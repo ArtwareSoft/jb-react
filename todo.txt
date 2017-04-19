@@ -1,0 +1,4 @@
+1. pass simple data test with imports
+2. custom-style implementation
+   a. get or create jbart.jsxTemplates[{path}]
+   b. bind to lifecycle methods
