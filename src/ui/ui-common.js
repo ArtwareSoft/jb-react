@@ -7,10 +7,22 @@ jb.component('group', {
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx =>
-    jb.ui.ctrl(ctx, {
-      beforeInit: cmp =>
-        cmp.state.ctrls = ctx.params.controls()
-      })
+    jb.ui.ctrl(ctx)
+})
+
+jb.component('group.init-group', {
+  type: 'feature', category: 'group:0',
+  impl: ctx => ({
+    init: cmp => {
+      if (cmp.ctrlEmitter) {
+          cmp.ctrlEmitter.takeUntil(cmp.jbEmitter.filter(x=>x=='destroy'))
+            .subscribe(ctrls=>
+              cmp.setState({ctrls:ctrls}))
+      } else {
+        cmp.state.ctrls = ctx.vars.$model.controls()
+      }
+    }
+  })
 })
 
 jb.component('label', {

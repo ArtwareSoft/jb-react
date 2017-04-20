@@ -6,6 +6,7 @@ jb.component('group.section', {
     template: (props,state) => (<section class="jb-group">
 	    	{ state.ctrls.map(ctrl=> jb.ui.h(ctrl)) }
         </section>),
+    features:{$: 'group.init-group'}
   }
 })
 

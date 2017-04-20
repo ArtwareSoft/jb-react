@@ -52,10 +52,20 @@ var jbRx = {
 //  entry: JBART_DIR + 'projects/ui-tests/common-styles.jsx',
   output: {
     path: JBART_DIR + 'dist',
+    filename: 'jb-rx.js',
+  },
+  resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
+};
+
+var jbRxMin = {
+  entry: JBART_DIR + 'src/ui/jb-rx.js',
+//  entry: JBART_DIR + 'projects/ui-tests/common-styles.jsx',
+  output: {
+    path: JBART_DIR + 'dist',
     filename: 'jb-rx.min.js',
   },
   resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
   plugins: [ new UglifyJSPlugin() ],
 };
 
-module.exports = [jb,jbLoader,dataTests,uiTests,uiBase,jbRx];
+module.exports = [jb,jbLoader,uiBase,jbRx];

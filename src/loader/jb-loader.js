@@ -5,11 +5,10 @@ var resources = {
       'ui-common': [
         'dist/ui-base-and-styles.js',
         'src/ui/ui-common.js',
+        'src/ui/common-features.js',
       ],
       'testers': [
-        'src/testing/data-testers.js',
-        'src/testing/ui-testers.js',
-        'src/testing/test-runner.js',
+        'src/testing/testers.js',
       ],
       'jquery': [
         'bower_components/jquery/dist/jquery.js'

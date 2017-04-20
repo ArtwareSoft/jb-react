@@ -15,3 +15,18 @@ jb.component('ui-test.group', {
   },
 })
 
+jb.component('ui-test.wait-for', {
+   impl :{$: 'ui-test', 
+    control :{$: 'group', 
+      features :{$: 'group.wait', 
+        for: ctx => new Promise(res => setTimeout(()=>{res('hello')}, 100))
+      },
+      controls: [
+        {$:'label', title: '%%'},
+      ] 
+    },
+    expectedResult :{$: 'contains', text: 'hello' }
+  },
+})
+
+

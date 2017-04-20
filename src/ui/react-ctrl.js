@@ -37,9 +37,10 @@ class JbComponent {
 
 	reactComp(ctx) {
 		var jbComp = this;
-		class JbComp extends Component { // must start with Capital?
+		class ReactComp extends Component { // must start with Capital?
 			constructor() {
 				super();
+				this.ctx = jbComp.ctx;
 				try {
 					if (jbComp.createjbEmitter)
 						this.jbEmitter = this.jbEmitter || new jb.rx.Subject();
@@ -55,11 +56,11 @@ class JbComponent {
 			    } catch(e) { jb.logException(e,'') }
 			}
 		}; 
-		JbComp.prototype.render = this.template;
+		ReactComp.prototype.render = this.template;
 		this.applyFeatures(ctx);
 		this.compileJsx();
-		injectLifeCycleMethods(JbComp,this);
-		return JbComp;
+		injectLifeCycleMethods(ReactComp,this);
+		return ReactComp;
 	}
 
 	compileJsx() {
@@ -149,7 +150,7 @@ class JbComponent {
 }
 
 function injectLifeCycleMethods(Comp,jbComp) {
-	if (jbComp.jbAfterViewInitFuncs.length)
+	if (jbComp.jbAfterViewInitFuncs.length || jbComp.createjbEmitter)
 	  Comp.prototype.componentDidMount = function() {
 		jbComp.jbAfterViewInitFuncs.forEach(init=> init(this));
 		if (this.jbEmitter) {
@@ -164,14 +165,18 @@ function injectLifeCycleMethods(Comp,jbComp) {
 		}
 	}
 
-	if (jbComp.jbCheckFuncs.length)
+	if (jbComp.jbCheckFuncs.length || jbComp.createjbEmitter)
 	  Comp.prototype.componentWillUpdate = function() {
 		jbComp.jbCheckFuncs.forEach(f=> 
 			f(this));
 		this.refreshModel && this.refreshModel();
 		this.jbEmitter && this.jbEmitter.next('check');
 	}
-	if (jbComp.jbDestroyFuncs.length)
+	if (jbComp.createjbEmitter)
+	  Comp.prototype.componentDidUpdate = function() {
+		this.jbEmitter.next('after-update');
+	}
+	if (jbComp.jbDestroyFuncs.length || jbComp.createjbEmitter)
 	  Comp.prototype.componentWillUnmount = function() {
 		jbComp.jbDestroyFuncs.forEach(f=> 
 			f(this));
