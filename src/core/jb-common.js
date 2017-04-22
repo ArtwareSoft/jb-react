@@ -220,7 +220,7 @@ jb.component('write-value',{
 		{ id: 'value',}
 	],
 	impl: (ctx,to,value) =>
-		jb.ui.writeValue ? jb.ui.writeValue(to,value) : jb.writeValue(to,value)
+		jb.writeValue(to,value)
 });
 
 jb.component('toggle-boolean-value',{
@@ -313,7 +313,7 @@ jb.component('contains',{
       });
       var prevIndex = -1;
       for(var i=0;i<text.length;i++) {
-      	var newIndex = all.indexOf(jb.tostring(text[i]),prevIndex);
+      	var newIndex = all.indexOf(jb.tostring(text[i]),prevIndex+1);
       	if (newIndex <= prevIndex) return false;
       	prevIndex = newIndex;
       }

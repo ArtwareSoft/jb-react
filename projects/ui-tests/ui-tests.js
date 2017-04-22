@@ -116,7 +116,8 @@ jb.component('ui-test.two-way-binding', {
         { $: 'label' , title: '%$person/name%' } ,
       ]
   },
-  expectedResult :{$: 'contains', text: ['input','Homer Simpson'] },
+  action :{$: 'ui-action.ngModel', selector: 'input', value: 'hello'},
+  expectedResult :{$: 'contains', text: ['hello','hello'] },
 },
 })
 

@@ -26,10 +26,11 @@ jb.component('ui-test', {
 	params: [
 		{ id: 'control', type: 'control', dynamic: true },
 		{ id: 'runBefore', type: 'action', dynamic: true },
+		{ id: 'action', type: 'action', dynamic: true },
 		{ id: 'expectedResult', type: 'boolean', dynamic: true },
 		{ id: 'cleanUp', type: 'action', dynamic: true },
 	],
-	impl: function(context,control,runBefore,expectedResult,cleanUp) {
+	impl: function(context,control,runBefore,action,expectedResult,cleanUp) {
 		return Promise.resolve(runBefore())
 			.then(_ => {
 				try {
@@ -44,6 +45,8 @@ jb.component('ui-test', {
 					return document.createElement('div');
 				}
 			})
+			.then(elem => 
+				Promise.resolve(action(context.setVars({elemToTest : elem }))).then(_=>elem))
 			.then(result =>
 					Promise.resolve(cleanUp()).then(_=>result) )
 			.then(elem=> {
@@ -58,6 +61,19 @@ jb.component('ui-test', {
 	}
 })
 
+jb.component('ui-action.ngModel', {
+	type: 'test',
+	params: [
+		{ id: 'selector', as: 'string' },
+		{ id: 'value', as: 'string' },
+	],
+	impl: (ctx,selector,value) => {
+		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
+		elems.forEach(e=>
+			e._component.state.jbModel(value))
+		return jb.delay(10);
+	}
+})
 
 var jb_success_counter = 0;
 var jb_fail_counter = 0;
