@@ -76,24 +76,29 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (immutable) */ __webpack_exports__["dynamicLoad"] = dynamicLoad;
 var resources = {
       'common': [
+        'dist/jb.js',
         'src/core/jb-common.js'
       ],
       'ui-common': [
+        'dist/jb-rx.js',
+        'node_modules/zepto/dist/zepto.min.js', // 30K jquery
+        'node_modules/material-design-lite/material.js',
+        'node_modules/material-design-lite/material.min.css',
+        'node_modules/material-design-lite/dist/material.indigo-pink.min.css',
+
+        'css/font.css',
+        'css/styles.css',
+
         'dist/ui-base-and-styles.js',
-        'src/ui/ui-common.js',
+        'src/ui/group.js',
+        'src/ui/label.js',
+        'src/ui/button.js',
+        'src/ui/field.js',
+        'src/ui/editable-text.js',
         'src/ui/common-features.js',
       ],
       'testers': [
         'src/testing/testers.js',
-      ],
-      'jquery': [
-        'bower_components/jquery/dist/jquery.js'
-      ],
-      'material-design-lite': [
-        'node_modules/material-design-lite/material.js',
-
-        'node_modules/material-design-lite/material.min.css',
-        'node_modules/material-design-lite/dist/material.indigo-pink.min.css',
       ],
       'codemirror': [
         'bower_components/codemirror/lib/codemirror.js',
@@ -130,7 +135,7 @@ function dynamicLoad(modules) {
       if (file.match(/\.js$/))
         document.write('<script src="' + url + '"></script>')
       else
-        document.write('<link rel="stylesheet" type="text/css" href="' + url + + '" />');
+        document.write('<link rel="stylesheet" type="text/css" href="' + url + '" />');
     })
   })
 }

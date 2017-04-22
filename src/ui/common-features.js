@@ -18,8 +18,24 @@ jb.component('group.wait', {
 
         cmp.delayed = waitForEmitter.toPromise().then(_=>
           cmp.jbEmitter.filter(x=>
-            x=='after-update').take(1)
-          .toPromise());
+            x=='after-update').take(1).toPromise());
+      },
+      jbEmitter: true,
+  })
+})
+
+jb.component('feature.listen', {
+  type: 'feature', category: 'group:70',
+  params: [ 
+    { id: 'resource', essential: true, as: 'string' },
+  ],
+  impl: (context,resource) => ({
+      beforeInit: cmp => {
+        jb.ui.resourceChange.takeUntil(cmp.jbEmitter.filter(x=>x=='destroy'))
+          .filter(e=>
+            e.op[resource])
+          .subscribe(e=>
+              cmp.setState({__: !cmp.state.__}));
       },
       jbEmitter: true,
   })

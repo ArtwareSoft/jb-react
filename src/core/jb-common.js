@@ -220,7 +220,7 @@ jb.component('write-value',{
 		{ id: 'value',}
 	],
 	impl: (ctx,to,value) =>
-		jb.writeValue(to,value)
+		jb.ui.writeValue ? jb.ui.writeValue(to,value) : jb.writeValue(to,value)
 });
 
 jb.component('toggle-boolean-value',{

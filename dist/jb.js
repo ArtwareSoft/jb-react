@@ -85,11 +85,10 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "jstypes", function() { return jstypes; });
 /* harmony export (immutable) */ __webpack_exports__["profileType"] = profileType;
 /* harmony export (immutable) */ __webpack_exports__["compName"] = compName;
-/* harmony export (immutable) */ __webpack_exports__["compDef"] = compDef;
 /* harmony export (immutable) */ __webpack_exports__["component"] = component;
-/* harmony export (immutable) */ __webpack_exports__["typeDef"] = typeDef;
+/* harmony export (immutable) */ __webpack_exports__["type"] = type;
+/* harmony export (immutable) */ __webpack_exports__["resource"] = resource;
 /* harmony export (immutable) */ __webpack_exports__["functionDef"] = functionDef;
-/* harmony export (immutable) */ __webpack_exports__["resourceDef"] = resourceDef;
 /* harmony export (immutable) */ __webpack_exports__["logError"] = logError;
 /* harmony export (immutable) */ __webpack_exports__["logPerformance"] = logPerformance;
 /* harmony export (immutable) */ __webpack_exports__["logException"] = logException;
@@ -112,10 +111,10 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (immutable) */ __webpack_exports__["delay"] = delay;
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "comps", function() { return comps; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "functions", function() { return functions; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "types", function() { return types; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ui", function() { return ui; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "rx", function() { return rx; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "studio", function() { return studio; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "resources", function() { return resources; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ctxDictionary", function() { return ctxDictionary; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "testers", function() { return testers; });
 function jb_run(context,parentParam,settings) {
@@ -324,8 +323,8 @@ function calcVar(context,varname) {
     res = context.vars[varname];
   else if (context.vars.scope && context.vars.scope[varname] != null) 
     res = context.vars.scope[varname];
-  else if (context.resources && context.resources[varname] != null) 
-    res = context.resources[varname];
+  else if (ui.resources && ui.resources[varname] != null) 
+    res = ui.resources[varname];
   return resolveFinishedPromise(res);
 }
 
@@ -557,39 +556,10 @@ function assignNameToFunc(name, fn) {
   return fn;
 } 
 
-function compDef(compName,component) {
-  comps[compName] = component;
-  return function(options) { 
-    if (typeof options == 'string') {
-      var out = {};
-      out['$'+compName] = options;
-      return out;
-    } else if (typeof options == 'object') {
-      options.$ = compName;
-      return options;
-    } else
-      return {$: compName}
-  }
-}
-
-function component(compName,component) {
-  compDef(compName,component)
-}
-
-function typeDef(typeName,typeObj) {
-  path(jbart,['types',typeName],typeObj || {});
-}
-
-function functionDef(funcName, func) {
-  path(jbart,['functions',funcName],func);
-}
-
-function resourceDef(widgetName,name,resource) {
-  path(jbart_widgets,[widgetName,'resources',name],resource);
-}
-
-// export var jbart = { ctxCounter : 0, ctxDictionary : {}, comps: {}, resources: {}, tests: {}, styles: {} };
-// if (typeof window != 'undefined') window.jbart = jbart; // for the studio and debug
+function component(compName,component) { comps[compName] = component }
+function type(id,val) { types[id] = val || {} }
+function resource(id,val) { ui.resources[id] = val || {} }
+function functionDef(id,val) { functions[id] = val }
 
 var ctxCounter = 0;
 
@@ -600,7 +570,6 @@ class jbCtx {
     if (typeof context == 'undefined') {
       this.vars = {};
       this.params = {};
-      this.resources = {}
     }
     else {
       if (ctx2.profile && ctx2.path == null) {
@@ -615,7 +584,6 @@ class jbCtx {
       this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : context.data;     // allow setting of data:null
       this.vars= ctx2.vars ? extend({},context.vars,ctx2.vars) : context.vars;
       this.params= ctx2.params || context.params;
-      this.resources= context.resources;
       this.componentContext= (typeof ctx2.componentContext != 'undefined') ? ctx2.componentContext : context.componentContext;
       this.probe= context.probe;
     }
@@ -781,12 +749,15 @@ function equals(x,y) {
   return x == y || val(x) == val(y)
 }
 
-function writeValue(to,val) {
+function writeValue(to,value) {
+  if (ui.writeValue) // use immutables
+    return ui.writeValue(to,value);
+
   if (!to) return;
   if (to.$jb_val) 
-    return to.$jb_val(val(val));
-  if (to.$jb_parent)
-    to.$jb_parent[to.$jb_property] = val(val);
+    to.$jb_val(val(value))
+  else if (to.$jb_parent)
+    to.$jb_parent[to.$jb_property] = val(value);
 }
 
 function isRef(value) {
@@ -811,12 +782,15 @@ function objectProperty(_object,property,jstype,lastInExpression) {
   return object[property];
 }
 
-function val(val) {
-  if (val == null) return val;
-  if (val.$jb_val) return val.$jb_val();
+function val(v) {
+  if (v == null) return v;
+  if (v.$jb_val) return v.$jb_val();
   // if (applyFunction && typeof val == 'function' && val.profile)
   //   return val();
-  return (val.$jb_parent) ? val.$jb_parent[val.$jb_property] : val;
+  if (v.$jb_parent && jb.ui.updateJbParent)
+    jb.ui.updateJbParent(v);
+
+  return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
 }
 
 function delay(mSec) {
@@ -825,10 +799,10 @@ function delay(mSec) {
 
 var comps = {};
 var functions = {};
-var ui = {};
+var types = {};
+var ui = { resources: {}};
 var rx = {};
 var studio = {};
-var resources = {};
 var ctxDictionary = {};
 var testers = {};
 

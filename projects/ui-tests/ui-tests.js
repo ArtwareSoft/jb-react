@@ -1,3 +1,24 @@
+jb.resource('people',[
+  { "name": "Homer Simpson" ,age: 42 , male: true},
+  { "name": "Marge Simpson" ,age: 38 , male: false},
+  { "name": "Bart Simpson"  ,age: 12 , male: true}
+]);
+
+jb.resource('person',{ 
+  name: "Homer Simpson", 
+  male: true,
+  isMale: 'yes', 
+  age: 42 
+});
+
+jb.resource('personWithAddress',{ 
+  "name": "Homer Simpson",
+  "address": {
+    "city": "Springfield",
+    "street": "742 Evergreen Terrace"
+  }
+})
+
 jb.component('ui-test.label', {
    impl :{$: 'ui-test', 
     control:{$:'label', title: 'hello world'},
@@ -29,4 +50,811 @@ jb.component('ui-test.wait-for', {
   },
 })
 
+jb.component('ui-test.button', {
+  impl :{$: 'ui-test',  
+  control :{$: 'button', title: 'btn1', action: ctx => alert(1) },
+  expectedResult: { $: 'contains', text: 'btn1' }
+},
+})
 
+jb.component('ui-test.button.mdl-icon', {
+  impl :{$: 'ui-test',  
+  control :{$: 'button', 
+    title: 'btn1', 
+    style :{ $: 'button.mdl-icon', icon: 'build' },
+    action: ctx => alert(1) 
+  },
+  expectedResult: { $: 'contains', text: 'build' }
+},
+})
+
+
+jb.component('ui-test.group2', {
+  impl :{$: 'ui-test',  
+  control :{$: 'group', controls: 
+    [ 
+      { $: 'button', title: 'button1' } ,
+      { $: 'label' , title: 'label1' } ,
+    ]
+  },
+  expectedResult: { $: 'contains', text: ['button1','label1'] }
+},
+})
+
+jb.component('ui-test.editable-text', {
+  impl :{$: 'ui-test',  
+    control :{$: 'editable-text', 
+    style :{$: 'editable-text.input'},
+      title: 'name', 
+      databind: '%$person/name%' 
+    },
+    expectedResult :{$: 'contains', text: ['input','Homer Simpson'] },
+},
+})
+
+jb.component('ui-test.editable-text.x-button', {
+  impl :{$: 'ui-test',  
+    control :{$: 'editable-text', 
+      style :{$: 'editable-text.input'},
+      title: 'name', 
+      databind: '%$person/name%',
+      features:{ $: 'editable-text.x-button'},
+    },
+    expectedResult :{$: 'contains', text: ['✗','input','Homer Simpson'] },
+},
+})
+
+jb.component('ui-test.two-way-binding', {
+  impl :{$: 'ui-test',  
+  control :{$: 'group', 
+    features :{$: 'feature.listen', resource : 'person'},
+    controls: [ 
+        {$: 'editable-text', 
+          title: 'name', 
+          databind: '%$person/name%',
+        },
+        { $: 'label' , title: '%$person/name%' } ,
+      ]
+  },
+  expectedResult :{$: 'contains', text: ['input','Homer Simpson'] },
+},
+})
+
+jb.component('ui-test.group-horizontal', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group', 
+    style: {$: 'layout.horizontal' },
+    controls: 
+      [ 
+        { $: 'button', title: 'button1' } ,
+        { $: 'label' , title: 'label1' } ,
+      ]
+  },
+  expectedResult: { $: 'contains', text: ['button1','label1'] }
+},
+})
+
+jb.component('ui-test.group-flex', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group', 
+    style: {$: 'layout.flex', direction: 'row' },
+    controls: 
+      [ 
+        { $: 'button', title: 'button1' } ,
+        { $: 'label' , title: 'label1' } ,
+      ]
+  },
+  expectedResult: { $: 'contains', text: ['button1','label1'] }
+},
+})
+
+jb.component('ui-test.button-click', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'button', 
+    //style :{$: 'button.x'}, 
+    title: 'Click Me', 
+    action: () => alert(1) 
+  },
+  expectedResult: true
+},
+})
+
+jb.component('ui-test.button-x', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'button', 
+    style :{$: 'button.x'}, 
+    title: 'Click Me', 
+    action: () => alert(1) 
+  },
+  expectedResult: true
+},
+})
+
+jb.component('ui-test.resource', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'button', title: '%$person.name%' } ,
+  expectedResult: { $: 'contains', text: ['Homer'] },
+},
+})
+
+jb.component('ui-test.features-css', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'label', 
+    title: 'Hello World2', 
+    features :{ $css: '{color: cyan; font-weight: bold}' },
+  },
+  expectedResult: { $: 'contains', text: ['Hello'] }
+},
+})
+
+jb.component('ui-test.itemlist', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'itemlist', items: '%$people%', 
+      controls :{ $: 'label', title: '%$item.name% - %name%' }, 
+  },
+  expectedResult: { $: 'contains', text: ['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'] },
+},
+})
+
+jb.component('ui-test.itemlist-with-select', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'itemlist', items: '%$people%', 
+      controls :{ $: 'label', title: '%$item.name% - %name%' }, 
+      features :{ $: 'itemlist.selection' }, 
+  },
+  expectedResult: { $: 'contains', text: ['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'] },
+},
+})
+
+jb.component('ui-test.itemlist-DD', {
+  impl :{$: 'ng2-ui-test', control :{$: 'group', controls: 
+  [
+    { $: 'itemlist', items: '%$people%', 
+        controls :{$: 'label', title: '%name%' }, 
+        features: [
+            { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+            { $: 'itemlist.keyboard-selection', autoFocus: true },
+            { $: 'itemlist.drag-and-drop' },
+        ],
+    },
+    { $: 'itemlist', items: '%$people%',
+      dynamicItems: true,
+      controls :{$: 'label', title: '%name%' } 
+    },
+  ]},
+  expectedResult: { $: 'contains', text: ['Homer Simpson', 'Bart Simpson'] },
+},
+})
+
+jb.component('ui-test.itemlist-basic', {
+  impl :{$: 'ng2-ui-test', control :
+    { $: 'itemlist', items: '%$people%',
+      controls :{$: 'label', title: '%name%' } 
+    },
+  expectedResult: { $: 'contains', text: ['Homer Simpson', 'Bart Simpson'] },
+},
+})
+
+jb.component('ui-test.itemlist-heading', {
+  impl :{$: 'ng2-ui-test', control :{$: 'group', controls: 
+  [
+    { $: 'itemlist-with-groups', items: '%$people%', 
+        controls :{$: 'label', title: '%name%' }, 
+        groupBy :{$: 'itemlist-heading.group-by', 
+          itemToGroupID :{$if: '%male%', then: 'male', else: 'female'}
+        },
+//        headingCtrl :{$: 'label', title: '%title%' }, 
+        features: [
+            { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+            { $: 'itemlist.keyboard-selection', autoFocus: true },
+            {$: 'css', css: '.jb-item:not(.heading) { margin-left: 30px }' }
+        ],
+    },
+  ]},
+  expectedResult: { $: 'contains', text: ['female', 'Marge', 'male', 'Homer Simpson', 'Bart Simpson'] },
+}
+})
+
+jb.component('ui-test.tree', {
+  impl :{$: 'ng2-ui-test',  
+  control: {$: 'tree',
+        nodeModel :{$: 'tree.json-read-only', 
+          object: '%$personWithAddress%', rootPath: 'personWithAddress' 
+        },
+    features: [
+        { $: 'tree.selection' },
+        { $: 'tree.keyboard-selection'} 
+    ] 
+  },
+  expectedResult :{$: 'contains', text: ['address'] } ,
+},
+})
+
+jb.component('ui-test.tree-DD', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'tree',
+    nodeModel :{$: 'tree.json', 
+      object: '%$personWithChildren%', rootPath: 'Homer' 
+    },
+    features: [
+        { $: 'tree.selection' },
+        { $: 'tree.drag-and-drop'},
+        { $: 'tree.keyboard-selection'} 
+    ] 
+  },
+  expectedResult: { $: 'contains', text: ['Homer'] } ,
+},
+})
+
+jb.component('ui-test.tree-right-click', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'tree',
+    nodeModel :{$: 'tree.json-read-only', 
+      object: '%$personWithChildren%', rootPath: 'Homer' 
+    },
+    features: [
+        { $: 'tree.keyboard-selection' },
+        { $: 'tree.drag-and-drop'},
+        { $: 'tree.selection', 
+          onDoubleClick :{$: 'openDialog', title: 'double %%',
+            features :{$: 'dialog-feature.nearLauncherLocation' }
+          },
+        },
+        { $: 'tree.onMouseRight', 
+          action :{$: 'openDialog', title: 'right %%',
+            features :{$: 'dialog-feature.nearLauncherLocation' }
+          }
+        }
+    ] 
+  },
+  expectedResult: { $: 'contains', text: ['Homer'] } ,
+},
+})
+
+jb.component('ui-test.itemlist-add-button', {
+  impl :{$: 'ng2-ui-test',  
+  control: { $: 'group', controls: 
+    [
+      { $: 'itemlist', 
+        items: '%$people%', 
+        controls :{$: 'label', title: '%$item.name% - %name%' }, 
+      }, 
+      { $: 'button', title: 'add', 
+        action: (ctx) => ctx.exp('%$people%').push({ name: "Magi"})
+      }
+    ]
+  } ,
+  expectedResult: { $: 'contains', text: ['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'] },
+},
+})
+
+jb.component('ui-test.itemlist-selection', {
+  impl :{$: 'ng2-ui-test',
+  control :{$: 'itemlist', items: '%$people%', 
+        controls :{$: 'label', title: '%$item.name%' }, 
+        features: [
+            { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+        ],
+  },
+  expectedResult: { $: 'contains', text: ['Homer Simpson'] },
+},
+})
+
+jb.component('ui-test.itemlist-MD', {
+  impl :{$: 'ng2-ui-test',
+control :{$: 'group', 
+  controls: 
+    [
+      { $: 'itemlist', items: '%$people%', 
+        controls :{$: 'label', title: '%$item.name%' }, 
+        features: [
+            { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+            { $: 'itemlist.keyboard-selection', autoFocus: true },
+        ],
+      },
+      { $: 'group', 
+        features :{$: 'group.data', data: '%$globals/selectedPerson%', watch1: true} , 
+         controls: [
+            {$: 'label' , title: '%name% selected' },
+          ]
+        }
+    ]
+  } ,
+  expectedResult: { $: 'contains', text: ['Homer Simpson', 'Homer Simpson selected'] },
+},
+})
+
+// jb.component('ui-test.ngShow-label', {
+// //   impl :{$: 'ng2-ui-test',  
+//   control :{$: 'label', 
+//         title: 'Dan',
+//         features :{$ngAtts: {'[hidden]': '12==12'} }
+//    }, 
+//     expectedResult: { $contains: ['hidden' , 'Dan'] }
+// },
+// })
+
+// jb.component('ui-test.ngShow-list', {
+// //   impl :{$: 'ng2-ui-test',  
+//   control :{$: 'itemlist', 
+//       items: '%$people%', 
+//       controls :{$: 'label', 
+//         title: '%$item.name% - %age%',
+//         features :{ $ngAtts: {'[hidden]': '%age%==12'} }
+//       }, 
+//     },
+//     expectedResult: { $contains: ['Homer','Marge', 'hidden' , 'Bart'] }
+// },
+// })
+
+// jb.component('ui-test.ngIf', {
+// type: 'test',
+//   impl :{$: 'ng2-ui-test', 
+//   control :{$: 'itemlist', 
+//       items: '%$people%', 
+//       controls :{$: 'label', 
+//         title: '%$item.name% - %age%', 
+//         atts: {'*ngIf': '%age%>12'}
+//       }, 
+//     },
+//     expectedResult :{$and: 
+//       [
+//         { $contains: ['Homer','Marge'] },
+// //        { $not: { $contains: 'Bart'}}
+//       ]
+//     }
+// },
+// })
+
+jb.component('ui-test.editable-text-in-group', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group',
+        controls: [
+          { $: 'editable-text', title: 'name', databind: '%$person/name%' },
+          { $: 'editable-text', title: 'name', databind: '%$person/name%' },
+          { $: 'label', title: '%$person/name%' }
+        ]
+  },
+  expectedResult: { $: 'contains', text: ['Homer'] },
+},
+})
+
+jb.component('ui-test.editable-text-with-jb-val', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group',
+      $vars: {
+        a1 : ctx => { return {
+          $jb_val: value => {
+            if (value == undefined)
+              return jbart.__test_jb_val || 'Marge';
+            else
+              jbart.__test_jb_val = value;
+          }
+        }}
+      },
+      controls: [
+          { $: 'editable-text', title: 'name', databind: '%$a1%' },
+          { $: 'editable-text', title: 'name', databind: '%$a1%' },
+          { $: 'picklist', title: 'name', databind: '%$a1%', 
+            options :{$: 'picklist.optionsByComma', 
+              options: 'Homer,Marge' 
+            } 
+          },
+          { $: 'label', title: '%$a1%' }
+        ]
+  },
+  expectedResult: { $: 'contains', text: ['Homer'] },
+},
+})
+
+jb.component('ui-test.property-sheet.titles-above', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group',
+    controls : [
+      {$: 'group',
+            style :{$: 'property-sheet.titles-above-float-left' },
+            controls: [
+              { $: 'editable-text', title: 'name', databind: '%$person/name%' },
+              { $: 'editable-text', title: 'address', databind: '%$person/address%' },
+            ]
+      },
+      { $: 'label', title: '%$person/name%' }
+    ]
+  },
+  expectedResult: { $: 'contains', text: ['Homer'] },
+},
+})
+
+jb.component('ui-test.property-sheet.titles-left', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group',
+    controls : [
+      {$: 'group',
+            style :{$: 'property-sheet.titles-left' },
+            controls: [
+              { $: 'editable-text', title: 'name', databind: '%$person/name%' },
+              { $: 'editable-text', title: 'address', databind: '%$person/address%' },
+            ]
+      },
+      { $: 'label', title: '%$person/name%' }
+    ]
+  },
+  expectedResult: { $: 'contains', text: ['Homer'] },
+},
+})
+
+jb.component('ui-test.editable-number', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group', controls: 
+    [
+      {$: 'editable-number', title: 'age',
+          databind: '%$person/age%',
+          style :{$: 'editable-number.slider'},
+      },
+      {$: 'editable-number', title: 'age',
+          databind: '%$person/age%',
+      },
+      { $: 'label', title: '%$person/age%' }
+    ]
+  },
+  expectedResult: { $: 'contains', text: ['42'] },
+},
+
+})
+
+jb.component('ui-test.editable-boolean.all-styles', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group', controls: 
+    [
+      {$: 'editable-boolean',
+          title: 'male',
+          databind: '%$person/male%',
+          style :{$: 'editable-boolean.checkbox'},
+      },
+      {$: 'editable-boolean',
+          title: 'gender',
+          databind: '%$person/male%',
+          textForTrue: 'male',
+          textForFalse: 'female',
+          style :{$: 'editable-boolean.checkbox-with-title'},
+      },
+      {$: 'editable-boolean',
+          title: 'male',
+          databind: '%$person/male%',
+          style :{$: 'editable-boolean.md-slide-toggle'},
+      },
+      { $: 'label', title: '%$person/male%' }
+    ]
+  },
+  expectedResult: { $: 'contains', text: ['male'] },
+},
+})
+
+jb.component('ui-test.editable-boolean-settings', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group', controls: 
+    [
+      {$: 'editable-boolean',
+          title: 'male',
+          style :{$: 'editable-boolean.checkbox-with-title'},
+          databind: '%$person/male%',
+          textForTrue: 'male',
+          textForFalse: 'female',
+      },
+      { $: 'label', title: '%$person/isMale%' }
+    ]
+  },
+  expectedResult: { $: 'contains', text: ['male','yes'] },
+},
+})
+
+jb.component('ui-test.editable-boolean.expand-collapse', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group', 
+  $vars: {
+      MyWidget :{$:'object', expanded: true}
+  },
+  controls: 
+    [
+      {$: 'editable-boolean',
+          style :{$: 'editable-boolean.expand-collapse'},
+          databind: '%$MyWidget/expanded%',
+      },
+      { $: 'label', title: 'inner text', 
+        features :{ $: 'hidden', showCondition: '%$MyWidget.expanded%' }
+      }
+    ]
+  },
+  expectedResult: { $: 'contains', text: ['inner text'] },
+},
+})
+
+jb.component('ui-test.code-mirror', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group', 
+    $vars: {
+      js: { $: 'object', text: 'function f1() { return 15 }'},
+      css: { $: 'object', text: '{ width: 15px; }' },
+      html: { $: 'object', text: '<div><span>hello</span></div>' },
+    },
+    controls: 
+    [
+      { $: 'editable-text', 
+          databind: '%$js/text%',
+          style :{$: 'editable-text.codemirror', mode: 'javascript'}
+      },
+      { $: 'editable-text', 
+          databind: '%$css/text%',
+          style :{$: 'editable-text.codemirror', mode: 'css'}
+      },
+      { $: 'editable-text', 
+          databind: '%$html/text%',
+          style :{$: 'editable-text.codemirror', mode: 'htmlmixed'}
+      },
+      { $: 'label',  title: '%$js/text%' }
+    ]
+ },
+  expectedResult: { $: 'contains', text: ['function'] },
+},
+})
+
+jb.component('ui-test.prettyPrintComp', {
+  impl :{$: 'ng2-ui-test',  waitForPromise: {$delay: 50},
+  control :{$: 'group', controls: [
+      {$: 'text', 
+          text: ctx => jb_prettyPrintComp('inner-label1-tst',jbart.comps['inner-label1-tst']),
+          style :{$: 'text.multi-line'}
+      },
+      {$: 'text', 
+          text: ctx => jb_prettyPrintComp('editable-text.codemirror',jbart.comps['editable-text.codemirror']),
+          style :{$: 'text.codemirror'}
+      },
+    ]
+  },
+  expectedResult: { $: 'contains', text: ["dynamic: true"] },
+},
+})
+
+jb.component('ui-test.picklist', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group', controls: 
+      [
+        { $: 'group', 
+            style :{$: 'property-sheet.titles-left' },
+            controls :{$: 'picklist', 
+                    title: 'city', 
+                    databind: '%$personWithAddress/address/city%', 
+                    options :{$: 'picklist.optionsByComma', 
+                      options: 'Springfield,New York,Tel Aviv,London' 
+                    } 
+            }
+        },
+        { $: 'label',  title: '%$personWithAddress/address/city%' }
+      ]
+  },
+  expectedResult: { $: 'contains', text: ['Springfield', 'New York'] },
+},
+})
+
+jb.component('ui-test.picklist-sort', {
+   impl :{$: 'data-test', 
+    calculate: {$pipeline: [ 
+        { $: 'picklist.sorted-options' , 
+          options: {$: 'picklist.optionsByComma', options: 'a,b,c,d' },
+          marks: {$pipeline : [ 
+            'c:100,d:50,b:0,a:20',
+            {$: 'split', separator: ',' },
+            {$: 'object', 
+              code: {$: 'split', separator: ':', part: 'first'  },  
+              mark: {$: 'split', separator: ':', part: 'second'  },  
+            }
+          ] }
+        }, 
+        '%text%', 
+        {$: 'join'} 
+      ]},
+    expectedResult :{$: 'contains', text: 'c,d,a' }
+  },
+})
+
+jb.component('ui-test.picklist-groups', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'group', controls: 
+      [
+        { $: 'group', 
+            style :{$: 'property-sheet.titles-left' },
+            controls :{$: 'picklist',
+                    style :{$: 'picklist.groups'}, 
+                    title: 'city', 
+                    databind: '%$personWithAddress/address/city%', 
+                    options :{$: 'picklist.optionsByComma', 
+                      options: 'US.Springfield,US.New York,Israel.Tel Aviv,UK.London,mooncity' 
+                    } 
+            }
+        },
+        { $: 'label',  title: '%$personWithAddress/address/city%' }
+      ]
+  },
+  expectedResult: { $: 'contains', text: ['Springfield', 'New York'] },
+},
+})
+
+jb.component('ui-test.dynamic-controls', {
+  impl :{$: 'ng2-ui-test', 
+  control :{$: 'group',
+      style :{$: 'property-sheet.titles-left' },
+      controls :{$: 'dynamic-controls', 
+          controlItems: {$list: ['name','age']},
+          genericControl: { $: 'editable-text', databind: '%$person/{%$controlItem%}%', title: '%$controlItem%' }
+      }
+  },
+  expectedResult :{$: 'contains', text: ['name','age'] },
+},
+})
+
+jb.component('ui-test.tabs', {
+  impl :{$: 'ng2-ui-test', 
+  control :{$: 'tabs',
+      tabs:[
+        {$: 'group', title: 'tab1', controls :{$: 'label', title: 'in tab1' }},
+        {$: 'group', title: 'tab2', controls :{$: 'label', title: 'in tab2' }},
+    ]
+  },
+  expectedResult :{$and: [ 
+    {$: 'contains', text: ['tab1','in tab1'] },
+    {$: 'contains', text: 'tab2' },
+    {$not: {$: 'contains', text: 'in tab2' } }
+  ]},
+},
+})
+
+jb.component('ui-test.group.accordion', {
+  impl :{$: 'ng2-ui-test', disableChangeDetection: false,
+  control :{$: 'group',
+      style :{$: 'group.accordion'},
+      controls:[
+        {$: 'group', title: 'tab1', controls :{$: 'label', title: 'in tab1' }},
+        {$: 'group', title: 'tab2', controls :{$: 'label', title: 'in tab2' }},
+    ]
+  },
+  expectedResult :{$: 'contains', text: ['tab1','in tab1','tab2'] },
+},
+})
+
+jb.component('ui-test.inner-label', {
+  impl :{$: 'ng2-ui-test',  
+    control :{$: 'inner-label3-tst', title: 'Hello World2' },
+    expectedResult: { $: 'contains', text: 'Hello World2' }
+},
+})
+
+jb.component('ui-test.markdown', {
+  impl :{$: 'ng2-ui-test',  
+    control :{$: 'markdown', markdown: `| Day     | Meal    | Price |
+| --------|---------|-------|
+| Monday  | pasta   | $6    |
+| Tuesday | chicken | $8    |    ` },
+    expectedResult: { $: 'contains', text: 'table' }
+  },
+})
+
+jb.component('ui-test.style-by-control', {
+  impl :{$: 'ng2-ui-test',  
+    control :{$: 'label', 
+        title: 'Hello World',
+        style :{$: 'style-by-control', 
+          modelVar: 'labelModel',
+          control :{$: 'button', 
+            title: '%$labelModel/title%2',
+          }
+        }
+    },
+    expectedResult: { $: 'contains', text: 'Hello World2' }
+  },
+})
+
+jb.component('ui-test.picklist-as-itemlist', {
+  impl :{$: 'ng2-ui-test',  
+    control :{$: 'group', 
+      controls: [
+          {$: 'picklist', 
+            style :{$: 'picklist.selection-list', width: '300' } ,
+            databind: '%$personWithAddress/address/city%', 
+            options :{$: 'picklist.optionsByComma', 
+                   options: 'Springfield,New York,Tel Aviv,London' 
+            },
+          },
+          { $: 'label',  title: '%$personWithAddress/address/city%' }
+    ]},
+    expectedResult: { $: 'contains', text: ['Springfield', 'New York'] },
+  },
+})
+
+jb.component('menu-test.menu1', {
+  impl :{$: 'menu.menu',
+      title: 'main',
+      options: [
+        {$: 'menu.menu', title: 'File',
+          options: [
+            {$: 'menu.action', title: 'New' },
+            {$: 'menu.action', title: 'Open' },
+            {$: 'menu.menu', title: 'Bookmarks',
+              options: [
+                  {$: 'menu.action', title: 'Google' },
+                  {$: 'menu.action', title: 'Facebook' }
+              ]
+            },
+            {$: 'menu.menu', title: 'Friends',
+              options: [
+                  {$: 'menu.action', title: 'Dave' },
+                  {$: 'menu.action', title: 'Dan' }
+              ]
+            },
+          ]
+        },
+        {$: 'menu.menu', title: 'Edit',
+          options: [
+            {$: 'menu.action', title: 'Copy' },
+            {$: 'menu.action', title: 'Paste' }
+          ]
+        },
+        {$:'menu.dynamic-options', 
+          items: {$list: [1,2,3]} ,
+          genericOption :{$: 'menu.action', title: 'dynamic-%%' },
+        }
+      ]
+   }
+})
+
+jb.component('menu-test.pulldown', {
+  impl :{$: 'ng2-ui-test',  
+    control :{$: 'menu.control',
+      style :{$: 'menu-style.pulldown'},
+      menu :{$: 'menu-test.menu1'},
+    },
+    expectedResult :{$: 'contains', text: ['File', 'Edit','dynamic-1','dynamic-3'] },
+  },
+})
+
+jb.component('menu-test.context-menu', {
+  impl :{$: 'ng2-ui-test',  
+    control: {$: 'menu.control',
+      menu :{$: 'menu-test.menu1'}
+    },
+    expectedResult :{$: 'contains', text: ['File', 'Edit'] },
+  },
+})
+
+jb.component('menu-test.open-context-menu', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'button', 
+    title: 'open', 
+    action :{$: 'menu.open-context-menu', 
+      menu :{$: 'menu-test.menu1'},
+    }
+  },
+  expectedResult :{$: 'contains', text: 'open' },
+  },
+})
+
+
+jb.component('inner-label1-tst', {
+  params: [
+     { id: 'title', essential: true, dynamic: true },
+  ],
+  impl :{$: 'label', title: {$call: 'title' }}
+})
+
+jb.component('inner-label2-tst', {
+  params: [
+     { id: 'title', essential: true, dynamic: true },
+  ],
+  impl :{$: 'inner-label1-tst', title: {$call: 'title' }}
+})
+
+jb.component('inner-label3-tst', {
+  params: [
+     { id: 'title', essential: true, dynamic: true },
+  ],
+  impl :{$: 'inner-label2-tst', title: {$call: 'title' }}
+})

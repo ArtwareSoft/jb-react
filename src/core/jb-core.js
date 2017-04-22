@@ -204,8 +204,8 @@ function calcVar(context,varname) {
     res = context.vars[varname];
   else if (context.vars.scope && context.vars.scope[varname] != null) 
     res = context.vars.scope[varname];
-  else if (context.resources && context.resources[varname] != null) 
-    res = context.resources[varname];
+  else if (ui.resources && ui.resources[varname] != null) 
+    res = ui.resources[varname];
   return resolveFinishedPromise(res);
 }
 
@@ -437,39 +437,10 @@ function assignNameToFunc(name, fn) {
   return fn;
 } 
 
-export function compDef(compName,component) {
-  comps[compName] = component;
-  return function(options) { 
-    if (typeof options == 'string') {
-      var out = {};
-      out['$'+compName] = options;
-      return out;
-    } else if (typeof options == 'object') {
-      options.$ = compName;
-      return options;
-    } else
-      return {$: compName}
-  }
-}
-
-export function component(compName,component) {
-  compDef(compName,component)
-}
-
-export function typeDef(typeName,typeObj) {
-  path(jbart,['types',typeName],typeObj || {});
-}
-
-export function functionDef(funcName, func) {
-  path(jbart,['functions',funcName],func);
-}
-
-export function resourceDef(widgetName,name,resource) {
-  path(jbart_widgets,[widgetName,'resources',name],resource);
-}
-
-// export var jbart = { ctxCounter : 0, ctxDictionary : {}, comps: {}, resources: {}, tests: {}, styles: {} };
-// if (typeof window != 'undefined') window.jbart = jbart; // for the studio and debug
+export function component(compName,component) { comps[compName] = component }
+export function type(id,val) { types[id] = val || {} }
+export function resource(id,val) { ui.resources[id] = val || {} }
+export function functionDef(id,val) { functions[id] = val }
 
 var ctxCounter = 0;
 
@@ -480,7 +451,6 @@ export class jbCtx {
     if (typeof context == 'undefined') {
       this.vars = {};
       this.params = {};
-      this.resources = {}
     }
     else {
       if (ctx2.profile && ctx2.path == null) {
@@ -495,7 +465,6 @@ export class jbCtx {
       this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : context.data;     // allow setting of data:null
       this.vars= ctx2.vars ? extend({},context.vars,ctx2.vars) : context.vars;
       this.params= ctx2.params || context.params;
-      this.resources= context.resources;
       this.componentContext= (typeof ctx2.componentContext != 'undefined') ? ctx2.componentContext : context.componentContext;
       this.probe= context.probe;
     }
@@ -659,12 +628,15 @@ export function equals(x,y) {
   return x == y || val(x) == val(y)
 }
 
-export function writeValue(to,val) {
+export function writeValue(to,value) {
+  if (ui.writeValue) // use immutables
+    return ui.writeValue(to,value);
+
   if (!to) return;
   if (to.$jb_val) 
-    return to.$jb_val(val(val));
-  if (to.$jb_parent)
-    to.$jb_parent[to.$jb_property] = val(val);
+    to.$jb_val(val(value))
+  else if (to.$jb_parent)
+    to.$jb_parent[to.$jb_property] = val(value);
 }
 
 export function isRef(value) {
@@ -689,12 +661,15 @@ export function objectProperty(_object,property,jstype,lastInExpression) {
   return object[property];
 }
 
-export function val(val) {
-  if (val == null) return val;
-  if (val.$jb_val) return val.$jb_val();
+export function val(v) {
+  if (v == null) return v;
+  if (v.$jb_val) return v.$jb_val();
   // if (applyFunction && typeof val == 'function' && val.profile)
   //   return val();
-  return (val.$jb_parent) ? val.$jb_parent[val.$jb_property] : val;
+  if (v.$jb_parent && jb.ui.updateJbParent)
+    jb.ui.updateJbParent(v);
+
+  return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
 }
 
 export function delay(mSec) {
@@ -703,9 +678,9 @@ export function delay(mSec) {
 
 export var comps = {};
 export var functions = {};
-export var ui = {};
+export var types = {};
+export var ui = { resources: {}};
 export var rx = {};
 export var studio = {};
-export var resources = {};
 export var ctxDictionary = {};
 export var testers = {};

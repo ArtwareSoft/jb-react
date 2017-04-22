@@ -519,6 +519,16 @@
 	},
 	"buffers":
 	[
+		{
+			"contents": "Searching 9085 files for \"templateModifier\"\n\nC:\\jb-react\\dist\\ui-base-and-styles.js:\n  159    description: 'add ripple effect to buttons',\n  160    impl: ctx => ({\n  161:     templateModifier: template => template.replace(/<\\/([^>]*)>$/, '<span class=\"mdl-ripple\"></span></$1>'),\n  162      css: '{ position: relative; overflow:hidden }',\n  163      init: cmp => {\n  ...\n  463  \t\tif (options.doCheck) this.jbCheckFuncs.push(options.doCheck);\n  464  \t\tif (options.destroy) this.jbDestroyFuncs.push(options.destroy);\n  465: \t\tif (options.templateModifier) this.modifierFuncs.push(options.templateModifier);\n  466  \n  467  \t\tif (options.jbEmitter) this.createjbEmitter = true;\n\nC:\\jb-react\\src\\ui\\editable-text.js:\n   36    type: 'feature',\n   37    impl : ctx =>({\n   38:     templateModifier: (vdom,props,state) => \n   39        jb.ui.h('div', [vdom].concat(state.jbModel('') ? [jb.ui.h('button', { class: 'delete', onclick: e => state.jbModel('')} , ['&#215;'])] : []) ),\n   40      css: `.delete {\n\nC:\\jb-react\\src\\ui\\itemlist.js:\n  103              cmp.selectionEmitter.next(cmp.items[0])\n  104      },\n  105:     templateModifier: { \n  106        jbItem: `[class.selected]=\"selected == ctrl.comp.ctx.data\"\n  107          (click)=\"clickEmitter.next(ctrl.comp.ctx.data)\"` // selected = ctrl.comp.ctx.data ; \n\nC:\\jb-react\\src\\ui\\menu.js:\n  317              cmp.select(cmp.items[0]);\n  318        },\n  319: \t  templateModifier: {\n  320  \t      jbItem: `[class.selected]=\"selected == ctrl.comp.ctx.data\" (mouseenter)=\"select(ctrl.comp.ctx.data)\"`\n  321  \t  },\n\nC:\\jb-react\\src\\ui\\react-ctrl.js:\n  124  \t\tif (options.doCheck) this.jbCheckFuncs.push(options.doCheck);\n  125  \t\tif (options.destroy) this.jbDestroyFuncs.push(options.destroy);\n  126: \t\tif (options.templateModifier) this.modifierFuncs.push(options.templateModifier);\n  127  \n  128  \t\tif (options.jbEmitter) this.createjbEmitter = true;\n\n8 matches across 5 files\n",
+			"settings":
+			{
+				"buffer_size": 1922,
+				"line_ending": "Windows",
+				"name": "Find Results",
+				"scratch": true
+			}
+		}
 	],
 	"build_system": "",
 	"build_system_choices":
@@ -554,10 +564,20 @@
 		"side_bar_visible": false,
 		"status_bar_visible": false
 	},
+	"expanded_folders":
+	[
+		"/C/jb-react"
+	],
 	"file_history":
 	[
 		"/C/jbart5-react/projects/ui-tests/ui-tests.js",
+		"/C/jbart5-ng/src/ui/group.js",
+		"/C/jbart5-ng/projects/ui-tests/ui-tests.js",
 		"/C/jbart5-ng/src/ui/features.js",
+		"/C/jbart5-ng/projects/ui-tests/single-test.html",
+		"/C/jb-react/jb-react.sublime-workspace",
+		"/C/jbart5-ng/src/ui/jb-ui.ts",
+		"/C/jb-react/jb-react.sublime-project",
 		"/C/jbart5-ng/src/ui/button.js",
 		"/C/jbart5-ng/projects/studio/studio-styles.js",
 		"/C/jbart5-ng/projects/material-demo/material-demo.js",
@@ -589,8 +609,6 @@
 		"/C/jbart5-ng/src/ui/tree/tree.ts",
 		"/C/jbart5-ng/projects/hello-world/hello-world.js",
 		"/C/jbart5-ng/src/ui/label.js",
-		"/C/jbart5-ng/src/ui/jb-ui.ts",
-		"/C/jbart5-ng/src/ui/group.js",
 		"/C/jbart5-ng/src/ui/menu.js",
 		"/C/jbart5-ng/src/ui/itemlist.js",
 		"/C/jbart5-ng/projects/studio-helper/studio-helper.js",
@@ -615,7 +633,6 @@
 		"/C/jbart5-ng/src/testing/ui-testers.js",
 		"/C/jbart5-ng/projects/studio/studio-probe.ts",
 		"/C/jbart5-ng/projects/studio/studio-open-project.ts",
-		"/C/jbart5-ng/projects/ui-tests/ui-tests.js",
 		"/C/jbart5-ng/src/ui/styles/codemirror-styles.js",
 		"/C/jbart5-ng/src/ui/slider.js",
 		"/C/jbart5-ng/src/ui/picklist.js",
@@ -670,7 +687,6 @@
 		"/C/jbart5-ng/projects/ui-tests/tests.html",
 		"/C/jbart5-ng/projects/aot-test/aot-test.html",
 		"/C/jbart5-ng/projects/studio/studio-menu.ts",
-		"/C/jbart5-ng/projects/ui-tests/single-test.html",
 		"/C/jbart5-ng/projects/studio/studio-styles.ts",
 		"/C/jbart5-ng/projects/studio/studio-jb-editor-styles.ts",
 		"/C/jbart5-ng/src/ui/md-styles/sidenav-md.ts",
@@ -681,9 +697,7 @@
 		"/C/jbart5-ng/src/ui/md-styles/tabs-md.ts",
 		"/C/jbart5-ng/dist/src/core/jb.js",
 		"/C/jbart5-ng/src/testing/data-testers.js",
-		"/C/jbart5-ng/projects/data-tests/data-tests.js",
-		"/C/jbart5-ng/src/level-db/levelup.js",
-		"/C/jbart5-ng/projects/studio/studio-properties.ts"
+		"/C/jbart5-ng/projects/data-tests/data-tests.js"
 	],
 	"find":
 	{
@@ -730,6 +744,12 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"templateModifier",
+			"garbageCollectCtxDictionary",
+			"wrapWithL",
+			"takeUntil",
+			"$: 'feature.wait'",
+			"$: 'wait'",
 			"(click",
 			"'feature.onEnter'",
 			"'onEnter'",
@@ -851,13 +871,7 @@
 			"context",
 			"aggregator",
 			"'sort'",
-			"insert-control",
-			".is-of-type'",
-			"'is-of-type'",
-			"/projects",
-			"test",
-			"studio.is-of-type",
-			"paramType"
+			"insert-control"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -976,8 +990,83 @@
 	"groups":
 	[
 		{
+			"selected": 0,
 			"sheets":
 			[
+				{
+					"buffer": 0,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1922,
+						"regions":
+						{
+							"match":
+							{
+								"flags": 112,
+								"regions":
+								[
+									[
+										175,
+										191
+									],
+									[
+										536,
+										552
+									],
+									[
+										586,
+										602
+									],
+									[
+										774,
+										790
+									],
+									[
+										1116,
+										1132
+									],
+									[
+										1409,
+										1425
+									],
+									[
+										1758,
+										1774
+									],
+									[
+										1808,
+										1824
+									]
+								],
+								"scope": ""
+							}
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"detect_indentation": false,
+							"line_numbers": false,
+							"output_tag": 1,
+							"result_base_dir": "",
+							"result_file_regex": "^([^ \t].*):$",
+							"result_line_regex": "^ +([0-9]+):",
+							"scroll_past_end": true,
+							"syntax": "Packages/Default/Find Results.hidden-tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
 			]
 		}
 	],
@@ -1033,6 +1122,22 @@
 		"last_filter": "",
 		"selected_items":
 		[
+			[
+				"single",
+				"jbart5-ng\\projects\\ui-tests\\single-test.html"
+			],
+			[
+				"group",
+				"ui\\group.js"
+			],
+			[
+				"ui-test",
+				"jbart5-ng\\projects\\ui-tests\\ui-tests.js"
+			],
+			[
+				"featu",
+				"ui\\features.js"
+			],
 			[
 				"fet",
 				"ui\\features.js"
@@ -1294,10 +1399,6 @@
 				"jbart5-ng\\projects\\studio\\studio-new-control.js"
 			],
 			[
-				"ui-test",
-				"jbart5-ng\\projects\\ui-tests\\ui-tests.js"
-			],
-			[
 				"feat",
 				"ui\\features.js"
 			],
@@ -1390,10 +1491,6 @@
 				"jbart5-ng\\projects\\studio\\studio-properties.js"
 			],
 			[
-				"group",
-				"ui\\styles\\group-styles.js"
-			],
-			[
 				"to",
 				"jbart5-ng\\todo.txt"
 			],
@@ -1424,10 +1521,6 @@
 			[
 				"tgp-",
 				"jbart5-ng\\projects\\studio\\studio-tgp-model.ts"
-			],
-			[
-				"featu",
-				"ui\\features.js"
 			],
 			[
 				"men",
@@ -1540,10 +1633,6 @@
 			[
 				"studio-new",
 				"jbart5-ng\\projects\\studio\\studio-new-control.js"
-			],
-			[
-				"studio-",
-				"jbart5-ng\\projects\\studio\\studio-menu.ts"
 			]
 		],
 		"width": 0.0
@@ -1574,7 +1663,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 197.0,
+	"side_bar_width": 319.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

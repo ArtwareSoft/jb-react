@@ -63,7 +63,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 3);
+/******/ 	return __webpack_require__(__webpack_require__.s = 4);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -73,38 +73,276 @@
 /** @jsx jb.ui.h */
 
 jb.component('group.section', {
-    type: 'group.style',
-    impl: { $: 'custom-style',
-        template: (props, state) => jb.ui.h(
-            'section',
-            { 'class': 'jb-group' },
-            state.ctrls.map(ctrl => jb.ui.h(ctrl))
-        ),
-        features: { $: 'group.init-group' }
-    }
+  type: 'group.style',
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'section',
+      { 'class': 'jb-group' },
+      state.ctrls.map(ctrl => jb.ui.h(ctrl))
+    ),
+    features: { $: 'group.init-group' }
+  }
 });
 
 jb.component('label.span', {
-    type: 'label.style',
-    impl: { $: 'custom-style',
-        template: (props, state) => jb.ui.h(
-            'span',
-            null,
-            state.title
-        ),
-        features: { $: 'label.bind-title' }
-    }
+  type: 'label.style',
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'span',
+      null,
+      state.title
+    ),
+    features: { $: 'label.bind-title' }
+  }
+});
+
+jb.component('button.href', {
+  type: 'button.style',
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'a',
+      { href: 'javascript:;', onclick: '{props.clicked()}' },
+      state.title
+    )
+  }
+});
+
+jb.component('button.x', {
+  type: 'button.style',
+  params: [{ id: 'size', as: 'number', defaultValue: '21' }],
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'button',
+      { onclick: '{props.clicked()}', title: 'title' },
+      '\xD7'
+    ),
+    css: `button {
+            cursor: pointer; 
+            font: %$size%px sans-serif; 
+            border: none; 
+            background: transparent; 
+            color: #000; 
+            text-shadow: 0 1px 0 #fff; 
+            font-weight: 700; 
+            opacity: .2;
+        }
+        button:hover { opacity: .5 }`
+  }
 });
 
 /***/ }),
 /* 1 */
+/***/ (function(module, exports) {
+
+/** @jsx jb.ui.h */
+
+jb.component('mdl-style.init-dynamic', {
+  type: 'feature',
+  params: [{ id: 'query', as: 'string' }],
+  impl: (ctx, query) => ({
+    afterViewInit: cmp => {
+      var elems = cmp.base.querySelectorAll(query);
+      cmp.refreshMdl = _ => {
+        jb.delay(1).then(_ => elems.forEach(el => {
+          componentHandler.downgradeElements(el);
+          componentHandler.upgradeElement(el);
+        }));
+      };
+      jb.delay(1).then(_ => elems.forEach(el => componentHandler.upgradeElement(el)));
+    },
+    destroy: cmp => cmp.base.querySelectorAll(query).forEach(el => componentHandler.downgradeElements(el))
+  })
+});
+
+jb.component('mdl.ripple-effect', {
+  type: 'feature',
+  description: 'add ripple effect to buttons',
+  impl: ctx => ({
+    templateModifier: template => template.replace(/<\/([^>]*)>$/, '<span class="mdl-ripple"></span></$1>'),
+    css: '{ position: relative; overflow:hidden }',
+    init: cmp => {
+      cmp.base.classList.add('mdl-js-ripple-effect');
+      componentHandler.upgradeElement(cmp.base);
+    },
+    destroy: cmp => componentHandler.downgradeElements(cmp.base)
+  })
+});
+
+// ****** button styles
+
+jb.component('button.mdl-raised', {
+  type: 'button.style',
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'button',
+      { 'class': 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: _ => props.clicked() },
+      state.title
+    ),
+    features: { $: 'mdl-style.init-dynamic', query: '.mdl-js-button' }
+  }
+});
+
+jb.component('button.mdl-flat-ripple', {
+  type: 'button.style',
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'button',
+      { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => props.clicked() },
+      state.title
+    ),
+    features: { $: 'mdl-style.init-dynamic', query: '.mdl-js-button' },
+    css: 'button { text-transform: none }'
+  }
+});
+
+jb.component('button.mdl-icon', {
+  type: 'button.style',
+  params: [{ id: 'icon', as: 'string', default: 'code' }],
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'button',
+      { 'class': 'mdl-button mdl-js-button mdl-button--icon mdl-js-ripple-effect', onclick: _ => props.clicked(), title: state.title, tabIndex: '-1' },
+      jb.ui.h(
+        'i',
+        { 'class': 'material-icons' },
+        props.icon
+      )
+    ),
+    css: `button, i { border-radius: 2px}`,
+    features: { $: 'mdl-style.init-dynamic', query: '.mdl-js-button' }
+  }
+});
+
+jb.component('button.mdl-icon-12', {
+  type: 'button.style',
+  params: [{ id: 'icon', as: 'string', default: 'code' }],
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'button',
+      { 'class': 'mdl-button mdl-js-button mdl-button--icon mdl-js-ripple-effect', onclick: _ => props.clicked(), title: state.title, tabIndex: '-1' },
+      jb.ui.h(
+        'i',
+        { 'class': 'material-icons' },
+        props.icon
+      )
+    ),
+    css: `.material-icons { font-size:12px;  }`,
+    features: { $: 'mdl-style.init-dynamic', query: '.mdl-js-button' }
+  }
+});
+
+jb.component('button.mdl-allow-html', {
+  type: 'button.style',
+  description: 'used for search pattern highlight',
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'button',
+      { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => props.clicked() },
+      state.title
+    ),
+    features: { $: 'mdl-style.init-dynamic', query: '.mdl-js-button' }
+  }
+});
+
+// ****** label styles
+
+jb.component('label.mdl-ripple-effect', {
+  type: 'label.style',
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'div',
+      { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect' },
+      state.title
+    ),
+    features: [{ $: 'label.bind-title' }, { $: 'mdl-style.init-dynamic', query: '.mdl-js-ripple-effect' }]
+  }
+});
+
+jb.component('label.mdl-button', {
+  type: 'label.style',
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'div',
+      { 'class': 'mdl-button mdl-js-button' },
+      state.title
+    ),
+    features: [{ $: 'label.bind-title' }, { $: 'mdl-style.init-dynamic', query: '.mdl-js-button' }]
+  }
+});
+
+// *************** inputs 
+
+jb.component('editable-text.mdl-search', {
+  type: 'editable-text.style',
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'div',
+      { 'class': 'mdl-textfield mdl-js-textfield' },
+      jb.ui.h('input', { value: '{props.jbModel()}', onchange: '{props.jbModel($event.target.value)}', onkeyup: '{props.jbModel($event.target.value,\'keyup\')}',
+        'class': 'mdl-textfield__input', type: 'text', id: 'search_{state.fieldId}' }),
+      jb.ui.h(
+        'label',
+        { 'class': 'mdl-textfield__label', 'for': 'search_{state.fieldId}' },
+        state.title
+      )
+    ),
+    features: [{ $: 'field.databind' }, { $: 'mdl-style.init-dynamic', query: '.mdl-js-textfield' }]
+  }
+});
+
+jb.component('editable-text.mdl-input', {
+  type: 'editable-text.style',
+  params: [{ id: 'width', as: 'number' }],
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'div',
+      { 'class': 'mdl-textfield mdl-js-textfield mdl-textfield--floating-label' },
+      jb.ui.h('input', { value: props.jbModel(), type: 'text', onchange: e => props.jbModel(e.target.value),
+        onkeyup: e => props.jbModel(e.target.value, 'keyup'),
+        'class': 'mdl-textfield__input', type: 'text', id: 'input_' + state.fieldId }),
+      jb.ui.h(
+        'label',
+        { 'class': 'mdl-textfield__label', 'for': 'input_' + state.fieldId },
+        state.title
+      )
+    ),
+    css: '{ {?width: %$width%px?} }',
+    features: [{ $: 'field.databind' }, { $: 'mdl-style.init-dynamic', query: '.mdl-js-textfield' }]
+  }
+});
+
+jb.component('editable-boolean.mdl-slide-toggle', {
+  type: 'editable-boolean.style',
+  impl: { $: 'custom-style',
+    template: (props, state) => jb.ui.h(
+      'label',
+      { 'class': 'mdl-switch mdl-js-switch mdl-js-ripple-effect', 'for': 'switch_{state.fieldId}' },
+      jb.ui.h('input', { type: 'checkbox', id: 'switch_{state.fieldId}', 'class': 'mdl-switch__input', value: '{props.jbModel()}',
+        onchange: '{props.jbModel($event.target.checked)}' }),
+      jb.ui.h(
+        'span',
+        { 'class': 'mdl-switch__label' },
+        state.text()
+      )
+    ),
+    features: [{ $: 'field.databind' }, { $: 'editable-boolean.keyboard-support' }, { $: 'mdl-style.init-dynamic', query: '.mdl-js-switch' }]
+  }
+});
+
+/***/ }),
+/* 2 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_preact__ = __webpack_require__(2);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_preact__ = __webpack_require__(3);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_preact___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_preact__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_immutability_helper__ = __webpack_require__(5);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_immutability_helper___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_immutability_helper__);
 
+
+
+var ui = jb.ui;
 
 function ctrl(context,options) {
 	var ctx = context.setVars({ $model: context.params });
@@ -124,16 +362,14 @@ function ctrl(context,options) {
 	}
 }
 
-jb.ui.ctrl = ctrl;
-jb.ui.render = __WEBPACK_IMPORTED_MODULE_0_preact__["render"];
-jb.ui.h = __WEBPACK_IMPORTED_MODULE_0_preact__["h"];
-//jb.ui.Component = Component;
+var cssId = 0;
+var cssSelectors_hash = {};
 
 class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
-		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbAfterViewInitFuncs: [],jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [] });
-		this.cssFixes = [];
+		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbAfterViewInitFuncs: [],jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [], modifierFuncs: [] });
+		this.cssSelectors = [];
 
 		this.jb_profile = ctx.profile;
 		var title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => ''); 
@@ -144,7 +380,7 @@ class JbComponent {
 	reactComp(ctx) {
 		var jbComp = this;
 		class ReactComp extends __WEBPACK_IMPORTED_MODULE_0_preact__["Component"] { // must start with Capital?
-			constructor() {
+			constructor(props) {
 				super();
 				this.ctx = jbComp.ctx;
 				try {
@@ -157,12 +393,23 @@ class JbComponent {
 			    		return this.ctx;
 			    	}
 			    	this.refreshCtx();
+					Object.assign(props,(jbComp.styleCtx || {}).params);
 					jbComp.jbBeforeInitFuncs.forEach(init=> init(this));
 					jbComp.jbInitFuncs.forEach(init=> init(this));
 			    } catch(e) { jb.logException(e,'') }
 			}
+			render(props,state) {
+				var vdom = jbComp.template(props,state,jbComp.ctx);
+				jbComp.modifierFuncs.forEach(modifier=> vdom = modifier(vdom,props,state) || vdom);
+				return vdom;
+			}
+    		componentDidMount() {
+				jbComp.injectCss(this);
+				jbComp.jbAfterViewInitFuncs.forEach(init=> init(this));
+				if (this.jbEmitter)
+					this.jbEmitter.next('after-init');
+			}
 		}; 
-		ReactComp.prototype.render = this.template;
 		this.applyFeatures(ctx);
 		this.compileJsx();
 		injectLifeCycleMethods(ReactComp,this);
@@ -173,7 +420,9 @@ class JbComponent {
 		// todo: compile template if string - cache result
 	}
 
-	initAfterViewInit(ctx,elem) { // should be called by the instantiator
+	injectCss(cmp) { // should be called by the instantiator
+		var elem = cmp.base;
+		var ctx = this.ctx;
 	  	while (ctx.profile.__innerImplementation)
 	  		ctx = ctx.componentContext._parent;
 	  	var attachedCtx = this.ctxForPick || ctx;
@@ -181,20 +430,16 @@ class JbComponent {
 		garbageCollectCtxDictionary();
 		jb.ctxDictionary[attachedCtx.id] = attachedCtx;
 
-		// if (this.cssFixes.length > 0) {
-		//   	var ngAtt = Array.from(elem.attributes).map(x=>x.name)
-		//   		.filter(x=>x.match(/_ng/))[0];
-
-		// 	var css = this.cssFixes
-		// 		.map(x=>x.trim())
-		// 		.map(x=>x.replace(/^!/,' ')) // replace the ! with space to allow internal selector
-		// 		.map(x=>`[${ngAtt}]${x}`)
-		// 		.join('\n');
-		// 	if (!cssFixes_hash[css]) {
-		// 		cssFixes_hash[css] = true;
-		// 		$(`<style type="text/css">${css}</style>`).appendTo($('head'));
-		// 	}
-		// }
+		if (this.cssSelectors && this.cssSelectors.length > 0) {
+			var cssKey = this.cssSelectors.join('\n');
+			if (!cssSelectors_hash[cssKey]) {
+				cssId++;
+				cssSelectors_hash[cssKey] = cssId;
+				var cssStyle = this.cssSelectors.map(x=>`.jb-${cssId}${x}`).join('\n');
+				$(`<style type="text/css">${cssStyle}</style>`).appendTo($('head'));
+			}
+			elem.classList.add(`jb-${cssId}`);
+		}
 	}
 
 	applyFeatures(context) {
@@ -222,32 +467,22 @@ class JbComponent {
 		if (options.afterViewInit) this.jbAfterViewInitFuncs.push(options.afterViewInit);
 		if (options.doCheck) this.jbCheckFuncs.push(options.doCheck);
 		if (options.destroy) this.jbDestroyFuncs.push(options.destroy);
+		if (options.templateModifier) this.modifierFuncs.push(options.templateModifier);
+
 		if (options.jbEmitter) this.createjbEmitter = true;
 		if (options.ctxForPick) this.ctxForPick=options.ctxForPick;
 		if (options.extendCtx) 
 			this.extendCtxFuncs.push(options.extendCtx);
+		this.styleCtx = this.styleCtx || options.styleCtx;
 
 	   	if (options.css)
-    		options.styles = (options.styles || [])
-    				.concat(options.css.split(/}\s*/m)
+    		this.cssSelectors = (this.cssSelectors || [])
+    			.concat(options.css.split(/}\s*/m)
     				.map(x=>x.trim())
     				.filter(x=>x)
-    				.map(x=>x+'}'));
-
-		options.styles = options.styles && (options.styles || []).map(st=> context.exp(st)).map(x=>x.trim());
-    	(options.styles || [])
-    		.filter(x=>x.match(/^{([^]*)}$/m))
-    		.forEach(x=> {
-    			if (this.cssFixes.indexOf(x) == -1)
-    				this.cssFixes.push('>*'+x);
-    		});
-
-    	(options.styles || [])
-    		.filter(x=>x.match(/^:/m)) // for example :hover
-    		.forEach(x=> {
-    			if (this.cssFixes.indexOf(x) == -1)
-    				this.cssFixes.push(x);
-    		});
+    				.map(x=>x+'}')
+    				.map(x=>x.replace(/^!/,' '))
+    			);
 
 		(options.featuresOptions || []).forEach(f => 
 			this.jbExtend(f, context))
@@ -256,21 +491,6 @@ class JbComponent {
 }
 
 function injectLifeCycleMethods(Comp,jbComp) {
-	if (jbComp.jbAfterViewInitFuncs.length || jbComp.createjbEmitter)
-	  Comp.prototype.componentDidMount = function() {
-		jbComp.jbAfterViewInitFuncs.forEach(init=> init(this));
-		if (this.jbEmitter) {
-			this.jbEmitter.next('after-init');
-			// delay(1).then(()=>{ 
-			// 	if (this.jbEmitter && !this.jbEmitter.hasCompleted) {
-			// 		this.jbEmitter.next('after-init-children');
-			// 		if (this.readyCounter == null)
-			// 			this.jbEmitter.next('ready');
-			// 	}
-			// })
-		}
-	}
-
 	if (jbComp.jbCheckFuncs.length || jbComp.createjbEmitter)
 	  Comp.prototype.componentWillUpdate = function() {
 		jbComp.jbCheckFuncs.forEach(f=> 
@@ -291,6 +511,129 @@ function injectLifeCycleMethods(Comp,jbComp) {
 	}
 }
 
+function garbageCollectCtxDictionary() {
+	var now = new Date().getTime();
+	ui.ctxDictionaryLastCleanUp = ui.ctxDictionaryLastCleanUp || now;
+	var timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp;
+	if (timeSinceLastCleanUp < 10000) 
+		return;
+	ui.ctxDictionaryLastCleanUp = now;
+
+	var used = Array.from(document.querySelectorAll('[jb-ctx]')).map(e=>Number(e.getAttribute('jb-ctx'))).sort((x,y)=>x-y);
+	var dict = Object.getOwnPropertyNames(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y);
+	var lastUsedIndex = 0;
+	for(var i=0;i<dict.length;i++) {
+		while (used[lastUsedIndex] < dict[i])
+			lastUsedIndex++;
+		if (used[lastUsedIndex] > dict[i])
+			delete jb.ctxDictionary[''+dict[i]];
+	}
+}
+
+ui.wrapWithLauchingElement = (f,context,elem) => 
+	_ =>
+		f(context.setVars({ $launchingElement: { $el : $(elem) }}));
+
+
+// ****************** data binding
+
+ui.pathId = 0;
+ui.resourceVersions = {}
+
+ui.writeValue = (to,value,settings) => {
+  if (!to) 
+  	return jb.logError('writeValue: empty "to"');
+
+  if (to.$jb_parent && to.$jb_parent[to.$jb_property] === jb.val(value)) return;
+
+  if (to.$jb_val) // will handle the change by iteself 
+    return to.$jb_val(jb.val(value));
+
+  if (to.$jb_parent) {
+  	var res = pathOfObject(to.$jb_parent,ui.resources);
+  	if (res) {
+  		var op = {}, resource = res[0], path = res.concat([to.$jb_property]);
+  		jb.path(op,path,{$set: value});
+  		ui.resources = ui.update(ui.resources,op);
+  		ui.resourceVersions[resource] = ui.resourceVersions[resource] ? ui.resourceVersions[resource]+1 : 1;
+  		ui.resourceChange.next({op: op});
+  	} else {
+  		jb.logError('writeValue: can not find parent in resources');
+    	to.$jb_parent[to.$jb_property] = jb.val(value);
+    }
+  }
+}
+
+ui.updateJbParent = function(wrapper) {
+	if (! wrapper.$jb_path) { // first time - look in all resources
+		var found = find(wrapper.$jb_parent,ui.resources);
+	} else { 
+		var resource = wrapper.$jb_path[0];
+		if (wrapper.$jb_resourceV == ui.resourceVersions[resource]) return;
+
+		var found = find(wrapper.$jb_parent,ui.resources[resource]);
+		if (found)
+			found.$jb_path = [resource].concat(found.$jb_path);
+	}
+
+	if (found) {
+		Object.assign(wrapper,found);
+		wrapper.$jb_resourceV = ui.resourceVersions[wrapper.$jb_path[0]];
+	}
+	
+	function find(obj,lookIn) {
+		if (typeof lookIn != 'object') 
+			return;
+		if ((lookIn.$jb_id && lookIn.$jb_id === obj.$jb_id) || lookIn === obj)
+			return { $jb_path: [], $jb_parent: lookIn};
+		for(var p in lookIn) {
+			var res = find(obj,lookIn[p]);
+			if (res) {
+				res.$jb_path = [p].concat(res.$jb_path);
+				return res;
+			}
+		}
+	}
+}
+
+var pathCache = [];
+function updatePathCache(hit) {
+	pathCache.unshift(hit);
+	if (pathCache.length>5)
+		pathCache.pop();
+}
+function pathOfObjectWithCache(obj,lookIn) {
+	for(var i=0;i<pathCache.length;i++) {
+		var res = pathOfObject(obj,jb.path(lookIn,pathCache[i]));
+		if (res) {
+			updatePathCache(pathCache[i]);
+			return pathCache[i].concat(res);
+		}
+	}
+	var res = pathOfObject(obj,lookIn);
+	if (res)
+		updatePathCache(res);
+	return res;
+}
+
+function pathOfObject(obj,lookIn) {
+	if (typeof lookIn != 'object') 
+		return;
+	if (lookIn.$jb_id && lookIn.$jb_id === obj.$jb_id) 
+		return [];
+	if (lookIn === obj) {
+		lookIn.$jb_id = ++ui.pathId;
+		return [];
+	}
+	for(var p in lookIn) {
+		var res = pathOfObject(obj,lookIn[p]);
+		if (res) 
+			return [p].concat(res);
+	}
+}
+
+// ****************** components
+
 jb.component('custom-style', {
 	typePattern: /.*-style/,
 	params: [
@@ -302,12 +645,19 @@ jb.component('custom-style', {
 		template: context.profile.template,
 		css: css,
 		featuresOptions: features(),
+		styleCtx: context._parent
 	})
 })
 
+ui.ctrl = ctrl;
+ui.render = __WEBPACK_IMPORTED_MODULE_0_preact__["render"];
+ui.h = __WEBPACK_IMPORTED_MODULE_0_preact__["h"];
+ui.update = __WEBPACK_IMPORTED_MODULE_1_immutability_helper___default.a;
+ui.resourceChange = new jb.rx.Subject();
+
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 !function() {
@@ -712,11 +1062,447 @@ jb.component('custom-style', {
 //# sourceMappingURL=preact.js.map
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
+__webpack_require__(2);
 __webpack_require__(0);
 module.exports = __webpack_require__(1);
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var invariant = __webpack_require__(6);
+
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var splice = Array.prototype.splice;
+
+var assign = Object.assign || function assign(target, source) {
+  var keys = getAllKeys(source);
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    if (hasOwnProperty.call(source, key)) {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+
+var getAllKeys = typeof Object.getOwnPropertySymbols === 'function' ?
+  function(obj) { return Object.keys(obj).concat(Object.getOwnPropertySymbols(obj)) } :
+  function(obj) { return Object.keys(obj) }
+;
+
+function copy(object) {
+  if (object instanceof Array) {
+    return object.slice();
+  } else if (object && typeof object === 'object') {
+    return assign(new object.constructor(), object);
+  } else {
+    return object;
+  }
+}
+
+
+function newContext() {
+  var commands = assign({}, defaultCommands);
+  update.extend = function(directive, fn) {
+    commands[directive] = fn;
+  }
+
+  return update;
+
+  function update(object, spec) {
+    invariant(
+      !Array.isArray(spec),
+      'update(): You provided an invalid spec to update(). The spec may ' +
+      'not contain an array except as the value of $set, $push, $unshift, ' +
+      '$splice or any custom command allowing an array value.'
+    );
+
+    invariant(
+      typeof spec === 'object' && spec !== null,
+      'update(): You provided an invalid spec to update(). The spec and ' +
+      'every included key path must be plain objects containing one of the ' +
+      'following commands: %s.',
+      Object.keys(commands).join(', ')
+    );
+
+    var nextObject = object;
+    var specKeys = getAllKeys(spec)
+    var index, key;
+    for (index = 0; index < specKeys.length; index++) {
+      var key = specKeys[index];
+      if (hasOwnProperty.call(commands, key)) {
+        nextObject = commands[key](spec[key], nextObject, spec, object);
+      } else {
+        var nextValueForKey = update(object[key], spec[key]);
+        if (nextValueForKey !== nextObject[key]) {
+          if (nextObject === object) {
+            nextObject = copy(object);
+          }
+          nextObject[key] = nextValueForKey;
+        }
+      }
+    }
+    return nextObject;
+  }
+
+}
+
+var defaultCommands = {
+  $push: function(value, original, spec) {
+    invariantPushAndUnshift(original, spec, '$push');
+    return original.concat(value);
+  },
+  $unshift: function(value, original, spec) {
+    invariantPushAndUnshift(original, spec, '$unshift');
+    return value.concat(original);
+  },
+  $splice: function(value, nextObject, spec, object) {
+    var originalValue = nextObject === object ? copy(object) : nextObject;
+    invariantSplices(originalValue, spec);
+    value.forEach(function(args) {
+      invariantSplice(args);
+      splice.apply(originalValue, args);
+    });
+    return originalValue;
+  },
+  $set: function(value, original, spec) {
+    invariantSet(spec);
+    return value;
+  },
+  $merge: function(value, nextObject, spec, object) {
+    var originalValue = nextObject === object ? copy(object) : nextObject;
+    invariantMerge(originalValue, value);
+    getAllKeys(value).forEach(function(key) {
+      originalValue[key] = value[key];
+    });
+    return originalValue;
+  },
+  $apply: function(value, original) {
+    invariantApply(value);
+    return value(original);
+  }
+};
+
+
+
+module.exports = newContext();
+module.exports.newContext = newContext;
+
+
+// invariants
+
+function invariantPushAndUnshift(value, spec, command) {
+  invariant(
+    Array.isArray(value),
+    'update(): expected target of %s to be an array; got %s.',
+    command,
+    value
+  );
+  var specValue = spec[command];
+  invariant(
+    Array.isArray(specValue),
+    'update(): expected spec of %s to be an array; got %s. ' +
+    'Did you forget to wrap your parameter in an array?',
+    command,
+    specValue
+  );
+}
+
+function invariantSplices(value, spec) {
+  invariant(
+    Array.isArray(value),
+    'Expected $splice target to be an array; got %s',
+    value
+  );
+  invariantSplice(spec['$splice']);
+}
+
+function invariantSplice(value) {
+  invariant(
+    Array.isArray(value),
+    'update(): expected spec of $splice to be an array of arrays; got %s. ' +
+    'Did you forget to wrap your parameters in an array?',
+    value
+  );
+}
+
+function invariantApply(fn) {
+  invariant(
+    typeof fn === 'function',
+    'update(): expected spec of $apply to be a function; got %s.',
+    fn
+  );
+}
+
+function invariantSet(spec) {
+  invariant(
+    Object.keys(spec).length === 1,
+    'Cannot have more than one key in an object with $set'
+  );
+}
+
+function invariantMerge(target, specValue) {
+  invariant(
+    specValue && typeof specValue === 'object',
+    'update(): $merge expects a spec of type \'object\'; got %s',
+    specValue
+  );
+  invariant(
+    target && typeof target === 'object',
+    'update(): $merge expects a target of type \'object\'; got %s',
+    target
+  );
+}
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {/**
+ * Copyright 2013-2015, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+
+
+/**
+ * Use invariant() to assert state which your program assumes to be true.
+ *
+ * Provide sprintf-style format (only %s is supported) and arguments
+ * to provide information about what broke and what you were
+ * expecting.
+ *
+ * The invariant message will be stripped in production, but the invariant
+ * will remain to ensure logic does not differ in production.
+ */
+
+var invariant = function(condition, format, a, b, c, d, e, f) {
+  if (process.env.NODE_ENV !== 'production') {
+    if (format === undefined) {
+      throw new Error('invariant requires an error message argument');
+    }
+  }
+
+  if (!condition) {
+    var error;
+    if (format === undefined) {
+      error = new Error(
+        'Minified exception occurred; use the non-minified dev environment ' +
+        'for the full error message and additional helpful warnings.'
+      );
+    } else {
+      var args = [a, b, c, d, e, f];
+      var argIndex = 0;
+      error = new Error(
+        format.replace(/%s/g, function() { return args[argIndex++]; })
+      );
+      error.name = 'Invariant Violation';
+    }
+
+    error.framesToPop = 1; // we don't care about invariant's own frame
+    throw error;
+  }
+};
+
+module.exports = invariant;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7)))
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports) {
+
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
 
 
 /***/ })

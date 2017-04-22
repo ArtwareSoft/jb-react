@@ -1,4 +1,7 @@
 import { h, render, Component } from 'preact';
+import update from 'immutability-helper';
+
+var ui = jb.ui;
 
 function ctrl(context,options) {
 	var ctx = context.setVars({ $model: context.params });
@@ -18,16 +21,14 @@ function ctrl(context,options) {
 	}
 }
 
-jb.ui.ctrl = ctrl;
-jb.ui.render = render;
-jb.ui.h = h;
-//jb.ui.Component = Component;
+var cssId = 0;
+var cssSelectors_hash = {};
 
 class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
-		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbAfterViewInitFuncs: [],jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [] });
-		this.cssFixes = [];
+		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbAfterViewInitFuncs: [],jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [], modifierFuncs: [] });
+		this.cssSelectors = [];
 
 		this.jb_profile = ctx.profile;
 		var title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => ''); 
@@ -38,7 +39,7 @@ class JbComponent {
 	reactComp(ctx) {
 		var jbComp = this;
 		class ReactComp extends Component { // must start with Capital?
-			constructor() {
+			constructor(props) {
 				super();
 				this.ctx = jbComp.ctx;
 				try {
@@ -51,12 +52,23 @@ class JbComponent {
 			    		return this.ctx;
 			    	}
 			    	this.refreshCtx();
+					Object.assign(props,(jbComp.styleCtx || {}).params);
 					jbComp.jbBeforeInitFuncs.forEach(init=> init(this));
 					jbComp.jbInitFuncs.forEach(init=> init(this));
 			    } catch(e) { jb.logException(e,'') }
 			}
+			render(props,state) {
+				var vdom = jbComp.template(props,state,jbComp.ctx);
+				jbComp.modifierFuncs.forEach(modifier=> vdom = modifier(vdom,props,state) || vdom);
+				return vdom;
+			}
+    		componentDidMount() {
+				jbComp.injectCss(this);
+				jbComp.jbAfterViewInitFuncs.forEach(init=> init(this));
+				if (this.jbEmitter)
+					this.jbEmitter.next('after-init');
+			}
 		}; 
-		ReactComp.prototype.render = this.template;
 		this.applyFeatures(ctx);
 		this.compileJsx();
 		injectLifeCycleMethods(ReactComp,this);
@@ -67,7 +79,9 @@ class JbComponent {
 		// todo: compile template if string - cache result
 	}
 
-	initAfterViewInit(ctx,elem) { // should be called by the instantiator
+	injectCss(cmp) { // should be called by the instantiator
+		var elem = cmp.base;
+		var ctx = this.ctx;
 	  	while (ctx.profile.__innerImplementation)
 	  		ctx = ctx.componentContext._parent;
 	  	var attachedCtx = this.ctxForPick || ctx;
@@ -75,20 +89,16 @@ class JbComponent {
 		garbageCollectCtxDictionary();
 		jb.ctxDictionary[attachedCtx.id] = attachedCtx;
 
-		// if (this.cssFixes.length > 0) {
-		//   	var ngAtt = Array.from(elem.attributes).map(x=>x.name)
-		//   		.filter(x=>x.match(/_ng/))[0];
-
-		// 	var css = this.cssFixes
-		// 		.map(x=>x.trim())
-		// 		.map(x=>x.replace(/^!/,' ')) // replace the ! with space to allow internal selector
-		// 		.map(x=>`[${ngAtt}]${x}`)
-		// 		.join('\n');
-		// 	if (!cssFixes_hash[css]) {
-		// 		cssFixes_hash[css] = true;
-		// 		$(`<style type="text/css">${css}</style>`).appendTo($('head'));
-		// 	}
-		// }
+		if (this.cssSelectors && this.cssSelectors.length > 0) {
+			var cssKey = this.cssSelectors.join('\n');
+			if (!cssSelectors_hash[cssKey]) {
+				cssId++;
+				cssSelectors_hash[cssKey] = cssId;
+				var cssStyle = this.cssSelectors.map(x=>`.jb-${cssId}${x}`).join('\n');
+				$(`<style type="text/css">${cssStyle}</style>`).appendTo($('head'));
+			}
+			elem.classList.add(`jb-${cssId}`);
+		}
 	}
 
 	applyFeatures(context) {
@@ -116,32 +126,22 @@ class JbComponent {
 		if (options.afterViewInit) this.jbAfterViewInitFuncs.push(options.afterViewInit);
 		if (options.doCheck) this.jbCheckFuncs.push(options.doCheck);
 		if (options.destroy) this.jbDestroyFuncs.push(options.destroy);
+		if (options.templateModifier) this.modifierFuncs.push(options.templateModifier);
+
 		if (options.jbEmitter) this.createjbEmitter = true;
 		if (options.ctxForPick) this.ctxForPick=options.ctxForPick;
 		if (options.extendCtx) 
 			this.extendCtxFuncs.push(options.extendCtx);
+		this.styleCtx = this.styleCtx || options.styleCtx;
 
 	   	if (options.css)
-    		options.styles = (options.styles || [])
-    				.concat(options.css.split(/}\s*/m)
+    		this.cssSelectors = (this.cssSelectors || [])
+    			.concat(options.css.split(/}\s*/m)
     				.map(x=>x.trim())
     				.filter(x=>x)
-    				.map(x=>x+'}'));
-
-		options.styles = options.styles && (options.styles || []).map(st=> context.exp(st)).map(x=>x.trim());
-    	(options.styles || [])
-    		.filter(x=>x.match(/^{([^]*)}$/m))
-    		.forEach(x=> {
-    			if (this.cssFixes.indexOf(x) == -1)
-    				this.cssFixes.push('>*'+x);
-    		});
-
-    	(options.styles || [])
-    		.filter(x=>x.match(/^:/m)) // for example :hover
-    		.forEach(x=> {
-    			if (this.cssFixes.indexOf(x) == -1)
-    				this.cssFixes.push(x);
-    		});
+    				.map(x=>x+'}')
+    				.map(x=>x.replace(/^!/,' '))
+    			);
 
 		(options.featuresOptions || []).forEach(f => 
 			this.jbExtend(f, context))
@@ -150,21 +150,6 @@ class JbComponent {
 }
 
 function injectLifeCycleMethods(Comp,jbComp) {
-	if (jbComp.jbAfterViewInitFuncs.length || jbComp.createjbEmitter)
-	  Comp.prototype.componentDidMount = function() {
-		jbComp.jbAfterViewInitFuncs.forEach(init=> init(this));
-		if (this.jbEmitter) {
-			this.jbEmitter.next('after-init');
-			// delay(1).then(()=>{ 
-			// 	if (this.jbEmitter && !this.jbEmitter.hasCompleted) {
-			// 		this.jbEmitter.next('after-init-children');
-			// 		if (this.readyCounter == null)
-			// 			this.jbEmitter.next('ready');
-			// 	}
-			// })
-		}
-	}
-
 	if (jbComp.jbCheckFuncs.length || jbComp.createjbEmitter)
 	  Comp.prototype.componentWillUpdate = function() {
 		jbComp.jbCheckFuncs.forEach(f=> 
@@ -185,6 +170,129 @@ function injectLifeCycleMethods(Comp,jbComp) {
 	}
 }
 
+function garbageCollectCtxDictionary() {
+	var now = new Date().getTime();
+	ui.ctxDictionaryLastCleanUp = ui.ctxDictionaryLastCleanUp || now;
+	var timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp;
+	if (timeSinceLastCleanUp < 10000) 
+		return;
+	ui.ctxDictionaryLastCleanUp = now;
+
+	var used = Array.from(document.querySelectorAll('[jb-ctx]')).map(e=>Number(e.getAttribute('jb-ctx'))).sort((x,y)=>x-y);
+	var dict = Object.getOwnPropertyNames(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y);
+	var lastUsedIndex = 0;
+	for(var i=0;i<dict.length;i++) {
+		while (used[lastUsedIndex] < dict[i])
+			lastUsedIndex++;
+		if (used[lastUsedIndex] > dict[i])
+			delete jb.ctxDictionary[''+dict[i]];
+	}
+}
+
+ui.wrapWithLauchingElement = (f,context,elem) => 
+	_ =>
+		f(context.setVars({ $launchingElement: { $el : $(elem) }}));
+
+
+// ****************** data binding
+
+ui.pathId = 0;
+ui.resourceVersions = {}
+
+ui.writeValue = (to,value,settings) => {
+  if (!to) 
+  	return jb.logError('writeValue: empty "to"');
+
+  if (to.$jb_parent && to.$jb_parent[to.$jb_property] === jb.val(value)) return;
+
+  if (to.$jb_val) // will handle the change by iteself 
+    return to.$jb_val(jb.val(value));
+
+  if (to.$jb_parent) {
+  	var res = pathOfObject(to.$jb_parent,ui.resources);
+  	if (res) {
+  		var op = {}, resource = res[0], path = res.concat([to.$jb_property]);
+  		jb.path(op,path,{$set: value});
+  		ui.resources = ui.update(ui.resources,op);
+  		ui.resourceVersions[resource] = ui.resourceVersions[resource] ? ui.resourceVersions[resource]+1 : 1;
+  		ui.resourceChange.next({op: op});
+  	} else {
+  		jb.logError('writeValue: can not find parent in resources');
+    	to.$jb_parent[to.$jb_property] = jb.val(value);
+    }
+  }
+}
+
+ui.updateJbParent = function(wrapper) {
+	if (! wrapper.$jb_path) { // first time - look in all resources
+		var found = find(wrapper.$jb_parent,ui.resources);
+	} else { 
+		var resource = wrapper.$jb_path[0];
+		if (wrapper.$jb_resourceV == ui.resourceVersions[resource]) return;
+
+		var found = find(wrapper.$jb_parent,ui.resources[resource]);
+		if (found)
+			found.$jb_path = [resource].concat(found.$jb_path);
+	}
+
+	if (found) {
+		Object.assign(wrapper,found);
+		wrapper.$jb_resourceV = ui.resourceVersions[wrapper.$jb_path[0]];
+	}
+	
+	function find(obj,lookIn) {
+		if (typeof lookIn != 'object') 
+			return;
+		if ((lookIn.$jb_id && lookIn.$jb_id === obj.$jb_id) || lookIn === obj)
+			return { $jb_path: [], $jb_parent: lookIn};
+		for(var p in lookIn) {
+			var res = find(obj,lookIn[p]);
+			if (res) {
+				res.$jb_path = [p].concat(res.$jb_path);
+				return res;
+			}
+		}
+	}
+}
+
+var pathCache = [];
+function updatePathCache(hit) {
+	pathCache.unshift(hit);
+	if (pathCache.length>5)
+		pathCache.pop();
+}
+function pathOfObjectWithCache(obj,lookIn) {
+	for(var i=0;i<pathCache.length;i++) {
+		var res = pathOfObject(obj,jb.path(lookIn,pathCache[i]));
+		if (res) {
+			updatePathCache(pathCache[i]);
+			return pathCache[i].concat(res);
+		}
+	}
+	var res = pathOfObject(obj,lookIn);
+	if (res)
+		updatePathCache(res);
+	return res;
+}
+
+function pathOfObject(obj,lookIn) {
+	if (typeof lookIn != 'object') 
+		return;
+	if (lookIn.$jb_id && lookIn.$jb_id === obj.$jb_id) 
+		return [];
+	if (lookIn === obj) {
+		lookIn.$jb_id = ++ui.pathId;
+		return [];
+	}
+	for(var p in lookIn) {
+		var res = pathOfObject(obj,lookIn[p]);
+		if (res) 
+			return [p].concat(res);
+	}
+}
+
+// ****************** components
+
 jb.component('custom-style', {
 	typePattern: /.*-style/,
 	params: [
@@ -196,5 +304,12 @@ jb.component('custom-style', {
 		template: context.profile.template,
 		css: css,
 		featuresOptions: features(),
+		styleCtx: context._parent
 	})
 })
+
+ui.ctrl = ctrl;
+ui.render = render;
+ui.h = h;
+ui.update = update;
+ui.resourceChange = new jb.rx.Subject();

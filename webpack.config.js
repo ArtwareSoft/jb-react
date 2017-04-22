@@ -35,8 +35,7 @@ var dataTests = {
 };
 
 var uiBase = {
-  entry: [JBART_DIR + 'src/ui/common-styles.jsx', JBART_DIR + 'src/ui/react-ctrl.js'],
-//  entry: JBART_DIR + 'projects/ui-tests/common-styles.jsx',
+  entry: [JBART_DIR + 'src/ui/react-ctrl.js', JBART_DIR + 'src/ui/styles/basic-styles.jsx', JBART_DIR + 'src/ui/styles/common-mdl-styles.jsx'],
   output: {
     path: JBART_DIR + 'dist',
     filename: 'ui-base-and-styles.js',
@@ -44,17 +43,16 @@ var uiBase = {
   resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
   externals: { "./jb-core.js": "jb" },
   module : { loaders : [ { test : /\.jsx$/, loader : 'babel-loader' } ] },
-//  plugins: [ new UglifyJSPlugin() ],
 };
 
 var jbRx = {
   entry: JBART_DIR + 'src/ui/jb-rx.js',
-//  entry: JBART_DIR + 'projects/ui-tests/common-styles.jsx',
   output: {
     path: JBART_DIR + 'dist',
     filename: 'jb-rx.js',
   },
   resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
+//  plugins: [ new UglifyJSPlugin() ],
 };
 
 var jbRxMin = {
