@@ -141,7 +141,8 @@ jb.component('mdl-style.init-dynamic', {
   params: [{ id: 'query', as: 'string' }],
   impl: (ctx, query) => ({
     afterViewInit: cmp => {
-      var elems = cmp.base.querySelectorAll(query);
+
+      var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
       cmp.refreshMdl = _ => {
         jb.delay(1).then(_ => elems.forEach(el => {
           componentHandler.downgradeElements(el);
@@ -150,7 +151,7 @@ jb.component('mdl-style.init-dynamic', {
       };
       jb.delay(1).then(_ => elems.forEach(el => componentHandler.upgradeElement(el)));
     },
-    destroy: cmp => cmp.base.querySelectorAll(query).forEach(el => componentHandler.downgradeElements(el))
+    destroy: cmp => (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el => componentHandler.downgradeElements(el))
   })
 });
 
@@ -178,7 +179,7 @@ jb.component('button.mdl-raised', {
       { 'class': 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: _ => props.clicked() },
       state.title
     ),
-    features: { $: 'mdl-style.init-dynamic', query: '.mdl-js-button' }
+    features: { $: 'mdl-style.init-dynamic' }
   }
 });
 
@@ -190,7 +191,7 @@ jb.component('button.mdl-flat-ripple', {
       { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => props.clicked() },
       state.title
     ),
-    features: { $: 'mdl-style.init-dynamic', query: '.mdl-js-button' },
+    features: { $: 'mdl-style.init-dynamic' },
     css: 'button { text-transform: none }'
   }
 });
@@ -209,7 +210,7 @@ jb.component('button.mdl-icon', {
       )
     ),
     css: `button, i { border-radius: 2px}`,
-    features: { $: 'mdl-style.init-dynamic', query: '.mdl-js-button' }
+    features: { $: 'mdl-style.init-dynamic' }
   }
 });
 
@@ -227,7 +228,7 @@ jb.component('button.mdl-icon-12', {
       )
     ),
     css: `.material-icons { font-size:12px;  }`,
-    features: { $: 'mdl-style.init-dynamic', query: '.mdl-js-button' }
+    features: { $: 'mdl-style.init-dynamic' }
   }
 });
 
@@ -240,7 +241,7 @@ jb.component('button.mdl-allow-html', {
       { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => props.clicked() },
       state.title
     ),
-    features: { $: 'mdl-style.init-dynamic', query: '.mdl-js-button' }
+    features: { $: 'mdl-style.init-dynamic' }
   }
 });
 
@@ -254,7 +255,7 @@ jb.component('label.mdl-ripple-effect', {
       { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect' },
       state.title
     ),
-    features: [{ $: 'label.bind-title' }, { $: 'mdl-style.init-dynamic', query: '.mdl-js-ripple-effect' }]
+    features: [{ $: 'label.bind-title' }, { $: 'mdl-style.init-dynamic' }]
   }
 });
 
@@ -266,7 +267,7 @@ jb.component('label.mdl-button', {
       { 'class': 'mdl-button mdl-js-button' },
       state.title
     ),
-    features: [{ $: 'label.bind-title' }, { $: 'mdl-style.init-dynamic', query: '.mdl-js-button' }]
+    features: [{ $: 'label.bind-title' }, { $: 'mdl-style.init-dynamic' }]
   }
 });
 
@@ -278,7 +279,7 @@ jb.component('editable-text.mdl-search', {
     template: (props, state) => jb.ui.h(
       'div',
       { 'class': 'mdl-textfield mdl-js-textfield' },
-      jb.ui.h('input', { value: '{props.jbModel()}', onchange: '{props.jbModel($event.target.value)}', onkeyup: '{props.jbModel($event.target.value,\'keyup\')}',
+      jb.ui.h('input', { value: state.jbModel(), onchange: state.jbModel($event.target.value), onkeyup: state.jbModel($event.target.value, 'keyup'),
         'class': 'mdl-textfield__input', type: 'text', id: 'search_{state.fieldId}' }),
       jb.ui.h(
         'label',
@@ -286,7 +287,7 @@ jb.component('editable-text.mdl-search', {
         state.title
       )
     ),
-    features: [{ $: 'field.databind' }, { $: 'mdl-style.init-dynamic', query: '.mdl-js-textfield' }]
+    features: [{ $: 'field.databind' }, { $: 'mdl-style.init-dynamic' }]
   }
 });
 
@@ -297,8 +298,8 @@ jb.component('editable-text.mdl-input', {
     template: (props, state) => jb.ui.h(
       'div',
       { 'class': 'mdl-textfield mdl-js-textfield mdl-textfield--floating-label' },
-      jb.ui.h('input', { value: props.jbModel(), type: 'text', onchange: e => props.jbModel(e.target.value),
-        onkeyup: e => props.jbModel(e.target.value, 'keyup'),
+      jb.ui.h('input', { value: state.jbModel(), type: 'text', onchange: e => state.jbModel(e.target.value),
+        onkeyup: e => state.jbModel(e.target.value, 'keyup'),
         'class': 'mdl-textfield__input', type: 'text', id: 'input_' + state.fieldId }),
       jb.ui.h(
         'label',
@@ -307,7 +308,7 @@ jb.component('editable-text.mdl-input', {
       )
     ),
     css: '{ {?width: %$width%px?} }',
-    features: [{ $: 'field.databind' }, { $: 'mdl-style.init-dynamic', query: '.mdl-js-textfield' }]
+    features: [{ $: 'field.databind' }, { $: 'mdl-style.init-dynamic' }]
   }
 });
 
@@ -317,15 +318,15 @@ jb.component('editable-boolean.mdl-slide-toggle', {
     template: (props, state) => jb.ui.h(
       'label',
       { 'class': 'mdl-switch mdl-js-switch mdl-js-ripple-effect', 'for': 'switch_{state.fieldId}' },
-      jb.ui.h('input', { type: 'checkbox', id: 'switch_{state.fieldId}', 'class': 'mdl-switch__input', value: '{props.jbModel()}',
-        onchange: '{props.jbModel($event.target.checked)}' }),
+      jb.ui.h('input', { type: 'checkbox', id: 'switch_{state.fieldId}', 'class': 'mdl-switch__input', value: state.jbModel(),
+        onchange: '{state.jbModel($event.target.checked)}' }),
       jb.ui.h(
         'span',
         { 'class': 'mdl-switch__label' },
         state.text()
       )
     ),
-    features: [{ $: 'field.databind' }, { $: 'editable-boolean.keyboard-support' }, { $: 'mdl-style.init-dynamic', query: '.mdl-js-switch' }]
+    features: [{ $: 'field.databind' }, { $: 'editable-boolean.keyboard-support' }, { $: 'mdl-style.init-dynamic' }]
   }
 });
 

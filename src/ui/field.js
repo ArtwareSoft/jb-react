@@ -10,7 +10,7 @@ jb.component('field.databind', {
             cmp.state.title = ctx.vars.$model.title();
             cmp.state.fieldId = jb.ui.field_id_counter++;
             cmp.state.jbModel = (val,source) => {
-              if (val == undefined) 
+              if (val === undefined) 
                 return jb.val(ctx.vars.$model.databind);
               else { // write
                 if (cmp.inputEvents && source == 'keyup')

@@ -6,7 +6,7 @@ jb.component('editable-text', {
     { id: 'title', as: 'string' , dynamic: true },
     { id: 'databind', as: 'ref'},
     { id: 'updateOnBlur', as: 'boolean', type: 'boolean' },
-    { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.input' }, dynamic: true },
+    { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-input' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx => 
@@ -39,7 +39,7 @@ jb.component('editable-text.x-button', {
   type: 'feature',
   impl : ctx =>({
     templateModifier: (vdom,props,state) => 
-      jb.ui.h('div', {},[vdom].concat(state.jbModel() ? [jb.ui.h('button', { class: 'delete', onclick: e => state.jbModel('')} , '✗')]  : []) ),
+      jb.ui.h('div', {},[vdom].concat(state.jbModel() ? [jb.ui.h('button', { class: 'delete', onclick: e => state.jbModel(null)} , '✗')]  : []) ),
     css: `>.delete {
           margin-left: -16px;
           float: right;

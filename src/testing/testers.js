@@ -71,7 +71,7 @@ jb.component('ui-action.ngModel', {
 		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=>
 			e._component.state.jbModel(value))
-		return jb.delay(10);
+		return jb.delay(1);
 	}
 })
 

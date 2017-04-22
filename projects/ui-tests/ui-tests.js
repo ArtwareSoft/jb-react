@@ -92,15 +92,25 @@ jb.component('ui-test.editable-text', {
 },
 })
 
+jb.component('ui-test.editable-text-mdl', {
+  impl :{$: 'ui-test',  
+    control :{$: 'editable-text', 
+    style :{$: 'editable-text.mdl-input'},
+      title: 'name', 
+      databind: '%$person/name%' 
+    },
+    expectedResult :{$: 'contains', text: ['input','Homer Simpson'] },
+},
+})
+
 jb.component('ui-test.editable-text.x-button', {
   impl :{$: 'ui-test',  
     control :{$: 'editable-text', 
-      style :{$: 'editable-text.input'},
       title: 'name', 
       databind: '%$person/name%',
-      features:{ $: 'editable-text.x-button'},
+      features: [{ $: 'editable-text.x-button'}, {$: 'feature.listen', resource : 'person'}],
     },
-    expectedResult :{$: 'contains', text: ['✗','input','Homer Simpson'] },
+    expectedResult :{$: 'contains', text: ['✗','input','Homer Simpson'], inOrder: false },
 },
 })
 
@@ -112,11 +122,12 @@ jb.component('ui-test.two-way-binding', {
         {$: 'editable-text', 
           title: 'name', 
           databind: '%$person/name%',
+          features :{$:'id', id:'inp'}
         },
         { $: 'label' , title: '%$person/name%' } ,
       ]
   },
-  action :{$: 'ui-action.ngModel', selector: 'input', value: 'hello'},
+  action :{$: 'ui-action.ngModel', selector: '#inp', value: 'hello'},
   expectedResult :{$: 'contains', text: ['hello','hello'] },
 },
 })
@@ -426,7 +437,7 @@ jb.component('ui-test.editable-text-with-jb-val', {
       $vars: {
         a1 : ctx => { return {
           $jb_val: value => {
-            if (value == undefined)
+            if (value === undefined)
               return jbart.__test_jb_val || 'Marge';
             else
               jbart.__test_jb_val = value;

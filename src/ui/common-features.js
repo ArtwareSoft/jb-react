@@ -40,3 +40,16 @@ jb.component('feature.listen', {
       jbEmitter: true,
   })
 })
+
+jb.component('id', {
+  type: 'feature',
+  params: [ 
+    { id: 'id', essential: true, as: 'string' },
+  ],
+  impl: (context,id) => ({
+    templateModifier: (vdom,props,state) => {
+        vdom.attributes.id = id
+        return vdom;
+      }
+  })
+})

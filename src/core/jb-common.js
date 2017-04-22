@@ -299,9 +299,10 @@ jb.component('contains',{
 	type: 'boolean',
 	params: [
 		{ id: 'text', type: 'data[]', as: 'array', essential: true },
-		{ id: 'allText', defaultValue: '%%', as:'array'}
+		{ id: 'allText', defaultValue: '%%', as:'array'},
+		{ id: 'inOrder', defaultValue: true, as:'boolean'},
 	],
-	impl: function(context,text,allText) {
+	impl: function(context,text,allText,inOrder) {
       var all = "";
       allText.forEach(function(allTextItem) {
 		if (allTextItem.outerHTML)
@@ -314,8 +315,8 @@ jb.component('contains',{
       var prevIndex = -1;
       for(var i=0;i<text.length;i++) {
       	var newIndex = all.indexOf(jb.tostring(text[i]),prevIndex+1);
-      	if (newIndex <= prevIndex) return false;
-      	prevIndex = newIndex;
+      	if (newIndex == -1) return false;
+      	prevIndex = inOrder ? newIndex : -1;
       }
       return true;
 	}

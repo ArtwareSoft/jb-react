@@ -8,7 +8,8 @@ jb.component('mdl-style.init-dynamic', {
   impl: (ctx,query) => 
     ({
       afterViewInit: cmp => {
-        var elems = cmp.base.querySelectorAll(query);
+
+        var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
         cmp.refreshMdl = _ => {
           jb.delay(1).then(_ => elems.forEach(el=> {
             componentHandler.downgradeElements(el);
@@ -20,7 +21,7 @@ jb.component('mdl-style.init-dynamic', {
       	 	componentHandler.upgradeElement(el)))
       },
       destroy: cmp => 
-      	 cmp.base.querySelectorAll(query).forEach(el=>
+      	 (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
       	 	componentHandler.downgradeElements(el))
     })
 })
@@ -49,7 +50,7 @@ jb.component('button.mdl-raised', {
   impl :{$: 'custom-style', 
       template: (props,state) => 
         (<button class="mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect" onclick={_=>props.clicked()}>{state.title}</button>),
-      features :{$: 'mdl-style.init-dynamic', query: '.mdl-js-button'},
+      features :{$: 'mdl-style.init-dynamic'},
   }
 })
 
@@ -57,7 +58,7 @@ jb.component('button.mdl-flat-ripple', {
   type: 'button.style',
   impl :{$: 'custom-style', 
       template: (props,state) => <button class="mdl-button mdl-js-button mdl-js-ripple-effect" onclick={_=>props.clicked()}>{state.title}</button>,
-      features :{$: 'mdl-style.init-dynamic', query: '.mdl-js-button'},
+      features :{$: 'mdl-style.init-dynamic'},
       css: 'button { text-transform: none }'
   }
 })
@@ -72,7 +73,7 @@ jb.component('button.mdl-icon', {
   <i class="material-icons" >{props.icon}</i>
 </button>),
       css: `button, i { border-radius: 2px}`,
-      features:{$: 'mdl-style.init-dynamic', query: '.mdl-js-button'},
+      features:{$: 'mdl-style.init-dynamic'},
   }
 })
 
@@ -86,7 +87,7 @@ jb.component('button.mdl-icon-12', {
   <i class="material-icons" >{props.icon}</i>
 </button>),
       css: `.material-icons { font-size:12px;  }`,
-      features:{$: 'mdl-style.init-dynamic', query: '.mdl-js-button'},
+      features:{$: 'mdl-style.init-dynamic'},
   }
 })
 
@@ -95,7 +96,7 @@ jb.component('button.mdl-allow-html', {
   description: 'used for search pattern highlight',
   impl :{$: 'custom-style',
       template: (props,state) => <button class="mdl-button mdl-js-button mdl-js-ripple-effect" onclick={_=>props.clicked()}>{state.title}</button>,
-      features:{$: 'mdl-style.init-dynamic', query: '.mdl-js-button'},
+      features:{$: 'mdl-style.init-dynamic'},
   }
 })
 
@@ -107,7 +108,7 @@ jb.component('label.mdl-ripple-effect', {
         template: (props,state) => <div class="mdl-button mdl-js-button mdl-js-ripple-effect">{state.title}</div>,
         features :[
           {$: 'label.bind-title' },
-          {$: 'mdl-style.init-dynamic', query: '.mdl-js-ripple-effect'}
+          {$: 'mdl-style.init-dynamic'}
         ],
     }
 });
@@ -118,7 +119,7 @@ jb.component('label.mdl-button', {
         template: (props,state) => <div class="mdl-button mdl-js-button">{state.title}</div>,
         features :[
           {$: 'label.bind-title' },
-          {$: 'mdl-style.init-dynamic', query: '.mdl-js-button'}
+          {$: 'mdl-style.init-dynamic'}
         ],
     }
 });
@@ -130,13 +131,13 @@ jb.component('editable-text.mdl-search', {
   impl :{$: 'custom-style', 
       template: (props,state) => (
   <div class="mdl-textfield mdl-js-textfield">
-    <input value="{props.jbModel()}" onchange="{props.jbModel($event.target.value)}" onkeyup="{props.jbModel($event.target.value,'keyup')}" 
+    <input value={state.jbModel()} onchange={state.jbModel($event.target.value)} onkeyup={state.jbModel($event.target.value,'keyup')} 
       class="mdl-textfield__input" type="text" id="search_{state.fieldId}"/>
     <label class="mdl-textfield__label" for="search_{state.fieldId}">{state.title}</label>
   </div>),
       features: [
           {$: 'field.databind' },
-          {$: 'mdl-style.init-dynamic', query: '.mdl-js-textfield'}
+          {$: 'mdl-style.init-dynamic'}
       ],
   }
 })
@@ -148,15 +149,15 @@ jb.component('editable-text.mdl-input', {
   ],
   impl :{$: 'custom-style', 
    template: (props,state) => (<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-    <input value={props.jbModel()} type="text" onchange={e=>props.jbModel(e.target.value)} 
-    onkeyup={e=>props.jbModel(e.target.value,'keyup')} 
+    <input value={state.jbModel()} type="text" onchange={e=>state.jbModel(e.target.value)} 
+    onkeyup={e=>state.jbModel(e.target.value,'keyup')} 
       class="mdl-textfield__input" type="text" id={'input_'+state.fieldId}/>
     <label class="mdl-textfield__label" for={'input_'+state.fieldId}>{state.title}</label>
   </div>),
       css: '{ {?width: %$width%px?} }',
       features :[
           {$: 'field.databind' },
-          {$: 'mdl-style.init-dynamic', query: '.mdl-js-textfield'}
+          {$: 'mdl-style.init-dynamic'}
       ],
   }
 })
@@ -165,14 +166,14 @@ jb.component('editable-boolean.mdl-slide-toggle', {
   type: 'editable-boolean.style',
   impl :{$: 'custom-style', 
       template: (props,state) => (<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="switch_{state.fieldId}">
-  <input type="checkbox" id="switch_{state.fieldId}" class="mdl-switch__input" value="{props.jbModel()}" 
-  onchange="{props.jbModel($event.target.checked)}"/>
+  <input type="checkbox" id="switch_{state.fieldId}" class="mdl-switch__input" value={state.jbModel()} 
+  onchange="{state.jbModel($event.target.checked)}"/>
   <span class="mdl-switch__label">{state.text()}</span>
 </label>),
       features :[
           {$: 'field.databind' },
           {$: 'editable-boolean.keyboard-support' },
-          {$: 'mdl-style.init-dynamic', query: '.mdl-js-switch'}
+          {$: 'mdl-style.init-dynamic'}
       ],
   }
 })
