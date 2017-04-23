@@ -78,14 +78,14 @@ jb.component('ui-action.ngModel', {
 var jb_success_counter = 0;
 var jb_fail_counter = 0;
 
+var startTime = new Date().getTime();
 jb.testers.runTests = function(testType,specificTest,show) {
 	var tests = jb.entries(jb.comps)
 		.filter(e=>typeof e[1].impl == 'object' && e[1].impl.$ == testType)
 		.filter(e=>!specificTest || e[0] == specificTest);
 
 
-	document.write(`<div><span id="success-counter"></span><span id="fail-counter"></span><span> total ${tests.length}</span>`);
-	
+	document.write(`<div style="font-size: 20px"><span id="fail-counter"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span></div>`);
 
 	jb.rx.Observable.from(tests).concatMap(e=> 
 			Promise.resolve(new jb.jbCtx().setVars({testID: e[0]}).run({$:e[0]})))
@@ -96,8 +96,10 @@ jb.testers.runTests = function(testType,specificTest,show) {
 				jb_fail_counter++;
 			var elem = `<div><a href="/projects/ui-tests/tests.html?test=${res.id}&show" style="color:${res.success ? 'green' : 'red'}">${res.id}</a></div>`;
 
-			document.getElementById('success-counter').innerHTML = 'success ' + jb_success_counter;
-			document.getElementById('fail-counter').innerHTML = ' failure ' + jb_fail_counter;
+			document.getElementById('success-counter').innerHTML = ', success ' + jb_success_counter;
+			document.getElementById('fail-counter').innerHTML = 'failures ' + jb_fail_counter;
+			document.getElementById('fail-counter').style.color = jb_fail_counter ? 'red' : 'green';
+			document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - startTime) +' mSec';
 			document.body.innerHTML += elem;
 			if (show)
 				document.body.appendChild(res.elem);

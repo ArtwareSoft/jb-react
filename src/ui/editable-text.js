@@ -81,7 +81,7 @@ jb.component('editable-text.helper-popup', {
 
 
       var keydown = jb_rx.Observable.fromEvent(input, 'keydown')
-              .takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') );
+              .takeUntil( cmp.destroyed );
 
       cmp.ctx.vars.selectionKeySource.keydown = keydown.filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1);
 

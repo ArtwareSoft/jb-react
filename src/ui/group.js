@@ -15,7 +15,7 @@ jb.component('group.init-group', {
   impl: ctx => ({
     init: cmp => {
       if (cmp.ctrlEmitter) {
-          cmp.ctrlEmitter.takeUntil(cmp.jbEmitter.filter(x=>x=='destroy'))
+          cmp.ctrlEmitter.takeUntil(cmp.destroyed)
             .subscribe(ctrls=>
               cmp.setState({ctrls:ctrls}))
       } else {

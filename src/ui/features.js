@@ -153,7 +153,7 @@ jb.component('feature.onEnter', {
           if (!elem) return;
           elem.setAttribute('tabIndex','0');
           cmp.keydown = jb_rx.Observable.fromEvent(elem, 'keydown')
-              .takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') );
+              .takeUntil( cmp.destroyed );
         } 
 
         cmp.keydown.filter(e=> e.keyCode == 13)

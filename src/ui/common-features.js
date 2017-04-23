@@ -31,7 +31,7 @@ jb.component('feature.listen', {
   ],
   impl: (context,resource) => ({
       beforeInit: cmp => {
-        jb.ui.resourceChange.takeUntil(cmp.jbEmitter.filter(x=>x=='destroy'))
+        jb.ui.resourceChange.takeUntil(cmp.destroyed)
           .filter(e=>
             e.op[resource])
           .subscribe(e=>

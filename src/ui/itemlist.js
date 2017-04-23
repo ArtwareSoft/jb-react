@@ -81,7 +81,7 @@ jb.component('itemlist.selection', {
         cmp.selectionEmitter
           .merge(databindEm)
           .merge(cmp.clickEmitter)
-          .takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') )
+          .takeUntil( cmp.destroyed )
           .distinctUntilChanged()
           .subscribe( selected => {
               if (jb.val(ctx.params.databind) != selected)
@@ -91,7 +91,7 @@ jb.component('itemlist.selection', {
           });
 
         // double click
-        var clickEm = cmp.clickEmitter.takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') );
+        var clickEm = cmp.clickEmitter.takeUntil( cmp.destroyed );
         clickEm.buffer(clickEm.debounceTime(250))
           .filter(buff => buff.length === 2)
           .subscribe(buff=>
@@ -123,7 +123,7 @@ jb.component('itemlist.keyboard-selection', {
         if (!cmp.keydown) {
           cmp.elementRef.nativeElement.setAttribute('tabIndex','0');
           cmp.keydown = jb_rx.Observable.fromEvent(cmp.elementRef.nativeElement, 'keydown')
-              .takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') );          
+              .takeUntil( cmp.destroyed );          
 
           if (ctx.params.autoFocus)
             jb_ui.focus(cmp.elementRef.nativeElement,'itemlist.keyboard-selection init autoFocus')
@@ -174,7 +174,7 @@ jb.component('itemlist.drag-and-drop', {
 
         cmp.elementRef.nativeElement.setAttribute('tabIndex','0');
         cmp.keydown = cmp.keydown || jb_rx.Observable.fromEvent(cmp.elementRef.nativeElement, 'keydown')
-            .takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') );
+            .takeUntil( cmp.destroyed );
 
         // ctrl + Up/Down
         cmp.keydown.filter(e=> 

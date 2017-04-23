@@ -19,6 +19,12 @@ jb.resource('personWithAddress',{
   }
 })
 
+jb.resource('personWithChildren',{ 
+  name: "Homer Simpson", 
+  children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ],
+  friends: [{ name: 'Barnie' } ],
+})
+
 jb.component('ui-test.label', {
    impl :{$: 'ui-test', 
     control:{$:'label', title: 'hello world'},
@@ -133,7 +139,7 @@ jb.component('ui-test.two-way-binding', {
 })
 
 jb.component('ui-test.group-horizontal', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
   control :{$: 'group', 
     style: {$: 'layout.horizontal' },
     controls: 
@@ -143,6 +149,62 @@ jb.component('ui-test.group-horizontal', {
       ]
   },
   expectedResult: { $: 'contains', text: ['button1','label1'] }
+},
+})
+
+jb.component('ui-test.tree', {
+  impl :{$: 'ui-test',  
+  control: {$: 'tree',
+    nodeModel :{$: 'tree.json-read-only', 
+      object: '%$personWithAddress%', rootPath: 'personWithAddress' 
+    },
+    features: [
+        { $: 'tree.selection' },
+        { $: 'tree.keyboard-selection'},
+    ] 
+  },
+  expectedResult :{$: 'contains', text: ['address'] } ,
+},
+})
+
+jb.component('ui-test.tree-DD', {
+  impl :{$: 'ui-test',  
+  control :{$: 'tree',
+    nodeModel :{$: 'tree.json', 
+      object: '%$personWithChildren%', rootPath: 'Homer' 
+    },
+    features: [
+        { $: 'tree.selection' },
+        { $: 'tree.drag-and-drop'},
+        { $: 'tree.keyboard-selection'} 
+    ] 
+  },
+  expectedResult: { $: 'contains', text: ['Homer'] } ,
+},
+})
+
+jb.component('ui-test.tree-right-click', {
+  impl :{$: 'ng2-ui-test',  
+  control :{$: 'tree',
+    nodeModel :{$: 'tree.json-read-only', 
+      object: '%$personWithChildren%', rootPath: 'Homer' 
+    },
+    features: [
+        { $: 'tree.keyboard-selection' },
+        { $: 'tree.drag-and-drop'},
+        { $: 'tree.selection', 
+          onDoubleClick :{$: 'openDialog', title: 'double %%',
+            features :{$: 'dialog-feature.nearLauncherLocation' }
+          },
+        },
+        { $: 'tree.onMouseRight', 
+          action :{$: 'openDialog', title: 'right %%',
+            features :{$: 'dialog-feature.nearLauncherLocation' }
+          }
+        }
+    ] 
+  },
+  expectedResult: { $: 'contains', text: ['Homer'] } ,
 },
 })
 
@@ -267,61 +329,6 @@ jb.component('ui-test.itemlist-heading', {
 }
 })
 
-jb.component('ui-test.tree', {
-  impl :{$: 'ng2-ui-test',  
-  control: {$: 'tree',
-        nodeModel :{$: 'tree.json-read-only', 
-          object: '%$personWithAddress%', rootPath: 'personWithAddress' 
-        },
-    features: [
-        { $: 'tree.selection' },
-        { $: 'tree.keyboard-selection'} 
-    ] 
-  },
-  expectedResult :{$: 'contains', text: ['address'] } ,
-},
-})
-
-jb.component('ui-test.tree-DD', {
-  impl :{$: 'ng2-ui-test',  
-  control :{$: 'tree',
-    nodeModel :{$: 'tree.json', 
-      object: '%$personWithChildren%', rootPath: 'Homer' 
-    },
-    features: [
-        { $: 'tree.selection' },
-        { $: 'tree.drag-and-drop'},
-        { $: 'tree.keyboard-selection'} 
-    ] 
-  },
-  expectedResult: { $: 'contains', text: ['Homer'] } ,
-},
-})
-
-jb.component('ui-test.tree-right-click', {
-  impl :{$: 'ng2-ui-test',  
-  control :{$: 'tree',
-    nodeModel :{$: 'tree.json-read-only', 
-      object: '%$personWithChildren%', rootPath: 'Homer' 
-    },
-    features: [
-        { $: 'tree.keyboard-selection' },
-        { $: 'tree.drag-and-drop'},
-        { $: 'tree.selection', 
-          onDoubleClick :{$: 'openDialog', title: 'double %%',
-            features :{$: 'dialog-feature.nearLauncherLocation' }
-          },
-        },
-        { $: 'tree.onMouseRight', 
-          action :{$: 'openDialog', title: 'right %%',
-            features :{$: 'dialog-feature.nearLauncherLocation' }
-          }
-        }
-    ] 
-  },
-  expectedResult: { $: 'contains', text: ['Homer'] } ,
-},
-})
 
 jb.component('ui-test.itemlist-add-button', {
   impl :{$: 'ng2-ui-test',  

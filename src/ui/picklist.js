@@ -54,7 +54,7 @@ jb.component('picklist.dynamic-options', {
     jbEmitter: true,
     init: cmp => 
       recalcEm && recalcEm
-        .takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') )
+        .takeUntil( cmp.destroyed )
         .subscribe(e=>
             cmp.recalcOptions()) 
   })

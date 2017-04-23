@@ -20,6 +20,13 @@ var resources = {
         'src/ui/field.js',
         'src/ui/editable-text.js',
         'src/ui/common-features.js',
+        'src/ui/css-features.js',
+
+        'src/ui/styles/layout-styles.js',
+      ],
+      'ui-tree':[
+        'src/ui/tree/tree.js',
+        'src/ui/tree/json-tree-model.js',
       ],
       'testers': [
         'src/testing/testers.js',
@@ -44,8 +51,8 @@ var resources = {
         'node_modules/history/umd/history.js',
       ],
       'dragula': [
-          'bower_components/dragula.js/dist/dragula.js',
-          'bower_components/dragula.js/dist/dragula.css',
+          'node_modules/dragula/dist/dragula.js',
+          'node_modules/dragula/dist/dragula.css',
       ]
 };
 

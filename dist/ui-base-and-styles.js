@@ -369,7 +369,7 @@ var cssSelectors_hash = {};
 class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
-		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbAfterViewInitFuncs: [],jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [], modifierFuncs: [] });
+		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [], modifierFuncs: [] });
 		this.cssSelectors = [];
 
 		this.jb_profile = ctx.profile;
@@ -384,6 +384,7 @@ class JbComponent {
 			constructor(props) {
 				super();
 				this.ctx = jbComp.ctx;
+				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				try {
 					if (jbComp.createjbEmitter)
 						this.jbEmitter = this.jbEmitter || new jb.rx.Subject();
@@ -395,8 +396,8 @@ class JbComponent {
 			    	}
 			    	this.refreshCtx();
 					Object.assign(props,(jbComp.styleCtx || {}).params);
-					jbComp.jbBeforeInitFuncs.forEach(init=> init(this));
-					jbComp.jbInitFuncs.forEach(init=> init(this));
+					jbComp.jbBeforeInitFuncs.forEach(init=> init(this,props));
+					jbComp.jbInitFuncs.forEach(init=> init(this,props));
 			    } catch(e) { jb.logException(e,'') }
 			}
 			render(props,state) {
@@ -406,10 +407,21 @@ class JbComponent {
 			}
     		componentDidMount() {
 				jbComp.injectCss(this);
+				jbComp.jbRegisterEventsFuncs.forEach(init=> init(this));
 				jbComp.jbAfterViewInitFuncs.forEach(init=> init(this));
 				if (this.jbEmitter)
 					this.jbEmitter.next('after-init');
 			}
+	  		componentWillUnmount() {
+				jbComp.jbDestroyFuncs.forEach(f=> 
+					f(this));
+				if (this.jbEmitter) {
+					 this.jbEmitter.next('destroy');
+					 this.jbEmitter.complete();
+				}
+				this.resolveDestroyed();
+			}
+
 		}; 
 		this.applyFeatures(ctx);
 		this.compileJsx();
@@ -469,8 +481,18 @@ class JbComponent {
 		if (options.doCheck) this.jbCheckFuncs.push(options.doCheck);
 		if (options.destroy) this.jbDestroyFuncs.push(options.destroy);
 		if (options.templateModifier) this.modifierFuncs.push(options.templateModifier);
+		if (typeof options.class == 'string') 
+			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class));
+		if (typeof options.class == 'function') 
+			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class()));
+		// events
+		var events = Object.getOwnPropertyNames(options).filter(op=>op.indexOf('on') == 0);
+		events.forEach(op=>
+			this.jbRegisterEventsFuncs.push(cmp=>
+		       	  cmp[op] = cmp[op] || jb.rx.Observable.fromEvent(cmp.base, op.slice(2))
+		       	  	.takeUntil( cmp.destroyed )));
 
-		if (options.jbEmitter) this.createjbEmitter = true;
+		if (options.jbEmitter || events.length > 0) this.createjbEmitter = true;
 		if (options.ctxForPick) this.ctxForPick=options.ctxForPick;
 		if (options.extendCtx) 
 			this.extendCtxFuncs.push(options.extendCtx);
@@ -503,13 +525,6 @@ function injectLifeCycleMethods(Comp,jbComp) {
 	  Comp.prototype.componentDidUpdate = function() {
 		this.jbEmitter.next('after-update');
 	}
-	if (jbComp.jbDestroyFuncs.length || jbComp.createjbEmitter)
-	  Comp.prototype.componentWillUnmount = function() {
-		jbComp.jbDestroyFuncs.forEach(f=> 
-			f(this));
-		this.jbEmitter && this.jbEmitter.next('destroy');
-		this.jbEmitter && this.jbEmitter.complete();
-	}
 }
 
 function garbageCollectCtxDictionary() {
@@ -529,6 +544,14 @@ function garbageCollectCtxDictionary() {
 		if (used[lastUsedIndex] > dict[i])
 			delete jb.ctxDictionary[''+dict[i]];
 	}
+}
+
+ui.focus = function(elem,logTxt) {
+    if (jb.studio.lastStudioActivity && new Date().getTime() - jb.studio.lastStudioActivity < 1000)
+    	return;
+    jb.logPerformance('focus',logTxt);
+    jb.delay(1).then(_=>
+    	elem.focus())
 }
 
 ui.wrapWithLauchingElement = (f,context,elem) => 
@@ -557,7 +580,7 @@ ui.writeValue = (to,value,settings) => {
   		jb.path(op,path,{$set: value});
   		ui.resources = ui.update(ui.resources,op);
   		ui.resourceVersions[resource] = ui.resourceVersions[resource] ? ui.resourceVersions[resource]+1 : 1;
-  		ui.resourceChange.next({op: op});
+  		ui.resourceChange.next({op: op, path: path});
   	} else {
   		jb.logError('writeValue: can not find parent in resources');
     	to.$jb_parent[to.$jb_property] = jb.val(value);
@@ -565,21 +588,35 @@ ui.writeValue = (to,value,settings) => {
   }
 }
 
-ui.updateJbParent = function(wrapper) {
-	if (! wrapper.$jb_path) { // first time - look in all resources
-		var found = find(wrapper.$jb_parent,ui.resources);
-	} else { 
-		var resource = wrapper.$jb_path[0];
-		if (wrapper.$jb_resourceV == ui.resourceVersions[resource]) return;
+ui.refObservable = function(ref,cmp) {
+  if (!ref) 
+  	return jb.rx.Observable.of();
+  if (ref.$jb_parent) {
+  	ui.updateJbParent(ref);
+  	return ui.resourceChange
+  		.takeUntil(cmp.destroyed)
+  		.filter(e=>ref.path.join('~').indexOf(e.path.join('~')) == 0)
+  		.map(_=>jb.val(ref))
+  		.distinctUntilChanged()
+  }
+  return jb.rx.Observable.of(jb.val(ref));
+}
 
-		var found = find(wrapper.$jb_parent,ui.resources[resource]);
+ui.updateJbParent = function(ref) {
+	if (! ref.$jb_path) { // first time - look in all resources
+		var found = find(ref.$jb_parent,ui.resources);
+	} else { 
+		var resource = ref.$jb_path[0];
+		if (ref.$jb_resourceV == ui.resourceVersions[resource]) return;
+
+		var found = find(ref.$jb_parent,ui.resources[resource]);
 		if (found)
 			found.$jb_path = [resource].concat(found.$jb_path);
 	}
 
 	if (found) {
-		Object.assign(wrapper,found);
-		wrapper.$jb_resourceV = ui.resourceVersions[wrapper.$jb_path[0]];
+		Object.assign(ref,found);
+		ref.$jb_resourceV = ui.resourceVersions[ref.$jb_path[0]];
 	}
 	
 	function find(obj,lookIn) {
@@ -633,7 +670,19 @@ function pathOfObject(obj,lookIn) {
 	}
 }
 
-// ****************** components
+// ****************** generic utils ***************
+
+if (typeof $ != 'undefined' && $.fn)
+    $.fn.findIncludeSelf = function(selector) { 
+    	return this.find(selector).add(selector); }  
+
+ui.addClassToVdom = function(vdom,clz) {
+	vdom.attributes = vdom.attributes || {};
+	vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');
+	return vdom;
+}
+
+// ****************** components ****************
 
 jb.component('custom-style', {
 	typePattern: /.*-style/,
@@ -653,6 +702,7 @@ jb.component('custom-style', {
 ui.ctrl = ctrl;
 ui.render = __WEBPACK_IMPORTED_MODULE_0_preact__["render"];
 ui.h = __WEBPACK_IMPORTED_MODULE_0_preact__["h"];
+ui.Component = __WEBPACK_IMPORTED_MODULE_0_preact__["Component"];
 ui.update = __WEBPACK_IMPORTED_MODULE_1_immutability_helper___default.a;
 ui.resourceChange = new jb.rx.Subject();
 

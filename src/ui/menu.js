@@ -199,7 +199,7 @@ jb.component('menu.init-popup-menu', {
 			};
 
 			if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
-				var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') );
+				var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
 
 			    keydown.filter(e=>e.keyCode == 39) // right arrow
 		    	    .subscribe(x=>{
@@ -237,7 +237,7 @@ jb.component('menu.init-menu-option', {
 	        }, ctx, cmp.elementRef);
 
 			if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
-				var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') );
+				var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
 			    keydown.filter(e=>e.keyCode == 13 && ctx.vars.topMenu.selected == ctx.vars.menuModel) // Enter
 		    	    .subscribe(_=>
 		    	    	cmp.action())
@@ -278,11 +278,11 @@ jb.component('menu.selection', {
         cmp.keydownSrc = new jb_rx.Subject();
      	if (!ctx.vars.topMenu.keydown) { 
 	        ctx.vars.topMenu.keydown = cmp.keydownSrc
-	          .takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') );
+	          .takeUntil( cmp.destroyed );
             jb_ui.focus(cmp.elementRef.nativeElement,'menu.keyboard init autoFocus');
       	};
 
-        var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') );
+        var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
 
         keydown.filter(e=>
               e.keyCode == 38 || e.keyCode == 40 )

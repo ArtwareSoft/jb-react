@@ -35,7 +35,7 @@ jb.component('field.debounce-databind', {
     ({
       init: cmp => {
           cmp.inputEvents = cmp.inputEvents || new jb.rx.Subject();
-          cmp.inputEvents.takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') )
+          cmp.inputEvents.takeUntil( cmp.destroyed )
             .distinctUntilChanged()
             .debounceTime(debounceTime)
             .subscribe(val=>

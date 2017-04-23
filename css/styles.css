@@ -166,7 +166,7 @@ padding: 10px 10px 10px 27px; color: #6D6E71; min-height: 12px; border-bottom: 1
 .jb-control-tree .treenode.leaf .treenode-children { display: none; }
 */
 
-.treenode.selected>*>*>.treenode-label { background: #D9E8FB;}
+.treenode.selected>*>.treenode-label { background: #D9E8FB;}
 
 /********* pulldown menu ********* */
 

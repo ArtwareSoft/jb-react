@@ -13,7 +13,7 @@ jb.component('css.class', {
     { id: 'class', essential: true, as: 'string' },
   ],
   impl: (context,clz) => 
-    ({cssClass:clz})
+    ({class :clz})
 })
 
 jb.component('css.width', {

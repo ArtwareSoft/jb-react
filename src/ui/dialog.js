@@ -136,7 +136,7 @@ jb.component('dialog-feature.keyboard-shortcut', {
 		};
 
 	    jb_rx.Observable.fromEvent(dialog.$el[0], 'keydown')
-   	  		.takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') )
+   	  		.takeUntil( cmp.destroyed )
 			.filter(e=> e.keyCode != 17 && e.keyCode != 18) // ctrl ot alt alone
    	  		.subscribe(e=>
    	  			dialog.applyShortcut(e))
@@ -302,7 +302,7 @@ jb.component('dialog-feature.dragTitle', {
 		       init: function(cmp) {
 		       	  var titleElem = cmp.elementRef.nativeElement.querySelector('.dialog-title');
 		       	  cmp.mousedownEm = jb_rx.Observable.fromEvent(titleElem, 'mousedown')
-		       	  	.takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') );
+		       	  	.takeUntil( cmp.destroyed );
 		       	  
 				  if (id && sessionStorage.getItem(id)) {
 						var pos = JSON.parse(sessionStorage.getItem(id));
@@ -313,12 +313,12 @@ jb.component('dialog-feature.dragTitle', {
 				  var mouseUpEm = jb_rx.Observable.fromEvent(document, 'mouseup')
 				      			.merge(jb_rx.Observable.fromEvent(
 				      				(jbart.previewWindow || {}).document, 'mouseup'))
-          						.takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') )
+          						.takeUntil( cmp.destroyed )
 
 				  var mouseMoveEm = jb_rx.Observable.fromEvent(document, 'mousemove')
 				      			.merge(jb_rx.Observable.fromEvent(
 				      				(jbart.previewWindow || {}).document, 'mousemove'))
-          						.takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') )
+          						.takeUntil( cmp.destroyed )
 
 				  var mousedrag = cmp.mousedownEm
 				  		.do(e => e.preventDefault())
