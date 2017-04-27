@@ -3,18 +3,16 @@ jb.component('property-sheet.titles-above', {
   params: [
     { id: 'spacing', as: 'number', defaultValue: 20 }
   ],
-  impl :{$: 'customStyle', 
+  impl :{$: 'custom-style', 
     features :{$: 'group.init-group'},
-    template: `<div>
-      <div *ngFor="let ctrl of ctrls" class="property">
-        <label class="property-title">{{ctrl.title}}</label>
-        <div *jbComp="ctrl.comp"></div>
-      </div>
-      </div>
-    `,
-    css: `.property { margin-bottom: %$spacing%px }
-      .property:last-child { margin-bottom:0 }
-      .property>.property-title {
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property'},[
+            h('label',{ class: 'property-title'},ctrl.title()),
+            h(ctrl)
+    ]))),
+    css: `>.property { margin-bottom: %$spacing%px }
+      >.property:last-child { margin-bottom:0 }
+      >.property>.property-title {
         width:100px;
         overflow:hidden;
         text-overflow:ellipsis;
@@ -22,7 +20,7 @@ jb.component('property-sheet.titles-above', {
         margin-top:2px;
         font-size:14px;
       }
-      .property>div { display:inline-block }`
+      >.property>div { display:inline-block }`
   }
 })
 
@@ -32,24 +30,21 @@ jb.component('property-sheet.titles-above-float-left', {
     { id: 'spacing', as: 'number', defaultValue: 20 },
     { id: 'fieldWidth', as: 'number', defaultValue: 200 },
   ],
-  impl :{$: 'customStyle', 
+  impl :{$: 'custom-style', 
     features :{$: 'group.init-group'},
-    template: `<div>
-        <div *ngFor="let ctrl of ctrls" class="property">
-          <label class="property-title">{{ctrl.title}}</label>
-          <div *jbComp="ctrl.comp"></div>
-        </div>
-        <div class="clearfix"></div>
-      </div>
-    `,
-    css: `.property { 
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property'},[
+          h('label',{ class: 'property-title'},ctrl.title()),
+          h(ctrl)
+    ]))),
+    css: `>.property { 
           float: left;
           width: %$fieldWidth%px;
-          margin-right: %$spacing}%px 
+          margin-right: %$spacing%px;
         }
       .clearfix { clear: both }
-      .property:last-child { margin-right:0 }
-      .property>.property-title {
+      >.property:last-child { margin-right:0 }
+      >.property>.property-title {
         margin-bottom: 3px;
         overflow:hidden;
         text-overflow:ellipsis;
@@ -66,17 +61,16 @@ jb.component('property-sheet.titles-left', {
     { id: 'hSpacing', as: 'number', defaultValue: 20 },
     { id: 'titleWidth', as: 'number', defaultValue: 100 },
   ],
-  impl :{$: 'customStyle', 
+  impl :{$: 'custom-style', 
     features :{$: 'group.init-group'},
-    template: `<div>
-      <div *ngFor="let ctrl of ctrls" class="property">
-        <label class="property-title">{{ctrl.title}}</label>
-        <div *jbComp="ctrl.comp" class="property-ctrl"></div>
-      </div>
-    </div>`,
-    css: `.property { margin-bottom: %$vSpacing%px; display: flex }
-      .property:last-child { margin-bottom:0px }
-      .property>.property-title {
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property'},[
+          h('label',{ class: 'property-title'}, ctrl.title()),
+          h(ctrl)
+    ]))),
+    css: `>.property { margin-bottom: %$vSpacing%px; display: flex }
+      >.property:last-child { margin-bottom:0px }
+      >.property>.property-title {
         width: %$titleWidth%px;
         overflow:hidden;
         text-overflow:ellipsis;
@@ -85,6 +79,6 @@ jb.component('property-sheet.titles-left', {
         font-size:14px;
         margin-right: %$hSpacing%px;
       }
-      .property>*:last-child { margin-right:0 }`
+      >.property>*:last-child { margin-right:0 }`
   }
 })

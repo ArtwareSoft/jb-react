@@ -31,7 +31,7 @@ jb.component('editable-boolean.keyboard-support', {
       jbEmitter: true,
       init: cmp => {
         if (!cmp.keydown) {
-          var elem = cmp.elementRef.nativeElement.firstChild;
+          var elem = cmp.base.firstChild;
           if (!elem) return;
           //elem.setAttribute('tabIndex','0');
           cmp.keydown = jb_rx.Observable.fromEvent(elem, 'keydown')

@@ -125,7 +125,7 @@ jb.component('itemlist-container.search', {
             return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
           });
         // allow itemlist selection use up/down arrows
-        ctx.vars.itemlistCntr.keydown = jb_rx.Observable.fromEvent(cmp.elementRef.nativeElement, 'keydown')
+        ctx.vars.itemlistCntr.keydown = jb_rx.Observable.fromEvent(cmp.base, 'keydown')
             .takeUntil( cmp.destroyed )
             .filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1) 
 
@@ -142,33 +142,6 @@ jb.component('itemlist-container.search-in-all-properties', {
     if (typeof ctx.data != 'object') return '';
     return jb.entries(ctx.data).map(e=>e[1]).filter(v=>typeof v == 'string').join('#');
    }
-})
-
-
-jb.component('itemlist.obj-as-items', {
-  type: 'data',
-  params: [
-    { id: 'obj', as: 'single', defaultValue: '%%' },
-  ],
-  impl: ctx => {
-  	if (!ctx.vars.itemlistCntr) return [];
-  	var cmp = ctx.vars.itemlistCntr.cmp;
-  	if (!cmp.obj) {
-  		cmp.obj = ctx.params.obj;
-  		cmp.items = jb.entries(cmp.obj).map(e=>({key:e[0],val: e[1]})).concat({key:'',val:''});
-  		cmp.jbEmitter
-  			.filter(x=>x=='check')
-  			.subscribe(_=>{
-  				Object.getOwnPropertyNames(cmp.obj).forEach(p=> {delete cmp.obj[p]})
-	  			cmp.items.forEach(item=>{
-	  				if (item.key) cmp.obj[item.key]=item.val
-	  			})
-	  			if (!cmp.items.filter(e=>!e.key)[0])
-	  				cmp.items.push({key:'',val:''})
-  		})
-  	}
-  	return cmp.items;
-  }
 })
 
 

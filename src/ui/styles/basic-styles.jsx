@@ -3,7 +3,7 @@
 jb.component('group.section', {
   type: 'group.style',
   impl :{$: 'custom-style',
-    template: (props,state) => (<section class="jb-group">
+    template: (cmp,state,h) => (<section class="jb-group" key="{state.key}">
 	    	{ state.ctrls.map(ctrl=> jb.ui.h(ctrl)) }
         </section>),
     features:{$: 'group.init-group'}
@@ -13,7 +13,7 @@ jb.component('group.section', {
 jb.component('label.span', {
     type: 'label.style',
     impl :{$: 'custom-style', 
-        template: (props,state) =>
+        template: (cmp,state) =>
         	(<span>{state.title}</span>),
         features :{$: 'label.bind-title' }
     }
@@ -22,7 +22,7 @@ jb.component('label.span', {
 jb.component('button.href', {
   type: 'button.style',
     impl :{$: 'custom-style', 
-        template: (props,state) => (<a href="javascript:;" onclick="{props.clicked()}">{state.title}</a>),
+        template: (cmp,state) => (<a href="javascript:;" onclick="{cmp.clicked()}">{state.title}</a>),
     }
 })
 
@@ -32,7 +32,7 @@ jb.component('button.x', {
     { id: 'size', as: 'number', defaultValue: '21'}
   ],
   impl :{$: 'custom-style', 
-      template: (props,state) => (<button onclick="{props.clicked()}" title="title">&#215;</button>),
+      template: (cmp,state) => (<button onclick="{cmp.clicked()}" title="title">&#215;</button>),
       css: `button {
             cursor: pointer; 
             font: %$size%px sans-serif; 

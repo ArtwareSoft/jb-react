@@ -24,20 +24,47 @@ jb.component('group.wait', {
   })
 })
 
-jb.component('feature.listen', {
+jb.component('watch', {
   type: 'feature', category: 'group:70',
   params: [ 
-    { id: 'resource', essential: true, as: 'string' },
+    { id: 'resource', essential: true, as: 'array' },
   ],
   impl: (context,resource) => ({
       beforeInit: cmp => {
         jb.ui.resourceChange.takeUntil(cmp.destroyed)
-          .filter(e=>
-            e.op[resource])
+          .filter(e => resource[0] == '*' || e.path && resource.indexOf(e.path[0]) != -1)
           .subscribe(e=>
-              cmp.setState({__: !cmp.state.__}));
+              cmp.forceUpdate());
+      }
+  })
+})
+
+jb.component('group.data', {
+  type: 'feature', category: 'group:100',
+  params: [
+    { id: 'data', essential: true, dynamic: true, as: 'ref' },
+    { id: 'itemVariable', as: 'string' },
+    { id: 'watch', as: 'string' }
+  ],
+  impl: (context, data_ref, itemVariable,watch) => ({
+      beforeInit: cmp => {
+        if (watch[0]) {
+          cmp.ctrlEmitter = jb.ui.resourceChange.takeUntil(cmp.destroyed)
+            .filter(e => watch[0] == '*' || e.path && watch.indexOf(e.path[0]) != -1)
+            .startWith(1)
+            .map(_=> {
+                cmp.refreshCtx();
+                return context.vars.$model.controls(cmp.ctx);
+             });
+        } 
       },
-      jbEmitter: true,
+      extendCtx: ctx => {
+          var val = data_ref();
+          var res = ctx.setData(val);
+          if (itemVariable)
+            res = res.setVars(jb.obj(itemVariable,val));
+          return res;
+      },
   })
 })
 
@@ -47,7 +74,7 @@ jb.component('id', {
     { id: 'id', essential: true, as: 'string' },
   ],
   impl: (context,id) => ({
-    templateModifier: (vdom,props,state) => {
+    templateModifier: (vdom,cmp,state) => {
         vdom.attributes.id = id
         return vdom;
       }

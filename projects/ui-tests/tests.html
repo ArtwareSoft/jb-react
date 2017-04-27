@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html title="jb-react tests">
 <head>
+	<script type="text/javascript">
+		startTime = new Date().getTime();
+	</script>
 	<script type="text/javascript" src="../../dist/jb-loader.js" 
 		modules="common,ui-common,ui-tree,dragula,testers"></script>
 	<script type="text/javascript" src="data-tests.js"></script>
@@ -8,6 +11,7 @@
 </head>
 <body>
 <div id="test"> </div>
+<div id="dialogs"> </div>
 <script>
 	var test = (location.href.match(/test=([^&]*)/) || [])[1]; //.split('?test=').pop().split('&')[0];
 	jb.testers.runTests('ui-test',test,location.href.indexOf('&show') != -1);

@@ -27,7 +27,7 @@ jb.component('editable-text.codemirror', {
 						'Ctrl-Enter': () => context.params.onCtrlEnter()
 					},
 				});
-				var $el = $(cmp.elementRef.nativeElement);
+				var $el = $(cmp.base);
 				var $textarea = $el.findIncludeSelf('textarea');
 				$textarea.val(jb.val(data_ref));
 				//if (resizer) jb_codemirrorResizer(editor, $el);
@@ -49,7 +49,7 @@ jb.component('editable-text.codemirror', {
 					cmp.codeMirror = editor;
 					cmp.lastEdit = new Date().getTime();
 					$(editor.getWrapperElement()).css('box-shadow', 'none');
-					jb_rx.refObservable(data_ref,cmp)
+					jb.rx.refObservable(data_ref,cmp)
 						.filter(x => new Date().getTime() - cmp.lastEdit > 500 &&
 							x != editor.getValue())
 						.subscribe(x=>
@@ -175,7 +175,7 @@ jb.component('text.codemirror', {
                     lineWrapping: lineWrapping,
                     theme: 'solarized light', 
                 };
-                var $el = $(cmp.elementRef.nativeElement);
+                var $el = $(cmp.base);
                 var $textarea = $el.findIncludeSelf('textarea');
                 //if (resizer) jb_codemirrorResizer(editor, $el);
 
@@ -194,7 +194,7 @@ jb.component('text.codemirror', {
                         return;
                     }
                     $(editor.getWrapperElement()).css('box-shadow', 'none'); //.css('height', '200px');
-                    var modelChangeEm = cmp.jbEmitter.filter(x => x == 'check')
+                    var modelChangeEm = jb.ui.resourceChange.takeUntil(cmp.destroyed)
                         .map(()=> context.vars.$model.text())
                         .filter(x=>x) 
                         .distinctUntilChanged()

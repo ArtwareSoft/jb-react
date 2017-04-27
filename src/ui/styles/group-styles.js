@@ -1,44 +1,39 @@
 jb.component('group.div', {
   type: 'group.style',
-  impl :{$: 'customStyle',
-    template: `<div *ngFor="let ctrl of ctrls"><div *jbComp="ctrl"></div></div>`,
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('div',{},
+        state.ctrls.map(ctrl=> h(ctrl))),
     features :{$: 'group.init-group'}
   }
 })
 
 jb.component('group.ul-li', {
   type: 'group.style',
-  impl :{$: 'customStyle',
-    template: `<ul class="jb-itemlist">
-      <li *ngFor="let ctrl of ctrls" class="jb-item" [class.heading]="ctrl.comp.ctx.data.heading" #jbItem>
-        <div *jbComp="ctrl"></div>
-      </li>
-      </ul>`,
-    css: 'ul, li { list-style: none; padding: 0; margin: 0;}'
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl, h('li', {} ,h(ctrl))))),
+    css: `{ list-style: none; padding: 0; margin: 0;}
+    >li { list-style: none; padding: 0; margin: 0;}`
   },
 })
 
 jb.component('group.expandable', {
   type: 'group.style',
-  impl :{$: 'customStyle', 
-      template: `<section class="jb-group">
-       <div class="header">
-        <div class="title">{{title}}</div>
-        <button class="mdl-button mdl-button--icon" (click)="toggle()" title="{{expand_title()}}">
-        <i *ngIf="show" class="material-icons">keyboard_arrow_down</i>
-        <i *ngIf="!show" class="material-icons">keyboard_arrow_right</i>
-        </button>
-      </div>
-      <ng-template [ngIf]="show">
-        <div *ngFor="let ctrl of ctrls"><div *jbComp="ctrl"></div></div>
-      </ng-template>
-</section>`, 
-      css: `.header { display: flex; flex-direction: row; }
-        button:hover { background: none }
-        button { margin-left: auto }
-        i { color: #}
-        .title { margin: 5px }`, 
-      features :[ 
+  impl :{$: 'custom-style', 
+    template: (cmp,state,h) => h('section',{ class: 'jb-group'},[
+        h('div',{ class: 'header'},[
+          h('div',{ class: 'title'}, state.title),
+          h('button',{ class: 'mdl-button mdl-button--icon', onclick: _=> cmp.toggle(), title: cmp.expand_title() },
+            h('i',{ class: 'material-icons'}, state.show ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
+          )
+        ])
+      ].concat(state.show ? state.ctrls.map(ctrl=> h('div',{ },h(ctrl))): [])
+    ),
+    css: `>.header { display: flex; flex-direction: row; }
+        >.header>button:hover { background: none }
+        >.header>button { margin-left: auto }
+        >.header.title { margin: 5px }`, 
+    features :[ 
         {$: 'group.init-group' },
         {$: 'group.init-expandable' },
       ]
@@ -49,7 +44,7 @@ jb.component('group.init-expandable', {
   type: 'feature', category: 'group:0',
   impl: ctx => ({
         init: cmp => {
-            cmp.show = true;
+            cmp.state.show = true;
             cmp.expand_title = () => cmp.show ? 'collapse' : 'expand';
             cmp.toggle = function () { cmp.show = !cmp.show; };
         },
@@ -58,26 +53,20 @@ jb.component('group.init-expandable', {
 
 jb.component('group.accordion', {
   type: 'group.style',
-  impl :{$: 'customStyle', 
-      template: `<section class="jb-group">
-      <div *ngFor="let ctrl of ctrls" class="accordion-section">
-        <div class="header">
-          <div class="title">{{ctrl.title}}</div>
-          <button class="mdl-button mdl-button--icon" (click)="toggle(ctrl)" title="{{expand_title(ctrl)}}">
-                <i *ngIf="ctrl.show" class="material-icons">keyboard_arrow_down</i>
-                <i *ngIf="!ctrl.show" class="material-icons">keyboard_arrow_right</i>
-          </button>
-        </div>
-      <ng-template [ngIf]="ctrl.show">
-        <div *jbComp="ctrl.comp"></div>
-      </ng-template>
-      </div>
-  </section>`, 
-      css: `.header { display: flex; flex-direction: row; }
-        button:hover { background: none }
-        button { margin-left: auto }
-        i { color: #}
-        .title { margin: 5px }`, 
+  impl :{$: 'custom-style', 
+    template: (cmp,state,h) => h('section',{ class: 'jb-group'},
+        state.ctrls.map(ctrl=> h('div',{ class: 'accordion-section' },[
+          h('div',{ class: 'header'},[
+            h('div',{ class: 'title'}, ctrl.title),
+            h('button',{ class: 'mdl-button mdl-button--icon', onclick: _=> cmp.toggle(ctrl), title: cmp.expand_title(ctrl) }, 
+              h('i',{ class: 'material-icons'}, ctrl.show ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
+            )
+          ])].concat(state.show ? [h(ctrl)] : [])))        
+    ),
+    css: `>.accordion-section>.header { display: flex; flex-direction: row; }
+        >.accordion-section>.header>button:hover { background: none }
+        >.accordion-section>.header>button { margin-left: auto }
+        >.accordion-section>.header>.title { margin: 5px }`, 
       features : [ 
         {$: 'group.init-group' },
         {$: 'group.init-accordion' },
@@ -113,14 +102,14 @@ jb.component('group.init-accordion', {
 //         jb.delay(100).then(()=> {
 //           jb_logPerformance('focus','group.accordion');
 //           if (ctx.params.autoFocus)
-//             $(cmp.elementRef.nativeElement).find('input,textarea,select')
+//             $(cmp.base).find('input,textarea,select')
 //               .filter(function(x) { return $(this).attr('type') != 'checkbox'})
 // //              .first().focus() 
 //         })
 
 
       if (ctx.params.keyboardSupport) {
-        jb_rx.Observable.fromEvent(cmp.elementRef.nativeElement, 'keydown')
+        jb.rx.Observable.fromEvent(cmp.base, 'keydown')
             .takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') )
         .filter(e=> e.keyCode == 33 || e.keyCode == 34) // pageUp/Down
             .subscribe(e=>
@@ -136,11 +125,9 @@ jb.component('group.init-accordion', {
 
 jb.component('toolbar.simple', {
   type: 'group.style',
-  impl :{$: 'customStyle', 
-    features :{$: 'group.init-group' },
-    template: `<div class="toolbar">
-        <div *ngComps="ctrls"></div>
-      </div>`,
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('div',{class:'toolbar'},
+        state.ctrls.map(ctrl=> h(ctrl))),
     css: `{ 
             display: flex;
             background: #F5F5F5; 
@@ -149,7 +136,8 @@ jb.component('toolbar.simple', {
             border-bottom: 1px solid #D9D9D9; 
             border-top: 1px solid #fff;
         }
-        * { margin-right: 0 }`
+        >* { margin-right: 0 }`,
+    features :{$: 'group.init-group'}
   }
 })
 

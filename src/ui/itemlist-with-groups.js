@@ -1,6 +1,3 @@
-jb.type('itemlist.heading','inject headings to itemlist');
-jb.type('itemlist-heading.style');
-
 jb.component('itemlist-with-groups', {
   type: 'control',
   params: [
@@ -10,7 +7,7 @@ jb.component('itemlist-with-groups', {
     { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
     { id: 'groupBy', type: 'itemlist.group-by', essential: true, dynamic: true },
     { id: 'headingCtrl', type: 'control', dynamic: true , defaultValue: {$: 'label', title: '%title%' } },
-    { id: 'watchItems', type: 'boolean', as: 'boolean', defaultValue: true },
+    { id: 'watch', as: 'array', description: 'resources to watch' },
     { id: 'itemVariable', as: 'string', defaultValue: 'item' },
     { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
   ],
@@ -30,7 +27,7 @@ jb.component('itemlist-with-groups', {
       {$: 'itemlist.watch-items-with-heading', 
         items: {$call: 'items'}, 
         groupBy: {$call: 'groupBy'}, 
-        watch: '%$watchItems%', 
+        watch: '%$watch%', 
         itemsArrayVariable: 'items_array' 
       }, 
     ]
@@ -42,36 +39,37 @@ jb.component('itemlist.watch-items-with-heading', {
   params: [
     { id: 'items', essential: true, dynamic: true },
     { id: 'itemsArrayVariable', as: 'string' },
-    { id: 'watch', type: 'boolean', as: 'boolean', defaultValue: true },
+    { id: 'watch', as: 'array', description: 'resources to watch' },
     { id: 'groupBy', type: 'itemlist.group-by', essential: true, dynamic: true },
   ],
   impl: function(context, items, itemsArrayVariable,watch,groupBy) {
     return {
       beforeInit: function(cmp) {
-          var itemsEm = cmp.jbEmitter
-              .filter(x => x == 'check')
-              .map(x=>
-                items(cmp.ctx))
-              .filter(items=> 
-                !jb_compareArrays(items,cmp.original_items)) // compare before injecting headings
-              .do(items => 
-                cmp.original_items = items)
-              .map(items => 
-                groupBy(cmp.ctx.setData(items)) || items
-               )
-              .do(items => 
-                cmp.items_with_headings = items)
-              .map(items=> {
-                  cmp.items = items.filter(item=>!item.heading);
-                  var ctx2 = (cmp.refreshCtx ? cmp.refreshCtx() : cmp.ctx).setData(items);
-                  var ctx3 = itemsArrayVariable ? ctx2.setVars(jb.obj(itemsArrayVariable,items)) : ctx2;
-                  var ctrls = context.vars.$model.controls(ctx3);
-                  return ctrls;
-              });
+        if (watch[0]) {
+          cmp.ctrlEmitter = jb.ui.resourceChange.takeUntil(cmp.destroyed)
+                .filter(e => watch[0] == '*' || e.path && watch.indexOf(e.path[0]) != -1)
+                .startWith(1)
+                .map(x=>
+                  items(cmp.ctx))
+                .filter(items=>
+                  ! jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
+                .map(items=> items2ctrls(items));
+        } else {
+          cmp.ctrlEmitter = jb.rx.Observable.of(items2ctrls(items(cmp.ctx)));
+        }
 
-          cmp.jbGroupChildrenEm = watch ? itemsEm : itemsEm.take(1);
-      },
-      jbEmitter: true,
+        function items2ctrls(_items) {
+            if (context.vars.itemlistCntr)
+              context.vars.itemlistCntr.items = _items;
+            var items = groupBy(cmp.ctx.setData(_items)) || _items;
+            cmp.items = items; //.filter(item=>!item.heading);
+
+            var ctx2 = (cmp.refreshCtx ? cmp.refreshCtx() : cmp.ctx).setData(items);
+            var ctx3 = itemsArrayVariable ? ctx2.setVars(jb.obj(itemsArrayVariable,items)) : ctx2;
+            var ctrls = context.vars.$model.controls(ctx3);
+            return ctrls;
+        }
+      }
   }}
 })
 

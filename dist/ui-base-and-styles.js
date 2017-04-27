@@ -75,9 +75,9 @@
 jb.component('group.section', {
   type: 'group.style',
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state, h) => jb.ui.h(
       'section',
-      { 'class': 'jb-group' },
+      { 'class': 'jb-group', key: '{state.key}' },
       state.ctrls.map(ctrl => jb.ui.h(ctrl))
     ),
     features: { $: 'group.init-group' }
@@ -87,7 +87,7 @@ jb.component('group.section', {
 jb.component('label.span', {
   type: 'label.style',
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'span',
       null,
       state.title
@@ -99,9 +99,9 @@ jb.component('label.span', {
 jb.component('button.href', {
   type: 'button.style',
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'a',
-      { href: 'javascript:;', onclick: '{props.clicked()}' },
+      { href: 'javascript:;', onclick: '{cmp.clicked()}' },
       state.title
     )
   }
@@ -111,9 +111,9 @@ jb.component('button.x', {
   type: 'button.style',
   params: [{ id: 'size', as: 'number', defaultValue: '21' }],
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'button',
-      { onclick: '{props.clicked()}', title: 'title' },
+      { onclick: '{cmp.clicked()}', title: 'title' },
       '\xD7'
     ),
     css: `button {
@@ -174,9 +174,9 @@ jb.component('mdl.ripple-effect', {
 jb.component('button.mdl-raised', {
   type: 'button.style',
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'button',
-      { 'class': 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: _ => props.clicked() },
+      { 'class': 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: _ => cmp.clicked() },
       state.title
     ),
     features: { $: 'mdl-style.init-dynamic' }
@@ -186,9 +186,9 @@ jb.component('button.mdl-raised', {
 jb.component('button.mdl-flat-ripple', {
   type: 'button.style',
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'button',
-      { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => props.clicked() },
+      { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => cmp.clicked() },
       state.title
     ),
     features: { $: 'mdl-style.init-dynamic' },
@@ -200,13 +200,13 @@ jb.component('button.mdl-icon', {
   type: 'button.style',
   params: [{ id: 'icon', as: 'string', default: 'code' }],
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'button',
-      { 'class': 'mdl-button mdl-js-button mdl-button--icon mdl-js-ripple-effect', onclick: _ => props.clicked(), title: state.title, tabIndex: '-1' },
+      { 'class': 'mdl-button mdl-js-button mdl-button--icon mdl-js-ripple-effect', onclick: _ => cmp.clicked(), title: state.title, tabIndex: '-1' },
       jb.ui.h(
         'i',
         { 'class': 'material-icons' },
-        props.icon
+        cmp.icon
       )
     ),
     css: `button, i { border-radius: 2px}`,
@@ -218,13 +218,13 @@ jb.component('button.mdl-icon-12', {
   type: 'button.style',
   params: [{ id: 'icon', as: 'string', default: 'code' }],
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'button',
-      { 'class': 'mdl-button mdl-js-button mdl-button--icon mdl-js-ripple-effect', onclick: _ => props.clicked(), title: state.title, tabIndex: '-1' },
+      { 'class': 'mdl-button mdl-js-button mdl-button--icon mdl-js-ripple-effect', onclick: _ => cmp.clicked(), title: state.title, tabIndex: '-1' },
       jb.ui.h(
         'i',
         { 'class': 'material-icons' },
-        props.icon
+        cmp.icon
       )
     ),
     css: `.material-icons { font-size:12px;  }`,
@@ -236,9 +236,9 @@ jb.component('button.mdl-allow-html', {
   type: 'button.style',
   description: 'used for search pattern highlight',
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'button',
-      { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => props.clicked() },
+      { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => cmp.clicked() },
       state.title
     ),
     features: { $: 'mdl-style.init-dynamic' }
@@ -250,7 +250,7 @@ jb.component('button.mdl-allow-html', {
 jb.component('label.mdl-ripple-effect', {
   type: 'label.style',
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'div',
       { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect' },
       state.title
@@ -262,7 +262,7 @@ jb.component('label.mdl-ripple-effect', {
 jb.component('label.mdl-button', {
   type: 'label.style',
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'div',
       { 'class': 'mdl-button mdl-js-button' },
       state.title
@@ -276,7 +276,7 @@ jb.component('label.mdl-button', {
 jb.component('editable-text.mdl-search', {
   type: 'editable-text.style',
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'div',
       { 'class': 'mdl-textfield mdl-js-textfield' },
       jb.ui.h('input', { value: state.jbModel(), onchange: state.jbModel($event.target.value), onkeyup: state.jbModel($event.target.value, 'keyup'),
@@ -295,7 +295,7 @@ jb.component('editable-text.mdl-input', {
   type: 'editable-text.style',
   params: [{ id: 'width', as: 'number' }],
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'div',
       { 'class': 'mdl-textfield mdl-js-textfield mdl-textfield--floating-label' },
       jb.ui.h('input', { value: state.jbModel(), type: 'text', onchange: e => state.jbModel(e.target.value),
@@ -315,7 +315,7 @@ jb.component('editable-text.mdl-input', {
 jb.component('editable-boolean.mdl-slide-toggle', {
   type: 'editable-boolean.style',
   impl: { $: 'custom-style',
-    template: (props, state) => jb.ui.h(
+    template: (cmp, state) => jb.ui.h(
       'label',
       { 'class': 'mdl-switch mdl-js-switch mdl-js-ripple-effect', 'for': 'switch_{state.fieldId}' },
       jb.ui.h('input', { type: 'checkbox', id: 'switch_{state.fieldId}', 'class': 'mdl-switch__input', value: state.jbModel(),
@@ -348,11 +348,11 @@ var ui = jb.ui;
 function ctrl(context,options) {
 	var ctx = context.setVars({ $model: context.params });
 	var styleOptions = defaultStyle(ctx);
-	if (styleOptions.reactComp)  {// style by control
+	if (styleOptions.jbExtend)  {// style by control
 		styleOptions.ctxForPick = ctx;
-		return styleOptions.reactComp(ctx);
+		return styleOptions.jbExtend(options);
 	}
-	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).reactComp(ctx);
+	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions); //.reactComp(ctx);
 
 	function defaultStyle(ctx) {
 		var profile = context.profile;
@@ -369,7 +369,8 @@ var cssSelectors_hash = {};
 class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
-		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [], modifierFuncs: [] });
+		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],
+			jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [], modifierFuncs: [], extendItemFuncs: [] });
 		this.cssSelectors = [];
 
 		this.jb_profile = ctx.profile;
@@ -378,11 +379,17 @@ class JbComponent {
 		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
 	}
 
-	reactComp(ctx) {
+	reactComp() {
+		this.applyFeatures(this.ctx);
+		if (this.ctxForPick)
+			this.applyFeatures(this.ctxForPick);
+		this.compileJsx();
+
 		var jbComp = this;
-		class ReactComp extends __WEBPACK_IMPORTED_MODULE_0_preact__["Component"] { // must start with Capital?
+		class ReactComp extends __WEBPACK_IMPORTED_MODULE_0_preact__["Component"] {
 			constructor(props) {
 				super();
+				this.jbComp = jbComp;
 				this.ctx = jbComp.ctx;
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				try {
@@ -395,14 +402,14 @@ class JbComponent {
 			    		return this.ctx;
 			    	}
 			    	this.refreshCtx();
-					Object.assign(props,(jbComp.styleCtx || {}).params);
+					Object.assign(this,(jbComp.styleCtx || {}).params);
 					jbComp.jbBeforeInitFuncs.forEach(init=> init(this,props));
 					jbComp.jbInitFuncs.forEach(init=> init(this,props));
 			    } catch(e) { jb.logException(e,'') }
 			}
 			render(props,state) {
-				var vdom = jbComp.template(props,state,jbComp.ctx);
-				jbComp.modifierFuncs.forEach(modifier=> vdom = modifier(vdom,props,state) || vdom);
+				var vdom = jbComp.template(this,state,ui.h);
+				jbComp.modifierFuncs.forEach(modifier=> vdom = modifier(vdom,this,state) || vdom);
 				return vdom;
 			}
     		componentDidMount() {
@@ -421,11 +428,10 @@ class JbComponent {
 				}
 				this.resolveDestroyed();
 			}
-
 		}; 
-		this.applyFeatures(ctx);
-		this.compileJsx();
 		injectLifeCycleMethods(ReactComp,this);
+		ReactComp.ctx = this.ctx;
+		ReactComp.title = this.jb_title;
 		return ReactComp;
 	}
 
@@ -433,7 +439,7 @@ class JbComponent {
 		// todo: compile template if string - cache result
 	}
 
-	injectCss(cmp) { // should be called by the instantiator
+	injectCss(cmp) {
 		var elem = cmp.base;
 		var ctx = this.ctx;
 	  	while (ctx.profile.__innerImplementation)
@@ -465,6 +471,7 @@ class JbComponent {
 		}
 		return this;
 	}
+
 	jbExtend(options,context) {
     	if (!options) return this;
     	context = context || this.ctx;
@@ -496,6 +503,8 @@ class JbComponent {
 		if (options.ctxForPick) this.ctxForPick=options.ctxForPick;
 		if (options.extendCtx) 
 			this.extendCtxFuncs.push(options.extendCtx);
+		if (options.extendItem) 
+			this.extendItemFuncs.push(options.extendItem);
 		this.styleCtx = this.styleCtx || options.styleCtx;
 
 	   	if (options.css)
@@ -514,12 +523,12 @@ class JbComponent {
 }
 
 function injectLifeCycleMethods(Comp,jbComp) {
-	if (jbComp.jbCheckFuncs.length || jbComp.createjbEmitter)
+	if (jbComp.jbCheckFuncs.length)
 	  Comp.prototype.componentWillUpdate = function() {
 		jbComp.jbCheckFuncs.forEach(f=> 
 			f(this));
-		this.refreshModel && this.refreshModel();
-		this.jbEmitter && this.jbEmitter.next('check');
+//		this.refreshModel && this.refreshModel();
+//		this.jbEmitter && this.jbEmitter.next('check');
 	}
 	if (jbComp.createjbEmitter)
 	  Comp.prototype.componentDidUpdate = function() {
@@ -588,6 +597,19 @@ ui.writeValue = (to,value,settings) => {
   }
 }
 
+ui.splice = function(arr,args) {
+  	var res = pathOfObject(arr,ui.resources);
+  	if (res) {
+  		var op = {}, resource = res[0], path = res;
+  		jb.path(op,path,{$splice: args });
+  		ui.resources = ui.update(ui.resources,op);
+  		ui.resourceVersions[resource] = ui.resourceVersions[resource] ? ui.resourceVersions[resource]+1 : 1;
+  		ui.resourceChange.next({op: op, path: path});
+  	} else {
+  		jb.logError('splice: can not find parent in resources');
+    }
+}
+
 ui.refObservable = function(ref,cmp) {
   if (!ref) 
   	return jb.rx.Observable.of();
@@ -595,8 +617,10 @@ ui.refObservable = function(ref,cmp) {
   	ui.updateJbParent(ref);
   	return ui.resourceChange
   		.takeUntil(cmp.destroyed)
-  		.filter(e=>ref.path.join('~').indexOf(e.path.join('~')) == 0)
-  		.map(_=>jb.val(ref))
+  		.filter(e=>
+  			e.path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0)
+  		.map(_=>
+  			jb.val(ref))
   		.distinctUntilChanged()
   }
   return jb.rx.Observable.of(jb.val(ref));
@@ -620,7 +644,7 @@ ui.updateJbParent = function(ref) {
 	}
 	
 	function find(obj,lookIn) {
-		if (typeof lookIn != 'object') 
+		if (!lookIn || typeof lookIn != 'object') 
 			return;
 		if ((lookIn.$jb_id && lookIn.$jb_id === obj.$jb_id) || lookIn === obj)
 			return { $jb_path: [], $jb_parent: lookIn};
@@ -670,15 +694,36 @@ function pathOfObject(obj,lookIn) {
 	}
 }
 
-// ****************** generic utils ***************
+// ****************** jquerry extension ***************
 
 if (typeof $ != 'undefined' && $.fn)
     $.fn.findIncludeSelf = function(selector) { 
-    	return this.find(selector).add(selector); }  
+    	return this.find(selector).addBack(selector); }  
+
+ui.applyAfter = function(promise,ctx) {
+	// should refresh all after promise
+}
+
+// ****************** vdom utils ***************
 
 ui.addClassToVdom = function(vdom,clz) {
 	vdom.attributes = vdom.attributes || {};
 	vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');
+	return vdom;
+}
+
+ui.toggleClassInVdom = function(vdom,clz,add) {
+  vdom.attributes = vdom.attributes || {};
+  var classes = (vdom.attributes.class || '').split(' ').map(x=>x.trim()).filter(x=>x);
+  if (add && classes.indexOf(clz) == -1)
+    vdom.attributes.class = classes.concat([clz]).join(' ');
+  if (!add)
+    vdom.attributes.class = classes.filter(x=>x==clz).join(' ');
+  return vdom;
+}
+
+ui.item = function(cmp,ctrl,vdom) {
+	cmp.jbComp.extendItemFuncs.forEach(f=>f(cmp,ctrl,vdom));
 	return vdom;
 }
 
@@ -697,6 +742,16 @@ jb.component('custom-style', {
 		featuresOptions: features(),
 		styleCtx: context._parent
 	})
+})
+
+jb.component('style-by-control', {
+	typePattern: /.*-style/,
+	params: [
+		{ id: 'control', type: 'control', essential: true, dynamic: true },
+		{ id: 'modelVar', as: 'string', essential: true }
+	],
+	impl: (ctx,control,modelVar) =>
+		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
 })
 
 ui.ctrl = ctrl;

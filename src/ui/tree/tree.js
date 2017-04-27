@@ -95,8 +95,8 @@ jb.component('tree', {
 jb.component('tree.ul-li', {
 	type: 'tree.style',
 	impl :{$: 'custom-style',
-		template: (props,state) => {
-			var tree = props.tree;
+		template: (cmp,state) => {
+			var tree = cmp.props.tree;
 			return jb.ui.h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath, 
 				class: 'jb-control-tree treenode' + (tree.selected == tree.nodeModel.rootPath ? ' selected': '') })
 		}

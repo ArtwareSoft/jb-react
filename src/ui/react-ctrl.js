@@ -6,11 +6,11 @@ var ui = jb.ui;
 function ctrl(context,options) {
 	var ctx = context.setVars({ $model: context.params });
 	var styleOptions = defaultStyle(ctx);
-	if (styleOptions.reactComp)  {// style by control
+	if (styleOptions.jbExtend)  {// style by control
 		styleOptions.ctxForPick = ctx;
-		return styleOptions.reactComp(ctx);
+		return styleOptions.jbExtend(options);
 	}
-	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).reactComp(ctx);
+	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions); //.reactComp(ctx);
 
 	function defaultStyle(ctx) {
 		var profile = context.profile;
@@ -27,7 +27,8 @@ var cssSelectors_hash = {};
 class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
-		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [], modifierFuncs: [] });
+		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],
+			jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [], modifierFuncs: [], extendItemFuncs: [] });
 		this.cssSelectors = [];
 
 		this.jb_profile = ctx.profile;
@@ -36,11 +37,17 @@ class JbComponent {
 		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
 	}
 
-	reactComp(ctx) {
+	reactComp() {
+		this.applyFeatures(this.ctx);
+		if (this.ctxForPick)
+			this.applyFeatures(this.ctxForPick);
+		this.compileJsx();
+
 		var jbComp = this;
-		class ReactComp extends Component { // must start with Capital?
+		class ReactComp extends Component {
 			constructor(props) {
 				super();
+				this.jbComp = jbComp;
 				this.ctx = jbComp.ctx;
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				try {
@@ -53,14 +60,14 @@ class JbComponent {
 			    		return this.ctx;
 			    	}
 			    	this.refreshCtx();
-					Object.assign(props,(jbComp.styleCtx || {}).params);
+					Object.assign(this,(jbComp.styleCtx || {}).params);
 					jbComp.jbBeforeInitFuncs.forEach(init=> init(this,props));
 					jbComp.jbInitFuncs.forEach(init=> init(this,props));
 			    } catch(e) { jb.logException(e,'') }
 			}
 			render(props,state) {
-				var vdom = jbComp.template(props,state,jbComp.ctx);
-				jbComp.modifierFuncs.forEach(modifier=> vdom = modifier(vdom,props,state) || vdom);
+				var vdom = jbComp.template(this,state,ui.h);
+				jbComp.modifierFuncs.forEach(modifier=> vdom = modifier(vdom,this,state) || vdom);
 				return vdom;
 			}
     		componentDidMount() {
@@ -79,11 +86,10 @@ class JbComponent {
 				}
 				this.resolveDestroyed();
 			}
-
 		}; 
-		this.applyFeatures(ctx);
-		this.compileJsx();
 		injectLifeCycleMethods(ReactComp,this);
+		ReactComp.ctx = this.ctx;
+		ReactComp.title = this.jb_title;
 		return ReactComp;
 	}
 
@@ -91,7 +97,7 @@ class JbComponent {
 		// todo: compile template if string - cache result
 	}
 
-	injectCss(cmp) { // should be called by the instantiator
+	injectCss(cmp) {
 		var elem = cmp.base;
 		var ctx = this.ctx;
 	  	while (ctx.profile.__innerImplementation)
@@ -123,6 +129,7 @@ class JbComponent {
 		}
 		return this;
 	}
+
 	jbExtend(options,context) {
     	if (!options) return this;
     	context = context || this.ctx;
@@ -154,6 +161,8 @@ class JbComponent {
 		if (options.ctxForPick) this.ctxForPick=options.ctxForPick;
 		if (options.extendCtx) 
 			this.extendCtxFuncs.push(options.extendCtx);
+		if (options.extendItem) 
+			this.extendItemFuncs.push(options.extendItem);
 		this.styleCtx = this.styleCtx || options.styleCtx;
 
 	   	if (options.css)
@@ -172,12 +181,12 @@ class JbComponent {
 }
 
 function injectLifeCycleMethods(Comp,jbComp) {
-	if (jbComp.jbCheckFuncs.length || jbComp.createjbEmitter)
+	if (jbComp.jbCheckFuncs.length)
 	  Comp.prototype.componentWillUpdate = function() {
 		jbComp.jbCheckFuncs.forEach(f=> 
 			f(this));
-		this.refreshModel && this.refreshModel();
-		this.jbEmitter && this.jbEmitter.next('check');
+//		this.refreshModel && this.refreshModel();
+//		this.jbEmitter && this.jbEmitter.next('check');
 	}
 	if (jbComp.createjbEmitter)
 	  Comp.prototype.componentDidUpdate = function() {
@@ -246,6 +255,19 @@ ui.writeValue = (to,value,settings) => {
   }
 }
 
+ui.splice = function(arr,args) {
+  	var res = pathOfObject(arr,ui.resources);
+  	if (res) {
+  		var op = {}, resource = res[0], path = res;
+  		jb.path(op,path,{$splice: args });
+  		ui.resources = ui.update(ui.resources,op);
+  		ui.resourceVersions[resource] = ui.resourceVersions[resource] ? ui.resourceVersions[resource]+1 : 1;
+  		ui.resourceChange.next({op: op, path: path});
+  	} else {
+  		jb.logError('splice: can not find parent in resources');
+    }
+}
+
 ui.refObservable = function(ref,cmp) {
   if (!ref) 
   	return jb.rx.Observable.of();
@@ -253,8 +275,10 @@ ui.refObservable = function(ref,cmp) {
   	ui.updateJbParent(ref);
   	return ui.resourceChange
   		.takeUntil(cmp.destroyed)
-  		.filter(e=>ref.path.join('~').indexOf(e.path.join('~')) == 0)
-  		.map(_=>jb.val(ref))
+  		.filter(e=>
+  			e.path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0)
+  		.map(_=>
+  			jb.val(ref))
   		.distinctUntilChanged()
   }
   return jb.rx.Observable.of(jb.val(ref));
@@ -278,7 +302,7 @@ ui.updateJbParent = function(ref) {
 	}
 	
 	function find(obj,lookIn) {
-		if (typeof lookIn != 'object') 
+		if (!lookIn || typeof lookIn != 'object') 
 			return;
 		if ((lookIn.$jb_id && lookIn.$jb_id === obj.$jb_id) || lookIn === obj)
 			return { $jb_path: [], $jb_parent: lookIn};
@@ -328,15 +352,36 @@ function pathOfObject(obj,lookIn) {
 	}
 }
 
-// ****************** generic utils ***************
+// ****************** jquerry extension ***************
 
 if (typeof $ != 'undefined' && $.fn)
     $.fn.findIncludeSelf = function(selector) { 
-    	return this.find(selector).add(selector); }  
+    	return this.find(selector).addBack(selector); }  
+
+ui.applyAfter = function(promise,ctx) {
+	// should refresh all after promise
+}
+
+// ****************** vdom utils ***************
 
 ui.addClassToVdom = function(vdom,clz) {
 	vdom.attributes = vdom.attributes || {};
 	vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');
+	return vdom;
+}
+
+ui.toggleClassInVdom = function(vdom,clz,add) {
+  vdom.attributes = vdom.attributes || {};
+  var classes = (vdom.attributes.class || '').split(' ').map(x=>x.trim()).filter(x=>x);
+  if (add && classes.indexOf(clz) == -1)
+    vdom.attributes.class = classes.concat([clz]).join(' ');
+  if (!add)
+    vdom.attributes.class = classes.filter(x=>x==clz).join(' ');
+  return vdom;
+}
+
+ui.item = function(cmp,ctrl,vdom) {
+	cmp.jbComp.extendItemFuncs.forEach(f=>f(cmp,ctrl,vdom));
 	return vdom;
 }
 
@@ -355,6 +400,16 @@ jb.component('custom-style', {
 		featuresOptions: features(),
 		styleCtx: context._parent
 	})
+})
+
+jb.component('style-by-control', {
+	typePattern: /.*-style/,
+	params: [
+		{ id: 'control', type: 'control', essential: true, dynamic: true },
+		{ id: 'modelVar', as: 'string', essential: true }
+	],
+	impl: (ctx,control,modelVar) =>
+		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
 })
 
 ui.ctrl = ctrl;

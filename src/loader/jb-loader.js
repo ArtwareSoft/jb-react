@@ -5,7 +5,7 @@ var resources = {
       ],
       'ui-common': [
         'dist/jb-rx.js',
-        'node_modules/zepto/dist/zepto.min.js', // 30K jquery
+        'node_modules/jquery/dist/jquery.min.js',
         'node_modules/material-design-lite/material.js',
         'node_modules/material-design-lite/material.min.css',
         'node_modules/material-design-lite/dist/material.indigo-pink.min.css',
@@ -21,8 +21,14 @@ var resources = {
         'src/ui/editable-text.js',
         'src/ui/common-features.js',
         'src/ui/css-features.js',
+        'src/ui/dialog.js',
+        'src/ui/itemlist.js',
+        'src/ui/itemlist-container.js',
+        'src/ui/itemlist-with-groups.js',
 
         'src/ui/styles/layout-styles.js',
+        'src/ui/styles/group-styles.js',
+        'src/ui/styles/property-sheet-styles.js'
       ],
       'ui-tree':[
         'src/ui/tree/tree.js',

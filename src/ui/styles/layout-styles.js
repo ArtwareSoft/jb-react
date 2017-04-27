@@ -4,7 +4,7 @@ jb.component('layout.vertical', {
     { id: 'spacing', as: 'number', defaultValue: 3 }
   ],
   impl :{$: 'custom-style',
-    template: (props,state) => jb.ui.h('div',{},
+    template: (cmp,state) => jb.ui.h('div',{},
         state.ctrls.map(ctrl=> jb.ui.h(ctrl))),
     css: `>.group-item { margin-bottom: %$spacing%px; display: block }
           >.group-item:last-child { margin-bottom:0 }`,
@@ -18,7 +18,7 @@ jb.component('layout.horizontal', {
     { id: 'spacing', as: 'number', defaultValue: 3 }
   ],
   impl :{$: 'custom-style',
-    template: (props,state) => jb.ui.h('div',{},
+    template: (cmp,state) => jb.ui.h('div',{},
         state.ctrls.map(ctrl=> jb.ui.h(ctrl))),
     css: `{display: flex}
         >* { margin-right: %$spacing%px }
@@ -35,7 +35,7 @@ jb.component('layout.flex', {
       { id: 'wrap', as: 'string', options:',wrap' },
   ],
   impl :{$: 'custom-style',
-    template: (props,state) => jb.ui.h('div',{},
+    template: (cmp,state) => jb.ui.h('div',{},
         state.ctrls.map(ctrl=> jb.ui.h(ctrl))),
     css: '{ display: flex; {?justify-content:%$align%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }',
     features :{$: 'group.init-group'}

@@ -17,7 +17,7 @@ jb.component('editable-text.input', {
   type: 'editable-text.style',
   impl :{$: 'custom-style', 
       features :{$: 'field.databind' },
-      template: (props,state) => 
+      template: (cmp,state) => 
       jb.ui.h('input', { 
         value: state.jbModel(), 
         onchange: e => state.jbModel(e.target.value), 
@@ -30,7 +30,7 @@ jb.component('editable-text.textarea', {
 	type: 'editable-text.style',
 	impl :{$: 'customStyle', 
       features :{$: 'field.databind' },
-      template: (props,state) => jb.ui.h('textarea', { 
+      template: (cmp,state) => jb.ui.h('textarea', { 
         value: state.jbModel(), onchange: e => state.jbModel(e.target.value), onkeyup: e => state.jbModel(e.target.value,'keyup')  }),
 	}
 })
@@ -38,7 +38,7 @@ jb.component('editable-text.textarea', {
 jb.component('editable-text.x-button', {
   type: 'feature',
   impl : ctx =>({
-    templateModifier: (vdom,props,state) => 
+    templateModifier: (vdom,cmp,state) => 
       jb.ui.h('div', {},[vdom].concat(state.jbModel() ? [jb.ui.h('button', { class: 'delete', onclick: e => state.jbModel(null)} , '✗')]  : []) ),
     css: `>.delete {
           margin-left: -16px;
@@ -63,7 +63,7 @@ jb.component('editable-text.helper-popup', {
     extendCtx: (ctx,cmp) => 
       ctx.setVars({selectionKeySource: {}}),
     afterViewInit: cmp => {
-      var input = $(cmp.elementRef.nativeElement).findIncludeSelf('input')[0];
+      var input = $(cmp.base).findIncludeSelf('input')[0];
       if (!input) return;
 
       cmp.openPopup = jb_ui.wrapWithLauchingElement( ctx2 =>

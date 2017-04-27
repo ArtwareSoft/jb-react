@@ -328,46 +328,47 @@ function calcVar(context,varname) {
   return resolveFinishedPromise(res);
 }
 
-function expression(expression, context, parentParam) {
+function expression(exp, context, parentParam) {
   var jstype = parentParam && parentParam.as;
-  expression = '' + expression;
-  if (jstype == 'boolean') return bool_expression(expression, context);
-  if (expression.indexOf('$debugger:') == 0) {
+  exp = '' + exp;
+  if (jstype == 'boolean') return bool_expression(exp, context);
+  if (exp.indexOf('$debugger:') == 0) {
     debugger;
-    expression = expression.split('$debugger:')[1];
+    exp = exp.split('$debugger:')[1];
   }
-  if (expression.indexOf('$log:') == 0) {
-    var out = expression(expression.split('$log:')[1],context,parentParam);
+  if (exp.indexOf('$log:') == 0) {
+    var out = expression(exp.split('$log:')[1],context,parentParam);
     comps.log.impl(context, out);
     return out;
   }
-  if (expression.indexOf('%') == -1 && expression.indexOf('{') == -1) return expression;
+  if (exp.indexOf('%') == -1 && exp.indexOf('{') == -1) return exp;
   // if (context && !context.ngMode)
-  //   expression = expression.replace(/{{/g,'{%').replace(/}}/g,'%}')
-  if (expression == '{%%}' || expression == '%%')
+  //   exp = exp.replace(/{{/g,'{%').replace(/}}/g,'%}')
+  if (exp == '{%%}' || exp == '%%')
       return expPart('',context,jstype);
 
-  if (expression.lastIndexOf('{%') == 0 && expression.indexOf('%}') == expression.length-2) // just one expression filling all string
-    return expPart(expression.substring(2,expression.length-2),context,jstype);
+  if (exp.lastIndexOf('{%') == 0 && exp.indexOf('%}') == exp.length-2) // just one exp filling all string
+    return expPart(exp.substring(2,exp.length-2),context,jstype);
 
-  expression = expression.replace(/{%(.*?)%}/g, function(match,contents) {
+  exp = exp.replace(/{%(.*?)%}/g, function(match,contents) {
       return tostring(expPart(contents,context,'string'));
   })
-  expression = expression.replace(/{\?(.*?)\?}/g, function(match,contents) {
+  exp = exp.replace(/{\?(.*?)\?}/g, function(match,contents) {
       return tostring(conditionalExp(contents));
   })
-  if (expression.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
-    return expPart(expression.substring(1,expression.length-1),context,jstype);
+  if (exp.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
+    return expPart(exp.substring(1,exp.length-1),context,jstype);
 
-  expression = expression.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
+  exp = exp.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
       return tostring(expPart(contents,context,'string'));
   })
+  return exp;
 
-  function conditionalExp(expression) {
-    // check variable value - if not empty return all expression, otherwise empty
-    var match = expression.match(/%([^%;{}\s><"']*)%/);
+  function conditionalExp(exp) {
+    // check variable value - if not empty return all exp, otherwise empty
+    var match = exp.match(/%([^%;{}\s><"']*)%/);
     if (match && tostring(expPart(match[1],context,'string')))
-      return expression(expression, context, { as: 'string' });
+      return expression(exp, context, { as: 'string' });
     else
       return '';
   }
@@ -375,8 +376,6 @@ function expression(expression, context, parentParam) {
   function expPart(expressionPart,context,jstype) {
     return resolveFinishedPromise(evalExpressionPart(expressionPart,context,jstype))
   }
-
-  return expression;
 }
 
 
@@ -428,26 +427,26 @@ function evalExpressionPart(expressionPart,context,jstype) {
   return item;
 }
 
-function bool_expression(expression, context) {
-  if (expression.indexOf('$debugger:') == 0) {
+function bool_expression(exp, context) {
+  if (exp.indexOf('$debugger:') == 0) {
     debugger;
-    expression = expression.split('$debugger:')[1];
+    exp = exp.split('$debugger:')[1];
   }
-  if (expression.indexOf('$log:') == 0) {
-    var calculated = expression(expression.split('$log:')[1],context,{as: 'string'});
-    var result = bool_expression(expression.split('$log:')[1], context);
+  if (exp.indexOf('$log:') == 0) {
+    var calculated = expression(exp.split('$log:')[1],context,{as: 'string'});
+    var result = bool_expression(exp.split('$log:')[1], context);
     comps.log.impl(context, calculated + ':' + result);
     return result;
   }
-  if (expression.indexOf('!') == 0)
-    return !bool_expression(expression.substring(1), context);
-  var parts = expression.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
+  if (exp.indexOf('!') == 0)
+    return !bool_expression(exp.substring(1), context);
+  var parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
   if (!parts) {
-    var asString = expression(expression, context, {as: 'string'});
+    var asString = expression(exp, context, {as: 'string'});
     return !!asString && asString != 'false';
   }
   if (parts.length != 4)
-    return logError('invalid boolean expression: ' + expression);
+    return logError('invalid boolean expression: ' + exp);
   var op = parts[2].trim();
 
   if (op == '==' || op == '!=' || op == '$=' || op == '^=') {
@@ -591,7 +590,7 @@ class jbCtx {
   run(profile,parentParam) { 
     return jb_run(new jbCtx(this,{ profile: profile, comp: profile.$ , path: ''}), parentParam) 
   }
-  exp(expression,jstype) { return expression(expression, this, {as: jstype}) }
+  exp(exp,jstype) { return expression(exp, this, {as: jstype}) }
   setVars(vars) { return new jbCtx(this,{vars: vars}) }
   setData(data) { return new jbCtx(this,{data: data}) }
   runInner(profile,parentParam, path) { return jb_run(new jbCtx(this,{profile: profile,path: path}), parentParam) }

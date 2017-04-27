@@ -1,4 +1,4 @@
-jb.component('openDialog', {
+jb.component('open-dialog', {
 	type: 'action',
 	params: [
 		{ id: 'id', as: 'string' },
@@ -16,31 +16,37 @@ jb.component('openDialog', {
 			id: id, 
 			onOK: context.params.onOK, 
 			modal: modal, 
-			em: new jb_rx.Subject(),
+			em: new jb.rx.Subject(),
+			resourceId: 'jb_dialog_'+ (id || context.id)
 		};
+		jb.ui.resources[dialog.resourceId] = {};
 //		dialog.em.subscribe(e=>console.log(e.type));
 
-		var ctx = (modal ? context.setVars({dialogData: {}}) : context)
-				.setVars({ $dialog: dialog });
-		dialog.comp = jb_ui.ctrl(ctx).jbExtend({
-			beforeInit: function(cmp) {
-				cmp.title = ctx.params.title(ctx);
+		var ctx = context.setVars({
+			dialogData: jb.ui.resources[dialog.resourceId],
+			$dialog: dialog 
+		});
+		dialog.comp = jb.ui.ctrl(ctx,{
+			beforeInit: cmp => {
 				cmp.dialog = dialog;
-				cmp.dialog.$el = $(cmp.elementRef.nativeElement).children().first();
-				cmp.dialog.$el.css('z-index',100);
 
-				cmp.dialogClose = dialog.close;
-				cmp.contentComp = ctx.params.content(ctx);
+				cmp.state.title = ctx.params.title(ctx);
+				cmp.state.contentComp = ctx.params.content(ctx).reactComp();
 				cmp.menuComp = ctx.params.menu(ctx);
 				cmp.hasMenu = !!ctx.params.menu.profile;
+				cmp.dialogClose = _ => dialog.close();
 			},
-		});
-		jbart.jb_dialogs.addDialog(dialog,ctx);
+			afterViewInit: cmp => {
+				cmp.dialog.el = cmp.base;
+				cmp.dialog.el.style.zIndex = 100;
+			}
+		}).reactComp();
+		jb.ui.dialogs.addDialog(dialog,ctx);
 		return dialog;
 	}
 })
 
-jb.component('closeContainingPopup', {
+jb.component('close-containing-popup', {
 	type: 'action',
 	params: [
 		{ id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
@@ -52,29 +58,30 @@ jb.component('closeContainingPopup', {
 
 jb.component('dialog.default', {
 	type: 'dialog.style',
-	impl :{$: 'customStyle',
-		noTemplateParsing: true,
-		template: `<div class="jb-dialog jb-default-dialog">
-				      <div class="dialog-title">{{title}}</div>
-				      <button class="dialog-close" (click)="dialogClose()">&#215;</button>
-				      <div *jbComp="contentComp"></div>
-				    </div>` 
+	impl :{$: 'custom-style',
+		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
+			h('div',{class: 'dialog-title'},state.title),
+			h('button',{class: 'dialog-close', onclick: 
+				_=> cmp.dialogClose() },'X'),
+			h(state.contentComp),
+		]),
+		features:{$:'dialog-feature.drag-title'}
 	}
 })
 
 jb.component('dialog.popup', {
   type: 'dialog.style',
-  impl :{$: 'customStyle',
-      template: '<div class="jb-dialog jb-popup"><div *jbComp="contentComp" class="dialog-content"></div></div>',
+  impl :{$: 'custom-style',
+		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
+			h(state.contentComp),
+		]),
       features: [
         { $: 'dialog-feature.maxZIndexOnClick' },
         { $: 'dialog-feature.closeWhenClickingOutside' },
         { $: 'dialog-feature.cssClassOnLaunchingControl' },
         { $: 'dialog-feature.nearLauncherLocation' }
       ],
-      css: `
-      .jb-dialog { position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }
-      `
+      css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }'
   }
 })
 
@@ -98,16 +105,6 @@ jb.component('dialog-feature.uniqueDialog', {
 	}
 })
 
-function fixDialogOverflow($control,$dialog,offsetLeft,offsetTop) {
-	var padding = 2,top,left;
-	if ($control.offset().top > $dialog.height() && $control.offset().top + $dialog.height() + padding + (offsetTop||0) > window.innerHeight + window.pageYOffset)
-		top = $control.offset().top - $dialog.height();
-	if ($control.offset().left > $dialog.width() && $control.offset().left + $dialog.width() + padding + (offsetLeft||0) > window.innerWidth + window.pageXOffset)
-		left = $control.offset().left - $dialog.width();
-	if (top || left)
-		return { top: top || $control.offset().top , left: left || $control.offset().left}
-}
-
 jb.component('dialog-feature.keyboard-shortcut', {
   type: 'dialog-feature',
   params: [
@@ -115,7 +112,8 @@ jb.component('dialog-feature.keyboard-shortcut', {
     { id: 'action', type: 'action', dynamic: true },
   ],
   impl: (ctx,key,action) => ({
-      init: cmp=> {
+  	  onkeydown : true,
+      afterViewInit: cmp=> {
 		var dialog = ctx.vars.$dialog;
 		dialog.applyShortcut = e=> {
 			var key = ctx.params.shortcut;
@@ -135,9 +133,7 @@ jb.component('dialog-feature.keyboard-shortcut', {
                 return ctx.params.action();
 		};
 
-	    jb_rx.Observable.fromEvent(dialog.$el[0], 'keydown')
-   	  		.takeUntil( cmp.destroyed )
-			.filter(e=> e.keyCode != 17 && e.keyCode != 18) // ctrl ot alt alone
+	    cmp.onkeydown.filter(e=> e.keyCode != 17 && e.keyCode != 18) // ctrl ot alt alone
    	  		.subscribe(e=>
    	  			dialog.applyShortcut(e))
 
@@ -158,7 +154,7 @@ jb.component('dialog-feature.nearLauncherLocation', {
 					return console.log('no launcher for dialog');
 				var $control = context.vars.$launchingElement.$el;
 				var pos = $control.offset();
-				var $jbDialog = $(cmp.elementRef.nativeElement).findIncludeSelf('.jb-dialog');
+				var $jbDialog = $(cmp.base).findIncludeSelf('.jb-dialog');
 				offsetLeft += rightSide ? $control.outerWidth() : 0;
 				var fixedPosition = fixDialogOverflow($control,$jbDialog,offsetLeft,offsetTop);
 				if (fixedPosition)
@@ -171,6 +167,16 @@ jb.component('dialog-feature.nearLauncherLocation', {
 						.css('display','block');
 			}
 		}
+
+		function fixDialogOverflow($control,$dialog,offsetLeft,offsetTop) {
+			var padding = 2,top,left;
+			if ($control.offset().top > $dialog.height() && $control.offset().top + $dialog.height() + padding + (offsetTop||0) > window.innerHeight + window.pageYOffset)
+				top = $control.offset().top - $dialog.height();
+			if ($control.offset().left > $dialog.width() && $control.offset().left + $dialog.width() + padding + (offsetLeft||0) > window.innerWidth + window.pageXOffset)
+				left = $control.offset().left - $dialog.width();
+			if (top || left)
+				return { top: top || $control.offset().top , left: left || $control.offset().left}
+		}
 	}
 })
 
@@ -180,17 +186,15 @@ jb.component('dialog-feature.launcherLocationNearSelectedNode', {
 		{ id: 'offsetLeft', as: 'number' },
 		{ id: 'offsetTop', as: 'number' },
 	],
-	impl: function(context, offsetLeft, offsetTop) {
-		return {
+	impl: (context, offsetLeft, offsetTop) => ({
 			afterViewInit: function(cmp) {
 				var $elem = context.vars.$launchingElement.$el;
 				var $control = $elem.closest('.selected').first();
 				var pos = $control.offset();
-				$(cmp.elementRef.nativeElement).findIncludeSelf('.jb-dialog').css('left', `${pos.left + offsetLeft}px`);
-				$(cmp.elementRef.nativeElement).findIncludeSelf('.jb-dialog').css('top', `${pos.top + $control.outerHeight() + offsetTop}px`);
+				$(cmp.base).findIncludeSelf('.jb-dialog').css('left', `${pos.left + offsetLeft}px`);
+				$(cmp.base).findIncludeSelf('.jb-dialog').css('top', `${pos.top + $control.outerHeight() + offsetTop}px`);
 			}
-		}
-	}
+		})
 })
 
 jb.component('dialog-feature.onClose', {
@@ -216,16 +220,14 @@ jb.component('dialog-feature.closeWhenClickingOutside', {
 		var dialog = context.vars.$dialog;
 		dialog.isPopup = true;
 		jb.delay(10).then(() =>  { // delay - close older before    		
-			var clickoutEm = jb_rx.Observable.fromEvent(document, 'mousedown')
-			      			.merge(jb_rx.Observable.fromEvent(
-			      				(jbart.previewWindow || {}).document, 'mousedown'))
+			var clickoutEm = jb.rx.Observable.fromEvent(document, 'mousedown')
+			      			.merge(jb.rx.Observable.fromEvent(
+			      				(jb.studio.previewWindow || {}).document, 'mousedown'))
 			      			.filter(e =>
-			      				$(e.target).closest(dialog.$el[0]).length == 0)
+			      				$(e.target).closest(dialog.el).length == 0)
    					 		.takeUntil(dialog.em.filter(e => e.type == 'close'));
 
-		 	clickoutEm.take(1)
-		  		.delay(delay)
-		  		.subscribe(()=>
+		 	clickoutEm.take(1).delay(delay).subscribe(()=>
 		  			dialog.close())
   		})
 	}
@@ -233,9 +235,15 @@ jb.component('dialog-feature.closeWhenClickingOutside', {
 
 jb.component('dialog.close-all-popups', {
 	type: 'action',
-	impl: ctx =>
-		jbart.jb_dialogs.dialogs.filter(d=>d.isPopup)
+	impl: ctx => 
+		jb.ui.dialogs.dialogs.filter(d=>d.isPopup)
   			.forEach(d=>d.close())
+})
+
+jb.component('dialog.close-all', {
+	type: 'action',
+	impl: ctx =>
+		jb.ui.dialogs.dialogs.forEach(d=>d.close())
 })
 
 jb.component('dialog-feature.autoFocusOnFirstInput', {
@@ -243,7 +251,7 @@ jb.component('dialog-feature.autoFocusOnFirstInput', {
 	impl: context => ({ 
 		afterViewInit: cmp =>
 			jb.delay(1).then(_=>
-				jb_ui.focus(context.vars.$dialog.$el.find('input,textarea,select').first(), 'autoFocusOnFirstInput'))
+				jb.ui.focus(context.vars.$dialog.el.querySelector('input,textarea,select'), 'autoFocusOnFirstInput'))
 	})
 })
 
@@ -275,21 +283,20 @@ jb.component('dialog-feature.maxZIndexOnClick', {
 		return ({
 			afterViewInit: cmp => {
 				setAsMaxZIndex();
-				dialog.$el.mousedown(setAsMaxZIndex);
+				$(dialog.el).mousedown(setAsMaxZIndex);
 			}
 		})
 
 		function setAsMaxZIndex() {
-			var maxIndex = jbart.jb_dialogs.dialogs.reduce(function(max,d) { 
-				return Math.max(max,(d.$el && parseInt(d.$el.css('z-index')) || 100)+1)
+			var maxIndex = jb.ui.dialogs.dialogs.reduce(function(max,d) { 
+				return Math.max(max,(d.el && parseInt(d.el.style.zIndex || 100)+1))
 			}, minZIndex || 100)
-
-			dialog.$el.css('z-index',maxIndex);
+			dialog.el.style.zIndex = maxIndex;
 		}
 	}
 })
 
-jb.component('dialog-feature.dragTitle', {
+jb.component('dialog-feature.drag-title', {
 	type: 'dialog-feature',
 	params: [
 		{ id: 'id', as: 'string' }
@@ -299,35 +306,37 @@ jb.component('dialog-feature.dragTitle', {
 		return {
 		       css: '.dialog-title { cursor: pointer }',
 	           jbEmitter: true,
-		       init: function(cmp) {
-		       	  var titleElem = cmp.elementRef.nativeElement.querySelector('.dialog-title');
-		       	  cmp.mousedownEm = jb_rx.Observable.fromEvent(titleElem, 'mousedown')
+		       afterViewInit: function(cmp) {
+		       	  var titleElem = cmp.base.querySelector('.dialog-title');
+		       	  cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
 		       	  	.takeUntil( cmp.destroyed );
 		       	  
 				  if (id && sessionStorage.getItem(id)) {
 						var pos = JSON.parse(sessionStorage.getItem(id));
-					    dialog.$el[0].style.top  = pos.top  + 'px';
-					    dialog.$el[0].style.left = pos.left + 'px';
+					    dialog.el.style.top  = pos.top  + 'px';
+					    dialog.el.style.left = pos.left + 'px';
 				  }
 
-				  var mouseUpEm = jb_rx.Observable.fromEvent(document, 'mouseup')
-				      			.merge(jb_rx.Observable.fromEvent(
-				      				(jbart.previewWindow || {}).document, 'mouseup'))
-          						.takeUntil( cmp.destroyed )
+				  var mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup');
+				      			// .merge(jb.rx.Observable.fromEvent(
+				      			// 	(jb.studio.previewWindow || {}).document, 'mouseup'));
+//          						.takeUntil( cmp.destroyed )
 
-				  var mouseMoveEm = jb_rx.Observable.fromEvent(document, 'mousemove')
-				      			.merge(jb_rx.Observable.fromEvent(
-				      				(jbart.previewWindow || {}).document, 'mousemove'))
-          						.takeUntil( cmp.destroyed )
+				  var mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove');
+				      			// .merge(jb.rx.Observable.fromEvent(
+				      			// 	(jb.studio.previewWindow || {}).document, 'mousemove'));
+//          						.takeUntil( cmp.destroyed )
 
 				  var mousedrag = cmp.mousedownEm
-				  		.do(e => e.preventDefault())
+				  		.do(e => 
+				  			e.preventDefault())
 				  		.map(e =>  ({
-				          left: e.clientX - dialog.$el[0].getBoundingClientRect().left,
-				          top:  e.clientY - dialog.$el[0].getBoundingClientRect().top
+				          left: e.clientX - dialog.el.getBoundingClientRect().left,
+				          top:  e.clientY - dialog.el.getBoundingClientRect().top
 				        }))
 				      	.flatMap(imageOffset => 
 			      			 mouseMoveEm.takeUntil(mouseUpEm)
+//			      			 .do(_=>titleElem.style.cursor = 'move')
 			      			 .map(pos => ({
 						        top:  pos.clientY - imageOffset.top,
 						        left: pos.clientX - imageOffset.left
@@ -335,8 +344,9 @@ jb.component('dialog-feature.dragTitle', {
 				      	);
 
 				  mousedrag.distinctUntilChanged().subscribe(pos => {
-			        dialog.$el[0].style.top  = pos.top  + 'px';
-			        dialog.$el[0].style.left = pos.left + 'px';
+				  	console.log(pos);
+			        dialog.el.style.top  = pos.top  + 'px';
+			        dialog.el.style.left = pos.left + 'px';
 			        if (id) sessionStorage.setItem(id, JSON.stringify(pos))
 			      });
 			  }
@@ -350,39 +360,61 @@ jb.component('dialog.dialog-ok-cancel', {
 		{ id: 'okLabel', as: 'string', defaultValue: 'OK' },
 		{ id: 'cancelLabel', as: 'string', defaultValue: 'Cancel' },
 	],
-	impl :{$: 'customStyle',
-		template: `
-				<div class="jb-dialog jb-default-dialog">
-				      <div class="dialog-title">{{title}}</div>
-				      <button class="dialog-close" (click)="dialogClose()">&#215;</button>
-				      <div *jbComp="contentComp"></div>
-					  <div class="dialog-buttons">
-							<button class="mdl-button mdl-js-button mdl-js-ripple-effect" (click)="dialogClose({OK:false})">%$cancelLabel%</button>
-							<button class="mdl-button mdl-js-button mdl-js-ripple-effect" (click)="dialogClose({OK:true})">%$okLabel%</button>
-					  </div>
-				</div>		
-		`,
-	  css: `.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }`,
+	impl :{$: 'custom-style',
+		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
+			h('div',{class: 'dialog-title'},state.title),
+			h('button',{class: 'dialog-close', onclick: _=> cmp.dialogClose() },'X'),
+			h(state.contentComp),
+			h('div',{class: 'dialog-buttons'},[
+				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: false}) },state.cancelLabel),
+				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },state.okLabel),
+			]),
+		]),
+	  css: `>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }`,
 	}
 })
 
+class JbDialogs extends jb.ui.Component {
+	constructor() {
+		super();
+		this.state.dialogs = [];
+		jb.ui.dialogs.em.subscribe(dialogs=>
+			this.setState({dialogs: dialogs}));		
+	}
+	render(props,state) {
+		return jb.ui.h('div',{ class: 'jb-dialogs'}, state.dialogs.map(d=>jb.ui.h(d.comp)) )
+	}
+}
 
-jbart.jb_dialogs = {
+jb.ui.dialogs = {
  	dialogs: [],
+ 	em: new jb.rx.Subject(),
+ 	redraw: function() {
+		this.em.next(this.dialogs) 		
+ 	},
+ 	init: function() {
+ 		if ($('.jb-dialogs')[0]) return;
+ 		console.log('before init');
+		jb.ui.render(jb.ui.h(JbDialogs), document.getElementById('dialogs'));
+ 		console.log('after init');
+ 	},
 	addDialog: function(dialog,context) {
+		jb.ui.dialogs.init();
+
 		var self = this;
 		dialog.context = context;
 		this.dialogs.forEach(d=>
 			d.em.next({ type: 'new-dialog', dialog: dialog }));
 		this.dialogs.push(dialog);
-		if (dialog.modal)
+		if (dialog.modal && !$('body>.modal-overlay')[0])
 			$('body').prepend('<div class="modal-overlay"></div>');
 
-		jb_ui.apply(context);
+		this.redraw();
 
 		dialog.close = function(args) {
 			dialog.em.next({type: 'close'});
 			dialog.em.complete();
+
 			var index = self.dialogs.indexOf(dialog);
 			if (index != -1)
 				self.dialogs.splice(index, 1);
@@ -393,12 +425,12 @@ jbart.jb_dialogs = {
 					console.log(e);
 				}
 			if (dialog.modal)
-				$('.modal-overlay').first().remove();
-			jb_ui.apply(context);
+				$('.modal-overlay').remove();
+			delete jb.ui.resources[dialog.resourceId];
+			jb.ui.dialogs.redraw();
 		},
-		dialog.closed = function() {
+		dialog.closed = _ =>
 			self.dialogs.indexOf(dialog) == -1
-		}
 	},
 	closeAll: function() {
 		this.dialogs.forEach(d=>

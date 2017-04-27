@@ -28,6 +28,7 @@ import 'rxjs/add/operator/take';
 import 'rxjs/add/operator/toArray';
 import 'rxjs/add/operator/toPromise';
 import 'rxjs/add/operator/race';
+import 'rxjs/add/operator/finally';
 
 jb.rx.Observable = Observable;
 jb.rx.Subject = Subject;
