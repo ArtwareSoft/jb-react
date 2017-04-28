@@ -67,7 +67,7 @@ jb.component('editable-text.helper-popup', {
       if (!input) return;
 
       cmp.openPopup = jb_ui.wrapWithLauchingElement( ctx2 =>
-            ctx2.run( {$: 'openDialog',
+            ctx2.run( {$: 'open-dialog',
               id: ctx.params.popupId,
               style: _ctx => ctx.params.popupStyle(_ctx),
               content: _ctx => ctx.params.control(_ctx),

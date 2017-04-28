@@ -1,8 +1,18 @@
+jb.component('group.section', {
+  type: 'group.style',
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('section',{class:'jb-group'},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl,h(ctrl)))),
+    features:{$: 'group.init-group'}
+  }
+})
+
+
 jb.component('group.div', {
   type: 'group.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> h(ctrl))),
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl,h(ctrl)))),
     features :{$: 'group.init-group'}
   }
 })
@@ -61,7 +71,7 @@ jb.component('group.accordion', {
             h('button',{ class: 'mdl-button mdl-button--icon', onclick: _=> cmp.toggle(ctrl), title: cmp.expand_title(ctrl) }, 
               h('i',{ class: 'material-icons'}, ctrl.show ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
             )
-          ])].concat(state.show ? [h(ctrl)] : [])))        
+          ])].concat(state.show ? [jb.ui.item(cmp,ctrl,h(ctrl))] : [])))        
     ),
     css: `>.accordion-section>.header { display: flex; flex-direction: row; }
         >.accordion-section>.header>button:hover { background: none }

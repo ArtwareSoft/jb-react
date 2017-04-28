@@ -221,8 +221,8 @@ jb.component('dialog-feature.closeWhenClickingOutside', {
 		dialog.isPopup = true;
 		jb.delay(10).then(() =>  { // delay - close older before    		
 			var clickoutEm = jb.rx.Observable.fromEvent(document, 'mousedown')
-			      			.merge(jb.rx.Observable.fromEvent(
-			      				(jb.studio.previewWindow || {}).document, 'mousedown'))
+			      			// .merge(jb.rx.Observable.fromEvent(
+			      			// 	(jb.studio.previewWindow || {}).document, 'mousedown'))
 			      			.filter(e =>
 			      				$(e.target).closest(dialog.el).length == 0)
    					 		.takeUntil(dialog.em.filter(e => e.type == 'close'));

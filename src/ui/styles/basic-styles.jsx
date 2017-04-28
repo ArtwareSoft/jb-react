@@ -1,15 +1,5 @@
 /** @jsx jb.ui.h */
 
-jb.component('group.section', {
-  type: 'group.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => (<section class="jb-group" key="{state.key}">
-	    	{ state.ctrls.map(ctrl=> jb.ui.h(ctrl)) }
-        </section>),
-    features:{$: 'group.init-group'}
-  }
-})
-
 jb.component('label.span', {
     type: 'label.style',
     impl :{$: 'custom-style', 

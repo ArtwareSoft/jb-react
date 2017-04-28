@@ -22,6 +22,7 @@ var resources = {
         'src/ui/common-features.js',
         'src/ui/css-features.js',
         'src/ui/dialog.js',
+        'src/ui/menu.js',
         'src/ui/itemlist.js',
         'src/ui/itemlist-container.js',
         'src/ui/itemlist-with-groups.js',

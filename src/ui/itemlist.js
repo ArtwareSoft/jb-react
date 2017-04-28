@@ -22,9 +22,6 @@ jb.component('itemlist.init', {
   ],
   impl: (context, items, itemsArrayVariable,watch) => ({
       beforeInit: function(cmp) {
-        // cmp.items = items(cmp.ctx);
-        // cmp.state.ctrls = items2ctrls(items);
-
         if (watch[0]) {
           cmp.ctrlEmitter = jb.ui.resourceChange.takeUntil(cmp.destroyed)
                 .filter(e => watch[0] == '*' || e.path && watch.indexOf(e.path[0]) != -1)
@@ -104,13 +101,7 @@ jb.component('itemlist.selection', {
       jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == ctrl.ctx.data);
       vdom.attributes.onclick = _ => cmp.clickEmitter.next(ctrl.ctx.data)
     },
-
-    // templateModifier: { 
-    //   jbItem: `[class.selected]="selected == ctrl.comp.ctx.data"
-    //     (click)="clickEmitter.next(ctrl.comp.ctx.data)"` // selected = ctrl.comp.ctx.data ; 
-    // },
     css: '>.selected { ' + ctx.params.cssForSelected + ' }',
-    jbEmitter: true,
   })
 })
 

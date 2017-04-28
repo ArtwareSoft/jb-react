@@ -30,14 +30,16 @@ jb.component('mdl.ripple-effect', {
   type: 'feature',
   description: 'add ripple effect to buttons',
   impl: ctx => ({ 
-        templateModifier: template => 
-            template.replace(/<\/([^>]*)>$/,'<span class="mdl-ripple"></span></$1>'),
-        css: '{ position: relative; overflow:hidden }',
-        init: cmp => {
-            cmp.base.classList.add('mdl-js-ripple-effect');
-            componentHandler.upgradeElement(cmp.base);
-        },
-        destroy: cmp => 
+      templateModifier: (vdom,cmp,state) => {
+        vdom.children.push(jb.ui.h('span',{class:'mdl-ripple'}));
+        return vdom;
+      },
+      css: '{ position: relative; overflow:hidden }',
+      afterViewInit: cmp => {
+          cmp.base.classList.add('mdl-js-ripple-effect');
+          componentHandler.upgradeElement(cmp.base);
+      },
+      destroy: cmp => 
           componentHandler.downgradeElements(cmp.base)
    }),
 })
@@ -59,7 +61,7 @@ jb.component('button.mdl-flat-ripple', {
   impl :{$: 'custom-style', 
       template: (cmp,state) => <button class="mdl-button mdl-js-button mdl-js-ripple-effect" onclick={_=>cmp.clicked()}>{state.title}</button>,
       features :{$: 'mdl-style.init-dynamic'},
-      css: 'button { text-transform: none }'
+      css: '{ text-transform: none }'
   }
 })
 
@@ -72,8 +74,9 @@ jb.component('button.mdl-icon', {
       template: (cmp,state) => (<button class="mdl-button mdl-js-button mdl-button--icon mdl-js-ripple-effect" onclick={_=>cmp.clicked()} title={state.title} tabIndex="-1">
   <i class="material-icons" >{cmp.icon}</i>
 </button>),
-      css: `button, i { border-radius: 2px}`,
-      features:{$: 'mdl-style.init-dynamic'},
+      css: `{ border-radius: 2px} 
+      >i {border-radius: 2px}`,
+      features :{$: 'mdl-style.init-dynamic'},
   }
 })
 
@@ -86,7 +89,7 @@ jb.component('button.mdl-icon-12', {
       template: (cmp,state) => (<button class="mdl-button mdl-js-button mdl-button--icon mdl-js-ripple-effect" onclick={_=>cmp.clicked()} title={state.title} tabIndex="-1">
   <i class="material-icons" >{cmp.icon}</i>
 </button>),
-      css: `.material-icons { font-size:12px;  }`,
+      css: `>.material-icons { font-size:12px;  }`,
       features:{$: 'mdl-style.init-dynamic'},
   }
 })

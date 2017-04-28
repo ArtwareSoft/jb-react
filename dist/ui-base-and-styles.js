@@ -72,51 +72,39 @@
 
 /** @jsx jb.ui.h */
 
-jb.component('group.section', {
-  type: 'group.style',
-  impl: { $: 'custom-style',
-    template: (cmp, state, h) => jb.ui.h(
-      'section',
-      { 'class': 'jb-group', key: '{state.key}' },
-      state.ctrls.map(ctrl => jb.ui.h(ctrl))
-    ),
-    features: { $: 'group.init-group' }
-  }
-});
-
 jb.component('label.span', {
-  type: 'label.style',
-  impl: { $: 'custom-style',
-    template: (cmp, state) => jb.ui.h(
-      'span',
-      null,
-      state.title
-    ),
-    features: { $: 'label.bind-title' }
-  }
+    type: 'label.style',
+    impl: { $: 'custom-style',
+        template: (cmp, state) => jb.ui.h(
+            'span',
+            null,
+            state.title
+        ),
+        features: { $: 'label.bind-title' }
+    }
 });
 
 jb.component('button.href', {
-  type: 'button.style',
-  impl: { $: 'custom-style',
-    template: (cmp, state) => jb.ui.h(
-      'a',
-      { href: 'javascript:;', onclick: '{cmp.clicked()}' },
-      state.title
-    )
-  }
+    type: 'button.style',
+    impl: { $: 'custom-style',
+        template: (cmp, state) => jb.ui.h(
+            'a',
+            { href: 'javascript:;', onclick: '{cmp.clicked()}' },
+            state.title
+        )
+    }
 });
 
 jb.component('button.x', {
-  type: 'button.style',
-  params: [{ id: 'size', as: 'number', defaultValue: '21' }],
-  impl: { $: 'custom-style',
-    template: (cmp, state) => jb.ui.h(
-      'button',
-      { onclick: '{cmp.clicked()}', title: 'title' },
-      '\xD7'
-    ),
-    css: `button {
+    type: 'button.style',
+    params: [{ id: 'size', as: 'number', defaultValue: '21' }],
+    impl: { $: 'custom-style',
+        template: (cmp, state) => jb.ui.h(
+            'button',
+            { onclick: '{cmp.clicked()}', title: 'title' },
+            '\xD7'
+        ),
+        css: `button {
             cursor: pointer; 
             font: %$size%px sans-serif; 
             border: none; 
@@ -127,7 +115,7 @@ jb.component('button.x', {
             opacity: .2;
         }
         button:hover { opacity: .5 }`
-  }
+    }
 });
 
 /***/ }),
@@ -159,9 +147,12 @@ jb.component('mdl.ripple-effect', {
   type: 'feature',
   description: 'add ripple effect to buttons',
   impl: ctx => ({
-    templateModifier: template => template.replace(/<\/([^>]*)>$/, '<span class="mdl-ripple"></span></$1>'),
+    templateModifier: (vdom, cmp, state) => {
+      vdom.children.push(jb.ui.h('span', { class: 'mdl-ripple' }));
+      return vdom;
+    },
     css: '{ position: relative; overflow:hidden }',
-    init: cmp => {
+    afterViewInit: cmp => {
       cmp.base.classList.add('mdl-js-ripple-effect');
       componentHandler.upgradeElement(cmp.base);
     },
@@ -192,7 +183,7 @@ jb.component('button.mdl-flat-ripple', {
       state.title
     ),
     features: { $: 'mdl-style.init-dynamic' },
-    css: 'button { text-transform: none }'
+    css: '{ text-transform: none }'
   }
 });
 
@@ -209,7 +200,8 @@ jb.component('button.mdl-icon', {
         cmp.icon
       )
     ),
-    css: `button, i { border-radius: 2px}`,
+    css: `{ border-radius: 2px} 
+      >i {border-radius: 2px}`,
     features: { $: 'mdl-style.init-dynamic' }
   }
 });
@@ -227,7 +219,7 @@ jb.component('button.mdl-icon-12', {
         cmp.icon
       )
     ),
-    css: `.material-icons { font-size:12px;  }`,
+    css: `>.material-icons { font-size:12px;  }`,
     features: { $: 'mdl-style.init-dynamic' }
   }
 });
@@ -350,9 +342,9 @@ function ctrl(context,options) {
 	var styleOptions = defaultStyle(ctx);
 	if (styleOptions.jbExtend)  {// style by control
 		styleOptions.ctxForPick = ctx;
-		return styleOptions.jbExtend(options);
+		return styleOptions.jbExtend(options).applyFeatures(ctx);
 	}
-	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions); //.reactComp(ctx);
+	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx); 
 
 	function defaultStyle(ctx) {
 		var profile = context.profile;
@@ -380,11 +372,6 @@ class JbComponent {
 	}
 
 	reactComp() {
-		this.applyFeatures(this.ctx);
-		if (this.ctxForPick)
-			this.applyFeatures(this.ctxForPick);
-		this.compileJsx();
-
 		var jbComp = this;
 		class ReactComp extends __WEBPACK_IMPORTED_MODULE_0_preact__["Component"] {
 			constructor(props) {
@@ -455,9 +442,10 @@ class JbComponent {
 				cssId++;
 				cssSelectors_hash[cssKey] = cssId;
 				var cssStyle = this.cssSelectors.map(x=>`.jb-${cssId}${x}`).join('\n');
-				$(`<style type="text/css">${cssStyle}</style>`).appendTo($('head'));
+				var remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
+				$(`<style type="text/css">${remark}${cssStyle}</style>`).appendTo($('head'));
 			}
-			elem.classList.add(`jb-${cssId}`);
+			elem.classList.add(`jb-${cssSelectors_hash[cssKey]}`);
 		}
 	}
 

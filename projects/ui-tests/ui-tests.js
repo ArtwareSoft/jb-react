@@ -631,7 +631,7 @@ jb.component('ui-test.prettyPrintComp', {
 })
 
 jb.component('ui-test.picklist', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
   control :{$: 'group', controls: 
       [
         { $: 'group', 
@@ -673,7 +673,7 @@ jb.component('ui-test.picklist-sort', {
 })
 
 jb.component('ui-test.picklist-groups', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
   control :{$: 'group', controls: 
       [
         { $: 'group', 
@@ -708,7 +708,7 @@ jb.component('ui-test.dynamic-controls', {
 })
 
 jb.component('ui-test.tabs', {
-  impl :{$: 'ng2-ui-test', 
+  impl :{$: 'ui-test', 
   control :{$: 'tabs',
       tabs:[
         {$: 'group', title: 'tab1', controls :{$: 'label', title: 'in tab1' }},
@@ -724,7 +724,7 @@ jb.component('ui-test.tabs', {
 })
 
 jb.component('ui-test.group.accordion', {
-  impl :{$: 'ng2-ui-test', disableChangeDetection: false,
+  impl :{$: 'ui-test', disableChangeDetection: false,
   control :{$: 'group',
       style :{$: 'group.accordion'},
       controls:[
@@ -769,7 +769,7 @@ jb.component('ui-test.style-by-control', {
 })
 
 jb.component('ui-test.picklist-as-itemlist', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
     control :{$: 'group', 
       controls: [
           {$: 'picklist', 
@@ -822,26 +822,28 @@ jb.component('menu-test.menu1', {
 })
 
 jb.component('menu-test.pulldown', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
     control :{$: 'menu.control',
       style :{$: 'menu-style.pulldown'},
       menu :{$: 'menu-test.menu1'},
     },
+    action: ctx=> jb.delay(1),
     expectedResult :{$: 'contains', text: ['File', 'Edit','dynamic-1','dynamic-3'] },
   },
 })
 
 jb.component('menu-test.context-menu', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
     control: {$: 'menu.control',
       menu :{$: 'menu-test.menu1'}
     },
+    action: ctx=> jb.delay(1),
     expectedResult :{$: 'contains', text: ['File', 'Edit'] },
   },
 })
 
 jb.component('menu-test.open-context-menu', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
   control :{$: 'button', 
     title: 'open', 
     action :{$: 'menu.open-context-menu', 

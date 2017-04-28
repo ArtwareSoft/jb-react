@@ -101,10 +101,10 @@ jb.component('menu.control', {
   ],
   impl: ctx => {
   	var menuModel = ctx.params.menu();
-  	return jb_ui.ctrl(ctx.setVars({
+  	return jb.ui.ctrl(ctx.setVars({
   		topMenu: ctx.vars.topMenu || { popups: []},
   		menuModel: menuModel, 
-  	})).jbExtend({ctxForPick: menuModel.ctx })
+  	}),{ctxForPick: menuModel.ctx })
   }
 })
 
@@ -114,7 +114,7 @@ jb.component('menu.open-context-menu', {
   	{id: 'menu', type: 'menu.option', dynamic: true },
   	{id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup'}  },
   ],
-  impl :{$: 'openDialog', 
+  impl :{$: 'open-dialog', 
   	  style :{$call: 'popupStyle' },
       content :{$: 'menu.control' , menu :{$call: 'menu'}, style :{$: 'menu-style.context-menu'} }
   }
@@ -175,24 +175,24 @@ jb.component('menu.init-popup-menu', {
   		destroy: cmp => 
   			cmp.closePopup()
   		,
- 		init: cmp => {
- 			cmp.title = ctx.vars.menuModel.title;
+ 		afterViewInit: cmp => {
+ 			cmp.setState({title: ctx.vars.menuModel.title});
 
 			cmp.mouseEnter = _ => {
 				if ($('.context-menu-popup')[0]) 
 					cmp.openPopup()
 			};
-			cmp.openPopup = jb_ui.wrapWithLauchingElement( ctx2 => {
+			cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {
 	 			cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
 	        	ctx2.run( {$: 'menu.open-context-menu', 
 	        		popupStyle: _ctx => ctx.params.popupStyle(_ctx),
 	        		menu: _ctx => 
 	        			ctx.vars.$model.menu()
 	        	})
-	        } , cmp.ctx, cmp.elementRef );
+	        } , cmp.ctx, cmp.base );
 
 			cmp.closePopup = _ => {
-	  			jbart.jb_dialogs.dialogs
+	  			jb.ui.dialogs.dialogs
 	  				.filter(d=>d.id == ctx.vars.optionsParentId)
 	  				.forEach(d=>d.close());
 	  			cmp.ctx.vars.topMenu.popups.pop();
@@ -215,8 +215,7 @@ jb.component('menu.init-popup-menu', {
 		        	})
 			}
 
-		},
-      	jbEmitter: true,
+		}
   	})
 })
 
@@ -224,16 +223,14 @@ jb.component('menu.init-menu-option', {
 	type: 'feature',
   	impl: ctx => 
   	({
- 		init: cmp => {
+ 		afterViewInit: cmp => {
 			var leafParams = ctx.vars.menuModel.leaf;
-	        cmp.title = leafParams.title();
-	        cmp.icon = leafParams.icon;
-	        cmp.shortcut = leafParams.shortcut;
-	        cmp.action = jb_ui.wrapWithLauchingElement( _ => {
-				jbart.jb_dialogs.dialogs.filter(d=>d.isPopup)
+	        cmp.setState({title:  leafParams.title() ,icon : leafParams.icon ,shortcut: leafParams.shortcut});
+	        cmp.action = jb.ui.wrapWithLauchingElement( _ => {
+				jb.ui.dialogs.dialogs.filter(d=>d.isPopup)
 		  			.forEach(d=>d.close());
 		  		jb.delay(50).then(_=>
-	        		jb_ui.applyAfter(ctx.vars.menuModel.action(),ctx))
+	        		jb.ui.applyAfter(ctx.vars.menuModel.action(),ctx))
 	        }, ctx, cmp.elementRef);
 
 			if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
@@ -242,8 +239,7 @@ jb.component('menu.init-menu-option', {
 		    	    .subscribe(_=>
 		    	    	cmp.action())
 		    }
-		},
-      	jbEmitter: true,
+		}
   	})
 })
 
@@ -272,14 +268,15 @@ jb.component('menu.selection', {
     { id: 'autoSelectFirst', type: 'boolean'},
   ],
   impl: ctx => ({
-     init: function(cmp) {
+  	 onkeydown: true,
+     afterViewInit: function(cmp) {
+        cmp.base.setAttribute('tabIndex','0');
      	// putting the emitter at the top-menu only and listen at all sub menus
 
-        cmp.keydownSrc = new jb_rx.Subject();
+//        cmp.keydownSrc = new jb_rx.Subject();
      	if (!ctx.vars.topMenu.keydown) { 
-	        ctx.vars.topMenu.keydown = cmp.keydownSrc
-	          .takeUntil( cmp.destroyed );
-            jb_ui.focus(cmp.base,'menu.keyboard init autoFocus');
+	        ctx.vars.topMenu.keydown = cmp.onkeydown;
+            jb.ui.focus(cmp.base,'menu.keyboard init autoFocus');
       	};
 
         var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
@@ -291,8 +288,6 @@ jb.component('menu.selection', {
               var diff = event.keyCode == 40 ? 1 : -1;
               var items = cmp.items.filter(item=>!item.separator);
               var selectedIndex = items.indexOf(ctx.vars.topMenu.selected);
-              if (!ctx.vars.topMenu.selected && cmp.selected)
-              	selectedIndex = items.indexOf(ctx.selected);
               if (selectedIndex != -1)
               	return items[(selectedIndex + diff + items.length) % items.length];
 	        }).subscribe(x=>{
@@ -301,45 +296,46 @@ jb.component('menu.selection', {
 	        })
 	    keydown.filter(e=>e.keyCode == 27) // close all popups
     	    .subscribe(_=>{
-		  			jbart.jb_dialogs.dialogs
+		  			jb.ui.dialogs.dialogs
 		  				.filter(d=>d.isPopup)
 		  				.forEach(d=>d.close())
 		  			cmp.ctx.vars.topMenu.popups = [];
 		  			cmp.ctx.run({$:'tree.regain-focus'});
 	    	})
 	    cmp.select = item => {
-	    	cmp.selected = ctx.vars.topMenu.selected = item;
-	    	jb_ui.apply(ctx);
+	    	cmp.setState({selected: ctx.vars.topMenu.selected = item})
 	    }
-      },
-      afterViewInit: cmp => {
+	    cmp.selected = _ =>
+	    	ctx.vars.topMenu.selected;
+
         if (ctx.params.autoSelectFirst && cmp.items[0])
             cmp.select(cmp.items[0]);
       },
-	  templateModifier: {
-	      jbItem: `[class.selected]="selected == ctrl.comp.ctx.data" (mouseenter)="select(ctrl.comp.ctx.data)"`
+	  extendItem: (cmp,ctrl,vdom) => {
+	      jb.ui.toggleClassInVdom(vdom,'selected', ctx.vars.topMenu.selected == ctrl.ctx.data);
+	      vdom.attributes.onmouseenter = _ => 
+	      	cmp.select(ctrl.ctx.data)
 	  },
-	  css: '.jb-item.selected { background: #bbb !important; color: #fff !important }',
-      host: {
-        '(keydown)': 'keydownSrc.next($event)',
-        'tabIndex' : '0'
-      }
+	  css: '>.selected { background: #bbb !important; color: #fff !important }',
     })
 })
 
 jb.component('menu-style.option-line', {
 	type: 'menu-option.style',
-  	impl :{$: 'customStyle', 
-	  	template: `<div class="line noselect" (mousedown)="action()">
-	  		<i class="material-icons">{{icon}}</i><span class="title">{{title}}</span><span class="shortcut">{{shortcut}}</span>
-	  		</div>`,
-		css: `.line { display: flex; cursor: pointer; font: 13px Arial; height: 24px}
-			  .line.selected { background: #d8d8d8 }	
-			  i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }
-			  span { padding-top: 3px }
-	          .title { display: block; text-align: left; } 
-			  .shortcut { margin-left: auto; text-align: right; padding-right: 15px }
-			`,
+  	impl :{$: 'custom-style', 
+		template: (cmp,state,h) => h('div',{ 
+				class: 'line noselect', onmousedown: _ => cmp.action() 
+			},[
+				h('i',{class:'material-icons'},state.icon),
+				h('span',{class:'title'},state.title),
+				h('span',{class:'shortcut'},state.shortcut),
+		]),
+		css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
+			  .selected { background: #d8d8d8 }	
+			  >i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }
+			  >span { padding-top: 3px }
+	          >.title { display: block; text-align: left; } 
+			  >.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
         features: [
         	{$: 'mdl.ripple-effect'},
     		{$: 'menu.init-menu-option'}
@@ -349,35 +345,44 @@ jb.component('menu-style.option-line', {
 
 jb.component('menu.option-as-icon24', {
 	type: 'menu-option.style',
-  	impl :{$: 'customStyle', 
-	  	template: `<div class="line noselect" (click)="clicked()" title="{{title}}">
-	  		<i class="material-icons">
-	  		</div>`,
-		css: `.line { display: flex; cursor: pointer; height: 24px}
-			  i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }
-			`
+  	impl :{$: 'custom-style', 
+		template: (cmp,state,h) => h('div',{ 
+				class: 'line noselect', onclick: _ => cmp.clicked(), title: state.title 
+			},[
+				h('i',{class:'material-icons'},state.icon),
+		]),
+		css: `{ display: flex; cursor: pointer; height: 24px}
+			  >i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }`
 	}
 })
 
 jb.component('menu-style.popup-as-option', {
 	type: 'menu.style',
-	impl :{$: 'customStyle',
-	  	template: `<div class="line noselect" (click)="action()">
-	  		<span class="title">{{title}}</span><i class="material-icons" (mouseenter)="openPopup($event)">play_arrow</i>
-	  		</div>`,
-		css: `.line { display: flex; cursor: pointer; font: 13px Arial; height: 24px}
-			  i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
-	          .title { display: block; text-align: left; padding-top: 3px; padding-left: 26px;} 
+  	impl :{$: 'custom-style', 
+		template: (cmp,state,h) => h('div',{ 
+				class: 'line noselect', onmousedown: _ => cmp.action() 
+			},[
+				h('span',{class:'title'},state.title),
+				h('i',{class:'material-icons', onmouseenter: e => cmp.openPopup(e) },'play_arrow'),
+		]),
+		css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
+			  >i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
+	          >.title { display: block; text-align: left; padding-top: 3px; padding-left: 26px;} 
 			`,
         features :{$: 'menu.init-popup-menu', popupStyle :{$: 'dialog.context-menu-popup', rightSide: true, offsetTop: -24 } },
-	}
+    }
 })
 
 jb.component('menu-style.popup-thumb', {
 	type: 'menu.style',
 	description: 'used for pulldown',
-	impl :{$: 'customStyle',
-		template: `<div class="pulldown-top-menu-item" (mouseenter)="mouseEnter()" (click)="openPopup()">{{title}}</div>`,
+	impl :{$: 'custom-style',
+		template: (cmp,state,h) => h('div',{ 
+				class: 'pulldown-top-menu-item', 
+				onmouseenter: _ => 
+					cmp.mouseEnter(),
+				onclick: _ => cmp.openPopup()
+		},state.title),
         features :[
           {$: 'menu.init-popup-menu' },
           {$: 'mdl.ripple-effect'}
@@ -399,8 +404,9 @@ jb.component('dialog.context-menu-popup',{
 		{ id: 'offsetTop', as: 'number' },
 		{ id: 'rightSide', as: 'boolean' },
 	],
-	impl :{$: 'customStyle',
-			template: '<div class="jb-dialog jb-popup context-menu-popup pulldown-mainmenu-popup"><div *jbComp="contentComp"></div></div>',
+	impl :{$: 'custom-style',
+		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup context-menu-popup pulldown-mainmenu-popup'},
+				h(state.contentComp)),
 			features: [
 				{ $: 'dialog-feature.uniqueDialog', id: '%$optionsParentId%', remeberLastLocation: false },
 				{ $: 'dialog-feature.maxZIndexOnClick' },
@@ -413,8 +419,8 @@ jb.component('dialog.context-menu-popup',{
 
 jb.component('menu-separator.line', {
 	type: 'menu-separator.style',
-  	impl :{$: 'customStyle', 
-      template: '<div></div>',
+  	impl :{$: 'custom-style', 
+      template: (cmp,state,h) => h('div'),
       css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}'
   }
 })

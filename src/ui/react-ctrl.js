@@ -8,9 +8,9 @@ function ctrl(context,options) {
 	var styleOptions = defaultStyle(ctx);
 	if (styleOptions.jbExtend)  {// style by control
 		styleOptions.ctxForPick = ctx;
-		return styleOptions.jbExtend(options);
+		return styleOptions.jbExtend(options).applyFeatures(ctx);
 	}
-	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions); //.reactComp(ctx);
+	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx); 
 
 	function defaultStyle(ctx) {
 		var profile = context.profile;
@@ -38,11 +38,6 @@ class JbComponent {
 	}
 
 	reactComp() {
-		this.applyFeatures(this.ctx);
-		if (this.ctxForPick)
-			this.applyFeatures(this.ctxForPick);
-		this.compileJsx();
-
 		var jbComp = this;
 		class ReactComp extends Component {
 			constructor(props) {
@@ -113,9 +108,10 @@ class JbComponent {
 				cssId++;
 				cssSelectors_hash[cssKey] = cssId;
 				var cssStyle = this.cssSelectors.map(x=>`.jb-${cssId}${x}`).join('\n');
-				$(`<style type="text/css">${cssStyle}</style>`).appendTo($('head'));
+				var remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
+				$(`<style type="text/css">${remark}${cssStyle}</style>`).appendTo($('head'));
 			}
-			elem.classList.add(`jb-${cssId}`);
+			elem.classList.add(`jb-${cssSelectors_hash[cssKey]}`);
 		}
 	}
 
