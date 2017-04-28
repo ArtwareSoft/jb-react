@@ -1,7 +1,3 @@
-jb.type('picklist.style');
-jb.type('picklist.options');
-jb.type('picklist.promote');
-
 jb.component('picklist', {
   type: 'control', category: 'input:80',
   params: [
@@ -12,31 +8,33 @@ jb.component('picklist', {
     { id: 'style', type: 'picklist.style', defaultValue: { $: 'picklist.native' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
-  impl: ctx => {
-    return jb_ui.ctrl(ctx).jbExtend({
+  impl: ctx => 
+    jb.ui.ctrl(ctx,{
       beforeInit: function(cmp) {
         cmp.recalcOptions = function() {
-          cmp.options = ctx.params.options(ctx);
+          var options = ctx.params.options(ctx);
           var groupsHash = {};
           var promotedGroups = (ctx.params.promote() || {}).groups || [];
-          cmp.groups = [];
-          cmp.options.filter(x=>x.text).forEach(o=>{
+          var groups = [];
+          options.filter(x=>x.text).forEach(o=>{
             var groupId = groupOfOpt(o);
             var group = groupsHash[groupId] || { options: [], text: groupId};
             if (!groupsHash[groupId]) {
-              cmp.groups.push(group);
+              groups.push(group);
               groupsHash[groupId] = group;
             }
             group.options.push({text: o.text.split('.').pop(), code: o.code });
           })
-          cmp.groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
-          cmp.hasEmptyOption = cmp.options.filter(x=>!x.text)[0];
+          groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
+          cmp.setState({
+            groups: groups,
+            options: options,
+            hasEmptyOption: options.filter(x=>!x.text)[0]
+          })
         }
         cmp.recalcOptions();
       },
-     jbEmitter: true,
-    },ctx);
-  }
+    })
 })
 
 function groupOfOpt(opt) {
@@ -134,15 +132,3 @@ jb.component('picklist.promote',{
     ({ groups: groups, options: options})
 });
 
-
-jb.component('picklist.selected', {
-  type: 'data',
-  params: [
-    { id: 'recalcEm', as: 'observable'}
-  ],
-  impl: ctx => ({
-    $jb_val: val => {
-
-    }
-  })
-})

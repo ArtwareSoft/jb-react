@@ -26,9 +26,11 @@ var resources = {
         'src/ui/itemlist.js',
         'src/ui/itemlist-container.js',
         'src/ui/itemlist-with-groups.js',
+        'src/ui/picklist.js',
 
         'src/ui/styles/layout-styles.js',
         'src/ui/styles/group-styles.js',
+        'src/ui/styles/picklist-styles.js',
         'src/ui/styles/property-sheet-styles.js'
       ],
       'ui-tree':[

@@ -17,8 +17,7 @@ jb.component('editable-text.input', {
   type: 'editable-text.style',
   impl :{$: 'custom-style', 
       features :{$: 'field.databind' },
-      template: (cmp,state) => 
-      jb.ui.h('input', { 
+      template: (cmp,state,h) => h('input', { 
         value: state.jbModel(), 
         onchange: e => state.jbModel(e.target.value), 
         onkeyup: e => state.jbModel(e.target.value,'keyup')  }),
@@ -28,9 +27,9 @@ jb.component('editable-text.input', {
 
 jb.component('editable-text.textarea', {
 	type: 'editable-text.style',
-	impl :{$: 'customStyle', 
+	impl :{$: 'custom-style', 
       features :{$: 'field.databind' },
-      template: (cmp,state) => jb.ui.h('textarea', { 
+      template: (cmp,state,h) => h('textarea', { 
         value: state.jbModel(), onchange: e => state.jbModel(e.target.value), onkeyup: e => state.jbModel(e.target.value,'keyup')  }),
 	}
 })
@@ -66,7 +65,7 @@ jb.component('editable-text.helper-popup', {
       var input = $(cmp.base).findIncludeSelf('input')[0];
       if (!input) return;
 
-      cmp.openPopup = jb_ui.wrapWithLauchingElement( ctx2 =>
+      cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 =>
             ctx2.run( {$: 'open-dialog',
               id: ctx.params.popupId,
               style: _ctx => ctx.params.popupStyle(_ctx),
@@ -75,7 +74,7 @@ jb.component('editable-text.helper-popup', {
           , cmp.ctx, input );
 
       cmp.popup = _ =>
-        jbart.jb_dialogs.dialogs.filter(d=>d.id == ctx.params.popupId)[0];
+        jb.ui.dialogs.dialogs.filter(d=>d.id == ctx.params.popupId)[0];
       cmp.closePopup = _ =>
         cmp.popup() && cmp.popup().close();
 
@@ -98,6 +97,5 @@ jb.component('editable-text.helper-popup', {
     },
     destroy: cmp => 
         cmp.closePopup(),
-    jbEmitter: true,
   })
 })
