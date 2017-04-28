@@ -9,7 +9,7 @@ jb.component('field.databind', {
       init: function(cmp) {
             cmp.state.title = ctx.vars.$model.title();
             cmp.state.fieldId = jb.ui.field_id_counter++;
-            cmp.state.jbModel = (val,source) => {
+            cmp.jbModel = (val,source) => {
               if (val === undefined) 
                 return jb.val(ctx.vars.$model.databind);
               else { // write
@@ -17,10 +17,11 @@ jb.component('field.databind', {
                   cmp.inputEvents.next(val);
                 else if (!ctx.vars.$model.updateOnBlur || source != 'keyup') {
                   jb.ui.writeValue(ctx.vars.$model.databind,val,{source: cmp});
-                  //jb_ui.apply(ctx);
                 }
               }
-          }
+            }
+            jb.ui.refObservable(ctx.vars.$model.databind,cmp)
+              .subscribe(_=>cmp.forceUpdate())
       }
   }}
 })

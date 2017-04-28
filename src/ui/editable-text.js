@@ -18,9 +18,9 @@ jb.component('editable-text.input', {
   impl :{$: 'custom-style', 
       features :{$: 'field.databind' },
       template: (cmp,state,h) => h('input', { 
-        value: state.jbModel(), 
-        onchange: e => state.jbModel(e.target.value), 
-        onkeyup: e => state.jbModel(e.target.value,'keyup')  }),
+        value: cmp.jbModel(), 
+        onchange: e => cmp.jbModel(e.target.value), 
+        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
     css: '{height: 16px}'
   }
 })
@@ -30,7 +30,7 @@ jb.component('editable-text.textarea', {
 	impl :{$: 'custom-style', 
       features :{$: 'field.databind' },
       template: (cmp,state,h) => h('textarea', { 
-        value: state.jbModel(), onchange: e => state.jbModel(e.target.value), onkeyup: e => state.jbModel(e.target.value,'keyup')  }),
+        value: cmp.jbModel(), onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
 	}
 })
 
@@ -38,7 +38,7 @@ jb.component('editable-text.x-button', {
   type: 'feature',
   impl : ctx =>({
     templateModifier: (vdom,cmp,state) => 
-      jb.ui.h('div', {},[vdom].concat(state.jbModel() ? [jb.ui.h('button', { class: 'delete', onclick: e => state.jbModel(null)} , '✗')]  : []) ),
+      jb.ui.h('div', {},[vdom].concat(cmp.jbModel() ? [jb.ui.h('button', { class: 'delete', onclick: e => cmp.jbModel(null)} , '✗')]  : []) ),
     css: `>.delete {
           margin-left: -16px;
           float: right;

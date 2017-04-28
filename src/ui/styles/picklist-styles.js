@@ -3,7 +3,7 @@ jb.component('picklist.native', {
   type: 'picklist.style',
   impl :{$: 'custom-style', 
       features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('select', { value: state.jbModel(), onchange: e => state.jbModel(e.target.value) },
+      template: (cmp,state,h) => h('select', { value: cmp.jbModel(), onchange: e => cmp.jbModel(e.target.value) },
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
@@ -43,7 +43,7 @@ jb.component('picklist.groups', {
   type: 'picklist.style',
   impl :{$: 'custom-style', 
       features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('select', { value: state.jbModel(), onchange: e => state.jbModel(e.target.value) },
+      template: (cmp,state,h) => h('select', { value: cmp.jbModel(), onchange: e => cmp.jbModel(e.target.value) },
           (state.hasEmptyOption ? [h('option',{value:''},'')] : []).concat(
             state.groups.map(group=>h('optgroup',{label: group.text},
               group.options.map(option=>h('option',{value: option.code},option.text))

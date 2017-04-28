@@ -107,7 +107,7 @@ jb.component('ui-action.jbModel', {
 	impl: (ctx,selector,value) => {
 		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=>
-			e._component.state.jbModel(value))
+			e._component.jbModel(value))
 		return jb.delay(1);
 	}
 })

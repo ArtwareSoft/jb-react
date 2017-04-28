@@ -134,7 +134,7 @@ jb.component('editable-text.mdl-search', {
   impl :{$: 'custom-style', 
       template: (cmp,state) => (
   <div class="mdl-textfield mdl-js-textfield">
-    <input value={state.jbModel()} onchange={state.jbModel($event.target.value)} onkeyup={state.jbModel($event.target.value,'keyup')} 
+    <input value={cmp.jbModel()} onchange={cmp.jbModel($event.target.value)} onkeyup={cmp.jbModel($event.target.value,'keyup')} 
       class="mdl-textfield__input" type="text" id="search_{state.fieldId}"/>
     <label class="mdl-textfield__label" for="search_{state.fieldId}">{state.title}</label>
   </div>),
@@ -152,8 +152,8 @@ jb.component('editable-text.mdl-input', {
   ],
   impl :{$: 'custom-style', 
    template: (cmp,state) => (<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-    <input value={state.jbModel()} type="text" onchange={e=>state.jbModel(e.target.value)} 
-    onkeyup={e=>state.jbModel(e.target.value,'keyup')} 
+    <input value={cmp.jbModel()} type="text" onchange={e=>cmp.jbModel(e.target.value)} 
+    onkeyup={e=>cmp.jbModel(e.target.value,'keyup')} 
       class="mdl-textfield__input" type="text" id={'input_'+state.fieldId}/>
     <label class="mdl-textfield__label" for={'input_'+state.fieldId}>{state.title}</label>
   </div>),
@@ -169,8 +169,8 @@ jb.component('editable-boolean.mdl-slide-toggle', {
   type: 'editable-boolean.style',
   impl :{$: 'custom-style', 
       template: (cmp,state) => (<label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="switch_{state.fieldId}">
-  <input type="checkbox" id="switch_{state.fieldId}" class="mdl-switch__input" value={state.jbModel()} 
-  onchange="{state.jbModel($event.target.checked)}"/>
+  <input type="checkbox" id="switch_{state.fieldId}" class="mdl-switch__input" value={cmp.jbModel()} 
+  onchange="{cmp.jbModel($event.target.checked)}"/>
   <span class="mdl-switch__label">{state.text()}</span>
 </label>),
       features :[

@@ -72,39 +72,27 @@
 
 /** @jsx jb.ui.h */
 
-jb.component('label.span', {
-    type: 'label.style',
-    impl: { $: 'custom-style',
-        template: (cmp, state) => jb.ui.h(
-            'span',
-            null,
-            state.title
-        ),
-        features: { $: 'label.bind-title' }
-    }
-});
-
 jb.component('button.href', {
-    type: 'button.style',
-    impl: { $: 'custom-style',
-        template: (cmp, state) => jb.ui.h(
-            'a',
-            { href: 'javascript:;', onclick: '{cmp.clicked()}' },
-            state.title
-        )
-    }
+  type: 'button.style',
+  impl: { $: 'custom-style',
+    template: (cmp, state) => jb.ui.h(
+      'a',
+      { href: 'javascript:;', onclick: '{cmp.clicked()}' },
+      state.title
+    )
+  }
 });
 
 jb.component('button.x', {
-    type: 'button.style',
-    params: [{ id: 'size', as: 'number', defaultValue: '21' }],
-    impl: { $: 'custom-style',
-        template: (cmp, state) => jb.ui.h(
-            'button',
-            { onclick: '{cmp.clicked()}', title: 'title' },
-            '\xD7'
-        ),
-        css: `button {
+  type: 'button.style',
+  params: [{ id: 'size', as: 'number', defaultValue: '21' }],
+  impl: { $: 'custom-style',
+    template: (cmp, state) => jb.ui.h(
+      'button',
+      { onclick: '{cmp.clicked()}', title: 'title' },
+      '\xD7'
+    ),
+    css: `button {
             cursor: pointer; 
             font: %$size%px sans-serif; 
             border: none; 
@@ -115,7 +103,7 @@ jb.component('button.x', {
             opacity: .2;
         }
         button:hover { opacity: .5 }`
-    }
+  }
 });
 
 /***/ }),
@@ -271,7 +259,7 @@ jb.component('editable-text.mdl-search', {
     template: (cmp, state) => jb.ui.h(
       'div',
       { 'class': 'mdl-textfield mdl-js-textfield' },
-      jb.ui.h('input', { value: state.jbModel(), onchange: state.jbModel($event.target.value), onkeyup: state.jbModel($event.target.value, 'keyup'),
+      jb.ui.h('input', { value: cmp.jbModel(), onchange: cmp.jbModel($event.target.value), onkeyup: cmp.jbModel($event.target.value, 'keyup'),
         'class': 'mdl-textfield__input', type: 'text', id: 'search_{state.fieldId}' }),
       jb.ui.h(
         'label',
@@ -290,8 +278,8 @@ jb.component('editable-text.mdl-input', {
     template: (cmp, state) => jb.ui.h(
       'div',
       { 'class': 'mdl-textfield mdl-js-textfield mdl-textfield--floating-label' },
-      jb.ui.h('input', { value: state.jbModel(), type: 'text', onchange: e => state.jbModel(e.target.value),
-        onkeyup: e => state.jbModel(e.target.value, 'keyup'),
+      jb.ui.h('input', { value: cmp.jbModel(), type: 'text', onchange: e => cmp.jbModel(e.target.value),
+        onkeyup: e => cmp.jbModel(e.target.value, 'keyup'),
         'class': 'mdl-textfield__input', type: 'text', id: 'input_' + state.fieldId }),
       jb.ui.h(
         'label',
@@ -310,8 +298,8 @@ jb.component('editable-boolean.mdl-slide-toggle', {
     template: (cmp, state) => jb.ui.h(
       'label',
       { 'class': 'mdl-switch mdl-js-switch mdl-js-ripple-effect', 'for': 'switch_{state.fieldId}' },
-      jb.ui.h('input', { type: 'checkbox', id: 'switch_{state.fieldId}', 'class': 'mdl-switch__input', value: state.jbModel(),
-        onchange: '{state.jbModel($event.target.checked)}' }),
+      jb.ui.h('input', { type: 'checkbox', id: 'switch_{state.fieldId}', 'class': 'mdl-switch__input', value: cmp.jbModel(),
+        onchange: '{cmp.jbModel($event.target.checked)}' }),
       jb.ui.h(
         'span',
         { 'class': 'mdl-switch__label' },

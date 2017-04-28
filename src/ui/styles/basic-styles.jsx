@@ -1,14 +1,5 @@
 /** @jsx jb.ui.h */
 
-jb.component('label.span', {
-    type: 'label.style',
-    impl :{$: 'custom-style', 
-        template: (cmp,state) =>
-        	(<span>{state.title}</span>),
-        features :{$: 'label.bind-title' }
-    }
-})
-
 jb.component('button.href', {
   type: 'button.style',
     impl :{$: 'custom-style', 

@@ -244,7 +244,7 @@ jb.component('ui-test.resource', {
 })
 
 jb.component('ui-test.features-css', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
   control :{$: 'label', 
     title: 'Hello World2', 
     features :{ $css: '{color: cyan; font-weight: bold}' },
@@ -380,7 +380,7 @@ control :{$: 'group',
 })
 
 // jb.component('ui-test.ngShow-label', {
-// //   impl :{$: 'ng2-ui-test',  
+// //   impl :{$: 'ui-test',  
 //   control :{$: 'label', 
 //         title: 'Dan',
 //         features :{$ngAtts: {'[hidden]': '12==12'} }
@@ -390,7 +390,7 @@ control :{$: 'group',
 // })
 
 // jb.component('ui-test.ngShow-list', {
-// //   impl :{$: 'ng2-ui-test',  
+// //   impl :{$: 'ui-test',  
 //   control :{$: 'itemlist', 
 //       items: '%$people%', 
 //       controls :{$: 'label', 
@@ -404,7 +404,7 @@ control :{$: 'group',
 
 // jb.component('ui-test.ngIf', {
 // type: 'test',
-//   impl :{$: 'ng2-ui-test', 
+//   impl :{$: 'ui-test', 
 //   control :{$: 'itemlist', 
 //       items: '%$people%', 
 //       controls :{$: 'label', 
@@ -436,7 +436,7 @@ jb.component('ui-test.editable-text-in-group', {
 })
 
 jb.component('ui-test.editable-text-with-jb-val', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test2',  
   control :{$: 'group',
       $vars: {
         a1 : ctx => { return {
@@ -499,7 +499,7 @@ jb.component('ui-test.property-sheet.titles-left', {
 })
 
 jb.component('ui-test.editable-number', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
   control :{$: 'group', controls: 
     [
       {$: 'editable-number', title: 'age',
@@ -518,7 +518,7 @@ jb.component('ui-test.editable-number', {
 })
 
 jb.component('ui-test.editable-boolean.all-styles', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
   control :{$: 'group', controls: 
     [
       {$: 'editable-boolean',
@@ -533,11 +533,6 @@ jb.component('ui-test.editable-boolean.all-styles', {
           textForFalse: 'female',
           style :{$: 'editable-boolean.checkbox-with-title'},
       },
-      {$: 'editable-boolean',
-          title: 'male',
-          databind: '%$person/male%',
-          style :{$: 'editable-boolean.md-slide-toggle'},
-      },
       { $: 'label', title: '%$person/male%' }
     ]
   },
@@ -546,7 +541,7 @@ jb.component('ui-test.editable-boolean.all-styles', {
 })
 
 jb.component('ui-test.editable-boolean-settings', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
   control :{$: 'group', controls: 
     [
       {$: 'editable-boolean',
@@ -556,15 +551,14 @@ jb.component('ui-test.editable-boolean-settings', {
           textForTrue: 'male',
           textForFalse: 'female',
       },
-      { $: 'label', title: '%$person/isMale%' }
     ]
   },
-  expectedResult: { $: 'contains', text: ['male','yes'] },
+  expectedResult: { $: 'contains', text: 'male' },
 },
 })
 
 jb.component('ui-test.editable-boolean.expand-collapse', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
   control :{$: 'group', 
   $vars: {
       MyWidget :{$:'object', expanded: true}
@@ -585,7 +579,7 @@ jb.component('ui-test.editable-boolean.expand-collapse', {
 })
 
 jb.component('ui-test.code-mirror', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
   control :{$: 'group', 
     $vars: {
       js: { $: 'object', text: 'function f1() { return 15 }'},
@@ -614,7 +608,7 @@ jb.component('ui-test.code-mirror', {
 })
 
 jb.component('ui-test.prettyPrintComp', {
-  impl :{$: 'ng2-ui-test',  waitForPromise: {$delay: 50},
+  impl :{$: 'ui-test2',  waitForPromise: {$delay: 50},
   control :{$: 'group', controls: [
       {$: 'text', 
           text: ctx => jb_prettyPrintComp('inner-label1-tst',jbart.comps['inner-label1-tst']),
@@ -738,14 +732,14 @@ jb.component('ui-test.group.accordion', {
 })
 
 jb.component('ui-test.inner-label', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test',  
     control :{$: 'inner-label3-tst', title: 'Hello World2' },
     expectedResult: { $: 'contains', text: 'Hello World2' }
 },
 })
 
 jb.component('ui-test.markdown', {
-  impl :{$: 'ng2-ui-test',  
+  impl :{$: 'ui-test2',  
     control :{$: 'markdown', markdown: `| Day     | Meal    | Price |
 | --------|---------|-------|
 | Monday  | pasta   | $6    |

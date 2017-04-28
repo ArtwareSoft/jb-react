@@ -10,8 +10,7 @@ jb.component('editable-boolean',{
     { id: 'textForFalse', as: 'string', defaultValue: 'no' },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
-  impl: (ctx) => {
-  	return jb_ui.ctrl(ctx).jbExtend({
+  impl: ctx => jb.ui.ctrl(ctx,{
   		init: function(cmp) {
         cmp.toggle = () =>
           cmp.jbModel(!cmp.jbModel());
@@ -21,22 +20,14 @@ jb.component('editable-boolean',{
           return cmp.jbModel() ? ctx.params.textForTrue : ctx.params.textForFalse;
         }
   		}
-  	});
-  }
+  	})
 })
 
 jb.component('editable-boolean.keyboard-support', {
   type: 'feature',
   impl: ctx => ({
-      jbEmitter: true,
+      onkeydown: true,
       init: cmp => {
-        if (!cmp.keydown) {
-          var elem = cmp.base.firstChild;
-          if (!elem) return;
-          //elem.setAttribute('tabIndex','0');
-          cmp.keydown = jb_rx.Observable.fromEvent(elem, 'keydown')
-              .takeUntil( cmp.destroyed );
-        }          
         cmp.keydown.filter(e=> 
             e.keyCode == 37 || e.keyCode == 39)
           .subscribe(x=> {

@@ -95,6 +95,7 @@ var resources = {
         'src/ui/button.js',
         'src/ui/field.js',
         'src/ui/editable-text.js',
+        'src/ui/editable-boolean.js',
         'src/ui/common-features.js',
         'src/ui/css-features.js',
         'src/ui/dialog.js',
@@ -107,7 +108,8 @@ var resources = {
         'src/ui/styles/layout-styles.js',
         'src/ui/styles/group-styles.js',
         'src/ui/styles/picklist-styles.js',
-        'src/ui/styles/property-sheet-styles.js'
+        'src/ui/styles/property-sheet-styles.js',
+        'src/ui/styles/editable-boolean-styles.js',
       ],
       'ui-tree':[
         'src/ui/tree/tree.js',
