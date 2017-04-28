@@ -732,6 +732,7 @@ jb.component('ui-test.group.accordion', {
         {$: 'group', title: 'tab2', controls :{$: 'label', title: 'in tab2' }},
     ]
   },
+  action: ctx=> jb.delay(1),
   expectedResult :{$: 'contains', text: ['tab1','in tab1','tab2'] },
 },
 })

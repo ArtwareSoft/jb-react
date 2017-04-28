@@ -65,14 +65,14 @@ jb.component('group.accordion', {
   type: 'group.style',
   impl :{$: 'custom-style', 
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
-        state.ctrls.map(ctrl=> h('div',{ class: 'accordion-section' },[
-          h('div',{ class: 'header'},[
-            h('div',{ class: 'title'}, ctrl.title),
-            h('button',{ class: 'mdl-button mdl-button--icon', onclick: _=> cmp.toggle(ctrl), title: cmp.expand_title(ctrl) }, 
-              h('i',{ class: 'material-icons'}, ctrl.show ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl,h('div',{ class: 'accordion-section' },[
+          h('div',{ class: 'header', onclick: _=> cmp.show(ctrl) },[
+            h('div',{ class: 'title'}, ctrl.title()),
+            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) }, 
+              h('i',{ class: 'material-icons'}, state.shown == ctrl ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
             )
-          ])].concat(state.show ? [jb.ui.item(cmp,ctrl,h(ctrl))] : [])))        
-    ),
+          ])].concat(state.shown == ctrl ? [h(ctrl)] : [])))        
+    )),
     css: `>.accordion-section>.header { display: flex; flex-direction: row; }
         >.accordion-section>.header>button:hover { background: none }
         >.accordion-section>.header>button { margin-left: auto }
@@ -91,21 +91,18 @@ jb.component('group.init-accordion', {
     { id: 'autoFocus', as: 'boolean' }
   ],
   impl: ctx => ({
+    onkeydown: ctx.params.keyboardSupport,
     init: cmp => {
       cmp.expand_title = ctrl => 
-        ctrl.show ? 'collapse' : 'expand';
+        ctrl == cmp.state.shown ? 'collapse' : 'expand';
 
-      cmp.toggle = newCtrl => {
-        cmp.ctrls.forEach(ctrl=>
-          ctrl.show = (ctrl == newCtrl ? !ctrl.show : false));
-        //cmp.autoFocus();
+      cmp.show = ctrl => {
+        cmp.setState({shown: ctrl});
       }
 
       cmp.next = diff => {
-        var new_index = (cmp.ctrls.findIndex(ctrl=>ctrl.show) + diff + cmp.ctrls.length) % cmp.ctrls.length;
-        cmp.ctrls.forEach((ctrl,i)=>
-          ctrl.show = (i == new_index))
-        //cmp.autoFocus();
+        var new_index = (cmp.state.ctrls.indexOf(cmp.state.shown) + diff + cmp.ctrls.length) % cmp.ctrls.length;
+        cmp.setState({shown: cmp.state.ctrls[new_index]});
       };
 
 //       cmp.autoFocus = _ =>
@@ -119,16 +116,14 @@ jb.component('group.init-accordion', {
 
 
       if (ctx.params.keyboardSupport) {
-        jb.rx.Observable.fromEvent(cmp.base, 'keydown')
-            .takeUntil( cmp.jbEmitter.filter(x=>x =='destroy') )
-        .filter(e=> e.keyCode == 33 || e.keyCode == 34) // pageUp/Down
+        keydown.filter(e=> e.keyCode == 33 || e.keyCode == 34) // pageUp/Down
             .subscribe(e=>
               cmp.next(e.keyCode == 33 ? -1 : 1))
       }
     },
     afterViewInit: cmp => {
-      if (cmp.ctrls && cmp.ctrls[0])
-         cmp.ctrls[0].show = true;
+      if (cmp.state.ctrls && cmp.state.ctrls[0])
+        cmp.setState({shown: cmp.state.ctrls[0]});
     },
   })
 })
