@@ -18,8 +18,8 @@ jb.component('group.init-group', {
           cmp.ctrlEmitter.takeUntil(cmp.destroyed)
             .subscribe(ctrls=>
               cmp.setState({ctrls:ctrls.map(c=>c.reactComp())}))
-      } else {
-        cmp.state.ctrls = ctx.vars.$model.controls().map(c=>c.reactComp())
+      } else if (!cmp.state.ctrls) {
+        cmp.state.ctrls = ctx.vars.$model.controls(cmp.ctx).map(c=>c.reactComp())
       }
     }
   })

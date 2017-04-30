@@ -65,13 +65,13 @@ jb.component('group.accordion', {
   type: 'group.style',
   impl :{$: 'custom-style', 
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl,h('div',{ class: 'accordion-section' },[
-          h('div',{ class: 'header', onclick: _=> cmp.show(ctrl) },[
-            h('div',{ class: 'title'}, ctrl.title()),
+        state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,ctrl,h('div',{ class: 'accordion-section' },[
+          h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
+            h('div',{ class: 'title'}, ctrl.title),
             h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) }, 
-              h('i',{ class: 'material-icons'}, state.shown == ctrl ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
+              h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
             )
-          ])].concat(state.shown == ctrl ? [h(ctrl)] : [])))        
+          ])].concat(state.shown == index ? [h(ctrl)] : [])))        
     )),
     css: `>.accordion-section>.header { display: flex; flex-direction: row; }
         >.accordion-section>.header>button:hover { background: none }
@@ -93,27 +93,15 @@ jb.component('group.init-accordion', {
   impl: ctx => ({
     onkeydown: ctx.params.keyboardSupport,
     init: cmp => {
-      cmp.expand_title = ctrl => 
-        ctrl == cmp.state.shown ? 'collapse' : 'expand';
+      cmp.state.shown = 0;
+      cmp.expand_title = index => 
+        index == cmp.state.shown ? 'collapse' : 'expand';
 
-      cmp.show = ctrl => {
-        cmp.setState({shown: ctrl});
-      }
+      cmp.show = index => 
+        cmp.setState({shown: index});
 
-      cmp.next = diff => {
-        var new_index = (cmp.state.ctrls.indexOf(cmp.state.shown) + diff + cmp.ctrls.length) % cmp.ctrls.length;
-        cmp.setState({shown: cmp.state.ctrls[new_index]});
-      };
-
-//       cmp.autoFocus = _ =>
-//         jb.delay(100).then(()=> {
-//           jb_logPerformance('focus','group.accordion');
-//           if (ctx.params.autoFocus)
-//             $(cmp.base).find('input,textarea,select')
-//               .filter(function(x) { return $(this).attr('type') != 'checkbox'})
-// //              .first().focus() 
-//         })
-
+      cmp.next = diff =>
+        cmp.setState({shown: (cmp.state.index + diff + cmp.ctrls.length) % cmp.ctrls.length});
 
       if (ctx.params.keyboardSupport) {
         keydown.filter(e=> e.keyCode == 33 || e.keyCode == 34) // pageUp/Down
@@ -121,11 +109,42 @@ jb.component('group.init-accordion', {
               cmp.next(e.keyCode == 33 ? -1 : 1))
       }
     },
-    afterViewInit: cmp => {
-      if (cmp.state.ctrls && cmp.state.ctrls[0])
-        cmp.setState({shown: cmp.state.ctrls[0]});
-    },
   })
+})
+
+jb.component('group.tabs', {
+  type: 'group.style',
+  params: [
+    { id: 'width', as : 'number' },
+  ],
+  impl :{$: 'style-by-control', __innerImplementation: true,
+    modelVar: 'tabsModel',
+    control :{$: 'group', controls: [
+      {$: 'group', title: 'thumbs',
+        features :{$: 'group.init-group'}, 
+        style :{$: 'layout.horizontal' },
+        controls :{$: 'dynamic-controls', 
+          itemVariable: 'tab',
+          controlItems : '%$tabsModel/controls%',
+          genericControl: {$: 'button', 
+            title: '%$tab/jb_title%', 
+            action :{$: 'write-value', value: '%$tab%', to: '%$selectedTab%' },
+            style :{$: 'button.mdl-flat-ripple' }, 
+            features: [
+              {$: 'css.width', width: '%$width%' }, 
+              {$: 'css', css: '{text-align: left}' }
+            ]
+          },
+        },
+      },
+      ctx => 
+        jb.val(ctx.exp('%$selectedTab%')), 
+    ],
+    features : [ 
+        {$: 'group.var', name: 'selectedTab', value: '%$tabsModel/controls[0]%' },
+        {$: 'group.init-group'},
+    ]
+  }}
 })
 
 jb.component('toolbar.simple', {

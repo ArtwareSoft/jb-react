@@ -10,19 +10,22 @@ jb.component('group.itemlist-container', {
         	ctx.setVars({ itemlistCntr: {
         		id: context.params.id,
         		selected: null,
+            selectedRef: function() {
+              return this._selectedRef = this._selectedRef || jb.objectProperty(this,'selected','ref',true);
+            },
         		cmp: cmp,
         		init: items =>
         			this.items = items,
         		add: function(item) {
         			this.selected = item || JSON.parse(JSON.stringify(context.params.defaultItem || {}));
-    				this.items && this.items.push(this.selected);
+    				  this.items && ui.splice(this.items,[[this.items.length,0,this.selected]]);
         		},
             filter_data: {},
             filters: [],
         		delete: function(item) {
         			if (this.items && this.items.indexOf(item) != -1) {
         				this.changeSelectionBeforeDelete();
-        				this.items.splice(this.items.indexOf(item),1)	
+                ui.splice(this.items,[[this.items.indexOf(item),1]]);
         			}
         		},
         		changeSelectionBeforeDelete: function() {
@@ -70,23 +73,15 @@ jb.component('itemlist-container.select', {
   params: [
     { id: 'item', as: 'single', defaultValue: '%%' },
   ],
-  impl: ctx => {
-  		if (ctx.vars.itemlistCntr)
-  			ctx.vars.itemlistCntr.selected = ctx.params.item
-  }
+  impl: ctx =>
+  		ctx.vars.itemlistCntr && 
+        jb.writeValue(ctx.vars.itemlistCntr.selectedRef(),ctx.params.item)
 })
 
 jb.component('itemlist-container.selected', {
   type: 'data',
-  impl: ctx => ({
-		$jb_val: function(value) {
-			if (!ctx.vars.itemlistCntr) return;
-			if (typeof value == 'undefined') 
-				return ctx.vars.itemlistCntr.selected;
-			else
-				ctx.vars.itemlistCntr.selected = value;
-		}
-	})
+  impl: ctx => 
+    ctx.vars.itemlistCntr.selectedRef()
 })
 
 
@@ -113,7 +108,7 @@ jb.component('itemlist-container.search', {
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: (ctx,title,searchIn,databind) => 
-    jb_ui.ctrl(ctx).jbExtend({
+    jb.ui.ctrl(ctx,{
       beforeInit: cmp => {
         if (ctx.vars.itemlistCntr) {
           ctx.vars.itemlistCntr.filters.push( items => {
@@ -125,13 +120,12 @@ jb.component('itemlist-container.search', {
             return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
           });
         // allow itemlist selection use up/down arrows
-        ctx.vars.itemlistCntr.keydown = jb_rx.Observable.fromEvent(cmp.base, 'keydown')
+        ctx.vars.itemlistCntr.keydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
             .takeUntil( cmp.destroyed )
             .filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1) 
 
         }
-      },
-      jbEmitter: true,
+      }
     })
 });
 

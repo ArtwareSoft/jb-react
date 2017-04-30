@@ -33,7 +33,7 @@ jb.component('picklist.selection-list', {
         ]
       },
       features :{$: 'itemlist.selection', 
-        onSelection :{$: 'writeValue', value: '%code%', to: '%$picklistModel/databind%' } 
+        onSelection :{$: 'write-value', value: '%code%', to: '%$picklistModel/databind%' } 
       }
     }
   }

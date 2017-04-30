@@ -51,7 +51,7 @@ jb.component('rich-text', {
         { id: 'features', type: 'feature[]', dynamic: true },
     ],
     impl: (ctx,text,title) => 
-        jb_ui.ctrl(ctx.setVars({text: text(), title: title() }))
+        jb.ui.ctrl(ctx.setVars({text: text(), title: title() }))
 })
 
 jb.component('rich-text.html', {

@@ -17,7 +17,7 @@ jb.component('call', {
  	}
 });
 
-function jb_pipe(context,items,ptName) {
+jb.pipe = function(context,items,ptName) {
 	var start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
 	if (typeof context.profile.items == 'string')
 		return context.runInner(context.profile.items,null,'items');
@@ -54,7 +54,7 @@ jb.component('pipeline',{
 	params: [
 		{ id: 'items', type: "data,aggregator[]", ignore: true, essential: true, composite: true },
 	],
-	impl: (ctx,items) => jb_pipe(ctx,items,'$pipeline')
+	impl: (ctx,items) => jb.pipe(ctx,items,'$pipeline')
 })
 
 jb.component('pipe', { // synched pipeline
@@ -62,30 +62,26 @@ jb.component('pipe', { // synched pipeline
 	params: [
 		{ id: 'items', type: "data,aggregator[]", ignore: true, essential: true, composite: true },
 	],
-	impl: (ctx,items) => jb_pipe(ctx,items,'$pipe')
+	impl: (ctx,items) => jb.pipe(ctx,items,'$pipe')
 })
 
-jb.component('run', {
- 	type: '*',
- 	params: [
- 		{ id: 'profile', as: 'single'},
- 	],
- 	impl: function(context,profile) {
- 	  	return context.run(profile);
- 	}
-});
+// jb.component('run', {
+//  	type: '*',
+//  	params: [{ id: 'profile', as: 'single'} ],
+//  	impl: (context,profile) => context.run(profile)
+// });
 
-jb.component('apply', {
-	description: 'run a function',
- 	type: '*',
- 	params: [
- 		{ id: 'func', as: 'single'},
- 	],
- 	impl: (ctx,func) => {
- 		if (typeof func == 'function')
- 	  		return func(ctx);
- 	}
-});
+// jb.component('apply', {
+// 	description: 'run a function',
+//  	type: '*',
+//  	params: [
+//  		{ id: 'func', as: 'single'},
+//  	],
+//  	impl: (ctx,func) => {
+//  		if (typeof func == 'function')
+//  	  		return func(ctx);
+//  	}
+// });
 
 jb.component('list', {
 	type: 'data',
@@ -149,9 +145,8 @@ jb.component('prefix', {
 		{ id: 'separator', as: 'string', essential: true },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
-	impl: function(context,separator,text) {
-		return (text||'').substring(0,text.indexOf(separator))
-	}
+	impl: (context,separator,text) =>
+		(text||'').substring(0,text.indexOf(separator))
 });
 
 jb.component('suffix', {
@@ -160,20 +155,18 @@ jb.component('suffix', {
 		{ id: 'separator', as: 'string', essential: true },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
-	impl: function(context,separator,text) {
-		return (text||'').substring(text.lastIndexOf(separator)+separator.length)
-	}
+	impl: (context,separator,text) =>
+		(text||'').substring(text.lastIndexOf(separator)+separator.length)
 });
 
-jb.component('remove-prefix',{
+jb.component('remove-prefix', {
 	type: 'data',
 	params: [
 		{ id: 'separator', as: 'string', essential: true },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
-	impl: function(context,separator,text) {
-		return (text||'').substring(text.indexOf(separator)+separator.length)
-	}
+	impl: (context,separator,text) =>
+		(text||'').substring(text.indexOf(separator)+separator.length)
 });
 
 jb.component('remove-prefix-regex',{
@@ -195,9 +188,8 @@ jb.component('remove-suffix',{
 		{ id: 'separator', as: 'string', essential: true },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
-	impl: function(context,separator,text) {
-		return (text||'').substring(0,text.lastIndexOf(separator))
-	}
+	impl: (context,separator,text) =>
+		(text||'').substring(0,text.lastIndexOf(separator))
 });
 
 jb.component('remove-suffix-regex',{
@@ -244,7 +236,7 @@ jb.component('slice', {
 	}
 });
 
-jb.component('numeric-sort', { // with side effects for performance reasons
+jb.component('numeric-sort', { // with side effects!!! decision made for performance reasons
 	type: 'aggregator',
 	params: [
 		{ id: 'propertyName' }
@@ -255,17 +247,15 @@ jb.component('numeric-sort', { // with side effects for performance reasons
 	}
 });
 
-jb.component('not',{
+jb.component('not', {
 	type: 'boolean',
 	params: [ 
 		{ id: 'of', type: 'boolean', as: 'boolean', essential: true} 
 	],
-	impl: function(context, of) {
-		return !of;
-	}
+	impl: (context, of) => !of
 });
 
-jb.component('and',{
+jb.component('and', {
 	type: 'boolean',
 	params: [ 
 		{ id: 'items', type: 'boolean[]', ignore: true, essential: true } 
@@ -280,7 +270,7 @@ jb.component('and',{
 	}
 });
 
-jb.component('or',{
+jb.component('or', {
 	type: 'boolean',
 	params: [ 
 		{ id: 'items', type: 'boolean[]', ignore: true, essential: true } 
@@ -322,7 +312,7 @@ jb.component('contains',{
 	}
 })
 
-jb.component('not-contains',{
+jb.component('not-contains', {
 	type: 'boolean',
 	params: [
 		{ id: 'text', type: 'data[]', as: 'array', essential: true },
@@ -337,9 +327,8 @@ jb.component('starts-with',{
 		{ id: 'startsWith', as: 'string', essential: true },
 		{ id: 'text', defaultValue: '%%', as:'string'}
 	],
-	impl: function(context,startsWith,text) {
-		return text.lastIndexOf(startsWith,0) == 0;
-	}
+	impl: (context,startsWith,text) =>
+		text.lastIndexOf(startsWith,0) == 0
 })
 
 jb.component('ends-with',{
@@ -348,9 +337,8 @@ jb.component('ends-with',{
 		{ id: 'endsWith', as: 'string', essential: true },
 		{ id: 'text', defaultValue: '%%', as:'string'}
 	],
-	impl: function(context,endsWith,text) {
-		return text.indexOf(endsWith,text.length-endsWith.length) !== -1;
-	}
+	impl: (context,endsWith,text) =>
+		text.indexOf(endsWith,text.length-endsWith.length) !== -1
 })
 
 
@@ -361,8 +349,7 @@ jb.component('filter',{
 	],
 	impl: (context,filter) =>
 		jb.toarray(context.data).filter(item =>
-			filter(context,item)
-		)
+			filter(context,item))
 });
 
 jb.component('count',{
@@ -452,7 +439,7 @@ jb.component('log',{
 	}
 });
 
-jb.component('asIs',{ params: [{id: '$asIs'}], impl: function(context) { return context.profile.$asIs } });
+jb.component('asIs',{ params: [{id: '$asIs'}], impl: ctx => context.profile.$asIs });
 
 jb.component('object',{
 	impl: function(context) {
@@ -471,7 +458,7 @@ jb.component('object',{
 	}
 });
 
-jb.component('stringify',{
+jb.component('stringify', {
 	params: [
 		{ id: 'value', defaultValue: '%%', as:'single'},
 		{ id: 'space', as: 'string', description: 'use space or tab to make pretty output' }
@@ -480,7 +467,7 @@ jb.component('stringify',{
 			JSON.stringify(value,null,space)
 });
 
-jb.component('split',{
+jb.component('split', {
 	type: 'data',
 	params: [
 		{ id: 'separator', as: 'string', defaultValue: ',' },
@@ -500,7 +487,7 @@ jb.component('split',{
 	}
 });
 
-jb.component('replace',{
+jb.component('replace', {
 	type: 'data',
 	params: [
 		{ id: 'find', as: 'string' },
@@ -543,14 +530,12 @@ jb.component('touch', {
 	}
 });
 
-jb.component('isNull',{
+jb.component('isNull', {
 	type: 'boolean',
 	params: [
 		{ id: 'item', as: 'single', defaultValue: '%%'}
 	],
-	impl: function(context, item) {
-		return (item == null);
-	}
+	impl: (ctx, item) => (item == null)
 });
 
 jb.component('isEmpty',{
@@ -558,9 +543,8 @@ jb.component('isEmpty',{
 	params: [
 		{ id: 'item', as: 'single', defaultValue: '%%'}
 	],
-	impl: function(context, item) {
-		return (!item || (Array.isArray(item) && item.length == 0));
-	}
+	impl: (ctx, item) =>
+		!item || (Array.isArray(item) && item.length == 0)
 });
 
 jb.component('notEmpty',{
@@ -568,42 +552,35 @@ jb.component('notEmpty',{
 	params: [
 		{ id: 'item', as: 'single', defaultValue: '%%'}
 	],
-	impl: function(context, item) {
-		return (item && !(Array.isArray(item) && item.length == 0));
-	}
+	impl: (ctx, item) =>
+		item && !(Array.isArray(item) && item.length == 0)
 });
 
-jb.component('equals',{
+jb.component('equals', {
 	type: 'boolean',
 	params: [
 		{ id: 'item1', as: 'single', essential: true },
 		{ id: 'item2', defaultValue: '%%', as: 'single' }
 	],
-	impl: function(context, item1, item2) {
-		if (!item1 && !item2) return true;
-		return JSON.stringify(openObject(item1)) == JSON.stringify(openObject(item2));
-
-		function openObject(obj) {
-			return (obj && obj.$jb_parent) ? obj.$jb_parent[obj.$jb_property] : obj;
-		}
-	}
+	impl: (ctx, item1, item2) => item1 == item2
 });
 
-jb.component('not-equals',{
+jb.component('not-equals', {
 	type: 'boolean',
 	params: [
 		{ id: 'item1', as: 'single', essential: true },
 		{ id: 'item2', defaultValue: '%%', as: 'single' }
 	],
-	impl: { $not: { $: 'equals', item1: '%$item1%', item2: '%$item2%'} }
+	impl: (ctx, item1, item2) => item1 != item2
 });
 
-jb.component('parent',{
+jb.component('parent', {
 	type: 'data',
-	impl: function(context) {
-		var object = jb.tosingle(context.data);
-		return object && object.$jb_parent;
-	}
+	params: [
+		{ id: 'item', as: 'ref', defaultValue: '%%'}
+	],
+	impl: (ctx,item) =>
+		item && item.$jb_parent
 });	
 
 jb.component('runActions', {

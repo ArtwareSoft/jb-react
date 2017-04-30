@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>Studio Helper</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+  	<script type="text/javascript" src="/src/loader/load-jbart.js"></script>
+    <script type="text/javascript" src="/projects/studio-helper/studio-helper.js"></script>
+  </head>
+
+    <link rel="stylesheet" href="/projects/studio/css/studio.css">
+
+
+<body>
+  <jbart compID="studio-helper.jb-editor">loading ...</jbart>
+
+<script>
+
+jbLoadModules(jb_modules.concat(jb_studio_modules)
+  .concat([
+      'projects/studio-helper/suggestion-tests.js',
+      'projects/studio-helper/path-tests.js',
+      'projects/studio-helper/studio-model-tests.js',
+      'projects/studio-helper/studio-tree-tests.js']))
+  .then(loadedModules=>
+    jbBootstrap(loadedModules)
+  );
+
+</script>
+
+</body>
+</html>

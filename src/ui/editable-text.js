@@ -59,8 +59,10 @@ jb.component('editable-text.helper-popup', {
     { id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.popup' } },
   ],
   impl : ctx =>({
+    onkeydown: true,
     extendCtx: (ctx,cmp) => 
       ctx.setVars({selectionKeySource: {}}),
+      
     afterViewInit: cmp => {
       var input = $(cmp.base).findIncludeSelf('input')[0];
       if (!input) return;
@@ -78,11 +80,7 @@ jb.component('editable-text.helper-popup', {
       cmp.closePopup = _ =>
         cmp.popup() && cmp.popup().close();
 
-
-      var keydown = jb_rx.Observable.fromEvent(input, 'keydown')
-              .takeUntil( cmp.destroyed );
-
-      cmp.ctx.vars.selectionKeySource.keydown = keydown.filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1);
+      var keydown = cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown.filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1);
 
       keydown.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)
         .delay(1).subscribe(_=>{

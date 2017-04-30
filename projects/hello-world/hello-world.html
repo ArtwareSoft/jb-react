@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html title="hello world">
+<head>
+  <script type="text/javascript">
+    startTime = new Date().getTime();
+  </script>
+  <script type="text/javascript" src="../../dist/jb-loader.js" modules="common,ui-common"></script>
+  <script type="text/javascript" src="/projects/hello-world/hello-world.js"></script>
+</head>
+<body>
+<div id="main"> </div>
+<script>
+  jb.ui.renderWidget({$:'hello-world.main'},document.getElementById('main'))
+</script>
+</body>
+</html>
+

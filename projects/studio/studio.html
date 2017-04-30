@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script type="text/javascript">
+    startTime = new Date().getTime();
+  </script>
+  <script type="text/javascript" src="/src/loader/jb-loader.js" 
+    modules="common,ui-common,ui-tree,dragula,codemirror,studio,history"></script>
+</head>
+<body>
+<div id="studio"> </div>
+<script>
+  jb.ui.render(jb.ui.h(new jb.jbCtx().run({$:'studio.all'}).reactComp()),document.getElementById('studio'))
+</script>
+</body>
+</html>
+

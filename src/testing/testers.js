@@ -37,7 +37,6 @@ jb.component('ui-test', {
 					var elem = document.createElement('div');
 					var ctrl = jb.ui.h(control().reactComp());
 					var cmp = jb.ui.render(ctrl, elem)._component;
-					console.log(cmp);
 					return Promise.resolve(cmp.delayed).then(_=>
 						elem)
 				} catch (e) {

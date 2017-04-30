@@ -15,17 +15,6 @@ var jb = {
   resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
 };
 
-var jbLoader = {
-  entry: JBART_DIR + 'src/loader/jb-loader.js',
-  output: {
-    path: JBART_DIR + 'dist',
-    filename: 'jb-loader.js',
-    library: 'jbLoader',
-    libraryTarget: 'var'
-  },
-  resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
-};
-
 var dataTests = {
   entry: JBART_DIR + 'projects/ui-tests/data-tests.js',
   output: { path: JBART_DIR + 'projects/ui-tests',  filename: 'data-tests-bnd.js'  },
@@ -66,4 +55,4 @@ var jbRxMin = {
   plugins: [ new UglifyJSPlugin() ],
 };
 
-module.exports = [jb,jbLoader,uiBase,jbRx];
+module.exports = [jb,uiBase,jbRx];

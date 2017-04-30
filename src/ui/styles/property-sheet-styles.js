@@ -7,7 +7,7 @@ jb.component('property-sheet.titles-above', {
     features :{$: 'group.init-group'},
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property'},[
-            h('label',{ class: 'property-title'},ctrl.title()),
+            h('label',{ class: 'property-title'},ctrl.title),
             h(ctrl)
     ]))),
     css: `>.property { margin-bottom: %$spacing%px }
@@ -34,7 +34,7 @@ jb.component('property-sheet.titles-above-float-left', {
     features :{$: 'group.init-group'},
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property'},[
-          h('label',{ class: 'property-title'},ctrl.title()),
+          h('label',{ class: 'property-title'},ctrl.title),
           h(ctrl)
     ]))),
     css: `>.property { 
@@ -65,7 +65,7 @@ jb.component('property-sheet.titles-left', {
     features :{$: 'group.init-group'},
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property'},[
-          h('label',{ class: 'property-title'}, ctrl.title()),
+          h('label',{ class: 'property-title'}, ctrl.title),
           h(ctrl)
     ]))),
     css: `>.property { margin-bottom: %$vSpacing%px; display: flex }

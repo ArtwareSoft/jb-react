@@ -5,45 +5,108 @@ jb.component('tabs', {
 		{ id: 'style', type: 'tabs.style', dynamic: true, defaultValue: { $: 'tabs.simple' } },
 		{ id: 'features', type: 'feature[]', dynamic: true },
 	],
-  impl: function(context) { 
-    return jb_ui.ctrl(context).jbExtend({
-      beforeInit: cmp => {
-      	cmp.empty = jb_ui.Comp({ template: '<div></div>'},context);
-      	cmp.selectedTab = 0;
+  impl: ctx =>  
+    jb.ui.ctrl(ctx)
+})
 
+jb.component('group.init-tabs', {
+  type: 'feature', category: 'group:0',
+  params: [
+    { id: 'keyboardSupport', as: 'boolean' },
+    { id: 'autoFocus', as: 'boolean' }
+  ],
+  impl: ctx => ({
+    onkeydown: ctx.params.keyboardSupport,
+    init: cmp => {
+      cmp.state.shown = 0;
+      cmp.expand_title = index => 
+        index == cmp.state.shown ? 'collapse' : 'expand';
 
-      	cmp.selectedTabContent = index => {
-          var _index = index == null ? cmp.selectedTab : index;
-      		return cmp.comps[_index] || cmp.empty;
-        }
+      cmp.show = index => 
+        cmp.setState({shown: index});
 
-        cmp.initTabs = function() {
-          (cmp.jbGroupChildrenEm || jb_rx.Observable.of(context.params.tabs(cmp.ctx)))
-              .merge(cmp.jbWatchGroupChildrenEm || jb_rx.Observable.of())
-              .subscribe(comps=> {
-              	cmp.comps = comps;
-                cmp.jb_disposable && cmp.jb_disposable.forEach(d=>d());
-                cmp.titles = comps.map(comp=>
-                	comp.jb_title ? comp.jb_title() : '')
-              })
-        }
+      cmp.next = diff =>
+        cmp.setState({shown: (cmp.state.index + diff + cmp.ctrls.length) % cmp.ctrls.length});
+
+      if (ctx.params.keyboardSupport) {
+        keydown.filter(e=> e.keyCode == 33 || e.keyCode == 34) // pageUp/Down
+            .subscribe(e=>
+              cmp.next(e.keyCode == 33 ? -1 : 1))
       }
-    })
+    },
+  })
+})
+
+jb.component('tabs.simple', {
+  type: 'tabs.style',
+  params: [
+    { id: 'width', as : 'number' },
+  ],
+  impl2 :{$: 'style-by-control', __innerImplementation: true,
+    modelVar: 'tabsModel',
+    control :{$: 'group', controls: [
+      { $: 'itemlist',
+        watchItems: false, 
+        items: '%$tabsModel/tabs%',
+        style :{ $: 'layout.horizontal' },
+        controls :{$: 'button', 
+          title: ctx => ctx.data.title(), 
+          style :{$: 'button.mdl-flat-ripple' }, 
+          features: [
+            {$: 'css.width', width: '%$width%' }, 
+            {$: 'css', css: '{text-align: left}' }
+          ]
+        },
+        features :{$: 'itemlist.selection', 
+          onSelection :{$: 'write-value', 
+            value: ctx => 
+              ctx.exp('%$tabsModel/tabs%').indexOf(ctx.exp('%%')), 
+            to: '%$tabsModel/shown%' 
+          } 
+        }
+      },
+      { $: 'group', 
+        features :{$: 'group.data', data: '%$tabsModel/shown%', watch: 'innerVars/tabsModel'} , 
+         controls: ctx => 
+              ctx.exp('%$tabsModel/tabs%')[ctx.exp('%%')], 
+      }
+    ]}
   }
 })
 
-jb.component('tabs.initTabs', {
-  type: 'feature',
-  impl: ctx => 
-    ({init: cmp => cmp.initTabs()})
-})
 
-jb.type('tabs.style');
+      { $: 'itemlist', items: '%$people%', 
+        controls :{$: 'label', title: '%$item.name%' }, 
+        features: [
+            { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+            { $: 'itemlist.keyboard-selection', autoFocus: true },
+        ],
+      },
+      { $: 'group', 
+        features :{$: 'group.data', data: '%$globals/selectedPerson%', watch: 'globals'} , 
+         controls: [
+            {$: 'label' , title: '%name% selected' },
+          ]
+        }
+    ]
+  } ,
 
 
 jb.component('tabs.simple', {
 	type: 'tabs.style',
-  	impl :{$: 'customStyle',
+  	impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('div',{ class: 'jb-tabs'}, [
+          h('div',{ class: 'tab-titles'}, state.ctrls.map(ctrl=> h(''))
+        ]
+        state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,ctrl,h('div',{ class: 'accordion-section' },[
+          h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
+            h('div',{ class: 'title'}, ctrl.title()),
+            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) }, 
+              h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
+            )
+          ])].concat(state.shown == ctrl ? [h(ctrl)] : [])))        
+    )),
+
       template: `<div class="jb-tab">
           <div class="tab-titles">
             <button *ngFor="let title of titles; let i = index" class="mdl-button mdl-js-button mdl-js-ripple-effect" (click)="selectedTab = i" [ngClass]="{'selected': i==selectedTab}">{{title}}</button>
@@ -51,7 +114,7 @@ jb.component('tabs.simple', {
           <div *jbComp="selectedTabContent()"></div>
         </div>`,
 	     css: `.selected { border-bottom: 1px solid black } button { background: none }`,
-	    features :{$: 'tabs.initTabs'},
+	    features :{$: 'tabs.init-tabs'},
   	}
 })
 

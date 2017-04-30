@@ -101,7 +101,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (immutable) */ __webpack_exports__["entries"] = entries;
 /* harmony export (immutable) */ __webpack_exports__["flattenArray"] = flattenArray;
 /* harmony export (immutable) */ __webpack_exports__["synchArray"] = synchArray;
-/* harmony export (immutable) */ __webpack_exports__["isProfOfType"] = isProfOfType;
 /* harmony export (immutable) */ __webpack_exports__["unique"] = unique;
 /* harmony export (immutable) */ __webpack_exports__["equals"] = equals;
 /* harmony export (immutable) */ __webpack_exports__["writeValue"] = writeValue;
@@ -405,22 +404,22 @@ function evalExpressionPart(expressionPart,context,jstype) {
     }
     if (part == '') ;
     else if (part == '$parent' && item.$jb_parent && i > 0) 
-      item = item.$jb_parent;
+      item = item.$jb_parent
     else if (part.charAt(0) == '$' && i == 0 && part.length > 1)
-      item = calcVar(context,part.substr(1));
-
+      item = calcVar(context,part.substr(1))
     else if (Array.isArray(item))
-      item = map(item,function(inner) {
-        return typeof inner === "object" ? objectProperty(inner,part,jstype,i == parts.length -1) : inner;
-      });
+      item = item.map(inner =>
+        typeof inner === "object" ? objectProperty(inner,part,jstype,i == parts.length -1) : inner)
     else if (typeof item === 'object' && typeof item[part] === 'function' && item[part].profile)
-      item = item[part](context);
+      item = item[part](context)
     else if (typeof item === 'object')
-      item = item && objectProperty(item,part,jstype,i == parts.length -1);
-    else if (index && Array.isArray(item)) 
-      item = item[index];
+      item = item && objectProperty(item,part,jstype,i == parts.length -1)
     else
       item = null; // no match
+
+    if (!isNaN(index) && Array.isArray(item)) 
+      item = item[index];
+
     if (!item) 
       return item;	// 0 should return 0
   }
@@ -720,19 +719,18 @@ function synchArray(ar) {
   var _ar = ar.filter(x=>x).map(v=>
     (typeof v.then == 'function' || typeof v.subscribe == 'function') ? v : [v])
 
-  return Observable.from(_ar)
-          .concatMap(x=>
-            x)
+  return rx.Observable.from(_ar)
+          .concatMap(x=>x)
           .flatMap(v => 
             Array.isArray(v) ? v : [v])
           .toArray()
           .toPromise()
 }
 
-function isProfOfType(prof,type) {
-  var types = ((comps[compName(prof)] || {}).type || '').split('[]')[0].split(',');
-  return types.indexOf(type) != -1;
-}
+// export function isProfOfType(prof,type) {
+//   var types = ((comps[compName(prof)] || {}).type || '').split('[]')[0].split(',');
+//   return types.indexOf(type) != -1;
+// }
 
 // usage: .filter( unique(x=>x.id) )
 // simple case: [1,2,3,3].filter((x,index,self)=>self.indexOf(x) === index)

@@ -21,8 +21,18 @@ jb.component('itemlist.init', {
     { id: 'watch', as: 'array', description: 'resources to watch' },
   ],
   impl: (context, items, itemsArrayVariable,watch) => ({
-      beforeInit: function(cmp) {
-        if (watch[0]) {
+      beforeInit: cmp => {
+        cmp.items = items(cmp.ctx);
+        var itemsRef = jb.ui.refOfObj(cmp.items);
+        if (itemsRef) {
+          cmp.ctrlEmitter = jb.ui.refObservable(itemsRef,cmp)
+                .filter(items=>
+                  items.length == 0 || !jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
+                .startWith(cmp.items)
+                .do(items => 
+                  cmp.items = items)
+                .map(items=> items2ctrls(items))
+        } else if (watch[0]) {
           cmp.ctrlEmitter = jb.ui.resourceChange.takeUntil(cmp.destroyed)
                 .filter(e => watch[0] == '*' || e.path && watch.indexOf(e.path[0]) != -1)
                 .startWith(1)
@@ -31,11 +41,10 @@ jb.component('itemlist.init', {
                 .do(items => 
                   cmp.items = items)
                 .filter(items=>
-                  ! jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
+                  items.length == 0 || !jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
                 .map(items=> items2ctrls(items));
         } else {
-          cmp.items = items(cmp.ctx);
-          cmp.ctrlEmitter = jb.rx.Observable.of(items2ctrls(cmp.items));
+          cmp.state.ctrls = items2ctrls(cmp.items).map(c=>c.reactComp());
         }
 
         function items2ctrls(items) {
@@ -64,7 +73,7 @@ jb.component('itemlist.divider', {
 jb.component('itemlist.selection', {
   type: 'feature',
   params: [
-    { id: 'databind', as: 'ref', defaultValue: {$: 'itemlist-container.selected' } },
+    { id: 'databind', as: 'ref', defaultValue :{$: 'itemlist-container.selected' } },
     { id: 'onSelection', type: 'action', dynamic: true },
     { id: 'onDoubleClick', type: 'action', dynamic: true },
     { id: 'autoSelectFirst', type: 'boolean'},
@@ -84,7 +93,7 @@ jb.component('itemlist.selection', {
           .subscribe( selected => {
               ctx.params.databind && jb.writeValue(ctx.params.databind,selected);
               cmp.setState({selected: selected});
-              jb.ui.applyAfter(ctx.params.onSelection(cmp.ctx.setData(selected)),ctx);
+              ctx.params.onSelection(cmp.ctx.setData(selected));
           });
 
         // double click
@@ -188,6 +197,12 @@ jb.component('itemlist.ul-li', {
   type: 'itemlist.style',
   impl :{$:'itemlist.use-group-style', groupStyle :{$: 'group.ul-li' }}
 })
+
+jb.component('itemlist.horizontal', {
+  type: 'itemlist.style',
+  impl :{$:'itemlist.use-group-style', groupStyle :{$: 'layout.horizontal' }}
+})
+
 
 jb.component('itemlist.use-group-style', {
   type: 'itemlist.style',

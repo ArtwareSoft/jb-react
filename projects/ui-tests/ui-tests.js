@@ -502,17 +502,17 @@ jb.component('ui-test.editable-number', {
   impl :{$: 'ui-test',  
   control :{$: 'group', controls: 
     [
-      {$: 'editable-number', title: 'age',
-          databind: '%$person/age%',
-          style :{$: 'editable-number.slider'},
-      },
+      // {$: 'editable-number', title: 'age',
+      //     databind: '%$person/age%',
+      //     style :{$: 'editable-number.slider'},
+      // },
       {$: 'editable-number', title: 'age',
           databind: '%$person/age%',
       },
       { $: 'label', title: '%$person/age%' }
     ]
   },
-  expectedResult: { $: 'contains', text: ['42'] },
+  expectedResult: { $: 'contains', text: ['42','42'] },
 },
 
 })
@@ -600,10 +600,9 @@ jb.component('ui-test.code-mirror', {
           databind: '%$html/text%',
           style :{$: 'editable-text.codemirror', mode: 'htmlmixed'}
       },
-      { $: 'label',  title: '%$js/text%' }
     ]
  },
-  expectedResult: { $: 'contains', text: ['function'] },
+  expectedResult: { $: 'contains', text: ['function','f1','15'] },
 },
 })
 
@@ -703,8 +702,9 @@ jb.component('ui-test.dynamic-controls', {
 
 jb.component('ui-test.tabs', {
   impl :{$: 'ui-test', 
-  control :{$: 'tabs',
-      tabs:[
+  control :{$: 'group',
+      style:{$: 'group.tabs'},
+      controls:[
         {$: 'group', title: 'tab1', controls :{$: 'label', title: 'in tab1' }},
         {$: 'group', title: 'tab2', controls :{$: 'label', title: 'in tab2' }},
     ]

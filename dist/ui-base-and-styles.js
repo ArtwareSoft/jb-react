@@ -406,7 +406,7 @@ class JbComponent {
 		}; 
 		injectLifeCycleMethods(ReactComp,this);
 		ReactComp.ctx = this.ctx;
-		ReactComp.title = this.jb_title;
+		ReactComp.title = this.jb_title();
 		return ReactComp;
 	}
 
@@ -549,7 +549,7 @@ ui.wrapWithLauchingElement = (f,context,elem) =>
 ui.pathId = 0;
 ui.resourceVersions = {}
 
-ui.writeValue = (to,value,settings) => {
+ui.writeValue = (to,value) => {
   if (!to) 
   	return jb.logError('writeValue: empty "to"');
 
@@ -559,7 +559,7 @@ ui.writeValue = (to,value,settings) => {
     return to.$jb_val(jb.val(value));
 
   if (to.$jb_parent) {
-  	var res = pathOfObject(to.$jb_parent,ui.resources);
+  	var res = ui.pathOfObject(to.$jb_parent,ui.resources);
   	if (res) {
   		var op = {}, resource = res[0], path = res.concat([to.$jb_property]);
   		jb.path(op,path,{$set: value});
@@ -574,7 +574,7 @@ ui.writeValue = (to,value,settings) => {
 }
 
 ui.splice = function(arr,args) {
-  	var res = pathOfObject(arr,ui.resources);
+  	var res = ui.pathOfObject(arr,ui.resources);
   	if (res) {
   		var op = {}, resource = res[0], path = res;
   		jb.path(op,path,{$splice: args });
@@ -584,6 +584,15 @@ ui.splice = function(arr,args) {
   	} else {
   		jb.logError('splice: can not find parent in resources');
     }
+}
+
+ui.refOfObj = function(obj) {
+  	var res = ui.findPath(obj,ui.resources);
+  	if (res) 
+  		return Object.assign(res,{ 
+  			$jb_property: res.$jb_path[res.$jb_path.length-1],
+  			$jb_resourceV: ui.resourceVersions[res.$jb_path[0]]
+  		})
 }
 
 ui.refObservable = function(ref,cmp) {
@@ -604,12 +613,12 @@ ui.refObservable = function(ref,cmp) {
 
 ui.updateJbParent = function(ref) {
 	if (! ref.$jb_path) { // first time - look in all resources
-		var found = find(ref.$jb_parent,ui.resources);
+		var found = ui.findPath(ref.$jb_parent,ui.resources);
 	} else { 
 		var resource = ref.$jb_path[0];
 		if (ref.$jb_resourceV == ui.resourceVersions[resource]) return;
 
-		var found = find(ref.$jb_parent,ui.resources[resource]);
+		var found = ui.findPath(ref.$jb_parent,ui.resources[resource]);
 		if (found)
 			found.$jb_path = [resource].concat(found.$jb_path);
 	}
@@ -617,44 +626,24 @@ ui.updateJbParent = function(ref) {
 	if (found) {
 		Object.assign(ref,found);
 		ref.$jb_resourceV = ui.resourceVersions[ref.$jb_path[0]];
-	}
-	
-	function find(obj,lookIn) {
-		if (!lookIn || typeof lookIn != 'object') 
-			return;
-		if ((lookIn.$jb_id && lookIn.$jb_id === obj.$jb_id) || lookIn === obj)
-			return { $jb_path: [], $jb_parent: lookIn};
-		for(var p in lookIn) {
-			var res = find(obj,lookIn[p]);
-			if (res) {
-				res.$jb_path = [p].concat(res.$jb_path);
-				return res;
-			}
-		}
-	}
+	} 
 }
 
-var pathCache = [];
-function updatePathCache(hit) {
-	pathCache.unshift(hit);
-	if (pathCache.length>5)
-		pathCache.pop();
-}
-function pathOfObjectWithCache(obj,lookIn) {
-	for(var i=0;i<pathCache.length;i++) {
-		var res = pathOfObject(obj,jb.path(lookIn,pathCache[i]));
+ui.findPath = function(obj,lookIn) {
+	if (!lookIn || typeof lookIn != 'object') 
+		return;
+	if ((lookIn.$jb_id && lookIn.$jb_id === obj.$jb_id) || lookIn === obj)
+		return { $jb_path: [], $jb_parent: lookIn};
+	for(var p in lookIn) {
+		var res = ui.findPath(obj,lookIn[p]);
 		if (res) {
-			updatePathCache(pathCache[i]);
-			return pathCache[i].concat(res);
+			res.$jb_path = [p].concat(res.$jb_path);
+			return res;
 		}
 	}
-	var res = pathOfObject(obj,lookIn);
-	if (res)
-		updatePathCache(res);
-	return res;
 }
 
-function pathOfObject(obj,lookIn) {
+ui.pathOfObject = function(obj,lookIn) {
 	if (typeof lookIn != 'object') 
 		return;
 	if (lookIn.$jb_id && lookIn.$jb_id === obj.$jb_id) 
@@ -664,20 +653,46 @@ function pathOfObject(obj,lookIn) {
 		return [];
 	}
 	for(var p in lookIn) {
-		var res = pathOfObject(obj,lookIn[p]);
+		var res = ui.pathOfObject(obj,lookIn[p]);
 		if (res) 
 			return [p].concat(res);
 	}
 }
 
-// ****************** jquerry extension ***************
+// ****************** generic utils ***************
 
 if (typeof $ != 'undefined' && $.fn)
     $.fn.findIncludeSelf = function(selector) { 
     	return this.find(selector).addBack(selector); }  
 
+ui.renderWidget = function(profile,elem) {
+	ui.render(ui.h(new jb.jbCtx().run(profile).reactComp()),elem);
+	ui.widgetLoaded = true;
+}
 ui.applyAfter = function(promise,ctx) {
 	// should refresh all after promise
+}
+
+jb.ui.waitFor = function(check,times,interval) {
+  if (check())
+    return Promise.resolve(1);
+
+  times = times || 300;
+  interval = interval || 50;
+
+  return new Promise((resolve,fail)=>{
+    function wait_and_check(counter) {
+      if (counter < 1)
+        fail();
+      setTimeout(() => {
+        if (check())
+          resolve();
+        else
+          wait_and_check(counter-1)
+      }, interval);  
+    }
+    return wait_and_check(times);
+  })
 }
 
 // ****************** vdom utils ***************

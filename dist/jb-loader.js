@@ -69,11 +69,8 @@ var jbLoader =
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
+/***/ (function(module, exports) {
 
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony export (immutable) */ __webpack_exports__["dynamicLoad"] = dynamicLoad;
 var resources = {
       'common': [
         'dist/jb.js',
@@ -92,10 +89,12 @@ var resources = {
         'dist/ui-base-and-styles.js',
         'src/ui/group.js',
         'src/ui/label.js',
+        'src/ui/image.js',
         'src/ui/button.js',
         'src/ui/field.js',
         'src/ui/editable-text.js',
         'src/ui/editable-boolean.js',
+        'src/ui/editable-number.js',
         'src/ui/common-features.js',
         'src/ui/css-features.js',
         'src/ui/dialog.js',
@@ -119,35 +118,40 @@ var resources = {
         'src/testing/testers.js',
       ],
       'codemirror': [
-        'bower_components/codemirror/lib/codemirror.js',
-        'bower_components/codemirror/mode/xml/xml.js',
-        'bower_components/codemirror/mode/javascript/javascript.js',
-        'bower_components/codemirror/mode/css/css.js',
-        'bower_components/codemirror/mode/htmlmixed/htmlmixed.js',
-        'bower_components/codemirror/addon/hint/show-hint.js',
-        'bower_components/codemirror/addon/hint/javascript-hint.js',
-        'bower_components/codemirror/addon/hint/xml-hint.js',
-        'bower_components/codemirror/addon/hint/html-hint.js',
-        'bower_components/codemirror/addon/fold/foldgutter.js',
-        'bower_components/codemirror/addon/selection/active-line.js',
+        'src/ui/styles/codemirror-styles.js',
+        'node_modules/codemirror/lib/codemirror.js',
+        'node_modules/codemirror/mode/xml/xml.js',
+        'node_modules/codemirror/mode/javascript/javascript.js',
+        'node_modules/codemirror/mode/css/css.js',
+        'node_modules/codemirror/mode/htmlmixed/htmlmixed.js',
+        'node_modules/codemirror/addon/hint/show-hint.js',
+        'node_modules/codemirror/addon/hint/javascript-hint.js',
+        'node_modules/codemirror/addon/hint/xml-hint.js',
+        'node_modules/codemirror/addon/hint/html-hint.js',
+        'node_modules/codemirror/addon/fold/foldgutter.js',
+        'node_modules/codemirror/addon/selection/active-line.js',
 
-        'bower_components/codemirror/lib/codemirror.css',
-        'bower_components/codemirror/theme/solarized.css'
+        'node_modules/codemirror/lib/codemirror.css',
+        'node_modules/codemirror/theme/solarized.css'
       ],
       'history': [
         'node_modules/history/umd/history.js',
+        'src/ui/url.js'
       ],
       'dragula': [
           'node_modules/dragula/dist/dragula.js',
           'node_modules/dragula/dist/dragula.css',
+      ],
+      studio: [
+        'main', 'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'model-components','path','utils','tgp-model'
       ]
 };
 
-function dynamicLoad(modules) {
+function jb_dynamicLoad(modules) {
   modules.split(',').forEach(m=>{
     (resources[m] || []).forEach(file=>{
       if (m == 'studio')
-        file = 'projects/studio/' + file;
+        file = 'projects/studio/studio-' + file + '.js';
 
       var url = (window.jbLoaderRelativePath ? '' : '/') + file;
       if (file.match(/\.js$/))
@@ -159,12 +163,8 @@ function dynamicLoad(modules) {
 }
 
 if (document.currentScript && document.currentScript.getAttribute('modules'))
-    dynamicLoad(document.currentScript.getAttribute('modules'));
+    jb_dynamicLoad(document.currentScript.getAttribute('modules'));
 
-var jb_studio_modules = ['tgp-model','model-components.js','path','utils','main.js','preview','menu.js','toolbar','tests','popups.js'
-,'tree','properties.js','properties-menu.js','pick.js','save','probe','edit-source','new-control.js','testers'
-,'undo','styles.js','style-editor.js','data-browse','open-project.js','jb-editor.js','jb-editor-styles.js','suggestions','context-viewer.js','search.js']
-  .map(x=> x.match(/\.js$/) ? 'projects/studio/studio-' + x : 'studio/studio-' + x  )
 
 
 

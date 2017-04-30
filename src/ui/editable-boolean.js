@@ -11,7 +11,7 @@ jb.component('editable-boolean',{
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx => jb.ui.ctrl(ctx,{
-  		init: function(cmp) {
+  		init: cmp => {
         cmp.toggle = () =>
           cmp.jbModel(!cmp.jbModel());
 
