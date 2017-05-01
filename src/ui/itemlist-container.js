@@ -18,14 +18,14 @@ jb.component('group.itemlist-container', {
         			this.items = items,
         		add: function(item) {
         			this.selected = item || JSON.parse(JSON.stringify(context.params.defaultItem || {}));
-    				  this.items && ui.splice(this.items,[[this.items.length,0,this.selected]]);
+    				  this.items && jb.splice(this.items,[[this.items.length,0,this.selected]]);
         		},
             filter_data: {},
             filters: [],
         		delete: function(item) {
         			if (this.items && this.items.indexOf(item) != -1) {
         				this.changeSelectionBeforeDelete();
-                ui.splice(this.items,[[this.items.indexOf(item),1]]);
+                jb.splice(this.items,[[this.items.indexOf(item),1]]);
         			}
         		},
         		changeSelectionBeforeDelete: function() {

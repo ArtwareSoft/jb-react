@@ -55,7 +55,9 @@ jb.component('studio.all', {
         ], 
         features :{$: 'css', css: '{ height: 90px; border-bottom: 1px #d9d9d9 solid}' }
       }, 
-      {$: 'studio.preview-widget', width: 1280, height: 520 }, 
+      {$: 'studio.preview-widget', width: 1280, height: 520,
+        features :{$: 'watch-ref', ref: '%$studio/page%'}
+      }, 
       {$: 'group', 
         title: 'pages', 
         style :{$: 'layout.horizontal' }, 
@@ -69,12 +71,12 @@ jb.component('studio.all', {
           {$: 'itemlist', 
             items :{$: 'studio.project-pages' }, 
             style :{$: 'itemlist.horizontal' }, 
-            watch: 'studio',
             controls :{$: 'label', 
               title :{$: 'extract-suffix', separator: '.' }, 
               features :{$: 'css.class', class: 'studio-page' }
             }, 
             features: [
+              {$: 'watch-ref', resource: '%$studio/comps%'},
               {$: 'itemlist.selection', 
                 databind: '%$studio/page%', 
                 onSelection :{$: 'write-value', 
@@ -115,7 +117,7 @@ jb.component('studio.all', {
 })
 
 jb.component('studio.currentProfilePath', {
-	impl: { $firstSucceeding: [ '%$studio/profile_path%', '%$studio/project%.%$studio/page%'] }
+	impl: { $firstSucceeding: [ '%$simulateProfilePath%','%$studio/profile_path%', '%$studio/project%.%$studio/page%'] }
 })
 
 jb.component('studio.is-single-test', {

@@ -92,7 +92,7 @@ export function jb_run(context,parentParam,settings) {
   }
 }
 
-function compParams(comp) {
+export function compParams(comp) {
   if (!comp || !comp.params) 
     return [];
   return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>extend(x[1],obj('id',x[0])));
@@ -404,9 +404,7 @@ export var jstypes = {
     'ref': function(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null) return value;
-      if (value && (value.$jb_parent || value.$jb_val))
-        return value;
-      return { $jb_val: () => value }
+      return valueByRefHandler.asRef(value);
     }
 };
 
@@ -506,16 +504,11 @@ export function logException(e,errorStr) {
   logError('exception: ' + errorStr + "\n" + (e.stack||''));
 }
 
-// functions
 export function extend(obj,obj1,obj2,obj3) {
   if (!obj) return;
-  Object.getOwnPropertyNames(obj1||{})
-    .forEach(function(p) { obj[p] = obj1[p] })
-  Object.getOwnPropertyNames(obj2||{})
-    .forEach(function(p) { obj[p] = obj2[p] })
-  Object.getOwnPropertyNames(obj3||{})
-    .forEach(function(p) { obj[p] = obj3[p] })
-
+  obj1 && Object.assign(obj,obj1);
+  obj2 && Object.assign(obj,obj2);
+  obj3 && Object.assign(obj,obj3);
   return obj;
 }
 
@@ -626,21 +619,27 @@ export function equals(x,y) {
   return x == y || val(x) == val(y)
 }
 
-export function writeValue(to,value) {
-  if (ui.writeValue) // use immutables
-    return ui.writeValue(to,value);
+// valueByRef functions
 
-  if (!to) return;
-  if (to.$jb_val) 
-    to.$jb_val(val(value))
-  else if (to.$jb_parent)
-    to.$jb_parent[to.$jb_property] = val(value);
+export function val(v) {
+  if (v == null) return v;
+  return valueByRefHandler.val(v)
 }
-
-export function isRef(value) {
-  return value && (value.$jb_parent || value.$jb_val);
+export function writeValue(ref,value) {
+  return valueByRefHandler.writeValue(ref,value);
 }
-
+export function splice(ref,args) {
+  return valueByRefHandler.splice(ref,args);
+}
+export function isRef(ref) {
+  return valueByRefHandler.isRef(ref);
+}
+export function asRef(obj) {
+  return valueByRefHandler.asRef(obj);
+}
+export function refreshRef(ref) {
+  return valueByRefHandler.refresh(ref);
+}
 export function objectProperty(_object,property,jstype,lastInExpression) {
   var object = val(_object);
   if (!object) return null;
@@ -649,30 +648,46 @@ export function objectProperty(_object,property,jstype,lastInExpression) {
   if (lastInExpression) {
     if (jstype == 'string' || jstype == 'boolean' || jstype == 'number')
       return jstypes[jstype](object[property]); // no need for valueByRef
-    if (jstype == 'ref') {
-      if (isRef(object[property]))
-        return object[property];
-      else
-        return { $jb_parent: object, $jb_property: property };
-    }
+    if (jstype == 'ref') 
+      return valueByRefHandler.objectProperty(object,property)
   }
   return object[property];
-}
-
-export function val(v) {
-  if (v == null) return v;
-  if (v.$jb_val) return v.$jb_val();
-  // if (applyFunction && typeof val == 'function' && val.profile)
-  //   return val();
-  if (v.$jb_parent && jb.ui.updateJbParent)
-    jb.ui.updateJbParent(v);
-
-  return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
 }
 
 export function delay(mSec) {
   return new Promise(r=>{setTimeout(r,mSec)})
 }
+
+var valueByRefHandlerWithjbParent = {
+  val: function(v) {
+    if (v.$jb_val) return v.$jb_val();
+    return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
+  },
+  writeValue: function(to,value) {
+    if (!to) return;
+    if (to.$jb_val) 
+      to.$jb_val(this.val(value))
+    else if (to.$jb_parent)
+      to.$jb_parent[to.$jb_property] = this.val(value);
+  },
+  asRef: function(value) {
+    if (value && (value.$jb_parent || value.$jb_val))
+        return value;
+    return { $jb_val: () => value }
+  },
+  isRef: function(value) {
+    return value && (value.$jb_parent || value.$jb_val);
+  },
+  objectProperty: function(obj,prop) {
+      if (this.isRef(obj[prop]))
+        return obj[prop];
+      else
+        return { $jb_parent: obj, $jb_property: prop };
+  }
+}
+var valueByRefHandler = valueByRefHandlerWithjbParent;
+
+export function setValueByRefHandler(h) { valueByRefHandler = h }
 
 export var comps = {};
 export var functions = {};

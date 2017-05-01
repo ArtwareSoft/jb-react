@@ -1,10 +1,10 @@
 var resources = {
       'common': [
         'dist/jb.js',
-        'src/core/jb-common.js'
+        'src/core/jb-common.js',
+        'dist/jb-rx.js',
       ],
       'ui-common': [
-        'dist/jb-rx.js',
         'node_modules/jquery/dist/jquery.min.js',
         'node_modules/material-design-lite/material.js',
         'node_modules/material-design-lite/material.min.css',
@@ -14,6 +14,7 @@ var resources = {
         'css/styles.css',
 
         'dist/ui-base-and-styles.js',
+        'src/ui/immutable.js',
         'src/ui/group.js',
         'src/ui/label.js',
         'src/ui/image.js',
@@ -70,7 +71,7 @@ var resources = {
           'node_modules/dragula/dist/dragula.css',
       ],
       studio: [
-        'main', 'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'model-components','path','utils','tgp-model'
+        'main', 'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'model-components','path','utils','tgp-model','tree'
       ]
 };
 

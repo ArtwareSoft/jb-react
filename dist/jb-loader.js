@@ -143,7 +143,7 @@ var resources = {
           'node_modules/dragula/dist/dragula.css',
       ],
       studio: [
-        'main', 'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'model-components','path','utils','tgp-model'
+        'main', 'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'model-components','path','utils','tgp-model','tree'
       ]
 };
 

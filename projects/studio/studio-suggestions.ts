@@ -1,6 +1,6 @@
 import {jb} from 'jb-core';
 import * as jb_ui from 'jb-ui';
-import * as jb_rx from 'jb-ui/jb-rx';
+import * as jb.rx from 'jb-ui/jb-rx';
 import {model} from './studio-tgp-model';
 import {getComp} from './studio-utils';
 
@@ -247,7 +247,7 @@ jb.component('group.studio-suggestions', {
         suggestionCtx.input = input;
         var inputClosed = cmp.destroyed;
 
-        cmp.keyEm = jb_rx.Observable.fromEvent(input, 'keydown')
+        cmp.keyEm = jb.rx.Observable.fromEvent(input, 'keydown')
           .takeUntil(inputClosed);
         suggestionCtx.keyEm = cmp.keyEm;
         suggestionCtx.closeAndWriteValue = _ =>{
@@ -299,11 +299,11 @@ jb.component('group.studio-suggestions', {
         function getProbe() {
           if (cmp.probeResult)
             return [cmp.probeResult];
-          var _probe = jb_rx.Observable.fromPromise(ctx.run({$: 'studio.probe', path: ctx.params.path }));
+          var _probe = jb.rx.Observable.fromPromise(ctx.run({$: 'studio.probe', path: ctx.params.path }));
           _probe.subscribe(res=>
             cmp.probeResult = res);
           // do not wait more than 500 mSec
-          return _probe.race(jb_rx.Observable.of({finalResult: [ctx] }).delay(500))
+          return _probe.race(jb.rx.Observable.of({finalResult: [ctx] }).delay(500))
             .catch(e=>
                 jb.logException(e,'in probe exception'))
         }

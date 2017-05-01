@@ -39,23 +39,22 @@ jb.component('itemlist.watch-items-with-heading', {
   params: [
     { id: 'items', essential: true, dynamic: true },
     { id: 'itemsArrayVariable', as: 'string' },
-    { id: 'watch', as: 'array', description: 'resources to watch' },
     { id: 'groupBy', type: 'itemlist.group-by', essential: true, dynamic: true },
   ],
-  impl: function(context, items, itemsArrayVariable,watch,groupBy) {
-    return {
+  impl: (context, items, itemsArrayVariable,groupBy) => ({
       beforeInit: function(cmp) {
-        if (watch[0]) {
-          cmp.ctrlEmitter = jb.ui.resourceChange.takeUntil(cmp.destroyed)
-                .filter(e => watch[0] == '*' || e.path && watch.indexOf(e.path[0]) != -1)
-                .startWith(1)
-                .map(x=>
-                  items(cmp.ctx))
+        cmp.items = items(cmp.ctx);
+        var itemsRef = jb.asRef(cmp.items);
+        if (itemsRef) {
+          cmp.ctrlEmitter = jb.ui.refObservable(itemsRef,cmp)
                 .filter(items=>
-                  ! jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
-                .map(items=> items2ctrls(items));
+                  items.length == 0 || !jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
+                .startWith(cmp.items)
+                .do(items => 
+                  cmp.items = items)
+                .map(items=> items2ctrls(items))
         } else {
-          cmp.ctrlEmitter = jb.rx.Observable.of(items2ctrls(items(cmp.ctx)));
+          cmp.state.ctrls = items2ctrls(cmp.items).map(c=>c.reactComp());
         }
 
         function items2ctrls(_items) {
@@ -70,7 +69,7 @@ jb.component('itemlist.watch-items-with-heading', {
             return ctrls;
         }
       }
-  }}
+  })
 })
 
 jb.component('itemlist-default-heading', {

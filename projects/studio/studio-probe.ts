@@ -1,5 +1,5 @@
 import {jb} from 'jb-core';
-import * as jb_rx from 'jb-ui/jb-rx';
+import * as jb.rx from 'jb-ui/jb-rx';
 
 import {model} from './studio-tgp-model';
 import {jbart_base,pathChangesEm} from './studio-utils';
@@ -112,7 +112,7 @@ function testControl(ctx,forTests) {
     var _win = ctx.win();
     var dialog = { 
       id: 'test-control', 
-      em: new jb_rx.Subject(),
+      em: new jb.rx.Subject(),
       comp: ctx.runItself().jbExtend({
         jbEmitter: true,
         init: cmp =>

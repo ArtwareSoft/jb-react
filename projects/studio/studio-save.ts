@@ -1,5 +1,5 @@
 import {jb} from 'jb-core';
-import * as jb_rx from 'jb-ui/jb-rx';
+import * as jb.rx from 'jb-ui/jb-rx';
 import {model} from './studio-tgp-model';
 import {compAsStr,modifyOperationsEm,message} from './studio-utils';
 
@@ -17,7 +17,7 @@ jb.component('studio.save-components', {
 		{ id: 'force',as: 'boolean', type: 'boolean' }
 	],
 	impl : (ctx,force) => 
-		jb_rx.Observable.from(jb.entries(modified))
+		jb.rx.Observable.from(jb.entries(modified))
 			.filter(x=>x)
 			.concatMap(toSave=>{
 				var comp = toSave[0], val = toSave[1];

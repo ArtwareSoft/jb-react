@@ -1,4 +1,17 @@
 <!DOCTYPE html>
-<script type="text/javascript" src="../../dist/jb.js"></script>
-<script type="text/javascript" src="../../dist/jb-loader.js" modules="common"></script>
-<script type="text/javascript" src="data-tests-bnd.js"></script>
+<html title="data tests">
+<head>
+<script type="text/javascript">
+	startTime = new Date().getTime();
+</script>
+
+<script type="text/javascript" src="/node_modules/jquery/dist/jquery.min.js"></script>
+<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,testers"></script>
+<script type="text/javascript" src="data-tests.js"></script>
+</head>
+<body>
+<script>
+	jb.testers.runTests('data-test');
+</script>
+</body>
+</html>

@@ -1,13 +1,11 @@
-jb.resource('studio-helper','people-array', { "people": [
+jb.resource('people-array', { "people": [
   { "name": "Homer Simpson" ,"age": 42 , "male": true},
   { "name": "Marge Simpson" ,"age": 38 , "male": false},
   { "name": "Bart Simpson"  ,"age": 12 , "male": true}
   ]
 })
 
-//jb.resource('studio-helper','settings', { "currentProfilePath": "studio-helper.sample-control"})
-
-jb.resource('studio-helper','group-with-custom-style',
+jb.resource('group-with-custom-style',
   {$: 'group', 
     title: 'main', 
     style : {$: 'customStyle',

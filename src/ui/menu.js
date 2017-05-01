@@ -273,7 +273,7 @@ jb.component('menu.selection', {
         cmp.base.setAttribute('tabIndex','0');
      	// putting the emitter at the top-menu only and listen at all sub menus
 
-//        cmp.keydownSrc = new jb_rx.Subject();
+//        cmp.keydownSrc = new jb.rx.Subject();
      	if (!ctx.vars.topMenu.keydown) { 
 	        ctx.vars.topMenu.keydown = cmp.onkeydown;
             jb.ui.focus(cmp.base,'menu.keyboard init autoFocus');

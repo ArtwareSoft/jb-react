@@ -18,12 +18,11 @@ jb.component('itemlist.init', {
   params: [
     { id: 'items', essential: true, dynamic: true },
     { id: 'itemsArrayVariable', as: 'string' },
-    { id: 'watch', as: 'array', description: 'resources to watch' },
   ],
   impl: (context, items, itemsArrayVariable,watch) => ({
       beforeInit: cmp => {
         cmp.items = items(cmp.ctx);
-        var itemsRef = jb.ui.refOfObj(cmp.items);
+        var itemsRef = jb.asRef(cmp.items);
         if (itemsRef) {
           cmp.ctrlEmitter = jb.ui.refObservable(itemsRef,cmp)
                 .filter(items=>
@@ -32,17 +31,6 @@ jb.component('itemlist.init', {
                 .do(items => 
                   cmp.items = items)
                 .map(items=> items2ctrls(items))
-        } else if (watch[0]) {
-          cmp.ctrlEmitter = jb.ui.resourceChange.takeUntil(cmp.destroyed)
-                .filter(e => watch[0] == '*' || e.path && watch.indexOf(e.path[0]) != -1)
-                .startWith(1)
-                .map(x=>
-                  items(cmp.ctx))
-                .do(items => 
-                  cmp.items = items)
-                .filter(items=>
-                  items.length == 0 || !jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
-                .map(items=> items2ctrls(items));
         } else {
           cmp.state.ctrls = items2ctrls(cmp.items).map(c=>c.reactComp());
         }
@@ -108,7 +96,8 @@ jb.component('itemlist.selection', {
     },
     extendItem: (cmp,ctrl,vdom) => {
       jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == ctrl.ctx.data);
-      vdom.attributes.onclick = _ => cmp.clickEmitter.next(ctrl.ctx.data)
+      vdom.attributes.onclick = _ => 
+        cmp.clickEmitter.next(ctrl.ctx.data)
     },
     css: '>.selected { ' + ctx.params.cssForSelected + ' }',
   })
@@ -171,7 +160,7 @@ jb.component('itemlist.drag-and-drop', {
         drake.on('drop', (dropElm, target, source,sibling) => {
             var draggedIndex = cmp.items.indexOf(dropElm.dragged.obj);
             var targetIndex = sibling ? $(sibling).index() : cmp.items.length;
-            jb.ui.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.obj]]);
+            jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.obj]]);
 
             dropElm.dragged = null;
         });
@@ -187,7 +176,7 @@ jb.component('itemlist.drag-and-drop', {
             var selectedIndex = cmp.items.indexOf(cmp.state.selected);
             if (selectedIndex == -1) return;
             var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-            jb.ui.splice(cmp.items,[[selectedIndex,1],[index,0,cmp.state.selected]]);
+            jb.splice(cmp.items,[[selectedIndex,1],[index,0,cmp.state.selected]]);
         })
       }
     })
@@ -214,7 +203,7 @@ jb.component('itemlist.use-group-style', {
     control: {$: 'group', 
       features : [
         {$: 'group.init-group'},
-        {$: 'itemlist.init', items: '%$itemlistModel/items%', watch: '%$itemlistModel/watch%', itemsArrayVariable: 'items_array' },
+        {$: 'itemlist.init', items: '%$itemlistModel/items%', itemsArrayVariable: 'items_array' },
       ], 
       style :{$call :'groupStyle'},
       controls :{$: 'dynamic-controls', 

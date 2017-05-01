@@ -16,7 +16,7 @@ jb.component('field.databind', {
                 if (cmp.inputEvents && source == 'keyup')
                   cmp.inputEvents.next(val);
                 else if (!ctx.vars.$model.updateOnBlur || source != 'keyup') {
-                  jb.ui.writeValue(ctx.vars.$model.databind,val,{source: cmp});
+                  jb.writeValue(ctx.vars.$model.databind,val,{source: cmp});
                 }
               }
             }
@@ -40,7 +40,7 @@ jb.component('field.debounce-databind', {
             .distinctUntilChanged()
             .debounceTime(debounceTime)
             .subscribe(val=>
-              jb.ui.writeValue(ctx.vars.$model.databind,val)
+              jb.writeValue(ctx.vars.$model.databind,val)
           )
       },
       jbEmitter: true,
@@ -61,7 +61,7 @@ jb.component('field.default', {
   impl: function(context,defaultValue) {
     var data_ref = context.vars.$model.databind;
     if (data_ref && jb.val(data_ref) == null)
-      jb.ui.writeValue(data_ref,defaultValue)
+      jb.writeValue(data_ref,defaultValue)
   }
 })
 
@@ -77,7 +77,7 @@ jb.component('field.subscribe', {
       var data_ref = context.vars.$model && context.vars.$model.databind;
       if (!data_ref) return;
       var includeFirstEm = includeFirst ? jb.rx.Observable.of(jb.val(data_ref)) : jb.rx.Observable.of();
-      jb_rx.refObservable(data_ref,cmp)
+      jb.rx.refObservable(data_ref,cmp)
             .merge(includeFirstEm)
             .filter(x=>x)
             .subscribe(x=>

@@ -101,7 +101,7 @@ jb.component('list', {
 	}
 });
 
-jb.component('first-succeeding', {
+jb.component('firstSucceeding', {
 	type: 'data',
 	params: [
 		{ id: 'items', type: "data[]", as: 'array', composite: true }

@@ -11,7 +11,7 @@ jb.component('data-test', {
 			.then(_ => 
 				calculate())
 			.then(v=>
-				Array.isArray(v) ? jb_synchArray(v) : v)
+				Array.isArray(v) ? jb.synchArray(v) : v)
 			.then(value=>
 				!! expectedResult(new jb.jbCtx(context,{ data: value })))
 			.then(result =>

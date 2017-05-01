@@ -76,12 +76,12 @@ jb.component('dialog-feature.studio-pick', {
 		  var previewOffset = ctx.params.from == 'preview' ? $('#jb-preview').offset().top : 0;
 		  cmp.titleBelow = false;
 
-		  var mouseMoveEm = jb_rx.Observable.fromEvent(_window.document, 'mousemove');
-		  var userPick = jb_rx.Observable.fromEvent(document, 'mousedown')
-		      			.merge(jb_rx.Observable.fromEvent(
+		  var mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
+		  var userPick = jb.rx.Observable.fromEvent(document, 'mousedown')
+		      			.merge(jb.rx.Observable.fromEvent(
 		      				(jbart.previewWindow || {}).document, 'mousedown'));
-		  var keyUpEm = jb_rx.Observable.fromEvent(document, 'keyup')
-		      			.merge(jb_rx.Observable.fromEvent(
+		  var keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup')
+		      			.merge(jb.rx.Observable.fromEvent(
 		      				(jbart.previewWindow || {}).document, 'keyup'));
 
 		  mouseMoveEm

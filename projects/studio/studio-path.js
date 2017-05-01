@@ -24,7 +24,7 @@ st.profileRefFromPath = function(path) {
 			parent[this.path.split('~').pop()] = value;
 		}
 	}
-	//pathChangesEm.subscribe(fixer => ref.path = fixer.fix(ref.path))
+	//st.pathChangesEm.subscribe(fixer => ref.path = fixer.fix(ref.path))
 	return ref;
 }
 
@@ -96,7 +96,7 @@ function fixMovePaths(from,to) {
 	var parent_path = parentPath(to);
 	var depth = parent_path.split('~').length;
 	var index = Number(to.split('~').pop()) || 0;
-	pathChangesEm.next({ from: from, to: to, 
+	st.pathChangesEm.next({ from: from, to: to, 
 		fix: function(pathToFix) {
 			if (!pathToFix) return;
 			if (pathToFix.indexOf(from) == 0) {
@@ -112,20 +112,20 @@ function fixMovePaths(from,to) {
 }
 
 function fixSetCompPath(comp) {
-	pathChangesEm.next({
+	st.pathChangesEm.next({
 		fix: pathToFix =>
 			pathToFix.indexOf(comp) == 0 ? closest(pathToFix) : pathToFix
 	})
 }
 
 function fixIndexPaths(path,diff) {
-	pathChangesEm.next({ fix: pathToFix =>
+	st.pathChangesEm.next({ fix: pathToFix =>
 		fixIndexOfPath(pathToFix,path,diff)
 	})
 } 
 
 function fixReplacingPaths(path1,path2) {
-	pathChangesEm.next(new FixReplacingPathsObj(path1,path2))
+	st.pathChangesEm.next(new FixReplacingPathsObj(path1,path2))
 } 
 
 class FixReplacingPathsObj {
@@ -158,7 +158,7 @@ function fixIndexOfPath(pathToFix,changedPath,diff) {
 }
 
 function fixArrayWrapperPath() {
-	pathChangesEm.next(function(pathToFix) {
+	st.pathChangesEm.next(function(pathToFix) {
 		var base = pathToFix.split('~')[0];
 		var first = jb.val(profileRefFromPath(base));
 		var res = pathToFix.split('~')[0];
@@ -205,11 +205,11 @@ jb.component('group.studio-watch-path', {
   ],
   impl: (context, path_ref) =>({
       beforeInit: cmp => {
-          cmp.jbWatchGroupChildrenEm = (cmp.jbWatchGroupChildrenEm || jb_rx.Observable.of())
+          cmp.jbWatchGroupChildrenEm = (cmp.jbWatchGroupChildrenEm || jb.rx.Observable.of())
               .merge(cmp.jbEmitter
                 .filter(x => x == 'check')
                 .merge(
-                  pathChangesEm.takeUntil( cmp.destroyed ).do(fixer=>
+                  st.pathChangesEm.takeUntil( cmp.destroyed ).do(fixer=>
                     jb.writeValue(path_ref,fixer.fix(jb.val(path_ref))))
                 )
                 .map(()=> jb.val(path_ref))
@@ -232,7 +232,7 @@ jb.component('feature.studio-auto-fix-path', {
   impl: (context, path_ref) =>
   	({
       beforeInit: cmp => {
-        pathChangesEm
+        st.pathChangesEm
             .takeUntil( cmp.destroyed )
             .subscribe(fixer=>
                 jb.writeValue(path_ref,fixer.fix(jb.val(path_ref)))

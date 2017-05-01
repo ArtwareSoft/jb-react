@@ -74,6 +74,7 @@ var jb =
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (immutable) */ __webpack_exports__["jb_run"] = jb_run;
+/* harmony export (immutable) */ __webpack_exports__["compParams"] = compParams;
 /* harmony export (immutable) */ __webpack_exports__["expression"] = expression;
 /* harmony export (immutable) */ __webpack_exports__["bool_expression"] = bool_expression;
 /* harmony export (immutable) */ __webpack_exports__["tojstype"] = tojstype;
@@ -103,11 +104,15 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (immutable) */ __webpack_exports__["synchArray"] = synchArray;
 /* harmony export (immutable) */ __webpack_exports__["unique"] = unique;
 /* harmony export (immutable) */ __webpack_exports__["equals"] = equals;
-/* harmony export (immutable) */ __webpack_exports__["writeValue"] = writeValue;
-/* harmony export (immutable) */ __webpack_exports__["isRef"] = isRef;
-/* harmony export (immutable) */ __webpack_exports__["objectProperty"] = objectProperty;
 /* harmony export (immutable) */ __webpack_exports__["val"] = val;
+/* harmony export (immutable) */ __webpack_exports__["writeValue"] = writeValue;
+/* harmony export (immutable) */ __webpack_exports__["splice"] = splice;
+/* harmony export (immutable) */ __webpack_exports__["isRef"] = isRef;
+/* harmony export (immutable) */ __webpack_exports__["asRef"] = asRef;
+/* harmony export (immutable) */ __webpack_exports__["refreshRef"] = refreshRef;
+/* harmony export (immutable) */ __webpack_exports__["objectProperty"] = objectProperty;
 /* harmony export (immutable) */ __webpack_exports__["delay"] = delay;
+/* harmony export (immutable) */ __webpack_exports__["setValueByRefHandler"] = setValueByRefHandler;
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "comps", function() { return comps; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "functions", function() { return functions; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "types", function() { return types; });
@@ -522,9 +527,7 @@ var jstypes = {
     'ref': function(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null) return value;
-      if (value && (value.$jb_parent || value.$jb_val))
-        return value;
-      return { $jb_val: () => value }
+      return valueByRefHandler.asRef(value);
     }
 };
 
@@ -626,16 +629,11 @@ function logException(e,errorStr) {
   logError('exception: ' + errorStr + "\n" + (e.stack||''));
 }
 
-// functions
 function extend(obj,obj1,obj2,obj3) {
   if (!obj) return;
-  Object.getOwnPropertyNames(obj1||{})
-    .forEach(function(p) { obj[p] = obj1[p] })
-  Object.getOwnPropertyNames(obj2||{})
-    .forEach(function(p) { obj[p] = obj2[p] })
-  Object.getOwnPropertyNames(obj3||{})
-    .forEach(function(p) { obj[p] = obj3[p] })
-
+  obj1 && Object.assign(obj,obj1);
+  obj2 && Object.assign(obj,obj2);
+  obj3 && Object.assign(obj,obj3);
   return obj;
 }
 
@@ -746,21 +744,27 @@ function equals(x,y) {
   return x == y || val(x) == val(y)
 }
 
-function writeValue(to,value) {
-  if (ui.writeValue) // use immutables
-    return ui.writeValue(to,value);
+// valueByRef functions
 
-  if (!to) return;
-  if (to.$jb_val) 
-    to.$jb_val(val(value))
-  else if (to.$jb_parent)
-    to.$jb_parent[to.$jb_property] = val(value);
+function val(v) {
+  if (v == null) return v;
+  return valueByRefHandler.val(v)
 }
-
-function isRef(value) {
-  return value && (value.$jb_parent || value.$jb_val);
+function writeValue(ref,value) {
+  return valueByRefHandler.writeValue(ref,value);
 }
-
+function splice(ref,args) {
+  return valueByRefHandler.splice(ref,args);
+}
+function isRef(ref) {
+  return valueByRefHandler.isRef(ref);
+}
+function asRef(obj) {
+  return valueByRefHandler.asRef(obj);
+}
+function refreshRef(ref) {
+  return valueByRefHandler.refresh(ref);
+}
 function objectProperty(_object,property,jstype,lastInExpression) {
   var object = val(_object);
   if (!object) return null;
@@ -769,30 +773,46 @@ function objectProperty(_object,property,jstype,lastInExpression) {
   if (lastInExpression) {
     if (jstype == 'string' || jstype == 'boolean' || jstype == 'number')
       return jstypes[jstype](object[property]); // no need for valueByRef
-    if (jstype == 'ref') {
-      if (isRef(object[property]))
-        return object[property];
-      else
-        return { $jb_parent: object, $jb_property: property };
-    }
+    if (jstype == 'ref') 
+      return valueByRefHandler.objectProperty(object,property)
   }
   return object[property];
-}
-
-function val(v) {
-  if (v == null) return v;
-  if (v.$jb_val) return v.$jb_val();
-  // if (applyFunction && typeof val == 'function' && val.profile)
-  //   return val();
-  if (v.$jb_parent && jb.ui.updateJbParent)
-    jb.ui.updateJbParent(v);
-
-  return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
 }
 
 function delay(mSec) {
   return new Promise(r=>{setTimeout(r,mSec)})
 }
+
+var valueByRefHandlerWithjbParent = {
+  val: function(v) {
+    if (v.$jb_val) return v.$jb_val();
+    return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
+  },
+  writeValue: function(to,value) {
+    if (!to) return;
+    if (to.$jb_val) 
+      to.$jb_val(this.val(value))
+    else if (to.$jb_parent)
+      to.$jb_parent[to.$jb_property] = this.val(value);
+  },
+  asRef: function(value) {
+    if (value && (value.$jb_parent || value.$jb_val))
+        return value;
+    return { $jb_val: () => value }
+  },
+  isRef: function(value) {
+    return value && (value.$jb_parent || value.$jb_val);
+  },
+  objectProperty: function(obj,prop) {
+      if (this.isRef(obj[prop]))
+        return obj[prop];
+      else
+        return { $jb_parent: obj, $jb_property: prop };
+  }
+}
+var valueByRefHandler = valueByRefHandlerWithjbParent;
+
+function setValueByRefHandler(h) { valueByRefHandler = h }
 
 var comps = {};
 var functions = {};

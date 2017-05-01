@@ -163,7 +163,7 @@ jb.component('studio.control-tree.nodes', {
 	impl: function(context) {
 		var currentPath = context.run({ $: 'studio.currentProfilePath' });
 		var compPath = currentPath.split('~')[0] || '';
-		return new TgpModel(compPath);
+		return new jb.studio.TgpModel(compPath);
 	}
 })
 
@@ -173,10 +173,10 @@ jb.component('studio.control-tree.refresh-path-changes', {
   impl: ctx => ({
     init : cmp => {
       var tree = ctx.vars.$tree; 
-      pathChangesEm.takeUntil( cmp.destroyed )
+      jb.studio.pathChangesEm.takeUntil( cmp.destroyed )
         .subscribe(fixer => {
           var new_expanded = {};
-          jb_entries(tree.expanded)
+          jb.entries(tree.expanded)
             .filter(e=>e[1])
             .forEach(e => new_expanded[fixer.fix(e[0])] = true)
           tree.expanded = new_expanded;

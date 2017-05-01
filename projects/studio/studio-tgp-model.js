@@ -63,7 +63,7 @@ class TgpModel {
 		var val = st.profileFromPath(path);
 		if (!val || typeof val != 'object') return [];
 		var compName = jb.compName(val);
-		var comp = getComp(compName);
+		var comp = st.getComp(compName);
 		if (Array.isArray(val))
 			return Object.getOwnPropertyNames(val)
 				.map(x=>x=='length'? val.length : x)
@@ -78,12 +78,12 @@ class TgpModel {
 
 			return [res_path];
 		} else if (comp) {
-			var composite = jb_compParams(comp)
+			var composite = jb.compParams(comp)
 				.filter(p=>
 					p.composite)
 				.map(p=>flattenArray(p.id));
 
-			return (composite[0] || []).concat(jb_compParams(comp)
+			return (composite[0] || []).concat(jb.compParams(comp)
 					.filter(p=>!p.composite)
 					.map(p=> ({ path: path + '~' + p.id, param: p}))
 					.filter(e=>st.profileFromPath(e.path) != null || e.param.essential)
@@ -105,10 +105,10 @@ class TgpModel {
 
 	jbEditorMoreParams(path) {
 		var val = st.profileFromPath(path);
-		var comp = getComp(jb.compName(val||{}));
+		var comp = st.getComp(jb.compName(val||{}));
 		if (comp) {
 			var existing = this.jbEditorSubNodes(path);
-			return jb_compParams(comp)
+			return jb.compParams(comp)
 					.map(p=> path + '~' + p.id)
 					.filter(p=> existing.indexOf(p) == -1)
 		}
@@ -219,7 +219,7 @@ class TgpModel {
 
 	modify(op,path,args,ctx,delayed) {
 		var comp = path.split('~')[0];
-		var before = getComp(comp) && compAsStr(comp);
+		var before = st.getComp(comp) && compAsStr(comp);
 		var res = op.call(this,path,args);
 		if (res && res.newPath) // used for insert to array that creates new path
 			path = res.newPath;
@@ -295,8 +295,8 @@ class TgpModel {
 		jb.writeValue(profileRefFromPath(path),result);
 	}
 	wrap(path,args) {
-		var comp = getComp(args.compName);
-		var firstParam = jb_compParams(comp).filter(p=>p.composite)[0];
+		var comp = st.getComp(args.compName);
+		var firstParam = jb.compParams(comp).filter(p=>p.composite)[0];
 		if (firstParam) {
 			var result = jb.extend({ $: args.compName }, jb.obj(firstParam.id, [st.profileFromPath(path)]));
 			jb.writeValue(profileRefFromPath(path),result);
@@ -308,7 +308,7 @@ class TgpModel {
 	    var compName = jb.compName(style);
 	    if (compName == 'customStyle')
 	      return { type: 'inner', path: path, style : style }
-		var comp = compName && getComp(compName);
+		var comp = compName && st.getComp(compName);
 		if (jb.compName(comp.impl) == 'customStyle') 
 	      return { type: 'global', path: compName, style: comp.impl, innerPath: path }
 	}
@@ -336,11 +336,11 @@ class TgpModel {
 
 	setComp(path,args) {
 		var compName = args.comp;
-		var comp = compName && getComp(compName);
+		var comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
 		var result = { $: compName };
 		var existing = st.profileFromPath(path);
-		jb_compParams(comp).forEach(p=>{
+		jb.compParams(comp).forEach(p=>{
 			if (p.composite)
 				result[p.id] = [];
 			if (existing && existing[p.id])
@@ -355,11 +355,11 @@ class TgpModel {
 
 	insertControl(path,args) {
 		var compName = args.comp;
-		var comp = compName && getComp(compName);
+		var comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
 		var result = { $: compName };
 		// copy default values
-		jb_compParams(comp).forEach(p=>{
+		jb.compParams(comp).forEach(p=>{
 			if (p.defaultValue || p.defaultTValue)
 				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue || p.defaultTValue))
 		})
@@ -399,13 +399,13 @@ class TgpModel {
 
 	makeLocal(path) {
 		var compName = this.compName(path);
-		var comp = compName && getComp(compName);
+		var comp = compName && st.getComp(compName);
 		if (!compName || !comp || typeof comp.impl != 'object') return;
 		var res = JSON.stringify(comp.impl, (key, val) => typeof val === 'function' ? ''+val : val , 4);
 
 		var profile = st.profileFromPath(path);
 		// inject conditional param values
-		jb_compParams(comp).forEach(p=>{ 
+		jb.compParams(comp).forEach(p=>{ 
 				var pUsage = '%$'+p.id+'%';
 				var pVal = '' + (profile[p.id] || p.defaultValue || '');
 				res = res.replace(new RegExp('{\\?(.*?)\\?}','g'),(match,condition_exp)=>{ // conditional exp
@@ -415,7 +415,7 @@ class TgpModel {
 					});
 		});
 		// inject param values 
-		jb_compParams(comp).forEach(p=>{ 
+		jb.compParams(comp).forEach(p=>{ 
 				var pVal = '' + (profile[p.id] || p.defaultValue || ''); // only primitives
 				res = res.replace(new RegExp(`%\\$${p.id}%`,'g') , pVal);
 		});
@@ -439,8 +439,8 @@ class TgpModel {
 		if (!isNaN(Number(path.split('~').pop()))) // array elements
 			path = st.parentPath(path);
 		var parent_prof = st.profileFromPath(st.parentPath(path),true);
-		var comp = parent_prof && getComp(jb.compName(parent_prof));
-		var params = jb_compParams(comp);
+		var comp = parent_prof && st.getComp(jb.compName(parent_prof));
+		var params = jb.compParams(comp);
 		var paramName = path.split('~').pop();
 		return params.filter(p=>p.id==paramName)[0] || {};
 	}
@@ -484,13 +484,13 @@ class TgpModel {
 	controlParams(path) {
 		var prof = st.profileFromPath(path,true);
 		if (!prof) return [];
-		var params = jb_compParams(getComp(jb.compName(prof)));
+		var params = jb.compParams(st.getComp(jb.compName(prof)));
 		return params.filter(p=>(p.type||'').match(/control|options|menu/)).map(p=>p.id)
 	}
 	nonControlParams(path) {
 		var prof = st.profileFromPath(path);
 		if (!prof) return [];
-		var params = jb_compParams(getComp(jb.compName(prof)));
+		var params = jb.compParams(st.getComp(jb.compName(prof)));
 		return params.filter(p=>
 				(p.type||'').indexOf('control')==-1)
 			.map(p=>p.id)

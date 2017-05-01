@@ -116,7 +116,7 @@ jb.component('ui-test.editable-text.x-button', {
     control :{$: 'editable-text', 
       title: 'name', 
       databind: '%$person/name%',
-      features: [{ $: 'editable-text.x-button'}, {$: 'watch', resource : 'person'}],
+      features: [{ $: 'editable-text.x-button'}],
     },
     expectedResult :{$: 'contains', text: ['✗','input','Homer Simpson'], inOrder: false },
 },
@@ -125,7 +125,6 @@ jb.component('ui-test.editable-text.x-button', {
 jb.component('ui-test.two-way-binding', {
   impl :{$: 'ui-test',  
   control :{$: 'group', 
-    features :{$: 'watch', resource : 'person'},
     controls: [ 
         {$: 'editable-text', 
           title: 'name', 
@@ -275,7 +274,7 @@ jb.component('ui-test.itemlist-with-select', {
 jb.component('ui-test.itemlist-DD', {
   impl :{$: 'ui-test', control :{$: 'group', 
   controls: [
-      { $: 'itemlist', items: '%$people%', watch: 'people',
+      { $: 'itemlist', items: '%$people%',
           controls :{$: 'label', title: '%name%' }, 
           features: [
               { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
@@ -284,8 +283,7 @@ jb.component('ui-test.itemlist-DD', {
               { $: 'id', id: 'itemlist' },
           ],
       },
-      { $: 'itemlist', items: '%$people%', watch: 'people',
-        dynamicItems: true,
+      { $: 'itemlist', items: '%$people%',
         controls :{$: 'label', title: '%name%' } 
       },
     ],
@@ -429,7 +427,6 @@ jb.component('ui-test.editable-text-in-group', {
           { $: 'editable-text', title: 'name', databind: '%$person/name%' },
           { $: 'label', title: '%$person/name%' }
         ],
-        features:{$: 'watch', resource: 'person'}
   },
   expectedResult: { $: 'contains', text: ['Homer'] },
 },
