@@ -28,7 +28,7 @@ jb.component('itemlist-with-groups', {
         items: {$call: 'items'}, 
         groupBy: {$call: 'groupBy'}, 
         watch: '%$watch%', 
-        itemsArrayVariable: 'items_array' 
+        itemVariableName: 'items_array' 
       }, 
     ]
   }
@@ -38,36 +38,37 @@ jb.component('itemlist.watch-items-with-heading', {
   type: 'feature',
   params: [
     { id: 'items', essential: true, dynamic: true },
-    { id: 'itemsArrayVariable', as: 'string' },
+    { id: 'itemVariableName', as: 'string' },
     { id: 'groupBy', type: 'itemlist.group-by', essential: true, dynamic: true },
   ],
-  impl: (context, items, itemsArrayVariable,groupBy) => ({
+  impl: (context, items, itemVariableName,groupBy) => ({
       beforeInit: function(cmp) {
-        cmp.items = items(cmp.ctx);
-        var itemsRef = jb.asRef(cmp.items);
-        if (itemsRef) {
-          cmp.ctrlEmitter = jb.ui.refObservable(itemsRef,cmp)
-                .filter(items=>
-                  items.length == 0 || !jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
-                .startWith(cmp.items)
-                .do(items => 
-                  cmp.items = items)
-                .map(items=> items2ctrls(items))
-        } else {
-          cmp.state.ctrls = items2ctrls(cmp.items).map(c=>c.reactComp());
-        }
-
-        function items2ctrls(_items) {
+        cmp.items2ctrls = function(_items) {
             if (context.vars.itemlistCntr)
               context.vars.itemlistCntr.items = _items;
             var items = groupBy(cmp.ctx.setData(_items)) || _items;
             cmp.items = items; //.filter(item=>!item.heading);
 
             var ctx2 = (cmp.refreshCtx ? cmp.refreshCtx() : cmp.ctx).setData(items);
-            var ctx3 = itemsArrayVariable ? ctx2.setVars(jb.obj(itemsArrayVariable,items)) : ctx2;
+            var ctx3 = itemVariableName ? ctx2.setVars(jb.obj(itemVariableName,items)) : ctx2;
             var ctrls = context.vars.$model.controls(ctx3);
             return ctrls;
         }
+
+        cmp.items = items(cmp.ctx);
+        cmp.state.ctrls = cmp.items2ctrls(cmp.items).map(c=>c.reactComp());
+
+        cmp.initWatchByRef = refToWatch =>
+            jb.ui.refObservable(refToWatch,cmp)
+              .map(_=>items(cmp.ctx))
+              .filter(items=>
+                items.length == 0 || !jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
+              .do(items => 
+                cmp.items = items)
+              .map(items=> cmp.items2ctrls(items))
+              .subscribe(ctrls=>
+                cmp.setState({ctrls:ctrls.map(c=>c.reactComp())}))
+        
       }
   })
 })

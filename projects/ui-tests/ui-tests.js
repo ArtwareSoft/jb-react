@@ -274,7 +274,7 @@ jb.component('ui-test.itemlist-with-select', {
 jb.component('ui-test.itemlist-DD', {
   impl :{$: 'ui-test', control :{$: 'group', 
   controls: [
-      { $: 'itemlist', items: '%$people%',
+      { $: 'itemlist', items: '%$people%', watchItems: true,
           controls :{$: 'label', title: '%name%' }, 
           features: [
               { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
@@ -283,7 +283,7 @@ jb.component('ui-test.itemlist-DD', {
               { $: 'id', id: 'itemlist' },
           ],
       },
-      { $: 'itemlist', items: '%$people%',
+      { $: 'itemlist', items: '%$people%', watchItems: true,
         controls :{$: 'label', title: '%name%' } 
       },
     ],
@@ -365,7 +365,7 @@ control :{$: 'group',
         ],
       },
       { $: 'group', 
-        features :{$: 'group.data', data: '%$globals/selectedPerson%', watch: 'globals'} , 
+        features :{$: 'group.data', data: '%$globals/selectedPerson%', watch: true } , 
          controls: [
             {$: 'label' , title: '%name% selected' },
           ]
@@ -375,6 +375,34 @@ control :{$: 'group',
   action: ctx=> jb.delay(1),
   expectedResult: { $: 'contains', text: ['Homer Simpson', 'Homer Simpson selected'] },
 },
+})
+
+jb.component('ui-test.itemlist-container-search', {
+  impl :{$: 'ui-test',
+      control :{$: 'group', 
+        controls: [
+          {$: 'itemlist-container.search' },
+          {$: 'itemlist', 
+            items :{
+              $pipeline: [
+                '%$people%', 
+                {$: 'itemlist-container.filter' }, 
+              ]
+            }, 
+            controls :{$: 'label', title: '%$item.name%' }, 
+            features: [
+                { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+                { $: 'itemlist.keyboard-selection', autoFocus: true },
+                { $: 'watch-ref', ref: '%$itemlistCntr/filter_data/search%'}
+            ],
+          },
+        ], 
+        features: [
+          {$: 'group.itemlist-container' }, 
+        ]
+      },
+      expectedResult: true
+  }
 })
 
 // jb.component('ui-test.ngShow-label', {
@@ -867,3 +895,5 @@ jb.component('inner-label3-tst', {
   ],
   impl :{$: 'inner-label2-tst', title: {$call: 'title' }}
 })
+
+

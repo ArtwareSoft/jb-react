@@ -103,18 +103,28 @@ var ImmutableWithPath = {
     }
   },
   refresh: function(ref) {
-    var path = ref.$jb_path;
+    var path = ref.$jb_path, new_ref = {};
     if (ui.resourceVersions[path[0]] == ref.$jb_resourceV) return;
     if (ref.$jb_parentOfPrim) {
-      Object.assign(ref,this.objectProperty(ref.$jb_parentOfPrim,path.slice(-1)[0]))
+      var parent = this.asRef(ref.$jb_parentOfPrim);
+      if (!parent)
+        return jb.logError('refresh: parent not found');
+      var prop = path.slice(-1)[0];
+      new_ref = {
+        $jb_path: parent.$jb_path.concat([prop]),
+        $jb_resourceV: ui.resourceVersions[path[0]],
+        $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
+        $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],ui.resources),
+      }
     } else {
       var path = this.pathOfObject(ref.$jb_cache,ui.resources[path[0]]);
-      if (path) return {
+      if (path) new_ref = {
         $jb_path: path,
         $jb_resourceV: ui.resourceVersions[path[0]],
-        $jb_cache: ref.$jb_cache,
+        $jb_cache: path.reduce((o,p)=>o[p],ui.resources),
       }
     }
+    Object.assign(ref,new_ref);
   },
   markPath: function(path) {
     path.reduce((o,p)=>{ 
@@ -122,13 +132,16 @@ var ImmutableWithPath = {
       return o[p] 
     },ui.resources)
   },
-  pathOfObject: function(obj,lookIn) {
-    if (!lookIn || typeof lookIn != 'object') 
+  pathOfObject: function(obj,lookIn,depth) {
+    if (!lookIn || typeof lookIn != 'object' || depth > 50) 
       return;
+    var proto = Object.getPrototypeOf(lookIn);
+    if (proto != Object.prototype && proto != Array.prototype) return; // just simple data objects
+
     if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id)) 
       return [];
     for(var p in lookIn) {
-      var res = this.pathOfObject(obj,lookIn[p]);
+      var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
       if (res) 
         return [p].concat(res);
     }

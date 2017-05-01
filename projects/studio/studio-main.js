@@ -76,7 +76,6 @@ jb.component('studio.all', {
               features :{$: 'css.class', class: 'studio-page' }
             }, 
             features: [
-              {$: 'watch-ref', resource: '%$studio/comps%'},
               {$: 'itemlist.selection', 
                 databind: '%$studio/page%', 
                 onSelection :{$: 'write-value', 
@@ -104,7 +103,7 @@ jb.component('studio.all', {
       }
     ], 
     features: [
-      {$: 'group.data', data: '%$studio/project%' }, 
+      {$: 'group.data', data: '%$studio/project%', watch: true }, 
       {$: 'feature.init', 
         action :{$: 'url-history.map-url-to-resource', 
           params: ['project', 'page', 'profile_path'], 

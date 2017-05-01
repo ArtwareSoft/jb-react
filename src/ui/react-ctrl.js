@@ -44,13 +44,14 @@ class JbComponent {
 				super();
 				this.jbComp = jbComp;
 				this.ctx = jbComp.ctx;
+				this.ctxForPick = jbComp.ctxForPick; // for debug
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				try {
 					if (jbComp.createjbEmitter)
 						this.jbEmitter = this.jbEmitter || new jb.rx.Subject();
 		    		this.refreshCtx = _ => {
 						jbComp.extendCtxFuncs.forEach(extendCtx => {
-			    			this.ctx = extendCtx(this.ctx,this);
+			    			this.ctx = extendCtx(this.ctx,this) || this.ctx;
 			    		})
 			    		return this.ctx;
 			    	}
@@ -229,14 +230,30 @@ if (typeof $ != 'undefined' && $.fn)
     	return this.find(selector).addBack(selector); }  
 
 ui.renderWidget = function(profile,elem) {
-	ui.render(ui.h(new jb.jbCtx().run(profile).reactComp()),elem);
+	class R extends Component {
+		constructor(props) {
+			super();
+			this.state.profile = profile;
+			ui.waitFor(_=>jb.path(jb,['studio','studioWindow','jb','ui','resourceChange'])).then(resourceChange=>
+				resourceChange.filter(e=>
+						e.path.join('/') == 'studio/page')
+					.map(e=>
+						jb.studio.studioWindow.jb.ui.resources.studio.project + '.' + e.op.studio.page.$set)
+					.subscribe(page=>this.setState({profile: {$: page}}))
+			)
+		}
+		render(pros,state) {
+			return ui.h(new jb.jbCtx().run(state.profile).reactComp())
+		}
+	}
+	ui.render(ui.h(R),elem);
 	ui.widgetLoaded = true;
 }
 ui.applyAfter = function(promise,ctx) {
 	// should refresh all after promise
 }
 
-jb.ui.waitFor = function(check,times,interval) {
+ui.waitFor = function(check,times,interval) {
   if (check())
     return Promise.resolve(1);
 
@@ -246,10 +263,11 @@ jb.ui.waitFor = function(check,times,interval) {
   return new Promise((resolve,fail)=>{
     function wait_and_check(counter) {
       if (counter < 1)
-        fail();
+        return fail();
       setTimeout(() => {
-        if (check())
-          resolve();
+      	var v = check();
+        if (v)
+          resolve(v);
         else
           wait_and_check(counter-1)
       }, interval);  

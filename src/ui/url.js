@@ -46,7 +46,7 @@ jb.component('url-history.map-url-to-resource', {
 		    	jb.ui.location.push(url);
 		    	var obj = urlToObj(url);
 		    	params.forEach(p=>
-		    		jb.writeValue({ $jb_parent: jb.ui.resources[resource], $jb_property: p },obj[p]));
+		    		jb.writeValue(jb.objectProperty(jb.ui.resources[resource],p,'ref',true),obj[p]));
 		    	context.params.onUrlChange(context.setData(url));
 	    	})
 	}

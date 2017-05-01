@@ -14,13 +14,17 @@ jb.component('group.init-group', {
   type: 'feature', category: 'group:0',
   impl: ctx => ({
     init: cmp => {
-      if (cmp.ctrlEmitter) {
-          cmp.ctrlEmitter.takeUntil(cmp.destroyed)
-            .subscribe(ctrls=>
+      cmp.initWatchByRef = cmp.initWatchByRef || (refToWatch =>
+        jb.ui.refObservable(refToWatch,cmp)
+          .map(_=>ctx.vars.$model.controls(cmp.ctx))
+          .subscribe(ctrls=>
+              cmp.setState({ctrls:ctrls.map(c=>c.reactComp())})))
+
+      if (cmp.ctrlEmitter)
+        cmp.ctrlEmitter.subscribe(ctrls=>
               cmp.setState({ctrls:ctrls.map(c=>c.reactComp())}))
-      } else if (!cmp.state.ctrls) {
+      if (!cmp.state.ctrls)
         cmp.state.ctrls = ctx.vars.$model.controls(cmp.ctx).map(c=>c.reactComp())
-      }
     }
   })
 })

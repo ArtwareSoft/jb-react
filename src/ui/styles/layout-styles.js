@@ -27,6 +27,21 @@ jb.component('layout.horizontal', {
   }
 })
 
+jb.component('layout.horizontal-wrapped', {
+  type: 'group.style',
+  params: [,
+    { id: 'spacing', as: 'number', defaultValue: 3 }
+  ],
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('div',{},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl, h('span', {} ,h(ctrl))))),
+    css: `{display: flex}
+        >* { margin-right: %$spacing%px }
+        >*:last-child { margin-right:0 }`,
+    features :{$: 'group.init-group'}
+  }
+})
+
 jb.component('layout.flex', {
   type: 'group.style',
   params: [

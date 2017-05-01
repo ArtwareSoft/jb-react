@@ -5,7 +5,7 @@ jb.component('itemlist', {
     { id: 'items', as: 'array' , dynamic: true, essential: true },
     { id: 'controls', type: 'control[]', essential: true, dynamic: true },
     { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
-    { id: 'watch', as: 'array', description: 'resources to watch' },
+    { id: 'watchItems', as: 'boolean' },
     { id: 'itemVariable', as: 'string', defaultValue: 'item' },
     { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
   ],
@@ -17,33 +17,44 @@ jb.component('itemlist.init', {
   type: 'feature',
   params: [
     { id: 'items', essential: true, dynamic: true },
-    { id: 'itemsArrayVariable', as: 'string' },
+    { id: 'itemVariableName', as: 'string' },
   ],
-  impl: (context, items, itemsArrayVariable,watch) => ({
+  impl: (context, items, itemVariableName,watch) => ({
       beforeInit: cmp => {
-        cmp.items = items(cmp.ctx);
-        var itemsRef = jb.asRef(cmp.items);
-        if (itemsRef) {
-          cmp.ctrlEmitter = jb.ui.refObservable(itemsRef,cmp)
-                .filter(items=>
-                  items.length == 0 || !jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
-                .startWith(cmp.items)
-                .do(items => 
-                  cmp.items = items)
-                .map(items=> items2ctrls(items))
-        } else {
-          cmp.state.ctrls = items2ctrls(cmp.items).map(c=>c.reactComp());
-        }
-
-        function items2ctrls(items) {
+        cmp.items2ctrls = function(items) {
             if (context.vars.itemlistCntr)
               context.vars.itemlistCntr.items = items;
             var ctx2 = (cmp.refreshCtx ? cmp.refreshCtx() : cmp.ctx).setData(items);
-            var ctx3 = itemsArrayVariable ? ctx2.setVars(jb.obj(itemsArrayVariable,items)) : ctx2;
+            var ctx3 = itemVariableName ? ctx2.setVars(jb.obj(itemVariableName,items)) : ctx2;
             var ctrls = context.vars.$model.controls(ctx3);
             return ctrls;
         }
+
+        cmp.items = items(cmp.ctx);
+        cmp.state.ctrls = cmp.items2ctrls(cmp.items).map(c=>c.reactComp());
+
+        cmp.initWatchByRef = refToWatch =>
+            jb.ui.refObservable(refToWatch,cmp)
+              .map(_=>items(cmp.ctx))
+              .filter(items=>
+                items.length == 0 || !jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
+              .do(items => 
+                cmp.items = items)
+              .map(items=> cmp.items2ctrls(items))
+              .subscribe(ctrls=>
+                cmp.setState({ctrls:ctrls.map(c=>c.reactComp())}))
       },
+  })
+})
+
+jb.component('itemlist.watch-items', {
+  type: 'feature', category: 'itemlist:70',
+  impl: (ctx,ref) => ({
+      init: cmp => {
+        var itemsAsRef = jb.asRef(cmp.items);
+        if (cmp.initWatchByRef && itemsAsRef) 
+          cmp.initWatchByRef(itemsAsRef);
+      }
   })
 })
 
@@ -123,7 +134,7 @@ jb.component('itemlist.keyboard-selection', {
 
         cmp.keydown.filter(e=> e.keyCode == 13)
           .subscribe(x=>
-            jb.ui.applyAfter(ctx.params.onEnter(ctx.setData(cmp.state.selected))),ctx)
+            jb.ui.applyAfter(ctx.params.onEnter(ctx.setData(cmp.state.selected))),ctx);
     
         cmp.keydown.filter(e=> !e.ctrlKey &&
               (e.keyCode == 38 || e.keyCode == 40))
@@ -189,7 +200,7 @@ jb.component('itemlist.ul-li', {
 
 jb.component('itemlist.horizontal', {
   type: 'itemlist.style',
-  impl :{$:'itemlist.use-group-style', groupStyle :{$: 'layout.horizontal' }}
+  impl :{$:'itemlist.use-group-style', groupStyle :{$: 'layout.horizontal-wrapped' }}
 })
 
 
@@ -203,7 +214,8 @@ jb.component('itemlist.use-group-style', {
     control: {$: 'group', 
       features : [
         {$: 'group.init-group'},
-        {$: 'itemlist.init', items: '%$itemlistModel/items%', itemsArrayVariable: 'items_array' },
+        {$: 'itemlist.init', items: '%$itemlistModel/items%', itemVariableName: 'items_array' },
+        {$if: '%$itemlistModel/watchItems%', then :{$: 'itemlist.watch-items'} }
       ], 
       style :{$call :'groupStyle'},
       controls :{$: 'dynamic-controls', 

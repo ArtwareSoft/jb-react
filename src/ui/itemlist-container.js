@@ -1,3 +1,43 @@
+(function() {
+
+createItemlistCntr = (params,cmp) => ({
+  id: params.id, 
+  defaultItem: params.defaultItem, 
+  selected: null, 
+  cmp: cmp,
+  filter_data: {},
+  filters: [],
+  selectedRef: function() {
+      return this._selectedRef = this._selectedRef || jb.objectProperty(this,'selected','ref',true);
+  },
+  init: function(items) {
+      return this.items = items
+  },
+  add: function(item) {
+    this.selected = item || JSON.parse(JSON.stringify(defaultItem || {}));
+    this.items && jb.splice(this.items,[[this.items.length,0,this.selected]]);
+  },
+  delete: function(item) {
+    if (this.items && this.items.indexOf(item) != -1) {
+      this.changeSelectionBeforeDelete();
+      jb.splice(this.items,[[this.items.indexOf(item),1]]);
+    }
+  },
+  changeSelectionBeforeDelete: function() {
+    if (this.items && this.selected) {
+      var curIndex = this.items.indexOf(this.selected);
+      if (curIndex == -1)
+        this.selected = null;
+      else if (curIndex == 0 && this.items.length > 0)
+        this.selected = this.items[1];
+      else if (this.items.length > 0)
+        this.selected = this.items[curIndex -1];
+      else
+        this.selected = null;
+    }
+  }
+})
+
 jb.component('group.itemlist-container', {
   description: 'itemlist writable container to support addition, deletion and selection',
   type: 'feature', category: 'itemlist:20,group:0',
@@ -5,44 +45,10 @@ jb.component('group.itemlist-container', {
     { id: 'id', as: 'string' },
     { id: 'defaultItem', as: 'single' },
   ],
-  impl: context => ({
-  	    extendCtx: (ctx,cmp) =>
-        	ctx.setVars({ itemlistCntr: {
-        		id: context.params.id,
-        		selected: null,
-            selectedRef: function() {
-              return this._selectedRef = this._selectedRef || jb.objectProperty(this,'selected','ref',true);
-            },
-        		cmp: cmp,
-        		init: items =>
-        			this.items = items,
-        		add: function(item) {
-        			this.selected = item || JSON.parse(JSON.stringify(context.params.defaultItem || {}));
-    				  this.items && jb.splice(this.items,[[this.items.length,0,this.selected]]);
-        		},
-            filter_data: {},
-            filters: [],
-        		delete: function(item) {
-        			if (this.items && this.items.indexOf(item) != -1) {
-        				this.changeSelectionBeforeDelete();
-                jb.splice(this.items,[[this.items.indexOf(item),1]]);
-        			}
-        		},
-        		changeSelectionBeforeDelete: function() {
-        			if (this.items && this.selected) {
-        				var curIndex = this.items.indexOf(this.selected);
-        				if (curIndex == -1)
-        					this.selected = null;
-        				else if (curIndex == 0 && this.items.length > 0)
-        					this.selected = this.items[1];
-        				else if (this.items.length > 0)
-        					this.selected = this.items[curIndex -1];
-        				else
-        					this.selected = null;
-        			}
-        		}
-        	}})
-    })
+  impl: {$: 'group.var', name: 'itemlistCntr', watch: false, 
+    value: ctx => 
+      createItemlistCntr(ctx.componentContext.params, ctx.data)
+  }
 })
 
 jb.component('group.itemlist-selected', {
@@ -81,7 +87,7 @@ jb.component('itemlist-container.select', {
 jb.component('itemlist-container.selected', {
   type: 'data',
   impl: ctx => 
-    ctx.vars.itemlistCntr.selectedRef()
+    ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.selectedRef()
 })
 
 
@@ -109,7 +115,7 @@ jb.component('itemlist-container.search', {
   ],
   impl: (ctx,title,searchIn,databind) => 
     jb.ui.ctrl(ctx,{
-      beforeInit: cmp => {
+      afterViewInit: cmp => {
         if (ctx.vars.itemlistCntr) {
           ctx.vars.itemlistCntr.filters.push( items => {
             var toSearch = jb.val(databind) || '';
@@ -122,8 +128,7 @@ jb.component('itemlist-container.search', {
         // allow itemlist selection use up/down arrows
         ctx.vars.itemlistCntr.keydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
             .takeUntil( cmp.destroyed )
-            .filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1) 
-
+            .filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1);
         }
       }
     })
@@ -139,3 +144,4 @@ jb.component('itemlist-container.search-in-all-properties', {
 })
 
 
+})()

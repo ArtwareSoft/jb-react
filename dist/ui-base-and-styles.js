@@ -256,17 +256,11 @@ jb.component('label.mdl-button', {
 jb.component('editable-text.mdl-search', {
   type: 'editable-text.style',
   impl: { $: 'custom-style',
-    template: (cmp, state) => jb.ui.h(
-      'div',
-      { 'class': 'mdl-textfield mdl-js-textfield' },
-      jb.ui.h('input', { value: cmp.jbModel(), onchange: cmp.jbModel($event.target.value), onkeyup: cmp.jbModel($event.target.value, 'keyup'),
-        'class': 'mdl-textfield__input', type: 'text', id: 'search_{state.fieldId}' }),
-      jb.ui.h(
-        'label',
-        { 'class': 'mdl-textfield__label', 'for': 'search_{state.fieldId}' },
-        state.title
-      )
-    ),
+    template: (cmp, state, h) => h('div', { class: 'mdl-textfield mdl-js-textfield' }, [h('input', { class: 'mdl-textfield__input', id: 'search_' + state.fieldId, type: 'text',
+      value: cmp.jbModel(),
+      onchange: e => cmp.jbModel(e.target.value),
+      onkeyup: e => cmp.jbModel(e.target.value, 'keyup')
+    }), h('label', { class: 'mdl-textfield__label', for: 'search_' + state.fieldId }, state.title)]),
     features: [{ $: 'field.databind' }, { $: 'mdl-style.init-dynamic' }]
   }
 });
@@ -275,18 +269,11 @@ jb.component('editable-text.mdl-input', {
   type: 'editable-text.style',
   params: [{ id: 'width', as: 'number' }],
   impl: { $: 'custom-style',
-    template: (cmp, state) => jb.ui.h(
-      'div',
-      { 'class': 'mdl-textfield mdl-js-textfield mdl-textfield--floating-label' },
-      jb.ui.h('input', { value: cmp.jbModel(), type: 'text', onchange: e => cmp.jbModel(e.target.value),
-        onkeyup: e => cmp.jbModel(e.target.value, 'keyup'),
-        'class': 'mdl-textfield__input', type: 'text', id: 'input_' + state.fieldId }),
-      jb.ui.h(
-        'label',
-        { 'class': 'mdl-textfield__label', 'for': 'input_' + state.fieldId },
-        state.title
-      )
-    ),
+    template: (cmp, state, h) => h('div', { class: 'mdl-textfield mdl-js-textfield mdl-textfield--floating-label' }, [h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
+      value: cmp.jbModel(),
+      onchange: e => cmp.jbModel(e.target.value),
+      onkeyup: e => cmp.jbModel(e.target.value, 'keyup')
+    }), h('label', { class: 'mdl-textfield__label', for: 'input_' + state.fieldId }, state.title)]),
     css: '{ {?width: %$width%px?} }',
     features: [{ $: 'field.databind' }, { $: 'mdl-style.init-dynamic' }]
   }
@@ -366,13 +353,14 @@ class JbComponent {
 				super();
 				this.jbComp = jbComp;
 				this.ctx = jbComp.ctx;
+				this.ctxForPick = jbComp.ctxForPick; // for debug
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				try {
 					if (jbComp.createjbEmitter)
 						this.jbEmitter = this.jbEmitter || new jb.rx.Subject();
 		    		this.refreshCtx = _ => {
 						jbComp.extendCtxFuncs.forEach(extendCtx => {
-			    			this.ctx = extendCtx(this.ctx,this);
+			    			this.ctx = extendCtx(this.ctx,this) || this.ctx;
 			    		})
 			    		return this.ctx;
 			    	}
@@ -551,14 +539,30 @@ if (typeof $ != 'undefined' && $.fn)
     	return this.find(selector).addBack(selector); }  
 
 ui.renderWidget = function(profile,elem) {
-	ui.render(ui.h(new jb.jbCtx().run(profile).reactComp()),elem);
+	class R extends __WEBPACK_IMPORTED_MODULE_0_preact__["Component"] {
+		constructor(props) {
+			super();
+			this.state.profile = profile;
+			ui.waitFor(_=>jb.path(jb,['studio','studioWindow','jb','ui','resourceChange'])).then(resourceChange=>
+				resourceChange.filter(e=>
+						e.path.join('/') == 'studio/page')
+					.map(e=>
+						jb.studio.studioWindow.jb.ui.resources.studio.project + '.' + e.op.studio.page.$set)
+					.subscribe(page=>this.setState({profile: {$: page}}))
+			)
+		}
+		render(pros,state) {
+			return ui.h(new jb.jbCtx().run(state.profile).reactComp())
+		}
+	}
+	ui.render(ui.h(R),elem);
 	ui.widgetLoaded = true;
 }
 ui.applyAfter = function(promise,ctx) {
 	// should refresh all after promise
 }
 
-jb.ui.waitFor = function(check,times,interval) {
+ui.waitFor = function(check,times,interval) {
   if (check())
     return Promise.resolve(1);
 
@@ -568,10 +572,11 @@ jb.ui.waitFor = function(check,times,interval) {
   return new Promise((resolve,fail)=>{
     function wait_and_check(counter) {
       if (counter < 1)
-        fail();
+        return fail();
       setTimeout(() => {
-        if (check())
-          resolve();
+      	var v = check();
+        if (v)
+          resolve(v);
         else
           wait_and_check(counter-1)
       }, interval);  

@@ -132,12 +132,14 @@ jb.component('label.mdl-button', {
 jb.component('editable-text.mdl-search', {
   type: 'editable-text.style',
   impl :{$: 'custom-style', 
-      template: (cmp,state) => (
-  <div class="mdl-textfield mdl-js-textfield">
-    <input value={cmp.jbModel()} onchange={cmp.jbModel($event.target.value)} onkeyup={cmp.jbModel($event.target.value,'keyup')} 
-      class="mdl-textfield__input" type="text" id="search_{state.fieldId}"/>
-    <label class="mdl-textfield__label" for="search_{state.fieldId}">{state.title}</label>
-  </div>),
+      template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[ 
+        h('input', { class: 'mdl-textfield__input', id: 'search_' + state.fieldId, type: 'text',
+            value: cmp.jbModel(),
+            onchange: e => cmp.jbModel(e.target.value),
+            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+        }),
+        h('label',{class: 'mdl-textfield__label', for: 'search_' + state.fieldId},state.title)
+      ]),
       features: [
           {$: 'field.databind' },
           {$: 'mdl-style.init-dynamic'}
@@ -151,12 +153,14 @@ jb.component('editable-text.mdl-input', {
     { id: 'width', as: 'number' },
   ],
   impl :{$: 'custom-style', 
-   template: (cmp,state) => (<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-    <input value={cmp.jbModel()} type="text" onchange={e=>cmp.jbModel(e.target.value)} 
-    onkeyup={e=>cmp.jbModel(e.target.value,'keyup')} 
-      class="mdl-textfield__input" type="text" id={'input_'+state.fieldId}/>
-    <label class="mdl-textfield__label" for={'input_'+state.fieldId}>{state.title}</label>
-  </div>),
+   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[ 
+        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
+            value: cmp.jbModel(),
+            onchange: e => cmp.jbModel(e.target.value),
+            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+        }),
+        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title)
+      ]),
       css: '{ {?width: %$width%px?} }',
       features :[
           {$: 'field.databind' },
@@ -164,6 +168,7 @@ jb.component('editable-text.mdl-input', {
       ],
   }
 })
+
 
 jb.component('editable-boolean.mdl-slide-toggle', {
   type: 'editable-boolean.style',
