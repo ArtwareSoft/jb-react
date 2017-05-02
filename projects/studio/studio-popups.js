@@ -23,24 +23,21 @@ jb.component('dialog.studio-floating', {
 		{ id: 'width', as: 'number', default: 300},
 		{ id: 'height', as: 'number', default: 100},
 	],
-	impl :{$: 'customStyle',
-			template: `<div class="jb-dialog jb-default-dialog" {?dialogId="%$id%"?}>
-				      		  <div class="dialog-title noselect">{{title}}</div>
-				      		  <div *ngIf="hasMenu" class="dialog-menu">
-				      		  	<div *jbComp="menuComp"></div>
-				      		  </div>
-							  <button class="dialog-close" (click)="dialogClose()">&#215;</button>
-							  <div class="jb-dialog-content-parent">
-					              <div *jbComp="contentComp"></div>
-						  	  </div>
-						</div>`,
+	impl :{$: 'custom-style',
+			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
+				h('div',{class: 'dialog-title noselect'},state.title),
+				cmp.hasMenu ? h('div',{class: 'dialog-menu'},cmp.menuComp): '',
+				h('button',{class: 'dialog-close', onclick: 
+					_=> cmp.dialogClose() },'×'),
+				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
+			]),
 			features: [
-					{$: 'dialog-feature.dragTitle', id: '%$id%'}, 
+					{$: 'dialog-feature.drag-title', id: '%$id%'}, 
 					{$: 'dialog-feature.uniqueDialog', id: '%$id%', remeberLastLocation: true },
 					{$: 'dialog-feature.maxZIndexOnClick', minZIndex: 5000 },
 					{$: 'studio-dialog-feature.studioPopupLocation' },
 			],
-			css: `.jb-dialog { position: fixed;
+			css: `{ position: fixed;
 						background: #F9F9F9; 
 						width: %$width%px; 
 						max-width: 800px;
@@ -50,9 +47,9 @@ jb.component('dialog.studio-floating', {
 						padding: 0 12px 12px 12px; 
 						box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
 				}
-				.dialog-title { background: none; padding: 10px 5px; }
-				.jb-dialog-content-parent { padding: 0; overflow-y: auto; max-height1: 500px }
-				.dialog-close {
+				>.dialog-title { background: none; padding: 10px 5px; }
+				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; max-height1: 500px }
+				>.dialog-close {
 						position: absolute; 
 						cursor: pointer; 
 						right: 4px; top: 4px; 
@@ -64,7 +61,7 @@ jb.component('dialog.studio-floating', {
 						font-weight: 700; 
 						opacity: .2;
 				}
-				.dialog-menu {
+				>.dialog-menu {
 						position: absolute; 
 						cursor: pointer; 
 						right: 24px; top: 0; 
@@ -76,21 +73,21 @@ jb.component('dialog.studio-floating', {
 						font-weight: 700; 
 						opacity: .2;
 				}
-				.dialog-close:hover { opacity: .5 }`
+				>.dialog-close:hover { opacity: .5 }`
 	}
 })
 
 jb.component('studio-dialog-feature.studioPopupLocation',{
 	type: 'dialog-feature',
-	impl: function(context) {
-		return {
-			afterViewInit: function(cmp) {
-				var dialog = cmp.dialog;
-				if (!sessionStorage[dialog.id])
-					dialog.$el.addClass(dialog.id).addClass('default-location')
+	impl: ctx => ({
+		afterViewInit: cmp => {
+			var dialog = cmp.dialog;
+			if (!sessionStorage[dialog.id]) {
+				dialog.el.classList.add(dialog.id);
+				dialog.el.classList.add('default-location')
 			}
 		}
-	}
+	})
 })
 
 jb.component('studio.code-mirror-mode',{

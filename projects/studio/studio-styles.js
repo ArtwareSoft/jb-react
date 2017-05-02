@@ -1,4 +1,4 @@
-jb.component('editable-text.studio-primitive-text',{
+jb.component('editable-text.studio-primitive-text', {
   type: 'editable-text.style',
   impl :{$: 'custom-style', 
       features :{$: 'field.databind' },

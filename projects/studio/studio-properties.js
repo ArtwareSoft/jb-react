@@ -1,6 +1,3 @@
-jbLoadModules(['studio/studio-tgp-model']).then(loadedModules => { 
-  var model = loadedModules['studio/studio-tgp-model'].model;
-
 
 jb.component('studio.open-properties', {
   type: 'action', 
@@ -66,13 +63,13 @@ jb.component('studio.properties', {
                 $pipeline: [
                   {$: 'objectProperties' }, 
                   {$: 'filter', 
-                    filter :{$: 'notEquals', item1: '%%', item2: 'features' }
+                    filter :{$: 'not-equals', item1: '%%', item2: 'features' }
                   }, 
                   {$: 'filter', 
-                    filter :{$: 'notEquals', item1: '%%', item2: '$' }
+                    filter :{$: 'not-equals', item1: '%%', item2: '$' }
                   }, 
                   {$: 'filter', 
-                    filter :{$: 'notEquals', item1: '%%', item2: 'controls' }
+                    filter :{$: 'not-equals', item1: '%%', item2: 'controls' }
                   }
                 ]
               }
@@ -88,7 +85,7 @@ jb.component('studio.properties', {
               {$: 'studio.non-control-children', path: '%$path%' }, 
               {$: 'filter', 
                 filter :{$: 'not', 
-                  of :{$: 'endsWith', endsWith: '~features', text: '%%' }
+                  of :{$: 'ends-with', endsWith: '~features', text: '%%' }
                 }
               }
             ]
@@ -139,6 +136,7 @@ jb.component('studio.property-field',{
 	impl: function(context,path) {
 		var fieldPT = 'studio.property-label';
 
+    var model = jb.studio.model;
 		var val = model.val(path);
 		var valType = typeof val;
 		var paramDef = model.paramDef(path);
@@ -224,6 +222,7 @@ jb.component('studio.data-script-summary', {
     { id: 'path', as: 'string' }
   ], 
   impl: (ctx,path) => {
+    var model = jb.studio.model;
   	var val = model.val(path);
   	if (model.compName(path))
   		return model.compName(path);
@@ -304,7 +303,7 @@ jb.component('studio.property-tgp', {
                     {
                       $notEmpty :{$: 'studio.val', path: '%$path%' }
                     }, 
-                    {$: 'notEquals', 
+                    {$: 'not-equals', 
                       item1 :{$: 'studio.comp-name', path: '%$path%' }, 
                       item2: 'customStyle'
                     }
@@ -333,8 +332,8 @@ jb.component('studio.property-tgp', {
       {$: 'group', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          {$: 'group.watch', 
-            data :{$: 'studio.comp-name', path: '%$path%' }
+          {$: 'watch-ref', 
+            ref :{$: 'studio.comp-name', path: '%$path%' }
           }, 
           {$: 'hidden', 
             showCondition :{
@@ -346,7 +345,7 @@ jb.component('studio.property-tgp', {
                 {
                   $notEmpty :{$: 'studio.val', path: '%$path%' }
                 }, 
-                {$: 'notEquals', 
+                {$: 'not-equals', 
                   item1 :{$: 'studio.comp-name', path: '%$path%' }, 
                   item2: 'customStyle'
                 }
@@ -439,8 +438,8 @@ jb.component('studio.property-tgp-in-array', {
       {$: 'group', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          {$: 'group.watch', 
-            data :{$: 'studio.comp-name', path: '%$path%' }
+          {$: 'watch-ref', 
+            ref :{$: 'studio.comp-name', path: '%$path%' }
           }, 
           {$: 'feature.if', showCondition: '%$tgpCtrl.expanded%' }, 
           {$: 'css', css: '{  margin-left: 10px; margin-bottom: 4px;}' }
@@ -502,9 +501,6 @@ jb.component('studio.tgp-path-options',{
 	],
 	impl: (context,path) => 
 		[{code:'',text:''}]
-			.concat(model.PTsOfPath(path).map(op=> ({ code: op, text: op})))
+			.concat(jb.studio.model.PTsOfPath(path).map(op=> ({ code: op, text: op})))
 })
 
-
-
-})

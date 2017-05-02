@@ -34,7 +34,7 @@ jb.component('studio.choose-project', {
                   url: '/project/studio/%$project%', 
                   target: 'new tab'
                 }, 
-                {$: 'closeContainingPopup' }
+                {$: 'close-containing-popup' }
               ]
             }
           }, 

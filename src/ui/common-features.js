@@ -134,7 +134,7 @@ jb.component('hidden', {
   ],
   impl: (context,showCondition) => ({
     templateModifier: (vdom,cmp,state) => 
-      showCondition(cmp.ctx) ? vdom : 'span'
+      showCondition(cmp.ctx) ? vdom : jb.ui.h('span')
   })
 })
 

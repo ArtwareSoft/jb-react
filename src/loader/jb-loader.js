@@ -71,7 +71,10 @@ var resources = {
           'node_modules/dragula/dist/dragula.css',
       ],
       studio: [
-        'main', 'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'model-components','path','utils','tgp-model','tree'
+        'utils','path','main', 'pretty-print', 
+        'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'tgp-model', 'model-components',
+        'tree','popups','properties','pick','properties-menu','save','open-project','new-control',
+        'suggestions','undo'
       ]
 };
 

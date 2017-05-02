@@ -1,9 +1,5 @@
 (function() {
 var st = jb.studio;
-//import {st.profileFromPath,parentPath,profileRefFromPath,pathFixer} from './studio-path';
-//import {jbart_base,findjBartToLook,compAsStr,getComp,modifyOperationsEm,evalProfile} from './studio-utils';
-
-// The jbart control model return string paths and methods to fix them on change
 
 class TgpModel {
 	constructor(rootPath,childrenType) { 
@@ -131,9 +127,10 @@ class TgpModel {
 			summary = ': ' + this.summary(path).substr(0,20);
 
 		if (compName)
-			return prop + `= <span class="treenode-val">${compName}${summary}</span>`;
+			return jb.ui.h('div',{},[prop + '= ',h('span',{class:'treenode-val'},compName+summary)]);
 		else if (typeof val == 'string')
-			return prop + (collapsed ? `: <span class="treenode-val" title="${val}">${val}</span>` : '');
+			return jb.ui.h('div',{},[prop + collapsed ? ': ': '',h('span',{class:'treenode-val', title: val},val)]);
+
 		return prop + (Array.isArray(val) ? ` (${val.length})` : '');
 	}
 
@@ -219,15 +216,15 @@ class TgpModel {
 
 	modify(op,path,args,ctx,delayed) {
 		var comp = path.split('~')[0];
-		var before = st.getComp(comp) && compAsStr(comp);
+		var before = st.getComp(comp) && st.compAsStr(comp);
 		var res = op.call(this,path,args);
 		if (res && res.newPath) // used for insert to array that creates new path
 			path = res.newPath;
 		jb.delay(delayed?1:0).then(()=>{
-			modifyOperationsEm.next({ 
+			st.modifyOperationsEm.next({ 
 				comp: comp, 
 				before: before, 
-				after: compAsStr(comp), 
+				after: st.compAsStr(comp), 
 				path: path, 
 				args: args, 
 				ctx: ctx, 
@@ -244,7 +241,7 @@ class TgpModel {
 			var index = Number(prop);
 			parent.splice(index, 1);
 			if (!args || !args.noFixer)
-				pathFixer.fixIndexPaths(path,-1);
+				st.pathFixer.fixIndexPaths(path,-1);
 		} else { 
 			// if (parent[prop] === undefined) { // array type with one element
 			// 	var pathToDelete = st.parentPath(path);
@@ -266,7 +263,7 @@ class TgpModel {
 			this._delete(args.dragged,{noFixer: true});
 			var index = (args.index == -1) ? arr.length : args.index;
 			arr.splice(index,0,dragged);
-			pathFixer.fixMovePaths(args.dragged,path+'~'+ctrlParam+ '~' + index);
+			st.pathFixer.fixMovePaths(args.dragged,path+'~'+ctrlParam+ '~' + index);
 		}
 	}
 
@@ -278,28 +275,28 @@ class TgpModel {
 			if (base <0 || base >= arr.length-1) 
 				return; // the + elem
 			arr.splice(base,2,arr[base+1],arr[base]);
-			pathFixer.fixReplacingPaths(st.parentPath(path)+'~'+base,st.parentPath(path)+'~'+(base+1));
+			st.pathFixer.fixReplacingPaths(st.parentPath(path)+'~'+base,st.parentPath(path)+'~'+(base+1));
 		}
 	}
 
 	writeValue(path,args) {
-		jb.writeValue(profileRefFromPath(path),args.value);
+		jb.writeValue(st.profileRefFromPath(path),args.value);
 	}
 
 	newComp(path,args) {
-        jb.studio.previewjb.comps[path] = jb.studio.previewjb.comps[path] || args.profile;
+        st.previewjb.comps[path] = st.previewjb.comps[path] || args.profile;
 	}
 
 	wrapWithGroup(path) {
 		var result = { $: 'group', controls: [ st.profileFromPath(path) ] };
-		jb.writeValue(profileRefFromPath(path),result);
+		jb.writeValue(st.profileRefFromPath(path),result);
 	}
 	wrap(path,args) {
 		var comp = st.getComp(args.compName);
 		var firstParam = jb.compParams(comp).filter(p=>p.composite)[0];
 		if (firstParam) {
 			var result = jb.extend({ $: args.compName }, jb.obj(firstParam.id, [st.profileFromPath(path)]));
-			jb.writeValue(profileRefFromPath(path),result);
+			jb.writeValue(st.profileRefFromPath(path),result);
 		}
 	}
 
@@ -316,9 +313,9 @@ class TgpModel {
 	addProperty(path) {
 		var parent = st.profileFromPath(st.parentPath(path));
 		if (this.paramType(path) == 'data')
-			return jb.writeValue(profileRefFromPath(path),'');
+			return jb.writeValue(st.profileRefFromPath(path),'');
 		var param = this.paramDef(path);
-		jb.writeValue(profileRefFromPath(path),param.defaultValue || {$: ''});
+		jb.writeValue(st.profileRefFromPath(path),param.defaultValue || {$: ''});
 	}
 
 	duplicate(path) {
@@ -326,11 +323,11 @@ class TgpModel {
 		var val = st.profileFromPath(path);
 		var arr = this.getOrCreateArray(st.parentPath(st.parentPath(path)));
 		if (Array.isArray(arr)) {
-			var clone = evalProfile(jb.prettyPrint(val));
+			var clone = st.evalProfile(jb.prettyPrint(val));
 			var index = Number(prop);
 			arr.splice(index, 0,clone);
 			if (index < arr.length-2)
-				pathFixer.fixIndexPaths(path,1);
+				st.pathFixer.fixIndexPaths(path,1);
 		}
 	}
 
@@ -350,7 +347,7 @@ class TgpModel {
 			if (p.defaultValue && typeof p.defaultValue == 'object' && (p.forceDefaultCreation || Array.isArray(p.defaultValue)))
 				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue));
 		})
-		jb.writeValue(profileRefFromPath(path),result);
+		jb.writeValue(st.profileRefFromPath(path),result);
 	}
 
 	insertControl(path,args) {
@@ -382,9 +379,9 @@ class TgpModel {
 			return { newPath: path + '~' + (val.length-1) }
 		}
 		else if (!val) {
-			jb.writeValue(profileRefFromPath(path),toAdd);
+			jb.writeValue(st.profileRefFromPath(path),toAdd);
 		} else {
-			jb.writeValue(profileRefFromPath(path),[val].concat(toAdd));
+			jb.writeValue(st.profileRefFromPath(path),[val].concat(toAdd));
 			return { newPath: path + '~1' }
 		}
 	}
@@ -392,7 +389,7 @@ class TgpModel {
 	wrapWithArray(path) {
 		var val = st.profileFromPath(path);
 		if (val && !Array.isArray(val)) {
-			jb.writeValue(profileRefFromPath(path),[val]);
+			jb.writeValue(st.profileRefFromPath(path),[val]);
 			return { newPath: path + '~0' }
 		}
 	}
@@ -420,7 +417,7 @@ class TgpModel {
 				res = res.replace(new RegExp(`%\\$${p.id}%`,'g') , pVal);
 		});
 
-		jb.writeValue(profileRefFromPath(path),evalProfile(res));
+		jb.writeValue(st.profileRefFromPath(path),st.evalProfile(res));
 	}
 
 	children(path,childrenType) {
@@ -460,7 +457,7 @@ class TgpModel {
 		return res;
 	}
 	PTsOfPath(path) {
-		return this.PTsOfType(this.paramType(path),findjBartToLook(path))
+		return this.PTsOfType(this.paramType(path),st.findjBartToLook(path))
 	}
 	PTsOfType(type,jbartToLook) {
 		var single = /([^\[]*)([])?/;
@@ -470,7 +467,7 @@ class TgpModel {
 			.map(x=> 
 				x=='data' ? ['data','aggregator'] : [x]));
 		var comp_arr = types.map(t=>
-			jb_entries((jbartToLook || st.jbart_base()).comps)
+			jb.entries((jbartToLook || st.jbart_base()).comps)
 				.filter(c=>
 					(c[1].type||'data').split(',').indexOf(t) != -1
 					|| (c[1].typePattern && t.match(c[1].typePattern.match))
@@ -525,7 +522,7 @@ class TgpModel {
 
 }
 
-jb.studio.model = new TgpModel('');
-jb.studio.TgpModel = TgpModel;
+st.model = new TgpModel('');
+st.TgpModel = TgpModel;
 
 })()

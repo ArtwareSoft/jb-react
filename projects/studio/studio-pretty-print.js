@@ -1,16 +1,14 @@
-import { entries, compName, compParams, obj } from './jb-core.js';
-
-export function prettyPrintComp(compId,comp) {
+jb.studio.prettyPrintComp = function(compId,comp) {
   if (comp)
     return "jb.component('" + compId + "', "
-      + prettyPrintWithPositions(comp).result + ')'
+      + jb.studio.prettyPrintWithPositions(comp).result + ')'
 }
 
-export function prettyPrint(profile,colWidth,tabSize,initialPath) {
-  return prettyPrintWithPositions(profile,colWidth,tabSize,initialPath).result;
+jb.studio.prettyPrint = function(profile,colWidth,tabSize,initialPath) {
+  return jb.studio.prettyPrintWithPositions(profile,colWidth,tabSize,initialPath).result;
 }
 
-function prettyPrintWithPositions(profile,colWidth,tabSize,initialPath) {
+jb.studio.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
   colWidth = colWidth || 80;
   tabSize = tabSize || 2;
 
@@ -24,14 +22,14 @@ function prettyPrintWithPositions(profile,colWidth,tabSize,initialPath) {
   return { result : result, positions : positions }
 
   function sortedPropertyNames(obj) {
-    var props = entries(obj)
+    var props = jb.entries(obj)
       .filter(p=>p[1] != null)
       .map(x=>x[0]) // try to keep the order
       .filter(p=>p.indexOf('$jb') != 0)
 
-    var comp_name = compName(obj);
+    var comp_name = jb.compName(obj);
     if (comp_name) { // tgp obj - sort by params def
-      var params = compParams(jbart.comps[comp_name]).map(p=>p.id);
+      var params = jb.compParams(jb.comps[comp_name]).map(p=>p.id);
       props.sort((p1,p2)=>params.indexOf(p1) - params.indexOf(p2));
     }
     if (props.indexOf('$') > 0) { // make the $ first
@@ -106,7 +104,7 @@ function prettyPrintWithPositions(profile,colWidth,tabSize,initialPath) {
     if (prop == '$')
       result += '$: '
     else
-      result += quotePropName(prop) + (compName(obj[prop]) ? ' :' : ': ');
+      result += quotePropName(prop) + (jb.compName(obj[prop]) ? ' :' : ': ');
     //depth++;
     printValue(obj[prop],path+'~'+prop);
     //depth--;
@@ -151,7 +149,7 @@ function prettyPrintWithPositions(profile,colWidth,tabSize,initialPath) {
     return '{ ' + props.join(', ') + ' }'
   }
   function flat_property(obj,prop) {
-    if (compName(obj[prop]))
+    if (jb.compName(obj[prop]))
       return quotePropName(prop) + ' :' + flat_val(obj[prop]);
     else
       return quotePropName(prop) + ': ' + flat_val(obj[prop]);

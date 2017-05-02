@@ -292,7 +292,7 @@ jb.component('studio.components-cross-ref',{
       		refs[cross] && refs[cross].by.push(k))
       );
 
-      return _jbart.statistics = jb_entries(comps).map(e=>({
+      return _jbart.statistics = jb.entries(comps).map(e=>({
           	id: e[0],
           	refs: refs[e[0]].refs,
           	referredBy: refs[e[0]].by,
@@ -318,7 +318,7 @@ jb.component('studio.references',{
 	impl: (ctx,path) => {
 	  if (path.indexOf('~') != -1) return [];
 
-      return jb_entries(st.jbart_base().comps)
+      return jb.entries(st.jbart_base().comps)
       	.filter(e=>
       		isRef(e[1].impl))
       	.map(e=>e[0]).slice(0,10);

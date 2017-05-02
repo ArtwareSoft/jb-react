@@ -102,13 +102,14 @@ jb.component('group.init-accordion', {
 
       cmp.next = diff =>
         cmp.setState({shown: (cmp.state.index + diff + cmp.ctrls.length) % cmp.ctrls.length});
-
+    },
+    afterViewInit: cmp => {
       if (ctx.params.keyboardSupport) {
-        keydown.filter(e=> e.keyCode == 33 || e.keyCode == 34) // pageUp/Down
+        cmp.onkeydown.filter(e=> e.keyCode == 33 || e.keyCode == 34) // pageUp/Down
             .subscribe(e=>
               cmp.next(e.keyCode == 33 ? -1 : 1))
       }
-    },
+    }    
   })
 })
 

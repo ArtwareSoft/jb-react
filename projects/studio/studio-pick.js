@@ -1,6 +1,3 @@
-jbLoadModules(['studio/studio-tgp-model']).then(loadedModules => { 
-  var model = loadedModules['studio/studio-tgp-model'].model;
-
 jb.component('studio.pick', {
 	type: 'action',
 	params: [
@@ -24,20 +21,18 @@ jb.component('dialog.studio-pick-dialog', {
 	params: [
 		{ id: 'from', as: 'string' },
 	],
-	impl: {$: 'customStyle',
-			template: `<div class="jb-dialog">
-<div class="edge top" [style.width]="width+'px'" [style.top]="top+'px'" [style.left]="left+'px'"></div>
-<div class="edge left" [style.height]="height+'px'" [style.top]="top+'px'" [style.left]="left+'px'"></div>
-<div class="edge right" [style.height]="height+'px'" [style.top]="top+'px'" [style.left]="left+width+'px'"></div>
-<div class="edge bottom" [style.width]="width+'px'" [style.top]="top+height+'px'" [style.left]="left+'px'"></div>
-<div class="title" [class.bottom]="titleBelow" [style.top]="titleTop+'px'" [style.left]="titleLeft+'px'">
-	<div class="text">{{title}}</div>
-	<div class="triangle"></div>
-</div>
-
-</div>`, 
-			css: `
-.edge { 
+	impl: {$: 'custom-style',
+	      template: (cmp,state,h) => h('div',{ class: 'jb-dialog' },[
+h('div',{ class: 'edge top', style: { width: state.width + 'px', top: state.top + 'px', left: state.left + 'px' }}) ,
+h('div',{ class: 'edge left', style: { height: state.height +'px', top: state.top + 'px', left: state.left + 'px' }}), 
+h('div',{ class: 'edge right', style: { height: state.height +'px', top: state.top + 'px', left: (state.left + state.width) + 'px' }}) ,
+h('div',{ class: 'edge bottom', style: { width: state.width + 'px', top: (state.top + state.height) +'px', left: state.left + 'px' }}) ,
+h('div',{ class: 'title' + (state.titleBelow ? ' bottom' : ''), style: { top: state.titleTop + 'px', left: state.titleLeft + 'px'} },[
+			h('div',{ class: 'text'},state.title),
+			h('div',{ class: 'triangle'}),
+	])]),
+		css: `
+>.edge { 
 	z-index: 6001;
 	position: absolute;
 	background: red;
@@ -45,16 +40,16 @@ jb.component('dialog.studio-pick-dialog', {
 	width: 1px; height: 1px;
 	cursor: pointer;
 }
-.title {
+>.title {
 	z-index: 6001;
 	position: absolute;
 	font: 14px arial; padding: 0; cursor: pointer;
 	transition:top 100ms, left 100ms;
 }
-.title .triangle {	width:0;height:0; border-style: solid; 	border-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}
-.title .text {	background: #e0e0e0; font: 14px arial; padding: 3px; }
-.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}
-.title.bottom .text { transform: translateY(6px);}
+>.title .triangle {	width:0;height:0; border-style: solid; 	border-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}
+>.title .text {	background: #e0e0e0; font: 14px arial; padding: 3px; }
+>.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}
+>.title.bottom .text { transform: translateY(6px);}
 				`,
 			features: [
 				{ $: 'dialog-feature.studio-pick', from: '%$from%' },
@@ -72,17 +67,17 @@ jb.component('dialog-feature.studio-pick', {
 	({
 	  disableChangeDetection: true,
       init: cmp=> {
-		  var _window = ctx.params.from == 'preview' ? jbart.previewWindow : window;
+		  var _window = ctx.params.from == 'preview' ? jb.studio.previewWindow : window;
 		  var previewOffset = ctx.params.from == 'preview' ? $('#jb-preview').offset().top : 0;
 		  cmp.titleBelow = false;
 
 		  var mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
 		  var userPick = jb.rx.Observable.fromEvent(document, 'mousedown')
 		      			.merge(jb.rx.Observable.fromEvent(
-		      				(jbart.previewWindow || {}).document, 'mousedown'));
+		      				(jb.studio.previewWindow || {}).document, 'mousedown'));
 		  var keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup')
 		      			.merge(jb.rx.Observable.fromEvent(
-		      				(jbart.previewWindow || {}).document, 'keyup'));
+		      				(jb.studio.previewWindow || {}).document, 'keyup'));
 
 		  mouseMoveEm
 		  	.debounceTime(50)
@@ -98,16 +93,14 @@ jb.component('dialog-feature.studio-pick', {
 		  		eventToProfile(e,_window))
 		  	.filter(x=> x && x.length > 0)
 		  	.do(profElem=> {
-		  		ctx.vars.pickSelection.ctx = _window.jbart.ctxDictionary[profElem.attr('jb-ctx')];
+		  		ctx.vars.pickSelection.ctx = _window.jb.ctxDictionary[profElem.attr('jb-ctx')];
 		  		showBox(cmp,profElem,_window,previewOffset);
-	            cmp.changeDt.markForCheck();
-	            cmp.changeDt.detectChanges();
 		  	})
 		  	.last()
 		  	.subscribe(x=> {
 		  		ctx.vars.$dialog.close({OK:true});
 		  		jb.delay(200).then(_=>
-		  			jbart.previewWindow.getSelection() && jbart.previewWindow.getSelection().empty())
+		  			jb.studio.previewWindow.getSelection() && jb.studio.previewWindow.getSelection().empty())
 		  	})
 		}
 	})			
@@ -115,7 +108,7 @@ jb.component('dialog-feature.studio-pick', {
 
 function pathFromElem(_window,profElem) {
 	try {
-		return _window.jbart.ctxDictionary[profElem.attr('jb-ctx') || profElem.parent().attr('jb-ctx')].path;
+		return _window.jb.ctxDictionary[profElem.attr('jb-ctx') || profElem.parent().attr('jb-ctx')].path;
 	} catch (e) {
 		return '';
 	}
@@ -132,68 +125,75 @@ function eventToProfile(e,_window) {
 		.filter((i,e) => 
 			$(e).attr('jb-ctx') ));
 	if (results.length == 0) return [];
+
 	// promote parents if the mouse is near the edge
 	var first_result = results.shift(); // shift also removes first item from results!
-	var edgeY = Math.max(3,Math.floor($(first_result).children().first().height() / 10));
-	var edgeX = Math.max(3,Math.floor($(first_result).children().first().width() / 10));
+	var edgeY = Math.max(6,Math.floor($(first_result).height() / 10));
+	var edgeX = Math.max(6,Math.floor($(first_result).width() / 10));
 
 	var orderedResults = results.filter(elem=>{
-		return Math.abs(mousePos.y - $(elem).children().first().offset().top) < edgeY || Math.abs(mousePos.x - $(elem).children().first().offset().left) < edgeX;
+		return Math.abs(mousePos.y - $(elem).offset().top) < edgeY || Math.abs(mousePos.x - $(elem).offset().left) < edgeX;
 	}).concat([first_result]);
 	return $(orderedResults[0]);
 }
 
-function showBox(cmp,_profElem,_window,previewOffset) {
-	var profElem = 	_profElem.children().first();
+function showBox(cmp,profElem,_window,previewOffset) {
 	if (profElem.offset() == null || $('#jb-preview').offset() == null) 
 		return;
 
-	cmp.top = previewOffset + profElem.offset().top;
-	cmp.left = profElem.offset().left;
-	if (profElem.outerWidth() == $(_window.document.body).width())
-		cmp.width = (profElem.outerWidth() -10);
-	else
-		cmp.width = profElem.outerWidth();
-	cmp.height = profElem.outerHeight();
+	// cmp.top = previewOffset + profElem.offset().top;
+	// cmp.left = profElem.offset().left;
+	// if (profElem.outerWidth() == $(_window.document.body).width())
+	// 	cmp.width = (profElem.outerWidth() -10);
+	// else
+	// 	cmp.width = profElem.outerWidth();
+	// cmp.height = profElem.outerHeight();
+    //	cmp.title = jb.studio.model.shortTitle(pathFromElem(_window,profElem));
+	cmp.setState({
+		top: previewOffset + profElem.offset().top,
+		left: profElem.offset().left,
+		width: profElem.outerWidth() == $(_window.document.body).width() ? profElem.outerWidth() -10 : cmp.width = profElem.outerWidth(),
+		height: profElem.outerHeight(),
+		title: jb.studio.model.shortTitle(pathFromElem(_window,profElem)),
+		titleTop: previewOffset + profElem.offset().top - 20,
+		titleLeft: profElem.offset().left
+	});
 
-	cmp.title = model.shortTitle(pathFromElem(_window,_profElem));
-
-	var $el = $(cmp.elementRef.nativeElement);
-	var $titleText = $el.find('.title .text');
+	// var $el = $(cmp.base);
+	// var $titleText = $el.find('.title .text');
 //	console.log('selected',profElem.outerWidth(),profElem.outerHeight());
 	// Array.from(profElem.parents())
 	// 	.forEach(el=>console.log('parent',$(el).outerWidth(),$(el).outerHeight()))	
+	// $el.find('.title .text').text(cmp.title);
 
-	$el.find('.title .text').text(cmp.title);
-
-	cmp.titleBelow = top - $titleText.outerHeight() -6 < $(_window).scrollTop();
-	cmp.titleTop = cmp.titleBelow ? cmp.top + cmp.height : cmp.top - $titleText.outerHeight() -6;
-	cmp.titleLeft = cmp.left + (cmp.width - $titleText.outerWidth())/2;
-	$el.find('.title .triangle').css({ marginLeft: $titleText.outerWidth()/2-6 })
+	// cmp.titleBelow = top - $titleText.outerHeight() -6 < $(_window).scrollTop();
+	// cmp.titleTop = cmp.titleBelow ? cmp.top + cmp.height : cmp.top - $titleText.outerHeight() -6;
+	// cmp.titleLeft = cmp.left + (cmp.width - $titleText.outerWidth())/2;
+	// $el.find('.title .triangle').css({ marginLeft: $titleText.outerWidth()/2-6 })
 }
 
 jb.component('studio.highlight-in-preview',{
+	type: 'action',
 	params: [
 		{ id: 'path', as: 'string' }
 	],
 	impl: (ctx,path) => {
-     ctx.vars.ngZone.runOutsideAngular(() => {
-		var _window = jbart.previewWindow || window;
+		var _window = jb.studio.previewWindow || window;
 		if (!_window) return;
 		var elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
 			.filter(e=>
-				_window.jbart.ctxDictionary[e.getAttribute('jb-ctx')].path == path)
+				_window.jb.ctxDictionary[e.getAttribute('jb-ctx')].path == path)
 
 		if (elems.length == 0) // try to look in studio
 			elems = Array.from(document.querySelectorAll('[jb-ctx]'))
 			.filter(e=>
-				jbart.ctxDictionary[e.getAttribute('jb-ctx')].path == path)
+				jb.ctxDictionary[e.getAttribute('jb-ctx')].path == path)
 
 		var boxes = [];
 		
 //		$('.jbstudio_highlight_in_preview').remove();
 		
-		elems.map(el=>$(el).children().first())
+		elems.map(el=>$(el))
 			.forEach($el => {
 				var $box = $('<div class="jbstudio_highlight_in_preview"/>');
 				$box.css({ position: 'absolute', background: 'rgb(193, 224, 228)', border: '1px solid blue', opacity: '1', zIndex: 5000 }); // cannot assume css class in preview window
@@ -210,9 +210,5 @@ jb.component('studio.highlight-in-preview',{
 			fadeTo(500,0,function() {
 				$(boxes).remove();
 			});
-  	})
   }
-})
-
-
 })

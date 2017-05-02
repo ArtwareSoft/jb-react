@@ -76,7 +76,7 @@ jb.component('tree', {
 		return jb.ui.ctrl(ctx, {
 			class: 'jb-tree', // define host element to keep the wrapper
 			beforeInit: (cmp,props) => {
-				props.tree = Object.assign( tree, {
+				cmp.tree = Object.assign( tree, {
 					redraw: _ => { // needed after dragula that changes the DOM
 						cmp.setState({});
 					},
@@ -95,9 +95,9 @@ jb.component('tree', {
 jb.component('tree.ul-li', {
 	type: 'tree.style',
 	impl :{$: 'custom-style',
-		template: (cmp,state) => {
-			var tree = cmp.props.tree;
-			return jb.ui.h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath, 
+		template: (cmp,state,h) => {
+			var tree = cmp.tree;
+			return h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath, 
 				class: 'jb-control-tree treenode' + (tree.selected == tree.nodeModel.rootPath ? ' selected': '') })
 		}
 	}
@@ -113,7 +113,7 @@ jb.component('tree.selection', {
   impl: context=> ({
 	    onclick: true,
   		afterViewInit: cmp => {
-  		  var tree = cmp.props.tree;
+  		  var tree = cmp.tree;
 
   		  var databindObs = jb.ui.refObservable(context.params.databind,cmp);
 
@@ -134,8 +134,8 @@ jb.component('tree.selection', {
 			  },'')
 			  if (context.params.databind)
 				  jb.writeValue(context.params.databind, selected);
+			  context.params.onSelection(cmp.ctx.setData(selected));
 			  tree.redraw();
-			  //jb.ui.applyAfter(context.params.onSelection(cmp.ctx.setData(selected)),context)
 		  });
 
 		  // first auto selection selection
@@ -162,7 +162,7 @@ jb.component('tree.keyboard-selection', {
 	impl: context => ({
 			onkeydown: true,
 			afterViewInit: cmp=> {
-				var tree = cmp.props.tree;
+				var tree = cmp.tree;
 				cmp.base.setAttribute('tabIndex','0');
 
 				var keyDownNoAlts = cmp.onkeydown.filter(e=> 
@@ -235,7 +235,7 @@ jb.component('tree.drag-and-drop', {
   	return {
   		onkeydown: true,
   		afterViewInit: cmp => {
-  			var tree = cmp.props.tree;
+  			var tree = cmp.tree;
 			var drake = tree.drake = dragula([], {
 				moves: function(el) { 
 					return $(el).is('.jb-array-node>.treenode-children>div') 
@@ -284,7 +284,7 @@ jb.component('tree.drag-and-drop', {
 			})
   		},
   		doCheck: function(cmp) {
-  			var tree = cmp.props.tree;
+  			var tree = cmp.tree;
 		  	if (tree.drake)
 			  tree.drake.containers = 
 				  $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();

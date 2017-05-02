@@ -42,3 +42,13 @@ jb.component('dynamic-controls', {
         new jb.jbCtx(context,{data: controlItem, vars: jb.obj(itemVariable,controlItem)})))
       )
 })
+
+jb.component('group.dynamic-titles', {
+  type: 'feature', category: 'group:30',
+  description: 'dynamic titles for sub controls',
+  impl: ctx => ({
+    doCheck: cmp => 
+      (cmp.state.ctrls || []).forEach(ctrl=>
+        ctrl.title = ctrl.jbComp.jb_title ? ctrl.jbComp.jb_title() : '')
+  })
+})

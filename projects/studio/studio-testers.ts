@@ -73,7 +73,7 @@ jb.component('jb-path-test', {
           try {
             var match = Array.from(res.element.querySelectorAll('[jb-ctx]'))
             .filter(e=> {
-              var ctx2 = jbart.ctxDictionary[e.getAttribute('jb-ctx')];
+              var ctx2 = jb.ctxDictionary[e.getAttribute('jb-ctx')];
               return ctx2.path == full_path || (ctx2.componentContext && ctx2.componentContext.callerPath == full_path)
             })
             if (match.length != expectedDynamicCounter)

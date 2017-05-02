@@ -56,7 +56,7 @@ class JbComponent {
 			    		return this.ctx;
 			    	}
 			    	this.refreshCtx();
-					Object.assign(this,(jbComp.styleCtx || {}).params);
+					Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
 					jbComp.jbBeforeInitFuncs.forEach(init=> init(this,props));
 					jbComp.jbInitFuncs.forEach(init=> init(this,props));
 			    } catch(e) { jb.logException(e,'') }
@@ -86,6 +86,7 @@ class JbComponent {
 		injectLifeCycleMethods(ReactComp,this);
 		ReactComp.ctx = this.ctx;
 		ReactComp.title = this.jb_title();
+		ReactComp.jbComp = jbComp;
 		return ReactComp;
 	}
 
@@ -95,6 +96,8 @@ class JbComponent {
 
 	injectCss(cmp) {
 		var elem = cmp.base;
+		if (!elem.setAttribute)
+			return;
 		var ctx = this.ctx;
 	  	while (ctx.profile.__innerImplementation)
 	  		ctx = ctx.componentContext._parent;
@@ -234,13 +237,9 @@ ui.renderWidget = function(profile,elem) {
 		constructor(props) {
 			super();
 			this.state.profile = profile;
-			ui.waitFor(_=>jb.path(jb,['studio','studioWindow','jb','ui','resourceChange'])).then(resourceChange=>
-				resourceChange.filter(e=>
-						e.path.join('/') == 'studio/page')
-					.map(e=>
-						jb.studio.studioWindow.jb.ui.resources.studio.project + '.' + e.op.studio.page.$set)
-					.subscribe(page=>this.setState({profile: {$: page}}))
-			)
+			ui.waitFor(_=>jb.path(jb,['studio','studioWindow','jb','studio','pageChange']))
+				.then(pageChange=>
+					pageChange.subscribe(page=>this.setState({profile: {$: page}})))
 		}
 		render(pros,state) {
 			return ui.h(new jb.jbCtx().run(state.profile).reactComp())
@@ -249,6 +248,7 @@ ui.renderWidget = function(profile,elem) {
 	ui.render(ui.h(R),elem);
 	ui.widgetLoaded = true;
 }
+
 ui.applyAfter = function(promise,ctx) {
 	// should refresh all after promise
 }

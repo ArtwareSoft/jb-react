@@ -31,8 +31,10 @@ jb.component('open-dialog', {
 				cmp.dialog = dialog;
 
 				cmp.state.title = ctx.params.title(ctx);
-				cmp.state.contentComp = ctx.params.content(ctx).reactComp();
-				cmp.menuComp = ctx.params.menu(ctx);
+				try {
+					cmp.state.contentComp = ctx.params.content(ctx).reactComp();
+					cmp.menuComp = ctx.params.menu(ctx).reactComp();
+				} catch (e) {}
 				cmp.hasMenu = !!ctx.params.menu.profile;
 				cmp.dialogClose = _ => dialog.close();
 			},
@@ -51,9 +53,8 @@ jb.component('close-containing-popup', {
 	params: [
 		{ id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
 	],
-	impl: function(context,OK) {
-		context.vars.$dialog && context.vars.$dialog.close({OK:OK});
-	}
+	impl: (context,OK) =>
+		context.vars.$dialog && context.vars.$dialog.close({OK:OK})
 })
 
 jb.component('dialog.default', {
@@ -62,7 +63,7 @@ jb.component('dialog.default', {
 		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
 			h('div',{class: 'dialog-title'},state.title),
 			h('button',{class: 'dialog-close', onclick: 
-				_=> cmp.dialogClose() },'X'),
+				_=> cmp.dialogClose() },'×'),
 			h(state.contentComp),
 		]),
 		features:{$:'dialog-feature.drag-title'}
@@ -304,8 +305,7 @@ jb.component('dialog-feature.drag-title', {
 	impl: function(context, id) { 
 		var dialog = context.vars.$dialog;
 		return {
-		       css: '.dialog-title { cursor: pointer }',
-	           jbEmitter: true,
+		       css: '>.dialog-title { cursor: pointer }',
 		       afterViewInit: function(cmp) {
 		       	  var titleElem = cmp.base.querySelector('.dialog-title');
 		       	  cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
@@ -317,15 +317,15 @@ jb.component('dialog-feature.drag-title', {
 					    dialog.el.style.left = pos.left + 'px';
 				  }
 
-				  var mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup');
-				      			// .merge(jb.rx.Observable.fromEvent(
-				      			// 	(jb.studio.previewWindow || {}).document, 'mouseup'));
-//          						.takeUntil( cmp.destroyed )
+				  var mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
+				  var mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
 
-				  var mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove');
-				      			// .merge(jb.rx.Observable.fromEvent(
-				      			// 	(jb.studio.previewWindow || {}).document, 'mousemove'));
-//          						.takeUntil( cmp.destroyed )
+				  if (jb.studio.previewWindow) {
+				  	mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
+				  		.takeUntil( cmp.destroyed );
+				  	mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
+				  		.takeUntil( cmp.destroyed );
+				  }
 
 				  var mousedrag = cmp.mousedownEm
 				  		.do(e => 
@@ -335,8 +335,7 @@ jb.component('dialog-feature.drag-title', {
 				          top:  e.clientY - dialog.el.getBoundingClientRect().top
 				        }))
 				      	.flatMap(imageOffset => 
-			      			 mouseMoveEm.takeUntil(mouseUpEm)
-//			      			 .do(_=>titleElem.style.cursor = 'move')
+			      			 mouseMoveEm.takeUntil(mouseUpEm.do(_=>titleElem.style.cursor = 'pointer'))
 			      			 .map(pos => ({
 						        top:  pos.clientY - imageOffset.top,
 						        left: pos.clientX - imageOffset.left
@@ -344,7 +343,7 @@ jb.component('dialog-feature.drag-title', {
 				      	);
 
 				  mousedrag.distinctUntilChanged().subscribe(pos => {
-				  	console.log(pos);
+				  	titleElem.style.cursor = 'move';
 			        dialog.el.style.top  = pos.top  + 'px';
 			        dialog.el.style.left = pos.left + 'px';
 			        if (id) sessionStorage.setItem(id, JSON.stringify(pos))
@@ -394,9 +393,7 @@ jb.ui.dialogs = {
  	},
  	init: function() {
  		if ($('.jb-dialogs')[0]) return;
- 		console.log('before init');
-		jb.ui.render(jb.ui.h(JbDialogs), document.getElementById('dialogs'));
- 		console.log('after init');
+		jb.ui.render(jb.ui.h(JbDialogs), document.body);
  	},
 	addDialog: function(dialog,context) {
 		jb.ui.dialogs.init();

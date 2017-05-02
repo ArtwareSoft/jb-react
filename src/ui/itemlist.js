@@ -52,7 +52,7 @@ jb.component('itemlist.watch-items', {
   impl: (ctx,ref) => ({
       init: cmp => {
         var itemsAsRef = jb.asRef(cmp.items);
-        if (cmp.initWatchByRef && itemsAsRef) 
+        if (cmp.initWatchByRef && jb.isRef(itemsAsRef)) 
           cmp.initWatchByRef(itemsAsRef);
       }
   })
@@ -161,7 +161,7 @@ jb.component('itemlist.drag-and-drop', {
         });
 
         drake.on('drag', function(el, source) { 
-          var item_comp = el._component || el.firstChild._component;
+          var item_comp = el._component;
           el.dragged = { 
             obj: item_comp && item_comp.ctx.data,
             remove: obj => cmp.items.splice(cmp.items.indexOf(obj), 1)

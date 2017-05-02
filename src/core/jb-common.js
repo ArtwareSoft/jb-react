@@ -113,14 +113,14 @@ jb.component('firstSucceeding', {
 	}
 });
 
-// jb.component('objectProperties', {
-// 	type: 'data',
-// 	params: [
-// 		{ id: 'object', defaultValue: '%%', as: 'single' }
-// 	],
-// 	impl: (ctx,object) =>
-// 		jb.ownPropertyNames(object)
-// })
+jb.component('objectProperties', {
+	type: 'data',
+	params: [
+		{ id: 'object', defaultValue: '%%', as: 'single' }
+	],
+	impl: (ctx,object) =>
+		jb.ownPropertyNames(object)
+})
 
 // jb.component('objectToArray',{
 // 	type: 'data',

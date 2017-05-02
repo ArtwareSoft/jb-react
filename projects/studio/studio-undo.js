@@ -1,14 +1,12 @@
-import {jb} from 'jb-core';
-import * as jb_ui from 'jb-ui';
-import {modifyOperationsEm,compAsStrFromPath,notifyModification} from './studio-utils';
-import {pathFixer} from './studio-path';
+(function() {
+var st = jb.studio;
 
 class Undo {
-	history = [];
-	index = 0;
-	clipboard = null;
 	constructor() {
-		modifyOperationsEm.subscribe(change=>{
+		this.history = [];
+		this.index = 0;
+		this.clipboard = null;
+		st.modifyOperationsEm.subscribe(change=>{
 			this.history.push(change);
 			this.index = this.history.length;
 		})
@@ -18,7 +16,7 @@ class Undo {
 			this.index--;
 			var change = this.history[this.index];
 			setComp(change.before,change.ctx.win().jbart);
-			jb_ui.apply(ctx);
+//			jb_ui.apply(ctx);
 		}
 	}
 	redo(ctx) {
@@ -26,7 +24,7 @@ class Undo {
 			var change = this.history[this.index];
 			setComp(change.after,change.ctx.win().jbart);
 			this.index++;
-			jb_ui.apply(ctx);
+//			jb_ui.apply(ctx);
 		}
 	}
 	copy(ctx,path) {
@@ -71,23 +69,23 @@ jb.component('studio.undo-support', {
   	({
   		// saving state on focus and setting the change on blur
   		init: cmp => {
-  			var before = compAsStrFromPath(path);
+  			var before = st.compAsStrFromPath(path);
   			if (cmp.codeMirror) {
   				cmp.codeMirror.on('focus',()=>
-  					before = compAsStrFromPath(path)
+  					before = st.compAsStrFromPath(path)
   				);
   				cmp.codeMirror.on('blur',()=>{
-  					if (before != compAsStrFromPath(path))
-						notifyModification(path,before,ctx)
+  					if (before != st.compAsStrFromPath(path))
+						st.notifyModification(path,before,ctx)
   				});
   			} else {
-  			$(cmp.elementRef.nativeElement).findIncludeSelf('input')
+  			$(cmp.base).findIncludeSelf('input')
   				.focus(e=> {
-  					before = compAsStrFromPath(path)
+  					before = st.compAsStrFromPath(path)
   				})
   				.blur(e=> {
-  					if (before != compAsStrFromPath(path))
-						notifyModification(path,before,ctx)
+  					if (before != st.compAsStrFromPath(path))
+						st.notifyModification(path,before,ctx)
   				})
   			}
   		}
@@ -96,8 +94,8 @@ jb.component('studio.undo-support', {
 
 
 function doSetComp(jbart_base,id,comp) {
-	jbart_base.comps[id] = comp;
-	pathFixer.fixSetCompPath(id);
+	st.jbart_base().comps[id] = comp;
+	st.pathFixer.fixSetCompPath(id);
 }
 
 function setComp(code,jbart_base) {
@@ -108,3 +106,5 @@ function setComp(code,jbart_base) {
 		jb.logException(e,'set comp:'+code);
 	}
 }
+
+})()

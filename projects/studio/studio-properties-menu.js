@@ -23,8 +23,8 @@ jb.component('studio.property-toolbar', {
           features :{$: 'hidden', 
             showCondition :{
               $and: [
-                {$: 'endsWith', endsWith: '~style', text: '%$path%' }, 
-                {$: 'notEquals', 
+                {$: 'ends-with', endsWith: '~style', text: '%$path%' }, 
+                {$: 'not-equals', 
                   item1 :{$: 'studio.comp-name', path: '%$path%' }, 
                   item2: 'customStyle'
                 }
@@ -67,7 +67,7 @@ jb.component('studio.open-property-menu', {
           {$: 'menu.action', 
             title: 'style editor', 
             action :{$: 'studio.open-style-editor', path: '%$path%' }, 
-            showCondition :{$: 'endsWith', endsWith: '~style', text: '%$path%' }
+            showCondition :{$: 'ends-with', endsWith: '~style', text: '%$path%' }
           },
         {$: 'menu.action', 
           title: 'multiline edit', 

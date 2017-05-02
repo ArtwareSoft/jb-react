@@ -20,7 +20,7 @@ st.profileRefFromPath = function(path) {
 			if (typeof value == 'undefined') 
 				return st.profileFromPath(this.path);
 
-			var parent = st.profileFromPath(parentPath(this.path));
+			var parent = st.profileFromPath(st.parentPath(this.path));
 			parent[this.path.split('~').pop()] = value;
 		}
 	}
@@ -62,14 +62,14 @@ st.pathFixer = {
 }
 
 function profileRefFromPathWithNotification(path,ctx) {
-	var _ref = profileRefFromPath(path);
+	var _ref = st.profileRefFromPath(path);
 	return {
 		$jb_val: function(value) {
 			if (typeof value == 'undefined') 
 				return _ref.$jb_val(value);
 			if (_ref.$jb_val() == value) return;
 			var comp = path.split('~')[0];
-			var before = compAsStr(comp);
+			var before = st.compAsStr(comp);
 			_ref.$jb_val(value);
 			notifyModification(path,before,ctx,this.ngPath);
 		}
@@ -83,7 +83,7 @@ function closest(path) {
 		_path = _path.replace(/([0-9]+)$/,(x,y) => Number(y)-1)
 
 	while (st.profileFromPath(_path,true) == null && _path.indexOf('~') != -1)
-		_path = parentPath(_path);
+		_path = st.parentPath(_path);
 
 	if (st.profileFromPath(_path,true))
 		return _path;
@@ -93,7 +93,7 @@ function closest(path) {
 
 function fixMovePaths(from,to) {
 //	console.log('fixMovePath',from,to);
-	var parent_path = parentPath(to);
+	var parent_path = st.parentPath(to);
 	var depth = parent_path.split('~').length;
 	var index = Number(to.split('~').pop()) || 0;
 	st.pathChangesEm.next({ from: from, to: to, 
@@ -142,7 +142,7 @@ class FixReplacingPathsObj {
 }
 
 function fixIndexOfPath(pathToFix,changedPath,diff) {
-	var parent_path = parentPath(changedPath);
+	var parent_path = st.parentPath(changedPath);
 	var depth = parent_path.split('~').length;
 	if (pathToFix.indexOf(parent_path) == 0 && pathToFix.split('~').length > depth) {
 		var index = Number(changedPath.split('~').pop()) || 0;
@@ -160,7 +160,7 @@ function fixIndexOfPath(pathToFix,changedPath,diff) {
 function fixArrayWrapperPath() {
 	st.pathChangesEm.next(function(pathToFix) {
 		var base = pathToFix.split('~')[0];
-		var first = jb.val(profileRefFromPath(base));
+		var first = jb.val(st.profileRefFromPath(base));
 		var res = pathToFix.split('~')[0];
 		pathToFix.split('~').slice(1).reduce(function(obj,prop) {
 			if (!obj || (obj[prop] == null && prop == '0')) 

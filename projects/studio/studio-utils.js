@@ -5,7 +5,7 @@ st.pathChangesEm = new jb.rx.Subject();
 
 st.notifyModification = function(path,before,ctx,ngPath) {
 	var comp = path.split('~')[0];
-	st.modifyOperationsEm.next({ comp: comp, before: before, after: compAsStr(comp), path: path, ctx: ctx, jbart: findjBartToLook(path), ngPath: ngPath });
+	st.modifyOperationsEm.next({ comp: comp, before: before, after: compAsStr(comp), path: path, ctx: ctx, jbart: st.findjBartToLook(path), ngPath: ngPath });
 }
 
 st.message = function(message,error) {
@@ -34,7 +34,7 @@ st.getComp = function(id) {
 }
 
 st.compAsStr = function(id) {
-	return st.prettyPrintComp(id,getComp(id))
+	return st.prettyPrintComp(id,st.getComp(id))
 }
 
 st.compAsStrFromPath = function(path) {
@@ -70,7 +70,7 @@ jb.component('studio.goto-path', {
 		{ id: 'path', as: 'string' },
 	],
 	impl :{$runActions: [ 
-		{$: 'closeContainingPopup' },
+		{$: 'close-containing-popup' },
 		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' }, 
 		{$if :{$: 'studio.is-of-type', type: 'control', path: '%$path%'},
 			then: {$runActions: [ 

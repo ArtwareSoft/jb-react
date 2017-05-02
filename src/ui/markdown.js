@@ -7,31 +7,17 @@ jb.component('markdown', {
         { id: 'features', type: 'feature[]', dynamic: true },
     ],
     impl: ctx =>
-        jb_ui.ctrl(ctx)
+        jb.ui.ctrl(ctx)
 })
 
-jb.type('markdown.style');
-
-jb.component('markdown.showdown2', {
-    impl :{$: 'customStyle', 
-        template: '<span></span>',
-    }
-})
 
 jb.component('markdown.showdown', {
     type: 'markdown.style',
     impl: ctx => ({
-        template: '<div [innerHTML]="markdownHtml"></div>',
-        init: function(cmp) {
-            cmp.markdownHtml = '';
+        template: (cmp,state,h) => h('div'),
+        afterViewInit: cmp => {
+            cmp.base.innerHtml = new showdown.Converter({tables:true})
+                    .makeHtml(ctx.vars.$model.markdown(cmp.ctx))
         },
-        doCheck: function(cmp) {
-          var new_markdown = ctx.vars.$model.markdown(cmp.ctx);
-          if (cmp.markdown != new_markdown) {
-              cmp.markdown = new_markdown;
-              cmp.markdownHtml = new showdown.Converter({tables:true})
-                    .makeHtml(new_markdown);
-          }
-        }
     })
 })

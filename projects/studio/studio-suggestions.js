@@ -1,8 +1,5 @@
-import {jb} from 'jb-core';
-import * as jb_ui from 'jb-ui';
-import * as jb.rx from 'jb-ui/jb-rx';
-import {model} from './studio-tgp-model';
-import {getComp} from './studio-utils';
+(function() {
+  var st = jb.studio;
 
 jb.component('studio.property-primitive', {
   type: 'control', 
@@ -97,7 +94,7 @@ jb.component('studio.jb-floating-input', {
       {$: 'group.studio-suggestions', 
         path: '%$path%', 
         closeFloatingInput: [
-          {$: 'closeContainingPopup', OK: true }, 
+          {$: 'close-containing-popup', OK: true }, 
           {$: 'tree.regain-focus' }
         ]
       },
@@ -120,8 +117,10 @@ function rev(str) {
   return str.split('').reverse().join('');
 }
 
-export class suggestions {
-  constructor(public input,public expressionOnly) {
+class suggestions {
+  constructor(input,expressionOnly) {
+    this.input = input;
+    this.expressionOnly = expressionOnly;
     this.pos = input.selectionStart;
     this.text = input.value.substr(0,this.pos).trim();
     this.text_with_open_close = this.text.replace(/%([^%;{}\s><"']*)%/g, (match,contents) =>
@@ -144,17 +143,17 @@ export class suggestions {
 
   extendWithOptions(probeCtx,path) {
     this.options = [];
-    probeCtx = probeCtx || (jb.studio.previewjb || jbart).initialCtx;
+    probeCtx = probeCtx || (jb.studio.previewjb || jb).initialCtx;
     var vars = jb.entries(jb.extend({},(probeCtx.componentContext||{}).params,probeCtx.vars,probeCtx.resources))
         .map(x=>new ValueOption('$'+x[0],x[1],this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
-        .filter(x=>['$ngZone','$window','$injector'].indexOf(x.toPaste) == -1)
+        .filter(x=>['$window'].indexOf(x.toPaste) == -1)
 
     if (this.inputVal.indexOf('=') == 0 && !this.expressionOnly)
-      this.options = model.PTsOfPath(path).map(compName=> {
+      this.options = jb.studio.model.PTsOfPath(path).map(compName=> {
             var name = compName.substring(compName.indexOf('.')+1);
             var ns = compName.substring(0,compName.indexOf('.'));
-            return new CompOption(compName, compName, ns ? `${name} (${ns})` : name, getComp(compName).description || '')
+            return new CompOption(compName, compName, ns ? `${name} (${ns})` : name, st.getComp(compName).description || '')
         })
     else if (this.tailSymbol == '%') 
       this.options = [].concat.apply([],jb.toarray(probeCtx.exp('%%'))
@@ -182,8 +181,12 @@ export class suggestions {
 }
 
 class ValueOption {
-    constructor(public toPaste, public value,public pos,public tail) {
-      this.text = this.toPaste + this.valAsText()
+    constructor(toPaste,value,pos,tail) {
+      this.toPaste = toPaste;
+      this.value = value;
+      this.pos = pos;
+      this.tail = tail;
+      this.text = toPaste + this.valAsText();
     }
     valAsText() {
       var val = this.value;
@@ -214,7 +217,12 @@ class ValueOption {
 }
 
 class CompOption {
-    constructor(public toPaste, public value,public text,public description) {}
+    constructor(toPaste,value,text,description,) {
+       this.toPaste = toPaste;
+       this.value = value;
+       this.text = text;
+       this.description = description;
+    }
     paste(ctx) {
       ctx.vars.suggestionCtx.input.value = '=' + this.toPaste;
       ctx.vars.suggestionCtx.closeAndWriteValue();
@@ -241,7 +249,7 @@ jb.component('group.studio-suggestions', {
         ctx2.setVars({suggestionCtx: suggestionCtx }),
 
       afterViewInit: cmp=> {
-        var input = $(cmp.elementRef.nativeElement).findIncludeSelf('input')[0];
+        var input = $(cmp.base).findIncludeSelf('input')[0];
         if (!input)
           return;
         suggestionCtx.input = input;
@@ -320,7 +328,7 @@ jb.component('itemlist.studio-suggestions-options', {
       afterViewInit: function(cmp) {
         var suggestionCtx = ctx.vars.suggestionCtx;
 
-        jb.delay(1,ctx).then(()=>{// ctx.vars.ngZone.runOutsideAngular(() => {
+        jb.delay(1,ctx).then(()=>{
           var keyEm = suggestionCtx.keyEm;
 
           keyEm.filter(e=>
@@ -360,3 +368,4 @@ jb.component('itemlist.studio-suggestions-options', {
   })
 })
 
+})()

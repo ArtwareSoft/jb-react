@@ -1,12 +1,5 @@
-import {jb} from 'jb-core';
-import * as jb.rx from 'jb-ui/jb-rx';
 
-import {model} from './studio-tgp-model';
-import {jbart_base,pathChangesEm} from './studio-utils';
-import {parentPath} from './studio-path';
-
-
-export class Probe {
+jb.studio = class Probe {
   constructor(ctx, public forTests) {
     if (ctx.probe)
       debugger;
@@ -32,7 +25,8 @@ export class Probe {
   }
 
   simpleRun() {
-      var _win = jbart.previewWindow || window;
+      var _win = jb.studio.previewWindow || window;
+      var model = jb.studio.model;
       if (model.isCompNameOfType(jb.compName(this.circuit),'control'))
         this.circuitType = 'control'
       else if (model.isCompNameOfType(jb.compName(this.circuit),'action'))
@@ -73,7 +67,7 @@ export class Probe {
       this.probe[path].visits++;
       var found;
       this.probe[path].forEach(x=>{
-        found = jb_compareArrays(x.in.data,input.data) ? x : found;
+        found = jb.compareArrays(x.in.data,input.data) ? x : found;
       })
       if (found)
         found.counter++;
@@ -89,55 +83,55 @@ jb.component('studio.probe', {
   impl: (ctx,path) => {
       var context = ctx.exp('%$studio/last_pick_selection%');
       if (!context) {
-        var _jbart = st.jbart_base();
-        var _win = jbart.previewWindow || window;
+        var _jbart = jb.studio.jbart_base();
+        var _win = jb.studio.previewWindow || window;
         var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
-        context = _win.jb_ctx(_jbart.initialCtx,{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
+        context = _win.jb.ctx(_jbart.initialCtx,{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
       }
-      return new Probe(context).runCircuit(path());
+      return new jb.studio.Probe(context).runCircuit(path());
     }
 })
 
 // watch & fix path changes
-pathChangesEm.subscribe(fixer => {
-  var ctx = jbart.initialCtx && jbart.initialCtx.exp('%$studio/last_pick_selection%');
-  if (ctx && ctx.path)
-      ctx.path = fixer.fix(ctx.path)
-}) 
+// pathChangesEm.subscribe(fixer => {
+//   var ctx = jbart.initialCtx && jbart.initialCtx.exp('%$studio/last_pick_selection%');
+//   if (ctx && ctx.path)
+//       ctx.path = fixer.fix(ctx.path)
+// }) 
 
 
-function testControl(ctx,forTests) {
-  // test the control as a dialog
-  return new Promise((resolve,reject)=> {
-    var _win = ctx.win();
-    var dialog = { 
-      id: 'test-control', 
-      em: new jb.rx.Subject(),
-      comp: ctx.runItself().jbExtend({
-        jbEmitter: true,
-        init: cmp =>
-          cmp.jbEmitter.filter(e=>
-            e == 'ready' || e == 'destroy')
-          .take(1)
-          .catch(e=> {
-              debugger;
-              dialog.close();resolve()
-          })
-          .subscribe(x=>{
-            if (!forTests)
-              jb.delay(1,ctx).then(()=>dialog.close()); // delay to avoid race conditin with itself
-//            console.log('close test dialog',ctx.id);
-            resolve({ element : cmp.elementRef.nativeElement });
-          })
-          ,
+// function testControl(ctx,forTests) {
+//   // test the control as a dialog
+//   return new Promise((resolve,reject)=> {
+//     var _win = ctx.win();
+//     var dialog = { 
+//       id: 'test-control', 
+//       em: new jb.rx.Subject(),
+//       comp: ctx.runItself().jbExtend({
+//         jbEmitter: true,
+//         init: cmp =>
+//           cmp.jbEmitter.filter(e=>
+//             e == 'ready' || e == 'destroy')
+//           .take(1)
+//           .catch(e=> {
+//               debugger;
+//               dialog.close();resolve()
+//           })
+//           .subscribe(x=>{
+//             if (!forTests)
+//               jb.delay(1,ctx).then(()=>dialog.close()); // delay to avoid race conditin with itself
+// //            console.log('close test dialog',ctx.id);
+//             resolve({ element : cmp.elementRef.nativeElement });
+//           })
+//           ,
 
-        css: '{display: none}'  
-      })
-    }
-//    console.log('add test dialog');
+//         css: '{display: none}'  
+//       })
+//     }
+// //    console.log('add test dialog');
 
-    _win.jbart.jb_dialogs.addDialog(dialog,ctx);
-//    console.log('create test dialog',ctx.id);
-    _win.setTimeout(()=>{},1); // refresh
-  })
-}
+//     _win.jbart.jb_dialogs.addDialog(dialog,ctx);
+// //    console.log('create test dialog',ctx.id);
+//     _win.setTimeout(()=>{},1); // refresh
+//   })
+// }

@@ -165,11 +165,7 @@ jb.component('button.mdl-raised', {
 jb.component('button.mdl-flat-ripple', {
   type: 'button.style',
   impl: { $: 'custom-style',
-    template: (cmp, state) => jb.ui.h(
-      'button',
-      { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => cmp.clicked() },
-      state.title
-    ),
+    template: (cmp, state, h) => h('button', { class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => cmp.clicked() }, state.title),
     features: { $: 'mdl-style.init-dynamic' },
     css: '{ text-transform: none }'
   }
@@ -179,15 +175,10 @@ jb.component('button.mdl-icon', {
   type: 'button.style',
   params: [{ id: 'icon', as: 'string', default: 'code' }],
   impl: { $: 'custom-style',
-    template: (cmp, state) => jb.ui.h(
-      'button',
-      { 'class': 'mdl-button mdl-js-button mdl-button--icon mdl-js-ripple-effect', onclick: _ => cmp.clicked(), title: state.title, tabIndex: '-1' },
-      jb.ui.h(
-        'i',
-        { 'class': 'material-icons' },
-        cmp.icon
-      )
-    ),
+    template: (cmp, state, h) => h('button', {
+      class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
+      title: state.title, tabIndex: -1,
+      onclick: _ => cmp.clicked() }, h('i', { class: 'material-icons' }, cmp.icon)),
     css: `{ border-radius: 2px} 
       >i {border-radius: 2px}`,
     features: { $: 'mdl-style.init-dynamic' }
@@ -198,29 +189,11 @@ jb.component('button.mdl-icon-12', {
   type: 'button.style',
   params: [{ id: 'icon', as: 'string', default: 'code' }],
   impl: { $: 'custom-style',
-    template: (cmp, state) => jb.ui.h(
-      'button',
-      { 'class': 'mdl-button mdl-js-button mdl-button--icon mdl-js-ripple-effect', onclick: _ => cmp.clicked(), title: state.title, tabIndex: '-1' },
-      jb.ui.h(
-        'i',
-        { 'class': 'material-icons' },
-        cmp.icon
-      )
-    ),
+    template: (cmp, state, h) => h('button', {
+      class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
+      title: state.title, tabIndex: -1,
+      onclick: _ => cmp.clicked() }, h('i', { class: 'material-icons' }, cmp.icon)),
     css: `>.material-icons { font-size:12px;  }`,
-    features: { $: 'mdl-style.init-dynamic' }
-  }
-});
-
-jb.component('button.mdl-allow-html', {
-  type: 'button.style',
-  description: 'used for search pattern highlight',
-  impl: { $: 'custom-style',
-    template: (cmp, state) => jb.ui.h(
-      'button',
-      { 'class': 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => cmp.clicked() },
-      state.title
-    ),
     features: { $: 'mdl-style.init-dynamic' }
   }
 });
@@ -365,7 +338,7 @@ class JbComponent {
 			    		return this.ctx;
 			    	}
 			    	this.refreshCtx();
-					Object.assign(this,(jbComp.styleCtx || {}).params);
+					Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
 					jbComp.jbBeforeInitFuncs.forEach(init=> init(this,props));
 					jbComp.jbInitFuncs.forEach(init=> init(this,props));
 			    } catch(e) { jb.logException(e,'') }
@@ -395,6 +368,7 @@ class JbComponent {
 		injectLifeCycleMethods(ReactComp,this);
 		ReactComp.ctx = this.ctx;
 		ReactComp.title = this.jb_title();
+		ReactComp.jbComp = jbComp;
 		return ReactComp;
 	}
 
@@ -404,6 +378,8 @@ class JbComponent {
 
 	injectCss(cmp) {
 		var elem = cmp.base;
+		if (!elem.setAttribute)
+			return;
 		var ctx = this.ctx;
 	  	while (ctx.profile.__innerImplementation)
 	  		ctx = ctx.componentContext._parent;
@@ -543,13 +519,9 @@ ui.renderWidget = function(profile,elem) {
 		constructor(props) {
 			super();
 			this.state.profile = profile;
-			ui.waitFor(_=>jb.path(jb,['studio','studioWindow','jb','ui','resourceChange'])).then(resourceChange=>
-				resourceChange.filter(e=>
-						e.path.join('/') == 'studio/page')
-					.map(e=>
-						jb.studio.studioWindow.jb.ui.resources.studio.project + '.' + e.op.studio.page.$set)
-					.subscribe(page=>this.setState({profile: {$: page}}))
-			)
+			ui.waitFor(_=>jb.path(jb,['studio','studioWindow','jb','studio','pageChange']))
+				.then(pageChange=>
+					pageChange.subscribe(page=>this.setState({profile: {$: page}})))
 		}
 		render(pros,state) {
 			return ui.h(new jb.jbCtx().run(state.profile).reactComp())
@@ -558,6 +530,7 @@ ui.renderWidget = function(profile,elem) {
 	ui.render(ui.h(R),elem);
 	ui.widgetLoaded = true;
 }
+
 ui.applyAfter = function(promise,ctx) {
 	// should refresh all after promise
 }

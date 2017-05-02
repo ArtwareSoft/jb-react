@@ -49,3 +49,6 @@ jb.component('studio.wait-for-preview-iframe', {
       jb.studio.previewWindow)
 //    previewRefreshCounter++
 })
+
+jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studio/page')
+      .map(e=>jb.ui.resources.studio.project + '.' + jb.ui.resources.studio.page);

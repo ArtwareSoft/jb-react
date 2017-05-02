@@ -63,11 +63,14 @@ jb.component('studio.search-list', {
             highlight: '%$itemlistCntr/filter_data/search%', 
             cssClass: 'highlight'
           }, 
-          style :{$: 'customStyle', template: '<span>%$title%</span>' }, 
-          features: [
-            {$: 'css.padding', left: '3' }, 
-            {$: 'css.opacity', opacity: '1' }
-          ]
+          style :{$: 'custom-style', 
+            template: (cmp,state,h) => 
+              h('span',{},state.title), 
+            features: [
+              {$: 'css.padding', left: '3' }, 
+              {$: 'css.opacity', opacity: '1' }
+            ]
+          }
         }
       ]
     }, 
@@ -96,6 +99,6 @@ jb.component('studio.search-component-selected',{
   impl: {$runActions: [
     {$: 'write-value', to: '%$itemlistCntr/filter_data/search%', value: '' },
     {$: 'studio.goto-path', path: '%$path%' },
-    {$: 'closeContainingPopup' }
+    {$: 'close-containing-popup' }
   ]}
 })

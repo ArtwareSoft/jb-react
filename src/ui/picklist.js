@@ -46,13 +46,13 @@ function groupOfOpt(opt) {
 jb.component('picklist.dynamic-options', {
   type: 'feature',
   params: [
-    { id: 'recalcEm', as: 'observable'}
+    { id: 'recalcEm', as: 'single'}
   ],
   impl: (ctx,recalcEm) => ({
     jbEmitter: true,
     init: cmp => 
-      recalcEm && recalcEm
-        .takeUntil( cmp.destroyed )
+      recalcEm && recalcEm.subscribe &&
+        recalcEm.takeUntil( cmp.destroyed )
         .subscribe(e=>
             cmp.recalcOptions()) 
   })

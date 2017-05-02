@@ -102,24 +102,12 @@ jb.component('studio.jb-editor', {
                     resource: 'probeResult'
                   }
                 }, 
-                features :{$: 'group.watch', 
-                  data :{$: 'pipeline', 
-                    items: [
-                      {$: 'stringify', 
-                        value :{$: 'studio.val', 
-                          path: '%$studio/jb_editor_selection%'
-                        }
-                      }, 
-                      '%$studio/jb_editor_selection%:%%'
-                    ]
-                  }
-                }
               }
             ], 
             features :{$: 'feature.if', showCondition: '%$studio/jb_editor_selection%' }
           }
         ], 
-        features :{$: 'group.watch', data: '%$studio/jb_editor_selection%' }
+        features :{$: 'watch-ref', ref: '%$studio/jb_editor_selection%' }
       }
     ], 
     features :{$: 'css.padding', top: '10' }
@@ -198,7 +186,7 @@ jb.component('studio.jb-editor-menu', {
             action :{$: 'runActions', 
               actions: [
                 {$: 'studio.add-property', path: '%%' }, 
-                {$: 'closeContainingPopup' }, 
+                {$: 'close-containing-popup' }, 
                 {$: 'write-value', 
                   to: '%$studio/jb_editor_selection%', 
                   value: '%$path%~%%'

@@ -1,7 +1,3 @@
-(function() {
-  var model = jb.studio.model;
-
-
 jb.component('studio.open-new-profile-dialog', {
   type: 'action', 
   params: [
@@ -40,7 +36,7 @@ jb.component('studio.open-new-profile-dialog', {
     features: [
       {$: 'css.height', height: '430', overflow: 'hidden' }, 
       {$: 'css.width', width: '450', overflow: 'hidden' }, 
-      {$: 'dialog-feature.dragTitle', id: 'new %$type%' }, 
+      {$: 'dialog-feature.drag-title', id: 'new %$type%' }, 
       {$: 'dialog-feature.nearLauncherLocation', offsetLeft: 0, offsetTop: 0 }, 
       {$: 'group.auto-focus-on-first-input' },
       {$: 'dialog-feature.onClose', action:{ $call: 'onClose'}}
@@ -197,12 +193,7 @@ jb.component('studio.select-profile', {
                   highlight: '%$itemlistCntr/filter_data/search%', 
                   cssClass: 'highlight'
                 }, 
-                action: [{$: 'closeContainingPopup' }, { $call: 'onSelect' }], 
-                style :{$: 'customStyle', 
-                  template: '<button class="mdl-button mdl-js-button mdl-js-ripple-effect" (click)="clicked()" [innerHtml]="title"></button>', 
-                  css: 'button { text-transform: none }', 
-                  features :{$: 'mdl-style.init-dynamic', query: '.mdl-js-button' }
-                }, 
+                action: [{$: 'close-containing-popup' }, { $call: 'onSelect' }], 
                 features :{$: 'css', css: '!button { text-align: left; width: 250px }' }
               }
             ], 
@@ -212,13 +203,13 @@ jb.component('studio.select-profile', {
               {$: 'css.height', height: '300', overflow: 'auto', minMax: '' }, 
               {$: 'itemlist.selection', 
                 onDoubleClick :{$: 'runActions', 
-                  actions: [{$: 'closeContainingPopup' }, { $call: 'onSelect' }]
+                  actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
                 }, 
                 autoSelectFirst: true
               }, 
               {$: 'itemlist.keyboard-selection', 
                 onEnter :{$: 'runActions', 
-                  actions: [{$: 'closeContainingPopup' }, { $call: 'onSelect' }]
+                  actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
                 }
               }
             ]
@@ -261,7 +252,7 @@ jb.component('studio.open-new-page', {
         {$: 'editable-text', 
           databind: '%$dialogData/name%', 
           features :{$: 'feature.onEnter', 
-            action :{$: 'closeContainingPopup' }
+            action :{$: 'close-containing-popup' }
           }, 
           title: 'page name', 
           style :{$: 'editable-text.mdl-input' }
@@ -276,7 +267,7 @@ jb.component('studio.open-new-page', {
             type: 'control',
             impl: { $: 'group', title: ctx.exp('%$dialogData/name%') }
         };
-        model.modify(model.newComp, id, { profile: profile }, ctx);
+        jb.studio.model.modify(jb.studio.model.newComp, id, { profile: profile }, ctx);
         ctx.run({ $: 'write-value', to: '%$studio/page%', value: '%$dialogData/name%' });
         ctx.run({ $: 'write-value', to: '%$studio/profile_path%', value: id });
     }
@@ -319,6 +310,3 @@ jb.component('studio.insert-control-menu', {
           ]
         },
 })
-
-
-})()
