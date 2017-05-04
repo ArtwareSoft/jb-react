@@ -194,7 +194,7 @@ jb.component('studio.main-menu', {
           }, 
           {$: 'menu.action', 
             title: 'Edit source', 
-            action :{$: 'studio.editSource' }
+            action :{$: 'studio.edit-source' }
           }, 
           {$: 'menu.action', 
             title: 'Outline', 

@@ -135,7 +135,7 @@ jb.testers.runTests = function(testType,specificTest,show) {
 	jb.rx.Observable.from(tests).concatMap(e=> 
 			Promise.resolve(new jb.jbCtx().setVars({testID: e[0]}).run({$:e[0]})))
 		.finally( _=> 
-			$('#dialogs').empty() )
+			$('.jb-dialogs').empty() )
 		.subscribe(res=> {
 			if (res.success)
 				jb_success_counter++;

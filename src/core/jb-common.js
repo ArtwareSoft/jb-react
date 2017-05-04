@@ -42,9 +42,9 @@ jb.pipe = function(context,items,ptName) {
 	function step(profile,i,data) {
 		var parentParam = (i == profiles.length - 1 && context.parentParam) ? context.parentParam : { as: 'array'};
 		if (jb.profileType(profile) == 'aggregator')
-			return jb.jb_run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
+			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
 		return [].concat.apply([],data.map(item =>
-				jb.jb_run(new jb.jbCtx(context,{data: item, profile: profile, path: innerPath+i}), parentParam)
+				jb.run(new jb.jbCtx(context,{data: item, profile: profile, path: innerPath+i}), parentParam)
 			)).filter(x=>x!=null);
 	}
 }

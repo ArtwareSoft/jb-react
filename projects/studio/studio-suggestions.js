@@ -168,7 +168,7 @@ class suggestions {
           .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail))) )
 
     this.options = this.options
-        .filter( jb_unique(x=>x.toPaste) )
+        .filter( jb.unique(x=>x.toPaste) )
         .filter(x=> x.toPaste != this.tail)
         .filter(x=>
           this.tail == '' || typeof x.toPaste != 'string' || (x.description + x.toPaste).toLowerCase().indexOf(this.tail.toLowerCase()) != -1)

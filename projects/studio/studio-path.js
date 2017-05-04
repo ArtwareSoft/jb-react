@@ -1,5 +1,35 @@
 (function() { var st = jb.studio;
 
+function compsRef(val) {
+  if (typeof val == 'undefined') 
+    return jb.studio.previewjb.comps;
+  else
+    jb.studio.previewjb.comps = val;
+}
+
+st.compsRefHandler = new jb.ui.ImmutableWithPath(compsRef);
+
+Object.assign(st,{
+  val: (v) =>
+    st.compsRefHandler.isRef(v),
+  writeValue: (ref,value) =>
+    st.compsRefHandler.writeValue(ref,value),
+  objectProperty: (obj,prop) =>
+    st.compsRefHandler.objectProperty(obj,prop),
+  splice: (ref,args) =>
+    st.compsRefHandler.splice(ref,args),
+  isRef: (ref) =>
+    st.compsRefHandler.isRef(ref),
+  asRef: (obj) =>
+    st.compsRefHandler.asRef(obj),
+  refreshRef: (ref) =>
+    st.compsRefHandler.refresh(ref),
+  resourceChange: _ => 
+    st.compsRefHandler.resourceChange,
+  compObservable: (ref,cmp) => 
+  	st.compsRefHandler.refObservable(ref,cmp)
+});
+
 st.parentPath = function(path) {
 	return path.split('~').slice(0,-1).join('~');
 }

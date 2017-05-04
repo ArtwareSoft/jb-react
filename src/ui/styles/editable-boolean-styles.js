@@ -36,3 +36,19 @@ jb.component('editable-boolean.expand-collapse', {
           >input { display: none }`
   }
 })
+
+jb.component('editable-boolean.mdl-slide-toggle', {
+  type: 'editable-boolean.style',
+  impl :{$: 'custom-style', 
+      template: (cmp,state,h) => h('label',{class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
+        h('input', { type: 'checkbox', class: 'mdl-switch__input', id: 'switch_' + state.fieldId,
+          value: cmp.jbModel(), onchange: e => cmp.jbModel(e.target.checked) }),
+        h('span',{class:'mdl-switch__label'},state.text())
+      ]),
+      features :[
+          {$: 'field.databind' },
+          {$: 'editable-boolean.keyboard-support' },
+          {$: 'mdl-style.init-dynamic'}
+      ],
+  }
+})

@@ -227,7 +227,7 @@ jb.component('studio.data-script-summary', {
   	if (model.compName(path))
   		return model.compName(path);
   	if (Array.isArray(val))
-  		return jb.prettyPrint(val);
+  		return jb.studio.prettyPrint(val);
   	if (typeof val == 'function')
   		return 'javascript';
   }

@@ -19,11 +19,11 @@ jb.component('open-dialog', {
 			em: new jb.rx.Subject(),
 			resourceId: 'jb_dialog_'+ (id || context.id)
 		};
-		jb.ui.resources[dialog.resourceId] = {};
+		jb.resource(dialog.resourceId,{});
 //		dialog.em.subscribe(e=>console.log(e.type));
 
 		var ctx = context.setVars({
-			dialogData: jb.ui.resources[dialog.resourceId],
+			dialogData: jb.resource(dialog.resourceId),
 			$dialog: dialog 
 		});
 		dialog.comp = jb.ui.ctrl(ctx,{
@@ -335,7 +335,8 @@ jb.component('dialog-feature.drag-title', {
 				          top:  e.clientY - dialog.el.getBoundingClientRect().top
 				        }))
 				      	.flatMap(imageOffset => 
-			      			 mouseMoveEm.takeUntil(mouseUpEm.do(_=>titleElem.style.cursor = 'pointer'))
+			      			 mouseMoveEm.takeUntil(mouseUpEm)
+			      			 //.do(_=>titleElem.style.cursor = 'pointer'))
 			      			 .map(pos => ({
 						        top:  pos.clientY - imageOffset.top,
 						        left: pos.clientX - imageOffset.left
@@ -343,7 +344,7 @@ jb.component('dialog-feature.drag-title', {
 				      	);
 
 				  mousedrag.distinctUntilChanged().subscribe(pos => {
-				  	titleElem.style.cursor = 'move';
+//				  	titleElem.style.cursor = 'move';
 			        dialog.el.style.top  = pos.top  + 'px';
 			        dialog.el.style.left = pos.left + 'px';
 			        if (id) sessionStorage.setItem(id, JSON.stringify(pos))
@@ -362,7 +363,7 @@ jb.component('dialog.dialog-ok-cancel', {
 	impl :{$: 'custom-style',
 		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
 			h('div',{class: 'dialog-title'},state.title),
-			h('button',{class: 'dialog-close', onclick: _=> cmp.dialogClose() },'X'),
+			h('button',{class: 'dialog-close', onclick: _=> cmp.dialogClose() },'×'),
 			h(state.contentComp),
 			h('div',{class: 'dialog-buttons'},[
 				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: false}) },state.cancelLabel),
@@ -423,7 +424,7 @@ jb.ui.dialogs = {
 				}
 			if (dialog.modal)
 				$('.modal-overlay').remove();
-			delete jb.ui.resources[dialog.resourceId];
+			delete jb.resources[dialog.resourceId];
 			jb.ui.dialogs.redraw();
 		},
 		dialog.closed = _ =>

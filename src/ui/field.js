@@ -91,7 +91,8 @@ jb.component('field.toolbar', {
   params: [
     { id: 'toolbar', type: 'control', essential: true, dynamic: true },
   ],
-  impl: (context,toolbar) => ({
-    extendComp: { jb_toolbar: toolbar() }
+  impl: (context,toolbar) => 
+  ({
+    toolbar: toolbar().reactComp()
   })
 })

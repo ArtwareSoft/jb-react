@@ -323,7 +323,7 @@ class TgpModel {
 		var val = st.profileFromPath(path);
 		var arr = this.getOrCreateArray(st.parentPath(st.parentPath(path)));
 		if (Array.isArray(arr)) {
-			var clone = st.evalProfile(jb.prettyPrint(val));
+			var clone = st.evalProfile(jb.studio.prettyPrint(val));
 			var index = Number(prop);
 			arr.splice(index, 0,clone);
 			if (index < arr.length-2)

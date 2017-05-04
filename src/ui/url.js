@@ -33,7 +33,7 @@ jb.component('url-history.map-url-to-resource', {
 
 		var databindEm = jb.ui.resourceChange
 			.filter(e=> e.path[0] == resource)
-  			.map(_=> jb.ui.resources[resource])
+  			.map(_=> jb.resource(resource))
 	    	.filter(obj=>
 	    		obj[params[0]])
 	    	.map(obj=>
@@ -46,7 +46,7 @@ jb.component('url-history.map-url-to-resource', {
 		    	jb.ui.location.push(url);
 		    	var obj = urlToObj(url);
 		    	params.forEach(p=>
-		    		jb.writeValue(jb.objectProperty(jb.ui.resources[resource],p,'ref',true),obj[p]));
+		    		jb.writeValue(jb.objectProperty(jb.resource(resource),p,'ref',true),obj[p]));
 		    	context.params.onUrlChange(context.setData(url));
 	    	})
 	}

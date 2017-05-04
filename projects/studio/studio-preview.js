@@ -51,4 +51,5 @@ jb.component('studio.wait-for-preview-iframe', {
 })
 
 jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studio/page')
-      .map(e=>jb.ui.resources.studio.project + '.' + jb.ui.resources.studio.page);
+      .startWith(1)
+      .map(e=>jb.resources.studio.project + '.' + jb.resources.studio.page);

@@ -100,7 +100,6 @@ jb.component('studio-helper.sample-control', {
           {$: 'label', title: '2.1' }, 
           {$: 'button', 
             title: '2.2', 
-            action :{$: 'toggleBooleanValue', of: '' }
           }
         ]
       }, 

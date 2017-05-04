@@ -1,7 +1,7 @@
 (function() {
   var model = jb.studio.model;
 
-jb.component('studio.editSource', {
+jb.component('studio.edit-source', {
 	type: 'action',
 	params: [
 		{ id: 'path', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } }
@@ -32,7 +32,7 @@ jb.component('studio.profile-as-text', {
 					var val = model.val(path);
 					if (typeof val == 'string')
 						return val;
-					return jb.prettyPrint(val);
+					return jb.studio.prettyPrint(val);
 				} else {
 					var newVal = value.match(/^\s*({|\[)/) ? evalProfile(value) : value;
 					if (newVal != null)
@@ -84,7 +84,7 @@ jb.component('studio.goto-targets', {
 			.filter(x=>x)
 			.map(x=>
 				x.split('~')[0])
-			.filter( jb_unique(x=>x) )
+			.filter( jb.unique(x=>x) )
 }) 
 
 jb.component('studio.open-sublime-editor', {

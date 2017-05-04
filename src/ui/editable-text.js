@@ -38,7 +38,7 @@ jb.component('editable-text.x-button', {
   type: 'feature',
   impl : ctx =>({
     templateModifier: (vdom,cmp,state) => 
-      jb.ui.h('div', {},[vdom].concat(cmp.jbModel() ? [jb.ui.h('button', { class: 'delete', onclick: e => cmp.jbModel(null)} , '✗')]  : []) ),
+      jb.ui.h('div', {},[vdom].concat(cmp.jbModel() ? [jb.ui.h('button', { class: 'delete', onclick: e => cmp.jbModel(null)} ,'×')]  : []) ),
     css: `>.delete {
           margin-left: -16px;
           float: right;

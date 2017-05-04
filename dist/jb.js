@@ -69,58 +69,9 @@ var jb =
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
+/***/ (function(module, exports) {
 
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony export (immutable) */ __webpack_exports__["jb_run"] = jb_run;
-/* harmony export (immutable) */ __webpack_exports__["compParams"] = compParams;
-/* harmony export (immutable) */ __webpack_exports__["expression"] = expression;
-/* harmony export (immutable) */ __webpack_exports__["bool_expression"] = bool_expression;
-/* harmony export (immutable) */ __webpack_exports__["tojstype"] = tojstype;
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "tostring", function() { return tostring; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "toarray", function() { return toarray; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "toboolean", function() { return toboolean; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "tosingle", function() { return tosingle; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "tonumber", function() { return tonumber; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "jstypes", function() { return jstypes; });
-/* harmony export (immutable) */ __webpack_exports__["profileType"] = profileType;
-/* harmony export (immutable) */ __webpack_exports__["compName"] = compName;
-/* harmony export (immutable) */ __webpack_exports__["component"] = component;
-/* harmony export (immutable) */ __webpack_exports__["type"] = type;
-/* harmony export (immutable) */ __webpack_exports__["resource"] = resource;
-/* harmony export (immutable) */ __webpack_exports__["functionDef"] = functionDef;
-/* harmony export (immutable) */ __webpack_exports__["logError"] = logError;
-/* harmony export (immutable) */ __webpack_exports__["logPerformance"] = logPerformance;
-/* harmony export (immutable) */ __webpack_exports__["logException"] = logException;
-/* harmony export (immutable) */ __webpack_exports__["extend"] = extend;
-/* harmony export (immutable) */ __webpack_exports__["path"] = path;
-/* harmony export (immutable) */ __webpack_exports__["ownPropertyNames"] = ownPropertyNames;
-/* harmony export (immutable) */ __webpack_exports__["obj"] = obj;
-/* harmony export (immutable) */ __webpack_exports__["compareArrays"] = compareArrays;
-/* harmony export (immutable) */ __webpack_exports__["range"] = range;
-/* harmony export (immutable) */ __webpack_exports__["entries"] = entries;
-/* harmony export (immutable) */ __webpack_exports__["flattenArray"] = flattenArray;
-/* harmony export (immutable) */ __webpack_exports__["synchArray"] = synchArray;
-/* harmony export (immutable) */ __webpack_exports__["unique"] = unique;
-/* harmony export (immutable) */ __webpack_exports__["equals"] = equals;
-/* harmony export (immutable) */ __webpack_exports__["val"] = val;
-/* harmony export (immutable) */ __webpack_exports__["writeValue"] = writeValue;
-/* harmony export (immutable) */ __webpack_exports__["splice"] = splice;
-/* harmony export (immutable) */ __webpack_exports__["isRef"] = isRef;
-/* harmony export (immutable) */ __webpack_exports__["asRef"] = asRef;
-/* harmony export (immutable) */ __webpack_exports__["refreshRef"] = refreshRef;
-/* harmony export (immutable) */ __webpack_exports__["objectProperty"] = objectProperty;
-/* harmony export (immutable) */ __webpack_exports__["delay"] = delay;
-/* harmony export (immutable) */ __webpack_exports__["setValueByRefHandler"] = setValueByRefHandler;
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "comps", function() { return comps; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "functions", function() { return functions; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "types", function() { return types; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ui", function() { return ui; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "rx", function() { return rx; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "studio", function() { return studio; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ctxDictionary", function() { return ctxDictionary; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "testers", function() { return testers; });
+jb = (function() {
 function jb_run(context,parentParam,settings) {
   try {
     var profile = context.profile;
@@ -160,7 +111,7 @@ function jb_run(context,parentParam,settings) {
       } 
       case 'profile':
         for(var varname in profile.$vars || {})
-          run.ctx.vars[varname] = run.ctx.runInner(profile.$vars[varname], null,'$vars~'+varname);
+          run.ctx = new jbCtx(run.ctx,{ vars: jb.obj(varname,run.ctx.runInner(profile.$vars[varname], null,'$vars~'+varname)) });
         run.preparedParams.forEach(paramObj => {
           switch (paramObj.type) {
             case 'function': run.ctx.params[paramObj.name] = paramObj.func; break;
@@ -239,7 +190,7 @@ function prepareParams(comp,profile,ctx) {
       if (param.dynamic) {
         if (arrayParam)
           var func = (ctx2,data2) => 
-            flattenArray(valOrDefaultArray.map((prof,i)=>
+            jb.flattenArray(valOrDefaultArray.map((prof,i)=>
               ctx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
         else
           var func = (ctx2,data2) => 
@@ -327,8 +278,8 @@ function calcVar(context,varname) {
     res = context.vars[varname];
   else if (context.vars.scope && context.vars.scope[varname] != null) 
     res = context.vars.scope[varname];
-  else if (ui.resources && ui.resources[varname] != null) 
-    res = ui.resources[varname];
+  else if (jb.resources && jb.resources[varname] != null) 
+    res = jb.resources[varname];
   return resolveFinishedPromise(res);
 }
 
@@ -384,7 +335,7 @@ function expression(exp, context, parentParam) {
 
 
 function evalExpressionPart(expressionPart,context,jstype) {
-  // example: {{$person.name}}.     
+  // example: %$person.name%.     
   if (expressionPart == ".") expressionPart = "";
 
   // empty primitive expression
@@ -415,6 +366,7 @@ function evalExpressionPart(expressionPart,context,jstype) {
     else if (Array.isArray(item))
       item = item.map(inner =>
         typeof inner === "object" ? objectProperty(inner,part,jstype,i == parts.length -1) : inner)
+        .filter(x=>x != null)
     else if (typeof item === 'object' && typeof item[part] === 'function' && item[part].profile)
       item = item[part](context)
     else if (typeof item === 'object')
@@ -527,9 +479,24 @@ var jstypes = {
     'ref': function(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null) return value;
-      return valueByRefHandler.asRef(value);
+      return jb.valueByRefHandler.asRef(value);
     }
-};
+}
+
+function objectProperty(_object,property,jstype,lastInExpression) {
+  var object = val(_object);
+  if (!object) return null;
+  if (typeof object[property] == 'undefined') 
+    object[property] = lastInExpression ? null : {};
+  if (lastInExpression) {
+    if (jstype == 'string' || jstype == 'boolean' || jstype == 'number')
+      return jstypes[jstype](object[property]); // no need for valueByRef
+    if (jstype == 'ref') 
+      return jb.valueByRefHandler.objectProperty(object,property)
+  }
+  return object[property];
+}
+
 
 function profileType(profile) {
   if (!profile) return '';
@@ -557,11 +524,6 @@ function assignNameToFunc(name, fn) {
   return fn;
 } 
 
-function component(compName,component) { comps[compName] = component }
-function type(id,val) { types[id] = val || {} }
-function resource(id,val) { ui.resources[id] = val || {} }
-function functionDef(id,val) { functions[id] = val }
-
 var ctxCounter = 0;
 
 class jbCtx {
@@ -583,7 +545,7 @@ class jbCtx {
       if (ctx2.comp)
         this.path = ctx2.comp;
       this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : context.data;     // allow setting of data:null
-      this.vars= ctx2.vars ? extend({},context.vars,ctx2.vars) : context.vars;
+      this.vars= ctx2.vars ? Object.assign({},context.vars,ctx2.vars) : context.vars;
       this.params= ctx2.params || context.params;
       this.componentContext= (typeof ctx2.componentContext != 'undefined') ? ctx2.componentContext : context.componentContext;
       this.probe= context.probe;
@@ -609,8 +571,6 @@ class jbCtx {
   }
   runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
 }
-/* harmony export (immutable) */ __webpack_exports__["jbCtx"] = jbCtx;
-
 
 var logs = {};
 function logError(errorStr,errorObj,ctx) {
@@ -629,6 +589,19 @@ function logException(e,errorStr) {
   logError('exception: ' + errorStr + "\n" + (e.stack||''));
 }
 
+function val(v) {
+  if (v == null) return v;
+  return jb.valueByRefHandler.val(v)
+}
+// Object.getOwnPropertyNames does not keep the order !!!
+function entries(obj) {
+  if (!obj || typeof obj != 'object') return [];
+  var ret = [];
+  for(var i in obj) // please do not change. its keeps definition order !!!!
+      if (obj.hasOwnProperty(i)) 
+        ret.push([i,obj[i]])
+  return ret;
+}
 function extend(obj,obj1,obj2,obj3) {
   if (!obj) return;
   obj1 && Object.assign(obj,obj1);
@@ -637,151 +610,6 @@ function extend(obj,obj1,obj2,obj3) {
   return obj;
 }
 
-// force path - create objects in the path if not exist
-function path(object,path,value) {
-  var cur = object;
-
-  if (typeof value == 'undefined') {  // get
-    for(var i=0;i<path.length;i++) {
-      cur = cur[path[i]];
-      if (cur == null || typeof cur == 'undefined') return null;
-    }
-    return cur;
-  } else { // set
-    for(var i=0;i<path.length;i++)
-      if (i == path.length-1)
-        cur[path[i]] = value;
-      else
-        cur = cur[path[i]] = cur[path[i]] || {};
-    return value;
-  }
-}
-
-// Object.getOwnPropertyNames does not keep the order !!!
-function ownPropertyNames(obj) {
-  var res = [];
-  for (var i in (obj || {}))
-    if (obj.hasOwnProperty(i))
-      res.push(i);
-  return res;
-}
-
-function obj(k,v,base) {
-  var ret = base || {};
-  ret[k] = v;
-  return ret;
-}
-
-function compareArrays(arr1, arr2) {
-  if (arr1 == arr2)
-    return true;
-  if (!Array.isArray(arr1) && !Array.isArray(arr2)) return arr1 == arr2;
-  if (!arr1 || !arr2 || arr1.length != arr2.length) return false;
-  for (var i = 0; i < arr1.length; i++) {
-    var key1 = (arr1[i]||{}).key, key2 = (arr2[i]||{}).key;
-    if (key1 && key2 && key1 == key2 && arr1[i].val == arr2[i].val)
-      continue;
-    if (arr1[i] !== arr2[i]) return false;
-  }
-  return true;
-}
-
- function range(start, count) {
-    return Array.apply(0, Array(count)).map((element, index) => index + start);
-}
-
-function entries(obj) {
-  if (!obj || typeof obj != 'object') return [];
-  var ret = [];
-  for(var i in obj) // do not change. tend to keep definition order !!!!
-      if (obj.hasOwnProperty(i)) 
-        ret.push([i,obj[i]])
-  return ret;
-}
-
-function flattenArray(items) {
-  var out = [];
-  items.filter(i=>i).forEach(function(item) { 
-    if (Array.isArray(item)) 
-      out = out.concat(item);
-    else 
-      out.push(item);
-  })
-  return out;
-}
-
-function synchArray(ar) {
-  var isSynch = ar.filter(v=> v &&  (typeof v.then == 'function' || typeof v.subscribe == 'function')).length == 0;
-  if (isSynch) return ar;
-
-  var _ar = ar.filter(x=>x).map(v=>
-    (typeof v.then == 'function' || typeof v.subscribe == 'function') ? v : [v])
-
-  return rx.Observable.from(_ar)
-          .concatMap(x=>x)
-          .flatMap(v => 
-            Array.isArray(v) ? v : [v])
-          .toArray()
-          .toPromise()
-}
-
-// export function isProfOfType(prof,type) {
-//   var types = ((comps[compName(prof)] || {}).type || '').split('[]')[0].split(',');
-//   return types.indexOf(type) != -1;
-// }
-
-// usage: .filter( unique(x=>x.id) )
-// simple case: [1,2,3,3].filter((x,index,self)=>self.indexOf(x) === index)
-// n**2 cost !!!! use only for small arrays
-function unique(mapFunc) { 
-  function onlyUnique(value, index, self) { 
-      return self.map(mapFunc).indexOf(mapFunc(value)) === index;
-  }
-  return onlyUnique;
-}
-
-function equals(x,y) {
-  return x == y || val(x) == val(y)
-}
-
-// valueByRef functions
-
-function val(v) {
-  if (v == null) return v;
-  return valueByRefHandler.val(v)
-}
-function writeValue(ref,value) {
-  return valueByRefHandler.writeValue(ref,value);
-}
-function splice(ref,args) {
-  return valueByRefHandler.splice(ref,args);
-}
-function isRef(ref) {
-  return valueByRefHandler.isRef(ref);
-}
-function asRef(obj) {
-  return valueByRefHandler.asRef(obj);
-}
-function refreshRef(ref) {
-  return valueByRefHandler.refresh(ref);
-}
-function objectProperty(_object,property,jstype,lastInExpression) {
-  var object = val(_object);
-  if (!object) return null;
-  if (typeof object[property] == 'undefined') 
-    object[property] = lastInExpression ? null : {};
-  if (lastInExpression) {
-    if (jstype == 'string' || jstype == 'boolean' || jstype == 'number')
-      return jstypes[jstype](object[property]); // no need for valueByRef
-    if (jstype == 'ref') 
-      return valueByRefHandler.objectProperty(object,property)
-  }
-  return object[property];
-}
-
-function delay(mSec) {
-  return new Promise(r=>{setTimeout(r,mSec)})
-}
 
 var valueByRefHandlerWithjbParent = {
   val: function(v) {
@@ -810,18 +638,148 @@ var valueByRefHandlerWithjbParent = {
         return { $jb_parent: obj, $jb_property: prop };
   }
 }
+
 var valueByRefHandler = valueByRefHandlerWithjbParent;
+var comps = {}, functions = {}, types = {}, ui = {}, rx = {}, studio = {}, ctxDictionary = {}, testers = {};
 
-function setValueByRefHandler(h) { valueByRefHandler = h }
+return {
+  jbCtx: jbCtx,
 
-var comps = {};
-var functions = {};
-var types = {};
-var ui = { resources: {}};
-var rx = {};
-var studio = {};
-var ctxDictionary = {};
-var testers = {};
+  run: jb_run,
+  expression: expression,
+  bool_expression: bool_expression,
+  profileType: profileType,
+  compName: compName,
+  logError: logError,
+  logPerformance: logPerformance,
+  logException: logException,
+
+  tojstype: tojstype, jstypes: jstypes,
+  tostring: tostring, toarray:toarray, toboolean: toboolean,tosingle:tosingle,tonumber:tonumber,
+
+  valueByRefHandler: valueByRefHandler,
+  comps: comps,
+  functions: functions,
+  types: types,
+  ui: ui,
+  rx: rx,
+  studio: studio,
+  ctxDictionary: ctxDictionary,
+  testers: testers,
+  compParams: compParams,
+  val: val,
+  entries: entries,
+  extend: extend,
+  objectProperty: objectProperty
+}
+
+})();
+
+Object.assign(jb,{
+  resources: {},
+  component: (compName,component) => jb.comps[compName] = component,
+  type: (id,val) => jb.types[id] = val || {},
+  resource: (id,val) => typeof val == 'undefined' ? jb.resources[id] : (jb.resources[id] = val || {}),
+  functionDef: (id,val) => jb.functions[id] = val,
+
+// force path - create objects in the path if not exist
+  path: (object,path,value) => {
+    var cur = object;
+
+    if (typeof value == 'undefined') {  // get
+      for(var i=0;i<path.length;i++) {
+        cur = cur[path[i]];
+        if (cur == null || typeof cur == 'undefined') return null;
+      }
+      return cur;
+    } else { // set
+      for(var i=0;i<path.length;i++)
+        if (i == path.length-1)
+          cur[path[i]] = value;
+        else
+          cur = cur[path[i]] = cur[path[i]] || {};
+      return value;
+    }
+  },
+  ownPropertyNames: obj => {
+    var res = [];
+    for (var i in (obj || {}))
+      if (obj.hasOwnProperty(i))
+        res.push(i);
+    return res;
+  },
+  obj: (k,v,base) => {
+    var ret = base || {};
+    ret[k] = v;
+    return ret;
+  },
+  compareArrays: (arr1, arr2) => {
+    if (arr1 == arr2)
+      return true;
+    if (!Array.isArray(arr1) && !Array.isArray(arr2)) return arr1 == arr2;
+    if (!arr1 || !arr2 || arr1.length != arr2.length) return false;
+    for (var i = 0; i < arr1.length; i++) {
+      var key1 = (arr1[i]||{}).key, key2 = (arr2[i]||{}).key;
+      if (key1 && key2 && key1 == key2 && arr1[i].val == arr2[i].val)
+        continue;
+      if (arr1[i] !== arr2[i]) return false;
+    }
+    return true;
+  },
+  range: (start, count) => 
+    Array.apply(0, Array(count)).map((element, index) => index + start),
+
+  flattenArray: items => {
+    var out = [];
+    items.filter(i=>i).forEach(function(item) { 
+      if (Array.isArray(item)) 
+        out = out.concat(item);
+      else 
+        out.push(item);
+    })
+    return out;
+  },
+  synchArray: ar => {
+    var isSynch = ar.filter(v=> v &&  (typeof v.then == 'function' || typeof v.subscribe == 'function')).length == 0;
+    if (isSynch) return ar;
+
+    var _ar = ar.filter(x=>x).map(v=>
+      (typeof v.then == 'function' || typeof v.subscribe == 'function') ? v : [v]);
+
+    var resolveArray = obj =>
+      Array.isArray(obj) ? obj.reduce((p,item)=>p.then(_=>resolveArray(item),Promise.resolve(0))) : Promise.resolve(obj);
+
+    return resolveArray(_ar);
+  },
+// usage: [1,2,2,3].filter(jb.unique(x=>x))
+  unique: mapFunc => // n**2 !!!!
+    (value, index, self) =>
+        self.map(mapFunc).indexOf(mapFunc(value)) === index,
+
+  equals: (x,y) =>
+    x == y || jb.val(x) == jb.val(y),
+
+  delay: mSec =>
+    new Promise(r=>{setTimeout(r,mSec)}),
+
+  // valueByRef API
+  writeValue: (ref,value) =>
+    jb.valueByRefHandler.writeValue(ref,value),
+  splice: (ref,args) =>
+    jb.valueByRefHandler.splice(ref,args),
+  isRef: (ref) =>
+    jb.valueByRefHandler.isRef(ref),
+  asRef: (obj) =>
+    jb.valueByRefHandler.asRef(obj),
+  refreshRef: (ref) =>
+    jb.valueByRefHandler.refresh(ref),
+  resourceChange: _ => 
+    jb.valueByRefHandler.resourceChange,
+})
+
+
+
+
 
 /***/ })
 /******/ ]);

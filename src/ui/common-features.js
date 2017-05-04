@@ -99,7 +99,7 @@ jb.component('group.var', {
       extendCtx: (ctx,cmp) => {
         if (!cmp.resourceId) {
           cmp.resourceId = cmp.ctx.id; // use the first ctx id
-          cmp.resource = jb.ui.resources[cmp.resourceId] = jb.ui.resources[cmp.resourceId] || {};
+          cmp.resource = jb.resources[cmp.resourceId] = jb.resources[cmp.resourceId] || {};
           cmp.resource[name] = value(ctx.setData(cmp));
         }
         return ctx.setVars(jb.obj(name, cmp.resource[name]));

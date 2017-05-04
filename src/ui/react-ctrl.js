@@ -1,9 +1,8 @@
-import { h, render, Component } from 'preact';
-import update from 'immutability-helper';
+(function(){
 
 var ui = jb.ui;
 
-function ctrl(context,options) {
+ui.ctrl = function(context,options) {
 	var ctx = context.setVars({ $model: context.params });
 	var styleOptions = defaultStyle(ctx);
 	if (styleOptions.jbExtend)  {// style by control
@@ -39,7 +38,7 @@ class JbComponent {
 
 	reactComp() {
 		var jbComp = this;
-		class ReactComp extends Component {
+		class ReactComp extends ui.Component {
 			constructor(props) {
 				super();
 				this.jbComp = jbComp;
@@ -164,6 +163,7 @@ class JbComponent {
 		if (options.extendItem) 
 			this.extendItemFuncs.push(options.extendItem);
 		this.styleCtx = this.styleCtx || options.styleCtx;
+		this.toolbar = this.toolbar || options.toolbar;
 
 	   	if (options.css)
     		this.cssSelectors = (this.cssSelectors || [])
@@ -233,7 +233,7 @@ if (typeof $ != 'undefined' && $.fn)
     	return this.find(selector).addBack(selector); }  
 
 ui.renderWidget = function(profile,elem) {
-	class R extends Component {
+	class R extends jb.ui.Component {
 		constructor(props) {
 			super();
 			this.state.profile = profile;
@@ -326,9 +326,4 @@ jb.component('style-by-control', {
 		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
 })
 
-ui.ctrl = ctrl;
-ui.render = render;
-ui.h = h;
-ui.Component = Component;
-ui.update = update;
-ui.resourceChange = new jb.rx.Subject();
+})()

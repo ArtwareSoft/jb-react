@@ -261,7 +261,7 @@ jb.component('studio.jb-editor-menu', {
       {$: 'menu.action', 
         title: 'Javascript', 
         icon: 'code',
-        action: {$: 'studio.editSource', path: '%$path%'}
+        action: {$: 'studio.edit-source', path: '%$path%'}
       }, 
       {$: 'menu.action', 
         title: 'Delete', 

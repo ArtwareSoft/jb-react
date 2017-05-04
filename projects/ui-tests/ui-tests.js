@@ -118,7 +118,7 @@ jb.component('ui-test.editable-text.x-button', {
       databind: '%$person/name%',
       features: [{ $: 'editable-text.x-button'}],
     },
-    expectedResult :{$: 'contains', text: ['✗','input','Homer Simpson'], inOrder: false },
+    expectedResult :{$: 'contains', text: ['×','input','Homer Simpson'], inOrder: false },
 },
 })
 

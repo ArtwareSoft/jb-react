@@ -62,7 +62,7 @@ jb.component('studio.tree-menu', {
         }, 
         {$: 'menu.action', 
           title: 'javascript editor', 
-          action :{$: 'studio.editSource', path: '%$path%' }
+          action :{$: 'studio.edit-source', path: '%$path%' }
         }, 
         {$: 'menu.action', 
           $vars: {

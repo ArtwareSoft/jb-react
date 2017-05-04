@@ -91,7 +91,7 @@ jb.component('studio.open-property-menu', {
         {$: 'menu.action', 
           title: 'Javascript editor', 
           icon: 'code', 
-          action :{$: 'studio.editSource', path: '%$path%' }
+          action :{$: 'studio.edit-source', path: '%$path%' }
         }, 
         {$: 'studio.goto-sublime', path: '%$path%' },
         {$: 'menu.action', 

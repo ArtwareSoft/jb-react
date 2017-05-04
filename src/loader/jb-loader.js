@@ -1,20 +1,24 @@
 var resources = {
       'common': [
-        'dist/jb.js',
+        'src/core/jb-core.js',
         'src/core/jb-common.js',
-        'dist/jb-rx.js',
       ],
       'ui-common': [
         'node_modules/jquery/dist/jquery.min.js',
-        'node_modules/material-design-lite/material.js',
+        'node_modules/material-design-lite/material.min.js',
         'node_modules/material-design-lite/material.min.css',
         'node_modules/material-design-lite/dist/material.indigo-pink.min.css',
 
         'css/font.css',
         'css/styles.css',
 
-        'dist/ui-base-and-styles.js',
+        'dist/jb-preact.js',
+        'dist/jb-immutable.js', // the immutable-helper lib
+        'dist/jb-rx.js',
+
+        'src/ui/react-ctrl.js',
         'src/ui/immutable.js',
+
         'src/ui/group.js',
         'src/ui/label.js',
         'src/ui/image.js',
@@ -32,6 +36,9 @@ var resources = {
         'src/ui/itemlist-with-groups.js',
         'src/ui/picklist.js',
 
+        'src/ui/styles/mdl-styles.js',
+        'src/ui/styles/button-styles.js',
+        'src/ui/styles/editable-text-styles.js',
         'src/ui/styles/layout-styles.js',
         'src/ui/styles/group-styles.js',
         'src/ui/styles/picklist-styles.js',
@@ -74,7 +81,7 @@ var resources = {
         'utils','path','main', 'pretty-print', 
         'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'tgp-model', 'model-components',
         'tree','popups','properties','pick','properties-menu','save','open-project','new-control',
-        'suggestions','undo'
+        'suggestions','undo','edit-source'
       ]
 };
 

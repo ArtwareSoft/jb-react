@@ -23,17 +23,6 @@ var dataTests = {
   module : { loaders : [ { test : /\.jsx?/, loader : 'babel-loader' } ] }
 };
 
-var uiBase = {
-  entry: [JBART_DIR + 'src/ui/react-ctrl.js', JBART_DIR + 'src/ui/styles/basic-styles.jsx', JBART_DIR + 'src/ui/styles/common-mdl-styles.jsx'],
-  output: {
-    path: JBART_DIR + 'dist',
-    filename: 'ui-base-and-styles.js',
-  },
-  resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
-  externals: { "./jb-core.js": "jb" },
-  module : { loaders : [ { test : /\.jsx$/, loader : 'babel-loader' } ] },
-};
-
 var jbRx = {
   entry: JBART_DIR + 'src/ui/jb-rx.js',
   output: {
@@ -41,7 +30,24 @@ var jbRx = {
     filename: 'jb-rx.js',
   },
   resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
-//  plugins: [ new UglifyJSPlugin() ],
+};
+
+var jbPreact = {
+  entry: JBART_DIR + 'src/ui/jb-preact.js',
+  output: {
+    path: JBART_DIR + 'dist',
+    filename: 'jb-preact.js',
+  },
+  resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
+};
+
+var jbImmutable = {
+  entry: JBART_DIR + 'src/ui/jb-immutable.js',
+  output: {
+    path: JBART_DIR + 'dist',
+    filename: 'jb-immutable.js',
+  },
+  resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
 };
 
 var jbRxMin = {
@@ -55,4 +61,4 @@ var jbRxMin = {
   plugins: [ new UglifyJSPlugin() ],
 };
 
-module.exports = [jb,uiBase,jbRx];
+module.exports = [jb,jbPreact,jbImmutable,jbRx];

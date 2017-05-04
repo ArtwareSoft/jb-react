@@ -54,7 +54,7 @@ jb.component('studio.categories-of-type', {
   		(comps[pt].category||'').split(',').map(c=>c.split(':')[0])
   			.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
   			.filter(x=>x)))
-  			.filter(jb_unique(x=>x))
+  			.filter(jb.unique(x=>x))
   			.map(c=>({
   				name: c,
   				pts: ptsOfCategory(c)

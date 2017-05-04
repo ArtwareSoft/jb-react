@@ -75,7 +75,7 @@ jb.component('property-sheet.studio-properties', {
           h('label',{ class: 'property-title', title: ctrl.title}, ctrl.title),
           h('div',{ class: 'input-and-toolbar'}, [
             h(ctrl),
-            h(ctrl.jb_toolbar)  
+            h(ctrl.jbComp.toolbar)  
           ])
     ]))),
     css: `>.property { margin-bottom: 5px; display: flex }
@@ -106,7 +106,7 @@ jb.component('property-sheet.studio-plain', {
           h('label',{ class: 'property-title', title: ctrl.title}, ctrl.title),
           h('div',{ class: 'input-and-toolbar'}, [
             h(ctrl),
-            h(ctrl.jb_toolbar)  
+            h(ctrl.jbComp.toolbar)  
           ])
     ]))),
     css: `>.property { margin-bottom: 5px; display: flex }
