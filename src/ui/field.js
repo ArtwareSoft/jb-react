@@ -43,7 +43,6 @@ jb.component('field.debounce-databind', {
               jb.writeValue(ctx.vars.$model.databind,val)
           )
       },
-      jbEmitter: true,
     })
 })
 
@@ -72,12 +71,11 @@ jb.component('field.subscribe', {
     { id: 'includeFirst', type: 'boolean', as: 'boolean'},
   ],
   impl: (context,action,includeFirst) => ({
-    jbEmitter: true,
     init: cmp => {
       var data_ref = context.vars.$model && context.vars.$model.databind;
       if (!data_ref) return;
       var includeFirstEm = includeFirst ? jb.rx.Observable.of(jb.val(data_ref)) : jb.rx.Observable.of();
-      jb.rx.refObservable(data_ref,cmp)
+      jb.ui.refObservable(data_ref,cmp)
             .merge(includeFirstEm)
             .filter(x=>x)
             .subscribe(x=>

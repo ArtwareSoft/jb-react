@@ -50,9 +50,9 @@ jb.component('studio.jb-editor', {
           {$: 'tree.drag-and-drop' }, 
           {$: 'studio.control-tree.refresh-path-changes' }, 
           {$: 'css.width', width: '500', selector: 'jb-editor' }, 
-          {$: 'feature.studio-auto-fix-path', 
-            path: '%$studio/jb_editor_selection%'
-          }
+          // {$: 'feature.studio-auto-fix-path', 
+          //   path: '%$studio/jb_editor_selection%'
+          // }
         ]
       }, 
       {$: 'group', 
@@ -376,7 +376,7 @@ jb.component('studio.expand-and-select-first-child-in-jb-editor', {
       if (firstChild) {
         tree.selectionEmitter.next(firstChild);
         tree.regainFocus && tree.regainFocus();
-        jb_ui.apply(ctx);
+//        jb_ui.apply(ctx);
 //        jb.delay(100);
       }
     })

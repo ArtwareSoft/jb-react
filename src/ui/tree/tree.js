@@ -141,7 +141,7 @@ jb.component('tree.selection', {
 		  // first auto selection selection
 		  var first_selected = jb.val(context.params.databind);
 		  if (!first_selected && context.params.autoSelectFirst) {
-			  var first = tree.el.querySelectorAll('.treenode')[0];
+			  var first = tree.el.parentNode.querySelectorAll('.treenode')[0];
 			  first_selected = tree.elemToPath(first);
 		  }
 		  if (first_selected)
@@ -206,7 +206,7 @@ jb.component('tree.keyboard-selection', {
 
 				function runActionInTreeContext(action) {
 					jb.ui.wrapWithLauchingElement(action, 
-						context.setData(tree.selected), tree.el.querySelector('.treenode.selected'))()
+						context.setData(tree.selected), tree.el.parentNode.querySelector('.treenode.selected>.treenode-line'))()
 				}
 				// menu shortcuts
 				cmp.onkeydown.filter(e=> e.ctrlKey || e.altKey || e.keyCode == 46) // also Delete
@@ -255,8 +255,7 @@ jb.component('tree.drag-and-drop', {
 	            tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
 	            var index =  sibling ? $(sibling).index() : -1;
 				var path = tree.elemToPath(target);
-				tree.nodeModel.modify(tree.nodeModel.move, 
-					path, { dragged: dropElm.dragged.path, index: index },context);
+				tree.nodeModel.move(path, dropElm.dragged.path,index);
 				// refresh the nodes on the tree - to avoid bugs
 				tree.expanded[tree.nodeModel.rootPath] = false;
 				jb.delay(1).then(()=> {
@@ -279,7 +278,7 @@ jb.component('tree.drag-and-drop', {
 					var no_of_siblings = $($('.treenode.selected').parents('.treenode-children')[0]).children().length;
 					var index = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
 					var path = tree.selected.split('~').slice(0,-1).join('~');
-					tree.nodeModel.modify(tree.nodeModel.move, path, { dragged: tree.selected, index: index },context);
+					tree.nodeModel.move(path, tree.selected, index);
 					tree.selectionEmitter.next(path+'~'+index);
 			})
   		},

@@ -183,7 +183,7 @@ function prepareParams(comp,profile,ctx) {
         path = sugarProp(profile)[0];
         val = sugarProp(profile)[1]; 
       }
-      var valOrDefault = (typeof(val) != "undefined") ? val : (typeof(param.defaultValue) != 'undefined') ? param.defaultValue : null;
+      var valOrDefault = typeof val != "undefined" ? val : (typeof param.defaultValue != 'undefined' ? param.defaultValue : null);
       var valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
       var arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
 
@@ -543,7 +543,7 @@ class jbCtx {
 
       this.path = (context.path || '') + (ctx2.path ? '~' + ctx2.path : '');
       if (ctx2.comp)
-        this.path = ctx2.comp;
+        this.path = ctx2.comp + '~impl';
       this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : context.data;     // allow setting of data:null
       this.vars= ctx2.vars ? Object.assign({},context.vars,ctx2.vars) : context.vars;
       this.params= ctx2.params || context.params;
@@ -677,7 +677,7 @@ return {
 
 Object.assign(jb,{
   resources: {},
-  component: (compName,component) => jb.comps[compName] = component,
+  component: (id,val) => jb.comps[id] = val,
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => typeof val == 'undefined' ? jb.resources[id] : (jb.resources[id] = val || {}),
   functionDef: (id,val) => jb.functions[id] = val,
@@ -763,16 +763,18 @@ Object.assign(jb,{
     new Promise(r=>{setTimeout(r,mSec)}),
 
   // valueByRef API
+  refHandler: ref =>
+    (ref && ref.handler) || jb.valueByRefHandler,
   writeValue: (ref,value) =>
-    jb.valueByRefHandler.writeValue(ref,value),
+    jb.refHandler(ref).writeValue(ref,value),
   splice: (ref,args) =>
-    jb.valueByRefHandler.splice(ref,args),
+    jb.refHandler(ref).splice(ref,args),
   isRef: (ref) =>
-    jb.valueByRefHandler.isRef(ref),
+    jb.refHandler(ref).isRef(ref),
+  refreshRef: (ref) =>
+    jb.refHandler(ref).refresh(ref),
   asRef: (obj) =>
     jb.valueByRefHandler.asRef(obj),
-  refreshRef: (ref) =>
-    jb.valueByRefHandler.refresh(ref),
   resourceChange: _ => 
     jb.valueByRefHandler.resourceChange,
 })

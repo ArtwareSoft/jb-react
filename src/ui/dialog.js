@@ -151,6 +151,7 @@ jb.component('dialog-feature.nearLauncherLocation', {
 	impl: function(context,offsetLeft,offsetTop,rightSide) {
 		return {
 			afterViewInit: function(cmp) {
+				offsetLeft = offsetLeft || 0; offsetTop = offsetTop || 0;
 				if (!context.vars.$launchingElement)
 					return console.log('no launcher for dialog');
 				var $control = context.vars.$launchingElement.$el;
@@ -181,22 +182,22 @@ jb.component('dialog-feature.nearLauncherLocation', {
 	}
 })
 
-jb.component('dialog-feature.launcherLocationNearSelectedNode', {
-	type: 'dialog-feature',
-	params: [
-		{ id: 'offsetLeft', as: 'number' },
-		{ id: 'offsetTop', as: 'number' },
-	],
-	impl: (context, offsetLeft, offsetTop) => ({
-			afterViewInit: function(cmp) {
-				var $elem = context.vars.$launchingElement.$el;
-				var $control = $elem.closest('.selected').first();
-				var pos = $control.offset();
-				$(cmp.base).findIncludeSelf('.jb-dialog').css('left', `${pos.left + offsetLeft}px`);
-				$(cmp.base).findIncludeSelf('.jb-dialog').css('top', `${pos.top + $control.outerHeight() + offsetTop}px`);
-			}
-		})
-})
+// jb.component('dialog-feature.launcherLocationNearSelectedNode', {
+// 	type: 'dialog-feature',
+// 	params: [
+// 		{ id: 'offsetLeft', as: 'number' },
+// 		{ id: 'offsetTop', as: 'number' },
+// 	],
+// 	impl: (context, offsetLeft, offsetTop) => ({
+// 			afterViewInit: function(cmp) {
+// 				var $elem = context.vars.$launchingElement.$el;
+// 				var $control = $elem.closest('.selected').first();
+// 				var pos = $control.offset();
+// 				$(cmp.base).findIncludeSelf('.jb-dialog').css('left', `${pos.left + offsetLeft}px`);
+// 				$(cmp.base).findIncludeSelf('.jb-dialog').css('top', `${pos.top + $control.outerHeight() + offsetTop}px`);
+// 			}
+// 		})
+// })
 
 jb.component('dialog-feature.onClose', {
 	type: 'dialog-feature',
@@ -222,8 +223,8 @@ jb.component('dialog-feature.closeWhenClickingOutside', {
 		dialog.isPopup = true;
 		jb.delay(10).then(() =>  { // delay - close older before    		
 			var clickoutEm = jb.rx.Observable.fromEvent(document, 'mousedown')
-			      			// .merge(jb.rx.Observable.fromEvent(
-			      			// 	(jb.studio.previewWindow || {}).document, 'mousedown'))
+			      			.merge(jb.rx.Observable.fromEvent(
+			      				(jb.studio.previewWindow || {}).document, 'mousedown'))
 			      			.filter(e =>
 			      				$(e.target).closest(dialog.el).length == 0)
    					 		.takeUntil(dialog.em.filter(e => e.type == 'close'));

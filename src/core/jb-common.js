@@ -224,6 +224,7 @@ jb.component('toggle-boolean-value',{
 		jb.writeValue(_of,jb.val(_of) ? false : true)
 });
 
+
 jb.component('slice', {
 	type: 'aggregator',
 	params: [

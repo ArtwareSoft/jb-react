@@ -1,6 +1,4 @@
 (function() {
-  var ui = jb.ui;
-
 
 class ImmutableWithPath {
   constructor(resources) {
@@ -10,6 +8,7 @@ class ImmutableWithPath {
     this.resourceChange = new jb.rx.Subject();
   }
   val(ref) {
+    if (ref == null) return ref;
     if (ref.$jb_val) return ref.$jb_val();
     if (!ref.$jb_path) return ref;
 
@@ -24,35 +23,29 @@ class ImmutableWithPath {
   writeValue(ref,value) {
     if (!ref) 
       return jb.logError('writeValue: null ref');
-
-    if (ref.$jb_val) 
+    if (ref.$jb_val)
       return ref.$jb_val(value);
-    if (!ref.$jb_path) return;
-
-    this.refresh(ref);
-    if (ref.$jb_path.length == 0)
-      return jb.logError('writeValue: ref not found');
-
-    var op = {}, resource = ref.$jb_path[0];
-    jb.path(op,ref.$jb_path,{$set: value});
-    this.markPath(ref.$jb_path);
-    this.resources(ui.update(this.resources(),op));
-    this.resourceVersions[resource] = this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1;
-    this.resourceChange.next({op: op, path: ref.$jb_path});
+    return this.doOp(ref,{$set: value})
   }
   splice(ref,args) {
+    return this.doOp(ref,{$splice: args })
+  }
+  push(ref,value) {
+    return this.doOp(ref,{$push: value})
+  }
+  doOp(ref,opOnRef) {
     if (!this.isRef(ref))
       ref = this.asRef(ref);
     if (!ref) return;
 
     this.refresh(ref);
     if (ref.$jb_path.length == 0)
-      return jb.logError('writeValue: ref not found');
+      return jb.logError('doOp: ref not found');
 
     var op = {}, resource = ref.$jb_path[0];
-    jb.path(op,ref.$jb_path,{$splice: args });
+    jb.path(op,ref.$jb_path,opOnRef);
     this.markPath(ref.$jb_path);
-    this.resources(ui.update(this.resources(),op));
+    this.resources(jb.ui.update(this.resources(),op));
     this.resourceVersions[resource] = this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1;
     this.resourceChange.next({op: op, path: ref.$jb_path});
   }
@@ -66,7 +59,8 @@ class ImmutableWithPath {
       return {
         $jb_path: path,
         $jb_resourceV: this.resourceVersions[path[0]],
-        $jb_cache: path.reduce((o,p)=>o[p],this.resources())
+        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
+        handler: this,
       }
     return obj;
   }
@@ -82,7 +76,8 @@ class ImmutableWithPath {
         $jb_path: objRef.$jb_path.concat([prop]),
         $jb_resourceV: objRef.$jb_resourceV,
         $jb_cache: objRef.$jb_cache[prop],
-        $jb_parentOfPrim: objRef.$jb_cache 
+        $jb_parentOfPrim: objRef.$jb_cache, 
+        handler: this,
       }
     } else {
       return obj[prop]; // not reffable
@@ -101,6 +96,7 @@ class ImmutableWithPath {
         $jb_resourceV: this.resourceVersions[path[0]],
         $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
         $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
+        handler: this,
       }
     } else {
       var path = this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
@@ -108,9 +104,23 @@ class ImmutableWithPath {
         $jb_path: path,
         $jb_resourceV: this.resourceVersions[path[0]],
         $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
+        handler: this,
       }
     }
     Object.assign(ref,new_ref);
+  }
+  refOfPath(path,silent) {
+      try {
+        return {
+          $jb_path: path,
+          $jb_resourceV: this.resourceVersions[path[0]],
+          $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
+      } catch (e) {
+        if (!silent)
+          jb.logException(e,'ref from path ' + path);
+      }
   }
   markPath(path) {
     path.reduce((o,p)=>{ 
@@ -160,8 +170,8 @@ function resourcesRef(val) {
 
 jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
 
-jb.ui.refObservable = (ref,cmp) => 
-  jb.valueByRefHandler.refObservable(ref,cmp);
+jb.ui.refObservable = (ref,cmp) =>
+  jb.refHandler(ref).refObservable(ref,cmp);
 
 jb.ui.ImmutableWithPath = ImmutableWithPath;
 jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;

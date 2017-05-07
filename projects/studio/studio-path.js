@@ -9,267 +9,237 @@ function compsRef(val) {
 
 st.compsRefHandler = new jb.ui.ImmutableWithPath(compsRef);
 
+// adaptors
+
 Object.assign(st,{
   val: (v) =>
-    st.compsRefHandler.isRef(v),
+    st.compsRefHandler.val(v),
   writeValue: (ref,value) =>
     st.compsRefHandler.writeValue(ref,value),
   objectProperty: (obj,prop) =>
     st.compsRefHandler.objectProperty(obj,prop),
   splice: (ref,args) =>
     st.compsRefHandler.splice(ref,args),
+  push: (ref,value) =>
+    st.compsRefHandler.splice(ref,value),
   isRef: (ref) =>
     st.compsRefHandler.isRef(ref),
   asRef: (obj) =>
     st.compsRefHandler.asRef(obj),
   refreshRef: (ref) =>
     st.compsRefHandler.refresh(ref),
-  resourceChange: _ => 
-    st.compsRefHandler.resourceChange,
-  compObservable: (ref,cmp) => 
-  	st.compsRefHandler.refObservable(ref,cmp)
+  scriptChange: st.compsRefHandler.resourceChange,
+  refObservable: (ref,cmp) => 
+  	st.compsRefHandler.refObservable(ref,cmp),
+  refOfPath: (path,silent) =>
+  	st.compsRefHandler.refOfPath(path.split('~'),silent),
+  parentPath: path =>
+	path.split('~').slice(0,-1).join('~'),
+  valOfPath: (path,silent) =>
+  	st.val(st.refOfPath(path,silent)),
+  compOfPath: (path,silent) => 
+  	st.getComp(jb.compName(st.valOfPath(path,silent))),
+  paramsOfPath: (path,silent) =>
+  	jb.compParams(st.compOfPath(path,silent)),
+  compNameOfPath: (path) => {
+  	var comp = st.valOfPath(path);
+	return comp && jb.compName(comp.impl)
+  },
+  writeValueOfPath: (path,value) =>
+	st.writeValue(st.refOfPath(path),value),
+  getComp: id =>
+	st.previewjb.comps[id],
+  compAsStr: id =>
+	st.prettyPrintComp(id,st.getComp(id)),
 });
 
-st.parentPath = function(path) {
-	return path.split('~').slice(0,-1).join('~');
-}
 
-st.profileRefFromPath = function(path) {
-	if (path.indexOf('~') == -1) return {
-		$jb_val: function(value) {
-			if (typeof value == 'undefined') 
-				return st.profileFromPath(path);
-			else
-				st.findjBartToLook(path).comps[path].impl = value;
+// write operations with logic
+
+Object.assign(st,{
+	_delete: (path) => {
+		var prop = path.split('~').pop();
+		var parent = st.valOfPath(st.parentPath(path))
+		if (Array.isArray(parent)) {
+			var index = Number(prop);
+			st.splice(st.refOfPath(st.parentPath(path)),[[index, 1]])
+		} else { 
+			st.writeValueOfPath(path,null);
 		}
-	}
+	},
 
-	var ref = {
-		path: path,
-		$jb_val: function(value) {
-			if (typeof value == 'undefined') 
-				return st.profileFromPath(this.path);
-
-			var parent = st.profileFromPath(st.parentPath(this.path));
-			parent[this.path.split('~').pop()] = value;
+	move: (path,draggedPath,index) => { // drag & drop
+		var dragged = st.valOfPath(draggedPath);
+		var arr = st.valOfPath(path);
+		if (!Array.isArray(arr))
+			arr = jb.getOrCreateControlArray(path);
+		if (Array.isArray(arr)) {
+			st._delete(dragged);
+			var _index = (index == -1) ? arr.length : index;
+			st.splice(st.refOfPath(path),[[_index,0,dragged]]);
 		}
-	}
-	//st.pathChangesEm.subscribe(fixer => ref.path = fixer.fix(ref.path))
-	return ref;
-}
+	},
 
-st.profileFromPath = function (path,silent) {
-	var id = path.split('~')[0];
-	var comp = st.jbart_base().comps[id] || jbart.comps[id];
-	comp = comp && comp.impl;
-	if (!comp && !silent) {
-		jb.logError('st.profileFromPath: can not find path ',path);
-		return;
-	}
-	var innerPath = path.split('~').slice(1).join('~');
-	if (!innerPath)
-		return comp;
-	return comp && innerPath.split('~').reduce(function(obj, p) { 
-		if (!obj && !silent)
-			jb.logError('st.profileFromPath: non existing path '+ path+ ' property: ' + p);
-		// if (obj && p == '0' && obj[p] == null) // flatten one-item array
-		// 	return obj;
-		if (obj == null)
-			return null;
-		else if (obj[p] == null)
-			return obj['$'+p];
-		else
-			return obj[p]; 
-	}, comp);
-}
-
-st.pathFixer = {
-	fixIndexPaths: fixIndexPaths,
-	fixReplacingPaths: fixReplacingPaths,
-	fixMovePaths: fixMovePaths,
-	fixArrayWrapperPath: fixArrayWrapperPath,
-	fixSetCompPath: fixSetCompPath
-}
-
-function profileRefFromPathWithNotification(path,ctx) {
-	var _ref = st.profileRefFromPath(path);
-	return {
-		$jb_val: function(value) {
-			if (typeof value == 'undefined') 
-				return _ref.$jb_val(value);
-			if (_ref.$jb_val() == value) return;
-			var comp = path.split('~')[0];
-			var before = st.compAsStr(comp);
-			_ref.$jb_val(value);
-			notifyModification(path,before,ctx,this.ngPath);
+	moveInArray: (path,moveUp) => { // drag & drop 
+		var arr = st.valOfPath(st.parentPath(path));
+		if (Array.isArray(arr)) {
+			var index = Number(path.split('~').pop());
+			var base = moveUp ? index -1 : index; 
+			if (base <0 || base >= arr.length-1) 
+				return; // the + elem
+			st.splice(st.refOfPath(st.parentPath(path)),[[base,2,arr[base+1],arr[base]]]);
 		}
-	}
-}
+	},
 
-function closest(path) {
-	if (!path) return '';
-	var _path = path;
-	while (st.profileFromPath(_path,true) == null && Number(_path.split('~').pop()) )
-		_path = _path.replace(/([0-9]+)$/,(x,y) => Number(y)-1)
+	newComp:(path,profile) =>
+        st.compsRefHandler.doOp({$jb_path: [path]},{$set: profile}),
 
-	while (st.profileFromPath(_path,true) == null && _path.indexOf('~') != -1)
-		_path = st.parentPath(_path);
+	wrapWithGroup: (path) =>
+		st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] }),
 
-	if (st.profileFromPath(_path,true))
-		return _path;
-}
-
-// ***************** path fixers after changes **************************
-
-function fixMovePaths(from,to) {
-//	console.log('fixMovePath',from,to);
-	var parent_path = st.parentPath(to);
-	var depth = parent_path.split('~').length;
-	var index = Number(to.split('~').pop()) || 0;
-	st.pathChangesEm.next({ from: from, to: to, 
-		fix: function(pathToFix) {
-			if (!pathToFix) return;
-			if (pathToFix.indexOf(from) == 0) {
-//				console.log('fixMovePath - action',pathToFix, 'to',to + pathToFix.substr(from.length));
-				return to + pathToFix.substr(from.length);
-			}
-			else {
-				var fixed1 = fixIndexOfPath(pathToFix,from,-1);
-				return fixIndexOfPath(fixed1,to,1);
-			}
+	wrap: (path,compName) => {
+		var comp = st.getComp(compName);
+		var firstParam = jb.compParams(comp).filter(p=>p.composite)[0];
+		if (firstParam) {
+			var result = jb.extend({ $: compName }, jb.obj(firstParam.id, [st.valOfPath(path)]));
+			st.writeValueOfPath(path,result);
 		}
-	})
-}
+	},
+	addProperty: (path) => {
+		var parent = st.valOfPath(st.parentPath(path));
+		if (st.paramTypeOfPath(path) == 'data')
+			return st.writeValueOfPath(path,'');
+		var param = st.paramDef(path);
+		st.writeValueOfPath(path,param.defaultValue || {$: ''});
+	},
 
-function fixSetCompPath(comp) {
-	st.pathChangesEm.next({
-		fix: pathToFix =>
-			pathToFix.indexOf(comp) == 0 ? closest(pathToFix) : pathToFix
-	})
-}
-
-function fixIndexPaths(path,diff) {
-	st.pathChangesEm.next({ fix: pathToFix =>
-		fixIndexOfPath(pathToFix,path,diff)
-	})
-} 
-
-function fixReplacingPaths(path1,path2) {
-	st.pathChangesEm.next(new FixReplacingPathsObj(path1,path2))
-} 
-
-class FixReplacingPathsObj {
-	constructor(path1,path2) {
-		this.path1 = path1; this.path2 = path2;
-	}
-	fix(pathToFix) {
-		if (pathToFix.indexOf(this.path1) == 0)
-			return pathToFix.replace(this.path1,this.path2)
-		else if (pathToFix.indexOf(this.path2) == 0)
-			return pathToFix.replace(this.path2,this.path1)
-		return pathToFix;
-	}
-}
-
-function fixIndexOfPath(pathToFix,changedPath,diff) {
-	var parent_path = st.parentPath(changedPath);
-	var depth = parent_path.split('~').length;
-	if (pathToFix.indexOf(parent_path) == 0 && pathToFix.split('~').length > depth) {
-		var index = Number(changedPath.split('~').pop()) || 0;
-		var elems = pathToFix.split('~');
-		var indexToFix = Number(elems[depth]);
-		if (indexToFix >= index) {
-			elems[depth] = Math.max(0,indexToFix + diff);
-//			console.log('fixIndexPath - action',pathToFix, indexToFix,'to',elems[depth]);
+	duplicate: (path) => {
+		var prop = path.split('~').pop();
+		var val = st.valOfPath(path);
+		var arr_ref = st.refOfPath(st.parentPath(st.parentPath(path)))
+		var arr = jb.getOrCreateControlArray(arr_ref);
+		if (Array.isArray(arr)) {
+			var clone = st.evalProfile(st.prettyPrint(val));
+			var index = Number(prop);
+			st.splice(arr_ref,[[index, 0,clone]]);
 		}
-		return elems.join('~')
-	}
-	return pathToFix;
-}
+	},
 
-function fixArrayWrapperPath() {
-	st.pathChangesEm.next(function(pathToFix) {
-		var base = pathToFix.split('~')[0];
-		var first = jb.val(st.profileRefFromPath(base));
-		var res = pathToFix.split('~')[0];
-		pathToFix.split('~').slice(1).reduce(function(obj,prop) {
-			if (!obj || (obj[prop] == null && prop == '0')) 
-				return
-			if (Array.isArray(obj) && isNaN(Number(prop))) {
-				res += '~0~' + prop;
-				debugger;
-			}
-			else
-				res += '~' + prop;
-			return obj[prop]
-		},first);
-		return res;
-	})
-}
+	setComp: (path,compName) => {
+		var comp = compName && st.getComp(compName);
+		if (!compName || !comp) return;
+		var result = { $: compName };
+		var existing = st.valOfPath(path);
+		jb.compParams(comp).forEach(p=>{
+			if (p.composite)
+				result[p.id] = [];
+			if (existing && existing[p.id])
+				result[p.id] = existing[p.id];
+			if (p.defaultValue && typeof p.defaultValue != 'object')
+				result[p.id] = p.defaultValue;
+			if (p.defaultValue && typeof p.defaultValue == 'object' && (p.forceDefaultCreation || Array.isArray(p.defaultValue)))
+				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue));
+		})
+		st.writeValueOfPath(path,result);
+	},
+
+	insertControl: (path,compName) => {
+		var comp = compName && st.getComp(compName);
+		if (!compName || !comp) return;
+		var result = { $: compName };
+		// copy default values
+		jb.compParams(comp).forEach(p=>{
+			if (p.defaultValue || p.defaultTValue)
+				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue || p.defaultTValue))
+		})
+		// find group parent that can insert the control
+		var group_path = path;
+		while (!jb.controlParam(group_path) && group_path)
+			group_path = st.parentPath(group_path);
+		var arr = jb.getOrCreateControlArray(group_path);
+		if (arr) 
+			st.push(st.refOfPath(group_path),result);
+	},
+
+	addArrayItem: (path,toAdd) => {
+		var val = st.valOfPath(path);
+		var toAdd = toAdd || {$:''};
+		if (Array.isArray(val)) {
+			st.push(st.refOfPath(path),toAdd);
+//			return { newPath: path + '~' + (val.length-1) }
+		}
+		else if (!val) {
+			st.writeValueOfPath(path,toAdd);
+		} else {
+			st.writeValueOfPath(path,[val].concat(toAdd));
+//			return { newPath: path + '~1' }
+		}
+	},
+
+	wrapWithArray: (path) => {
+		var val = st.valOfPath(path);
+		if (val && !Array.isArray(val))
+			st.writeValueOfPath(path,[val]);
+	},
+
+	makeLocal: (path) =>{
+		var comp = st.compOfPath(path);
+		if (!comp || typeof comp.impl != 'object') return;
+		var res = JSON.stringify(comp.impl, (key, val) => typeof val === 'function' ? ''+val : val , 4);
+
+		var profile = st.valOfPath(path);
+		// inject conditional param values
+		jb.compParams(comp).forEach(p=>{ 
+				var pUsage = '%$'+p.id+'%';
+				var pVal = '' + (profile[p.id] || p.defaultValue || '');
+				res = res.replace(new RegExp('{\\?(.*?)\\?}','g'),(match,condition_exp)=>{ // conditional exp
+						if (condition_exp.indexOf(pUsage) != -1)
+							return pVal ? condition_exp : '';
+						return match;
+					});
+		});
+		// inject param values 
+		jb.compParams(comp).forEach(p=>{ 
+				var pVal = '' + (profile[p.id] || p.defaultValue || ''); // only primitives
+				res = res.replace(new RegExp(`%\\$${p.id}%`,'g') , pVal);
+		});
+
+		st.writeValueOfPath(path,st.evalProfile(res));
+	},
+	getOrCreateControlArray: (path) => {
+		var val = st.valOfPath(path);
+		var prop = jb.controlParam(path);
+		if (!prop)
+			return console.log('pushing to non array');
+		if (val[prop] === undefined)
+			val[prop] = [];
+		if (!Array.isArray(val[prop]))
+			val[prop] = [val[prop]];
+		return val[prop];
+	},
+	evalProfile: prof_str => {
+		try {
+			return eval('('+prof_str+')')
+		} catch (e) {
+			jb.logException(e,'eval profile:'+prof_str);
+		}
+	},
+})
 
 // ******* components ***************
 
 jb.component('studio.ref',{
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (context,path) => 
-		profileRefFromPathWithNotification(path,context)
+		st.refOfPath(path)
 });
-
-jb.component('studio.fix-to-closest-path', {
-	params: [ {id: 'path', as: 'ref' } ],
-	impl: (ctx,pathRef) => {
-		var path = jb.val(pathRef);
-		var closest_path = closest(path);
-
-		if (path && path != closest_path) {
-			jb.writeValue(pathRef,closest_path);
-//			jb_ui.apply(ctx);
-		}
-	}
-})
 
 jb.component('group.studio-watch-path', {
   type: 'feature', category: 'group:0',
   params: [
     { id: 'path', essential: true, as: 'ref' },
   ],
-  impl: (context, path_ref) =>({
-      beforeInit: cmp => {
-          cmp.jbWatchGroupChildrenEm = (cmp.jbWatchGroupChildrenEm || jb.rx.Observable.of())
-              .merge(cmp.jbEmitter
-                .filter(x => x == 'check')
-                .merge(
-                  st.pathChangesEm.takeUntil( cmp.destroyed ).do(fixer=>
-                    jb.writeValue(path_ref,fixer.fix(jb.val(path_ref))))
-                )
-                .map(()=> jb.val(path_ref))
-                .distinctUntilChanged()
-                .map(val=> {
-                    var ctx2 = (cmp.refreshCtx ? cmp.refreshCtx() : cmp.ctx);
-                    return context.vars.$model.controls(ctx2)
-                })
-            )
-      },
-      jbEmitter: true,
-    })
-})
-
-jb.component('feature.studio-auto-fix-path', {
-  type: 'feature',
-  params: [
-    { id: 'path', essential: true, as: 'ref' },
-  ],
-  impl: (context, path_ref) =>
-  	({
-      beforeInit: cmp => {
-        st.pathChangesEm
-            .takeUntil( cmp.destroyed )
-            .subscribe(fixer=>
-                jb.writeValue(path_ref,fixer.fix(jb.val(path_ref)))
-            )
-      },
-      jbEmitter: true,
-    })
+  impl: {$: 'watch-ref', ref :{$: 'studio.ref', path: '%$path%'}}
 })
 
 })()

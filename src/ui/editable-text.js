@@ -13,27 +13,6 @@ jb.component('editable-text', {
     jb.ui.ctrl(ctx)
 });
 
-jb.component('editable-text.input', {
-  type: 'editable-text.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('input', { 
-        value: cmp.jbModel(), 
-        onchange: e => cmp.jbModel(e.target.value), 
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-    css: '{height: 16px}'
-  }
-})
-
-jb.component('editable-text.textarea', {
-	type: 'editable-text.style',
-	impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('textarea', { 
-        value: cmp.jbModel(), onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-	}
-})
-
 jb.component('editable-text.x-button', {
   type: 'feature',
   impl : ctx =>({

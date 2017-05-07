@@ -148,13 +148,13 @@ function showBox(cmp,profElem,_window,previewOffset) {
 	// else
 	// 	cmp.width = profElem.outerWidth();
 	// cmp.height = profElem.outerHeight();
-    //	cmp.title = jb.studio.model.shortTitle(pathFromElem(_window,profElem));
+    //	cmp.title = jb.studio.shortTitle(pathFromElem(_window,profElem));
 	cmp.setState({
 		top: previewOffset + profElem.offset().top,
 		left: profElem.offset().left,
 		width: profElem.outerWidth() == $(_window.document.body).width() ? profElem.outerWidth() -10 : cmp.width = profElem.outerWidth(),
 		height: profElem.outerHeight(),
-		title: jb.studio.model.shortTitle(pathFromElem(_window,profElem)),
+		title: jb.studio.shortTitle(pathFromElem(_window,profElem)),
 		titleTop: previewOffset + profElem.offset().top - 20,
 		titleLeft: profElem.offset().left
 	});

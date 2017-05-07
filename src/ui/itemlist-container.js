@@ -45,7 +45,7 @@ jb.component('group.itemlist-container', {
     { id: 'id', as: 'string' },
     { id: 'defaultItem', as: 'single' },
   ],
-  impl: {$: 'group.var', name: 'itemlistCntr', watch: false, 
+  impl: {$: 'inner-resource', name: 'itemlistCntr', asRef: false,
     value: ctx => 
       createItemlistCntr(ctx.componentContext.params, ctx.data)
   }

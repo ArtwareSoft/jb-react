@@ -122,21 +122,21 @@ jb.component('itemlist.keyboard-selection', {
   ],
   impl: ctx => ({
       afterViewInit: function(cmp) {
-        cmp.keydown = (ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.keydown) || (ctx.vars.selectionKeySource && ctx.vars.selectionKeySource.keydown);
-        if (!cmp.keydown) {
+        cmp.onkeydown = (ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.keydown) || (ctx.vars.selectionKeySource && ctx.vars.selectionKeySource.keydown);
+        if (!cmp.onkeydown) {
           cmp.base.setAttribute('tabIndex','0');
-          cmp.keydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
+          cmp.onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
               .takeUntil( cmp.destroyed );          
 
           if (ctx.params.autoFocus)
             jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus')
         }
 
-        cmp.keydown.filter(e=> e.keyCode == 13)
+        cmp.onkeydown.filter(e=> e.keyCode == 13)
           .subscribe(x=>
             jb.ui.applyAfter(ctx.params.onEnter(ctx.setData(cmp.state.selected))),ctx);
     
-        cmp.keydown.filter(e=> !e.ctrlKey &&
+        cmp.onkeydown.filter(e=> !e.ctrlKey &&
               (e.keyCode == 38 || e.keyCode == 40))
             .map(event => {
               event.stopPropagation();
@@ -177,10 +177,10 @@ jb.component('itemlist.drag-and-drop', {
         });
 
         cmp.base.setAttribute('tabIndex','0');
-        cmp.keydown = cmp.keydown || jb.rx.Observable.fromEvent(cmp.base, 'keydown').takeUntil( cmp.destroyed );
+        cmp.onkeydown = cmp.onkeydown || jb.rx.Observable.fromEvent(cmp.base, 'keydown').takeUntil( cmp.destroyed );
 
         // ctrl + Up/Down
-        cmp.keydown.filter(e=> 
+        cmp.onkeydown.filter(e=> 
           e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
           .subscribe(e=> {
             var diff = e.keyCode == 40 ? 1 : -1;

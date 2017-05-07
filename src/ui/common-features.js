@@ -52,7 +52,7 @@ jb.component('group.data', {
         if (watch && cmp.initWatchByRef)
               cmp.initWatchByRef(data_ref())
       },
-      extendCtx: ctx => {
+      extendCtxOnce: ctx => {
           var val = data_ref();
           var res = ctx.setData(val);
           if (itemVariable)
@@ -75,34 +75,38 @@ jb.component('id', {
   })
 })
 
-jb.component('group.var', {
-  type: 'feature', category: 'group:100',
+jb.component('var', {
+  type: 'feature', category: 'group:60',
   params: [
     { id: 'name', as: 'string', essential: true },
     { id: 'value', dynamic: true },
-    { id: 'watch', as: 'boolean' }
   ],
-  impl: (context, name, value, watch) => ({
-      beforeInit: cmp => {
-        cmp.state.ctrls = context.vars.$model.controls(cmp.ctx).map(c=>c.reactComp());
-        if (watch)
-          cmp.ctrlEmitter = jb.ui.refObservable(jb.objectProperty(cmp.resource,name,'ref',true),cmp)
-            .map(_ => {
-                cmp.refreshCtx();
-                return context.vars.$model.controls(cmp.ctx);
-             });
-      },
+  impl: (context, name, value) => ({
+      extendCtxOnce: (ctx,cmp) => {
+        return ctx.setVars(jb.obj(name, value));
+      }
+  })
+})
+
+jb.component('inner-resource', {
+  type: 'feature', category: 'group:10',
+  params: [
+    { id: 'name', as: 'string', essential: true },
+    { id: 'value', dynamic: true },
+    { id: 'asRef', as: 'boolean', defaultValue: true },
+  ],
+  impl: (context, name, value, asRef) => ({
       destroyed: cmp => {
         if (jb.resources[cmp.resourceId])
           delete jb.resources[cmp.resourceId];
       },
-      extendCtx: (ctx,cmp) => {
-        if (!cmp.resourceId) {
+      extendCtxOnce: (ctx,cmp) => {
+        if (!cmp.resourceId)
           cmp.resourceId = cmp.ctx.id; // use the first ctx id
-          cmp.resource = jb.resources[cmp.resourceId] = jb.resources[cmp.resourceId] || {};
-          cmp.resource[name] = value(ctx.setData(cmp));
-        }
-        return ctx.setVars(jb.obj(name, cmp.resource[name]));
+        cmp.resource = jb.resources[cmp.resourceId] = jb.resources[cmp.resourceId] || {};
+        cmp.resource[name] = value(ctx.setData(cmp));
+        var ref = jb.objectProperty(cmp.resource,name,'ref',true);
+        return ctx.setVars(jb.obj(name, asRef ? ref : cmp.resource[name]));
       }
   })
 })

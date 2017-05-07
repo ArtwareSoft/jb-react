@@ -25,13 +25,13 @@ jb.studio = class Probe {
   }
 
   simpleRun() {
-      var _win = jb.studio.previewWindow || window;
-      var model = jb.studio.model;
-      if (model.isCompNameOfType(jb.compName(this.circuit),'control'))
+      var st = jb.studio;
+      var _win = st.previewWindow || window;
+      if (st.isCompNameOfType(jb.compName(this.circuit),'control'))
         this.circuitType = 'control'
-      else if (model.isCompNameOfType(jb.compName(this.circuit),'action'))
+      else if (st.isCompNameOfType(jb.compName(this.circuit),'action'))
         this.circuitType = 'action'
-      else if (model.isCompNameOfType(jb.compName(this.circuit),'data'))
+      else if (st.isCompNameOfType(jb.compName(this.circuit),'data'))
         this.circuitType = 'data'
       else
         this.circuitType = 'unknown';

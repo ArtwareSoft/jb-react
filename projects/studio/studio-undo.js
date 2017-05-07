@@ -6,7 +6,7 @@ class Undo {
 		this.history = [];
 		this.index = 0;
 		this.clipboard = null;
-		st.modifyOperationsEm.subscribe(change=>{
+		st.scriptChange.subscribe(change=>{
 			this.history.push(change);
 			this.index = this.history.length;
 		})
@@ -68,7 +68,7 @@ jb.component('studio.undo-support', {
   impl: (ctx,path) => 
   	({
   		// saving state on focus and setting the change on blur
-  		init: cmp => {
+  		init1: cmp => {
   			var before = st.compAsStrFromPath(path);
   			if (cmp.codeMirror) {
   				cmp.codeMirror.on('focus',()=>

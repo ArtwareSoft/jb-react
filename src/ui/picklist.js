@@ -49,7 +49,6 @@ jb.component('picklist.dynamic-options', {
     { id: 'recalcEm', as: 'single'}
   ],
   impl: (ctx,recalcEm) => ({
-    jbEmitter: true,
     init: cmp => 
       recalcEm && recalcEm.subscribe &&
         recalcEm.takeUntil( cmp.destroyed )

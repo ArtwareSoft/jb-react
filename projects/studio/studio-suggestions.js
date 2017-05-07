@@ -143,14 +143,14 @@ class suggestions {
 
   extendWithOptions(probeCtx,path) {
     this.options = [];
-    probeCtx = probeCtx || (jb.studio.previewjb || jb).initialCtx;
+    probeCtx = probeCtx || (st.previewjb || jb).initialCtx;
     var vars = jb.entries(jb.extend({},(probeCtx.componentContext||{}).params,probeCtx.vars,probeCtx.resources))
         .map(x=>new ValueOption('$'+x[0],x[1],this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
         .filter(x=>['$window'].indexOf(x.toPaste) == -1)
 
     if (this.inputVal.indexOf('=') == 0 && !this.expressionOnly)
-      this.options = jb.studio.model.PTsOfPath(path).map(compName=> {
+      this.options = st.PTsOfPath(path).map(compName=> {
             var name = compName.substring(compName.indexOf('.')+1);
             var ns = compName.substring(0,compName.indexOf('.'));
             return new CompOption(compName, compName, ns ? `${name} (${ns})` : name, st.getComp(compName).description || '')
@@ -210,9 +210,8 @@ class ValueOption {
       })
     }
     writeValue(ctx) {
-      var input = ctx.vars.suggestionCtx.input;
-      var script_ref = ctx.run({$: 'studio.ref', path: '%$suggestionCtx.path%' });
-      jb.writeValue(script_ref,input.value);
+      var input = ctx.vars.suggestionCtx.input, path = ctx.vars.suggestionCtx.path;
+      st.writeValueOfPath(path,input.value);
     }
 }
 
@@ -228,7 +227,7 @@ class CompOption {
       ctx.vars.suggestionCtx.closeAndWriteValue();
     }
     writeValue(ctx) {
-      ctx.run({$:'write-value', to: {$: 'studio.comp-name-ref', path: '%$suggestionCtx.path%' }, value: this.toPaste });
+      st.setComp(ctx.vars.suggestionCtx.path,this.toPaste);
 //      ctx.run({$:'studio.expand-and-select-first-child-in-jb-editor' });
     }
 }

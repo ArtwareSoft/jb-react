@@ -12,7 +12,7 @@ jb.component('studio.open-new-profile-dialog', {
       onSelect :{$if: '%$mode% == "insert-control"', 
           then : [
             {$: 'studio.insert-control', path: '%$path%', comp: '%%' },
-            {$: 'studio.onNextModifiedPath', 
+            {$: 'on-next-timer', 
               action: [
                 {$: 'write-value', 
                   to: '%$studio/profile_path%', 
@@ -267,7 +267,7 @@ jb.component('studio.open-new-page', {
             type: 'control',
             impl: { $: 'group', title: ctx.exp('%$dialogData/name%') }
         };
-        jb.studio.model.modify(jb.studio.model.newComp, id, { profile: profile }, ctx);
+        jb.studio.newComp(id, profile);
         ctx.run({ $: 'write-value', to: '%$studio/page%', value: '%$dialogData/name%' });
         ctx.run({ $: 'write-value', to: '%$studio/profile_path%', value: id });
     }

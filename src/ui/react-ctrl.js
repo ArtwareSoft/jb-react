@@ -27,7 +27,7 @@ class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
 		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],
-			jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [], modifierFuncs: [], extendItemFuncs: [] });
+			jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], extendItemFuncs: [] });
 		this.cssSelectors = [];
 
 		this.jb_profile = ctx.profile;
@@ -54,6 +54,8 @@ class JbComponent {
 			    		})
 			    		return this.ctx;
 			    	}
+					jbComp.extendCtxOnceFuncs.forEach(extendCtx =>
+		    			this.ctx = extendCtx(this.ctx,this) || this.ctx);
 			    	this.refreshCtx();
 					Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
 					jbComp.jbBeforeInitFuncs.forEach(init=> init(this,props));
@@ -158,8 +160,8 @@ class JbComponent {
 
 		if (options.jbEmitter || events.length > 0) this.createjbEmitter = true;
 		if (options.ctxForPick) this.ctxForPick=options.ctxForPick;
-		if (options.extendCtx) 
-			this.extendCtxFuncs.push(options.extendCtx);
+		if (options.extendCtx) this.extendCtxFuncs.push(options.extendCtx);
+		if (options.extendCtxOnce) this.extendCtxOnceFuncs.push(options.extendCtxOnce);
 		if (options.extendItem) 
 			this.extendItemFuncs.push(options.extendItem);
 		this.styleCtx = this.styleCtx || options.styleCtx;
@@ -222,8 +224,10 @@ ui.focus = function(elem,logTxt) {
 }
 
 ui.wrapWithLauchingElement = (f,context,elem) => 
-	_ =>
-		f(context.setVars({ $launchingElement: { $el : $(elem) }}));
+	_ => {
+		if (!elem) debugger;
+		return f(context.setVars({ $launchingElement: { $el : $(elem) }}));
+	}
 
 
 // ****************** generic utils ***************
@@ -233,20 +237,20 @@ if (typeof $ != 'undefined' && $.fn)
     	return this.find(selector).addBack(selector); }  
 
 ui.renderWidget = function(profile,elem) {
+	if (window.parent != window && window.parent.jb)
+		window.parent.jb.studio.initPreview(window);
 	class R extends jb.ui.Component {
 		constructor(props) {
 			super();
 			this.state.profile = profile;
-			ui.waitFor(_=>jb.path(jb,['studio','studioWindow','jb','studio','pageChange']))
-				.then(pageChange=>
-					pageChange.subscribe(page=>this.setState({profile: {$: page}})))
+			if (jb.studio.studioWindow)
+				jb.studio.studioWindow.jb.studio.pageChange.subscribe(page=>this.setState({profile: {$: page}}))
 		}
 		render(pros,state) {
 			return ui.h(new jb.jbCtx().run(state.profile).reactComp())
 		}
 	}
 	ui.render(ui.h(R),elem);
-	ui.widgetLoaded = true;
 }
 
 ui.applyAfter = function(promise,ctx) {

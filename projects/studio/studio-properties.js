@@ -136,10 +136,10 @@ jb.component('studio.property-field',{
 	impl: function(context,path) {
 		var fieldPT = 'studio.property-label';
 
-    var model = jb.studio.model;
-		var val = model.val(path);
+    var st = jb.studio;
+		var val = st.valOfPath(path);
 		var valType = typeof val;
-		var paramDef = model.paramDef(path);
+		var paramDef = st.paramDef(path);
 		if (!paramDef)
 			jb.logError('property-field: no param def for path '+path);
 		if (valType == 'function')
@@ -149,7 +149,7 @@ jb.component('studio.property-field',{
 		else if (paramDef.options)
 			fieldPT = 'studio.property-enum';
 		else if ( ['data','boolean'].indexOf(paramDef.type || 'data') != -1) {
-			if ( model.compName(path) || valType == 'object')
+			if ( st.compNameOfPath(path) || valType == 'object')
 				fieldPT = 'studio.property-script';
 			else if (paramDef.type == 'boolean' && (valType == 'boolean' || val == null))
 				fieldPT = 'studio.property-boolean';
@@ -158,10 +158,6 @@ jb.component('studio.property-field',{
 		}
 		else if ( (paramDef.type || '').indexOf('[]') != -1 && isNaN(Number(path.split('~').pop())))
 			fieldPT = 'studio.property-script';
-		// else if ( (paramDef.type || '').indexOf('.style') > -1 )
-		//  	fieldPT = 'studio.property-Style';
-    // else if ( model.compName(path) == 'customStyle')
-    //   fieldPT = 'studio.property-custom-style';
 		else 
 			fieldPT = 'studio.property-tgp';
 
@@ -222,12 +218,12 @@ jb.component('studio.data-script-summary', {
     { id: 'path', as: 'string' }
   ], 
   impl: (ctx,path) => {
-    var model = jb.studio.model;
-  	var val = model.val(path);
-  	if (model.compName(path))
-  		return model.compName(path);
+    var st = jb.studio;
+  	var val = st.valOfPath(path);
+  	if (st.compNameOfPath(path))
+  		return st.compNameOfPath(path);
   	if (Array.isArray(val))
-  		return jb.studio.prettyPrint(val);
+  		return st.prettyPrint(val);
   	if (typeof val == 'function')
   		return 'javascript';
   }
@@ -279,16 +275,13 @@ jb.component('studio.property-tgp', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'group', 
-    $vars: {
-      tgpCtrl :{$: 'object', expanded: true }
-    }, 
     title :{$: 'studio.prop-name', path: '%$path%' }, 
     controls: [
       {$: 'group', 
         style :{$: 'layout.horizontal', spacing: '0' }, 
         controls: [
           {$: 'editable-boolean', 
-            databind: '%$tgpCtrl/expanded%', 
+            databind: '%$expanded%', 
             style :{$: 'editable-boolean.expand-collapse' }, 
             features: [
               {$: 'css', 
@@ -338,13 +331,13 @@ jb.component('studio.property-tgp', {
           {$: 'hidden', 
             showCondition :{
               $and: [
-                '%$tgpCtrl.expanded%', 
+                '%$expanded%', 
                 {
                   $notEmpty :{$: 'studio.non-control-children', path: '%$path%' }
                 }, 
                 {
                   $notEmpty :{$: 'studio.val', path: '%$path%' }
-                }, 
+                },
                 {$: 'not-equals', 
                   item1 :{$: 'studio.comp-name', path: '%$path%' }, 
                   item2: 'customStyle'
@@ -359,11 +352,8 @@ jb.component('studio.property-tgp', {
       }
     ], 
     features: [
-      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
-      {$: 'studio.bindto-modifyOperations', 
-        path: '%$path%', 
-        data: '%$tgpCtrl/expanded%'
-      }
+      {$: 'studio.property-toolbar-feature', path: '%$path%' },
+      {$: 'inner-resource', name: 'expanded', value: false }
     ]
   }
 })
@@ -403,13 +393,9 @@ jb.component('studio.property-tgp-in-array', {
         style :{$: 'layout.flex', align: 'space-between' }, 
         controls: [
           {$: 'editable-boolean', 
-            databind: '%$tgpCtrl/expanded%', 
+            databind: '%$expanded%', 
             style :{$: 'editable-boolean.expand-collapse' }, 
             features: [
-              {$: 'studio.bindto-modifyOperations', 
-                path: '%$path%', 
-                data: '%$tgpCtrl/expanded%'
-              }, 
               {$: 'css.padding', top: '4' }
             ]
           }, 
@@ -441,17 +427,14 @@ jb.component('studio.property-tgp-in-array', {
           {$: 'watch-ref', 
             ref :{$: 'studio.comp-name', path: '%$path%' }
           }, 
-          {$: 'feature.if', showCondition: '%$tgpCtrl.expanded%' }, 
+          {$: 'feature.if', showCondition: '%$expanded%' }, 
           {$: 'css', css: '{  margin-left: 10px; margin-bottom: 4px;}' }
         ]
       }
     ], 
     features: [
-      {$: 'studio.bindto-modifyOperations', 
-        path: '%$path%', 
-        data: '%$tgpCtrl/expanded%'
-      }, 
-      {$: 'css.margin', left: '-100' }
+      {$: 'css.margin', left: '-100' }, 
+      {$: 'inner-resource', name: 'expanded', value: false }
     ]
   }
 })
@@ -501,6 +484,6 @@ jb.component('studio.tgp-path-options',{
 	],
 	impl: (context,path) => 
 		[{code:'',text:''}]
-			.concat(jb.studio.model.PTsOfPath(path).map(op=> ({ code: op, text: op})))
+			.concat(jb.studio.PTsOfPath(path).map(op=> ({ code: op, text: op})))
 })
 

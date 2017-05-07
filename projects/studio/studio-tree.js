@@ -36,7 +36,7 @@ jb.component('studio.tree-menu', {
           title: 'Wrap with group', 
           action : [ 
               {$: 'studio.wrap-with-group', path: '%$path%' },
-              {$: 'onNextTimer', 
+              {$: 'on-next-timer', 
                   action: [
                     {$: 'write-value', 
                         to: '%$studio/profile_path%', 
@@ -163,7 +163,7 @@ jb.component('studio.control-tree.nodes', {
 	impl: function(context) {
 		var currentPath = context.run({ $: 'studio.currentProfilePath' });
 		var compPath = currentPath.split('~')[0] || '';
-		return new jb.studio.TgpModel(compPath);
+		return new jb.studio.ControlTree(compPath + '~impl');
 	}
 })
 
@@ -173,15 +173,15 @@ jb.component('studio.control-tree.refresh-path-changes', {
   impl: ctx => ({
     init : cmp => {
       var tree = ctx.vars.$tree; 
-      jb.studio.pathChangesEm.takeUntil( cmp.destroyed )
-        .subscribe(fixer => {
-          var new_expanded = {};
-          jb.entries(tree.expanded)
-            .filter(e=>e[1])
-            .forEach(e => new_expanded[fixer.fix(e[0])] = true)
-          tree.expanded = new_expanded;
-          tree.selected = fixer.fix(tree.selected);
-        })
+      // jb.studio.scriptChanges.takeUntil( cmp.destroyed )
+      //   .subscribe(fixer => {
+      //     var new_expanded = {};
+      //     jb.entries(tree.expanded)
+      //       .filter(e=>e[1])
+      //       .forEach(e => new_expanded[fixer.fix(e[0])] = true)
+      //     tree.expanded = new_expanded;
+      //     tree.selected = fixer.fix(tree.selected);
+      //   })
     }
   })
 })

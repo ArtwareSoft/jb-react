@@ -1,6 +1,3 @@
-jbLoadModules(['studio/studio-tgp-model']).then(loadedModules => { 
-  var model = loadedModules['studio/studio-tgp-model'].model;
-
 jb.component('studio.open-style-editor', {
   type: 'action', 
   params: [{ id: 'path', as: 'string' }], 
@@ -98,8 +95,16 @@ jb.component('studio.style-source', {
   params: [
     { id: 'path', as: 'string' }
   ], 
-  impl: (ctx,path) =>
-    model.getStyleComp(path) 
+  impl: (ctx,path) => {
+      var st = jb.studio;
+      var style = st.valOfPath(path);
+      var compName = jb.compName(style);
+      if (compName == 'custom-style')
+        return { type: 'inner', path: path, style : style }
+      var comp = compName && st.getComp(compName);
+      if (comp && jb.compName(comp.impl) == 'custom-style') 
+          return { type: 'global', path: compName, style: comp.impl, innerPath: path }
+  }
 })
 
 jb.component('studio.format-css', {
@@ -132,14 +137,15 @@ jb.component('studio.open-make-global-style', {
     }, 
     onOK: ctx => {
         debugger;
+        var st = jb.studio;
         var path = ctx.componentContext.params.path;
         var id = ctx.exp('%$studio/project%.%$dialogData/name%'); 
         var profile = {
-          type: model.paramDef(path).type,
-          impl : model.val(path)
+          type: st.paramDef(path).type,
+          impl : st.valOfPath(path)
         }
-        model.modify(model.newComp,id,{profile:profile},ctx);
-        model.modify(model.writeValue,path,{value : {$: id}},ctx);
+        st.newComp(id,profile);
+        st.writeValueOfPath(path,{$: id});
     }
   }
 })
@@ -150,7 +156,4 @@ jb.component('studio.custom-style-make-local', {
     { id: 'css', as: 'string'},
   ],
   impl: {$: 'object', template: '%$template%', css: '%$css%' }
-})
-
-
 })

@@ -1,13 +1,5 @@
 (function() { var st = jb.studio;
 
-st.modifyOperationsEm = new jb.rx.Subject();
-st.pathChangesEm = new jb.rx.Subject();
-
-st.notifyModification = function(path,before,ctx,ngPath) {
-	var comp = path.split('~')[0];
-	st.modifyOperationsEm.next({ comp: comp, before: before, after: compAsStr(comp), path: path, ctx: ctx, jbart: st.findjBartToLook(path), ngPath: ngPath });
-}
-
 st.message = function(message,error) {
 	$('.studio-message').text(message); // add animation
 	$('.studio-message').css('background', error ? 'red' : '#327DC8');
@@ -17,37 +9,17 @@ st.message = function(message,error) {
 	)
 }
 
-st.jbart_base = function() {
-	return jb.studio.previewjb || jb;
-}
+// st.jbart_base = function() {
+// 	return jb.studio.previewjb || jb;
+// }
 
-st.findjBartToLook = function(path) {
-	var id = path.split('~')[0];
-	if (st.jbart_base().comps[id])
-		return st.jbart_base();
-	if (jb.comps[id])
-		return jb;
-}
-
-st.getComp = function(id) {
-	return st.jbart_base().comps[id] || jb.comps[id];
-}
-
-st.compAsStr = function(id) {
-	return st.prettyPrintComp(id,st.getComp(id))
-}
-
-st.compAsStrFromPath = function(path) {
-	return st.compAsStr(path.split('~')[0])
-}
-
-st.evalProfile = function(prof_str) {
-	try {
-		return eval('('+prof_str+')')
-	} catch (e) {
-		jb.logException(e,'eval profile:'+prof_str);
-	}
-}
+// st.findjBartToLook = function(path) {
+// 	var id = path.split('~')[0];
+// 	if (st.jbart_base().comps[id])
+// 		return st.jbart_base();
+// 	if (jb.comps[id])
+// 		return jb;
+// }
 
 // ********* Components ************
 
@@ -88,8 +60,8 @@ jb.component('studio.project-source',{
 	],
 	impl: (context,project) => {
 		if (!project) return;
-		var comps = jb.entries(st.jbart_base().comps).map(x=>x[0]).filter(x=>x.indexOf(project) == 0);
-		return comps.map(comp=>compAsStr(comp)).join('\n\n')
+		var comps = jb.entries(st.previewjb.comps).map(x=>x[0]).filter(x=>x.indexOf(project) == 0);
+		return comps.map(comp=>st.compAsStr(comp)).join('\n\n')
 	}
 })
 
@@ -101,43 +73,11 @@ jb.component('studio.comp-source',{
 		st.compAsStr(comp.split('~')[0])
 })
 
-jb.component('studio.onNextModifiedPath', {
-	type: 'action',
-	params: [
-		{ id: 'action', type: 'action', dynamic: true, essential: true }
-	],
-	impl: (ctx,action) =>  
-		st.modifyOperationsEm.take(1).delay(1)
-            .subscribe(e =>
-            	action(ctx.setVars({ modifiedPath: e.args.modifiedPath }))
-            )
-})
-
-jb.component('studio.bindto-modifyOperations', {
-  type: 'feature',
-  params: [
-    { id: 'path', essential: true, as: 'string' },
-    { id: 'data', as: 'ref' }
-  ],
-  impl: (context, path,data_ref) => ({
-      init: cmp =>  
-        st.modifyOperationsEm
-          .takeUntil( cmp.destroyed )
-          .filter(e=>
-            e.path == path)
-          .subscribe(e=>
-              jb.writeValue(data_ref,true)
-          ),
-      jbEmitter: true,
-    })
-})
-
 jb.component('studio.dynamic-options-watch-new-comp', {
   type: 'feature',
   impl :{$: 'picklist.dynamic-options', 
         recalcEm: () => 
-          st.modifyOperationsEm.filter(e => 
-            e.newComp)
+          st.scriptChange.filter(e => e.path.length == 1)
   }
 })
 

@@ -1,5 +1,5 @@
 (function() {
-  var model = jb.studio.model;
+  var st = jb.studio;
 
 jb.component('studio.edit-source', {
 	type: 'action',
@@ -19,41 +19,17 @@ jb.component('studio.edit-source', {
 	}
 })
 
-jb.component('studio.profile-as-text', {
-	type: 'data',
-	params: [
-		{ id: 'path', as: 'string', dynamic: true },
-	],
-	impl: ctx => ({
-			$jb_val: function(value) {
-				var path = ctx.params.path();
-				if (!path) return;
-				if (typeof value == 'undefined') {
-					var val = model.val(path);
-					if (typeof val == 'string')
-						return val;
-					return jb.studio.prettyPrint(val);
-				} else {
-					var newVal = value.match(/^\s*({|\[)/) ? evalProfile(value) : value;
-					if (newVal != null)
-						model.modify(model.writeValue, path, { value: newVal },ctx);
-				}
-			}
-		})
-})
-
 jb.component('studio.string-property-ref', {
 	type: 'data',
 	params: [
 		{ id: 'path', as: 'string' },
 	],
-	impl: (context,path,stringOnly) => ({
-			$jb_val: function(value) {
-				if (typeof value == 'undefined') {
-					return model.val(path);
-				} else {
-					model.modify(model.writeValue, path, { value: newVal },context);
-				}
+	impl: (context,path) => ({
+			$jb_val: value => {
+				if (typeof value == 'undefined')
+					return st.valOfPath(path);
+				else
+					st.writeValueOfPath(path, newVal);
 			}
 		})
 })
@@ -80,7 +56,7 @@ jb.component('studio.goto-targets', {
 		{ id: 'path', as: 'string'},
 	],
 	impl: (ctx,path) => 
-		[model.compName(path),path]
+		[st.compNameOfPath(path),path]
 			.filter(x=>x)
 			.map(x=>
 				x.split('~')[0])
