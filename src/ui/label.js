@@ -29,3 +29,15 @@ jb.component('label.span', {
         features :{$: 'label.bind-title' }
     }
 })
+
+jb.component('highlight', {
+  params: [
+    { id: 'base', as: 'string', dynamic: true },
+    { id: 'highlight', as: 'string', dynamic: true },
+    { id: 'cssClass', as: 'string', defaultValue: 'highlight'},
+  ],
+  impl: (ctx,base,highlight,cssClass) => 
+    highlight() ? jb.ui.h('div',{},[base().split(highlight())[0],jb.ui.h('span',{class: cssClass},highlight()),base().split(highlight())[1]
+      ]) : base()
+})
+

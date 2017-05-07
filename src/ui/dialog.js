@@ -252,8 +252,11 @@ jb.component('dialog-feature.autoFocusOnFirstInput', {
 	type: 'dialog-feature',
 	impl: context => ({ 
 		afterViewInit: cmp =>
-			jb.delay(1).then(_=>
-				jb.ui.focus(context.vars.$dialog.el.querySelector('input,textarea,select'), 'autoFocusOnFirstInput'))
+			jb.delay(1).then(_=> {
+				var elem = context.vars.$dialog.el.querySelector('input,textarea,select');
+				if (elem)
+					jb.ui.focus(elem, 'autoFocusOnFirstInput')
+			})
 	})
 })
 

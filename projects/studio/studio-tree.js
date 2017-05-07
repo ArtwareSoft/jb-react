@@ -145,6 +145,7 @@ jb.component('studio.control-tree', {
           }, 
           {$: 'tree.drag-and-drop' }, 
           {$: 'studio.control-tree.refresh-path-changes' }, 
+          {$: 'refresh-on-script-change' }
           // {$: 'tree.onMouseRight', 
           //   action :{$: 'studio.open-tree-menu', path: '%%' }
           // }
@@ -153,7 +154,7 @@ jb.component('studio.control-tree', {
     ], 
     features :[ 
         {$: 'css.padding', top: '10' },
-        {$: 'group.studio-watch-path', path :{$: 'studio.currentProfilePath' } },
+        //{$: 'group.studio-watch-path', path :{$: 'studio.currentProfilePath' } },
     ]
   }
 })

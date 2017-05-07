@@ -108,6 +108,7 @@ Object.assign(st,{
 		var val = st.valOfPath(path);
 		if (Array.isArray(val))
 			return Object.getOwnPropertyNames(val)
+				.filter(x=> x.indexOf('$jb_') != 0)
 				.filter(x=> !(noExtraElem && x =='length'))
 				.map(x=>x=='length'? val.length : x) // extra elem
 				.map(k=> path +'~'+k)

@@ -43,7 +43,7 @@ jb.component('editable-boolean.mdl-slide-toggle', {
       template: (cmp,state,h) => h('label',{class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
         h('input', { type: 'checkbox', class: 'mdl-switch__input', id: 'switch_' + state.fieldId,
           value: cmp.jbModel(), onchange: e => cmp.jbModel(e.target.checked) }),
-        h('span',{class:'mdl-switch__label'},state.text())
+        h('span',{class:'mdl-switch__label'},cmp.text())
       ]),
       features :[
           {$: 'field.databind' },

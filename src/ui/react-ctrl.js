@@ -216,6 +216,7 @@ function garbageCollectCtxDictionary() {
 }
 
 ui.focus = function(elem,logTxt) {
+	if (!elem) debugger;
     if (jb.studio.lastStudioActivity && new Date().getTime() - jb.studio.lastStudioActivity < 1000)
     	return;
     jb.logPerformance('focus',logTxt);
@@ -238,7 +239,7 @@ if (typeof $ != 'undefined' && $.fn)
 
 ui.renderWidget = function(profile,elem) {
 	if (window.parent != window && window.parent.jb)
-		window.parent.jb.studio.initPreview(window);
+		window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
 	class R extends jb.ui.Component {
 		constructor(props) {
 			super();

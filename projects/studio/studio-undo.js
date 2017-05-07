@@ -68,27 +68,27 @@ jb.component('studio.undo-support', {
   impl: (ctx,path) => 
   	({
   		// saving state on focus and setting the change on blur
-  		init1: cmp => {
-  			var before = st.compAsStrFromPath(path);
-  			if (cmp.codeMirror) {
-  				cmp.codeMirror.on('focus',()=>
-  					before = st.compAsStrFromPath(path)
-  				);
-  				cmp.codeMirror.on('blur',()=>{
-  					if (before != st.compAsStrFromPath(path))
-						st.notifyModification(path,before,ctx)
-  				});
-  			} else {
-  			$(cmp.base).findIncludeSelf('input')
-  				.focus(e=> {
-  					before = st.compAsStrFromPath(path)
-  				})
-  				.blur(e=> {
-  					if (before != st.compAsStrFromPath(path))
-						st.notifyModification(path,before,ctx)
-  				})
-  			}
-  		}
+  		// init1: cmp => {
+  		// 	var before = st.compAsStrFromPath(path);
+  		// 	if (cmp.codeMirror) {
+  		// 		cmp.codeMirror.on('focus',()=>
+  		// 			before = st.compAsStrFromPath(path)
+  		// 		);
+  		// 		cmp.codeMirror.on('blur',()=>{
+  		// 			if (before != st.compAsStrFromPath(path))
+				// 		st.notifyModification(path,before,ctx)
+  		// 		});
+  		// 	} else {
+  		// 	$(cmp.base).findIncludeSelf('input')
+  		// 		.focus(e=> {
+  		// 			before = st.compAsStrFromPath(path)
+  		// 		})
+  		// 		.blur(e=> {
+  		// 			if (before != st.compAsStrFromPath(path))
+				// 		st.notifyModification(path,before,ctx)
+  		// 		})
+  		// 	}
+  		// }
   })
 })
 

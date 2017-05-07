@@ -27,7 +27,7 @@ jb.component('editable-boolean.keyboard-support', {
   type: 'feature',
   impl: ctx => ({
       onkeydown: true,
-      init: cmp => {
+      afterViewInit: cmp => {
         cmp.onkeydown.filter(e=> 
             e.keyCode == 37 || e.keyCode == 39)
           .subscribe(x=> {

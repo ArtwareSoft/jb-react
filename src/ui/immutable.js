@@ -5,12 +5,15 @@ class ImmutableWithPath {
     this.resources = resources;
     this.resourceVersions = {};
     this.pathId = 0;
+    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
     this.resourceChange = new jb.rx.Subject();
   }
   val(ref) {
     if (ref == null) return ref;
     if (ref.$jb_val) return ref.$jb_val();
     if (!ref.$jb_path) return ref;
+    if (ref.handler != this) 
+      return ref.handler.val(ref)
 
     var resource = ref.$jb_path[0];
     if (ref.$jb_resourceV == this.resourceVersions[resource]) 
@@ -23,6 +26,7 @@ class ImmutableWithPath {
   writeValue(ref,value) {
     if (!ref) 
       return jb.logError('writeValue: null ref');
+    if (this.val(ref) == value) return;
     if (ref.$jb_val)
       return ref.$jb_val(value);
     return this.doOp(ref,{$set: value})
@@ -84,37 +88,52 @@ class ImmutableWithPath {
     }
   }
   refresh(ref) {
-    var path = ref.$jb_path, new_ref = {};
-    if (this.resourceVersions[path[0]] == ref.$jb_resourceV) return;
-    if (ref.$jb_parentOfPrim) {
-      var parent = this.asRef(ref.$jb_parentOfPrim);
-      if (!parent)
-        return jb.logError('refresh: parent not found');
-      var prop = path.slice(-1)[0];
-      new_ref = {
-        $jb_path: parent.$jb_path.concat([prop]),
-        $jb_resourceV: this.resourceVersions[path[0]],
-        $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
-        $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
-        handler: this,
+    try {
+      var path = ref.$jb_path, new_ref = {};
+      if (!path)
+        debugger;
+      if (this.resourceVersions[path[0]] == ref.$jb_resourceV) return;
+      if (ref.$jb_parentOfPrim) {
+        var parent = this.asRef(ref.$jb_parentOfPrim);
+        if (!parent)
+          return jb.logError('refresh: parent not found');
+        var prop = path.slice(-1)[0];
+        new_ref = {
+          $jb_path: parent.$jb_path.concat([prop]),
+          $jb_resourceV: this.resourceVersions[path[0]],
+          $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
+          $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
+      } else {
+        var found_path = this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+        if (!found_path) {
+          this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+          return jb.logError('refresh: object not found');
+        }
+        var new_path = [path[0]].concat(found_path);
+        if (new_path) new_ref = {
+          $jb_path: new_path,
+          $jb_resourceV: this.resourceVersions[new_path[0]],
+          $jb_cache: new_path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
       }
-    } else {
-      var path = this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
-      if (path) new_ref = {
-        $jb_path: path,
-        $jb_resourceV: this.resourceVersions[path[0]],
-        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
-        handler: this,
-      }
+      Object.assign(ref,new_ref);
+    } catch (e) {
+       jb.logException(e,'ref refresh ',ref);
     }
-    Object.assign(ref,new_ref);
   }
   refOfPath(path,silent) {
+      var val = path.reduce((o,p)=>o[p],this.resources()),parent = null;
+      if (typeof val != 'object') 
+        parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
       try {
         return {
           $jb_path: path,
           $jb_resourceV: this.resourceVersions[path[0]],
-          $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
+          $jb_cache: val,
+          $jb_parentOfPrim: parent,
           handler: this,
         }
       } catch (e) {
@@ -129,10 +148,10 @@ class ImmutableWithPath {
     }, this.resources())
   }
   pathOfObject(obj,lookIn,depth) {
-    if (!lookIn || typeof lookIn != 'object' || depth > 50) 
+    if (!lookIn || typeof lookIn != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50) 
       return;
-    var proto = Object.getPrototypeOf(lookIn);
-    if (proto != Object.prototype && proto != Array.prototype) return; // just simple data objects
+    if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1) 
+      return;
 
     if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id)) 
       return [];
@@ -142,8 +161,11 @@ class ImmutableWithPath {
         return [p].concat(res);
     }
   }
+  // valid(ref) {
+  //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
+  // }
   refObservable (ref,cmp) {
-    if (!ref) 
+    if (!ref || !this.isRef(ref)) 
       return jb.rx.Observable.of();
     if (ref.$jb_path) {
       return this.resourceChange

@@ -617,7 +617,7 @@ jb.component('editable-primitive', {
     initialValue: { type: 'data', as: 'string' }
   },
   impl: (ctx,_type,initialValue) => {
-    var res = { data: jbart.jstypes[_type](initialValue)};
+    var res = { data: jb.jstypes[_type](initialValue)};
     return { $jb_parent: res, $jb_property: 'data' }
   }
 })

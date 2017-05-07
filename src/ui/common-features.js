@@ -27,10 +27,11 @@ jb.component('watch-ref', {
   type: 'feature', category: 'group:70',
   params: [ 
     { id: 'ref', essential: true, as: 'ref' },
+    { id: 'strongRefresh', as: 'boolean' },
   ],
-  impl: (ctx,ref) => ({
+  impl: (ctx,ref,strongRefresh) => ({
       init: cmp => {
-          if (cmp.initWatchByRef) { // itemlist or group
+          if (strongRefresh && cmp.initWatchByRef) { // itemlist or group
               cmp.initWatchByRef(ref)
           } else {
             jb.ui.refObservable(ref,cmp).subscribe(e=>
@@ -45,12 +46,16 @@ jb.component('group.data', {
   params: [
     { id: 'data', essential: true, dynamic: true, as: 'ref' },
     { id: 'itemVariable', as: 'string' },
-    { id: 'watch', as: 'boolean' }
+    { id: 'watch', as: 'boolean' },
+    { id: 'strongRefresh', as: 'boolean' },
   ],
-  impl: (context, data_ref, itemVariable,watch) => ({
+  impl: (context, data_ref, itemVariable,watch,strongRefresh) => ({
       init: cmp => {
-        if (watch && cmp.initWatchByRef)
+        if (watch && strongRefresh && cmp.initWatchByRef)
               cmp.initWatchByRef(data_ref())
+        else if (watch)
+          jb.ui.refObservable(data_ref(),cmp).subscribe(e=>
+                cmp.forceUpdate())
       },
       extendCtxOnce: ctx => {
           var val = data_ref();

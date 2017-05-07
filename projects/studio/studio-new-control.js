@@ -194,10 +194,9 @@ jb.component('studio.select-profile', {
                   cssClass: 'highlight'
                 }, 
                 action: [{$: 'close-containing-popup' }, { $call: 'onSelect' }], 
-                features :{$: 'css', css: '!button { text-align: left; width: 250px }' }
+                features :{$: 'css', css: '{ text-align: left; width: 250px }' }
               }
             ], 
-            watchItems: true, 
             itemVariable: 'item', 
             features: [
               {$: 'css.height', height: '300', overflow: 'auto', minMax: '' }, 
@@ -211,7 +210,8 @@ jb.component('studio.select-profile', {
                 onEnter :{$: 'runActions', 
                   actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
                 }
-              }
+              },
+              {$: 'watch-ref', ref: '%$SelectedCategory%'}
             ]
           }
         ]
@@ -223,16 +223,12 @@ jb.component('studio.select-profile', {
         name: 'Categories', 
         value :{$: 'studio.categories-of-type', type: '%$type%' }
       }, 
-      {$: 'var', 
+      {$: 'inner-resource', 
         name: 'SelectedCategory', 
-        value :{$: 'editable-primitive', 
-          type: 'string', 
-          initialValue: '%$Categories[0]%'
-        }
+        value : '%$Categories[0]%'
       }, 
-      {$: 'var', 
-        name: 'SearchPattern', 
-        value :{$: 'editable-primitive', type: 'string' }
+      {$: 'inner-resource', 
+        name: 'SearchPattern', value: ''
       }, 
       {$: 'group.itemlist-container' }
     ]

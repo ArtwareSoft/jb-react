@@ -20,8 +20,8 @@ jb.component('field.databind', {
                 }
               }
             }
-            jb.ui.refObservable(ctx.vars.$model.databind,cmp)
-              .subscribe(_=>cmp.forceUpdate())
+            // jb.ui.refObservable(ctx.vars.$model.databind,cmp)
+            //   .subscribe(_=>cmp.forceUpdate())
       }
   }}
 })

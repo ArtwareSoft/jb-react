@@ -21,11 +21,12 @@ jb.component('studio.preview-widget', {
     })
 })
 
-jb.studio.initPreview = function(preview_window) {
+jb.studio.initPreview = function(preview_window,allowedTypes) {
       preview_window.jb.studio.studioWindow = window;
       jb.studio.previewWindow = preview_window;
       jb.studio.previewjb = preview_window.jb;
       preview_window.jb.studio.previewjb = preview_window.jb;
+      jb.studio.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
 }
 
 jb.component('studio.preview-widget-impl', {

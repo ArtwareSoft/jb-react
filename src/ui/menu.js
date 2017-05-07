@@ -231,14 +231,16 @@ jb.component('menu.init-menu-option', {
 		  			.forEach(d=>d.close());
 		  		jb.delay(50).then(_=>
 	        		jb.ui.applyAfter(ctx.vars.menuModel.action(),ctx))
-	        }, ctx, cmp.elementRef);
+	        }, ctx, cmp.base);
 
-			if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
-				var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
-			    keydown.filter(e=>e.keyCode == 13 && ctx.vars.topMenu.selected == ctx.vars.menuModel) // Enter
-		    	    .subscribe(_=>
-		    	    	cmp.action())
-		    }
+	  		jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
+				if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
+					var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
+				    keydown.filter(e=>e.keyCode == 13 && ctx.vars.topMenu.selected == ctx.vars.menuModel) // Enter
+			    	    .subscribe(_=>
+			    	    	cmp.action())
+			    }
+			})
 		}
   	})
 })

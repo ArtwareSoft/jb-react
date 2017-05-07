@@ -238,8 +238,18 @@ jb.component('group.studio-watch-path', {
   type: 'feature', category: 'group:0',
   params: [
     { id: 'path', essential: true, as: 'ref' },
+    { id: 'strongRefresh', as: 'boolean' },
   ],
-  impl: {$: 'watch-ref', ref :{$: 'studio.ref', path: '%$path%'}}
+  impl: {$: 'watch-ref', ref :{$: 'studio.ref', path: '%$path%'}, strongRefresh: '%$strongRefresh%'}
+})
+
+jb.component('refresh-on-script-change', {
+  type: 'feature',
+  impl: (ctx,strongRefresh) => ({
+      init: cmp =>
+        st.compsRefHandler.resourceChange.debounceTime(200).subscribe(e=>
+            cmp.forceUpdate())
+   })
 })
 
 })()

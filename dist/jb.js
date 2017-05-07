@@ -169,7 +169,7 @@ function jb_run(context,parentParam,settings) {
 function compParams(comp) {
   if (!comp || !comp.params) 
     return [];
-  return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>extend(x[1],obj('id',x[0])));
+  return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>extend(x[1],jb.obj('id',x[0])));
 }
 
 function prepareParams(comp,profile,ctx) {
