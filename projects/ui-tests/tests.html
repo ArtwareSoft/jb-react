@@ -5,7 +5,7 @@
 		startTime = new Date().getTime();
 	</script>
 	<script type="text/javascript" src="/src/loader/jb-loader.js" 
-		modules="common,ui-common,ui-tree,dragula,codemirror,testers"></script>
+		modules="common,ui-common,ui-tree,dragula,codemirror,testers,studio,studio-tests"></script>
 	<script type="text/javascript" src="data-tests.js"></script>
 	<script type="text/javascript" src="ui-tests.js"></script>
 </head>
@@ -14,7 +14,7 @@
 <div id="dialogs"> </div>
 <script>
 	var test = (location.href.match(/test=([^&]*)/) || [])[1]; //.split('?test=').pop().split('&')[0];
-	jb.testers.runTests('ui-test',test,location.href.indexOf('&show') != -1);
+	jb.testers.runTests('',test,location.href.indexOf('&show') != -1);
 </script>
 </body>
 </html>

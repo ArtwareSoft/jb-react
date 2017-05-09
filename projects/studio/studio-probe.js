@@ -1,8 +1,9 @@
 
-jb.studio = class Probe {
-  constructor(ctx, public forTests) {
+jb.studio.Probe = class {
+  constructor(ctx, forTests) {
     if (ctx.probe)
       debugger;
+    this.forTests = forTests;
 
     this.context = ctx.ctx({});
     this.probe = {};
@@ -36,19 +37,23 @@ jb.studio = class Probe {
       else
         this.circuitType = 'unknown';
 
-      if (this.circuitType == 'control') // running circuit in a group to get the 'ready' event
-        return testControl(this.context, this.forTests);
-      else if (this.circuitType != 'action')
-        return Promise.resolve(_win.jb_run(this.context));
-      
+      if (this.circuitType == 'control') { // running circuit in a group to get the 'ready' event
+        //return testControl(this.context, this.forTests);
+          var ctrl = jb.ui.h(this.context.runItself().reactComp());
+          var el = document.createElement('div');
+          jb.ui.render(ctrl, el);
+          return Promise.resolve({element: el});
+      } else if (this.circuitType != 'action')
+        return Promise.resolve(_win.jb.run(this.context));
   }
 
   handleGaps() {
+    var st = jb.studio;
     if (this.probe[this.pathToTrace].length == 0) {
       // find closest path
-      var _path = parentPath(this.pathToTrace);
+      var _path = st.parentPath(this.pathToTrace);
       while (!this.probe[_path] && _path.indexOf('~') != -1)
-        _path = parentPath(_path);
+        _path = st.parentPath(_path);
       if (this.probe[_path])
         this.probe[this.pathToTrace] = this.probe[_path];
     }
@@ -72,7 +77,7 @@ jb.studio = class Probe {
       if (found)
         found.counter++;
       else 
-        this.probe[path].push({in: input, out: jb_val(out), counter: 0});
+        this.probe[path].push({in: input, out: jb.val(out), counter: 0});
       return out;
   }
 }

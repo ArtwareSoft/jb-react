@@ -35,6 +35,8 @@ var resources = {
         'src/ui/itemlist-container.js',
         'src/ui/itemlist-with-groups.js',
         'src/ui/picklist.js',
+        'src/ui/theme.js',
+        'src/ui/icon.js',
 
         'src/ui/styles/mdl-styles.js',
         'src/ui/styles/button-styles.js',
@@ -81,7 +83,10 @@ var resources = {
         'utils','path','main', 'pretty-print', 
         'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'tgp-model', 'model-components',
         'tree','popups','properties','pick','properties-menu','save','open-project','new-control',
-        'suggestions','undo','edit-source','jb-editor','jb-editor-styles'
+        'suggestions','undo','edit-source','jb-editor','jb-editor-styles','probe','testers'
+      ],
+      'studio-tests': [
+        'path','model','tree','suggestion'
       ]
 };
 
@@ -90,6 +95,8 @@ function jb_dynamicLoad(modules) {
     (resources[m] || []).forEach(file=>{
       if (m == 'studio')
         file = 'projects/studio/studio-' + file + '.js';
+      if (m == 'studio-tests')
+        file = 'projects/studio-helper/studio-' + file + '-tests.js';
 
       var url = (window.jbLoaderRelativePath ? '' : '/') + file;
       if (file.match(/\.js$/))

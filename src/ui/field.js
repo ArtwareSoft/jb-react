@@ -14,21 +14,21 @@ jb.component('field.databind', {
                 return jb.val(ctx.vars.$model.databind);
               else { // write
                 if (cmp.inputEvents && source == 'keyup')
-                  cmp.inputEvents.next(val);
+                  cmp.inputEvents.next(val); // used for debounce
                 else if (!ctx.vars.$model.updateOnBlur || source != 'keyup') {
-                  jb.writeValue(ctx.vars.$model.databind,val,{source: cmp});
+                  jb.writeValue(ctx.vars.$model.databind,val);
                 }
               }
             }
-            // jb.ui.refObservable(ctx.vars.$model.databind,cmp)
-            //   .subscribe(_=>cmp.forceUpdate())
+            jb.ui.refObservable(ctx.vars.$model.databind,cmp)
+              .subscribe(_=>cmp.forceUpdate())
       }
   }}
 })
 
 jb.component('field.debounce-databind', {
   type: 'feature',
-  description: 'debounce input content writing to databind',
+  description: 'debounce input content writing to databind via keyup',
   params: [
     { id: 'debounceTime', as: 'number', defaultValue: 500 },
   ],

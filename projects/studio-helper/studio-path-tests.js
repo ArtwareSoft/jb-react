@@ -1,5 +1,3 @@
-jbLoadModules(['jb-core']).then(loadedModules => { var jb = loadedModules['jb-core'].jb;
-
 jb.component('path-test.single-control', {
 	impl :{$: 'jb-path-test', 
 	 	$vars: { tst: 10 },
@@ -137,8 +135,3 @@ jb.component('path-test.filter-no-sugar', {
 // 		probeCheck : '%$tst% == ""'
 // 	}
 // })
-
-
-
-
-})

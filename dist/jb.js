@@ -101,7 +101,7 @@ function jb_run(context,parentParam,settings) {
       case 'ignore': return context.data;
       case 'list': { return profile.map((inner,i) => 
             context.runInner(inner,null,i)) };
-      case 'runActions': return comps.runActions.impl(new jbCtx(context,{profile: { actions : profile },path:''}));
+      case 'runActions': return jb.comps.runActions.impl(new jbCtx(context,{profile: { actions : profile },path:''}));
       case 'if': {
           var cond = jb_run(run.ifContext, run.IfParentParam);
           if (cond && cond.then) 
@@ -246,7 +246,7 @@ function prepare(context,parentParam) {
   var comp_name = compName(profile);
   if (!comp_name) 
     return { type: 'ignore' }
-  var comp = comps[comp_name];
+  var comp = jb.comps[comp_name];
   if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined'); return { type:'null' } }
   if (!comp.impl) { logError('component ' + comp_name + ' has no implementation'); return { type:'null' } }
 
@@ -293,7 +293,7 @@ function expression(exp, context, parentParam) {
   }
   if (exp.indexOf('$log:') == 0) {
     var out = expression(exp.split('$log:')[1],context,parentParam);
-    comps.log.impl(context, out);
+    jb.comps.log.impl(context, out);
     return out;
   }
   if (exp.indexOf('%') == -1 && exp.indexOf('{') == -1) return exp;
@@ -345,8 +345,8 @@ function evalExpressionPart(expressionPart,context,jstype) {
   if (expressionPart.indexOf('=') == 0) { // function
     var parsed = expressionPart.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
     var funcName = parsed && parsed[1];
-    if (funcName && functions[funcName])
-      return tojstype(functions[funcName](context,parsed[2]),jstype,context);
+    if (funcName && jb.functions[funcName])
+      return tojstype(jb.functions[funcName](context,parsed[2]),jstype,context);
   }
 
   var parts = expressionPart.split(/[.\/]/);
@@ -391,7 +391,7 @@ function bool_expression(exp, context) {
   if (exp.indexOf('$log:') == 0) {
     var calculated = expression(exp.split('$log:')[1],context,{as: 'string'});
     var result = bool_expression(exp.split('$log:')[1], context);
-    comps.log.impl(context, calculated + ':' + result);
+    jb.comps.log.impl(context, calculated + ':' + result);
     return result;
   }
   if (exp.indexOf('!') == 0)
@@ -502,7 +502,7 @@ function profileType(profile) {
   if (!profile) return '';
   if (typeof profile == 'string') return 'data';
   var comp_name = compName(profile);
-  return (comps[comp_name] && comps[comp_name].type) || '';
+  return (jb.comps[comp_name] && jb.comps[comp_name].type) || '';
 }
 
 function sugarProp(profile) {
@@ -640,7 +640,7 @@ var valueByRefHandlerWithjbParent = {
 }
 
 var valueByRefHandler = valueByRefHandlerWithjbParent;
-var comps = {}, functions = {}, types = {}, ui = {}, rx = {}, studio = {}, ctxDictionary = {}, testers = {};
+var types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 
 return {
   jbCtx: jbCtx,
@@ -658,12 +658,9 @@ return {
   tostring: tostring, toarray:toarray, toboolean: toboolean,tosingle:tosingle,tonumber:tonumber,
 
   valueByRefHandler: valueByRefHandler,
-  comps: comps,
-  functions: functions,
   types: types,
   ui: ui,
   rx: rx,
-  studio: studio,
   ctxDictionary: ctxDictionary,
   testers: testers,
   compParams: compParams,
@@ -676,7 +673,8 @@ return {
 })();
 
 Object.assign(jb,{
-  resources: {},
+  comps: {}, functions: {}, resources: {},
+  studio: { previewjb: jb }, 
   component: (id,val) => jb.comps[id] = val,
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => typeof val == 'undefined' ? jb.resources[id] : (jb.resources[id] = val || {}),
@@ -746,10 +744,12 @@ Object.assign(jb,{
     var _ar = ar.filter(x=>x).map(v=>
       (typeof v.then == 'function' || typeof v.subscribe == 'function') ? v : [v]);
 
-    var resolveArray = obj =>
-      Array.isArray(obj) ? obj.reduce((p,item)=>p.then(_=>resolveArray(item),Promise.resolve(0))) : Promise.resolve(obj);
-
-    return resolveArray(_ar);
+    return jb.rx.Observable.from(_ar)
+          .concatMap(x=>x)
+          .flatMap(v => 
+            Array.isArray(v) ? v : [v])
+          .toArray()
+          .toPromise()
   },
 // usage: [1,2,2,3].filter(jb.unique(x=>x))
   unique: mapFunc => // n**2 !!!!

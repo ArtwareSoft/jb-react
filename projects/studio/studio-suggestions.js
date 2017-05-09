@@ -117,7 +117,7 @@ function rev(str) {
   return str.split('').reverse().join('');
 }
 
-class suggestions {
+st.suggestions = class {
   constructor(input,expressionOnly) {
     this.input = input;
     this.expressionOnly = expressionOnly;
@@ -143,8 +143,8 @@ class suggestions {
 
   extendWithOptions(probeCtx,path) {
     this.options = [];
-    probeCtx = probeCtx || (st.previewjb || jb).initialCtx;
-    var vars = jb.entries(jb.extend({},(probeCtx.componentContext||{}).params,probeCtx.vars,probeCtx.resources))
+    probeCtx = probeCtx || st.previewjb.initialCtx;
+    var vars = jb.entries(jb.extend({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources))
         .map(x=>new ValueOption('$'+x[0],x[1],this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
         .filter(x=>['$window'].indexOf(x.toPaste) == -1)
@@ -281,7 +281,7 @@ jb.component('group.studio-suggestions', {
           .delay(1) // we use keydown - let the input fill itself
           .debounceTime(20) // solves timing of closing the floating input
           .filter(e=>
-            suggestionCtx.show = new suggestions(input,ctx.params.expressionOnly).suggestionsRelevant() )
+            suggestionCtx.show = new st.suggestions(input,ctx.params.expressionOnly).suggestionsRelevant() )
           .catch(e=>
             console.log(1,e))
           .map(e=>
@@ -294,7 +294,7 @@ jb.component('group.studio-suggestions', {
           .map(res=>
               res && res.finalResult && res.finalResult[0] && res.finalResult[0].in)
           .map(probeCtx=> 
-            new suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,ctx.params.path))
+            new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,ctx.params.path))
           .catch(e=>
             console.log(2,e))
           .distinctUntilChanged((e1,e2)=>
@@ -338,7 +338,6 @@ jb.component('itemlist.studio-suggestions-options', {
                   suggestionCtx.selected.paste(ctx);
                   suggestionCtx.selected = null;
                 }
-                jb_ui.apply(ctx);
             })
           keyEm.filter(e=>e.keyCode == 27) // ESC
             .subscribe(x=>

@@ -244,8 +244,13 @@ ui.renderWidget = function(profile,elem) {
 		constructor(props) {
 			super();
 			this.state.profile = profile;
-			if (jb.studio.studioWindow)
-				jb.studio.studioWindow.jb.studio.pageChange.subscribe(page=>this.setState({profile: {$: page}}))
+			if (jb.studio.studioWindow) {
+				var st = jb.studio.studioWindow.jb.studio;
+				st.pageChange.subscribe(page=>
+					this.setState({profile: {$: page}}));
+				st.scriptChange.subscribe(_=>
+					this.forceUpdate());
+			}
 		}
 		render(pros,state) {
 			return ui.h(new jb.jbCtx().run(state.profile).reactComp())

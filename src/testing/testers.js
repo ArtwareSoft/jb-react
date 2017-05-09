@@ -61,7 +61,7 @@ jb.component('ui-test', {
 })
 
 jb.component('ui-action.click', {
-	type: 'test',
+	type: 'ui-action',
 	params: [
 		{ id: 'selector', as: 'string' },
 	],
@@ -75,7 +75,7 @@ jb.component('ui-action.click', {
 })
 
 jb.component('ui-action.keyboard-event', {
-	type: 'test',
+	type: 'ui-action',
 	params: [
 		{ id: 'selector', as: 'string' },
 		{ id: 'type', as: 'string', options: ['keypress','keyup','keydown'] },
@@ -98,7 +98,7 @@ jb.component('ui-action.keyboard-event', {
 
 
 jb.component('ui-action.jbModel', {
-	type: 'test',
+	type: 'ui-action',
 	params: [
 		{ id: 'selector', as: 'string' },
 		{ id: 'value', as: 'string' },
@@ -126,7 +126,10 @@ var jb_fail_counter = 0;
 startTime = startTime || new Date().getTime();
 jb.testers.runTests = function(testType,specificTest,show) {
 	var tests = jb.entries(jb.comps)
-		.filter(e=>typeof e[1].impl == 'object' && e[1].impl.$ == testType)
+		.filter(e=>typeof e[1].impl == 'object')
+		.filter(e=>e[1].type != 'test') // exclude the testers
+		.filter(e=>jb.studio.isCompNameOfType(e[0],'test'))
+		.filter(e=>!testType || e[1].impl.$ == testType)
 		.filter(e=>!specificTest || e[0] == specificTest);
 
 
@@ -148,7 +151,7 @@ jb.testers.runTests = function(testType,specificTest,show) {
 			document.getElementById('fail-counter').style.color = jb_fail_counter ? 'red' : 'green';
 			document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - startTime) +' mSec';
 			document.body.innerHTML += elem;
-			if (show)
+			if (show && res.elem)
 				document.body.appendChild(res.elem);
 		})
 }

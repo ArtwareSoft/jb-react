@@ -49,12 +49,12 @@ st.jbEditorTree = class {
 			compName = `actions (${val.length})`;
 		var summary = '';
 		if (collapsed && typeof val == 'object')
-			summary = ': ' + jb.summary(path).substr(0,20);
+			summary = ': ' + st.summary(path).substr(0,20);
 
 		if (compName)
-			return jb.ui.h('div',{},[prop + '= ',h('span',{class:'treenode-val'},compName+summary)]);
+			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val'},compName+summary)]);
 		else if (typeof val == 'string')
-			return jb.ui.h('div',{},[prop + collapsed ? ': ': '',h('span',{class:'treenode-val', title: val},val)]);
+			return jb.ui.h('div',{},[prop + collapsed ? ': ': '',jb.ui.h('span',{class:'treenode-val', title: val},val)]);
 
 		return prop + (Array.isArray(val) ? ` (${val.length})` : '');
 	}
@@ -80,7 +80,7 @@ st.jbEditorTree = class {
 		var sugarPath = path + '~$' +compName;
 		var sugarVal = st.valOfPath(sugarPath);
 		if (Array.isArray(sugarVal)) // sugar array. e.g. $pipeline: [ .. ]
-			return this.arrayElems(sugarPath,sugarVal)
+			return st.arrayChildren(sugarPath,sugarVal)
 		else if (sugarVal)
 			return [sugarPath];
 	}
@@ -171,9 +171,9 @@ Object.assign(st,{
 		var _jb = st.previewjb;
 		var comp = name && _jb.comps[name];
 		if (comp) {
-			while (!_jb.comps[name].type && jb.compName(_jb.comps[name].impl))
-				name = jb.compName(_jb.comps[name].impl);
-			return (_jb.comps[name].type || '').indexOf(type) == 0;
+			while (_jb.comps[name] && !_jb.comps[name].type && _jb.compName(_jb.comps[name].impl))
+				name = _jb.compName(_jb.comps[name].impl);
+			return (_jb.comps[name] && _jb.comps[name].type || '').indexOf(type) == 0;
 		}
 	},
 	paramDef: path => {
