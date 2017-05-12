@@ -77,3 +77,8 @@ jb.component('button.mdl-icon-12', {
       features:{$: 'mdl-style.init-dynamic'},
   }
 })
+
+
+// {$ :' button', class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect', title: state.title, tabIndex: -1, 
+//           onclick: _=> cmp.clicked() , 
+//           elems: {$: 'i', class: 'material-icons', innerText: cmp.icon } }

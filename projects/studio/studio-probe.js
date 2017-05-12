@@ -86,12 +86,13 @@ jb.component('studio.probe', {
   type:'data',
   params: [ { id: 'path', as: 'string', dynamic: true } ],
   impl: (ctx,path) => {
+      var st = jb.studio;
       var context = ctx.exp('%$studio/last_pick_selection%');
       if (!context) {
-        var _jbart = jb.studio.jbart_base();
-        var _win = jb.studio.previewWindow || window;
+        var _jbart = st.previewjb;
+        var _win = st.previewWindow || window;
         var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
-        context = _win.jb.ctx(_jbart.initialCtx,{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
+        context = new _win.jb.jbCtx(new _win.jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
       }
       return new jb.studio.Probe(context).runCircuit(path());
     }

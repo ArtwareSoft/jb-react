@@ -72,12 +72,12 @@ jb.component('dialog-feature.studio-pick', {
 		  cmp.titleBelow = false;
 
 		  var mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
-		  var userPick = jb.rx.Observable.fromEvent(document, 'mousedown')
-		      			.merge(jb.rx.Observable.fromEvent(
-		      				(jb.studio.previewWindow || {}).document, 'mousedown'));
-		  var keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup')
-		      			.merge(jb.rx.Observable.fromEvent(
-		      				(jb.studio.previewWindow || {}).document, 'keyup'));
+		  var userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
+		  var keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
+		  if (jb.studio.previewWindow) {
+		  	userPick = userPick.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousedown'));
+		  	keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'keyup'));
+		  };
 
 		  mouseMoveEm
 		  	.debounceTime(50)
@@ -100,7 +100,7 @@ jb.component('dialog-feature.studio-pick', {
 		  	.subscribe(x=> {
 		  		ctx.vars.$dialog.close({OK:true});
 		  		jb.delay(200).then(_=>
-		  			jb.studio.previewWindow.getSelection() && jb.studio.previewWindow.getSelection().empty())
+		  			jb.studio.previewWindow && jb.studio.previewWindow.getSelection() && jb.studio.previewWindow.getSelection().empty())
 		  	})
 		}
 	})			

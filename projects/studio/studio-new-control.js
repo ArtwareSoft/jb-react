@@ -119,7 +119,7 @@ jb.component('studio.select-profile', {
       {$: 'itemlist-container.search', 
         title: 'Search', 
         searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
-        databind: '%$itemlistCntr/filter_data/search%', 
+        databind: '%$itemlistCntrData/search_pattern%', 
         style :{$: 'editable-text.mdl-input', width: '155' }, 
         features: [
           {$: 'field.subscribe', 
@@ -190,8 +190,7 @@ jb.component('studio.select-profile', {
               {$: 'button', 
                 title :{$: 'highlight', 
                   base: '%%', 
-                  highlight: '%$itemlistCntr/filter_data/search%', 
-                  cssClass: 'highlight'
+                  highlight: '%$itemlistCntrData/search_pattern%', 
                 }, 
                 action: [{$: 'close-containing-popup' }, { $call: 'onSelect' }], 
                 features :{$: 'css', css: '{ text-align: left; width: 250px }' }

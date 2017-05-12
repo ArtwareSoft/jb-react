@@ -4,7 +4,7 @@ var ui = jb.ui;
 
 ui.ctrl = function(context,options) {
 	var ctx = context.setVars({ $model: context.params });
-	var styleOptions = defaultStyle(ctx);
+	var styleOptions = defaultStyle(ctx) || {};
 	if (styleOptions.jbExtend)  {// style by control
 		styleOptions.ctxForPick = ctx;
 		return styleOptions.jbExtend(options).applyFeatures(ctx);
@@ -63,6 +63,7 @@ class JbComponent {
 			    } catch(e) { jb.logException(e,'') }
 			}
 			render(props,state) {
+				if (!jbComp.template) return '';
 				var vdom = jbComp.template(this,state,ui.h);
 				jbComp.modifierFuncs.forEach(modifier=> vdom = modifier(vdom,this,state) || vdom);
 				return vdom;
@@ -253,6 +254,7 @@ ui.renderWidget = function(profile,elem) {
 			}
 		}
 		render(pros,state) {
+			if (!jb.comps[state.profile.$]) return '';
 			return ui.h(new jb.jbCtx().run(state.profile).reactComp())
 		}
 	}

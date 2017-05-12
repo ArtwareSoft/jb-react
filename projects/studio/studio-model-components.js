@@ -100,15 +100,21 @@ jb.component('studio.has-param', {
 })
 
 jb.component('studio.non-control-children', {
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => 
-		st.nonControlChildren(path)
+	params: [ 
+		{id: 'path', as: 'string' },
+		{id: 'includeFeatures', as: 'boolean' },
+	],
+	impl: (ctx,path,includeFeatures) => 
+		st.nonControlChildren(path,includeFeatures)
 })
 
 jb.component('studio.array-children', {
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => 
-		st.arrayChildren(path)
+	params: [ 
+		{id: 'path', as: 'string' },
+		{id: 'noExtraElem', as: 'boolean'}
+	],
+	impl: (ctx,path,noExtraElem) => 
+		st.arrayChildren(path,noExtraElem)
 })
 
 jb.component('studio.comp-name',{

@@ -15,7 +15,7 @@
     "start": "npm run studio",
     "dev": "concurrently \"npm run webpack\" \"npm run studio\" ",
     "webpack": "node node_modules/webpack/bin/webpack.js --watch",
-    "studio": "npm run openStudio & node jbart-studio.js",
+    "studio": "npm run openStudio & node jb-studio-server.js",
     "openStudio": "start http://localhost:8082/projects/ui-tests/tests.html"
   },
   "dependencies": {

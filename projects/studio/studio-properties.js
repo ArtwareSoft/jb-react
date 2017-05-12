@@ -57,22 +57,8 @@ jb.component('studio.properties', {
         remark: 'properties', 
         title :{
           $pipeline: [
-            {$: 'studio.val', path: '%$path%' }, 
             {$: 'count', 
-              items :{
-                $pipeline: [
-                  {$: 'objectProperties' }, 
-                  {$: 'filter', 
-                    filter :{$: 'not-equals', item1: '%%', item2: 'features' }
-                  }, 
-                  {$: 'filter', 
-                    filter :{$: 'not-equals', item1: '%%', item2: '$' }
-                  }, 
-                  {$: 'filter', 
-                    filter :{$: 'not-equals', item1: '%%', item2: 'controls' }
-                  }
-                ]
-              }
+              items :{$: 'studio.non-control-children', path: '%$path%' },
             }, 
             'Properties (%%)'
           ]
@@ -80,25 +66,15 @@ jb.component('studio.properties', {
         style :{$: 'property-sheet.studio-properties' }, 
         controls : [
           {$: 'dynamic-controls', 
-          controlItems :{
-            $pipeline: [
-              {$: 'studio.non-control-children', path: '%$path%' }, 
-              {$: 'filter', 
-                filter :{$: 'not', 
-                  of :{$: 'ends-with', endsWith: '~features', text: '%%' }
-                }
-              }
-            ]
-          }, 
-          genericControl :{$: 'studio.property-field', path: '%$controlItem%' }
+            controlItems :{$: 'studio.non-control-children', path: '%$path%' }, 
+            genericControl :{$: 'studio.property-field', path: '%$controlItem%' }
         }], 
       }, 
       {$: 'group', 
         remark: 'features', 
         title :{
           $pipeline: [
-            {$: 'studio.val', path: '%$path%' }, 
-            {$: 'count', items: '%features%' }, 
+            {$: 'count', items:{$: 'studio.val', path: '%$path%~features' } }, 
             'Features (%%)'
           ]
         }, 
@@ -122,7 +98,7 @@ jb.component('studio.properties-in-tgp',{
     style :{$: 'property-sheet.studio-properties'},
     features :{$: 'group.studio-watch-path', path: '%$path%'},
     controls :{$: 'dynamic-controls', 
-        controlItems :{$: 'studio.non-control-children', path: '%$path%' },
+        controlItems :{$: 'studio.non-control-children', path: '%$path%', includeFeatures: true },
         genericControl :{$: 'studio.property-field', path: '%$controlItem%' } 
     }
   }
@@ -314,7 +290,7 @@ jb.component('studio.property-tgp', {
             style :{$: 'picklist.groups' }, 
             features: [
               {$: 'css', 
-                css: 'select { padding: 0 0; width: 150px; font-size: 12px; height: 23px;}'
+                css: '{ padding: 0 0; width: 150px; font-size: 12px; height: 23px;}'
               }, 
               {$: 'studio.dynamic-options-watch-new-comp'}
             ]
@@ -372,7 +348,7 @@ jb.component('studio.property-custom-style', {
             style :{$: 'picklist.groups' }, 
             features : [
             {$: 'css', 
-              css: 'select { padding: 0 0; width: 150px; font-size: 12px; height: 23px;}'
+              css: '{ padding: 0 0; width: 150px; font-size: 12px; height: 23px;}'
             },
             {$: 'studio.dynamic-options-watch-new-comp'}
          ],
@@ -385,9 +361,6 @@ jb.component('studio.property-tgp-in-array', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'group', 
-    $vars: {
-      tgpCtrl :{$: 'object', expanded: false }
-    }, 
     controls: [
       {$: 'group', 
         style :{$: 'layout.flex', align: 'space-between' }, 
@@ -424,11 +397,11 @@ jb.component('studio.property-tgp-in-array', {
       {$: 'group', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          {$: 'watch-ref', 
-            ref :{$: 'studio.comp-name', path: '%$path%' }
-          }, 
-          {$: 'feature.if', showCondition: '%$expanded%' }, 
-          {$: 'css', css: '{  margin-left: 10px; margin-bottom: 4px;}' }
+          // {$: 'watch-ref', 
+          //   ref :{$: 'studio.comp-name', path: '%$path%' }
+          // }, 
+          {$: 'feature.if', showCondition: '%$expanded%', watch: true }, 
+          {$: 'css', css: '{ margin-left: 10px; margin-bottom: 4px;}' }
         ]
       }
     ], 
@@ -443,16 +416,13 @@ jb.component('studio.property-array', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'group', 
-    $vars: {
-      arrayCtrl :{$: 'object', expanded: true }
-    }, 
     style :{$: 'layout.vertical', spacing: '7' }, 
     controls: [
       {$: 'group', 
         title: 'items', 
         controls: [
           {$: 'itemlist', 
-            items :{$: 'studio.array-children', path: '%$path%' }, 
+            items :{$: 'studio.array-children', path: '%$path%', noExtraElem: true }, 
             controls :{$: 'group', 
               style :{$: 'property-sheet.studio-plain' }, 
               controls :{$: 'studio.property-tgp-in-array', path: '%$arrayItem%' }

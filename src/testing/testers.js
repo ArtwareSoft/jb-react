@@ -95,15 +95,13 @@ jb.component('ui-action.keyboard-event', {
 	}
 })
 
-
-
-jb.component('ui-action.jbModel', {
+jb.component('ui-action.set-text', {
 	type: 'ui-action',
 	params: [
-		{ id: 'selector', as: 'string' },
-		{ id: 'value', as: 'string' },
+		{ id: 'value', as: 'string', essential: true },
+		{ id: 'selector', as: 'string', defaultValue: 'input' },
 	],
-	impl: (ctx,selector,value) => {
+	impl: (ctx,value,selector) => {
 		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=>
 			e._component.jbModel(value))
@@ -122,6 +120,10 @@ jb.component('test.dialog-content', {
 
 var jb_success_counter = 0;
 var jb_fail_counter = 0;
+
+function goto_sublime(id) {
+	$.ajax(`/?op=gotoSource&comp=${id}`)
+}
 
 startTime = startTime || new Date().getTime();
 jb.testers.runTests = function(testType,specificTest,show) {
@@ -144,7 +146,9 @@ jb.testers.runTests = function(testType,specificTest,show) {
 				jb_success_counter++;
 			else
 				jb_fail_counter++;
-			var elem = `<div><a href="/projects/ui-tests/tests.html?test=${res.id}&show" style="color:${res.success ? 'green' : 'red'}">${res.id}</a></div>`;
+			var elem = `<div><a href="/projects/ui-tests/tests.html?test=${res.id}&show" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+			<button class="sublime" onclick="goto_sublime('${res.id}')">src</button>
+			</div>`;
 
 			document.getElementById('success-counter').innerHTML = ', success ' + jb_success_counter;
 			document.getElementById('fail-counter').innerHTML = 'failures ' + jb_fail_counter;

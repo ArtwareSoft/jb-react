@@ -88,7 +88,7 @@ jb.component('var', {
   ],
   impl: (context, name, value) => ({
       extendCtxOnce: (ctx,cmp) => {
-        return ctx.setVars(jb.obj(name, value));
+        return ctx.setVars(jb.obj(name, value()));
       }
   })
 })
@@ -98,9 +98,8 @@ jb.component('inner-resource', {
   params: [
     { id: 'name', as: 'string', essential: true },
     { id: 'value', dynamic: true },
-    { id: 'asRef', as: 'boolean', defaultValue: true },
   ],
-  impl: (context, name, value, asRef) => ({
+  impl: (context, name, value) => ({
       destroyed: cmp => {
         if (jb.resources[cmp.resourceId])
           delete jb.resources[cmp.resourceId];
@@ -111,10 +110,20 @@ jb.component('inner-resource', {
         cmp.resource = jb.resources[cmp.resourceId] = jb.resources[cmp.resourceId] || {};
         cmp.resource[name] = value(ctx.setData(cmp));
         var ref = jb.objectProperty(cmp.resource,name,'ref',true);
-        return ctx.setVars(jb.obj(name, asRef ? ref : cmp.resource[name]));
+        return ctx.setVars(jb.obj(name, ref));
       }
   })
 })
+
+jb.component('features', {
+  type: 'feature',
+  params: [
+    { id: 'features', type: 'feature[]', flattenArray: true, dynamic: true },
+  ],
+  impl: (ctx,features) => 
+    features()
+})
+
 
 jb.component('feature.init', {
   type: 'feature',
@@ -134,6 +143,26 @@ jb.component('feature.after-load', {
   impl: function(context) { return  { 
     afterViewInit: cmp => jb.delay(1).then(() => context.params.action(cmp.ctx))
   }}
+})
+
+jb.component('feature.if', {
+  type: 'feature',
+  params: [
+    { id: 'showCondition', as: 'ref', essential: true, dynamic: true },
+    { id: 'watch', as: 'boolean' },
+    { id: 'strongRefresh', as: 'boolean' },
+  ],
+  impl: (context, condition,watch,strongRefresh) => ({
+    init: cmp => {
+        if (watch && strongRefresh && cmp.initWatchByRef)
+              cmp.initWatchByRef(condition())
+        else if (watch)
+          jb.ui.refObservable(condition(),cmp).subscribe(e=>
+                cmp.forceUpdate())
+    },
+    templateModifier: (vdom,cmp,state) => 
+        jb.toboolean(condition()) ? vdom : ' ' // can not be empty string
+  })
 })
 
 jb.component('hidden', {

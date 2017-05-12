@@ -17,7 +17,7 @@ var settings = JSON.parse(fs.readFileSync('jbart.json'));
 
 // define projects not under /jbart/projects directory
 var external_projects = {
-  mega: '../dropbox'
+//  mega: '../dropbox'
 }
 
 // Http server
@@ -68,6 +68,7 @@ function serveFile(req,res,path) {
     var full_path = settings.http_dir + external_projects[project[1]] + '/' + project[1] + project[2];
   else
     var full_path = settings.http_dir + path;
+  full_path = full_path.replace(/!st!/,'')
 
   var extension = path.split('.').pop();
 

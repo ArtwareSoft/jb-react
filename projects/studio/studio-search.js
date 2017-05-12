@@ -11,7 +11,7 @@ jb.component('studio.search-component', {
         title: 'Search', 
         searchIn: item => 
           item.id, 
-        databind: '%$itemlistCntr/filter_data/search%', 
+        databind: '%$itemlistCntrData/search_pattern%', 
         style :{$: 'editable-text.mdl-input', width: '200' }, 
         features: [
           {$: 'editable-text.helper-popup', 
@@ -60,8 +60,7 @@ jb.component('studio.search-list', {
         {$: 'label', 
           title :{$: 'highlight', 
             base: '%id% (%refCount%)', 
-            highlight: '%$itemlistCntr/filter_data/search%', 
-            cssClass: 'highlight'
+            highlight: '%$itemlistCntrData/search_pattern%', 
           }, 
           style :{$: 'custom-style', 
             template: (cmp,state,h) => 
@@ -86,7 +85,7 @@ jb.component('studio.search-list', {
         onEnter :{$: 'studio.search-component-selected', path: '%id%' }, 
         autoFocus: false
       }, 
-      {$: 'feature.if', showCondition: '%$itemlistCntr/filter_data/search%' }
+      {$: 'feature.if', showCondition: '%$itemlistCntrData/search_pattern%' }
     ]
   }
 })
@@ -97,7 +96,7 @@ jb.component('studio.search-component-selected',{
     {id: 'path', as: 'string'}
   ],
   impl: {$runActions: [
-    {$: 'write-value', to: '%$itemlistCntr/filter_data/search%', value: '' },
+    {$: 'write-value', to: '%$itemlistCntrData/search_pattern%', value: '' },
     {$: 'studio.goto-path', path: '%$path%' },
     {$: 'close-containing-popup' }
   ]}

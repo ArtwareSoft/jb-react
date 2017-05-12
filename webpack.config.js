@@ -1,27 +1,22 @@
 var webpack = require('webpack');
 var path = require('path');
+var fs = require('fs');
+require('./src/loader/jb-loader.js');
 
 var JBART_DIR = 'c:\\jb-react\\';
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
-var jb = {
-  entry: JBART_DIR + 'src/core/jb-core.js',
-  output: {
-    path: JBART_DIR + 'dist',
-    filename: 'jb.js',
-    library: 'jb',
-    libraryTarget: 'var'
-  },
-  resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
-};
 
-var dataTests = {
-  entry: JBART_DIR + 'projects/ui-tests/data-tests.js',
-  output: { path: JBART_DIR + 'projects/ui-tests',  filename: 'data-tests-bnd.js'  },
-  resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
-  externals: { "./jb-core.js": "jb" },
-  module : { loaders : [ { test : /\.jsx?/, loader : 'babel-loader' } ] }
-};
+function concatFiles(files,target) {
+  fs.unlink(JBART_DIR +target);
+  files.map(x=>JBART_DIR +x).forEach(f=>
+    fs.appendFile(JBART_DIR +target,fs.readFileSync(f) + ';\n\n'));
+}
+
+var studioFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree']]).filter(x=>!x.match(/.css$/))
+    .concat(resources.studio.map(x=>'projects/studio/studio-' + x + '.js'));
+
+concatFiles(studioFiles,'dist/studio-all.js');
 
 var jbRx = {
   entry: JBART_DIR + 'src/ui/jb-rx.js',
@@ -61,4 +56,4 @@ var jbRxMin = {
   plugins: [ new UglifyJSPlugin() ],
 };
 
-module.exports = [jb,jbPreact,jbImmutable,jbRx];
+module.exports = [jbPreact,jbImmutable,jbRx];

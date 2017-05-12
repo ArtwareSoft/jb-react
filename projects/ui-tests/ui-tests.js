@@ -134,7 +134,7 @@ jb.component('ui-test.two-way-binding', {
         { $: 'label' , title: '%$person/name%' } ,
       ]
   },
-  action :{$: 'ui-action.jbModel', selector: '#inp', value: 'hello'},
+  action :{$: 'ui-action.set-text', selector: '#inp', value: 'hello'},
   cleanUp :{$: 'write-value', to: '%$person/name%', value: 'Homer Simpson'},
   expectedResult :{$: 'contains', text: ['hello','hello'] },
 },
@@ -389,11 +389,16 @@ jb.component('ui-test.itemlist-container-search', {
                 {$: 'itemlist-container.filter' }, 
               ]
             }, 
-            controls :{$: 'label', title: '%$item.name%' }, 
+            controls :{$: 'label', title1: '%name%',
+                title :{$: 'highlight', 
+                  base: '%name%', 
+                  highlight: '%$itemlistCntrData/search_pattern%', 
+                }, 
+            }, 
             features: [
-                { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+                { $: 'itemlist.selection', autoSelectFirst: true }, 
                 { $: 'itemlist.keyboard-selection', autoFocus: true },
-                { $: 'watch-ref', ref: '%$itemlistCntr/filter_data/search%'}
+                { $: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', strongRefresh: true}
             ],
           },
         ], 
@@ -401,7 +406,12 @@ jb.component('ui-test.itemlist-container-search', {
           {$: 'group.itemlist-container' }, 
         ]
       },
-      expectedResult: true
+      action :{$: 'ui-action.set-text', value: 'ho', selector: '.mdl-textfield'},
+      expectedResult :{$and: [ 
+        {$: 'contains', text: ['Ho','mer'] },
+        {$: 'not-contains', text: 'Marge' },
+        {$: 'not-contains', text: 'Homer' }, // highlight selection - 'Homer' should be separated to Ho-Mer
+      ]},
   }
 })
 

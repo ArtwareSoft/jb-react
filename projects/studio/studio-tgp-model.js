@@ -63,6 +63,7 @@ st.jbEditorTree = class {
 	}
 	children(path) {
 		var val = st.valOfPath(path);
+		if (!val) return [];
 		return (st.arrayChildren(path) || [])
 				.concat(this.sugarChildren(path,val) || [])
 				.concat(this.innerProfiles(path,val) || []);
@@ -99,9 +100,10 @@ Object.assign(st,{
 		st.paramsOfPath(path)
 			.filter(e=>st.valOfPath(e.path) == null && !e.param.essential)
 			.map(p=> path + '~' + p.id),
-	nonControlChildren: path =>
+	nonControlChildren: (path,includeFeatures) =>
 		st.paramsOfPath(path).filter(p=>
 				(p.type||'').indexOf('control')==-1)
+			.filter(p=>includeFeatures || p.id != 'features')
 			.map(p=>path + '~' + p.id),
 
 	arrayChildren: (path,noExtraElem) => {

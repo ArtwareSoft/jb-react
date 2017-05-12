@@ -1,5 +1,3 @@
-jb.type('image.style');
-
 jb.component('image', {
 	type: 'control', category: 'control:50',
 	params: [

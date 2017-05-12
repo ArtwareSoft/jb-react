@@ -72,7 +72,7 @@ jb.component('itemlist.divider', {
 jb.component('itemlist.selection', {
   type: 'feature',
   params: [
-    { id: 'databind', as: 'ref', defaultValue :{$: 'itemlist-container.selected' } },
+    { id: 'databind', as: 'ref', defaultValue: '%itemlistCntrData/selected%' },
     { id: 'onSelection', type: 'action', dynamic: true },
     { id: 'onDoubleClick', type: 'action', dynamic: true },
     { id: 'autoSelectFirst', type: 'boolean'},

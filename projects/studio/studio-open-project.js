@@ -7,51 +7,54 @@ jb.component('studio.open-project', {
   }
 })
 
+jb.component('studio.goto-project', {
+  type: 'action', 
+  impl :{$: 'runActions', 
+    actions: [
+      {$: 'goto-url', 
+        url: '/project/studio/%%', 
+        target: 'new tab'
+      }, 
+      {$: 'close-containing-popup' }
+    ]
+  }
+})
 
 jb.component('studio.choose-project', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'itemlist-with-find', 
     controls: [
-      {$: 'editable-text', 
-        title: 'search', 
-        databind: '%$studio/project_pattern%', 
-        style :{$: 'editable-text.mdl-input', width: '260' }
-      }, 
+      {$: 'itemlist-container.search', features: {$: 'css.width', width: '250'} },
       {$: 'itemlist', 
         items :{
           $pipeline: [
-            '%$projects%', 
-            {$: 'search-filter', pattern: '%$studio/project_pattern%' }
+            '%projects%', 
+            {$: 'itemlist-container.filter' }, 
           ]
         }, 
+        features: [
+            { $: 'itemlist.selection' }, 
+            { $: 'itemlist.keyboard-selection', autoFocus: true, onEnter :{$: 'studio.goto-project' } },
+            { $: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', strongRefresh: true}
+        ],
         controls :{$: 'button', 
-          title: '%$project%', 
-          action :{$: 'runActions', 
-            actions :{$: 'runActions', 
-              actions: [
-                {$: 'goto-url', 
-                  url: '/project/studio/%$project%', 
-                  target: 'new tab'
-                }, 
-                {$: 'close-containing-popup' }
-              ]
-            }
+          title :{$: 'highlight', 
+            base: '%%', 
+            highlight: '%$itemlistCntrData/search_pattern%', 
           }, 
+          action :{$: 'studio.goto-project' }, 
           style :{$: 'button.mdl-flat-ripple' }, 
-          features :{$: 'css', css: '!button { text-align: left; width: 250px }' }
+          features :{$: 'css', css: '{ text-align: left; width: 250px }' }
         }, 
-        style :{$: 'itemlist.ul-li' }, 
-        itemVariable: 'project'
+//        style :{$: 'itemlist.ul-li' }, 
+//        itemVariable: 'project'
       }
     ], 
     features: [
-      {$: 'group.wait', 
-        for :{$: 'http.get', url: '/?op=projects', json: 'true' }, 
-        resource: 'projects', 
-        mapToResource: '%projects%'
-      }, 
-      {$: 'css.padding', top: '15', left: '15' }
+      {$: 'group.wait', for :{$: 'http.get', url: '/?op=projects', json: 'true' }},
+      {$: 'css.padding', top: '15', left: '15' },
+      {$: 'group.itemlist-container' }, 
     ]
   }
 })

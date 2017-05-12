@@ -1,4 +1,4 @@
-jb = (function() {
+var jb = (function() {
 function jb_run(context,parentParam,settings) {
   try {
     var profile = context.profile;
@@ -7,7 +7,7 @@ function jb_run(context,parentParam,settings) {
         return context.probe.record(context,parentParam)
     }
     if (profile === null)
-      return tojstype(profile,parentParam && parentParam.as,context);
+      return castToParam(profile,parentParam);
     if (profile.$debugger == 0) debugger;
     if (profile.$asIs) return profile.$asIs;
     if (parentParam && (parentParam.type||'').indexOf('[]') > -1 && ! parentParam.as) // fix to array value. e.g. single feature not in array
@@ -20,11 +20,11 @@ function jb_run(context,parentParam,settings) {
     context.parentParam = parentParam;
     switch (run.type) {
       case 'booleanExp': return bool_expression(profile, context);
-      case 'expression': return tojstype(expression(profile, context,parentParam), jstype, context);
+      case 'expression': return castToParam(expression(profile, context,parentParam), parentParam);
       case 'asIs': return profile;
       case 'object': return entriesToObject(entries(profile).map(e=>[e[0],context.runInner(e[1],null,e[0])]));
-      case 'function': return tojstype(profile(context),jstype, context);
-      case 'null': return tojstype(null,jstype, context);
+      case 'function': return castToParam(profile(context),parentParam);
+      case 'null': return castToParam(null,parentParam);
       case 'ignore': return context.data;
       case 'list': { return profile.map((inner,i) => 
             context.runInner(inner,null,i)) };
@@ -56,7 +56,7 @@ function jb_run(context,parentParam,settings) {
             out = run.impl.apply(null,args);
           else
             return args.then(args=>
-              tojstype(run.impl.apply(null,args),jstype, context))
+              castToParam(run.impl.apply(null,args),parentParam))
         }
         else {
           run.ctx.callerPath = context.path;
@@ -68,7 +68,7 @@ function jb_run(context,parentParam,settings) {
 
         if (profile.$trace) console.log('trace: ' + context.path, compName(profile),context,out,run);
           
-        return tojstype(out,jstype, context);
+        return castToParam(out,parentParam);
     }
   } catch (e) {
     if (context.vars.$throw) throw e;
@@ -211,7 +211,7 @@ function calcVar(context,varname) {
 }
 
 function expression(exp, context, parentParam) {
-  var jstype = parentParam && parentParam.as;
+  var jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   exp = '' + exp;
   if (jstype == 'boolean') return bool_expression(exp, context);
   if (exp.indexOf('$debugger:') == 0) {
@@ -325,7 +325,9 @@ function bool_expression(exp, context) {
     return !bool_expression(exp.substring(1), context);
   var parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
   if (!parts) {
-    var asString = expression(exp, context, {as: 'string'});
+    var val = jb.val(expression(exp, context));
+    if (typeof val == 'boolean') return val;
+    var asString = tostring(val);
     return !!asString && asString != 'false';
   }
   if (parts.length != 4)
@@ -344,8 +346,8 @@ function bool_expression(exp, context) {
     if (op == '$=') return p1.indexOf(p2, p1.length - p2.length) !== -1;
   }
 
-  var p1 = tojstype(expression(parts[1].trim(), context), {as:'number'});
-  var p2 = tojstype(expression(parts[3].trim(), context), {as:'number'});
+  var p1 = tonumber(expression(parts[1].trim(), context));
+  var p2 = tonumber(expression(parts[3].trim(), context));
 
   if (op == '>') return p1 > p2;
   if (op == '<') return p1 < p2;
@@ -357,10 +359,14 @@ function bool_expression(exp, context) {
   }
 }
 
-function tojstype(value,jstype,context) {
+function castToParam(value,param) {
+  return tojstype(value,param ? (param.ref ? 'ref' : param.as) : null)
+}
+
+function tojstype(value,jstype) {
   if (!jstype) return value;
   if (typeof jstypes[jstype] != 'function') debugger;
-  return jstypes[jstype](value,context);
+  return jstypes[jstype](value);
 }
 
 var tostring = value => tojstype(value,'string');

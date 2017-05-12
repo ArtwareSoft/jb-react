@@ -92,6 +92,7 @@ class ImmutableWithPath {
       var path = ref.$jb_path, new_ref = {};
       if (!path)
         debugger;
+      if (path.length == 1) return;
       if (this.resourceVersions[path[0]] == ref.$jb_resourceV) return;
       if (ref.$jb_parentOfPrim) {
         var parent = this.asRef(ref.$jb_parentOfPrim);
@@ -125,17 +126,17 @@ class ImmutableWithPath {
     }
   }
   refOfPath(path,silent) {
-      var val = path.reduce((o,p)=>o[p],this.resources()),parent = null;
-      if (typeof val != 'object') 
-        parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
       try {
-        return {
-          $jb_path: path,
-          $jb_resourceV: this.resourceVersions[path[0]],
-          $jb_cache: val,
-          $jb_parentOfPrim: parent,
-          handler: this,
-        }
+        var val = path.reduce((o,p)=>o[p],this.resources()),parent = null;
+        if (typeof val != 'object') 
+          parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
+          return {
+            $jb_path: path,
+            $jb_resourceV: this.resourceVersions[path[0]],
+            $jb_cache: val,
+            $jb_parentOfPrim: parent,
+            handler: this,
+          }
       } catch (e) {
         if (!silent)
           jb.logException(e,'ref from path ' + path);

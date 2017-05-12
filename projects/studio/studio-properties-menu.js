@@ -13,44 +13,11 @@ jb.component('studio.property-toolbar', {
   params: [
     { id: 'path', as: 'string' }
   ], 
-  impl :{$: 'group', 
-        style :{$: 'layout.horizontal' }, 
-        controls : [
-        {$: 'button', 
-          title: 'Customize style', 
-          style :{$: 'button.mdl-icon-12', icon: 'build' },
-          action : [ {$: 'studio.make-local', path: '%$path%' }, {$: 'studio.open-style-editor', path: '%$path%' } ],
-          features :{$: 'hidden', 
-            showCondition :{
-              $and: [
-                {$: 'ends-with', endsWith: '~style', text: '%$path%' }, 
-                {$: 'not-equals', 
-                  item1 :{$: 'studio.comp-name', path: '%$path%' }, 
-                  item2: 'customStyle'
-                }
-              ]
-            }
-          }
-        }, 
-          {$: 'button', 
-            title: 'style editor', 
-            action :{$: 'studio.open-style-editor', path: '%$path%' }, 
-            style :{$: 'button.mdl-icon-12', icon: 'build' },
-            features :{$: 'hidden', 
-              showCondition :{$: 'equals', 
-                  item1 :{$: 'studio.comp-name', path: '%$path%' }, 
-                  item2: 'customStyle'
-                }
-            }
-          },
-
-          {$: 'button', 
+  impl :{$: 'button', 
             title: 'more...', 
             style :{$: 'button.mdl-icon-12', icon: 'more_vert' }, 
             action :{$: 'studio.open-property-menu', path: '%$path%' }
-          }
-        ]
-    }
+      }
 }) 
 
 jb.component('studio.open-property-menu', {

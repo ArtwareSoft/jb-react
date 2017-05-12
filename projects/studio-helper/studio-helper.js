@@ -73,7 +73,7 @@ jb.component('studio-helper.studio-properties', {
   impl :{$: 'group', 
     $vars: { circuit: 'studio-helper-dummy.simple-label' }, 
     title: '', 
-    controls :{$: 'studio.properties', path: 'studio-helper-dummy.simple-label' }
+    controls :{$: 'studio.properties', path: 'studio-helper-dummy.simple-label~impl' }
   }
 })
 
@@ -82,6 +82,7 @@ jb.component('studio-helper-dummy.simple-label', {
   impl :{$: 'label', 
     $vars : { check: 2},
     title: 'hello',
+    style :{$: 'label.h1'},
     features : [
       {$:'css', css:'{ color: red }'},
       {$: 'css.padding', top: '20', left: '160' }
@@ -239,7 +240,7 @@ jb.component('studio-helper.search', {
           {$: 'itemlist-container.search', 
             title: 'Search', 
             searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
-            databind: '%$itemlistCntr/filter_data/search%', 
+            databind: '%$itemlistCntrData/search_pattern%', 
             style :{$: 'editable-text.mdl-input', width: '270' }, 
             features :{$: 'css.margin', top: '-10' }
           }, 

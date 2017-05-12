@@ -37,6 +37,7 @@ var resources = {
         'src/ui/picklist.js',
         'src/ui/theme.js',
         'src/ui/icon.js',
+        'src/ui/window.js',
 
         'src/ui/styles/mdl-styles.js',
         'src/ui/styles/button-styles.js',
@@ -82,21 +83,35 @@ var resources = {
       studio: [
         'utils','path','main', 'pretty-print', 
         'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'tgp-model', 'model-components',
-        'tree','popups','properties','pick','properties-menu','save','open-project','new-control',
+        'tree','popups','properties','pick','properties-menu','save','open-project', //'new-control',
         'suggestions','undo','edit-source','jb-editor','jb-editor-styles','probe','testers'
       ],
       'studio-tests': [
         'path','model','tree','suggestion'
+      ],
+      'css-files': [
+        'node_modules/material-design-lite/material.min.css',
+        'node_modules/material-design-lite/dist/material.indigo-pink.min.css',
+
+        'css/font.css',
+        'css/styles.css',
       ]
 };
 
-function jb_dynamicLoad(modules) {
+function jb_dynamicLoad(modules,prefix) {
+  prefix = prefix || '';
   modules.split(',').forEach(m=>{
     (resources[m] || []).forEach(file=>{
       if (m == 'studio')
         file = 'projects/studio/studio-' + file + '.js';
       if (m == 'studio-tests')
         file = 'projects/studio-helper/studio-' + file + '-tests.js';
+
+      if (prefix) { // avoid muliple source files with the same name in the debugger
+        var file_path = file.split('/');
+        file_path.push(prefix+file_path.pop());
+        file = file_path.join('/');
+      }
 
       var url = (window.jbLoaderRelativePath ? '' : '/') + file;
       if (file.match(/\.js$/))
@@ -107,7 +122,9 @@ function jb_dynamicLoad(modules) {
   })
 }
 
-if (document.currentScript && document.currentScript.getAttribute('modules'))
-    jb_dynamicLoad(document.currentScript.getAttribute('modules'));
+if (typeof window != 'undefined')
+  if (document.currentScript && document.currentScript.getAttribute('modules'))
+    jb_dynamicLoad(document.currentScript.getAttribute('modules'),document.currentScript.getAttribute('prefix'));
 
-
+if (typeof global != 'undefined')
+ global.resources = resources;

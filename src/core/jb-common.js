@@ -264,7 +264,7 @@ jb.component('and', {
 	impl: function(context) {
 		var items = context.profile.$and || context.profile.items || [];
 		for(var i=0;i<items.length;i++) {
-			if (!context.run({ profile: items[i], path: i},{ type: 'boolean' }))
+			if (!context.runInner(items[i], { type: 'boolean' }, i))
 				return false;
 		}
 		return true;
@@ -279,7 +279,7 @@ jb.component('or', {
 	impl: function(context) {
 		var items = context.profile.$or || context.profile.items || [];
 		for(var i=0;i<items.length;i++) {
-			if (context.run({ profile: items[i], path: i}),{ type: 'boolean' })
+			if (context.runInner(items[i],{ type: 'boolean' },i))
 				return true;
 		}
 		return false;
@@ -671,7 +671,7 @@ jb.component('extract-suffix',{
 	}
 });
 
-jb.component('http-get', {
+jb.component('http.get', {
 	params: [
 		{ id: 'url', as: 'string' },
 		{ id: 'json', as: 'boolean' }
@@ -684,4 +684,5 @@ jb.component('http-get', {
 			  .catch(e =>
 			  		jb.logException(e))
 	}
-})
+});
+

@@ -37,14 +37,12 @@ Object.assign(st,{
 	path.split('~').slice(0,-1).join('~'),
   valOfPath: (path,silent) =>
   	st.val(st.refOfPath(path,silent)),
+  compNameOfPath: (path,silent) => 
+  	jb.compName(st.valOfPath(path + (path.indexOf('~') == -1 ? '~impl' : ''),silent)),
   compOfPath: (path,silent) => 
-  	st.getComp(jb.compName(st.valOfPath(path,silent))),
+  	st.getComp(st.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) =>
   	jb.compParams(st.compOfPath(path,silent)),
-  compNameOfPath: (path) => {
-  	var comp = st.valOfPath(path);
-	return comp && jb.compName(comp.impl)
-  },
   writeValueOfPath: (path,value) =>
 	st.writeValue(st.refOfPath(path),value),
   getComp: id =>

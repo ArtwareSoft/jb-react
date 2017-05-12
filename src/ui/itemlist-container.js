@@ -1,15 +1,11 @@
 (function() {
 
-createItemlistCntr = (params,cmp) => ({
+createItemlistCntr = (params) => ({
   id: params.id, 
   defaultItem: params.defaultItem, 
   selected: null, 
-  cmp: cmp,
   filter_data: {},
   filters: [],
-  selectedRef: function() {
-      return this._selectedRef = this._selectedRef || jb.objectProperty(this,'selected','ref',true);
-  },
   init: function(items) {
       return this.items = items
   },
@@ -45,17 +41,17 @@ jb.component('group.itemlist-container', {
     { id: 'id', as: 'string' },
     { id: 'defaultItem', as: 'single' },
   ],
-  impl: {$: 'inner-resource', name: 'itemlistCntr', asRef: false,
-    value: ctx => 
-      createItemlistCntr(ctx.componentContext.params, ctx.data)
-  }
+  impl :{$list : [
+    {$: 'inner-resource', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '' }},
+    {$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx.componentContext.params) }
+  ]}
 })
 
 jb.component('group.itemlist-selected', {
   type: 'feature',   category: 'itemlist:20,group:0',
-  impl: { $list : [ 	
-  			{$: 'group.data', data : {$: 'itemlist-container.selected'}},
-  			{$: 'hidden', showCondition: {$notEmpty: {$: 'itemlist-container.selected' } } }
+  impl :{ $list : [ 	
+  			{$: 'group.data', data : '%itemlistCntrData/selected%'},
+  			{$: 'hidden', showCondition: {$notEmpty: '%itemlistCntrData/selected%' } }
   		]}
 })
 
@@ -64,32 +60,6 @@ jb.component('itemlist-container.add', {
   impl: ctx => 
   		ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.add()
 })
-
-jb.component('itemlist-container.delete', {
-  type: 'action',
-  params: [
-    { id: 'item', as: 'single', defaultValue: '%$itemlistCntr/selected%' },
-  ],
-  impl: ctx => 
-  		ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.delete(ctx.params.item)
-})
-
-jb.component('itemlist-container.select', {
-  type: 'action',
-  params: [
-    { id: 'item', as: 'single', defaultValue: '%%' },
-  ],
-  impl: ctx =>
-  		ctx.vars.itemlistCntr && 
-        jb.writeValue(ctx.vars.itemlistCntr.selectedRef(),ctx.params.item)
-})
-
-jb.component('itemlist-container.selected', {
-  type: 'data',
-  impl: ctx => 
-    ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.selectedRef()
-})
-
 
 jb.component('itemlist-container.filter', {
   type: 'aggregator',
@@ -109,7 +79,7 @@ jb.component('itemlist-container.search', {
   params: [
     { id: 'title', as: 'string' , dynamic: true, defaultValue: 'Search' },
     { id: 'searchIn', as: 'string' , dynamic: true, defaultValue: {$: 'itemlist-container.search-in-all-properties'} },
-    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntr/filter_data/search%'},
+    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/search_pattern%'},
     { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-search' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
