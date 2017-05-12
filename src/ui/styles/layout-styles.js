@@ -5,9 +5,9 @@ jb.component('layout.vertical', {
   ],
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl,h(ctrl)))),
-    css: `>.group-item { margin-bottom: %$spacing%px; display: block }
-          >.group-item:last-child { margin-bottom:0 }`,
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl, h('div', {} ,h(ctrl))))),
+    css: `>div { margin-bottom: %$spacing%px; display: block }
+          >div:last-child { margin-bottom:0 }`,
     features :{$: 'group.init-group'}
   }
 })

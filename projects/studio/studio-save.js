@@ -45,7 +45,7 @@ jb.component('studio.save-components', {
 			})
 			.subscribe(entry=>{
 				var result = entry.res;
-				st.message((result.type || '') + ': ' + (result.desc || '') + (result.st.message || ''), result.type != 'success');
+				st.message((result.type || '') + ': ' + (result.desc || '') + (result.message || ''), result.type != 'success');
 				if (result.type == 'success')
 					delete st.modified[entry.comp];
 			})

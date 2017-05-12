@@ -235,9 +235,9 @@ jb.component('group.studio-properties-accordion', {
 jb.component('label.studio-message', {
   type: 'label.style', 
   impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('span',{}, state.title),
+    template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.title),
     css: `{ position: absolute;
-      color: white;  padding: 20px;  background: #327DC8;
+      color: white;  padding: 10px;  background: #327DC8;
       width: 1000px;
       margin-top: -100px;
       }`,

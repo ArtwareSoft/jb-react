@@ -17,7 +17,7 @@ jb.component('studio.all', {
           }, 
           {$: 'group', 
             title: 'title and menu', 
-            style :{$: 'layout.vertical', spacing: '16' }, 
+            style :{$: 'layout.vertical', spacing: '17' }, 
             controls: [
               {$: 'label', 
                 title: 'message', 
@@ -31,7 +31,7 @@ jb.component('studio.all', {
                 }, 
                 style :{$: 'label.span' }, 
                 features :{$: 'css', 
-                  css: '{ font: 20px Arial; margin-left: 6px; margin-top: 20px}'
+                  css: '{ font: 20px Arial; margin-left: 6px; }'
                 }
               }, 
               {$: 'group', 
@@ -47,10 +47,11 @@ jb.component('studio.all', {
                     features :{$: 'css.margin', top: '-10' }
                   }
                 ], 
-                features :{$: 'css.width', width: '1040' }
+                features : [ {$: 'css.width', width: '1040' }, {$: 'css.height', height: '30' }
+                ]
               }
             ], 
-            features :{$: 'css', css: '{ padding-left: 18px; width: 100% }' }
+            features :{$: 'css', css: '{ padding-left: 18px; width: 100%; }' }
           }
         ], 
         features :{$: 'css', css: '{ height: 90px; border-bottom: 1px #d9d9d9 solid}' }
