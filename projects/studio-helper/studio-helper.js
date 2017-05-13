@@ -391,3 +391,290 @@ jb.component('studio-helper.sample-control', {
     ]
   }
 })
+
+jb.component('studio.select-profile', {
+  type: 'control', 
+  params: [
+    { id: 'onSelect', type: 'action', dynamic: true }, 
+    { id: 'type', as: 'string' }, 
+    { id: 'path', as: 'string' }
+  ], 
+  impl :{$: 'group', 
+    title: 'itemlist-with-find', 
+    style :{$: 'layout.vertical', spacing: 3 }, 
+    controls: [
+      {$: 'itemlist-container.search', 
+        title: 'Search', 
+        searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
+        databind: '%$itemlistCntrData/search_pattern%', 
+        style :{$: 'editable-text.mdl-input', width: '155' }, 
+        features: [
+          {$: 'field.subscribe', 
+            action :{$: 'write-value', to: '%$SelectedCategory%', value: 'all' }
+          }, 
+          {$: 'editable-text.x-button' }
+        ]
+      }, 
+      {$: 'group', 
+        title: 'categories and items', 
+        style :{$: 'layout.horizontal', spacing: 3 }, 
+        controls: [
+          {$: 'picklist', 
+            title: '', 
+            databind: '%$SelectedCategory%', 
+            options :{$: 'picklist.sorted-options', 
+              options :{$: 'picklist.coded-options', 
+                options :{$: 'studio.categories-of-type', type: '%$type%' }, 
+                code: '%name%', 
+                text: '%name%'
+              }, 
+              marks :{$: 'studio.categories-marks', type: '%$type%', path: '%$path%' }
+            }, 
+            style :{$: 'style-by-control', 
+              control :{$: 'group', 
+                controls :{$: 'itemlist', 
+                  items: '%$picklistModel/options%', 
+                  controls :{$: 'label', 
+                    title: '%text%', 
+                    style :{$: 'label.mdl-button' }, 
+                    features: [
+                      {$: 'css.width', width: '120' }, 
+                      {$: 'css', css: '{text-align: left}' }
+                    ]
+                  }, 
+                  style :{$: 'itemlist.ul-li' }, 
+                  watchItems: false, 
+                  features: [
+                    {$: 'itemlist.selection', 
+                      cssForActive: 'background: white', 
+                      onSelection :{$: 'write-value', 
+                        to: '%$picklistModel/databind%', 
+                        value: '%code%'
+                      }, 
+                      autoSelectFirst: 'true', 
+                      cssForSelected: 'border-left: 2px #ccc solid; background: #eee'
+                    }
+                  ]
+                }, 
+                features :{$: 'group.itemlist-container' }
+              }, 
+              modelVar: 'picklistModel'
+            }
+          }, 
+          {$: 'itemlist', 
+            title: 'items', 
+            items :{
+              $pipeline: [
+                '%$Categories%', 
+                {$: 'filter', 
+                  filter :{$: 'equals', item1: '%name%', item2: '%$SelectedCategory%' }
+                }, 
+                '%pts%', 
+                {$: 'itemlist-container.filter' }
+              ]
+            }, 
+            controls: [
+              {$: 'button', 
+                title :{$: 'highlight', 
+                  base: '%%', 
+                  highlight: '%$itemlistCntrData/search_pattern%'
+                }, 
+                action: [{$: 'close-containing-popup' }, { $call: 'onSelect' }], 
+                features :{$: 'css', css: '{ text-align: left; width: 250px }' }
+              }
+            ], 
+            itemVariable: 'item', 
+            features: [
+              {$: 'css.height', height: '300', overflow: 'auto', minMax: '' }, 
+              {$: 'itemlist.selection', 
+                onDoubleClick :{$: 'runActions', 
+                  actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
+                }, 
+                autoSelectFirst: true
+              }, 
+              {$: 'itemlist.keyboard-selection', 
+                onEnter :{$: 'runActions', 
+                  actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
+                }
+              }, 
+              {$: 'watch-ref', ref: '%$SelectedCategory%', strongRefresh: true }
+            ]
+          }
+        ]
+      }
+    ], 
+    features: [
+      {$: 'css.margin', top: '10', left: '20' }, 
+      {$: 'var', 
+        name: 'Categories', 
+        value :{$: 'studio.categories-of-type', type: '%$type%' }
+      }, 
+      {$: 'inner-resource', 
+        name: 'SelectedCategory', 
+        value: '%$Categories[0]%'
+      }, 
+      {$: 'inner-resource', name: 'SearchPattern', value: '' }, 
+      {$: 'group.itemlist-container' }
+    ]
+  }
+})
+
+jb.component('studio.select-profile', {
+  type: 'control', 
+  params: [
+    { id: 'onSelect', type: 'action', dynamic: true }, 
+    { id: 'type', as: 'string' }, 
+    { id: 'path', as: 'string' }
+  ], 
+  impl :{$: 'group', 
+    title: 'itemlist-with-find', 
+    style :{$: 'layout.vertical', spacing: 3 }, 
+    controls :[
+      {$: 'itemlist-container.search', 
+        title: 'Search', 
+        searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
+        databind: '%$itemlistCntrData/search_pattern%', 
+        style :{$: 'editable-text.mdl-input', width: '155' }, 
+        features: [
+          {$: 'field.subscribe', 
+            action :{$: 'write-value', to: '%$SelectedCategory%', value: 'all' }
+          }, 
+          {$: 'editable-text.x-button' }
+        ]
+      }, 
+      {$: 'group', 
+        title: 'categories and items', 
+        style :{$: 'layout.horizontal', spacing: 3 }, 
+        controls :[
+          {$: 'picklist', 
+            title: '', 
+            databind: '%$SelectedCategory%', 
+            options :{$: 'picklist.sorted-options', 
+              options :{$: 'picklist.coded-options', 
+                options :{$: 'studio.categories-of-type', type: '%$type%' }, 
+                code: '%name%', 
+                text: '%name%'
+              }, 
+              marks :{$: 'studio.categories-marks', type: '%$type%', path: '%$path%' }
+            }, 
+            style :{$: 'style-by-control', 
+              control :{$: 'group', 
+                controls :{$: 'itemlist', 
+                  items: '%$picklistModel/options%', 
+                  controls :{$: 'label', 
+                    title: '%text%', 
+                    style :{$: 'label.mdl-button' }, 
+                    features: [
+                      {$: 'css.width', width: '120' }, 
+                      {$: 'css', css: '{text-align: left}' }
+                    ]
+                  }, 
+                  style :{$: 'itemlist.ul-li' }, 
+                  watchItems: false, 
+                  features: [
+                    {$: 'itemlist.selection', 
+                      cssForActive: 'background: white', 
+                      onSelection :{$: 'write-value', 
+                        to: '%$picklistModel/databind%', 
+                        value: '%code%'
+                      }, 
+                      autoSelectFirst: 'true', 
+                      cssForSelected: 'border-left: 2px #ccc solid; background: #eee'
+                    }
+                  ]
+                }, 
+                features :{$: 'group.itemlist-container' }
+              }, 
+              modelVar: 'picklistModel'
+            }
+          }, 
+          {$: 'itemlist', 
+            title: 'items', 
+            items :{
+              $pipeline: [
+                '%$Categories%', 
+                {$: 'filter', 
+                  filter :{$: 'equals', item1: '%name%', item2: '%$SelectedCategory%' }
+                }, 
+                '%pts%', 
+                {$: 'itemlist-container.filter' }
+              ]
+            }, 
+            controls :[
+              {$: 'button', 
+                title :{$: 'highlight', 
+                  base: '%%', 
+                  highlight: '%$itemlistCntrData/search_pattern%'
+                }, 
+                action: [{$: 'close-containing-popup' }, { $call: 'onSelect' }], 
+                style :{$: 'button.mdl-flat-ripple' }, 
+                features :{$: 'css', css: '{ text-align: left; width: 250px }' }
+              }
+            ], 
+            itemVariable: 'item', 
+            features: [
+              {$: 'css.height', height: '300', overflow: 'auto', minMax: '' }, 
+              {$: 'itemlist.selection', 
+                onDoubleClick :{$: 'runActions', 
+                  actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
+                }, 
+                autoSelectFirst: true
+              }, 
+              {$: 'itemlist.keyboard-selection', 
+                onEnter :{$: 'runActions', 
+                  actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
+                }
+              }, 
+              {$: 'watch-ref', ref: '%$SelectedCategory%', strongRefresh: true }
+            ]
+          }
+        ]
+      }
+    ], 
+    features: [
+      {$: 'css.margin', top: '10', left: '20' }, 
+      {$: 'var', 
+        name: 'Categories', 
+        value :{$: 'studio.categories-of-type', type: '%$type%' }
+      }, 
+      {$: 'inner-resource', 
+        name: 'SelectedCategory', 
+        value: '%$Categories[0]%'
+      }, 
+      {$: 'inner-resource', name: 'SearchPattern', value: '' }, 
+      {$: 'group.itemlist-container' }
+    ]
+  }
+})
+
+
+
+jb.component('studio-helper.studio-properties', {
+  type: 'control', 
+  remark: 1, 
+  impl :{$: 'group', 
+    $vars: { circuit: 'studio-helper-dummy.simple-label' }, 
+    title: '', 
+    controls :{$: 'studio.properties', path: 'studio-helper-dummy.simple-label~impl' }
+  }
+})
+
+jb.component('studio-helper.studio-properties', {
+  type: 'control', 
+  remark: 2, 
+  impl :{$: 'group', 
+    $vars: { circuit: 'studio-helper-dummy.simple-label' }, 
+    title: '', 
+    controls :{$: 'studio.properties', path: 'studio-helper-dummy.simple-label~impl' }
+  }
+})
+
+jb.component('studio-helper.studio-properties', {
+  type: 'control', 
+  impl :{$: 'group', 
+    $vars: { circuit: 'studio-helper-dummy.simple-label' }, 
+    title: '', 
+    controls :{$: 'studio.properties', path: 'studio-helper-dummy.simple-label~impl' }
+  }
+})
+

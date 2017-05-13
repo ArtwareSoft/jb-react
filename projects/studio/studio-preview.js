@@ -22,11 +22,14 @@ jb.component('studio.preview-widget', {
 })
 
 jb.studio.initPreview = function(preview_window,allowedTypes) {
+      var st = jb.studio;
+      st.previewWindow = preview_window;
+      st.previewjb = preview_window.jb;
+      st.serverComps = st.previewjb.comps;
+      st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
+
       preview_window.jb.studio.studioWindow = window;
-      jb.studio.previewWindow = preview_window;
-      jb.studio.previewjb = preview_window.jb;
       preview_window.jb.studio.previewjb = preview_window.jb;
-      jb.studio.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
 }
 
 jb.component('studio.preview-widget-impl', {

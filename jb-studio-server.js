@@ -132,8 +132,8 @@ extend(op_post_handlers, {
         else
           var projDirs = ['projects/' + project];
 
-        if (comp.indexOf('studio.') == 0 || comp.indexOf('.studio-') != -1)
-          projDirs.push('projects/studio');
+        if (comp.indexOf('studio.') == 0 && project == 'studio-helper')
+          projDirs = ['projects/studio'];
 
         if (!clientReq.original) { // new comp
           var srcPath = `projects/${project}/${project}.ts`;

@@ -1,10 +1,14 @@
 (function() { var st = jb.studio;
 
+st.compsHistory = [];
+
 function compsRef(val) {
   if (typeof val == 'undefined') 
-    return jb.studio.previewjb.comps;
-  else
-    jb.studio.previewjb.comps = val;
+    return st.previewjb.comps;
+  else {
+  	st.compsHistory.push(st.previewjb.comps);
+    st.previewjb.comps = val;
+  }
 }
 
 st.compsRefHandler = new jb.ui.ImmutableWithPath(compsRef);

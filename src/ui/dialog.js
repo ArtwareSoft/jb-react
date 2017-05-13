@@ -33,9 +33,12 @@ jb.component('open-dialog', {
 				cmp.state.title = ctx.params.title(ctx);
 				try {
 					cmp.state.contentComp = ctx.params.content(ctx).reactComp();
-					cmp.menuComp = ctx.params.menu(ctx).reactComp();
-				} catch (e) {}
-				cmp.hasMenu = !!ctx.params.menu.profile;
+					cmp.hasMenu = !!ctx.params.menu.profile;
+					if (cmp.hasMenu)
+						cmp.menuComp = ctx.params.menu(ctx).reactComp();
+				} catch (e) {
+					jb.logException(e,'dialog');
+				}
 				cmp.dialogClose = _ => dialog.close();
 			},
 			afterViewInit: cmp => {

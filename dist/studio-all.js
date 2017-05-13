@@ -7,7 +7,7 @@ function jb_run(context,parentParam,settings) {
         return context.probe.record(context,parentParam)
     }
     if (profile === null)
-      return tojstype(profile,parentParam && parentParam.as,context);
+      return castToParam(profile,parentParam);
     if (profile.$debugger == 0) debugger;
     if (profile.$asIs) return profile.$asIs;
     if (parentParam && (parentParam.type||'').indexOf('[]') > -1 && ! parentParam.as) // fix to array value. e.g. single feature not in array
@@ -20,11 +20,11 @@ function jb_run(context,parentParam,settings) {
     context.parentParam = parentParam;
     switch (run.type) {
       case 'booleanExp': return bool_expression(profile, context);
-      case 'expression': return tojstype(expression(profile, context,parentParam), jstype, context);
+      case 'expression': return castToParam(expression(profile, context,parentParam), parentParam);
       case 'asIs': return profile;
       case 'object': return entriesToObject(entries(profile).map(e=>[e[0],context.runInner(e[1],null,e[0])]));
-      case 'function': return tojstype(profile(context),jstype, context);
-      case 'null': return tojstype(null,jstype, context);
+      case 'function': return castToParam(profile(context),parentParam);
+      case 'null': return castToParam(null,parentParam);
       case 'ignore': return context.data;
       case 'list': { return profile.map((inner,i) => 
             context.runInner(inner,null,i)) };
@@ -56,7 +56,7 @@ function jb_run(context,parentParam,settings) {
             out = run.impl.apply(null,args);
           else
             return args.then(args=>
-              tojstype(run.impl.apply(null,args),jstype, context))
+              castToParam(run.impl.apply(null,args),parentParam))
         }
         else {
           run.ctx.callerPath = context.path;
@@ -68,7 +68,7 @@ function jb_run(context,parentParam,settings) {
 
         if (profile.$trace) console.log('trace: ' + context.path, compName(profile),context,out,run);
           
-        return tojstype(out,jstype, context);
+        return castToParam(out,parentParam);
     }
   } catch (e) {
     if (context.vars.$throw) throw e;
@@ -211,7 +211,7 @@ function calcVar(context,varname) {
 }
 
 function expression(exp, context, parentParam) {
-  var jstype = parentParam && parentParam.as;
+  var jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   exp = '' + exp;
   if (jstype == 'boolean') return bool_expression(exp, context);
   if (exp.indexOf('$debugger:') == 0) {
@@ -346,8 +346,8 @@ function bool_expression(exp, context) {
     if (op == '$=') return p1.indexOf(p2, p1.length - p2.length) !== -1;
   }
 
-  var p1 = tojstype(expression(parts[1].trim(), context), {as:'number'});
-  var p2 = tojstype(expression(parts[3].trim(), context), {as:'number'});
+  var p1 = tonumber(expression(parts[1].trim(), context));
+  var p2 = tonumber(expression(parts[3].trim(), context));
 
   if (op == '>') return p1 > p2;
   if (op == '<') return p1 < p2;
@@ -359,10 +359,14 @@ function bool_expression(exp, context) {
   }
 }
 
-function tojstype(value,jstype,context) {
+function castToParam(value,param) {
+  return tojstype(value,param ? (param.ref ? 'ref' : param.as) : null)
+}
+
+function tojstype(value,jstype) {
   if (!jstype) return value;
   if (typeof jstypes[jstype] != 'function') debugger;
-  return jstypes[jstype](value,context);
+  return jstypes[jstype](value);
 }
 
 var tostring = value => tojstype(value,'string');
@@ -978,7 +982,7 @@ jb.component('and', {
 	impl: function(context) {
 		var items = context.profile.$and || context.profile.items || [];
 		for(var i=0;i<items.length;i++) {
-			if (!context.run({ profile: items[i], path: i},{ type: 'boolean' }))
+			if (!context.runInner(items[i], { type: 'boolean' }, i))
 				return false;
 		}
 		return true;
@@ -993,7 +997,7 @@ jb.component('or', {
 	impl: function(context) {
 		var items = context.profile.$or || context.profile.items || [];
 		for(var i=0;i<items.length;i++) {
-			if (context.run({ profile: items[i], path: i}),{ type: 'boolean' })
+			if (context.runInner(items[i],{ type: 'boolean' },i))
 				return true;
 		}
 		return false;
@@ -1385,7 +1389,7 @@ jb.component('extract-suffix',{
 	}
 });
 
-jb.component('http-get', {
+jb.component('http.get', {
 	params: [
 		{ id: 'url', as: 'string' },
 		{ id: 'json', as: 'boolean' }
@@ -1398,7 +1402,8 @@ jb.component('http-get', {
 			  .catch(e =>
 			  		jb.logException(e))
 	}
-})
+});
+
 ;
 
 /*! jQuery v3.2.1 | (c) JS Foundation and other contributors | jquery.org/license */
@@ -8139,208 +8144,6 @@ jb.rx.Subject = __WEBPACK_IMPORTED_MODULE_0_rxjs_Subject__["Subject"];
 /***/ })
 /******/ ]);;
 
-(function() {
-
-class ImmutableWithPath {
-  constructor(resources) {
-    this.resources = resources;
-    this.resourceVersions = {};
-    this.pathId = 0;
-    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
-    this.resourceChange = new jb.rx.Subject();
-  }
-  val(ref) {
-    if (ref == null) return ref;
-    if (ref.$jb_val) return ref.$jb_val();
-    if (!ref.$jb_path) return ref;
-    if (ref.handler != this) 
-      return ref.handler.val(ref)
-
-    var resource = ref.$jb_path[0];
-    if (ref.$jb_resourceV == this.resourceVersions[resource]) 
-      return ref.$jb_cache;
-    this.refresh(ref);
-    if (!ref.$jb_path)
-      return ref;
-    return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
-  }
-  writeValue(ref,value) {
-    if (!ref) 
-      return jb.logError('writeValue: null ref');
-    if (this.val(ref) == value) return;
-    if (ref.$jb_val)
-      return ref.$jb_val(value);
-    return this.doOp(ref,{$set: value})
-  }
-  splice(ref,args) {
-    return this.doOp(ref,{$splice: args })
-  }
-  push(ref,value) {
-    return this.doOp(ref,{$push: value})
-  }
-  doOp(ref,opOnRef) {
-    if (!this.isRef(ref))
-      ref = this.asRef(ref);
-    if (!ref) return;
-
-    this.refresh(ref);
-    if (ref.$jb_path.length == 0)
-      return jb.logError('doOp: ref not found');
-
-    var op = {}, resource = ref.$jb_path[0];
-    jb.path(op,ref.$jb_path,opOnRef);
-    this.markPath(ref.$jb_path);
-    this.resources(jb.ui.update(this.resources(),op));
-    this.resourceVersions[resource] = this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1;
-    this.resourceChange.next({op: op, path: ref.$jb_path});
-  }
-  asRef(obj) {
-    if (!obj) return;
-    if (obj && (obj.$jb_path || obj.$jb_val))
-        return obj;
-
-    var path = this.pathOfObject(obj,this.resources());
-    if (path)
-      return {
-        $jb_path: path,
-        $jb_resourceV: this.resourceVersions[path[0]],
-        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
-        handler: this,
-      }
-    return obj;
-  }
-  isRef(ref) {
-    return ref && (ref.$jb_path || ref.$jb_val);
-  }
-  objectProperty(obj,prop) {
-    if (!obj) 
-      return jb.logError('objectProperty: null obj');
-    var objRef = this.asRef(obj);
-    if (objRef && objRef.$jb_path) {
-      return {
-        $jb_path: objRef.$jb_path.concat([prop]),
-        $jb_resourceV: objRef.$jb_resourceV,
-        $jb_cache: objRef.$jb_cache[prop],
-        $jb_parentOfPrim: objRef.$jb_cache, 
-        handler: this,
-      }
-    } else {
-      return obj[prop]; // not reffable
-    }
-  }
-  refresh(ref) {
-    try {
-      var path = ref.$jb_path, new_ref = {};
-      if (!path)
-        debugger;
-      if (this.resourceVersions[path[0]] == ref.$jb_resourceV) return;
-      if (ref.$jb_parentOfPrim) {
-        var parent = this.asRef(ref.$jb_parentOfPrim);
-        if (!parent)
-          return jb.logError('refresh: parent not found');
-        var prop = path.slice(-1)[0];
-        new_ref = {
-          $jb_path: parent.$jb_path.concat([prop]),
-          $jb_resourceV: this.resourceVersions[path[0]],
-          $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
-          $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
-          handler: this,
-        }
-      } else {
-        var found_path = this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
-        if (!found_path) {
-          this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
-          return jb.logError('refresh: object not found');
-        }
-        var new_path = [path[0]].concat(found_path);
-        if (new_path) new_ref = {
-          $jb_path: new_path,
-          $jb_resourceV: this.resourceVersions[new_path[0]],
-          $jb_cache: new_path.reduce((o,p)=>o[p],this.resources()),
-          handler: this,
-        }
-      }
-      Object.assign(ref,new_ref);
-    } catch (e) {
-       jb.logException(e,'ref refresh ',ref);
-    }
-  }
-  refOfPath(path,silent) {
-      var val = path.reduce((o,p)=>o[p],this.resources()),parent = null;
-      if (typeof val != 'object') 
-        parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
-      try {
-        return {
-          $jb_path: path,
-          $jb_resourceV: this.resourceVersions[path[0]],
-          $jb_cache: val,
-          $jb_parentOfPrim: parent,
-          handler: this,
-        }
-      } catch (e) {
-        if (!silent)
-          jb.logException(e,'ref from path ' + path);
-      }
-  }
-  markPath(path) {
-    path.reduce((o,p)=>{ 
-      o.$jb_id = o.$jb_id || (++this.pathId);
-      return o[p] 
-    }, this.resources())
-  }
-  pathOfObject(obj,lookIn,depth) {
-    if (!lookIn || typeof lookIn != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50) 
-      return;
-    if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1) 
-      return;
-
-    if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id)) 
-      return [];
-    for(var p in lookIn) {
-      var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
-      if (res) 
-        return [p].concat(res);
-    }
-  }
-  // valid(ref) {
-  //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
-  // }
-  refObservable (ref,cmp) {
-    if (!ref || !this.isRef(ref)) 
-      return jb.rx.Observable.of();
-    if (ref.$jb_path) {
-      return this.resourceChange
-        .takeUntil(cmp.destroyed)
-        .filter(e=>e.path[0] == ref.$jb_path[0])
-        .filter(e=> { // same resource - refind itself
-          jb.refreshRef(ref);
-          return e.path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0
-        })
-        .map(_=>
-          jb.val(ref))
-        .distinctUntilChanged()
-    }
-    return jb.rx.Observable.of(jb.val(ref));
-  }
-}
-
-function resourcesRef(val) {
-  if (typeof val == 'undefined') 
-    return jb.resources;
-  else
-    jb.resources = val;
-}
-
-jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
-
-jb.ui.refObservable = (ref,cmp) =>
-  jb.refHandler(ref).refObservable(ref,cmp);
-
-jb.ui.ImmutableWithPath = ImmutableWithPath;
-jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
-
-})();
-
 (function(){
 
 var ui = jb.ui;
@@ -8597,6 +8400,7 @@ ui.renderWidget = function(profile,elem) {
 			}
 		}
 		render(pros,state) {
+			if (!jb.comps[state.profile.$]) return '';
 			return ui.h(new jb.jbCtx().run(state.profile).reactComp())
 		}
 	}
@@ -8682,6 +8486,209 @@ jb.component('style-by-control', {
 
 })();
 
+(function() {
+
+class ImmutableWithPath {
+  constructor(resources) {
+    this.resources = resources;
+    this.resourceVersions = {};
+    this.pathId = 0;
+    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
+    this.resourceChange = new jb.rx.Subject();
+  }
+  val(ref) {
+    if (ref == null) return ref;
+    if (ref.$jb_val) return ref.$jb_val();
+    if (!ref.$jb_path) return ref;
+    if (ref.handler != this) 
+      return ref.handler.val(ref)
+
+    var resource = ref.$jb_path[0];
+    if (ref.$jb_resourceV == this.resourceVersions[resource]) 
+      return ref.$jb_cache;
+    this.refresh(ref);
+    if (!ref.$jb_path)
+      return ref;
+    return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
+  }
+  writeValue(ref,value) {
+    if (!ref) 
+      return jb.logError('writeValue: null ref');
+    if (this.val(ref) == value) return;
+    if (ref.$jb_val)
+      return ref.$jb_val(value);
+    return this.doOp(ref,{$set: value})
+  }
+  splice(ref,args) {
+    return this.doOp(ref,{$splice: args })
+  }
+  push(ref,value) {
+    return this.doOp(ref,{$push: value})
+  }
+  doOp(ref,opOnRef) {
+    if (!this.isRef(ref))
+      ref = this.asRef(ref);
+    if (!ref) return;
+
+    this.refresh(ref);
+    if (ref.$jb_path.length == 0)
+      return jb.logError('doOp: ref not found');
+
+    var op = {}, resource = ref.$jb_path[0];
+    jb.path(op,ref.$jb_path,opOnRef);
+    this.markPath(ref.$jb_path);
+    this.resources(jb.ui.update(this.resources(),op));
+    this.resourceVersions[resource] = this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1;
+    this.resourceChange.next({op: op, path: ref.$jb_path});
+  }
+  asRef(obj) {
+    if (!obj) return;
+    if (obj && (obj.$jb_path || obj.$jb_val))
+        return obj;
+
+    var path = this.pathOfObject(obj,this.resources());
+    if (path)
+      return {
+        $jb_path: path,
+        $jb_resourceV: this.resourceVersions[path[0]],
+        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
+        handler: this,
+      }
+    return obj;
+  }
+  isRef(ref) {
+    return ref && (ref.$jb_path || ref.$jb_val);
+  }
+  objectProperty(obj,prop) {
+    if (!obj) 
+      return jb.logError('objectProperty: null obj');
+    var objRef = this.asRef(obj);
+    if (objRef && objRef.$jb_path) {
+      return {
+        $jb_path: objRef.$jb_path.concat([prop]),
+        $jb_resourceV: objRef.$jb_resourceV,
+        $jb_cache: objRef.$jb_cache[prop],
+        $jb_parentOfPrim: objRef.$jb_cache, 
+        handler: this,
+      }
+    } else {
+      return obj[prop]; // not reffable
+    }
+  }
+  refresh(ref) {
+    try {
+      var path = ref.$jb_path, new_ref = {};
+      if (!path)
+        debugger;
+      if (path.length == 1) return;
+      if (this.resourceVersions[path[0]] == ref.$jb_resourceV) return;
+      if (ref.$jb_parentOfPrim) {
+        var parent = this.asRef(ref.$jb_parentOfPrim);
+        if (!parent)
+          return jb.logError('refresh: parent not found');
+        var prop = path.slice(-1)[0];
+        new_ref = {
+          $jb_path: parent.$jb_path.concat([prop]),
+          $jb_resourceV: this.resourceVersions[path[0]],
+          $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
+          $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
+      } else {
+        var found_path = this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+        if (!found_path) {
+          this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+          return jb.logError('refresh: object not found');
+        }
+        var new_path = [path[0]].concat(found_path);
+        if (new_path) new_ref = {
+          $jb_path: new_path,
+          $jb_resourceV: this.resourceVersions[new_path[0]],
+          $jb_cache: new_path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
+      }
+      Object.assign(ref,new_ref);
+    } catch (e) {
+       jb.logException(e,'ref refresh ',ref);
+    }
+  }
+  refOfPath(path,silent) {
+      try {
+        var val = path.reduce((o,p)=>o[p],this.resources()),parent = null;
+        if (typeof val != 'object') 
+          parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
+          return {
+            $jb_path: path,
+            $jb_resourceV: this.resourceVersions[path[0]],
+            $jb_cache: val,
+            $jb_parentOfPrim: parent,
+            handler: this,
+          }
+      } catch (e) {
+        if (!silent)
+          jb.logException(e,'ref from path ' + path);
+      }
+  }
+  markPath(path) {
+    path.reduce((o,p)=>{ 
+      o.$jb_id = o.$jb_id || (++this.pathId);
+      return o[p] 
+    }, this.resources())
+  }
+  pathOfObject(obj,lookIn,depth) {
+    if (!lookIn || typeof lookIn != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50) 
+      return;
+    if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1) 
+      return;
+
+    if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id)) 
+      return [];
+    for(var p in lookIn) {
+      var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
+      if (res) 
+        return [p].concat(res);
+    }
+  }
+  // valid(ref) {
+  //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
+  // }
+  refObservable (ref,cmp) {
+    if (!ref || !this.isRef(ref)) 
+      return jb.rx.Observable.of();
+    if (ref.$jb_path) {
+      return this.resourceChange
+        .takeUntil(cmp.destroyed)
+        .filter(e=>e.path[0] == ref.$jb_path[0])
+        .filter(e=> { // same resource - refind itself
+          jb.refreshRef(ref);
+          return e.path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0
+        })
+        .map(_=>
+          jb.val(ref))
+        .distinctUntilChanged()
+    }
+    return jb.rx.Observable.of(jb.val(ref));
+  }
+}
+
+function resourcesRef(val) {
+  if (typeof val == 'undefined') 
+    return jb.resources;
+  else
+    jb.resources = val;
+}
+
+jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
+
+jb.ui.refObservable = (ref,cmp) =>
+  jb.refHandler(ref).refObservable(ref,cmp);
+
+jb.ui.ImmutableWithPath = ImmutableWithPath;
+jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
+
+})();
+
 jb.component('group', {
   type: 'control', category: 'group:100,common:90',
   params: [
@@ -8741,7 +8748,7 @@ jb.component('group.dynamic-titles', {
 jb.component('label', {
     type: 'control', category: 'control:100,common:80',
     params: [
-        { id: 'title', as: 'ref', essential: true, defaultValue: 'my label', dynamic: true },
+        { id: 'title', as: 'string', essential: true, defaultValue: 'my label', ref: true },
         { id: 'style', type: 'label.style', defaultValue: { $: 'label.span' }, dynamic: true },
         { id: 'features', type: 'feature[]', dynamic: true },
     ],
@@ -8753,10 +8760,10 @@ jb.component('label.bind-title', {
   type: 'feature',
   impl: ctx => ({
     init: cmp => {
-      var ref = ctx.vars.$model.title(cmp.ctx);
-      cmp.state.title = jb.tostring(ref);
+      var ref = ctx.vars.$model.title;
+      cmp.state.title = jb.val(ref);
       jb.ui.refObservable(ref,cmp)
-        .subscribe(_=>cmp.setState({title: jb.tostring(ref)}))
+        .subscribe(_=>cmp.setState({title: jb.val(ref)}))
     }
   })
 })
@@ -8816,35 +8823,19 @@ jb.component('highlight', {
     { id: 'highlight', as: 'string', dynamic: true },
     { id: 'cssClass', as: 'string', defaultValue: 'highlight'},
   ],
-  impl: (ctx,base,highlight,cssClass) => 
-    highlight() ? jb.ui.h('div',{},[base().split(highlight())[0],jb.ui.h('span',{class: cssClass},highlight()),base().split(highlight())[1]
-      ]) : base()
+  impl: (ctx,base,highlight,cssClass) => {
+    var h = highlight(), b = base();
+    if (!h || !b) return b;
+    var highlight = b.match(new RegExp(h,'i'))[0]; // case sensitive highlight
+    return jb.ui.h('div',{},[
+        b.split(highlight)[0],
+        jb.ui.h('span',{class: cssClass},highlight),
+        b.split(highlight)[1]]
+    )
+  }
 })
 
 ;
-
-jb.type('button.style')
-
-jb.component('button', {
-  type: 'control', category: 'control:100,common:100',
-  params: [
-    { id: 'title', as: 'string', dynamic: true, essential: true, defaultTValue: 'click me' },
-    { id: 'action', type: 'action', essential: true, dynamic: true },
-    { id: 'style', type: 'button.style', defaultValue: { $: 'button.mdl-raised' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx,{
-      beforeInit: cmp =>
-        cmp.state.title = ctx.params.title(),
-      afterViewInit: cmp => {
-        cmp.clicked = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base);
-      }
-    })
-})
-;
-
-jb.type('image.style');
 
 jb.component('image', {
 	type: 'control', category: 'control:50',
@@ -8874,6 +8865,27 @@ jb.component('image.default', {
 		css: `{ {? width: %$$model/width%%$$model/units%; ?} {? height: %$$model/height%%$$model/units%; ?} }
 			>img{ {? width: %$$model/imageWidth%%$$model/units%; ?} {? height: %$$model/imageHeight%%$$model/units%; ?} }`
 	}
+})
+;
+
+jb.type('button.style')
+
+jb.component('button', {
+  type: 'control', category: 'control:100,common:100',
+  params: [
+    { id: 'title', as: 'string', ref: true, essential: true, defaultTValue: 'click me' },
+    { id: 'action', type: 'action', essential: true, dynamic: true },
+    { id: 'style', type: 'button.style', defaultValue: { $: 'button.mdl-raised' }, dynamic: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx,{
+      beforeInit: cmp =>
+        cmp.state.title = jb.val(ctx.params.title),
+      afterViewInit: cmp => {
+        cmp.clicked = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base);
+      }
+    })
 })
 ;
 
@@ -9245,7 +9257,7 @@ jb.component('var', {
   ],
   impl: (context, name, value) => ({
       extendCtxOnce: (ctx,cmp) => {
-        return ctx.setVars(jb.obj(name, value));
+        return ctx.setVars(jb.obj(name, value()));
       }
   })
 })
@@ -9255,9 +9267,8 @@ jb.component('inner-resource', {
   params: [
     { id: 'name', as: 'string', essential: true },
     { id: 'value', dynamic: true },
-    { id: 'asRef', as: 'boolean', defaultValue: true },
   ],
-  impl: (context, name, value, asRef) => ({
+  impl: (context, name, value) => ({
       destroyed: cmp => {
         if (jb.resources[cmp.resourceId])
           delete jb.resources[cmp.resourceId];
@@ -9268,10 +9279,20 @@ jb.component('inner-resource', {
         cmp.resource = jb.resources[cmp.resourceId] = jb.resources[cmp.resourceId] || {};
         cmp.resource[name] = value(ctx.setData(cmp));
         var ref = jb.objectProperty(cmp.resource,name,'ref',true);
-        return ctx.setVars(jb.obj(name, asRef ? ref : cmp.resource[name]));
+        return ctx.setVars(jb.obj(name, ref));
       }
   })
 })
+
+jb.component('features', {
+  type: 'feature',
+  params: [
+    { id: 'features', type: 'feature[]', flattenArray: true, dynamic: true },
+  ],
+  impl: (ctx,features) => 
+    features()
+})
+
 
 jb.component('feature.init', {
   type: 'feature',
@@ -9552,9 +9573,12 @@ jb.component('open-dialog', {
 				cmp.state.title = ctx.params.title(ctx);
 				try {
 					cmp.state.contentComp = ctx.params.content(ctx).reactComp();
-					cmp.menuComp = ctx.params.menu(ctx).reactComp();
-				} catch (e) {}
-				cmp.hasMenu = !!ctx.params.menu.profile;
+					cmp.hasMenu = !!ctx.params.menu.profile;
+					if (cmp.hasMenu)
+						cmp.menuComp = ctx.params.menu(ctx).reactComp();
+				} catch (e) {
+					jb.logException(e,'dialog');
+				}
 				cmp.dialogClose = _ => dialog.close();
 			},
 			afterViewInit: cmp => {
@@ -10464,7 +10488,7 @@ jb.component('itemlist.divider', {
 jb.component('itemlist.selection', {
   type: 'feature',
   params: [
-    { id: 'databind', as: 'ref', defaultValue :{$: 'itemlist-container.selected' } },
+    { id: 'databind', as: 'ref', defaultValue: '%itemlistCntrData/selected%' },
     { id: 'onSelection', type: 'action', dynamic: true },
     { id: 'onDoubleClick', type: 'action', dynamic: true },
     { id: 'autoSelectFirst', type: 'boolean'},
@@ -10622,16 +10646,12 @@ jb.component('itemlist.use-group-style', {
 
 (function() {
 
-createItemlistCntr = (params,cmp) => ({
+createItemlistCntr = (params) => ({
   id: params.id, 
   defaultItem: params.defaultItem, 
   selected: null, 
-  cmp: cmp,
   filter_data: {},
   filters: [],
-  selectedRef: function() {
-      return this._selectedRef = this._selectedRef || jb.objectProperty(this,'selected','ref',true);
-  },
   init: function(items) {
       return this.items = items
   },
@@ -10667,17 +10687,17 @@ jb.component('group.itemlist-container', {
     { id: 'id', as: 'string' },
     { id: 'defaultItem', as: 'single' },
   ],
-  impl: {$: 'inner-resource', name: 'itemlistCntr', asRef: false,
-    value: ctx => 
-      createItemlistCntr(ctx.componentContext.params, ctx.data)
-  }
+  impl :{$list : [
+    {$: 'inner-resource', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '' }},
+    {$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx.componentContext.params) }
+  ]}
 })
 
 jb.component('group.itemlist-selected', {
   type: 'feature',   category: 'itemlist:20,group:0',
-  impl: { $list : [ 	
-  			{$: 'group.data', data : {$: 'itemlist-container.selected'}},
-  			{$: 'hidden', showCondition: {$notEmpty: {$: 'itemlist-container.selected' } } }
+  impl :{ $list : [ 	
+  			{$: 'group.data', data : '%itemlistCntrData/selected%'},
+  			{$: 'hidden', showCondition: {$notEmpty: '%itemlistCntrData/selected%' } }
   		]}
 })
 
@@ -10686,32 +10706,6 @@ jb.component('itemlist-container.add', {
   impl: ctx => 
   		ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.add()
 })
-
-jb.component('itemlist-container.delete', {
-  type: 'action',
-  params: [
-    { id: 'item', as: 'single', defaultValue: '%$itemlistCntr/selected%' },
-  ],
-  impl: ctx => 
-  		ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.delete(ctx.params.item)
-})
-
-jb.component('itemlist-container.select', {
-  type: 'action',
-  params: [
-    { id: 'item', as: 'single', defaultValue: '%%' },
-  ],
-  impl: ctx =>
-  		ctx.vars.itemlistCntr && 
-        jb.writeValue(ctx.vars.itemlistCntr.selectedRef(),ctx.params.item)
-})
-
-jb.component('itemlist-container.selected', {
-  type: 'data',
-  impl: ctx => 
-    ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.selectedRef()
-})
-
 
 jb.component('itemlist-container.filter', {
   type: 'aggregator',
@@ -10731,7 +10725,7 @@ jb.component('itemlist-container.search', {
   params: [
     { id: 'title', as: 'string' , dynamic: true, defaultValue: 'Search' },
     { id: 'searchIn', as: 'string' , dynamic: true, defaultValue: {$: 'itemlist-container.search-in-all-properties'} },
-    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntr/filter_data/search%'},
+    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/search_pattern%'},
     { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-search' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
@@ -10767,119 +10761,6 @@ jb.component('itemlist-container.search-in-all-properties', {
 
 
 })();
-
-jb.type('theme');
-
-jb.component('group.theme', {
-  type: 'feature',
-  params: [
-    { id: 'theme', type: 'theme' },
-  ],
-  impl: (context,theme) => ({
-    extendCtx: (ctx,cmp) => 
-      ctx.setVars(theme)
-  })
-})
-
-jb.component('theme.material-design', {
-  type: 'theme',
-  impl: () => ({
-  	'$theme.editable-text': 'editable-text.mdl-input'
-  })
-})
-;
-
-
-jb.component('material-icon', {
-	type: 'control', category: 'control:50',
-	params: [
-		{ id: 'icon', as: 'string', essential: true },
-		{ id: 'style', type: 'icon.style', dynamic: true, defaultValue :{$: 'icon.material' } },
-		{ id: 'features', type: 'feature[]', dynamic: true }
-	],
-	impl: ctx => 
-		jb.ui.ctrl(ctx,{init: cmp=> cmp.state.icon = ctx.params.icon})
-})
-
-jb.component('icon.material', {
-    type: 'icon.style',
-    impl :{$: 'custom-style', 
-        template: (cmp,state,h) => h('i',{class: 'material-icons'},state.icon),
-    }
-})
-
-;
-
-jb.component('mdl-style.init-dynamic', {
-  type: 'feature',
-  params: [
-  	{id: 'query', as: 'string'}
-  ],
-  impl: (ctx,query) => 
-    ({
-      afterViewInit: cmp => {
-
-        var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
-        cmp.refreshMdl = _ => {
-          jb.delay(1).then(_ => elems.forEach(el=> {
-            componentHandler.downgradeElements(el);
-            componentHandler.upgradeElement(el);
-          }))
-        };
-        jb.delay(1).then(_ =>
-      	 elems.forEach(el=>
-      	 	componentHandler.upgradeElement(el)))
-      },
-      destroy: cmp => 
-      	 (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
-      	 	componentHandler.downgradeElements(el))
-    })
-})
-
-jb.component('mdl.ripple-effect', { 
-  type: 'feature',
-  description: 'add ripple effect to buttons',
-  impl: ctx => ({ 
-      templateModifier: (vdom,cmp,state) => {
-        vdom.children.push(jb.ui.h('span',{class:'mdl-ripple'}));
-        return vdom;
-      },
-      css: '{ position: relative; overflow:hidden }',
-      afterViewInit: cmp => {
-          cmp.base.classList.add('mdl-js-ripple-effect');
-          componentHandler.upgradeElement(cmp.base);
-      },
-      destroy: cmp => 
-          componentHandler.downgradeElements(cmp.base)
-   }),
-})
-
-
-// ****** label styles
-
-jb.component('label.mdl-ripple-effect', {
-    type: 'label.style',
-    impl :{$: 'custom-style', 
-        template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button mdl-js-ripple-effect'},state.title),
-        features :[
-          {$: 'label.bind-title' },
-          {$: 'mdl-style.init-dynamic'}
-        ],
-    }
-});
-
-jb.component('label.mdl-button', {
-    type: 'label.style',
-    impl :{$: 'custom-style', 
-        template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button'},state.title),
-        features :[
-          {$: 'label.bind-title' },
-          {$: 'mdl-style.init-dynamic'}
-        ],
-    }
-});
-
-;
 
 jb.component('itemlist-with-groups', {
   type: 'control',
@@ -11122,6 +11003,133 @@ jb.component('picklist.promote',{
 
 ;
 
+jb.type('theme');
+
+jb.component('group.theme', {
+  type: 'feature',
+  params: [
+    { id: 'theme', type: 'theme' },
+  ],
+  impl: (context,theme) => ({
+    extendCtx: (ctx,cmp) => 
+      ctx.setVars(theme)
+  })
+})
+
+jb.component('theme.material-design', {
+  type: 'theme',
+  impl: () => ({
+  	'$theme.editable-text': 'editable-text.mdl-input'
+  })
+})
+;
+
+
+jb.component('material-icon', {
+	type: 'control', category: 'control:50',
+	params: [
+		{ id: 'icon', as: 'string', essential: true },
+		{ id: 'style', type: 'icon.style', dynamic: true, defaultValue :{$: 'icon.material' } },
+		{ id: 'features', type: 'feature[]', dynamic: true }
+	],
+	impl: ctx => 
+		jb.ui.ctrl(ctx,{init: cmp=> cmp.state.icon = ctx.params.icon})
+})
+
+jb.component('icon.material', {
+    type: 'icon.style',
+    impl :{$: 'custom-style', 
+        template: (cmp,state,h) => h('i',{class: 'material-icons'},state.icon),
+    }
+})
+
+;
+
+jb.component('goto-url', {
+	type: 'action',
+	description: 'navigate/open a new web page, change href location',
+	params: [
+		{ id: 'url', as:'string', essential: true },
+		{ id: 'target', type:'enum', values: ['new tab','self'], defaultValue:'new tab', as:'string'}
+	],
+	impl: function(context,url,target) {
+		var _target = (target == 'new tab') ? '_blank' : '_self';
+		window.open(url,_target);
+	}
+})
+;
+
+jb.component('mdl-style.init-dynamic', {
+  type: 'feature',
+  params: [
+  	{id: 'query', as: 'string'}
+  ],
+  impl: (ctx,query) => 
+    ({
+      afterViewInit: cmp => {
+
+        var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
+        cmp.refreshMdl = _ => {
+          jb.delay(1).then(_ => elems.forEach(el=> {
+            componentHandler.downgradeElements(el);
+            componentHandler.upgradeElement(el);
+          }))
+        };
+        jb.delay(1).then(_ =>
+      	 elems.forEach(el=>
+      	 	componentHandler.upgradeElement(el)))
+      },
+      destroy: cmp => 
+      	 (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
+      	 	componentHandler.downgradeElements(el))
+    })
+})
+
+jb.component('mdl.ripple-effect', { 
+  type: 'feature',
+  description: 'add ripple effect to buttons',
+  impl: ctx => ({ 
+      templateModifier: (vdom,cmp,state) => {
+        vdom.children.push(jb.ui.h('span',{class:'mdl-ripple'}));
+        return vdom;
+      },
+      css: '{ position: relative; overflow:hidden }',
+      afterViewInit: cmp => {
+          cmp.base.classList.add('mdl-js-ripple-effect');
+          componentHandler.upgradeElement(cmp.base);
+      },
+      destroy: cmp => 
+          componentHandler.downgradeElements(cmp.base)
+   }),
+})
+
+
+// ****** label styles
+
+jb.component('label.mdl-ripple-effect', {
+    type: 'label.style',
+    impl :{$: 'custom-style', 
+        template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button mdl-js-ripple-effect'},state.title),
+        features :[
+          {$: 'label.bind-title' },
+          {$: 'mdl-style.init-dynamic'}
+        ],
+    }
+});
+
+jb.component('label.mdl-button', {
+    type: 'label.style',
+    impl :{$: 'custom-style', 
+        template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button'},state.title),
+        features :[
+          {$: 'label.bind-title' },
+          {$: 'mdl-style.init-dynamic'}
+        ],
+    }
+});
+
+;
+
 jb.component('button.href', {
   type: 'button.style',
     impl :{$: 'custom-style', 
@@ -11277,9 +11285,9 @@ jb.component('layout.vertical', {
   ],
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl,h(ctrl)))),
-    css: `>.group-item { margin-bottom: %$spacing%px; display: block }
-          >.group-item:last-child { margin-bottom:0 }`,
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl, h('div', {} ,h(ctrl))))),
+    css: `>div { margin-bottom: %$spacing%px; display: block }
+          >div:last-child { margin-bottom:0 }`,
     features :{$: 'group.init-group'}
   }
 })
@@ -12284,11 +12292,15 @@ jb.component('studio.dynamic-options-watch-new-comp', {
 
 (function() { var st = jb.studio;
 
+st.compsHistory = [];
+
 function compsRef(val) {
   if (typeof val == 'undefined') 
-    return jb.studio.previewjb.comps;
-  else
-    jb.studio.previewjb.comps = val;
+    return st.previewjb.comps;
+  else {
+  	st.compsHistory.push(st.previewjb.comps);
+    st.previewjb.comps = val;
+  }
 }
 
 st.compsRefHandler = new jb.ui.ImmutableWithPath(compsRef);
@@ -12555,7 +12567,7 @@ jb.component('studio.all', {
           }, 
           {$: 'group', 
             title: 'title and menu', 
-            style :{$: 'layout.vertical', spacing: '16' }, 
+            style :{$: 'layout.vertical', spacing: '17' }, 
             controls: [
               {$: 'label', 
                 title: 'message', 
@@ -12569,7 +12581,7 @@ jb.component('studio.all', {
                 }, 
                 style :{$: 'label.span' }, 
                 features :{$: 'css', 
-                  css: '{ font: 20px Arial; margin-left: 6px; margin-top: 20px}'
+                  css: '{ font: 20px Arial; margin-left: 6px; }'
                 }
               }, 
               {$: 'group', 
@@ -12585,10 +12597,11 @@ jb.component('studio.all', {
                     features :{$: 'css.margin', top: '-10' }
                   }
                 ], 
-                features :{$: 'css.width', width: '1040' }
+                features : [ {$: 'css.width', width: '1040' }, {$: 'css.height', height: '30' }
+                ]
               }
             ], 
-            features :{$: 'css', css: '{ padding-left: 18px; width: 100% }' }
+            features :{$: 'css', css: '{ padding-left: 18px; width: 100%; }' }
           }
         ], 
         features :{$: 'css', css: '{ height: 90px; border-bottom: 1px #d9d9d9 solid}' }
@@ -13289,9 +13302,9 @@ jb.component('group.studio-properties-accordion', {
 jb.component('label.studio-message', {
   type: 'label.style', 
   impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('span',{}, state.title),
+    template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.title),
     css: `{ position: absolute;
-      color: white;  padding: 20px;  background: #327DC8;
+      color: white;  padding: 10px;  background: #327DC8;
       width: 1000px;
       margin-top: -100px;
       }`,
@@ -13313,7 +13326,7 @@ jb.component('studio.search-component', {
         title: 'Search', 
         searchIn: item => 
           item.id, 
-        databind: '%$itemlistCntr/filter_data/search%', 
+        databind: '%$itemlistCntrData/search_pattern%', 
         style :{$: 'editable-text.mdl-input', width: '200' }, 
         features: [
           {$: 'editable-text.helper-popup', 
@@ -13362,8 +13375,7 @@ jb.component('studio.search-list', {
         {$: 'label', 
           title :{$: 'highlight', 
             base: '%id% (%refCount%)', 
-            highlight: '%$itemlistCntr/filter_data/search%', 
-            cssClass: 'highlight'
+            highlight: '%$itemlistCntrData/search_pattern%', 
           }, 
           style :{$: 'custom-style', 
             template: (cmp,state,h) => 
@@ -13388,7 +13400,7 @@ jb.component('studio.search-list', {
         onEnter :{$: 'studio.search-component-selected', path: '%id%' }, 
         autoFocus: false
       }, 
-      {$: 'feature.if', showCondition: '%$itemlistCntr/filter_data/search%' }
+      {$: 'feature.if', showCondition: '%$itemlistCntrData/search_pattern%' }
     ]
   }
 })
@@ -13399,7 +13411,7 @@ jb.component('studio.search-component-selected',{
     {id: 'path', as: 'string'}
   ],
   impl: {$runActions: [
-    {$: 'write-value', to: '%$itemlistCntr/filter_data/search%', value: '' },
+    {$: 'write-value', to: '%$itemlistCntrData/search_pattern%', value: '' },
     {$: 'studio.goto-path', path: '%$path%' },
     {$: 'close-containing-popup' }
   ]}
@@ -13516,18 +13528,18 @@ jb.component('studio.select-profile', {
   type: 'control', 
   params: [
     { id: 'onSelect', type: 'action', dynamic: true }, 
-    { id: 'type', as: 'string' },
-    { id: 'path', as: 'string' },
+    { id: 'type', as: 'string' }, 
+    { id: 'path', as: 'string' }
   ], 
   impl :{$: 'group', 
     title: 'itemlist-with-find', 
     style :{$: 'layout.vertical', spacing: 3 }, 
-    controls: [
+    controls :[
       {$: 'itemlist-container.search', 
         title: 'Search', 
         searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
-        databind: '%$itemlistCntr/filter_data/search%', 
-        style :{$: 'editable-text.mdl-input', width: '155' }, 
+        databind: '%$itemlistCntrData/search_pattern%', 
+        style :{$: 'editable-text.mdl-input' }, 
         features: [
           {$: 'field.subscribe', 
             action :{$: 'write-value', to: '%$SelectedCategory%', value: 'all' }
@@ -13538,7 +13550,7 @@ jb.component('studio.select-profile', {
       {$: 'group', 
         title: 'categories and items', 
         style :{$: 'layout.horizontal', spacing: 3 }, 
-        controls: [
+        controls :[
           {$: 'picklist', 
             title: '', 
             databind: '%$SelectedCategory%', 
@@ -13566,13 +13578,13 @@ jb.component('studio.select-profile', {
                   watchItems: false, 
                   features: [
                     {$: 'itemlist.selection', 
+                      cssForActive: 'background: white', 
                       onSelection :{$: 'write-value', 
                         to: '%$picklistModel/databind%', 
                         value: '%code%'
                       }, 
                       autoSelectFirst: 'true', 
-                      cssForSelected: 'border-left: 2px #ccc solid; background: #eee', 
-                      cssForActive: 'background: white'
+                      cssForSelected: 'border-left: 2px #ccc solid; background: #eee'
                     }
                   ]
                 }, 
@@ -13597,10 +13609,10 @@ jb.component('studio.select-profile', {
               {$: 'button', 
                 title :{$: 'highlight', 
                   base: '%%', 
-                  highlight: '%$itemlistCntr/filter_data/search%', 
-                  cssClass: 'highlight'
+                  highlight: '%$itemlistCntrData/search_pattern%'
                 }, 
                 action: [{$: 'close-containing-popup' }, { $call: 'onSelect' }], 
+                style :{$: 'button.mdl-flat-ripple' }, 
                 features :{$: 'css', css: '{ text-align: left; width: 250px }' }
               }
             ], 
@@ -13617,8 +13629,12 @@ jb.component('studio.select-profile', {
                 onEnter :{$: 'runActions', 
                   actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
                 }
-              },
-              {$: 'watch-ref', ref: '%$SelectedCategory%'}
+              }, 
+              {$: 'watch-ref', ref: '%$SelectedCategory%', strongRefresh: true }, 
+              {$: 'watch-ref', 
+                ref: '%$itemlistCntrData/search_pattern%', 
+                strongRefresh: true
+              }
             ]
           }
         ]
@@ -13632,11 +13648,9 @@ jb.component('studio.select-profile', {
       }, 
       {$: 'inner-resource', 
         name: 'SelectedCategory', 
-        value : '%$Categories[0]%'
+        value: '%$Categories[0]%'
       }, 
-      {$: 'inner-resource', 
-        name: 'SearchPattern', value: ''
-      }, 
+      {$: 'inner-resource', name: 'SearchPattern', value: '' }, 
       {$: 'group.itemlist-container' }
     ]
   }
@@ -13830,11 +13844,14 @@ jb.component('studio.preview-widget', {
 })
 
 jb.studio.initPreview = function(preview_window,allowedTypes) {
+      var st = jb.studio;
+      st.previewWindow = preview_window;
+      st.previewjb = preview_window.jb;
+      st.serverComps = st.previewjb.comps;
+      st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
+
       preview_window.jb.studio.studioWindow = window;
-      jb.studio.previewWindow = preview_window;
-      jb.studio.previewjb = preview_window.jb;
       preview_window.jb.studio.previewjb = preview_window.jb;
-      jb.studio.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
 }
 
 jb.component('studio.preview-widget-impl', {
@@ -13933,6 +13950,7 @@ st.jbEditorTree = class {
 	}
 	children(path) {
 		var val = st.valOfPath(path);
+		if (!val) return [];
 		return (st.arrayChildren(path) || [])
 				.concat(this.sugarChildren(path,val) || [])
 				.concat(this.innerProfiles(path,val) || []);
@@ -14726,7 +14744,7 @@ jb.component('dialog.studio-floating', {
 	impl :{$: 'custom-style',
 			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
 				h('div',{class: 'dialog-title noselect'},state.title),
-				cmp.hasMenu ? h('div',{class: 'dialog-menu'},cmp.menuComp): '',
+				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
 				h('button',{class: 'dialog-close', onclick: 
 					_=> cmp.dialogClose() },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
@@ -14782,7 +14800,7 @@ jb.component('studio-dialog-feature.studioPopupLocation',{
 	impl: ctx => ({
 		afterViewInit: cmp => {
 			var dialog = cmp.dialog;
-			if (!sessionStorage[dialog.id]) {
+			if (dialog.id && !sessionStorage[dialog.id]) {
 				dialog.el.classList.add(dialog.id);
 				dialog.el.classList.add('default-location')
 			}
@@ -15331,85 +15349,6 @@ jb.component('studio.tgp-path-options',{
 
 ;
 
-jb.component('studio.property-toolbar-feature', {
-  type: 'feature', 
-  params: [
-    { id: 'path', as: 'string' }
-  ], 
-  impl :{$: 'field.toolbar', 
-        toolbar :{$: 'studio.property-toolbar', path: '%$path%' } 
-    }
-}) 
-
-jb.component('studio.property-toolbar', {
-  type: 'control', 
-  params: [
-    { id: 'path', as: 'string' }
-  ], 
-  impl :{$: 'button', 
-            title: 'more...', 
-            style :{$: 'button.mdl-icon-12', icon: 'more_vert' }, 
-            action :{$: 'studio.open-property-menu', path: '%$path%' }
-      }
-}) 
-
-jb.component('studio.open-property-menu', {
-  type: 'action', 
-  params: [
-    { id: 'path', as: 'string' }
-  ], 
-  impl :{$: 'menu.open-context-menu', 
-    $vars: {
-      compName :{$: 'studio.comp-name', path: '%$path%' }
-    }, 
-    menu :{$: 'menu.menu',
-      options: [
-          {$: 'menu.action', 
-            title: 'style editor', 
-            action :{$: 'studio.open-style-editor', path: '%$path%' }, 
-            showCondition :{$: 'ends-with', endsWith: '~style', text: '%$path%' }
-          },
-        {$: 'menu.action', 
-          title: 'multiline edit', 
-          showCondition: {$: 'equals', 
-              item1: { $pipeline: [ {$: 'studio.param-def', path: '%$path%' }, '%as%']},
-              item2: 'string'
-          },
-          action :{$: 'studio.open-multiline-edit', path: '%$path%' }
-        }, 
-
-        {$: 'menu.action', 
-          title: 'Goto %$compName%', 
-          showCondition: '%$compName%', 
-          action :{$: 'studio.goto-path', path: '%$compName%' }
-        }, 
-        {$: 'menu.action', 
-          title: 'Inteliscript editor', 
-          icon: 'code', 
-          action :{$: 'studio.open-jb-editor', path: '%$path%' }
-        }, 
-        {$: 'menu.action', 
-          title: 'Javascript editor', 
-          icon: 'code', 
-          action :{$: 'studio.edit-source', path: '%$path%' }
-        }, 
-        {$: 'studio.goto-sublime', path: '%$path%' },
-        {$: 'menu.action', 
-          title: 'Delete', 
-          icon: 'delete', 
-          shortcut: 'Delete', 
-          action: [
-            {$: 'write-value', to: '%$TgpTypeCtrl.expanded%', value: false }, 
-            {$: 'studio.delete', path: '%$path%' }
-          ]
-        }
-      ]
-    }
-  }
-})
-
-;
-
 jb.component('studio.pick', {
 	type: 'action',
 	params: [
@@ -15484,12 +15423,12 @@ jb.component('dialog-feature.studio-pick', {
 		  cmp.titleBelow = false;
 
 		  var mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
-		  var userPick = jb.rx.Observable.fromEvent(document, 'mousedown')
-		      			.merge(jb.rx.Observable.fromEvent(
-		      				(jb.studio.previewWindow || {}).document, 'mousedown'));
-		  var keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup')
-		      			.merge(jb.rx.Observable.fromEvent(
-		      				(jb.studio.previewWindow || {}).document, 'keyup'));
+		  var userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
+		  var keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
+		  if (jb.studio.previewWindow) {
+		  	userPick = userPick.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousedown'));
+		  	keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'keyup'));
+		  };
 
 		  mouseMoveEm
 		  	.debounceTime(50)
@@ -15512,7 +15451,7 @@ jb.component('dialog-feature.studio-pick', {
 		  	.subscribe(x=> {
 		  		ctx.vars.$dialog.close({OK:true});
 		  		jb.delay(200).then(_=>
-		  			jb.studio.previewWindow.getSelection() && jb.studio.previewWindow.getSelection().empty())
+		  			jb.studio.previewWindow && jb.studio.previewWindow.getSelection() && jb.studio.previewWindow.getSelection().empty())
 		  	})
 		}
 	})			
@@ -15626,46 +15565,111 @@ jb.component('studio.highlight-in-preview',{
 })
 ;
 
+jb.component('studio.property-toolbar-feature', {
+  type: 'feature', 
+  params: [
+    { id: 'path', as: 'string' }
+  ], 
+  impl :{$: 'field.toolbar', 
+        toolbar :{$: 'studio.property-toolbar', path: '%$path%' } 
+    }
+}) 
+
+jb.component('studio.property-toolbar', {
+  type: 'control', 
+  params: [
+    { id: 'path', as: 'string' }
+  ], 
+  impl :{$: 'button', 
+            title: 'more...', 
+            style :{$: 'button.mdl-icon-12', icon: 'more_vert' }, 
+            action :{$: 'studio.open-property-menu', path: '%$path%' }
+      }
+}) 
+
+jb.component('studio.open-property-menu', {
+  type: 'action', 
+  params: [
+    { id: 'path', as: 'string' }
+  ], 
+  impl :{$: 'menu.open-context-menu', 
+    $vars: {
+      compName :{$: 'studio.comp-name', path: '%$path%' }
+    }, 
+    menu :{$: 'menu.menu',
+      options: [
+          {$: 'menu.action', 
+            title: 'style editor', 
+            action :{$: 'studio.open-style-editor', path: '%$path%' }, 
+            showCondition :{$: 'ends-with', endsWith: '~style', text: '%$path%' }
+          },
+        {$: 'menu.action', 
+          title: 'multiline edit', 
+          showCondition: {$: 'equals', 
+              item1: { $pipeline: [ {$: 'studio.param-def', path: '%$path%' }, '%as%']},
+              item2: 'string'
+          },
+          action :{$: 'studio.open-multiline-edit', path: '%$path%' }
+        }, 
+
+        {$: 'menu.action', 
+          title: 'Goto %$compName%', 
+          showCondition: '%$compName%', 
+          action :{$: 'studio.goto-path', path: '%$compName%' }
+        }, 
+        {$: 'menu.action', 
+          title: 'Inteliscript editor', 
+          icon: 'code', 
+          action :{$: 'studio.open-jb-editor', path: '%$path%' }
+        }, 
+        {$: 'menu.action', 
+          title: 'Javascript editor', 
+          icon: 'code', 
+          action :{$: 'studio.edit-source', path: '%$path%' }
+        }, 
+        {$: 'studio.goto-sublime', path: '%$path%' },
+        {$: 'menu.action', 
+          title: 'Delete', 
+          icon: 'delete', 
+          shortcut: 'Delete', 
+          action: [
+            {$: 'write-value', to: '%$TgpTypeCtrl.expanded%', value: false }, 
+            {$: 'studio.delete', path: '%$path%' }
+          ]
+        }
+      ]
+    }
+  }
+})
+
+;
+
 (function() {
 var st = jb.studio;
-
-st.modified = {};
-
-st.scriptChange.subscribe(e=>{
-	var comp = e.path[0];
-	if (!st.modified[comp]) {
-		st.modified[comp] = { original : e.before || '' }
-	}
-})
 
 jb.component('studio.save-components', {
 	params: [
 		{ id: 'force',as: 'boolean', type: 'boolean' }
 	],
 	impl : (ctx,force) => 
-		jb.rx.Observable.from(jb.entries(st.modified))
-			.filter(x=>x)
-			.concatMap(toSave=>{
-				var comp = toSave[0], val = toSave[1];
+		jb.rx.Observable.from(Object.getOwnPropertyNames(st.previewjb.comps))
+			.filter(comp=>comp.indexOf('$jb') != 0)
+			.filter(comp=>st.previewjb.comps[comp] != st.serverComps[comp])
+			.concatMap(comp=>{
+				var original = st.serverComps[comp] ? st.compAsStr(st.serverComps[comp]) || '';
 				st.message('saving ' + comp);
-				if (force && !val.original)
-					val.original = `jb.component('${comp}', {`;
+				if (force && !original)
+					original = `jb.component('${comp}', {`;
 
 				return $.ajax({ 
 					url: `/?op=saveComp&comp=${comp}&project=${ctx.exp('%$studio/project%')}&force=${force}`, 
 					type: 'POST', 
-					data: JSON.stringify({ original: val && val.original, toSave: st.compAsStr(comp) }),
+					data: JSON.stringify({ original: original, toSave: st.compAsStr(comp) }),
 					headers: { 'Content-Type': 'application/json; charset=UTF-8' } 
 				}).then(
 					res=>({ res: res , comp: comp }),
 					e=> { throw { e: e , comp: comp } }
 				)
-
-				// return fetch(`/?op=saveComp&comp=${comp}&project=${ctx.exp('%$studio/project%')}&force=${force}`, {
-				// 	method: 'post',  
-				// 	body: JSON.stringify({ original: val && val.original, toSave: st.compAsStr(comp) }),
-				//     headers: { 'Content-type': 'application/json; charset=UTF-8' },  
-				// })
 			})
 			.catch(e=>{
 				st.message('error saving: ' + e.e);
@@ -15673,9 +15677,9 @@ jb.component('studio.save-components', {
 			})
 			.subscribe(entry=>{
 				var result = entry.res;
-				st.message((result.type || '') + ': ' + (result.desc || '') + (result.st.message || ''), result.type != 'success');
+				st.message((result.type || '') + ': ' + (result.desc || '') + (result.message || ''), result.type != 'success');
 				if (result.type == 'success')
-					delete st.modified[entry.comp];
+					st.serverComps[entry.comp] = st.previewjb.comps[comp];
 			})
 });
 
@@ -15690,51 +15694,54 @@ jb.component('studio.open-project', {
   }
 })
 
+jb.component('studio.goto-project', {
+  type: 'action', 
+  impl :{$: 'runActions', 
+    actions: [
+      {$: 'goto-url', 
+        url: '/project/studio/%%', 
+        target: 'new tab'
+      }, 
+      {$: 'close-containing-popup' }
+    ]
+  }
+})
 
 jb.component('studio.choose-project', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'itemlist-with-find', 
     controls: [
-      {$: 'editable-text', 
-        title: 'search', 
-        databind: '%$studio/project_pattern%', 
-        style :{$: 'editable-text.mdl-input', width: '260' }
-      }, 
+      {$: 'itemlist-container.search', features: {$: 'css.width', width: '250'} },
       {$: 'itemlist', 
         items :{
           $pipeline: [
-            '%$projects%', 
-            {$: 'search-filter', pattern: '%$studio/project_pattern%' }
+            '%projects%', 
+            {$: 'itemlist-container.filter' }, 
           ]
         }, 
+        features: [
+            { $: 'itemlist.selection' }, 
+            { $: 'itemlist.keyboard-selection', autoFocus: true, onEnter :{$: 'studio.goto-project' } },
+            { $: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', strongRefresh: true}
+        ],
         controls :{$: 'button', 
-          title: '%$project%', 
-          action :{$: 'runActions', 
-            actions :{$: 'runActions', 
-              actions: [
-                {$: 'goto-url', 
-                  url: '/project/studio/%$project%', 
-                  target: 'new tab'
-                }, 
-                {$: 'close-containing-popup' }
-              ]
-            }
+          title :{$: 'highlight', 
+            base: '%%', 
+            highlight: '%$itemlistCntrData/search_pattern%', 
           }, 
+          action :{$: 'studio.goto-project' }, 
           style :{$: 'button.mdl-flat-ripple' }, 
-          features :{$: 'css', css: '!button { text-align: left; width: 250px }' }
+          features :{$: 'css', css: '{ text-align: left; width: 250px }' }
         }, 
-        style :{$: 'itemlist.ul-li' }, 
-        itemVariable: 'project'
+//        style :{$: 'itemlist.ul-li' }, 
+//        itemVariable: 'project'
       }
     ], 
     features: [
-      {$: 'group.wait', 
-        for :{$: 'http.get', url: '/?op=projects', json: 'true' }, 
-        resource: 'projects', 
-        mapToResource: '%projects%'
-      }, 
-      {$: 'css.padding', top: '15', left: '15' }
+      {$: 'group.wait', for :{$: 'http.get', url: '/?op=projects', json: 'true' }},
+      {$: 'css.padding', top: '15', left: '15' },
+      {$: 'group.itemlist-container' }, 
     ]
   }
 })
@@ -16112,83 +16119,6 @@ jb.component('itemlist.studio-suggestions-options', {
 })();
 
 (function() {
-  var st = jb.studio;
-
-jb.component('studio.edit-source', {
-	type: 'action',
-	params: [
-		{ id: 'path', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } }
-	],
-	impl: {
-		$: 'open-dialog',
-		title :{$: 'studio.short-title', path: '%$path%' },
-		style :{$: 'dialog.studio-floating', id: 'edit source', width: 600 },
-		features :{$: 'css', css: '.jb-dialog-content-parent {overflow-y: hidden}'},
-		content :{$: 'editable-text', 
-			databind :{$: 'studio.profile-as-text', path: '%$path%' },
-			style :{$: 'editable-text.codemirror', mode: 'javascript'},
-			features: {$: 'studio.undo-support', path: '%$path%' },
-		}
-	}
-})
-
-jb.component('studio.string-property-ref', {
-	type: 'data',
-	params: [
-		{ id: 'path', as: 'string' },
-	],
-	impl: (context,path) => ({
-			$jb_val: value => {
-				if (typeof value == 'undefined')
-					return st.valOfPath(path);
-				else
-					st.writeValueOfPath(path, newVal);
-			}
-		})
-})
-
-jb.component('studio.goto-sublime', {
-	type: 'menu.option',
-	params: [
-		{ id: 'path', as: 'string'},
-	],
-    impl :{$: 'menu.dynamic-options', 
-        items :{$: 'studio.goto-targets', path: '%$path%' }, 
-        genericOption :{$: 'menu.action', 
-          title: { $pipeline: [
-            {$: 'split', separator: '~', part: 'first' },
-            'Goto sublime: %%'
-          ]}, 
-          action :{$: 'studio.open-sublime-editor', path: '%%' } 
-        }
-      }, 
-}) 
-
-jb.component('studio.goto-targets', {
-	params: [
-		{ id: 'path', as: 'string'},
-	],
-	impl: (ctx,path) => 
-		[st.compNameOfPath(path),path]
-			.filter(x=>x)
-			.map(x=>
-				x.split('~')[0])
-			.filter( jb.unique(x=>x) )
-}) 
-
-jb.component('studio.open-sublime-editor', {
-	type: 'action',
-	params: [
-		{ id: 'path', as: 'string'},
-	],
-	impl: (ctx,path) => {
-		path && $.ajax(`/?op=gotoSource&comp=${path.split('~')[0]}`)
-	}
-}) 
-
-})();
-
-(function() {
 var st = jb.studio;
 
 class Undo {
@@ -16296,6 +16226,83 @@ function setComp(code,jbart_base) {
 		jb.logException(e,'set comp:'+code);
 	}
 }
+
+})();
+
+(function() {
+  var st = jb.studio;
+
+jb.component('studio.edit-source', {
+	type: 'action',
+	params: [
+		{ id: 'path', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } }
+	],
+	impl: {
+		$: 'open-dialog',
+		title :{$: 'studio.short-title', path: '%$path%' },
+		style :{$: 'dialog.studio-floating', id: 'edit source', width: 600 },
+		features :{$: 'css', css: '.jb-dialog-content-parent {overflow-y: hidden}'},
+		content :{$: 'editable-text', 
+			databind :{$: 'studio.profile-as-text', path: '%$path%' },
+			style :{$: 'editable-text.codemirror', mode: 'javascript'},
+			features: {$: 'studio.undo-support', path: '%$path%' },
+		}
+	}
+})
+
+jb.component('studio.string-property-ref', {
+	type: 'data',
+	params: [
+		{ id: 'path', as: 'string' },
+	],
+	impl: (context,path) => ({
+			$jb_val: value => {
+				if (typeof value == 'undefined')
+					return st.valOfPath(path);
+				else
+					st.writeValueOfPath(path, newVal);
+			}
+		})
+})
+
+jb.component('studio.goto-sublime', {
+	type: 'menu.option',
+	params: [
+		{ id: 'path', as: 'string'},
+	],
+    impl :{$: 'menu.dynamic-options', 
+        items :{$: 'studio.goto-targets', path: '%$path%' }, 
+        genericOption :{$: 'menu.action', 
+          title: { $pipeline: [
+            {$: 'split', separator: '~', part: 'first' },
+            'Goto sublime: %%'
+          ]}, 
+          action :{$: 'studio.open-sublime-editor', path: '%%' } 
+        }
+      }, 
+}) 
+
+jb.component('studio.goto-targets', {
+	params: [
+		{ id: 'path', as: 'string'},
+	],
+	impl: (ctx,path) => 
+		[st.compNameOfPath(path),path]
+			.filter(x=>x)
+			.map(x=>
+				x.split('~')[0])
+			.filter( jb.unique(x=>x) )
+}) 
+
+jb.component('studio.open-sublime-editor', {
+	type: 'action',
+	params: [
+		{ id: 'path', as: 'string'},
+	],
+	impl: (ctx,path) => {
+		path && $.ajax(`/?op=gotoSource&comp=${path.split('~')[0]}`)
+	}
+}) 
 
 })();
 

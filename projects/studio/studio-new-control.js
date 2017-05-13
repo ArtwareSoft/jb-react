@@ -109,18 +109,18 @@ jb.component('studio.select-profile', {
   type: 'control', 
   params: [
     { id: 'onSelect', type: 'action', dynamic: true }, 
-    { id: 'type', as: 'string' },
-    { id: 'path', as: 'string' },
+    { id: 'type', as: 'string' }, 
+    { id: 'path', as: 'string' }
   ], 
   impl :{$: 'group', 
     title: 'itemlist-with-find', 
     style :{$: 'layout.vertical', spacing: 3 }, 
-    controls: [
+    controls :[
       {$: 'itemlist-container.search', 
         title: 'Search', 
         searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
         databind: '%$itemlistCntrData/search_pattern%', 
-        style :{$: 'editable-text.mdl-input', width: '155' }, 
+        style :{$: 'editable-text.mdl-input' }, 
         features: [
           {$: 'field.subscribe', 
             action :{$: 'write-value', to: '%$SelectedCategory%', value: 'all' }
@@ -131,7 +131,7 @@ jb.component('studio.select-profile', {
       {$: 'group', 
         title: 'categories and items', 
         style :{$: 'layout.horizontal', spacing: 3 }, 
-        controls: [
+        controls :[
           {$: 'picklist', 
             title: '', 
             databind: '%$SelectedCategory%', 
@@ -159,13 +159,13 @@ jb.component('studio.select-profile', {
                   watchItems: false, 
                   features: [
                     {$: 'itemlist.selection', 
+                      cssForActive: 'background: white', 
                       onSelection :{$: 'write-value', 
                         to: '%$picklistModel/databind%', 
                         value: '%code%'
                       }, 
                       autoSelectFirst: 'true', 
-                      cssForSelected: 'border-left: 2px #ccc solid; background: #eee', 
-                      cssForActive: 'background: white'
+                      cssForSelected: 'border-left: 2px #ccc solid; background: #eee'
                     }
                   ]
                 }, 
@@ -190,9 +190,10 @@ jb.component('studio.select-profile', {
               {$: 'button', 
                 title :{$: 'highlight', 
                   base: '%%', 
-                  highlight: '%$itemlistCntrData/search_pattern%', 
+                  highlight: '%$itemlistCntrData/search_pattern%'
                 }, 
                 action: [{$: 'close-containing-popup' }, { $call: 'onSelect' }], 
+                style :{$: 'button.mdl-flat-ripple' }, 
                 features :{$: 'css', css: '{ text-align: left; width: 250px }' }
               }
             ], 
@@ -209,8 +210,12 @@ jb.component('studio.select-profile', {
                 onEnter :{$: 'runActions', 
                   actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
                 }
-              },
-              {$: 'watch-ref', ref: '%$SelectedCategory%'}
+              }, 
+              {$: 'watch-ref', ref: '%$SelectedCategory%', strongRefresh: true }, 
+              {$: 'watch-ref', 
+                ref: '%$itemlistCntrData/search_pattern%', 
+                strongRefresh: true
+              }
             ]
           }
         ]
@@ -224,11 +229,9 @@ jb.component('studio.select-profile', {
       }, 
       {$: 'inner-resource', 
         name: 'SelectedCategory', 
-        value : '%$Categories[0]%'
+        value: '%$Categories[0]%'
       }, 
-      {$: 'inner-resource', 
-        name: 'SearchPattern', value: ''
-      }, 
+      {$: 'inner-resource', name: 'SearchPattern', value: '' }, 
       {$: 'group.itemlist-container' }
     ]
   }

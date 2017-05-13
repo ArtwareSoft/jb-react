@@ -58,34 +58,41 @@ jb.component('studio.properties', {
         title :{
           $pipeline: [
             {$: 'count', 
-              items :{$: 'studio.non-control-children', path: '%$path%' },
+              items :{$: 'studio.non-control-children', path: '%$path%' }
             }, 
             'Properties (%%)'
           ]
         }, 
         style :{$: 'property-sheet.studio-properties' }, 
-        controls : [
+        controls: [
           {$: 'dynamic-controls', 
             controlItems :{$: 'studio.non-control-children', path: '%$path%' }, 
             genericControl :{$: 'studio.property-field', path: '%$controlItem%' }
-        }], 
+          }
+        ]
       }, 
       {$: 'group', 
         remark: 'features', 
         title :{
           $pipeline: [
-            {$: 'count', items:{$: 'studio.val', path: '%$path%~features' } }, 
+            {$: 'count', 
+              items :{$: 'studio.val', path: '%$path%~features' }
+            }, 
             'Features (%%)'
           ]
         }, 
-        controls :{$: 'studio.property-array', path: '%$path%~features' }, 
+        controls :{$: 'studio.property-array', path: '%$path%~features' }
       }
     ], 
     features: [
       {$: 'group.dynamic-titles' }, 
-      {$: 'group.studio-watch-path', path: '%$path%' },
+      {$: 'group.studio-watch-path', path: '%$path%' }, 
       {$: 'hidden', 
-        showCondition :{$: 'studio.has-param', path: '%$path%', param: 'features', remark: 'not a control' }
+        showCondition :{$: 'studio.has-param', 
+          remark: 'not a control', 
+          path: '%$path%', 
+          param: 'features'
+        }
       }
     ]
   }

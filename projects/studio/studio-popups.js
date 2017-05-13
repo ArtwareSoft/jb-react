@@ -26,7 +26,7 @@ jb.component('dialog.studio-floating', {
 	impl :{$: 'custom-style',
 			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
 				h('div',{class: 'dialog-title noselect'},state.title),
-				cmp.hasMenu ? h('div',{class: 'dialog-menu'},cmp.menuComp): '',
+				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
 				h('button',{class: 'dialog-close', onclick: 
 					_=> cmp.dialogClose() },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
@@ -82,7 +82,7 @@ jb.component('studio-dialog-feature.studioPopupLocation',{
 	impl: ctx => ({
 		afterViewInit: cmp => {
 			var dialog = cmp.dialog;
-			if (!sessionStorage[dialog.id]) {
+			if (dialog.id && !sessionStorage[dialog.id]) {
 				dialog.el.classList.add(dialog.id);
 				dialog.el.classList.add('default-location')
 			}
