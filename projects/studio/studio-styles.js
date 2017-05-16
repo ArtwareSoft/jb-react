@@ -13,10 +13,9 @@ jb.component('editable-text.studio-primitive-text', {
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); 
 	transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; 
 }
-:focus { border-color: #66afe9; outline: 0; 
+:focus { width: 300px; transition: width: 1s; border-color: #66afe9; outline: 0; 
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
-::placeholder { color: #999; opacity: 1; }
-.focused {width: 300px; transition: width: 1s}`
+::placeholder { color: #999; opacity: 1; }`
 	}
 })
 

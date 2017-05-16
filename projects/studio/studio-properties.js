@@ -156,26 +156,6 @@ jb.component('studio.property-label',{
 	}
 });
 
-jb.component('studio.property-primitive2', {
-  type: 'control', 
-  params: [
-    { id: 'path', as: 'string' }
-  ], 
-  impl :{$: 'editable-text', 
-    style :{$: 'editable-text.studio-primitive-text' }, 
-    title :{$: 'studio.prop-name', path: '%$path%' }, 
-    databind :{$: 'studio.ref', path: '%$path%' }, 
-    features: [
-      {$: 'studio.undo-support', path: '%$path%' }, 
-      {$: 'studio.property-toolbar-feature', path: '%$path%'},
-      // {$: 'editable-text.suggestions-input-feature', 
-      //   path: '%$path%', 
-      //   action :{$: 'studio.jb-open-suggestions', path: '%$path%' }
-      // }
-    ]
-  }
-})
-
 jb.component('studio.property-script', {
   type: 'control', 
   params: [

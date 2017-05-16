@@ -26,7 +26,7 @@ jb.component('picklist', {
             group.options.push({text: o.text.split('.').pop(), code: o.code });
           })
           groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
-          cmp.setState({
+          jb.ui.setState(cmp,{
             groups: groups,
             options: options,
             hasEmptyOption: options.filter(x=>!x.text)[0]

@@ -214,10 +214,10 @@ jb.component('studio.wrap', {
 	type: 'action',
 	params: [ 
 		{ id: 'path', as: 'string' }, 
-		{ id: 'compName', as: 'string' } 
+		{ id: 'comp', as: 'string' } 
 	],
-	impl: (ctx,path,compName) => 
-		st.wrap(path,compName)
+	impl: (ctx,path,comp) => 
+		st.wrap(path,comp)
 })
 
 jb.component('studio.wrap-with-group', {

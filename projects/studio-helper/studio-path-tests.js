@@ -124,6 +124,29 @@ jb.component('path-test.filter-no-sugar', {
 	}
 })
 
+jb.component('test.label1', {
+	type: 'control',
+	impl :{$: 'label' }
+})
+
+jb.component('path-change-test.wrap', {
+	 impl :{$: 'path-change-test', 
+	 	path: 'test.label1~impl',
+	 	action :{$: 'studio.wrap-with-group', path: 'test.label1~impl' },
+	 	expectedPathAfter: 'test.label1~impl~controls~0',
+//	 	cleanUp: {$: 'studio.undo'}
+	}
+})
+
+// jb.component('path-change-test.insert-comp', {
+// 	 impl :{$: 'path-change-test', 
+// 	 	path: 'test.group1~impl',
+// 	 	action :{$: 'studio.insert-control', path: 'test.group1~impl', comp: 'label' },
+// 	 	expectedPathAfter: 'test.group1~impl~controls',
+// //	 	cleanUp: {$: 'studio.undo'}
+// 	}
+// })
+
 // jb.component('path-test.asIs', {
 // // 	 impl :{$: 'jb-path-test', 
 // 	 	$vars: { tst: 10 },

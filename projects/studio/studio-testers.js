@@ -46,7 +46,6 @@ jb.component('studio-tree-children-test', {
   },
 })
 
-
 jb.component('jb-path-test', {
   type: 'test',
   params: [
@@ -81,5 +80,31 @@ jb.component('jb-path-test', {
           }
           return success();
     })
+  }
+})
+
+jb.component('path-change-test', {
+  type: 'test',
+  params: [
+    { id: 'path', as: 'string' },
+    { id: 'action', type: 'action', dynamic: true },
+    { id: 'expectedPathAfter', as: 'string' },
+    { id: 'cleanUp', type: 'action', dynamic: true  },
+  ],
+  impl: (ctx,path,action,expectedPathAfter,cleanUp)=> {
+    var testId = ctx.vars.testID;
+    var failure = (part,reason) => ({ id: testId, title: testId + '- ' + part, success:false, reason: reason });
+    var success = _ => ({ id: testId, title: testId, success: true });
+
+    var pathRef = jb.studio.refOfPath(path);
+    action();
+    pathRef.handler.refresh(pathRef);
+    if (pathRef.$jb_path.join('~') != expectedPathAfter)
+      var res = { id: testId, title: testId, success: false , reason: pathRef.$jb_path.join('~') + ' instead of ' + expectedPathAfter }
+    else
+      var res = { id: testId, title: testId, success: true };
+    cleanUp();
+
+    return res;
   }
 })

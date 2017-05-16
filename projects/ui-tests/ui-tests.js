@@ -199,6 +199,44 @@ jb.component('ui-test.open-dialog', {
 },
 })
 
+var ui_test_dialog_isAttached = false;
+
+jb.component('ui-test.dialog-cleanup', {
+  impl :{$: 'ui-test',  
+  control :{$: 'button', title: 'click me',
+    action :{$: 'open-dialog', title: 'hello', id:'hello', 
+      content :{$: 'label', title: 'world'},
+      features: ctx => ({
+           destroy: cmp =>
+            ui_test_dialog_isAttached = cmp.base.parentNode.parentNode
+      })
+    }
+  },
+  action :[
+    {$: 'ui-action.click', selector: 'button' },
+    {$: 'dialog.close-all' }
+  ],
+  expectedResult : ctx => 
+    ui_test_dialog_isAttached
+},
+})
+
+jb.component('ui-test.dialog-cleanup-bug', {
+  impl :{$: 'ui-test',  
+  control :{$: 'button', title: 'click me',
+    action :{$: 'open-dialog', title: 'hello', id:'hello', 
+      content :{$: 'label', title: 'world'},
+    }
+  },
+  action :[
+    {$: 'ui-action.click', selector: 'button' },
+    {$: 'dialog.close-all' }
+  ],
+  expectedResult : ctx => 
+    ! jb.resources['jb_dialog_hello']
+},
+})
+
 jb.component('ui-test.group-flex', {
   impl :{$: 'ui-test',  
   control :{$: 'group', 

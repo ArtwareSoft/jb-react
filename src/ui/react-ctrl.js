@@ -290,6 +290,12 @@ ui.waitFor = function(check,times,interval) {
 
 // ****************** vdom utils ***************
 
+ui.setState = function(cmp,state) {
+	if (!state) state = {};
+	jb.logPerformance('setState',cmp.ctx,state);
+	cmp.setState(state);
+}
+
 ui.addClassToVdom = function(vdom,clz) {
 	vdom.attributes = vdom.attributes || {};
 	vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');

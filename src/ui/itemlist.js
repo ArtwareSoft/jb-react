@@ -2,7 +2,7 @@ jb.component('itemlist', {
   type: 'control', category: 'group:80,common:80',
   params: [
     { id: 'title', as: 'string' },
-    { id: 'items', as: 'array' , dynamic: true, essential: true },
+    { id: 'items', as: 'array' , dynamic: true, essential: true, ref: true },
     { id: 'controls', type: 'control[]', essential: true, dynamic: true },
     { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
     { id: 'watchItems', as: 'boolean' },
@@ -16,7 +16,7 @@ jb.component('itemlist', {
 jb.component('itemlist.init', {
   type: 'feature',
   params: [
-    { id: 'items', essential: true, dynamic: true },
+    { id: 'items', as: 'array', essential: true, dynamic: true, ref: true },
     { id: 'itemVariableName', as: 'string' },
   ],
   impl: (context, items, itemVariableName,watch) => ({
@@ -30,19 +30,23 @@ jb.component('itemlist.init', {
             return ctrls;
         }
 
-        cmp.items = items(cmp.ctx);
+        cmp.itemsRef = items(cmp.ctx);
+        cmp.items = jb.toarray(jb.val(cmp.itemsRef));
+        if (!cmp.items.indexOf) debugger;
         cmp.state.ctrls = cmp.items2ctrls(cmp.items).map(c=>c.reactComp());
 
         cmp.initWatchByRef = refToWatch =>
             jb.ui.refObservable(refToWatch,cmp)
-              .map(_=>items(cmp.ctx))
+              .map(_=>jb.toarray(jb.val(items(cmp.ctx))))
               .filter(items=>
                 items.length == 0 || !jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
-              .do(items => 
-                cmp.items = items)
+              .do(items => {
+                cmp.items = items;
+                if (!cmp.items.indexOf) debugger;
+              })
               .map(items=> cmp.items2ctrls(items))
               .subscribe(ctrls=>
-                cmp.setState({ctrls:ctrls.map(c=>c.reactComp())}))
+                jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())}))
       },
   })
 })
@@ -51,9 +55,8 @@ jb.component('itemlist.watch-items', {
   type: 'feature', category: 'itemlist:70',
   impl: (ctx,ref) => ({
       init: cmp => {
-        var itemsAsRef = jb.asRef(cmp.items);
-        if (cmp.initWatchByRef && jb.isRef(itemsAsRef)) 
-          cmp.initWatchByRef(itemsAsRef);
+        if (cmp.initWatchByRef && jb.isRef(cmp.itemsRef)) 
+          cmp.initWatchByRef(cmp.itemsRef);
       }
   })
 })
@@ -100,7 +103,7 @@ jb.component('itemlist.selection', {
         clickEm.buffer(clickEm.debounceTime(250))
           .filter(buff => buff.length === 2)
           .subscribe(buff=>
-            jb.ui.applyAfter(ctx.params.onDoubleClick(ctx.setData(buff[1]))),ctx);
+            jb.ui.applyAfter(ctx.params.onDoubleClick(cmp.ctx.setData(buff[1]))),ctx);
 
         if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
             cmp.selectionEmitter.next(cmp.items[0])
@@ -122,19 +125,19 @@ jb.component('itemlist.keyboard-selection', {
   ],
   impl: ctx => ({
       afterViewInit: function(cmp) {
-        cmp.onkeydown = (ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.keydown) || (ctx.vars.selectionKeySource && ctx.vars.selectionKeySource.keydown);
-        if (!cmp.onkeydown) {
+        var onkeydown = (ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.keydown) || (ctx.vars.selectionKeySource && ctx.vars.selectionKeySource.keydown);
+        if (!onkeydown) {
           cmp.base.setAttribute('tabIndex','0');
-          cmp.onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
-              .takeUntil( cmp.destroyed );          
+          onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
 
           if (ctx.params.autoFocus)
             jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus')
         }
+        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );          
 
         cmp.onkeydown.filter(e=> e.keyCode == 13)
           .subscribe(x=>
-            jb.ui.applyAfter(ctx.params.onEnter(ctx.setData(cmp.state.selected))),ctx);
+            ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
     
         cmp.onkeydown.filter(e=> !e.ctrlKey &&
               (e.keyCode == 38 || e.keyCode == 40))
@@ -142,6 +145,7 @@ jb.component('itemlist.keyboard-selection', {
               event.stopPropagation();
               var diff = event.keyCode == 40 ? 1 : -1;
               var items = cmp.items;
+              if (!items.indexOf) debugger;
               return items[(items.indexOf(cmp.state.selected) + diff + items.length) % items.length] || cmp.state.selected;
         }).subscribe(x=>
           cmp.selectionEmitter && cmp.selectionEmitter.next(x)

@@ -410,7 +410,7 @@ var jstypes = {
       return value;
     },
     'ref': function(value) {
-      if (Array.isArray(value)) value = value[0];
+//      if (Array.isArray(value)) value = value[0];
       if (value == null) return value;
       return jb.valueByRefHandler.asRef(value);
     }
@@ -512,10 +512,10 @@ function logError(errorStr,errorObj,ctx) {
   console.error(errorStr,errorObj,ctx);
 }
 
-function logPerformance(type,text) {
+function logPerformance(type,p1,p2,p3) {
   var types = ['focus','apply','check','suggestions'];
-  if (type != 'focus') return; // filter. TBD take from somewhere else
-  console.log(type, text == null ? '' : text);
+  if (['suggestions','setState'].indexOf(type) == -1) return; // filter. TBD take from somewhere else
+  console.log(type, p1 || '', p2 || '', p3 ||'');
 }
 
 function logException(e,errorStr) {
@@ -555,6 +555,7 @@ var valueByRefHandlerWithjbParent = {
       to.$jb_val(this.val(value))
     else if (to.$jb_parent)
       to.$jb_parent[to.$jb_property] = this.val(value);
+    return to;
   },
   asRef: function(value) {
     if (value && (value.$jb_parent || value.$jb_val))

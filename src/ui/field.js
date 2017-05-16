@@ -21,7 +21,7 @@ jb.component('field.databind', {
               }
             }
             jb.ui.refObservable(ctx.vars.$model.databind,cmp)
-              .subscribe(_=>cmp.forceUpdate())
+              .subscribe(_=>jb.ui.setState(cmp))
       }
   }}
 })

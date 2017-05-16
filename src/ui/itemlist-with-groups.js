@@ -67,7 +67,7 @@ jb.component('itemlist.watch-items-with-heading', {
                 cmp.items = items)
               .map(items=> cmp.items2ctrls(items))
               .subscribe(ctrls=>
-                cmp.setState({ctrls:ctrls.map(c=>c.reactComp())}))
+                jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())}))
         
       }
   })

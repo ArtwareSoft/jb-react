@@ -51,6 +51,7 @@ jb.component('editable-text.helper-popup', {
               id: ctx.params.popupId,
               style: _ctx => ctx.params.popupStyle(_ctx),
               content: _ctx => ctx.params.control(_ctx),
+              features: {$: 'dialog-feature.uniqueDialog', id: ctx.params.popupId}
             })
           , cmp.ctx, input );
 
@@ -59,7 +60,8 @@ jb.component('editable-text.helper-popup', {
       cmp.closePopup = _ =>
         cmp.popup() && cmp.popup().close();
 
-      var keydown = cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown.filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1);
+      cmp.ctx.vars.selectionKeySource.input = input;
+      var keydown = cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown; // .filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1);
 
       keydown.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)
         .delay(1).subscribe(_=>{

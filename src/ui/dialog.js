@@ -20,7 +20,6 @@ jb.component('open-dialog', {
 			resourceId: 'jb_dialog_'+ (id || context.id)
 		};
 		jb.resource(dialog.resourceId,{});
-//		dialog.em.subscribe(e=>console.log(e.type));
 
 		var ctx = context.setVars({
 			dialogData: jb.resource(dialog.resourceId),
@@ -44,7 +43,7 @@ jb.component('open-dialog', {
 			afterViewInit: cmp => {
 				cmp.dialog.el = cmp.base;
 				cmp.dialog.el.style.zIndex = 100;
-			}
+			},
 		}).reactComp();
 		jb.ui.dialogs.addDialog(dialog,ctx);
 		return dialog;
@@ -184,23 +183,6 @@ jb.component('dialog-feature.nearLauncherLocation', {
 		}
 	}
 })
-
-// jb.component('dialog-feature.launcherLocationNearSelectedNode', {
-// 	type: 'dialog-feature',
-// 	params: [
-// 		{ id: 'offsetLeft', as: 'number' },
-// 		{ id: 'offsetTop', as: 'number' },
-// 	],
-// 	impl: (context, offsetLeft, offsetTop) => ({
-// 			afterViewInit: function(cmp) {
-// 				var $elem = context.vars.$launchingElement.$el;
-// 				var $control = $elem.closest('.selected').first();
-// 				var pos = $control.offset();
-// 				$(cmp.base).findIncludeSelf('.jb-dialog').css('left', `${pos.left + offsetLeft}px`);
-// 				$(cmp.base).findIncludeSelf('.jb-dialog').css('top', `${pos.top + $control.outerHeight() + offsetTop}px`);
-// 			}
-// 		})
-// })
 
 jb.component('dialog-feature.onClose', {
 	type: 'dialog-feature',
@@ -343,7 +325,6 @@ jb.component('dialog-feature.drag-title', {
 				        }))
 				      	.flatMap(imageOffset => 
 			      			 mouseMoveEm.takeUntil(mouseUpEm)
-			      			 //.do(_=>titleElem.style.cursor = 'pointer'))
 			      			 .map(pos => ({
 						        top:  pos.clientY - imageOffset.top,
 						        left: pos.clientX - imageOffset.left
@@ -351,7 +332,6 @@ jb.component('dialog-feature.drag-title', {
 				      	);
 
 				  mousedrag.distinctUntilChanged().subscribe(pos => {
-//				  	titleElem.style.cursor = 'move';
 			        dialog.el.style.top  = pos.top  + 'px';
 			        dialog.el.style.left = pos.left + 'px';
 			        if (id) sessionStorage.setItem(id, JSON.stringify(pos))
@@ -381,30 +361,13 @@ jb.component('dialog.dialog-ok-cancel', {
 	}
 })
 
-class JbDialogs extends jb.ui.Component {
-	constructor() {
-		super();
-		this.state.dialogs = [];
-		jb.ui.dialogs.em.subscribe(dialogs=>
-			this.setState({dialogs: dialogs}));		
-	}
-	render(props,state) {
-		return jb.ui.h('div',{ class: 'jb-dialogs'}, state.dialogs.map(d=>jb.ui.h(d.comp)) )
-	}
-}
-
 jb.ui.dialogs = {
  	dialogs: [],
- 	em: new jb.rx.Subject(),
  	redraw: function() {
-		this.em.next(this.dialogs) 		
- 	},
- 	init: function() {
- 		if ($('.jb-dialogs')[0]) return;
-		jb.ui.render(jb.ui.h(JbDialogs), document.body);
+		jb.ui.render(jb.ui.h('div',{ class: 'jb-dialogs'}, jb.ui.dialogs.dialogs.map(d=>jb.ui.h(d.comp)) )
+			, document.body, document.querySelector('body>.jb-dialogs'));
  	},
 	addDialog: function(dialog,context) {
-		jb.ui.dialogs.init();
 
 		var self = this;
 		dialog.context = context;

@@ -35,7 +35,7 @@ jb.component('watch-ref', {
               cmp.initWatchByRef(ref)
           } else {
             jb.ui.refObservable(ref,cmp).subscribe(e=>
-                cmp.forceUpdate())
+                jb.ui.setState(cmp))
           }
       }
   })
@@ -55,7 +55,7 @@ jb.component('group.data', {
               cmp.initWatchByRef(data_ref())
         else if (watch)
           jb.ui.refObservable(data_ref(),cmp).subscribe(e=>
-                cmp.forceUpdate())
+                jb.ui.setState(cmp))
       },
       extendCtxOnce: ctx => {
           var val = data_ref();
@@ -100,7 +100,7 @@ jb.component('inner-resource', {
     { id: 'value', dynamic: true },
   ],
   impl: (context, name, value) => ({
-      destroyed: cmp => {
+      destroy: cmp => {
         if (jb.resources[cmp.resourceId])
           delete jb.resources[cmp.resourceId];
       },
@@ -158,7 +158,7 @@ jb.component('feature.if', {
               cmp.initWatchByRef(condition())
         else if (watch)
           jb.ui.refObservable(condition(),cmp).subscribe(e=>
-                cmp.forceUpdate())
+                jb.ui.setState(cmp))
     },
     templateModifier: (vdom,cmp,state) => 
         jb.toboolean(condition()) ? vdom : ' ' // can not be empty string

@@ -52,6 +52,7 @@ class ImmutableWithPath {
     this.resources(jb.ui.update(this.resources(),op));
     this.resourceVersions[resource] = this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1;
     this.resourceChange.next({op: op, path: ref.$jb_path});
+    return ref;
   }
   asRef(obj) {
     if (!obj) return;
@@ -171,7 +172,8 @@ class ImmutableWithPath {
     if (ref.$jb_path) {
       return this.resourceChange
         .takeUntil(cmp.destroyed)
-        .filter(e=>e.path[0] == ref.$jb_path[0])
+        .filter(e=>
+            e.path[0] == ref.$jb_path[0])
         .filter(e=> { // same resource - refind itself
           jb.refreshRef(ref);
           return e.path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0

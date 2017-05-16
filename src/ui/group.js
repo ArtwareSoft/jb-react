@@ -18,11 +18,11 @@ jb.component('group.init-group', {
         jb.ui.refObservable(refToWatch,cmp)
           .map(_=>ctx.vars.$model.controls(cmp.ctx))
           .subscribe(ctrls=>
-              cmp.setState({ctrls:ctrls.map(c=>c.reactComp())})))
+              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())})))
 
       if (cmp.ctrlEmitter)
         cmp.ctrlEmitter.subscribe(ctrls=>
-              cmp.setState({ctrls:ctrls.map(c=>c.reactComp())}))
+              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())}))
       if (!cmp.state.ctrls)
         cmp.state.ctrls = ctx.vars.$model.controls(cmp.ctx).map(c=>c.reactComp())
     }

@@ -15,7 +15,6 @@
 </head>
 <body>
 <div id="test"> </div>
-<div id="dialogs"> </div>
 <script>
 	var test = (location.href.match(/test=([^&]*)/) || [])[1]; //.split('?test=').pop().split('&')[0];
 	jb.testers.runTests('',test,location.href.indexOf('&show') != -1);

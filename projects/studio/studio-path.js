@@ -25,7 +25,7 @@ Object.assign(st,{
   splice: (ref,args) =>
     st.compsRefHandler.splice(ref,args),
   push: (ref,value) =>
-    st.compsRefHandler.splice(ref,value),
+    st.compsRefHandler.push(ref,value),
   isRef: (ref) =>
     st.compsRefHandler.isRef(ref),
   asRef: (obj) =>
@@ -72,13 +72,11 @@ Object.assign(st,{
 
 	move: (path,draggedPath,index) => { // drag & drop
 		var dragged = st.valOfPath(draggedPath);
-		var arr = st.valOfPath(path);
-		if (!Array.isArray(arr))
-			arr = jb.getOrCreateControlArray(path);
-		if (Array.isArray(arr)) {
-			st._delete(dragged);
-			var _index = (index == -1) ? arr.length : index;
-			st.splice(st.refOfPath(path),[[_index,0,dragged]]);
+		var dest = st.getOrCreateControlArrayRef(path);
+		if (dest) {
+			st._delete(draggedPath);
+			var _index = (index == -1) ? jb.val(dest).length : index;
+			st.splice(dest,[[_index,0,dragged]]);
 		}
 	},
 
@@ -118,12 +116,10 @@ Object.assign(st,{
 	duplicate: (path) => {
 		var prop = path.split('~').pop();
 		var val = st.valOfPath(path);
-		var arr_ref = st.refOfPath(st.parentPath(st.parentPath(path)))
-		var arr = jb.getOrCreateControlArray(arr_ref);
-		if (Array.isArray(arr)) {
+		var parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
+		if (parent_ref) {
 			var clone = st.evalProfile(st.prettyPrint(val));
-			var index = Number(prop);
-			st.splice(arr_ref,[[index, 0,clone]]);
+			st.splice(parent_ref,[[Number(prop), 0,clone]]);
 		}
 	},
 
@@ -148,26 +144,26 @@ Object.assign(st,{
 	insertControl: (path,compName) => {
 		var comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
-		var result = { $: compName };
+		var newCtrl = { $: compName };
 		// copy default values
 		jb.compParams(comp).forEach(p=>{
 			if (p.defaultValue || p.defaultTValue)
-				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue || p.defaultTValue))
+				newCtrl[p.id] = JSON.parse(JSON.stringify(p.defaultValue || p.defaultTValue))
 		})
 		// find group parent that can insert the control
 		var group_path = path;
-		while (!jb.controlParam(group_path) && group_path)
+		while (st.controlParams(group_path).length == 0 && group_path)
 			group_path = st.parentPath(group_path);
-		var arr = jb.getOrCreateControlArray(group_path);
-		if (arr) 
-			st.push(st.refOfPath(group_path),result);
+		var group_ref = st.getOrCreateControlArrayRef(group_path);
+		if (group_ref)
+			st.push(group_ref,[newCtrl]);
 	},
 
 	addArrayItem: (path,toAdd) => {
 		var val = st.valOfPath(path);
 		var toAdd = toAdd || {$:''};
 		if (Array.isArray(val)) {
-			st.push(st.refOfPath(path),toAdd);
+			st.push(st.refOfPath(path),[toAdd]);
 //			return { newPath: path + '~' + (val.length-1) }
 		}
 		else if (!val) {
@@ -208,16 +204,17 @@ Object.assign(st,{
 
 		st.writeValueOfPath(path,st.evalProfile(res));
 	},
-	getOrCreateControlArray: (path) => {
+	getOrCreateControlArrayRef: (path) => {
 		var val = st.valOfPath(path);
-		var prop = jb.controlParam(path);
+		var prop = st.controlParams(path)[0];
 		if (!prop)
-			return console.log('pushing to non array');
+			return console.log('getOrCreateControlArrayRef: no control param');
+		var ref = st.refOfPath(path+'~'+prop);
 		if (val[prop] === undefined)
-			val[prop] = [];
+			return jb.writeValue(ref,[]);
 		if (!Array.isArray(val[prop]))
-			val[prop] = [val[prop]];
-		return val[prop];
+			return jb.writeValue(ref,[val[prop]]);
+		return ref;
 	},
 	evalProfile: prof_str => {
 		try {
@@ -250,7 +247,7 @@ jb.component('refresh-on-script-change', {
   impl: (ctx,strongRefresh) => ({
       init: cmp =>
         st.compsRefHandler.resourceChange.debounceTime(200).subscribe(e=>
-            cmp.forceUpdate())
+            jb.ui.setState(cmp))
    })
 })
 
