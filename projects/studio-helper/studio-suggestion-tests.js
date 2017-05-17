@@ -30,3 +30,10 @@ jb.component('suggestions-test.inside-array', {
 		expectedResult :{ $and: [{$: 'contains', text: 'people' }, { $not: { $contains: '$people'}}]}
 	},
 })
+
+jb.component('suggestions-test.1', {
+	 impl :{$: 'suggestions-test', 
+	 	expression: '%',
+		expectedResult :{$: 'contains', text: 'people' }
+	},
+})

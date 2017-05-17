@@ -174,9 +174,12 @@ class ImmutableWithPath {
         .takeUntil(cmp.destroyed)
         .filter(e=>
             e.path[0] == ref.$jb_path[0])
-        .filter(e=> { // same resource - refind itself
-          jb.refreshRef(ref);
-          return e.path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0
+        .filter(e=> { 
+          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(e.path.join('~')) == 0;
+          if (changeInParent) // change in self or parent - refind itself
+            jb.refreshRef(ref);
+          return changeInParent;
+          //e.path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0
         })
         .map(_=>
           jb.val(ref))

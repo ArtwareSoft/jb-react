@@ -32,17 +32,15 @@ jb.component('itemlist.init', {
 
         cmp.itemsRef = items(cmp.ctx);
         cmp.items = jb.toarray(jb.val(cmp.itemsRef));
-        if (!cmp.items.indexOf) debugger;
         cmp.state.ctrls = cmp.items2ctrls(cmp.items).map(c=>c.reactComp());
 
         cmp.initWatchByRef = refToWatch =>
             jb.ui.refObservable(refToWatch,cmp)
               .map(_=>jb.toarray(jb.val(items(cmp.ctx))))
               .filter(items=>
-                items.length == 0 || !jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
+                items.length == 0 || !jb.compareArrays(items,cmp.items))
               .do(items => {
                 cmp.items = items;
-                if (!cmp.items.indexOf) debugger;
               })
               .map(items=> cmp.items2ctrls(items))
               .subscribe(ctrls=>
@@ -103,10 +101,20 @@ jb.component('itemlist.selection', {
         clickEm.buffer(clickEm.debounceTime(250))
           .filter(buff => buff.length === 2)
           .subscribe(buff=>
-            jb.ui.applyAfter(ctx.params.onDoubleClick(cmp.ctx.setData(buff[1]))),ctx);
+            ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
 
-        if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
-            cmp.selectionEmitter.next(cmp.items[0])
+        cmp.jbEmitter.filter(x=> x =='after-update').subscribe(x=>{
+          if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
+              cmp.setState({selected: null});
+          if (!cmp.state.selected)
+            autoSelectFirst()
+        })
+        
+        function autoSelectFirst() {
+          if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
+              cmp.selectionEmitter.next(cmp.items[0])
+        };
+        autoSelectFirst();
     },
     extendItem: (cmp,ctrl,vdom) => {
       jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == ctrl.ctx.data);

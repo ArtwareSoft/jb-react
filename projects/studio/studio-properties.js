@@ -50,7 +50,6 @@ jb.component('studio.properties', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'group', 
-    title: '', 
     style :{$: 'group.studio-properties-accordion' }, 
     controls: [
       {$: 'group', 

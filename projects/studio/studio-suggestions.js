@@ -53,21 +53,17 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
+        console.log('init refresh-suggestions-options');
         var selectionKeySource = cmp.ctx.vars.selectionKeySource;
-        var keydown = selectionKeySource.keydown;
+        var keydown = selectionKeySource.keydown.takeUntil( cmp.destroyed );
         var input = selectionKeySource.input;
 
-        keydown.takeUntil( cmp.destroyed ).filter(e=> 
-            e.keyCode != 38 && e.keyCode != 40 && e.key != 'Shift')
-          .delay(1) // we use keydown - let the input fill itself
+        keydown.delay(1) // we use keydown - let the input fill itself
           .debounceTime(20) // solves timing of closing the floating input
-          .filter(e=>
-            new st.suggestions(input,ctx.params.expressionOnly).suggestionsRelevant() )
-          .catch(e=>
-            console.log(1,e))
-          .map(e=> input.value)
-          .distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
-//          .do(x=>console.log(1,x))
+          .startWith(1) // compensation for loosing the first event from selectionKeySource
+          // .filter(e=>
+          //   new st.suggestions(input,ctx.params.expressionOnly).suggestionsRelevant() )
+          .map(e=> input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
           .flatMap(e=>
             getProbe())
           .map(res=>
@@ -75,12 +71,10 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
           .map(probeCtx=> 
             new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,ctx.params.path))
           .catch(e=>
-            console.log(2,e))
+            jb.logException(e,'suggestions'))
           .distinctUntilChanged((e1,e2)=>
             e1.key == e2.key) // compare options - if options are the same - leave it.
           .do(e=>jb.logPerformance('suggestions',e))
-          .catch(e=>
-            console.log(3,e))
           .subscribe(e=>
               cmp.ctx.run({$:'write-value', to: '%$suggestionData/options%', value: ctx => e.options }));
 
@@ -99,6 +93,10 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
   })
 })
 
+jb.component('studio.show-suggestions', {
+  impl: ctx =>
+    new st.suggestions(ctx.data,false).suggestionsRelevant()
+})
 
 jb.component('studio.property-primitive', {
   type: 'control', 
@@ -113,6 +111,7 @@ jb.component('studio.property-primitive', {
           {$: 'studio.undo-support', path: '%$path%' }, 
           {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
           {$: 'editable-text.helper-popup', 
+            showHelper :{$: 'studio.show-suggestions' },
             features :{$: 'dialog-feature.nearLauncherLocation' }, 
             control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
             popupId: 'suggestions', 

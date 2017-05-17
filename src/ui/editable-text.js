@@ -36,6 +36,7 @@ jb.component('editable-text.helper-popup', {
     { id: 'control', type: 'control', dynamic: true, essential: true },
     { id: 'popupId', as: 'string', essential: true },
     { id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.popup' } },
+    { id: 'showHelper', as: 'boolean', dynamic: true, defaultValue :{$notEmpty: '%value%' }, description: 'show/hide helper according to input content' },
   ],
   impl : ctx =>({
     onkeydown: true,
@@ -65,7 +66,7 @@ jb.component('editable-text.helper-popup', {
 
       keydown.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)
         .delay(1).subscribe(_=>{
-        if (input.value == '')
+        if (!ctx.params.showHelper(ctx.setData(input)))
           cmp.closePopup();
         else if (!cmp.popup())
           cmp.openPopup()
