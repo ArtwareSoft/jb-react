@@ -61,7 +61,7 @@ jb.component('button.mdl-icon', {
   }
 })
 
-jb.component('button.mdl-icon-12', {
+jb.component('button.mdl-icon-12-with-ripple', {
   type: 'button.style',
   params: [
     { id: 'icon', as: 'string', default: 'code' },
@@ -78,7 +78,13 @@ jb.component('button.mdl-icon-12', {
   }
 })
 
-
-// {$ :' button', class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect', title: state.title, tabIndex: -1, 
-//           onclick: _=> cmp.clicked() , 
-//           elems: {$: 'i', class: 'material-icons', innerText: cmp.icon } }
+jb.component('button.mdl-icon-12', {
+  type: 'button.style',
+  params: [
+    { id: 'icon', as: 'string', default: 'code' },
+  ],
+  impl :{$: 'custom-style', 
+      template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: _=> cmp.clicked()},cmp.icon),
+      css: `{ font-size:12px; cursor: pointer }`,
+  }
+})

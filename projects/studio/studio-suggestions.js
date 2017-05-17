@@ -4,45 +4,40 @@
 jb.component('studio.suggestions-itemlist', {
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'itemlist', 
-        items: '%$suggestionData/options%', 
-        watchItems: true,
-        controls :{$: 'group', 
-          style :{$: 'layout.flex', align: 'space-between', direction: 'row' }, 
-          controls: [
-            {$: 'label', 
-              title: '%text%', 
-              features :{$: 'css.padding', top: '', left: '3', bottom: '' }
-            }, 
-            {$: 'button', 
-              title: 'select and close', 
-              style :{$: 'button.mdl-icon-12', icon: 'done' },
-              action :{$: 'studio.paste-suggestion', close: true}, 
-            }
-          ]
-        }, 
-        features: [
-          {$: 'inner-resource', name: 'suggestionData', 
-            value: {$: 'object', selected: '', options: [], path: '%$path%' }},
-          {$: 'itemlist.studio-refresh-suggestions-options', path: '%$path%', expressionOnly: true }, 
-          {$: 'itemlist.selection', 
-            databind: '%$suggestionData/selected%', 
-            onDoubleClick :{$: 'studio.paste-suggestion'}, 
-            autoSelectFirst: true
-          }, 
-          {$: 'itemlist.keyboard-selection', 
-            onEnter :{$: 'studio.paste-suggestion' }, 
-            autoFocus: false
-          },
-          {$: 'hidden', showCondition :{$notEmpty: '%$suggestionData/options%' } }, 
-          {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' }, 
-          {$: 'css.width', width: '300', overflow: 'auto' }, 
-          {$: 'css', 
-            css: '{ position: absolute; z-index:1000; background: white }'
-          }, 
-          {$: 'css.border', width: '1', color: '#cdcdcd' }, 
-          {$: 'css.padding', top: '2', left: '3', selector: 'li' }
-        ]
-      }
+    items: '%$suggestionData/options%', 
+    controls :{$: 'label', 
+      title: '%text%',
+//      title: {$: 'highlight', base: '%text%', highlight: '%$suggestionData/tail%'},
+    }, 
+    watchItems: true, 
+    features: [
+      {$: 'inner-resource', 
+        name: 'suggestionData', 
+        value :{$: 'object', selected: '', options: [], path: '%$path%' }
+      }, 
+      {$: 'itemlist.studio-refresh-suggestions-options', 
+        path: '%$path%', 
+        expressionOnly: true
+      }, 
+      {$: 'itemlist.selection', 
+        databind: '%$suggestionData/selected%', 
+        onDoubleClick :{$: 'studio.paste-suggestion' }, 
+        autoSelectFirst: true
+      }, 
+      {$: 'itemlist.keyboard-selection', 
+        onEnter :{$: 'studio.paste-suggestion' }, 
+        autoFocus: false
+      }, 
+      {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' }, 
+      {$: 'css.width', width: '300', overflow: 'auto', minMax: 'min' }, 
+      {$: 'css', 
+        css: '{ position: absolute; z-index:1000; background: white }'
+      }, 
+      {$: 'css.border', width: '1', color: '#cdcdcd' }, 
+      {$: 'css.padding', top: '2', left: '3', selector: 'li' },
+      {$: 'hidden', showCondition :{ $notEmpty: '%$suggestionData/options%' } }, 
+    ]
+  }
 })
 
 jb.component('itemlist.studio-refresh-suggestions-options', {
@@ -53,7 +48,6 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
-        console.log('init refresh-suggestions-options');
         var selectionKeySource = cmp.ctx.vars.selectionKeySource;
         var keydown = selectionKeySource.keydown.takeUntil( cmp.destroyed );
         var input = selectionKeySource.input;
@@ -75,8 +69,10 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
           .distinctUntilChanged((e1,e2)=>
             e1.key == e2.key) // compare options - if options are the same - leave it.
           .do(e=>jb.logPerformance('suggestions',e))
-          .subscribe(e=>
-              cmp.ctx.run({$:'write-value', to: '%$suggestionData/options%', value: ctx => e.options }));
+          .subscribe(e=> {
+              cmp.ctx.run({$:'write-value', to: '%$suggestionData/tail%', value: ctx => e.tail })
+              cmp.ctx.run({$:'write-value', to: '%$suggestionData/options%', value: ctx => e.options });
+          });
 
         function getProbe() {
           if (cmp.probeResult)
@@ -263,10 +259,14 @@ class ValueOption {
         return ` (${val.substring(0,20)}...)`;
       else if (typeof val == 'string' || typeof val == 'number' || typeof val == 'boolean')
         return ` (${val})`;
+      else if (Array.isArray(val))
+        return ` (${val.length} items)`
       return ``;
     }
-    paste(ctx,close) {
-      var toPaste = this.toPaste + ((typeof this.value != 'object' || close) ? '%' : '/');
+    paste(ctx,_close) {
+      var close = typeof this.value != 'object' || Array.isArray(this.value) || _close;
+
+      var toPaste = this.toPaste + (close ? '%' : '/');
       var input = ctx.vars.selectionKeySource.input;
       var pos = this.pos + 1;
       input.value = input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos);

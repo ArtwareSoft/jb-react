@@ -171,8 +171,10 @@ jb.component('hidden', {
     { id: 'showCondition', type: 'boolean', essential: true, dynamic: true },
   ],
   impl: (context,showCondition) => ({
-    templateModifier: (vdom,cmp,state) => 
-      showCondition(cmp.ctx) ? vdom : jb.ui.h('span')
+    templateModifier: (vdom,cmp,state) => {
+      if (!showCondition(cmp.ctx))
+        jb.path(vdom,['attributes','style','display'],'none')
+    }
   })
 })
 

@@ -79,7 +79,8 @@ jb.component('highlight', {
   impl: (ctx,base,highlight,cssClass) => {
     var h = highlight(), b = base();
     if (!h || !b) return b;
-    var highlight = b.match(new RegExp(h,'i'))[0]; // case sensitive highlight
+    var highlight = (b.match(new RegExp(h,'i'))||[])[0]; // case sensitive highlight
+    if (!highlight) return b;
     return jb.ui.h('div',{},[
         b.split(highlight)[0],
         jb.ui.h('span',{class: cssClass},highlight),

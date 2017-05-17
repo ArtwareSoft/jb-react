@@ -143,7 +143,7 @@ jb.component('itemlist.keyboard-selection', {
         }
         cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );          
 
-        cmp.onkeydown.filter(e=> e.keyCode == 13)
+        cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
           .subscribe(x=>
             ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
     
@@ -153,7 +153,6 @@ jb.component('itemlist.keyboard-selection', {
               event.stopPropagation();
               var diff = event.keyCode == 40 ? 1 : -1;
               var items = cmp.items;
-              if (!items.indexOf) debugger;
               return items[(items.indexOf(cmp.state.selected) + diff + items.length) % items.length] || cmp.state.selected;
         }).subscribe(x=>
           cmp.selectionEmitter && cmp.selectionEmitter.next(x)

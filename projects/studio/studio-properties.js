@@ -225,7 +225,7 @@ jb.component('studio.property-slider', {
 		},
 		title :{$: 'studio.prop-name', path: '%$path%' },
 		databind :{$: 'studio.ref', path: '%$path%' },
-		style :{$: 'editable-number.slider', width: '120' },
+//		style :{$: 'editable-number.slider', width: '120' },
 		min: '%$paramDef/min%',
 		max: '%$paramDef/max%',
 		step: '%$paramDef/step%',
@@ -415,6 +415,7 @@ jb.component('studio.property-array', {
             }, 
             itemVariable: 'arrayItem', 
             features: [
+              {$: 'group.studio-watch-path', path: '%$path%', strongRefresh: true},
               {$: 'hidden', showCondition: true }, 
               {$: 'itemlist.divider' }, 
               {$: 'itemlist.drag-and-drop' }
