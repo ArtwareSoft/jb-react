@@ -165,7 +165,7 @@ jb.component('studio.select-profile', {
                         value: '%code%'
                       }, 
                       autoSelectFirst: 'true', 
-                      cssForSelected: 'border-left: 2px #ccc solid; background: #eee'
+                      cssForSelected: 'box-shadow: 3px 0px 0 0 #304ffe inset; background: none !important'
                     }
                   ]
                 }, 
@@ -204,6 +204,7 @@ jb.component('studio.select-profile', {
                 onDoubleClick :{$: 'runActions', 
                   actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
                 }, 
+                cssForSelected: 'box-shadow: 1px 0px 0 0 #304ffe inset; background: none !important',
                 autoSelectFirst: true
               }, 
               {$: 'itemlist.keyboard-selection', 

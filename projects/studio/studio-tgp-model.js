@@ -112,8 +112,9 @@ Object.assign(st,{
 				.filter(x=> x.indexOf('$jb_') != 0)
 				.filter(x=> !(noExtraElem && x =='length'))
 				.map(x=>x=='length'? val.length : x) // extra elem
-				.map(k=> path +'~'+k)
-		return [path].concat(noExtraElem ? [] : [path +'~1'])
+				.map(k=> path +'~'+k);
+		if (val)
+			return [path].concat(noExtraElem ? [] : [path +'~1'])
 	},
 
 	controlParams: path =>

@@ -60,7 +60,7 @@ jb.component('highlight', {
   params: [
     { id: 'base', as: 'string', dynamic: true },
     { id: 'highlight', as: 'string', dynamic: true },
-    { id: 'cssClass', as: 'string', defaultValue: 'highlight'},
+    { id: 'cssClass', as: 'string', defaultValue: 'mdl-color-text--indigo-A700'},
   ],
   impl: (ctx,base,highlight,cssClass) => {
     var h = highlight(), b = base();

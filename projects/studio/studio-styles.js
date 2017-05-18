@@ -96,6 +96,37 @@ jb.component('property-sheet.studio-properties', {
   }
 })
 
+jb.component('property-sheet.studio-properties-in-tgp', {
+  type: 'group.style', 
+  impl :{$: 'custom-style', 
+    features :{$: 'group.init-group' }, 
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property' },[
+          h('label',{ class: 'property-title', title: ctrl.title}, ctrl.title),
+          h('div',{ class: 'input-and-toolbar'}, [
+            h(ctrl),
+            h(ctrl.jbComp.toolbar)  
+          ])
+    ]))),
+    css: `>.property { margin-bottom: 5px; display: flex }
+      >.property:last-child { margin-bottom:0px }
+      >.property>.input-and-toolbar { display: flex; }
+      >.property>.input-and-toolbar>.toolbar { height: 16px; margin-left: 10px; }
+      >.property>.property-title {
+        width: 75px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        vertical-align:top;
+        margin-top:2px;
+        font-size:14px;
+        margin-right: 10px;
+        margin-left: 7px;
+      },
+      >.property>*:last-child { margin-right:0 }`
+  }
+})
+
+
 jb.component('property-sheet.studio-plain', {
   type: 'group.style', 
   impl :{$: 'custom-style', 

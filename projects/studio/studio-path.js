@@ -137,7 +137,10 @@ Object.assign(st,{
 			if (p.defaultValue && typeof p.defaultValue == 'object' && (p.forceDefaultCreation || Array.isArray(p.defaultValue)))
 				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue));
 		})
-		st.merge(st.refOfPath(path),result);
+		if (!st.valOfPath(path))
+			st.writeValue(st.refOfPath(path),result)
+		else
+			st.merge(st.refOfPath(path),result);
 	},
 
 	insertControl: (path,compName) => {

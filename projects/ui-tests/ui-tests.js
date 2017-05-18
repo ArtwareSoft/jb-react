@@ -573,12 +573,18 @@ jb.component('ui-test.property-sheet.titles-left', {
 
 jb.component('ui-test.editable-number', {
   impl :{$: 'ui-test',  
-  control :{$: 'group', controls: 
+  control :{$: 'group', 
+  style: {$: 'layout.vertical'},
+  controls: 
     [
-      // {$: 'editable-number', title: 'age',
-      //     databind: '%$person/age%',
-      //     style :{$: 'editable-number.slider'},
-      // },
+      {$: 'editable-number', title: 'age',
+          databind: '%$person/age%',
+          style :{$: 'editable-number.slider-no-text'},
+      },
+      {$: 'editable-number', title: 'age',
+          databind: '%$person/age%',
+          style :{$: 'editable-number.slider'},
+      },
       {$: 'editable-number', title: 'age',
           databind: '%$person/age%',
       },

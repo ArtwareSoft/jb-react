@@ -100,7 +100,7 @@ jb.component('studio.properties-in-tgp',{
   type: 'control',
   params: [ {id: 'path', as: 'string' } ],
   impl :{$: 'group',
-    style :{$: 'property-sheet.studio-properties'},
+    style :{$: 'property-sheet.studio-properties-in-tgp'},
     controls :{$: 'dynamic-controls', 
         controlItems :{$: 'studio.non-control-children', path: '%$path%', includeFeatures: true },
         genericControl :{$: 'studio.property-field', path: '%$controlItem%' } 
@@ -223,11 +223,12 @@ jb.component('studio.property-slider', {
 		},
 		title :{$: 'studio.prop-name', path: '%$path%' },
 		databind :{$: 'studio.ref', path: '%$path%' },
-		style :{$: 'editable-number.mdl-slider', width: '120' },
+		style :{$: 'editable-number.slider', width: '120' },
 		min: { $firstSucceeding : ['%$paramDef/min%',0] },
 		max: { $firstSucceeding : ['%$paramDef/max%',100] },
 		step: { $firstSucceeding : ['%$paramDef/step%',1] } ,
-		features :{$: 'css', css: '{ margin-left: -5px; }' },
+    features :{$: 'css', 
+      css: '>.slider-text { margin-left: -20px; padding-right: 15px; margin-top: 2px; }' },
 	}
 })
 
@@ -289,7 +290,7 @@ jb.component('studio.property-tgp', {
         features: [
           {$: 'studio.watch-path', path: '%$path%~$', strongRefresh: true, includeChildren: true },
           {$: 'watch-ref', ref: '%$expanded%', strongRefresh: true },
-          {$: 'feature.if', 
+          {$: 'hidden', 
             showCondition :{
               $and: [
                 '%$expanded%', 
