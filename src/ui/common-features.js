@@ -31,7 +31,7 @@ jb.component('group.wait', {
 jb.component('watch-ref', {
   type: 'feature', category: 'group:70',
   params: [ 
-    { id: 'ref', essential: true, as: 'ref' },
+    { id: 'ref', essential: true, as: 'ref', ref: true },
     { id: 'strongRefresh', as: 'boolean' },
     { id: 'includeChildren', as: 'boolean' },
   ],

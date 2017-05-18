@@ -47,11 +47,11 @@ jb.component('label.h1', {
     }
 })
 
-jb.component('label.header', {
+jb.component('label.heading', {
     type: 'label.style',
-    params: [{ id: 'level', as: 'string', defaultValue: '1', options: ['1','2','3','4']}],
+    params: [{ id: 'level', as: 'string', defaultValue: 'h1', options: 'h1,h2,h3,h4,h5'}],
     impl :{$: 'custom-style', 
-        template: (cmp,state,h) => h('h'+cmp.level,{},state.title),
+        template: (cmp,state,h) => h(cmp.level,{},state.title),
         features :{$: 'label.bind-title' }
     }
 })

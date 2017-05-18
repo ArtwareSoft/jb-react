@@ -26,6 +26,8 @@ Object.assign(st,{
     st.compsRefHandler.splice(ref,args),
   push: (ref,value) =>
     st.compsRefHandler.push(ref,value),
+  merge: (ref,value) =>
+    st.compsRefHandler.merge(ref,value),
   isRef: (ref) =>
     st.compsRefHandler.isRef(ref),
   asRef: (obj) =>
@@ -127,18 +129,15 @@ Object.assign(st,{
 		var comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
 		var result = { $: compName };
-		var existing = st.valOfPath(path);
 		jb.compParams(comp).forEach(p=>{
 			if (p.composite)
 				result[p.id] = [];
-			if (existing && existing[p.id])
-				result[p.id] = existing[p.id];
 			if (p.defaultValue && typeof p.defaultValue != 'object')
 				result[p.id] = p.defaultValue;
 			if (p.defaultValue && typeof p.defaultValue == 'object' && (p.forceDefaultCreation || Array.isArray(p.defaultValue)))
 				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue));
 		})
-		st.writeValueOfPath(path,result);
+		st.merge(st.refOfPath(path),result);
 	},
 
 	insertControl: (path,compName) => {

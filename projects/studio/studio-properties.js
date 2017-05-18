@@ -274,6 +274,7 @@ jb.component('studio.property-tgp', {
             }, 
             style :{$: 'picklist.groups' }, 
             features: [
+              {$: 'picklist.onChange', action: {$: 'write-value', to: '%$expanded%', value: true} },
               {$: 'css', 
                 css: '{ padding: 0 0; width: 150px; font-size: 12px; height: 23px;}'
               }, 
@@ -286,8 +287,9 @@ jb.component('studio.property-tgp', {
       {$: 'group', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          {$: 'studio.watch-path', path: '%$path%~$', strongRefresh: true },
-          {$: 'hidden', 
+          {$: 'studio.watch-path', path: '%$path%~$', strongRefresh: true, includeChildren: true },
+          {$: 'watch-ref', ref: '%$expanded%', strongRefresh: true },
+          {$: 'feature.if', 
             showCondition :{
               $and: [
                 '%$expanded%', 

@@ -154,7 +154,9 @@ jb.component('studio.comp-name-ref', {
 					return st.compNameOfPath(path);
 				else
 					st.setComp(path,value)
-			}
+			},
+			$jb_observable: cmp => 
+				st.refObservable(st.refOfPath(path),cmp,true)
 	})
 })
 

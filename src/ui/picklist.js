@@ -33,6 +33,8 @@ jb.component('picklist', {
           })
         }
         cmp.recalcOptions();
+        jb.ui.refObservable(ctx.params.databind,cmp).subscribe(val=>
+          cmp.onChange && cmp.onChange(val))
       },
     })
 })
@@ -54,6 +56,17 @@ jb.component('picklist.dynamic-options', {
         recalcEm.takeUntil( cmp.destroyed )
         .subscribe(e=>
             cmp.recalcOptions()) 
+  })
+})
+
+jb.component('picklist.onChange', {
+  type: 'feature',
+  params: [
+    { id: 'action', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,action) => ({
+    init: cmp => 
+      cmp.onChange = val => action(ctx.setData(val))
   })
 })
 

@@ -37,6 +37,9 @@ class ImmutableWithPath {
   push(ref,value) {
     return this.doOp(ref,{$push: value})
   }
+  merge(ref,value) {
+    return this.doOp(ref,{$merge: value})
+  }
   doOp(ref,opOnRef) {
     if (!this.isRef(ref))
       ref = this.asRef(ref);
@@ -97,7 +100,7 @@ class ImmutableWithPath {
       if (this.resourceVersions[path[0]] == ref.$jb_resourceV) return;
       if (ref.$jb_parentOfPrim) {
         var parent = this.asRef(ref.$jb_parentOfPrim);
-        if (!parent)
+        if (!parent || !this.isRef(parent))
           return jb.logError('refresh: parent not found');
         var prop = path.slice(-1)[0];
         new_ref = {
@@ -144,10 +147,12 @@ class ImmutableWithPath {
       }
   }
   markPath(path) {
-    path.reduce((o,p)=>{ 
+    var leaf = path.reduce((o,p)=>{ 
       o.$jb_id = o.$jb_id || (++this.pathId);
       return o[p] 
-    }, this.resources())
+    }, this.resources());
+    if (leaf && typeof leaf == 'object')
+      leaf.$jb_id = leaf.$jb_id || (++this.pathId);
   }
   pathOfObject(obj,lookIn,depth) {
     if (!lookIn || typeof lookIn != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50) 
@@ -169,6 +174,8 @@ class ImmutableWithPath {
   refObservable(ref,cmp,includeChildren) {
     if (!ref || !this.isRef(ref)) 
       return jb.rx.Observable.of();
+    if (ref.$jb_observable)
+      return ref.$jb_observable(cmp);
     if (ref.$jb_path) {
       return this.resourceChange
         .takeUntil(cmp.destroyed)
