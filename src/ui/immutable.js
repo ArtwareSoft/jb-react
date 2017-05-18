@@ -166,7 +166,7 @@ class ImmutableWithPath {
   // valid(ref) {
   //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
   // }
-  refObservable (ref,cmp) {
+  refObservable(ref,cmp,includeChildren) {
     if (!ref || !this.isRef(ref)) 
       return jb.rx.Observable.of();
     if (ref.$jb_path) {
@@ -178,8 +178,9 @@ class ImmutableWithPath {
           var changeInParent = (ref.$jb_path||[]).join('~').indexOf(e.path.join('~')) == 0;
           if (changeInParent) // change in self or parent - refind itself
             jb.refreshRef(ref);
+          if (includeChildren)
+            return changeInParent || e.path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
           return changeInParent;
-          //e.path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0
         })
         .map(_=>
           jb.val(ref))
@@ -198,8 +199,8 @@ function resourcesRef(val) {
 
 jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
 
-jb.ui.refObservable = (ref,cmp) =>
-  jb.refHandler(ref).refObservable(ref,cmp);
+jb.ui.refObservable = (ref,cmp,includeChildren) =>
+  jb.refHandler(ref).refObservable(ref,cmp,includeChildren);
 
 jb.ui.ImmutableWithPath = ImmutableWithPath;
 jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;

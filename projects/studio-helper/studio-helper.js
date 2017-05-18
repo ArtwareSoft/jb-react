@@ -54,13 +54,14 @@ jb.component('studio-helper.jb-editor', {
         action :{$: 'studio.open-jb-editor-menu', 
           path: '%$studio/jb_editor_selection%'
         }, 
-        style :{$: 'button.md-icon-fab', icon: 'menu', size: '24' }, 
+//        style :{$: 'button.md-icon-fab', icon: 'menu', size: '24' }, 
         features :{$: 'css.height', height: '30' }
       }, 
       {$: 'studio.jb-editor', path: '%$path%' }, 
       {$: 'editable-text', 
         databind :{$: 'studio.profile-as-text', path: '%$studio/jb_editor_selection%' }, 
-        style :{$: 'editable-text.input' }
+        style :{$: 'editable-text.input' },
+        features: {$: 'watch-ref', ref: '%$studio/jb_editor_selection%' }
       }
     ], 
     features :{$: 'css', css: '{ height: 200px; padding: 50px }' }

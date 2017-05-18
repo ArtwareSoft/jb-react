@@ -17,7 +17,7 @@ jb.component('studio.suggestions-itemlist', {
       }, 
       {$: 'itemlist.studio-refresh-suggestions-options', 
         path: '%$path%', 
-        expressionOnly: true
+//        expressionOnly: true
       }, 
       {$: 'itemlist.selection', 
         databind: '%$suggestionData/selected%', 
@@ -113,31 +113,40 @@ jb.component('studio.property-primitive', {
             popupId: 'suggestions', 
             popupStyle :{$: 'dialog.popup' }
           }, 
-//          {$: 'field.debounce-databind', debounceTime: '500' },
         ]
       }, 
     ], 
     features: [
-//      {$: 'group.studio-suggestions', path: '%$path%', expressionOnly: true }, 
-      {$: 'studio.property-toolbar-feature', path: '%$path%' },
+//      {$: 'studio.property-toolbar-feature', path: '%$path%' },
     ]
   }
 })
 
-// jb.component('studio.jb-floating-input', {
-//   type: 'control', 
-//   params: [{ id: 'path', as: 'string' }], 
-//   impl :{$: 'group', 
-//     controls: [
-//       {$: 'editable-text', 
-//         databind :{$: 'studio.profile-value-as-text', path: '%$path%' }, 
-//         updateOnBlur: true, 
-//         style :{$: 'editable-text.mdl-input', width: '400' }, 
-//         features: [
-//           {$: 'studio.undo-support', path: '%$path%' }, 
-//           {$: 'css.padding', left: '4', right: '4' },
-//         ]
-//       }, 
+jb.component('studio.jb-floating-input', {
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'editable-text', 
+        databind :{$: 'studio.profile-value-as-text', path: '%$path%' }, 
+        updateOnBlur: true, 
+        style :{$: 'editable-text.mdl-input', width: '400' }, 
+        features: [
+          {$: 'studio.undo-support', path: '%$path%' }, 
+  //        {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
+          {$: 'editable-text.helper-popup', 
+            showHelper :{$: 'studio.show-suggestions' },
+            features :{$: 'dialog-feature.nearLauncherLocation' }, 
+            control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
+            popupId: 'suggestions', 
+            popupStyle :{$: 'dialog.popup' }
+          }, 
+        ],
+
+        features1: [
+          {$: 'studio.undo-support', path: '%$path%' }, 
+          {$: 'css.padding', left: '4', right: '4' },
+        ]
+      }, 
+})
 //       {$: 'itemlist-with-groups', 
 //         items: '%$suggestionCtx/options%', 
 //         controls :{$: 'label', title: '%text%' }, 
@@ -207,7 +216,7 @@ st.suggestions = class {
 
   extendWithOptions(probeCtx,path) {
     var options = [];
-    probeCtx = probeCtx || st.previewjb.initialCtx;
+    probeCtx = probeCtx || new st.previewjb.jbCtx();
     var vars = jb.entries(jb.extend({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources))
         .map(x=>new ValueOption('$'+x[0],x[1],this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)

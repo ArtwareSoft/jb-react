@@ -1,4 +1,10 @@
-1. pass simple data test with imports
-2. custom-style implementation
-   a. get or create jbart.jsxTemplates[{path}]
-   b. bind to lifecycle methods
+slider editable number
+auto open new feature
+jbEditor
+  tree refresh
+  =
+  close floating on enter
+  extra array elem (pipeline)
+suggestion highlight in option object
+search component
+dragula handle for features

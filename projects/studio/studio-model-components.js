@@ -175,7 +175,9 @@ jb.component('studio.profile-as-text', {
 					if (newVal != null)
 						st.writeValueOfPath(path, newVal);
 				}
-			}
+			},
+			// $jb_observable: _ =>
+			// 	st.refOfPath(ctx.params.path())
 		})
 })
 
@@ -198,7 +200,6 @@ jb.component('studio.profile-value-as-text', {
       }
     })
 })
-
 
 jb.component('studio.insert-control',{
 	type: 'action',

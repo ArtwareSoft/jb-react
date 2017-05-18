@@ -168,11 +168,13 @@ jb.component('itemlist.drag-and-drop', {
   impl: ctx => ({
       afterViewInit: function(cmp) {
         var drake = dragula($(cmp.base).findIncludeSelf('.jb-itemlist').get(), {
-          moves: el => $(el).parent().is('.jb-itemlist')
+          moves: (el,source,handle) => 
+            $(el).parent().hasClass('jb-itemlist') && $(handle).hasClass('drag-handle')
         });
 
         drake.on('drag', function(el, source) { 
-          var item_comp = el._component;
+          var item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
+          if (!item_comp) return;
           el.dragged = { 
             obj: item_comp && item_comp.ctx.data,
             remove: obj => cmp.items.splice(cmp.items.indexOf(obj), 1)
@@ -187,19 +189,19 @@ jb.component('itemlist.drag-and-drop', {
             dropElm.dragged = null;
         });
 
-        cmp.base.setAttribute('tabIndex','0');
-        cmp.onkeydown = cmp.onkeydown || jb.rx.Observable.fromEvent(cmp.base, 'keydown').takeUntil( cmp.destroyed );
-
         // ctrl + Up/Down
-        cmp.onkeydown.filter(e=> 
-          e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
-          .subscribe(e=> {
-            var diff = e.keyCode == 40 ? 1 : -1;
-            var selectedIndex = cmp.items.indexOf(cmp.state.selected);
-            if (selectedIndex == -1) return;
-            var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-            jb.splice(cmp.items,[[selectedIndex,1],[index,0,cmp.state.selected]]);
-        })
+//        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
+          if (!cmp.onkeydown) return;
+          cmp.onkeydown.filter(e=> 
+            e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
+            .subscribe(e=> {
+              var diff = e.keyCode == 40 ? 1 : -1;
+              var selectedIndex = cmp.items.indexOf(cmp.state.selected);
+              if (selectedIndex == -1) return;
+              var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
+              jb.splice(cmp.items,[[selectedIndex,1],[index,0,cmp.state.selected]]);
+          })
+//        })
       }
     })
 })

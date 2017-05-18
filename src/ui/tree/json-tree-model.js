@@ -40,7 +40,7 @@ class ROjson {
 		var prop = path.split('~').pop();
 		var h = jb.ui.h;
 		if (val == null) 
-			return h(prop + ': null');
+			return h('div',{},prop + ': null');
 		if (!collapsed && typeof val == 'object')
 			return h('div',{},prop);
 

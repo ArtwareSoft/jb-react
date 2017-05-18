@@ -37,6 +37,7 @@ var resources = {
         'src/ui/picklist.js',
         'src/ui/theme.js',
         'src/ui/icon.js',
+        'src/ui/slider.js',
         'src/ui/window.js',
 
         'src/ui/styles/mdl-styles.js',

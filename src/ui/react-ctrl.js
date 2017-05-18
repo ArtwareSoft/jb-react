@@ -292,6 +292,8 @@ ui.waitFor = function(check,times,interval) {
 
 ui.setState = function(cmp,state) {
 	jb.logPerformance('setState',cmp.ctx,state);
+	if (typeof state == 'undefined' && cmp.refresh)	
+		return cmp.refresh();
 	cmp.setState(state || {});
 }
 

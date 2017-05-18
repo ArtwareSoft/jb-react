@@ -4,10 +4,15 @@ jb.component('group.wait', {
     { id: 'for', essential: true, dynamic: true },
     { id: 'loadingControl', type: 'control', defaultValue: { $:'label', title: 'loading ...'} , dynamic: true },
     { id: 'error', type: 'control', defaultValue: { $:'label', title: 'error: %$error%', css: '{color: red; font-weight: bold}'} , dynamic: true },
+    { id: 'resource', as: 'string' },    
   ],
-  impl: (context,waitFor,loading,error) => ({
+  impl: (context,waitFor,loading,error,resource) => ({
       beforeInit: cmp => {
         cmp.ctrlEmitter = jb.rx.Observable.from(waitFor()).take(1)
+            .do(data => {
+              if (resource) 
+                jb.resources[resource] = data;
+            })
             .map(data=>
               context.vars.$model.controls(cmp.ctx.setData(data)))
             .catch(e=> 
@@ -28,13 +33,14 @@ jb.component('watch-ref', {
   params: [ 
     { id: 'ref', essential: true, as: 'ref' },
     { id: 'strongRefresh', as: 'boolean' },
+    { id: 'includeChildren', as: 'boolean' },
   ],
-  impl: (ctx,ref,strongRefresh) => ({
+  impl: (ctx,ref,strongRefresh,includeChildren) => ({
       init: cmp => {
           if (strongRefresh && cmp.initWatchByRef) { // itemlist or group
-              cmp.initWatchByRef(ref)
+              cmp.initWatchByRef(ref,includeChildren)
           } else {
-            jb.ui.refObservable(ref,cmp).subscribe(e=>
+            jb.ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
                 jb.ui.setState(cmp))
           }
       }
@@ -201,20 +207,38 @@ jb.component('feature.keyboard-shortcut', {
       })
 })
 
+jb.component('feature.onKey', {
+  type: 'feature', category: 'feature:60',
+  params: [
+    { id: 'code', as: 'number' },
+    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+  ],
+  impl: (ctx,code) => ({ 
+      onkeydown: true,
+      afterViewInit: cmp=> {
+        cmp.base.setAttribute('tabIndex','0');
+        cmp.onkeydown.filter(e=> e.keyCode == code).subscribe(()=>
+              jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
+      }
+  })
+})
+
 jb.component('feature.onEnter', {
   type: 'feature', category: 'feature:60',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
-  impl: ctx => ({ 
-      onkeydown: true,
-      afterViewInit: cmp=> {
-        cmp.base.setAttribute('tabIndex','0');
-        cmp.onkeydown.filter(e=> e.keyCode == 13).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
-      }
-  })
+  impl :{$: 'feature.onKey', code: 13, action :{$call: 'action'}}
 })
+
+jb.component('feature.onDelete', {
+  type: 'feature', category: 'feature:60',
+  params: [
+    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+  ],
+  impl :{$: 'feature.onKey', code: 46, action :{$call: 'action'}}
+})
+
 
 jb.component('group.auto-focus-on-first-input', {
   type: 'feature',

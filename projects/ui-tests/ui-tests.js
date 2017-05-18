@@ -313,7 +313,7 @@ jb.component('ui-test.itemlist-DD', {
   impl :{$: 'ui-test', control :{$: 'group', 
   controls: [
       { $: 'itemlist', items: '%$people%', watchItems: true,
-          controls :{$: 'label', title: '%name%' }, 
+          controls :{$: 'label', title: '%name%', features:{$: 'css.class', class: 'drag-handle'} }, 
           features: [
               { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
               { $: 'itemlist.keyboard-selection', autoFocus: true },

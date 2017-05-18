@@ -441,6 +441,7 @@ function profileType(profile) {
 function sugarProp(profile) {
   return entries(profile)
     .filter(p=>p[0].indexOf('$') == 0 && p[0].length > 1)
+    .filter(p=>p[0].indexOf('$jb_') != 0)
     .filter(p=>['$vars','$debugger','$log'].indexOf(p[0]) == -1)[0]
 }
 

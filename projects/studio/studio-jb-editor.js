@@ -72,7 +72,7 @@ jb.component('studio.jb-editor', {
                       }, 
                       {$: 'label', 
                         title: 'action circuits are not supported', 
-                        features :{$: 'feature.if', 
+                        features :{$: 'hidden', 
                           showCondition: '%$probeResult/probe/circuitType% == "action"'
                         }
                       }, 
@@ -107,7 +107,7 @@ jb.component('studio.jb-editor', {
             features :{$: 'feature.if', showCondition: '%$studio/jb_editor_selection%' }
           }
         ], 
-        features :{$: 'watch-ref', ref: '%$studio/jb_editor_selection%' }
+        features :{$: 'watch-ref', ref: '%$studio/jb_editor_selection%', strongRefresh: true }
       }
     ], 
     features :{$: 'css.padding', top: '10' }
@@ -137,9 +137,7 @@ jb.component('studio.data-browse', {
 
 jb.component('studio.open-jb-edit-property', {
   type: 'action', 
-  params: [
-    { id: 'path', as: 'string' }
-  ], 
+  params: [{ id: 'path', as: 'string' }], 
   impl :{
       $if :{$: 'studio.is-of-type', type: 'data', path: '%$path%' },
       then :{$: 'open-dialog', 
@@ -148,7 +146,7 @@ jb.component('studio.open-jb-edit-property', {
         features: [
           {$: 'dialog-feature.autoFocusOnFirstInput' }, 
           {$: 'dialog-feature.onClose', 
-            action :{$: 'toggleBooleanValue', of: '%$studio/jb_preview_result_counter%' }
+            action :{$: 'toggle-boolean-value', of: '%$studio/jb_preview_result_counter%' }
           }
         ],
       },
@@ -317,7 +315,7 @@ jb.component('menu.studio-wrap-with', {
         genericOption :{$: 'menu.action', 
           title: 'Wrap with %%',
           action : [
-            {$: 'studio.wrap', path: '%$path%', compName: '%%' },
+            {$: 'studio.wrap', path: '%$path%', comp: '%%' },
             {$:'studio.expand-and-select-first-child-in-jb-editor' }
           ]
     },

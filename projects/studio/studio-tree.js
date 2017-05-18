@@ -154,7 +154,7 @@ jb.component('studio.control-tree', {
     ], 
     features :[ 
         {$: 'css.padding', top: '10' },
-        //{$: 'group.studio-watch-path', path :{$: 'studio.currentProfilePath' } },
+        //{$: 'studio.watch-path', path :{$: 'studio.currentProfilePath' } },
     ]
   }
 })

@@ -33,8 +33,8 @@ Object.assign(st,{
   refreshRef: (ref) =>
     st.compsRefHandler.refresh(ref),
   scriptChange: st.compsRefHandler.resourceChange,
-  refObservable: (ref,cmp) => 
-  	st.compsRefHandler.refObservable(ref,cmp),
+  refObservable: (ref,cmp,includeChildren) => 
+  	st.compsRefHandler.refObservable(ref,cmp,includeChildren),
   refOfPath: (path,silent) =>
   	st.compsRefHandler.refOfPath(path.split('~'),silent),
   parentPath: path =>
@@ -233,13 +233,14 @@ jb.component('studio.ref',{
 		st.refOfPath(path)
 });
 
-jb.component('group.studio-watch-path', {
+jb.component('studio.watch-path', {
   type: 'feature', category: 'group:0',
   params: [
     { id: 'path', essential: true, as: 'ref' },
     { id: 'strongRefresh', as: 'boolean' },
+    { id: 'includeChildren', as: 'boolean' },
   ],
-  impl: {$: 'watch-ref', ref :{$: 'studio.ref', path: '%$path%'}, strongRefresh: '%$strongRefresh%'}
+  impl: {$: 'watch-ref', ref :{$: 'studio.ref', path: '%$path%'}, strongRefresh: '%$strongRefresh%', includeChildren: '%$includeChildren%'}
 })
 
 jb.component('refresh-on-script-change', {

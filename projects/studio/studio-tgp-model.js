@@ -87,18 +87,17 @@ st.jbEditorTree = class {
 	}
 	innerProfiles(path,val) {
 		return st.paramsOfPath(path)
-			.map(p=> ({ path: path + '~' + p.id, param: p}))
+			.map(p=> ({ path: path + (path.indexOf('~') == -1 ? '~impl' : '') + '~' + p.id, param: p}))
 			.filter(e=>st.valOfPath(e.path) != null || e.param.essential)
 			.map(e=>e.path)
 	}
-
 }
 
 
 Object.assign(st,{
 	jbEditorMoreParams: path =>
 		st.paramsOfPath(path)
-			.filter(e=>st.valOfPath(e.path) == null && !e.param.essential)
+			.filter(e=>st.valOfPath(path) == null && !e.param.essential)
 			.map(p=> path + '~' + p.id),
 	nonControlChildren: (path,includeFeatures) =>
 		st.paramsOfPath(path).filter(p=>
@@ -114,6 +113,7 @@ Object.assign(st,{
 				.filter(x=> !(noExtraElem && x =='length'))
 				.map(x=>x=='length'? val.length : x) // extra elem
 				.map(k=> path +'~'+k)
+		return [path].concat(noExtraElem ? [] : [path +'~1'])
 	},
 
 	controlParams: path =>

@@ -85,7 +85,6 @@ jb.component('studio.properties', {
     ], 
     features: [
       {$: 'group.dynamic-titles' }, 
-      {$: 'group.studio-watch-path', path: '%$path%' }, 
       {$: 'hidden', 
         showCondition :{$: 'studio.has-param', 
           remark: 'not a control', 
@@ -102,7 +101,6 @@ jb.component('studio.properties-in-tgp',{
   params: [ {id: 'path', as: 'string' } ],
   impl :{$: 'group',
     style :{$: 'property-sheet.studio-properties'},
-    features :{$: 'group.studio-watch-path', path: '%$path%'},
     controls :{$: 'dynamic-controls', 
         controlItems :{$: 'studio.non-control-children', path: '%$path%', includeFeatures: true },
         genericControl :{$: 'studio.property-field', path: '%$controlItem%' } 
@@ -225,10 +223,10 @@ jb.component('studio.property-slider', {
 		},
 		title :{$: 'studio.prop-name', path: '%$path%' },
 		databind :{$: 'studio.ref', path: '%$path%' },
-//		style :{$: 'editable-number.slider', width: '120' },
-		min: '%$paramDef/min%',
-		max: '%$paramDef/max%',
-		step: '%$paramDef/step%',
+		style :{$: 'editable-number.mdl-slider', width: '120' },
+		min: { $firstSucceeding : ['%$paramDef/min%',0] },
+		max: { $firstSucceeding : ['%$paramDef/max%',100] },
+		step: { $firstSucceeding : ['%$paramDef/step%',1] } ,
 		features :{$: 'css', css: '{ margin-left: -5px; }' },
 	}
 })
@@ -246,6 +244,7 @@ jb.component('studio.property-tgp', {
             databind: '%$expanded%', 
             style :{$: 'editable-boolean.expand-collapse' }, 
             features: [
+              {$: 'studio.watch-path', path: '%$path%~$' },
               {$: 'css', 
                 css: '{ position: absolute; margin-left: -20px; margin-top: 2px }'
               }, 
@@ -260,7 +259,7 @@ jb.component('studio.property-tgp', {
                     }, 
                     {$: 'not-equals', 
                       item1 :{$: 'studio.comp-name', path: '%$path%' }, 
-                      item2: 'customStyle'
+                      item2: 'custom-style'
                     }
                   ]
                 }
@@ -287,9 +286,7 @@ jb.component('studio.property-tgp', {
       {$: 'group', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          {$: 'watch-ref', 
-            ref :{$: 'studio.comp-name', path: '%$path%' }
-          }, 
+          {$: 'studio.watch-path', path: '%$path%~$', strongRefresh: true },
           {$: 'hidden', 
             showCondition :{
               $and: [
@@ -302,7 +299,7 @@ jb.component('studio.property-tgp', {
                 },
                 {$: 'not-equals', 
                   item1 :{$: 'studio.comp-name', path: '%$path%' }, 
-                  item2: 'customStyle'
+                  item2: 'custom-style'
                 }
               ]
             }
@@ -354,9 +351,7 @@ jb.component('studio.property-tgp-in-array', {
           {$: 'editable-boolean', 
             databind: '%$expanded%', 
             style :{$: 'editable-boolean.expand-collapse' }, 
-            features: [
-              {$: 'css.padding', top: '4' }
-            ]
+            features: [{$: 'css.padding', top: '4' }]
           }, 
           {$: 'label', 
             title :{$: 'pipeline', 
@@ -366,26 +361,28 @@ jb.component('studio.property-tgp-in-array', {
               ]
             }, 
             style :{$: 'label.p' }, 
-            features :{$: 'css.width', width: '100' }
+            features: [
+              {$: 'css.width', width: '100' }, 
+              {$: 'css.class', class: 'drag-handle' }
+            ]
           }, 
           {$: 'label', 
             title :{$: 'studio.summary', path: '%$path%' }, 
             style :{$: 'label.p' }, 
-            features :{$: 'css.width', width: '335' }
+            features: [
+              {$: 'css.width', width: '335' }, 
+              {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
+            ]
           }, 
           {$: 'studio.property-toolbar', 
             features :{$: 'css', css: '{ position: absolute; left: 20px }' }, 
             path: '%$path%'
           }
-        ], 
-        features: []
+        ]
       }, 
       {$: 'group', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          // {$: 'watch-ref', 
-          //   ref :{$: 'studio.comp-name', path: '%$path%' }
-          // }, 
           {$: 'feature.if', showCondition: '%$expanded%', watch: true }, 
           {$: 'css', css: '{ margin-left: 10px; margin-bottom: 4px;}' }
         ]
@@ -415,7 +412,7 @@ jb.component('studio.property-array', {
             }, 
             itemVariable: 'arrayItem', 
             features: [
-              {$: 'group.studio-watch-path', path: '%$path%', strongRefresh: true},
+              {$: 'studio.watch-path', path: '%$path%', strongRefresh: true},
               {$: 'hidden', showCondition: true }, 
               {$: 'itemlist.divider' }, 
               {$: 'itemlist.drag-and-drop' }
