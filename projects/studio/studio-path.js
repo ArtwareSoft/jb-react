@@ -235,6 +235,15 @@ jb.component('studio.ref',{
 		st.refOfPath(path)
 });
 
+jb.component('studio.is-new',{
+	params: [ {id: 'path', as: 'string' } ],
+	impl: (context,path) => {
+		if (st.compsHistory.length == 0) return false;
+		var version_before = new jb.ui.ImmutableWithPath(_=>st.compsHistory.slice(-1)[0]).refOfPath(path.split('~'),true);
+		return st.valOfPath(path) && !st.val(version_before);
+	}
+});
+
 jb.component('studio.watch-path', {
   type: 'feature', category: 'group:0',
   params: [

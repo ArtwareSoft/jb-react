@@ -393,7 +393,7 @@ jb.component('studio.property-tgp-in-array', {
     ], 
     features: [
       {$: 'css.margin', left: '-100' }, 
-      {$: 'inner-resource', name: 'expanded', value: false }
+      {$: 'inner-resource', name: 'expanded', value: {$:'studio.is-new', path: '%$path%'} }
     ]
   }
 })
@@ -416,7 +416,6 @@ jb.component('studio.property-array', {
             itemVariable: 'arrayItem', 
             features: [
               {$: 'studio.watch-path', path: '%$path%', strongRefresh: true},
-              {$: 'hidden', showCondition: true }, 
               {$: 'itemlist.divider' }, 
               {$: 'itemlist.drag-and-drop' }
             ]
