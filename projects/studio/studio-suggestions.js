@@ -11,10 +11,6 @@ jb.component('studio.suggestions-itemlist', {
     }, 
     watchItems: true, 
     features: [
-      {$: 'inner-resource', 
-        name: 'suggestionData', 
-        value :{$: 'object', selected: '', options: [], path: '%$path%' }
-      }, 
       {$: 'itemlist.studio-refresh-suggestions-options', 
         path: '%$path%', 
 //        expressionOnly: true
@@ -52,12 +48,12 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
         var keydown = selectionKeySource.keydown.takeUntil( cmp.destroyed );
         var input = selectionKeySource.input;
 
-        keydown.delay(1) // we use keydown - let the input fill itself
+        keydown
+          .delay(1) // we use keydown - let the input fill itself
           .debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
-          // .filter(e=>
-          //   new st.suggestions(input,ctx.params.expressionOnly).suggestionsRelevant() )
-          .map(e=> input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
+          .map(e=> 
+              input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
           .flatMap(e=>
             getProbe())
           .map(res=>
@@ -117,6 +113,10 @@ jb.component('studio.property-primitive', {
       }, 
     ], 
     features: [
+      {$: 'var', 
+        name: 'suggestionData', 
+        value :{$: 'object', selected: '', options: [], path: '%$path%' }, mutable: true
+      }, 
 //      {$: 'studio.property-toolbar-feature', path: '%$path%' },
     ]
   }
@@ -125,13 +125,18 @@ jb.component('studio.property-primitive', {
 jb.component('studio.jb-floating-input', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'editable-text', 
+  impl :{$: 'group', 
+     controls:{$: 'editable-text', 
+        title :{$: 'studio.prop-name', path: '%$path%' },
         databind :{$: 'studio.profile-value-as-text', path: '%$path%' }, 
         updateOnBlur: true, 
-        style :{$: 'editable-text.mdl-input', width: '400' }, 
+        style :{$: 'editable-text.jb-editor-floating-input'}, 
         features: [
+          {$: 'var', 
+            name: 'suggestionData', 
+            value :{$: 'object', selected: '', options: [], path: '%$path%' }, mutable: true
+          }, 
           {$: 'studio.undo-support', path: '%$path%' }, 
-  //        {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
           {$: 'editable-text.helper-popup', 
             showHelper :{$: 'studio.show-suggestions' },
             features :{$: 'dialog-feature.nearLauncherLocation' }, 
@@ -140,12 +145,9 @@ jb.component('studio.jb-floating-input', {
             popupStyle :{$: 'dialog.popup' }
           }, 
         ],
-
-        features1: [
-          {$: 'studio.undo-support', path: '%$path%' }, 
-          {$: 'css.padding', left: '4', right: '4' },
-        ]
-      }, 
+      },
+      features :{$: 'css.padding', left: '4', right: '4' },
+    } 
 })
 //       {$: 'itemlist-with-groups', 
 //         items: '%$suggestionCtx/options%', 

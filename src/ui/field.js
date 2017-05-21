@@ -2,26 +2,32 @@ jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 
 jb.component('field.databind', {
   type: 'feature',
-  impl: ctx => {
+  params: [
+    { id: 'noUpdates', as: 'boolean' },
+  ],
+  impl: (ctx,noUpdates) => {
     if (!ctx.vars.$model || !ctx.vars.$model.databind)
       jb.logError('bind-field: No databind in model', ctx.vars.$model, ctx);
     return {
+      noUpdates: noUpdates,
       init: function(cmp) {
-            cmp.state.title = ctx.vars.$model.title();
-            cmp.state.fieldId = jb.ui.field_id_counter++;
-            cmp.jbModel = (val,source) => {
-              if (val === undefined) 
-                return jb.val(ctx.vars.$model.databind);
-              else { // write
-                if (cmp.inputEvents && source == 'keyup')
-                  cmp.inputEvents.next(val); // used for debounce
-                else if (!ctx.vars.$model.updateOnBlur || source != 'keyup') {
-                  jb.writeValue(ctx.vars.$model.databind,val);
-                }
-              }
+        cmp.state.title = ctx.vars.$model.title();
+        cmp.state.fieldId = jb.ui.field_id_counter++;
+        cmp.jbModel = (val,source) => {
+          if (val === undefined) 
+            return jb.val(ctx.vars.$model.databind);
+          else { // write
+            if (cmp.inputEvents && source == 'keyup')
+              cmp.inputEvents.next(val); // used for debounce
+            else if (!ctx.vars.$model.updateOnBlur || source != 'keyup') {
+              jb.writeValue(ctx.vars.$model.databind,val);
             }
-            jb.ui.refObservable(ctx.vars.$model.databind,cmp)
-              .subscribe(_=>jb.ui.setState(cmp))
+          }
+        }
+        if (!noUpdates) {
+          jb.ui.refObservable(ctx.vars.$model.databind,cmp)
+            .subscribe(_=>jb.ui.setState(cmp))
+        }
       }
   }}
 })

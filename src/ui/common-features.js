@@ -87,36 +87,26 @@ jb.component('id', {
 })
 
 jb.component('var', {
-  type: 'feature', category: 'group:60',
+  type: 'feature', category: 'group:80',
   params: [
     { id: 'name', as: 'string', essential: true },
     { id: 'value', dynamic: true },
+    { id: 'mutable', as: 'boolean' },    
   ],
-  impl: (context, name, value) => ({
-      extendCtxOnce: (ctx,cmp) => {
-        return ctx.setVars(jb.obj(name, value()));
-      }
-  })
-})
-
-jb.component('inner-resource', {
-  type: 'feature', category: 'group:10',
-  params: [
-    { id: 'name', as: 'string', essential: true },
-    { id: 'value', dynamic: true },
-  ],
-  impl: (context, name, value) => ({
+  impl: (context, name, value,mutable) => ({
       destroy: cmp => {
-        if (jb.resources[cmp.resourceId])
-          delete jb.resources[cmp.resourceId];
+        if (mutable)
+          delete jb.resources[name + ':' + cmp.resourceId]
       },
       extendCtxOnce: (ctx,cmp) => {
-        if (!cmp.resourceId)
-          cmp.resourceId = cmp.ctx.id; // use the first ctx id
-        cmp.resource = jb.resources[cmp.resourceId] = jb.resources[cmp.resourceId] || {};
-        cmp.resource[name] = value(ctx.setData(cmp));
-        var ref = jb.objectProperty(cmp.resource,name,'ref',true);
-        return ctx.setVars(jb.obj(name, ref));
+        if (!mutable) {
+          return ctx.setVars(jb.obj(name, value()))
+        } else {
+          cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
+          var full_name = name + ':' + cmp.resourceId;
+          jb.resources[full_name] = value(ctx.setData(cmp));
+          return ctx.setVars(jb.obj(name, jb.objectProperty(jb.resources,full_name,'ref',true)));
+        }
       }
   })
 })

@@ -254,7 +254,7 @@ jb.component('studio.watch-path', {
   impl: {$: 'watch-ref', ref :{$: 'studio.ref', path: '%$path%'}, strongRefresh: '%$strongRefresh%', includeChildren: '%$includeChildren%'}
 })
 
-jb.component('refresh-on-script-change', {
+jb.component('studio.watch-script-changes', {
   type: 'feature',
   impl: (ctx,strongRefresh) => ({
       init: cmp =>

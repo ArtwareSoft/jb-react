@@ -35,6 +35,7 @@ jb.component('dialog.studio-floating', {
 					{$: 'dialog-feature.drag-title', id: '%$id%'}, 
 					{$: 'dialog-feature.uniqueDialog', id: '%$id%', remeberLastLocation: true },
 					{$: 'dialog-feature.maxZIndexOnClick', minZIndex: 5000 },
+					{$: 'studio-dialog-feature.refresh-title' },
 					{$: 'studio-dialog-feature.studioPopupLocation' },
 			],
 			css: `{ position: fixed;
@@ -87,6 +88,15 @@ jb.component('studio-dialog-feature.studioPopupLocation',{
 				dialog.el.classList.add('default-location')
 			}
 		}
+	})
+})
+
+jb.component('studio-dialog-feature.refresh-title', {
+	type: 'dialog-feature',
+	impl: ctx => ({
+		afterViewInit: cmp =>
+			jb.studio.scriptChange.subscribe(_=>
+				cmp.recalcTitle && cmp.recalcTitle())
 	})
 })
 

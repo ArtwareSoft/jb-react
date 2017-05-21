@@ -86,10 +86,7 @@ jb.component('studio.tree-menu', {
           title: 'Delete', 
           icon: 'delete', 
           shortcut: 'Delete', 
-          action: [
-            {$: 'write-value', to: '%$TgpTypeCtrl.expanded%', value: false }, 
-            {$: 'studio.delete', path: '%$path%' }
-          ]
+          action :{$: 'studio.delete', path: '%$path%' }
         }, 
         {$: 'menu.action', 
           title: 'Copy', 
@@ -145,7 +142,7 @@ jb.component('studio.control-tree', {
           }, 
           {$: 'tree.drag-and-drop' }, 
           {$: 'studio.control-tree.refresh-path-changes' }, 
-          {$: 'refresh-on-script-change' }
+          {$: 'studio.watch-script-changes' }
           // {$: 'tree.onMouseRight', 
           //   action :{$: 'studio.open-tree-menu', path: '%%' }
           // }

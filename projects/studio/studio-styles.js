@@ -1,11 +1,12 @@
 jb.component('editable-text.studio-primitive-text', {
   type: 'editable-text.style',
   impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
+      features :{$: 'field.databind', noUpdates: true },
       template: (cmp,state,h) => h('input', { 
-        value: cmp.jbModel(), 
-        onchange: e => cmp.jbModel(e.target.value), 
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
+          value: cmp.jbModel(), 
+          onchange: e => cmp.jbModel(e.target.value), 
+          onkeyup: e => cmp.jbModel(e.target.value,'keyup')
+      }),
 	  css: `
 { display: block; width: 146px; height: 19px; padding-left: 2px;
 	font-size: 12px; color: #555555; background-color: #fff; 
@@ -17,6 +18,25 @@ jb.component('editable-text.studio-primitive-text', {
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
 ::placeholder { color: #999; opacity: 1; }`
 	}
+})
+
+jb.component('editable-text.jb-editor-floating-input', {
+  type: 'editable-text.style',
+  impl :{$: 'custom-style', 
+   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[ 
+        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
+            value: cmp.jbModel(),
+            onchange: e => cmp.jbModel(e.target.value),
+            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+        }),
+        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title)
+      ]),
+      css: '{ width: 400px; }',
+      features :[
+          {$: 'field.databind', noUpdates: true },
+          {$: 'mdl-style.init-dynamic'}
+      ],
+  }
 })
 
 jb.component('button.studio-script',{

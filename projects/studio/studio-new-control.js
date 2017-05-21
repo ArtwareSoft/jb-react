@@ -115,7 +115,7 @@ jb.component('studio.select-profile', {
   impl :{$: 'group', 
     title: 'itemlist-with-find', 
     style :{$: 'layout.vertical', spacing: 3 }, 
-    controls :[
+    controls: [
       {$: 'itemlist-container.search', 
         title: 'Search', 
         searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
@@ -131,7 +131,7 @@ jb.component('studio.select-profile', {
       {$: 'group', 
         title: 'categories and items', 
         style :{$: 'layout.horizontal', spacing: 3 }, 
-        controls :[
+        controls: [
           {$: 'picklist', 
             title: '', 
             databind: '%$SelectedCategory%', 
@@ -187,14 +187,18 @@ jb.component('studio.select-profile', {
               ]
             }, 
             controls: [
-              {$: 'button', 
+              {$: 'label', 
+                action: [{$: 'close-containing-popup' }, { $call: 'onSelect' }], 
                 title :{$: 'highlight', 
                   base: '%%', 
                   highlight: '%$itemlistCntrData/search_pattern%'
                 }, 
-                action: [{$: 'close-containing-popup' }, { $call: 'onSelect' }], 
-                style :{$: 'button.mdl-flat-ripple' }, 
-                features :{$: 'css', css: '{ text-align: left; width: 250px }' }
+                style :{$: 'label.span', level: 'h3' }, 
+                features: [
+                  {$: 'css', css: '{ text-align: left; }' }, 
+                  {$: 'css.padding', left: '4' }, 
+                  {$: 'css.width', width: '250', minMax: 'min' }
+                ]
               }
             ], 
             itemVariable: 'item', 
@@ -204,7 +208,6 @@ jb.component('studio.select-profile', {
                 onDoubleClick :{$: 'runActions', 
                   actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
                 }, 
-                cssForSelected: 'box-shadow: 1px 0px 0 0 #304ffe inset; background: none !important',
                 autoSelectFirst: true
               }, 
               {$: 'itemlist.keyboard-selection', 
@@ -228,11 +231,11 @@ jb.component('studio.select-profile', {
         name: 'Categories', 
         value :{$: 'studio.categories-of-type', type: '%$type%' }
       }, 
-      {$: 'inner-resource', 
+      {$: 'var', 
         name: 'SelectedCategory', 
-        value: '%$Categories[0]%'
+        value: '%$Categories[0]%', mutable: true
       }, 
-      {$: 'inner-resource', name: 'SearchPattern', value: '' }, 
+      {$: 'var', name: 'SearchPattern', value: '', mutable: true }, 
       {$: 'group.itemlist-container' }
     ]
   }

@@ -42,7 +42,7 @@ jb.component('group.itemlist-container', {
     { id: 'defaultItem', as: 'single' },
   ],
   impl :{$list : [
-    {$: 'inner-resource', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '' }},
+    {$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '' } , mutable: true},
     {$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx.componentContext.params) }
   ]}
 })

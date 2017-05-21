@@ -245,7 +245,7 @@ jb.component('studio.property-tgp', {
             databind: '%$expanded%', 
             style :{$: 'editable-boolean.expand-collapse' }, 
             features: [
-              {$: 'studio.watch-path', path: '%$path%~$' },
+              {$: 'studio.watch-path', path: '%$path%', includeChildren: true },
               {$: 'css', 
                 css: '{ position: absolute; margin-left: -20px; margin-top: 2px }'
               }, 
@@ -288,7 +288,7 @@ jb.component('studio.property-tgp', {
       {$: 'group', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          {$: 'studio.watch-path', path: '%$path%~$', strongRefresh: true, includeChildren: true },
+          {$: 'studio.watch-path', path: '%$path%', strongRefresh: true, includeChildren: true },
           {$: 'watch-ref', ref: '%$expanded%', strongRefresh: true },
           {$: 'hidden', 
             showCondition :{
@@ -315,7 +315,7 @@ jb.component('studio.property-tgp', {
     ], 
     features: [
       {$: 'studio.property-toolbar-feature', path: '%$path%' },
-      {$: 'inner-resource', name: 'expanded', value: false }
+      {$: 'var', name: 'expanded', value: false, mutable: true }
     ]
   }
 })
@@ -393,7 +393,7 @@ jb.component('studio.property-tgp-in-array', {
     ], 
     features: [
       {$: 'css.margin', left: '-100' }, 
-      {$: 'inner-resource', name: 'expanded', value: {$:'studio.is-new', path: '%$path%'} }
+      {$: 'var', name: 'expanded', value: {$:'studio.is-new', path: '%$path%'} , mutable: true }
     ]
   }
 })
@@ -408,7 +408,7 @@ jb.component('studio.property-array', {
         title: 'items', 
         controls: [
           {$: 'itemlist', 
-            items :{$: 'studio.array-children', path: '%$path%', noExtraElem: true }, 
+            items :{$: 'studio.as-array-children', path: '%$path%' }, 
             controls :{$: 'group', 
               style :{$: 'property-sheet.studio-plain' }, 
               controls :{$: 'studio.property-tgp-in-array', path: '%$arrayItem%' }

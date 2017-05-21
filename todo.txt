@@ -1,8 +1,3 @@
-slider editable number
-	add text
-	popup bugs from dialog
-
-auto open new feature
 jbEditor
   tree refresh
   =
@@ -10,3 +5,10 @@ jbEditor
   extra array elem (pipeline)
 suggestion highlight in option object
 search component
+
+
+keybaord only features editing
+	padding tabs index
+
+new feature dialog
+	fix css

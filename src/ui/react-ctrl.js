@@ -167,6 +167,7 @@ class JbComponent {
 			this.extendItemFuncs.push(options.extendItem);
 		this.styleCtx = this.styleCtx || options.styleCtx;
 		this.toolbar = this.toolbar || options.toolbar;
+		this.noUpdates = this.noUpdates || options.noUpdates;
 
 	   	if (options.css)
     		this.cssSelectors = (this.cssSelectors || [])
@@ -195,6 +196,8 @@ function injectLifeCycleMethods(Comp,jbComp) {
 	  Comp.prototype.componentDidUpdate = function() {
 		this.jbEmitter.next('after-update');
 	}
+	if (jbComp.noUpdates)
+		Comp.prototype.shouldComponentUpdate = _ => false;
 }
 
 function garbageCollectCtxDictionary() {

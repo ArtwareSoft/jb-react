@@ -113,8 +113,13 @@ Object.assign(st,{
 				.filter(x=> !(noExtraElem && x =='length'))
 				.map(x=>x=='length'? val.length : x) // extra elem
 				.map(k=> path +'~'+k);
-		if (val)
-			return [path].concat(noExtraElem ? [] : [path +'~1'])
+	},
+	asArrayChildren: path => { // support the case of single element - used by properties features
+		var val = st.valOfPath(path);
+		if (Array.isArray(val))
+			return st.arrayChildren(path,true)
+		else if (val)
+			return [path]
 	},
 
 	controlParams: path =>
@@ -122,7 +127,7 @@ Object.assign(st,{
 
 	summary: path => {
 		var val = st.valOfPath(path);
-		if (typeof val != 'object') return '';
+		if (val == null || typeof val != 'object') return '';
 		return Object.getOwnPropertyNames(val)
 			.filter(p=> p != '$')
 			.map(p=>val[p])

@@ -39,6 +39,8 @@ jb.component('open-dialog', {
 					jb.logException(e,'dialog');
 				}
 				cmp.dialogClose = _ => dialog.close();
+				cmp.recalcTitle = _ => 
+					jb.ui.setState(cmp,{title: ctx.params.title(ctx)})
 			},
 			afterViewInit: cmp => {
 				cmp.dialog.el = cmp.base;
@@ -235,12 +237,17 @@ jb.component('dialog.close-all', {
 
 jb.component('dialog-feature.autoFocusOnFirstInput', {
 	type: 'dialog-feature',
-	impl: context => ({ 
+	params: [
+		{ id: 'selectText', as: 'boolean' }
+	],
+	impl: (ctx,selectText) => ({ 
 		afterViewInit: cmp =>
 			jb.delay(1).then(_=> {
-				var elem = context.vars.$dialog.el.querySelector('input,textarea,select');
+				var elem = ctx.vars.$dialog.el.querySelector('input,textarea,select');
 				if (elem)
-					jb.ui.focus(elem, 'autoFocusOnFirstInput')
+					jb.ui.focus(elem, 'autoFocusOnFirstInput');
+				if (selectText)
+					elem.select();
 			})
 	})
 })

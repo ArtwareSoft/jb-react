@@ -596,6 +596,26 @@ jb.component('ui-test.editable-number', {
 
 })
 
+jb.component('ui-test.editable-number-slider', {
+  impl :{$: 'ui-test',  
+    control :{$: 'editable-number', title: 'age',
+        databind: '%$person/age%',
+        style :{$: 'editable-number.slider'},
+    },
+    expectedResult: { $: 'contains', text: '42' },
+  },
+})
+
+jb.component('ui-test.editable-number-slider-empty', {
+  impl :{$: 'ui-test',  
+    control :{$: 'editable-number', title: 'age',
+        databind: '%$person/age1%',
+        style :{$: 'editable-number.slider'},
+    },
+    expectedResult: true,
+  },
+})
+
 jb.component('ui-test.editable-boolean.all-styles', {
   impl :{$: 'ui-test',  
   control :{$: 'group', controls: 
@@ -925,6 +945,58 @@ jb.component('menu-test.open-context-menu', {
     }
   },
   expectedResult :{$: 'contains', text: 'open' },
+  },
+})
+
+jb.component('ui-test.immutable-var', {
+  impl :{$: 'ui-test',  
+    control: {$: 'label', title: '%$var1%',
+      features: [ 
+        {$:'var', name: 'var1', value: 'hello' },
+//        {$: 'feature.after-load', action: {$: 'write-value', to: '%$var1%', value: 'foo'}}
+        ]
+    },
+    action: ctx=> jb.delay(1),
+    expectedResult :{$: 'contains', text: 'hello' },
+  },
+})
+
+jb.component('ui-test.mutable-var', {
+  impl :{$: 'ui-test',  
+    control: {$: 'label', title: '%$var1%',
+      features: [ 
+        {$:'var', name: 'var1', value: 'hello', mutable: true },
+        {$: 'feature.after-load', action: {$: 'write-value', to: '%$var1%', value: 'foo'}}
+        ]
+    },
+    action: ctx=> jb.delay(1).then(_=>jb.delay(1)),
+    expectedResult :{$: 'contains', text: 'foo' },
+  },
+})
+
+jb.component('ui-test.mutable-var-as-object', {
+  impl :{$: 'ui-test',  
+    control: {$: 'label', title: '%$obj1/txt%',
+      features: [ 
+        {$:'var', name: 'obj1', value: {$: 'object', txt: 'hello' }, mutable: true },
+        {$: 'feature.after-load', action: {$: 'write-value', to: '%$obj1/txt%', value: 'foo'}}
+        ]
+    },
+    action: ctx=> jb.delay(1).then(_=>jb.delay(1)),
+    expectedResult :{$: 'contains', text: 'foo' },
+  },
+})
+
+jb.component('ui-test.mutable-var-as-object-not-initialized', {
+  impl :{$: 'ui-test',  
+    control: {$: 'label', title: '%$obj1/txt%',
+      features: [ 
+        {$:'var', name: 'obj1', value: {$: 'object' }, mutable: true },
+        {$: 'feature.after-load', action: {$: 'write-value', to: '%$obj1/txt%', value: 'foo'}}
+        ]
+    },
+    action: ctx=> jb.delay(1).then(_=>jb.delay(1)),
+    expectedResult :{$: 'contains', text: 'foo' },
   },
 })
 

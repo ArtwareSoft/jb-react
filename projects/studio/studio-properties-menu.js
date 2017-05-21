@@ -65,10 +65,7 @@ jb.component('studio.open-property-menu', {
           title: 'Delete', 
           icon: 'delete', 
           shortcut: 'Delete', 
-          action: [
-            {$: 'write-value', to: '%$TgpTypeCtrl.expanded%', value: false }, 
-            {$: 'studio.delete', path: '%$path%' }
-          ]
+          action :{$: 'studio.delete', path: '%$path%' }
         }
       ]
     }

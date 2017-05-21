@@ -290,22 +290,22 @@ jb.component('contains',{
 	type: 'boolean',
 	params: [
 		{ id: 'text', type: 'data[]', as: 'array', essential: true },
-		{ id: 'allText', defaultValue: '%%', as:'array'},
+		{ id: 'allText', defaultValue: '%%', as:'string'},
 		{ id: 'inOrder', defaultValue: true, as:'boolean'},
 	],
 	impl: function(context,text,allText,inOrder) {
-      var all = "";
-      allText.forEach(function(allTextItem) {
-		if (allTextItem.outerHTML)
-			all += allTextItem.outerHTML + $(allTextItem).findIncludeSelf('input,textarea').get().map(function(item) { return item.value; }).join();
-		else if (typeof(allTextItem) == 'object') 
-			all += JSON.stringify(allTextItem);
-		else 
-			all += jb.tostring(allTextItem);
-      });
+      //var all = "";
+  //     allText.forEach(function(allTextItem) {
+		// if (allTextItem.outerHTML)
+		// 	all += allTextItem.outerHTML + allTextItem.querySelectorAll('input,textarea').get().map(function(item) { return item.value; }).join();
+		// else if (typeof(allTextItem) == 'object') 
+		// 	all += JSON.stringify(allTextItem);
+		// else 
+		// 	all += jb.tostring(allTextItem);
+  //     });
       var prevIndex = -1;
       for(var i=0;i<text.length;i++) {
-      	var newIndex = all.indexOf(jb.tostring(text[i]),prevIndex+1);
+      	var newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1);
       	if (newIndex == -1) return false;
       	prevIndex = inOrder ? newIndex : -1;
       }

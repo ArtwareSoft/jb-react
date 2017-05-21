@@ -33,7 +33,7 @@ jb.component('editable-number.slider', {
 jb.component('slider.init', {
   type: 'feature',
   params: [
-    {id: 'onEnter', type: 'action', dynamic: true, defaultValue:{$: 'slider.edit-settings'} },
+    {id: 'openPopup', type: 'action', dynamic: true, defaultValue:{$: 'slider.edit-as-text-popup'} },
   ],
   impl: ctx => ({
       onclick: true,
@@ -55,10 +55,12 @@ jb.component('slider.init', {
       afterViewInit: cmp => {
           cmp.refresh();
           cmp.onmouseup.merge(cmp.onkeyup).subscribe(e=> {
+              if (cmp.jbModel() == null) // first time
+                return cmp.jbModel(0);
               cmp.jbModel(e.target.value);
               cmp.refresh();
-              if (e.keyCode == 13)
-                jb.ui.wrapWithLauchingElement(ctx.params.onEnter, cmp.ctx, cmp.base)();
+              if (e.keyCode == 13 || Number(e.key))
+                jb.ui.wrapWithLauchingElement(ctx.params.openPopup, cmp.ctx, cmp.base)();
               if (e.keyCode == 46) // delete
                 jb.writeValue(ctx.vars.$model.databind,null);
               if ([37,39].indexOf(e.keyCode) != -1 && e.shiftKey) { 
@@ -69,13 +71,20 @@ jb.component('slider.init', {
                   cmp.jbModel(Math.max(cmp.min,val-9));
               }
           });
+
+          // double click
+          cmp.onmouseup.buffer(cmp.onmouseup.debounceTime(250))
+            .filter(buff => buff.length === 2)
+              .subscribe(_=>
+                jb.ui.wrapWithLauchingElement(ctx.params.openPopup, cmp.ctx, cmp.base)());
+
           cmp.onclick.subscribe(e=>jb.ui.focus(cmp.base,'slider'));
         }
     })
 })
 
 
-jb.component('slider.edit-settings', {
+jb.component('slider.edit-as-text-popup', {
   type: 'feature',
   impl :{$: 'open-dialog', 
     style :{$: 'dialog.popup' }, 
@@ -103,7 +112,7 @@ jb.component('slider.edit-settings', {
         { $: 'dialog-feature.closeWhenClickingOutside' },
         { $: 'dialog-feature.cssClassOnLaunchingControl' },
         { $: 'dialog-feature.nearLauncherLocation' },
-        {$: 'dialog-feature.autoFocusOnFirstInput' },
+        {$: 'dialog-feature.autoFocusOnFirstInput', selectText: true },
       ]
   }, 
 })

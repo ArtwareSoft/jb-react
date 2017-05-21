@@ -49,19 +49,16 @@ jb.component('studio-helper.jb-editor', {
     title: 'main %', 
     style :{$: 'layout.flex', align: 'flex-start' }, 
     controls: [
-      {$: 'button', 
-        title: 'menu', 
-        action :{$: 'studio.open-jb-editor-menu', 
-          path: '%$studio/jb_editor_selection%'
-        }, 
-//        style :{$: 'button.md-icon-fab', icon: 'menu', size: '24' }, 
-        features :{$: 'css.height', height: '30' }
-      }, 
       {$: 'studio.jb-editor', path: '%$path%' }, 
       {$: 'editable-text', 
         databind :{$: 'studio.profile-as-text', path: '%$studio/jb_editor_selection%' }, 
-        style :{$: 'editable-text.input' },
-        features: {$: 'watch-ref', ref: '%$studio/jb_editor_selection%' }
+        style :{$: 'editable-text.textarea' }, 
+        features: [
+          {$: 'watch-ref', ref: '%$studio/jb_editor_selection%' }, 
+          {$: 'css.width', width: '450' }, 
+          {$: 'css.height', height: '200' }, 
+          {$: 'css.margin', left: '10' }
+        ]
       }
     ], 
     features :{$: 'css', css: '{ height: 200px; padding: 50px }' }
@@ -100,12 +97,11 @@ jb.component('studio-helper.sample-control', {
         title: '2.0', 
         controls: [
           {$: 'label', title: '2.1' }, 
-          {$: 'button', 
-            title: '2.2', 
-          }
-        ]
+          {$: 'button', title: '2.2' }
+        ], 
+        features :{$: 'css.padding', top: '33', left: '41', right: '22' }
       }, 
-      {$: 'label', title: '1.0' }
+      {$: 'label', title: '1.00' }
     ]
   }
 })

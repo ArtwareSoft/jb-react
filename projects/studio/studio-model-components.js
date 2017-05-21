@@ -108,13 +108,12 @@ jb.component('studio.non-control-children', {
 		st.nonControlChildren(path,includeFeatures)
 })
 
-jb.component('studio.array-children', {
+jb.component('studio.as-array-children', {
 	params: [ 
 		{id: 'path', as: 'string' },
-		{id: 'noExtraElem', as: 'boolean'}
 	],
-	impl: (ctx,path,noExtraElem) => 
-		st.arrayChildren(path,noExtraElem)
+	impl: (ctx,path) => 
+		st.asArrayChildren(path)
 })
 
 jb.component('studio.comp-name',{

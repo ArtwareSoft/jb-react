@@ -33,10 +33,10 @@ jb.component('studio.jb-editor', {
             class: 'jb-editor jb-control-tree studio-control-tree'
           }, 
           {$: 'tree.selection', 
-            databind: '%$studio/jb_editor_selection%', 
             onDoubleClick :{$: 'studio.open-jb-edit-property', 
               path: '%$studio/jb_editor_selection%'
             }, 
+            databind: '%$studio/jb_editor_selection%', 
             autoSelectFirst: true
           }, 
           {$: 'tree.keyboard-selection', 
@@ -48,11 +48,8 @@ jb.component('studio.jb-editor', {
             applyMenuShortcuts :{$: 'studio.jb-editor-menu', path: '%%' }
           }, 
           {$: 'tree.drag-and-drop' }, 
-          {$: 'studio.control-tree.refresh-path-changes' }, 
           {$: 'css.width', width: '500', selector: 'jb-editor' }, 
-          // {$: 'feature.studio-auto-fix-path', 
-          //   path: '%$studio/jb_editor_selection%'
-          // }
+          {$: 'studio.watch-script-changes' }
         ]
       }, 
       {$: 'group', 
@@ -101,13 +98,16 @@ jb.component('studio.jb-editor', {
                     loadingControl :{$: 'label', title: 'calculating...' }, 
                     resource: 'probeResult'
                   }
-                }, 
+                }
               }
             ], 
             features :{$: 'feature.if', showCondition: '%$studio/jb_editor_selection%' }
           }
         ], 
-        features :{$: 'watch-ref', ref: '%$studio/jb_editor_selection%', strongRefresh: true }
+        features :{$: 'watch-ref', 
+          ref: '%$studio/jb_editor_selection%', 
+          strongRefresh: true
+        }
       }
     ], 
     features :{$: 'css.padding', top: '10' }
@@ -265,10 +265,7 @@ jb.component('studio.jb-editor-menu', {
         title: 'Delete', 
         icon: 'delete', 
         shortcut: 'Delete', 
-        action: [
-          {$: 'write-value', to: '%$TgpTypeCtrl.expanded%', value: false }, 
-          {$: 'studio.delete', path: '%$path%' }
-        ]
+        action: {$: 'studio.delete', path: '%$path%' }
       }, 
       {$: 'menu.action', 
         title: 'Copy', 

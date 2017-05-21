@@ -28,7 +28,7 @@ jb.component('studio.data-resources', {
             itemVariable: 'item'
           }
         ], 
-        features :{$: 'inner-resource', name: 'selected_in_itemlist' }
+        features :{$: 'var', name: 'selected_in_itemlist', mutable: true }
       }
     ], 
     features :{$: 'group.wait', 

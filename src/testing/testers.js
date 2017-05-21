@@ -115,7 +115,7 @@ jb.component('test.dialog-content', {
 		{ id: 'id', as: 'string' },
 	],
 	impl: (ctx,id) =>
-		jb.ui.dialogs.dialogs.filter(d=>d.id == id).map(d=>d.el)[0] || ''
+		jb.ui.dialogs.dialogs.filter(d=>d.id == id).map(d=>d.el)[0].outerHTML || ''
 })
 
 var jb_success_counter = 0;
