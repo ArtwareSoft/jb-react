@@ -190,7 +190,7 @@ jb.component('ui-test.open-dialog', {
   control :{$: 'button', title: 'click me',
     action :{$: 'open-dialog', title: 'hello', id:'hello', 
       content :{$: 'group', controls: [ {$: 'label', title: 'jbart'} ] },
-      features:{$: 'dialog-feature.nearLauncherLocation', offsetTop: ctx=> Math.floor(Math.random()*20+2)*10 }
+      features:{$: 'dialog-feature.near-launcher-position', offsetTop: ctx=> Math.floor(Math.random()*20+2)*10 }
     }
   },
   action :{$: 'ui-action.click', selector: 'button' },

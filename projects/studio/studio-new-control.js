@@ -37,7 +37,7 @@ jb.component('studio.open-new-profile-dialog', {
       {$: 'css.height', height: '430', overflow: 'hidden' }, 
       {$: 'css.width', width: '450', overflow: 'hidden' }, 
       {$: 'dialog-feature.drag-title', id: 'new %$type%' }, 
-      {$: 'dialog-feature.nearLauncherLocation', offsetLeft: 0, offsetTop: 0 }, 
+      {$: 'dialog-feature.near-launcher-position', offsetLeft: 0, offsetTop: 0 }, 
       {$: 'group.auto-focus-on-first-input' },
       {$: 'dialog-feature.onClose', action:{ $call: 'onClose'}}
     ]
@@ -247,7 +247,7 @@ jb.component('studio.open-new-page', {
     modal: true, 
     title: 'New Page', 
     style :{$: 'dialog.dialog-ok-cancel', 
-      features :{$: 'dialog-feature.autoFocusOnFirstInput' }
+      features :{$: 'dialog-feature.auto-focus-on-first-input' }
     }, 
     content :{$: 'group', 
       controls: [

@@ -15,7 +15,7 @@ jb.component('studio.search-component', {
         style :{$: 'editable-text.mdl-input', width: '200' }, 
         features: [
           {$: 'editable-text.helper-popup', 
-            features :{$: 'dialog-feature.nearLauncherLocation' }, 
+            features :{$: 'dialog-feature.near-launcher-position' }, 
             control :{$: 'studio.search-list' }, 
             popupId: 'search-component', 
             popupStyle :{$: 'dialog.popup' }

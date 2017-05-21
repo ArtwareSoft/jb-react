@@ -104,7 +104,7 @@ jb.component('studio.property-primitive', {
           {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
           {$: 'editable-text.helper-popup', 
             showHelper :{$: 'studio.show-suggestions' },
-            features :{$: 'dialog-feature.nearLauncherLocation' }, 
+            features :{$: 'dialog-feature.near-launcher-position' }, 
             control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
             popupId: 'suggestions', 
             popupStyle :{$: 'dialog.popup' }
@@ -134,12 +134,13 @@ jb.component('studio.jb-floating-input', {
         features: [
           {$: 'var', 
             name: 'suggestionData', 
-            value :{$: 'object', selected: '', options: [], path: '%$path%' }, mutable: true
+            value :{$: 'object', selected: '', options: [], path: '%$path%' }, 
+            mutable: true
           }, 
           {$: 'studio.undo-support', path: '%$path%' }, 
           {$: 'editable-text.helper-popup', 
             showHelper :{$: 'studio.show-suggestions' },
-            features :{$: 'dialog-feature.nearLauncherLocation' }, 
+            features :{$: 'dialog-feature.near-launcher-position' }, 
             control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
             popupId: 'suggestions', 
             popupStyle :{$: 'dialog.popup' }

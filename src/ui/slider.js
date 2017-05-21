@@ -107,12 +107,12 @@ jb.component('slider.edit-as-text-popup', {
       ]
     }, 
     features: [
-        { $: 'dialog-feature.uniqueDialog', id: 'slider', remeberLastLocation: false },
-        { $: 'dialog-feature.maxZIndexOnClick' },
-        { $: 'dialog-feature.closeWhenClickingOutside' },
-        { $: 'dialog-feature.cssClassOnLaunchingControl' },
-        { $: 'dialog-feature.nearLauncherLocation' },
-        {$: 'dialog-feature.autoFocusOnFirstInput', selectText: true },
+        { $: 'dialog-feature.unique-dialog', id: 'slider', remeberLastLocation: false },
+        { $: 'dialog-feature.max-zIndex-on-click' },
+        { $: 'dialog-feature.close-when-clicking-outside' },
+        { $: 'dialog-feature.css-class-on-launching-element' },
+        { $: 'dialog-feature.near-launcher-position' },
+        {$: 'dialog-feature.auto-focus-on-first-input', selectText: true },
       ]
   }, 
 })

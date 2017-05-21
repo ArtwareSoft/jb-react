@@ -232,9 +232,9 @@ jb.component('dialog.studio-multiline-edit',{
 				>.dialog-close:hover { opacity: .5 }
 				`,
 			features: [
-				{ $: 'dialog-feature.maxZIndexOnClick' },
-				{ $: 'dialog-feature.closeWhenClickingOutside' },
-				{ $: 'dialog-feature.cssClassOnLaunchingControl' },
+				{ $: 'dialog-feature.max-zIndex-on-click' },
+				{ $: 'dialog-feature.close-when-clicking-outside' },
+				{ $: 'dialog-feature.css-class-on-launching-element' },
 				{ $: 'dialog-feature.studio-position-under-property' }
 			]
 	}

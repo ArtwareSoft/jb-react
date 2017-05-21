@@ -52,7 +52,7 @@ jb.component('editable-text.helper-popup', {
               id: ctx.params.popupId,
               style: _ctx => ctx.params.popupStyle(_ctx),
               content: _ctx => ctx.params.control(_ctx),
-              features: {$: 'dialog-feature.uniqueDialog', id: ctx.params.popupId}
+              features: {$: 'dialog-feature.unique-dialog', id: ctx.params.popupId}
             })
           , cmp.ctx, input );
 

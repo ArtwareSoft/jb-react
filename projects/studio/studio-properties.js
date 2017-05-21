@@ -23,7 +23,7 @@ jb.component('studio.open-properties', {
     features: [
       {
         $if: '%$focus%', 
-        then :{$: 'dialog-feature.autoFocusOnFirstInput' }
+        then :{$: 'dialog-feature.auto-focus-on-first-input' }
       }, 
       {$: 'dialog-feature.keyboard-shortcut', 
         shortcut: 'Ctrl+Left', 

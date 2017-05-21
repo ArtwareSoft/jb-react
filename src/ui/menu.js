@@ -409,11 +409,11 @@ jb.component('dialog.context-menu-popup',{
 		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup context-menu-popup pulldown-mainmenu-popup'},
 				h(state.contentComp)),
 			features: [
-				{ $: 'dialog-feature.uniqueDialog', id: '%$optionsParentId%', remeberLastLocation: false },
-				{ $: 'dialog-feature.maxZIndexOnClick' },
-				{ $: 'dialog-feature.closeWhenClickingOutside' },
-				{ $: 'dialog-feature.cssClassOnLaunchingControl' },
-				{ $: 'dialog-feature.nearLauncherLocation', rightSide: '%$rightSide%', offsetTop: '%$offsetTop%' }
+				{ $: 'dialog-feature.unique-dialog', id: '%$optionsParentId%', remeberLastLocation: false },
+				{ $: 'dialog-feature.max-zIndex-on-click' },
+				{ $: 'dialog-feature.close-when-clicking-outside' },
+				{ $: 'dialog-feature.css-class-on-launching-element' },
+				{ $: 'dialog-feature.near-launcher-position', rightSide: '%$rightSide%', offsetTop: '%$offsetTop%' }
 			]
 	}
 })

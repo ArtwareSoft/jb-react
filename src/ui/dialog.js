@@ -81,17 +81,17 @@ jb.component('dialog.popup', {
 			h(state.contentComp),
 		]),
       features: [
-        { $: 'dialog-feature.maxZIndexOnClick' },
-        { $: 'dialog-feature.closeWhenClickingOutside' },
-        { $: 'dialog-feature.cssClassOnLaunchingControl' },
-        { $: 'dialog-feature.nearLauncherLocation' }
+        { $: 'dialog-feature.max-zIndex-on-click' },
+        { $: 'dialog-feature.close-when-clicking-outside' },
+        { $: 'dialog-feature.css-class-on-launching-element' },
+        { $: 'dialog-feature.near-launcher-position' }
       ],
       css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }'
   }
 })
 
 
-jb.component('dialog-feature.uniqueDialog', {
+jb.component('dialog-feature.unique-dialog', {
 	type: 'dialog-feature',
 	params: [
 		{ id: 'id', as: 'string' },
@@ -145,7 +145,7 @@ jb.component('dialog-feature.keyboard-shortcut', {
 	}})
 })
 
-jb.component('dialog-feature.nearLauncherLocation', {
+jb.component('dialog-feature.near-launcher-position', {
 	type: 'dialog-feature',
 	params: [
 		{ id: 'offsetLeft', as: 'number', defaultValue: 0 },
@@ -200,7 +200,7 @@ jb.component('dialog-feature.onClose', {
 	}
 })
 
-jb.component('dialog-feature.closeWhenClickingOutside', {
+jb.component('dialog-feature.close-when-clicking-outside', {
 	type: 'dialog-feature',
 	params: [
 		{ id: 'delay', as: 'number', defaultValue: 100 }
@@ -235,7 +235,7 @@ jb.component('dialog.close-all', {
 		jb.ui.dialogs.dialogs.forEach(d=>d.close())
 })
 
-jb.component('dialog-feature.autoFocusOnFirstInput', {
+jb.component('dialog-feature.auto-focus-on-first-input', {
 	type: 'dialog-feature',
 	params: [
 		{ id: 'selectText', as: 'boolean' }
@@ -245,31 +245,31 @@ jb.component('dialog-feature.autoFocusOnFirstInput', {
 			jb.delay(1).then(_=> {
 				var elem = ctx.vars.$dialog.el.querySelector('input,textarea,select');
 				if (elem)
-					jb.ui.focus(elem, 'autoFocusOnFirstInput');
+					jb.ui.focus(elem, 'auto-focus-on-first-input');
 				if (selectText)
 					elem.select();
 			})
 	})
 })
 
-jb.component('dialog-feature.cssClassOnLaunchingControl', {
+jb.component('dialog-feature.css-class-on-launching-element', {
 	type: 'dialog-feature',
 	impl: context => ({ 
-			afterViewInit: cmp => {
-				var dialog = context.vars.$dialog;
-				var $control = context.vars.$launchingElement.$el;
-				$control.addClass('dialog-open');
-				dialog.em.filter(e=>
-					e.type == 'close')
-					.take(1)
-					.subscribe(()=> {
-						$control.removeClass('dialog-open');
-					})
-			}
+		afterViewInit: cmp => {
+			var dialog = context.vars.$dialog;
+			var $control = context.vars.$launchingElement.$el;
+			$control.addClass('dialog-open');
+			dialog.em.filter(e=>
+				e.type == 'close')
+				.take(1)
+				.subscribe(()=> {
+					$control.removeClass('dialog-open');
+				})
+		}
 	})
 })
 
-jb.component('dialog-feature.maxZIndexOnClick', {
+jb.component('dialog-feature.max-zIndex-on-click', {
 	type: 'dialog-feature',
 	params: [
 		{ id: 'minZIndex', as: 'number'}

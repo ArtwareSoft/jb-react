@@ -129,7 +129,7 @@ jb.component('studio.open-make-global-style', {
     modal: true, 
     title: 'Style Name', 
     style :{$: 'dialog.dialog-ok-cancel', 
-      features :{$: 'dialog-feature.autoFocusOnFirstInput' }
+      features :{$: 'dialog-feature.auto-focus-on-first-input' }
     }, 
     content :{$: 'editable-text', 
       databind: '%$dialogData/name%',
