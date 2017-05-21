@@ -23,27 +23,28 @@ class ImmutableWithPath {
       return ref;
     return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
   }
-  writeValue(ref,value) {
+  writeValue(ref,value,srcCtx) {
     if (!ref) 
       return jb.logError('writeValue: null ref');
     if (this.val(ref) == value) return;
     if (ref.$jb_val)
       return ref.$jb_val(value);
-    return this.doOp(ref,{$set: value})
+    return this.doOp(ref,{$set: value},srcCtx)
   }
-  splice(ref,args) {
-    return this.doOp(ref,{$splice: args })
+  splice(ref,args,srcCtx) {
+    return this.doOp(ref,{$splice: args },srcCtx)
   }
-  push(ref,value) {
-    return this.doOp(ref,{$push: value})
+  push(ref,value,srcCtx) {
+    return this.doOp(ref,{$push: value},srcCtx)
   }
-  merge(ref,value) {
-    return this.doOp(ref,{$merge: value})
+  merge(ref,value,srcCtx) {
+    return this.doOp(ref,{$merge: value},srcCtx)
   }
-  doOp(ref,opOnRef) {
+  doOp(ref,opOnRef,srcCtx) {
     if (!this.isRef(ref))
       ref = this.asRef(ref);
     if (!ref) return;
+    var oldRef = Object.assign({},ref),oldResources = this.resources();
 
     this.refresh(ref);
     if (ref.$jb_path.length == 0)
@@ -54,7 +55,7 @@ class ImmutableWithPath {
     this.markPath(ref.$jb_path);
     this.resources(jb.ui.update(this.resources(),op));
     this.resourceVersions[resource] = this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1;
-    this.resourceChange.next({op: op, path: ref.$jb_path});
+    this.resourceChange.next({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources});
     return ref;
   }
   asRef(obj) {
@@ -180,18 +181,18 @@ class ImmutableWithPath {
       return this.resourceChange
         .takeUntil(cmp.destroyed)
         .filter(e=>
-            e.path[0] == ref.$jb_path[0])
+            e.ref.$jb_path[0] == ref.$jb_path[0])
         .filter(e=> { 
-          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(e.path.join('~')) == 0;
+          var path = e.ref.$jb_path;
+          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
           if (changeInParent) // change in self or parent - refind itself
             jb.refreshRef(ref);
           if (includeChildren)
-            return changeInParent || e.path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
+            return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
           return changeInParent;
         })
-        .map(_=>
-          jb.val(ref))
-        .distinctUntilChanged()
+        .distinctUntilChanged(e=>
+          jb.val(e.ref))
     }
     return jb.rx.Observable.of(jb.val(ref));
   }

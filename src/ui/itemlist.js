@@ -36,15 +36,14 @@ jb.component('itemlist.init', {
 
         cmp.initWatchByRef = refToWatch =>
             jb.ui.refObservable(refToWatch,cmp)
-              .map(_=>jb.toarray(jb.val(items(cmp.ctx))))
-              .filter(items=>
-                items.length == 0 || !jb.compareArrays(items,cmp.items))
-              .do(items => {
-                cmp.items = items;
-              })
-              .map(items=> cmp.items2ctrls(items))
-              .subscribe(ctrls=>
-                jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())}))
+              .subscribe(e=> {
+                var _items = jb.toarray(jb.val(items(cmp.ctx)));
+                if (_items.length != 0 && jb.compareArrays(_items,cmp.items))
+                  return;
+                cmp.items = _items;
+                var ctrls = cmp.items2ctrls(cmp.items); 
+                jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())},e)
+              });
       },
   })
 })
@@ -86,7 +85,6 @@ jb.component('itemlist.selection', {
         cmp.clickEmitter = new jb.rx.Subject();
 
         cmp.selectionEmitter
-          .merge(jb.ui.refObservable(ctx.params.databind,cmp))
           .merge(cmp.clickEmitter)
           .distinctUntilChanged()
           .filter(x=>x)
@@ -95,6 +93,9 @@ jb.component('itemlist.selection', {
               cmp.setState({selected: selected});
               ctx.params.onSelection(cmp.ctx.setData(selected));
           });
+
+        jb.ui.refObservable(ctx.params.databind,cmp).subscribe(e=>
+          jb.ui.setState(cmp,{selected: jb.val(e.ref)},e))
 
         // double click
         var clickEm = cmp.clickEmitter.takeUntil( cmp.destroyed );
@@ -184,7 +185,7 @@ jb.component('itemlist.drag-and-drop', {
         drake.on('drop', (dropElm, target, source,sibling) => {
             var draggedIndex = cmp.items.indexOf(dropElm.dragged.obj);
             var targetIndex = sibling ? $(sibling).index() : cmp.items.length;
-            jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.obj]]);
+            jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.obj]],ctx);
 
             dropElm.dragged = null;
         });
@@ -199,7 +200,7 @@ jb.component('itemlist.drag-and-drop', {
               var selectedIndex = cmp.items.indexOf(cmp.state.selected);
               if (selectedIndex == -1) return;
               var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-              jb.splice(cmp.items,[[selectedIndex,1],[index,0,cmp.state.selected]]);
+              jb.splice(cmp.items,[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
           })
 //        })
       }

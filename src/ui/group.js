@@ -15,10 +15,10 @@ jb.component('group.init-group', {
   impl: ctx => ({
     init: cmp => {
       cmp.initWatchByRef = cmp.initWatchByRef || (refToWatch =>
-        jb.ui.refObservable(refToWatch,cmp)
-          .map(_=>ctx.vars.$model.controls(cmp.ctx))
-          .subscribe(ctrls=>
-              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())})))
+        jb.ui.refObservable(refToWatch,cmp).subscribe(e => {
+              var ctrls = ctx.vars.$model.controls(cmp.ctx);
+              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())},e) 
+            } ))
 
       if (cmp.ctrlEmitter)
         cmp.ctrlEmitter.subscribe(ctrls=>

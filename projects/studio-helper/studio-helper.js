@@ -139,19 +139,16 @@ jb.component('studio-helper.edit-style', {
 jb.component('studio-helper-dummy.label', {
   type: 'control', 
   impl :{$: 'label', 
-        title: {$pipeline: [ '%$people-array/people%', 
-                {$filter: '%age% == 42'},
-                '%name%'
-        ]},
-        features: [
-          {$: 'css', 
-            css: '{ position: absolute; margin-left: -20px; margin-top: 2px }'
-          }, 
-          {$: 'hidden', 
-            showCondition : true
-          }
-        ]
+    title :{
+      $pipeline: ['%$people-array/people%', { $filter: '%age% == 42' }, '%name%aa']
+    }, 
+    features: [
+      {$: 'css', 
+        css: '{ position: absolute; margin-left: -20px; margin-top: 2px }'
       }, 
+      {$: 'hidden', showCondition: true }
+    ]
+  }
 })
 
 

@@ -293,12 +293,17 @@ ui.waitFor = function(check,times,interval) {
 
 // ****************** vdom utils ***************
 
-ui.setState = function(cmp,state) {
+ui.setStateObserver = new jb.rx.Subject();
+
+ui.setState = function(cmp,state,opEvent) {
 	jb.logPerformance('setState',cmp.ctx,state);
 	if (typeof state == 'undefined' && cmp.refresh)	
 		return cmp.refresh();
 	cmp.setState(state || {});
+	ui.setStateObserver.next({cmp: cmp, opEvent: opEvent});
 }
+
+ui.setStateObserver.bufferTime(100).filter(x=>x.length> 0).subscribe(x=>console.log(x));
 
 ui.addClassToVdom = function(vdom,clz) {
 	vdom.attributes = vdom.attributes || {};

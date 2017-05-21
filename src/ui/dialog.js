@@ -222,6 +222,17 @@ jb.component('dialog-feature.close-when-clicking-outside', {
 	}
 })
 
+jb.component('dialog.close-dialog', {
+	type: 'action',
+	params: [
+		{ id: 'id', as: 'string' },
+		{ id: 'delay', as: 'number', defaultValue: 200 },
+	],
+	impl: (ctx,id,delay) => 
+		jb.ui.dialogs.dialogs.filter(d=>d.id == id)
+  			.forEach(d=>jb.delay(delay).then(d.close()))
+})
+
 jb.component('dialog.close-all-popups', {
 	type: 'action',
 	impl: ctx => 

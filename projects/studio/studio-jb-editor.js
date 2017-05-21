@@ -104,10 +104,13 @@ jb.component('studio.jb-editor', {
             features :{$: 'feature.if', showCondition: '%$studio/jb_editor_selection%' }
           }
         ], 
-        features :{$: 'watch-ref', 
-          ref: '%$studio/jb_editor_selection%', 
-          strongRefresh: true
-        }
+        features: [
+          {$: 'watch-ref', 
+            ref: '%$studio/jb_editor_selection%', 
+            strongRefresh: true
+          }, 
+          {$: 'studio.watch-script-changes' }
+        ]
       }
     ], 
     features :{$: 'css.padding', top: '10' }
@@ -140,7 +143,7 @@ jb.component('studio.open-jb-edit-property', {
   params: [{ id: 'path', as: 'string' }], 
   impl :{
       $if :{$: 'studio.is-of-type', type: 'data', path: '%$path%' },
-      then :{$: 'open-dialog', 
+      then :{$: 'open-dialog',
         style :{$: 'dialog.studio-jb-editor-popup' }, 
         content :{$: 'studio.jb-floating-input', path: '%$path%' }, 
         features: [

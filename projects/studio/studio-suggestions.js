@@ -21,7 +21,9 @@ jb.component('studio.suggestions-itemlist', {
         autoSelectFirst: true
       }, 
       {$: 'itemlist.keyboard-selection', 
-        onEnter :{$: 'studio.paste-suggestion' }, 
+        onEnter : [
+          {$: 'studio.paste-suggestion' },
+        ], 
         autoFocus: false
       }, 
       {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' }, 
@@ -52,9 +54,11 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
           .delay(1) // we use keydown - let the input fill itself
           .debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
-          .map(e=> 
-              input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
-          .flatMap(e=>
+          // .map(e=> 
+          //     input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
+          .distinctUntilChanged(_=>
+            input.value) // compare input value - if input was not changed - leave it. Alt-Space can be used here
+          .flatMap(_=>
             getProbe())
           .map(res=>
               res && res.finalResult && res.finalResult[0] && res.finalResult[0].in)
@@ -66,6 +70,8 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
             e1.key == e2.key) // compare options - if options are the same - leave it.
           .do(e=>jb.logPerformance('suggestions',e))
           .subscribe(e=> {
+              if (!jb.val(cmp.ctx.exp('%$suggestionData%'))) // after dialog closed
+                return; 
               cmp.ctx.run({$:'write-value', to: '%$suggestionData/tail%', value: ctx => e.tail })
               cmp.ctx.run({$:'write-value', to: '%$suggestionData/options%', value: ctx => e.options });
           });
@@ -147,7 +153,15 @@ jb.component('studio.jb-floating-input', {
           }, 
         ],
       },
-      features :{$: 'css.padding', left: '4', right: '4' },
+      features :[ 
+      {$: 'css.padding', left: '4', right: '4' },
+      {$: 'feature.onEnter', action: 
+        [
+          { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' },
+          { $: 'tree.regain-focus'}
+        ]
+        },
+      ],
     } 
 })
 //       {$: 'itemlist-with-groups', 
@@ -306,6 +320,9 @@ class CompOption {
     paste(ctx) {
       var input = ctx.vars.selectionKeySource.input;
       input.value = '=' + this.toPaste;
+      this.writeValue(ctx);
+      // dirty design ?
+//      ctx.run({$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' });
         // var closeAndWriteValue = _ => {
         //   params.closeFloatingInput();
         //   var option = input.value.indexOf('=') == 0 ? new CompOption(input.value.substr(1)) : new ValueOption();
@@ -314,7 +331,7 @@ class CompOption {
     }
     writeValue(ctx) {
       st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste);
-//      ctx.run({$:'studio.expand-and-select-first-child-in-jb-editor' });
+      ctx.run({$:'studio.expand-and-select-first-child-in-jb-editor' });
     }
 }
 

@@ -18,16 +18,16 @@ st.compsRefHandler = new jb.ui.ImmutableWithPath(compsRef);
 Object.assign(st,{
   val: (v) =>
     st.compsRefHandler.val(v),
-  writeValue: (ref,value) =>
-    st.compsRefHandler.writeValue(ref,value),
+  writeValue: (ref,value,srcCtx) =>
+    st.compsRefHandler.writeValue(ref,value,srcCtx),
   objectProperty: (obj,prop) =>
     st.compsRefHandler.objectProperty(obj,prop),
-  splice: (ref,args) =>
-    st.compsRefHandler.splice(ref,args),
-  push: (ref,value) =>
-    st.compsRefHandler.push(ref,value),
-  merge: (ref,value) =>
-    st.compsRefHandler.merge(ref,value),
+  splice: (ref,args,srcCtx) =>
+    st.compsRefHandler.splice(ref,args,srcCtx),
+  push: (ref,value,srcCtx) =>
+    st.compsRefHandler.push(ref,value,srcCtx),
+  merge: (ref,value,srcCtx) =>
+    st.compsRefHandler.merge(ref,value,srcCtx),
   isRef: (ref) =>
     st.compsRefHandler.isRef(ref),
   asRef: (obj) =>

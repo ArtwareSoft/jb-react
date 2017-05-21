@@ -550,8 +550,8 @@ var valueByRefHandlerWithjbParent = {
     if (v.$jb_val) return v.$jb_val();
     return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
   },
-  writeValue: function(to,value) {
-    jb.logPerformance('writeValue',value,to);
+  writeValue: function(to,value,srcCtx) {
+    jb.logPerformance('writeValue',value,to,srcCtx);
     if (!to) return;
     if (to.$jb_val) 
       to.$jb_val(this.val(value))
@@ -701,10 +701,10 @@ Object.assign(jb,{
   // valueByRef API
   refHandler: ref =>
     (ref && ref.handler) || jb.valueByRefHandler,
-  writeValue: (ref,value) =>
-    jb.refHandler(ref).writeValue(ref,value),
-  splice: (ref,args) =>
-    jb.refHandler(ref).splice(ref,args),
+  writeValue: (ref,value,srcCtx) =>
+    jb.refHandler(ref).writeValue(ref,value,srcCtx),
+  splice: (ref,args,srcCtx) =>
+    jb.refHandler(ref).splice(ref,args,srcCtx),
   isRef: (ref) =>
     jb.refHandler(ref).isRef(ref),
   refreshRef: (ref) =>

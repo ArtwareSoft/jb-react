@@ -43,6 +43,7 @@ jb.component('editable-text.codemirror', {
 				cmp.lastEdit = new Date().getTime();
 				$(editor.getWrapperElement()).css('box-shadow', 'none');
 				jb.ui.refObservable(data_ref,cmp)
+					.map(e=>jb.val(e.ref))
 					.filter(x => new Date().getTime() - cmp.lastEdit > 500 &&
 						x != editor.getValue())
 					.subscribe(x=>

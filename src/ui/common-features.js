@@ -41,7 +41,7 @@ jb.component('watch-ref', {
               cmp.initWatchByRef(ref,includeChildren)
           } else {
             jb.ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
-                jb.ui.setState(cmp))
+                jb.ui.setState(cmp,null,e))
           }
       }
   })
@@ -61,7 +61,7 @@ jb.component('group.data', {
               cmp.initWatchByRef(data_ref())
         else if (watch)
           jb.ui.refObservable(data_ref(),cmp).subscribe(e=>
-                jb.ui.setState(cmp))
+                jb.ui.setState(cmp,null,e))
       },
       extendCtxOnce: ctx => {
           var val = data_ref();
@@ -154,7 +154,7 @@ jb.component('feature.if', {
               cmp.initWatchByRef(condition())
         else if (watch)
           jb.ui.refObservable(condition(),cmp).subscribe(e=>
-                jb.ui.setState(cmp))
+                jb.ui.setState(cmp,null,e))
     },
     templateModifier: (vdom,cmp,state) => 
         jb.toboolean(condition()) ? vdom : ' ' // can not be empty string

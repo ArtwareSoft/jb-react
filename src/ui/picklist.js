@@ -33,8 +33,8 @@ jb.component('picklist', {
           })
         }
         cmp.recalcOptions();
-        jb.ui.refObservable(ctx.params.databind,cmp).subscribe(val=>
-          cmp.onChange && cmp.onChange(val))
+        jb.ui.refObservable(ctx.params.databind,cmp).subscribe(e=>
+          cmp.onChange && cmp.onChange(jb.val(e.ref)))
       },
     })
 })

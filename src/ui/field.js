@@ -26,7 +26,7 @@ jb.component('field.databind', {
         }
         if (!noUpdates) {
           jb.ui.refObservable(ctx.vars.$model.databind,cmp)
-            .subscribe(_=>jb.ui.setState(cmp))
+            .subscribe(e=>jb.ui.setState(cmp,null,e))
         }
       }
   }}
@@ -82,10 +82,11 @@ jb.component('field.subscribe', {
       if (!data_ref) return;
       var includeFirstEm = includeFirst ? jb.rx.Observable.of(jb.val(data_ref)) : jb.rx.Observable.of();
       jb.ui.refObservable(data_ref,cmp)
+            .map(e=>jb.val(e.ref))
             .merge(includeFirstEm)
             .filter(x=>x)
             .subscribe(x=>
-              action(context.setData(x)));
+              action(context.setData(x)));  
     }
   })
 })

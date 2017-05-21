@@ -115,7 +115,7 @@ jb.component('tree.selection', {
   		afterViewInit: cmp => {
   		  var tree = cmp.tree;
 
-  		  var databindObs = jb.ui.refObservable(context.params.databind,cmp);
+  		  var databindObs = jb.ui.refObservable(context.params.databind,cmp).map(e=>jb.val(e.ref));
 
 		  tree.selectionEmitter
 		  	.merge(databindObs)

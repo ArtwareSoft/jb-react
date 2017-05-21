@@ -26,7 +26,7 @@ jb.component('suggestions-test', {
   },
 })
 
-jb.component('studio-tree-children-test', {
+jb.component('jb-editor-children-test', {
   type: 'test',
   params: [
     { id: 'path', as: 'string' },
