@@ -56,11 +56,10 @@ jb.component('studio.goto-targets', {
 		{ id: 'path', as: 'string'},
 	],
 	impl: (ctx,path) => 
-		[st.compNameOfPath(path),path]
+		jb.unique([st.compNameOfPath(path),path]
 			.filter(x=>x)
 			.map(x=>
-				x.split('~')[0])
-			.filter( jb.unique(x=>x) )
+				x.split('~')[0]))
 }) 
 
 jb.component('studio.open-sublime-editor', {

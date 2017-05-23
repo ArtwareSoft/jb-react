@@ -20,7 +20,7 @@ jb.component('field.databind', {
             if (cmp.inputEvents && source == 'keyup')
               cmp.inputEvents.next(val); // used for debounce
             else if (!ctx.vars.$model.updateOnBlur || source != 'keyup') {
-              jb.writeValue(ctx.vars.$model.databind,val);
+              jb.writeValue(ctx.vars.$model.databind,val,cmp.ctxForPick || cmp.ctx);
             }
           }
         }

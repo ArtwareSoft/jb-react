@@ -62,6 +62,11 @@ jb.component('studio.toolbar', {
         style :{$: 'button.mdl-icon', icon: 'build' }
       }, 
       {$: 'button', 
+        title: 'Event Tracker', 
+        action :{$: 'studio.open-event-tracker' }, 
+        style :{$: 'button.mdl-icon', icon: 'hearing' }
+      }, 
+      {$: 'button', 
         title: 'show data', 
         action :{$: 'studio.showProbeData' }, 
         style :{$: 'button.mdl-icon', icon: 'input' }

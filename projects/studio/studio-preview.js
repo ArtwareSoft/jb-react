@@ -12,12 +12,6 @@ jb.component('studio.preview-widget', {
         cmp.state.cacheKiller = 'cacheKiller='+(''+Math.random()).slice(10);
         document.title = cmp.state.project + ' with jBart';
       },
-      // afterViewInit: cmp => {
-      //   var iframe = cmp.base;
-      //   jb.ui.waitFor(()=>jb.path(iframe,['contentWindow','jb','ui','widgetLoaded'])).then(_ => {
-      //     var w = iframe.contentWindow;
-      //   })
-      // }
     })
 })
 
@@ -30,6 +24,7 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
 
       preview_window.jb.studio.studioWindow = window;
       preview_window.jb.studio.previewjb = preview_window.jb;
+      st.initEventTracker();
 }
 
 jb.component('studio.preview-widget-impl', {

@@ -55,7 +55,8 @@ class ImmutableWithPath {
     this.markPath(ref.$jb_path);
     this.resources(jb.ui.update(this.resources(),op));
     this.resourceVersions[resource] = this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1;
-    this.resourceChange.next({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources});
+    this.resourceChange.next({op: op, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, val: jb.val(ref),
+        oldRef: oldRef, oldResources: oldResources, timeStamp: new Date().getTime()});
     return ref;
   }
   asRef(obj) {
@@ -173,10 +174,10 @@ class ImmutableWithPath {
   //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
   // }
   refObservable(ref,cmp,includeChildren) {
+    if (ref && ref.$jb_observable)
+      return ref.$jb_observable(cmp);
     if (!ref || !this.isRef(ref)) 
       return jb.rx.Observable.of();
-    if (ref.$jb_observable)
-      return ref.$jb_observable(cmp);
     if (ref.$jb_path) {
       return this.resourceChange
         .takeUntil(cmp.destroyed)
@@ -191,8 +192,8 @@ class ImmutableWithPath {
             return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
           return changeInParent;
         })
-        .distinctUntilChanged(e=>
-          jb.val(e.ref))
+        .distinctUntilChanged((e1,e2)=> 
+          e1.val == e2.val)
     }
     return jb.rx.Observable.of(jb.val(ref));
   }

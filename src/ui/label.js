@@ -17,7 +17,8 @@ jb.component('label.bind-title', {
       cmp.state.title = jb.val(ref);
       jb.ui.refObservable(ref,cmp)
         .subscribe(e=>jb.ui.setState(cmp,{title: jb.val(ref)},e));
-      cmp.refresh = _ => cmp.setState({title: jb.val(ctx.vars.$model.title(cmp.ctx))})
+      cmp.refresh = _ => 
+        cmp.setState({title: jb.val(ctx.vars.$model.title(cmp.ctx))})
     }
   })
 })

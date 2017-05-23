@@ -687,10 +687,17 @@ Object.assign(jb,{
           .toArray()
           .toPromise()
   },
-// usage: [1,2,2,3].filter(jb.unique(x=>x))
-  unique: mapFunc => // n**2 !!!!
-    (value, index, self) =>
-        self.map(mapFunc).indexOf(mapFunc(value)) === index,
+  unique: (ar,f) => {
+    f = f || (x=>x);
+    var keys = {}, res = [];
+    ar.forEach(e=>{
+      if (!keys[f(e)]) {
+        keys[f(e)] = true;
+        res.push(e)
+      }
+    })
+    return res;
+  },
 
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),

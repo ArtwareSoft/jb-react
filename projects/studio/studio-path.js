@@ -225,6 +225,15 @@ Object.assign(st,{
 			jb.logException(e,'eval profile:'+prof_str);
 		}
 	},
+	nameOfRef: ref => 
+		ref.$jb_path ? ref.$jb_path.slice(-1)[0] : 'ref',
+	valSummaryOfRef: ref => 
+		st.valSummary(jb.val(ref)),
+	valSummary: val => {
+		if (val && typeof val == 'object')
+			return val.id || val.name
+		return '' + val;
+	},
 })
 
 // ******* components ***************

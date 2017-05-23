@@ -54,10 +54,8 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
           .delay(1) // we use keydown - let the input fill itself
           .debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
-          // .map(e=> 
-          //     input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
-          .distinctUntilChanged(_=>
-            input.value) // compare input value - if input was not changed - leave it. Alt-Space can be used here
+          .map(e=> 
+              input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
           .flatMap(_=>
             getProbe())
           .map(res=>
@@ -257,8 +255,7 @@ st.suggestions = class {
         jb.toarray(probeCtx.exp(this.base))
           .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail))) )
 
-    options = options
-        .filter( jb.unique(x=>x.toPaste) )
+    options = jb.unique(options,x=>x.toPaste)
         .filter(x=> x.toPaste != this.tail)
         .filter(x=>
           this.tail == '' || typeof x.toPaste != 'string' || (x.description + x.toPaste).toLowerCase().indexOf(this.tail.toLowerCase()) != -1)

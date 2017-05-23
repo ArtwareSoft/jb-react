@@ -1,24 +1,14 @@
 jb.component('hello-world.main', {
-	type: 'control',
-	impl:{$: 'label', title: 'hello world'}
-})
-
-jb.component('hello-world.main', {
   type: 'control', 
-  impl :{$: 'label', title: 'hello world 2' }
-})
-
-jb.component('hello-world.main', {
-  type: 'control', 
-  impl :{$: 'label', title: 'hello world 2' }
-})
-
-jb.component('hello-world.main', {
-  type: 'control', 
-  impl :{$: 'label', title: 'hello worl' }
-})
-
-jb.component('hello-world.main', {
-  type: 'control', 
-  impl :{$: 'label', title: 'hello world' }
+  impl :{$: 'group', 
+    controls: [
+      {$: 'editable-text', 
+        title: 'text', 
+        databind: '%$text%', 
+        style :{$: 'editable-text.mdl-input' }
+      }, 
+      {$: 'label', title: '%$text%' }
+    ], 
+    features :{$: 'var', name: 'text', value: 'hello world', mutable: 'true' }
+  }
 })

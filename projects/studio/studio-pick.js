@@ -1,3 +1,5 @@
+(function() {
+
 jb.component('studio.pick', {
 	type: 'action',
 	params: [
@@ -141,14 +143,6 @@ function showBox(cmp,profElem,_window,previewOffset) {
 	if (profElem.offset() == null || $('#jb-preview').offset() == null) 
 		return;
 
-	// cmp.top = previewOffset + profElem.offset().top;
-	// cmp.left = profElem.offset().left;
-	// if (profElem.outerWidth() == $(_window.document.body).width())
-	// 	cmp.width = (profElem.outerWidth() -10);
-	// else
-	// 	cmp.width = profElem.outerWidth();
-	// cmp.height = profElem.outerHeight();
-    //	cmp.title = jb.studio.shortTitle(pathFromElem(_window,profElem));
 	cmp.setState({
 		top: previewOffset + profElem.offset().top,
 		left: profElem.offset().left,
@@ -158,18 +152,27 @@ function showBox(cmp,profElem,_window,previewOffset) {
 		titleTop: previewOffset + profElem.offset().top - 20,
 		titleLeft: profElem.offset().left
 	});
+}
 
-	// var $el = $(cmp.base);
-	// var $titleText = $el.find('.title .text');
-//	console.log('selected',profElem.outerWidth(),profElem.outerHeight());
-	// Array.from(profElem.parents())
-	// 	.forEach(el=>console.log('parent',$(el).outerWidth(),$(el).outerHeight()))	
-	// $el.find('.title .text').text(cmp.title);
+function highlight(elems) {
+	var boxes = [];
+	elems.map(el=>$(el))
+		.forEach($el => {
+			var $box = $('<div class="jbstudio_highlight_in_preview"/>');
+			$box.css({ position: 'absolute', background: 'rgb(193, 224, 228)', border: '1px solid blue', opacity: '1', zIndex: 5000 }); // cannot assume css class in preview window
+			var offset = $el.offset();
+			$box.css('left',offset.left).css('top',offset.top).width($el.outerWidth()).height($el.outerHeight());				
+			if ($box.width() == $(_window.document.body).width())
+				$box.width($box.width()-10);
+			boxes.push($box[0]);
+	})
 
-	// cmp.titleBelow = top - $titleText.outerHeight() -6 < $(_window).scrollTop();
-	// cmp.titleTop = cmp.titleBelow ? cmp.top + cmp.height : cmp.top - $titleText.outerHeight() -6;
-	// cmp.titleLeft = cmp.left + (cmp.width - $titleText.outerWidth())/2;
-	// $el.find('.title .triangle').css({ marginLeft: $titleText.outerWidth()/2-6 })
+	$(_window.document.body).append($(boxes));	
+
+	$(boxes).css({ opacity: 0.5 }).
+		fadeTo(500,0,function() {
+			$(boxes).remove();
+		});
 }
 
 jb.component('studio.highlight-in-preview',{
@@ -188,27 +191,9 @@ jb.component('studio.highlight-in-preview',{
 			elems = Array.from(document.querySelectorAll('[jb-ctx]'))
 			.filter(e=>
 				jb.ctxDictionary[e.getAttribute('jb-ctx')].path == path)
-
-		var boxes = [];
-		
-//		$('.jbstudio_highlight_in_preview').remove();
-		
-		elems.map(el=>$(el))
-			.forEach($el => {
-				var $box = $('<div class="jbstudio_highlight_in_preview"/>');
-				$box.css({ position: 'absolute', background: 'rgb(193, 224, 228)', border: '1px solid blue', opacity: '1', zIndex: 5000 }); // cannot assume css class in preview window
-				var offset = $el.offset();
-				$box.css('left',offset.left).css('top',offset.top).width($el.outerWidth()).height($el.outerHeight());				
-				if ($box.width() == $(_window.document.body).width())
-					$box.width($box.width()-10);
-				boxes.push($box[0]);
-		})
-
-		$(_window.document.body).append($(boxes));	
-
-		$(boxes).css({ opacity: 0.5 }).
-			fadeTo(500,0,function() {
-				$(boxes).remove();
-			});
+	
+		highlight(elems);
   }
 })
+
+})()

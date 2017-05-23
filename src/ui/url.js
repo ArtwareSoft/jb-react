@@ -10,7 +10,7 @@ jb.component('url-history.map-url-to-resource', {
 		if (jb.ui.location) return;
 
 		jb.ui.location = History.createBrowserHistory();
-		jb.ui.location.path = () => location.pathname;
+		jb.ui.location.path = _ => location.pathname;
 	    var browserUrlEm = jb.rx.Observable.create(obs=>
 			jb.ui.location.listen(x=>
 				obs.next(x.pathname)));

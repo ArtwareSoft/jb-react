@@ -45,11 +45,10 @@ jb.component('studio.categories-of-type', {
   impl: (ctx,_type,marks,allCategory) => {
   	var comps = st.previewjb.comps;
   	var pts = st.PTsOfType(_type);
-  	var categories = [].concat.apply([],pts.map(pt=>
+  	var categories = jb.unique([].concat.apply([],pts.map(pt=>
   		(comps[pt].category||'').split(',').map(c=>c.split(':')[0])
   			.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
-  			.filter(x=>x)))
-  			.filter(jb.unique(x=>x))
+  			.filter(x=>x))))
   			.map(c=>({
   				name: c,
   				pts: ptsOfCategory(c)

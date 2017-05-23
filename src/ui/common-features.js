@@ -47,6 +47,29 @@ jb.component('watch-ref', {
   })
 })
 
+jb.component('watch-observable', {
+  type: 'feature', category: 'group:70',
+  params: [ 
+    { id: 'toWatch', essential: true },
+    { id: 'strongRefresh', as: 'boolean' },
+  ],
+  impl: (ctx,toWatch,strongRefresh) => ({
+      init: cmp => {
+        if (!toWatch.subscribe)
+          return jb.logError('watch-observable: non obsevable parameter');
+        var virtualRef = {
+          $jb_observable: cmp => toWatch
+        }
+        if (strongRefresh && cmp.initWatchByRef) // itemlist or group
+            cmp.initWatchByRef(virtualRef)
+        else
+            virtualRef.subscribe(e=>
+                jb.ui.setState(cmp,null,e))
+      }
+  })
+})
+
+
 jb.component('group.data', {
   type: 'feature', category: 'group:100',
   params: [

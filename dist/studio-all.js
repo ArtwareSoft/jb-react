@@ -410,7 +410,7 @@ var jstypes = {
       return value;
     },
     'ref': function(value) {
-      if (Array.isArray(value)) value = value[0];
+//      if (Array.isArray(value)) value = value[0];
       if (value == null) return value;
       return jb.valueByRefHandler.asRef(value);
     }
@@ -441,6 +441,7 @@ function profileType(profile) {
 function sugarProp(profile) {
   return entries(profile)
     .filter(p=>p[0].indexOf('$') == 0 && p[0].length > 1)
+    .filter(p=>p[0].indexOf('$jb_') != 0)
     .filter(p=>['$vars','$debugger','$log'].indexOf(p[0]) == -1)[0]
 }
 
@@ -512,10 +513,10 @@ function logError(errorStr,errorObj,ctx) {
   console.error(errorStr,errorObj,ctx);
 }
 
-function logPerformance(type,text) {
-  var types = ['focus','apply','check','suggestions'];
-  if (type != 'focus') return; // filter. TBD take from somewhere else
-  console.log(type, text == null ? '' : text);
+function logPerformance(type,p1,p2,p3) {
+  var types = ['focus','apply','check','suggestions','writeValue'];
+  if (['suggestions','writeValue'].indexOf(type) == -1) return; // filter. TBD take from somewhere else
+  console.log(type, p1 || '', p2 || '', p3 ||'');
 }
 
 function logException(e,errorStr) {
@@ -549,7 +550,8 @@ var valueByRefHandlerWithjbParent = {
     if (v.$jb_val) return v.$jb_val();
     return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
   },
-  writeValue: function(to,value) {
+  writeValue: function(to,value,srcCtx) {
+    jb.logPerformance('writeValue',value,to,srcCtx);
     if (!to) return;
     if (to.$jb_val) 
       to.$jb_val(this.val(value))
@@ -685,10 +687,17 @@ Object.assign(jb,{
           .toArray()
           .toPromise()
   },
-// usage: [1,2,2,3].filter(jb.unique(x=>x))
-  unique: mapFunc => // n**2 !!!!
-    (value, index, self) =>
-        self.map(mapFunc).indexOf(mapFunc(value)) === index,
+  unique: (ar,f) => {
+    f = f || (x=>x);
+    var keys = {}, res = [];
+    ar.forEach(e=>{
+      if (!keys[f(e)]) {
+        keys[f(e)] = true;
+        res.push(e)
+      }
+    })
+    return res;
+  },
 
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
@@ -699,10 +708,10 @@ Object.assign(jb,{
   // valueByRef API
   refHandler: ref =>
     (ref && ref.handler) || jb.valueByRefHandler,
-  writeValue: (ref,value) =>
-    jb.refHandler(ref).writeValue(ref,value),
-  splice: (ref,args) =>
-    jb.refHandler(ref).splice(ref,args),
+  writeValue: (ref,value,srcCtx) =>
+    jb.refHandler(ref).writeValue(ref,value,srcCtx),
+  splice: (ref,args,srcCtx) =>
+    jb.refHandler(ref).splice(ref,args,srcCtx),
   isRef: (ref) =>
     jb.refHandler(ref).isRef(ref),
   refreshRef: (ref) =>
@@ -931,7 +940,7 @@ jb.component('write-value',{
 		{ id: 'value',}
 	],
 	impl: (ctx,to,value) =>
-		jb.writeValue(to,value)
+		jb.writeValue(to,value,ctx)
 });
 
 jb.component('toggle-boolean-value',{
@@ -1009,22 +1018,22 @@ jb.component('contains',{
 	type: 'boolean',
 	params: [
 		{ id: 'text', type: 'data[]', as: 'array', essential: true },
-		{ id: 'allText', defaultValue: '%%', as:'array'},
+		{ id: 'allText', defaultValue: '%%', as:'string'},
 		{ id: 'inOrder', defaultValue: true, as:'boolean'},
 	],
 	impl: function(context,text,allText,inOrder) {
-      var all = "";
-      allText.forEach(function(allTextItem) {
-		if (allTextItem.outerHTML)
-			all += allTextItem.outerHTML + $(allTextItem).findIncludeSelf('input,textarea').get().map(function(item) { return item.value; }).join();
-		else if (typeof(allTextItem) == 'object') 
-			all += JSON.stringify(allTextItem);
-		else 
-			all += jb.tostring(allTextItem);
-      });
+      //var all = "";
+  //     allText.forEach(function(allTextItem) {
+		// if (allTextItem.outerHTML)
+		// 	all += allTextItem.outerHTML + allTextItem.querySelectorAll('input,textarea').get().map(function(item) { return item.value; }).join();
+		// else if (typeof(allTextItem) == 'object') 
+		// 	all += JSON.stringify(allTextItem);
+		// else 
+		// 	all += jb.tostring(allTextItem);
+  //     });
       var prevIndex = -1;
       for(var i=0;i<text.length;i++) {
-      	var newIndex = all.indexOf(jb.tostring(text[i]),prevIndex+1);
+      	var newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1);
       	if (newIndex == -1) return false;
       	prevIndex = inOrder ? newIndex : -1;
       }
@@ -8084,28 +8093,31 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_15_rxjs_add_observable_from___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_15_rxjs_add_observable_from__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_16_rxjs_add_observable_of__ = __webpack_require__(33);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_16_rxjs_add_observable_of___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_16_rxjs_add_observable_of__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_17_rxjs_add_operator_distinctUntilChanged__ = __webpack_require__(39);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_17_rxjs_add_operator_distinctUntilChanged___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_17_rxjs_add_operator_distinctUntilChanged__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_18_rxjs_add_operator_debounceTime__ = __webpack_require__(37);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_18_rxjs_add_operator_debounceTime___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_18_rxjs_add_operator_debounceTime__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_19_rxjs_add_operator_buffer__ = __webpack_require__(34);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_19_rxjs_add_operator_buffer___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_19_rxjs_add_operator_buffer__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_20_rxjs_add_operator_skip__ = __webpack_require__(48);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_20_rxjs_add_operator_skip___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_20_rxjs_add_operator_skip__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_21_rxjs_add_operator_last__ = __webpack_require__(43);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_21_rxjs_add_operator_last___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_21_rxjs_add_operator_last__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_22_rxjs_add_operator_delay__ = __webpack_require__(38);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_22_rxjs_add_operator_delay___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_22_rxjs_add_operator_delay__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_23_rxjs_add_operator_take__ = __webpack_require__(50);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_23_rxjs_add_operator_take___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_23_rxjs_add_operator_take__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_24_rxjs_add_operator_toArray__ = __webpack_require__(52);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_24_rxjs_add_operator_toArray___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_24_rxjs_add_operator_toArray__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_25_rxjs_add_operator_toPromise__ = __webpack_require__(53);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_25_rxjs_add_operator_toPromise___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_25_rxjs_add_operator_toPromise__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_26_rxjs_add_operator_race__ = __webpack_require__(47);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_26_rxjs_add_operator_race___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_26_rxjs_add_operator_race__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_27_rxjs_add_operator_finally__ = __webpack_require__(42);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_27_rxjs_add_operator_finally___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_27_rxjs_add_operator_finally__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_17_rxjs_add_operator_bufferTime__ = __webpack_require__(95);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_17_rxjs_add_operator_bufferTime___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_17_rxjs_add_operator_bufferTime__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_18_rxjs_add_operator_distinctUntilChanged__ = __webpack_require__(39);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_18_rxjs_add_operator_distinctUntilChanged___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_18_rxjs_add_operator_distinctUntilChanged__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_19_rxjs_add_operator_debounceTime__ = __webpack_require__(37);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_19_rxjs_add_operator_debounceTime___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_19_rxjs_add_operator_debounceTime__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_20_rxjs_add_operator_buffer__ = __webpack_require__(34);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_20_rxjs_add_operator_buffer___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_20_rxjs_add_operator_buffer__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_21_rxjs_add_operator_skip__ = __webpack_require__(48);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_21_rxjs_add_operator_skip___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_21_rxjs_add_operator_skip__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_22_rxjs_add_operator_last__ = __webpack_require__(43);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_22_rxjs_add_operator_last___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_22_rxjs_add_operator_last__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_23_rxjs_add_operator_delay__ = __webpack_require__(38);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_23_rxjs_add_operator_delay___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_23_rxjs_add_operator_delay__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_24_rxjs_add_operator_take__ = __webpack_require__(50);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_24_rxjs_add_operator_take___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_24_rxjs_add_operator_take__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_25_rxjs_add_operator_toArray__ = __webpack_require__(52);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_25_rxjs_add_operator_toArray___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_25_rxjs_add_operator_toArray__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_26_rxjs_add_operator_toPromise__ = __webpack_require__(53);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_26_rxjs_add_operator_toPromise___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_26_rxjs_add_operator_toPromise__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_27_rxjs_add_operator_race__ = __webpack_require__(47);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_27_rxjs_add_operator_race___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_27_rxjs_add_operator_race__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_28_rxjs_add_operator_finally__ = __webpack_require__(42);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_28_rxjs_add_operator_finally___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_28_rxjs_add_operator_finally__);
+
 
 
 
@@ -8142,6 +8154,222 @@ jb.rx.Observable = __WEBPACK_IMPORTED_MODULE_1_rxjs_Observable__["Observable"];
 jb.rx.Subject = __WEBPACK_IMPORTED_MODULE_0_rxjs_Subject__["Subject"];
 
 
+/***/ }),
+/* 95 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var Observable_1 = __webpack_require__(0);
+var bufferTime_1 = __webpack_require__(96);
+Observable_1.Observable.prototype.bufferTime = bufferTime_1.bufferTime;
+//# sourceMappingURL=bufferTime.js.map
+
+/***/ }),
+/* 96 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+};
+var async_1 = __webpack_require__(25);
+var Subscriber_1 = __webpack_require__(1);
+var isScheduler_1 = __webpack_require__(9);
+/* tslint:enable:max-line-length */
+/**
+ * Buffers the source Observable values for a specific time period.
+ *
+ * <span class="informal">Collects values from the past as an array, and emits
+ * those arrays periodically in time.</span>
+ *
+ * <img src="./img/bufferTime.png" width="100%">
+ *
+ * Buffers values from the source for a specific time duration `bufferTimeSpan`.
+ * Unless the optional argument `bufferCreationInterval` is given, it emits and
+ * resets the buffer every `bufferTimeSpan` milliseconds. If
+ * `bufferCreationInterval` is given, this operator opens the buffer every
+ * `bufferCreationInterval` milliseconds and closes (emits and resets) the
+ * buffer every `bufferTimeSpan` milliseconds. When the optional argument
+ * `maxBufferSize` is specified, the buffer will be closed either after
+ * `bufferTimeSpan` milliseconds or when it contains `maxBufferSize` elements.
+ *
+ * @example <caption>Every second, emit an array of the recent click events</caption>
+ * var clicks = Rx.Observable.fromEvent(document, 'click');
+ * var buffered = clicks.bufferTime(1000);
+ * buffered.subscribe(x => console.log(x));
+ *
+ * @example <caption>Every 5 seconds, emit the click events from the next 2 seconds</caption>
+ * var clicks = Rx.Observable.fromEvent(document, 'click');
+ * var buffered = clicks.bufferTime(2000, 5000);
+ * buffered.subscribe(x => console.log(x));
+ *
+ * @see {@link buffer}
+ * @see {@link bufferCount}
+ * @see {@link bufferToggle}
+ * @see {@link bufferWhen}
+ * @see {@link windowTime}
+ *
+ * @param {number} bufferTimeSpan The amount of time to fill each buffer array.
+ * @param {number} [bufferCreationInterval] The interval at which to start new
+ * buffers.
+ * @param {number} [maxBufferSize] The maximum buffer size.
+ * @param {Scheduler} [scheduler=async] The scheduler on which to schedule the
+ * intervals that determine buffer boundaries.
+ * @return {Observable<T[]>} An observable of arrays of buffered values.
+ * @method bufferTime
+ * @owner Observable
+ */
+function bufferTime(bufferTimeSpan) {
+    var length = arguments.length;
+    var scheduler = async_1.async;
+    if (isScheduler_1.isScheduler(arguments[arguments.length - 1])) {
+        scheduler = arguments[arguments.length - 1];
+        length--;
+    }
+    var bufferCreationInterval = null;
+    if (length >= 2) {
+        bufferCreationInterval = arguments[1];
+    }
+    var maxBufferSize = Number.POSITIVE_INFINITY;
+    if (length >= 3) {
+        maxBufferSize = arguments[2];
+    }
+    return this.lift(new BufferTimeOperator(bufferTimeSpan, bufferCreationInterval, maxBufferSize, scheduler));
+}
+exports.bufferTime = bufferTime;
+var BufferTimeOperator = (function () {
+    function BufferTimeOperator(bufferTimeSpan, bufferCreationInterval, maxBufferSize, scheduler) {
+        this.bufferTimeSpan = bufferTimeSpan;
+        this.bufferCreationInterval = bufferCreationInterval;
+        this.maxBufferSize = maxBufferSize;
+        this.scheduler = scheduler;
+    }
+    BufferTimeOperator.prototype.call = function (subscriber, source) {
+        return source.subscribe(new BufferTimeSubscriber(subscriber, this.bufferTimeSpan, this.bufferCreationInterval, this.maxBufferSize, this.scheduler));
+    };
+    return BufferTimeOperator;
+}());
+var Context = (function () {
+    function Context() {
+        this.buffer = [];
+    }
+    return Context;
+}());
+/**
+ * We need this JSDoc comment for affecting ESDoc.
+ * @ignore
+ * @extends {Ignored}
+ */
+var BufferTimeSubscriber = (function (_super) {
+    __extends(BufferTimeSubscriber, _super);
+    function BufferTimeSubscriber(destination, bufferTimeSpan, bufferCreationInterval, maxBufferSize, scheduler) {
+        _super.call(this, destination);
+        this.bufferTimeSpan = bufferTimeSpan;
+        this.bufferCreationInterval = bufferCreationInterval;
+        this.maxBufferSize = maxBufferSize;
+        this.scheduler = scheduler;
+        this.contexts = [];
+        var context = this.openContext();
+        this.timespanOnly = bufferCreationInterval == null || bufferCreationInterval < 0;
+        if (this.timespanOnly) {
+            var timeSpanOnlyState = { subscriber: this, context: context, bufferTimeSpan: bufferTimeSpan };
+            this.add(context.closeAction = scheduler.schedule(dispatchBufferTimeSpanOnly, bufferTimeSpan, timeSpanOnlyState));
+        }
+        else {
+            var closeState = { subscriber: this, context: context };
+            var creationState = { bufferTimeSpan: bufferTimeSpan, bufferCreationInterval: bufferCreationInterval, subscriber: this, scheduler: scheduler };
+            this.add(context.closeAction = scheduler.schedule(dispatchBufferClose, bufferTimeSpan, closeState));
+            this.add(scheduler.schedule(dispatchBufferCreation, bufferCreationInterval, creationState));
+        }
+    }
+    BufferTimeSubscriber.prototype._next = function (value) {
+        var contexts = this.contexts;
+        var len = contexts.length;
+        var filledBufferContext;
+        for (var i = 0; i < len; i++) {
+            var context = contexts[i];
+            var buffer = context.buffer;
+            buffer.push(value);
+            if (buffer.length == this.maxBufferSize) {
+                filledBufferContext = context;
+            }
+        }
+        if (filledBufferContext) {
+            this.onBufferFull(filledBufferContext);
+        }
+    };
+    BufferTimeSubscriber.prototype._error = function (err) {
+        this.contexts.length = 0;
+        _super.prototype._error.call(this, err);
+    };
+    BufferTimeSubscriber.prototype._complete = function () {
+        var _a = this, contexts = _a.contexts, destination = _a.destination;
+        while (contexts.length > 0) {
+            var context = contexts.shift();
+            destination.next(context.buffer);
+        }
+        _super.prototype._complete.call(this);
+    };
+    BufferTimeSubscriber.prototype._unsubscribe = function () {
+        this.contexts = null;
+    };
+    BufferTimeSubscriber.prototype.onBufferFull = function (context) {
+        this.closeContext(context);
+        var closeAction = context.closeAction;
+        closeAction.unsubscribe();
+        this.remove(closeAction);
+        if (!this.closed && this.timespanOnly) {
+            context = this.openContext();
+            var bufferTimeSpan = this.bufferTimeSpan;
+            var timeSpanOnlyState = { subscriber: this, context: context, bufferTimeSpan: bufferTimeSpan };
+            this.add(context.closeAction = this.scheduler.schedule(dispatchBufferTimeSpanOnly, bufferTimeSpan, timeSpanOnlyState));
+        }
+    };
+    BufferTimeSubscriber.prototype.openContext = function () {
+        var context = new Context();
+        this.contexts.push(context);
+        return context;
+    };
+    BufferTimeSubscriber.prototype.closeContext = function (context) {
+        this.destination.next(context.buffer);
+        var contexts = this.contexts;
+        var spliceIndex = contexts ? contexts.indexOf(context) : -1;
+        if (spliceIndex >= 0) {
+            contexts.splice(contexts.indexOf(context), 1);
+        }
+    };
+    return BufferTimeSubscriber;
+}(Subscriber_1.Subscriber));
+function dispatchBufferTimeSpanOnly(state) {
+    var subscriber = state.subscriber;
+    var prevContext = state.context;
+    if (prevContext) {
+        subscriber.closeContext(prevContext);
+    }
+    if (!subscriber.closed) {
+        state.context = subscriber.openContext();
+        state.context.closeAction = this.schedule(state, state.bufferTimeSpan);
+    }
+}
+function dispatchBufferCreation(state) {
+    var bufferCreationInterval = state.bufferCreationInterval, bufferTimeSpan = state.bufferTimeSpan, subscriber = state.subscriber, scheduler = state.scheduler;
+    var context = subscriber.openContext();
+    var action = this;
+    if (!subscriber.closed) {
+        subscriber.add(context.closeAction = scheduler.schedule(dispatchBufferClose, bufferTimeSpan, { subscriber: subscriber, context: context }));
+        action.schedule(state, bufferCreationInterval);
+    }
+}
+function dispatchBufferClose(arg) {
+    var subscriber = arg.subscriber, context = arg.context;
+    subscriber.closeContext(context);
+}
+//# sourceMappingURL=bufferTime.js.map
+
 /***/ })
 /******/ ]);;
 
@@ -8170,24 +8398,28 @@ class ImmutableWithPath {
       return ref;
     return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
   }
-  writeValue(ref,value) {
+  writeValue(ref,value,srcCtx) {
     if (!ref) 
       return jb.logError('writeValue: null ref');
     if (this.val(ref) == value) return;
     if (ref.$jb_val)
       return ref.$jb_val(value);
-    return this.doOp(ref,{$set: value})
+    return this.doOp(ref,{$set: value},srcCtx)
   }
-  splice(ref,args) {
-    return this.doOp(ref,{$splice: args })
+  splice(ref,args,srcCtx) {
+    return this.doOp(ref,{$splice: args },srcCtx)
   }
-  push(ref,value) {
-    return this.doOp(ref,{$push: value})
+  push(ref,value,srcCtx) {
+    return this.doOp(ref,{$push: value},srcCtx)
   }
-  doOp(ref,opOnRef) {
+  merge(ref,value,srcCtx) {
+    return this.doOp(ref,{$merge: value},srcCtx)
+  }
+  doOp(ref,opOnRef,srcCtx) {
     if (!this.isRef(ref))
       ref = this.asRef(ref);
     if (!ref) return;
+    var oldRef = Object.assign({},ref),oldResources = this.resources();
 
     this.refresh(ref);
     if (ref.$jb_path.length == 0)
@@ -8198,7 +8430,7 @@ class ImmutableWithPath {
     this.markPath(ref.$jb_path);
     this.resources(jb.ui.update(this.resources(),op));
     this.resourceVersions[resource] = this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1;
-    this.resourceChange.next({op: op, path: ref.$jb_path});
+    this.resourceChange.next({op: op, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources, timeStamp: new Date().getTime()});
     return ref;
   }
   asRef(obj) {
@@ -8244,7 +8476,7 @@ class ImmutableWithPath {
       if (this.resourceVersions[path[0]] == ref.$jb_resourceV) return;
       if (ref.$jb_parentOfPrim) {
         var parent = this.asRef(ref.$jb_parentOfPrim);
-        if (!parent)
+        if (!parent || !this.isRef(parent))
           return jb.logError('refresh: parent not found');
         var prop = path.slice(-1)[0];
         new_ref = {
@@ -8291,10 +8523,12 @@ class ImmutableWithPath {
       }
   }
   markPath(path) {
-    path.reduce((o,p)=>{ 
+    var leaf = path.reduce((o,p)=>{ 
       o.$jb_id = o.$jb_id || (++this.pathId);
       return o[p] 
-    }, this.resources())
+    }, this.resources());
+    if (leaf && typeof leaf == 'object')
+      leaf.$jb_id = leaf.$jb_id || (++this.pathId);
   }
   pathOfObject(obj,lookIn,depth) {
     if (!lookIn || typeof lookIn != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50) 
@@ -8313,20 +8547,27 @@ class ImmutableWithPath {
   // valid(ref) {
   //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
   // }
-  refObservable (ref,cmp) {
+  refObservable(ref,cmp,includeChildren) {
     if (!ref || !this.isRef(ref)) 
       return jb.rx.Observable.of();
+    if (ref.$jb_observable)
+      return ref.$jb_observable(cmp);
     if (ref.$jb_path) {
       return this.resourceChange
         .takeUntil(cmp.destroyed)
-        .filter(e=>e.path[0] == ref.$jb_path[0])
-        .filter(e=> { // same resource - refind itself
-          jb.refreshRef(ref);
-          return e.path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0
+        .filter(e=>
+            e.ref.$jb_path[0] == ref.$jb_path[0])
+        .filter(e=> { 
+          var path = e.ref.$jb_path;
+          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
+          if (changeInParent) // change in self or parent - refind itself
+            jb.refreshRef(ref);
+          if (includeChildren)
+            return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
+          return changeInParent;
         })
-        .map(_=>
-          jb.val(ref))
-        .distinctUntilChanged()
+        .distinctUntilChanged(e=>
+          jb.val(e.ref))
     }
     return jb.rx.Observable.of(jb.val(ref));
   }
@@ -8341,8 +8582,8 @@ function resourcesRef(val) {
 
 jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
 
-jb.ui.refObservable = (ref,cmp) =>
-  jb.refHandler(ref).refObservable(ref,cmp);
+jb.ui.refObservable = (ref,cmp,includeChildren) =>
+  jb.refHandler(ref).refObservable(ref,cmp,includeChildren);
 
 jb.ui.ImmutableWithPath = ImmutableWithPath;
 jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
@@ -8518,6 +8759,7 @@ class JbComponent {
 			this.extendItemFuncs.push(options.extendItem);
 		this.styleCtx = this.styleCtx || options.styleCtx;
 		this.toolbar = this.toolbar || options.toolbar;
+		this.noUpdates = this.noUpdates || options.noUpdates;
 
 	   	if (options.css)
     		this.cssSelectors = (this.cssSelectors || [])
@@ -8546,6 +8788,8 @@ function injectLifeCycleMethods(Comp,jbComp) {
 	  Comp.prototype.componentDidUpdate = function() {
 		this.jbEmitter.next('after-update');
 	}
+	if (jbComp.noUpdates)
+		Comp.prototype.shouldComponentUpdate = _ => false;
 }
 
 function garbageCollectCtxDictionary() {
@@ -8641,6 +8885,16 @@ ui.waitFor = function(check,times,interval) {
 
 // ****************** vdom utils ***************
 
+ui.stateChangeEm = new jb.rx.Subject();
+
+ui.setState = function(cmp,state,opEvent) {
+	jb.logPerformance('setState',cmp.ctx,state);
+	if (typeof state == 'undefined' && cmp.refresh)	
+		return cmp.refresh();
+	cmp.setState(state || {});
+	ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent});
+}
+
 ui.addClassToVdom = function(vdom,clz) {
 	vdom.attributes = vdom.attributes || {};
 	vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');
@@ -8708,14 +8962,14 @@ jb.component('group.init-group', {
   impl: ctx => ({
     init: cmp => {
       cmp.initWatchByRef = cmp.initWatchByRef || (refToWatch =>
-        jb.ui.refObservable(refToWatch,cmp)
-          .map(_=>ctx.vars.$model.controls(cmp.ctx))
-          .subscribe(ctrls=>
-              cmp.setState({ctrls:ctrls.map(c=>c.reactComp())})))
+        jb.ui.refObservable(refToWatch,cmp).subscribe(e => {
+              var ctrls = ctx.vars.$model.controls(cmp.ctx);
+              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())},e) 
+            } ))
 
       if (cmp.ctrlEmitter)
         cmp.ctrlEmitter.subscribe(ctrls=>
-              cmp.setState({ctrls:ctrls.map(c=>c.reactComp())}))
+              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())}))
       if (!cmp.state.ctrls)
         cmp.state.ctrls = ctx.vars.$model.controls(cmp.ctx).map(c=>c.reactComp())
     }
@@ -8744,119 +8998,6 @@ jb.component('group.dynamic-titles', {
       (cmp.state.ctrls || []).forEach(ctrl=>
         ctrl.title = ctrl.jbComp.jb_title ? ctrl.jbComp.jb_title() : '')
   })
-})
-;
-
-jb.component('label', {
-    type: 'control', category: 'control:100,common:80',
-    params: [
-        { id: 'title', as: 'string', essential: true, defaultValue: 'my label', ref: true },
-        { id: 'style', type: 'label.style', defaultValue: { $: 'label.span' }, dynamic: true },
-        { id: 'features', type: 'feature[]', dynamic: true },
-    ],
-    impl: ctx =>
-        jb.ui.ctrl(ctx)
-})
-
-jb.component('label.bind-title', {
-  type: 'feature',
-  impl: ctx => ({
-    init: cmp => {
-      var ref = ctx.vars.$model.title;
-      cmp.state.title = jb.val(ref);
-      jb.ui.refObservable(ref,cmp)
-        .subscribe(_=>cmp.setState({title: jb.val(ref)}))
-    }
-  })
-})
-
-jb.component('label.span', {
-    type: 'label.style',
-    impl :{$: 'custom-style', 
-        template: (cmp,state,h) => h('span',{},state.title),
-        features :{$: 'label.bind-title' }
-    }
-})
-
-jb.component('label.p', {
-    type: 'label.style',
-    impl :{$: 'custom-style', 
-        template: (cmp,state,h) => h('p',{},state.title),
-        features :{$: 'label.bind-title' }
-    }
-})
-
-
-jb.component('label.h1', {
-    type: 'label.style',
-    impl :{$: 'custom-style', 
-        template: (cmp,state,h) => h('h1',{},state.title),
-        features :{$: 'label.bind-title' }
-    }
-})
-
-jb.component('label.h4', {
-    type: 'label.style',
-    impl :{$: 'custom-style', 
-        template: (cmp,state,h) => h('h4',{},state.title),
-        features :{$: 'label.bind-title' }
-    }
-})
-
-jb.component('label.h3', {
-    type: 'label.style',
-    impl :{$: 'custom-style', 
-        template: (cmp,state,h) => h('h3',{},state.title),
-        features :{$: 'label.bind-title' }
-    }
-})
-
-jb.component('label.h4', {
-    type: 'label.style',
-    impl :{$: 'custom-style', 
-        template: (cmp,state,h) => h('h4',{},state.title),
-        features :{$: 'label.bind-title' }
-    }
-})
-
-jb.component('highlight', {
-  params: [
-    { id: 'base', as: 'string', dynamic: true },
-    { id: 'highlight', as: 'string', dynamic: true },
-    { id: 'cssClass', as: 'string', defaultValue: 'highlight'},
-  ],
-  impl: (ctx,base,highlight,cssClass) => {
-    var h = highlight(), b = base();
-    if (!h || !b) return b;
-    var highlight = b.match(new RegExp(h,'i'))[0]; // case sensitive highlight
-    return jb.ui.h('div',{},[
-        b.split(highlight)[0],
-        jb.ui.h('span',{class: cssClass},highlight),
-        b.split(highlight)[1]]
-    )
-  }
-})
-
-;
-
-jb.type('button.style')
-
-jb.component('button', {
-  type: 'control', category: 'control:100,common:100',
-  params: [
-    { id: 'title', as: 'string', ref: true, essential: true, defaultTValue: 'click me' },
-    { id: 'action', type: 'action', essential: true, dynamic: true },
-    { id: 'style', type: 'button.style', defaultValue: { $: 'button.mdl-raised' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx,{
-      beforeInit: cmp =>
-        cmp.state.title = jb.val(ctx.params.title),
-      afterViewInit: cmp => {
-        cmp.clicked = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base);
-      }
-    })
 })
 ;
 
@@ -8891,30 +9032,115 @@ jb.component('image.default', {
 })
 ;
 
+jb.component('label', {
+    type: 'control', category: 'control:100,common:80',
+    params: [
+        { id: 'title', as: 'string', essential: true, defaultValue: 'my label', ref: true, dynamic: true },
+        { id: 'style', type: 'label.style', defaultValue: { $: 'label.span' }, dynamic: true },
+        { id: 'features', type: 'feature[]', dynamic: true },
+    ],
+    impl: ctx =>
+        jb.ui.ctrl(ctx)
+})
+
+jb.component('label.bind-title', {
+  type: 'feature',
+  impl: ctx => ({
+    init: cmp => {
+      var ref = ctx.vars.$model.title(cmp.ctx);
+      cmp.state.title = jb.val(ref);
+      jb.ui.refObservable(ref,cmp)
+        .subscribe(e=>jb.ui.setState(cmp,{title: jb.val(ref)},e));
+      cmp.refresh = _ => cmp.setState({title: jb.val(ctx.vars.$model.title(cmp.ctx))})
+    }
+  })
+})
+
+jb.component('label.span', {
+    type: 'label.style',
+    impl :{$: 'custom-style', 
+        template: (cmp,state,h) => h('span',{},state.title),
+        features :{$: 'label.bind-title' }
+    }
+})
+
+jb.component('label.p', {
+    type: 'label.style',
+    impl :{$: 'custom-style', 
+        template: (cmp,state,h) => h('p',{},state.title),
+        features :{$: 'label.bind-title' }
+    }
+})
+
+
+jb.component('label.h1', {
+    type: 'label.style',
+    impl :{$: 'custom-style', 
+        template: (cmp,state,h) => h('h1',{},state.title),
+        features :{$: 'label.bind-title' }
+    }
+})
+
+jb.component('label.heading', {
+    type: 'label.style',
+    params: [{ id: 'level', as: 'string', defaultValue: 'h1', options: 'h1,h2,h3,h4,h5'}],
+    impl :{$: 'custom-style', 
+        template: (cmp,state,h) => h(cmp.level,{},state.title),
+        features :{$: 'label.bind-title' }
+    }
+})
+
+jb.component('highlight', {
+  params: [
+    { id: 'base', as: 'string', dynamic: true },
+    { id: 'highlight', as: 'string', dynamic: true },
+    { id: 'cssClass', as: 'string', defaultValue: 'mdl-color-text--indigo-A700'},
+  ],
+  impl: (ctx,base,highlight,cssClass) => {
+    var h = highlight(), b = base();
+    if (!h || !b) return b;
+    var highlight = (b.match(new RegExp(h,'i'))||[])[0]; // case sensitive highlight
+    if (!highlight) return b;
+    return jb.ui.h('div',{},[
+        b.split(highlight)[0],
+        jb.ui.h('span',{class: cssClass},highlight),
+        b.split(highlight)[1]]
+    )
+  }
+})
+
+;
+
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 
 jb.component('field.databind', {
   type: 'feature',
-  impl: ctx => {
+  params: [
+    { id: 'noUpdates', as: 'boolean' },
+  ],
+  impl: (ctx,noUpdates) => {
     if (!ctx.vars.$model || !ctx.vars.$model.databind)
       jb.logError('bind-field: No databind in model', ctx.vars.$model, ctx);
     return {
+      noUpdates: noUpdates,
       init: function(cmp) {
-            cmp.state.title = ctx.vars.$model.title();
-            cmp.state.fieldId = jb.ui.field_id_counter++;
-            cmp.jbModel = (val,source) => {
-              if (val === undefined) 
-                return jb.val(ctx.vars.$model.databind);
-              else { // write
-                if (cmp.inputEvents && source == 'keyup')
-                  cmp.inputEvents.next(val); // used for debounce
-                else if (!ctx.vars.$model.updateOnBlur || source != 'keyup') {
-                  jb.writeValue(ctx.vars.$model.databind,val);
-                }
-              }
+        cmp.state.title = ctx.vars.$model.title();
+        cmp.state.fieldId = jb.ui.field_id_counter++;
+        cmp.jbModel = (val,source) => {
+          if (val === undefined) 
+            return jb.val(ctx.vars.$model.databind);
+          else { // write
+            if (cmp.inputEvents && source == 'keyup')
+              cmp.inputEvents.next(val); // used for debounce
+            else if (!ctx.vars.$model.updateOnBlur || source != 'keyup') {
+              jb.writeValue(ctx.vars.$model.databind,val);
             }
-            jb.ui.refObservable(ctx.vars.$model.databind,cmp)
-              .subscribe(_=>cmp.forceUpdate())
+          }
+        }
+        if (!noUpdates) {
+          jb.ui.refObservable(ctx.vars.$model.databind,cmp)
+            .subscribe(e=>jb.ui.setState(cmp,null,e))
+        }
       }
   }}
 })
@@ -8969,10 +9195,11 @@ jb.component('field.subscribe', {
       if (!data_ref) return;
       var includeFirstEm = includeFirst ? jb.rx.Observable.of(jb.val(data_ref)) : jb.rx.Observable.of();
       jb.ui.refObservable(data_ref,cmp)
+            .map(e=>jb.val(e.ref))
             .merge(includeFirstEm)
             .filter(x=>x)
             .subscribe(x=>
-              action(context.setData(x)));
+              action(context.setData(x)));  
     }
   })
 })
@@ -8986,6 +9213,27 @@ jb.component('field.toolbar', {
   ({
     toolbar: toolbar().reactComp()
   })
+})
+;
+
+jb.type('button.style')
+
+jb.component('button', {
+  type: 'control', category: 'control:100,common:100',
+  params: [
+    { id: 'title', as: 'string', ref: true, essential: true, defaultTValue: 'click me' },
+    { id: 'action', type: 'action', essential: true, dynamic: true },
+    { id: 'style', type: 'button.style', defaultValue: { $: 'button.mdl-raised' }, dynamic: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx,{
+      beforeInit: cmp =>
+        cmp.state.title = jb.val(ctx.params.title),
+      afterViewInit: cmp => {
+        cmp.clicked = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base);
+      }
+    })
 })
 ;
 
@@ -9027,6 +9275,7 @@ jb.component('editable-text.helper-popup', {
     { id: 'control', type: 'control', dynamic: true, essential: true },
     { id: 'popupId', as: 'string', essential: true },
     { id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.popup' } },
+    { id: 'showHelper', as: 'boolean', dynamic: true, defaultValue :{$notEmpty: '%value%' }, description: 'show/hide helper according to input content' },
   ],
   impl : ctx =>({
     onkeydown: true,
@@ -9042,6 +9291,7 @@ jb.component('editable-text.helper-popup', {
               id: ctx.params.popupId,
               style: _ctx => ctx.params.popupStyle(_ctx),
               content: _ctx => ctx.params.control(_ctx),
+              features: {$: 'dialog-feature.unique-dialog', id: ctx.params.popupId}
             })
           , cmp.ctx, input );
 
@@ -9050,11 +9300,13 @@ jb.component('editable-text.helper-popup', {
       cmp.closePopup = _ =>
         cmp.popup() && cmp.popup().close();
 
-      var keydown = cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown.filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1);
+      cmp.ctx.vars.selectionKeySource.input = input;
+      var keydown = cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown; // .filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1);
 
       keydown.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)
         .delay(1).subscribe(_=>{
-        if (input.value == '')
+        console.log('helper-popup', ctx.params.showHelper(ctx.setData(input)))
+        if (!ctx.params.showHelper(ctx.setData(input)))
           cmp.closePopup();
         else if (!cmp.popup())
           cmp.openPopup()
@@ -9069,47 +9321,6 @@ jb.component('editable-text.helper-popup', {
 })
 ;
 
-jb.type('editable-boolean.style');
-
-jb.component('editable-boolean',{
-  type: 'control', category: 'input:20',
-  params: [
-    { id: 'databind', as: 'ref'},
-    { id: 'style', type: 'editable-boolean.style', defaultValue: { $: 'editable-boolean.checkbox' }, dynamic: true },
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'textForTrue', as: 'string', defaultValue: 'yes' },
-    { id: 'textForFalse', as: 'string', defaultValue: 'no' },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx => jb.ui.ctrl(ctx,{
-  		init: cmp => {
-        cmp.toggle = () =>
-          cmp.jbModel(!cmp.jbModel());
-
-  			cmp.text = () => {
-          if (!cmp.jbModel) return '';
-          return cmp.jbModel() ? ctx.params.textForTrue : ctx.params.textForFalse;
-        }
-  		}
-  	})
-})
-
-jb.component('editable-boolean.keyboard-support', {
-  type: 'feature',
-  impl: ctx => ({
-      onkeydown: true,
-      afterViewInit: cmp => {
-        cmp.onkeydown.filter(e=> 
-            e.keyCode == 37 || e.keyCode == 39)
-          .subscribe(x=> {
-            cmp.toggle();
-            cmp.refreshMdl && cmp.refreshMdl();
-          })
-      },
-    })
-})
-;
-
 jb.component('editable-number', {
   type: 'control', category: 'input:30',
   params: [
@@ -9117,10 +9328,11 @@ jb.component('editable-number', {
     { id: 'title', as: 'string' , dynamic: true },
     { id: 'style', type: 'editable-number.style', defaultValue: { $: 'editable-number.input' }, dynamic: true },
     { id: 'symbol', as: 'string', description: 'leave empty to parse symbol from value' },
-    { id: 'min', as: 'number' },
-    { id: 'max', as: 'number' },
+    { id: 'min', as: 'number', defaultValue: 0 },
+    { id: 'max', as: 'number', defaultValue: 100 },
     { id: 'displayString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%' },
     { id: 'dataString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%' },
+    { id: 'autoScale', as: 'boolean', defaultValue: true, description: 'adjust its scale if at edges' },
 
     { id: 'step', as: 'number', defaultValue: 1, description: 'used by slider' },
     { id: 'initialPixelsPerUnit', as: 'number', description: 'used by slider' },
@@ -9169,16 +9381,62 @@ jb.component('editable-number.input',{
 
 ;
 
+jb.type('editable-boolean.style');
+
+jb.component('editable-boolean',{
+  type: 'control', category: 'input:20',
+  params: [
+    { id: 'databind', as: 'ref'},
+    { id: 'style', type: 'editable-boolean.style', defaultValue: { $: 'editable-boolean.checkbox' }, dynamic: true },
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'textForTrue', as: 'string', defaultValue: 'yes' },
+    { id: 'textForFalse', as: 'string', defaultValue: 'no' },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx => jb.ui.ctrl(ctx,{
+  		init: cmp => {
+        cmp.toggle = () =>
+          cmp.jbModel(!cmp.jbModel());
+
+  			cmp.text = () => {
+          if (!cmp.jbModel) return '';
+          return cmp.jbModel() ? ctx.params.textForTrue : ctx.params.textForFalse;
+        }
+  		}
+  	})
+})
+
+jb.component('editable-boolean.keyboard-support', {
+  type: 'feature',
+  impl: ctx => ({
+      onkeydown: true,
+      afterViewInit: cmp => {
+        cmp.onkeydown.filter(e=> 
+            e.keyCode == 37 || e.keyCode == 39)
+          .subscribe(x=> {
+            cmp.toggle();
+            cmp.refreshMdl && cmp.refreshMdl();
+          })
+      },
+    })
+})
+;
+
 jb.component('group.wait', {
   type: 'feature', category: 'group:70',
   params: [ 
     { id: 'for', essential: true, dynamic: true },
     { id: 'loadingControl', type: 'control', defaultValue: { $:'label', title: 'loading ...'} , dynamic: true },
     { id: 'error', type: 'control', defaultValue: { $:'label', title: 'error: %$error%', css: '{color: red; font-weight: bold}'} , dynamic: true },
+    { id: 'resource', as: 'string' },    
   ],
-  impl: (context,waitFor,loading,error) => ({
+  impl: (context,waitFor,loading,error,resource) => ({
       beforeInit: cmp => {
         cmp.ctrlEmitter = jb.rx.Observable.from(waitFor()).take(1)
+            .do(data => {
+              if (resource) 
+                jb.resources[resource] = data;
+            })
             .map(data=>
               context.vars.$model.controls(cmp.ctx.setData(data)))
             .catch(e=> 
@@ -9197,20 +9455,44 @@ jb.component('group.wait', {
 jb.component('watch-ref', {
   type: 'feature', category: 'group:70',
   params: [ 
-    { id: 'ref', essential: true, as: 'ref' },
+    { id: 'ref', essential: true, as: 'ref', ref: true },
     { id: 'strongRefresh', as: 'boolean' },
+    { id: 'includeChildren', as: 'boolean' },
   ],
-  impl: (ctx,ref,strongRefresh) => ({
+  impl: (ctx,ref,strongRefresh,includeChildren) => ({
       init: cmp => {
           if (strongRefresh && cmp.initWatchByRef) { // itemlist or group
-              cmp.initWatchByRef(ref)
+              cmp.initWatchByRef(ref,includeChildren)
           } else {
-            jb.ui.refObservable(ref,cmp).subscribe(e=>
-                cmp.forceUpdate())
+            jb.ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
+                jb.ui.setState(cmp,null,e))
           }
       }
   })
 })
+
+jb.component('watch-observable', {
+  type: 'feature', category: 'group:70',
+  params: [ 
+    { id: 'toWatch', essential: true },
+    { id: 'strongRefresh', as: 'boolean' },
+  ],
+  impl: (ctx,toWatch,strongRefresh) => ({
+      init: cmp => {
+        if (!toWatch.subscribe)
+          return jb.logError('watch-observable: non obsevable parameter');
+        var virtualRef = {
+          $jb_observable: cmp => toWatch
+        }
+        if (strongRefresh && cmp.initWatchByRef) // itemlist or group
+            cmp.initWatchByRef(virtualRef)
+        else
+            virtualRef.subscribe(e=>
+                jb.ui.setState(cmp,null,e))
+      }
+  })
+})
+
 
 jb.component('group.data', {
   type: 'feature', category: 'group:100',
@@ -9226,7 +9508,7 @@ jb.component('group.data', {
               cmp.initWatchByRef(data_ref())
         else if (watch)
           jb.ui.refObservable(data_ref(),cmp).subscribe(e=>
-                cmp.forceUpdate())
+                jb.ui.setState(cmp,null,e))
       },
       extendCtxOnce: ctx => {
           var val = data_ref();
@@ -9252,36 +9534,26 @@ jb.component('id', {
 })
 
 jb.component('var', {
-  type: 'feature', category: 'group:60',
+  type: 'feature', category: 'group:80',
   params: [
     { id: 'name', as: 'string', essential: true },
     { id: 'value', dynamic: true },
+    { id: 'mutable', as: 'boolean' },    
   ],
-  impl: (context, name, value) => ({
-      extendCtxOnce: (ctx,cmp) => {
-        return ctx.setVars(jb.obj(name, value()));
-      }
-  })
-})
-
-jb.component('inner-resource', {
-  type: 'feature', category: 'group:10',
-  params: [
-    { id: 'name', as: 'string', essential: true },
-    { id: 'value', dynamic: true },
-  ],
-  impl: (context, name, value) => ({
-      destroyed: cmp => {
-        if (jb.resources[cmp.resourceId])
-          delete jb.resources[cmp.resourceId];
+  impl: (context, name, value,mutable) => ({
+      destroy: cmp => {
+        if (mutable)
+          delete jb.resources[name + ':' + cmp.resourceId]
       },
       extendCtxOnce: (ctx,cmp) => {
-        if (!cmp.resourceId)
-          cmp.resourceId = cmp.ctx.id; // use the first ctx id
-        cmp.resource = jb.resources[cmp.resourceId] = jb.resources[cmp.resourceId] || {};
-        cmp.resource[name] = value(ctx.setData(cmp));
-        var ref = jb.objectProperty(cmp.resource,name,'ref',true);
-        return ctx.setVars(jb.obj(name, ref));
+        if (!mutable) {
+          return ctx.setVars(jb.obj(name, value()))
+        } else {
+          cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
+          var full_name = name + ':' + cmp.resourceId;
+          jb.resources[full_name] = value(ctx.setData(cmp));
+          return ctx.setVars(jb.obj(name, jb.objectProperty(jb.resources,full_name,'ref',true)));
+        }
       }
   })
 })
@@ -9329,7 +9601,7 @@ jb.component('feature.if', {
               cmp.initWatchByRef(condition())
         else if (watch)
           jb.ui.refObservable(condition(),cmp).subscribe(e=>
-                cmp.forceUpdate())
+                jb.ui.setState(cmp,null,e))
     },
     templateModifier: (vdom,cmp,state) => 
         jb.toboolean(condition()) ? vdom : ' ' // can not be empty string
@@ -9342,8 +9614,10 @@ jb.component('hidden', {
     { id: 'showCondition', type: 'boolean', essential: true, dynamic: true },
   ],
   impl: (context,showCondition) => ({
-    templateModifier: (vdom,cmp,state) => 
-      showCondition(cmp.ctx) ? vdom : jb.ui.h('span')
+    templateModifier: (vdom,cmp,state) => {
+      if (!showCondition(cmp.ctx))
+        jb.path(vdom,['attributes','style','display'],'none')
+    }
   })
 })
 
@@ -9370,20 +9644,38 @@ jb.component('feature.keyboard-shortcut', {
       })
 })
 
+jb.component('feature.onKey', {
+  type: 'feature', category: 'feature:60',
+  params: [
+    { id: 'code', as: 'number' },
+    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+  ],
+  impl: (ctx,code) => ({ 
+      onkeydown: true,
+      afterViewInit: cmp=> {
+        cmp.base.setAttribute('tabIndex','0');
+        cmp.onkeydown.filter(e=> e.keyCode == code).subscribe(()=>
+              jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
+      }
+  })
+})
+
 jb.component('feature.onEnter', {
   type: 'feature', category: 'feature:60',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
-  impl: ctx => ({ 
-      onkeydown: true,
-      afterViewInit: cmp=> {
-        cmp.base.setAttribute('tabIndex','0');
-        cmp.onkeydown.filter(e=> e.keyCode == 13).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
-      }
-  })
+  impl :{$: 'feature.onKey', code: 13, action :{$call: 'action'}}
 })
+
+jb.component('feature.onDelete', {
+  type: 'feature', category: 'feature:60',
+  params: [
+    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+  ],
+  impl :{$: 'feature.onKey', code: 46, action :{$call: 'action'}}
+})
+
 
 jb.component('group.auto-focus-on-first-input', {
   type: 'feature',
@@ -9562,7 +9854,6 @@ jb.component('open-dialog', {
 			resourceId: 'jb_dialog_'+ (id || context.id)
 		};
 		jb.resource(dialog.resourceId,{});
-//		dialog.em.subscribe(e=>console.log(e.type));
 
 		var ctx = context.setVars({
 			dialogData: jb.resource(dialog.resourceId),
@@ -9582,11 +9873,13 @@ jb.component('open-dialog', {
 					jb.logException(e,'dialog');
 				}
 				cmp.dialogClose = _ => dialog.close();
+				cmp.recalcTitle = _ => 
+					jb.ui.setState(cmp,{title: ctx.params.title(ctx)})
 			},
 			afterViewInit: cmp => {
 				cmp.dialog.el = cmp.base;
 				cmp.dialog.el.style.zIndex = 100;
-			}
+			},
 		}).reactComp();
 		jb.ui.dialogs.addDialog(dialog,ctx);
 		return dialog;
@@ -9622,17 +9915,17 @@ jb.component('dialog.popup', {
 			h(state.contentComp),
 		]),
       features: [
-        { $: 'dialog-feature.maxZIndexOnClick' },
-        { $: 'dialog-feature.closeWhenClickingOutside' },
-        { $: 'dialog-feature.cssClassOnLaunchingControl' },
-        { $: 'dialog-feature.nearLauncherLocation' }
+        { $: 'dialog-feature.max-zIndex-on-click' },
+        { $: 'dialog-feature.close-when-clicking-outside' },
+        { $: 'dialog-feature.css-class-on-launching-element' },
+        { $: 'dialog-feature.near-launcher-position' }
       ],
       css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }'
   }
 })
 
 
-jb.component('dialog-feature.uniqueDialog', {
+jb.component('dialog-feature.unique-dialog', {
 	type: 'dialog-feature',
 	params: [
 		{ id: 'id', as: 'string' },
@@ -9686,7 +9979,7 @@ jb.component('dialog-feature.keyboard-shortcut', {
 	}})
 })
 
-jb.component('dialog-feature.nearLauncherLocation', {
+jb.component('dialog-feature.near-launcher-position', {
 	type: 'dialog-feature',
 	params: [
 		{ id: 'offsetLeft', as: 'number', defaultValue: 0 },
@@ -9727,23 +10020,6 @@ jb.component('dialog-feature.nearLauncherLocation', {
 	}
 })
 
-// jb.component('dialog-feature.launcherLocationNearSelectedNode', {
-// 	type: 'dialog-feature',
-// 	params: [
-// 		{ id: 'offsetLeft', as: 'number' },
-// 		{ id: 'offsetTop', as: 'number' },
-// 	],
-// 	impl: (context, offsetLeft, offsetTop) => ({
-// 			afterViewInit: function(cmp) {
-// 				var $elem = context.vars.$launchingElement.$el;
-// 				var $control = $elem.closest('.selected').first();
-// 				var pos = $control.offset();
-// 				$(cmp.base).findIncludeSelf('.jb-dialog').css('left', `${pos.left + offsetLeft}px`);
-// 				$(cmp.base).findIncludeSelf('.jb-dialog').css('top', `${pos.top + $control.outerHeight() + offsetTop}px`);
-// 			}
-// 		})
-// })
-
 jb.component('dialog-feature.onClose', {
 	type: 'dialog-feature',
 	params: [
@@ -9758,7 +10034,7 @@ jb.component('dialog-feature.onClose', {
 	}
 })
 
-jb.component('dialog-feature.closeWhenClickingOutside', {
+jb.component('dialog-feature.close-when-clicking-outside', {
 	type: 'dialog-feature',
 	params: [
 		{ id: 'delay', as: 'number', defaultValue: 100 }
@@ -9780,6 +10056,17 @@ jb.component('dialog-feature.closeWhenClickingOutside', {
 	}
 })
 
+jb.component('dialog.close-dialog', {
+	type: 'action',
+	params: [
+		{ id: 'id', as: 'string' },
+		{ id: 'delay', as: 'number', defaultValue: 200 },
+	],
+	impl: (ctx,id,delay) => 
+		jb.ui.dialogs.dialogs.filter(d=>d.id == id)
+  			.forEach(d=>jb.delay(delay).then(d.close()))
+})
+
 jb.component('dialog.close-all-popups', {
 	type: 'action',
 	impl: ctx => 
@@ -9793,36 +10080,41 @@ jb.component('dialog.close-all', {
 		jb.ui.dialogs.dialogs.forEach(d=>d.close())
 })
 
-jb.component('dialog-feature.autoFocusOnFirstInput', {
+jb.component('dialog-feature.auto-focus-on-first-input', {
 	type: 'dialog-feature',
-	impl: context => ({ 
+	params: [
+		{ id: 'selectText', as: 'boolean' }
+	],
+	impl: (ctx,selectText) => ({ 
 		afterViewInit: cmp =>
 			jb.delay(1).then(_=> {
-				var elem = context.vars.$dialog.el.querySelector('input,textarea,select');
+				var elem = ctx.vars.$dialog.el.querySelector('input,textarea,select');
 				if (elem)
-					jb.ui.focus(elem, 'autoFocusOnFirstInput')
+					jb.ui.focus(elem, 'auto-focus-on-first-input');
+				if (selectText)
+					elem.select();
 			})
 	})
 })
 
-jb.component('dialog-feature.cssClassOnLaunchingControl', {
+jb.component('dialog-feature.css-class-on-launching-element', {
 	type: 'dialog-feature',
 	impl: context => ({ 
-			afterViewInit: cmp => {
-				var dialog = context.vars.$dialog;
-				var $control = context.vars.$launchingElement.$el;
-				$control.addClass('dialog-open');
-				dialog.em.filter(e=>
-					e.type == 'close')
-					.take(1)
-					.subscribe(()=> {
-						$control.removeClass('dialog-open');
-					})
-			}
+		afterViewInit: cmp => {
+			var dialog = context.vars.$dialog;
+			var $control = context.vars.$launchingElement.$el;
+			$control.addClass('dialog-open');
+			dialog.em.filter(e=>
+				e.type == 'close')
+				.take(1)
+				.subscribe(()=> {
+					$control.removeClass('dialog-open');
+				})
+		}
 	})
 })
 
-jb.component('dialog-feature.maxZIndexOnClick', {
+jb.component('dialog-feature.max-zIndex-on-click', {
 	type: 'dialog-feature',
 	params: [
 		{ id: 'minZIndex', as: 'number'}
@@ -9885,7 +10177,6 @@ jb.component('dialog-feature.drag-title', {
 				        }))
 				      	.flatMap(imageOffset => 
 			      			 mouseMoveEm.takeUntil(mouseUpEm)
-			      			 //.do(_=>titleElem.style.cursor = 'pointer'))
 			      			 .map(pos => ({
 						        top:  pos.clientY - imageOffset.top,
 						        left: pos.clientX - imageOffset.left
@@ -9893,7 +10184,6 @@ jb.component('dialog-feature.drag-title', {
 				      	);
 
 				  mousedrag.distinctUntilChanged().subscribe(pos => {
-//				  	titleElem.style.cursor = 'move';
 			        dialog.el.style.top  = pos.top  + 'px';
 			        dialog.el.style.left = pos.left + 'px';
 			        if (id) sessionStorage.setItem(id, JSON.stringify(pos))
@@ -9923,30 +10213,13 @@ jb.component('dialog.dialog-ok-cancel', {
 	}
 })
 
-class JbDialogs extends jb.ui.Component {
-	constructor() {
-		super();
-		this.state.dialogs = [];
-		jb.ui.dialogs.em.subscribe(dialogs=>
-			this.setState({dialogs: dialogs}));		
-	}
-	render(props,state) {
-		return jb.ui.h('div',{ class: 'jb-dialogs'}, state.dialogs.map(d=>jb.ui.h(d.comp)) )
-	}
-}
-
 jb.ui.dialogs = {
  	dialogs: [],
- 	em: new jb.rx.Subject(),
  	redraw: function() {
-		this.em.next(this.dialogs) 		
- 	},
- 	init: function() {
- 		if ($('.jb-dialogs')[0]) return;
-		jb.ui.render(jb.ui.h(JbDialogs), document.body);
+		jb.ui.render(jb.ui.h('div',{ class: 'jb-dialogs'}, jb.ui.dialogs.dialogs.map(d=>jb.ui.h(d.comp)) )
+			, document.body, document.querySelector('body>.jb-dialogs'));
  	},
 	addDialog: function(dialog,context) {
-		jb.ui.dialogs.init();
 
 		var self = this;
 		dialog.context = context;
@@ -10398,11 +10671,11 @@ jb.component('dialog.context-menu-popup',{
 		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup context-menu-popup pulldown-mainmenu-popup'},
 				h(state.contentComp)),
 			features: [
-				{ $: 'dialog-feature.uniqueDialog', id: '%$optionsParentId%', remeberLastLocation: false },
-				{ $: 'dialog-feature.maxZIndexOnClick' },
-				{ $: 'dialog-feature.closeWhenClickingOutside' },
-				{ $: 'dialog-feature.cssClassOnLaunchingControl' },
-				{ $: 'dialog-feature.nearLauncherLocation', rightSide: '%$rightSide%', offsetTop: '%$offsetTop%' }
+				{ $: 'dialog-feature.unique-dialog', id: '%$optionsParentId%', remeberLastLocation: false },
+				{ $: 'dialog-feature.max-zIndex-on-click' },
+				{ $: 'dialog-feature.close-when-clicking-outside' },
+				{ $: 'dialog-feature.css-class-on-launching-element' },
+				{ $: 'dialog-feature.near-launcher-position', rightSide: '%$rightSide%', offsetTop: '%$offsetTop%' }
 			]
 	}
 })
@@ -10412,236 +10685,6 @@ jb.component('menu-separator.line', {
   	impl :{$: 'custom-style', 
       template: (cmp,state,h) => h('div'),
       css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}'
-  }
-})
-;
-
-jb.component('itemlist', {
-  type: 'control', category: 'group:80,common:80',
-  params: [
-    { id: 'title', as: 'string' },
-    { id: 'items', as: 'array' , dynamic: true, essential: true },
-    { id: 'controls', type: 'control[]', essential: true, dynamic: true },
-    { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
-    { id: 'watchItems', as: 'boolean' },
-    { id: 'itemVariable', as: 'string', defaultValue: 'item' },
-    { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
-  ],
-  impl: ctx => 
-    jb.ui.ctrl(ctx)
-})
-
-jb.component('itemlist.init', {
-  type: 'feature',
-  params: [
-    { id: 'items', essential: true, dynamic: true },
-    { id: 'itemVariableName', as: 'string' },
-  ],
-  impl: (context, items, itemVariableName,watch) => ({
-      beforeInit: cmp => {
-        cmp.items2ctrls = function(items) {
-            if (context.vars.itemlistCntr)
-              context.vars.itemlistCntr.items = items;
-            var ctx2 = (cmp.refreshCtx ? cmp.refreshCtx() : cmp.ctx).setData(items);
-            var ctx3 = itemVariableName ? ctx2.setVars(jb.obj(itemVariableName,items)) : ctx2;
-            var ctrls = context.vars.$model.controls(ctx3);
-            return ctrls;
-        }
-
-        cmp.items = items(cmp.ctx);
-        cmp.state.ctrls = cmp.items2ctrls(cmp.items).map(c=>c.reactComp());
-
-        cmp.initWatchByRef = refToWatch =>
-            jb.ui.refObservable(refToWatch,cmp)
-              .map(_=>items(cmp.ctx))
-              .filter(items=>
-                items.length == 0 || !jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))
-              .do(items => 
-                cmp.items = items)
-              .map(items=> cmp.items2ctrls(items))
-              .subscribe(ctrls=>
-                cmp.setState({ctrls:ctrls.map(c=>c.reactComp())}))
-      },
-  })
-})
-
-jb.component('itemlist.watch-items', {
-  type: 'feature', category: 'itemlist:70',
-  impl: (ctx,ref) => ({
-      init: cmp => {
-        var itemsAsRef = jb.asRef(cmp.items);
-        if (cmp.initWatchByRef && jb.isRef(itemsAsRef)) 
-          cmp.initWatchByRef(itemsAsRef);
-      }
-  })
-})
-
-jb.component('itemlist.divider', {
-  type: 'feature',
-  params: [
-    { id: 'space', as: 'number', defaultValue: 5}
-  ],
-  impl : (ctx,space) =>
-    ({css: `>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: ${space}px }`})
-})
-
-// ****************** Selection ******************
-
-jb.component('itemlist.selection', {
-  type: 'feature',
-  params: [
-    { id: 'databind', as: 'ref', defaultValue: '%itemlistCntrData/selected%' },
-    { id: 'onSelection', type: 'action', dynamic: true },
-    { id: 'onDoubleClick', type: 'action', dynamic: true },
-    { id: 'autoSelectFirst', type: 'boolean'},
-    { id: 'cssForSelected', as: 'string', defaultValue: 'background: #bbb !important; color: #fff !important' },
-  ],
-  impl: ctx => ({
-    onclick: true,
-    afterViewInit: cmp => {
-        cmp.selectionEmitter = new jb.rx.Subject();
-        cmp.clickEmitter = new jb.rx.Subject();
-
-        cmp.selectionEmitter
-          .merge(jb.ui.refObservable(ctx.params.databind,cmp))
-          .merge(cmp.clickEmitter)
-          .distinctUntilChanged()
-          .filter(x=>x)
-          .subscribe( selected => {
-              ctx.params.databind && jb.writeValue(ctx.params.databind,selected);
-              cmp.setState({selected: selected});
-              ctx.params.onSelection(cmp.ctx.setData(selected));
-          });
-
-        // double click
-        var clickEm = cmp.clickEmitter.takeUntil( cmp.destroyed );
-        clickEm.buffer(clickEm.debounceTime(250))
-          .filter(buff => buff.length === 2)
-          .subscribe(buff=>
-            jb.ui.applyAfter(ctx.params.onDoubleClick(ctx.setData(buff[1]))),ctx);
-
-        if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
-            cmp.selectionEmitter.next(cmp.items[0])
-    },
-    extendItem: (cmp,ctrl,vdom) => {
-      jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == ctrl.ctx.data);
-      vdom.attributes.onclick = _ => 
-        cmp.clickEmitter.next(ctrl.ctx.data)
-    },
-    css: '>.selected { ' + ctx.params.cssForSelected + ' }',
-  })
-})
-
-jb.component('itemlist.keyboard-selection', {
-  type: 'feature',
-  params: [
-    { id: 'onEnter', type: 'action', dynamic: true },
-    { id: 'autoFocus', type: 'boolean' }
-  ],
-  impl: ctx => ({
-      afterViewInit: function(cmp) {
-        cmp.onkeydown = (ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.keydown) || (ctx.vars.selectionKeySource && ctx.vars.selectionKeySource.keydown);
-        if (!cmp.onkeydown) {
-          cmp.base.setAttribute('tabIndex','0');
-          cmp.onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
-              .takeUntil( cmp.destroyed );          
-
-          if (ctx.params.autoFocus)
-            jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus')
-        }
-
-        cmp.onkeydown.filter(e=> e.keyCode == 13)
-          .subscribe(x=>
-            jb.ui.applyAfter(ctx.params.onEnter(ctx.setData(cmp.state.selected))),ctx);
-    
-        cmp.onkeydown.filter(e=> !e.ctrlKey &&
-              (e.keyCode == 38 || e.keyCode == 40))
-            .map(event => {
-              event.stopPropagation();
-              var diff = event.keyCode == 40 ? 1 : -1;
-              var items = cmp.items;
-              return items[(items.indexOf(cmp.state.selected) + diff + items.length) % items.length] || cmp.state.selected;
-        }).subscribe(x=>
-          cmp.selectionEmitter && cmp.selectionEmitter.next(x)
-        )
-      },
-    })
-})
-
-jb.component('itemlist.drag-and-drop', {
-  type: 'feature',
-  params: [
-  ],
-  impl: ctx => ({
-      afterViewInit: function(cmp) {
-        var drake = dragula($(cmp.base).findIncludeSelf('.jb-itemlist').get(), {
-          moves: el => $(el).parent().is('.jb-itemlist')
-        });
-
-        drake.on('drag', function(el, source) { 
-          var item_comp = el._component;
-          el.dragged = { 
-            obj: item_comp && item_comp.ctx.data,
-            remove: obj => cmp.items.splice(cmp.items.indexOf(obj), 1)
-          }
-          cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.obj);
-        });
-        drake.on('drop', (dropElm, target, source,sibling) => {
-            var draggedIndex = cmp.items.indexOf(dropElm.dragged.obj);
-            var targetIndex = sibling ? $(sibling).index() : cmp.items.length;
-            jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.obj]]);
-
-            dropElm.dragged = null;
-        });
-
-        cmp.base.setAttribute('tabIndex','0');
-        cmp.onkeydown = cmp.onkeydown || jb.rx.Observable.fromEvent(cmp.base, 'keydown').takeUntil( cmp.destroyed );
-
-        // ctrl + Up/Down
-        cmp.onkeydown.filter(e=> 
-          e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
-          .subscribe(e=> {
-            var diff = e.keyCode == 40 ? 1 : -1;
-            var selectedIndex = cmp.items.indexOf(cmp.state.selected);
-            if (selectedIndex == -1) return;
-            var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-            jb.splice(cmp.items,[[selectedIndex,1],[index,0,cmp.state.selected]]);
-        })
-      }
-    })
-})
-
-jb.component('itemlist.ul-li', {
-  type: 'itemlist.style',
-  impl :{$:'itemlist.use-group-style', groupStyle :{$: 'group.ul-li' }}
-})
-
-jb.component('itemlist.horizontal', {
-  type: 'itemlist.style',
-  impl :{$:'itemlist.use-group-style', groupStyle :{$: 'layout.horizontal-wrapped' }}
-})
-
-
-jb.component('itemlist.use-group-style', {
-  type: 'itemlist.style',
-  params: [
-    { id: 'groupStyle', type: 'group.style', dynamic: true },
-  ],
-  impl :{$: 'style-by-control', __innerImplementation: true,
-    modelVar: 'itemlistModel',
-    control: {$: 'group', 
-      features : [
-        {$: 'group.init-group'},
-        {$: 'itemlist.init', items: '%$itemlistModel/items%', itemVariableName: 'items_array' },
-        {$if: '%$itemlistModel/watchItems%', then :{$: 'itemlist.watch-items'} }
-      ], 
-      style :{$call :'groupStyle'},
-      controls :{$: 'dynamic-controls', 
-        controlItems : '%$items_array%',
-        genericControl: '%$itemlistModel/controls%',
-        itemVariable: '%$itemlistModel/itemVariable%',
-      },
-    }
   }
 })
 ;
@@ -10690,7 +10733,7 @@ jb.component('group.itemlist-container', {
     { id: 'defaultItem', as: 'single' },
   ],
   impl :{$list : [
-    {$: 'inner-resource', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '' }},
+    {$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '' } , mutable: true},
     {$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx.componentContext.params) }
   ]}
 })
@@ -10764,6 +10807,250 @@ jb.component('itemlist-container.search-in-all-properties', {
 
 })();
 
+jb.component('itemlist', {
+  type: 'control', category: 'group:80,common:80',
+  params: [
+    { id: 'title', as: 'string' },
+    { id: 'items', as: 'array' , dynamic: true, essential: true, ref: true },
+    { id: 'controls', type: 'control[]', essential: true, dynamic: true },
+    { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
+    { id: 'watchItems', as: 'boolean' },
+    { id: 'itemVariable', as: 'string', defaultValue: 'item' },
+    { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
+  ],
+  impl: ctx => 
+    jb.ui.ctrl(ctx)
+})
+
+jb.component('itemlist.init', {
+  type: 'feature',
+  params: [
+    { id: 'items', as: 'array', essential: true, dynamic: true, ref: true },
+    { id: 'itemVariableName', as: 'string' },
+  ],
+  impl: (context, items, itemVariableName,watch) => ({
+      beforeInit: cmp => {
+        cmp.items2ctrls = function(items) {
+            if (context.vars.itemlistCntr)
+              context.vars.itemlistCntr.items = items;
+            var ctx2 = (cmp.refreshCtx ? cmp.refreshCtx() : cmp.ctx).setData(items);
+            var ctx3 = itemVariableName ? ctx2.setVars(jb.obj(itemVariableName,items)) : ctx2;
+            var ctrls = context.vars.$model.controls(ctx3);
+            return ctrls;
+        }
+
+        cmp.itemsRef = items(cmp.ctx);
+        cmp.items = jb.toarray(jb.val(cmp.itemsRef));
+        cmp.state.ctrls = cmp.items2ctrls(cmp.items).map(c=>c.reactComp());
+
+        cmp.initWatchByRef = refToWatch =>
+            jb.ui.refObservable(refToWatch,cmp)
+              .subscribe(e=> {
+                var _items = jb.toarray(jb.val(items(cmp.ctx)));
+                if (_items.length != 0 && jb.compareArrays(_items,cmp.items))
+                  return;
+                cmp.items = _items;
+                var ctrls = cmp.items2ctrls(cmp.items); 
+                jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())},e)
+              });
+      },
+  })
+})
+
+jb.component('itemlist.watch-items', {
+  type: 'feature', category: 'itemlist:70',
+  impl: (ctx,ref) => ({
+      init: cmp => {
+        if (cmp.initWatchByRef && jb.isRef(cmp.itemsRef)) 
+          cmp.initWatchByRef(cmp.itemsRef);
+      }
+  })
+})
+
+jb.component('itemlist.divider', {
+  type: 'feature',
+  params: [
+    { id: 'space', as: 'number', defaultValue: 5}
+  ],
+  impl : (ctx,space) =>
+    ({css: `>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: ${space}px }`})
+})
+
+// ****************** Selection ******************
+
+jb.component('itemlist.selection', {
+  type: 'feature',
+  params: [
+    { id: 'databind', as: 'ref', defaultValue: '%itemlistCntrData/selected%' },
+    { id: 'onSelection', type: 'action', dynamic: true },
+    { id: 'onDoubleClick', type: 'action', dynamic: true },
+    { id: 'autoSelectFirst', type: 'boolean'},
+    { id: 'cssForSelected', as: 'string', defaultValue: 'background: #bbb !important; color: #fff !important' },
+  ],
+  impl: ctx => ({
+    onclick: true,
+    afterViewInit: cmp => {
+        cmp.selectionEmitter = new jb.rx.Subject();
+        cmp.clickEmitter = new jb.rx.Subject();
+
+        cmp.selectionEmitter
+          .merge(cmp.clickEmitter)
+          .distinctUntilChanged()
+          .filter(x=>x)
+          .subscribe( selected => {
+              ctx.params.databind && jb.writeValue(ctx.params.databind,selected);
+              cmp.setState({selected: selected});
+              ctx.params.onSelection(cmp.ctx.setData(selected));
+          });
+
+        jb.ui.refObservable(ctx.params.databind,cmp).subscribe(e=>
+          jb.ui.setState(cmp,{selected: jb.val(e.ref)},e))
+
+        // double click
+        var clickEm = cmp.clickEmitter.takeUntil( cmp.destroyed );
+        clickEm.buffer(clickEm.debounceTime(250))
+          .filter(buff => buff.length === 2)
+          .subscribe(buff=>
+            ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
+
+        cmp.jbEmitter.filter(x=> x =='after-update').subscribe(x=>{
+          if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
+              cmp.setState({selected: null});
+          if (!cmp.state.selected)
+            autoSelectFirst()
+        })
+        
+        function autoSelectFirst() {
+          if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
+              cmp.selectionEmitter.next(cmp.items[0])
+        };
+        autoSelectFirst();
+    },
+    extendItem: (cmp,ctrl,vdom) => {
+      jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == ctrl.ctx.data);
+      vdom.attributes.onclick = _ => 
+        cmp.clickEmitter.next(ctrl.ctx.data)
+    },
+    css: '>.selected { ' + ctx.params.cssForSelected + ' }',
+  })
+})
+
+jb.component('itemlist.keyboard-selection', {
+  type: 'feature',
+  params: [
+    { id: 'onEnter', type: 'action', dynamic: true },
+    { id: 'autoFocus', type: 'boolean' }
+  ],
+  impl: ctx => ({
+      afterViewInit: function(cmp) {
+        var onkeydown = (ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.keydown) || (ctx.vars.selectionKeySource && ctx.vars.selectionKeySource.keydown);
+        if (!onkeydown) {
+          cmp.base.setAttribute('tabIndex','0');
+          onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
+
+          if (ctx.params.autoFocus)
+            jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus')
+        }
+        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );          
+
+        cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
+          .subscribe(x=>
+            ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
+    
+        cmp.onkeydown.filter(e=> !e.ctrlKey &&
+              (e.keyCode == 38 || e.keyCode == 40))
+            .map(event => {
+              event.stopPropagation();
+              var diff = event.keyCode == 40 ? 1 : -1;
+              var items = cmp.items;
+              return items[(items.indexOf(cmp.state.selected) + diff + items.length) % items.length] || cmp.state.selected;
+        }).subscribe(x=>
+          cmp.selectionEmitter && cmp.selectionEmitter.next(x)
+        )
+      },
+    })
+})
+
+jb.component('itemlist.drag-and-drop', {
+  type: 'feature',
+  params: [
+  ],
+  impl: ctx => ({
+      afterViewInit: function(cmp) {
+        var drake = dragula($(cmp.base).findIncludeSelf('.jb-itemlist').get(), {
+          moves: (el,source,handle) => 
+            $(el).parent().hasClass('jb-itemlist') && $(handle).hasClass('drag-handle')
+        });
+
+        drake.on('drag', function(el, source) { 
+          var item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
+          if (!item_comp) return;
+          el.dragged = { 
+            obj: item_comp && item_comp.ctx.data,
+            remove: obj => cmp.items.splice(cmp.items.indexOf(obj), 1)
+          }
+          cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.obj);
+        });
+        drake.on('drop', (dropElm, target, source,sibling) => {
+            var draggedIndex = cmp.items.indexOf(dropElm.dragged.obj);
+            var targetIndex = sibling ? $(sibling).index() : cmp.items.length;
+            jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.obj]],ctx);
+
+            dropElm.dragged = null;
+        });
+
+        // ctrl + Up/Down
+//        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
+          if (!cmp.onkeydown) return;
+          cmp.onkeydown.filter(e=> 
+            e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
+            .subscribe(e=> {
+              var diff = e.keyCode == 40 ? 1 : -1;
+              var selectedIndex = cmp.items.indexOf(cmp.state.selected);
+              if (selectedIndex == -1) return;
+              var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
+              jb.splice(cmp.items,[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
+          })
+//        })
+      }
+    })
+})
+
+jb.component('itemlist.ul-li', {
+  type: 'itemlist.style',
+  impl :{$:'itemlist.use-group-style', groupStyle :{$: 'group.ul-li' }}
+})
+
+jb.component('itemlist.horizontal', {
+  type: 'itemlist.style',
+  impl :{$:'itemlist.use-group-style', groupStyle :{$: 'layout.horizontal-wrapped' }}
+})
+
+
+jb.component('itemlist.use-group-style', {
+  type: 'itemlist.style',
+  params: [
+    { id: 'groupStyle', type: 'group.style', dynamic: true },
+  ],
+  impl :{$: 'style-by-control', __innerImplementation: true,
+    modelVar: 'itemlistModel',
+    control: {$: 'group', 
+      features : [
+        {$: 'group.init-group'},
+        {$: 'itemlist.init', items: '%$itemlistModel/items%', itemVariableName: 'items_array' },
+        {$if: '%$itemlistModel/watchItems%', then :{$: 'itemlist.watch-items'} }
+      ], 
+      style :{$call :'groupStyle'},
+      controls :{$: 'dynamic-controls', 
+        controlItems : '%$items_array%',
+        genericControl: '%$itemlistModel/controls%',
+        itemVariable: '%$itemlistModel/itemVariable%',
+      },
+    }
+  }
+})
+;
+
 jb.component('picklist', {
   type: 'control', category: 'input:80',
   params: [
@@ -10792,13 +11079,15 @@ jb.component('picklist', {
             group.options.push({text: o.text.split('.').pop(), code: o.code });
           })
           groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
-          cmp.setState({
+          jb.ui.setState(cmp,{
             groups: groups,
             options: options,
             hasEmptyOption: options.filter(x=>!x.text)[0]
           })
         }
         cmp.recalcOptions();
+        jb.ui.refObservable(ctx.params.databind,cmp).subscribe(e=>
+          cmp.onChange && cmp.onChange(jb.val(e.ref)))
       },
     })
 })
@@ -10820,6 +11109,17 @@ jb.component('picklist.dynamic-options', {
         recalcEm.takeUntil( cmp.destroyed )
         .subscribe(e=>
             cmp.recalcOptions()) 
+  })
+})
+
+jb.component('picklist.onChange', {
+  type: 'feature',
+  params: [
+    { id: 'action', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,action) => ({
+    init: cmp => 
+      cmp.onChange = val => action(ctx.setData(val))
   })
 })
 
@@ -10899,25 +11199,25 @@ jb.component('picklist.promote',{
 
 ;
 
-jb.type('theme');
 
-jb.component('group.theme', {
-  type: 'feature',
-  params: [
-    { id: 'theme', type: 'theme' },
-  ],
-  impl: (context,theme) => ({
-    extendCtx: (ctx,cmp) => 
-      ctx.setVars(theme)
-  })
+jb.component('material-icon', {
+	type: 'control', category: 'control:50',
+	params: [
+		{ id: 'icon', as: 'string', essential: true },
+		{ id: 'style', type: 'icon.style', dynamic: true, defaultValue :{$: 'icon.material' } },
+		{ id: 'features', type: 'feature[]', dynamic: true }
+	],
+	impl: ctx => 
+		jb.ui.ctrl(ctx,{init: cmp=> cmp.state.icon = ctx.params.icon})
 })
 
-jb.component('theme.material-design', {
-  type: 'theme',
-  impl: () => ({
-  	'$theme.editable-text': 'editable-text.mdl-input'
-  })
+jb.component('icon.material', {
+    type: 'icon.style',
+    impl :{$: 'custom-style', 
+        template: (cmp,state,h) => h('i',{class: 'material-icons'},state.icon),
+    }
 })
+
 ;
 
 jb.component('itemlist-with-groups', {
@@ -10989,7 +11289,7 @@ jb.component('itemlist.watch-items-with-heading', {
                 cmp.items = items)
               .map(items=> cmp.items2ctrls(items))
               .subscribe(ctrls=>
-                cmp.setState({ctrls:ctrls.map(c=>c.reactComp())}))
+                jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())}))
         
       }
   })
@@ -11026,17 +11326,159 @@ jb.component('itemlist-heading.group-by', {
 })
 ;
 
-jb.component('goto-url', {
-	type: 'action',
-	description: 'navigate/open a new web page, change href location',
-	params: [
-		{ id: 'url', as:'string', essential: true },
-		{ id: 'target', type:'enum', values: ['new tab','self'], defaultValue:'new tab', as:'string'}
-	],
-	impl: function(context,url,target) {
-		var _target = (target == 'new tab') ? '_blank' : '_self';
-		window.open(url,_target);
-	}
+jb.type('theme');
+
+jb.component('group.theme', {
+  type: 'feature',
+  params: [
+    { id: 'theme', type: 'theme' },
+  ],
+  impl: (context,theme) => ({
+    extendCtx: (ctx,cmp) => 
+      ctx.setVars(theme)
+  })
+})
+
+jb.component('theme.material-design', {
+  type: 'theme',
+  impl: () => ({
+  	'$theme.editable-text': 'editable-text.mdl-input'
+  })
+})
+;
+
+jb.component('editable-number.slider-no-text', {
+  type: 'editable-number.style',
+  impl :{$: 'custom-style', 
+      template: (cmp,state,h) => h('input',{ type: 'range', 
+        min: state.min, max: state.max, step: state.step,
+        value: cmp.jbModel(), mouseup: e => cmp.jbModel(e.target.value), tabindex: 0}),
+      features :[
+          {$: 'field.databind' },
+          {$: 'slider.init'},
+      ],
+  }
+})
+
+jb.component('editable-number.slider', {
+  type: 'editable-number.style',
+  impl :{$: 'custom-style', 
+      template: (cmp,state,h) => h('div',{},[
+        h('div',{class:'slider-text'},cmp.jbModel()),
+        h('input',{ type: 'range', 
+          min: state.min, max: state.max, step: state.step,
+          value: cmp.jbModel(), mouseup: e => cmp.jbModel(e.target.value), tabindex: 0})
+        ]),
+      features :[
+          {$: 'field.databind' },
+          {$: 'slider.init'},
+      ],
+      css: `{display: flex}
+        >* { margin-right: %$spacing%px }
+        >*:last-child { margin-right:0 }`,
+  }
+})
+
+jb.component('slider.init', {
+  type: 'feature',
+  params: [
+    {id: 'openPopup', type: 'action', dynamic: true, defaultValue:{$: 'slider.edit-as-text-popup'} },
+  ],
+  impl: ctx => ({
+      onclick: true,
+      onmouseup: true,
+      onkeyup: true,
+      init: cmp => 
+        cmp.refresh =  _=> {
+          var val = Number(cmp.jbModel());
+          cmp.max = Math.max.apply(0,[ctx.vars.$model.max,val,cmp.max].filter(x=>x!=null));
+          cmp.min = Math.min.apply(0,[ctx.vars.$model.min,val,cmp.min].filter(x=>x!=null));
+          if (val == cmp.max && ctx.vars.$model.autoScale)
+            cmp.max += cmp.max - cmp.min;
+          if (val == cmp.min && ctx.vars.$model.autoScale)
+            cmp.min -= cmp.max - cmp.min;
+
+          jb.ui.setState(cmp,{ min: cmp.min, max: cmp.max, step: ctx.vars.$model.step })
+        },
+
+      afterViewInit: cmp => {
+          cmp.refresh();
+          cmp.onmouseup.merge(cmp.onkeyup).subscribe(e=> {
+              if (cmp.jbModel() == null) // first time
+                return cmp.jbModel(0);
+              cmp.jbModel(e.target.value);
+              cmp.refresh();
+              if (e.keyCode == 13 || Number(e.key))
+                jb.ui.wrapWithLauchingElement(ctx.params.openPopup, cmp.ctx, cmp.base)();
+              if (e.keyCode == 46) // delete
+                jb.writeValue(ctx.vars.$model.databind,null);
+              if ([37,39].indexOf(e.keyCode) != -1 && e.shiftKey) { 
+                var val = Number(cmp.jbModel());
+                if (e.keyCode == 39)
+                  cmp.jbModel(Math.min(cmp.max,val+9));
+                if (e.keyCode == 37)
+                  cmp.jbModel(Math.max(cmp.min,val-9));
+              }
+          });
+
+          // double click
+          cmp.onmouseup.buffer(cmp.onmouseup.debounceTime(250))
+            .filter(buff => buff.length === 2)
+              .subscribe(_=>
+                jb.ui.wrapWithLauchingElement(ctx.params.openPopup, cmp.ctx, cmp.base)());
+
+          cmp.onclick.subscribe(e=>jb.ui.focus(cmp.base,'slider'));
+        }
+    })
+})
+
+
+jb.component('slider.edit-as-text-popup', {
+  type: 'feature',
+  impl :{$: 'open-dialog', 
+    style :{$: 'dialog.popup' }, 
+    content :{$: 'group', 
+      title: 'data-settings', 
+      style :{$: 'layout.vertical', spacing: 3 }, 
+      controls: [
+        {$: 'editable-text', 
+          title: '%title%', 
+          databind: '%databind%', 
+          style :{$: 'editable-text.mdl-input', width: '270' },
+          features :{$: 'feature.onEnter', 
+            action :{$: 'close-containing-popup' }
+          }, 
+        }, 
+      ], 
+      features: [
+        {$: 'group.data', data: '%$editableNumber%' }, 
+        {$: 'css.padding', left: '10', right: '10' }
+      ]
+    }, 
+    features: [
+        { $: 'dialog-feature.unique-dialog', id: 'slider', remeberLastLocation: false },
+        { $: 'dialog-feature.max-zIndex-on-click' },
+        { $: 'dialog-feature.close-when-clicking-outside' },
+        { $: 'dialog-feature.css-class-on-launching-element' },
+        { $: 'dialog-feature.near-launcher-position' },
+        {$: 'dialog-feature.auto-focus-on-first-input', selectText: true },
+      ]
+  }, 
+})
+
+
+jb.component('editable-number.mdl-slider', {
+  type: 'editable-number.style',
+  impl :{$: 'custom-style', 
+      template: (cmp,state,h) => h('input',{class:'mdl-slider mdl-js-slider', type: 'range', 
+        min: state.min, max: state.max, step: state.step,
+        value: cmp.jbModel(), mouseup: e => cmp.jbModel(e.target.value), tabindex: 0}),
+      features :[
+          {$: 'field.databind' },
+          {$: 'slider.init'},
+          {$: 'mdl-style.init-dynamic' }
+      ],
+  }
 })
 ;
 
@@ -11048,7 +11490,6 @@ jb.component('mdl-style.init-dynamic', {
   impl: (ctx,query) => 
     ({
       afterViewInit: cmp => {
-
         var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
         cmp.refreshMdl = _ => {
           jb.delay(1).then(_ => elems.forEach(el=> {
@@ -11111,25 +11552,18 @@ jb.component('label.mdl-button', {
 
 ;
 
-
-jb.component('material-icon', {
-	type: 'control', category: 'control:50',
+jb.component('goto-url', {
+	type: 'action',
+	description: 'navigate/open a new web page, change href location',
 	params: [
-		{ id: 'icon', as: 'string', essential: true },
-		{ id: 'style', type: 'icon.style', dynamic: true, defaultValue :{$: 'icon.material' } },
-		{ id: 'features', type: 'feature[]', dynamic: true }
+		{ id: 'url', as:'string', essential: true },
+		{ id: 'target', type:'enum', values: ['new tab','self'], defaultValue:'new tab', as:'string'}
 	],
-	impl: ctx => 
-		jb.ui.ctrl(ctx,{init: cmp=> cmp.state.icon = ctx.params.icon})
+	impl: function(context,url,target) {
+		var _target = (target == 'new tab') ? '_blank' : '_self';
+		window.open(url,_target);
+	}
 })
-
-jb.component('icon.material', {
-    type: 'icon.style',
-    impl :{$: 'custom-style', 
-        template: (cmp,state,h) => h('i',{class: 'material-icons'},state.icon),
-    }
-})
-
 ;
 
 jb.component('button.href', {
@@ -11195,7 +11629,7 @@ jb.component('button.mdl-icon', {
   }
 })
 
-jb.component('button.mdl-icon-12', {
+jb.component('button.mdl-icon-12-with-ripple', {
   type: 'button.style',
   params: [
     { id: 'icon', as: 'string', default: 'code' },
@@ -11212,70 +11646,14 @@ jb.component('button.mdl-icon-12', {
   }
 })
 
-
-// {$ :' button', class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect', title: state.title, tabIndex: -1, 
-//           onclick: _=> cmp.clicked() , 
-//           elems: {$: 'i', class: 'material-icons', innerText: cmp.icon } }
-;
-
-jb.component('editable-text.input', {
-  type: 'editable-text.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('input', { 
-        value: cmp.jbModel(), 
-        onchange: e => cmp.jbModel(e.target.value), 
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-    css: '{height: 16px}'
-  }
-})
-
-jb.component('editable-text.textarea', {
-	type: 'editable-text.style',
-	impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('textarea', { 
-        value: cmp.jbModel(), onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-	}
-})
-
-jb.component('editable-text.mdl-input', {
-  type: 'editable-text.style',
+jb.component('button.mdl-icon-12', {
+  type: 'button.style',
   params: [
-    { id: 'width', as: 'number' },
+    { id: 'icon', as: 'string', default: 'code' },
   ],
   impl :{$: 'custom-style', 
-   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[ 
-        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
-            value: cmp.jbModel(),
-            onchange: e => cmp.jbModel(e.target.value),
-            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
-        }),
-        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title)
-      ]),
-      css: '{ {?width: %$width%px?} }',
-      features :[
-          {$: 'field.databind' },
-          {$: 'mdl-style.init-dynamic'}
-      ],
-  }
-})
-
-jb.component('editable-text.mdl-search', {
-  type: 'editable-text.style',
-  impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[ 
-        h('input', { class: 'mdl-textfield__input', id: 'search_' + state.fieldId, type: 'text',
-            value: cmp.jbModel(),
-            onchange: e => cmp.jbModel(e.target.value),
-            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
-        }),
-        h('label',{class: 'mdl-textfield__label', for: 'search_' + state.fieldId},state.title)
-      ]),
-      features: [
-          {$: 'field.databind' },
-          {$: 'mdl-style.init-dynamic'}
-      ],
+      template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: _=> cmp.clicked()},cmp.icon),
+      css: `{ font-size:12px; cursor: pointer }`,
   }
 })
 ;
@@ -11412,6 +11790,68 @@ jb.component('responsive.not-for-phone', {
       cssClass: 'not-for-phone'
     })
 });
+
+jb.component('editable-text.input', {
+  type: 'editable-text.style',
+  impl :{$: 'custom-style', 
+      features :{$: 'field.databind' },
+      template: (cmp,state,h) => h('input', { 
+        value: cmp.jbModel(), 
+        onchange: e => cmp.jbModel(e.target.value), 
+        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
+    css: '{height: 16px}'
+  }
+})
+
+jb.component('editable-text.textarea', {
+	type: 'editable-text.style',
+	impl :{$: 'custom-style', 
+      features :{$: 'field.databind' },
+      template: (cmp,state,h) => h('textarea', { 
+        value: cmp.jbModel(), onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
+	}
+})
+
+jb.component('editable-text.mdl-input', {
+  type: 'editable-text.style',
+  params: [
+    { id: 'width', as: 'number' },
+  ],
+  impl :{$: 'custom-style', 
+   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[ 
+        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
+            value: cmp.jbModel(),
+            onchange: e => cmp.jbModel(e.target.value),
+            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+        }),
+        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title)
+      ]),
+      css: '{ {?width: %$width%px?} }',
+      features :[
+          {$: 'field.databind' },
+          {$: 'mdl-style.init-dynamic'}
+      ],
+  }
+})
+
+jb.component('editable-text.mdl-search', {
+  type: 'editable-text.style',
+  impl :{$: 'custom-style', 
+      template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[ 
+        h('input', { class: 'mdl-textfield__input', id: 'search_' + state.fieldId, type: 'text',
+            value: cmp.jbModel(),
+            onchange: e => cmp.jbModel(e.target.value),
+            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+        }),
+        h('label',{class: 'mdl-textfield__label', for: 'search_' + state.fieldId},state.title)
+      ]),
+      features: [
+          {$: 'field.databind' },
+          {$: 'mdl-style.init-dynamic'}
+      ],
+  }
+})
+;
 
 jb.component('group.section', {
   type: 'group.style',
@@ -11557,7 +11997,7 @@ jb.component('group.tabs', {
         jb.val(ctx.exp('%$selectedTab%')), 
     ],
     features : [ 
-        {$: 'inner-resource', name: 'selectedTab', value: '%$tabsModel/controls[0]%' },
+        {$: 'var', name: 'selectedTab', value: '%$tabsModel/controls[0]%', mutable: true },
         {$: 'group.init-group'},
     ]
   }}
@@ -11581,6 +12021,92 @@ jb.component('toolbar.simple', {
   }
 })
 
+;
+
+jb.component('property-sheet.titles-above', {
+  type: 'group.style',
+  params: [
+    { id: 'spacing', as: 'number', defaultValue: 20 }
+  ],
+  impl :{$: 'custom-style', 
+    features :{$: 'group.init-group'},
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property'},[
+            h('label',{ class: 'property-title'},ctrl.title),
+            h(ctrl)
+    ]))),
+    css: `>.property { margin-bottom: %$spacing%px }
+      >.property:last-child { margin-bottom:0 }
+      >.property>.property-title {
+        width:100px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        vertical-align:top;
+        margin-top:2px;
+        font-size:14px;
+      }
+      >.property>div { display:inline-block }`
+  }
+})
+
+jb.component('property-sheet.titles-above-float-left', {
+  type: 'group.style',
+  params: [
+    { id: 'spacing', as: 'number', defaultValue: 20 },
+    { id: 'fieldWidth', as: 'number', defaultValue: 200 },
+  ],
+  impl :{$: 'custom-style', 
+    features :{$: 'group.init-group'},
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property'},[
+          h('label',{ class: 'property-title'},ctrl.title),
+          h(ctrl)
+    ]))),
+    css: `>.property { 
+          float: left;
+          width: %$fieldWidth%px;
+          margin-right: %$spacing%px;
+        }
+      .clearfix { clear: both }
+      >.property:last-child { margin-right:0 }
+      >.property>.property-title {
+        margin-bottom: 3px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        vertical-align:top;
+        font-size:14px;
+      }`,
+  }
+})
+
+jb.component('property-sheet.titles-left', {
+  type: 'group.style',
+  params: [
+    { id: 'vSpacing', as: 'number', defaultValue: 20 },
+    { id: 'hSpacing', as: 'number', defaultValue: 20 },
+    { id: 'titleWidth', as: 'number', defaultValue: 100 },
+  ],
+  impl :{$: 'custom-style', 
+    features :{$: 'group.init-group'},
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property'},[
+          h('label',{ class: 'property-title'}, ctrl.title),
+          h(ctrl)
+    ]))),
+    css: `>.property { margin-bottom: %$vSpacing%px; display: flex }
+      >.property:last-child { margin-bottom:0px }
+      >.property>.property-title {
+        width: %$titleWidth%px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        vertical-align:top;
+        margin-top:2px;
+        font-size:14px;
+        margin-right: %$hSpacing%px;
+      }
+      >.property>*:last-child { margin-right:0 }`
+  }
+})
 ;
 
 
@@ -11694,92 +12220,6 @@ jb.component('editable-boolean.mdl-slide-toggle', {
           {$: 'editable-boolean.keyboard-support' },
           {$: 'mdl-style.init-dynamic'}
       ],
-  }
-})
-;
-
-jb.component('property-sheet.titles-above', {
-  type: 'group.style',
-  params: [
-    { id: 'spacing', as: 'number', defaultValue: 20 }
-  ],
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group'},
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property'},[
-            h('label',{ class: 'property-title'},ctrl.title),
-            h(ctrl)
-    ]))),
-    css: `>.property { margin-bottom: %$spacing%px }
-      >.property:last-child { margin-bottom:0 }
-      >.property>.property-title {
-        width:100px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        margin-top:2px;
-        font-size:14px;
-      }
-      >.property>div { display:inline-block }`
-  }
-})
-
-jb.component('property-sheet.titles-above-float-left', {
-  type: 'group.style',
-  params: [
-    { id: 'spacing', as: 'number', defaultValue: 20 },
-    { id: 'fieldWidth', as: 'number', defaultValue: 200 },
-  ],
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group'},
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property'},[
-          h('label',{ class: 'property-title'},ctrl.title),
-          h(ctrl)
-    ]))),
-    css: `>.property { 
-          float: left;
-          width: %$fieldWidth%px;
-          margin-right: %$spacing%px;
-        }
-      .clearfix { clear: both }
-      >.property:last-child { margin-right:0 }
-      >.property>.property-title {
-        margin-bottom: 3px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        font-size:14px;
-      }`,
-  }
-})
-
-jb.component('property-sheet.titles-left', {
-  type: 'group.style',
-  params: [
-    { id: 'vSpacing', as: 'number', defaultValue: 20 },
-    { id: 'hSpacing', as: 'number', defaultValue: 20 },
-    { id: 'titleWidth', as: 'number', defaultValue: 100 },
-  ],
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group'},
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property'},[
-          h('label',{ class: 'property-title'}, ctrl.title),
-          h(ctrl)
-    ]))),
-    css: `>.property { margin-bottom: %$vSpacing%px; display: flex }
-      >.property:last-child { margin-bottom:0px }
-      >.property>.property-title {
-        width: %$titleWidth%px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        margin-top:2px;
-        font-size:14px;
-        margin-right: %$hSpacing%px;
-      }
-      >.property>*:last-child { margin-right:0 }`
   }
 })
 ;
@@ -11901,7 +12341,7 @@ jb.component('tree.selection', {
   		afterViewInit: cmp => {
   		  var tree = cmp.tree;
 
-  		  var databindObs = jb.ui.refObservable(context.params.databind,cmp);
+  		  var databindObs = jb.ui.refObservable(context.params.databind,cmp).map(e=>jb.val(e.ref));
 
 		  tree.selectionEmitter
 		  	.merge(databindObs)
@@ -12079,93 +12519,6 @@ jb.component('tree.drag-and-drop', {
 })
 ;
 
-(function() { var st = jb.studio;
-
-st.message = function(message,error) {
-	$('.studio-message').text(message); // add animation
-	$('.studio-message').css('background', error ? 'red' : '#327DC8');
-	$('.studio-message').css('animation','');
-	jb.delay(1).then(()=>
-		$('.studio-message').css('animation','slide_from_top 5s ease')
-	)
-}
-
-// st.jbart_base = function() {
-// 	return jb.studio.previewjb || jb;
-// }
-
-// st.findjBartToLook = function(path) {
-// 	var id = path.split('~')[0];
-// 	if (st.jbart_base().comps[id])
-// 		return st.jbart_base();
-// 	if (jb.comps[id])
-// 		return jb;
-// }
-
-// ********* Components ************
-
-jb.component('studio.message', {
-	type: 'action',
-	params: [ { id: 'message', as: 'string' } ],
-	impl: (ctx,message) => 
-		st.message(message)
-})
-
-jb.component('studio.redraw-studio', {
-	type: 'action',
-	impl: () => 
-    	st.redrawStudio && st.redrawStudio()
-})
-
-jb.component('studio.goto-path', {
-	type: 'action',
-	params: [ 
-		{ id: 'path', as: 'string' },
-	],
-	impl :{$runActions: [ 
-		{$: 'close-containing-popup' },
-		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' }, 
-		{$if :{$: 'studio.is-of-type', type: 'control', path: '%$path%'},
-			then: {$runActions: [ 
-				{$: 'studio.open-properties'},
-				{$: 'studio.open-control-tree'} 
-			]},
-			else :{$: 'studio.open-jb-editor', path: '%$path%' }
-		}
-	]}
-})
-
-jb.component('studio.project-source',{
-	params: [ 
-		{ id: 'project', as: 'string', defaultValue: '%$studio/project%' } 
-	],
-	impl: (context,project) => {
-		if (!project) return;
-		var comps = jb.entries(st.previewjb.comps).map(x=>x[0]).filter(x=>x.indexOf(project) == 0);
-		return comps.map(comp=>st.compAsStr(comp)).join('\n\n')
-	}
-})
-
-jb.component('studio.comp-source',{
-	params: [ 
-		{ id: 'comp', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } } 
-	],
-	impl: (context,comp) => 
-		st.compAsStr(comp.split('~')[0])
-})
-
-jb.component('studio.dynamic-options-watch-new-comp', {
-  type: 'feature',
-  impl :{$: 'picklist.dynamic-options', 
-        recalcEm: () => 
-          st.scriptChange.filter(e => e.path.length == 1)
-  }
-})
-
-
-})();
-;
-
 jb.component('tree.json-read-only',{
 	type: 'tree.nodeModel',
 	params: [
@@ -12208,7 +12561,7 @@ class ROjson {
 		var prop = path.split('~').pop();
 		var h = jb.ui.h;
 		if (val == null) 
-			return h(prop + ': null');
+			return h('div',{},prop + ': null');
 		if (!collapsed && typeof val == 'object')
 			return h('div',{},prop);
 
@@ -12312,14 +12665,16 @@ st.compsRefHandler = new jb.ui.ImmutableWithPath(compsRef);
 Object.assign(st,{
   val: (v) =>
     st.compsRefHandler.val(v),
-  writeValue: (ref,value) =>
-    st.compsRefHandler.writeValue(ref,value),
+  writeValue: (ref,value,srcCtx) =>
+    st.compsRefHandler.writeValue(ref,value,srcCtx),
   objectProperty: (obj,prop) =>
     st.compsRefHandler.objectProperty(obj,prop),
-  splice: (ref,args) =>
-    st.compsRefHandler.splice(ref,args),
-  push: (ref,value) =>
-    st.compsRefHandler.splice(ref,value),
+  splice: (ref,args,srcCtx) =>
+    st.compsRefHandler.splice(ref,args,srcCtx),
+  push: (ref,value,srcCtx) =>
+    st.compsRefHandler.push(ref,value,srcCtx),
+  merge: (ref,value,srcCtx) =>
+    st.compsRefHandler.merge(ref,value,srcCtx),
   isRef: (ref) =>
     st.compsRefHandler.isRef(ref),
   asRef: (obj) =>
@@ -12327,8 +12682,8 @@ Object.assign(st,{
   refreshRef: (ref) =>
     st.compsRefHandler.refresh(ref),
   scriptChange: st.compsRefHandler.resourceChange,
-  refObservable: (ref,cmp) => 
-  	st.compsRefHandler.refObservable(ref,cmp),
+  refObservable: (ref,cmp,includeChildren) => 
+  	st.compsRefHandler.refObservable(ref,cmp,includeChildren),
   refOfPath: (path,silent) =>
   	st.compsRefHandler.refOfPath(path.split('~'),silent),
   parentPath: path =>
@@ -12421,18 +12776,18 @@ Object.assign(st,{
 		var comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
 		var result = { $: compName };
-		var existing = st.valOfPath(path);
 		jb.compParams(comp).forEach(p=>{
 			if (p.composite)
 				result[p.id] = [];
-			if (existing && existing[p.id])
-				result[p.id] = existing[p.id];
 			if (p.defaultValue && typeof p.defaultValue != 'object')
 				result[p.id] = p.defaultValue;
 			if (p.defaultValue && typeof p.defaultValue == 'object' && (p.forceDefaultCreation || Array.isArray(p.defaultValue)))
 				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue));
 		})
-		st.writeValueOfPath(path,result);
+		if (!st.valOfPath(path))
+			st.writeValue(st.refOfPath(path),result)
+		else
+			st.merge(st.refOfPath(path),result);
 	},
 
 	insertControl: (path,compName) => {
@@ -12450,14 +12805,14 @@ Object.assign(st,{
 			group_path = st.parentPath(group_path);
 		var group_ref = st.getOrCreateControlArrayRef(group_path);
 		if (group_ref)
-			st.push(group_ref,newCtrl);
+			st.push(group_ref,[newCtrl]);
 	},
 
 	addArrayItem: (path,toAdd) => {
 		var val = st.valOfPath(path);
 		var toAdd = toAdd || {$:''};
 		if (Array.isArray(val)) {
-			st.push(st.refOfPath(path),toAdd);
+			st.push(st.refOfPath(path),[toAdd]);
 //			return { newPath: path + '~' + (val.length-1) }
 		}
 		else if (!val) {
@@ -12503,10 +12858,12 @@ Object.assign(st,{
 		var prop = st.controlParams(path)[0];
 		if (!prop)
 			return console.log('getOrCreateControlArrayRef: no control param');
+		var ref = st.refOfPath(path+'~'+prop);
 		if (val[prop] === undefined)
-			return jb.writeValue(st.refOfPath(path+'~'+prop),[]);
+			return jb.writeValue(ref,[]);
 		if (!Array.isArray(val[prop]))
-			return jb.writeValue(st.refOfPath(path+'~'+prop),[val[prop]]);
+			return jb.writeValue(ref,[val[prop]]);
+		return ref;
 	},
 	evalProfile: prof_str => {
 		try {
@@ -12514,6 +12871,15 @@ Object.assign(st,{
 		} catch (e) {
 			jb.logException(e,'eval profile:'+prof_str);
 		}
+	},
+	nameOfRef: ref => 
+		ref.$jb_path ? ref.$jb_path.slice(-1)[0] : 'ref',
+	valSummaryOfRef: ref => 
+		st.valSummary(jb.val(ref)),
+	valSummary: val => {
+		if (val && typeof val == 'object')
+			return val.id || val.name
+		return '' + val;
 	},
 })
 
@@ -12525,25 +12891,293 @@ jb.component('studio.ref',{
 		st.refOfPath(path)
 });
 
-jb.component('group.studio-watch-path', {
+jb.component('studio.is-new',{
+	params: [ {id: 'path', as: 'string' } ],
+	impl: (context,path) => {
+		if (st.compsHistory.length == 0) return false;
+		var version_before = new jb.ui.ImmutableWithPath(_=>st.compsHistory.slice(-1)[0]).refOfPath(path.split('~'),true);
+		return st.valOfPath(path) && !st.val(version_before);
+	}
+});
+
+jb.component('studio.watch-path', {
   type: 'feature', category: 'group:0',
   params: [
     { id: 'path', essential: true, as: 'ref' },
     { id: 'strongRefresh', as: 'boolean' },
+    { id: 'includeChildren', as: 'boolean' },
   ],
-  impl: {$: 'watch-ref', ref :{$: 'studio.ref', path: '%$path%'}, strongRefresh: '%$strongRefresh%'}
+  impl: {$: 'watch-ref', ref :{$: 'studio.ref', path: '%$path%'}, strongRefresh: '%$strongRefresh%', includeChildren: '%$includeChildren%'}
 })
 
-jb.component('refresh-on-script-change', {
+jb.component('studio.watch-script-changes', {
   type: 'feature',
   impl: (ctx,strongRefresh) => ({
       init: cmp =>
         st.compsRefHandler.resourceChange.debounceTime(200).subscribe(e=>
-            cmp.forceUpdate())
+            jb.ui.setState(cmp))
    })
 })
 
 })();
+
+(function() { var st = jb.studio;
+
+st.message = function(message,error) {
+	$('.studio-message').text(message); // add animation
+	$('.studio-message').css('background', error ? 'red' : '#327DC8');
+	$('.studio-message').css('animation','');
+	jb.delay(1).then(()=>
+		$('.studio-message').css('animation','slide_from_top 5s ease')
+	)
+}
+
+// st.jbart_base = function() {
+// 	return jb.studio.previewjb || jb;
+// }
+
+// st.findjBartToLook = function(path) {
+// 	var id = path.split('~')[0];
+// 	if (st.jbart_base().comps[id])
+// 		return st.jbart_base();
+// 	if (jb.comps[id])
+// 		return jb;
+// }
+
+// ********* Components ************
+
+jb.component('studio.message', {
+	type: 'action',
+	params: [ { id: 'message', as: 'string' } ],
+	impl: (ctx,message) => 
+		st.message(message)
+})
+
+jb.component('studio.redraw-studio', {
+	type: 'action',
+	impl: () => 
+    	st.redrawStudio && st.redrawStudio()
+})
+
+jb.component('studio.goto-path', {
+	type: 'action',
+	params: [ 
+		{ id: 'path', as: 'string' },
+	],
+	impl :{$runActions: [ 
+		{$: 'close-containing-popup' },
+		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' }, 
+		{$if :{$: 'studio.is-of-type', type: 'control', path: '%$path%'},
+			then: {$runActions: [ 
+				{$: 'studio.open-properties'},
+				{$: 'studio.open-control-tree'} 
+			]},
+			else :{$: 'studio.open-jb-editor', path: '%$path%' }
+		}
+	]}
+})
+
+jb.component('studio.project-source',{
+	params: [ 
+		{ id: 'project', as: 'string', defaultValue: '%$studio/project%' } 
+	],
+	impl: (context,project) => {
+		if (!project) return;
+		var comps = jb.entries(st.previewjb.comps).map(x=>x[0]).filter(x=>x.indexOf(project) == 0);
+		return comps.map(comp=>st.compAsStr(comp)).join('\n\n')
+	}
+})
+
+jb.component('studio.comp-source',{
+	params: [ 
+		{ id: 'comp', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } } 
+	],
+	impl: (context,comp) => 
+		st.compAsStr(comp.split('~')[0])
+})
+
+jb.component('studio.dynamic-options-watch-new-comp', {
+  type: 'feature',
+  impl :{$: 'picklist.dynamic-options', 
+        recalcEm: () => 
+          st.scriptChange.filter(e => e.path.length == 1)
+  }
+})
+
+
+})();
+;
+
+jb.studio.prettyPrintComp = function(compId,comp) {
+  if (comp)
+    return "jb.component('" + compId + "', "
+      + jb.studio.prettyPrintWithPositions(comp).result + ')'
+}
+
+jb.studio.prettyPrint = function(profile,colWidth,tabSize,initialPath) {
+  return jb.studio.prettyPrintWithPositions(profile,colWidth,tabSize,initialPath).result;
+}
+
+jb.studio.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
+  colWidth = colWidth || 80;
+  tabSize = tabSize || 2;
+
+  var remainedInLine = colWidth;
+  var result = '';
+  var depth = 0;
+  var lineNum = 0;
+  var positions = {};
+
+  printValue(profile,initialPath || '');
+  return { result : result, positions : positions }
+
+  function sortedPropertyNames(obj) {
+    var props = jb.entries(obj)
+      .filter(p=>p[1] != null)
+      .map(x=>x[0]) // try to keep the order
+      .filter(p=>p.indexOf('$jb') != 0)
+
+    var comp_name = jb.compName(obj);
+    if (comp_name) { // tgp obj - sort by params def
+      var params = jb.compParams(jb.comps[comp_name]).map(p=>p.id);
+      props.sort((p1,p2)=>params.indexOf(p1) - params.indexOf(p2));
+    }
+    if (props.indexOf('$') > 0) { // make the $ first
+      props.splice(props.indexOf('$'),1);
+      props.unshift('$');
+    }
+    return props;
+  }
+
+  function printValue(val,path) {
+    positions[path] = lineNum;
+    if (!val) return;
+    if (val.$jb_arrayShortcut)
+      val = val.items;
+    if (Array.isArray(val)) return printArray(val,path);
+    if (typeof val === 'object') return printObj(val,path);
+    if (typeof val === 'string' && val.indexOf('$jbProbe:') == 0)
+      val = val.split('$jbProbe:')[1];
+    if (typeof val === 'function')
+      result += val.toString();
+    else if (typeof val === 'string' && val.indexOf('\n') == -1) 
+      result += "'" + val + "'";
+    else if (typeof val === 'string' && val.indexOf('\n') != -1) {
+      result += "`" + val.replace(/`/g,'\\`') + "`"
+      // depth++;
+      // result += "`";
+      // var lines = val.split('\n');
+      // lines.forEach((line,index)=>{
+      //     result += line.trim(); 
+      //     if(index<lines.length-1) 
+      //       newLine();
+      // })
+      // depth--;
+      // result += "`";
+    }  else
+      result += JSON.stringify(val);
+  }
+
+  function printObj(obj,path) {
+      var obj_str = flat_obj(obj);
+      if (!printInLine(obj_str)) { // object does not fit in parent line
+        depth++;
+        result += '{';
+        if (!printInLine(obj_str)) { // object does not fit in its own line
+          sortedPropertyNames(obj).forEach(function(prop,index,array) {
+              if (prop != '$')
+                newLine();
+              if (obj[prop] != null) {
+                printProp(obj,prop,path);
+                if (index < array.length -1)
+                  result += ', ';//newLine();
+              }
+          });
+        }
+        depth--;
+        newLine();
+        result += '}';
+      }
+  }
+  function quotePropName(p) {
+    if (p.match(/^[$a-zA-Z_][$a-zA-Z0-9_]*$/))
+      return p;
+    else
+      return `"${p}"`
+  }
+  function printProp(obj,prop,path) {
+    if (obj[prop] && obj[prop].$jb_arrayShortcut)
+      obj = obj(prop,obj[prop].items);
+
+    if (printInLine(flat_property(obj,prop))) return;
+
+    if (prop == '$')
+      result += '$: '
+    else
+      result += quotePropName(prop) + (jb.compName(obj[prop]) ? ' :' : ': ');
+    //depth++;
+    printValue(obj[prop],path+'~'+prop);
+    //depth--;
+  }
+  function printArray(array,path) {
+    if (printInLine(flat_array(array))) return;
+    result += '[';
+    depth++;
+    newLine();
+    array.forEach(function(val,index) {
+      printValue(val,path+'~'+index);
+      if (index < array.length -1) {
+        result += ', ';
+        newLine();
+      }
+    })
+    depth--;newLine();
+    result += ']';
+  }
+  function printInLine(text) {
+    if (remainedInLine < text.length || text.match(/:\s?{/) || text.match(/, {\$/)) return false;
+    result += text;
+    remainedInLine -= text.length;
+    return true;
+  }
+  function newLine() {
+    result += '\n';
+    lineNum++;
+    for (var i = 0; i < depth; i++) result += '               '.substr(0,tabSize);
+    remainedInLine = colWidth - tabSize * depth;
+  }
+  function flat_obj(obj) {
+    var props = sortedPropertyNames(obj)
+      .filter(p=>obj[p] != null)
+      .filter(x=>x!='$')
+      .map(prop => 
+      quotePropName(prop) + ': ' + flat_val(obj[prop]));
+    if (obj && obj.$) {
+      props.unshift("$: '" + obj.$+ "'");
+      return '{' + props.join(', ') + ' }'
+    }
+    return '{ ' + props.join(', ') + ' }'
+  }
+  function flat_property(obj,prop) {
+    if (jb.compName(obj[prop]))
+      return quotePropName(prop) + ' :' + flat_val(obj[prop]);
+    else
+      return quotePropName(prop) + ': ' + flat_val(obj[prop]);
+  }
+  function flat_val(val) {
+    if (Array.isArray(val)) return flat_array(val);
+    if (typeof val === 'object') return flat_obj(val);
+    if (typeof val === 'function') return val.toString();
+    if (typeof val === 'string') 
+      return "'" + val + "'";
+    else
+      return JSON.stringify(val); // primitives
+  }
+  function flat_array(array) {
+    return '[' + array.map(item=>flat_val(item)).join(', ') + ']';
+  }
+}
+;
 
 jb.resource('studio',{});
 
@@ -12763,177 +13397,6 @@ jb.component('studio.main-menu', {
 })
 ;
 
-jb.studio.prettyPrintComp = function(compId,comp) {
-  if (comp)
-    return "jb.component('" + compId + "', "
-      + jb.studio.prettyPrintWithPositions(comp).result + ')'
-}
-
-jb.studio.prettyPrint = function(profile,colWidth,tabSize,initialPath) {
-  return jb.studio.prettyPrintWithPositions(profile,colWidth,tabSize,initialPath).result;
-}
-
-jb.studio.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
-  colWidth = colWidth || 80;
-  tabSize = tabSize || 2;
-
-  var remainedInLine = colWidth;
-  var result = '';
-  var depth = 0;
-  var lineNum = 0;
-  var positions = {};
-
-  printValue(profile,initialPath || '');
-  return { result : result, positions : positions }
-
-  function sortedPropertyNames(obj) {
-    var props = jb.entries(obj)
-      .filter(p=>p[1] != null)
-      .map(x=>x[0]) // try to keep the order
-      .filter(p=>p.indexOf('$jb') != 0)
-
-    var comp_name = jb.compName(obj);
-    if (comp_name) { // tgp obj - sort by params def
-      var params = jb.compParams(jb.comps[comp_name]).map(p=>p.id);
-      props.sort((p1,p2)=>params.indexOf(p1) - params.indexOf(p2));
-    }
-    if (props.indexOf('$') > 0) { // make the $ first
-      props.splice(props.indexOf('$'),1);
-      props.unshift('$');
-    }
-    return props;
-  }
-
-  function printValue(val,path) {
-    positions[path] = lineNum;
-    if (!val) return;
-    if (val.$jb_arrayShortcut)
-      val = val.items;
-    if (Array.isArray(val)) return printArray(val,path);
-    if (typeof val === 'object') return printObj(val,path);
-    if (typeof val === 'string' && val.indexOf('$jbProbe:') == 0)
-      val = val.split('$jbProbe:')[1];
-    if (typeof val === 'function')
-      result += val.toString();
-    else if (typeof val === 'string' && val.indexOf('\n') == -1) 
-      result += "'" + val + "'";
-    else if (typeof val === 'string' && val.indexOf('\n') != -1) {
-      result += "`" + val.replace(/`/g,'\\`') + "`"
-      // depth++;
-      // result += "`";
-      // var lines = val.split('\n');
-      // lines.forEach((line,index)=>{
-      //     result += line.trim(); 
-      //     if(index<lines.length-1) 
-      //       newLine();
-      // })
-      // depth--;
-      // result += "`";
-    }  else
-      result += JSON.stringify(val);
-  }
-
-  function printObj(obj,path) {
-      var obj_str = flat_obj(obj);
-      if (!printInLine(obj_str)) { // object does not fit in parent line
-        depth++;
-        result += '{';
-        if (!printInLine(obj_str)) { // object does not fit in its own line
-          sortedPropertyNames(obj).forEach(function(prop,index,array) {
-              if (prop != '$')
-                newLine();
-              if (obj[prop] != null) {
-                printProp(obj,prop,path);
-                if (index < array.length -1)
-                  result += ', ';//newLine();
-              }
-          });
-        }
-        depth--;
-        newLine();
-        result += '}';
-      }
-  }
-  function quotePropName(p) {
-    if (p.match(/^[$a-zA-Z_][$a-zA-Z0-9_]*$/))
-      return p;
-    else
-      return `"${p}"`
-  }
-  function printProp(obj,prop,path) {
-    if (obj[prop] && obj[prop].$jb_arrayShortcut)
-      obj = obj(prop,obj[prop].items);
-
-    if (printInLine(flat_property(obj,prop))) return;
-
-    if (prop == '$')
-      result += '$: '
-    else
-      result += quotePropName(prop) + (jb.compName(obj[prop]) ? ' :' : ': ');
-    //depth++;
-    printValue(obj[prop],path+'~'+prop);
-    //depth--;
-  }
-  function printArray(array,path) {
-    if (printInLine(flat_array(array))) return;
-    result += '[';
-    depth++;
-    newLine();
-    array.forEach(function(val,index) {
-      printValue(val,path+'~'+index);
-      if (index < array.length -1) {
-        result += ', ';
-        newLine();
-      }
-    })
-    depth--;newLine();
-    result += ']';
-  }
-  function printInLine(text) {
-    if (remainedInLine < text.length || text.match(/:\s?{/) || text.match(/, {\$/)) return false;
-    result += text;
-    remainedInLine -= text.length;
-    return true;
-  }
-  function newLine() {
-    result += '\n';
-    lineNum++;
-    for (var i = 0; i < depth; i++) result += '               '.substr(0,tabSize);
-    remainedInLine = colWidth - tabSize * depth;
-  }
-  function flat_obj(obj) {
-    var props = sortedPropertyNames(obj)
-      .filter(p=>obj[p] != null)
-      .filter(x=>x!='$')
-      .map(prop => 
-      quotePropName(prop) + ': ' + flat_val(obj[prop]));
-    if (obj && obj.$) {
-      props.unshift("$: '" + obj.$+ "'");
-      return '{' + props.join(', ') + ' }'
-    }
-    return '{ ' + props.join(', ') + ' }'
-  }
-  function flat_property(obj,prop) {
-    if (jb.compName(obj[prop]))
-      return quotePropName(prop) + ' :' + flat_val(obj[prop]);
-    else
-      return quotePropName(prop) + ': ' + flat_val(obj[prop]);
-  }
-  function flat_val(val) {
-    if (Array.isArray(val)) return flat_array(val);
-    if (typeof val === 'object') return flat_obj(val);
-    if (typeof val === 'function') return val.toString();
-    if (typeof val === 'string') 
-      return "'" + val + "'";
-    else
-      return JSON.stringify(val); // primitives
-  }
-  function flat_array(array) {
-    return '[' + array.map(item=>flat_val(item)).join(', ') + ']';
-  }
-}
-;
-
 jb.component('studio.pickAndOpen', {
 	type: 'action',
 	params: [
@@ -12996,6 +13459,11 @@ jb.component('studio.toolbar', {
         title: 'jbEditor', 
         action :{$: 'studio.open-jb-editor', path: '%$studio/profile_path%' }, 
         style :{$: 'button.mdl-icon', icon: 'build' }
+      }, 
+      {$: 'button', 
+        title: 'Event Tracker', 
+        action :{$: 'studio.open-event-tracker' }, 
+        style :{$: 'button.mdl-icon', icon: 'hearing' }
       }, 
       {$: 'button', 
         title: 'show data', 
@@ -13065,11 +13533,12 @@ jb.component('studio-toolbar', {
 jb.component('editable-text.studio-primitive-text', {
   type: 'editable-text.style',
   impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
+      features :{$: 'field.databind', noUpdates: true },
       template: (cmp,state,h) => h('input', { 
-        value: cmp.jbModel(), 
-        onchange: e => cmp.jbModel(e.target.value), 
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
+          value: cmp.jbModel(), 
+          onchange: e => cmp.jbModel(e.target.value), 
+          onkeyup: e => cmp.jbModel(e.target.value,'keyup')
+      }),
 	  css: `
 { display: block; width: 146px; height: 19px; padding-left: 2px;
 	font-size: 12px; color: #555555; background-color: #fff; 
@@ -13077,11 +13546,29 @@ jb.component('editable-text.studio-primitive-text', {
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); 
 	transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; 
 }
-:focus { border-color: #66afe9; outline: 0; 
+:focus { width: 300px; transition: width: 1s; border-color: #66afe9; outline: 0; 
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
-::placeholder { color: #999; opacity: 1; }
-.focused {width: 300px; transition: width: 1s}`
+::placeholder { color: #999; opacity: 1; }`
 	}
+})
+
+jb.component('editable-text.jb-editor-floating-input', {
+  type: 'editable-text.style',
+  impl :{$: 'custom-style', 
+   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[ 
+        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
+            value: cmp.jbModel(),
+            onchange: e => cmp.jbModel(e.target.value),
+            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+        }),
+        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title)
+      ]),
+      css: '{ width: 400px; }',
+      features :[
+          {$: 'field.databind', noUpdates: true },
+          {$: 'mdl-style.init-dynamic'}
+      ],
+  }
 })
 
 jb.component('button.studio-script',{
@@ -13160,6 +13647,37 @@ jb.component('property-sheet.studio-properties', {
       >.property>*:last-child { margin-right:0 }`
   }
 })
+
+jb.component('property-sheet.studio-properties-in-tgp', {
+  type: 'group.style', 
+  impl :{$: 'custom-style', 
+    features :{$: 'group.init-group' }, 
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property' },[
+          h('label',{ class: 'property-title', title: ctrl.title}, ctrl.title),
+          h('div',{ class: 'input-and-toolbar'}, [
+            h(ctrl),
+            h(ctrl.jbComp.toolbar)  
+          ])
+    ]))),
+    css: `>.property { margin-bottom: 5px; display: flex }
+      >.property:last-child { margin-bottom:0px }
+      >.property>.input-and-toolbar { display: flex; }
+      >.property>.input-and-toolbar>.toolbar { height: 16px; margin-left: 10px; }
+      >.property>.property-title {
+        width: 75px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        vertical-align:top;
+        margin-top:2px;
+        font-size:14px;
+        margin-right: 10px;
+        margin-left: 7px;
+      },
+      >.property>*:last-child { margin-right:0 }`
+  }
+})
+
 
 jb.component('property-sheet.studio-plain', {
   type: 'group.style', 
@@ -13246,9 +13764,9 @@ jb.component('dialog.studio-multiline-edit',{
 				>.dialog-close:hover { opacity: .5 }
 				`,
 			features: [
-				{ $: 'dialog-feature.maxZIndexOnClick' },
-				{ $: 'dialog-feature.closeWhenClickingOutside' },
-				{ $: 'dialog-feature.cssClassOnLaunchingControl' },
+				{ $: 'dialog-feature.max-zIndex-on-click' },
+				{ $: 'dialog-feature.close-when-clicking-outside' },
+				{ $: 'dialog-feature.css-class-on-launching-element' },
 				{ $: 'dialog-feature.studio-position-under-property' }
 			]
 	}
@@ -13327,7 +13845,7 @@ jb.component('studio.search-component', {
         style :{$: 'editable-text.mdl-input', width: '200' }, 
         features: [
           {$: 'editable-text.helper-popup', 
-            features :{$: 'dialog-feature.nearLauncherLocation' }, 
+            features :{$: 'dialog-feature.near-launcher-position' }, 
             control :{$: 'studio.search-list' }, 
             popupId: 'search-component', 
             popupStyle :{$: 'dialog.popup' }
@@ -13453,7 +13971,7 @@ jb.component('studio.open-new-profile-dialog', {
       {$: 'css.height', height: '430', overflow: 'hidden' }, 
       {$: 'css.width', width: '450', overflow: 'hidden' }, 
       {$: 'dialog-feature.drag-title', id: 'new %$type%' }, 
-      {$: 'dialog-feature.nearLauncherLocation', offsetLeft: 0, offsetTop: 0 }, 
+      {$: 'dialog-feature.near-launcher-position', offsetLeft: 0, offsetTop: 0 }, 
       {$: 'group.auto-focus-on-first-input' },
       {$: 'dialog-feature.onClose', action:{ $call: 'onClose'}}
     ]
@@ -13531,7 +14049,7 @@ jb.component('studio.select-profile', {
   impl :{$: 'group', 
     title: 'itemlist-with-find', 
     style :{$: 'layout.vertical', spacing: 3 }, 
-    controls :[
+    controls: [
       {$: 'itemlist-container.search', 
         title: 'Search', 
         searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
@@ -13547,7 +14065,7 @@ jb.component('studio.select-profile', {
       {$: 'group', 
         title: 'categories and items', 
         style :{$: 'layout.horizontal', spacing: 3 }, 
-        controls :[
+        controls: [
           {$: 'picklist', 
             title: '', 
             databind: '%$SelectedCategory%', 
@@ -13581,7 +14099,7 @@ jb.component('studio.select-profile', {
                         value: '%code%'
                       }, 
                       autoSelectFirst: 'true', 
-                      cssForSelected: 'border-left: 2px #ccc solid; background: #eee'
+                      cssForSelected: 'box-shadow: 3px 0px 0 0 #304ffe inset; background: none !important'
                     }
                   ]
                 }, 
@@ -13603,14 +14121,18 @@ jb.component('studio.select-profile', {
               ]
             }, 
             controls: [
-              {$: 'button', 
+              {$: 'label', 
+                action: [{$: 'close-containing-popup' }, { $call: 'onSelect' }], 
                 title :{$: 'highlight', 
                   base: '%%', 
                   highlight: '%$itemlistCntrData/search_pattern%'
                 }, 
-                action: [{$: 'close-containing-popup' }, { $call: 'onSelect' }], 
-                style :{$: 'button.mdl-flat-ripple' }, 
-                features :{$: 'css', css: '{ text-align: left; width: 250px }' }
+                style :{$: 'label.span', level: 'h3' }, 
+                features: [
+                  {$: 'css', css: '{ text-align: left; }' }, 
+                  {$: 'css.padding', left: '4' }, 
+                  {$: 'css.width', width: '250', minMax: 'min' }
+                ]
               }
             ], 
             itemVariable: 'item', 
@@ -13643,11 +14165,11 @@ jb.component('studio.select-profile', {
         name: 'Categories', 
         value :{$: 'studio.categories-of-type', type: '%$type%' }
       }, 
-      {$: 'inner-resource', 
+      {$: 'var', 
         name: 'SelectedCategory', 
-        value: '%$Categories[0]%'
+        value: '%$Categories[0]%', mutable: true
       }, 
-      {$: 'inner-resource', name: 'SearchPattern', value: '' }, 
+      {$: 'var', name: 'SearchPattern', value: '', mutable: true }, 
       {$: 'group.itemlist-container' }
     ]
   }
@@ -13659,7 +14181,7 @@ jb.component('studio.open-new-page', {
     modal: true, 
     title: 'New Page', 
     style :{$: 'dialog.dialog-ok-cancel', 
-      features :{$: 'dialog-feature.autoFocusOnFirstInput' }
+      features :{$: 'dialog-feature.auto-focus-on-first-input' }
     }, 
     content :{$: 'group', 
       controls: [
@@ -13756,7 +14278,7 @@ jb.component('studio.data-resources', {
             itemVariable: 'item'
           }
         ], 
-        features :{$: 'inner-resource', name: 'selected_in_itemlist' }
+        features :{$: 'var', name: 'selected_in_itemlist', mutable: true }
       }
     ], 
     features :{$: 'group.wait', 
@@ -13815,71 +14337,6 @@ jb.component('studio.data-resource-menu', {
     }
 })
 
-;
-
-jb.component('studio.preview-widget', {
-  type: 'control',
-  params: [
-    { id: 'style', type: 'preview-style', dynamic: true, defaultValue :{$: 'studio.preview-widget-impl'}  },
-    { id: 'width', as: 'number'},
-    { id: 'height', as: 'number'},
-  ],
-  impl: ctx => 
-    jb.ui.ctrl(ctx,{
-      init: cmp => {
-        cmp.state.project = ctx.exp('%$studio/project%');
-        cmp.state.cacheKiller = 'cacheKiller='+(''+Math.random()).slice(10);
-        document.title = cmp.state.project + ' with jBart';
-      },
-      // afterViewInit: cmp => {
-      //   var iframe = cmp.base;
-      //   jb.ui.waitFor(()=>jb.path(iframe,['contentWindow','jb','ui','widgetLoaded'])).then(_ => {
-      //     var w = iframe.contentWindow;
-      //   })
-      // }
-    })
-})
-
-jb.studio.initPreview = function(preview_window,allowedTypes) {
-      var st = jb.studio;
-      st.previewWindow = preview_window;
-      st.previewjb = preview_window.jb;
-      st.serverComps = st.previewjb.comps;
-      st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
-
-      preview_window.jb.studio.studioWindow = window;
-      preview_window.jb.studio.previewjb = preview_window.jb;
-}
-
-jb.component('studio.preview-widget-impl', {
-  type: 'preview-style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('iframe', { 
-          id:'jb-preview', 
-          sandbox: 'allow-same-origin allow-forms allow-scripts', 
-          frameborder: 0, 
-          src: '/project/'+ state.project + '?' + state.cacheKiller
-      }),
-      css: `{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; width: %$$model/width%px; height: %$$model/height%px; }`
-  }
-})
-
-jb.component('studio.refresh-preview', {
-  type: 'action',
-  impl: _ => {}
-//    previewRefreshCounter++
-})
-
-jb.component('studio.wait-for-preview-iframe', {
-  impl: _ => 
-    jb.ui.waitFor(()=> 
-      jb.studio.previewWindow)
-//    previewRefreshCounter++
-})
-
-jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studio/page')
-      .startWith(1)
-      .map(e=>jb.resources.studio.project + '.' + jb.resources.studio.page);
 ;
 
 (function() {
@@ -13971,18 +14428,17 @@ st.jbEditorTree = class {
 	}
 	innerProfiles(path,val) {
 		return st.paramsOfPath(path)
-			.map(p=> ({ path: path + '~' + p.id, param: p}))
+			.map(p=> ({ path: path + (path.indexOf('~') == -1 ? '~impl' : '') + '~' + p.id, param: p}))
 			.filter(e=>st.valOfPath(e.path) != null || e.param.essential)
 			.map(e=>e.path)
 	}
-
 }
 
 
 Object.assign(st,{
 	jbEditorMoreParams: path =>
 		st.paramsOfPath(path)
-			.filter(e=>st.valOfPath(e.path) == null && !e.param.essential)
+			.filter(e=>st.valOfPath(path) == null && !e.param.essential)
 			.map(p=> path + '~' + p.id),
 	nonControlChildren: (path,includeFeatures) =>
 		st.paramsOfPath(path).filter(p=>
@@ -13997,7 +14453,14 @@ Object.assign(st,{
 				.filter(x=> x.indexOf('$jb_') != 0)
 				.filter(x=> !(noExtraElem && x =='length'))
 				.map(x=>x=='length'? val.length : x) // extra elem
-				.map(k=> path +'~'+k)
+				.map(k=> path +'~'+k);
+	},
+	asArrayChildren: path => { // support the case of single element - used by properties features
+		var val = st.valOfPath(path);
+		if (Array.isArray(val))
+			return st.arrayChildren(path,true)
+		else if (val)
+			return [path]
 	},
 
 	controlParams: path =>
@@ -14005,7 +14468,7 @@ Object.assign(st,{
 
 	summary: path => {
 		var val = st.valOfPath(path);
-		if (typeof val != 'object') return '';
+		if (val == null || typeof val != 'object') return '';
 		return Object.getOwnPropertyNames(val)
 			.filter(p=> p != '$')
 			.map(p=>val[p])
@@ -14174,11 +14637,10 @@ jb.component('studio.categories-of-type', {
   impl: (ctx,_type,marks,allCategory) => {
   	var comps = st.previewjb.comps;
   	var pts = st.PTsOfType(_type);
-  	var categories = [].concat.apply([],pts.map(pt=>
+  	var categories = jb.unique([].concat.apply([],pts.map(pt=>
   		(comps[pt].category||'').split(',').map(c=>c.split(':')[0])
   			.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
-  			.filter(x=>x)))
-  			.filter(jb.unique(x=>x))
+  			.filter(x=>x))))
   			.map(c=>({
   				name: c,
   				pts: ptsOfCategory(c)
@@ -14237,13 +14699,12 @@ jb.component('studio.non-control-children', {
 		st.nonControlChildren(path,includeFeatures)
 })
 
-jb.component('studio.array-children', {
+jb.component('studio.as-array-children', {
 	params: [ 
 		{id: 'path', as: 'string' },
-		{id: 'noExtraElem', as: 'boolean'}
 	],
-	impl: (ctx,path,noExtraElem) => 
-		st.arrayChildren(path,noExtraElem)
+	impl: (ctx,path) => 
+		st.asArrayChildren(path)
 })
 
 jb.component('studio.comp-name',{
@@ -14283,7 +14744,9 @@ jb.component('studio.comp-name-ref', {
 					return st.compNameOfPath(path);
 				else
 					st.setComp(path,value)
-			}
+			},
+			$jb_observable: cmp => 
+				st.refObservable(st.refOfPath(path),cmp,true)
 	})
 })
 
@@ -14304,7 +14767,9 @@ jb.component('studio.profile-as-text', {
 					if (newVal != null)
 						st.writeValueOfPath(path, newVal);
 				}
-			}
+			},
+			// $jb_observable: _ =>
+			// 	st.refOfPath(ctx.params.path())
 		})
 })
 
@@ -14327,7 +14792,6 @@ jb.component('studio.profile-value-as-text', {
       }
     })
 })
-
 
 jb.component('studio.insert-control',{
 	type: 'action',
@@ -14523,6 +14987,66 @@ jb.component('studio.icon-of-type',{
 
 })();;
 
+jb.component('studio.preview-widget', {
+  type: 'control',
+  params: [
+    { id: 'style', type: 'preview-style', dynamic: true, defaultValue :{$: 'studio.preview-widget-impl'}  },
+    { id: 'width', as: 'number'},
+    { id: 'height', as: 'number'},
+  ],
+  impl: ctx => 
+    jb.ui.ctrl(ctx,{
+      init: cmp => {
+        cmp.state.project = ctx.exp('%$studio/project%');
+        cmp.state.cacheKiller = 'cacheKiller='+(''+Math.random()).slice(10);
+        document.title = cmp.state.project + ' with jBart';
+      },
+    })
+})
+
+jb.studio.initPreview = function(preview_window,allowedTypes) {
+      var st = jb.studio;
+      st.previewWindow = preview_window;
+      st.previewjb = preview_window.jb;
+      st.serverComps = st.previewjb.comps;
+      st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
+
+      preview_window.jb.studio.studioWindow = window;
+      preview_window.jb.studio.previewjb = preview_window.jb;
+      st.initEventTracker();
+}
+
+jb.component('studio.preview-widget-impl', {
+  type: 'preview-style',
+  impl :{$: 'custom-style',
+      template: (cmp,state,h) => h('iframe', { 
+          id:'jb-preview', 
+          sandbox: 'allow-same-origin allow-forms allow-scripts', 
+          frameborder: 0, 
+          src: '/project/'+ state.project + '?' + state.cacheKiller
+      }),
+      css: `{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; width: %$$model/width%px; height: %$$model/height%px; }`
+  }
+})
+
+jb.component('studio.refresh-preview', {
+  type: 'action',
+  impl: _ => {}
+//    previewRefreshCounter++
+})
+
+jb.component('studio.wait-for-preview-iframe', {
+  impl: _ => 
+    jb.ui.waitFor(()=> 
+      jb.studio.previewWindow)
+//    previewRefreshCounter++
+})
+
+jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studio/page')
+      .startWith(1)
+      .map(e=>jb.resources.studio.project + '.' + jb.resources.studio.page);
+;
+
 jb.component('studio.open-control-tree', {
   type: 'action', 
   impl :{$: 'open-dialog', 
@@ -14611,10 +15135,7 @@ jb.component('studio.tree-menu', {
           title: 'Delete', 
           icon: 'delete', 
           shortcut: 'Delete', 
-          action: [
-            {$: 'write-value', to: '%$TgpTypeCtrl.expanded%', value: false }, 
-            {$: 'studio.delete', path: '%$path%' }
-          ]
+          action :{$: 'studio.delete', path: '%$path%' }
         }, 
         {$: 'menu.action', 
           title: 'Copy', 
@@ -14670,7 +15191,7 @@ jb.component('studio.control-tree', {
           }, 
           {$: 'tree.drag-and-drop' }, 
           {$: 'studio.control-tree.refresh-path-changes' }, 
-          {$: 'refresh-on-script-change' }
+          {$: 'studio.watch-script-changes' }
           // {$: 'tree.onMouseRight', 
           //   action :{$: 'studio.open-tree-menu', path: '%%' }
           // }
@@ -14679,7 +15200,7 @@ jb.component('studio.control-tree', {
     ], 
     features :[ 
         {$: 'css.padding', top: '10' },
-        //{$: 'group.studio-watch-path', path :{$: 'studio.currentProfilePath' } },
+        //{$: 'studio.watch-path', path :{$: 'studio.currentProfilePath' } },
     ]
   }
 })
@@ -14748,9 +15269,10 @@ jb.component('dialog.studio-floating', {
 			]),
 			features: [
 					{$: 'dialog-feature.drag-title', id: '%$id%'}, 
-					{$: 'dialog-feature.uniqueDialog', id: '%$id%', remeberLastLocation: true },
-					{$: 'dialog-feature.maxZIndexOnClick', minZIndex: 5000 },
-					{$: 'studio-dialog-feature.studioPopupLocation' },
+					{$: 'dialog-feature.unique-dialog', id: '%$id%', remeberLastLocation: true },
+					{$: 'dialog-feature.max-zIndex-on-click', minZIndex: 5000 },
+					{$: 'studio-dialog-feature.refresh-title' },
+					{$: 'studio-dialog-feature.studio-popup-location' },
 			],
 			css: `{ position: fixed;
 						background: #F9F9F9; 
@@ -14792,7 +15314,7 @@ jb.component('dialog.studio-floating', {
 	}
 })
 
-jb.component('studio-dialog-feature.studioPopupLocation',{
+jb.component('studio-dialog-feature.studio-popup-location',{
 	type: 'dialog-feature',
 	impl: ctx => ({
 		afterViewInit: cmp => {
@@ -14802,6 +15324,15 @@ jb.component('studio-dialog-feature.studioPopupLocation',{
 				dialog.el.classList.add('default-location')
 			}
 		}
+	})
+})
+
+jb.component('studio-dialog-feature.refresh-title', {
+	type: 'dialog-feature',
+	impl: ctx => ({
+		afterViewInit: cmp =>
+			jb.studio.scriptChange.subscribe(_=>
+				cmp.recalcTitle && cmp.recalcTitle())
 	})
 })
 
@@ -14910,7 +15441,7 @@ jb.component('studio.open-properties', {
     features: [
       {
         $if: '%$focus%', 
-        then :{$: 'dialog-feature.autoFocusOnFirstInput' }
+        then :{$: 'dialog-feature.auto-focus-on-first-input' }
       }, 
       {$: 'dialog-feature.keyboard-shortcut', 
         shortcut: 'Ctrl+Left', 
@@ -14937,7 +15468,6 @@ jb.component('studio.properties', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'group', 
-    title: '', 
     style :{$: 'group.studio-properties-accordion' }, 
     controls: [
       {$: 'group', 
@@ -14973,7 +15503,6 @@ jb.component('studio.properties', {
     ], 
     features: [
       {$: 'group.dynamic-titles' }, 
-      {$: 'group.studio-watch-path', path: '%$path%' }, 
       {$: 'hidden', 
         showCondition :{$: 'studio.has-param', 
           remark: 'not a control', 
@@ -14989,8 +15518,7 @@ jb.component('studio.properties-in-tgp',{
   type: 'control',
   params: [ {id: 'path', as: 'string' } ],
   impl :{$: 'group',
-    style :{$: 'property-sheet.studio-properties'},
-    features :{$: 'group.studio-watch-path', path: '%$path%'},
+    style :{$: 'property-sheet.studio-properties-in-tgp'},
     controls :{$: 'dynamic-controls', 
         controlItems :{$: 'studio.non-control-children', path: '%$path%', includeFeatures: true },
         genericControl :{$: 'studio.property-field', path: '%$controlItem%' } 
@@ -15042,26 +15570,6 @@ jb.component('studio.property-label',{
 		title :{$: 'studio.prop-name', path: '%$path%' },
 	}
 });
-
-jb.component('studio.property-primitive2', {
-  type: 'control', 
-  params: [
-    { id: 'path', as: 'string' }
-  ], 
-  impl :{$: 'editable-text', 
-    style :{$: 'editable-text.studio-primitive-text' }, 
-    title :{$: 'studio.prop-name', path: '%$path%' }, 
-    databind :{$: 'studio.ref', path: '%$path%' }, 
-    features: [
-      {$: 'studio.undo-support', path: '%$path%' }, 
-      {$: 'studio.property-toolbar-feature', path: '%$path%'},
-      // {$: 'editable-text.suggestions-input-feature', 
-      //   path: '%$path%', 
-      //   action :{$: 'studio.jb-open-suggestions', path: '%$path%' }
-      // }
-    ]
-  }
-})
 
 jb.component('studio.property-script', {
   type: 'control', 
@@ -15134,10 +15642,11 @@ jb.component('studio.property-slider', {
 		title :{$: 'studio.prop-name', path: '%$path%' },
 		databind :{$: 'studio.ref', path: '%$path%' },
 		style :{$: 'editable-number.slider', width: '120' },
-		min: '%$paramDef/min%',
-		max: '%$paramDef/max%',
-		step: '%$paramDef/step%',
-		features :{$: 'css', css: '{ margin-left: -5px; }' },
+		min: { $firstSucceeding : ['%$paramDef/min%',0] },
+		max: { $firstSucceeding : ['%$paramDef/max%',100] },
+		step: { $firstSucceeding : ['%$paramDef/step%',1] } ,
+    features :{$: 'css', 
+      css: '>.slider-text { margin-left: -20px; padding-right: 15px; margin-top: 2px; }' },
 	}
 })
 
@@ -15154,6 +15663,7 @@ jb.component('studio.property-tgp', {
             databind: '%$expanded%', 
             style :{$: 'editable-boolean.expand-collapse' }, 
             features: [
+              {$: 'studio.watch-path', path: '%$path%', includeChildren: true },
               {$: 'css', 
                 css: '{ position: absolute; margin-left: -20px; margin-top: 2px }'
               }, 
@@ -15168,7 +15678,7 @@ jb.component('studio.property-tgp', {
                     }, 
                     {$: 'not-equals', 
                       item1 :{$: 'studio.comp-name', path: '%$path%' }, 
-                      item2: 'customStyle'
+                      item2: 'custom-style'
                     }
                   ]
                 }
@@ -15183,6 +15693,7 @@ jb.component('studio.property-tgp', {
             }, 
             style :{$: 'picklist.groups' }, 
             features: [
+              {$: 'picklist.onChange', action: {$: 'write-value', to: '%$expanded%', value: true} },
               {$: 'css', 
                 css: '{ padding: 0 0; width: 150px; font-size: 12px; height: 23px;}'
               }, 
@@ -15195,9 +15706,8 @@ jb.component('studio.property-tgp', {
       {$: 'group', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          {$: 'watch-ref', 
-            ref :{$: 'studio.comp-name', path: '%$path%' }
-          }, 
+          {$: 'studio.watch-path', path: '%$path%', strongRefresh: true, includeChildren: true },
+          {$: 'watch-ref', ref: '%$expanded%', strongRefresh: true },
           {$: 'hidden', 
             showCondition :{
               $and: [
@@ -15210,7 +15720,7 @@ jb.component('studio.property-tgp', {
                 },
                 {$: 'not-equals', 
                   item1 :{$: 'studio.comp-name', path: '%$path%' }, 
-                  item2: 'customStyle'
+                  item2: 'custom-style'
                 }
               ]
             }
@@ -15223,7 +15733,7 @@ jb.component('studio.property-tgp', {
     ], 
     features: [
       {$: 'studio.property-toolbar-feature', path: '%$path%' },
-      {$: 'inner-resource', name: 'expanded', value: false }
+      {$: 'var', name: 'expanded', value: false, mutable: true }
     ]
   }
 })
@@ -15262,9 +15772,7 @@ jb.component('studio.property-tgp-in-array', {
           {$: 'editable-boolean', 
             databind: '%$expanded%', 
             style :{$: 'editable-boolean.expand-collapse' }, 
-            features: [
-              {$: 'css.padding', top: '4' }
-            ]
+            features: [{$: 'css.padding', top: '4' }]
           }, 
           {$: 'label', 
             title :{$: 'pipeline', 
@@ -15274,26 +15782,28 @@ jb.component('studio.property-tgp-in-array', {
               ]
             }, 
             style :{$: 'label.p' }, 
-            features :{$: 'css.width', width: '100' }
+            features: [
+              {$: 'css.width', width: '100' }, 
+              {$: 'css.class', class: 'drag-handle' }
+            ]
           }, 
           {$: 'label', 
             title :{$: 'studio.summary', path: '%$path%' }, 
             style :{$: 'label.p' }, 
-            features :{$: 'css.width', width: '335' }
+            features: [
+              {$: 'css.width', width: '335' }, 
+              {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
+            ]
           }, 
           {$: 'studio.property-toolbar', 
             features :{$: 'css', css: '{ position: absolute; left: 20px }' }, 
             path: '%$path%'
           }
-        ], 
-        features: []
+        ]
       }, 
       {$: 'group', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          // {$: 'watch-ref', 
-          //   ref :{$: 'studio.comp-name', path: '%$path%' }
-          // }, 
           {$: 'feature.if', showCondition: '%$expanded%', watch: true }, 
           {$: 'css', css: '{ margin-left: 10px; margin-bottom: 4px;}' }
         ]
@@ -15301,7 +15811,7 @@ jb.component('studio.property-tgp-in-array', {
     ], 
     features: [
       {$: 'css.margin', left: '-100' }, 
-      {$: 'inner-resource', name: 'expanded', value: false }
+      {$: 'var', name: 'expanded', value: {$:'studio.is-new', path: '%$path%'} , mutable: true }
     ]
   }
 })
@@ -15316,14 +15826,14 @@ jb.component('studio.property-array', {
         title: 'items', 
         controls: [
           {$: 'itemlist', 
-            items :{$: 'studio.array-children', path: '%$path%', noExtraElem: true }, 
+            items :{$: 'studio.as-array-children', path: '%$path%' }, 
             controls :{$: 'group', 
               style :{$: 'property-sheet.studio-plain' }, 
               controls :{$: 'studio.property-tgp-in-array', path: '%$arrayItem%' }
             }, 
             itemVariable: 'arrayItem', 
             features: [
-              {$: 'hidden', showCondition: true }, 
+              {$: 'studio.watch-path', path: '%$path%', strongRefresh: true},
               {$: 'itemlist.divider' }, 
               {$: 'itemlist.drag-and-drop' }
             ]
@@ -15352,6 +15862,8 @@ jb.component('studio.tgp-path-options',{
 })
 
 ;
+
+(function() {
 
 jb.component('studio.pick', {
 	type: 'action',
@@ -15496,14 +16008,6 @@ function showBox(cmp,profElem,_window,previewOffset) {
 	if (profElem.offset() == null || $('#jb-preview').offset() == null) 
 		return;
 
-	// cmp.top = previewOffset + profElem.offset().top;
-	// cmp.left = profElem.offset().left;
-	// if (profElem.outerWidth() == $(_window.document.body).width())
-	// 	cmp.width = (profElem.outerWidth() -10);
-	// else
-	// 	cmp.width = profElem.outerWidth();
-	// cmp.height = profElem.outerHeight();
-    //	cmp.title = jb.studio.shortTitle(pathFromElem(_window,profElem));
 	cmp.setState({
 		top: previewOffset + profElem.offset().top,
 		left: profElem.offset().left,
@@ -15513,18 +16017,27 @@ function showBox(cmp,profElem,_window,previewOffset) {
 		titleTop: previewOffset + profElem.offset().top - 20,
 		titleLeft: profElem.offset().left
 	});
+}
 
-	// var $el = $(cmp.base);
-	// var $titleText = $el.find('.title .text');
-//	console.log('selected',profElem.outerWidth(),profElem.outerHeight());
-	// Array.from(profElem.parents())
-	// 	.forEach(el=>console.log('parent',$(el).outerWidth(),$(el).outerHeight()))	
-	// $el.find('.title .text').text(cmp.title);
+function highlight(elems) {
+	var boxes = [];
+	elems.map(el=>$(el))
+		.forEach($el => {
+			var $box = $('<div class="jbstudio_highlight_in_preview"/>');
+			$box.css({ position: 'absolute', background: 'rgb(193, 224, 228)', border: '1px solid blue', opacity: '1', zIndex: 5000 }); // cannot assume css class in preview window
+			var offset = $el.offset();
+			$box.css('left',offset.left).css('top',offset.top).width($el.outerWidth()).height($el.outerHeight());				
+			if ($box.width() == $(_window.document.body).width())
+				$box.width($box.width()-10);
+			boxes.push($box[0]);
+	})
 
-	// cmp.titleBelow = top - $titleText.outerHeight() -6 < $(_window).scrollTop();
-	// cmp.titleTop = cmp.titleBelow ? cmp.top + cmp.height : cmp.top - $titleText.outerHeight() -6;
-	// cmp.titleLeft = cmp.left + (cmp.width - $titleText.outerWidth())/2;
-	// $el.find('.title .triangle').css({ marginLeft: $titleText.outerWidth()/2-6 })
+	$(_window.document.body).append($(boxes));	
+
+	$(boxes).css({ opacity: 0.5 }).
+		fadeTo(500,0,function() {
+			$(boxes).remove();
+		});
 }
 
 jb.component('studio.highlight-in-preview',{
@@ -15543,72 +16056,12 @@ jb.component('studio.highlight-in-preview',{
 			elems = Array.from(document.querySelectorAll('[jb-ctx]'))
 			.filter(e=>
 				jb.ctxDictionary[e.getAttribute('jb-ctx')].path == path)
-
-		var boxes = [];
-		
-//		$('.jbstudio_highlight_in_preview').remove();
-		
-		elems.map(el=>$(el))
-			.forEach($el => {
-				var $box = $('<div class="jbstudio_highlight_in_preview"/>');
-				$box.css({ position: 'absolute', background: 'rgb(193, 224, 228)', border: '1px solid blue', opacity: '1', zIndex: 5000 }); // cannot assume css class in preview window
-				var offset = $el.offset();
-				$box.css('left',offset.left).css('top',offset.top).width($el.outerWidth()).height($el.outerHeight());				
-				if ($box.width() == $(_window.document.body).width())
-					$box.width($box.width()-10);
-				boxes.push($box[0]);
-		})
-
-		$(_window.document.body).append($(boxes));	
-
-		$(boxes).css({ opacity: 0.5 }).
-			fadeTo(500,0,function() {
-				$(boxes).remove();
-			});
+	
+		highlight(elems);
   }
 })
-;
 
-(function() {
-var st = jb.studio;
-
-jb.component('studio.save-components', {
-	params: [
-		{ id: 'force',as: 'boolean', type: 'boolean' }
-	],
-	impl : (ctx,force) => 
-		jb.rx.Observable.from(Object.getOwnPropertyNames(st.previewjb.comps))
-			.filter(id=>id.indexOf('$jb') != 0)
-			.filter(id=>st.previewjb.comps[id] != st.serverComps[id])
-			.concatMap(id=>{
-				var original = st.serverComps[id] ? st.prettyPrintComp(id,st.serverComps[id]) : '';
-				st.message('saving ' + id);
-				if (force && !original)
-					original = `jb.component('${id}', {`;
-
-				return $.ajax({ 
-					url: `/?op=saveComp&comp=${id}&project=${ctx.exp('%$studio/project%')}&force=${force}`, 
-					type: 'POST', 
-					data: JSON.stringify({ original: original, toSave: st.compAsStr(id) }),
-					headers: { 'Content-Type': 'application/json; charset=UTF-8' } 
-				}).then(
-					res=>({ res: res , id: id }),
-					e=> { throw { e: e , id: id } }
-				)
-			})
-			.catch(e=>{
-				st.message('error saving: ' + e.e);
-				jb.logException(e,'error while saving ' + e.id)
-			})
-			.subscribe(entry=>{
-				var result = entry.res;
-				st.message((result.type || '') + ': ' + (result.desc || '') + (result.message || ''), result.type != 'success');
-				if (result.type == 'success')
-					st.serverComps[entry.id] = st.previewjb.comps[entry.id];
-			})
-});
-
-})();;
+})();
 
 jb.component('studio.property-toolbar-feature', {
   type: 'feature', 
@@ -15677,10 +16130,7 @@ jb.component('studio.open-property-menu', {
           title: 'Delete', 
           icon: 'delete', 
           shortcut: 'Delete', 
-          action: [
-            {$: 'write-value', to: '%$TgpTypeCtrl.expanded%', value: false }, 
-            {$: 'studio.delete', path: '%$path%' }
-          ]
+          action :{$: 'studio.delete', path: '%$path%' }
         }
       ]
     }
@@ -15688,6 +16138,47 @@ jb.component('studio.open-property-menu', {
 })
 
 ;
+
+(function() {
+var st = jb.studio;
+
+jb.component('studio.save-components', {
+	params: [
+		{ id: 'force',as: 'boolean', type: 'boolean' }
+	],
+	impl : (ctx,force) => 
+		jb.rx.Observable.from(Object.getOwnPropertyNames(st.previewjb.comps))
+			.filter(id=>id.indexOf('$jb') != 0)
+			.filter(id=>st.previewjb.comps[id] != st.serverComps[id])
+			.concatMap(id=>{
+				var original = st.serverComps[id] ? st.prettyPrintComp(id,st.serverComps[id]) : '';
+				st.message('saving ' + id);
+				if (force && !original)
+					original = `jb.component('${id}', {`;
+
+				return $.ajax({ 
+					url: `/?op=saveComp&comp=${id}&project=${ctx.exp('%$studio/project%')}&force=${force}`, 
+					type: 'POST', 
+					data: JSON.stringify({ original: original, toSave: st.compAsStr(id) }),
+					headers: { 'Content-Type': 'application/json; charset=UTF-8' } 
+				}).then(
+					res=>({ res: res , id: id }),
+					e=> { throw { e: e , id: id } }
+				)
+			})
+			.catch(e=>{
+				st.message('error saving: ' + e.e);
+				jb.logException(e,'error while saving ' + e.id)
+			})
+			.subscribe(entry=>{
+				var result = entry.res;
+				st.message((result.type || '') + ': ' + (result.desc || '') + (result.message || ''), result.type != 'success');
+				if (result.type == 'success')
+					st.serverComps[entry.id] = st.previewjb.comps[entry.id];
+			})
+});
+
+})();;
 
 jb.component('studio.open-project', {
   type: 'action', 
@@ -15755,6 +16246,101 @@ jb.component('studio.choose-project', {
 (function() {
   var st = jb.studio;
 
+jb.component('studio.suggestions-itemlist', {
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'itemlist', 
+    items: '%$suggestionData/options%', 
+    controls :{$: 'label', 
+      title: '%text%',
+//      title: {$: 'highlight', base: '%text%', highlight: '%$suggestionData/tail%'},
+    }, 
+    watchItems: true, 
+    features: [
+      {$: 'itemlist.studio-refresh-suggestions-options', 
+        path: '%$path%', 
+//        expressionOnly: true
+      }, 
+      {$: 'itemlist.selection', 
+        databind: '%$suggestionData/selected%', 
+        onDoubleClick :{$: 'studio.paste-suggestion' }, 
+        autoSelectFirst: true
+      }, 
+      {$: 'itemlist.keyboard-selection', 
+        onEnter : [
+          {$: 'studio.paste-suggestion' },
+        ], 
+        autoFocus: false
+      }, 
+      {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' }, 
+      {$: 'css.width', width: '300', overflow: 'auto', minMax: 'min' }, 
+      {$: 'css', 
+        css: '{ position: absolute; z-index:1000; background: white }'
+      }, 
+      {$: 'css.border', width: '1', color: '#cdcdcd' }, 
+      {$: 'css.padding', top: '2', left: '3', selector: 'li' },
+      {$: 'hidden', showCondition :{ $notEmpty: '%$suggestionData/options%' } }, 
+    ]
+  }
+})
+
+jb.component('itemlist.studio-refresh-suggestions-options', {
+  type: 'feature',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'expressionOnly', as: 'boolean'}
+  ],
+  impl: ctx => ({
+      afterViewInit: cmp => {
+        var selectionKeySource = cmp.ctx.vars.selectionKeySource;
+        var keydown = selectionKeySource.keydown.takeUntil( cmp.destroyed );
+        var input = selectionKeySource.input;
+
+        keydown
+          .delay(1) // we use keydown - let the input fill itself
+          .debounceTime(20) // solves timing of closing the floating input
+          .startWith(1) // compensation for loosing the first event from selectionKeySource
+          // .map(e=> 
+          //     input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
+          .distinctUntilChanged(_=>
+            input.value) // compare input value - if input was not changed - leave it. Alt-Space can be used here
+          .flatMap(_=>
+            getProbe())
+          .map(res=>
+              res && res.finalResult && res.finalResult[0] && res.finalResult[0].in)
+          .map(probeCtx=> 
+            new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,ctx.params.path))
+          .catch(e=>
+            jb.logException(e,'suggestions'))
+          .distinctUntilChanged((e1,e2)=>
+            e1.key == e2.key) // compare options - if options are the same - leave it.
+          .do(e=>jb.logPerformance('suggestions',e))
+          .subscribe(e=> {
+              if (!jb.val(cmp.ctx.exp('%$suggestionData%'))) // after dialog closed
+                return; 
+              cmp.ctx.run({$:'write-value', to: '%$suggestionData/tail%', value: ctx => e.tail })
+              cmp.ctx.run({$:'write-value', to: '%$suggestionData/options%', value: ctx => e.options });
+          });
+
+        function getProbe() {
+          if (cmp.probeResult)
+            return [cmp.probeResult];
+          var _probe = jb.rx.Observable.fromPromise(ctx.run({$: 'studio.probe', path: ctx.params.path }));
+          _probe.subscribe(res=>
+            cmp.probeResult = res);
+          // do not wait more than 500 mSec
+          return _probe.race(jb.rx.Observable.of({finalResult: [ctx] }).delay(500))
+            .catch(e=>
+                jb.logException(e,'in probe exception'))
+        }
+      }
+  })
+})
+
+jb.component('studio.show-suggestions', {
+  impl: ctx =>
+    new st.suggestions(ctx.data,false).suggestionsRelevant()
+})
+
 jb.component('studio.property-primitive', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
@@ -15762,53 +16348,27 @@ jb.component('studio.property-primitive', {
     title :{$: 'studio.prop-name', path: '%$path%' }, 
     controls: [
       {$: 'editable-text', 
-        title: '%', 
         databind :{$: 'studio.ref', path: '%$path%' }, 
         style :{$: 'editable-text.studio-primitive-text' }, 
         features: [
           {$: 'studio.undo-support', path: '%$path%' }, 
           {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
-          {$: 'field.debounce-databind', debounceTime: '500' },
+          {$: 'editable-text.helper-popup', 
+            showHelper :{$: 'studio.show-suggestions' },
+            features :{$: 'dialog-feature.near-launcher-position' }, 
+            control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
+            popupId: 'suggestions', 
+            popupStyle :{$: 'dialog.popup' }
+          }, 
         ]
       }, 
-      {$: 'itemlist', 
-        items: '%$suggestionCtx/options%', 
-        controls :{$: 'group', 
-          style :{$: 'layout.flex', align: 'space-between', direction: 'row' }, 
-          controls: [
-            {$: 'label', 
-              title: '%text%', 
-              features :{$: 'css.padding', top: '', left: '3', bottom: '' }
-            }, 
-            {$: 'button', 
-              title: 'select and close', 
-              style :{$: 'button.mdl-icon-12', icon: 'done' },
-              action :{$: 'studio.paste-suggestion', close: true}, 
-            }
-          ]
-        }, 
-        watchItems: true, 
-        features: [
-          {$: 'itemlist.studio-suggestions-options' }, 
-          {$: 'itemlist.selection', 
-            databind: '%$suggestionCtx/selected%', 
-            onDoubleClick :{$: 'studio.paste-suggestion'}, 
-            autoSelectFirst: true
-          }, 
-          {$: 'hidden', showCondition: '%$suggestionCtx/show%' }, 
-          {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' }, 
-          {$: 'css.width', width: '300', overflow: 'auto' }, 
-          {$: 'css', 
-            css: '{ position: absolute; z-index:1000; background: white }'
-          }, 
-          {$: 'css.border', width: '1', color: '#cdcdcd' }, 
-          {$: 'css.padding', top: '2', left: '3', selector: 'li' }
-        ]
-      }
     ], 
     features: [
-      {$: 'group.studio-suggestions', path: '%$path%', expressionOnly: true }, 
-      {$: 'studio.property-toolbar-feature', path: '%$path%' },
+      {$: 'var', 
+        name: 'suggestionData', 
+        value :{$: 'object', selected: '', options: [], path: '%$path%' }, mutable: true
+      }, 
+//      {$: 'studio.property-toolbar-feature', path: '%$path%' },
     ]
   }
 })
@@ -15817,44 +16377,65 @@ jb.component('studio.jb-floating-input', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'group', 
-    controls: [
-      {$: 'editable-text', 
+     controls:{$: 'editable-text', 
+        title :{$: 'studio.prop-name', path: '%$path%' },
         databind :{$: 'studio.profile-value-as-text', path: '%$path%' }, 
         updateOnBlur: true, 
-        style :{$: 'editable-text.mdl-input', width: '400' }, 
+        style :{$: 'editable-text.jb-editor-floating-input'}, 
         features: [
-          {$: 'studio.undo-support', path: '%$path%' }, 
-          {$: 'css.padding', left: '4', right: '4' },
-          {$: 'feature.dont-generate-change-detection-events' },
-        ]
-      }, 
-      {$: 'itemlist-with-groups', 
-        items: '%$suggestionCtx/options%', 
-        controls :{$: 'label', title: '%text%' }, 
-        watchItems: true, 
-        features: [
-          {$: 'itemlist.studio-suggestions-options' }, 
-          {$: 'itemlist.selection', databind: '%$suggestionCtx/selected%',
-            onDoubleClick: ctx => ctx.data.paste(ctx),
-            autoSelectFirst: true
+          {$: 'var', 
+            name: 'suggestionData', 
+            value :{$: 'object', selected: '', options: [], path: '%$path%' }, 
+            mutable: true
           }, 
-          {$: 'hidden', showCondition: '%$suggestionCtx/show%' }, 
-          {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' }, 
-          {$: 'css.padding', top: '3', left: '3', selector: 'li' }
-        ]
-      }
-    ], 
-    features : [
-      {$: 'group.studio-suggestions', 
-        path: '%$path%', 
-        closeFloatingInput: [
-          {$: 'close-containing-popup', OK: true }, 
-          {$: 'tree.regain-focus' }
-        ]
+          {$: 'studio.undo-support', path: '%$path%' }, 
+          {$: 'editable-text.helper-popup', 
+            showHelper :{$: 'studio.show-suggestions' },
+            features :{$: 'dialog-feature.near-launcher-position' }, 
+            control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
+            popupId: 'suggestions', 
+            popupStyle :{$: 'dialog.popup' }
+          }, 
+        ],
       },
-    ]
-  }
+      features :[ 
+      {$: 'css.padding', left: '4', right: '4' },
+      {$: 'feature.onEnter', action: 
+        [
+          { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' },
+          { $: 'tree.regain-focus'}
+        ]
+        },
+      ],
+    } 
 })
+//       {$: 'itemlist-with-groups', 
+//         items: '%$suggestionCtx/options%', 
+//         controls :{$: 'label', title: '%text%' }, 
+//         watchItems: true, 
+//         features: [
+//           {$: 'itemlist.studio-suggestions-options' }, 
+//           {$: 'itemlist.selection', databind: '%$suggestionCtx/selected%',
+//             onDoubleClick: ctx => ctx.data.paste(ctx),
+//             autoSelectFirst: true
+//           }, 
+//           {$: 'hidden', showCondition: '%$suggestionCtx/show%' }, 
+//           {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' }, 
+//           {$: 'css.padding', top: '3', left: '3', selector: 'li' }
+//         ]
+//       }
+//     ], 
+//     features : [
+//       {$: 'group.studio-suggestions', 
+//         path: '%$path%', 
+//         closeFloatingInput: [
+//           {$: 'close-containing-popup', OK: true }, 
+//           {$: 'tree.regain-focus' }
+//         ]
+//       },
+//     ]
+//   }
+// })
 
 jb.component('studio.paste-suggestion', {
   type: 'control', 
@@ -15896,40 +16477,41 @@ st.suggestions = class {
   }
 
   extendWithOptions(probeCtx,path) {
-    this.options = [];
-    probeCtx = probeCtx || st.previewjb.initialCtx;
+    var options = [];
+    probeCtx = probeCtx || new st.previewjb.jbCtx();
     var vars = jb.entries(jb.extend({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources))
         .map(x=>new ValueOption('$'+x[0],x[1],this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
         .filter(x=>['$window'].indexOf(x.toPaste) == -1)
 
     if (this.inputVal.indexOf('=') == 0 && !this.expressionOnly)
-      this.options = st.PTsOfPath(path).map(compName=> {
+      options = st.PTsOfPath(path).map(compName=> {
             var name = compName.substring(compName.indexOf('.')+1);
             var ns = compName.substring(0,compName.indexOf('.'));
             return new CompOption(compName, compName, ns ? `${name} (${ns})` : name, st.getComp(compName).description || '')
         })
     else if (this.tailSymbol == '%') 
-      this.options = [].concat.apply([],jb.toarray(probeCtx.exp('%%'))
+      options = [].concat.apply([],jb.toarray(probeCtx.exp('%%'))
         .map(x=>
           jb.entries(x).map(x=> new ValueOption(x[0],x[1],this.pos,this.tail))))
         .concat(vars)
     else if (this.tailSymbol == '%$') 
-      this.options = vars
+      options = vars
     else if (this.tailSymbol == '/' || this.tailSymbol == '.')
-      this.options = [].concat.apply([],
+      options = [].concat.apply([],
         jb.toarray(probeCtx.exp(this.base))
           .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail))) )
 
-    this.options = this.options
-        .filter( jb.unique(x=>x.toPaste) )
+    options = options
+        .filter( jb.inefficientUnique(x=>x.toPaste) )
         .filter(x=> x.toPaste != this.tail)
         .filter(x=>
           this.tail == '' || typeof x.toPaste != 'string' || (x.description + x.toPaste).toLowerCase().indexOf(this.tail.toLowerCase()) != -1)
     if (this.tail)
-      this.options.sort((x,y)=> (y.toPaste.toLowerCase().indexOf(this.tail.toLowerCase()) == 0 ? 1 : 0) - (x.toPaste.toLowerCase().indexOf(this.tail.toLowerCase()) == 0 ? 1 : 0));
+      options.sort((x,y)=> (y.toPaste.toLowerCase().indexOf(this.tail.toLowerCase()) == 0 ? 1 : 0) - (x.toPaste.toLowerCase().indexOf(this.tail.toLowerCase()) == 0 ? 1 : 0));
 
-    this.key = this.options.map(o=>o.toPaste).join(',');
+    this.options = options;
+    this.key = options.map(o=>o.toPaste).join(','); // build hash for the options to detect options change
     return this;
   }
 }
@@ -15948,177 +16530,132 @@ class ValueOption {
         return ` (${val.substring(0,20)}...)`;
       else if (typeof val == 'string' || typeof val == 'number' || typeof val == 'boolean')
         return ` (${val})`;
+      else if (Array.isArray(val))
+        return ` (${val.length} items)`
       return ``;
     }
-    paste(ctx,close) {
-      var toPaste = this.toPaste + ((typeof this.value != 'object' || close) ? '%' : '/');
-      var suggestionCtx = ctx.vars.suggestionCtx;
-      var input = suggestionCtx.input;
+    paste(ctx,_close) {
+      var close = typeof this.value != 'object' || Array.isArray(this.value) || _close;
+
+      var toPaste = this.toPaste + (close ? '%' : '/');
+      var input = ctx.vars.selectionKeySource.input;
       var pos = this.pos + 1;
       input.value = input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos);
-      suggestionCtx.show = false;
-      suggestionCtx.selected = null;
+      this.writeValue(ctx);
+//      suggestionCtx.selected = null;
       return jb.delay(1,ctx).then (() => {
         input.selectionStart = pos + toPaste.length;
         input.selectionEnd = input.selectionStart;
       })
     }
     writeValue(ctx) {
-      var input = ctx.vars.suggestionCtx.input, path = ctx.vars.suggestionCtx.path;
+      var input = ctx.vars.selectionKeySource.input;
+      var path = ctx.exp('%$suggestionData/path%','string');
       st.writeValueOfPath(path,input.value);
     }
 }
 
 class CompOption {
-    constructor(toPaste,value,text,description,) {
+    constructor(toPaste,value,text,description) {
        this.toPaste = toPaste;
        this.value = value;
        this.text = text;
        this.description = description;
     }
     paste(ctx) {
-      ctx.vars.suggestionCtx.input.value = '=' + this.toPaste;
-      ctx.vars.suggestionCtx.closeAndWriteValue();
+      var input = ctx.vars.selectionKeySource.input;
+      input.value = '=' + this.toPaste;
+      this.writeValue(ctx);
+      // dirty design ?
+//      ctx.run({$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' });
+        // var closeAndWriteValue = _ => {
+        //   params.closeFloatingInput();
+        //   var option = input.value.indexOf('=') == 0 ? new CompOption(input.value.substr(1)) : new ValueOption();
+        //   option.writeValue(cmp.ctx);
+        // };
     }
     writeValue(ctx) {
-      st.setComp(ctx.vars.suggestionCtx.path,this.toPaste);
-//      ctx.run({$:'studio.expand-and-select-first-child-in-jb-editor' });
+      st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste);
+      ctx.run({$:'studio.expand-and-select-first-child-in-jb-editor' });
     }
 }
 
 
-jb.component('group.studio-suggestions', {
-  type: 'feature', category: 'group:0',
-  params: [
-    { id: 'path', as: 'string' },
-    { id: 'closeFloatingInput', type: 'action', dynamic:true },
-    { id: 'expressionOnly', type: 'boolean', as: 'boolean' }
-  ], 
-  impl: ctx => {
-    var suggestionCtx = { path: ctx.params.path, options: [], show: false };
-    return {
-      observable: () => {}, // register jbEmitter
-      extendCtx: ctx2 =>
-        ctx2.setVars({suggestionCtx: suggestionCtx }),
+})();
 
-      afterViewInit: cmp=> {
-        var input = $(cmp.base).findIncludeSelf('input')[0];
-        if (!input)
-          return;
-        suggestionCtx.input = input;
-        var inputClosed = cmp.destroyed;
+(function() {
+  var st = jb.studio;
 
-        cmp.keyEm = jb.rx.Observable.fromEvent(input, 'keydown')
-          .takeUntil(inputClosed);
-        suggestionCtx.keyEm = cmp.keyEm;
-        suggestionCtx.closeAndWriteValue = _ =>{
-          ctx.params.closeFloatingInput();
-          var option = input.value.indexOf('=') == 0 ? new CompOption(input.value.substr(1)) : new ValueOption();
-          option.writeValue(cmp.ctx);
-        };
-        suggestionCtx.refresh = _ =>
-          cmp.changeDt.detectChanges();
+jb.component('studio.edit-source', {
+	type: 'action',
+	params: [
+		{ id: 'path', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } }
+	],
+	impl: {
+		$: 'open-dialog',
+		title :{$: 'studio.short-title', path: '%$path%' },
+		style :{$: 'dialog.studio-floating', id: 'edit source', width: 600 },
+		features :{$: 'css', css: '.jb-dialog-content-parent {overflow-y: hidden}'},
+		content :{$: 'editable-text', 
+			databind :{$: 'studio.profile-as-text', path: '%$path%' },
+			style :{$: 'editable-text.codemirror', mode: 'javascript'},
+			features: {$: 'studio.undo-support', path: '%$path%' },
+		}
+	}
+})
 
-        cmp.keyEm.filter(e=> e.keyCode == 13)
-            .subscribe(e=>{
-              if (!suggestionCtx.show || suggestionCtx.options.length == 0)
-                suggestionCtx.closeAndWriteValue()
-            })
+jb.component('studio.string-property-ref', {
+	type: 'data',
+	params: [
+		{ id: 'path', as: 'string' },
+	],
+	impl: (context,path) => ({
+			$jb_val: value => {
+				if (typeof value == 'undefined')
+					return st.valOfPath(path);
+				else
+					st.writeValueOfPath(path, newVal);
+			}
+		})
+})
 
-        cmp.keyEm.filter(e=> e.keyCode == 27)
-            .subscribe(e=>{
-              ctx.params.closeFloatingInput();
-            })
-
-        suggestionCtx.suggestionEm = cmp.keyEm
-          .filter(e=> e.keyCode != 38 && e.keyCode != 40 && e.key != 'Shift')
-          .delay(1) // we use keydown - let the input fill itself
-          .debounceTime(20) // solves timing of closing the floating input
-          .filter(e=>
-            suggestionCtx.show = new st.suggestions(input,ctx.params.expressionOnly).suggestionsRelevant() )
-          .catch(e=>
-            console.log(1,e))
-          .map(e=>
-            input.value)
-//          .do(x=>console.log(0,x))
-          .distinctUntilChanged()
-//          .do(x=>console.log(1,x))
-          .flatMap(e=>
-            getProbe())
-          .map(res=>
-              res && res.finalResult && res.finalResult[0] && res.finalResult[0].in)
-          .map(probeCtx=> 
-            new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,ctx.params.path))
-          .catch(e=>
-            console.log(2,e))
-          .distinctUntilChanged((e1,e2)=>
-            e1.key == e2.key)
-          .do(e=>jb_logPerformance('suggestions',e))
-          .catch(e=>
-            console.log(3,e))
-
-        function getProbe() {
-          if (cmp.probeResult)
-            return [cmp.probeResult];
-          var _probe = jb.rx.Observable.fromPromise(ctx.run({$: 'studio.probe', path: ctx.params.path }));
-          _probe.subscribe(res=>
-            cmp.probeResult = res);
-          // do not wait more than 500 mSec
-          return _probe.race(jb.rx.Observable.of({finalResult: [ctx] }).delay(500))
-            .catch(e=>
-                jb.logException(e,'in probe exception'))
+jb.component('studio.goto-sublime', {
+	type: 'menu.option',
+	params: [
+		{ id: 'path', as: 'string'},
+	],
+    impl :{$: 'menu.dynamic-options', 
+        items :{$: 'studio.goto-targets', path: '%$path%' }, 
+        genericOption :{$: 'menu.action', 
+          title: { $pipeline: [
+            {$: 'split', separator: '~', part: 'first' },
+            'Goto sublime: %%'
+          ]}, 
+          action :{$: 'studio.open-sublime-editor', path: '%%' } 
         }
-      }
-  }}
-})
+      }, 
+}) 
 
-jb.component('itemlist.studio-suggestions-options', {
-  type: 'feature',
-  params: [
-  ],
-  impl: ctx => 
-    ({
-      afterViewInit: function(cmp) {
-        var suggestionCtx = ctx.vars.suggestionCtx;
+jb.component('studio.goto-targets', {
+	params: [
+		{ id: 'path', as: 'string'},
+	],
+	impl: (ctx,path) => 
+		jb.unique([st.compNameOfPath(path),path]
+			.filter(x=>x)
+			.map(x=>
+				x.split('~')[0]))
+}) 
 
-        jb.delay(1,ctx).then(()=>{
-          var keyEm = suggestionCtx.keyEm;
-
-          keyEm.filter(e=>
-              e.keyCode == 13) // ENTER
-            .subscribe(()=>{
-                suggestionCtx.show = false;
-                if (suggestionCtx.selected && suggestionCtx.selected.paste) {
-                  suggestionCtx.selected.paste(ctx);
-                  suggestionCtx.selected = null;
-                }
-            })
-          keyEm.filter(e=>e.keyCode == 27) // ESC
-            .subscribe(x=>
-                suggestionCtx.show = false)
-
-          keyEm.filter(e=>
-                  e.keyCode == 38 || e.keyCode == 40)
-              .subscribe(e=>{
-                  var diff = e.keyCode == 40 ? 1 : -1;
-                  var items = cmp.items; //.filter(item=>!item.heing);
-                  var newIndex = (items.indexOf(suggestionCtx.selected) + diff + items.length) % items.length;
-                  cmp.selected = suggestionCtx.selected = items[newIndex];
-                  jb_logPerformance('suggestions',newIndex,suggestionCtx.selected);
-                  suggestionCtx.refresh();
-                  e.preventDefault();
-              })
-
-          suggestionCtx.suggestionEm.subscribe(e=> {
-              suggestionCtx.show = e.options.length > 0;
-              suggestionCtx.options = e.options;
-              suggestionCtx.selected = e.options[0];
-              suggestionCtx.refresh();
-           })
-        })
-      },
-  })
-})
+jb.component('studio.open-sublime-editor', {
+	type: 'action',
+	params: [
+		{ id: 'path', as: 'string'},
+	],
+	impl: (ctx,path) => {
+		path && $.ajax(`/?op=gotoSource&comp=${path.split('~')[0]}`)
+	}
+}) 
 
 })();
 
@@ -16233,83 +16770,6 @@ function setComp(code,jbart_base) {
 
 })();
 
-(function() {
-  var st = jb.studio;
-
-jb.component('studio.edit-source', {
-	type: 'action',
-	params: [
-		{ id: 'path', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } }
-	],
-	impl: {
-		$: 'open-dialog',
-		title :{$: 'studio.short-title', path: '%$path%' },
-		style :{$: 'dialog.studio-floating', id: 'edit source', width: 600 },
-		features :{$: 'css', css: '.jb-dialog-content-parent {overflow-y: hidden}'},
-		content :{$: 'editable-text', 
-			databind :{$: 'studio.profile-as-text', path: '%$path%' },
-			style :{$: 'editable-text.codemirror', mode: 'javascript'},
-			features: {$: 'studio.undo-support', path: '%$path%' },
-		}
-	}
-})
-
-jb.component('studio.string-property-ref', {
-	type: 'data',
-	params: [
-		{ id: 'path', as: 'string' },
-	],
-	impl: (context,path) => ({
-			$jb_val: value => {
-				if (typeof value == 'undefined')
-					return st.valOfPath(path);
-				else
-					st.writeValueOfPath(path, newVal);
-			}
-		})
-})
-
-jb.component('studio.goto-sublime', {
-	type: 'menu.option',
-	params: [
-		{ id: 'path', as: 'string'},
-	],
-    impl :{$: 'menu.dynamic-options', 
-        items :{$: 'studio.goto-targets', path: '%$path%' }, 
-        genericOption :{$: 'menu.action', 
-          title: { $pipeline: [
-            {$: 'split', separator: '~', part: 'first' },
-            'Goto sublime: %%'
-          ]}, 
-          action :{$: 'studio.open-sublime-editor', path: '%%' } 
-        }
-      }, 
-}) 
-
-jb.component('studio.goto-targets', {
-	params: [
-		{ id: 'path', as: 'string'},
-	],
-	impl: (ctx,path) => 
-		[st.compNameOfPath(path),path]
-			.filter(x=>x)
-			.map(x=>
-				x.split('~')[0])
-			.filter( jb.unique(x=>x) )
-}) 
-
-jb.component('studio.open-sublime-editor', {
-	type: 'action',
-	params: [
-		{ id: 'path', as: 'string'},
-	],
-	impl: (ctx,path) => {
-		path && $.ajax(`/?op=gotoSource&comp=${path.split('~')[0]}`)
-	}
-}) 
-
-})();
-
 
 jb.component('studio.open-jb-editor', {
   type: 'action', 
@@ -16345,10 +16805,10 @@ jb.component('studio.jb-editor', {
             class: 'jb-editor jb-control-tree studio-control-tree'
           }, 
           {$: 'tree.selection', 
-            databind: '%$studio/jb_editor_selection%', 
             onDoubleClick :{$: 'studio.open-jb-edit-property', 
               path: '%$studio/jb_editor_selection%'
             }, 
+            databind: '%$studio/jb_editor_selection%', 
             autoSelectFirst: true
           }, 
           {$: 'tree.keyboard-selection', 
@@ -16360,11 +16820,8 @@ jb.component('studio.jb-editor', {
             applyMenuShortcuts :{$: 'studio.jb-editor-menu', path: '%%' }
           }, 
           {$: 'tree.drag-and-drop' }, 
-          {$: 'studio.control-tree.refresh-path-changes' }, 
           {$: 'css.width', width: '500', selector: 'jb-editor' }, 
-          // {$: 'feature.studio-auto-fix-path', 
-          //   path: '%$studio/jb_editor_selection%'
-          // }
+          {$: 'studio.watch-script-changes' }
         ]
       }, 
       {$: 'group', 
@@ -16384,7 +16841,7 @@ jb.component('studio.jb-editor', {
                       }, 
                       {$: 'label', 
                         title: 'action circuits are not supported', 
-                        features :{$: 'feature.if', 
+                        features :{$: 'hidden', 
                           showCondition: '%$probeResult/probe/circuitType% == "action"'
                         }
                       }, 
@@ -16413,13 +16870,19 @@ jb.component('studio.jb-editor', {
                     loadingControl :{$: 'label', title: 'calculating...' }, 
                     resource: 'probeResult'
                   }
-                }, 
+                }
               }
             ], 
             features :{$: 'feature.if', showCondition: '%$studio/jb_editor_selection%' }
           }
         ], 
-        features :{$: 'watch-ref', ref: '%$studio/jb_editor_selection%' }
+        features: [
+          {$: 'watch-ref', 
+            ref: '%$studio/jb_editor_selection%', 
+            strongRefresh: true
+          }, 
+          {$: 'studio.watch-script-changes' }
+        ]
       }
     ], 
     features :{$: 'css.padding', top: '10' }
@@ -16449,18 +16912,16 @@ jb.component('studio.data-browse', {
 
 jb.component('studio.open-jb-edit-property', {
   type: 'action', 
-  params: [
-    { id: 'path', as: 'string' }
-  ], 
+  params: [{ id: 'path', as: 'string' }], 
   impl :{
       $if :{$: 'studio.is-of-type', type: 'data', path: '%$path%' },
-      then :{$: 'open-dialog', 
+      then :{$: 'open-dialog',
         style :{$: 'dialog.studio-jb-editor-popup' }, 
         content :{$: 'studio.jb-floating-input', path: '%$path%' }, 
         features: [
-          {$: 'dialog-feature.autoFocusOnFirstInput' }, 
+          {$: 'dialog-feature.auto-focus-on-first-input' }, 
           {$: 'dialog-feature.onClose', 
-            action :{$: 'toggleBooleanValue', of: '%$studio/jb_preview_result_counter%' }
+            action :{$: 'toggle-boolean-value', of: '%$studio/jb_preview_result_counter%' }
           }
         ],
       },
@@ -16579,10 +17040,7 @@ jb.component('studio.jb-editor-menu', {
         title: 'Delete', 
         icon: 'delete', 
         shortcut: 'Delete', 
-        action: [
-          {$: 'write-value', to: '%$TgpTypeCtrl.expanded%', value: false }, 
-          {$: 'studio.delete', path: '%$path%' }
-        ]
+        action: {$: 'studio.delete', path: '%$path%' }
       }, 
       {$: 'menu.action', 
         title: 'Copy', 
@@ -16629,7 +17087,7 @@ jb.component('menu.studio-wrap-with', {
         genericOption :{$: 'menu.action', 
           title: 'Wrap with %%',
           action : [
-            {$: 'studio.wrap', path: '%$path%', compName: '%%' },
+            {$: 'studio.wrap', path: '%$path%', comp: '%%' },
             {$:'studio.expand-and-select-first-child-in-jb-editor' }
           ]
     },
@@ -16695,72 +17153,6 @@ jb.component('studio.expand-and-select-first-child-in-jb-editor', {
   }
 })
 
-;
-
-jb.component('dialog.studio-jb-editor-popup', {
-  type: 'dialog.style',
-  impl: {$: 'custom-style',
-      template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
-        h('button',{class: 'dialog-close', onclick: _=> cmp.dialogClose() },'×'),
-        h(state.contentComp),
-      ]),
-      css: `{ background: #fff; position: absolute }
-        >.dialog-close {
-            position: absolute; 
-            cursor: pointer; 
-            right: -7px; top: -22px; 
-            font: 21px sans-serif; 
-            border: none; 
-            background: transparent; 
-            color: #000; 
-            text-shadow: 0 1px 0 #fff; 
-            font-weight: 700; 
-            opacity: .2;
-        }
-        >.dialog-close:hover { opacity: .5 }
-        `,
-      features: [
-        { $: 'dialog-feature.maxZIndexOnClick' },
-        { $: 'dialog-feature.closeWhenClickingOutside' },
-        { $: 'dialog-feature.nearLauncherLocation' },
-        { $: 'dialog-feature.uniqueDialog', id: 'studio-jb-editor-popup' },
-        {$: 'css.box-shadow', 
-          blurRadius: 5, 
-          spreadRadius: 0, 
-          shadowColor: '#000000', 
-          opacity: 0.75, 
-          horizontal: 0, 
-          vertical: 0, 
-        }
-   ]
-  }
-})
-
-jb.component('dialog.studio-suggestions-popup',{
-  type: 'dialog.style',
-  impl: {$: 'custom-style',
-      template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
-        h(state.contentComp),
-      ]),
-      css: `{ background: #fff; position: absolute; padding: 3px 5px }`,
-      features: [
-        { $: 'dialog-feature.maxZIndexOnClick' },
-        { $: 'dialog-feature.closeWhenClickingOutside' },
-        { $: 'dialog-feature.cssClassOnLaunchingControl' },
-        { $: 'dialog-feature.nearLauncherLocation' },
-//        { $: 'studio.fix-suggestions-margin' } ,
-        { $: 'dialog-feature.uniqueDialog', id: 'studio-suggestions-popup' },
-        { $: 'css.box-shadow', 
-          blurRadius: 5, 
-          spreadRadius: 0, 
-          shadowColor: '#000000', 
-          opacity: 0.75, 
-          horizontal: 0, 
-          vertical: 0, 
-        }
-   ]
-  }
-})
 ;
 
 
@@ -16892,7 +17284,7 @@ jb.component('suggestions-test', {
   },
 })
 
-jb.component('studio-tree-children-test', {
+jb.component('jb-editor-children-test', {
   type: 'test',
   params: [
     { id: 'path', as: 'string' },
@@ -16952,28 +17344,177 @@ jb.component('jb-path-test', {
 jb.component('path-change-test', {
   type: 'test',
   params: [
-    { id: 'path', as: 'ref' },
-    { id: 'action', as: 'action' },
-    { id: 'expectedPathBefore', as: 'string' },
+    { id: 'path', as: 'string' },
+    { id: 'action', type: 'action', dynamic: true },
     { id: 'expectedPathAfter', as: 'string' },
-    { id: 'cleanUp', as: 'action' },
+    { id: 'cleanUp', type: 'action', dynamic: true  },
   ],
-  impl: (ctx,pathRef,action,expectedPathBefore,expectedPathAfter,cleanUp)=> {
+  impl: (ctx,path,action,expectedPathAfter,cleanUp)=> {
     var testId = ctx.vars.testID;
     var failure = (part,reason) => ({ id: testId, title: testId + '- ' + part, success:false, reason: reason });
     var success = _ => ({ id: testId, title: testId, success: true });
 
-    if (pathRef.$jb_path.join('~') != expectedPathBefore)
-      return failure('path before',pathRef.$jb_path.join('~') + ' instead of ' + expectedPathBefore);
+    var pathRef = jb.studio.refOfPath(path);
     action();
-    return jb.ui.refObservable(pathRef,{destroyed: new Promise()}).take(1).map(_=>{
-      if (pathRef.$jb_path.join('~') != expectedPathAfter)
-        var res = failure('path after',pathRef.$jb_path.join('~') + ' instead of ' + expectedPathAfter)
-      else
-        var res = success();
-      cleanUp();
-      return res;
-    }).toPromise()
+    pathRef.handler.refresh(pathRef);
+    if (pathRef.$jb_path.join('~') != expectedPathAfter)
+      var res = { id: testId, title: testId, success: false , reason: pathRef.$jb_path.join('~') + ' instead of ' + expectedPathAfter }
+    else
+      var res = { id: testId, title: testId, success: true };
+    cleanUp();
+
+    return res;
+  }
+})
+;
+
+(function() { var st = jb.studio;
+
+st.initEventTracker = _ => {
+	st.stateChangeEvents = [];
+	st.stateChangeClusterEm = st.previewjb.ui.stateChangeEm.bufferTime(100).filter(x=>x.length> 0);
+	st.stateChangeClusterEm.subscribe(events=>{
+		st.stateChangeEvents.unshift(events);
+		st.stateChangeEvents = st.stateChangeEvents.slice(0,5);
+	})
+}
+
+//ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent});
+//({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources});
+
+jb.component('studio.state-change-title', {
+	type: 'data',
+	params: [ {id: 'event', as: 'single' } ],
+	impl: (context,event) => {
+		if (event.opEvent && event.opEvent.ref)
+			var cause = 'caused by change value to ' + st.valSummaryOfRef(event.opEvent.ref) + ' of ' + st.nameOfRef(event.opEvent.ref)
+		else 
+			var cause = ''
+		return 'refresh at ' + (event.cmp.ctxForPick || event.cmp.ctx).path.replace(/~/g,'/') + ' ' + cause;
+	}
+});
+
+jb.component('studio.state-change-events', {
+	type: 'data',
+	impl: ctx => 
+		st.stateChangeEvents[0] || []
+})
+
+jb.component('studio.events-of-opeation', {
+	type: 'data',
+	params: [ {id: 'op', as: 'single' } ],
+	impl: (ctx,op) => 
+		jb.unique(t.stateChangeEvents.map(e=>e.opEvent))
+})
+
+jb.component('studio.opeations-of-events', {
+	type: 'data',
+	impl: ctx => 
+		t.stateChangeEvents.map(e=>e.opEvent == op)
+})
+
+
+jb.component('studio.highlight-event', {
+	type: 'action',
+	params: [
+		{id: 'event' }
+	],
+	impl :{$: 'studio.highlight-in-preview', path: '%$event/cmp/ctx/path%' }
+})
+
+
+jb.component('studio.open-event-tracker', {
+  type: 'action', 
+  impl :{$: 'open-dialog', 
+      content :{$: 'studio.event-tracker' }, 
+      style :{$: 'dialog.studio-floating', 
+        id: 'event-tracker', 
+        width: '700', 
+        height: '400'
+      }, 
+      title: 'Event Tracking'
+  }
+}) 
+
+jb.component('studio.event-tracker', {
+  type: 'control', 
+  impl :{$: 'itemlist', 
+    	items: {$: 'studio.state-change-events'},
+    	controls: {$: 'label', title:{$: 'studio.state-change-title', event: '%%'} },
+        features: [
+          {$: 'itemlist.selection', 
+            onSelection :{$: 'studio.highlight-event' }
+          }
+        ],
+    	features:{$: 'watch-observable', toWatch: ctx => st.stateChangeClusterEm.delay(1) , strongRefresh: true } 
+	}
+})
+
+
+})();
+
+jb.component('dialog.studio-jb-editor-popup', {
+  type: 'dialog.style',
+  impl: {$: 'custom-style',
+      template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
+        h('button',{class: 'dialog-close', onclick: _=> cmp.dialogClose() },'×'),
+        h(state.contentComp),
+      ]),
+      css: `{ background: #fff; position: absolute }
+        >.dialog-close {
+            position: absolute; 
+            cursor: pointer; 
+            right: 0;
+            font: 21px sans-serif; 
+            border: none; 
+            background: transparent; 
+            color: #000; 
+            text-shadow: 0 1px 0 #fff; 
+            font-weight: 700; 
+            opacity: .2;
+        }
+        >.dialog-close:hover { opacity: .5 }
+        `,
+      features: [
+        { $: 'dialog-feature.max-zIndex-on-click' },
+        { $: 'dialog-feature.close-when-clicking-outside' },
+        { $: 'dialog-feature.near-launcher-position' },
+        { $: 'dialog-feature.unique-dialog', id: 'studio-jb-editor-popup' },
+        {$: 'css.box-shadow', 
+          blurRadius: 5, 
+          spreadRadius: 0, 
+          shadowColor: '#000000', 
+          opacity: 0.75, 
+          horizontal: 0, 
+          vertical: 0, 
+        }
+   ]
+  }
+})
+
+jb.component('dialog.studio-suggestions-popup',{
+  type: 'dialog.style',
+  impl: {$: 'custom-style',
+      template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
+        h(state.contentComp),
+      ]),
+      css: `{ background: #fff; position: absolute; padding: 3px 5px }`,
+      features: [
+        { $: 'dialog-feature.max-zIndex-on-click' },
+        { $: 'dialog-feature.close-when-clicking-outside' },
+        { $: 'dialog-feature.css-class-on-launching-element' },
+        { $: 'dialog-feature.near-launcher-position' },
+//        { $: 'studio.fix-suggestions-margin' } ,
+        { $: 'dialog-feature.unique-dialog', id: 'studio-suggestions-popup' },
+        { $: 'css.box-shadow', 
+          blurRadius: 5, 
+          spreadRadius: 0, 
+          shadowColor: '#000000', 
+          opacity: 0.75, 
+          horizontal: 0, 
+          vertical: 0, 
+        }
+   ]
   }
 })
 ;
