@@ -5,8 +5,8 @@ var resources = {
       ],
       'ui-common': [
         'node_modules/jquery/dist/jquery.min.js',
-        'node_modules/material-design-lite/material.min.js',
-        'node_modules/material-design-lite/material.min.css',
+        'node_modules/material-design-lite/material.js',
+        'node_modules/material-design-lite/material.css',
         'node_modules/material-design-lite/dist/material.indigo-pink.min.css',
 
         'css/font.css',

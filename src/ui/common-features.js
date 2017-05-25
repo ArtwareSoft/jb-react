@@ -57,14 +57,15 @@ jb.component('watch-observable', {
       init: cmp => {
         if (!toWatch.subscribe)
           return jb.logError('watch-observable: non obsevable parameter');
-        var virtualRef = {
-          $jb_observable: cmp => toWatch
-        }
+        var virtualRef = { $jb_observable: cmp => 
+          toWatch 
+        };
+
         if (strongRefresh && cmp.initWatchByRef) // itemlist or group
             cmp.initWatchByRef(virtualRef)
         else
-            virtualRef.subscribe(e=>
-                jb.ui.setState(cmp,null,e))
+            virtualRef.subscribe(_=>
+                jb.ui.setState(cmp))
       }
   })
 })
@@ -218,6 +219,19 @@ jb.component('feature.keyboard-shortcut', {
                 action();
             })
       })
+})
+
+jb.component('feature.onHover', {
+  type: 'feature', category: 'feature:60',
+  params: [
+    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+  ],
+  impl: (ctx,code) => ({ 
+      onmouseenter: true,
+      afterViewInit: cmp=>
+        cmp.onmouseenter.debounceTime(500).subscribe(()=>
+              jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
+  })
 })
 
 jb.component('feature.onKey', {

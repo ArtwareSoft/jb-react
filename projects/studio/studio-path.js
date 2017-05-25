@@ -137,7 +137,8 @@ Object.assign(st,{
 			if (p.defaultValue && typeof p.defaultValue == 'object' && (p.forceDefaultCreation || Array.isArray(p.defaultValue)))
 				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue));
 		})
-		if (!st.valOfPath(path))
+		var currentVal = st.valOfPath(path);
+		if (!currentVal || typeof currentVal != 'object')
 			st.writeValue(st.refOfPath(path),result)
 		else
 			st.merge(st.refOfPath(path),result);
@@ -226,7 +227,7 @@ Object.assign(st,{
 		}
 	},
 	nameOfRef: ref => 
-		ref.$jb_path ? ref.$jb_path.slice(-1)[0] : 'ref',
+		ref.$jb_path ? ref.$jb_path.slice(-1)[0].split(':')[0] : 'ref',
 	valSummaryOfRef: ref => 
 		st.valSummary(jb.val(ref)),
 	valSummary: val => {
@@ -234,6 +235,8 @@ Object.assign(st,{
 			return val.id || val.name
 		return '' + val;
 	},
+	pathSummary: path => 
+		path.replace(/~controls~/g,'~').replace(/~impl~/g,'~').replace(/^[^\.]*./,'')
 })
 
 // ******* components ***************

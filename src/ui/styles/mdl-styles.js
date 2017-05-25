@@ -6,6 +6,8 @@ jb.component('mdl-style.init-dynamic', {
   impl: (ctx,query) => 
     ({
       afterViewInit: cmp => {
+        if (!$.contains(document.documentElement, cmp.base))
+          return;
         var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
         cmp.refreshMdl = _ => {
           jb.delay(1).then(_ => elems.forEach(el=> {
@@ -18,8 +20,9 @@ jb.component('mdl-style.init-dynamic', {
       	 	componentHandler.upgradeElement(el)))
       },
       destroy: cmp => 
-      	 (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
-      	 	componentHandler.downgradeElements(el))
+      	 $.contains(document.documentElement, cmp.base) && 
+          (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
+      	 	   componentHandler.downgradeElements(el))
     })
 })
 

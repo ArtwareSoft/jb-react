@@ -11,4 +11,9 @@ keybaord only features editing
 	padding tabs index
 
 new feature dialog
+	refresh features and focus
+	fix css
+
+new control dialog
+	focus on new feature
 	fix css

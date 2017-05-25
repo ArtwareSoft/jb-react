@@ -154,7 +154,7 @@ function showBox(cmp,profElem,_window,previewOffset) {
 	});
 }
 
-function highlight(elems) {
+function highlight(elems,_window) {
 	var boxes = [];
 	elems.map(el=>$(el))
 		.forEach($el => {
@@ -192,7 +192,7 @@ jb.component('studio.highlight-in-preview',{
 			.filter(e=>
 				jb.ctxDictionary[e.getAttribute('jb-ctx')].path == path)
 	
-		highlight(elems);
+		highlight(elems,_window);
   }
 })
 

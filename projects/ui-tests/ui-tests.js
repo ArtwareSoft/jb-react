@@ -961,6 +961,24 @@ jb.component('ui-test.immutable-var', {
   },
 })
 
+jb.component('ui-test.raw-vdom', {
+  impl :{$: 'ui-test',  
+    control: ctx => 
+      jb.ui.h('div',{},'hello world'),
+    expectedResult :{$: 'contains', text: 'hello world' },
+  },
+})
+
+jb.component('ui-test.raw-vdom-in-group', {
+  impl :{$: 'ui-test',  
+    control: { $: 'group', 
+      controls: ctx => 
+          jb.ui.h('div',{},'hello world')
+    },
+    expectedResult :{$: 'contains', text: 'hello world' },
+  },
+})
+
 jb.component('ui-test.mutable-var', {
   impl :{$: 'ui-test',  
     control: {$: 'label', title: '%$var1%',

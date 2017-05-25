@@ -35,9 +35,9 @@ jb.component('ui-test', {
 			.then(_ => {
 				try {
 					var elem = document.createElement('div');
-					var ctrl = jb.ui.h(control().reactComp());
-					var cmp = jb.ui.render(ctrl, elem)._component;
-					return Promise.resolve(cmp.delayed).then(_=>
+					var vdom = jb.ui.h(jb.ui.renderable(control()));
+					var cmp = jb.ui.render(vdom, elem)._component;
+					return Promise.resolve(cmp && cmp.delayed).then(_=>
 						elem)
 				} catch (e) {
 					jb.logException(e,'error in test');

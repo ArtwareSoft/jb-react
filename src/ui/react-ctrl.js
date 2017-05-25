@@ -241,6 +241,16 @@ if (typeof $ != 'undefined' && $.fn)
     $.fn.findIncludeSelf = function(selector) { 
     	return this.find(selector).addBack(selector); }  
 
+ui.isVdom = ctrl =>
+	(ctrl.constructor && ctrl.constructor.name == 'VNode');
+
+ui.renderable = ctrl => 
+	ui.isVdom(ctrl) ? ctrl : ctrl.reactComp();
+
+// do not wrap vdom
+ui.h = (p1,p2,p3) =>
+	ui.isVdom(p1) ? p1 : ui._h(p1,p2,p3);
+
 ui.renderWidget = function(profile,elem) {
 	if (window.parent != window && window.parent.jb)
 		window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);

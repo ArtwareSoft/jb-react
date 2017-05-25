@@ -14,10 +14,10 @@ jb.component('studio.open-new-profile-dialog', {
             {$: 'studio.insert-control', path: '%$path%', comp: '%%' },
             {$: 'on-next-timer', 
               action: [
-                {$: 'write-value', 
-                  to: '%$studio/profile_path%', 
-                  value: '%$modifiedPath%'
-                }, 
+                // {$: 'write-value', 
+                //   to: '%$studio/profile_path%', 
+                //   value: '%$modifiedPath%'
+                // }, 
                 {$: 'studio.open-properties' }, 
                 {$: 'studio.open-control-tree' }, 
                 {$: 'studio.refresh-preview' }

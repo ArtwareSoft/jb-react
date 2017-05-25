@@ -2,32 +2,41 @@
 
 st.initEventTracker = _ => {
 	st.stateChangeEvents = [];
-	st.stateChangeClusterEm = st.previewjb.ui.stateChangeEm.bufferTime(100).filter(x=>x.length> 0);
-	st.stateChangeClusterEm.subscribe(events=>{
-		st.stateChangeEvents.unshift(events);
-		st.stateChangeEvents = st.stateChangeEvents.slice(0,5);
+	st.previewjb.ui.stateChangeEm.subscribe(e=>{
+		var curTime = e.timeStamp = new Date().getTime();
+		st.stateChangeEvents.unshift(e);
+		st.stateChangeEvents = st.stateChangeEvents.filter(e=>e.timeStamp > curTime - 2000)
 	})
 }
 
 //ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent});
 //({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources});
 
-jb.component('studio.state-change-title', {
+jb.component('studio.event-title', {
 	type: 'data',
-	params: [ {id: 'event', as: 'single' } ],
-	impl: (context,event) => {
-		if (event.opEvent && event.opEvent.ref)
-			var cause = 'caused by change value to ' + st.valSummaryOfRef(event.opEvent.ref) + ' of ' + st.nameOfRef(event.opEvent.ref)
-		else 
-			var cause = ''
-		return 'refresh at ' + (event.cmp.ctxForPick || event.cmp.ctx).path.replace(/~/g,'/') + ' ' + cause;
-	}
+	params: [ {id: 'event', as: 'single', defaultValue: '%%' } ],
+	impl: (context,event) =>
+		event ? st.pathSummary((event.cmp.ctxForPick || event.cmp.ctx).path).replace(/~/g,'/') : ''
+});
+
+jb.component('studio.event-cmp', {
+	type: 'data',
+	params: [ {id: 'event', as: 'single', defaultValue: '%%' } ],
+	impl: (context,event) =>
+		event ? st.pathSummary((event.cmp.ctxForPick || event.cmp.ctx).path).replace(/~/g,'/') : ''
+});
+
+jb.component('studio.event-cause', {
+	type: 'data',
+	params: [ {id: 'event', as: 'single', defaultValue: '%%' } ],
+	impl: (context,event) =>
+		(event && event.opEvent) ? st.nameOfRef(event.opEvent.ref) + ' changed to "' + st.valSummaryOfRef(event.opEvent.ref) + '"' : ''
 });
 
 jb.component('studio.state-change-events', {
 	type: 'data',
 	impl: ctx => 
-		st.stateChangeEvents[0] || []
+		st.stateChangeEvents || []
 })
 
 jb.component('studio.events-of-opeation', {
@@ -47,7 +56,7 @@ jb.component('studio.opeations-of-events', {
 jb.component('studio.highlight-event', {
 	type: 'action',
 	params: [
-		{id: 'event' }
+		{id: 'event', as: 'single', defaultValue: '%%' }
 	],
 	impl :{$: 'studio.highlight-in-preview', path: '%$event/cmp/ctx/path%' }
 })
@@ -69,15 +78,31 @@ jb.component('studio.open-event-tracker', {
 jb.component('studio.event-tracker', {
   type: 'control', 
   impl :{$: 'itemlist', 
-    	items: {$: 'studio.state-change-events'},
-    	controls: {$: 'label', title:{$: 'studio.state-change-title', event: '%%'} },
-        features: [
-          {$: 'itemlist.selection', 
-            onSelection :{$: 'studio.highlight-event' }
-          }
-        ],
-    	features:{$: 'watch-observable', toWatch: ctx => st.stateChangeClusterEm.delay(1) , strongRefresh: true } 
-	}
+    items :{$: 'studio.state-change-events' }, 
+    controls :{$: 'group', 
+      style :{$: 'layout.horizontal', spacing: '3' }, 
+      controls: [
+        {$: 'label', 
+          title :{$: 'studio.event-cmp' }, 
+          style :{$: 'label.span' }, 
+          features: [
+            {$: 'css.width', width: '180' }, 
+            {$: 'feature.onHover', 
+              action :{$: 'studio.highlight-event' }
+            }
+          ]
+        }, 
+        {$: 'label', 
+          title :{$: 'studio.event-cause', event: '%%' }, 
+          style :{$: 'label.span' }
+        }
+      ]
+    }, 
+    features :{$: 'watch-observable', 
+      toWatch: ctx => st.previewjb.ui.stateChangeEm.debounceTime(500), 
+      strongRefresh: true
+    }
+  }
 })
 
 

@@ -482,7 +482,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 
 jb.ui.render = __WEBPACK_IMPORTED_MODULE_0_preact__["render"];
-jb.ui.h = __WEBPACK_IMPORTED_MODULE_0_preact__["h"];
+jb.ui._h = __WEBPACK_IMPORTED_MODULE_0_preact__["h"];
 jb.ui.Component = __WEBPACK_IMPORTED_MODULE_0_preact__["Component"];
 
 

@@ -9,7 +9,7 @@ jb.component('studio.edit-source', {
 	impl: {
 		$: 'open-dialog',
 		title :{$: 'studio.short-title', path: '%$path%' },
-		style :{$: 'dialog.studio-floating', id: 'edit source', width: 600 },
+		style :{$: 'dialog.studio-floating', id: 'edit-source', width: 600 },
 		features :{$: 'css', css: '.jb-dialog-content-parent {overflow-y: hidden}'},
 		content :{$: 'editable-text', 
 			databind :{$: 'studio.profile-as-text', path: '%$path%' },

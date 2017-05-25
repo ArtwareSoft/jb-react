@@ -54,7 +54,7 @@ st.jbEditorTree = class {
 		if (compName)
 			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val'},compName+summary)]);
 		else if (typeof val == 'string')
-			return jb.ui.h('div',{},[prop + collapsed ? ': ': '',jb.ui.h('span',{class:'treenode-val', title: val},val)]);
+			return jb.ui.h('div',{},[prop + (collapsed ? ': ': ''),jb.ui.h('span',{class:'treenode-val', title: val},val)]);
 
 		return prop + (Array.isArray(val) ? ` (${val.length})` : '');
 	}

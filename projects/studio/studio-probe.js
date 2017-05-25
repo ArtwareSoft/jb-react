@@ -40,9 +40,13 @@ jb.studio.Probe = class {
       if (this.circuitType == 'control') { // running circuit in a group to get the 'ready' event
         //return testControl(this.context, this.forTests);
           var ctrl = jb.ui.h(this.context.runItself().reactComp());
-          var el = document.createElement('div');
-          jb.ui.render(ctrl, el);
-          return Promise.resolve({element: el});
+          jb.studio.probeEl = jb.studio.probeEl || document.createElement('div');
+          try {
+            jb.studio.probeResEl = jb.ui.render(ctrl, jb.studio.probeEl, jb.studio.probeResEl);
+          } catch (e) {
+            jb.logException(e,'probe run')
+          }          
+          return Promise.resolve({element: jb.studio.probeResEl});
       } else if (this.circuitType != 'action')
         return Promise.resolve(_win.jb.run(this.context));
   }
@@ -87,7 +91,7 @@ jb.component('studio.probe', {
   params: [ { id: 'path', as: 'string', dynamic: true } ],
   impl: (ctx,path) => {
       var st = jb.studio;
-      var context = ctx.exp('%$studio/last_pick_selection%');
+      var context = null; //ctx.exp('%$studio/last_pick_selection%');
       if (!context) {
         var _jbart = st.previewjb;
         var _win = st.previewWindow || window;

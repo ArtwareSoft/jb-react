@@ -25,6 +25,8 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       preview_window.jb.studio.studioWindow = window;
       preview_window.jb.studio.previewjb = preview_window.jb;
       st.initEventTracker();
+      if (preview_window.location.href.match(/\/studio-helper/))
+        st.previewjb.studio.initEventTracker();
 }
 
 jb.component('studio.preview-widget-impl', {

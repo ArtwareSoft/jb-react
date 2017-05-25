@@ -5,6 +5,9 @@ jb.resource('people-array', { "people": [
   ]
 })
 
+jb.resource('globals', { });
+
+
 jb.resource('group-with-custom-style',
   {$: 'group', 
     title: 'main', 
@@ -28,6 +31,26 @@ jb.resource('group-with-custom-style',
 )
 
 // fake current path
+
+jb.component('studio-helper.event-tracker', {
+  type: 'control', 
+  impl :{$: 'group', 
+    title: '', 
+    style :{$: 'layout.vertical', spacing: 3 }, 
+    controls: [
+      {$: 'editable-text', 
+        databind: '%$globals/test1%', 
+        style :{$: 'editable-text.mdl-input' }
+      }, 
+      {$: 'label', 
+        title: '%$globals/test1%', 
+        style :{$: 'label.span' }
+      }, 
+      {$: 'studio.event-tracker' }
+    ]
+  }
+})
+
 
 jb.component('studio-helper.control-tree', {
   type: 'control', 

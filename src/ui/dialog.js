@@ -38,7 +38,8 @@ jb.component('open-dialog', {
 				} catch (e) {
 					jb.logException(e,'dialog');
 				}
-				cmp.dialogClose = _ => dialog.close();
+				cmp.dialogClose = _ => 
+					dialog.close();
 				cmp.recalcTitle = _ => 
 					jb.ui.setState(cmp,{title: ctx.params.title(ctx)})
 			},
