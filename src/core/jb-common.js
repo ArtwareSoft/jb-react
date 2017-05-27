@@ -209,10 +209,20 @@ jb.component('write-value',{
 	type: 'action',
 	params: [
 		{ id: 'to', as: 'ref' },
-		{ id: 'value',}
+		{ id: 'value'}
 	],
 	impl: (ctx,to,value) =>
 		jb.writeValue(to,value,ctx)
+});
+
+jb.component('remove-from-array',{
+	type: 'action',
+	params: [
+		{ id: 'array', as: 'ref' },
+		{ id: 'item', as: 'single' },
+	],
+	impl: (ctx,array,item) =>
+		jb.splice(array,[[(jb.val(array)||[]).indexOf(item),1]],ctx)
 });
 
 jb.component('toggle-boolean-value',{

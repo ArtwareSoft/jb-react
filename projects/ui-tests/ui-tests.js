@@ -475,6 +475,11 @@ jb.component('ui-test.table-DD', {
         fields : [
           {$: 'field', field: 'name', title: 'name', class: 'drag-handle'},
           {$: 'field.calculated', formula: '%age%', title: 'age' },
+          {$: 'field.control', control: {$: 'button', 
+            title: 'delete', 
+            style:{$: 'button.x'},
+            action :{ $:'remove-from-array', array: '%$people%', item: '%%'} 
+          } },
         ], 
           features: [
               { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 

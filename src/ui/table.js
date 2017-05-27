@@ -49,9 +49,9 @@ jb.component('field.control', {
     { id: 'title', as: 'string', essential: true },
     { id: 'control', type: 'control' , dynamic: true, essential: true },
   ],
-  impl: (ctx,title,data) => ({
+  impl: (ctx,title,control) => ({
     title: title,
-    control: row => control(ctx.setData(row)),
+    control: row => control(ctx.setData(row)).reactComp(),
     ctx: ctx
   })
 })

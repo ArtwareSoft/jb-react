@@ -46,7 +46,7 @@ class ImmutableWithPath {
     if (!ref) return;
     var oldRef = Object.assign({},ref),oldResources = this.resources();
 
-    this.refresh(ref);
+    if (!this.refresh(ref)) return;
     if (ref.$jb_path.length == 0)
       return jb.logError('doOp: ref not found');
 
@@ -97,9 +97,9 @@ class ImmutableWithPath {
     try {
       var path = ref.$jb_path, new_ref = {};
       if (!path)
-        debugger;
-      if (path.length == 1) return;
-      if (this.resourceVersions[path[0]] == ref.$jb_resourceV) return;
+        return jb.logError('refresh: empty path');
+      if (path.length == 1) return true;
+      if (this.resourceVersions[path[0]] == ref.$jb_resourceV) return true;
       if (ref.$jb_parentOfPrim) {
         var parent = this.asRef(ref.$jb_parentOfPrim);
         if (!parent || !this.isRef(parent))
@@ -113,7 +113,7 @@ class ImmutableWithPath {
           handler: this,
         }
       } else {
-        var found_path = this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+        var found_path = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
         if (!found_path) {
           this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
           return jb.logError('refresh: object not found');
@@ -128,8 +128,9 @@ class ImmutableWithPath {
       }
       Object.assign(ref,new_ref);
     } catch (e) {
-       jb.logException(e,'ref refresh ',ref);
+       return jb.logException(e,'ref refresh ',ref);
     }
+    return true;
   }
   refOfPath(path,silent) {
       try {
