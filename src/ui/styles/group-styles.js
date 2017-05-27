@@ -2,7 +2,7 @@ jb.component('group.section', {
   type: 'group.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('section',{class:'jb-group'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl,h(ctrl)))),
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     features:{$: 'group.init-group'}
   }
 })
@@ -12,7 +12,7 @@ jb.component('group.div', {
   type: 'group.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl,h(ctrl)))),
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     features :{$: 'group.init-group'}
   }
 })
@@ -21,7 +21,7 @@ jb.component('group.ul-li', {
   type: 'group.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl, h('li', {} ,h(ctrl))))),
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li', {} ,h(ctrl)),ctrl.ctx.data))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`
   },
@@ -65,13 +65,13 @@ jb.component('group.accordion', {
   type: 'group.style',
   impl :{$: 'custom-style', 
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
-        state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,ctrl,h('div',{ class: 'accordion-section' },[
+        state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
           h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
             h('div',{ class: 'title'}, ctrl.title),
             h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) }, 
               h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
             )
-          ])].concat(state.shown == index ? [h(ctrl)] : [])))        
+          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)        
     )),
     css: `>.accordion-section>.header { display: flex; flex-direction: row; }
         >.accordion-section>.header>button:hover { background: none }

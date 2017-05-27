@@ -117,10 +117,10 @@ jb.component('itemlist.selection', {
         };
         autoSelectFirst();
     },
-    extendItem: (cmp,ctrl,vdom) => {
-      jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == ctrl.ctx.data);
+    extendItem: (cmp,vdom,data) => {
+      jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == data);
       vdom.attributes.onclick = _ => 
-        cmp.clickEmitter.next(ctrl.ctx.data)
+        cmp.clickEmitter.next(data)
     },
     css: '>.selected { ' + ctx.params.cssForSelected + ' }',
   })
@@ -168,24 +168,32 @@ jb.component('itemlist.drag-and-drop', {
   ],
   impl: ctx => ({
       afterViewInit: function(cmp) {
-        var drake = dragula($(cmp.base).findIncludeSelf('.jb-itemlist').get(), {
+        var drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
           moves: (el,source,handle) => 
-            $(el).parent().hasClass('jb-itemlist') && $(handle).hasClass('drag-handle')
+            $(handle).hasClass('drag-handle')
         });
 
+        // var drake = dragula([cmp.base], {
+        //   moves: (el,source,handle) => 
+        //     $(handle).hasClass('drag-handle')
+        // });
+
         drake.on('drag', function(el, source) { 
-          var item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
-          if (!item_comp) return;
-          el.dragged = { 
-            obj: item_comp && item_comp.ctx.data,
-            remove: obj => cmp.items.splice(cmp.items.indexOf(obj), 1)
+          var item = el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data;
+          if (!item) {
+            var item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
+            item = item_comp && item_comp.ctx.data;
           }
-          cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.obj);
+          el.dragged = { 
+            item: item,
+            remove: item => cmp.items.splice(cmp.items.indexOf(item), 1)
+          }
+          cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.item);
         });
         drake.on('drop', (dropElm, target, source,sibling) => {
-            var draggedIndex = cmp.items.indexOf(dropElm.dragged.obj);
+            var draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
             var targetIndex = sibling ? $(sibling).index() : cmp.items.length;
-            jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.obj]],ctx);
+            jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
 
             dropElm.dragged = null;
         });

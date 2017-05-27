@@ -117,7 +117,7 @@ jb.component('studio-toolbar', {
   impl :{$: 'custom-style', 
     features :{$: 'group.init-group' },
     template: (cmp,state,h) => h('section',{class:'jb-group'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl,h(ctrl)))),
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx))),
     css: `{ 
             display: flex;
             height: 33px; 

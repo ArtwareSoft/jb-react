@@ -312,10 +312,10 @@ jb.component('menu.selection', {
         if (ctx.params.autoSelectFirst && cmp.items[0])
             cmp.select(cmp.items[0]);
       },
-	  extendItem: (cmp,ctrl,vdom) => {
-	      jb.ui.toggleClassInVdom(vdom,'selected', ctx.vars.topMenu.selected == ctrl.ctx.data);
+	  extendItem: (cmp,vdom,data) => {
+	      jb.ui.toggleClassInVdom(vdom,'selected', ctx.vars.topMenu.selected == data);
 	      vdom.attributes.onmouseenter = _ => 
-	      	cmp.select(ctrl.ctx.data)
+	      	cmp.select(data)
 	  },
 	  css: '>.selected { background: #bbb !important; color: #fff !important }',
     })

@@ -38,6 +38,7 @@ var resources = {
         'src/ui/theme.js',
         'src/ui/icon.js',
         'src/ui/slider.js',
+        'src/ui/table.js',
         'src/ui/window.js',
 
         'src/ui/styles/mdl-styles.js',

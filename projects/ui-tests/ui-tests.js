@@ -453,6 +453,46 @@ jb.component('ui-test.itemlist-container-search', {
   }
 })
 
+jb.component('ui-test.table', {
+  impl :{$: 'ui-test',
+  control :{$: 'table', items: '%$people%', 
+        fields : [
+          {$: 'field', field: 'name', title: 'name' },
+          {$: 'field.calculated', formula: '%age%', title: 'age' },
+        ], 
+        features: [
+            { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+        ],
+  },
+  expectedResult: { $: 'contains', text: ['age','Homer Simpson','12'] },
+},
+})
+
+jb.component('ui-test.table-DD', {
+  impl :{$: 'ui-test',  control :{$: 'group', 
+  controls: [
+    {$: 'table', items: '%$people%', watchItems: true,
+        fields : [
+          {$: 'field', field: 'name', title: 'name', class: 'drag-handle'},
+          {$: 'field.calculated', formula: '%age%', title: 'age' },
+        ], 
+          features: [
+              { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+              { $: 'itemlist.keyboard-selection', autoFocus: true },
+              { $: 'itemlist.drag-and-drop' },
+//              { $: 'id', id: 'itemlist' },
+          ],
+    },
+    {$: 'label', 
+      title :{ $pipeline: ['%$people/name%', {$:'join' , separated: ', '}] },
+      features: {$: 'watch-ref', ref: '%$people%'}
+    },
+  ]
+  },
+  expectedResult: { $: 'contains', text: ['age','Homer Simpson','12'] },
+},
+})
+
 // jb.component('ui-test.ngShow-label', {
 // //   impl :{$: 'ui-test',  
 //   control :{$: 'label', 
@@ -961,23 +1001,23 @@ jb.component('ui-test.immutable-var', {
   },
 })
 
-jb.component('ui-test.raw-vdom', {
-  impl :{$: 'ui-test',  
-    control: ctx => 
-      jb.ui.h('div',{},'hello world'),
-    expectedResult :{$: 'contains', text: 'hello world' },
-  },
-})
+// jb.component('ui-test.raw-vdom', {
+//   impl :{$: 'ui-test',  
+//     control: ctx => 
+//       jb.ui.h('div',{},'hello world'),
+//     expectedResult :{$: 'contains', text: 'hello world' },
+//   },
+// })
 
-jb.component('ui-test.raw-vdom-in-group', {
-  impl :{$: 'ui-test',  
-    control: { $: 'group', 
-      controls: ctx => 
-          jb.ui.h('div',{},'hello world')
-    },
-    expectedResult :{$: 'contains', text: 'hello world' },
-  },
-})
+// jb.component('ui-test.raw-vdom-in-group', {
+//   impl :{$: 'ui-test',  
+//     control: { $: 'group', 
+//       controls: ctx => 
+//           jb.ui.h('div',{},'hello world')
+//     },
+//     expectedResult :{$: 'contains', text: 'hello world' },
+//   },
+// })
 
 jb.component('ui-test.mutable-var', {
   impl :{$: 'ui-test',  

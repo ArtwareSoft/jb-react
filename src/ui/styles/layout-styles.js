@@ -5,7 +5,7 @@ jb.component('layout.vertical', {
   ],
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl, h('div', {} ,h(ctrl))))),
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('div', {} ,h(ctrl)), ctrl.ctx.data) )),
     css: `>div { margin-bottom: %$spacing%px; display: block }
           >div:last-child { margin-bottom:0 }`,
     features :{$: 'group.init-group'}
@@ -19,7 +19,7 @@ jb.component('layout.horizontal', {
   ],
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl,h(ctrl)))),
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     css: `{display: flex}
         >* { margin-right: %$spacing%px }
         >*:last-child { margin-right:0 }`,
@@ -34,7 +34,7 @@ jb.component('layout.horizontal-wrapped', {
   ],
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl, h('span', {} ,h(ctrl))))),
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('span', {} ,h(ctrl)),ctrl.ctx.data) )),
     css: `{display: flex}
         >* { margin-right: %$spacing%px }
         >*:last-child { margin-right:0 }`,
@@ -51,7 +51,7 @@ jb.component('layout.flex', {
   ],
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,ctrl,h(ctrl)))),
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     css: '{ display: flex; {?justify-content:%$align%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }',
     features :{$: 'group.init-group'}
   }

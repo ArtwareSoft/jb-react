@@ -241,15 +241,14 @@ if (typeof $ != 'undefined' && $.fn)
     $.fn.findIncludeSelf = function(selector) { 
     	return this.find(selector).addBack(selector); }  
 
-ui.isVdom = ctrl =>
-	(ctrl.constructor && ctrl.constructor.name == 'VNode');
-
 ui.renderable = ctrl => 
-	ui.isVdom(ctrl) ? ctrl : ctrl.reactComp();
+	ctrl.reactComp();
 
-// do not wrap vdom
-ui.h = (p1,p2,p3) =>
-	ui.isVdom(p1) ? p1 : ui._h(p1,p2,p3);
+// prevent garbadge collection and preserve the ctx as long as it is in the dom 
+ui.preserveCtx = ctx => { 
+  jb.ctxDictionary[ctx.id] = ctx;
+  return ctx.id;
+}
 
 ui.renderWidget = function(profile,elem) {
 	if (window.parent != window && window.parent.jb)
@@ -307,7 +306,7 @@ ui.stateChangeEm = new jb.rx.Subject();
 
 ui.setState = function(cmp,state,opEvent) {
 	jb.logPerformance('setState',cmp.ctx,state);
-	if (typeof state == 'undefined' && cmp.refresh)	
+	if (state == null && cmp.refresh)	
 		return cmp.refresh();
 	cmp.setState(state || {});
 	ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent});
@@ -329,8 +328,8 @@ ui.toggleClassInVdom = function(vdom,clz,add) {
   return vdom;
 }
 
-ui.item = function(cmp,ctrl,vdom) {
-	cmp.jbComp.extendItemFuncs.forEach(f=>f(cmp,ctrl,vdom));
+ui.item = function(cmp,vdom,data) {
+	cmp.jbComp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
 	return vdom;
 }
 

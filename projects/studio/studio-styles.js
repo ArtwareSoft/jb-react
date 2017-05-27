@@ -260,13 +260,13 @@ jb.component('group.studio-properties-accordion', {
   type: 'group.style', 
   impl :{$: 'custom-style', 
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
-        state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,ctrl,h('div',{ class: 'accordion-section' },[
+        state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
           h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
             h('div',{ class: 'title'}, ctrl.title),
             h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) }, 
               h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
             )
-          ])].concat(state.shown == index ? [h(ctrl)] : [])))        
+          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)        
     )),
     css: `>.accordion-section>.header { display: flex; flex-direction: row; background: #eee; margin-bottom: 2px; justify-content: space-between}
 >.accordion-section>.header>button:hover { background: none }
