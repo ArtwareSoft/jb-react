@@ -122,7 +122,7 @@ jb.component('itemlist.selection', {
       vdom.attributes.onclick = _ => 
         cmp.clickEmitter.next(data)
     },
-    css: '>.selected { ' + ctx.params.cssForSelected + ' }',
+    css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
   })
 })
 
@@ -172,11 +172,6 @@ jb.component('itemlist.drag-and-drop', {
           moves: (el,source,handle) => 
             $(handle).hasClass('drag-handle')
         });
-
-        // var drake = dragula([cmp.base], {
-        //   moves: (el,source,handle) => 
-        //     $(handle).hasClass('drag-handle')
-        // });
 
         drake.on('drag', function(el, source) { 
           var item = el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data;

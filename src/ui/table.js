@@ -1,5 +1,5 @@
 jb.component('table', {
-  type: 'control', category: 'group:80,common:80',
+  type: 'control', category: 'group:80,common:70',
   params: [
     { id: 'title', as: 'string' },
     { id: 'items', as: 'array' , dynamic: true, essential: true, ref: true },

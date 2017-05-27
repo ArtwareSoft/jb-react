@@ -113,7 +113,11 @@ class JbComponent {
 			if (!cssSelectors_hash[cssKey]) {
 				cssId++;
 				cssSelectors_hash[cssKey] = cssId;
-				var cssStyle = this.cssSelectors.map(x=>`.jb-${cssId}${x}`).join('\n');
+				var cssStyle = this.cssSelectors.map(selectorPlusExp=>{
+					var selector = selectorPlusExp.split('{')[0];
+					var fixed_selector = selector.split(',').map(x=>x.trim()).map(x=>`.jb-${cssId}${x}`);
+					return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
+				}).join('\n');
 				var remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
 				$(`<style type="text/css">${remark}${cssStyle}</style>`).appendTo($('head'));
 			}
