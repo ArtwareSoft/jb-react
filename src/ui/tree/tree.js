@@ -49,7 +49,7 @@ class TreeNode extends jb.ui.Component {
 		var clz = [props.class, tree.nodeModel.isArray(path) ? 'jb-array-node': ''].filter(x=>x).join(' ');
 
 		return h('div',{class: clz, path: props.path},
-			[h(NodeLine,{ tree: tree, path: path })].concat(!tree.expanded[path] ? [] : h('ul',{ class: 'treenode-children'} , 
+			[h(NodeLine,{ tree: tree, path: path })].concat(!tree.expanded[path] ? [] : h('div',{ class: 'treenode-children'} , 
 					tree.nodeModel.children(path).map(childPath=>
 						h(TreeNode,{ tree: tree, path: childPath, class: 'treenode' + (tree.selected == childPath ? ' selected' : '') })
 					))
@@ -86,7 +86,7 @@ jb.component('tree', {
 					selectionEmitter: new jb.rx.Subject(),
 				})
 			},
-			afterViewInit: cmp => 
+			afterViewInit: cmp =>
 				tree.el = cmp.base
 		}) 
 	}
@@ -137,6 +137,10 @@ jb.component('tree.selection', {
 			  context.params.onSelection(cmp.ctx.setData(selected));
 			  tree.redraw();
 		  });
+
+		  cmp.onclick.subscribe(_=>
+		  	tree.regainFocus && tree.regainFocus()
+		  );
 
 		  // first auto selection selection
 		  var first_selected = jb.val(context.params.databind);

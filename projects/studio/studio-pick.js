@@ -130,8 +130,8 @@ function eventToProfile(e,_window) {
 
 	// promote parents if the mouse is near the edge
 	var first_result = results.shift(); // shift also removes first item from results!
-	var edgeY = Math.max(6,Math.floor($(first_result).height() / 10));
-	var edgeX = Math.max(6,Math.floor($(first_result).width() / 10));
+	var edgeY = Math.max(3,Math.floor($(first_result).height() / 10));
+	var edgeX = Math.max(3,Math.floor($(first_result).width() / 10));
 
 	var orderedResults = results.filter(elem=>{
 		return Math.abs(mousePos.y - $(elem).offset().top) < edgeY || Math.abs(mousePos.x - $(elem).offset().left) < edgeX;
@@ -142,6 +142,8 @@ function eventToProfile(e,_window) {
 function showBox(cmp,profElem,_window,previewOffset) {
 	if (profElem.offset() == null || $('#jb-preview').offset() == null) 
 		return;
+
+	console.log(1,pathFromElem(_window,profElem),profElem,jb.studio.shortTitle(pathFromElem(_window,profElem)));
 
 	cmp.setState({
 		top: previewOffset + profElem.offset().top,

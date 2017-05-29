@@ -41,7 +41,7 @@ jb.component('watch-ref', {
               cmp.initWatchByRef(ref,includeChildren)
           } else {
             jb.ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
-                jb.ui.setState(cmp,null,e))
+                jb.ui.setState(cmp,null,e,ctx))
           }
       }
   })
@@ -79,13 +79,13 @@ jb.component('group.data', {
     { id: 'watch', as: 'boolean' },
     { id: 'strongRefresh', as: 'boolean' },
   ],
-  impl: (context, data_ref, itemVariable,watch,strongRefresh) => ({
+  impl: (ctx, data_ref, itemVariable,watch,strongRefresh) => ({
       init: cmp => {
         if (watch && strongRefresh && cmp.initWatchByRef)
               cmp.initWatchByRef(data_ref())
         else if (watch)
           jb.ui.refObservable(data_ref(),cmp).subscribe(e=>
-                jb.ui.setState(cmp,null,e))
+                jb.ui.setState(cmp,null,e,ctx))
       },
       extendCtxOnce: ctx => {
           var val = data_ref();
@@ -102,7 +102,7 @@ jb.component('id', {
   params: [ 
     { id: 'id', essential: true, as: 'string' },
   ],
-  impl: (context,id) => ({
+  impl: (ctx,id) => ({
     templateModifier: (vdom,cmp,state) => {
         vdom.attributes.id = id
         return vdom;
@@ -172,13 +172,13 @@ jb.component('feature.if', {
     { id: 'watch', as: 'boolean' },
     { id: 'strongRefresh', as: 'boolean' },
   ],
-  impl: (context, condition,watch,strongRefresh) => ({
+  impl: (ctx, condition,watch,strongRefresh) => ({
     init: cmp => {
         if (watch && strongRefresh && cmp.initWatchByRef)
               cmp.initWatchByRef(condition())
         else if (watch)
           jb.ui.refObservable(condition(),cmp).subscribe(e=>
-                jb.ui.setState(cmp,null,e))
+                jb.ui.setState(cmp,null,e,ctx))
     },
     templateModifier: (vdom,cmp,state) => 
         jb.toboolean(condition()) ? vdom : ' ' // can not be empty string
@@ -190,7 +190,7 @@ jb.component('hidden', {
   params: [
     { id: 'showCondition', type: 'boolean', essential: true, dynamic: true },
   ],
-  impl: (context,showCondition) => ({
+  impl: (ctx,showCondition) => ({
     templateModifier: (vdom,cmp,state) => {
       if (!showCondition(cmp.ctx))
         jb.path(vdom,['attributes','style','display'],'none')
@@ -198,6 +198,18 @@ jb.component('hidden', {
   })
 })
 
+jb.component('feature.hover-title', {
+  type: 'feature',
+  params: [
+    { id: 'title', as: 'string', dynamic: true },
+  ],
+  impl: (ctx, title) => ({
+    templateModifier: (vdom,cmp,state) => {
+      vdom.attributes.title = title()
+      return vdom;
+    }
+  })
+})
 jb.component('feature.keyboard-shortcut', {
   type: 'feature',
   params: [

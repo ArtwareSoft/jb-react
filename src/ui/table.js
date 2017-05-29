@@ -16,30 +16,16 @@ jb.component('field', {
   type: 'table-field',
   params: [
     { id: 'title', as: 'string', essential: true },
-    { id: 'field', as: 'string', essential: true },
+    { id: 'data', as: 'string', essential: true, dynamic: true },
+    { id: 'width', as: 'number' },
     { id: 'class', as: 'string' },
   ],
-  impl: (ctx,title,property,_class) => ({
+  impl: (ctx,title,data,width,_class) => ({
     title: title,
-    fieldData: row => row[property],
+    fieldData: row => data(ctx.setData(row)),
     class: _class,
-    ctx: ctx
-  })
-})
-
-jb.component('field.calculated', {
-  type: 'table-field',
-  params: [
-    { id: 'title', as: 'string', essential: true },
-    { id: 'formula', as: 'string' , dynamic: true, essential: true, description: 'relative to item' },
-    { id: 'class', as: 'string' },
-  ],
-  impl: (ctx,title,formula,_class) => ({
-    title: title,
-    fieldData: row => 
-      formula(ctx.setData(row)),
-    class: _class,
-    ctx: ctx
+    width: width,
+    ctxId: jb.ui.preserveCtx(ctx)
   })
 })
 
@@ -48,11 +34,13 @@ jb.component('field.control', {
   params: [
     { id: 'title', as: 'string', essential: true },
     { id: 'control', type: 'control' , dynamic: true, essential: true },
+    { id: 'width', as: 'number' },
   ],
-  impl: (ctx,title,control) => ({
+  impl: (ctx,title,control,width) => ({
     title: title,
     control: row => control(ctx.setData(row)).reactComp(),
-    ctx: ctx
+    width: width,
+    ctxId: jb.ui.preserveCtx(ctx)
   })
 })
 
@@ -77,14 +65,14 @@ jb.component('table.with-headers', {
   type: 'table.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('table',{},[
-        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctx.id },f.title)) )),
+        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, width: f.width ? f.width + 'px' : '' },f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map(item=> jb.ui.item(cmp,h('tr',{ 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctx.id, class: f.class }, f.control ? h(f.control(item)) : f.fieldData(item))))
+              h('td', { 'jb-ctx': f.ctxId, class: f.class, width: f.width ? f.width + 'px' : '' }, f.control ? h(f.control(item)) : f.fieldData(item))))
               ,item))
         )]),
     features:{$: 'table.init'},
-    css: '{border-spacing: 0}'
+    css: '{border-spacing: 0; text-align: left}'
   }
 })
 

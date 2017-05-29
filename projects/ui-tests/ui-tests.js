@@ -457,8 +457,8 @@ jb.component('ui-test.table', {
   impl :{$: 'ui-test',
   control :{$: 'table', items: '%$people%', 
         fields : [
-          {$: 'field', field: 'name', title: 'name' },
-          {$: 'field.calculated', formula: '%age%', title: 'age' },
+          {$: 'field', data: '%name%', title: 'name' },
+          {$: 'field', data: '%age%', title: 'age' },
         ], 
         features: [
             { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
@@ -473,8 +473,8 @@ jb.component('ui-test.table-DD', {
   controls: [
     {$: 'table', items: '%$people%', watchItems: true,
         fields : [
-          {$: 'field', field: 'name', title: 'name', class: 'drag-handle'},
-          {$: 'field.calculated', formula: '%age%', title: 'age' },
+          {$: 'field', data: '%name%', title: 'name', class: 'drag-handle', width: 300},
+          {$: 'field', data: '%age%', title: 'age', width: 50 },
           {$: 'field.control', control: {$: 'button', 
             title: 'delete', 
             style:{$: 'button.x'},

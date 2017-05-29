@@ -113,6 +113,7 @@ Object.assign(st,{
 				.filter(x=> !(noExtraElem && x =='length'))
 				.map(x=>x=='length'? val.length : x) // extra elem
 				.map(k=> path +'~'+k);
+		return [];
 	},
 	asArrayChildren: path => { // support the case of single element - used by properties features
 		var val = st.valOfPath(path);
@@ -123,7 +124,7 @@ Object.assign(st,{
 	},
 
 	controlParams: path =>
-		st.paramsOfPath(path).filter(p=>(p.type||'').match(/control|options|menu/)).map(p=>p.id),
+		st.paramsOfPath(path).filter(p=>(p.type||'').match(/control|options|menu|table-field/)).map(p=>p.id),
 
 	summary: path => {
 		var val = st.valOfPath(path);

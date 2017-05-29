@@ -387,7 +387,6 @@ jb.ui.dialogs = {
 			, document.body, document.querySelector('body>.jb-dialogs'));
  	},
 	addDialog: function(dialog,context) {
-
 		var self = this;
 		dialog.context = context;
 		this.dialogs.forEach(d=>
@@ -395,8 +394,6 @@ jb.ui.dialogs = {
 		this.dialogs.push(dialog);
 		if (dialog.modal && !$('body>.modal-overlay')[0])
 			$('body').prepend('<div class="modal-overlay"></div>');
-
-		this.redraw();
 
 		dialog.close = function(args) {
 			dialog.em.next({type: 'close'});
@@ -417,7 +414,9 @@ jb.ui.dialogs = {
 			jb.ui.dialogs.redraw();
 		},
 		dialog.closed = _ =>
-			self.dialogs.indexOf(dialog) == -1
+			self.dialogs.indexOf(dialog) == -1;
+
+		this.redraw();
 	},
 	closeAll: function() {
 		this.dialogs.forEach(d=>

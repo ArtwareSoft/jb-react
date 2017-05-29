@@ -1,7 +1,8 @@
 jb.component('button.href', {
   type: 'button.style',
     impl :{$: 'custom-style', 
-        template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: _ => cmp.clicked()}, state.title)
+        template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: _ => cmp.clicked()}, state.title),
+        css: `{color: grey}`
     }
 })
 

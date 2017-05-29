@@ -58,6 +58,7 @@ jb.component('itemlist.watch-items-with-heading', {
         cmp.items = items(cmp.ctx);
         cmp.state.ctrls = cmp.items2ctrls(cmp.items).map(c=>c.reactComp());
 
+        // todo: fix as in itemlist
         cmp.initWatchByRef = refToWatch =>
             jb.ui.refObservable(refToWatch,cmp)
               .map(_=>items(cmp.ctx))

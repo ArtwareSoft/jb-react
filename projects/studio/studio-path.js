@@ -153,6 +153,8 @@ Object.assign(st,{
 			if (p.defaultValue || p.defaultTValue)
 				newCtrl[p.id] = JSON.parse(JSON.stringify(p.defaultValue || p.defaultTValue))
 		})
+		if (st.controlParams(path)[0] == 'fields')
+			newCtrl = { $: 'field.control', control : newCtrl};
 		// find group parent that can insert the control
 		var group_path = path;
 		while (st.controlParams(group_path).length == 0 && group_path)
@@ -227,7 +229,7 @@ Object.assign(st,{
 		}
 	},
 	nameOfRef: ref => 
-		ref.$jb_path ? ref.$jb_path.slice(-1)[0].split(':')[0] : 'ref',
+		(ref && ref.$jb_path) ? ref.$jb_path.slice(-1)[0].split(':')[0] : 'ref',
 	valSummaryOfRef: ref => 
 		st.valSummary(jb.val(ref)),
 	valSummary: val => {

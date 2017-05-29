@@ -419,23 +419,3 @@ jb.component('studio-helper.studio-properties', {
     controls :{$: 'studio.properties', path: 'studio-helper-dummy.simple-label~impl' }
   }
 })
-
-jb.component('studio-helper.studio-properties', {
-  type: 'control', 
-  remark: 2, 
-  impl :{$: 'group', 
-    $vars: { circuit: 'studio-helper-dummy.simple-label' }, 
-    title: '', 
-    controls :{$: 'studio.properties', path: 'studio-helper-dummy.simple-label~impl' }
-  }
-})
-
-jb.component('studio-helper.studio-properties', {
-  type: 'control', 
-  impl :{$: 'group', 
-    $vars: { circuit: 'studio-helper-dummy.simple-label' }, 
-    title: '', 
-    controls :{$: 'studio.properties', path: 'studio-helper-dummy.simple-label~impl' }
-  }
-})
-

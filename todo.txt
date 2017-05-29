@@ -1,10 +1,19 @@
 jbEditor
-  tree refresh
-  =
+  create new pipeline as sugar
+  auto focus on first
+  tree refresh bug
   close floating on enter
   extra array elem (pipeline)
 suggestion highlight in option object
 search component
+
+undo
+ copy - paste
+
+operation history
+
+color picker from color pallete of theme
+
 
 
 keybaord only features editing

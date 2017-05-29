@@ -43,7 +43,7 @@ class JbComponent {
 				super();
 				this.jbComp = jbComp;
 				this.ctx = jbComp.ctx;
-				this.ctxForPick = jbComp.ctxForPick; // for debug
+				this.ctxForPick = jbComp.ctxForPick || jbComp.ctx;
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				try {
 					if (jbComp.createjbEmitter)
@@ -308,12 +308,12 @@ ui.waitFor = function(check,times,interval) {
 
 ui.stateChangeEm = new jb.rx.Subject();
 
-ui.setState = function(cmp,state,opEvent) {
+ui.setState = function(cmp,state,opEvent,watchedAt) {
 	jb.logPerformance('setState',cmp.ctx,state);
 	if (state == null && cmp.refresh)	
 		return cmp.refresh();
 	cmp.setState(state || {});
-	ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent});
+	ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent, watchedAt: watchedAt });
 }
 
 ui.addClassToVdom = function(vdom,clz) {

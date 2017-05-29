@@ -16,14 +16,14 @@ jb.component('studio.event-title', {
 	type: 'data',
 	params: [ {id: 'event', as: 'single', defaultValue: '%%' } ],
 	impl: (context,event) =>
-		event ? st.pathSummary((event.cmp.ctxForPick || event.cmp.ctx).path).replace(/~/g,'/') : ''
+		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
 });
 
 jb.component('studio.event-cmp', {
 	type: 'data',
 	params: [ {id: 'event', as: 'single', defaultValue: '%%' } ],
 	impl: (context,event) =>
-		event ? st.pathSummary((event.cmp.ctxForPick || event.cmp.ctx).path).replace(/~/g,'/') : ''
+		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
 });
 
 jb.component('studio.event-cause', {
@@ -77,27 +77,56 @@ jb.component('studio.open-event-tracker', {
 
 jb.component('studio.event-tracker', {
   type: 'control', 
-  impl :{$: 'itemlist', 
-    items :{$: 'studio.state-change-events' }, 
-    controls :{$: 'group', 
-      style :{$: 'layout.horizontal', spacing: '3' }, 
-      controls: [
-        {$: 'label', 
-          title :{$: 'studio.event-cmp' }, 
-          style :{$: 'label.span' }, 
-          features: [
-            {$: 'css.width', width: '180' }, 
-            {$: 'feature.onHover', 
-              action :{$: 'studio.highlight-event' }
-            }
-          ]
-        }, 
-        {$: 'label', 
-          title :{$: 'studio.event-cause', event: '%%' }, 
-          style :{$: 'label.span' }
-        }
-      ]
-    }, 
+  impl :{$: 'group', 
+    controls: [
+      {$: 'table', 
+        items :{$: 'studio.state-change-events' }, 
+        fields: [
+          {$: 'field.control', 
+            title: 'action', 
+            control :{$: 'button', 
+              title :{$: 'studio.event-cause', event: '%%' }, 
+              action :{$: 'studio.goto-path', path: '%opEvent/srcCtx/path%' }, 
+              style :{$: 'button.href' }, 
+              features: [
+                {$: 'feature.onHover', 
+                  action :{$: 'studio.highlight-event' }
+                }, 
+                {$: 'feature.hover-title', title: '%opEvent/srcCtx/path%' }
+              ]
+            }, 
+            width: '200'
+          }, 
+          {$: 'field.control', 
+            title: 'refreshing', 
+            control :{$: 'button', 
+              title :{$: 'studio.event-cmp' }, 
+              action :{$: 'studio.goto-path', 
+                target: 'new tab', 
+                path: '%cmp/ctxForPick/path%'
+              }, 
+              style :{$: 'button.href' }, 
+              features: [
+                {$: 'feature.onHover', 
+                  action :{$: 'studio.highlight-event' }
+                }
+              ]
+            }, 
+            width: '200'
+          }, 
+          {$: 'field.control', 
+            title: 'watched at', 
+            control :{$: 'button', 
+              title: '%watchedAt/path%', 
+              action :{$: 'studio.goto-path', path: '%watchedAt/path%' }, 
+              style :{$: 'button.href' }
+            }, 
+            width: '100'
+          }
+        ], 
+        style :{$: 'table.with-headers' }
+      }
+    ], 
     features :{$: 'watch-observable', 
       toWatch: ctx => st.previewjb.ui.stateChangeEm.debounceTime(500), 
       strongRefresh: true
