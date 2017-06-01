@@ -95,8 +95,8 @@ jb.component('studio-dialog-feature.refresh-title', {
 	type: 'dialog-feature',
 	impl: ctx => ({
 		afterViewInit: cmp =>
-			jb.studio.scriptChange.subscribe(_=>
-				cmp.recalcTitle && cmp.recalcTitle())
+			jb.studio.scriptChange.subscribe(e=>
+				cmp.recalcTitle && cmp.recalcTitle(e,ctx))
 	})
 })
 

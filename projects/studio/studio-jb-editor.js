@@ -1,23 +1,17 @@
 
 jb.component('studio.open-jb-editor', {
   type: 'action', 
-  params: [
-    { id: 'path', as: 'string' }
-  ], 
-  impl :{$: 'open-dialog', 
-      content :{$: 'studio.jb-editor', path: '%$path%' }, 
-      style :{$: 'dialog.studio-floating', 
-        id: 'jb editor', 
-        width: '700', 
-        height: '400'
-      }, 
-      menu :{$: 'button', 
-        style :{$: 'button.mdl-icon', icon: 'menu'},
-        action :{$: 'studio.open-jb-editor-menu', path: '%$studio/jb_editor_selection%' }
-      },
-      title: 'Inteliscript'
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'open-dialog',
+    style :{$: 'dialog.studio-floating', id: 'jb editor', width: '700', height: '400' }, 
+    content :{$: 'studio.jb-editor', path: '%$path%' }, 
+    menu :{$: 'button', 
+      action :{$: 'studio.open-jb-editor-menu', path: '%$studio/jb_editor_selection%' }, 
+      style :{$: 'button.mdl-icon', icon: 'menu' }
+    }, 
+    title :{$: 'studio.path-hyperlink', path: '%$path%', prefix: 'Inteliscript' }
   }
-}) 
+})
 
 jb.component('studio.jb-editor', {
   type: 'control', 

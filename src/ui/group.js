@@ -17,14 +17,14 @@ jb.component('group.init-group', {
       cmp.initWatchByRef = cmp.initWatchByRef || (refToWatch =>
         jb.ui.refObservable(refToWatch,cmp).subscribe(e => {
               var ctrls = ctx.vars.$model.controls(cmp.ctx);
-              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c))},e,ctx) 
+              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c)).filter(x=>x)},e,ctx) 
             } ))
 
       if (cmp.ctrlEmitter)
         cmp.ctrlEmitter.subscribe(ctrls=>
-              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c))},null,ctx))
+              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c)).filter(x=>x)},null,ctx))
       if (!cmp.state.ctrls)
-        cmp.state.ctrls = ctx.vars.$model.controls(cmp.ctx).map(c=>jb.ui.renderable(c))
+        cmp.state.ctrls = ctx.vars.$model.controls(cmp.ctx).map(c=>jb.ui.renderable(c)).filter(x=>x)
     }
   })
 })

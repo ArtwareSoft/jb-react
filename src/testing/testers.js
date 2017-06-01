@@ -147,7 +147,7 @@ jb.testers.runTests = function(testType,specificTest,show) {
 			else
 				jb_fail_counter++;
 			var elem = `<div><a href="/projects/ui-tests/tests.html?test=${res.id}&show" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
-			<button class="sublime" onclick="goto_sublime('${res.id}')">src</button>
+			<button class="sublime" onclick="goto_sublime('${res.id}')">src</button><span>${res.reason||''}</span>
 			</div>`;
 
 			document.getElementById('success-counter').innerHTML = ', success ' + jb_success_counter;

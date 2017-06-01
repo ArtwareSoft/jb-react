@@ -235,12 +235,8 @@ jb.component('studio-helper.search', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'search', 
+    style :{$: 'layout.vertical', spacing: '53' }, 
     controls: [
-      {$: 'image', 
-        url: 'http://image.prntscr.com/image/3b57301a16474f579d18556bb91d08f0.png', 
-        units: 'px', 
-        style :{$: 'image.default' }
-      }, 
       {$: 'group', 
         title: 'search', 
         style :{$: 'layout.horizontal', spacing: '3' }, 

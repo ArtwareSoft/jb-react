@@ -12,8 +12,7 @@ jb.component('button', {
     jb.ui.ctrl(ctx,{
       beforeInit: cmp =>
         cmp.state.title = jb.val(ctx.params.title),
-      afterViewInit: cmp => {
-        cmp.clicked = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base);
-      }
+      afterViewInit: cmp =>
+        cmp.clicked = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
     })
 })

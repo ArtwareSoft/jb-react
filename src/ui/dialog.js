@@ -5,7 +5,7 @@ jb.component('open-dialog', {
 		{ id: 'style', type: 'dialog.style', dynamic: true, defaultValue: { $:'dialog.default' } },
 		{ id: 'content', type: 'control', dynamic: true, defaultValue :{$: 'group'}, forceDefaultCreation: true },
 		{ id: 'menu', type: 'control', dynamic: true },
-		{ id: 'title', as: 'string', dynamic: true  },
+		{ id: 'title', as: 'renderable', dynamic: true  },
 		{ id: 'onOK', type: 'action', dynamic: true },
 		{ id: 'modal', type: 'boolean', as: 'boolean' },
 		{ id: 'features', type: 'dialog-feature[]', dynamic: true }
@@ -40,8 +40,8 @@ jb.component('open-dialog', {
 				}
 				cmp.dialogClose = _ => 
 					dialog.close();
-				cmp.recalcTitle = _ => 
-					jb.ui.setState(cmp,{title: ctx.params.title(ctx)})
+				cmp.recalcTitle = (e,srcCtx) => 
+					jb.ui.setState(cmp,{title: ctx.params.title(ctx)},e,srcCtx)
 			},
 			afterViewInit: cmp => {
 				cmp.dialog.el = cmp.base;

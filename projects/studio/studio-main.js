@@ -107,7 +107,7 @@ jb.component('studio.all', {
       {$: 'group.data', data: '%$studio/project%', watch: true }, 
       {$: 'feature.init', 
         action :{$: 'url-history.map-url-to-resource', 
-          params: ['project', 'page'], 
+          params: ['project', 'page', 'profile_path'], 
           resource: 'studio', base: 'studio', 
           onUrlChange :{$: 'studio.refresh-preview' }
         }

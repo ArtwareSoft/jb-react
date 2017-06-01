@@ -143,8 +143,6 @@ function showBox(cmp,profElem,_window,previewOffset) {
 	if (profElem.offset() == null || $('#jb-preview').offset() == null) 
 		return;
 
-	console.log(1,pathFromElem(_window,profElem),profElem,jb.studio.shortTitle(pathFromElem(_window,profElem)));
-
 	cmp.setState({
 		top: previewOffset + profElem.offset().top,
 		left: profElem.offset().left,

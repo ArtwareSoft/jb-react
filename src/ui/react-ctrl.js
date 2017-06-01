@@ -245,8 +245,21 @@ if (typeof $ != 'undefined' && $.fn)
     $.fn.findIncludeSelf = function(selector) { 
     	return this.find(selector).addBack(selector); }  
 
+jb.jstypes.renderable = value => {
+  if (value == null) return '';
+  if (Array.isArray(value))
+  	return ui.h('div',{},value.map(item=>jb.jstypes.renderable(item)));
+  value = jb.val(value,true);
+  if (typeof(value) == 'undefined') return '';
+  if (value.reactComp)
+  	return ui.h(value.reactComp())
+  else if (value.constructor && value.constructor.name == 'VNode')
+  	return value;
+  return '' + value;
+}
+
 ui.renderable = ctrl => 
-	ctrl.reactComp();
+	ctrl && ctrl.reactComp();
 
 // prevent garbadge collection and preserve the ctx as long as it is in the dom 
 ui.preserveCtx = ctx => { 
@@ -311,8 +324,9 @@ ui.stateChangeEm = new jb.rx.Subject();
 ui.setState = function(cmp,state,opEvent,watchedAt) {
 	jb.logPerformance('setState',cmp.ctx,state);
 	if (state == null && cmp.refresh)	
-		return cmp.refresh();
-	cmp.setState(state || {});
+		cmp.refresh();
+	else
+		cmp.setState(state || {});
 	ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent, watchedAt: watchedAt });
 }
 

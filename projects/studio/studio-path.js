@@ -244,7 +244,7 @@ Object.assign(st,{
 // ******* components ***************
 
 jb.component('studio.ref',{
-	params: [ {id: 'path', as: 'string' } ],
+	params: [ {id: 'path', as: 'string', essential: true } ],
 	impl: (context,path) => 
 		st.refOfPath(path)
 });
@@ -261,7 +261,7 @@ jb.component('studio.is-new',{
 jb.component('studio.watch-path', {
   type: 'feature', category: 'group:0',
   params: [
-    { id: 'path', essential: true, as: 'ref' },
+    { id: 'path', essential: true },
     { id: 'strongRefresh', as: 'boolean' },
     { id: 'includeChildren', as: 'boolean' },
   ],
@@ -273,8 +273,32 @@ jb.component('studio.watch-script-changes', {
   impl: (ctx,strongRefresh) => ({
       init: cmp =>
         st.compsRefHandler.resourceChange.debounceTime(200).subscribe(e=>
-            jb.ui.setState(cmp))
+            jb.ui.setState(cmp,null,e,ctx))
    })
+})
+
+jb.component('studio.path-hyperlink', {
+  type: 'control', 
+  params: [
+    { id: 'path', as: 'string', essential: true }, 
+    { id: 'prefix', as: 'string' }
+  ], 
+  impl :{$: 'group', 
+    style :{$: 'layout.horizontal', spacing: '9' }, 
+    controls: [
+      {$: 'label', title: '%$prefix%' }, 
+      {$: 'button', 
+        title: ctx => {
+	  		var path = ctx.componentContext.params.path;
+	  		var title = st.shortTitle(path) || '',compName = st.compNameOfPath(path) || '';
+	  		return title == compName ? title : compName + ' ' + title;
+	  	}, 
+        action :{$: 'studio.goto-path', path: '%$path%' }, 
+        style :{$: 'button.href' }, 
+        features :{$: 'feature.hover-title', title: '%$path%' }
+      }
+    ]
+  }
 })
 
 })()

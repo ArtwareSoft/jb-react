@@ -40,9 +40,10 @@ jb.component('editable-text.jb-editor-floating-input', {
 })
 
 jb.component('button.studio-script',{
-  type: 'editable-text.style',
+  type: 'button.style',
   impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('div', { title: state.title }, h('div',{class:'inner-text'},state.title)),
+      template: (cmp,state,h) => h('div', { title: state.title, onclick: _ => cmp.clicked() }, 
+        h('div',{class:'inner-text'},state.title)),
           css: `>.inner-text {
   white-space: nowrap; overflow-x: hidden;
   display: inline; height: 16px; 

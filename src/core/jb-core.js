@@ -39,13 +39,17 @@ function jb_run(context,parentParam,settings) {
       case 'profile':
         for(var varname in profile.$vars || {})
           run.ctx = new jbCtx(run.ctx,{ vars: jb.obj(varname,run.ctx.runInner(profile.$vars[varname], null,'$vars~'+varname)) });
+        if (!run.impl) 
+          run.ctx.callerPath = context.path;
+          
         run.preparedParams.forEach(paramObj => {
           switch (paramObj.type) {
-            case 'function': run.ctx.params[paramObj.name] = paramObj.func; break;
+            case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
             case 'array': run.ctx.params[paramObj.name] = 
                 paramObj.array.map((prof,i) => run.ctx.runInner(prof, paramObj.param, paramObj.name+'~'+i) )
               ; break;  // maybe we should [].concat and handle nulls
-            default: run.ctx.params[paramObj.name] = jb_run(paramObj.context, paramObj.param);
+            default: run.ctx.params[paramObj.name] = run.ctx.runInner(paramObj.prof, paramObj.param, paramObj.name)
+            //jb_run(paramObj.context, paramObj.param);
           }
         });
         var out;
@@ -59,7 +63,6 @@ function jb_run(context,parentParam,settings) {
               castToParam(run.impl.apply(null,args),parentParam))
         }
         else {
-          run.ctx.callerPath = context.path;
           out = jb_run(new jbCtx(run.ctx, { componentContext: run.ctx }),parentParam);
         }
 
@@ -115,24 +118,27 @@ function prepareParams(comp,profile,ctx) {
       var arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
 
       if (param.dynamic) {
-        if (arrayParam)
-          var func = (ctx2,data2) => 
-            jb.flattenArray(valOrDefaultArray.map((prof,i)=>
-              ctx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
-        else
-          var func = (ctx2,data2) => 
-                valOrDefault != null ? ctx.extendVars(ctx2,data2).runInner(valOrDefault,param,path) : valOrDefault;
+        var outerFunc = runCtx => {
+          if (arrayParam)
+            var func = (ctx2,data2) => 
+              jb.flattenArray(valOrDefaultArray.map((prof,i)=>
+                runCtx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
+          else
+            var func = (ctx2,data2) => 
+                  valOrDefault != null ? runCtx.extendVars(ctx2,data2).runInner(valOrDefault,param,path) : valOrDefault;
 
-        Object.defineProperty(func, "name", { value: p }); // for debug
-        func.profile = (typeof(val) != "undefined") ? val : (typeof(param.defaultValue) != 'undefined') ? param.defaultValue : null;
-        func.srcPath = ctx.path;
-        return { name: p, type: 'function', func: func };
+          Object.defineProperty(func, "name", { value: p }); // for debug
+          func.profile = (typeof(val) != "undefined") ? val : (typeof(param.defaultValue) != 'undefined') ? param.defaultValue : null;
+          func.srcPath = ctx.path;
+          return func;
+        }
+        return { name: p, type: 'function', outerFunc: outerFunc };
       } 
 
       if (arrayParam) // array of profiles
         return { name: p, type: 'array', array: valOrDefaultArray, param: {} };
       else 
-        return { name: p, type: 'run', context: new jbCtx(ctx,{profile: valOrDefault, path: p}), param: param };
+        return { name: p, type: 'run', prof: valOrDefault, param: param }; // context: new jbCtx(ctx,{profile: valOrDefault, path: p}),
   })
 }
 
@@ -294,9 +300,9 @@ function evalExpressionPart(expressionPart,context,jstype) {
       item = item.map(inner =>
         typeof inner === "object" ? objectProperty(inner,part,jstype,i == parts.length -1) : inner)
         .filter(x=>x != null)
-    else if (typeof item === 'object' && typeof item[part] === 'function' && item[part].profile)
+    else if (item && typeof item === 'object' && typeof item[part] === 'function' && item[part].profile)
       item = item[part](context)
-    else if (typeof item === 'object')
+    else if (item && typeof item === 'object')
       item = item && objectProperty(item,part,jstype,i == parts.length -1)
     else
       item = null; // no match

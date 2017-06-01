@@ -199,6 +199,20 @@ jb.component('ui-test.open-dialog', {
 },
 })
 
+jb.component('ui-test.renderable', {
+  impl :{$: 'ui-test',  
+  control :{$: 'button', title: 'click me',
+    action :{$: 'open-dialog', 
+      title: {$:'label' , title: 'hello as label' }, id:'hello', 
+      content :{$: 'label', title: 'jbart'},
+    }
+  },
+  action :{$: 'ui-action.click', selector: 'button' },
+  cleanUp :{$: 'dialog.close-all' },
+  expectedResult :{$: 'contains', allText :{$: 'test.dialog-content', id: 'hello'}, text: 'hello as label' } ,
+},
+})
+
 var ui_test_dialog_isAttached = false;
 
 jb.component('ui-test.dialog-cleanup', {
