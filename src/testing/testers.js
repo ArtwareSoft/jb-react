@@ -7,6 +7,7 @@ jb.component('data-test', {
 		{ id: 'cleanUp', type: 'action', dynamic: true },
 	],
 	impl: function(context,calculate,runBefore,expectedResult,cleanUp) {
+		var initial_resources = jb.valueByRefHandler.resources();
 		return Promise.resolve(runBefore())
 			.then(_ => 
 				calculate())
@@ -14,7 +15,10 @@ jb.component('data-test', {
 				Array.isArray(v) ? jb.synchArray(v) : v)
 			.then(value=>
 				!! expectedResult(new jb.jbCtx(context,{ data: value })))
-			.then(result =>
+			.then(result => { // default cleanup
+				jb.valueByRefHandler.resources(initial_resources);
+				return result;
+			}).then(result =>
 					Promise.resolve(cleanUp()).then(_=>result) )
 			.then(result =>
 					({ id: context.vars.testID, success: result }))
@@ -31,6 +35,7 @@ jb.component('ui-test', {
 		{ id: 'cleanUp', type: 'action', dynamic: true },
 	],
 	impl: function(context,control,runBefore,action,expectedResult,cleanUp) {
+		var initial_resources = jb.valueByRefHandler.resources();
 		return Promise.resolve(runBefore())
 			.then(_ => {
 				try {
@@ -54,9 +59,12 @@ jb.component('ui-test', {
 				if (!success)
 					t = 5; // just a breakpoint for debugger
 				return { id: context.vars.testID, success: success,	elem: elem }
-			})
-			.then(result =>
-					Promise.resolve(cleanUp()).then(_=>result) )
+			}).then(result=> { // default cleanup
+				jb.ui.dialogs.dialogs.forEach(d=>d.close()) 
+				jb.valueByRefHandler.resources(initial_resources);
+				return result;
+			}).then(result =>
+				Promise.resolve(cleanUp()).then(_=>result) )
 	}
 })
 
@@ -124,6 +132,9 @@ var jb_fail_counter = 0;
 function goto_sublime(id) {
 	$.ajax(`/?op=gotoSource&comp=${id}`)
 }
+function hide_success_lines() {
+	$('.success').hide()
+}
 
 startTime = startTime || new Date().getTime();
 jb.testers.runTests = function(testType,specificTest,show) {
@@ -135,7 +146,7 @@ jb.testers.runTests = function(testType,specificTest,show) {
 		.filter(e=>!specificTest || e[0] == specificTest);
 
 
-	document.write(`<div style="font-size: 20px"><span id="fail-counter"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span></div>`);
+	document.write(`<div style="font-size: 20px"><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span></div>`);
 
 	jb.rx.Observable.from(tests).concatMap(e=> 
 			Promise.resolve(new jb.jbCtx().setVars({testID: e[0]}).run({$:e[0]})))
@@ -146,16 +157,19 @@ jb.testers.runTests = function(testType,specificTest,show) {
 				jb_success_counter++;
 			else
 				jb_fail_counter++;
-			var elem = `<div><a href="/projects/ui-tests/tests.html?test=${res.id}&show" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+			var elem = `<div class="${res.success ? 'success' : 'failure'}""><a href="/projects/ui-tests/tests.html?test=${res.id}&show" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 			<button class="sublime" onclick="goto_sublime('${res.id}')">src</button><span>${res.reason||''}</span>
 			</div>`;
 
 			document.getElementById('success-counter').innerHTML = ', success ' + jb_success_counter;
 			document.getElementById('fail-counter').innerHTML = 'failures ' + jb_fail_counter;
 			document.getElementById('fail-counter').style.color = jb_fail_counter ? 'red' : 'green';
+			document.getElementById('fail-counter').style.cursor = 'pointer';
+
 			document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - startTime) +' mSec';
 			document.body.innerHTML += elem;
 			if (show && res.elem)
 				document.body.appendChild(res.elem);
 		})
+
 }

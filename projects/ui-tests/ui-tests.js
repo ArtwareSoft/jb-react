@@ -135,7 +135,6 @@ jb.component('ui-test.two-way-binding', {
       ]
   },
   action :{$: 'ui-action.set-text', selector: '#inp', value: 'hello'},
-  cleanUp :{$: 'write-value', to: '%$person/name%', value: 'Homer Simpson'},
   expectedResult :{$: 'contains', text: ['hello','hello'] },
 },
 })
@@ -194,7 +193,6 @@ jb.component('ui-test.open-dialog', {
     }
   },
   action :{$: 'ui-action.click', selector: 'button' },
-  cleanUp :{$: 'dialog.close-all' },
   expectedResult :{$: 'contains', allText :{$: 'test.dialog-content', id: 'hello'}, text: ['hello', 'jbart' ] } ,
 },
 })
@@ -208,7 +206,6 @@ jb.component('ui-test.renderable', {
     }
   },
   action :{$: 'ui-action.click', selector: 'button' },
-  cleanUp :{$: 'dialog.close-all' },
   expectedResult :{$: 'contains', allText :{$: 'test.dialog-content', id: 'hello'}, text: 'hello as label' } ,
 },
 })
@@ -417,11 +414,9 @@ control :{$: 'group',
         ],
       },
       { $: 'group', 
-        features :{$: 'group.data', data: '%$globals/selectedPerson%', watch: true } , 
-         controls: [
-            {$: 'label' , title: '%name% selected' },
-          ]
-        }
+        features :{$: 'group.data', data: '%$globals/selectedPerson%', watch: true, strongRefresh: true } , 
+         controls :{$: 'label' , title: '%name% selected' },
+      }
     ]
   } ,
   action: ctx=> jb.delay(1),
