@@ -66,7 +66,7 @@ jb.studio.Probe = class {
 
   record(context,parentParam) {
       var path = context.path;
-      var input = context.ctx({});
+      var input = context.ctx({probe: null});
       var out = input.runItself(parentParam,{noprobe: true});
 
       if (!this.probe[path]) {

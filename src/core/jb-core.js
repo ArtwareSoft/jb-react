@@ -41,7 +41,7 @@ function jb_run(context,parentParam,settings) {
           run.ctx = new jbCtx(run.ctx,{ vars: jb.obj(varname,run.ctx.runInner(profile.$vars[varname], null,'$vars~'+varname)) });
         if (!run.impl) 
           run.ctx.callerPath = context.path;
-          
+
         run.preparedParams.forEach(paramObj => {
           switch (paramObj.type) {
             case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;

@@ -46,34 +46,28 @@ jb.component('jb-editor-children-test', {
   },
 })
 
-jb.component('jb-path-test', {
+jb.component('studio-probe-test', {
   type: 'test',
   params: [
-    { id: 'controlWithMark', type: 'control', dynamic: true },
-    { id: 'staticPath', as: 'string' },
-    { id: 'expectedDynamicCounter', as: 'number' },
-    { id: 'probeCheck', type: 'boolean', dynamic: true, as: 'boolean' }
+    { id: 'circuit', type: 'control', dynamic: true },
+    { id: 'probePath', as: 'string' },
+    { id: 'expectedVisits', as: 'number', defaultValue : -1 },
   ],
-  impl: (ctx,control,staticPath,expectedDynamicCounter,probeCheck)=> {
+  impl: (ctx,circuit,probePath,expectedVisits)=> {
 
     var testId = ctx.vars.testID;
-    var failure = (part,reason) => ({ id: testId, title: testId + '- ' + part, success:false, reason: reason });
+    var failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
     var success = _ => ({ id: testId, title: testId, success: true });
 
-    var full_path = testId + '~impl~' + staticPath;
-    var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: control.profile, comp: testId, path: '' } ),true)
+    var full_path = testId + '~impl~' + probePath;
+    var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, comp: testId, path: '' } ),true)
       .runCircuit(full_path);
     return probeRes.then(res=>{
           try {
-            var match = Array.from(res.element.querySelectorAll('[jb-ctx]'))
-            .filter(e=> {
-              var ctx2 = jb.ctxDictionary[e.getAttribute('jb-ctx')];
-              return ctx2.path == full_path || (ctx2.componentContext && ctx2.componentContext.callerPath == full_path)
-            })
-            if (match.length != expectedDynamicCounter)
-              return failure('dynamic counter', 'jb-path error: ' + staticPath + ' found ' + (match || []).length +' times. expecting ' + expectedDynamicCounter + ' occurrences');
-            if (!res.finalResult[0] || !probeCheck(res.finalResult[0].in) )
-                return failure('probe');
+            if (res.finalResult.visits != expectedVisits && expectedVisits != -1)
+              return failure(`expected visits error actual/expected: ${res.finalResult.visits}/${expectedVisits}`);
+            if (!res.finalResult[0])
+                return failure('no probe results at path ' + probePath);
           } catch(e) {
             jb.logException(e,'jb-path-test');
             return failure('exception');

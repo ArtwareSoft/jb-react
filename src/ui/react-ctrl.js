@@ -33,7 +33,7 @@ class JbComponent {
 		this.jb_profile = ctx.profile;
 		var title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => ''); 
 		this.jb_title = (typeof title == 'function') ? title : () => ''+title;
-		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
+//		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
 	}
 
 	reactComp() {

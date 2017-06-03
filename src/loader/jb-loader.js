@@ -89,7 +89,7 @@ var resources = {
         'suggestions','undo','edit-source','jb-editor','jb-editor-styles','probe','testers', 'event-tracker'
       ],
       'studio-tests': [
-        'path','model','tree','suggestion'
+        'probe','model','tree','suggestion'
       ],
       'css-files': [
         'node_modules/material-design-lite/material.min.css',
