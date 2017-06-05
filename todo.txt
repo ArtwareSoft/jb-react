@@ -1,3 +1,5 @@
+table with filters
+tree - redraw
 jbEditor
   create new pipeline as sugar
   auto focus on first

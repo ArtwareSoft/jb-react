@@ -244,15 +244,15 @@ jb.component('studio.duplicate',{
 		st.duplicate(path)
 })
 
-jb.component('studio.move-in-array',{
-	type: 'action',
-	params: [ 
-		{ id: 'path', as: 'string' },
-		{ id: 'moveUp', type: 'boolean', as: 'boolean'} 
-	],
-	impl: (ctx,path,moveUp) => 
-		st.moveInArray(path,moveUp)
-})
+// jb.component('studio.move-in-array',{
+// 	type: 'action',
+// 	params: [ 
+// 		{ id: 'path', as: 'string' },
+// 		{ id: 'moveUp', type: 'boolean', as: 'boolean'} 
+// 	],
+// 	impl: (ctx,path,moveUp) => 
+// 		st.moveInArray(path,moveUp)
+// })
 
 jb.component('studio.new-array-item', {
 	type: 'action',

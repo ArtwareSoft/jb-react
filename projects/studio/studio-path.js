@@ -72,7 +72,7 @@ Object.assign(st,{
 		}
 	},
 
-	move: (path,draggedPath,index) => { // drag & drop
+	moveInTree: (path,draggedPath,index) => { // drag & drop
 		var dragged = st.valOfPath(draggedPath);
 		var dest = st.getOrCreateControlArrayRef(path);
 		if (dest) {
@@ -80,16 +80,18 @@ Object.assign(st,{
 			var _index = (index == -1) ? jb.val(dest).length : index;
 			st.splice(dest,[[_index,0,dragged]]);
 		}
-	},
+ 	},
 
-	moveInArray: (path,moveUp) => { // drag & drop 
-		var arr = st.valOfPath(st.parentPath(path));
-		if (Array.isArray(arr)) {
-			var index = Number(path.split('~').pop());
-			var base = moveUp ? index -1 : index; 
-			if (base <0 || base >= arr.length-1) 
-				return; // the + elem
-			st.splice(st.refOfPath(st.parentPath(path)),[[base,2,arr[base+1],arr[base]]]);
+	moveInArray: (path,draggedPath,index) => { // drag & drop
+		var dragged = st.valOfPath(draggedPath);
+		var array = st.valOfPath(path);
+		if (Array.isArray(array)) {
+			if (index < 0 || index >= array.length) 
+				return 'moveInArray: out of array index ' + index + ' in array of size ' + array.length;
+			st._delete(draggedPath);
+			array = st.valOfPath(path);
+			var _index = (index == -1) ? jb.val(array).length : index;
+			st.splice(array,[[_index,0,dragged]]);
 		}
 	},
 

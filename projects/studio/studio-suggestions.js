@@ -107,21 +107,22 @@ jb.component('studio.property-primitive', {
           {$: 'studio.undo-support', path: '%$path%' }, 
           {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
           {$: 'editable-text.helper-popup', 
-            showHelper :{$: 'studio.show-suggestions' },
             features :{$: 'dialog-feature.near-launcher-position' }, 
             control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
             popupId: 'suggestions', 
-            popupStyle :{$: 'dialog.popup' }
-          }, 
+            popupStyle :{$: 'dialog.popup' }, 
+            showHelper :{$: 'studio.show-suggestions' }
+          }
         ]
-      }, 
+      }
     ], 
     features: [
       {$: 'var', 
         name: 'suggestionData', 
-        value :{$: 'object', selected: '', options: [], path: '%$path%' }, mutable: true
+        value :{$: 'object', selected: '', options: [], path: '%$path%' }, 
+        mutable: true
       }, 
-//      {$: 'studio.property-toolbar-feature', path: '%$path%' },
+      {$: 'studio.property-toolbar-feature', path: '%$path%' }
     ]
   }
 })

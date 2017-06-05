@@ -28,3 +28,20 @@ jb.component('studio-data-test.param-type-array', {
 	},
 })
 
+jb.component('test.simple-pipeline', {
+	type: 'data',
+	impl :{$pipeline: ['x' , 'y', 'z']}
+})
+
+jb.component('studio.jb-editor-move', {
+	 impl :{$: 'data-test', 
+	 	runBefore : ctx =>
+	 		jb.studio.moveInArray('test.simple-pipeline~impl~$pipeline',
+	 				'test.simple-pipeline~impl~$pipeline~0',1),
+		calculate :{$pipeline: [
+			{$: 'studio.val' , path: 'test.simple-pipeline~impl~$pipeline' },
+			{$join: ','}
+		]},
+		expectedResult : '%% == "y,x,z"'
+	},
+})

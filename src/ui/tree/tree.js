@@ -282,8 +282,8 @@ jb.component('tree.drag-and-drop', {
 					var no_of_siblings = $($('.treenode.selected').parents('.treenode-children')[0]).children().length;
 					var index = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
 					var path = tree.selected.split('~').slice(0,-1).join('~');
-					tree.nodeModel.move(path, tree.selected, index);
-					tree.selectionEmitter.next(path+'~'+index);
+					if (!tree.nodeModel.move(path, tree.selected, index))
+						tree.selectionEmitter.next(path+'~'+index);
 			})
   		},
   		doCheck: function(cmp) {

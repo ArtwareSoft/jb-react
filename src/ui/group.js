@@ -2,7 +2,7 @@ jb.component('group', {
   type: 'control', category: 'group:100,common:90',
   params: [
     { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'group.style', defaultValue: { $: 'group.section' }, essential: true , dynamic: true },
+    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, essential: true , dynamic: true },
     { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],

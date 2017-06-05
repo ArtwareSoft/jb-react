@@ -3,63 +3,79 @@ jb.resource('studio',{});
 jb.component('studio.all', {
   type: 'control', 
   impl :{$: 'group', 
-    style :{$: 'layout.vertical', spacing: '0' }, 
+    style :{$: 'layout.vertical', spacing: '0' },
     controls: [
-      {$: 'group', 
-        title: 'top bar', 
-        style :{$: 'layout.horizontal', spacing: '3' }, 
-        controls: [
-          {$: 'image', 
-            url: '/projects/studio/css/logo90.png', 
-            imageHeight: '90', 
-            units: 'px', 
-            style :{$: 'image.default' }
-          }, 
-          {$: 'group', 
-            title: 'title and menu', 
-            style :{$: 'layout.vertical', spacing: '17' }, 
-            controls: [
-              {$: 'label', 
-                title: 'message', 
-                style :{$: 'label.studio-message' }
-              }, 
-              {$: 'label', 
-                title :{$: 'replace', 
-                  find: '_', 
-                  replace: ' ', 
-                  text: '%$studio/project%'
-                }, 
-                style :{$: 'label.span' }, 
-                features :{$: 'css', 
-                  css: '{ font: 20px Arial; margin-left: 6px; }'
-                }
-              }, 
-              {$: 'group', 
-                title: 'menu and toolbar', 
-                style :{$: 'layout.flex', align: 'space-between' }, 
-                controls: [
-                  {$: 'menu.control', 
-                    menu :{$: 'studio.main-menu' }, 
-                    style :{$: 'menu-style.pulldown' }
-                  }, 
-                  {$: 'studio.toolbar' }, 
-                  {$: 'studio.search-component', 
-                    features :{$: 'css.margin', top: '-10' }
-                  }
-                ], 
-                features : [ {$: 'css.width', width: '1040' }, {$: 'css.height', height: '30' }
-                ]
-              }
-            ], 
-            features :{$: 'css', css: '{ padding-left: 18px; width: 100%; }' }
-          }
-        ], 
-        features :{$: 'css', css: '{ height: 90px; border-bottom: 1px #d9d9d9 solid}' }
-      }, 
+      {$:'studio.top-bar' },
       {$: 'studio.preview-widget', width: 1280, height: 520,
         features :{$: 'watch-ref', ref: '%$studio/page%'}
       }, 
+      {$: 'studio.pages' },
+    ], 
+    features: [
+      {$: 'group.data', data: '%$studio/project%', watch: true }, 
+      {$: 'feature.init', 
+        action :{$: 'url-history.map-url-to-resource', 
+          params: ['project', 'page', 'profile_path'], 
+          resource: 'studio', base: 'studio', 
+          onUrlChange :{$: 'studio.refresh-preview' }
+        }
+      }
+    ]
+  }
+})
+
+jb.component('studio.top-bar', {
+  type: 'control', 
+  impl :{$: 'group', 
+    title: 'top bar', 
+    style :{$: 'layout.horizontal', spacing: '3' }, 
+    controls: [
+      {$: 'image', 
+        url: '/projects/studio/css/logo90.png', 
+        imageHeight: '90', 
+        units: 'px', 
+        style :{$: 'image.default' }
+      }, 
       {$: 'group', 
+        title: 'title and menu', 
+        style :{$: 'layout.vertical', spacing: '17' }, 
+        controls: [
+          {$: 'label', 
+            title: 'message', 
+            style :{$: 'label.studio-message' }
+          }, 
+          {$: 'label', 
+            title :{$: 'replace', find: '_', replace: ' ', text: '%$studio/project%' }, 
+            style :{$: 'label.span' }, 
+            features :{$: 'css', css: '{ font: 20px Arial; margin-left: 6px; }' }
+          }, 
+          {$: 'group', 
+            title: 'menu and toolbar', 
+            style :{$: 'layout.flex', align: 'space-between' }, 
+            controls: [
+              {$: 'menu.control', 
+                menu :{$: 'studio.main-menu' }, 
+                style :{$: 'menu-style.pulldown' }, 
+                features :{$: 'css.height', height: '30' }
+              }, 
+              {$: 'studio.toolbar' }, 
+              {$: 'studio.search-component', 
+                features :{$: 'css.margin', top: '-10' }
+              }
+            ], 
+            features: [{$: 'css.width', width: '1040' }]
+          }
+        ], 
+        features :{$: 'css', css: '{ padding-left: 18px; width: 100%; }' }
+      }
+    ], 
+    features :{$: 'css', css: '{ height: 90px; border-bottom: 1px #d9d9d9 solid}' }
+  }
+})
+
+jb.component('studio.pages', {
+  type: 'control', 
+  impl :{$: 'group', 
         title: 'pages', 
         style :{$: 'layout.horizontal' }, 
         controls: [
@@ -102,18 +118,6 @@ jb.component('studio.all', {
           }, 
         ]
       }
-    ], 
-    features: [
-      {$: 'group.data', data: '%$studio/project%', watch: true }, 
-      {$: 'feature.init', 
-        action :{$: 'url-history.map-url-to-resource', 
-          params: ['project', 'page', 'profile_path'], 
-          resource: 'studio', base: 'studio', 
-          onUrlChange :{$: 'studio.refresh-preview' }
-        }
-      }
-    ]
-  }
 })
 
 jb.component('studio.currentProfilePath', {

@@ -11,18 +11,20 @@ jb.component('mdl-style.init-dynamic', {
         var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
         cmp.refreshMdl = _ => {
           jb.delay(1).then(_ => elems.forEach(el=> {
+            if (!$.contains(document, $(el)[0]))
+              return;
             componentHandler.downgradeElements(el);
             componentHandler.upgradeElement(el);
           }))
         };
         jb.delay(1).then(_ =>
       	 elems.forEach(el=>
-      	 	componentHandler.upgradeElement(el)))
+      	 	$.contains(document, $(el)[0]) && componentHandler.upgradeElement(el)))
       },
       destroy: cmp => 
       	 $.contains(document.documentElement, cmp.base) && 
           (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
-      	 	   componentHandler.downgradeElements(el))
+      	 	   $.contains(document, $(el)[0]) && componentHandler.downgradeElements(el))
     })
 })
 
@@ -37,10 +39,10 @@ jb.component('mdl.ripple-effect', {
       css: '{ position: relative; overflow:hidden }',
       afterViewInit: cmp => {
           cmp.base.classList.add('mdl-js-ripple-effect');
-          componentHandler.upgradeElement(cmp.base);
+          $.contains(document, $(cmp.base)[0]) && componentHandler.upgradeElement(cmp.base);
       },
       destroy: cmp => 
-          componentHandler.downgradeElements(cmp.base)
+          $.contains(document, $(cmp.base)[0]) && componentHandler.downgradeElements(cmp.base)
    }),
 })
 

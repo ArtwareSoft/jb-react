@@ -184,13 +184,18 @@ jb.component('studio.highlight-in-preview',{
 		var _window = jb.studio.previewWindow || window;
 		if (!_window) return;
 		var elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
-			.filter(e=>
-				_window.jb.ctxDictionary[e.getAttribute('jb-ctx')].path == path)
+			.filter(e=>{
+				var _ctx = _window.jb.ctxDictionary[e.getAttribute('jb-ctx')];
+				var callerPath = _ctx && _ctx.componentContext && _ctx.componentContext.callerPath;
+				return callerPath == path || (_ctx && _ctx.path == path);
+			})
 
 		if (elems.length == 0) // try to look in studio
 			elems = Array.from(document.querySelectorAll('[jb-ctx]'))
-			.filter(e=>
-				jb.ctxDictionary[e.getAttribute('jb-ctx')].path == path)
+			.filter(e=> {
+				var _ctx = jb.ctxDictionary[e.getAttribute('jb-ctx')];
+				return _ctx && _ctx.path == path
+			})
 	
 		highlight(elems,_window);
   }

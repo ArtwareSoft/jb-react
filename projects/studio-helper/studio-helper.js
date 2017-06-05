@@ -51,6 +51,15 @@ jb.component('studio-helper.event-tracker', {
   }
 })
 
+jb.component('studio-helper.top-bar', {
+  type: 'control', 
+  impl :{$: 'studio.top-bar' } 
+})
+
+jb.component('studio-helper.pages', {
+  type: 'control', 
+  impl :{$: 'studio.pages' } 
+})
 
 jb.component('studio-helper.control-tree', {
   type: 'control', 

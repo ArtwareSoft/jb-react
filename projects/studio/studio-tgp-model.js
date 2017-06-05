@@ -18,7 +18,10 @@ st.ControlTree = class {
 				.concat(this.innerControlPaths(path));		
 	}
 	move(path,draggedPath,index) {
-		return st.move(path,draggedPath,index)
+		if (st.parentPath(draggedPath) == path)
+			return st.moveInArray(path,draggedPath,index)
+		else
+			return st.moveInTree(path,draggedPath,index)
 	}
 	icon(path) {
 		return st.icon(path)
@@ -70,7 +73,7 @@ st.jbEditorTree = class {
 				.concat(this.innerProfiles(path,val) || []);
 	}
 	move(path,draggedPath,index) {
-		return st.move(path,draggedPath,index)
+		return st.moveInArray(path,draggedPath,index)
 	}
 	icon(path) {
 		return st.icon(path)
@@ -146,6 +149,8 @@ Object.assign(st,{
 		if (path == '') return '';
 		if (path.indexOf('~') == -1)
 			return path;
+		if (path.match(/~impl$/))
+			return path.split('~')[0];
 
 		var val = st.valOfPath(path);
 		return (val && typeof val.title == 'string' && val.title) || (val && val.remark) || (val && jb.compName(val)) || path.split('~').pop();
