@@ -40,7 +40,7 @@ jb.component('ui-test.group', {
       {$:'label', title: 'hello world'},
       {$:'label', title: '2'},
     ] },
-    expectedResult :{$: 'contains', text: ['jb-group','hello world','2'] }
+    expectedResult :{$: 'contains', text: ['hello world','2'] }
   },
 })
 
