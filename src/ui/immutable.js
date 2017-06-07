@@ -94,6 +94,7 @@ class ImmutableWithPath {
     }
   }
   refresh(ref) {
+    if (!ref) debugger;
     try {
       var path = ref.$jb_path, new_ref = {};
       if (!path)
@@ -139,7 +140,7 @@ class ImmutableWithPath {
   refOfPath(path,silent) {
       try {
         var val = path.reduce((o,p)=>o[p],this.resources()),parent = null;
-        if (typeof val != 'object') 
+        if (typeof val != 'object' || Array.isArray(val)) 
           parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
           return {
             $jb_path: path,

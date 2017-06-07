@@ -41,11 +41,68 @@ jb.component('itemlists.table-with-search', {
             style :{$: 'editable-text.mdl-search' }
           }, 
           {$: 'table', 
-            items: '%$people%', 
+            items :{$: 'pipeline', 
+              items: [
+                '%$people%', 
+                {$: 'itemlist-container.filter' }
+              ]
+            }, 
             fields: [
               {$: 'field', title: 'name', data: '%name%' }, 
               {$: 'field', title: 'age', data: '%age%' }
+            ], 
+            watchItems: 'true', 
+            features :{$: 'watch-ref', 
+              ref: '%$itemlistCntrData/search_pattern%', 
+              strongRefresh: 'true', 
+              includeChildren: ''
+            }
+          }
+        ], 
+        features :{$: 'group.itemlist-container' }
+      }
+    ]
+  }
+})
+
+jb.component('itemlists.table-with-filters', {
+  type: 'control', 
+  impl :{$: 'group', 
+    controls: [
+      {$: 'group', 
+        controls: [
+          {$: 'group', 
+            style :{$: 'layout.horizontal', spacing: 45 }, 
+            controls: [
+              {$: 'editable-text', 
+                title: 'name', 
+                databind: '%$itemlistCntrData/name_filter%', 
+                style :{$: 'editable-text.mdl-input', width: '100' }
+              }, 
+              {$: 'editable-text', 
+                title: 'age', 
+                databind: '%$itemlistCntrData/age_filter%', 
+                style :{$: 'editable-text.mdl-input', width: '100' }
+              }
             ]
+          }, 
+          {$: 'table', 
+            items :{$: 'pipeline', 
+              items: [
+                '%$people%', 
+                {$: 'itemlist-container.filter' }
+              ]
+            }, 
+            fields: [
+              {$: 'field', title: 'name', data: '%name%' }, 
+              {$: 'field', title: 'age', data: '%age%' }
+            ], 
+            watchItems: 'true', 
+            features :{$: 'watch-ref', 
+              ref: '%$itemlistCntrData/search_pattern%', 
+              strongRefresh: 'true', 
+              includeChildren: ''
+            }
           }
         ], 
         features :{$: 'group.itemlist-container' }

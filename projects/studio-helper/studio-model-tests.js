@@ -33,15 +33,27 @@ jb.component('test.simple-pipeline', {
 	impl :{$pipeline: ['x' , 'y', 'z']}
 })
 
+jb.component('test.move-in-tree', {
+  type: 'control', 
+  impl :{$: 'itemlist', 
+    items: '%$people%', 
+    controls :{$: 'group', 
+      style :{$: 'layout.horizontal', spacing: 3 }, 
+      controls: [
+        {$: 'label', title: '%name%' }, 
+        {$: 'label', title: '%age%' }
+      ]
+    }
+  }
+})
+
 jb.component('studio.jb-editor-move', {
 	 impl :{$: 'data-test', 
 	 	runBefore : ctx =>
-	 		jb.studio.moveInArray('test.simple-pipeline~impl~$pipeline',
-	 				'test.simple-pipeline~impl~$pipeline~0',1),
-		calculate :{$pipeline: [
-			{$: 'studio.val' , path: 'test.simple-pipeline~impl~$pipeline' },
-			{$join: ','}
-		]},
-		expectedResult : '%% == "y,x,z"'
+	 		jb.studio.moveInTree('test.move-in-tree~impl',
+	 				'test.move-in-tree~impl~controls~controls~0',0),
+		calculate :{$: 'studio.val' , path: 'test.move-in-tree~impl~controls' },
+		expectedResult : ctx => 
+			ctx.data.length == 2
 	},
 })

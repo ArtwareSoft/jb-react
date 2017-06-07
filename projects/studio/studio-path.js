@@ -73,10 +73,18 @@ Object.assign(st,{
 	},
 
 	moveInTree: (path,draggedPath,index) => { // drag & drop
+		var draggedRef = st.refOfPath(draggedPath);
 		var dragged = st.valOfPath(draggedPath);
 		var dest = st.getOrCreateControlArrayRef(path);
+		if (!st.refreshRef(draggedRef))
+			return;
+		var _draggedPath = draggedRef.$jb_path.join('~');
 		if (dest) {
-			st._delete(draggedPath);
+			console.log(1,st.val(dest));
+			console.log(11,st.valOfPath(path));
+			st._delete(_draggedPath);
+			console.log(12,st.valOfPath(path));
+			console.log(2,st.val(dest));
 			var _index = (index == -1) ? jb.val(dest).length : index;
 			st.splice(dest,[[_index,0,dragged]]);
 		}
@@ -218,9 +226,10 @@ Object.assign(st,{
 			return console.log('getOrCreateControlArrayRef: no control param');
 		var ref = st.refOfPath(path+'~'+prop);
 		if (val[prop] === undefined)
-			return jb.writeValue(ref,[]);
-		if (!Array.isArray(val[prop]))
-			return jb.writeValue(ref,[val[prop]]);
+			jb.writeValue(ref,[]);
+		if (!Array.isArray(val[prop])) 
+			jb.writeValue(ref,[val[prop]]);
+		ref = st.refOfPath(path+'~'+prop);
 		return ref;
 	},
 	evalProfile: prof_str => {
