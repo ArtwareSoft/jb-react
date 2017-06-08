@@ -72,7 +72,7 @@ jb.component('studio-helper.pages', {
 jb.component('studio-helper.control-tree', {
   type: 'control', 
   params: [
-    { id: 'path', defaultValue: 'studio-helper.sample-control' }
+    { id: 'path', defaultValue: 'studio-helper-sample.control' }
   ],
   impl :{$: 'studio.control-tree',
     $vars: {
@@ -128,7 +128,7 @@ jb.component('studio-helper-dummy.simple-label', {
   }
 })
 
-jb.component('studio-helper.sample-control', {
+jb.component('studio-helper-sample.control', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'main', 
@@ -303,7 +303,7 @@ jb.component('studio-helper.search', {
   }
 })
 
-jb.component('studio-helper.sample-control', {
+jb.component('studio-helper-sample.control', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'main', 
@@ -320,7 +320,7 @@ jb.component('studio-helper.sample-control', {
   }
 })
 
-jb.component('studio-helper.sample-control', {
+jb.component('studio-helper-sample.control', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'main', 
@@ -337,7 +337,7 @@ jb.component('studio-helper.sample-control', {
   }
 })
 
-jb.component('studio-helper.sample-control', {
+jb.component('studio-helper-sample.control', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'main', 
@@ -354,7 +354,7 @@ jb.component('studio-helper.sample-control', {
   }
 })
 
-jb.component('studio-helper.sample-control', {
+jb.component('studio-helper-sample.control', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'main', 
@@ -371,7 +371,7 @@ jb.component('studio-helper.sample-control', {
   }
 })
 
-jb.component('studio-helper.sample-control', {
+jb.component('studio-helper-sample.control', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'main', 
@@ -388,7 +388,7 @@ jb.component('studio-helper.sample-control', {
   }
 })
 
-jb.component('studio-helper.sample-control', {
+jb.component('studio-helper-sample.control', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'main', 
@@ -405,7 +405,7 @@ jb.component('studio-helper.sample-control', {
   }
 })
 
-jb.component('studio-helper.sample-control', {
+jb.component('studio-helper-sample.control', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'main', 
@@ -422,7 +422,7 @@ jb.component('studio-helper.sample-control', {
   }
 })
 
-jb.component('studio-helper.sample-table', {
+jb.component('studio-helper-sample.table', {
   type: 'control', 
   impl :{$: 'table', 
     items: '%$people%', 
@@ -433,7 +433,7 @@ jb.component('studio-helper.sample-table', {
   }
 })
 
-jb.component('studio-helper.sample-picklist', {
+jb.component('studio-helper-sample.picklist', {
   type: 'control', 
   impl :{$: 'picklist', 
     title: 'name', 
@@ -457,7 +457,7 @@ jb.component('studio-helper1.studio-properties', {
 jb.component('studio-helper.studio-properties', {
   type: 'control', 
   impl :{$: 'group', 
-    $vars: { circuit: 'studio-helper.sample-picklist' }, 
-    controls :{$: 'studio.properties', path: 'studio-helper.sample-picklist~impl' }
+    $vars: { circuit: 'studio-helper-sample.picklist' }, 
+    controls :{$: 'studio.properties', path: 'studio-helper-sample.picklist~impl' }
   }
 })

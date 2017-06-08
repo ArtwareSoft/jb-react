@@ -53,10 +53,11 @@ class ImmutableWithPath {
     var op = {}, resource = ref.$jb_path[0];
     jb.path(op,ref.$jb_path,opOnRef);
     this.markPath(ref.$jb_path);
-    this.resources(jb.ui.update(this.resources(),op));
+    var opEvent = {op: op, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, val: jb.val(ref),
+        oldRef: oldRef, oldResources: oldResources, timeStamp: new Date().getTime()};
+    this.resources(jb.ui.update(this.resources(),op),opEvent);
     this.resourceVersions[resource] = this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1;
-    this.resourceChange.next({op: op, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, val: jb.val(ref),
-        oldRef: oldRef, oldResources: oldResources, timeStamp: new Date().getTime()});
+    this.resourceChange.next(opEvent);
     return ref;
   }
   asRef(obj) {

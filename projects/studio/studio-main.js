@@ -76,48 +76,51 @@ jb.component('studio.top-bar', {
 jb.component('studio.pages', {
   type: 'control', 
   impl :{$: 'group', 
-        title: 'pages', 
-        style :{$: 'layout.horizontal' }, 
-        controls: [
-          {$: 'button', 
-            title: 'new page', 
-            action :{$: 'studio.open-new-page' }, 
-            style :{$: 'button.mdl-icon-12', icon: 'add' }, 
-            features :{$: 'css', css: 'button {margin-top: 2px}' }
-          }, 
-          {$: 'itemlist', 
-            items :{$: 'studio.project-pages' }, 
-            style :{$: 'itemlist.horizontal' }, 
-            controls :{$: 'label', 
-              title :{$: 'extract-suffix', separator: '.' }, 
-              features :{$: 'css.class', class: 'studio-page' }
+    title: 'pages', 
+    style :{$: 'layout.horizontal' }, 
+    controls: [
+      {$: 'button', 
+        title: 'new page', 
+        action :{$: 'studio.open-new-page' }, 
+        style :{$: 'button.mdl-icon-12', icon: 'add' }, 
+        features :{$: 'css', css: '{margin: 3px}' }
+      }, 
+      {$: 'itemlist', 
+        items :{$: 'studio.project-pages' }, 
+        controls :{$: 'label', 
+          title :{$: 'extract-suffix', separator: '.' }, 
+          features :{$: 'css.class', class: 'studio-page' }
+        }, 
+        style :{$: 'itemlist.horizontal' }, 
+        features: [
+          {$: 'itemlist.selection', 
+            databind: '%$studio/page%', 
+            onSelection :{$: 'write-value', 
+              to: '%$studio/profile_path%', 
+              value: '{%$studio/project%}.{%$studio/page%}'
             }, 
-            features: [
-              {$: 'itemlist.selection', 
-                databind: '%$studio/page%', 
-                onSelection :{$: 'write-value', 
-                    to: '%$studio/profile_path%', 
-                    value: '{%$studio/project%}.{%$studio/page%}'
-                },
-                autoSelectFirst: true
-              }, 
-              {$: 'css', 
-                css: `{ list-style: none; padding: 0; margin: 0; margin-left: 20px; font-family: "Arial"}
-                  >* { list-style: none; display: inline-block; padding: 6px 10px; font-size: 12px; border: 1px solid transparent; cursor: pointer;}
+            autoSelectFirst: true
+          }, 
+          {$: 'css', 
+            css: `{ list-style: none; padding: 0; 
+              margin: 0; margin-left: 20px; font-family: "Arial"}
+                  >* { list-style: none; display: inline-block; padding: 0 5px; font-size: 12px; border: 1px solid transparent; cursor: pointer;}
                   >* label { cursor: inherit; }
                   >*.selected { background: #fff;  border: 1px solid #ccc;  border-top: 1px solid transparent; color: inherit;  }`
-              }
-            ]
           }
-        ], 
-        features: [
-          {$: 'css', css: '{ background: #F5F5F5; position: absolute; bottom: 0px; left: 0px;right:0; border-top: 1px solid #aaa;}' }, 
-          {$: 'group.wait', 
-            for :{$: 'studio.wait-for-preview-iframe' }, 
-            loadingControl :{ $label: '...' },
-          }, 
         ]
       }
+    ], 
+    features: [
+      {$: 'css', 
+        css: '{ background: #F5F5F5; position: absolute; bottom: 0px; left: 0px;right:0; border-top: 1px solid #aaa; overflow-x: scroll}'
+      }, 
+      {$: 'group.wait', 
+        for :{$: 'studio.wait-for-preview-iframe' }, 
+        loadingControl :{ $label: '...' }
+      }
+    ]
+  }
 })
 
 jb.component('studio.currentProfilePath', {
