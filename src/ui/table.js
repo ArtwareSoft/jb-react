@@ -51,8 +51,8 @@ jb.component('table.init', {
         cmp.items = cmp.state.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
         cmp.fields = ctx.vars.$model.fields();
 
-        cmp.initWatchByRef = refToWatch =>
-            jb.ui.refObservable(refToWatch,cmp)
+        cmp.initWatchByRef = (refToWatch,includeChildren) =>
+            jb.ui.refObservable(refToWatch,cmp,includeChildren)
               .subscribe(e=>
                 jb.ui.setState(cmp,{items: cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)))},e));
         if (ctx.vars.$model.watchItems)
@@ -65,12 +65,14 @@ jb.component('table.with-headers', {
   type: 'table.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('table',{},[
-        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, width: f.width ? f.width + 'px' : '' },f.title)) )),
+        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map(item=> jb.ui.item(cmp,h('tr',{ 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: f.class, width: f.width ? f.width + 'px' : '' }, f.control ? h(f.control(item)) : f.fieldData(item))))
+              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item)) : f.fieldData(item))))
               ,item))
-        )]),
+        ),
+        state.items.length == 0 ? 'no items' : ''
+        ]),
     features:{$: 'table.init'},
     css: '{border-spacing: 0; text-align: left}'
   }

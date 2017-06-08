@@ -62,7 +62,7 @@ jb.component('itemlist-container.add', {
 })
 
 jb.component('itemlist-container.filter', {
-  type: 'aggregator',
+  type: 'aggregator', category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
   impl: ctx => {
       if (ctx.vars.itemlistCntr) 
@@ -72,9 +72,8 @@ jb.component('itemlist-container.filter', {
    }
 })
 
-
 jb.component('itemlist-container.search', {
-  type: 'control',
+  type: 'control', category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
     { id: 'title', as: 'string' , dynamic: true, defaultValue: 'Search' },
@@ -104,8 +103,81 @@ jb.component('itemlist-container.search', {
     })
 });
 
+jb.ui.extractPropFromExpression = exp => { // performance for simple cases such as %prop1%
+  if (exp.match(/^%.*%$/) && !exp.match(/[./[]/))
+    return exp.match(/^%(.*)%$/)[1]
+}
+
+// match fields in pattern itemlistCntrData/FLDNAME_filter to data
+jb.component('itemlist-container.filter-field', {
+  type: 'feature', category: 'itemlist-filter:80',
+  requires: ctx => ctx.vars.itemlistCntr,
+  params: [
+    { id: 'fieldData', dynamic: true, essential: true },
+    { id: 'filterType', type: 'filter-type' },
+  ],
+  impl: (ctx,fieldData,filterType) => ({
+      afterViewInit: cmp => {
+        var propToFilter = jb.ui.extractPropFromExpression(ctx.params.fieldData.profile);
+        if (propToFilter) 
+          cmp.itemToFilterData = item => item[propToFilter];
+        else
+          cmp.itemToFilterData = item => fieldData(ctx.setData(item));
+
+        ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.filters.push(items=>{
+            var filterValue = cmp.jbModel();
+            if (!filterValue) return items;
+            var res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
+            if (filterType.sort)
+              filterType.sort(res,cmp.itemToFilterData,filterValue);
+            return res;
+        })
+    }
+  })
+});
+
+jb.component('filter-type.text', {
+  type: 'filter-type',
+  params: [
+    { id: 'ignoreCase', as: 'boolean', defaultValue: true }
+  ],
+  impl: (ctx,ignoreCase) => ignoreCase ? ({
+    filter: (filter,data) => (data||'').toLowerCase().indexOf((filter||'').toLowerCase()) != -1,
+    sort: (items,itemToData,filter) =>  {
+      var asWord = new RegExp('\\b' + filter + '\\b','i');
+      var score = txt => (asWord.test(txt) ? 5 : 0) + (txt.toLowerCase().indexOf(filter.toLowerCase()) == 0 ? 3 : 0); // higher score for wholeWord or beginsWith
+      items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
+    }
+  }) : ({
+    filter: (filter,data) => (data||'').indexOf(filter||'') != -1,
+    sort: (items,itemToData,filter) =>  {
+      var asWord = new RegExp('\\b' + filter + '\\b');
+      var score = txt => (asWord.test(txt) ? 5 : 0) + (txt.indexOf(filter) == 0 ? 3 : 0);
+      items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
+    }
+  })
+})
+
+jb.component('filter-type.exact-match', {
+  type: 'filter-type',
+  impl: ctx => ({
+    filter: (filter,data) =>  {
+      var _filter = (filter||'').trim(), _data = (data||'').trim();
+      return _data.indexOf(_filter) == 0 && _data.length == _filter.length;
+    }
+  })
+})
+
+jb.component('filter-type.numeric', {
+  type: 'filter-type',
+  impl: ctx => ({
+    filter: (filter,data) => Number(data) >= Number(filter),
+    sort: (items,itemToData) => items.sort((item1,item2)=> Number(itemToData(item1)) - Number(itemToData(item2)))
+  })
+})
+
 jb.component('itemlist-container.search-in-all-properties', {
-  type: 'data',
+  type: 'data', category: 'itemlist-filter:40',
   impl: ctx => {
     if (typeof ctx.data == 'string') return ctx.data;
     if (typeof ctx.data != 'object') return '';

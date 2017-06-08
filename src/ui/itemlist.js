@@ -34,8 +34,8 @@ jb.component('itemlist.init', {
         cmp.items = jb.toarray(jb.val(cmp.itemsRef));
         cmp.state.ctrls = cmp.items2ctrls(cmp.items).map(c=>c.reactComp());
 
-        cmp.initWatchByRef = refToWatch =>
-            jb.ui.refObservable(refToWatch,cmp)
+        cmp.initWatchByRef = (refToWatch,includeChildren) =>
+            jb.ui.refObservable(refToWatch,cmp,includeChildren)
               .subscribe(e=> {
                 var _items = jb.toarray(jb.val(items(cmp.ctx)));
                 if (_items.length != 0 && jb.compareArrays(_items,cmp.items))

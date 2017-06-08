@@ -61,6 +61,7 @@ jb.component('picklist.dynamic-options', {
 
 jb.component('picklist.onChange', {
   type: 'feature',
+  description: 'action on picklist selection',
   params: [
     { id: 'action', type: 'action', dynamic: true}
   ],

@@ -1,3 +1,11 @@
+jb.resource('person',{ 
+  name: "Homer Simpson", 
+  male: true,
+  isMale: 'yes', 
+  age: 42 
+});
+
+
 jb.resource('people-array', { "people": [
   { "name": "Homer Simpson" ,"age": 42 , "male": true},
   { "name": "Marge Simpson" ,"age": 38 , "male": false},
@@ -414,13 +422,42 @@ jb.component('studio-helper.sample-control', {
   }
 })
 
+jb.component('studio-helper.sample-table', {
+  type: 'control', 
+  impl :{$: 'table', 
+    items: '%$people%', 
+    fields: [
+      {$: 'field', title: 'name', data: '%name%', width: '400' }, 
+      {$: 'field', title: 'age', data: '%age%' }
+    ]
+  }
+})
 
-jb.component('studio-helper.studio-properties', {
+jb.component('studio-helper.sample-picklist', {
+  type: 'control', 
+  impl :{$: 'picklist', 
+    title: 'name', 
+    databind: '', 
+    options :{$: 'picklist.options', options: '%' }, 
+    style :{$: 'picklist.native' }
+  }
+})
+
+
+jb.component('studio-helper1.studio-properties', {
   type: 'control', 
   remark: 1, 
   impl :{$: 'group', 
     $vars: { circuit: 'studio-helper-dummy.simple-label' }, 
     title: '', 
     controls :{$: 'studio.properties', path: 'studio-helper-dummy.simple-label~impl' }
+  }
+})
+
+jb.component('studio-helper.studio-properties', {
+  type: 'control', 
+  impl :{$: 'group', 
+    $vars: { circuit: 'studio-helper.sample-picklist' }, 
+    controls :{$: 'studio.properties', path: 'studio-helper.sample-picklist~impl' }
   }
 })

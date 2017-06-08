@@ -14,8 +14,8 @@ jb.component('group.init-group', {
   type: 'feature', category: 'group:0',
   impl: ctx => ({
     init: cmp => {
-      cmp.initWatchByRef = cmp.initWatchByRef || (refToWatch =>
-        jb.ui.refObservable(refToWatch,cmp).subscribe(e => {
+      cmp.initWatchByRef = cmp.initWatchByRef || ((refToWatch,includeChildren) =>
+        jb.ui.refObservable(refToWatch,cmp,includeChildren).subscribe(e => {
               var ctrls = ctx.vars.$model.controls(cmp.ctx);
               jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c)).filter(x=>x)},e,ctx) 
             } ))

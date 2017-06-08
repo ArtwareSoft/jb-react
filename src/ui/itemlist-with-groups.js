@@ -59,8 +59,8 @@ jb.component('itemlist.watch-items-with-heading', {
         cmp.state.ctrls = cmp.items2ctrls(cmp.items).map(c=>c.reactComp());
 
         // todo: fix as in itemlist
-        cmp.initWatchByRef = refToWatch =>
-            jb.ui.refObservable(refToWatch,cmp)
+        cmp.initWatchByRef = (refToWatch,includeChildren) =>
+            jb.ui.refObservable(refToWatch,cmp,includeChildren)
               .map(_=>items(cmp.ctx))
               .filter(items=>
                 items.length == 0 || !jb.compareArrays(items,(cmp.ctrls || []).map(ctrl => ctrl.comp.ctx.data)))

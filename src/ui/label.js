@@ -68,11 +68,10 @@ jb.component('highlight', {
     if (!h || !b) return b;
     var highlight = (b.match(new RegExp(h,'i'))||[])[0]; // case sensitive highlight
     if (!highlight) return b;
-    return jb.ui.h('div',{},[
+    return [
         b.split(highlight)[0],
         jb.ui.h('span',{class: cssClass},highlight),
         b.split(highlight)[1]]
-    )
   }
 })
 

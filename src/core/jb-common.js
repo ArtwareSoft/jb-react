@@ -110,6 +110,9 @@ jb.component('firstSucceeding', {
 		for(var i=0;i<items.length;i++)
 			if (jb.val(items[i]))
 				return items[i];
+		// return last one if zero or empty string			
+		var last = items.pop();
+		return (last != null) && jb.val(last);
 	}
 });
 

@@ -62,12 +62,16 @@ jb.component('label.mdl-ripple-effect', {
 
 jb.component('label.mdl-button', {
     type: 'label.style',
+    params: [
+      {id: 'width', as: 'number' }
+    ],
     impl :{$: 'custom-style', 
         template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button'},state.title),
         features :[
           {$: 'label.bind-title' },
           {$: 'mdl-style.init-dynamic'}
         ],
+        css: '{? {width:%$width%px} ?}'
     }
 });
 

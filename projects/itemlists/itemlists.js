@@ -22,10 +22,11 @@ jb.component('itemlists.table', {
   type: 'control', 
   impl :{$: 'table', 
     items: '%$people%', 
-    fields: [ 
-    {$: 'field', title: 'name', data: '%name%'},
-    {$: 'field', title: 'age', data: '%age%'},
-  ]}
+    fields: [
+      {$: 'field', title: 'name', data: '%name%', width: '200' }, 
+      {$: 'field', title: 'age', data: '%age%' }
+    ]
+  }
 })
 
 jb.component('itemlists.table-with-search', {
@@ -77,12 +78,20 @@ jb.component('itemlists.table-with-filters', {
               {$: 'editable-text', 
                 title: 'name', 
                 databind: '%$itemlistCntrData/name_filter%', 
-                style :{$: 'editable-text.mdl-input', width: '100' }
+                style :{$: 'editable-text.mdl-input', width: '100' }, 
+                features :{$: 'itemlist-container.filter-field', 
+                  fieldData: '%name%', 
+                  filterType :{$: 'filter-type.text', ignoreCase: true }
+                }
               }, 
               {$: 'editable-text', 
                 title: 'age', 
                 databind: '%$itemlistCntrData/age_filter%', 
-                style :{$: 'editable-text.mdl-input', width: '100' }
+                style :{$: 'editable-text.mdl-input', width: '100' }, 
+                features :{$: 'itemlist-container.filter-field', 
+                  fieldData: '%age%', 
+                  filterType :{$: 'filter-type.numeric' }
+                }
               }
             ]
           }, 
@@ -94,14 +103,14 @@ jb.component('itemlists.table-with-filters', {
               ]
             }, 
             fields: [
-              {$: 'field', title: 'name', data: '%name%' }, 
+              {$: 'field', title: 'name', data: '%name%', width: '200' }, 
               {$: 'field', title: 'age', data: '%age%' }
             ], 
             watchItems: 'true', 
             features :{$: 'watch-ref', 
-              ref: '%$itemlistCntrData/search_pattern%', 
+              ref: '%$itemlistCntrData%', 
               strongRefresh: 'true', 
-              includeChildren: ''
+              includeChildren: 'true'
             }
           }
         ], 

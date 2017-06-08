@@ -124,8 +124,7 @@ jb.component('studio.select-profile', {
         features: [
           {$: 'field.subscribe', 
             action :{$: 'write-value', to: '%$SelectedCategory%', value: 'all' }
-          }, 
-          {$: 'editable-text.x-button' }
+          }
         ]
       }, 
       {$: 'group', 
@@ -172,6 +171,9 @@ jb.component('studio.select-profile', {
                 features :{$: 'group.itemlist-container' }
               }, 
               modelVar: 'picklistModel'
+            }, 
+            features :{$: 'picklist.onChange', 
+              action :{$: 'write-value', to: '%$itemlistCntrData/search_pattern%' }
             }
           }, 
           {$: 'itemlist', 
@@ -233,7 +235,8 @@ jb.component('studio.select-profile', {
       }, 
       {$: 'var', 
         name: 'SelectedCategory', 
-        value: '%$Categories[0]%', mutable: true
+        value: '%$Categories[0]%', 
+        mutable: true
       }, 
       {$: 'var', name: 'SearchPattern', value: '', mutable: true }, 
       {$: 'group.itemlist-container' }

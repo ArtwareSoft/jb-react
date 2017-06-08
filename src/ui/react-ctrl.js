@@ -42,7 +42,7 @@ class JbComponent {
 			constructor(props) {
 				super();
 				this.jbComp = jbComp;
-				this.ctx = jbComp.ctx;
+				this.ctx = this.originalCtx = jbComp.ctx; // this.ctx is re-calculated
 				this.ctxForPick = jbComp.ctxForPick || jbComp.ctx;
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				try {
@@ -322,6 +322,8 @@ ui.waitFor = function(check,times,interval) {
 ui.stateChangeEm = new jb.rx.Subject();
 
 ui.setState = function(cmp,state,opEvent,watchedAt) {
+	if (opEvent && opEvent.interactive && cmp.orignalCtx.isParentOf(opEvent.srcCtx))
+		return
 	jb.logPerformance('setState',cmp.ctx,state);
 	if (state == null && cmp.refresh)	
 		cmp.refresh();

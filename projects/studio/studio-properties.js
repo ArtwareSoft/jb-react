@@ -215,21 +215,24 @@ jb.component('studio.property-enum',{
 })
 
 jb.component('studio.property-slider', {
-	type: 'control',
-	params: [ {id: 'path', as: 'string' } ],
-	impl :{$: 'editable-number', 
-		$vars: { 
-			paramDef :{$: 'studio.param-def', path: '%$path%' } 
-		},
-		title :{$: 'studio.prop-name', path: '%$path%' },
-		databind :{$: 'studio.ref', path: '%$path%' },
-		style :{$: 'editable-number.slider', width: '120' },
-		min: { $firstSucceeding : ['%$paramDef/min%',0] },
-		max: { $firstSucceeding : ['%$paramDef/max%',100] },
-		step: { $firstSucceeding : ['%$paramDef/step%',1] } ,
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'editable-number', 
+    $vars: {
+      paramDef :{$: 'studio.param-def', path: '%$path%' }
+    }, 
+    databind :{$: 'studio.ref', path: '%$path%' }, 
+    title :{$: 'studio.prop-name', path: '%$path%' }, 
+    style :{$: 'editable-number.slider', width: '120' }, 
+    min :{ $firstSucceeding: ['%$paramDef/min%', 0] }, 
+    max :{ $firstSucceeding: ['%$paramDef/max%', 100] }, 
+    step :{ $firstSucceeding: ['%$paramDef/step%', 1] }, 
     features :{$: 'css', 
-      css: '>.slider-text { margin-left: -20px; padding-right: 15px; margin-top: 2px; }' },
-	}
+      width: '212', 
+      css: `>input { width: 110px; background: red }
+>.slider-text { width: 20px; padding-right: 15px; margin-top: 2px; }`
+    }
+  }
 })
 
 jb.component('studio.property-tgp', {
@@ -288,7 +291,7 @@ jb.component('studio.property-tgp', {
       {$: 'group', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          {$: 'studio.watch-path', path: '%$path%', strongRefresh: true, includeChildren: true },
+          {$: 'studio.watch-path', path: '%$path%', includeChildren: true },
           {$: 'watch-ref', ref: '%$expanded%', strongRefresh: true },
           {$: 'hidden', 
             showCondition :{

@@ -510,6 +510,12 @@ class jbCtx {
     return new jbCtx(this,{ vars: ctx2 ? ctx2.vars : null, data: (data2 == null) ? ctx2.data : data2 })
   }
   runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
+  parents()  { return doParents([this]) }
+  doParents(parentsSoFar) {
+    if (!this.componentContext || parentsSoFar.filter(ctx == this).length) return parentsSoFar; // avoid recursion
+    return this.componentContext.doParents(parentsSoFar.concat([this]))
+  }
+
 }
 
 var logs = {};

@@ -25,6 +25,7 @@ jb.component('editable-number.slider', {
           {$: 'slider.init'},
       ],
       css: `{display: flex}
+        >.slider-text { cursor: pointer }
         >* { margin-right: %$spacing%px }
         >*:last-child { margin-right:0 }`,
   }
@@ -36,7 +37,6 @@ jb.component('slider.init', {
     {id: 'openPopup', type: 'action', dynamic: true, defaultValue:{$: 'slider.edit-as-text-popup'} },
   ],
   impl: ctx => ({
-      onclick: true,
       onmouseup: true,
       onkeyup: true,
       init: cmp => 
@@ -78,7 +78,11 @@ jb.component('slider.init', {
               .subscribe(_=>
                 jb.ui.wrapWithLauchingElement(ctx.params.openPopup, cmp.ctx, cmp.base)());
 
-          cmp.onclick.subscribe(e=>jb.ui.focus(cmp.base,'slider'));
+          cmp.onmouseup.filter(e=>$(e.target).is('.slider-text'))
+              .subscribe(_=>
+                jb.ui.wrapWithLauchingElement(ctx.params.openPopup, cmp.ctx, cmp.base)());
+
+          cmp.onmouseup.subscribe(e=>jb.ui.focus(cmp.base,'slider'));
         }
     })
 })
