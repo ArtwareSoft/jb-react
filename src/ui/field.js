@@ -13,6 +13,7 @@ jb.component('field.databind', {
       init: function(cmp) {
         cmp.state.title = ctx.vars.$model.title();
         cmp.state.fieldId = jb.ui.field_id_counter++;
+        var srcCtx = cmp.ctxForPick || cmp.ctx;
         cmp.jbModel = (val,source) => {
           if (val === undefined) 
             return jb.val(ctx.vars.$model.databind);
@@ -20,12 +21,13 @@ jb.component('field.databind', {
             if (cmp.inputEvents && source == 'keyup')
               cmp.inputEvents.next(val); // used for debounce
             else if (!ctx.vars.$model.updateOnBlur || source != 'keyup') {
-              jb.writeValue(ctx.vars.$model.databind,val,cmp.ctxForPick || cmp.ctx);
+              jb.writeValue(ctx.vars.$model.databind,val,srcCtx);
             }
           }
         }
         if (!noUpdates) {
           jb.ui.refObservable(ctx.vars.$model.databind,cmp)
+            .filter(e=>!e.srcCtx || e.srcCtx.path != srcCtx.path) // do not refresh by its own change
             .subscribe(e=>jb.ui.setState(cmp,null,e,ctx))
         }
       }

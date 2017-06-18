@@ -634,6 +634,7 @@ jb.component('ui-test.editable-number', {
       {$: 'editable-number', title: 'age',
           databind: '%$person/age%',
           style :{$: 'editable-number.slider-no-text'},
+          features: {$: 'css', css: '{width: 100px}'}
       },
       {$: 'editable-number', title: 'age',
           databind: '%$person/age%',

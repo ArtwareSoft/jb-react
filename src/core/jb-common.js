@@ -65,11 +65,16 @@ jb.component('pipe', { // synched pipeline
 	impl: (ctx,items) => jb.pipe(ctx,items,'$pipe')
 })
 
-// jb.component('run', {
-//  	type: '*',
-//  	params: [{ id: 'profile', as: 'single'} ],
-//  	impl: (context,profile) => context.run(profile)
-// });
+jb.component('data.if', {
+ 	type: 'data',
+ 	params: [
+ 		{ id: 'condition', type: 'boolean', as: 'boolean', essential: true},
+ 		{ id: 'then', essential: true, dynamic: true },
+ 		{ id: 'else', dynamic: true },
+ 	],
+ 	impl: (ctx,cond,_then,_else) =>
+ 		cond ? _then() : _else()
+});
 
 // jb.component('apply', {
 // 	description: 'run a function',

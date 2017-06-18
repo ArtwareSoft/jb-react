@@ -169,7 +169,7 @@ function prepare(context,parentParam) {
   } else if (profile.$if) 
   return {
       type: 'if',
-      ifContext: new jbCtx(context,{profile: profile.$if, path: '$if'}),
+      ifContext: new jbCtx(context,{profile: profile.$if || profile.condition, path: '$if'}),
       IfParentParam: { type: 'boolean', as:'boolean' },
       thenContext: new jbCtx(context,{profile: profile.then || 0 , path: '~then'}),
       thenParentParam: { type: parentParam_type, as:jstype },
@@ -510,10 +510,11 @@ class jbCtx {
     return new jbCtx(this,{ vars: ctx2 ? ctx2.vars : null, data: (data2 == null) ? ctx2.data : data2 })
   }
   runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
-  parents()  { return doParents([this]) }
-  doParents(parentsSoFar) {
-    if (!this.componentContext || parentsSoFar.filter(ctx == this).length) return parentsSoFar; // avoid recursion
-    return this.componentContext.doParents(parentsSoFar.concat([this]))
+  parents() {
+    return this._parent ? [this._parent].concat(_this.parent.parents()) : []
+  }
+  isParentOf(childCtx) {
+    return childCtx.parents().filter(x == this).length > 0
   }
 
 }

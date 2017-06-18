@@ -25,7 +25,7 @@ jb.component('editable-text.mdl-input', {
     { id: 'width', as: 'number' },
   ],
   impl :{$: 'custom-style', 
-   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[ 
+   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label' },[ 
         h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
             value: cmp.jbModel(),
             onchange: e => cmp.jbModel(e.target.value),
@@ -33,6 +33,26 @@ jb.component('editable-text.mdl-input', {
         }),
         h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title)
       ]),
+      css: '{ {?width: %$width%px?} }',
+      features :[
+          {$: 'field.databind' },
+          {$: 'mdl-style.init-dynamic'}
+      ],
+  }
+})
+
+jb.component('editable-text.mdl-input-no-floating-label', {
+  type: 'editable-text.style',
+  params: [
+    { id: 'width', as: 'number' },
+  ],
+  impl :{$: 'custom-style', 
+   template: (cmp,state,h) => 
+        h('input', { class: 'mdl-textfield__input', type: 'text',
+            value: cmp.jbModel(),
+            onchange: e => cmp.jbModel(e.target.value),
+            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+        }),
       css: '{ {?width: %$width%px?} }',
       features :[
           {$: 'field.databind' },

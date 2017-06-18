@@ -113,7 +113,7 @@ jb.component('studio.pages', {
     ], 
     features: [
       {$: 'css', 
-        css: '{ background: #F5F5F5; position: absolute; bottom: 0px; left: 0px;right:0; border-top: 1px solid #aaa; overflow-x: scroll}'
+        css: '{ background: #F5F5F5; position: absolute; bottom: 0; left: 0; width: 100%; border-top: 1px solid #aaa}'
       }, 
       {$: 'group.wait', 
         for :{$: 'studio.wait-for-preview-iframe' }, 

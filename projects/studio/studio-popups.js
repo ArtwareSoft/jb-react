@@ -11,7 +11,7 @@ jb.component('studio.open-multiline-edit', {
 			style :{$: 'editable-text.codemirror', 
 				mode :{$: 'studio.code-mirror-mode', path: '%$path%'} 
 			},
-			features: {$: 'studio.undo-support', path: '%$path%' },
+//			features: {$: 'studio.undo-support', path: '%$path%' },
 		}
 	}
 })

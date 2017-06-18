@@ -111,8 +111,10 @@ jb.component('ui-action.set-text', {
 	],
 	impl: (ctx,value,selector) => {
 		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
-		elems.forEach(e=>
-			e._component.jbModel(value))
+		elems.forEach(e=> {
+			e._component.jbModel(value);
+			$(e).findIncludeSelf('input').val(value);
+		})
 		return jb.delay(1);
 	}
 })

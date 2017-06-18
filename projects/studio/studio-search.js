@@ -55,14 +55,49 @@ jb.component('studio.search-list', {
               ]
             }
           }, 
-          {$: 'field', title: 'id', data: '%id%' }, 
+          {$: 'field.control', 
+            title: 'id', 
+            control :{$: 'label', 
+              title :{$: 'pipeline', 
+                items :{$: 'highlight', 
+                  base: '%id%', 
+                  highlight: '%$itemlistCntrData/search_pattern%', 
+                  cssClass: 'mdl-color-text--indigo-A700'
+                }
+              }
+            }
+          }, 
           {$: 'field', title: 'refs', data: '%refCount%' }, 
           {$: 'field', title: 'type', data: '%type%' }, 
-          {$: 'field', title: 'impl', data: '%implType%' }
+          {$: 'field', 
+            title: 'impl', 
+            data :{$: 'pipeline', 
+              items: [
+                '%implType%', 
+                {$: 'data.if', 
+                  condition: '%% = "function"', 
+                  then: 'javascript', 
+                  else: ''
+                }
+              ]
+            }
+          }
         ], 
         style :{$: 'table.with-headers' }, 
-        features :{$: 'itemlist.selection' }
+        features: [
+          {$: 'itemlist.selection', databind: '' }, 
+          {$: 'watch-ref', 
+            ref: '%$itemlistCntrData/search_pattern%', 
+            strongRefresh: 'true'
+          }
+        ]
       }
+    ], 
+    features: [
+      {$: 'css.box-shadow', shadowColor: '#cccccc' }, 
+      {$: 'css.padding', top: '4', right: '5' }, 
+      {$: 'css.height', height: '600', overflow: 'auto', minMax: 'max' }, 
+      {$: 'css.width', width: '400', minMax: 'min' }
     ]
   }
 })

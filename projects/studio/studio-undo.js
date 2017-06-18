@@ -1,110 +1,78 @@
 (function() {
 var st = jb.studio;
 
-class Undo {
-	constructor() {
-		this.history = [];
-		this.index = 0;
-		this.clipboard = null;
-		st.scriptChange.subscribe(change=>{
-			this.history.push(change);
-			this.index = this.history.length;
-		})
-	}
-	undo(ctx) {
-		if (this.index > 0) {
-			this.index--;
-			var change = this.history[this.index];
-			setComp(change.before,change.ctx.win().jbart);
-//			jb_ui.apply(ctx);
-		}
-	}
-	redo(ctx) {
-		if (this.index < this.history.length) {
-			var change = this.history[this.index];
-			setComp(change.after,change.ctx.win().jbart);
-			this.index++;
-//			jb_ui.apply(ctx);
-		}
-	}
-	copy(ctx,path) {
-		this.clipboard = ctx.run({$:'studio.profile-as-text', path: path}, {as: 'string'});
-	}
-	paste(ctx,path) {
-		if (this.clipboard != null) {
-			var ref = ctx.run({$:'studio.profile-as-text', path: path});
-			jb.writeValue(ref,this.clipboard)
-		}
-	}
-}
-
-var undo = new Undo();
+st.compsHistory = [];
 
 jb.component('studio.undo', {
-	impl: ctx => undo.undo(ctx)
+	impl: ctx => {
+		if (st.undoIndex > 0) {
+			st.undoIndex--;
+			var change = st.compsHistory[st.undoIndex];
+			st.previewjb.comps = st.compsHistory[st.undoIndex];
+//			jb_ui.apply(ctx);
+		}
+	}
 })
 
 jb.component('studio.redo', {
-	impl: ctx => undo.redo(ctx)
+	impl: ctx => {
+		if (st.undoIndex < st.compsHistory.length) {
+			var change = st.compsHistory[st.undoIndex];
+			setComp(change.after,change.ctx.win().jbart);
+			st.undoIndex++;
+//			jb_ui.apply(ctx);
+		}
+
+	}
 })
 
 jb.component('studio.copy', {
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) => 
-		undo.copy(ctx,path)
+		st.clipboard = st.valOfPath(path)
 })
 
 jb.component('studio.paste', {
 	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => 
-		undo.paste(ctx,path)
+	impl: (ctx,path) =>
+		(st.clipboard != null) && jb.writeValue(ref,st.clipboard,ctx)
 })
 
-jb.component('studio.undo-support', {
-  type: 'feature',
-  params: [
-    { id: 'path', essential: true, as: 'string' },
-  ],
-  impl: (ctx,path) => 
-  	({
-  		// saving state on focus and setting the change on blur
-  		// init1: cmp => {
-  		// 	var before = st.compAsStrFromPath(path);
-  		// 	if (cmp.codeMirror) {
-  		// 		cmp.codeMirror.on('focus',()=>
-  		// 			before = st.compAsStrFromPath(path)
-  		// 		);
-  		// 		cmp.codeMirror.on('blur',()=>{
-  		// 			if (before != st.compAsStrFromPath(path))
-				// 		st.notifyModification(path,before,ctx)
-  		// 		});
-  		// 	} else {
-  		// 	$(cmp.base).findIncludeSelf('input')
-  		// 		.focus(e=> {
-  		// 			before = st.compAsStrFromPath(path)
-  		// 		})
-  		// 		.blur(e=> {
-  		// 			if (before != st.compAsStrFromPath(path))
-				// 		st.notifyModification(path,before,ctx)
-  		// 		})
-  		// 	}
-  		// }
-  })
+jb.component('studio.script-history', {
+	type: 'data',
+	impl: ctx => st.compsHistory
 })
 
+jb.component('studio.open-script-history', {
+  type: 'action', 
+  impl :{$: 'open-dialog', 
+      content :{$: 'studio.script-history' }, 
+      style :{$: 'dialog.studio-floating', 
+        id: 'script-history', 
+        width: '700', 
+        height: '400'
+      }, 
+      title: 'Script History'
+  }
+}) 
 
-function doSetComp(jbart_base,id,comp) {
-	st.jbart_base().comps[id] = comp;
-	st.pathFixer.fixSetCompPath(id);
-}
+jb.component('studio.script-history', {
+  type: 'control', 
+  impl :{$: 'group', 
+    controls: [
+      {$: 'table', 
+        items :{$: 'studio.script-history' }, 
+        fields: [
+        ], 
+        style :{$: 'table.with-headers' }
+      }
+    ], 
+    features :{$: 'watch-observable', 
+      toWatch: ctx => st.previewjb.ui.stateChangeEm.debounceTime(500), 
+      strongRefresh: true
+    }
+  }
+})
 
-function setComp(code,jbart_base) {
-	var fixed = code.replace(/^jb.component\(/,'doSetComp(jbart_base,')
-	try {
-		return eval(`(${fixed})`)
-	} catch (e) {
-		jb.logException(e,'set comp:'+code);
-	}
-}
 
 })()

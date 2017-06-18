@@ -71,14 +71,10 @@ jb.component('studio-helper.pages', {
 
 jb.component('studio-helper.control-tree', {
   type: 'control', 
-  params: [
-    { id: 'path', defaultValue: 'studio-helper-sample.control' }
-  ],
-  impl :{$: 'studio.control-tree',
-    $vars: {
-      simulateProfilePath: '%$path%'
-    }
-  } 
+  params: [{ id: 'path', defaultValue: 'studio.search-component' }], 
+  impl :{$: 'studio.control-tree', 
+    $vars: { simulateProfilePath: '%$path%' }
+  }
 })
 
 jb.component('studio-helper.jb-editor', {
@@ -242,7 +238,7 @@ jb.component('studio-helper.features', {
     title: 'features', 
     controls: [
       {$: 'studio.property-array', 
-        path: 'studio-helper-dummy.simple-label~features'
+        path: 'studio-helper-dummy.simple-label~impl~features'
       }
     ]
   }

@@ -67,10 +67,10 @@ jb.component('editable-text.helper-popup', {
       keydown.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)
         .delay(1).subscribe(_=>{
         console.log('helper-popup', ctx.params.showHelper(ctx.setData(input)))
-        if (!ctx.params.showHelper(ctx.setData(input)))
+        if (!ctx.params.showHelper(cmp.ctx.setData(input)))
           cmp.closePopup();
         else if (!cmp.popup())
-          cmp.openPopup()
+          cmp.openPopup(cmp.ctx)
       })
 
       keydown.filter(e=>e.keyCode == 27) // ESC

@@ -50,49 +50,70 @@ jb.component('studio.properties', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'group', 
-    style :{$: 'group.studio-properties-accordion' }, 
     controls: [
       {$: 'group', 
-        remark: 'properties', 
-        title :{
-          $pipeline: [
-            {$: 'count', 
-              items :{$: 'studio.non-control-children', path: '%$path%' }
-            }, 
-            'Properties (%%)'
-          ]
-        }, 
-        style :{$: 'property-sheet.studio-properties' }, 
+        title: 'accordion', 
+        style :{$: 'group.studio-properties-accordion' }, 
         controls: [
-          {$: 'dynamic-controls', 
-            controlItems :{$: 'studio.non-control-children', path: '%$path%' }, 
-            genericControl :{$: 'studio.property-field', path: '%$controlItem%' }
+          {$: 'group', 
+            remark: 'properties', 
+            title :{
+              $pipeline: [
+                {$: 'count', 
+                  items :{$: 'studio.non-control-children', path: '%$path%' }
+                }, 
+                'Properties (%%)'
+              ]
+            }, 
+            style :{$: 'property-sheet.studio-properties' }, 
+            controls: [
+              {$: 'dynamic-controls', 
+                controlItems :{$: 'studio.non-control-children', path: '%$path%' }, 
+                genericControl :{$: 'studio.property-field', path: '%$controlItem%' }
+              }
+            ]
+          }, 
+          {$: 'group', 
+            remark: 'features', 
+            title :{
+              $pipeline: [
+                {$: 'count', 
+                  items :{$: 'studio.val', path: '%$path%~features' }
+                }, 
+                'Features (%%)'
+              ]
+            }, 
+            controls :{$: 'studio.property-array', path: '%$path%~features' }
+          }
+        ], 
+        features: [
+          {$: 'group.dynamic-titles' }, 
+          {$: 'hidden', 
+            showCondition :{$: 'studio.has-param', 
+              remark: 'not a control', 
+              path: '%$path%', 
+              param: 'features'
+            }
           }
         ]
       }, 
-      {$: 'group', 
-        remark: 'features', 
-        title :{
-          $pipeline: [
-            {$: 'count', 
-              items :{$: 'studio.val', path: '%$path%~features' }
-            }, 
-            'Features (%%)'
-          ]
+      {$: 'button', 
+        title: 'new feature', 
+        action :{$: 'studio.open-new-profile-dialog', 
+          path: '%$path%~features', 
+          type: 'feature', 
+          onClose: ctx => 
+            ctx.vars.PropertiesDialog.openFeatureSection()
         }, 
-        controls :{$: 'studio.property-array', path: '%$path%~features' }
+        style :{$: 'button.href' }, 
+        features :{$: 'css.margin', top: '20', left: '5' }
       }
     ], 
-    features: [
-      {$: 'group.dynamic-titles' }, 
-      {$: 'hidden', 
-        showCondition :{$: 'studio.has-param', 
-          remark: 'not a control', 
-          path: '%$path%', 
-          param: 'features'
-        }
-      }
-    ]
+    features :{$: 'var', 
+      name: 'PropertiesDialog', 
+      value :{$: 'object' }, 
+      mutable: false
+    }
   }
 })
 
@@ -161,7 +182,7 @@ jb.component('studio.property-script', {
   impl :{$: 'group', 
     title :{$: 'studio.prop-name', path: '%$path%' }, 
     features: [
-          {$: 'studio.undo-support', path: '%$path%' }, 
+//          {$: 'studio.undo-support', path: '%$path%' }, 
           {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
     ],
     controls :{$: 'button', 
@@ -197,7 +218,7 @@ jb.component('studio.property-boolean', {
     style :{$: 'editable-boolean.mdl-slide-toggle' }, 
     title :{$: 'studio.prop-name', path: '%$path%' }, 
     features: [
-      {$: 'studio.undo-support', path: '%$path%' }, 
+//      {$: 'studio.undo-support', path: '%$path%' }, 
       {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
       {$: 'css.width', width: '150' }
     ]
@@ -229,8 +250,8 @@ jb.component('studio.property-slider', {
     step :{ $firstSucceeding: ['%$paramDef/step%', 1] }, 
     features :{$: 'css', 
       width: '212', 
-      css: `>input { width: 110px; background: red }
->.slider-text { width: 20px; padding-right: 15px; margin-top: 2px; }`
+      css: `>input-slider { width: 110px; }
+>.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }`
     }
   }
 })
@@ -425,12 +446,12 @@ jb.component('studio.property-array', {
           }
         ]
       }, 
-      {$: 'button', 
-        title: 'new feature', 
-        action :{$: 'studio.open-new-profile-dialog', type: 'feature', path: '%$path%' }, 
-        style :{$: 'button.href' }, 
-        features :{$: 'css.margin', top: '20', left: '20' }
-      }
+      // {$: 'button', 
+      //   title: 'new feature', 
+      //   action :{$: 'studio.open-new-profile-dialog', type: 'feature', path: '%$path%' }, 
+      //   style :{$: 'button.href' }, 
+      //   features :{$: 'css.margin', top: '20', left: '20' }
+      // }
     ], 
   }
 })

@@ -104,7 +104,7 @@ jb.component('studio.property-primitive', {
         databind :{$: 'studio.ref', path: '%$path%' }, 
         style :{$: 'editable-text.studio-primitive-text' }, 
         features: [
-          {$: 'studio.undo-support', path: '%$path%' }, 
+//          {$: 'studio.undo-support', path: '%$path%' }, 
           {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
           {$: 'editable-text.helper-popup', 
             features :{$: 'dialog-feature.near-launcher-position' }, 
@@ -142,7 +142,7 @@ jb.component('studio.jb-floating-input', {
             value :{$: 'object', selected: '', options: [], path: '%$path%' }, 
             mutable: true
           }, 
-          {$: 'studio.undo-support', path: '%$path%' }, 
+//          {$: 'studio.undo-support', path: '%$path%' }, 
           {$: 'editable-text.helper-popup', 
             showHelper :{$: 'studio.show-suggestions' },
             features :{$: 'dialog-feature.near-launcher-position' }, 

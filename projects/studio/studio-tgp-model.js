@@ -10,12 +10,12 @@ st.ControlTree = class {
 	}
 	// differnt from children() == 0, beacuse in the control tree you can drop into empty group
 	isArray(path) {
-		return st.controlParams(path).length > 0;
+		return this.children(path).length > 0;
 	}
-	children(path) {
+	children(path,nonRecursive) {
 		return [].concat.apply([],st.controlParams(path).map(prop=>path + '~' + prop)
 				.map(innerPath=>Array.isArray(st.valOfPath(innerPath)) ? st.arrayChildren(innerPath,true) : [innerPath] ))
-				.concat(this.innerControlPaths(path));		
+				.concat(nonRecursive ? [] : this.innerControlPaths(path));		
 	}
 	move(path,draggedPath,index) {
 		if (st.parentPath(draggedPath) == path)
@@ -29,6 +29,9 @@ st.ControlTree = class {
 
 	// private
 	innerControlPaths(path) {
+		// var nonControlChildren = [].concat.apply([],
+		//  	st.nonControlChildren(path,true).map(innerPath=>Array.isArray(st.valOfPath(innerPath)) ? st.arrayChildren(innerPath,true) : [innerPath] ))
+		// return [].concat.apply([],nonControlChildren.map(innerPath=>this.children(innerPath,true)))
 		return ['action~content'] // add more inner paths here
 			.map(x=>path+'~'+x)
 			.filter(p=>
@@ -109,8 +112,7 @@ Object.assign(st,{
 			.filter(p=>st.valOfPath(path+'~'+p.id) == null && !p.essential)
 			.map(p=> path + '~' + p.id),
 	nonControlChildren: (path,includeFeatures) =>
-		st.paramsOfPath(path).filter(p=>
-				(p.type||'').indexOf('control')==-1)
+		st.paramsOfPath(path).filter(p=>!st.isControlType(p.type))
 			.filter(p=>includeFeatures || p.id != 'features')
 			.map(p=>path + '~' + p.id),
 
@@ -132,16 +134,19 @@ Object.assign(st,{
 			return [path]
 	},
 
+	isControlType: type =>
+		(type||'').match(/control|options|menu|table-field/),
 	controlParams: path =>
-		st.paramsOfPath(path).filter(p=>(p.type||'').match(/control|options|menu|table-field/)).map(p=>p.id),
+		st.paramsOfPath(path).filter(p=>st.isControlType(p.type)).map(p=>p.id),
 
 	summary: path => {
 		var val = st.valOfPath(path);
 		if (val == null || typeof val != 'object') return '';
 		return Object.getOwnPropertyNames(val)
 			.filter(p=> p != '$')
+			.filter(p=> p.indexOf('$jb_') != 0)
 			.map(p=>val[p])
-			.filter(v=>typeof v == 'string')
+			.filter(v=>typeof v != 'object')
 			.join(', ');
 	},
 

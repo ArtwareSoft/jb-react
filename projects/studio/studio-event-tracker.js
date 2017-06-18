@@ -134,5 +134,4 @@ jb.component('studio.event-tracker', {
   }
 })
 
-
 })()

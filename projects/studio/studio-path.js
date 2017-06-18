@@ -1,13 +1,12 @@
 (function() { var st = jb.studio;
 
-st.compsHistory = [];
-
-function compsRef(val) {
+function compsRef(val,opEvent) {
   if (typeof val == 'undefined') 
     return st.previewjb.comps;
   else {
-  	st.compsHistory.push(st.previewjb.comps);
+  	st.compsHistory.push({comps: st.previewjb.comps,opEvent: opEvent});
     st.previewjb.comps = val;
+    st.undoIndex = st.compsHistory.length;
   }
 }
 
@@ -264,8 +263,9 @@ jb.component('studio.is-new',{
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (context,path) => {
 		if (st.compsHistory.length == 0) return false;
-		var version_before = new jb.ui.ImmutableWithPath(_=>st.compsHistory.slice(-1)[0]).refOfPath(path.split('~'),true);
-		return st.valOfPath(path) && !st.val(version_before);
+		var version_before = new jb.ui.ImmutableWithPath(_=>st.compsHistory.slice(-1)[0].comps).refOfPath(path.split('~'),true);
+		var res =  st.valOfPath(path) && !st.val(version_before);
+		return res;
 	}
 });
 

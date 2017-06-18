@@ -279,6 +279,10 @@ jb.component('group.studio-properties-accordion', {
       features : [ 
         {$: 'group.init-group' },
         {$: 'group.init-accordion', keyboardSupport: true, autoFocus: true },
+        ctx =>({
+          afterViewInit: cmp => 
+            ctx.vars.PropertiesDialog.openFeatureSection = _ => cmp.show(1)
+        })
       ]
   }
 })

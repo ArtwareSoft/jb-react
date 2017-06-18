@@ -72,7 +72,7 @@ jb.component('studio.style-editor', {
           mode: 'css', 
           onCtrlEnter :{$: 'studio.refresh-preview' }
         }, 
-        features :{$: 'studio.undo-support', path: '%styleSource/path%' }
+//        features :{$: 'studio.undo-support', path: '%styleSource/path%' }
       }, 
       {$: 'editable-text', 
         title: 'template', 
@@ -85,7 +85,7 @@ jb.component('studio.style-editor', {
           mode: 'htmlmixed', 
           onCtrlEnter :{$: 'studio.refresh-preview' }
         }, 
-        features :{$: 'studio.undo-support', path: '%$styleSource/path%' }
+//        features :{$: 'studio.undo-support', path: '%$styleSource/path%' }
       }
     ]
   }
