@@ -27,7 +27,7 @@ jb.component('field.databind', {
         }
         if (!noUpdates) {
           jb.ui.refObservable(ctx.vars.$model.databind,cmp)
-            .filter(e=>!e.srcCtx || e.srcCtx.path != srcCtx.path) // do not refresh by its own change
+            .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // do not refresh by its own change
             .subscribe(e=>jb.ui.setState(cmp,null,e,ctx))
         }
       }

@@ -13,6 +13,27 @@ jb.component('studio.open-jb-editor', {
   }
 })
 
+jb.component('studio.open-component-in-jb-editor', {
+  type: 'action', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl : {
+   $vars: {
+    compPath: {$: 'split', text: '%$path%', separator: '~', part: 'first'},
+   }, 
+    $runActions: [
+  {$: 'write-value', value: '%$path%', to: '%$studio/jb_editor_selection%'},
+  {$: 'open-dialog',
+    style :{$: 'dialog.studio-floating', id: 'jb editor', width: '700', height: '400' }, 
+    content :{$: 'studio.jb-editor', path: '%$compPath%' }, 
+    menu :{$: 'button', 
+      action :{$: 'studio.open-jb-editor-menu', path: '%$studio/jb_editor_selection%' }, 
+      style :{$: 'button.mdl-icon', icon: 'menu' }
+    }, 
+    title :{$: 'studio.path-hyperlink', path: '%$compPath%', prefix: 'Inteliscript' }
+  }
+  ]}
+})
+
 jb.component('studio.jb-editor', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 

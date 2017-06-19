@@ -1,7 +1,7 @@
 jb.component('editable-text.studio-primitive-text', {
   type: 'editable-text.style',
   impl :{$: 'custom-style', 
-      features :{$: 'field.databind', noUpdates: true },
+      features :{$: 'field.databind' },
       template: (cmp,state,h) => h('input', { 
           value: cmp.jbModel(), 
           onchange: e => cmp.jbModel(e.target.value), 

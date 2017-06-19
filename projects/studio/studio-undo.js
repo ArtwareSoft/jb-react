@@ -2,27 +2,41 @@
 var st = jb.studio;
 
 st.compsHistory = [];
+st.undoIndex = 0;
+
+function setToVersion(versionIndex,ctx) {
+	var version = st.compsHistory[versionIndex];
+    var opEvent = Object.assign({},version.opEvent);
+    opEvent.oldVal = version.opEvent.newVal;
+    opEvent.newVal = version.opEvent.oldVal;
+    opEvent.srcCtx = ctx;
+
+	st.previewjb.comps = version.comps;
+    st.compsRefHandler.resourceVersions = version.opEvent.oldResourceVersions;
+    st.compsRefHandler.resourceChange.next(opEvent);
+}
 
 jb.component('studio.undo', {
 	impl: ctx => {
-		if (st.undoIndex > 0) {
-			st.undoIndex--;
-			var change = st.compsHistory[st.undoIndex];
-			st.previewjb.comps = st.compsHistory[st.undoIndex];
-//			jb_ui.apply(ctx);
-		}
+		if (st.undoIndex > 0)
+			setToVersion(--st.undoIndex,ctx)
+	}
+})
+
+jb.component('studio.revert', {
+	params: [
+		{ id: 'toIndex', as: 'number' }
+	],
+	impl: (ctx,toIndex) => {
+		st.undoIndex = toIndex;
+		setToVersion(st.undoIndex,ctx)
 	}
 })
 
 jb.component('studio.redo', {
 	impl: ctx => {
-		if (st.undoIndex < st.compsHistory.length) {
-			var change = st.compsHistory[st.undoIndex];
-			setComp(change.after,change.ctx.win().jbart);
-			st.undoIndex++;
-//			jb_ui.apply(ctx);
-		}
-
+		if (st.undoIndex < st.compsHistory.length)
+			setToVersion(st.undoIndex++,ctx)
 	}
 })
 
@@ -38,7 +52,7 @@ jb.component('studio.paste', {
 		(st.clipboard != null) && jb.writeValue(ref,st.clipboard,ctx)
 })
 
-jb.component('studio.script-history', {
+jb.component('studio.script-history-items', {
 	type: 'data',
 	impl: ctx => st.compsHistory
 })
@@ -61,14 +75,35 @@ jb.component('studio.script-history', {
   impl :{$: 'group', 
     controls: [
       {$: 'table', 
-        items :{$: 'studio.script-history' }, 
+        items :{$: 'studio.script-history-items' }, 
         fields: [
+          {$: 'field.control', 
+            title: 'changed', 
+            control :{$: 'button', 
+              title : ctx => st.nameOfRef(ctx.data.opEvent.ref), 
+              action :{$: 'studio.goto-path', path: '%opEvent/srcCtx/path%' }, 
+              style :{$: 'button.href' }, 
+              features: {$: 'feature.hover-title', title: '%opEvent/srcCtx/path%' }
+            }, 
+            width: '100'
+          },
+          {$: 'field' , title: 'from', data: {$: 'pretty-print', profile: '%opEvent/oldVal%'}, width: '200' },
+          {$: 'field' , title: 'to', data: {$: 'pretty-print', profile: '%opEvent/newVal%'}, width: '200' },
+          {$: 'field.control', 
+            title: 'undo/redo',
+            control :{$: 'button', 
+              title : 'revert to here', 
+              action :{$: 'studio.revert', toIndex: '%undoIndex%' }, 
+              style :{$: 'button.href' }, 
+            }, 
+            width: '100'
+          },
         ], 
         style :{$: 'table.with-headers' }
       }
     ], 
     features :{$: 'watch-observable', 
-      toWatch: ctx => st.previewjb.ui.stateChangeEm.debounceTime(500), 
+      toWatch: ctx => st.compsRefHandler.resourceChange.debounceTime(500), 
       strongRefresh: true
     }
   }

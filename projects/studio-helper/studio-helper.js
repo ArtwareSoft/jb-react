@@ -244,163 +244,6 @@ jb.component('studio-helper.features', {
   }
 })
 
-jb.component('studio-helper.search', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'search', 
-    style :{$: 'layout.vertical', spacing: '53' }, 
-    controls: [
-      {$: 'group', 
-        title: 'search', 
-        style :{$: 'layout.horizontal', spacing: '3' }, 
-        controls: [
-          {$: 'button', 
-            title: 'menu icon', 
-            style :{$: 'button.mdl-icon', icon: 'search' }, 
-            features: [
-              {$: 'css.width', width: '60' }, 
-              {$: 'css.height', height: '46' }, 
-              {$: 'css.opacity', opacity: '0.2' }
-            ]
-          }, 
-          {$: 'itemlist-container.search', 
-            title: 'Search', 
-            searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
-            databind: '%$itemlistCntrData/search_pattern%', 
-            style :{$: 'editable-text.mdl-input', width: '270' }, 
-            features :{$: 'css.margin', top: '-10' }
-          }, 
-          {$: 'button', 
-            title: 'menu icon', 
-            style :{$: 'button.mdl-icon', icon: 'clear' }, 
-            features: [
-              {$: 'css.width', width: '60' }, 
-              {$: 'css.height', height: '46' }, 
-              {$: 'css.opacity', opacity: '0.2' }
-            ]
-          }
-        ], 
-        features: [
-          {$: 'css.box-shadow', 
-            blurRadius: '7', 
-            spreadRadius: '2', 
-            shadowColor: '#cdcdcd', 
-            horizontal: '1', 
-            vertical: '1'
-          }, 
-          {$: 'css.width', width: '390' }, 
-          {$: 'css.height', height: '46' }
-        ]
-      }, 
-      {$: 'studio.search-list' }, 
-      {$: 'studio.search-component' }
-    ], 
-    features :{$: 'group.itemlist-container' }
-  }
-})
-
-jb.component('studio-helper-sample.control', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'main', 
-    controls :[
-      {$: 'group', 
-        title: '2.0', 
-        controls: [
-          {$: 'label', title: '2.1' }, 
-          {$: 'button', title: '2.2' }
-        ]
-      }, 
-      {$: 'label', title: '1.00' }
-    ]
-  }
-})
-
-jb.component('studio-helper-sample.control', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'main', 
-    controls :[
-      {$: 'group', 
-        title: '2.0', 
-        controls: [
-          {$: 'label', title: '2.1' }, 
-          {$: 'button', title: '2.2' }
-        ]
-      }, 
-      {$: 'label', title: '1.000' }
-    ]
-  }
-})
-
-jb.component('studio-helper-sample.control', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'main', 
-    controls :[
-      {$: 'group', 
-        title: '2.0', 
-        controls: [
-          {$: 'label', title: '2.1' }, 
-          {$: 'button', title: '2.2' }
-        ]
-      }, 
-      {$: 'label', title: '1.0' }
-    ]
-  }
-})
-
-jb.component('studio-helper-sample.control', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'main', 
-    controls :[
-      {$: 'group', 
-        title: '2.0', 
-        controls: [
-          {$: 'label', title: '2.1' }, 
-          {$: 'button', title: '2.2' }
-        ]
-      }, 
-      {$: 'label', title: '1.000' }
-    ]
-  }
-})
-
-jb.component('studio-helper-sample.control', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'main', 
-    controls :[
-      {$: 'group', 
-        title: '2.0', 
-        controls: [
-          {$: 'label', title: '2.1' }, 
-          {$: 'button', title: '2.2' }
-        ]
-      }, 
-      {$: 'label', title: '1.00' }
-    ]
-  }
-})
-
-jb.component('studio-helper-sample.control', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'main', 
-    controls :[
-      {$: 'group', 
-        title: '2.0', 
-        controls: [
-          {$: 'label', title: '2.1' }, 
-          {$: 'button', title: '2.2' }
-        ]
-      }, 
-      {$: 'label', title: '1.0' }
-    ]
-  }
-})
-
 jb.component('studio-helper-sample.control', {
   type: 'control', 
   impl :{$: 'group', 
@@ -455,5 +298,15 @@ jb.component('studio-helper.studio-properties', {
   impl :{$: 'group', 
     $vars: { circuit: 'studio-helper-sample.picklist' }, 
     controls :{$: 'studio.properties', path: 'studio-helper-sample.picklist~impl' }
+  }
+})
+
+jb.component('studio-helper.script-history', {
+  type: 'control', 
+  impl :{$: 'group', 
+    controls :[ 
+      {$: 'studio-helper.studio-properties'},
+      {$: 'studio.script-history' } 
+    ]
   }
 })

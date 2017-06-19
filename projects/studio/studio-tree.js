@@ -168,20 +168,20 @@ jb.component('studio.control-tree.nodes', {
 })
 
 // after model modifications the paths of the selected and expanded nodes may change and the tree should fix it.
-jb.component('studio.control-tree.refresh-path-changes', {
-  type: 'feature',
-  impl: ctx => ({
-    init : cmp => {
-      var tree = ctx.vars.$tree; 
-      // jb.studio.scriptChanges.takeUntil( cmp.destroyed )
-      //   .subscribe(fixer => {
-      //     var new_expanded = {};
-      //     jb.entries(tree.expanded)
-      //       .filter(e=>e[1])
-      //       .forEach(e => new_expanded[fixer.fix(e[0])] = true)
-      //     tree.expanded = new_expanded;
-      //     tree.selected = fixer.fix(tree.selected);
-      //   })
-    }
-  })
-})
+// jb.component('studio.control-tree.refresh-path-changes', {
+//   type: 'feature',
+//   impl: ctx => ({
+//     init : cmp => {
+//       var tree = ctx.vars.$tree; 
+//       jb.studio.scriptChanges.takeUntil( cmp.destroyed )
+//         .subscribe(fixer => {
+//           var new_expanded = {};
+//           jb.entries(tree.expanded)
+//             .filter(e=>e[1])
+//             .forEach(e => new_expanded[fixer.fix(e[0])] = true)
+//           tree.expanded = new_expanded;
+//           tree.selected = fixer.fix(tree.selected);
+//         })
+//     }
+//   })
+// })

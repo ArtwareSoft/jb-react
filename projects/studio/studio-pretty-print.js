@@ -1,3 +1,11 @@
+jb.component('pretty-print', {
+  params: [
+    { id: 'profile', defaultValue: '%%' }
+  ],
+  impl: (ctx,profile) => 
+    jb.studio.prettyPrint(profile)
+})
+
 jb.studio.prettyPrintComp = function(compId,comp) {
   if (comp)
     return "jb.component('" + compId + "', "

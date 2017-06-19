@@ -30,7 +30,7 @@ jb.component('studio.event-cause', {
 	type: 'data',
 	params: [ {id: 'event', as: 'single', defaultValue: '%%' } ],
 	impl: (context,event) =>
-		(event && event.opEvent) ? st.nameOfRef(event.opEvent.ref) + ' changed to "' + st.valSummaryOfRef(event.opEvent.ref) + '"' : ''
+		(event && event.opEvent) ? st.nameOfRef(event.opEvent.ref) + ' changed to "' + st.valSummary(event.opEvent.newVal) + '"' : ''
 });
 
 jb.component('studio.state-change-events', {
