@@ -164,7 +164,10 @@ jb.component('studio.open-jb-edit-property', {
         features: [
           {$: 'dialog-feature.auto-focus-on-first-input' }, 
           {$: 'dialog-feature.onClose', 
-            action :{$: 'toggle-boolean-value', of: '%$studio/jb_preview_result_counter%' }
+            action : {$runActions: [
+              {$: 'toggle-boolean-value', of: '%$studio/jb_preview_result_counter%'},
+              {$: 'tree.regain-focus'}
+            ]}
           }
         ],
       },

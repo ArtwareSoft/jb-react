@@ -257,7 +257,7 @@ jb.component('dialog-feature.auto-focus-on-first-input', {
 			jb.delay(1).then(_=> {
 				var elem = ctx.vars.$dialog.el.querySelector('input,textarea,select');
 				if (elem)
-					jb.ui.focus(elem, 'auto-focus-on-first-input');
+					jb.ui.focus(elem, 'auto-focus-on-first-input',ctx);
 				if (selectText)
 					elem.select();
 			})

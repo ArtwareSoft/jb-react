@@ -176,7 +176,12 @@ jb.component('studio-helper-dummy.label', {
   type: 'control', 
   impl :{$: 'label', 
     title :{
-      $pipeline: ['%$people-array/people%', { $filter: '%age% == 42' }, '%name%aa']
+      $pipeline: [
+        '%$people-array/people%', 
+        { $filter: '%age% == 42' }, 
+        '%name%', 
+        '%name% '
+      ]
     }, 
     features: [
       {$: 'css', 

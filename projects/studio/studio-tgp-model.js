@@ -88,7 +88,7 @@ st.jbEditorTree = class {
 		var sugarPath = path + '~$' +compName;
 		var sugarVal = st.valOfPath(sugarPath);
 		if (Array.isArray(sugarVal)) // sugar array. e.g. $pipeline: [ .. ]
-			return st.arrayChildren(sugarPath,sugarVal)
+			return st.arrayChildren(sugarPath)
 		else if (sugarVal)
 			return [sugarPath];
 	}

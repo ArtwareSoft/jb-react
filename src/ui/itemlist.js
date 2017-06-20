@@ -140,7 +140,7 @@ jb.component('itemlist.keyboard-selection', {
           onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
 
           if (ctx.params.autoFocus)
-            jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus')
+            jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus',ctx)
         }
         cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );          
 

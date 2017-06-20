@@ -1,12 +1,13 @@
-undo
-
 jbEditor
-  copy - paste
-  flatten items array
-  create new pipeline as sugar
+  undo/redo
+  tree losing focus after changing value
+  remove 'items' in sugar
+  create new pipeline (and other 'wrap as') as sugar
   auto focus on first
   tree refresh bug
   extra array elem (pipeline)
+
+probe in and out in table
 suggestion highlight in option object
 
 

@@ -4,15 +4,21 @@ var st = jb.studio;
 st.compsHistory = [];
 st.undoIndex = 0;
 
-function setToVersion(versionIndex,ctx) {
+function setToVersion(versionIndex,ctx,after) {
 	var version = st.compsHistory[versionIndex];
     var opEvent = Object.assign({},version.opEvent);
     opEvent.oldVal = version.opEvent.newVal;
     opEvent.newVal = version.opEvent.oldVal;
     opEvent.srcCtx = ctx;
 
-	st.previewjb.comps = version.comps;
-    st.compsRefHandler.resourceVersions = version.opEvent.oldResourceVersions;
+    if (after) {
+		st.previewjb.comps = version.after;
+	    st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsAfter;
+    } else {
+		st.previewjb.comps = version.before;
+	    st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsBefore;
+    }
+
     st.compsRefHandler.resourceChange.next(opEvent);
 }
 
@@ -36,7 +42,7 @@ jb.component('studio.revert', {
 jb.component('studio.redo', {
 	impl: ctx => {
 		if (st.undoIndex < st.compsHistory.length)
-			setToVersion(st.undoIndex++,ctx)
+			setToVersion(st.undoIndex++,ctx,true)
 	}
 })
 
@@ -49,7 +55,7 @@ jb.component('studio.copy', {
 jb.component('studio.paste', {
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		(st.clipboard != null) && jb.writeValue(ref,st.clipboard,ctx)
+		(st.clipboard != null) && jb.writeValue(st.refOfPath(path),st.clipboard,ctx)
 })
 
 jb.component('studio.script-history-items', {

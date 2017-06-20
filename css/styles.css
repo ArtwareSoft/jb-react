@@ -134,7 +134,7 @@ padding: 10px 10px 10px 27px; color: #6D6E71; min-height: 12px; border-bottom: 1
 
 /*** tree *******/
 .jb-control-tree { margin: 0; padding: 0; }
-.jb-control-tree:focus { outline: none; }
+.jb-control-tree1:focus { outline: none; }
 .jb-control-tree .treenode-children { margin: 0; padding: 0 0 0 10px; min-height: 7px}
 .jb-control-tree ul,li { list-style: none; padding: 1px 0;}
 .jb-control-tree .treenode-line { width:300px; display: flex; box-orient: horizontal; padding-bottom: 3px; }
@@ -147,7 +147,7 @@ padding: 10px 10px 10px 27px; color: #6D6E71; min-height: 12px; border-bottom: 1
 .jb-control-tree .treenode-expandbox { border: none; background: none; position: relative; width:9px; height:9px; padding: 0; vertical-align: top;  
     margin-top: 3px;  margin-right: 5px;  cursor: pointer;}
 .jb-control-tree .treenode-expandbox div { position: absolute; }
-.jb-control-tree .treenode-expandbox:focus { outline: none; }
+.jb-control-tree1 .treenode-expandbox:focus { outline: none; }
 .jb-control-tree .treenode-expandbox .frame { background: #F8FFF9; border-radius: 3px; border: 1px solid #91B193; top: 0px; left: 0px; right: 0px; bottom: 0px; }
 .jb-control-tree .treenode-expandbox .line-lr { background: #91B193; top: 4px; left: 2px; width: 5px; height: 1px; }
 .jb-control-tree .treenode-expandbox .line-tb { background: #91B193; left: 4px; top: 2px; height: 5px; width: 1px; display: none;}
@@ -193,7 +193,7 @@ border: 1px solid rgb(213, 213, 213);}
 /* .pulldown-menu-item */
 .pulldown-menu-item { -webkit-user-select: none;  padding: 6px 10px 6px 29px; font-size: 13px; display: block; background: #fff;  border: none; width: 100%; text-align: left; cursor: pointer;   position: relative;} 
 .pulldown-menu-item:hover { background: #eee; }
-.pulldown-menu-item:focus { outline: none; }
+.pulldown-menu-item1:focus { outline: none; }
 .pulldown-menu-item span { background: url('icons1.png?v=16_02') no-repeat; width: 16px; height: 16px; display: block; position: absolute; top: 5px; left: 6px;}
 
 

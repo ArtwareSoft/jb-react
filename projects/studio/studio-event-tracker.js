@@ -83,19 +83,37 @@ jb.component('studio.event-tracker', {
         items :{$: 'studio.state-change-events' }, 
         fields: [
           {$: 'field.control', 
+            title: 'changed', 
+            control :{$: 'button', 
+              title :{$: 'studio.name-of-ref', ref: '%opEvent/ref%' }, 
+              action :{$: 'studio.goto-path', 
+                path :{$: 'studio.path-of-ref', ref: '%opEvent/ref%' }
+              }, 
+              style :{$: 'button.href' }, 
+              features :{$: 'feature.hover-title', 
+                title :{$: 'studio.path-of-ref', ref: '%opEvent/ref%' }
+              }
+            }, 
+            width: '100'
+          }, 
+          {$: 'field', 
+            title: 'from', 
+            data :{$: 'pretty-print', profile: '%opEvent/oldVal%' }, 
+            width: '200'
+          }, 
+          {$: 'field', 
+            title: 'to', 
+            data :{$: 'pretty-print', profile: '%opEvent/newVal%' }, 
+            width: '200'
+          }, 
+          {$: 'field.control', 
             title: 'action', 
             control :{$: 'button', 
-              title :{$: 'studio.event-cause', event: '%%' }, 
+              title: '%opEvent/srcCtx/path%', 
               action :{$: 'studio.goto-path', path: '%opEvent/srcCtx/path%' }, 
-              style :{$: 'button.href' }, 
-              features: [
-                {$: 'feature.onHover', 
-                  action :{$: 'studio.highlight-event' }
-                }, 
-                {$: 'feature.hover-title', title: '%opEvent/srcCtx/path%' }
-              ]
+              style :{$: 'button.href' }
             }, 
-            width: '200'
+            width: '100'
           }, 
           {$: 'field.control', 
             title: 'refreshing', 

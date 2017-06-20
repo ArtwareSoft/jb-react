@@ -4,7 +4,7 @@ function compsRef(val,opEvent) {
   if (typeof val == 'undefined') 
     return st.previewjb.comps;
   else {
-  	st.compsHistory.push({comps: st.previewjb.comps,opEvent: opEvent, undoIndex: st.undoIndex});
+  	st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex});
     st.previewjb.comps = val;
     st.undoIndex = st.compsHistory.length;
   }

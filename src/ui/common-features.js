@@ -210,6 +210,7 @@ jb.component('feature.hover-title', {
     }
   })
 })
+
 jb.component('feature.keyboard-shortcut', {
   type: 'feature',
   params: [
@@ -281,11 +282,11 @@ jb.component('feature.onDelete', {
 
 jb.component('group.auto-focus-on-first-input', {
   type: 'feature',
-  impl: context => ({ 
+  impl: ctx => ({ 
       afterViewInit: cmp => {
           var elem = Array.from(cmp.base.querySelectorAll('input,textarea,select'))
             .filter(e => e.getAttribute('type') != 'checkbox')[0];
-          jb.ui.focus(elem,'auto-focus-on-first-input'); 
+          jb.ui.focus(elem,'auto-focus-on-first-input',ctx); 
         }
   })
 })

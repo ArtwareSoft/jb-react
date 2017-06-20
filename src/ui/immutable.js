@@ -44,7 +44,7 @@ class ImmutableWithPath {
     if (!this.isRef(ref))
       ref = this.asRef(ref);
     if (!ref) return;
-    var oldRef = Object.assign({},ref),oldResources = this.resources(), oldResourceVersions = JSON.parse(JSON.stringify(this.resourceVersions));
+    var oldRef = Object.assign({},ref);
 
     if (!this.refresh(ref)) return;
     if (ref.$jb_path.length == 0)
@@ -54,10 +54,11 @@ class ImmutableWithPath {
     jb.path(op,ref.$jb_path,opOnRef);
     this.markPath(ref.$jb_path);
     var opEvent = {op: op, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
-        oldRef: oldRef, oldResources: oldResources, oldResourceVersions: oldResourceVersions, timeStamp: new Date().getTime()};
+        oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
     this.resources(jb.ui.update(this.resources(),op),opEvent);
-    this.resourceVersions[resource] = this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1;
+    this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
     opEvent.newVal = jb.val(ref);
+    opEvent.resourceVersionsAfter = this.resourceVersions;
     this.resourceChange.next(opEvent);
     return ref;
   }

@@ -126,7 +126,7 @@ function enableFullScreen(editor,width,height) {
 			});
 			jEditorElem.append(jEsc);
 			jEditorElem[0].jEsc = jEsc;
-			jb.ui.focus(editor,'code mirror');
+			jb.ui.focus(editor,'code mirror',ctx);
 		}
 	}
 

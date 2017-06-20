@@ -277,7 +277,7 @@ jb.component('menu.selection', {
 
      	if (!ctx.vars.topMenu.keydown) { 
 	        ctx.vars.topMenu.keydown = cmp.onkeydown;
-            jb.ui.focus(cmp.base,'menu.keyboard init autoFocus');
+            jb.ui.focus(cmp.base,'menu.keyboard init autoFocus',ctx);
       	};
 
         var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
