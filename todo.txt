@@ -1,20 +1,17 @@
-table with filters
-tree - redraw
+undo
+
 jbEditor
+  copy - paste
+  flatten items array
   create new pipeline as sugar
   auto focus on first
   tree refresh bug
-  close floating on enter
   extra array elem (pipeline)
 suggestion highlight in option object
-search component
 
-undo
- copy - paste
 
-operation history
-
-color picker from color pallete of theme
+logo
+color picker from color palette of theme
 
 
 

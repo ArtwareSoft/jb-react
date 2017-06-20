@@ -120,12 +120,7 @@ jb.component('studio.select-profile', {
         title: 'Search', 
         searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
         databind: '%$itemlistCntrData/search_pattern%', 
-        style :{$: 'editable-text.mdl-input' }, 
-        features: [
-          {$: 'field.subscribe', 
-            action :{$: 'write-value', to: '%$SelectedCategory%', value: 'all' }
-          }
-        ]
+        style :{$: 'editable-text.mdl-input' }
       }, 
       {$: 'group', 
         title: 'categories and items', 
@@ -182,7 +177,22 @@ jb.component('studio.select-profile', {
               $pipeline: [
                 '%$Categories%', 
                 {$: 'filter', 
-                  filter :{$: 'equals', item1: '%name%', item2: '%$SelectedCategory%' }
+                  filter :{$: 'or', 
+                    items: [
+                      {$: 'equals', 
+                        item1: '%name%', 
+                        item2: '%$SelectedCategory%'
+                      }, 
+                      {$: 'and', 
+                        items: [
+                          {$: 'notEmpty', 
+                            item: '%$itemlistCntrData/search_pattern%'
+                          }, 
+                          {$: 'not-equals', item1: 'all', item2: '%name%' }
+                        ]
+                      }
+                    ]
+                  }
                 }, 
                 '%pts%', 
                 {$: 'itemlist-container.filter' }
@@ -198,7 +208,12 @@ jb.component('studio.select-profile', {
                 style :{$: 'label.span', level: 'h3' }, 
                 features: [
                   {$: 'css', css: '{ text-align: left; }' }, 
-                  {$: 'css.padding', left: '4' }, 
+                  {$: 'css.padding', 
+                    top: '0', 
+                    left: '4', 
+                    right: '4', 
+                    bottom: '0'
+                  }, 
                   {$: 'css.width', width: '250', minMax: 'min' }
                 ]
               }
@@ -221,7 +236,8 @@ jb.component('studio.select-profile', {
               {$: 'watch-ref', 
                 ref: '%$itemlistCntrData/search_pattern%', 
                 strongRefresh: true
-              }
+              }, 
+              {$: 'css.margin', top: '3', selector: '>li' }
             ]
           }
         ]

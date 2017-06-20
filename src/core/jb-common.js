@@ -269,7 +269,7 @@ jb.component('numeric-sort', { // with side effects!!! decision made for perform
 jb.component('not', {
 	type: 'boolean',
 	params: [ 
-		{ id: 'of', type: 'boolean', as: 'boolean', essential: true} 
+		{ id: 'of', type: 'boolean', as: 'boolean', essential: true, composite: true} 
 	],
 	impl: (context, of) => !of
 });
@@ -277,7 +277,7 @@ jb.component('not', {
 jb.component('and', {
 	type: 'boolean',
 	params: [ 
-		{ id: 'items', type: 'boolean[]', ignore: true, essential: true } 
+		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true } 
 	],
 	impl: function(context) {
 		var items = context.profile.$and || context.profile.items || [];
@@ -292,7 +292,7 @@ jb.component('and', {
 jb.component('or', {
 	type: 'boolean',
 	params: [ 
-		{ id: 'items', type: 'boolean[]', ignore: true, essential: true } 
+		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true } 
 	],
 	impl: function(context) {
 		var items = context.profile.$or || context.profile.items || [];

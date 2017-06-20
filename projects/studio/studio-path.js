@@ -112,7 +112,8 @@ Object.assign(st, {
 		var comp = st.getComp(compName);
 		var firstParam = jb.compParams(comp).filter(p=>p.composite)[0];
 		if (firstParam) {
-			var result = jb.extend({ $: compName }, jb.obj(firstParam.id, [st.valOfPath(path)]));
+			var singleOrArray = firstParam.type.indexOf('[') == -1 ? st.valOfPath(path) : [st.valOfPath(path)];
+			var result = jb.extend({ $: compName }, jb.obj(firstParam.id,singleOrArray));
 			st.writeValueOfPath(path,result);
 		}
 	},
