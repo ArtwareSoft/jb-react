@@ -11,7 +11,7 @@ function compsRef(val,opEvent) {
 }
 
 st.compsRefHandler = new jb.ui.ImmutableWithPath(compsRef);
-
+st.compsRefHandler.resourceChange.subscribe(_=>st.lastStudioActivity= new Date().getTime())
 // adaptors
 
 Object.assign(st,{
@@ -238,7 +238,7 @@ Object.assign(st, {
 			jb.logException(e,'eval profile:'+prof_str);
 		}
 	},
-	
+
   	pathOfRef: ref =>
   		ref.$jb_path && ref.$jb_path.join('~'),
 	nameOfRef: ref => 

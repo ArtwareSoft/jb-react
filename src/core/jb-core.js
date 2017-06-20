@@ -528,7 +528,7 @@ function logError(errorStr,errorObj,ctx) {
 
 function logPerformance(type,p1,p2,p3) {
   var types = ['focus','apply','check','suggestions','writeValue'];
-  if (['suggestions','writeValue'].indexOf(type) == -1) return; // filter. TBD take from somewhere else
+  if (['focus','writeValue'].indexOf(type) == -1) return; // filter. TBD take from somewhere else
   console.log(type, p1 || '', p2 || '', p3 ||'');
 }
 

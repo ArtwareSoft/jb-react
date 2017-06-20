@@ -225,7 +225,8 @@ function garbageCollectCtxDictionary() {
 
 ui.focus = function(elem,logTxt) {
 	if (!elem) debugger;
-    if (jb.studio.lastStudioActivity && new Date().getTime() - jb.studio.lastStudioActivity < 1000)
+	var lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity']);
+    if (lastStudioActivity && new Date().getTime() - lastStudioActivity < 1000)
     	return;
     jb.logPerformance('focus',logTxt);
     jb.delay(1).then(_=>
