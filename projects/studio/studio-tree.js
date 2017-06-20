@@ -143,7 +143,7 @@ jb.component('studio.control-tree', {
             autoFocus: true,
           }, 
           {$: 'tree.drag-and-drop' }, 
-          {$: 'studio.control-tree.refresh-path-changes' }, 
+//          {$: 'studio.control-tree.refresh-path-changes' }, 
           {$: 'studio.watch-script-changes' }
           // {$: 'tree.onMouseRight', 
           //   action :{$: 'studio.open-tree-menu', path: '%%' }

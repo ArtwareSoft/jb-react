@@ -65,9 +65,10 @@ jb.component('studio.search-list', {
                   cssClass: 'mdl-color-text--indigo-A700'
                 }
               }
-            }
+            }, 
+            width: '200'
           }, 
-          {$: 'field', title: 'refs', data: '%refCount%' }, 
+          {$: 'field', title: 'refs', data: '%refCount%', width: '30' }, 
           {$: 'field', title: 'type', data: '%type%' }, 
           {$: 'field', 
             title: 'impl', 

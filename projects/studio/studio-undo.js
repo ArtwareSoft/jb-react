@@ -80,32 +80,47 @@ jb.component('studio.script-history', {
           {$: 'field.control', 
             title: 'changed', 
             control :{$: 'button', 
-              title : ctx => st.nameOfRef(ctx.data.opEvent.ref), 
-              action :{$: 'studio.goto-path', path: '%opEvent/srcCtx/path%' }, 
+              title :{$: 'studio.name-of-ref', ref: '%opEvent/ref%' }, 
+              action :{$: 'studio.goto-path', 
+                path :{$: 'studio.path-of-ref', ref: '%opEvent/ref%' }
+              }, 
               style :{$: 'button.href' }, 
-              features: {$: 'feature.hover-title', title: '%opEvent/srcCtx/path%' }
+              features :{$: 'feature.hover-title', 
+                title :{$: 'studio.path-of-ref', ref: '%opEvent/ref%' }
+              }
             }, 
             width: '100'
-          },
-          {$: 'field' , title: 'from', data: {$: 'pretty-print', profile: '%opEvent/oldVal%'}, width: '200' },
-          {$: 'field' , title: 'to', data: {$: 'pretty-print', profile: '%opEvent/newVal%'}, width: '200' },
+          }, 
+          {$: 'field', 
+            title: 'from', 
+            data :{$: 'pretty-print', profile: '%opEvent/oldVal%' }, 
+            width: '200'
+          }, 
+          {$: 'field', 
+            title: 'to', 
+            data :{$: 'pretty-print', profile: '%opEvent/newVal%' }, 
+            width: '200'
+          }, 
           {$: 'field.control', 
-            title: 'undo/redo',
+            title: 'undo/redo', 
             control :{$: 'button', 
-              title : 'revert to here', 
+              title: 'revert to here', 
               action :{$: 'studio.revert', toIndex: '%undoIndex%' }, 
-              style :{$: 'button.href' }, 
+              style :{$: 'button.href' }
             }, 
             width: '100'
-          },
+          }
         ], 
         style :{$: 'table.with-headers' }
       }
     ], 
-    features :{$: 'watch-observable', 
-      toWatch: ctx => st.compsRefHandler.resourceChange.debounceTime(500), 
-      strongRefresh: true
-    }
+    features: [
+      {$: 'watch-observable', 
+        toWatch: ctx => st.compsRefHandler.resourceChange.debounceTime(500), 
+        strongRefresh: true
+      }, 
+      {$: 'css.height', height: '400', overflow: 'auto', minMax: 'max' }
+    ]
   }
 })
 

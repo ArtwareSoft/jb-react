@@ -275,8 +275,8 @@ jb.component('studio-helper-sample.table', {
 jb.component('studio-helper-sample.picklist', {
   type: 'control', 
   impl :{$: 'picklist', 
-    title: 'name', 
-    databind: '', 
+    title: 'aa', 
+    databind: 'ada', 
     options :{$: 'picklist.options', options: '%' }, 
     style :{$: 'picklist.native' }
   }

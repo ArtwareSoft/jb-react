@@ -49,7 +49,7 @@ jb.component('studio.goto-path', {
 				{$: 'studio.open-properties'},
 				{$: 'studio.open-control-tree'} 
 			]},
-			else :{$: 'studio.open-jb-editor', path: '%$path%' }
+			else :{$: 'studio.open-component-in-jb-editor', path: '%$path%' }
 		}
 	]}
 })

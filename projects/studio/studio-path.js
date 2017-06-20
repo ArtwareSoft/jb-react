@@ -59,7 +59,7 @@ Object.assign(st,{
 
 // write operations with logic
 
-Object.assign(st,{
+Object.assign(st, {
 	_delete: (path) => {
 		var prop = path.split('~').pop();
 		var parent = st.valOfPath(st.parentPath(path))
@@ -238,6 +238,9 @@ Object.assign(st,{
 			jb.logException(e,'eval profile:'+prof_str);
 		}
 	},
+	
+  	pathOfRef: ref =>
+  		ref.$jb_path && ref.$jb_path.join('~'),
 	nameOfRef: ref => 
 		(ref && ref.$jb_path) ? ref.$jb_path.slice(-1)[0].split(':')[0] : 'ref',
 	valSummaryOfRef: ref => 
@@ -253,11 +256,24 @@ Object.assign(st,{
 
 // ******* components ***************
 
-jb.component('studio.ref',{
+jb.component('studio.ref', {
 	params: [ {id: 'path', as: 'string', essential: true } ],
 	impl: (context,path) => 
 		st.refOfPath(path)
 });
+
+jb.component('studio.path-of-ref', {
+	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
+	impl: (context,ref) => 
+		st.pathOfRef(ref)
+});
+
+jb.component('studio.name-of-ref', {
+	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
+	impl: (context,ref) => 
+		st.nameOfRef(ref)
+});
+
 
 jb.component('studio.is-new',{
 	params: [ {id: 'path', as: 'string' } ],

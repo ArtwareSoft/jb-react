@@ -67,17 +67,25 @@ jb.component('studio.toolbar', {
         style :{$: 'button.mdl-icon', icon: 'hearing' }
       }, 
       {$: 'button', 
-        title: 'show data', 
+        title: 'History', 
+        action :{$: 'studio.open-script-history' }, 
+        style :{$: 'button.mdl-icon', icon: 'pets' }
+      }, 
+      {$: 'button', 
+        title: 'Show Data', 
         action :{$: 'studio.showProbeData' }, 
         style :{$: 'button.mdl-icon', icon: 'input' }
       }, 
       {$: 'button', 
-        title: 'insert control', 
-        action :{$: 'studio.open-new-profile-dialog', type: 'control', mode: 'insert-control' }, 
+        title: 'Insert Control', 
+        action :{$: 'studio.open-new-profile-dialog', 
+          type: 'control', 
+          mode: 'insert-control'
+        }, 
         style :{$: 'button.mdl-icon', icon: 'add' }
       }, 
       {$: 'button', 
-        title: 'responsive-phone', 
+        title: 'Responsive', 
         action :{$: 'studio.open-responsive-phone-popup' }, 
         style :{$: 'button.mdl-icon', icon: 'tablet_android' }
       }

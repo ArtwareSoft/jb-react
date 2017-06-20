@@ -74,7 +74,9 @@ jb.component('table.with-headers', {
         state.items.length == 0 ? 'no items' : ''
         ]),
     features:{$: 'table.init'},
-    css: '{border-spacing: 0; text-align: left}'
+    css: `{border-spacing: 0; text-align: left}
+    >tbody>tr>td { padding-right: 2px }
+    `
   }
 })
 
