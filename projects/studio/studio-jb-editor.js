@@ -157,28 +157,46 @@ jb.component('studio.open-jb-edit-property', {
   type: 'action', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{
-      $if :{$: 'studio.is-of-type', type: 'data', path: '%$path%' },
-      then :{$: 'open-dialog',
-        style :{$: 'dialog.studio-jb-editor-popup' }, 
-        content :{$: 'studio.jb-floating-input', path: '%$path%' }, 
-        features: [
-          {$: 'dialog-feature.auto-focus-on-first-input' }, 
-          {$: 'dialog-feature.onClose', 
-            action : {$runActions: [
-              {$: 'toggle-boolean-value', of: '%$studio/jb_preview_result_counter%'},
-              {$: 'tree.regain-focus'}
-            ]}
-          }
-        ],
+      $vars: {
+          actualPath: {$: 'studio.jb-editor-path-for-edit', path: '%$path%'}
       },
-      else :{$: 'studio.open-new-profile-dialog', 
-        path: '%$path%', 
-        mode: 'update',
-        type :{$: 'studio.param-type', path: '%$path%'},
-        onClose :{$: 'tree.regain-focus'}
-      }
+      $runActions: [{ // $vars can not be used with $if
+        $if :{$: 'studio.is-of-type', type: 'data', path: '%$actualPath%' },
+        then :{$: 'open-dialog',
+          style :{$: 'dialog.studio-jb-editor-popup' }, 
+          content :{$: 'studio.jb-floating-input', path: '%$actualPath%' }, 
+          features: [
+            {$: 'dialog-feature.auto-focus-on-first-input' }, 
+            {$: 'dialog-feature.onClose', 
+              action : {$runActions: [
+                {$: 'toggle-boolean-value', of: '%$studio/jb_preview_result_counter%'},
+                {$: 'tree.regain-focus' }
+              ]}
+            }
+          ],
+        },
+        else :{$: 'studio.open-new-profile-dialog', 
+          path: '%$actualPath%', 
+          mode: 'update',
+          type :{$: 'studio.param-type', path: '%$actualPath%'},
+          onClose :{$: 'tree.regain-focus' }
+        }
+      }]
   }
 })
+
+jb.component('studio.jb-editor-path-for-edit', { 
+  type: 'data', 
+  description: 'in case of array, use extra element path',
+  params: [ { id: 'path', as: 'string' } ], 
+  impl: (ctx,path) => {
+    var ar = jb.studio.valOfPath(path);
+    if (Array.isArray(ar))
+      return path + '~' + ar.length;
+    return path;
+  }
+})
+
 
 jb.component('studio.open-jb-editor-menu', {
   type: 'action', 
@@ -210,8 +228,9 @@ jb.component('studio.jb-editor-menu', {
                 {$: 'dialog.close-containing-popup' }, 
                 {$: 'write-value', 
                   to: '%$studio/jb_editor_selection%', 
-                  value: '%$path%~%%'
+                  value: '%%'
                 }, 
+                {$: 'studio.open-jb-edit-property', path: '%%' },
               ]
             }
           }
@@ -376,17 +395,11 @@ jb.component('studio.goto-references', {
   }
 })
 
-
 jb.component('studio.expand-and-select-first-child-in-jb-editor', {
   type: 'action',
   impl: ctx => {
     var ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[$('.jb-editor').attr('jb-ctx')];
     var tree = ctxOfTree.vars.$tree;
-    // if (!tree) {
-    //   var ctxId = $('.jb-editor').attr('jb-ctx');
-    //   var ctx = jbart.ctxDictionary[ctxId];
-    //   tree = ctx && ctx.vars.$tree;
-    // }
     if (!tree) return;
     tree.expanded[tree.selected] = true;
     jb.delay(100).then(()=>{
@@ -400,4 +413,3 @@ jb.component('studio.expand-and-select-first-child-in-jb-editor', {
     })
   }
 })
-

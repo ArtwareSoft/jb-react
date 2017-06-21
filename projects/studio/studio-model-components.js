@@ -10,7 +10,7 @@ jb.component('studio.val', {
 jb.component('studio.is-primitive-value', {
   params: [ {id: 'path', as: 'string' } ],
   impl: (ctx,path) => 
-      typeof st.valOfPath(path) == 'string'
+      st.isPrimitiveValue(st.valOfPath(path))
 })
 
 jb.component('studio.is-of-type', {
@@ -167,8 +167,8 @@ jb.component('studio.profile-as-text', {
 				if (!path) return;
 				if (typeof value == 'undefined') {
 					var val = st.valOfPath(path);
-					if (typeof val == 'string')
-						return val;
+					if (st.isPrimitiveValue(val))
+						return ''+val;
 					return st.prettyPrint(val);
 				} else {
 					var newVal = value.match(/^\s*({|\[)/) ? st.evalProfile(value) : value;
@@ -190,8 +190,8 @@ jb.component('studio.profile-value-as-text', {
           var val = st.valOfPath(path);
           if (val == null)
             return '';
-          if (typeof val == 'string')
-            return val;
+          if (st.isPrimitiveValue(val))
+            return ''+val;
           if (st.compNameOfPath(path))
             return '=' + st.compNameOfPath(path);
         }

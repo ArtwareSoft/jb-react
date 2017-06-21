@@ -121,11 +121,15 @@ Object.assign(st, {
 		}
 	},
 	addProperty: (path) => {
-		var parent = st.valOfPath(st.parentPath(path));
-		if (st.paramTypeOfPath(path) == 'data')
-			return st.writeValueOfPath(path,'');
+		// if (st.paramTypeOfPath(path) == 'data')
+		// 	return st.writeValueOfPath(path,'');
 		var param = st.paramDef(path);
-		st.writeValueOfPath(path,param.defaultValue || {$: ''});
+		var result = param.defaultValue || {$: ''};
+		if (st.paramTypeOfPath(path).indexOf('data') != -1)
+			result = '';
+		if (param.type.indexOf('[') != -1) 
+			result = [];
+		st.writeValueOfPath(path,result);
 	},
 
 	duplicate: (path) => {
@@ -274,35 +278,36 @@ Object.assign(st, {
 		return '' + val;
 	},
 	pathSummary: path => 
-		path.replace(/~controls~/g,'~').replace(/~impl~/g,'~').replace(/^[^\.]*./,'')
+		path.replace(/~controls~/g,'~').replace(/~impl~/g,'~').replace(/^[^\.]*./,''),
+	isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,
 })
 
 // ******* components ***************
 
 jb.component('studio.ref', {
 	params: [ {id: 'path', as: 'string', essential: true } ],
-	impl: (context,path) => 
+	impl: (ctx,path) => 
 		st.refOfPath(path)
 });
 
 jb.component('studio.path-of-ref', {
 	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
-	impl: (context,ref) => 
+	impl: (ctx,ref) => 
 		st.pathOfRef(ref)
 });
 
 jb.component('studio.name-of-ref', {
 	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
-	impl: (context,ref) => 
+	impl: (ctx,ref) => 
 		st.nameOfRef(ref)
 });
 
 
 jb.component('studio.is-new',{
 	params: [ {id: 'path', as: 'string' } ],
-	impl: (context,path) => {
+	impl: (ctx,path) => {
 		if (st.compsHistory.length == 0) return false;
-		var version_before = new jb.ui.ImmutableWithPath(_=>st.compsHistory.slice(-1)[0].comps).refOfPath(path.split('~'),true);
+		var version_before = new jb.ui.ImmutableWithPath(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
 		var res =  st.valOfPath(path) && !st.val(version_before);
 		return res;
 	}

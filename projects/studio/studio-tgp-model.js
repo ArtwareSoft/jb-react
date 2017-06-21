@@ -61,8 +61,8 @@ st.jbEditorTree = class {
 
 		if (compName)
 			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val'},compName+summary)]);
-		else if (typeof val == 'string')
-			return jb.ui.h('div',{},[prop + (collapsed ? ': ': ''),jb.ui.h('span',{class:'treenode-val', title: val},val)]);
+		else if (['string','boolean','number'].indexOf(typeof val) != -1)
+			return jb.ui.h('div',{},[prop + (collapsed ? ': ': ''),jb.ui.h('span',{class:'treenode-val', title: ''+val},''+val)]);
 
 		return prop + (Array.isArray(val) ? ` (${val.length})` : '');
 	}
@@ -208,8 +208,9 @@ Object.assign(st,{
 			return;
 		if (!isNaN(Number(path.split('~').pop()))) // array elements
 			path = st.parentPath(path);
-		var parent_prof = st.valOfPath(st.parentPath(path),true);
-		var comp = parent_prof && st.getComp(jb.compName(parent_prof));
+		// var parent_prof = st.valOfPath(st.parentPath(path),true);
+		// var comp = parent_prof && st.getComp(jb.compName(parent_prof));
+		var comp = st.compOfPath(st.parentPath(path),true);
 		var params = jb.compParams(comp);
 		var paramName = path.split('~').pop();
 		if (paramName.indexOf('$') == 0) // sugar
