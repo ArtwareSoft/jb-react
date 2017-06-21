@@ -24,14 +24,14 @@ jb.component('editable-text.jb-editor-floating-input', {
   type: 'editable-text.style',
   impl :{$: 'custom-style', 
    template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[ 
-        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
+        h('input', { class: 'mdl-textfield__input', id: 'jb_input_' + state.fieldId, type: 'text',
             value: cmp.jbModel(),
             onchange: e => cmp.jbModel(e.target.value),
             onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
         }),
-        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title)
+        h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
       ]),
-      css: '{ width: 400px; }',
+      css: '{ margin-right: 13px; }', // for the x-button
       features :[
           {$: 'field.databind', noUpdates: true },
           {$: 'mdl-style.init-dynamic'}

@@ -113,10 +113,12 @@ jb.component('menu.open-context-menu', {
   params: [
   	{id: 'menu', type: 'menu.option', dynamic: true },
   	{id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup'}  },
+	{ id: 'features', type: 'dialog-feature[]', dynamic: true }
   ],
   impl :{$: 'open-dialog', 
   	  style :{$call: 'popupStyle' },
-      content :{$: 'menu.control' , menu :{$call: 'menu'}, style :{$: 'menu-style.context-menu'} }
+      content :{$: 'menu.control' , menu :{$call: 'menu'}, style :{$: 'menu-style.context-menu'} },
+  	  features :{$call: 'features' },
   }
 })
 

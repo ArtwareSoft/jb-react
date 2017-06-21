@@ -53,7 +53,7 @@ jb.component('open-dialog', {
 	}
 })
 
-jb.component('close-containing-popup', {
+jb.component('dialog.close-containing-popup', {
 	type: 'action',
 	params: [
 		{ id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
@@ -253,14 +253,15 @@ jb.component('dialog-feature.auto-focus-on-first-input', {
 		{ id: 'selectText', as: 'boolean' }
 	],
 	impl: (ctx,selectText) => ({ 
-		afterViewInit: cmp =>
+		afterViewInit: cmp => {
 			jb.delay(1).then(_=> {
 				var elem = ctx.vars.$dialog.el.querySelector('input,textarea,select');
 				if (elem)
-					jb.ui.focus(elem, 'auto-focus-on-first-input',ctx);
+					jb.ui.focus(elem, 'dialog-feature.auto-focus-on-first-input',ctx);
 				if (selectText)
 					elem.select();
 			})
+		}
 	})
 })
 

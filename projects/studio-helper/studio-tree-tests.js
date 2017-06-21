@@ -72,7 +72,11 @@ jb.component('jb-editor-test.$pipline', {
 	impl :{$: 'jb-editor-children-test',
 		path: 'jb-editor-test.cmp5~impl~title', 
 		childrenType: 'jb-editor',
-		expectedResult :{ $and: [{$: 'contains', text: ['$pipeline[0]','$pipeline[1]'] }, { $not: { $contains: 'pipeline (2)'}}]}
+		expectedResult :{ $and: [
+			{$: 'contains', text: ['[0]','[1]'] }, 
+			{$: 'not-contains', text : '$pipeline'},
+			{$: 'not-contains', text : 'items'},
+		]}
 	}
 })
 

@@ -47,7 +47,7 @@ jb.component('test.move-in-tree', {
   }
 })
 
-jb.component('studio.jb-editor-move', {
+jb.component('studio-data-test.jb-editor-move', {
 	 impl :{$: 'data-test', 
 	 	runBefore : ctx =>
 	 		jb.studio.moveInTree('test.move-in-tree~impl',
@@ -55,5 +55,57 @@ jb.component('studio.jb-editor-move', {
 		calculate :{$: 'studio.val' , path: 'test.move-in-tree~impl~controls' },
 		expectedResult : ctx => 
 			ctx.data.length == 2
+	},
+})
+
+jb.component('test.set-sugar-comp-simple', {
+	impl :{$: 'label' }
+})
+
+jb.component('test.set-sugar-comp-wrap', {
+	impl :{$: 'label', title: 'a'}
+})
+
+jb.component('test.set-sugar-comp-override1', {
+	impl :{$: 'label', title: {$: 'pipeline', items: ['a','b']} }
+})
+
+jb.component('test.set-sugar-comp-override2', {
+	impl :{$: 'label', title: {$list: ['a','b']} }
+})
+
+jb.component('studio-data-test.set-sugar-comp-simple', {
+	 impl :{$: 'data-test', 
+	 	runBefore : {$: 'studio.set-comp', path: 'test.set-sugar-comp-simple~impl~title', comp: 'pipeline' },
+		calculate :{$: 'studio.val' , path: 'test.set-sugar-comp-simple~impl~title~$pipeline' },
+		expectedResult : ctx => 
+			JSON.stringify(ctx.data) == '[]'
+	},
+})
+
+jb.component('studio-data-test.set-sugar-comp-wrap', {
+	 impl :{$: 'data-test', 
+	 	runBefore : {$: 'studio.set-comp', path: 'test.set-sugar-comp-wrap~impl~title', comp: 'pipeline' },
+		calculate :{$: 'studio.val' , path: 'test.set-sugar-comp-wrap~impl~title~$pipeline' },
+		expectedResult : ctx => 
+			JSON.stringify(ctx.data) == '["a"]'
+	},
+})
+
+jb.component('studio-data-test.set-sugar-comp-override1', {
+	 impl :{$: 'data-test', 
+	 	runBefore : {$: 'studio.set-comp', path: 'test.set-sugar-comp-override1~impl~title', comp: 'pipeline' },
+		calculate :{$: 'studio.val' , path: 'test.set-sugar-comp-override1~impl~title~$pipeline' },
+		expectedResult : ctx => 
+			JSON.stringify(ctx.data) == '["a","b"]'
+	},
+})
+
+jb.component('studio-data-test.set-sugar-comp-override2', {
+	 impl :{$: 'data-test', 
+	 	runBefore : {$: 'studio.set-comp', path: 'test.set-sugar-comp-override2~impl~title', comp: 'pipeline' },
+		calculate :{$: 'studio.val' , path: 'test.set-sugar-comp-override2~impl~title~$pipeline' },
+		expectedResult : ctx => 
+			JSON.stringify(ctx.data) == '["a","b"]'
 	},
 })

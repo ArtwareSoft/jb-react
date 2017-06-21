@@ -48,11 +48,13 @@ st.jbEditorTree = class {
 		var compName = jb.compName(val||{});
 		var prop = path.split('~').pop();
 		if (!isNaN(Number(prop))) // array value - title as a[i]
-			prop = path.split('~').slice(-2).join('[') + ']';
-		if (Array.isArray(val) && st.paramTypeOfPath(path) == 'data')
-			compName = `pipeline (${val.length})`;
-		if (Array.isArray(val) && st.paramTypeOfPath(path) == 'action')
-			compName = `actions (${val.length})`;
+			prop = path.split('~').slice(-2)
+				.map(x=>x.replace(/\$pipeline/,''))
+				.join('[') + ']';
+		// if (Array.isArray(val) && st.paramTypeOfPath(path) == 'data')
+		// 	compName = `pipeline (${val.length})`;
+		// if (Array.isArray(val) && st.paramTypeOfPath(path) == 'action')
+		// 	compName = `actions (${val.length})`;
 		var summary = '';
 		if (collapsed && typeof val == 'object')
 			summary = ': ' + st.summary(path).substr(0,20);
@@ -73,7 +75,7 @@ st.jbEditorTree = class {
 		return (st.arrayChildren(path) || [])
 				.concat(this.sugarChildren(path,val) || [])
 				.concat(this.$objectChildren(path,val) || [])
-				.concat(this.innerProfiles(path,val) || []);
+				.concat(this.innerProfiles(path,val) || [])
 	}
 	move(path,draggedPath,index) {
 		return st.moveInArray(path,draggedPath,index)
@@ -88,11 +90,12 @@ st.jbEditorTree = class {
 		var sugarPath = path + '~$' +compName;
 		var sugarVal = st.valOfPath(sugarPath);
 		if (Array.isArray(sugarVal)) // sugar array. e.g. $pipeline: [ .. ]
-			return st.arrayChildren(sugarPath)
+			return st.arrayChildren(sugarPath);
 		else if (sugarVal)
 			return [sugarPath];
 	}
 	innerProfiles(path,val) {
+		if (this.sugarChildren(path,val)) return [];
 		return st.paramsOfPath(path)
 			.map(p=> ({ path: path + (path.indexOf('~') == -1 ? '~impl' : '') + '~' + p.id, param: p}))
 			.filter(e=>st.valOfPath(e.path) != null || e.param.essential)
@@ -133,7 +136,6 @@ Object.assign(st,{
 		else if (val)
 			return [path]
 	},
-
 	isControlType: type =>
 		(type||'').match(/control|options|menu|table-field/),
 	controlParams: path =>
@@ -210,6 +212,8 @@ Object.assign(st,{
 		var comp = parent_prof && st.getComp(jb.compName(parent_prof));
 		var params = jb.compParams(comp);
 		var paramName = path.split('~').pop();
+		if (paramName.indexOf('$') == 0) // sugar
+			return params[0];
 		return params.filter(p=>p.id==paramName)[0] || {};
 	},
 

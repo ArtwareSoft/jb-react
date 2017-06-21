@@ -162,7 +162,7 @@ jb.component('slider.edit-as-text-popup', {
           databind: '%databind%', 
           style :{$: 'editable-text.mdl-input', width: '270' },
           features :{$: 'feature.onEnter', 
-            action :{$: 'close-containing-popup' }
+            action :{$: 'dialog.close-containing-popup' }
           }, 
         }, 
       ], 

@@ -85,7 +85,8 @@ jb.component('button.mdl-icon-12', {
     { id: 'icon', as: 'string', default: 'code' },
   ],
   impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: _=> cmp.clicked()},cmp.icon),
+      template: (cmp,state,h) => h('i',{class: 'material-icons', 
+        onclick: _=> cmp.clicked()},cmp.icon),
       css: `{ font-size:12px; cursor: pointer }`,
   }
 })

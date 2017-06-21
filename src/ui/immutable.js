@@ -166,7 +166,7 @@ class ImmutableWithPath {
       leaf.$jb_id = leaf.$jb_id || (++this.pathId);
   }
   pathOfObject(obj,lookIn,depth) {
-    if (!lookIn || typeof lookIn != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50) 
+    if (!obj || !lookIn || typeof lookIn != 'object' || typeof obj != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50) 
       return;
     if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1) 
       return;

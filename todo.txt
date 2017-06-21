@@ -1,11 +1,10 @@
 jbEditor
-  undo/redo
-  tree losing focus after changing value
-  remove 'items' in sugar
-  create new pipeline (and other 'wrap as') as sugar
-  auto focus on first
-  tree refresh bug
-  extra array elem (pipeline)
+  setSugarComp - create sugar and use existing
+  tree.regain-focus -> jb-editor.regain-focus
+  	auto focus on just-created - open if object
+  new param - create array if is array type
+
+$runActions - put in core for type action and action[], work with test
 
 probe in and out in table
 suggestion highlight in option object

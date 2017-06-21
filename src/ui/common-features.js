@@ -271,6 +271,14 @@ jb.component('feature.onEnter', {
   impl :{$: 'feature.onKey', code: 13, action :{$call: 'action'}}
 })
 
+jb.component('feature.onEsc', {
+  type: 'feature', category: 'feature:60',
+  params: [
+    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+  ],
+  impl :{$: 'feature.onKey', code: 27, action :{$call: 'action'}}
+})
+
 jb.component('feature.onDelete', {
   type: 'feature', category: 'feature:60',
   params: [
@@ -286,7 +294,7 @@ jb.component('group.auto-focus-on-first-input', {
       afterViewInit: cmp => {
           var elem = Array.from(cmp.base.querySelectorAll('input,textarea,select'))
             .filter(e => e.getAttribute('type') != 'checkbox')[0];
-          jb.ui.focus(elem,'auto-focus-on-first-input',ctx); 
+          jb.ui.focus(elem,'group.auto-focus-on-first-input',ctx); 
         }
   })
 })

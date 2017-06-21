@@ -24,7 +24,6 @@ jb.component('data-test.write-value', {
 	 impl :{$: 'data-test', 
 	 runBefore:{$: 'write-value', value: 20, to: '%$person/age%'},
 	 calculate: '%$person/age%',
-	 cleanUp:{$: 'write-value', value: 42, to: '%$person/age%'},
 	 expectedResult :{$: 'contains', text: '20' }
 	}
 })

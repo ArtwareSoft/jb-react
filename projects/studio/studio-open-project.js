@@ -15,7 +15,7 @@ jb.component('studio.goto-project', {
         url: '/project/studio/%%', 
         target: 'new tab'
       }, 
-      {$: 'close-containing-popup' }
+      {$: 'dialog.close-containing-popup' }
     ]
   }
 })

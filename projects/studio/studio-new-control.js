@@ -39,7 +39,7 @@ jb.component('studio.open-new-profile-dialog', {
       {$: 'dialog-feature.drag-title', id: 'new %$type%' }, 
       {$: 'dialog-feature.near-launcher-position', offsetLeft: 0, offsetTop: 0 }, 
       {$: 'group.auto-focus-on-first-input' },
-      {$: 'dialog-feature.onClose', action:{ $call: 'onClose'}}
+      {$: 'dialog-feature.onClose', action:{ $call: 'onClose'}},
     ]
   }
 })
@@ -104,7 +104,6 @@ jb.component('studio.categories-marks', {
   }
 })
 
-
 jb.component('studio.select-profile', {
   type: 'control', 
   params: [
@@ -120,7 +119,13 @@ jb.component('studio.select-profile', {
         title: 'Search', 
         searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
         databind: '%$itemlistCntrData/search_pattern%', 
-        style :{$: 'editable-text.mdl-input' }
+        style :{$: 'editable-text.mdl-input' }, 
+        features :{$: 'feature.onEsc', 
+          action :{$: 'dialog.close-containing-popup', 
+            id: 'studio-jb-editor-popup', 
+            OK: true
+          }
+        }
       }, 
       {$: 'group', 
         title: 'categories and items', 
@@ -200,7 +205,7 @@ jb.component('studio.select-profile', {
             }, 
             controls: [
               {$: 'label', 
-                action: [{$: 'close-containing-popup' }, { $call: 'onSelect' }], 
+                action: [{$: 'dialog.close-containing-popup' }, { $call: 'onSelect' }], 
                 title :{$: 'highlight', 
                   base: '%%', 
                   highlight: '%$itemlistCntrData/search_pattern%'
@@ -223,13 +228,13 @@ jb.component('studio.select-profile', {
               {$: 'css.height', height: '300', overflow: 'auto', minMax: '' }, 
               {$: 'itemlist.selection', 
                 onDoubleClick :{$: 'runActions', 
-                  actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
+                  actions: [{$: 'dialog.close-containing-popup' }, { $call: 'onSelect' }]
                 }, 
                 autoSelectFirst: true
               }, 
               {$: 'itemlist.keyboard-selection', 
                 onEnter :{$: 'runActions', 
-                  actions: [{$: 'close-containing-popup' }, { $call: 'onSelect' }]
+                  actions: [{$: 'dialog.close-containing-popup' }, { $call: 'onSelect' }]
                 }
               }, 
               {$: 'watch-ref', ref: '%$SelectedCategory%', strongRefresh: true }, 
@@ -273,7 +278,7 @@ jb.component('studio.open-new-page', {
         {$: 'editable-text', 
           databind: '%$dialogData/name%', 
           features :{$: 'feature.onEnter', 
-            action :{$: 'close-containing-popup' }
+            action :{$: 'dialog.close-containing-popup' }
           }, 
           title: 'page name', 
           style :{$: 'editable-text.mdl-input' }

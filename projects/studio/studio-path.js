@@ -110,10 +110,13 @@ Object.assign(st, {
 
 	wrap: (path,compName) => {
 		var comp = st.getComp(compName);
-		var firstParam = jb.compParams(comp).filter(p=>p.composite)[0];
-		if (firstParam) {
-			var singleOrArray = firstParam.type.indexOf('[') == -1 ? st.valOfPath(path) : [st.valOfPath(path)];
-			var result = jb.extend({ $: compName }, jb.obj(firstParam.id,singleOrArray));
+		var compositeParam = jb.compParams(comp).filter(p=>p.composite)[0];
+		if (compositeParam) {
+			var singleOrArray = compositeParam.type.indexOf('[') == -1 ? st.valOfPath(path) : [st.valOfPath(path)];
+			if (jb.compParams(comp).length == 1) // use sugar
+				var result = jb.obj('$'+compName,singleOrArray);
+			else
+				var result = Object.assign({ $: compName }, jb.obj(compositeParam.id,singleOrArray));
 			st.writeValueOfPath(path,result);
 		}
 	},
@@ -138,8 +141,12 @@ Object.assign(st, {
 	setComp: (path,compName) => {
 		var comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
+		var params = jb.compParams(comp);
+		if (params.length == 1 && params[0].composite == true)
+			return st.setSugarComp(path,compName,params[0]);
+
 		var result = { $: compName };
-		jb.compParams(comp).forEach(p=>{
+		params.forEach(p=>{
 			if (p.composite)
 				result[p.id] = [];
 			if (p.defaultValue && typeof p.defaultValue != 'object')
@@ -152,6 +159,21 @@ Object.assign(st, {
 			st.writeValue(st.refOfPath(path),result)
 		else
 			st.merge(st.refOfPath(path),result);
+	},
+
+	setSugarComp: (path,compName,param) => {
+		var emptyVal = (param.type||'').indexOf('[') == -1 ? '' : [];
+		var currentVal = st.valOfPath(path);
+		if (typeof currentVal == 'object') {
+			var properties = Object.getOwnPropertyNames(currentVal);
+			if (properties.length == 1 && properties[0].indexOf('$') == 0)
+				currentVal = currentVal[properties[0]];
+			else
+				currentVal = st.valOfPath(path+'~'+param.id,true) || st.valOfPath(path+'~$'+compName,true);
+		}
+		if (currentVal && !Array.isArray(currentVal) && (param.type||'').indexOf('[') != -1)
+			currentVal = [currentVal];
+		st.writeValue(st.refOfPath(path),jb.obj('$'+compName,currentVal || emptyVal))
 	},
 
 	insertControl: (path,compName) => {

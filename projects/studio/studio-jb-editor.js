@@ -187,7 +187,9 @@ jb.component('studio.open-jb-editor-menu', {
   ], 
   impl :{$: 'menu.open-context-menu', 
     menu :{$: 'studio.jb-editor-menu', path: '%$path%' } ,
-//    features :{$: 'css.margin', top: '17', left: '31' }
+    features :{$: 'dialog-feature.onClose', 
+      action :{$: 'tree.regain-focus'}
+    },
   }
 })
 
@@ -205,7 +207,7 @@ jb.component('studio.jb-editor-menu', {
             action :{$: 'runActions', 
               actions: [
                 {$: 'studio.add-property', path: '%%' }, 
-                {$: 'close-containing-popup' }, 
+                {$: 'dialog.close-containing-popup' }, 
                 {$: 'write-value', 
                   to: '%$studio/jb_editor_selection%', 
                   value: '%$path%~%%'

@@ -14,7 +14,7 @@ jb.component('studio.edit-source', {
 		content :{$: 'editable-text', 
 			databind :{$: 'studio.profile-as-text', path: '%$path%' },
 			style :{$: 'editable-text.codemirror', mode: 'javascript'},
-			features: {$: 'studio.undo-support', path: '%$path%' },
+//			features: {$: 'studio.undo-support', path: '%$path%' },
 		}
 	}
 })

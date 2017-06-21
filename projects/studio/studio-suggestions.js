@@ -153,13 +153,9 @@ jb.component('studio.jb-floating-input', {
         ],
       },
       features :[ 
-      {$: 'css.padding', left: '4', right: '4' },
-      {$: 'feature.onEnter', action: 
-        [
-          { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' },
-          { $: 'tree.regain-focus'}
-        ]
-        },
+        {$: 'css.padding', left: '4', right: '4' },
+        {$: 'feature.onEnter', action: { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } },
+        {$: 'feature.onEsc', action: { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } },
       ],
     } 
 })
@@ -183,7 +179,7 @@ jb.component('studio.jb-floating-input', {
 //       {$: 'group.studio-suggestions', 
 //         path: '%$path%', 
 //         closeFloatingInput: [
-//           {$: 'close-containing-popup', OK: true }, 
+//           {$: 'dialog.close-containing-popup', OK: true }, 
 //           {$: 'tree.regain-focus' }
 //         ]
 //       },

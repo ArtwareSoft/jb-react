@@ -111,6 +111,6 @@ jb.component('studio.search-component-selected',{
   impl: {$runActions: [
     {$: 'write-value', to: '%$itemlistCntrData/search_pattern%', value: '' },
     {$: 'studio.goto-path', path: '%$path%' },
-    {$: 'close-containing-popup' }
+    {$: 'dialog.close-containing-popup' }
   ]}
 })

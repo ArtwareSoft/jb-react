@@ -42,7 +42,7 @@ jb.component('studio.goto-path', {
 		{ id: 'path', as: 'string' },
 	],
 	impl :{$runActions: [ 
-		{$: 'close-containing-popup' },
+		{$: 'dialog.close-containing-popup' },
 		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' }, 
 		{$if :{$: 'studio.is-of-type', type: 'control', path: '%$path%'},
 			then: {$runActions: [ 
