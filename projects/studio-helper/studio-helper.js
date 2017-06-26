@@ -13,6 +13,13 @@ jb.resource('people-array', { "people": [
   ]
 })
 
+jb.resource('people',[
+  { "name": "Homer Simpson" ,age: 42 , male: true},
+  { "name": "Marge Simpson" ,age: 38 , male: false},
+  { "name": "Bart Simpson"  ,age: 12 , male: true}
+]);
+
+
 jb.resource('globals', { });
 
 
@@ -175,21 +182,15 @@ jb.component('studio-helper.edit-style', {
 jb.component('studio-helper-dummy.label', {
   type: 'control', 
   impl :{$: 'label', 
-    title :{
-      $pipeline: [
-        '%$people-array/people%', 
-        { $filter: '%age% == 42' }, 
-        '%name%', 
-        '%name% '
-      ]
-    }, 
+    title :{ $pipeline: ['%$people-array/people%', '%name%'] }, 
     features: [
       {$: 'css', 
         css: '{ position: absolute; margin-left: -20px; margin-top: 2px }'
       }, 
       {$: 'hidden', showCondition: true }
     ]
-  }
+  }, 
+  style :{$: 'label.span' }
 })
 
 

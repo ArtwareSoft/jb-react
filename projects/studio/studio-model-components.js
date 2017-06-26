@@ -176,8 +176,6 @@ jb.component('studio.profile-as-text', {
 						st.writeValueOfPath(path, newVal);
 				}
 			},
-			// $jb_observable: _ =>
-			// 	st.refOfPath(ctx.params.path())
 		})
 })
 

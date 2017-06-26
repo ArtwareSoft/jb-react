@@ -1,10 +1,37 @@
+jb.resource('people',[
+  { "name": "Homer Simpson" ,age: 42 , male: true},
+  { "name": "Marge Simpson" ,age: 38 , male: false},
+  { "name": "Bart Simpson"  ,age: 12 , male: true}
+]);
+
+
 jb.component('hello-world.main', {
   type: 'control', 
   impl :{$: 'group', 
-    controls: [ 
-    {$: 'label', title: 'a'},
-    {$: 'label', title: 'b'},
-  ]}
+    title: '%$people%', 
+    controls: [
+      {$: 'label', title: 'a' }, 
+      {$: 'label', title: 'b' }, 
+      {$: 'group', 
+        controls: [
+          {$: 'control-by-condition', 
+            controls: [
+              {$: 'control-with-condition', 
+                condition: '%$gender% == "male"', 
+                control :{$: 'label', title: 'male' }
+              }, 
+              {$: 'control-with-condition', 
+                condition: '%$gender% != "male"', 
+                control :{$: 'label', title: 'female' }
+              }
+            ], 
+            default :{$: 'label', title: 'default' }
+          }
+        ], 
+        features: [{$: 'var', name: 'gender', value: 'male' }]
+      }
+    ]
+  }
 })
 
 

@@ -45,11 +45,11 @@ class ROjson {
 			return h('div',{},prop);
 
 		if (typeof val != 'object')
-			return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: val},val)]);
+			return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: ''+val},''+val)]);
 
 		return h('div',{},[h('span',{},prop + ': ')].concat(
-			Object.getOwnPropertyNames(val).filter(p=> typeof val[p] == 'string' || typeof val[p] == 'number' || typeof val[p] == 'boolean')
-			.map(p=> [h('span',{class:'treenode-val', title: val[p]},val[p]) ])))
+			Object.getOwnPropertyNames(val).filter(p=> ['string','boolean','number'].indexOf(typeof val[p]) != -1)
+			.map(p=> [h('span',{class:'treenode-val', title: ''+val[p]},''+val[p]) ])))
 	}
 }
 

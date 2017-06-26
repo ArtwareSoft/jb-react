@@ -1072,7 +1072,6 @@ jb.component('ui-test.mutable-var-as-object-not-initialized', {
   },
 })
 
-
 jb.component('inner-label1-tst', {
   params: [
      { id: 'title', essential: true, dynamic: true },
@@ -1092,6 +1091,50 @@ jb.component('inner-label3-tst', {
      { id: 'title', essential: true, dynamic: true },
   ],
   impl :{$: 'inner-label2-tst', title: {$call: 'title' }}
+})
+
+jb.component('ui-test.control-by-condition', {
+  impl :{$: 'ui-test',  
+    control:     {$: 'group', 
+      controls: [
+        {$: 'control-by-condition', 
+          controls: [
+            {$: 'control-with-condition', 
+              condition: '%$gender% == "male"', 
+              control :{$: 'label', title: 'male' }
+            }, 
+          ], 
+        },
+        {$: 'control-by-condition', 
+          controls: [
+            {$: 'control-with-condition', 
+              condition: '%$gender% == "female"', 
+              control :{$: 'label', title: 'female' }
+            }, 
+            {$: 'control-with-condition', 
+              condition: '%$gender% != "female"', 
+              control :{$: 'label', title: 'male2' }
+            }
+          ], 
+        },
+        {$: 'control-by-condition', 
+          controls: [
+            {$: 'control-with-condition', 
+              condition: '%$gender% == "female"', 
+              control :{$: 'label', title: 'female' }
+            }, 
+            {$: 'control-with-condition', 
+              condition: '%$gender% == "lale"', 
+              control :{$: 'label', title: 'male2' }
+            }
+          ], 
+          default :{$: 'label', title: 'default' }
+        }
+      ], 
+      features: [{$: 'var', name: 'gender', value: 'male' }]
+    },
+    expectedResult :{$: 'contains', text: ['male','male2','default'] },
+  },
 })
 
 

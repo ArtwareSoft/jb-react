@@ -77,7 +77,10 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
         function getProbe() {
           if (cmp.probeResult)
             return [cmp.probeResult];
-          var _probe = jb.rx.Observable.fromPromise(ctx.run({$: 'studio.probe', path: ctx.params.path }));
+          var probePath = ctx.params.path;
+          if (st.valOfPath(probePath) == null)
+            jb.writeValue(st.refOfPath(probePath),'',ctx);
+          var _probe = jb.rx.Observable.fromPromise(ctx.run({$: 'studio.probe', path: probePath }));
           _probe.subscribe(res=>
             cmp.probeResult = res);
           // do not wait more than 500 mSec

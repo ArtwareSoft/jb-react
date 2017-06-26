@@ -88,23 +88,24 @@ jb.component('studio.jb-editor', {
                           showCondition: '%$probeResult/probe/circuitType% == "action"'
                         }
                       }, 
-                      {$: 'itemlist', 
+                      {$: 'table', 
                         items: '%$probeResult/finalResult%', 
-                        controls: [
-                          {$: 'group', 
-                            title: 'in/out', 
-                            controls: [
-                              {$: 'studio.data-browse', 
-                                data: '%in/data%', 
-                                title: 'in'
-                              }, 
-                              {$: 'studio.data-browse', 
-                                data: '%out%', 
-                                title: 'out'
-                              }
-                            ]
+                        fields: [
+                          {$: 'field.control', 
+                            title: 'in', 
+                            control :{$: 'studio.data-browse', obj: '%in/data%' }, 
+                            width: '100'
+                          }, 
+                          {$: 'field.control', 
+                            title: 'out', 
+                            control :{$: 'studio.data-browse', obj: '%out%' }, 
+                            width: '100'
                           }
-                        ]
+                        ], 
+                        style :{$: 'table.mdl', 
+                          classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp', 
+                          classForTd: 'mdl-data-table__cell--non-numeric'
+                        }
                       }
                     ]
                   }, 
@@ -113,6 +114,10 @@ jb.component('studio.jb-editor', {
                     loadingControl :{$: 'label', title: 'calculating...' }, 
                     resource: 'probeResult'
                   }
+                }, 
+                features :{$: 'watch-ref', 
+                  ref :{$: 'studio.ref', path: '%$studio/jb_editor_selection%' }, 
+                  strongRefresh: 'true'
                 }
               }
             ], 
@@ -133,24 +138,58 @@ jb.component('studio.jb-editor', {
 })
 
 jb.component('studio.data-browse', {
-  type: 'control',
-  params: [ 
-    { id: 'data', },
-    { id: 'title', as: 'string'}
-  ],
+  type: 'control', 
+  params: [
+    { id: 'obj', essential: true, defaultValue: '%%' }, 
+    { id: 'title', as: 'string' }, 
+    { id: 'width', as: 'number', defaultValue: 200 }
+  ], 
   impl :{$: 'group', 
-    title: '%$title%',
-    controls :{$: 'tree',
-        nodeModel :{$: 'tree.json-read-only', 
-          object: '%$data%', rootPath: '%$title%' 
-        },
-        features: [
-            { $: 'css.class', class: 'jb-control-tree'},
-            { $: 'tree.selection' },
-            { $: 'tree.keyboard-selection'},
-        ] 
-     },
+    title: '%$title%', 
+    controls :{$: 'group', 
+      controls: [
+        {$: 'control-by-condition', 
+          controls: [
+            {$: 'control-with-condition', 
+              condition :{$: 'data.is-of-type', 
+                type: 'string,boolean,number', 
+                obj: '%$obj%'
+              }, 
+              control :{$: 'label', title: '%$obj%' }
+            }, 
+            {$: 'control-with-condition', 
+              condition :{$: 'data.is-of-type', type: 'array', obj: '%$obj%' }, 
+              control :{$: 'table', 
+                items: '%$obj%', 
+                fields :{$: 'field.control', 
+                  title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] }, 
+                  control :{$: 'studio.data-browse', a: 'label', obj: '%%', width: 200 }
+                }, 
+                style :{$: 'table.mdl', 
+                  classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp', 
+                  classForTd: 'mdl-data-table__cell--non-numeric'
+                }
+              }
+            }, 
+            {$: 'control-with-condition', 
+              condition :{$: 'isNull', obj: '%$obj%' }, 
+              control :{$: 'label', title: 'null' }
+            }
+          ], 
+          default :{$: 'tree', 
+            nodeModel :{$: 'tree.json-read-only', object: '%$obj%', rootPath: '%$title%' }, 
+            style :{$: 'tree.no-head' }, 
+            features: [
+              {$: 'css.class', class: 'jb-control-tree' }, 
+              {$: 'tree.selection' }, 
+              {$: 'tree.keyboard-selection' }, 
+              {$: 'css.width', width: '%$width%', minMax: 'max' }
+            ]
+          }
+        }
+      ]
     }
+  }
 })
 
 jb.component('studio.open-jb-edit-property', {
@@ -161,7 +200,7 @@ jb.component('studio.open-jb-edit-property', {
           actualPath: {$: 'studio.jb-editor-path-for-edit', path: '%$path%'}
       },
       $runActions: [{ // $vars can not be used with $if
-        $if :{$: 'studio.is-of-type', type: 'data', path: '%$actualPath%' },
+        $if :{$: 'studio.is-of-type', type: 'data,boolean', path: '%$actualPath%' },
         then :{$: 'open-dialog',
           style :{$: 'dialog.studio-jb-editor-popup' }, 
           content :{$: 'studio.jb-floating-input', path: '%$actualPath%' }, 

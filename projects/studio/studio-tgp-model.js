@@ -222,7 +222,7 @@ Object.assign(st,{
 		var paramDef = st.paramDef(path);
 		if (paramDef)
 			return (paramDef.type || 'data').split(',')
-				.map(x=>x.split('[')[0]).indexOf(type) != -1;
+				.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length;
 		return st.isCompNameOfType(st.compNameOfPath(path),type);
 	},
 	// single first param type

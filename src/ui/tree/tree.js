@@ -103,6 +103,17 @@ jb.component('tree.ul-li', {
 	}
 })
 
+jb.component('tree.no-head', {
+	type: 'tree.style',
+	impl :{$: 'custom-style',
+		template: (cmp,state,h) => {
+		var tree = cmp.tree, path = tree.nodeModel.rootPath;
+		return h('div',{},tree.nodeModel.children(path).map(childPath=>
+				 h(TreeNode,{ tree: tree, path: childPath, class: 'treenode' + (tree.selected == childPath ? ' selected' : '') }))
+		)}
+	}
+})
+
 jb.component('tree.selection', {
   type: 'feature',
   params: [

@@ -52,3 +52,24 @@ jb.component('group.dynamic-titles', {
         ctrl.title = ctrl.jbComp.jb_title ? ctrl.jbComp.jb_title() : '')
   })
 })
+
+jb.component('control-by-condition', {
+  type: 'control', category: 'common:30',
+  params: [
+    { id: 'controls', type: 'control-with-condition[]', essential: true },
+    { id: 'default', type: 'control', dynamic: true, defaultValue: {$: 'label' ,title: ''}},
+  ],
+  impl: (ctx,controls,defaultCtrl) => {
+    var res = controls.filter(c=>c.condition)[0];
+    return res ? res.ctrl() : defaultCtrl();
+  }
+})
+
+jb.component('control-with-condition', {
+  type: 'control-with-condition',
+  params: [
+    { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
+    { id: 'control', type: 'control', essential: true, dynamic: true },
+  ],
+  impl: (ctx,condition,ctrl) => ({condition: condition, ctrl: ctrl})
+})

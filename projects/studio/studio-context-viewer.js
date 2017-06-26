@@ -10,7 +10,7 @@ jb.component('studio.open-context-viewer', {
 
 jb.component('studio.context-viewer', {
 	type: 'control',
-	impl :{$: 'studio.data-browse', data: '%$studio/last_pick_selection%', title: 'context' }, 
+	impl :{$: 'studio.data-browse', obj: '%$studio/last_pick_selection%', title: 'context' }, 
 
 })
 

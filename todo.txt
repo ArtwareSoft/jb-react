@@ -1,12 +1,12 @@
+probe in and out in table
+context (data) viewer lightly attached to popups after pick
+
 jbEditor
-  setSugarComp - create sugar and use existing
-  tree.regain-focus -> jb-editor.regain-focus
-  	auto focus on just-created - open if object
-  new param - create array if is array type
+  $: 'object' dialog - use table
+  $vars dialog - use table
 
 $runActions - put in core for type action and action[], work with test
 
-probe in and out in table
 suggestion highlight in option object
 
 

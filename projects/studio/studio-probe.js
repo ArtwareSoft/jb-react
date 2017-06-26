@@ -81,7 +81,7 @@ jb.studio.Probe = class {
       if (found)
         found.counter++;
       else 
-        this.probe[path].push({in: input, out: jb.val(out), counter: 0});
+        this.probe[path].push({in: input, out: out, counter: 0});
       return out;
   }
 }

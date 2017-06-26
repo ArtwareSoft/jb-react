@@ -44,8 +44,9 @@ jb.pipe = function(context,items,ptName) {
 		if (jb.profileType(profile) == 'aggregator')
 			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
 		return [].concat.apply([],data.map(item =>
-				jb.run(new jb.jbCtx(context,{data: item, profile: profile, path: innerPath+i}), parentParam)
-			)).filter(x=>x!=null);
+				jb.run(new jb.jbCtx(context,{data: item, profile: profile, path: innerPath+i}), parentParam))
+			.filter(x=>x!=null)
+			.map(x=> Array.isArray(jb.val(x)) ? jb.val(x) : x ));
 	}
 }
 
@@ -258,7 +259,7 @@ jb.component('slice', {
 jb.component('numeric-sort', { // with side effects!!! decision made for performance reasons
 	type: 'aggregator',
 	params: [
-		{ id: 'propertyName' }
+		{ id: 'propertyName', as: 'string', essential: true }
 	],
 	impl: (ctx,prop) => {
 		if (!ctx.data || ! Array.isArray(ctx.data)) return null;
@@ -340,7 +341,7 @@ jb.component('not-contains', {
 	impl :{$not: {$: 'contains', text: '%$text%', allText :'%$allText%'}} 
 })
 
-jb.component('starts-with',{
+jb.component('starts-with', {
 	type: 'boolean',
 	params: [
 		{ id: 'startsWith', as: 'string', essential: true },
@@ -426,7 +427,7 @@ jb.component('join', {
 jb.component('unique',{
 	params: [
 		{ id: 'id', as: 'string', dynamic: true, defaultValue: '%%' },
-		{ id: 'items', as:'array', defaultValue: '%%'}
+		{ id: 'items', as: 'array', defaultValue: '%%'}
 	],
 	type: 'aggregator',
 	impl: function(context,id,items) {
@@ -442,7 +443,7 @@ jb.component('unique',{
 	}
 });
 
-jb.component('log',{
+jb.component('log', {
 	params: [
 		{ id: 'obj', as: 'single', defaultValue: '%%'}
 	],
@@ -523,21 +524,6 @@ jb.component('replace', {
 	}
 });
 
-jb.component('foreach', {
-	type: 'action',
-	params: [
-		{ id: 'items', as: 'array', defaultValue: '%%'},
-		{ id: 'action', type:'action', dynamic:true },
-		{ id: 'itemVariable', as:'string' },
-		{ id: 'inputVariable', as:'string' }
-	],
-	impl: function(context,items,action,itemVariable,inputVariable) {
-		items.forEach(function(item) {
-			action(new jb.jbCtx(context,{ data:item, vars: jb.obj(itemVariable,item, jb.obj(inputVariable,context.data)) }));
-		});
-	}
-});
-
 jb.component('touch', {
 	type: 'action',
 	params: [
@@ -552,12 +538,12 @@ jb.component('touch', {
 jb.component('isNull', {
 	type: 'boolean',
 	params: [
-		{ id: 'item', as: 'single', defaultValue: '%%'}
+		{ id: 'obj', defaultValue: '%%'}
 	],
-	impl: (ctx, item) => (item == null)
+	impl: (ctx, obj) => jb.val(obj) == null
 });
 
-jb.component('isEmpty',{
+jb.component('isEmpty', {
 	type: 'boolean',
 	params: [
 		{ id: 'item', as: 'single', defaultValue: '%%'}
@@ -566,7 +552,7 @@ jb.component('isEmpty',{
 		!item || (Array.isArray(item) && item.length == 0)
 });
 
-jb.component('notEmpty',{
+jb.component('notEmpty', {
 	type: 'boolean',
 	params: [
 		{ id: 'item', as: 'single', defaultValue: '%%'}
@@ -628,18 +614,6 @@ jb.component('delay', {
 	impl: ctx => jb.delay(ctx.params.mSec)
 })
 
-jb.component('editable-primitive', {
-  type: 'data',
-  params: {
-    type: { type: 'data', as: 'string', options: 'string,number,boolean', defaultValue: 'string' },
-    initialValue: { type: 'data', as: 'string' }
-  },
-  impl: (ctx,_type,initialValue) => {
-    var res = { data: jb.jstypes[_type](initialValue)};
-    return { $jb_parent: res, $jb_property: 'data' }
-  }
-})
-
 jb.component('on-next-timer',{
 	type: 'action',
 	params: [
@@ -688,6 +662,30 @@ jb.component('extract-suffix',{
 		}
 	}
 });
+
+jb.component('type-of', {
+	type: 'data',
+	params: [
+		{ id: 'obj', defaultValue: '%%' },
+	],
+	impl: (ctx,_obj) => {
+	  	var obj = jb.val(_obj);
+		return Array.isArray(obj) ? 'array' : typeof obj
+	}
+})
+
+jb.component('data.is-of-type', {
+  type: 'boolean',
+  params: [ 
+  	{ id: 'type', as: 'string', essential: true, description: 'string,boolean' },
+  	{ id: 'obj', defaultValue: '%%' },
+  ],
+  impl: (ctx,_type,_obj) => {
+  	var obj = jb.val(_obj);
+  	var objType = Array.isArray(obj) ? 'array' : typeof obj;
+  	return _type.split(',').indexOf(objType) != -1;
+  }
+})
 
 jb.component('http.get', {
 	params: [
