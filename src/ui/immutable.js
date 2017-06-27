@@ -50,24 +50,37 @@ class ImmutableWithPath {
     if (ref.$jb_path.length == 0)
       return jb.logError('doOp: ref not found');
 
-    var op = {}, resource = ref.$jb_path[0];
-    jb.path(op,ref.$jb_path,opOnRef);
+    var op = {}, resource = ref.$jb_path[0], oldResources = this.resources();
+    jb.path(op,ref.$jb_path,opOnRef); // create op as nested object 
     this.markPath(ref.$jb_path);
     var opEvent = {op: op, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
         oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
     this.resources(jb.ui.update(this.resources(),op),opEvent);
     this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
+    this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
     opEvent.newVal = jb.val(ref);
     opEvent.resourceVersionsAfter = this.resourceVersions;
     this.resourceChange.next(opEvent);
     return ref;
   }
-  asRef(obj) {
+  restoreArrayIds(from,to,path) {
+    if (from && to && from.$jb_id)
+      to.$jb_id = from.$jb_id;
+    if (path.length > 0)
+      this.restoreArrayIds(from[path[0]], to[path[0]], path.slice(1))
+  }
+  asRef(obj,hint) {
     if (!obj) return;
     if (obj && (obj.$jb_path || obj.$jb_val))
         return obj;
 
-    var path = this.pathOfObject(obj,this.resources());
+    var path;
+    if (hint && hint.resource) {
+      var res = this.pathOfObject(obj,this.resources()[hint.resource]);
+      path = res && [hint.resource].concat(res);
+    }
+    path = path || this.pathOfObject(obj,this.resources()); // try without the hint
+
     if (path)
       return {
         $jb_path: path,
@@ -105,8 +118,9 @@ class ImmutableWithPath {
       if (path.length == 1) return true;
       if (this.resourceVersions[path[0]] == ref.$jb_resourceV) return true;
       if (ref.$jb_parentOfPrim) {
-        var parent = this.asRef(ref.$jb_parentOfPrim);
+        var parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
         if (!parent || !this.isRef(parent)) {
+          this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
           ref.$jb_invalid = true;
           return jb.logError('refresh: parent not found');
         }

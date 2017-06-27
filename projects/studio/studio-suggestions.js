@@ -67,9 +67,10 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
           .distinctUntilChanged((e1,e2)=>
             e1.key == e2.key) // compare options - if options are the same - leave it.
           .do(e=>jb.logPerformance('suggestions',e))
+          .takeUntil( cmp.destroyed )
           .subscribe(e=> {
-              if (!jb.val(cmp.ctx.exp('%$suggestionData%'))) // after dialog closed
-                return; 
+              // if (!jb.val(cmp.ctx.exp('%$suggestionData%'))) // after dialog closed
+              //   return; 
               cmp.ctx.run({$:'write-value', to: '%$suggestionData/tail%', value: ctx => e.tail })
               cmp.ctx.run({$:'write-value', to: '%$suggestionData/options%', value: ctx => e.options });
           });

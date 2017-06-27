@@ -267,7 +267,7 @@ Object.assign(st, {
 	},
 
   	pathOfRef: ref =>
-  		ref.$jb_path && ref.$jb_path.join('~'),
+  		ref && ref.$jb_path && ref.$jb_path.join('~'),
 	nameOfRef: ref => 
 		(ref && ref.$jb_path) ? ref.$jb_path.slice(-1)[0].split(':')[0] : 'ref',
 	valSummaryOfRef: ref => 
