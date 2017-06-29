@@ -91,6 +91,12 @@ jb.component('studio.tree-menu', {
         shortcut: 'Delete'
       }, 
       {$: 'menu.action', 
+        title: {$if: {$: 'studio.disabled', path: '%$path%'} , then: 'Enable', else: 'Disable' }, 
+        icon: 'do_not_disturb', 
+        shortcut: 'Ctrl+D', 
+        action: {$: 'studio.toggle-disabled', path: '%$path%' }
+      }, 
+      {$: 'menu.action', 
         title: 'Copy', 
         action :{$: 'studio.copy', path: '%$path%' }, 
         icon: 'copy', 
@@ -125,7 +131,7 @@ jb.component('studio.control-tree', {
       {$: 'tree', 
         nodeModel :{$: 'studio.control-tree.nodes' }, 
         features: [
-          {$: 'css.class', class: 'jb-control-tree studio-control-tree' }, 
+          {$: 'css.class', class: 'jb-control-tree' }, 
           {$: 'tree.selection', 
             databind: '%$studio/profile_path%', 
             onSelection: [

@@ -3,9 +3,12 @@ jb.component('studio.property-toolbar-feature', {
   params: [
     { id: 'path', as: 'string' }
   ], 
-  impl :{$: 'field.toolbar', 
+  impl : {$list: [
+    {$: 'field.toolbar', 
         toolbar :{$: 'studio.property-toolbar', path: '%$path%' } 
-    }
+    },
+    {$: 'studio.disabled-support', path: '%$path%' }
+  ]}
 }) 
 
 jb.component('studio.property-toolbar', {
@@ -65,7 +68,14 @@ jb.component('studio.open-property-menu', {
           icon: 'delete', 
           shortcut: 'Delete', 
           action :{$: 'studio.delete', path: '%$path%' }
-        }
+        },
+      {$: 'menu.action', 
+        title: {$if: {$: 'studio.disabled', path: '%$path%'} , then: 'Enable', else: 'Disable' }, 
+        icon: 'do_not_disturb', 
+        shortcut: 'Ctrl+D', 
+        action: {$: 'studio.toggle-disabled', path: '%$path%' }
+      }, 
+        
       ]
     }
   }

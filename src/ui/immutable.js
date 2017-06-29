@@ -64,7 +64,7 @@ class ImmutableWithPath {
     return ref;
   }
   restoreArrayIds(from,to,path) {
-    if (from && to && from.$jb_id)
+    if (from && to && from.$jb_id && Array.isArray(from) && Array.isArray(to) && !to.$jb_id && typeof to == 'object')
       to.$jb_id = from.$jb_id;
     if (path.length > 0)
       this.restoreArrayIds(from[path[0]], to[path[0]], path.slice(1))
@@ -122,7 +122,7 @@ class ImmutableWithPath {
         if (!parent || !this.isRef(parent)) {
           this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
           ref.$jb_invalid = true;
-          return jb.logError('refresh: parent not found');
+          return jb.logError('refresh: parent not found: '+ path.join('~'));
         }
         var prop = path.slice(-1)[0];
         new_ref = {
@@ -137,7 +137,7 @@ class ImmutableWithPath {
         if (!found_path) {
           this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
           ref.$jb_invalid = true;
-          return jb.logError('refresh: object not found');
+          return jb.logError('refresh: object not found: ' + path.join('~'));
         }
         var new_path = [path[0]].concat(found_path);
         if (new_path) new_ref = {
@@ -156,10 +156,13 @@ class ImmutableWithPath {
   }
   refOfPath(path,silent) {
       try {
-        var val = path.reduce((o,p)=>o[p],this.resources()),parent = null;
-        if (typeof val != 'object' || Array.isArray(val)) 
-          parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
-          return {
+        var val = path.reduce((o,p)=>o[p],this.resources());
+        if (val == null || typeof val != 'object' || Array.isArray(val)) 
+          var parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
+        else
+          var parent = null
+        
+        return {
             $jb_path: path,
             $jb_resourceV: this.resourceVersions[path[0]],
             $jb_cache: val,

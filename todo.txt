@@ -1,7 +1,15 @@
 context (data) viewer lightly attached to popups after pick
 
-jbEditor
+show disabled in properties
+	picklist
+	features
+
+
+table
   editable table with add + delete
+  table with max items - add max items filter and button (button title 'XX more items')
+
+jbEditor
   $: 'object' dialog - use table
   $vars dialog - use table
 
@@ -9,13 +17,13 @@ $runActions - put in core for type action and action[], work with test
 
 suggestion highlight in option object
 
-table with max items - add max items filter and button (button title 'XX more items')
 
 tooltip from material design
 
 logo
 color picker from color palette of theme
 
+atom plugin with jbEditor
 
 
 keybaord only features editing

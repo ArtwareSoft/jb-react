@@ -24,9 +24,10 @@ class NodeLine extends jb.ui.Component {
 		})
 	}
 	render(props,state) {
-		var h = jb.ui.h;
-		var collapsed = props.tree.expanded[props.path] ? '' : ' collapsed';
-		var nochildren = props.tree.nodeModel.isArray(props.path) ? '' : ' nochildren';
+		var h = jb.ui.h, tree= props.tree, model = props.tree.nodeModel;
+
+		var collapsed = tree.expanded[props.path] ? '' : ' collapsed';
+		var nochildren = model.isArray(props.path) ? '' : ' nochildren';
 
 		return h('div',{ class: `treenode-line${collapsed}`},[
 			h('button',{class: `treenode-expandbox${nochildren}`, onclick: _=> state.flip() },[
@@ -35,7 +36,7 @@ class NodeLine extends jb.ui.Component {
 				h('div',{ class: 'line-tb'}),
 			]),
 			h('i',{class: 'material-icons', style: 'font-size: 16px; margin-left: -4px; padding-right:2px'},state.icon),
-			h('span',{class: 'treenode-label'},state.title),
+			h('span',{class: 'treenode-label'}, jb.ui.limitStringLength(state.title,20)),
 		])		
 	}
 }
@@ -45,8 +46,9 @@ class TreeNode extends jb.ui.Component {
 		super();
 	}
 	render(props,state) {
-		var h = jb.ui.h, tree = props.tree, path = props.path;
-		var clz = [props.class, tree.nodeModel.isArray(path) ? 'jb-array-node': ''].filter(x=>x).join(' ');
+		var h = jb.ui.h, tree = props.tree, path = props.path, model = props.tree.nodeModel;
+		var disabled = model.disabled && model.disabled(props.path) ? 'jb-disabled' : '';
+		var clz = [props.class, model.isArray(path) ? 'jb-array-node': '',disabled].filter(x=>x).join(' ');
 
 		return h('div',{class: clz, path: props.path},
 			[h(NodeLine,{ tree: tree, path: path })].concat(!tree.expanded[path] ? [] : h('div',{ class: 'treenode-children'} , 
@@ -224,12 +226,14 @@ jb.component('tree.keyboard-selection', {
 						context.setData(tree.selected), tree.el.parentNode.querySelector('.treenode.selected>.treenode-line'))()
 				}
 				// menu shortcuts
-				cmp.onkeydown.filter(e=> e.ctrlKey || e.altKey || e.keyCode == 46) // also Delete
-					.filter(e=> e.keyCode != 17 && e.keyCode != 18) // ctrl or alt alone
-					.subscribe(e => {
+		        cmp.base.onkeydown = e => {
+					if ((e=> e.ctrlKey || e.altKey || e.keyCode == 46) // also Delete
+					 && (e.keyCode != 17 && e.keyCode != 18)) { // ctrl or alt alone
 						var menu = context.params.applyMenuShortcuts(context.setData(tree.selected));
 						menu && menu.applyShortcut && menu.applyShortcut(e);
-					})
+						return false;  // stop propagation
+					}
+				}
 			}
 		})
 })

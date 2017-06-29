@@ -132,7 +132,7 @@ Object.assign(st, {
 		st.writeValueOfPath(path,result);
 	},
 
-	duplicate: (path) => {
+	duplicate: path => {
 		var prop = path.split('~').pop();
 		var val = st.valOfPath(path);
 		var parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
@@ -141,7 +141,15 @@ Object.assign(st, {
 			st.splice(parent_ref,[[Number(prop), 0,clone]]);
 		}
 	},
-
+	disabled: path => {
+		var prof = st.valOfPath(path);
+		return typeof prof == 'object' && prof.$disabled;
+	},
+	toggleDisabled: path => {
+		var prof = st.valOfPath(path);
+		if (typeof prof == 'object' && !Array.isArray(prof)) 
+			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true)
+	},
 	setComp: (path,compName) => {
 		var comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
@@ -314,13 +322,17 @@ jb.component('studio.is-new', {
 });
 
 jb.component('studio.watch-path', {
-  type: 'feature', category: 'group:0',
+  type: 'feature', 
+  category: 'group:0', 
   params: [
-    { id: 'path', essential: true },
-    { id: 'strongRefresh', as: 'boolean' },
-    { id: 'includeChildren', as: 'boolean' },
-  ],
-  impl: {$: 'watch-ref', ref :{$: 'studio.ref', path: '%$path%'}, strongRefresh: '%$strongRefresh%', includeChildren: '%$includeChildren%'}
+    { id: 'path', essential: true }, 
+    { id: 'strongRefresh', as: 'boolean' }, 
+    { id: 'includeChildren', as: 'boolean' }
+  ], 
+  impl: (ctx,path,strongRefresh,includeChildren) => ({
+      init: cmp => 
+      	jb.ui.watchRef(ctx,cmp,st.refOfPath(path),strongRefresh,includeChildren)
+  })
 })
 
 jb.component('studio.watch-script-changes', {

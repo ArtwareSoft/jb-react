@@ -65,7 +65,10 @@ class JbComponent {
 			render(props,state) {
 				if (!jbComp.template) return '';
 				var vdom = jbComp.template(this,state,ui.h);
-				jbComp.modifierFuncs.forEach(modifier=> vdom = modifier(vdom,this,state) || vdom);
+				jbComp.modifierFuncs.forEach(modifier=> {
+					if (typeof vdom == 'object')
+						vdom = modifier(vdom,this,state) || vdom
+				});
 				return vdom;
 			}
     		componentDidMount() {
@@ -320,6 +323,11 @@ ui.waitFor = function(check,times,interval) {
   })
 }
 
+ui.limitStringLength = function(str,maxLength) {
+  if (typeof str == 'string' && str.length > maxLength-3)
+    return str.substring(0,maxLength) + '...';
+  return str;
+}
 // ****************** vdom utils ***************
 
 ui.stateChangeEm = new jb.rx.Subject();
@@ -354,6 +362,16 @@ ui.toggleClassInVdom = function(vdom,clz,add) {
 ui.item = function(cmp,vdom,data) {
 	cmp.jbComp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
 	return vdom;
+}
+
+ui.watchRef = function(ctx,cmp,ref,strongRefresh,includeChildren) {
+  if (!ref) return;
+  if (strongRefresh && cmp.initWatchByRef) { // itemlist or group
+      cmp.initWatchByRef(ref,includeChildren)
+  } else {
+    ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
+        ui.setState(cmp,null,e,ctx))
+  }
 }
 
 // ****************** components ****************

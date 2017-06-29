@@ -301,6 +301,18 @@ jb.component('studio.delete',{
 	impl: (ctx,path) => st._delete(path)
 })
 
+jb.component('studio.disabled',{
+	type: 'boolean',
+	params: [ {id: 'path', as: 'string' } ],
+	impl: (ctx,path) => st.disabled(path)
+})
+
+jb.component('studio.toggle-disabled',{
+	type: 'action',
+	params: [ {id: 'path', as: 'string' } ],
+	impl: (ctx,path) => st.toggleDisabled(path)
+})
+
 jb.component('studio.make-local',{
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
@@ -372,7 +384,7 @@ jb.component('studio.jb-editor.nodes', {
 		  new st.jbEditorTree(path)
 })
 
-jb.component('studio.icon-of-type',{
+jb.component('studio.icon-of-type', {
 	type: 'data',
 	params: [ {id: 'type', as: 'string' } ],
 	impl: (ctx,type) => {
@@ -388,6 +400,21 @@ jb.component('studio.icon-of-type',{
 		}[type] || 'extension')
 	}
 
+})
+
+jb.component('studio.is-disabled', {
+	type: 'boolean',
+	params: [ {id: 'path', as: 'string' } ],
+	impl: (ctx,path) =>
+		  st.disabled(path)
+})
+
+jb.component('studio.disabled-support', {
+  params: [
+    { id: 'path', as: 'string', essential: true }, 
+  ], 
+  type: 'feature',
+  impl: {$: 'conditional-class', cssClass: 'jb-disabled', condition: {$: 'studio.is-disabled', path: '%$path%'} }
 })
 
 

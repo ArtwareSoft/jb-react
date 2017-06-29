@@ -32,18 +32,12 @@ jb.component('watch-ref', {
   type: 'feature', category: 'group:70',
   params: [ 
     { id: 'ref', essential: true, as: 'ref', ref: true },
-    { id: 'strongRefresh', as: 'boolean' },
-    { id: 'includeChildren', as: 'boolean' },
+    { id: 'strongRefresh', as: 'boolean', description: 'redraw groups and itemlists' },
+    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
   ],
   impl: (ctx,ref,strongRefresh,includeChildren) => ({
-      init: cmp => {
-          if (strongRefresh && cmp.initWatchByRef) { // itemlist or group
-              cmp.initWatchByRef(ref,includeChildren)
-          } else {
-            jb.ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
-                jb.ui.setState(cmp,null,e,ctx))
-          }
-      }
+      init: cmp => 
+        jb.ui.watchRef(ctx,cmp,ref,strongRefresh,includeChildren)
   })
 })
 
@@ -51,7 +45,7 @@ jb.component('watch-observable', {
   type: 'feature', category: 'group:70',
   params: [ 
     { id: 'toWatch', essential: true },
-    { id: 'strongRefresh', as: 'boolean' },
+    { id: 'strongRefresh', as: 'boolean', description: 'redraw groups and itemlists' },
   ],
   impl: (ctx,toWatch,strongRefresh) => ({
       init: cmp => {
@@ -60,12 +54,7 @@ jb.component('watch-observable', {
         var virtualRef = { $jb_observable: cmp => 
           toWatch 
         };
-
-        if (strongRefresh && cmp.initWatchByRef) // itemlist or group
-            cmp.initWatchByRef(virtualRef)
-        else
-            virtualRef.subscribe(_=>
-                jb.ui.setState(cmp))
+        jb.ui.watchRef(ctx,cmp,virtualRef,strongRefresh,false)
       }
   })
 })
@@ -77,15 +66,13 @@ jb.component('group.data', {
     { id: 'data', essential: true, dynamic: true, as: 'ref' },
     { id: 'itemVariable', as: 'string' },
     { id: 'watch', as: 'boolean' },
-    { id: 'strongRefresh', as: 'boolean' },
+    { id: 'strongRefresh', as: 'boolean', description: 'redraw groups and itemlists' },
+    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
   ],
-  impl: (ctx, data_ref, itemVariable,watch,strongRefresh) => ({
+  impl: (ctx, data_ref, itemVariable,watch,strongRefresh,includeChildren) => ({
       init: cmp => {
-        if (watch && strongRefresh && cmp.initWatchByRef)
-              cmp.initWatchByRef(data_ref())
-        else if (watch)
-          jb.ui.refObservable(data_ref(),cmp).subscribe(e=>
-                jb.ui.setState(cmp,null,e,ctx))
+        if (watch)
+          jb.ui.watchRef(ctx,cmp,data_ref(),strongRefresh,includeChildren)
       },
       extendCtxOnce: ctx => {
           var val = data_ref();
@@ -168,20 +155,11 @@ jb.component('feature.after-load', {
 jb.component('feature.if', {
   type: 'feature',
   params: [
-    { id: 'showCondition', as: 'ref', essential: true, dynamic: true },
-    { id: 'watch', as: 'boolean' },
-    { id: 'strongRefresh', as: 'boolean' },
+    { id: 'showCondition', essential: true, dynamic: true },
   ],
   impl: (ctx, condition,watch,strongRefresh) => ({
-    init: cmp => {
-        if (watch && strongRefresh && cmp.initWatchByRef)
-              cmp.initWatchByRef(condition())
-        else if (watch)
-          jb.ui.refObservable(condition(),cmp).subscribe(e=>
-                jb.ui.setState(cmp,null,e,ctx))
-    },
     templateModifier: (vdom,cmp,state) => 
-        jb.toboolean(condition()) ? vdom : ' ' // can not be empty string
+        jb.toboolean(condition()) ? vdom : jb.ui.h('div',{style: {display: 'none'}}) // can not be empty string
   })
 })
 
@@ -194,6 +172,23 @@ jb.component('hidden', {
     templateModifier: (vdom,cmp,state) => {
       if (!showCondition(cmp.ctx))
         jb.path(vdom,['attributes','style','display'],'none')
+      return vdom;
+    }
+  })
+})
+
+jb.component('conditional-class', {
+  type: 'feature', category: 'feature:75',
+  params: [
+    { id: 'cssClass', as: 'string', essential: true, dynamic: true },
+    { id: 'condition', type: 'boolean', essential: true, dynamic: true },
+  ],
+  impl: (ctx,cssClass,cond) => ({
+    templateModifier: (vdom,cmp,state) => {
+      vdom.attributes = vdom.attributes || {};
+      if (vdom.attributes == null) debugger;
+      vdom.attributes.class = [vdom.attributes.class || '', cond(cmp.ctx) ? cssClass() : ''].join(' ');
+      return vdom;
     }
   })
 })

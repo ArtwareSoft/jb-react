@@ -6,8 +6,9 @@ function jb_run(context,parentParam,settings) {
       if (context.probe.pathToTrace.indexOf(context.path) == 0)
         return context.probe.record(context,parentParam)
     }
-    if (profile === null)
-      return castToParam(profile,parentParam);
+    if (profile === null || (typeof profile == 'object' && profile.$disabled))
+      return castToParam(null,parentParam);
+
     if (profile.$debugger == 0) debugger;
     if (profile.$asIs) return profile.$asIs;
     if (parentParam && (parentParam.type||'').indexOf('[]') > -1 && ! parentParam.as) // fix to array value. e.g. single feature not in array

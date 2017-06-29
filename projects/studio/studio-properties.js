@@ -129,7 +129,7 @@ jb.component('studio.properties-in-tgp',{
   }
 })
 
-jb.component('studio.property-field',{
+jb.component('studio.property-field', {
 	type: 'control',
 	params: [
 		{ id: 'path', as: 'string' },
@@ -162,7 +162,7 @@ jb.component('studio.property-field',{
 		else 
 			fieldPT = 'studio.property-tgp';
 
-		return context.run({ $: fieldPT, path: path});
+		return context.run({ $: fieldPT, path: path });
 	}
 })
 
@@ -405,19 +405,31 @@ jb.component('studio.property-tgp-in-array', {
             features :{$: 'css', css: '{ position: absolute; left: 20px }' }, 
             path: '%$path%'
           }
-        ]
+        ], 
+        features: [{$: 'studio.disabled-support', path: '%$path%' }]
       }, 
       {$: 'group', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          {$: 'feature.if', showCondition: '%$expanded%', watch: true }, 
-          {$: 'css', css: '{ margin-left: 10px; margin-bottom: 4px;}' }
+          {$: 'feature.if', showCondition: '%$expanded%'},
+          {$: 'watch-ref', ref: '%$expanded%', strongRefresh: true }, 
+          {$: 'css', css: '{ margin-left: 10px; margin-bottom: 4px;}' }, 
+          {$: 'studio.disabled-support', path: '%$path%' }
         ]
       }
     ], 
     features: [
       {$: 'css.margin', left: '-100' }, 
-      {$: 'var', name: 'expanded', value: {$:'studio.is-new', path: '%$path%'} , mutable: true }
+      {$: 'var', 
+        name: 'expanded', 
+        value :{$: 'studio.is-new', path: '%$path%' }, 
+        mutable: true
+      }, 
+      {$: 'studio.watch-path', 
+        path: '%$path%', 
+        strongRefresh: 'true', 
+        includeChildren: 'true'
+      }
     ]
   }
 })

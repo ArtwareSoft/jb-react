@@ -83,8 +83,10 @@ jb.component('menu.action', {
 
 	            if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
 	            if (key.match(/^[Aa]lt/) && !e.altKey) return;
-	            if (e.keyCode == keyCode)
+	            if (e.keyCode == keyCode) {
+	            	e.stopPropagation();
 	                return ctx.params.action();
+	            }
 			},
 			ctx: ctx 
 		}) : null

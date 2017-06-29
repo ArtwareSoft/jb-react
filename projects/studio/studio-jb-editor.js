@@ -45,7 +45,7 @@ jb.component('studio.jb-editor', {
         nodeModel :{$: 'studio.jb-editor.nodes', path: '%$path%' }, 
         features: [
           {$: 'css.class', 
-            class: 'jb-editor jb-control-tree studio-control-tree'
+            class: 'jb-editor jb-control-tree'
           }, 
           {$: 'tree.selection', 
             onDoubleClick :{$: 'studio.open-jb-edit-property', 
@@ -103,9 +103,10 @@ jb.component('studio.jb-editor', {
                           }
                         ], 
                         style :{$: 'table.mdl', 
-                          classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp', 
+                          classForTable: 'mdl-data-table', 
                           classForTd: 'mdl-data-table__cell--non-numeric'
-                        }
+                        }, 
+                        features: [{$: 'css', css: '{white-space: normal}' }]
                       }
                     ]
                   }, 
@@ -347,6 +348,12 @@ jb.component('studio.jb-editor-menu', {
         icon: 'delete', 
         shortcut: 'Delete', 
         action: {$: 'studio.delete', path: '%$path%' }
+      }, 
+      {$: 'menu.action', 
+        title: {$if: {$: 'studio.disabled', path: '%$path%'} , then: 'Enable', else: 'Disable' }, 
+        icon: 'do_not_disturb', 
+        shortcut: 'Ctrl+D', 
+        action: {$: 'studio.toggle-disabled', path: '%$path%' }
       }, 
       {$: 'menu.action', 
         title: 'Copy', 
