@@ -10,13 +10,8 @@ jb.component('probe-test.single-control', {
 
 jb.component('probe-test.multiple-visits', {
 	 impl :{$: 'studio-probe-test', 
-		circuit: {$: 'group', 
-			controls :{$: 'itemlist', 
-				items :{$pipeline:[{$list: [1,2]}, '%%']},
-				controls :{$: 'label', title: 'hello' } 
-			}
-		},
-		probePath : 'controls~items~$pipeline~1',
+		circuit: {$: 'button', title: {$pipeline:[{$list: [1,2]}, '%%']} },
+		probePath : 'title~$pipeline~1',
 		expectedVisits: 2, // pipeline with 2 elements
 	}
 })
@@ -137,6 +132,45 @@ jb.component('path-change-test.wrap', {
 //	 	cleanUp: {$: 'studio.undo'}
 	}
 })
+
+jb.component('test.pathSrc-comp', {
+	params: [
+		{ id: 'items', dynamic: true}
+	],
+	impl :{$: 'list', items: {$call: 'items'} }
+})
+
+jb.component('test.pathSrc-caller', {
+	params: [
+		{ id: 'items', dynamic: true}
+	],
+	impl :{$: 'test.pathSrc-comp', items: ['a', 'b'] }
+})
+
+jb.component('probe-test.pathSrc-through-$call', {
+   impl :{$: 'data-test', 
+   calculate: ctx => {
+   	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrc-caller'}, path: '' } ),true)
+      .runCircuit('test.pathSrc-comp~impl~items~1');
+    return probe1.then(res=>
+    	''+res.finalResult.visits)
+   },
+   expectedResult :{$: 'contains', text: '0' }
+  }
+})
+
+jb.component('probe-test.pathSrc-through-$call-2', {
+   impl :{$: 'data-test', 
+   calculate: ctx => {
+   	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrc-caller'}, path: '' } ),true)
+      .runCircuit('test.pathSrc-caller~impl~items~1');
+    return probe1.then(res=>
+    	''+res.finalResult.visits)
+   },
+   expectedResult :{$: 'contains', text: '1' }
+  }
+})
+
 
 // jb.component('path-change-test.insert-comp', {
 // 	 impl :{$: 'path-change-test', 

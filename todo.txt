@@ -1,9 +1,6 @@
 context (data) viewer lightly attached to popups after pick
 
-show disabled in properties
-	picklist
-	features
-
+restoreArrayIds,srcPath tests
 
 table
   editable table with add + delete

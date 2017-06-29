@@ -1,9 +1,9 @@
 
 jb.studio.Probe = class {
-  constructor(ctx, forTests) {
+  constructor(ctx, noGaps) {
     if (ctx.probe)
       debugger;
-    this.forTests = forTests;
+    this.noGaps = noGaps;
 
     this.context = ctx.ctx({});
     this.probe = {};
@@ -52,6 +52,8 @@ jb.studio.Probe = class {
   }
 
   handleGaps() {
+    if (this.noGaps) 
+      return Promise.resolve();
     var st = jb.studio;
     if (this.probe[this.pathToTrace].length == 0) {
       // find closest path

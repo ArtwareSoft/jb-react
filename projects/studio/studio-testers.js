@@ -13,7 +13,7 @@ jb.component('suggestions-test', {
       var selectionStart = params.selectionStart == -1 ? params.expression.length : params.selectionStart;
 
       var circuit = params.path.split('~')[0];
-      var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: { $: circuit }, comp: circuit, path: '', data: null }),true)
+      var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: { $: circuit }, comp: circuit, path: '', data: null }))
         .runCircuit(params.path);
       return probeRes.then(res=>{
         var probeCtx = res.finalResult[0] && res.finalResult[0].in;
@@ -60,7 +60,7 @@ jb.component('studio-probe-test', {
     var success = _ => ({ id: testId, title: testId, success: true });
 
     var full_path = testId + '~impl~' + probePath;
-    var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, comp: testId, path: '' } ),true)
+    var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, comp: testId, path: '' } ))
       .runCircuit(full_path);
     return probeRes.then(res=>{
           try {

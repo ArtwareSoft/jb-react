@@ -105,6 +105,23 @@ jb.component('data-test.pipe-with-observable', {
   },
 })
 
+jb.resource('ar-test',{ ar: ['0'] })
+
+jb.component('data-test.restoreArrayIds-bug', {
+   impl :{$: 'data-test', 
+   runBefore: ctx => {
+      var ar_ref = ctx.exp('%$ar-test/ar%','ref');
+      var refWithBug = jb.refHandler().refOfPath(['ar-test','ar','0']);
+      jb.splice(ar_ref,[[1,0,'1']]);
+      var v = jb.val(refWithBug);
+      console.log(v);
+      jb.writeValue(ctx.exp('%$ar-test/result%','ref'),v);
+   },
+   calculate: '%$ar-test/result%',
+   expectedResult :{$: 'contains', text: '0' }
+  }
+})
+
 // jb.component('data-test.http-get', {
 //    impl :{$: 'data-test', 
 //     calculate: {$pipe : [ {$: 'http.get', url: '/projects/ui-tests/people.json'}, '%people/name%', {$join:','}  ]},

@@ -483,6 +483,8 @@ class jbCtx {
       this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : context.profile;
 
       this.path = (context.path || '') + (ctx2.path ? '~' + ctx2.path : '');
+      if (ctx2.forcePath)
+        this.path = this.forcePath = ctx2.forcePath;
       if (ctx2.comp)
         this.path = ctx2.comp + '~impl';
       this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : context.data;     // allow setting of data:null
@@ -508,7 +510,11 @@ class jbCtx {
   extendVars(ctx2,data2) { 
     if (ctx2 == null && data2 == null)
       return this;
-    return new jbCtx(this,{ vars: ctx2 ? ctx2.vars : null, data: (data2 == null) ? ctx2.data : data2 })
+    return new jbCtx(this,{ 
+      vars: ctx2 ? ctx2.vars : null, 
+      data: (data2 == null) ? ctx2.data : data2,
+      forcePath: (ctx2 && ctx2.forcePath) ? ctx2.forcePath : null
+    })
   }
   runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
   parents() {

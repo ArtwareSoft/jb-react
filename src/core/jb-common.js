@@ -10,7 +10,7 @@ jb.component('call', {
  			data: context.data, 
  			vars: context.vars, 
  			componentContext: context.componentContext.componentContext,
- 			comp: paramObj.srcPath // overrides path - use the former path
+ 			forcePath: paramObj.srcPath // overrides path - use the former path
  		}));
       else
         return paramObj;
