@@ -21,7 +21,7 @@ jb.component('group.ul-li', {
   type: 'group.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li', {} ,h(ctrl)),ctrl.ctx.data))),
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li', {class: 'jb-item'} ,h(ctrl)),ctrl.ctx.data))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`
   },

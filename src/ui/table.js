@@ -33,7 +33,7 @@ jb.component('field.control', {
   type: 'table-field',
   params: [
     { id: 'title', as: 'string', essential: true },
-    { id: 'control', type: 'control' , dynamic: true, essential: true },
+    { id: 'control', type: 'control' , dynamic: true, essential: true, defaultValue: {$: 'label', title: ''} },
     { id: 'width', as: 'number' },
   ],
   impl: (ctx,title,control,width) => ({
@@ -48,54 +48,23 @@ jb.component('table.init', {
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
-        cmp.items = cmp.state.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
+        cmp.state.items = calcItems();
         cmp.fields = ctx.vars.$model.fields();
 
         cmp.initWatchByRef = (refToWatch,includeChildren) =>
             jb.ui.refObservable(refToWatch,cmp,includeChildren)
               .subscribe(e=>
-                jb.ui.setState(cmp,{items: cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)))},e));
+                jb.ui.setState(cmp,{items: calcItems()},e));
         if (ctx.vars.$model.watchItems)
           cmp.initWatchByRef(ctx.vars.$model.items(cmp.ctx))
+
+        function calcItems() {
+          cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
+          if (cmp.ctx.vars.itemlistCntr)
+              cmp.ctx.vars.itemlistCntr.items = cmp.items;
+          return cmp.items;
+        }
       },
   })
 })
 
-jb.component('table.with-headers', {
-  type: 'table.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('table',{},[
-        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
-        h('tbody',{class: 'jb-drag-parent'},
-            state.items.map(item=> jb.ui.item(cmp,h('tr',{ 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item)) : f.fieldData(item))))
-              ,item))
-        ),
-        state.items.length == 0 ? 'no items' : ''
-        ]),
-    features:{$: 'table.init'},
-    css: `{border-spacing: 0; text-align: left}
-    >tbody>tr>td { padding-right: 2px }
-    `
-  }
-})
-
-jb.component('table.mdl', {
-  type: 'table.style',
-  params: [
-    { id: 'classForTable', as: 'string', defaultValue: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp'},
-    { id: 'classForTd', as: 'string', defaultValue: 'mdl-data-table__cell--non-numeric'},
-  ],
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('table',{ class: cmp.classForTable },[
-        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, class: cmp.classForTd, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
-        h('tbody',{class: 'jb-drag-parent'},
-            state.items.map(item=> jb.ui.item(cmp,h('tr',{ 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item)) : f.fieldData(item))))
-              ,item))
-        ),
-        state.items.length == 0 ? 'no items' : ''
-        ]),
-    features:{$: 'table.init'},
-  }
-})

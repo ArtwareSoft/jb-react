@@ -1,18 +1,24 @@
-context (data) viewer lightly attached to popups after pick
+context (data) viewer lightly attached to popups after pick, drag & drop context
 
-restoreArrayIds,srcPath tests
+new profile dialog - sort unique
+
+new page bug
+	no ok in dialog
+	page is not added
 
 table
   editable table with add + delete
+  test changeSelectionBeforeDelete
   table with max items - add max items filter and button (button title 'XX more items')
 
 jbEditor
   $: 'object' dialog - use table
   $vars dialog - use table
+  navigation history - back to XX 
 
 $runActions - put in core for type action and action[], work with test
 
-suggestion highlight in option object
+navigation/editing history - back to XX 
 
 
 tooltip from material design
@@ -26,10 +32,4 @@ atom plugin with jbEditor
 keybaord only features editing
 	padding tabs index
 
-new feature dialog
-	refresh features and focus
-	fix css
-
-new control dialog
-	focus on new feature
-	fix css
+search result - add link to o

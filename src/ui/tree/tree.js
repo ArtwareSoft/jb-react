@@ -36,7 +36,7 @@ class NodeLine extends jb.ui.Component {
 				h('div',{ class: 'line-tb'}),
 			]),
 			h('i',{class: 'material-icons', style: 'font-size: 16px; margin-left: -4px; padding-right:2px'},state.icon),
-			h('span',{class: 'treenode-label'}, jb.ui.limitStringLength(state.title,20)),
+			h('span',{class: 'treenode-label'}, state.title),
 		])		
 	}
 }

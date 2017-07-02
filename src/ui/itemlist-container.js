@@ -1,6 +1,6 @@
 (function() {
 
-createItemlistCntr = (params) => ({
+createItemlistCntr = params => ({
   id: params.id, 
   defaultItem: params.defaultItem, 
   selected: null, 
@@ -10,7 +10,7 @@ createItemlistCntr = (params) => ({
       return this.items = items
   },
   add: function(item) {
-    this.selected = item || JSON.parse(JSON.stringify(defaultItem || {}));
+    this.selected = item || JSON.parse(JSON.stringify(this.defaultItem || {}));
     this.items && jb.splice(this.items,[[this.items.length,0,this.selected]]);
   },
   delete: function(item) {
@@ -59,6 +59,13 @@ jb.component('itemlist-container.add', {
   type: 'action',
   impl: ctx => 
   		ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.add()
+})
+
+jb.component('itemlist-container.delete', {
+  type: 'action',
+  params: [{ id: 'item', as: 'single', defaultValue: '%%'} ],
+  impl: (ctx,item) => 
+      ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.delete(item)
 })
 
 jb.component('itemlist-container.filter', {

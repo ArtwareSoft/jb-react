@@ -29,6 +29,69 @@ jb.component('itemlists.table', {
   }
 })
 
+jb.component('itemlists.editable-table', {
+  type: 'control', 
+  impl :{$: 'group', 
+    controls: [
+      {$: 'table', 
+        items: '%$people%', 
+        fields: [
+          {$: 'field.control', 
+            title: '', 
+            control :{$: 'material-icon', 
+              icon: 'person', 
+              style :{$: 'icon.material' }, 
+              features :{$: 'itemlist.drag-handle' }
+            }, 
+            width: '60'
+          }, 
+          {$: 'field.control', 
+            title: 'name', 
+            control :{$: 'editable-text', 
+              icon: 'person', 
+              title: 'name', 
+              databind: '%name%', 
+              style :{$: 'editable-text.mdl-input-no-floating-label', width: '200' }
+            }
+          }, 
+          {$: 'field.control', 
+            title: 'age', 
+            control :{$: 'editable-text', 
+              icon: 'person', 
+              title: 'age', 
+              databind: '%age%', 
+              style :{$: 'editable-text.mdl-input-no-floating-label', width: '50' }
+            }
+          }, 
+          {$: 'field.control', 
+            control :{$: 'button', 
+              icon: 'delete', 
+              action :{$: 'itemlist-container.delete', item: '%%' }, 
+              style :{$: 'button.x', size: '21' }, 
+              features :{$: 'itemlist.shown-only-on-item-hover' }
+            }, 
+            width: '60'
+          }
+        ], 
+        style :{$: 'table.mdl', 
+          classForTable: 'mdl-data-table mdl-shadow--2dp', 
+          classForTd: 'mdl-data-table__cell--non-numeric'
+        }, 
+        watchItems: 'true', 
+        features :{$: 'itemlist.drag-and-drop' }
+      }, 
+      {$: 'button', 
+        title: 'add', 
+        action :{$: 'itemlist-container.add' }, 
+        style :{$: 'button.mdl-raised' }
+      }
+    ], 
+    features :{$: 'group.itemlist-container', 
+      defaultItem :{$: 'object' }
+    }
+  }
+})
+
 jb.component('itemlists.table-with-search', {
   type: 'control', 
   impl :{$: 'group', 

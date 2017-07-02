@@ -59,7 +59,13 @@ jb.component('studio.toolbar', {
       {$: 'button', 
         title: 'jbEditor', 
         action :{$: 'studio.open-jb-editor', path: '%$studio/profile_path%' }, 
-        style :{$: 'button.mdl-icon', icon: 'build' }
+        style :{$: 'button.mdl-icon', icon: 'build' }, 
+        features :{$: 'ctrl-action', 
+          action :{$: 'studio.open-jb-editor', 
+            path: '%$studio/profile_path%', 
+            newWindow: true
+          }
+        }
       }, 
       {$: 'button', 
         title: 'Event Tracker', 

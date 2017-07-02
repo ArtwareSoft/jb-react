@@ -143,11 +143,11 @@ Object.assign(st, {
 	},
 	disabled: path => {
 		var prof = st.valOfPath(path);
-		return typeof prof == 'object' && prof.$disabled;
+		return prof && typeof prof == 'object' && prof.$disabled;
 	},
 	toggleDisabled: path => {
 		var prof = st.valOfPath(path);
-		if (typeof prof == 'object' && !Array.isArray(prof)) 
+		if (prof && typeof prof == 'object' && !Array.isArray(prof)) 
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true)
 	},
 	setComp: (path,compName) => {

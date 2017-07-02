@@ -185,10 +185,8 @@ jb.component('conditional-class', {
   ],
   impl: (ctx,cssClass,cond) => ({
     templateModifier: (vdom,cmp,state) => {
-      vdom.attributes = vdom.attributes || {};
-      if (vdom.attributes == null) debugger;
-      vdom.attributes.class = [vdom.attributes.class || '', cond(cmp.ctx) ? cssClass() : ''].join(' ');
-      return vdom;
+      if (cond())
+        jb.ui.addClassToVdom(vdom,cssClass())
     }
   })
 })
@@ -200,6 +198,7 @@ jb.component('feature.hover-title', {
   ],
   impl: (ctx, title) => ({
     templateModifier: (vdom,cmp,state) => {
+      vdom.attributes = vdom.attributes || {};
       vdom.attributes.title = title()
       return vdom;
     }

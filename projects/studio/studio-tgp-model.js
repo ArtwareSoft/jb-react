@@ -63,9 +63,9 @@ st.jbEditorTree = class {
 			summary = ': ' + st.summary(path).substr(0,20);
 
 		if (compName)
-			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,20))]);
+			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
 		else if (['string','boolean','number'].indexOf(typeof val) != -1)
-			return jb.ui.h('div',{},[prop + (collapsed ? ': ': ''),jb.ui.h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,20))]);
+			return jb.ui.h('div',{},[prop + (collapsed ? ': ': ''),jb.ui.h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,50))]);
 
 		return prop + (Array.isArray(val) ? ` (${val.length})` : '');
 	}

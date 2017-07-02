@@ -46,6 +46,7 @@ var resources = {
         'src/ui/styles/editable-text-styles.js',
         'src/ui/styles/layout-styles.js',
         'src/ui/styles/group-styles.js',
+        'src/ui/styles/table-styles.js',
         'src/ui/styles/picklist-styles.js',
         'src/ui/styles/property-sheet-styles.js',
         'src/ui/styles/editable-boolean-styles.js',

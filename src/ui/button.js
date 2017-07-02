@@ -10,9 +10,40 @@ jb.component('button', {
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx,{
-      beforeInit: cmp =>
+      beforeInit: cmp => {
         cmp.state.title = jb.val(ctx.params.title),
-      afterViewInit: cmp =>
-        cmp.clicked = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
+        cmp.clicked = ev => {
+          if (ev.ctrlKey && cmp.ctrlAction)
+            cmp.ctrlAction()
+          else
+            cmp.action();
+        }
+      },
+      afterViewInit: cmp => 
+          cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
     })
+})
+
+jb.component('ctrl-action', {
+  type: 'feature', category: 'button:70',
+  description: 'action to perform on control+click',
+  params: [ 
+    { id: 'action', type: 'action', essential: true, dynamic: true },
+  ],
+  impl: (ctx,action) => ({
+      afterViewInit: cmp => 
+        cmp.ctrlAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
+  })
+})
+
+jb.component('button-disabled', {
+  type: 'feature', category: 'button:70',
+  description: 'define condition when button is enabled',
+  params: [ 
+    { id: 'enabledCondition', type: 'boolean', essential: true, dynamic: true },
+  ],
+  impl: (ctx,cond) => ({
+      init: cmp => 
+        cmp.isEnabled = ctx2 => cond(ctx.extendVars(ctx2))
+  })
 })

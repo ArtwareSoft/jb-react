@@ -42,7 +42,7 @@ jb.component('itemlist.init', {
                   return;
                 cmp.items = _items;
                 var ctrls = cmp.items2ctrls(cmp.items); 
-                jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())},e)
+                jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())},e,context)
               });
       },
   })
@@ -209,6 +209,22 @@ jb.component('itemlist.drag-and-drop', {
       }
     })
 })
+
+jb.component('itemlist.drag-handle', {
+  description: 'put on the control inside the item which is used to drag the whole line',
+  type: 'feature',
+  impl: {$: 'css.class', class: 'drag-handle' }
+})
+
+jb.component('itemlist.shown-only-on-item-hover', {
+  type: 'feature', category: 'itemlist:75',
+  description: 'put on the control inside the item which is shown when the mouse enters the line',
+  impl: (ctx,cssClass,cond) => ({
+    class: 'jb-shown-on-item-hover',
+    css: '{ display: none }'
+  })
+})
+
 
 jb.component('itemlist.ul-li', {
   type: 'itemlist.style',

@@ -57,14 +57,16 @@ jb.component('studio.search-list', {
           }, 
           {$: 'field.control', 
             title: 'id', 
-            control :{$: 'label', 
+            control :{$: 'button', 
               title :{$: 'pipeline', 
                 items :{$: 'highlight', 
                   base: '%id%', 
                   highlight: '%$itemlistCntrData/search_pattern%', 
                   cssClass: 'mdl-color-text--indigo-A700'
                 }
-              }
+              }, 
+              action :{$: 'studio.goto-path', path: '%id%' }, 
+              style :{$: 'button.href' }
             }, 
             width: '200'
           }, 
