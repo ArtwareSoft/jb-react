@@ -138,7 +138,7 @@ jb.component('feature.init', {
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
-  impl: (ctx,action) => ({init: cmp => 
+  impl: (ctx,action) => ({ init: cmp => 
       action(cmp.ctx)
   })
 })
@@ -148,9 +148,9 @@ jb.component('feature.after-load', {
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
-  impl: function(context) { return  { 
-    afterViewInit: cmp => jb.delay(1).then(() => context.params.action(cmp.ctx))
-  }}
+  impl: ctx => ({ afterViewInit: cmp => 
+      jb.delay(1).then(_ => ctx.params.action(cmp.ctx))
+    })
 })
 
 jb.component('feature.if', {
@@ -160,7 +160,7 @@ jb.component('feature.if', {
   ],
   impl: (ctx, condition,watch,strongRefresh) => ({
     templateModifier: (vdom,cmp,state) => 
-        jb.toboolean(condition()) ? vdom : jb.ui.h('div',{style: {display: 'none'}}) // can not be empty string
+        jb.toboolean(condition()) ? vdom : jb.ui.h('div',{style: {display: 'none'}})
   })
 })
 

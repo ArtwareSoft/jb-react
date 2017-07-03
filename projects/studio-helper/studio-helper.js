@@ -201,7 +201,8 @@ jb.component('studio-helper-dummy.label', {
       $pipeline: [
         '%$people-array/people%', 
         '%name% aa aa a a a a a sa fds ds f sd fsd fsd fsd fs sdf faaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 
-        '%%'
+        '%%', 
+        {$: 'object', dd: '%%', mkmk: '' }
       ]
     }, 
     features: [

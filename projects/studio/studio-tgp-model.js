@@ -109,7 +109,10 @@ st.jbEditorTree = class {
 	}
 	$objectChildren(path,val) {
 		if (jb.compName(val) == 'object')
-			return Object.getOwnPropertyNames(val).map(p=>path+'~'+p);
+			return Object.getOwnPropertyNames(val)
+				.filter(p=>p!='$')
+				.filter(p=>p.indexOf('$jb_') != 0)
+				.map(p=>path+'~'+p);
 		return []
 	}
 }

@@ -1,3 +1,4 @@
+esc ' in string editing
 context (data) viewer lightly attached to popups after pick, drag & drop context
 choose action from properties should show select comp
 

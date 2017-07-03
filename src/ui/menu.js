@@ -3,7 +3,7 @@ jb.component('menu.menu', {
 	type: 'menu.option', 
 	params: [
 		{ id: 'title', as: 'string', dynamic: true, essential: true },
-		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
+		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true, defaultValue: [] },
 	],
 	impl: ctx => ({ 
 		options: ctx.params.options, 
@@ -25,21 +25,21 @@ jb.component('menu.options-group', {
 })
 
 jb.component('menu.dynamic-options', {
-  type: 'menu.option[]',
+  type: 'menu.option',
   params: [
     { id: 'items', type: 'data', as: 'array', essential: true, dynamic: true },
     { id: 'genericOption', type: 'menu.option', essential: true, dynamic: true },
   ],
   impl: (ctx,items,generic) =>
     items().map(item => 
-      	generic(ctx.setData(item)))
+      	generic(ctx.setVars({menuData: item}).setData(item)))
 })
 
 jb.component('menu.end-with-separator', {
-  type: 'menu.option[]',
+  type: 'menu.option',
   params: [
 	{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
-	{ id: 'separator', type: 'menu.option[]', as: 'array',defaultValue :{$: 'menu.separator'} },
+	{ id: 'separator', type: 'menu.option', as: 'array',defaultValue :{$: 'menu.separator'} },
   ],
   impl: (ctx) => {
   	var options = ctx.params.options();
@@ -51,7 +51,7 @@ jb.component('menu.end-with-separator', {
 
 
 jb.component('menu.separator', {
-	type: 'menu-option', 
+	type: 'menu.option', 
 	impl: ctx => ({ separator: true })
 })
 
@@ -62,13 +62,13 @@ jb.component('menu.action', {
 		{ id: 'action', type: 'action', dynamic: true, essential: true },
 		{ id: 'icon', as: 'string' },
 		{ id: 'shortcut', as: 'string' },
-		{ id: 'showCondition', as: 'boolean', defaultValue: true }
+		{ id: 'showCondition', type:'boolean', as: 'boolean', defaultValue: true }
 	],
 	impl: ctx => 
 		ctx.params.showCondition ? ({ 
 			leaf : ctx.params, 
 			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
-			title: ctx.params.title(), 
+			title: ctx.params.title(ctx), 
 			applyShortcut: e=> {
 				var key = ctx.params.shortcut;
 				if (!key) return;
@@ -97,12 +97,12 @@ jb.component('menu.action', {
 jb.component('menu.control', {
   type: 'control',
   params: [
-  	{id: 'menu', type: 'menu.option', dynamic: true},
+  	{id: 'menu', type: 'menu.option', dynamic: true, essential: true },
     {id: 'style', type: 'menu.style', defaultValue :{$: 'menu-style.context-menu' }, dynamic: true },
 	{id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx => {
-  	var menuModel = ctx.params.menu();
+  	var menuModel = ctx.params.menu() || { options: [], ctx: ctx, title: ''};
   	return jb.ui.ctrl(ctx.setVars({
   		topMenu: ctx.vars.topMenu || { popups: []},
   		menuModel: menuModel, 
@@ -113,7 +113,7 @@ jb.component('menu.control', {
 jb.component('menu.open-context-menu', {
   type: 'action',
   params: [
-  	{id: 'menu', type: 'menu.option', dynamic: true },
+  	{id: 'menu', type: 'menu.option', dynamic: true, essential: true },
   	{id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup'}  },
 	{ id: 'features', type: 'dialog-feature[]', dynamic: true }
   ],
@@ -329,7 +329,7 @@ jb.component('menu-style.option-line', {
 	type: 'menu-option.style',
   	impl :{$: 'custom-style', 
 		template: (cmp,state,h) => h('div',{ 
-				class: 'line noselect', onmousedown: _ => cmp.action() 
+				class: 'line noselect', onmousedown: _ => cmp.action && cmp.action() 
 			},[
 				h('i',{class:'material-icons'},state.icon),
 				h('span',{class:'title'},state.title),
@@ -339,7 +339,7 @@ jb.component('menu-style.option-line', {
 			  .selected { background: #d8d8d8 }	
 			  >i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }
 			  >span { padding-top: 3px }
-	          >.title { display: block; text-align: left; } 
+	          >.title { display: block; text-align: left; white-space: nowrap; } 
 			  >.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
         features: [
         	{$: 'mdl.ripple-effect'},
@@ -372,7 +372,7 @@ jb.component('menu-style.popup-as-option', {
 		]),
 		css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 			  >i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
-	          >.title { display: block; text-align: left; padding-top: 3px; padding-left: 26px;} 
+	          >.title { display: block; text-align: left; padding-top: 3px; padding-left: 26px; white-space: nowrap; } 
 			`,
         features :{$: 'menu.init-popup-menu', popupStyle :{$: 'dialog.context-menu-popup', rightSide: true, offsetTop: -24 } },
     }

@@ -58,7 +58,18 @@ jb.component('hello-world.main2', {
             {$: 'object', text: '%%' }
           ]
         }, 
-        fields: [{$: 'field', title: 'name', data: '%text%' }]
+        fields: [
+          {$: 'field', 
+            title: 'name', 
+            data :{
+              $pipeline: [
+                '%text%', 
+                {$: 'object', huyt: '%%' }, 
+                '%huyt%'
+              ]
+            }
+          }
+        ]
       }
     ], 
     features :{$: 'var', name: 'text', value: 'hello world', mutable: 'true' }

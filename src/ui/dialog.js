@@ -14,7 +14,6 @@ jb.component('open-dialog', {
 		var modal = context.params.modal;
 		var dialog = { 
 			id: id, 
-			onOK: context.params.onOK, 
 			modal: modal, 
 			em: new jb.rx.Subject(),
 		};
@@ -35,6 +34,8 @@ jb.component('open-dialog', {
 				} catch (e) {
 					jb.logException(e,'dialog');
 				}
+				dialog.onOK = ctx2 => 
+					context.params.onOK(cmp.ctx.extendVars(ctx2));
 				cmp.dialogClose = _ => 
 					dialog.close();
 				cmp.recalcTitle = (e,srcCtx) => 
@@ -370,8 +371,8 @@ jb.component('dialog.dialog-ok-cancel', {
 			h('button',{class: 'dialog-close', onclick: _=> cmp.dialogClose() },'×'),
 			h(state.contentComp),
 			h('div',{class: 'dialog-buttons'},[
-				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: false}) },state.cancelLabel),
-				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },state.okLabel),
+				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: false}) },cmp.cancelLabel),
+				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },cmp.okLabel),
 			]),
 		]),
 	  css: `>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }`,

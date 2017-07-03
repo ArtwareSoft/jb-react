@@ -262,22 +262,65 @@ jb.component('studio.jb-editor-menu', {
   type: 'menu.option', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'menu.menu', 
-    style :{$: 'menu.context-menu' },
+    style :{$: 'menu.context-menu' }, 
+    features :{$: 'group.menu-keyboard-selection', autoFocus: true }, 
     options: [
-      {$:'menu.end-with-separator',
-         options :{$:'menu.dynamic-options', endsWithSeparator: true,
-            items :{$: 'studio.more-params', path: '%$path%' } ,
-            genericOption :{$: 'menu.action', 
-            title :{$: 'suffix', separator: '~' },
+      {$: 'menu.action', 
+        title: 'Add property', 
+        action :{$: 'open-dialog', 
+          id: 'add property', 
+          style :{$: 'dialog.popup', okLabel: 'OK', cancelLabel: 'Cancel' }, 
+          content :{$: 'group', 
+            controls: [
+              {$: 'editable-text', 
+                title: 'property name', 
+                databind: '%$name%', 
+                style :{$: 'editable-text.mdl-input' }, 
+                features: [
+                  {$: 'feature.onEnter', 
+                    action: [
+                      {$: 'write-value', 
+                        to :{$: 'studio.ref', path: '%$path%~%$name%' }, 
+                        value: ''
+                      }, 
+                      {$: 'dialog.close-containing-popup', OK: true }, 
+                      {$: 'tree.regain-focus' }
+                    ]
+                  }
+                ]
+              }
+            ], 
+            features :{$: 'css.padding', top: '9', left: '20', right: '20' }
+          }, 
+          title: 'Add Property', 
+          onOK :{$: 'write-value', 
+            to :{$: 'studio.ref', path: '%$path%~%$name%' }, 
+            value: ''
+          }, 
+          modal: 'true', 
+          features: [
+            {$: 'var', name: 'name', mutable: true }, 
+            {$: 'dialog-feature.near-launcher-position' }, 
+            {$: 'dialog-feature.auto-focus-on-first-input' }
+          ]
+        }, 
+        showCondition :{$: 'equals', 
+          item1 :{$: 'studio.comp-name', path: '%$path%' }, 
+          item2: 'object'
+        }
+      }, 
+      {$: 'menu.end-with-separator', 
+        options :{$: 'menu.dynamic-options', 
+          endsWithSeparator: true, 
+          items :{$: 'studio.more-params', path: '%$path%' }, 
+          genericOption :{$: 'menu.action', 
+            title :{$: 'suffix', separator: '~' }, 
             action :{$: 'runActions', 
               actions: [
                 {$: 'studio.add-property', path: '%%' }, 
                 {$: 'dialog.close-containing-popup' }, 
-                {$: 'write-value', 
-                  to: '%$jbEditor_selection%', 
-                  value: '%%'
-                }, 
-                {$: 'studio.open-jb-edit-property', path: '%%' },
+                {$: 'write-value', to: '%$jbEditor_selection%', value: '%%' }, 
+                {$: 'studio.open-jb-edit-property', path: '%%' }
               ]
             }
           }
@@ -291,9 +334,9 @@ jb.component('studio.jb-editor-menu', {
         action :{$: 'studio.open-jb-editor', path: '%$compName%' }, 
         showCondition: '%$compName%'
       }, 
-      {$:'menu.end-with-separator',
-        options: {$: 'studio.goto-sublime', path: '%$path%' }
-      },
+      {$: 'menu.end-with-separator', 
+        options :{$: 'studio.goto-sublime', path: '%$path%' }
+      }, 
       {$: 'menu.studio-wrap-with', 
         path: '%$path%', 
         type: 'control', 
@@ -314,81 +357,57 @@ jb.component('studio.jb-editor-menu', {
         type: 'action', 
         components :{$: 'list', items: ['runActions', 'runActionOnItems'] }
       }, 
-      {$:'menu.studio-wrap-with-array', path: '%$path%'},
-      {$: 'menu.action', 
-        title: 'Add property', 
-        action :{$: 'open-dialog', 
-          id: 'add property', 
-          style :{$: 'dialog.dialog-ok-cancel', 
-            okLabel: 'OK', 
-            cancelLabel: 'Cancel'
-          }, 
-          content :{$: 'group', 
-            controls: [
-              {$: 'editable-text', 
-                title: 'name', 
-                databind: '%$name%', 
-                style :{$: 'editable-text.mdl-input' }
-              }
-            ], 
-            features :{$: 'css.padding', top: '9', left: '19' }
-          }, 
-          title: 'Add Property', 
-          onOK :{$: 'write-value', 
-            to :{$: 'studio.ref', path: '%$path%~%$name%' }, 
-            value: ''
-          },
-          modal: 'true',
-          features :{$: 'var', name: 'name', mutable: true },
-        }
-      },
+      {$: 'menu.studio-wrap-with-array', path: '%$path%' }, 
       {$: 'menu.separator' }, 
-      {$:'menu.end-with-separator',
-        options: {$: 'studio.goto-references', path: '%$path%' }
-      },
+      {$: 'menu.end-with-separator', 
+        options :{$: 'studio.goto-references', path: '%$path%' }
+      }, 
       {$: 'menu.action', 
         title: 'Javascript', 
-        icon: 'code',
-        action: {$: 'studio.edit-source', path: '%$path%'}
+        action :{$: 'studio.edit-source', path: '%$path%' }, 
+        icon: 'code'
       }, 
       {$: 'menu.action', 
         title: 'Delete', 
+        action :{$: 'studio.delete', path: '%$path%' }, 
         icon: 'delete', 
-        shortcut: 'Delete', 
-        action: {$: 'studio.delete', path: '%$path%' }
+        shortcut: 'Delete'
       }, 
       {$: 'menu.action', 
-        title: {$if: {$: 'studio.disabled', path: '%$path%'} , then: 'Enable', else: 'Disable' }, 
+        title :{
+          $if :{$: 'studio.disabled', path: '%$path%' }, 
+          then: 'Enable', 
+          else: 'Disable'
+        }, 
+        action :{$: 'studio.toggle-disabled', path: '%$path%' }, 
         icon: 'do_not_disturb', 
-        shortcut: 'Ctrl+D', 
-        action: {$: 'studio.toggle-disabled', path: '%$path%' }
+        shortcut: 'Ctrl+D'
       }, 
       {$: 'menu.action', 
         title: 'Copy', 
+        action :{$: 'studio.copy', path: '%$path%' }, 
         icon: 'copy', 
-        shortcut: 'Ctrl+C', 
-        action :{$: 'studio.copy', path: '%$path%' }
+        shortcut: 'Ctrl+C'
       }, 
       {$: 'menu.action', 
         title: 'Paste', 
+        action :{$: 'studio.paste', path: '%$path%' }, 
         icon: 'paste', 
-        shortcut: 'Ctrl+V', 
-        action :{$: 'studio.paste', path: '%$path%' }
+        shortcut: 'Ctrl+V'
       }, 
       {$: 'menu.action', 
         title: 'Undo', 
+        action :{$: 'studio.undo' }, 
         icon: 'undo', 
-        shortcut: 'Ctrl+Z', 
-        action :{$: 'studio.undo' }
+        shortcut: 'Ctrl+Z'
       }, 
       {$: 'menu.action', 
         title: 'Redo', 
+        action :{$: 'studio.redo' }, 
         icon: 'redo', 
-        shortcut: 'Ctrl+Y', 
-        action :{$: 'studio.redo' }
-      }, 
-    ], 
-    features :{$: 'group.menu-keyboard-selection', autoFocus: true }
+        shortcut: 'Ctrl+Y'
+      }
+    ]
   }
 })
 
@@ -427,7 +446,7 @@ jb.component('menu.studio-wrap-with-array', {
             {$: 'studio.wrap-with-array', path: '%$path%' },
             {$:'studio.expand-and-select-first-child-in-jb-editor' }
           ]
-    },
+    }, else: []
   }
 })
 

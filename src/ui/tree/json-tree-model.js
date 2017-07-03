@@ -21,7 +21,7 @@ class ROjson {
 			out = Object.getOwnPropertyNames(val || {});
 		if (Array.isArray(val))
 			out = out.slice(0,-1);
-		return out.map(x=>path+'~'+x);
+		return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p);
 	}
 	val(path) {
 		if (path.indexOf('~') == -1)
@@ -76,7 +76,7 @@ class Json {
 			out = Object.getOwnPropertyNames(val || {});
 		if (Array.isArray(val))
 			out = out.slice(0,-1);
-		return out.map(x=>path+'~'+x);
+		return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p);
 	}
 	val(path) {
 		if (path.indexOf('~') == -1)

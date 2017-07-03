@@ -227,12 +227,13 @@ jb.component('tree.keyboard-selection', {
 				}
 				// menu shortcuts
 		        cmp.base.onkeydown = e => {
-					if ((e=> e.ctrlKey || e.altKey || e.keyCode == 46) // also Delete
+					if ((e.ctrlKey || e.altKey || e.keyCode == 46) // also Delete
 					 && (e.keyCode != 17 && e.keyCode != 18)) { // ctrl or alt alone
 						var menu = context.params.applyMenuShortcuts(context.setData(tree.selected));
 						menu && menu.applyShortcut && menu.applyShortcut(e);
 						return false;  // stop propagation
 					}
+					return true;
 				}
 			}
 		})
