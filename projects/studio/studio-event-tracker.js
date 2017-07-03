@@ -1,11 +1,19 @@
 (function() { var st = jb.studio;
 
 st.initEventTracker = _ => {
+	// debug the preview
 	st.stateChangeEvents = [];
 	st.previewjb.ui.stateChangeEm.subscribe(e=>{
 		var curTime = e.timeStamp = new Date().getTime();
 		st.stateChangeEvents.unshift(e);
-		st.stateChangeEvents = st.stateChangeEvents.filter(e=>e.timeStamp > curTime - 2000)
+		st.stateChangeEvents = st.stateChangeEvents.filter(ev=>ev.timeStamp > curTime - 2000)
+	})
+	// debug the studio
+	st.studioStateChangeEvents = [];
+	jb.ui.stateChangeEm.subscribe(e=>{
+		var curTime = e.timeStamp = new Date().getTime();
+		st.studioStateChangeEvents.unshift(e);
+		st.studioStateChangeEvents = st.studioStateChangeEvents.filter(ev=>ev.timeStamp > curTime - 2000)
 	})
 }
 
@@ -35,23 +43,10 @@ jb.component('studio.event-cause', {
 
 jb.component('studio.state-change-events', {
 	type: 'data',
-	impl: ctx => 
-		st.stateChangeEvents || []
+	params: [ {id: 'studio', as: 'boolean' } ],
+	impl: (ctx,studio) => 
+		(studio ? st.studioStateChangeEvents : st.stateChangeEvents) || []
 })
-
-jb.component('studio.events-of-opeation', {
-	type: 'data',
-	params: [ {id: 'op', as: 'single' } ],
-	impl: (ctx,op) => 
-		jb.unique(t.stateChangeEvents.map(e=>e.opEvent))
-})
-
-jb.component('studio.opeations-of-events', {
-	type: 'data',
-	impl: ctx => 
-		t.stateChangeEvents.map(e=>e.opEvent == op)
-})
-
 
 jb.component('studio.highlight-event', {
 	type: 'action',
@@ -64,8 +59,9 @@ jb.component('studio.highlight-event', {
 
 jb.component('studio.open-event-tracker', {
   type: 'action', 
+  params: [ {id: 'studio', as: 'boolean' } ],
   impl :{$: 'open-dialog', 
-      content :{$: 'studio.event-tracker' }, 
+      content :{$: 'studio.event-tracker', studio: '%$studio%' }, 
       style :{$: 'dialog.studio-floating', 
         id: 'event-tracker', 
         width: '700', 
@@ -77,10 +73,11 @@ jb.component('studio.open-event-tracker', {
 
 jb.component('studio.event-tracker', {
   type: 'control', 
+  params: [ {id: 'studio', as: 'boolean' } ],
   impl :{$: 'group', 
     controls: [
       {$: 'table', 
-        items :{$: 'studio.state-change-events' }, 
+        items :{$: 'studio.state-change-events', studio: '%$studio%' }, 
         fields: [
           {$: 'field.control', 
             title: 'changed', 

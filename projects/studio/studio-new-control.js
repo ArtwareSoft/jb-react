@@ -270,13 +270,14 @@ jb.component('studio.open-new-page', {
   impl :{$: 'open-dialog', 
     modal: true, 
     title: 'New Page', 
+    features :{$: 'var', name: 'name', mutable: true },
     style :{$: 'dialog.dialog-ok-cancel', 
       features :{$: 'dialog-feature.auto-focus-on-first-input' }
     }, 
     content :{$: 'group', 
       controls: [
         {$: 'editable-text', 
-          databind: '%$dialogData/name%', 
+          databind: '%$name%', 
           features :{$: 'feature.onEnter', 
             action :{$: 'dialog.close-containing-popup' }
           }, 
@@ -288,13 +289,13 @@ jb.component('studio.open-new-page', {
       style :{$: 'group.div' }
     }, 
     onOK: function (ctx) {
-        var id = ctx.exp('%$studio/project%.%$dialogData/name%');
+        var id = ctx.exp('%$studio/project%.%$name%');
         var profile = {
             type: 'control',
-            impl: { $: 'group', title: ctx.exp('%$dialogData/name%') }
+            impl: { $: 'group', title: ctx.exp('%$name%') }
         };
         jb.studio.newComp(id, profile);
-        ctx.run({ $: 'write-value', to: '%$studio/page%', value: '%$dialogData/name%' });
+        ctx.run({ $: 'write-value', to: '%$studio/page%', value: '%$name%' });
         ctx.run({ $: 'write-value', to: '%$studio/profile_path%', value: id });
     }
   }

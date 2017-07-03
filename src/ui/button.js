@@ -13,7 +13,7 @@ jb.component('button', {
       beforeInit: cmp => {
         cmp.state.title = jb.val(ctx.params.title),
         cmp.clicked = ev => {
-          if (ev.ctrlKey && cmp.ctrlAction)
+          if (ev && ev.ctrlKey && cmp.ctrlAction)
             cmp.ctrlAction()
           else
             cmp.action();

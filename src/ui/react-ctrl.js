@@ -229,8 +229,9 @@ function garbageCollectCtxDictionary() {
 ui.focus = function(elem,logTxt,srcCtx) {
 	if (!elem) debugger;
 	// block the preview from stealing the studio focus
+	var now = new Date().getTime();
 	var lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity']);
-    if (jb.studio.previewjb == jb && lastStudioActivity && new Date().getTime() - lastStudioActivity < 1000)
+    if (jb.studio.previewjb == jb && lastStudioActivity && now - lastStudioActivity < 1000)
     	return;
     jb.delay(1).then(_=> {
    	    jb.logPerformance('focus',logTxt,elem,srcCtx);

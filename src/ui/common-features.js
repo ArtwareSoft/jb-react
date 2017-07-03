@@ -101,22 +101,23 @@ jb.component('var', {
   type: 'feature', category: 'group:80',
   params: [
     { id: 'name', as: 'string', essential: true },
-    { id: 'value', dynamic: true },
+    { id: 'value', dynamic: true, defaultValue: '' },
     { id: 'mutable', as: 'boolean' },    
   ],
   impl: (context, name, value,mutable) => ({
       destroy: cmp => {
         if (mutable)
-          delete jb.resources[name + ':' + cmp.resourceId]
+          jb.writeValue(jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]),null,context)
       },
       extendCtxOnce: (ctx,cmp) => {
         if (!mutable) {
-          return ctx.setVars(jb.obj(name, value()))
+          return ctx.setVars(jb.obj(name, value(ctx)))
         } else {
           cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
-          var full_name = name + ':' + cmp.resourceId;
-          jb.resources[full_name] = value(ctx.setData(cmp));
-          return ctx.setVars(jb.obj(name, jb.objectProperty(jb.resources,full_name,'ref',true)));
+          var refToResource = jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]);
+          //jb.writeValue(refToResource,value(ctx.setData(cmp)),context);
+          jb.writeValue(refToResource,value(ctx),context);
+          return ctx.setVars(jb.obj(name, refToResource));
         }
       }
   })

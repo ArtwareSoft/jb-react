@@ -2,6 +2,7 @@
 var st = jb.studio;
 
 jb.component('studio.save-components', {
+	type: 'action',
 	params: [
 		{ id: 'force',as: 'boolean', type: 'boolean' }
 	],

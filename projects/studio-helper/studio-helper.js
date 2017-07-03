@@ -88,28 +88,37 @@ jb.component('studio-helper.jb-editor', {
   type: 'control', 
   params: [{ id: 'path', defaultValue: 'studio-helper-dummy.label' }], 
   impl :{$: 'group', 
-    $vars: { 
-      circuit: 'studio-helper-dummy.label',
-      jbEditor: {$: 'object', selection: ''},
-    },
-    title: 'main %', 
-    style :{$: 'layout.flex', align: 'flex-start' }, 
     controls: [
-      {$: 'studio.jb-editor', path: '%$path%' }, 
-      {$: 'editable-text', 
-        databind :{$: 'studio.profile-as-text', path: '%$jbEditor_selection%' }, 
-        style :{$: 'editable-text.textarea' }, 
+      {$: 'button', 
+        title: 'open jbEditor', 
+        action :{$: 'studio.open-jb-editor', path: 'studio-helper-dummy.label' }, 
+        style :{$: 'button.href' }
+      }, 
+      {$: 'group', 
+        $vars: {
+          circuit: 'studio-helper-dummy.label', 
+          jbEditor :{$: 'object', selection: '' }
+        }, 
+        title: 'main', 
+        style :{$: 'layout.flex', align: 'flex-start' }, 
+        controls: [
+          {$: 'studio.jb-editor', path: '%$path%' }, 
+          {$: 'editable-text', 
+            databind :{$: 'studio.profile-as-text', path: '%$jbEditor_selection%' }, 
+            style :{$: 'editable-text.textarea' }, 
+            features: [
+              {$: 'watch-ref', ref: '%$jbEditor_selection%' }, 
+              {$: 'css.width', width: '450' }, 
+              {$: 'css.height', height: '200' }, 
+              {$: 'css.margin', left: '10' }
+            ]
+          }
+        ], 
         features: [
-          {$: 'watch-ref', ref: '%$jbEditor_selection%' }, 
-          {$: 'css.width', width: '450' }, 
-          {$: 'css.height', height: '200' }, 
-          {$: 'css.margin', left: '10' }
+          {$: 'css', css: '{ height: 200px; padding: 50px }' }, 
+          {$: 'var', name: 'jbEditor_selection', mutable: true }
         ]
       }
-    ], 
-    features :[ 
-      {$: 'css', css: '{ height: 200px; padding: 50px }' },
-      {$: 'var', name: 'jbEditor_selection', mutable: true }
     ]
   }
 })

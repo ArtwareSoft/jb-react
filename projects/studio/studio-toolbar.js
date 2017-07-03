@@ -34,7 +34,10 @@ jb.component('studio.toolbar', {
       {$: 'button', 
         title: 'Save', 
         action :{$: 'studio.save-components' }, 
-        style :{$: 'button.mdl-icon', icon: 'save' }
+        style :{$: 'button.mdl-icon', icon: 'save' }, 
+        features :{$: 'ctrl-action', 
+          action :{$: 'studio.save-components', force: true }
+        }
       }, 
       {$: 'button', 
         title: 'Refresh Preview', 
@@ -70,7 +73,10 @@ jb.component('studio.toolbar', {
       {$: 'button', 
         title: 'Event Tracker', 
         action :{$: 'studio.open-event-tracker' }, 
-        style :{$: 'button.mdl-icon', icon: 'hearing' }
+        style :{$: 'button.mdl-icon', icon: 'hearing' }, 
+        features :{$: 'ctrl-action', 
+          action :{$: 'studio.open-event-tracker', studio: 'true' }
+        }
       }, 
       {$: 'button', 
         title: 'History', 

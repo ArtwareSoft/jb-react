@@ -17,12 +17,9 @@ jb.component('open-dialog', {
 			onOK: context.params.onOK, 
 			modal: modal, 
 			em: new jb.rx.Subject(),
-			resourceId: 'jb_dialog_'+ (id || context.id)
 		};
-		jb.resource(dialog.resourceId,{});
 
 		var ctx = context.setVars({
-			dialogData: jb.resource(dialog.resourceId),
 			$dialog: dialog 
 		});
 		dialog.comp = jb.ui.ctrl(ctx,{
@@ -31,10 +28,10 @@ jb.component('open-dialog', {
 
 				cmp.state.title = ctx.params.title(ctx);
 				try {
-					cmp.state.contentComp = ctx.params.content(ctx).reactComp();
+					cmp.state.contentComp = ctx.params.content(cmp.ctx).reactComp();
 					cmp.hasMenu = !!ctx.params.menu.profile;
 					if (cmp.hasMenu)
-						cmp.menuComp = ctx.params.menu(ctx).reactComp();
+						cmp.menuComp = ctx.params.menu(cmp.ctx).reactComp();
 				} catch (e) {
 					jb.logException(e,'dialog');
 				}
@@ -411,7 +408,6 @@ jb.ui.dialogs = {
 				}
 			if (dialog.modal)
 				$('.modal-overlay').remove();
-			delete jb.resources[dialog.resourceId];
 			jb.ui.dialogs.redraw();
 		},
 		dialog.closed = _ =>

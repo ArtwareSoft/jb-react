@@ -1,4 +1,8 @@
 context (data) viewer lightly attached to popups after pick, drag & drop context
+choose action from properties should show select comp
+
+data-changes in event tracker should be shown first
+  support dynamic creation/deletion of resources
 
 new profile dialog - sort unique
 
@@ -14,7 +18,10 @@ table
 jbEditor
   $: 'object' dialog - use table
   $vars dialog - use table
-  navigation history - back to XX 
+  navigation history - back to XX
+  open in menu - show all components
+  in/out special viewers by type
+  	control
 
 $runActions - put in core for type action and action[], work with test
 

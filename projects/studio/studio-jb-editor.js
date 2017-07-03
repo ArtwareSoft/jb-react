@@ -327,7 +327,7 @@ jb.component('studio.jb-editor-menu', {
             controls: [
               {$: 'editable-text', 
                 title: 'name', 
-                databind: '%$dialogData/name%', 
+                databind: '%$name%', 
                 style :{$: 'editable-text.mdl-input' }
               }
             ], 
@@ -335,10 +335,11 @@ jb.component('studio.jb-editor-menu', {
           }, 
           title: 'Add Property', 
           onOK :{$: 'write-value', 
-            to :{$: 'studio.ref', path: '%$path%~%$dialogData/name%' }, 
+            to :{$: 'studio.ref', path: '%$path%~%$name%' }, 
             value: ''
           },
-          modal: 'true'
+          modal: 'true',
+          features :{$: 'var', name: 'name', mutable: true },
         }
       },
       {$: 'menu.separator' }, 
