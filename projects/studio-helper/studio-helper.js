@@ -84,6 +84,11 @@ jb.component('studio-helper.control-tree', {
   }
 })
 
+jb.component('studio-helper.pick-profile', {
+  type: 'control', 
+  impl :{$: 'studio.pick-profile', path: 'studio-helper-sample.button~action' }
+})
+
 jb.component('studio-helper.jb-editor', {
   type: 'control', 
   params: [{ id: 'path', defaultValue: 'studio-helper-dummy.label' }], 
@@ -146,11 +151,18 @@ jb.component('studio-helper-dummy.simple-label', {
   }
 })
 
+jb.component('studio-helper-sample.button', {
+  type: 'control', 
+  impl :{$: 'button', title: 'btn1' }, 
+  action :{$: 'dialog.close-all', delay: 200, OK: true }
+})
+
 jb.component('studio-helper-sample.control', {
   type: 'control', 
   impl :{$: 'group', 
     title: 'main', 
     controls: [
+      {$: 'button', title: '1.0' },
       {$: 'group', 
         title: '2.0', 
         controls: [
@@ -159,7 +171,6 @@ jb.component('studio-helper-sample.control', {
         ], 
         features :{$: 'css.padding', top: '33', left: '41', right: '22' }
       }, 
-      {$: 'label', title: '1.00' }
     ]
   }
 })

@@ -335,7 +335,7 @@ ui.stateChangeEm = new jb.rx.Subject();
 
 ui.setState = function(cmp,state,opEvent,watchedAt) {
 	if (opEvent && opEvent.interactive && cmp.orignalCtx.isParentOf(opEvent.srcCtx))
-		return
+		return;
 	jb.logPerformance('setState',cmp.ctx,state);
 	if (state == null && cmp.refresh)	
 		cmp.refresh();

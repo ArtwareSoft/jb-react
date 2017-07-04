@@ -116,7 +116,7 @@ jb.component('studio.select-profile', {
     style :{$: 'layout.vertical', spacing: 3 }, 
     controls: [
       {$: 'itemlist-container.search', 
-        title: 'Search', 
+        title :{$: 'studio.prop-name', path: '%$path%' }, 
         searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
         databind: '%$itemlistCntrData/search_pattern%', 
         style :{$: 'editable-text.mdl-input' }, 
@@ -262,6 +262,29 @@ jb.component('studio.select-profile', {
       {$: 'var', name: 'SearchPattern', value: '', mutable: true }, 
       {$: 'group.itemlist-container' }
     ]
+  }
+})
+
+jb.component('studio.pick-profile', {
+  description: 'picklist for picking a profile in a context', 
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'button', 
+    title :{ $firstSucceeding: [{$: 'studio.comp-name', path: '%$path%' }, 'select'] }, 
+    action :{$: 'open-dialog', 
+      style :{$: 'dialog.popup' }, 
+      content :{$: 'studio.select-profile', 
+        onSelect :{$: 'studio.set-comp', path: '%$path%', comp: '%%' }, 
+        type :{$: 'studio.param-type', path: '%$path%' },
+        path: '%$path%'
+      }, 
+      features: [
+        {$: 'group.auto-focus-on-first-input' }, 
+        {$: 'css.padding', right: '20' }
+      ]
+    }, 
+    style :{$: 'button.href' }, 
+    features :{$: 'studio.watch-path', path: '%$path%' }
   }
 })
 

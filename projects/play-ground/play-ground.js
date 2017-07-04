@@ -13,7 +13,11 @@ jb.component('play-ground.main', {
         title: 'a', 
         features :{$: 'feature.onKey2' }
       }, 
-      {$: 'label', title: 'b' }
+      {$: 'label', title: 'b' }, 
+      {$: 'button', 
+        title: 'click me', 
+        style :{$: 'button.mdl-raised' }
+      }
     ]
   }
 })

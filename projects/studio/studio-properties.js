@@ -269,7 +269,7 @@ jb.component('studio.property-tgp', {
             databind: '%$expanded%', 
             style :{$: 'editable-boolean.expand-collapse' }, 
             features: [
-              {$: 'studio.watch-path', path: '%$path%', includeChildren: true },
+              {$: 'studio.watch-path', path: '%$path%', includeChildren: true }, 
               {$: 'css', 
                 css: '{ position: absolute; margin-left: -20px; margin-top: 2px }'
               }, 
@@ -291,20 +291,9 @@ jb.component('studio.property-tgp', {
               }
             ]
           }, 
-          {$: 'picklist', 
-            databind :{$: 'studio.comp-name-ref', path: '%$path%' }, 
-            options :{$: 'studio.tgp-path-options', path: '%$path%' }, 
-            promote :{$: 'picklist.promote', 
-              groups :{$: 'list', items: ['layout'] }
-            }, 
-            style :{$: 'picklist.groups' }, 
-            features: [
-              {$: 'picklist.onChange', action: {$: 'write-value', to: '%$expanded%', value: true} },
-              {$: 'css', 
-                css: '{ padding: 0 0; width: 150px; font-size: 12px; height: 23px;}'
-              }, 
-              {$: 'studio.dynamic-options-watch-new-comp'}
-            ]
+          {$: 'group', 
+            controls: [{$: 'studio.pick-profile', path: '%$path%' }], 
+            features: [{$: 'css.width', width: '150' }]
           }
         ], 
         features :{$: 'css', css: '{ position: relative }' }
@@ -312,8 +301,8 @@ jb.component('studio.property-tgp', {
       {$: 'group', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          {$: 'studio.watch-path', path: '%$path%', includeChildren: true },
-          {$: 'watch-ref', ref: '%$expanded%', strongRefresh: true },
+          {$: 'studio.watch-path', path: '%$path%', includeChildren: true }, 
+          {$: 'watch-ref', ref: '%$expanded%', strongRefresh: true }, 
           {$: 'hidden', 
             showCondition :{
               $and: [
@@ -323,7 +312,7 @@ jb.component('studio.property-tgp', {
                 }, 
                 {
                   $notEmpty :{$: 'studio.val', path: '%$path%' }
-                },
+                }, 
                 {$: 'not-equals', 
                   item1 :{$: 'studio.comp-name', path: '%$path%' }, 
                   item2: 'custom-style'
@@ -338,7 +327,7 @@ jb.component('studio.property-tgp', {
       }
     ], 
     features: [
-      {$: 'studio.property-toolbar-feature', path: '%$path%' },
+      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
       {$: 'var', name: 'expanded', value: false, mutable: true }
     ]
   }

@@ -325,7 +325,7 @@ jb.component('studio.watch-path', {
   type: 'feature', 
   category: 'group:0', 
   params: [
-    { id: 'path', essential: true }, 
+    { id: 'path', as: 'string', essential: true }, 
     { id: 'strongRefresh', as: 'boolean' }, 
     { id: 'includeChildren', as: 'boolean' }
   ], 

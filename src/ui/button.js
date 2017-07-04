@@ -3,7 +3,7 @@ jb.type('button.style')
 jb.component('button', {
   type: 'control', category: 'control:100,common:100',
   params: [
-    { id: 'title', as: 'string', ref: true, essential: true, defaultTValue: 'click me' },
+    { id: 'title', as: 'string', essential: true, defaultTValue: 'click me', ref: true, dynamic: true },
     { id: 'action', type: 'action', essential: true, dynamic: true },
     { id: 'style', type: 'button.style', defaultValue: { $: 'button.mdl-raised' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
@@ -11,7 +11,10 @@ jb.component('button', {
   impl: ctx =>
     jb.ui.ctrl(ctx,{
       beforeInit: cmp => {
-        cmp.state.title = jb.val(ctx.params.title),
+        cmp.state.title = jb.val(ctx.params.title());
+        cmp.refresh = _ => 
+          cmp.setState({title: jb.val(ctx.params.title(cmp.ctx))});
+          
         cmp.clicked = ev => {
           if (ev && ev.ctrlKey && cmp.ctrlAction)
             cmp.ctrlAction()

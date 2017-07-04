@@ -1,11 +1,7 @@
-esc ' in string editing
-context (data) viewer lightly attached to popups after pick, drag & drop context
-choose action from properties should show select comp
-
-data-changes in event tracker should be shown first
-  support dynamic creation/deletion of resources
+bug - new button scenario does not select the right path
 
 new profile dialog - sort unique
+  'write-value' does not show in actions
 
 new page bug
 	no ok in dialog
@@ -17,16 +13,13 @@ table
   table with max items - add max items filter and button (button title 'XX more items')
 
 jbEditor
-  $: 'object' dialog - use table
-  $vars dialog - use table
-  navigation history - back to XX
-  open in menu - show all components
+  $vars support
+  opening jbEditor history - back to XX
   in/out special viewers by type
   	control
 
-$runActions - put in core for type action and action[], work with test
-
-navigation/editing history - back to XX 
+context (data) viewer lightly attached to popups after pick, drag & drop context
+select profile should use context object
 
 
 tooltip from material design
@@ -37,7 +30,5 @@ color picker from color palette of theme
 atom plugin with jbEditor
 
 
-keybaord only features editing
+keybaord only features editingp
 	padding tabs index
-
-search result - add link to o
