@@ -54,11 +54,9 @@ jb.studio.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPa
       val = val.items;
     if (Array.isArray(val)) return printArray(val,path);
     if (typeof val === 'object') return printObj(val,path);
-    if (typeof val === 'string' && val.indexOf('$jbProbe:') == 0)
-      val = val.split('$jbProbe:')[1];
     if (typeof val === 'function')
       result += val.toString();
-    else if (typeof val === 'string' && val.indexOf('\n') == -1) 
+    else if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1) 
       result += "'" + val + "'";
     else if (typeof val === 'string' && val.indexOf('\n') != -1) {
       result += "`" + val.replace(/`/g,'\\`') + "`"
@@ -166,7 +164,7 @@ jb.studio.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPa
     if (Array.isArray(val)) return flat_array(val);
     if (typeof val === 'object') return flat_obj(val);
     if (typeof val === 'function') return val.toString();
-    if (typeof val === 'string') 
+    if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1) 
       return "'" + val + "'";
     else
       return JSON.stringify(val); // primitives

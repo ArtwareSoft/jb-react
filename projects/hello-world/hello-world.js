@@ -44,7 +44,7 @@ jb.component('hello-world.main2', {
         controls: [
           {$: 'label', title: '%$text%' }, 
           {$: 'editable-text', 
-            title: 'text', 
+            title: "text'''", 
             databind: '%$text%', 
             style :{$: 'editable-text.mdl-input' }
           }
@@ -64,7 +64,7 @@ jb.component('hello-world.main2', {
             data :{
               $pipeline: [
                 '%text%', 
-                {$: 'object', huyt: '%%' }, 
+                {$: 'object', huyt: '%%', blbl: '%%*2' }, 
                 '%huyt%'
               ]
             }
