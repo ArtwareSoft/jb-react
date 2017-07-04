@@ -188,19 +188,15 @@ jb.component('studio.select-profile', {
                         item1: '%name%', 
                         item2: '%$SelectedCategory%'
                       }, 
-                      {$: 'and', 
-                        items: [
-                          {$: 'notEmpty', 
-                            item: '%$itemlistCntrData/search_pattern%'
-                          }, 
-                          {$: 'not-equals', item1: 'all', item2: '%name%' }
-                        ]
+                      {$: 'notEmpty', 
+                        item: '%$itemlistCntrData/search_pattern%'
                       }
                     ]
                   }
                 }, 
                 '%pts%', 
-                {$: 'itemlist-container.filter' }
+                {$: 'itemlist-container.filter' }, 
+                {$: 'unique', id: '%%', items: '%%' }
               ]
             }, 
             controls: [

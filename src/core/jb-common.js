@@ -424,22 +424,15 @@ jb.component('join', {
 	}
 });
 
-jb.component('unique',{
+jb.component('unique', {
 	params: [
 		{ id: 'id', as: 'string', dynamic: true, defaultValue: '%%' },
 		{ id: 'items', as: 'array', defaultValue: '%%'}
 	],
 	type: 'aggregator',
-	impl: function(context,id,items) {
-		var out = [];
-		var soFar = {};
-		for(var i=0;i<items.length;i++) {
-			var itemId = id( new jb.jbCtx(context, {data: items[i] } ));
-			if (soFar[itemId]) continue;
-			soFar[itemId] = true;
-			out.push(items[i]);
-		}
-		return out;
+	impl: (ctx,idFunc,items) => {
+		var _idFunc = idFunc.profile == '%%' ? x=>x : x => idFunc(ctx.setData(x));
+		return jb.unique(items,_idFunc);
 	}
 });
 
