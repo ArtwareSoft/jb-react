@@ -29,7 +29,7 @@ jb.component('group.wait', {
 })
 
 jb.component('watch-ref', {
-  type: 'feature', category: 'group:70',
+  type: 'feature', category: '70',
   params: [ 
     { id: 'ref', essential: true, as: 'ref', ref: true },
     { id: 'strongRefresh', as: 'boolean', description: 'redraw groups and itemlists' },
@@ -42,7 +42,7 @@ jb.component('watch-ref', {
 })
 
 jb.component('watch-observable', {
-  type: 'feature', category: 'group:70',
+  type: 'feature', category: '20',
   params: [ 
     { id: 'toWatch', essential: true },
     { id: 'strongRefresh', as: 'boolean', description: 'redraw groups and itemlists' },
@@ -56,6 +56,22 @@ jb.component('watch-observable', {
         };
         jb.ui.watchRef(ctx,cmp,virtualRef,strongRefresh,false)
       }
+  })
+})
+
+jb.component('bind-refs', {
+  type: 'feature', category: '20',
+  description: 'automatically update a mutual variable when other value is changing',
+  params: [ 
+    { id: 'watchRef', essential: true, as: 'ref', ref: true },
+    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+    { id: 'updateRef', essential: true, as: 'ref', ref: true },
+    { id: 'value', essential: true, as: 'single', dynamic: true },
+  ],
+  impl: (ctx,ref,includeChildren,updateRef,value) => ({
+      init: cmp => 
+        jb.ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
+          jb.writeValue(updateRef,value(cmp.ctx),ctx)) 
   })
 })
 

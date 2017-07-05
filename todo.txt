@@ -1,10 +1,10 @@
-bug - property sheet tgp - open last created
-
-bug - mdl-slide-toggle yes & no at the left
 
 new page bug
 	no ok in dialog
 	page is not added
+
+open profile chooser in suggestions
+	choose data
 
 table
   editable table with add + delete

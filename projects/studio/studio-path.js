@@ -312,6 +312,7 @@ jb.component('studio.name-of-ref', {
 
 
 jb.component('studio.is-new', {
+	type: 'boolean',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) => {
 		if (st.compsHistory.length == 0) return false;

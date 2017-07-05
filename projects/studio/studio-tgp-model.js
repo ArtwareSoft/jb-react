@@ -252,7 +252,7 @@ Object.assign(st,{
 			.map(x=>
 				x.match(single)[1])
 			.map(x=> 
-				x=='data' ? ['data','aggregator'] : [x]));
+				x=='data' ? ['data','aggregator','boolean'] : [x]));
 		var comp_arr = types.map(t=>
 			jb.entries(st.previewjb.comps)
 				.filter(c=>

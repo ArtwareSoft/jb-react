@@ -290,6 +290,7 @@ jb.component('studio.property-tgp', {
     title :{$: 'studio.prop-name', path: '%$path%' }, 
     controls: [
       {$: 'group', 
+        title: 'header', 
         style :{$: 'layout.horizontal', spacing: '0' }, 
         controls: [
           {$: 'editable-boolean', 
@@ -298,7 +299,7 @@ jb.component('studio.property-tgp', {
             features: [
               {$: 'studio.watch-path', path: '%$path%', includeChildren: true }, 
               {$: 'css', 
-                css: '{ position: absolute; margin-left: -20px; margin-top: 2px }'
+                css: '{ position: absolute; margin-left: -20px; margin-top: 5px }'
               }, 
               {$: 'hidden', 
                 showCondition :{
@@ -326,6 +327,7 @@ jb.component('studio.property-tgp', {
         features :{$: 'css', css: '{ position: relative }' }
       }, 
       {$: 'group', 
+        title: 'inner', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
           {$: 'studio.watch-path', path: '%$path%', includeChildren: true }, 
@@ -349,13 +351,27 @@ jb.component('studio.property-tgp', {
           }, 
           {$: 'css', 
             css: '{ margin-top: 9px; margin-left: -83px; margin-bottom: 4px;}'
+          }, 
+          {$: 'bind-refs', 
+            watchRef: '%$path%', 
+            updateRef: '%$expanded%', 
+            value :{
+              $or: [
+                '%$expanded%', 
+                {$: 'studio.is-new', path: '%$path%' }
+              ]
+            }
           }
         ]
       }
     ], 
     features: [
       {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
-      {$: 'var', name: 'expanded', value: {$:'studio.is-new', path: '%$path%'}, mutable: true },
+      {$: 'var', 
+        name: 'expanded', 
+        value :{$: 'studio.is-new', path: '%$path%' }, 
+        mutable: true
+      }
     ]
   }
 })
