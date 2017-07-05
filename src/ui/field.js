@@ -10,7 +10,7 @@ jb.component('field.databind', {
       jb.logError('bind-field: No databind in model', ctx.vars.$model, ctx);
     return {
       noUpdates: noUpdates,
-      init: function(cmp) {
+      beforeInit: function(cmp) {
         cmp.state.title = ctx.vars.$model.title();
         cmp.state.fieldId = jb.ui.field_id_counter++;
         var srcCtx = cmp.ctxForPick || cmp.ctx;
@@ -27,7 +27,7 @@ jb.component('field.databind', {
         }
         if (!noUpdates) {
           jb.ui.refObservable(ctx.vars.$model.databind,cmp)
-            .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // do not refresh by its own change
+            .filter(e=>!e || cmp.allowSelfRefresh || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
             .subscribe(e=>jb.ui.setState(cmp,null,e,ctx))
         }
       }

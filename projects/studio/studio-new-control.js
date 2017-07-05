@@ -1,45 +1,59 @@
 jb.component('studio.open-new-profile-dialog', {
   type: 'action', 
   params: [
-    { id: 'path', as: 'string', defaultValue :{$: 'studio.currentProfilePath' } },
+    {
+      id: 'path', 
+      as: 'string', 
+      defaultValue :{$: 'studio.currentProfilePath' }
+    }, 
     { id: 'type', as: 'string' }, 
-    { id: 'mode', option: 'insert,insert-control,update', defaultValue: 'insert' }, 
-    { id: 'onClose', type: 'action', dynamic: true}
+    {
+      id: 'mode', 
+      option: 'insert,insert-control,update', 
+      defaultValue: 'insert'
+    }, 
+    { id: 'onClose', type: 'action', dynamic: true }
   ], 
-  impl :{$: 'open-dialog',
+  impl :{$: 'open-dialog', 
     style :{$: 'dialog.studio-floating' }, 
-    content :{$: 'studio.select-profile', path: '%$path%' , 
-      onSelect :{$if: '%$mode% == "insert-control"', 
-          then : [
-            {$: 'studio.insert-control', path: '%$path%', comp: '%%' },
-            {$: 'on-next-timer', 
-              action: [
-                // {$: 'write-value', 
-                //   to: '%$studio/profile_path%', 
-                //   value: '%$modifiedPath%'
-                // }, 
-                {$: 'studio.open-properties' }, 
-                {$: 'studio.open-control-tree' }, 
-                {$: 'studio.refresh-preview' }
-              ]
-            }, 
-          ],
-          else :{$if: '%$mode% == "insert"', 
-            then: {$: 'studio.add-array-item', path: '%$path%', toAdd: { $object: { $: '%%'} } },
-            else: {$: 'studio.set-comp', path: '%$path%', comp: '%%' },
-          },
-        }, 
-      type: '%$type%'
+    content :{$: 'studio.select-profile', 
+      onSelect :{$: 'action.if', 
+        condition: '%$mode% == "insert-control"', 
+        then: [
+          {$: 'studio.insert-control', path: '%$path%', comp: '%%' }, 
+          {$: 'on-next-timer', 
+            action:{$:'studio.goto-last-edit'} 
+            // [
+            //   {$: 'studio.open-properties' }, 
+            //   {$: 'studio.open-control-tree' }, 
+            //   {$: 'studio.refresh-preview' }
+            // ]
+          }
+        ], 
+        else :{
+          $if: '%$mode% == "insert"', 
+          then :{$: 'studio.add-array-item', 
+            path: '%$path%', 
+            toAdd :{
+              $object :{$: '%%' }
+            }
+          }, 
+          else :{$: 'studio.set-comp', path: '%$path%', comp: '%%' }
+        }
+      }, 
+      type: '%$type%', 
+      path: '%$path%'
     }, 
     title: 'new %$type%', 
-//    modal: true, 
     features: [
       {$: 'css.height', height: '430', overflow: 'hidden' }, 
       {$: 'css.width', width: '450', overflow: 'hidden' }, 
       {$: 'dialog-feature.drag-title', id: 'new %$type%' }, 
       {$: 'dialog-feature.near-launcher-position', offsetLeft: 0, offsetTop: 0 }, 
-      {$: 'group.auto-focus-on-first-input' },
-      {$: 'dialog-feature.onClose', action:{ $call: 'onClose'}},
+      {$: 'group.auto-focus-on-first-input' }, 
+      {$: 'dialog-feature.onClose', 
+        action :{ $call: 'onClose' }
+      }
     ]
   }
 })
@@ -266,7 +280,7 @@ jb.component('studio.pick-profile', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'button', 
-    title :{ $firstSucceeding: [{$: 'studio.comp-name', path: '%$path%' }, 'select'] }, 
+    title :{ $firstSucceeding: [{$: 'studio.comp-name', path: '%$path%' }, ''] }, 
     action :{$: 'open-dialog', 
       style :{$: 'dialog.popup' }, 
       content :{$: 'studio.select-profile', 
@@ -279,7 +293,7 @@ jb.component('studio.pick-profile', {
         {$: 'css.padding', right: '20' }
       ]
     }, 
-    style :{$: 'button.href' }, 
+    style :{$: 'button.select-profile-style' }, 
     features :{$: 'studio.watch-path', path: '%$path%' }
   }
 })

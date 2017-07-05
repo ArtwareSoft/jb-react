@@ -130,41 +130,67 @@ jb.component('studio.properties-in-tgp',{
 })
 
 jb.component('studio.property-field', {
-	type: 'control',
-	params: [
-		{ id: 'path', as: 'string' },
-	],
-	impl: function(context,path) {
-		var fieldPT = 'studio.property-label';
-
-    var st = jb.studio;
-		var val = st.valOfPath(path);
-		var valType = typeof val;
-		var paramDef = st.paramDef(path);
-		if (!paramDef)
-			jb.logError('property-field: no param def for path '+path);
-		if (valType == 'function')
-			fieldPT = 'studio.property-javascript';
-		else if (paramDef.as == 'number')
-			fieldPT = 'studio.property-slider';
-		else if (paramDef.options)
-			fieldPT = 'studio.property-enum';
-		else if ( ['data','boolean'].indexOf(paramDef.type || 'data') != -1) {
-			if ( st.compNameOfPath(path) || valType == 'object')
-				fieldPT = 'studio.property-script';
-			else if (paramDef.type == 'boolean' && (valType == 'boolean' || val == null))
-				fieldPT = 'studio.property-boolean';
-			else
-				fieldPT = 'studio.property-primitive';
-		}
-		else if ( (paramDef.type || '').indexOf('[]') != -1 && isNaN(Number(path.split('~').pop())))
-			fieldPT = 'studio.property-script';
-		else 
-			fieldPT = 'studio.property-tgp';
-
-		return context.run({ $: fieldPT, path: path });
-	}
+  type: 'control',
+  params: [
+    { id: 'path', as: 'string' },
+  ],
+  impl: {$: 'control-by-condition', 
+        $vars: {
+          paramType: {$:'studio.param-type', path: '%$path%'},
+          paramDef: {$:'studio.param-def', path: '%$path%'},
+          isDataScript: {$and: [{$: 'studio.is-of-type', type: 'data,boolean', path: '%$path%'}, {$notEmpty: {$:'studio.comp-name', path: '%$path%'} }]},
+        },
+        controls: [
+          // {$: 'control-with-condition', 
+          //   condition: {$:'equals', item1: {$: 'type-of', obj: {$:'studio.val-of-path', path: '%$path%'}}, item2: 'function' },
+          //   control:{$:'studio.property-javascript', path: '%$path%'}},
+          {$: 'control-with-condition', condition: '%$isDataScript%', control:{$: 'studio.property-script', path: '%$path%'}},
+          {$: 'control-with-condition', condition: '%$paramDef/as%=="number"', control:{$:'studio.property-slider', path: '%$path%'}},
+          {$: 'control-with-condition', condition: '%$paramDef/as%=="boolean"', control:{$:'studio.property-boolean', path: '%$path%'}},
+          {$: 'control-with-condition', condition: {$: 'studio.is-of-type', type: 'data,boolean', path: '%$path%'}, control:{$:'studio.property-primitive', path: '%$path%'}},
+        ],
+        default :{$:'studio.property-tgp', path: '%$path%'}
+    },
+  //   features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
+  // }
 })
+
+// jb.component('studio.property-field2', {
+// 	type: 'control',
+// 	params: [
+// 		{ id: 'path', as: 'string' },
+// 	],
+// 	impl: function(context,path) {
+// 		var fieldPT = 'studio.property-label';
+
+//     var st = jb.studio;
+// 		var val = st.valOfPath(path);
+// 		var valType = typeof val;
+// 		var paramDef = st.paramDef(path);
+// 		if (!paramDef)
+// 			jb.logError('property-field: no param def for path '+path);
+// 		if (valType == 'function')
+// 			fieldPT = 'studio.property-javascript';
+// 		else if (paramDef.as == 'number')
+// 			fieldPT = 'studio.property-slider';
+// 		else if (paramDef.options)
+// 			fieldPT = 'studio.property-enum';
+// 		else if ( ['data','boolean'].indexOf(paramDef.type || 'data') != -1) {
+// 			if ( st.compNameOfPath(path) || valType == 'object')
+// 				fieldPT = 'studio.property-script';
+// 			else if (paramDef.type == 'boolean' && (valType == 'boolean' || val == null))
+// 				fieldPT = 'studio.property-boolean';
+// 			else
+// 				fieldPT = 'studio.property-primitive';
+// 		}
+// 		else if ( (paramDef.type || '').indexOf('[]') != -1 && isNaN(Number(path.split('~').pop())))
+// 			fieldPT = 'studio.property-script';
+// 		else 
+// 			fieldPT = 'studio.property-tgp';
+
+// 		return context.run({ $: fieldPT, path: path });
+// 	}
+// })
 
 jb.component('studio.property-label',{
 	type: 'control',
@@ -200,13 +226,14 @@ jb.component('studio.data-script-summary', {
   ], 
   impl: (ctx,path) => {
     var st = jb.studio;
-  	var val = st.valOfPath(path);
-  	if (st.compNameOfPath(path))
-  		return st.compNameOfPath(path);
-  	if (Array.isArray(val))
-  		return st.prettyPrint(val);
-  	if (typeof val == 'function')
-  		return 'javascript';
+    return st.prettyPrint(st.valOfPath(path));
+  	// var val = st.valOfPath(path);
+  	// if (st.compNameOfPath(path))
+  	// 	return st.compNameOfPath(path);
+  	// if (Array.isArray(val))
+  	// 	return st.prettyPrint(val);
+  	// if (typeof val == 'function')
+  	// 	return 'javascript';
   }
 })
 
@@ -328,7 +355,7 @@ jb.component('studio.property-tgp', {
     ], 
     features: [
       {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
-      {$: 'var', name: 'expanded', value: false, mutable: true }
+      {$: 'var', name: 'expanded', value: {$:'studio.is-new', path: '%$path%'}, mutable: true },
     ]
   }
 })

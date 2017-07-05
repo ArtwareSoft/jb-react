@@ -3,11 +3,14 @@ jb.component('editable-text.studio-primitive-text', {
   impl :{$: 'custom-style', 
       features :{$: 'field.databind' },
       template: (cmp,state,h) => h('input', { 
+          class: 'mdl-textfield__input',
           value: cmp.jbModel(), 
           onchange: e => cmp.jbModel(e.target.value), 
           onkeyup: e => cmp.jbModel(e.target.value,'keyup')
       }),
-	  css: `
+    css: `{ width: 367px}
+    `,
+	  css2: `
 { display: block; width: 146px; height: 19px; padding-left: 2px;
 	font-size: 12px; color: #555555; background-color: #fff; 
 	border: 1px solid #ccc; border-radius: 4px;
@@ -19,6 +22,30 @@ jb.component('editable-text.studio-primitive-text', {
 ::placeholder { color: #999; opacity: 1; }`
 	}
 })
+
+jb.component('button.select-profile-style', {
+  type: 'button.style',
+  impl :{$: 'custom-style', 
+   template: (cmp,state,h) => 
+        h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
+            value: state.title,
+            onmouseup:ev => cmp.clicked(ev),
+            onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
+        }),
+        css: `{ cursor: pointer;width: 367px }`
+  }
+})
+
+jb.component('studio.property-toolbar-style', {
+  type: 'button.style',
+  impl :{$: 'custom-style', 
+      template: (cmp,state,h) => h('i',{class: 'material-icons', 
+        onclick: ev => cmp.clicked(ev)
+      },'more_vert'),
+      css: `{ cursor: pointer;width: 16px; font-size: 16px; padding-top: 3px }`,
+  }
+})
+
 
 jb.component('editable-text.jb-editor-floating-input', {
   type: 'editable-text.style',
@@ -39,29 +66,42 @@ jb.component('editable-text.jb-editor-floating-input', {
   }
 })
 
-jb.component('button.studio-script',{
+jb.component('button.studio-script', {
   type: 'button.style',
   impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('div', { title: state.title, onclick: _ => cmp.clicked() }, 
-        h('div',{class:'inner-text'},state.title)),
-          css: `>.inner-text {
-  white-space: nowrap; overflow-x: hidden;
-  display: inline; height: 16px; 
-  padding-left: 4px; padding-top: 2px;
-  font: 12px "arial"; color: #555555; 
-}
-
-{
-  width: 149px;
-  border: 1px solid #ccc; border-radius: 4px;
-  cursor: pointer;
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); 
-  background: #eee;
-  white-space: nowrap; overflow-x: hidden;
-  text-overflow: ellipsis;
-}`, 
-}
+   template: (cmp,state,h) => 
+        h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
+            value: state.title,
+            onmouseup:ev => cmp.clicked(ev),
+            onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
+        }),
+        css: `{ cursor: pointer;width: 367px; opacity: 0.8; font-style: italic; }`
+  }
 })
+
+// jb.component('button.studio-script2', {
+//   type: 'button.style',
+//   impl :{$: 'custom-style', 
+//       template: (cmp,state,h) => h('div', { title: state.title, onclick: _ => cmp.clicked() }, 
+//         h('div',{class:'inner-text'},state.title)),
+//           css: `>.inner-text {
+//   white-space: nowrap; overflow-x: hidden;
+//   display: inline; height: 16px; 
+//   padding-left: 4px; padding-top: 2px;
+//   font: 12px "arial"; color: #555555; 
+// }
+
+// {
+//   width: 149px;
+//   border: 1px solid #ccc; border-radius: 4px;
+//   cursor: pointer;
+//   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); 
+//   background: #eee;
+//   white-space: nowrap; overflow-x: hidden;
+//   text-overflow: ellipsis;
+// }`, 
+// }
+// })
 
 
 jb.component('picklist.studio-enum', {
@@ -90,30 +130,18 @@ jb.component('property-sheet.studio-properties', {
   type: 'group.style', 
   impl :{$: 'custom-style', 
     features :{$: 'group.init-group' }, 
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property' },[
-          h('label',{ class: 'property-title', title: ctrl.title}, ctrl.title),
-          h('div',{ class: 'input-and-toolbar'}, [
-            h(ctrl),
-            h(ctrl.jbComp.toolbar)  
-          ])
-    ]))),
-    css: `>.property { margin-bottom: 5px; display: flex }
-      >.property:last-child { margin-bottom:0px }
-      >.property>.input-and-toolbar { display: flex; }
-      >.property>.input-and-toolbar>.toolbar { height: 16px; margin-left: 10px; }
-      >.property>.property-title {
-        min-width: 90px;
-        width: 90px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        margin-top:2px;
-        font-size:14px;
-        margin-right: 10px;
-        margin-left: 7px;
-      },
-      >.property>*:last-child { margin-right:0 }`
+    template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
+      h('tr',{ class: 'property' },[
+          h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
+          h('td',{ class: 'property-ctrl'},h(ctrl)),
+          h('td',{ class: 'property-toolbar'}, h(ctrl.jbComp.toolbar) ),
+      ])
+    )),
+    css: `
+      { width: 100% }
+      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px }
+      >.property>td { vertical-align: top; }
+    `,
   }
 })
 
@@ -121,15 +149,21 @@ jb.component('property-sheet.studio-properties-in-tgp', {
   type: 'group.style', 
   impl :{$: 'custom-style', 
     features :{$: 'group.init-group' }, 
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property' },[
-          h('label',{ class: 'property-title', title: ctrl.title}, ctrl.title),
-          h('div',{ class: 'input-and-toolbar'}, [
-            h(ctrl),
-            h(ctrl.jbComp.toolbar)  
-          ])
-    ]))),
-    css: `>.property { margin-bottom: 5px; display: flex }
+    template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
+      h('tr',{ class: 'property' },[
+          h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
+          h('td',{ class: 'property-ctrl'},h(ctrl)),
+          h('td',{ class: 'property-toolbar'}, h(ctrl.jbComp.toolbar) ),
+      ])
+    )),
+    css: `
+      { width: 100% }
+      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px }
+      >.property>.property-ctrl { }
+      >.property>td { vertical-align: top; }
+    `,
+
+    css2: `>.property { margin-bottom: 5px; display: flex }
       >.property:last-child { margin-bottom:0px }
       >.property>.input-and-toolbar { display: flex; }
       >.property>.input-and-toolbar>.toolbar { height: 16px; margin-left: 10px; }

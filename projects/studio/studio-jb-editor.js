@@ -46,25 +46,19 @@ jb.component('studio.jb-editor', {
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'group', 
     title: 'main', 
-    style :{$: 'layout.flex', align: 'space-between', direction: '' }, 
+    style :{$: 'layout.horizontal', align: 'space-between', direction: '', spacing: 3 }, 
     controls: [
       {$: 'tree', 
         nodeModel :{$: 'studio.jb-editor.nodes', path: '%$path%' }, 
         features: [
-          {$: 'css.class', 
-            class: 'jb-editor jb-control-tree'
-          }, 
+          {$: 'css.class', class: 'jb-editor jb-control-tree' }, 
           {$: 'tree.selection', 
-            onDoubleClick :{$: 'studio.open-jb-edit-property', 
-              path: '%$jbEditor_selection%'
-            }, 
+            onDoubleClick :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' }, 
             databind: '%$jbEditor_selection%', 
             autoSelectFirst: true
           }, 
           {$: 'tree.keyboard-selection', 
-            onEnter :{$: 'studio.open-jb-edit-property', 
-              path: '%$jbEditor_selection%'
-            }, 
+            onEnter :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' }, 
             onRightClickOfExpanded :{$: 'studio.open-jb-editor-menu', path: '%%' }, 
             autoFocus: true, 
             applyMenuShortcuts :{$: 'studio.jb-editor-menu', path: '%%' }
@@ -133,15 +127,12 @@ jb.component('studio.jb-editor', {
           }
         ], 
         features: [
-          {$: 'watch-ref', 
-            ref: '%$jbEditor_selection%', 
-            strongRefresh: true
-          }, 
+          {$: 'watch-ref', ref: '%$jbEditor_selection%', strongRefresh: true }, 
           {$: 'studio.watch-script-changes' }
         ]
       }
     ], 
-    features :{$: 'css.padding', top: '10' },
+    features :{$: 'css.padding', top: '10' }
   }
 })
 

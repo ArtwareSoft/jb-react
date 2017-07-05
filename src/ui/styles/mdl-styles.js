@@ -6,12 +6,10 @@ jb.component('mdl-style.init-dynamic', {
   impl: (ctx,query) => 
     ({
       afterViewInit: cmp => {
-        if (!$.contains(document.documentElement, cmp.base))
-          return;
         var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
         cmp.refreshMdl = _ => {
           jb.delay(1).then(_ => elems.forEach(el=> {
-            if (!$.contains(document, $(el)[0]))
+            if (!$.contains(document, el))
               return;
             componentHandler.downgradeElements(el);
             componentHandler.upgradeElement(el);
@@ -19,12 +17,12 @@ jb.component('mdl-style.init-dynamic', {
         };
         jb.delay(1).then(_ =>
       	 elems.forEach(el=>
-      	 	$.contains(document, $(el)[0]) && componentHandler.upgradeElement(el)))
+      	 	$.contains(document, el) && componentHandler.upgradeElement(el)))
       },
       destroy: cmp => 
       	 $.contains(document.documentElement, cmp.base) && 
           (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
-      	 	   $.contains(document, $(el)[0]) && componentHandler.downgradeElements(el))
+      	 	   $.contains(document, el) && componentHandler.downgradeElements(el))
     })
 })
 

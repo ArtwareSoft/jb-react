@@ -8,6 +8,7 @@ jb.component('play-ground.main', {
   type: 'control', 
   impl :{$: 'group', 
     title: '%$people%', 
+    style :{$: 'layout.flex' }, 
     controls: [
       {$: 'label', 
         title: 'a', 
@@ -15,7 +16,13 @@ jb.component('play-ground.main', {
       }, 
       {$: 'label', title: 'b' }, 
       {$: 'button', 
-        title: 'click me', 
+        title :{
+          $pipeline: [
+            'click me', 
+            '%%aa', 
+            {$: 'to-uppercase', text: '%%' }
+          ]
+        }, 
         style :{$: 'button.mdl-raised' }
       }
     ]

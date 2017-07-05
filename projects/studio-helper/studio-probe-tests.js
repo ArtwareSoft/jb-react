@@ -8,14 +8,6 @@ jb.component('probe-test.single-control', {
 	}
 })
 
-jb.component('probe-test.multiple-visits', {
-	 impl :{$: 'studio-probe-test', 
-		circuit: {$: 'button', title: {$pipeline:[{$list: [1,2]}, '%%']} },
-		probePath : 'title~$pipeline~1',
-		expectedVisits: 2, // pipeline with 2 elements
-	}
-})
-
 jb.component('probe-test.pt-by-example', {
 	 impl :{$: 'studio-probe-test', 
 		circuit: {$: 'group', 

@@ -17,8 +17,8 @@ jb.component('studio.property-toolbar', {
   impl :{$: 'button', 
     title: 'more...', 
     action :{$: 'studio.open-property-menu', path: '%$path%' }, 
-    style :{$: 'button.mdl-icon-12', icon: 'more_vert' }, 
-    features :{$: 'css.margin', top: '5', left: '4' }
+    style :{$: 'studio.property-toolbar-style' }, 
+//    features :{$: 'css.margin', top: '5', left: '4' }
   }
 })
 

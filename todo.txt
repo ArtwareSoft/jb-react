@@ -1,4 +1,6 @@
-bug - new button scenario does not select the right path
+bug - property sheet tgp - open last created
+
+bug - mdl-slide-toggle yes & no at the left
 
 new page bug
 	no ok in dialog
@@ -9,12 +11,19 @@ table
   test changeSelectionBeforeDelete
   table with max items - add max items filter and button (button title 'XX more items')
 
+data-editor (primitive)
+	javascript - should create js funtion and use eval
+		result preview at the bottom
+
 jbEditor
   $vars support
+  $if support - edit + should show then/else
+  javascript - should create js funtion and use eval
   opening jbEditor history - back to XX
   horizonal auto scroll bug
   in/out special viewers by type
   	control
+  resizer (dialog resizer)
 
 select profile 
 	show component description and usage at the bottom line
@@ -29,3 +38,7 @@ logo
 
 atom plugin with jbEditor
 
+data.switch
+	case: (codition,data)
+action.switch
+	case: (codition,action)	

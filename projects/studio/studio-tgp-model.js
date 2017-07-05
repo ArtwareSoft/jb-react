@@ -77,7 +77,7 @@ st.jbEditorTree = class {
 		if (!val) return [];
 		return (st.arrayChildren(path) || [])
 				.concat(this.sugarChildren(path,val) || [])
-				.concat(this.$objectChildren(path,val) || [])
+				.concat(this.specialCases(path,val) || [])
 				.concat(this.innerProfiles(path,val) || [])
 	}
 	move(path,draggedPath,index) {
@@ -107,12 +107,14 @@ st.jbEditorTree = class {
 			.filter(e=>st.valOfPath(e.path) != null || e.param.essential)
 			.map(e=>e.path)
 	}
-	$objectChildren(path,val) {
+	specialCases(path,val) {
 		if (jb.compName(val) == 'object')
 			return Object.getOwnPropertyNames(val)
 				.filter(p=>p!='$')
 				.filter(p=>p.indexOf('$jb_') != 0)
 				.map(p=>path+'~'+p);
+		if (jb.compName(val) == 'if')
+			return ['then','else']
 		return []
 	}
 }

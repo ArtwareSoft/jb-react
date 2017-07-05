@@ -77,6 +77,17 @@ jb.component('data.if', {
  		cond ? _then() : _else()
 });
 
+jb.component('action.if', {
+ 	type: 'action',
+ 	params: [
+ 		{ id: 'condition', type: 'boolean', as: 'boolean', essential: true},
+ 		{ id: 'then', type: 'action', essential: true, dynamic: true },
+ 		{ id: 'else', type: 'action', dynamic: true },
+ 	],
+ 	impl: (ctx,cond,_then,_else) =>
+ 		cond ? _then() : _else()
+});
+
 // jb.component('apply', {
 // 	description: 'run a function',
 //  	type: '*',
@@ -88,6 +99,17 @@ jb.component('data.if', {
 //  	  		return func(ctx);
 //  	}
 // });
+
+jb.component('jb-run', {
+ 	type: 'action',
+ 	params: [
+ 		{ id: 'profile', as: 'string', essential: true},
+ 		{ id: 'params', as: 'single' },
+ 	],
+ 	impl: (ctx,profile,params) =>
+ 		ctx.run(Object.assign({$:profile},params || {}))
+});
+
 
 jb.component('list', {
 	type: 'data',
@@ -313,15 +335,6 @@ jb.component('contains',{
 		{ id: 'inOrder', defaultValue: true, as:'boolean'},
 	],
 	impl: function(context,text,allText,inOrder) {
-      //var all = "";
-  //     allText.forEach(function(allTextItem) {
-		// if (allTextItem.outerHTML)
-		// 	all += allTextItem.outerHTML + allTextItem.querySelectorAll('input,textarea').get().map(function(item) { return item.value; }).join();
-		// else if (typeof(allTextItem) == 'object') 
-		// 	all += JSON.stringify(allTextItem);
-		// else 
-		// 	all += jb.tostring(allTextItem);
-  //     });
       var prevIndex = -1;
       for(var i=0;i<text.length;i++) {
       	var newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1);
@@ -695,3 +708,47 @@ jb.component('http.get', {
 	}
 });
 
+jb.component('data.switch', {
+  params: [ 
+  	{ id: 'cases', type: 'data.switch-case[]', as: 'array', essential: true, defaultValue: [] },
+  	{ id: 'default', dynamic: true },
+  ],
+  impl: (ctx,cases,defaultValue) => {
+  	for(var i=0;i<cases.length;i++)
+  		if (cases[i].condition(ctx))
+  			return cases[i].value(ctx)
+  	return defaultValue(ctx);
+  }
+})
+
+jb.component('data.case', {
+  type: 'data.switch-case',
+  params: [ 
+  	{ id: 'condition', type: 'boolean', essential: true, dynamic: true },
+  	{ id: 'value', essential: true, dynamic: true },
+  ],
+  impl: ctx => ctx.params
+})
+
+jb.component('action.switch', {
+  type: 'action',
+  params: [ 
+  	{ id: 'cases', type: 'action.switch-case[]', as: 'array', essential: true, defaultValue: [] },
+  	{ id: 'defaultAction', type: 'action', dynamic: true },
+  ],
+  impl: (ctx,cases,defaultAction) => {
+  	for(var i=0;i<cases.length;i++)
+  		if (cases[i].condition(ctx))
+  			return cases[i].action(ctx)
+  	return defaultAction(ctx);
+  }
+})
+
+jb.component('action.case', {
+  type: 'action.switch-case',
+  params: [ 
+  	{ id: 'condition', type: 'boolean', essential: true, dynamic: true },
+  	{ id: 'action', type: 'action' ,essential: true, dynamic: true },
+  ],
+  impl: ctx => ctx.params
+})

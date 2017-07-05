@@ -3,7 +3,7 @@ jb.component('editable-boolean.checkbox', {
   impl :{$: 'custom-style', 
       features :{$: 'field.databind' },
       template: (cmp,state,h) => h('input', { type: 'checkbox',
-        value: cmp.jbModel(), 
+        checked: state.model, 
         onchange: e => cmp.jbModel(e.target.checked), 
         onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  })
     }
@@ -14,9 +14,9 @@ jb.component('editable-boolean.checkbox-with-title', {
   impl :{$: 'custom-style', 
       features :{$: 'field.databind' },
       template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        value: cmp.jbModel(), 
+        checked: state.model, 
         onchange: e => cmp.jbModel(e.target.checked), 
-        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }), cmp.text()])
+        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }), state.text])
   }
 })
 
@@ -27,10 +27,10 @@ jb.component('editable-boolean.expand-collapse', {
       features :{$: 'field.databind' },
       template: (cmp,state,h) => h('div',{},[
           h('input', { type: 'checkbox',
-            value: cmp.jbModel(), 
+            checked: state.model, 
             onchange: e => cmp.jbModel(e.target.checked), 
-            onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }, cmp.text()),
-          h('i',{class:'material-icons noselect', onclick: _=> cmp.toggle() }, cmp.jbModel() ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
+            onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }, state.text),
+          h('i',{class:'material-icons noselect', onclick: _=> cmp.toggle() }, state.model ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
       ]),
       css: `>i { font-size:16px; cursor: pointer; }
           >input { display: none }`
@@ -42,8 +42,8 @@ jb.component('editable-boolean.mdl-slide-toggle', {
   impl :{$: 'custom-style', 
       template: (cmp,state,h) => h('label',{class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
         h('input', { type: 'checkbox', class: 'mdl-switch__input', id: 'switch_' + state.fieldId,
-          value: cmp.jbModel(), onchange: e => cmp.jbModel(e.target.checked) }),
-        h('span',{class:'mdl-switch__label'},cmp.text())
+          checked: state.model, onchange: e => cmp.jbModel(e.target.checked) }),
+        h('span',{class:'mdl-switch__label'},state.text)
       ]),
       features :[
           {$: 'field.databind' },

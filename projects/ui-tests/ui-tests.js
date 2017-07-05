@@ -686,6 +686,16 @@ jb.component('ui-test.editable-boolean.all-styles', {
           textForFalse: 'female',
           style :{$: 'editable-boolean.checkbox-with-title'},
       },
+      {$: 'editable-boolean',
+          title: 'male',
+          databind: '%$person/male%',
+          style :{$: 'editable-boolean.mdl-slide-toggle'},
+      },
+      {$: 'editable-boolean',
+          title: 'male',
+          databind: '%$person/male%',
+          style :{$: 'editable-boolean.expand-collapse'},
+      },
       { $: 'label', title: '%$person/male%' }
     ]
   },

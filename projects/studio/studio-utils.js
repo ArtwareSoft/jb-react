@@ -32,8 +32,27 @@ jb.component('studio.message', {
 
 jb.component('studio.redraw-studio', {
 	type: 'action',
-	impl: () => 
+	impl: ctx => 
     	st.redrawStudio && st.redrawStudio()
+})
+
+jb.component('studio.last-edit', {
+	type: 'data',
+	params: [ 
+		{ id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true },
+	],
+	impl: (ctx,justNow) => {
+		var now = new Date().getTime();
+		var lastEvent = st.compsHistory.slice(-1).map(x=>x.opEvent).filter(x=>x)
+			.filter(r=>
+				!justNow || now - r.timeStamp < 1000)[0];
+		return lastEvent && (lastEvent.insertedPath || lastEvent.path).join('~');
+	}
+})
+
+jb.component('studio.goto-last-edit', {
+	type: 'action',
+	impl: {$:'action.if', condition: {$: 'studio.last-edit'}, then: {$: 'studio.goto-path', path: {$: 'studio.last-edit'}} }
 })
 
 jb.component('studio.goto-path', {

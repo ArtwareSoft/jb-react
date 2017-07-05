@@ -56,11 +56,11 @@ jb.component('group.dynamic-titles', {
 jb.component('control-by-condition', {
   type: 'control', category: 'common:30',
   params: [
-    { id: 'controls', type: 'control-with-condition[]', essential: true },
+    { id: 'controls', type: 'control-with-condition[]', essential: true, dynamic: true },
     { id: 'default', type: 'control', dynamic: true, defaultValue: {$: 'label' ,title: ''}},
   ],
   impl: (ctx,controls,defaultCtrl) => {
-    var res = controls.filter(c=>c.condition)[0];
+    var res = controls().filter(c=>c.condition(ctx))[0];
     return res ? res.ctrl() : defaultCtrl();
   }
 })
@@ -68,7 +68,7 @@ jb.component('control-by-condition', {
 jb.component('control-with-condition', {
   type: 'control-with-condition',
   params: [
-    { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
+    { id: 'condition', type: 'boolean', essential: true, as: 'boolean', dynamic: true },
     { id: 'control', type: 'control', essential: true, dynamic: true },
   ],
   impl: (ctx,condition,ctrl) => ({condition: condition, ctrl: ctrl})

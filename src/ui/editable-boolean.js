@@ -6,20 +6,27 @@ jb.component('editable-boolean',{
     { id: 'databind', as: 'ref'},
     { id: 'style', type: 'editable-boolean.style', defaultValue: { $: 'editable-boolean.checkbox' }, dynamic: true },
     { id: 'title', as: 'string' , dynamic: true },
-    { id: 'textForTrue', as: 'string', defaultValue: 'yes' },
-    { id: 'textForFalse', as: 'string', defaultValue: 'no' },
+    { id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true },
+    { id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true  },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx => jb.ui.ctrl(ctx,{
   		init: cmp => {
+        cmp.allowSelfRefresh = true;
         cmp.toggle = () =>
           cmp.jbModel(!cmp.jbModel());
 
   			cmp.text = () => {
           if (!cmp.jbModel) return '';
-          return cmp.jbModel() ? ctx.params.textForTrue : ctx.params.textForFalse;
+          return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
         }
-  		}
+        cmp.refresh = _ => {
+          cmp.setState({model: cmp.jbModel(), text: cmp.text()});
+          cmp.refreshMdl && cmp.refreshMdl()
+        }
+        cmp.refresh();
+  		},
+//      afterViewInit: cmp => 
   	})
 })
 

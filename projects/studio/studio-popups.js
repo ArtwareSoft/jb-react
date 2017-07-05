@@ -20,8 +20,8 @@ jb.component('dialog.studio-floating', {
 	type: 'dialog.style',
 	params: [
 		{ id: 'id', as: 'string' },
-		{ id: 'width', as: 'number', default: 300},
-		{ id: 'height', as: 'number', default: 100},
+		{ id: 'width', as: 'number', defaultValue: 300},
+		{ id: 'height', as: 'number', defaultValue: 100},
 	],
 	impl :{$: 'custom-style',
 			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
@@ -41,7 +41,7 @@ jb.component('dialog.studio-floating', {
 			css: `{ position: fixed;
 						background: #F9F9F9; 
 						width: %$width%px; 
-						max-width: 800px;
+						max-width: 1200px;
 						min-height: %$height%px; 
 						overflow: auto;
 						border-radius: 4px; 
