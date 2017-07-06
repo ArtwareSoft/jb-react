@@ -36,7 +36,7 @@ jb.component('studio.choose-project', {
         features: [
             { $: 'itemlist.selection' }, 
             { $: 'itemlist.keyboard-selection', autoFocus: true, onEnter :{$: 'studio.goto-project' } },
-            { $: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', strongRefresh: true}
+            { $: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', }
         ],
         controls :{$: 'button', 
           title :{$: 'highlight', 

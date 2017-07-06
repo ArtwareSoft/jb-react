@@ -331,7 +331,7 @@ jb.component('studio.property-tgp', {
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
           {$: 'studio.watch-path', path: '%$path%', includeChildren: true }, 
-          {$: 'watch-ref', ref: '%$expanded%', strongRefresh: true }, 
+          {$: 'watch-ref', ref: '%$expanded%',  }, 
           {$: 'hidden', 
             showCondition :{
               $and: [
@@ -444,7 +444,7 @@ jb.component('studio.property-tgp-in-array', {
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
           {$: 'feature.if', showCondition: '%$expanded%'},
-          {$: 'watch-ref', ref: '%$expanded%', strongRefresh: true }, 
+          {$: 'watch-ref', ref: '%$expanded%',  }, 
           {$: 'css', css: '{ margin-left: 10px; margin-bottom: 4px;}' }, 
           {$: 'studio.disabled-support', path: '%$path%' }
         ]
@@ -459,7 +459,7 @@ jb.component('studio.property-tgp-in-array', {
       }, 
       {$: 'studio.watch-path', 
         path: '%$path%', 
-        strongRefresh: 'true', 
+         
         includeChildren: 'true'
       }
     ]
@@ -483,7 +483,7 @@ jb.component('studio.property-array', {
             }, 
             itemVariable: 'arrayItem', 
             features: [
-              {$: 'studio.watch-path', path: '%$path%', strongRefresh: true},
+              {$: 'studio.watch-path', path: '%$path%', },
               {$: 'itemlist.divider' }, 
               {$: 'itemlist.drag-and-drop' }
             ]

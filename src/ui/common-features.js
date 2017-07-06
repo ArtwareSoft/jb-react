@@ -32,12 +32,11 @@ jb.component('watch-ref', {
   type: 'feature', category: '70',
   params: [ 
     { id: 'ref', essential: true, as: 'ref', ref: true },
-    { id: 'strongRefresh', as: 'boolean', description: 'redraw groups and itemlists' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
   ],
-  impl: (ctx,ref,strongRefresh,includeChildren) => ({
+  impl: (ctx,ref,includeChildren) => ({
       init: cmp => 
-        jb.ui.watchRef(ctx,cmp,ref,strongRefresh,includeChildren)
+        jb.ui.watchRef(ctx,cmp,ref,includeChildren)
   })
 })
 
@@ -45,16 +44,15 @@ jb.component('watch-observable', {
   type: 'feature', category: '20',
   params: [ 
     { id: 'toWatch', essential: true },
-    { id: 'strongRefresh', as: 'boolean', description: 'redraw groups and itemlists' },
   ],
-  impl: (ctx,toWatch,strongRefresh) => ({
+  impl: (ctx,toWatch) => ({
       init: cmp => {
         if (!toWatch.subscribe)
           return jb.logError('watch-observable: non obsevable parameter');
         var virtualRef = { $jb_observable: cmp => 
           toWatch 
         };
-        jb.ui.watchRef(ctx,cmp,virtualRef,strongRefresh,false)
+        jb.ui.watchRef(ctx,cmp,virtualRef)
       }
   })
 })
@@ -82,13 +80,12 @@ jb.component('group.data', {
     { id: 'data', essential: true, dynamic: true, as: 'ref' },
     { id: 'itemVariable', as: 'string' },
     { id: 'watch', as: 'boolean' },
-    { id: 'strongRefresh', as: 'boolean', description: 'redraw groups and itemlists' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
   ],
-  impl: (ctx, data_ref, itemVariable,watch,strongRefresh,includeChildren) => ({
+  impl: (ctx, data_ref, itemVariable,watch,includeChildren) => ({
       init: cmp => {
         if (watch)
-          jb.ui.watchRef(ctx,cmp,data_ref(),strongRefresh,includeChildren)
+          jb.ui.watchRef(ctx,cmp,data_ref(),includeChildren)
       },
       extendCtxOnce: ctx => {
           var val = data_ref();
@@ -174,7 +171,7 @@ jb.component('feature.if', {
   params: [
     { id: 'showCondition', essential: true, dynamic: true },
   ],
-  impl: (ctx, condition,watch,strongRefresh) => ({
+  impl: (ctx, condition,watch) => ({
     templateModifier: (vdom,cmp,state) => 
         jb.toboolean(condition()) ? vdom : jb.ui.h('div',{style: {display: 'none'}})
   })

@@ -402,6 +402,7 @@ var jstypes = {
     'array': function(value) {
       if (typeof value == 'function' && value.profile)
         value = value();
+      value = val(value);
       if (Array.isArray(value)) return value;
       if (value == null) return [];
       return [value];

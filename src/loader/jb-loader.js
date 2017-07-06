@@ -33,7 +33,7 @@ var resources = {
         'src/ui/menu.js',
         'src/ui/itemlist.js',
         'src/ui/itemlist-container.js',
-        'src/ui/itemlist-with-groups.js',
+//        'src/ui/itemlist-with-groups.js',
         'src/ui/picklist.js',
         'src/ui/theme.js',
         'src/ui/icon.js',

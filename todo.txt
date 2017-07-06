@@ -1,7 +1,13 @@
+table
+          // todo: try not to assign to cmp.items in tabel.init
 
 new page bug
-	no ok in dialog
 	page is not added
+
+data-editor (primitive) that changes to script bug
+	add studio.watch-script-structure to the top properties
+
+'studio.pick-enum' - similar to 'studio.pick-profile'
 
 open profile chooser in suggestions
 	choose data
@@ -11,8 +17,7 @@ table
   test changeSelectionBeforeDelete
   table with max items - add max items filter and button (button title 'XX more items')
 
-data-editor (primitive)
-	javascript - should create js funtion and use eval
+sublime javascript editor - should create js funtion and use eval
 		result preview at the bottom
 
 jbEditor
@@ -38,7 +43,4 @@ logo
 
 atom plugin with jbEditor
 
-data.switch
-	case: (codition,data)
-action.switch
-	case: (codition,action)	
+itemlist with group - fix watch

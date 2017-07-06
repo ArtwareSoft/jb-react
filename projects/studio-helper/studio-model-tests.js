@@ -109,3 +109,4 @@ jb.component('studio-data-test.set-sugar-comp-override2', {
 			JSON.stringify(ctx.data) == '["a","b"]'
 	},
 })
+

@@ -14,17 +14,16 @@ jb.component('group.init-group', {
   type: 'feature', category: 'group:0',
   impl: ctx => ({
     init: cmp => {
-      cmp.initWatchByRef = cmp.initWatchByRef || ((refToWatch,includeChildren) =>
-        jb.ui.refObservable(refToWatch,cmp,includeChildren).subscribe(e => {
-              var ctrls = ctx.vars.$model.controls(cmp.ctx);
-              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c)).filter(x=>x)},e,ctx) 
-            } ))
+      cmp.calcCtrls = cmp.calcCtrls || (_ =>
+        ctx.vars.$model.controls(cmp.ctx).map(c=>jb.ui.renderable(c)).filter(x=>x))
+      if (!cmp.state.ctrls)
+        cmp.state.ctrls = cmp.calcCtrls()
+      cmp.refresh = cmp.refresh || (_ =>
+          cmp.setState({ctrls: cmp.calcCtrls() })) 
 
       if (cmp.ctrlEmitter)
         cmp.ctrlEmitter.subscribe(ctrls=>
               jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c)).filter(x=>x)},null,ctx))
-      if (!cmp.state.ctrls)
-        cmp.state.ctrls = ctx.vars.$model.controls(cmp.ctx).map(c=>jb.ui.renderable(c)).filter(x=>x)
     }
   })
 })

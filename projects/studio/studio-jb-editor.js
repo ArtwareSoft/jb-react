@@ -119,7 +119,7 @@ jb.component('studio.jb-editor', {
                 }, 
                 features :{$: 'watch-ref', 
                   ref :{$: 'studio.ref', path: '%$jbEditor_selection%' }, 
-                  strongRefresh: 'true'
+                  
                 }
               }
             ], 
@@ -127,7 +127,7 @@ jb.component('studio.jb-editor', {
           }
         ], 
         features: [
-          {$: 'watch-ref', ref: '%$jbEditor_selection%', strongRefresh: true }, 
+          {$: 'watch-ref', ref: '%$jbEditor_selection%',  }, 
           {$: 'studio.watch-script-changes' }
         ]
       }

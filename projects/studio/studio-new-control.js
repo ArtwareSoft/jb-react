@@ -247,10 +247,10 @@ jb.component('studio.select-profile', {
                   actions: [{$: 'dialog.close-containing-popup' }, { $call: 'onSelect' }]
                 }
               }, 
-              {$: 'watch-ref', ref: '%$SelectedCategory%', strongRefresh: true }, 
+              {$: 'watch-ref', ref: '%$SelectedCategory%',  }, 
               {$: 'watch-ref', 
                 ref: '%$itemlistCntrData/search_pattern%', 
-                strongRefresh: true
+                
               }, 
               {$: 'css.margin', top: '3', selector: '>li' }
             ]

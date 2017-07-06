@@ -63,7 +63,9 @@ class JbComponent {
 			    } catch(e) { jb.logException(e,'') }
 			}
 			render(props,state) {
-				if (!jbComp.template) return '';
+				if (!jbComp.template) 
+					return ui.h('span',{display: 'none'});
+				//console.log('render',jb.studio.shortTitle(this.ctx.path));
 				var vdom = jbComp.template(this,state,ui.h);
 				jbComp.modifierFuncs.forEach(modifier=> {
 					if (typeof vdom == 'object')
@@ -334,8 +336,8 @@ ui.limitStringLength = function(str,maxLength) {
 ui.stateChangeEm = new jb.rx.Subject();
 
 ui.setState = function(cmp,state,opEvent,watchedAt) {
-	if (opEvent && opEvent.interactive && cmp.orignalCtx.isParentOf(opEvent.srcCtx))
-		return;
+	// if (opEvent && opEvent.interactive && cmp.orignalCtx.isParentOf(opEvent.srcCtx))
+	// 	return;
 	jb.logPerformance('setState',cmp.ctx,state);
 	if (state == null && cmp.refresh)	
 		cmp.refresh();
@@ -365,14 +367,9 @@ ui.item = function(cmp,vdom,data) {
 	return vdom;
 }
 
-ui.watchRef = function(ctx,cmp,ref,strongRefresh,includeChildren) {
-  if (!ref) return;
-  if (strongRefresh && cmp.initWatchByRef) { // itemlist or group
-      cmp.initWatchByRef(ref,includeChildren)
-  } else {
+ui.watchRef = function(ctx,cmp,ref,includeChildren) {
     ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
         ui.setState(cmp,null,e,ctx))
-  }
 }
 
 // ****************** components ****************

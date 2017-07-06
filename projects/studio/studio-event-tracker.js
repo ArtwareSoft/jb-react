@@ -144,7 +144,6 @@ jb.component('studio.event-tracker', {
     ], 
     features :{$: 'watch-observable', 
       toWatch: ctx => st.previewjb.ui.stateChangeEm.debounceTime(500), 
-      strongRefresh: true
     }
   }
 })

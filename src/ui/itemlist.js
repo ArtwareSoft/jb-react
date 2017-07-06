@@ -15,48 +15,114 @@ jb.component('itemlist', {
 
 jb.component('itemlist.init', {
   type: 'feature',
-  params: [
-    { id: 'items', as: 'array', essential: true, dynamic: true, ref: true },
-    { id: 'itemVariableName', as: 'string' },
-  ],
-  impl: (context, items, itemVariableName,watch) => ({
+  impl: ctx => ({
       beforeInit: cmp => {
-        cmp.items2ctrls = function(items) {
-            if (context.vars.itemlistCntr)
-              context.vars.itemlistCntr.items = items;
-            var ctx2 = (cmp.refreshCtx ? cmp.refreshCtx() : cmp.ctx).setData(items);
-            var ctx3 = itemVariableName ? ctx2.setVars(jb.obj(itemVariableName,items)) : ctx2;
-            var ctrls = context.vars.$model.controls(ctx3);
-            return ctrls;
+        cmp.state.ctrls = calcCtrls();
+        
+        cmp.refresh = _ =>
+            cmp.setState({ctrls: calcCtrls()})  
+
+        if (ctx.vars.$model.watchItems)
+          jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
+
+        function controlsOfItem(item) {
+          return ctx.vars.$model.controls(cmp.ctx.setData(item).setVars(jb.obj(ctx.vars.$model.itemVariable,item)))
+            .map(c=>jb.ui.renderable(c)).filter(x=>x);
         }
 
-        cmp.itemsRef = items(cmp.ctx);
-        cmp.items = jb.toarray(jb.val(cmp.itemsRef));
-        cmp.state.ctrls = cmp.items2ctrls(cmp.items).map(c=>c.reactComp());
-
-        cmp.initWatchByRef = (refToWatch,includeChildren) =>
-            jb.ui.refObservable(refToWatch,cmp,includeChildren)
-              .subscribe(e=> {
-                var _items = jb.toarray(jb.val(items(cmp.ctx)));
-                if (_items.length != 0 && jb.compareArrays(_items,cmp.items))
-                  return;
-                cmp.items = _items;
-                var ctrls = cmp.items2ctrls(cmp.items); 
-                jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())},e,context)
-              });
+        function calcCtrls() {
+            var _items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
+            if (jb.compareArrays(_items,cmp.items))
+              return cmp.state.ctrls;
+            if (cmp.ctx.vars.itemlistCntr)
+              cmp.ctx.vars.itemlistCntr.items = _items;
+            cmp.items = _items;
+            return _items.map(item=>
+              Object.assign(controlsOfItem(item),{item:item}));
+        }
       },
   })
 })
 
-jb.component('itemlist.watch-items', {
-  type: 'feature', category: 'itemlist:70',
-  impl: (ctx,ref) => ({
-      init: cmp => {
-        if (cmp.initWatchByRef && jb.isRef(cmp.itemsRef)) 
-          cmp.initWatchByRef(cmp.itemsRef);
-      }
-  })
+jb.component('itemlist.ul-li', {
+  type: 'group.style',
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li', 
+          {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+          ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
+    css: `{ list-style: none; padding: 0; margin: 0;}
+    >li { list-style: none; padding: 0; margin: 0;}`,
+    features:{$: 'itemlist.init'},
+  },
 })
+
+jb.component('itemlist.horizontal', {
+  type: 'itemlist.style',
+  params: [,
+    { id: 'spacing', as: 'number', defaultValue: 0 }
+  ],
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('div',{ class: 'jb-drag-parent'},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('div', {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+          ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
+
+    css: `{display: flex}
+        >* { margin-right: %$spacing%px }
+        >*:last-child { margin-right:0 }`,
+    features:{$: 'itemlist.init'},
+  }
+})
+
+// jb.component('itemlist.init', {
+//   type: 'feature',
+//   params: [
+//     { id: 'itemVariableName', as: 'string' },
+//   ],
+//   impl: (ctx, itemVariableName) => ({
+//       beforeInit: cmp => {
+//         var $model = ctx.vars.itemlistModel;
+//         if (!$model) return;
+//         cmp.items2ctrls = function(items) {
+//             if (ctx.vars.itemlistCntr)
+//               ctx.vars.itemlistCntr.items = items;
+//             var ctx2 = (cmp.refreshCtx ? cmp.refreshCtx() : cmp.ctx).setData(items);
+//             var ctx3 = itemVariableName ? ctx2.setVars(jb.obj(itemVariableName,items)) : ctx2;
+//             var ctrls = ctx.vars.$model.controls(ctx3);
+//             return ctrls;
+//         }
+
+//         cmp.calcCtrls = _ =>
+//           cmp.items2ctrls(jb.toarray(jb.val($model.items(cmp.ctx)))).map(c=>jb.ui.renderable(c)).filter(x=>x)
+//         // if (!cmp.state.ctrls)
+//         //   cmp.state.ctrls = cmp.calcCtrls()
+//         cmp.refresh = _ =>
+//             cmp.setState({ctrls: cmp.calcCtrls() }) 
+
+//         if (ctx.vars.itemlistModel.watchItems)
+//           jb.ui.watchRef(ctx,cmp,$model.items(cmp.ctx))
+
+//         // cmp.initWatchByRef = (refToWatch,includeChildren) =>
+//         //     jb.ui.refObservable(refToWatch,cmp,includeChildren)
+//         //       .subscribe(e=> {
+//         //         var _items = jb.toarray(jb.val(items(cmp.ctx)));
+//         //         if (_items.length != 0 && jb.compareArrays(_items,cmp.items))
+//         //           return;
+//         //         cmp.items = _items;
+//         //         var ctrls = cmp.items2ctrls(cmp.items); 
+//         //         jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())},e,context)
+//         //       });
+//       },
+//   })
+// })
+
+// jb.component('itemlist.watch-items', {
+//   type: 'feature', category: 'itemlist:70',
+//   impl: ctx => ({
+//       init: cmp =>
+//         jb.ui.watchRef(ctx,cmp,ref)
+//   })
+// })
 
 jb.component('itemlist.divider', {
   type: 'feature',
@@ -226,36 +292,32 @@ jb.component('itemlist.shown-only-on-item-hover', {
 })
 
 
-jb.component('itemlist.ul-li', {
-  type: 'itemlist.style',
-  impl :{$:'itemlist.use-group-style', groupStyle :{$: 'group.ul-li' }}
-})
-
-jb.component('itemlist.horizontal', {
-  type: 'itemlist.style',
-  impl :{$:'itemlist.use-group-style', groupStyle :{$: 'layout.horizontal-wrapped' }}
-})
+// jb.component('itemlist.ul-li', {
+//   type: 'itemlist.style',
+//   impl :{$:'itemlist.use-group-style', groupStyle :{$: 'group.ul-li' }}
+// })
 
 
-jb.component('itemlist.use-group-style', {
-  type: 'itemlist.style',
-  params: [
-    { id: 'groupStyle', type: 'group.style', dynamic: true },
-  ],
-  impl :{$: 'style-by-control', __innerImplementation: true,
-    modelVar: 'itemlistModel',
-    control: {$: 'group', 
-      features : [
-        {$: 'group.init-group'},
-        {$: 'itemlist.init', items: '%$itemlistModel/items%', itemVariableName: 'items_array' },
-        {$if: '%$itemlistModel/watchItems%', then :{$: 'itemlist.watch-items'} }
-      ], 
-      style :{$call :'groupStyle'},
-      controls :{$: 'dynamic-controls', 
-        controlItems : '%$items_array%',
-        genericControl: '%$itemlistModel/controls%',
-        itemVariable: '%$itemlistModel/itemVariable%',
-      },
-    }
-  }
-})
+
+// jb.component('itemlist.use-group-style', {
+//   type: 'itemlist.style',
+//   params: [
+//     { id: 'groupStyle', type: 'group.style', dynamic: true },
+//   ],
+//   impl :{$: 'style-by-control', __innerImplementation: true,
+//     modelVar: 'itemlistModel',
+//     control: {$: 'group', 
+//       features : [
+//         {$: 'group.init-group'},
+// //        {$: 'itemlist.init', itemVariableName: 'items_array' },
+//         {$if: '%$itemlistModel/watchItems%', then :{$: 'watch-ref', ref: '%$itemlistModel/items%'} }
+//       ], 
+//       style :{$call :'groupStyle'},
+//       controls :{$: 'dynamic-controls', 
+//         controlItems : '%$itemlistModel/items%',
+//         genericControl: '%$itemlistModel/controls%',
+//         itemVariable: '%$itemlistModel/itemVariable%',
+//       },
+//     }
+//   }
+// })

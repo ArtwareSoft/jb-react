@@ -327,23 +327,34 @@ jb.component('studio.watch-path', {
   category: 'group:0', 
   params: [
     { id: 'path', as: 'string', essential: true }, 
-    { id: 'strongRefresh', as: 'boolean' }, 
-    { id: 'includeChildren', as: 'boolean' }
+    { id: 'includeChildren', as: 'boolean' },
   ], 
-  impl: (ctx,path,strongRefresh,includeChildren) => ({
+  impl: (ctx,path,includeChildren) => ({
       init: cmp => 
-      	jb.ui.watchRef(ctx,cmp,st.refOfPath(path),strongRefresh,includeChildren)
+      	jb.ui.watchRef(ctx,cmp,st.refOfPath(path),includeChildren)
   })
 })
 
 jb.component('studio.watch-script-changes', {
   type: 'feature',
-  impl: (ctx,strongRefresh) => ({
+  impl: (ctx) => ({
       init: cmp =>
         st.compsRefHandler.resourceChange.debounceTime(200).subscribe(e=>
             jb.ui.setState(cmp,null,e,ctx))
    })
 })
+
+// jb.component('studio.watch-script-structure', {
+//   params: [
+//     { id: 'path', as: 'string', essential: true }, 
+//     { id: 'includeChildren', as: 'boolean' }
+//   ],
+//   type: 'feature',
+//   impl: (ctx,path) => ({
+//       init: cmp =>
+//       	..
+//    })
+// })
 
 jb.component('studio.path-hyperlink', {
   type: 'control', 

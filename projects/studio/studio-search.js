@@ -91,7 +91,7 @@ jb.component('studio.search-list', {
           {$: 'itemlist.selection', databind: '' }, 
           {$: 'watch-ref', 
             ref: '%$itemlistCntrData/search_pattern%', 
-            strongRefresh: 'true'
+            
           }
         ]
       }

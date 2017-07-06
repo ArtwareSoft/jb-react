@@ -51,12 +51,11 @@ jb.component('table.init', {
         cmp.state.items = calcItems();
         cmp.fields = ctx.vars.$model.fields();
 
-        cmp.initWatchByRef = (refToWatch,includeChildren) =>
-            jb.ui.refObservable(refToWatch,cmp,includeChildren)
-              .subscribe(e=>
-                jb.ui.setState(cmp,{items: calcItems()},e));
+        cmp.refresh = _ =>
+            cmp.setState({items: calcItems()}) 
+
         if (ctx.vars.$model.watchItems)
-          cmp.initWatchByRef(ctx.vars.$model.items(cmp.ctx))
+          jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
 
         function calcItems() {
           cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));

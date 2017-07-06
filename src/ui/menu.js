@@ -131,7 +131,7 @@ jb.component('menu-style.pulldown', {
 	params: [
 	    { id: 'innerMenuStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-style.popup-as-option'}},
 	    { id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: {$: 'menu-style.option-line'}},
-	    { id: 'layout', type: 'group.style', dynamic: true, defaultValue :{$: 'layout.horizontal'}},
+	    { id: 'layout', type: 'group.style', dynamic: true, defaultValue :{$: 'itemlist.horizontal'}},
 	],
   	impl :{$: 'style-by-control', __innerImplementation: true,
     	control :{$: 'itemlist',
@@ -141,7 +141,7 @@ jb.component('menu-style.pulldown', {
 	    		leafOptionStyle: ctx => ctx.componentContext.params.leafOptionStyle,
 	    	},
 	    	watchItems: false,
-	    	style :{$:'itemlist.use-group-style', groupStyle :{$call: 'layout' }},
+	    	style :{$call: 'layout' },
     		items: '%$menuModel/options%',
 			controls :{$: 'menu.control', menu: '%$item%', style :{$: 'menu-style.popup-thumb'} },
     		features :{$: 'menu.selection'},
@@ -275,7 +275,7 @@ jb.component('menu.selection', {
   ],
   impl: ctx => ({
   	 onkeydown: true,
-     afterViewInit: function(cmp) {
+     afterViewInit: cmp => {
         cmp.base.setAttribute('tabIndex','0');
      	// putting the emitter at the top-menu only and listen at all sub menus
 
@@ -308,7 +308,8 @@ jb.component('menu.selection', {
 		  			cmp.ctx.run({$:'tree.regain-focus'});
 	    	})
 	    cmp.select = item => {
-	    	cmp.setState({selected: ctx.vars.topMenu.selected = item})
+	    	if (ctx.vars.topMenu.selected != item)
+	    		cmp.setState({selected: ctx.vars.topMenu.selected = item})
 	    }
 	    cmp.selected = _ =>
 	    	ctx.vars.topMenu.selected;

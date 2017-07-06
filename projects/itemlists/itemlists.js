@@ -118,7 +118,7 @@ jb.component('itemlists.table-with-search', {
             watchItems: 'true', 
             features :{$: 'watch-ref', 
               ref: '%$itemlistCntrData/search_pattern%', 
-              strongRefresh: 'true', 
+               
               includeChildren: ''
             }
           }
@@ -172,7 +172,7 @@ jb.component('itemlists.table-with-filters', {
             watchItems: 'true', 
             features :{$: 'watch-ref', 
               ref: '%$itemlistCntrData%', 
-              strongRefresh: 'true', 
+               
               includeChildren: 'true'
             }
           }
