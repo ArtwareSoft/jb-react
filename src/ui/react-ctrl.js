@@ -16,7 +16,7 @@ ui.ctrl = function(context,options) {
 		var defaultVar = '$theme.' + (profile.$ || '');
 		if (!profile.style && context.vars[defaultVar])
 			return ctx.run({$:context.vars[defaultVar]})
-		return context.params.style(ctx);
+		return context.params.style ? context.params.style(ctx) : {};
 	}
 }
 

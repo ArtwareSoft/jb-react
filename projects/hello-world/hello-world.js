@@ -14,7 +14,7 @@ jb.component('hello-world.main', {
       {$: 'label', title: 'b' }, 
       {$: 'group', 
         controls: [
-          {$: 'control-by-condition', 
+          {$: 'control.first-succeeding', 
             controls: [
               {$: 'control-with-condition', 
                 condition: '%$gender% == "male"', 
@@ -25,7 +25,6 @@ jb.component('hello-world.main', {
                 control :{$: 'label', title: 'female' }
               }
             ], 
-            default :{$: 'label', title: 'default' }
           }
         ], 
         features: [{$: 'var', name: 'gender', value: 'male' }]

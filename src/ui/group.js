@@ -52,23 +52,24 @@ jb.component('group.dynamic-titles', {
   })
 })
 
-jb.component('control-by-condition', {
+jb.component('control.first-succeeding', {
   type: 'control', category: 'common:30',
   params: [
-    { id: 'controls', type: 'control-with-condition[]', essential: true, dynamic: true },
-    { id: 'default', type: 'control', dynamic: true, defaultValue: {$: 'label' ,title: ''}},
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, essential: true , dynamic: true },
+    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
   ],
-  impl: (ctx,controls,defaultCtrl) => {
-    var res = controls().filter(c=>c.condition(ctx))[0];
-    return res ? res.ctrl() : defaultCtrl();
-  }
+  impl: ctx =>
+    jb.ui.ctrl(ctx)
 })
 
 jb.component('control-with-condition', {
   type: 'control-with-condition',
   params: [
-    { id: 'condition', type: 'boolean', essential: true, as: 'boolean', dynamic: true },
+    { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
     { id: 'control', type: 'control', essential: true, dynamic: true },
   ],
-  impl: (ctx,condition,ctrl) => ({condition: condition, ctrl: ctrl})
+  impl: (ctx,condition,ctrl) => 
+    condition && ctrl(ctx)
 })

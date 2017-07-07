@@ -134,24 +134,30 @@ jb.component('studio.property-field', {
   params: [
     { id: 'path', as: 'string' },
   ],
-  impl: {$: 'control-by-condition', 
+  impl: {$: 'control.first-succeeding', 
         $vars: {
           paramType: {$:'studio.param-type', path: '%$path%'},
           paramDef: {$:'studio.param-def', path: '%$path%'},
-          isDataScript: {$and: [{$: 'studio.is-of-type', type: 'data,boolean', path: '%$path%'}, {$notEmpty: {$:'studio.comp-name', path: '%$path%'} }]},
         },
+        title :{$: 'studio.prop-name', path: '%$path%' },
         controls: [
           // {$: 'control-with-condition', 
           //   condition: {$:'equals', item1: {$: 'type-of', obj: {$:'studio.val-of-path', path: '%$path%'}}, item2: 'function' },
           //   control:{$:'studio.property-javascript', path: '%$path%'}},
-          {$: 'control-with-condition', condition: '%$isDataScript%', control:{$: 'studio.property-script', path: '%$path%'}},
+          {$: 'control-with-condition', 
+              condition: {$and: [{$: 'studio.is-of-type', type: 'data,boolean', path: '%$path%'}, {$notEmpty: {$:'studio.comp-name', path: '%$path%'} }]}, 
+              control:{$: 'studio.property-script', path: '%$path%'}},
           {$: 'control-with-condition', condition: '%$paramDef/as%=="number"', control:{$:'studio.property-slider', path: '%$path%'}},
           {$: 'control-with-condition', condition: '%$paramDef/as%=="boolean"', control:{$:'studio.property-boolean', path: '%$path%'}},
           {$: 'control-with-condition', condition: {$: 'studio.is-of-type', type: 'data,boolean', path: '%$path%'}, control:{$:'studio.property-primitive', path: '%$path%'}},
+
+          {$:'studio.property-tgp', path: '%$path%'}          
         ],
-        default :{$:'studio.property-tgp', path: '%$path%'}
+        features: [
+          {$: 'studio.property-toolbar-feature', path: '%$path%' },
+        ]
+//        features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
     },
-  //   features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
   // }
 })
 

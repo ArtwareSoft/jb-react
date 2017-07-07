@@ -17,6 +17,17 @@ jb.component('group.div', {
   }
 })
 
+jb.component('first-succeeding.style', {
+  type: 'first-succeeding.style',
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => {
+      var ctrl = state.ctrls.filter(x=>x)[0];
+      return ctrl && h(ctrl)
+    },
+    features :{$: 'group.init-group'}
+  }
+})
+
 jb.component('group.ul-li', {
   type: 'group.style',
   impl :{$: 'custom-style',

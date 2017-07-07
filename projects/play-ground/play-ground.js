@@ -7,56 +7,25 @@ jb.resource('people',[
 jb.component('play-ground.main', {
   type: 'control', 
   impl :{$: 'group', 
-    title: '%$people%', 
-    style :{$: 'layout.flex' }, 
-    controls: [
-      {$: 'label', 
-        title: 'a', 
-        features :{$: 'feature.onKey2' }
-      }, 
-      {$: 'label', title: 'b' }, 
-      {$: 'button', 
-        title :{
-          $pipeline: [
-            'click me', 
-            '%%aa', 
-            {$: 'to-uppercase', text: '%%' }
-          ]
-        }, 
-        style :{$: 'button.mdl-raised' }
-      }
-    ]
-  }
-})
-
-jb.component('feature.onKey2', {
-  type: 'feature', category: 'feature:60',
-  params: [
-    { id: 'code', as: 'number' },
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
-  ],
-  impl: (ctx,code) => ({ 
-      // onkeydown: true,
-      // onkeyup: true,
-      afterViewInit: cmp=> {
-        cmp.base.setAttribute('tabIndex','0');
-
-        cmp.base.onkeydown = (e) => {
-//          e.stopPropagation();
-          console.log('a1');
-          return false;
-        } 
-    
-  //       cmp.base.onkeyup = (e) => {
-  // //        e.stopPropagation();
-  //         console.log('a2');
-  //         return false;
-  //       } 
-  //       // cmp.onkeydown.do(e=>
-        //   e.stopPropagation()).subscribe(_=>{console.log(1); return false})
-        // cmp.onkeyup.do(e=>
-        //   e.stopPropagation()).subscribe(_=>{console.log(2); return false;})
-      }
-  })
+      controls: [
+        {$: 'editable-boolean', databind: '%$male%'},
+        {$: 'control.first-succeeding', 
+          controls: [
+            {$: 'control-with-condition', 
+              condition: '%$male%', 
+              control :{$: 'label', title: 'male' }
+            }, 
+            {$: 'control-with-condition', 
+              condition: {$not: '%$male%'}, 
+              control :{$: 'label', title: 'female' }
+            }, 
+          ],
+          features: {$: 'watch-ref', ref: '%$male%'}
+        },
+      ],
+      features: [
+        {$: 'var', name: 'male', value: true , mutable: true }
+      ]
+    }
 })
 

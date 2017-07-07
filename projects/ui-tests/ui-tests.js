@@ -1103,11 +1103,11 @@ jb.component('inner-label3-tst', {
   impl :{$: 'inner-label2-tst', title: {$call: 'title' }}
 })
 
-jb.component('ui-test.control-by-condition', {
+jb.component('ui-test.control.first-succeeding', {
   impl :{$: 'ui-test',  
-    control:     {$: 'group', 
+    control :{$: 'group', 
       controls: [
-        {$: 'control-by-condition', 
+        {$: 'control.first-succeeding', 
           controls: [
             {$: 'control-with-condition', 
               condition: '%$gender% == "male"', 
@@ -1115,7 +1115,7 @@ jb.component('ui-test.control-by-condition', {
             }, 
           ], 
         },
-        {$: 'control-by-condition', 
+        {$: 'control.first-succeeding', 
           controls: [
             {$: 'control-with-condition', 
               condition: '%$gender% == "female"', 
@@ -1127,7 +1127,7 @@ jb.component('ui-test.control-by-condition', {
             }
           ], 
         },
-        {$: 'control-by-condition', 
+        {$: 'control.first-succeeding', 
           controls: [
             {$: 'control-with-condition', 
               condition: '%$gender% == "female"', 
@@ -1136,9 +1136,9 @@ jb.component('ui-test.control-by-condition', {
             {$: 'control-with-condition', 
               condition: '%$gender% == "lale"', 
               control :{$: 'label', title: 'male2' }
-            }
+            },
+            {$: 'label', title: 'default' }
           ], 
-          default :{$: 'label', title: 'default' }
         }
       ], 
       features: [{$: 'var', name: 'gender', value: 'male' }]
@@ -1147,4 +1147,33 @@ jb.component('ui-test.control-by-condition', {
   },
 })
 
-
+jb.component('ui-test.dynamic-first-succeeding', {
+  impl :{$: 'ui-test',  
+    control :{$: 'group', 
+      controls: [
+        {$: 'editable-boolean', databind: '%$male%'},
+        {$: 'button', title: 'change', 
+          action: {$:'write-value', to: '%$male%', value: false } 
+        },
+        {$: 'control.first-succeeding', 
+          controls: [
+            {$: 'control-with-condition', 
+              condition: '%$male%', 
+              control :{$: 'label', title: 'male' }
+            }, 
+            {$: 'control-with-condition', 
+              condition: {$not: '%$male%'}, 
+              control :{$: 'label', title: 'female' }
+            }, 
+          ],
+          features: {$: 'watch-ref', ref: '%$male%'}
+        },
+      ],
+      features: [
+        {$: 'var', name: 'male', value: true , mutable: true }
+      ]
+    },
+    action :{$: 'ui-action.click', selector: 'button' },
+    expectedResult :{$: 'contains', text: ['female'] },
+  },
+})

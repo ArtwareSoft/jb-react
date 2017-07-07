@@ -10,7 +10,7 @@ jb.component('studio.open-jb-editor', {
       dialogId: {$if : '%$newWindow%', then: '', else: 'jb editor'},
     },
     features :{$: 'var', name: 'jbEditor_selection', mutable: true },
-    style :{$: 'dialog.studio-floating', id: '%$dialogId%', width: '700', height: '400' }, 
+    style :{$: 'dialog.studio-floating', id: '%$dialogId%', width: '750', height: '400' }, 
     content :{$: 'studio.jb-editor', path: '%$path%' }, 
     menu :{$: 'button', 
       action :{$: 'studio.open-jb-editor-menu', path: '%$jbEditor_selection%' }, 
@@ -30,7 +30,7 @@ jb.component('studio.open-component-in-jb-editor', {
     $runActions: [
   {$: 'open-dialog',
     features :{$: 'var', name: 'jbEditor_selection', mutable: true },
-    style :{$: 'dialog.studio-floating', id: 'jb editor', width: '700', height: '400' }, 
+    style :{$: 'dialog.studio-floating', id: 'jb editor', width: '750', height: '400' }, 
     content :{$: 'studio.jb-editor', path: '%$compPath%' }, 
     menu :{$: 'button', 
       action :{$: 'studio.open-jb-editor-menu', path: '%$jbEditor_selection%' }, 
@@ -147,7 +147,7 @@ jb.component('studio.data-browse', {
     title: '%$title%', 
     controls :{$: 'group', 
       controls: [
-        {$: 'control-by-condition', 
+        {$: 'control.first-succeeding', 
           controls: [
             {$: 'control-with-condition', 
               condition :{$: 'data.is-of-type', 
@@ -173,18 +173,18 @@ jb.component('studio.data-browse', {
             {$: 'control-with-condition', 
               condition :{$: 'isNull', obj: '%$obj%' }, 
               control :{$: 'label', title: 'null' }
-            }
+            },
+            {$: 'tree', 
+              nodeModel :{$: 'tree.json-read-only', object: '%$obj%', rootPath: '%$title%' }, 
+              style :{$: 'tree.no-head' }, 
+              features: [
+                {$: 'css.class', class: 'jb-control-tree' }, 
+                {$: 'tree.selection' }, 
+                {$: 'tree.keyboard-selection' }, 
+                {$: 'css.width', width: '%$width%', minMax: 'max' }
+              ]
+            }            
           ], 
-          default :{$: 'tree', 
-            nodeModel :{$: 'tree.json-read-only', object: '%$obj%', rootPath: '%$title%' }, 
-            style :{$: 'tree.no-head' }, 
-            features: [
-              {$: 'css.class', class: 'jb-control-tree' }, 
-              {$: 'tree.selection' }, 
-              {$: 'tree.keyboard-selection' }, 
-              {$: 'css.width', width: '%$width%', minMax: 'max' }
-            ]
-          }
         }
       ]
     }

@@ -45,7 +45,7 @@ jb.component('itemlist.init', {
 })
 
 jb.component('itemlist.ul-li', {
-  type: 'group.style',
+  type: 'itemlist.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li', 
@@ -290,34 +290,3 @@ jb.component('itemlist.shown-only-on-item-hover', {
     css: '{ display: none }'
   })
 })
-
-
-// jb.component('itemlist.ul-li', {
-//   type: 'itemlist.style',
-//   impl :{$:'itemlist.use-group-style', groupStyle :{$: 'group.ul-li' }}
-// })
-
-
-
-// jb.component('itemlist.use-group-style', {
-//   type: 'itemlist.style',
-//   params: [
-//     { id: 'groupStyle', type: 'group.style', dynamic: true },
-//   ],
-//   impl :{$: 'style-by-control', __innerImplementation: true,
-//     modelVar: 'itemlistModel',
-//     control: {$: 'group', 
-//       features : [
-//         {$: 'group.init-group'},
-// //        {$: 'itemlist.init', itemVariableName: 'items_array' },
-//         {$if: '%$itemlistModel/watchItems%', then :{$: 'watch-ref', ref: '%$itemlistModel/items%'} }
-//       ], 
-//       style :{$call :'groupStyle'},
-//       controls :{$: 'dynamic-controls', 
-//         controlItems : '%$itemlistModel/items%',
-//         genericControl: '%$itemlistModel/controls%',
-//         itemVariable: '%$itemlistModel/itemVariable%',
-//       },
-//     }
-//   }
-// })

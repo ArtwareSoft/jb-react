@@ -337,24 +337,24 @@ jb.component('studio.watch-path', {
 
 jb.component('studio.watch-script-changes', {
   type: 'feature',
-  impl: (ctx) => ({
+  impl: ctx => ({
       init: cmp =>
         st.compsRefHandler.resourceChange.debounceTime(200).subscribe(e=>
             jb.ui.setState(cmp,null,e,ctx))
    })
 })
 
-// jb.component('studio.watch-script-structure', {
-//   params: [
-//     { id: 'path', as: 'string', essential: true }, 
-//     { id: 'includeChildren', as: 'boolean' }
-//   ],
-//   type: 'feature',
-//   impl: (ctx,path) => ({
-//       init: cmp =>
-//       	..
-//    })
-// })
+jb.component('studio.watch-script-structure', {
+  params: [
+    { id: 'path', as: 'string', essential: true }, 
+    { id: 'includeChildren', as: 'boolean' }
+  ],
+  type: 'feature',
+  impl: (ctx,path) => ({
+      init: cmp =>
+      	null
+   })
+})
 
 jb.component('studio.path-hyperlink', {
   type: 'control', 
