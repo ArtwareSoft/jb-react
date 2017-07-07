@@ -344,15 +344,18 @@ jb.component('studio.watch-script-changes', {
    })
 })
 
-jb.component('studio.watch-script-structure', {
+jb.component('studio.watch-typeof-script', {
   params: [
     { id: 'path', as: 'string', essential: true }, 
-    { id: 'includeChildren', as: 'boolean' }
   ],
   type: 'feature',
   impl: (ctx,path) => ({
       init: cmp =>
-      	null
+    	jb.ui.refObservable(st.refOfPath(path),cmp,true)
+    		.filter(e=>
+    			typeof e.oldVal != typeof e.newVal)
+    		.subscribe(e=>
+        		jb.ui.setState(cmp,null,e,ctx))
    })
 })
 

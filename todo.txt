@@ -1,8 +1,8 @@
-table
-          // todo: try not to assign to cmp.items in tabel.init
-
 new page bug
 	page is not added
+
+studio properties
+	clean toolbar & title from all controls
 
 data-editor (primitive) that changes to script bug
 	add studio.watch-script-structure to the top properties

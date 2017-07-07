@@ -130,35 +130,45 @@ jb.component('studio.properties-in-tgp',{
 })
 
 jb.component('studio.property-field', {
-  type: 'control',
-  params: [
-    { id: 'path', as: 'string' },
-  ],
-  impl: {$: 'control.first-succeeding', 
-        $vars: {
-          paramType: {$:'studio.param-type', path: '%$path%'},
-          paramDef: {$:'studio.param-def', path: '%$path%'},
-        },
-        title :{$: 'studio.prop-name', path: '%$path%' },
-        controls: [
-          // {$: 'control-with-condition', 
-          //   condition: {$:'equals', item1: {$: 'type-of', obj: {$:'studio.val-of-path', path: '%$path%'}}, item2: 'function' },
-          //   control:{$:'studio.property-javascript', path: '%$path%'}},
-          {$: 'control-with-condition', 
-              condition: {$and: [{$: 'studio.is-of-type', type: 'data,boolean', path: '%$path%'}, {$notEmpty: {$:'studio.comp-name', path: '%$path%'} }]}, 
-              control:{$: 'studio.property-script', path: '%$path%'}},
-          {$: 'control-with-condition', condition: '%$paramDef/as%=="number"', control:{$:'studio.property-slider', path: '%$path%'}},
-          {$: 'control-with-condition', condition: '%$paramDef/as%=="boolean"', control:{$:'studio.property-boolean', path: '%$path%'}},
-          {$: 'control-with-condition', condition: {$: 'studio.is-of-type', type: 'data,boolean', path: '%$path%'}, control:{$:'studio.property-primitive', path: '%$path%'}},
-
-          {$:'studio.property-tgp', path: '%$path%'}          
-        ],
-        features: [
-          {$: 'studio.property-toolbar-feature', path: '%$path%' },
-        ]
-//        features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
-    },
-  // }
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'control.first-succeeding', 
+    $vars: {
+      paramType :{$: 'studio.param-type', path: '%$path%' }, 
+      paramDef :{$: 'studio.param-def', path: '%$path%' }
+    }, 
+    title :{$: 'studio.prop-name', path: '%$path%' }, 
+    controls: [
+      {$: 'control-with-condition', 
+        condition :{
+          $and: [
+            {$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }, 
+            {
+              $notEmpty :{$: 'studio.comp-name', path: '%$path%' }
+            }
+          ]
+        }, 
+        control :{$: 'studio.property-script', path: '%$path%' }
+      }, 
+      {$: 'control-with-condition', 
+        condition: '%$paramDef/as%=="number"', 
+        control :{$: 'studio.property-slider', path: '%$path%' }
+      }, 
+      {$: 'control-with-condition', 
+        condition: '%$paramDef/as%=="boolean"', 
+        control :{$: 'studio.property-boolean', path: '%$path%' }
+      }, 
+      {$: 'control-with-condition', 
+        condition :{$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }, 
+        control :{$: 'studio.property-primitive', path: '%$path%' }
+      }, 
+      {$: 'studio.property-tgp', path: '%$path%' }
+    ], 
+    features: [
+      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
+      {$: 'studio.watch-typeof-script', path: '%$path%' }
+    ]
+  }
 })
 
 // jb.component('studio.property-field2', {
