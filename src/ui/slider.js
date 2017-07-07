@@ -23,7 +23,10 @@ jb.component('editable-number.slider', {
         {$: 'editable-text', 
             databind: '%$editableNumberModel/databind%',
             style: {$: 'editable-text.mdl-input-no-floating-label', width: 36 },
-            features: {$: 'slider-text.handleArrowKeys' },
+            features: [
+              {$: 'slider-text.handleArrowKeys' },
+              { $: 'css.margin', top : -3}
+            ],
         },
         {$: 'editable-number',
             databind: '%$editableNumberModel/databind%',

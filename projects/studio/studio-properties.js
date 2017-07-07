@@ -222,11 +222,6 @@ jb.component('studio.property-script', {
     { id: 'path', as: 'string' }
   ], 
   impl :{$: 'group', 
-    title :{$: 'studio.prop-name', path: '%$path%' }, 
-    features: [
-//          {$: 'studio.undo-support', path: '%$path%' }, 
-          {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
-    ],
     controls :{$: 'button', 
         title :{$: 'studio.data-script-summary', path: '%$path%' }, 
         action :{$: 'studio.open-jb-editor',path: '%$path%' } ,
@@ -259,20 +254,19 @@ jb.component('studio.property-boolean', {
   impl :{$: 'editable-boolean', 
     databind :{$: 'studio.ref', path: '%$path%' }, 
     style :{$: 'editable-boolean.mdl-slide-toggle' }, 
-    title :{$: 'studio.prop-name', path: '%$path%' }, 
     features: [
 //      {$: 'studio.undo-support', path: '%$path%' }, 
-      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
+//      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
       {$: 'css.width', width: '150' }
     ]
   }
 })
+
 jb.component('studio.property-enum',{
 	type: 'control',
 	params: [ {id: 'path', as: 'string' } ],
 	impl :{$: 'picklist', 
 		style :{$: 'picklist.studio-enum'},
-		title :{$: 'studio.prop-name', path: '%$path%' },
 		databind :{$: 'studio.ref', path: '%$path%' },
 		options :{$: 'studio.enum-options', path: '%$path%' },
 	}
@@ -286,7 +280,6 @@ jb.component('studio.property-slider', {
       paramDef :{$: 'studio.param-def', path: '%$path%' }
     }, 
     databind :{$: 'studio.ref', path: '%$path%' }, 
-    title :{$: 'studio.prop-name', path: '%$path%' }, 
     style :{$: 'editable-number.slider', width: '120' }, 
     min :{ $firstSucceeding: ['%$paramDef/min%', 0] }, 
     max :{ $firstSucceeding: ['%$paramDef/max%', 100] }, 
@@ -303,7 +296,7 @@ jb.component('studio.property-tgp', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'group', 
-    title :{$: 'studio.prop-name', path: '%$path%' }, 
+    // title :{$: 'studio.prop-name', path: '%$path%' }, 
     controls: [
       {$: 'group', 
         title: 'header', 
@@ -382,7 +375,7 @@ jb.component('studio.property-tgp', {
       }
     ], 
     features: [
-      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
+//      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
       {$: 'var', 
         name: 'expanded', 
         value :{$: 'studio.is-new', path: '%$path%' }, 
@@ -391,29 +384,6 @@ jb.component('studio.property-tgp', {
     ]
   }
 })
-
-jb.component('studio.property-custom-style', {
-  type: 'control', 
-  params: [ {id: 'path', as: 'string' } ], 
-  impl :{$: 'group', 
-    title :{$: 'studio.prop-name', path: '%$path%' }, 
-    features : [
-      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
-    ],
-    controls :{$: 'picklist', 
-            databind :{$: 'studio.comp-name-ref', path: '%$path%' }, 
-            options :{$: 'studio.tgp-path-options', path: '%$path%' }, 
-            style :{$: 'picklist.groups' }, 
-            features : [
-            {$: 'css', 
-              css: '{ padding: 0 0; width: 150px; font-size: 12px; height: 23px;}'
-            },
-            {$: 'studio.dynamic-options-watch-new-comp'}
-         ],
-    }
-  }
-})
-
 
 jb.component('studio.property-tgp-in-array', {
   type: 'control', 

@@ -303,7 +303,7 @@ jb.component('group.studio-properties-accordion', {
             )
           ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)        
     )),
-    css: `>.accordion-section>.header { display: flex; flex-direction: row; background: #eee; margin-bottom: 2px; justify-content: space-between}
+    css: `>.accordion-section>.header { cursor: pointer; display: flex; flex-direction: row; background: #eee; margin-bottom: 2px; justify-content: space-between}
 >.accordion-section>.header>button:hover { background: none }
 >.accordion-section>.header>button { margin-left: auto }
 >.accordion-section>.header>button>i { color: #; cursor: pointer }

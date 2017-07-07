@@ -102,14 +102,14 @@ jb.component('studio.property-primitive', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'group', 
-    title :{$: 'studio.prop-name', path: '%$path%' }, 
+//    title :{$: 'studio.prop-name', path: '%$path%' }, 
     controls: [
       {$: 'editable-text', 
         databind :{$: 'studio.ref', path: '%$path%' }, 
         style :{$: 'editable-text.studio-primitive-text' }, 
         features: [
 //          {$: 'studio.undo-support', path: '%$path%' }, 
-          {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
+//          {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
           {$: 'editable-text.helper-popup', 
             features :{$: 'dialog-feature.near-launcher-position' }, 
             control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
@@ -126,7 +126,7 @@ jb.component('studio.property-primitive', {
         value :{$: 'object', selected: '', options: [], path: '%$path%' }, 
         mutable: true
       }, 
-      {$: 'studio.property-toolbar-feature', path: '%$path%' }
+//      {$: 'studio.property-toolbar-feature', path: '%$path%' }
     ]
   }
 })

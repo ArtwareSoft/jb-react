@@ -1,13 +1,11 @@
 new page bug
 	page is not added
 
-studio properties
-	clean toolbar & title from all controls
-
 data-editor (primitive) that changes to script bug
 	add studio.watch-script-structure to the top properties
 
 'studio.pick-enum' - similar to 'studio.pick-profile'
+studio.property-enum
 
 open profile chooser in suggestions
 	choose data
