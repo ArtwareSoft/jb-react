@@ -317,7 +317,7 @@ jb.component('studio-helper-sample.picklist', {
     title: 'aa', 
     databind: 'ada', 
     options :{$: 'picklist.options', options: '%' }, 
-    style :{$: 'picklist.selection-list' }, 
+    style :{$: 'picklist.selection-list', width: '33' }, 
     features: [
       {$: 'css.padding' }, 
       {$: 'css.padding' }

@@ -29,3 +29,17 @@ jb.component('play-ground.main', {
     }
 })
 
+
+
+jb.component('play-ground.t', {
+  type: 'control', 
+  impl :{$: 'group', 
+    title: 't', 
+    controls: [
+      {$: 'button', 
+        title: 'click me', 
+        style :{$: 'button.mdl-icon', icon: 'b' }
+      }
+    ]
+  }
+})

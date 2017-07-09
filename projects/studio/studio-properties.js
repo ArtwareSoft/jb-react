@@ -339,7 +339,7 @@ jb.component('studio.property-tgp', {
         title: 'inner', 
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          {$: 'studio.watch-path', path: '%$path%', includeChildren: true }, 
+          {$: 'studio.watch-path', path: '%$path%' }, 
           {$: 'watch-ref', ref: '%$expanded%',  }, 
           {$: 'hidden', 
             showCondition :{

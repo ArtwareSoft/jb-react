@@ -323,7 +323,7 @@ jb.component('studio.open-new-page', {
       {$: 'write-value', 
         to :{$: 'studio.ref', path: '%$studio/project%.%$name%' }, 
         value :{$: 'json.parse', 
-          text: '{ "type": "control", "impl": {"$": "group", "title": "%$name%"}}'
+          text: '{ "type": "control", "impl": {"$": "group", "title": "%$name%", "controls": []}}'
         }
       }, 
       //{$: 'studio.goto-path', path: '%$studio/project%.%$name%' }, 

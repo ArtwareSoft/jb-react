@@ -60,7 +60,7 @@ class ImmutableWithPath {
     this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
     opEvent.newVal = jb.val(ref);
     if (opOnRef.$push)
-      opEvent.insertedPath = opEvent.path.concat(opEvent.newVal.length - 1);
+      opEvent.insertedPath = opEvent.path.concat([opEvent.newVal.length - 1]);
     opEvent.resourceVersionsAfter = this.resourceVersions;
     this.resourceChange.next(opEvent);
     return ref;

@@ -258,7 +258,7 @@ Object.assign(st, {
 		var ref = st.refOfPath(path+'~'+prop);
 		if (val[prop] === undefined)
 			jb.writeValue(ref,[]);
-		if (!Array.isArray(val[prop])) 
+		else if (!Array.isArray(val[prop])) // wrap
 			jb.writeValue(ref,[val[prop]]);
 		ref = st.refOfPath(path+'~'+prop);
 		return ref;
