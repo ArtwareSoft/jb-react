@@ -36,8 +36,8 @@ jb.component('open-dialog', {
 				}
 				dialog.onOK = ctx2 => 
 					context.params.onOK(cmp.ctx.extendVars(ctx2));
-				cmp.dialogClose = _ => 
-					dialog.close();
+				cmp.dialogClose = args => 
+					dialog.close(args);
 				cmp.recalcTitle = (e,srcCtx) => 
 					jb.ui.setState(cmp,{title: ctx.params.title(ctx)},e,srcCtx)
 			},
@@ -395,21 +395,22 @@ jb.ui.dialogs = {
 			$('body').prepend('<div class="modal-overlay"></div>');
 
 		dialog.close = function(args) {
-			dialog.em.next({type: 'close'});
-			dialog.em.complete();
+			return Promise.resolve().then(_=>{
+				if (dialog.closing) return;
+				dialog.closing = true;
+				if (dialog.onOK && args && args.OK)
+					return dialog.onOK(context)
+			}).then( _ => {
+				dialog.em.next({type: 'close'});
+				dialog.em.complete();
 
-			var index = self.dialogs.indexOf(dialog);
-			if (index != -1)
-				self.dialogs.splice(index, 1);
-			if (dialog.onOK && args && args.OK) 
-				try { 
-					dialog.onOK(context);
-				} catch (e) {
-					console.log(e);
-				}
-			if (dialog.modal)
-				$('.modal-overlay').remove();
-			jb.ui.dialogs.redraw();
+				var index = self.dialogs.indexOf(dialog);
+				if (index != -1)
+					self.dialogs.splice(index, 1);
+				if (dialog.modal)
+					$('.modal-overlay').remove();
+				jb.ui.dialogs.redraw();
+			})				
 		},
 		dialog.closed = _ =>
 			self.dialogs.indexOf(dialog) == -1;

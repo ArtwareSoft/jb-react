@@ -139,36 +139,48 @@ jb.component('firstSucceeding', {
 			if (jb.val(items[i]))
 				return items[i];
 		// return last one if zero or empty string			
-		var last = items.pop();
+		var last = items.slice(-1)[0];
 		return (last != null) && jb.val(last);
 	}
 });
 
-jb.component('objectProperties', {
+jb.component('first', {
 	type: 'data',
 	params: [
-		{ id: 'object', defaultValue: '%%', as: 'single' }
+		{ id: 'items', type: "data", as: 'array', composite: true }
 	],
-	impl: (ctx,object) =>
-		jb.ownPropertyNames(object)
+	impl: (ctx,items) => items[0]
+});
+
+jb.component('property-names', {
+	type: 'data',
+	params: [
+		{ id: 'obj', defaultValue: '%%', as: 'single' }
+	],
+	impl: (ctx,obj) =>
+		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0)
 })
 
-// jb.component('objectToArray',{
-// 	type: 'data',
-// 	params: [
-// 		{ id: 'object', defaultValue: '%%', as: 'single' }
-// 	],
-// 	impl: (context,object) =>
-// 		jb.ownPropertyNames(object).map((id,index) => 
-// 			({id: id, val: object[id], index: index}))
-// });
+jb.component('assign', {
+	type: 'data',
+	params: [
+		{ id: 'property', essential: true, as: 'string' },
+		{ id: 'value', essential: true },
+		{ id: 'obj', defaultValue: '%%', as: 'single' },
+	],
+	impl: (ctx,prop,val,obj) =>
+		Object.assign({},obj,jb.obj(prop,val))
+})
 
-// jb.component('propertyName',{
-// 	type: 'data',
-// 	impl: function(context) {
-// 		return context.data && context.data.$jb_property;
-// 	}
-// });
+jb.component('properties',{
+	type: 'data',
+	params: [
+		{ id: 'obj', defaultValue: '%%', as: 'single' }
+	],
+	impl: (context,obj) =>
+		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) => 
+			({id: id, val: obj[id], index: index}))
+});
 
 jb.component('prefix', {
 	type: 'data',
@@ -484,13 +496,26 @@ jb.component('object',{
 	}
 });
 
-jb.component('stringify', {
+jb.component('json.stringify', {
 	params: [
 		{ id: 'value', defaultValue: '%%', as:'single'},
 		{ id: 'space', as: 'string', description: 'use space or tab to make pretty output' }
 	],
 	impl: (context,value,space) =>		
 			JSON.stringify(value,null,space)
+});
+
+jb.component('json.parse', {
+	params: [
+		{ id: 'text', as: 'string' }
+	],
+	impl: (ctx,text) =>	{
+		try {
+			return JSON.parse(text)
+		} catch (e) {
+			jb.logException(e,'json parse');
+		}
+	}
 });
 
 jb.component('split', {
@@ -613,22 +638,23 @@ jb.component('runActions', {
 	}
 });
 
-jb.component('delay', {
-	params: [
-		{ id: 'mSec', type: 'number', defaultValue: 1}
-	],
-	impl: ctx => jb.delay(ctx.params.mSec)
-})
+// jb.component('delay', {
+// 	params: [
+// 		{ id: 'mSec', type: 'number', defaultValue: 1}
+// 	],
+// 	impl: ctx => jb.delay(ctx.params.mSec)
+// })
 
-jb.component('on-next-timer',{
+jb.component('on-next-timer', {
+	description: 'run action after delay',
 	type: 'action',
 	params: [
-		{ id: 'action', type: 'action', dynamic: true }
+		{ id: 'action', type: 'action', dynamic: true, essential: true },
+		{ id: 'mSec', type: 'number', defaultValue: 1}
 	],
-	impl: (ctx,action) => {
-		jb.delay(1,ctx).then(()=>
+	impl: (ctx,action,mSec) =>
+		jb.delay(mSec,ctx).then(()=>
 			action())
-	}
 })
 
 jb.component('extract-prefix',{

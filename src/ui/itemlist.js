@@ -139,6 +139,8 @@ jb.component('itemlist.selection', {
   type: 'feature',
   params: [
     { id: 'databind', as: 'ref', defaultValue: '%itemlistCntrData/selected%' },
+    { id: 'selectedToDatabind', dynamic: true ,defaultValue: '%%' },
+    { id: 'databindToSelected', dynamic: true ,defaultValue: '%%' },
     { id: 'onSelection', type: 'action', dynamic: true },
     { id: 'onDoubleClick', type: 'action', dynamic: true },
     { id: 'autoSelectFirst', type: 'boolean'},
@@ -155,13 +157,13 @@ jb.component('itemlist.selection', {
           .distinctUntilChanged()
           .filter(x=>x)
           .subscribe( selected => {
-              ctx.params.databind && jb.writeValue(ctx.params.databind,selected);
+              writeSelectedToDatabind(selected);
               cmp.setState({selected: selected});
               ctx.params.onSelection(cmp.ctx.setData(selected));
           });
 
         jb.ui.refObservable(ctx.params.databind,cmp).subscribe(e=>
-          jb.ui.setState(cmp,{selected: jb.val(e.ref)},e))
+          jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
 
         // double click
         var clickEm = cmp.clickEmitter.takeUntil( cmp.destroyed );
@@ -180,7 +182,13 @@ jb.component('itemlist.selection', {
         function autoSelectFirst() {
           if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
               cmp.selectionEmitter.next(cmp.items[0])
-        };
+        }
+        function writeSelectedToDatabind(selected) {
+          return ctx.params.databind && jb.writeValue(ctx.params.databind,ctx.params.selectedToDatabind(ctx.setData(selected)))
+        }
+        function selectedOfDatabind() {
+          return ctx.params.databind && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(ctx.params.databind))))
+        }
         autoSelectFirst();
     },
     extendItem: (cmp,vdom,data) => {

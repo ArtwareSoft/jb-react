@@ -1,8 +1,7 @@
-new page bug
-	page is not added
+insert button does not work
+primitive script bug - show also array
 
-data-editor (primitive) that changes to script bug
-	add studio.watch-script-structure to the top properties
+essential -> mandatory
 
 'studio.pick-enum' - similar to 'studio.pick-profile'
 studio.property-enum

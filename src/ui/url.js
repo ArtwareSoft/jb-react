@@ -26,7 +26,7 @@ jb.component('url-history.map-url-to-resource', {
 	    function objToUrl(obj) {
 	    	var split_base = jb.ui.location.path().split(`/${base}`);
 	    	var url = split_base[0] + `/${base}/` + 
-	    		params.map(p=>obj[p]||'')
+	    		params.map(p=>jb.tostring(obj[p])||'')
 	    		.join('/');
 	    	return url.replace(/\/*$/,'');
 		}
@@ -46,7 +46,7 @@ jb.component('url-history.map-url-to-resource', {
 		    	jb.ui.location.push(url);
 		    	var obj = urlToObj(url);
 		    	params.forEach(p=>
-		    		jb.writeValue(jb.objectProperty(jb.resource(resource),p,'ref',true),obj[p]));
+		    		jb.writeValue(jb.objectProperty(jb.resource(resource),p,'ref',true),jb.tostring(obj[p])));
 		    	context.params.onUrlChange(context.setData(url));
 	    	})
 	}

@@ -301,36 +301,43 @@ jb.component('studio.pick-profile', {
 jb.component('studio.open-new-page', {
   type: 'action', 
   impl :{$: 'open-dialog', 
-    modal: true, 
-    title: 'New Page', 
-    features :{$: 'var', name: 'name', mutable: true },
     style :{$: 'dialog.dialog-ok-cancel', 
       features :{$: 'dialog-feature.auto-focus-on-first-input' }
     }, 
     content :{$: 'group', 
+      style :{$: 'group.div' }, 
       controls: [
         {$: 'editable-text', 
+          title: 'page name', 
           databind: '%$name%', 
+          style :{$: 'editable-text.mdl-input' }, 
           features :{$: 'feature.onEnter', 
             action :{$: 'dialog.close-containing-popup' }
-          }, 
-          title: 'page name', 
-          style :{$: 'editable-text.mdl-input' }
+          }
         }
       ], 
-      features :{$: 'css.padding', top: '14', left: '11' }, 
-      style :{$: 'group.div' }
+      features :{$: 'css.padding', top: '14', left: '11' }
     }, 
-    onOK: function (ctx) {
-        var id = ctx.exp('%$studio/project%.%$name%');
-        var profile = {
-            type: 'control',
-            impl: { $: 'group', title: ctx.exp('%$name%') }
-        };
-        jb.studio.newComp(id, profile);
-        ctx.run({ $: 'write-value', to: '%$studio/page%', value: '%$name%' });
-        ctx.run({ $: 'write-value', to: '%$studio/profile_path%', value: id });
-    }
+    title: 'New Page', 
+    onOK: [
+      {$: 'write-value', 
+        to :{$: 'studio.ref', path: '%$studio/project%.%$name%' }, 
+        value :{$: 'json.parse', 
+          text: '{ "type": "control", "impl": {"$": "group", "title": "%$name%"}}'
+        }
+      }, 
+      //{$: 'studio.goto-path', path: '%$studio/project%.%$name%' }, 
+      {$: 'write-value', to: '%$studio/profile_path%', value: '%$studio/project%.%$name%~impl' },
+      {$: 'studio.open-control-tree'},
+      {$: 'tree.regain-focus' },
+      {$: 'on-next-timer',
+        description: 'we need to wait for the itemlist to be updated with new page. However, the mutable name var is lost on next timer so we put it in context var as newName', 
+        $vars: { newName: '%$name%'},
+        action: {$: 'write-value', to: '%$studio/page%', value: '%$newName%' },
+      }
+    ], 
+    modal: true, 
+    features :{$: 'var', name: 'name', mutable: true }
   }
 })
 

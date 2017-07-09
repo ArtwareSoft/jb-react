@@ -79,11 +79,7 @@ Object.assign(st, {
 			return;
 		var _draggedPath = draggedRef.$jb_path.join('~');
 		if (dest) {
-			console.log(1,st.val(dest));
-			console.log(11,st.valOfPath(path));
 			st._delete(_draggedPath);
-			console.log(12,st.valOfPath(path));
-			console.log(2,st.val(dest));
 			var _index = (index == -1) ? jb.val(dest).length : index;
 			st.splice(dest,[[_index,0,dragged]]);
 		}
@@ -102,8 +98,9 @@ Object.assign(st, {
 		}
 	},
 
-	newComp:(path,profile) =>
-        st.compsRefHandler.doOp({$jb_path: [path]},{$set: profile}),
+//	newComp:(path,profile) =>
+//        st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] })
+//        st.compsRefHandler.doOp({$jb_path: [path]},{$set: profile}),
 
 	wrapWithGroup: (path) =>
 		st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] }),
@@ -343,6 +340,17 @@ jb.component('studio.watch-script-changes', {
             jb.ui.setState(cmp,null,e,ctx))
    })
 })
+
+jb.component('studio.watch-components', {
+  type: 'feature',
+  impl: ctx => ({
+      init: cmp =>
+        st.compsRefHandler.resourceChange.filter(e=>e.path.length == 1)
+        	.subscribe(e=>
+            	jb.ui.setState(cmp,null,e,ctx))
+   })
+})
+
 
 jb.component('studio.watch-typeof-script', {
   params: [

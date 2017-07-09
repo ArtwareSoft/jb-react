@@ -120,37 +120,6 @@ jb.component('studio.format-css', {
   }
 })
 
-jb.component('studio.open-make-global-style', {
-  type: 'action', 
-  params: [
-    { id: 'path', as: 'string' }
-  ],
-  impl :{$: 'open-dialog', 
-    modal: true, 
-    title: 'Style Name', 
-    style :{$: 'dialog.dialog-ok-cancel', 
-      features :{$: 'dialog-feature.auto-focus-on-first-input' }
-    }, 
-    features :{$: 'var', name: 'name', mutable: true },
-    content :{$: 'editable-text', 
-      databind: '%$name%',
-      features :{$: 'feature.onEnter', action :{$: 'dialog.close-containing-popup'} }
-    }, 
-    onOK: ctx => {
-        debugger;
-        var st = jb.studio;
-        var path = ctx.componentContext.params.path;
-        var id = ctx.exp('%$studio/project%.%$name%'); 
-        var profile = {
-          type: st.paramDef(path).type,
-          impl : st.valOfPath(path)
-        }
-        st.newComp(id,profile);
-        st.writeValueOfPath(path,{$: id});
-    }
-  }
-})
-
 jb.component('studio.custom-style-make-local', {
   params: [
     { id: 'template', as: 'string'},

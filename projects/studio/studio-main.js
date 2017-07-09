@@ -118,7 +118,8 @@ jb.component('studio.pages', {
       {$: 'group.wait', 
         for :{$: 'studio.wait-for-preview-iframe' }, 
         loadingControl :{ $label: '...' }
-      }
+      }, 
+      {$: 'studio.watch-components' }
     ]
   }
 })
