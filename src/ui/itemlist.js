@@ -2,7 +2,7 @@ jb.component('itemlist', {
   type: 'control', category: 'group:80,common:80',
   params: [
     { id: 'title', as: 'string' },
-    { id: 'items', as: 'array' , dynamic: true, essential: true, ref: true },
+    { id: 'items', as: 'ref', whenNotReffable: 'array' , dynamic: true, essential: true },
     { id: 'controls', type: 'control[]', essential: true, dynamic: true },
     { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
     { id: 'watchItems', as: 'boolean' },
@@ -22,7 +22,7 @@ jb.component('itemlist.init', {
         cmp.refresh = _ =>
             cmp.setState({ctrls: calcCtrls()})  
 
-        if (ctx.vars.$model.watchItems)
+        if (ctx.vars.$model.watchItems && ctx.vars.$model.items)
           jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
 
         function controlsOfItem(item) {

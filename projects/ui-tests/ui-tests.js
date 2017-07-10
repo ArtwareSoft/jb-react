@@ -1177,3 +1177,21 @@ jb.component('ui-test.dynamic-first-succeeding', {
     expectedResult :{$: 'contains', text: ['female'] },
   },
 })
+
+jb.component('ui-test.boolean-not-reffable-true', {
+  impl :{$: 'ui-test',  
+    control :{$: 'label', 
+      title :{$: 'is-of-type', type: 'string', obj: '123' }, 
+    },
+    expectedResult :{$: 'contains', text: 'true' },
+  }
+})
+
+jb.component('ui-test.boolean-not-reffable-false', {
+  impl :{$: 'ui-test',  
+    control :{$: 'label', 
+      title :{$: 'is-of-type', type: 'string2', obj: '123' }, 
+    },
+    expectedResult :{$: 'contains', text: 'false' },
+  }
+})

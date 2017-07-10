@@ -47,9 +47,9 @@ function jb_run(context,parentParam,settings) {
           switch (paramObj.type) {
             case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
             case 'array': run.ctx.params[paramObj.name] = 
-                paramObj.array.map((prof,i) => run.ctx.runInner(prof, paramObj.param, paramObj.name+'~'+i) )
+                paramObj.array.map((prof,i) => run.ctx.runInner(prof, paramObj.param, paramObj.path+'~'+i) )
               ; break;  // maybe we should [].concat and handle nulls
-            default: run.ctx.params[paramObj.name] = run.ctx.runInner(paramObj.prof, paramObj.param, paramObj.name)
+            default: run.ctx.params[paramObj.name] = run.ctx.runInner(paramObj.prof, paramObj.param, paramObj.path)
             //jb_run(paramObj.context, paramObj.param);
           }
         });
@@ -109,10 +109,10 @@ function prepareParams(comp,profile,ctx) {
       !comp.ignore)
     .map((param,index) => {
       var p = param.id;
-      var val = profile[p], path =p;
-      if (!val && index == 0 && sugarProp(profile)) {
-        path = sugarProp(profile)[0];
-        val = sugarProp(profile)[1]; 
+      var val = profile[p], path =p, sugar = sugarProp(profile);
+      if (!val && index == 0 && sugar) {
+        path = sugar[0];
+        val = sugar[1]; 
       }
       var valOrDefault = typeof val != "undefined" ? val : (typeof param.defaultValue != 'undefined' ? param.defaultValue : null);
       var valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
@@ -133,13 +133,13 @@ function prepareParams(comp,profile,ctx) {
           func.srcPath = ctx.path;
           return func;
         }
-        return { name: p, type: 'function', outerFunc: outerFunc };
+        return { name: p, type: 'function', outerFunc: outerFunc, path: path };
       } 
 
       if (arrayParam) // array of profiles
-        return { name: p, type: 'array', array: valOrDefaultArray, param: {} };
+        return { name: p, type: 'array', array: valOrDefaultArray, param: {}, path: path };
       else 
-        return { name: p, type: 'run', prof: valOrDefault, param: param }; // context: new jbCtx(ctx,{profile: valOrDefault, path: p}),
+        return { name: p, type: 'run', prof: valOrDefault, param: param, path: path }; // context: new jbCtx(ctx,{profile: valOrDefault, path: p}),
   })
 }
 
@@ -367,7 +367,10 @@ function bool_expression(exp, context) {
 }
 
 function castToParam(value,param) {
-  return tojstype(value,param ? (param.ref ? 'ref' : param.as) : null)
+  var res = tojstype(value,param ? param.as : null);
+  if (param && param.as == 'ref' && param.whenNotReffable && !jb.isRef(res))
+    res = tojstype(value,param.whenNotReffable);
+  return res;
 }
 
 function tojstype(value,jstype) {

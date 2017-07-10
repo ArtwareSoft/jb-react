@@ -31,7 +31,7 @@ jb.component('group.wait', {
 jb.component('watch-ref', {
   type: 'feature', category: '70',
   params: [ 
-    { id: 'ref', essential: true, as: 'ref', ref: true },
+    { id: 'ref', essential: true, as: 'ref' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
   ],
   impl: (ctx,ref,includeChildren) => ({
@@ -61,9 +61,9 @@ jb.component('bind-refs', {
   type: 'feature', category: '20',
   description: 'automatically update a mutual variable when other value is changing',
   params: [ 
-    { id: 'watchRef', essential: true, as: 'ref', ref: true },
+    { id: 'watchRef', essential: true, as: 'ref' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
-    { id: 'updateRef', essential: true, as: 'ref', ref: true },
+    { id: 'updateRef', essential: true, as: 'ref' },
     { id: 'value', essential: true, as: 'single', dynamic: true },
   ],
   impl: (ctx,ref,includeChildren,updateRef,value) => ({

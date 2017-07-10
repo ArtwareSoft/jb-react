@@ -7,26 +7,20 @@ jb.resource('people',[
 jb.component('play-ground.main', {
   type: 'control', 
   impl :{$: 'group', 
-      controls: [
-        {$: 'editable-boolean', databind: '%$male%'},
-        {$: 'control.first-succeeding', 
-          controls: [
-            {$: 'control-with-condition', 
-              condition: '%$male%', 
-              control :{$: 'label', title: 'male' }
-            }, 
-            {$: 'control-with-condition', 
-              condition: {$not: '%$male%'}, 
-              control :{$: 'label', title: 'female' }
-            }, 
-          ],
-          features: {$: 'watch-ref', ref: '%$male%'}
-        },
-      ],
-      features: [
-        {$: 'var', name: 'male', value: true , mutable: true }
-      ]
+    controls: [
+      {$: 'label', 
+        title :{$: 'is-of-type', type: 'string2', obj: '123' }, 
+        style :{$: 'label.p' }
+      }
+    ], 
+    features: [{$: 'var', name: 'male', value: true, mutable: true }]
+  }, 
+  controls: [
+    {$: 'label', 
+      title: 'my label', 
+      style :{$: 'label.span' }
     }
+  ]
 })
 
 

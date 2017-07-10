@@ -368,7 +368,7 @@ ui.item = function(cmp,vdom,data) {
 }
 
 ui.watchRef = function(ctx,cmp,ref,includeChildren) {
-    ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
+    ref && ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
         ui.setState(cmp,null,e,ctx))
 }
 

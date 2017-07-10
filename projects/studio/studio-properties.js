@@ -142,10 +142,13 @@ jb.component('studio.property-field', {
       {$: 'control-with-condition', 
         condition :{
           $and: [
-            {$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }, 
             {
-              $notEmpty :{$: 'studio.comp-name', path: '%$path%' }
-            }
+              $not :{$: 'is-of-type', 
+                type: 'string,undefined', 
+                obj :{$: 'studio.val', path: '%$path%' }
+              }
+            }, 
+            {$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }
           ]
         }, 
         control :{$: 'studio.property-script', path: '%$path%' }

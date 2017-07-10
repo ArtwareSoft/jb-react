@@ -142,7 +142,7 @@ padding: 10px 10px 10px 27px; color: #6D6E71; min-height: 12px; border-bottom: 1
 .jb-control-tree .treenode-line { width:300px; display: flex; box-orient: horizontal; padding-bottom: 3px; }
 .jb-control-tree .treenode-label { margin-top: -3px; display: block; color: #3D443D; font-size: 12px; vertical-align: top; padding: 0; 
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-.jb-control-tree .treenode-label .treenode-val { color: red; } 
+.jb-control-tree .treenode-label .treenode-val { color: red; padding-left: 4px; } 
 .jb-control-tree .treenode-icon { width: 16px; height1:14px; display: inline-block;  background: url('icons1.png?v=16_02') no-repeat; 
   margin-right: 2px; vertical-align: top; background-position: 0px -16px;} /* fix background position to get other icons */
 

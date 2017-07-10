@@ -81,7 +81,11 @@ jb.component('studio.jb-editor', {
                   controls :{$: 'group', 
                     controls: [
                       {$: 'label', 
-                        title: 'circuit %$probeResult/probe/circuitType%: %$probeResult/circuit%'
+                        title: '{? closest Path: %$probeResult/probe/closestPath% ?}',
+                        features :{$: 'css', css: '{ color: red}' }
+                      }, 
+                      {$: 'label', 
+                        title: 'circuit %$probeResult/probe/circuitType%: %$probeResult/circuit%', 
                       }, 
                       {$: 'label', 
                         title: 'action circuits are not supported', 
@@ -118,8 +122,7 @@ jb.component('studio.jb-editor', {
                   }
                 }, 
                 features :{$: 'watch-ref', 
-                  ref :{$: 'studio.ref', path: '%$jbEditor_selection%' }, 
-                  
+                  ref :{$: 'studio.ref', path: '%$jbEditor_selection%' }
                 }
               }
             ], 
@@ -127,7 +130,7 @@ jb.component('studio.jb-editor', {
           }
         ], 
         features: [
-          {$: 'watch-ref', ref: '%$jbEditor_selection%',  }, 
+          {$: 'watch-ref', ref: '%$jbEditor_selection%' }, 
           {$: 'studio.watch-script-changes' }
         ]
       }
@@ -150,14 +153,14 @@ jb.component('studio.data-browse', {
         {$: 'control.first-succeeding', 
           controls: [
             {$: 'control-with-condition', 
-              condition :{$: 'data.is-of-type', 
+              condition :{$: 'is-of-type', 
                 type: 'string,boolean,number', 
                 obj: '%$obj%'
               }, 
               control :{$: 'label', title: '%$obj%' }
             }, 
             {$: 'control-with-condition', 
-              condition :{$: 'data.is-of-type', type: 'array', obj: '%$obj%' }, 
+              condition :{$: 'is-of-type', type: 'array', obj: '%$obj%' }, 
               control :{$: 'table', 
                 items: '%$obj%', 
                 fields :{$: 'field.control', 

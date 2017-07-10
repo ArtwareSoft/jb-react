@@ -48,7 +48,7 @@ jb.studio.Probe = class {
           }          
           return Promise.resolve({element: jb.studio.probeResEl});
       } else if (this.circuitType != 'action')
-        return Promise.resolve(_win.jb.run(this.context));
+        return Promise.resolve(this.context.runItself());
   }
 
   handleGaps() {
@@ -60,8 +60,10 @@ jb.studio.Probe = class {
       var _path = st.parentPath(this.pathToTrace);
       while (!this.probe[_path] && _path.indexOf('~') != -1)
         _path = st.parentPath(_path);
-      if (this.probe[_path])
+      if (this.probe[_path]) {
+        this.closestPath = _path;
         this.probe[this.pathToTrace] = this.probe[_path];
+      }
     }
     return Promise.resolve();
   }
@@ -92,14 +94,9 @@ jb.component('studio.probe', {
   type:'data',
   params: [ { id: 'path', as: 'string', dynamic: true } ],
   impl: (ctx,path) => {
-      var st = jb.studio;
-      var context = null; //ctx.exp('%$studio/last_pick_selection%');
-      if (!context) {
-        var _jbart = st.previewjb;
-        var _win = st.previewWindow || window;
-        var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
-        context = new _win.jb.jbCtx(new _win.jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
-      }
-      return new jb.studio.Probe(context).runCircuit(path());
+      var _jb = jb.studio.previewjb;
+      var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
+      var context = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
+      return new (_jb.studio.Probe || jb.studio.Probe)(context).runCircuit(path());
     }
 })

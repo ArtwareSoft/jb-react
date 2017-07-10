@@ -316,8 +316,9 @@ jb.component('and', {
 	],
 	impl: function(context) {
 		var items = context.profile.$and || context.profile.items || [];
+		var innerPath =  context.profile.$and ? '$and~' : 'items~';
 		for(var i=0;i<items.length;i++) {
-			if (!context.runInner(items[i], { type: 'boolean' }, i))
+			if (!context.runInner(items[i], { type: 'boolean' }, innerPath + i))
 				return false;
 		}
 		return true;
@@ -331,8 +332,9 @@ jb.component('or', {
 	],
 	impl: function(context) {
 		var items = context.profile.$or || context.profile.items || [];
+		var innerPath =  context.profile.$or ? '$or~' : 'items~';
 		for(var i=0;i<items.length;i++) {
-			if (context.runInner(items[i],{ type: 'boolean' },i))
+			if (context.runInner(items[i],{ type: 'boolean' },innerPath+i))
 				return true;
 		}
 		return false;
@@ -404,6 +406,14 @@ jb.component('count',{
 	],
 	impl: (ctx,items) =>
 		items.length
+});
+
+jb.component('to-string', {
+	params: [
+		{ id: 'text', as: 'string', defaultValue: '%%'}
+	],
+	impl: (ctx,text) =>
+		text
 });
 
 jb.component('to-uppercase', {
@@ -706,7 +716,7 @@ jb.component('type-of', {
 	}
 })
 
-jb.component('data.is-of-type', {
+jb.component('is-of-type', {
   type: 'boolean',
   params: [ 
   	{ id: 'type', as: 'string', essential: true, description: 'string,boolean' },
@@ -717,6 +727,16 @@ jb.component('data.is-of-type', {
   	var objType = Array.isArray(obj) ? 'array' : typeof obj;
   	return _type.split(',').indexOf(objType) != -1;
   }
+})
+
+jb.component('in-group', {
+  type: 'boolean',
+  params: [ 
+  	{ id: 'group', as: 'array', essential: true },
+  	{ id: 'item', as: 'single', defaultValue: '%%' },
+  ],
+  impl: (ctx,group,item) =>
+  	group.indexOf(item) != -1
 })
 
 jb.component('http.get', {

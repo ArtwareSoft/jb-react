@@ -1,7 +1,7 @@
 jb.component('label', {
     type: 'control', category: 'control:100,common:80',
     params: [
-        { id: 'title', as: 'string', essential: true, defaultValue: 'my label', ref: true, dynamic: true },
+        { id: 'title', as: 'ref', essential: true, defaultValue: 'my label', dynamic: true },
         { id: 'style', type: 'label.style', defaultValue: { $: 'label.span' }, dynamic: true },
         { id: 'features', type: 'feature[]', dynamic: true },
     ],
@@ -14,11 +14,17 @@ jb.component('label.bind-title', {
   impl: ctx => ({
     init: cmp => {
       var ref = ctx.vars.$model.title(cmp.ctx);
-      cmp.state.title = jb.val(ref);
-      jb.ui.refObservable(ref,cmp)
-        .subscribe(e=>jb.ui.setState(cmp,{title: jb.val(ref)},e,ctx));
+      cmp.state.title = fixTitleVal(ref);
+      if (jb.isRef(ref))
+        jb.ui.refObservable(ref,cmp)
+            .subscribe(e=>jb.ui.setState(cmp,{title: fixTitleVal(ref)},e,ctx));
       cmp.refresh = _ => 
-        cmp.setState({title: jb.val(ctx.vars.$model.title(cmp.ctx))})
+        cmp.setState({title: fixTitleVal(ctx.vars.$model.title(cmp.ctx))})
+
+      function fixTitleVal(titleVal) {
+        var val = jb.val(titleVal);
+        return (typeof val == 'boolean') ? (''+val) : val
+      }
     }
   })
 })

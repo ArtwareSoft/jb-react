@@ -3,7 +3,7 @@ jb.type('button.style')
 jb.component('button', {
   type: 'control', category: 'control:100,common:100',
   params: [
-    { id: 'title', as: 'string', essential: true, defaultTValue: 'click me', ref: true, dynamic: true },
+    { id: 'title', as: 'ref', essential: true, defaultTValue: 'click me', dynamic: true },
     { id: 'action', type: 'action', essential: true, dynamic: true },
     { id: 'style', type: 'button.style', defaultValue: { $: 'button.mdl-raised' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
@@ -18,6 +18,8 @@ jb.component('button', {
         cmp.clicked = ev => {
           if (ev && ev.ctrlKey && cmp.ctrlAction)
             cmp.ctrlAction()
+          else if (ev && ev.altKey && cmp.altAction)
+            cmp.altAction()
           else
             cmp.action();
         }
@@ -36,6 +38,18 @@ jb.component('ctrl-action', {
   impl: (ctx,action) => ({
       afterViewInit: cmp => 
         cmp.ctrlAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
+  })
+})
+
+jb.component('alt-action', {
+  type: 'feature', category: 'button:70',
+  description: 'action to perform on alt+click',
+  params: [ 
+    { id: 'action', type: 'action', essential: true, dynamic: true },
+  ],
+  impl: (ctx,action) => ({
+      afterViewInit: cmp => 
+        cmp.altAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
   })
 })
 

@@ -72,7 +72,7 @@ class ImmutableWithPath {
       this.restoreArrayIds(from[path[0]], to[path[0]], path.slice(1))
   }
   asRef(obj,hint) {
-    if (!obj) return;
+    if (!obj) return obj;
     if (obj && (obj.$jb_path || obj.$jb_val))
         return obj;
 

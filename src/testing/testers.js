@@ -108,14 +108,15 @@ jb.component('ui-action.set-text', {
 	params: [
 		{ id: 'value', as: 'string', essential: true },
 		{ id: 'selector', as: 'string', defaultValue: 'input' },
+		{ id: 'delay', as: 'number', defaultValue: 1}
 	],
-	impl: (ctx,value,selector) => {
+	impl: (ctx,value,selector,delay) => {
 		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=> {
 			e._component.jbModel(value);
 			$(e).findIncludeSelf('input').val(value);
 		})
-		return jb.delay(1);
+		return jb.delay(delay);
 	}
 })
 

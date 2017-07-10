@@ -314,7 +314,7 @@ jb.component('studio-helper-sample.table', {
 jb.component('studio-helper-sample.picklist', {
   type: 'control', 
   impl :{$: 'picklist', 
-    title: 'aa', 
+    title :{ $pipeline: ['aa'] }, 
     databind: 'ada', 
     options :{$: 'picklist.options', options: '%' }, 
     style :{$: 'picklist.selection-list', width: '33' }, 
