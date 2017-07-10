@@ -39,7 +39,8 @@ jb.component('editable-text.helper-popup', {
     { id: 'showHelper', as: 'boolean', dynamic: true, defaultValue :{$notEmpty: '%value%' }, description: 'show/hide helper according to input content' },
   ],
   impl : ctx =>({
-    onkeydown: true,
+    onkeyup: true,
+    onkeydown: true, // used for arrows
     extendCtx: (ctx,cmp) => 
       ctx.setVars({selectionKeySource: {}}),
       
@@ -62,18 +63,22 @@ jb.component('editable-text.helper-popup', {
         cmp.popup() && cmp.popup().close();
 
       cmp.ctx.vars.selectionKeySource.input = input;
-      var keydown = cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown;
+      var keyup = cmp.ctx.vars.selectionKeySource.keyup = cmp.onkeyup.delay(1); // delay to have input updated
+      cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown;
 
-      keydown.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)
-        .delay(1).subscribe(_=>{
-          jb.logPerformance('helper-popup', ctx.params.showHelper(ctx.setData(input)))
-          if (!ctx.params.showHelper(cmp.ctx.setData(input)))
+      keyup.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)
+        .subscribe(_=>{
+          jb.logPerformance('helper-popup', ''+ctx.params.showHelper(ctx.setData(input)), ''+input.value );
+          if (!ctx.params.showHelper(cmp.ctx.setData(input))) {
+            jb.logPerformance('helper-popup', 'close popup' );
             cmp.closePopup();
-          else if (!cmp.popup())
+          } else if (!cmp.popup()) {
+            jb.logPerformance('helper-popup', 'open popup' );
             cmp.openPopup(cmp.ctx)
+          }
       })
 
-      keydown.filter(e=>e.keyCode == 27) // ESC
+      keyup.filter(e=>e.keyCode == 27) // ESC
           .subscribe(_=>cmp.closePopup())
     },
     destroy: cmp => 

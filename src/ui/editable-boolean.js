@@ -12,7 +12,6 @@ jb.component('editable-boolean',{
   ],
   impl: ctx => jb.ui.ctrl(ctx,{
   		init: cmp => {
-        cmp.allowSelfRefresh = true;
         cmp.toggle = () =>
           cmp.jbModel(!cmp.jbModel());
 
@@ -20,13 +19,11 @@ jb.component('editable-boolean',{
           if (!cmp.jbModel) return '';
           return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
         }
-        cmp.refresh = _ => {
-          cmp.setState({model: cmp.jbModel(), text: cmp.text()});
-          cmp.refreshMdl && cmp.refreshMdl()
-        }
+        cmp.extendRefresh = _ =>
+          cmp.setState({text: cmp.text()})
+          
         cmp.refresh();
   		},
-//      afterViewInit: cmp => 
   	})
 })
 

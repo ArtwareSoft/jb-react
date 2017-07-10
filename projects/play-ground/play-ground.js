@@ -9,11 +9,25 @@ jb.component('play-ground.main', {
   impl :{$: 'group', 
     controls: [
       {$: 'label', 
-        title :{$: 'is-of-type', type: 'string2', obj: '123' }, 
+        title :{$: 'is-of-type', type: 'string', obj: '123' }, 
         style :{$: 'label.p' }
+      }, 
+      {$: 'button', 
+        title: 'click me', 
+        action: [{$: 'action.switch', cases: [] }], 
+        style :{$: 'button.mdl-raised' }
+      }, 
+      {$: 'picklist', 
+        title: 'name', 
+        databind: '%$name%', 
+        options :{$: 'picklist.options', options: '%$people/name%' }, 
+        style :{$: 'picklist.mdl' }
       }
     ], 
-    features: [{$: 'var', name: 'male', value: true, mutable: true }]
+    features: [
+      {$: 'var', name: 'male', value: true, mutable: true }, 
+      {$: 'var', name: 'name', mutable: true }
+    ]
   }, 
   controls: [
     {$: 'label', 

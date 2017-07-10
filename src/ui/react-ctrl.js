@@ -63,6 +63,7 @@ class JbComponent {
 			    } catch(e) { jb.logException(e,'') }
 			}
 			render(props,state) {
+				jb.logPerformance('render',state,props,this);
 				if (!jbComp.template) 
 					return ui.h('span',{display: 'none'});
 				//console.log('render',jb.studio.shortTitle(this.ctx.path));
@@ -336,8 +337,6 @@ ui.limitStringLength = function(str,maxLength) {
 ui.stateChangeEm = new jb.rx.Subject();
 
 ui.setState = function(cmp,state,opEvent,watchedAt) {
-	// if (opEvent && opEvent.interactive && cmp.orignalCtx.isParentOf(opEvent.srcCtx))
-	// 	return;
 	jb.logPerformance('setState',cmp.ctx,state);
 	if (state == null && cmp.refresh)	
 		cmp.refresh();

@@ -47,9 +47,9 @@ jb.component('editable-number', {
 jb.component('editable-number.input',{
   type: 'editable-number.style',
   impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
+      features :{$: 'field.databind-text' },
       template: (cmp,state,h) => h('input', { 
-        value: cmp.jbModel(), 
+        value: state.model, 
         onchange: e => cmp.jbModel(e.target.value), 
         onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
   }

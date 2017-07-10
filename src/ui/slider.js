@@ -3,7 +3,7 @@ jb.component('editable-number.slider-no-text', {
   impl :{$: 'custom-style', 
       template: (cmp,state,h) => h('input',{ type: 'range', 
         min: state.min, max: state.max, step: state.step,
-        value: cmp.jbModel(), mouseup: e => cmp.jbModel(e.target.value), tabindex: 0}),
+        value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: 0}),
       features :[
           {$: 'field.databind' },
           {$: 'slider.init'},
@@ -123,35 +123,6 @@ jb.component('slider-text.handleArrowKeys', {
     })
 })
 
-jb.component('editable-number.slider-zbl', {
-  type: 'editable-number.style',
-  impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('div',{},[
-        h('input', { 
-          class: 'input-text',
-          value: cmp.jbModel(), 
-          onchange: e => cmp.jbModel(e.target.value), 
-          onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }
-        ),
-        h('input',{ type: 'range', 
-          tabIndex: -1,
-          class: 'input-range',
-          min: state.min, max: state.max, step: state.step,
-          value: cmp.jbModel(), mouseup: e => cmp.jbModel(e.target.value) }
-        ), 
-        ' (' + state.min + ',' + state.max + ')'
-        ]),
-      features :[
-          {$: 'field.databind' },
-          {$: 'slider.init'},
-      ],
-      css: `{display: flex}
-        >* { margin-right: %$spacing%px }
-        >*:last-child { margin-right:0 }`,
-  }
-})
-
-
 jb.component('slider.edit-as-text-popup', {
   type: 'feature',
   impl :{$: 'open-dialog', 
@@ -191,7 +162,7 @@ jb.component('editable-number.mdl-slider', {
   impl :{$: 'custom-style', 
       template: (cmp,state,h) => h('input',{class:'mdl-slider mdl-js-slider', type: 'range', 
         min: state.min, max: state.max, step: state.step,
-        value: cmp.jbModel(), mouseup: e => cmp.jbModel(e.target.value), tabindex: 0}),
+        value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: 0}),
       features :[
           {$: 'field.databind' },
           {$: 'slider.init'},

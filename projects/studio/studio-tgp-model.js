@@ -148,7 +148,7 @@ Object.assign(st,{
 			return [path]
 	},
 	isControlType: type =>
-		(type||'').match(/control|options|menu|table-field/),
+		(type||'').match(/^(control|options|menu|table-field)/),
 	controlParams: path =>
 		st.paramsOfPath(path).filter(p=>st.isControlType(p.type)).map(p=>p.id),
 

@@ -1,12 +1,7 @@
-out - show boolean
-
 allow studio editing
 	studio editing popups should have different header background
 	open inteli for studio
 	add conditional 'save studio component' as inteli option
-
-primitive script bug - show also array
-	build test
 
 'studio.pick-enum' - similar to 'studio.pick-profile'
 studio.property-enum
@@ -25,6 +20,7 @@ sublime javascript editor - should create js funtion and use eval
 		result preview at the bottom
 
 jbEditor
+  duplicate in array
   $vars support
   $if support - edit + should show then/else
   javascript - should create js funtion and use eval

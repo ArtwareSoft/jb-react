@@ -154,6 +154,18 @@ jb.component('studio.property-field', {
         control :{$: 'studio.property-script', path: '%$path%' }
       }, 
       {$: 'control-with-condition', 
+        condition :{
+          $and: [
+            {$: 'is-of-type', 
+              type: 'array', 
+              obj :{$: 'studio.val', path: '%$path%' }
+            }, 
+            {$: 'studio.is-of-type', path: '%$path%', type: 'action' }
+          ]
+        }, 
+        control :{$: 'studio.property-script', path: '%$path%' }
+      }, 
+      {$: 'control-with-condition', 
         condition: '%$paramDef/as%=="number"', 
         control :{$: 'studio.property-slider', path: '%$path%' }
       }, 

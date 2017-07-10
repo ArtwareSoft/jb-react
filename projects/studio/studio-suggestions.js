@@ -22,10 +22,11 @@ jb.component('studio.suggestions-itemlist', {
       }, 
       {$: 'itemlist.keyboard-selection', 
         onEnter : [
-          {$: 'studio.paste-suggestion' },
+          {$: 'studio.paste-suggestion', close: true },
         ], 
         autoFocus: false
       }, 
+      {$: 'feature.onKey', code: 39, action :{$: 'studio.paste-suggestion', option: '%$suggestionData/selected%', close: false }}, // right arrow should drill down
       {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' }, 
       {$: 'css.width', width: '300', overflow: 'auto', minMax: 'min' }, 
       {$: 'css', 
@@ -47,13 +48,14 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
   impl: ctx => ({
       afterViewInit: cmp => {
         var selectionKeySource = cmp.ctx.vars.selectionKeySource;
-        var keydown = selectionKeySource.keydown.takeUntil( cmp.destroyed );
+        var keyup = selectionKeySource.keyup.takeUntil( cmp.destroyed );
         var input = selectionKeySource.input;
 
-        keydown
-          .delay(1) // we use keydown - let the input fill itself
+        keyup
+//          .delay(1) // we use keyup - let the input fill itself
           .debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
+          .do(e=>jb.logPerformance('suggestions','input: ' + input.value))
           .map(e=> 
               input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
           .flatMap(_=>
@@ -66,7 +68,7 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
             jb.logException(e,'suggestions'))
           .distinctUntilChanged((e1,e2)=>
             e1.key == e2.key) // compare options - if options are the same - leave it.
-          .do(e=>jb.logPerformance('suggestions',e))
+          .do(e=>jb.logPerformance('suggestions','event',e))
           .takeUntil( cmp.destroyed )
           .subscribe(e=> {
               // if (!jb.val(cmp.ctx.exp('%$suggestionData%'))) // after dialog closed
@@ -234,8 +236,9 @@ st.suggestions = class {
     var options = [];
     probeCtx = probeCtx || new st.previewjb.jbCtx();
     var vars = jb.entries(jb.extend({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources))
-        .map(x=>new ValueOption('$'+x[0],x[1],this.pos,this.tail))
+        .map(x=>new ValueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
+        .filter(x=> x.toPaste.indexOf(':') == -1)
         .filter(x=>['$window'].indexOf(x.toPaste) == -1)
 
     if (this.inputVal.indexOf('=') == 0 && !this.expressionOnly)
@@ -288,9 +291,9 @@ class ValueOption {
       return ``;
     }
     paste(ctx,_close) {
-      var close = typeof this.value != 'object' || Array.isArray(this.value) || _close;
+      //var close = typeof this.value != 'object' || Array.isArray(this.value) || _close;
 
-      var toPaste = this.toPaste + (close ? '%' : '/');
+      var toPaste = this.toPaste + (_close ? '%' : '/');
       var input = ctx.vars.selectionKeySource.input;
       var pos = this.pos + 1;
       input.value = input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos);

@@ -1,25 +1,14 @@
 jb.component('editable-text.studio-primitive-text', {
   type: 'editable-text.style',
   impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
+      features :{$: 'field.databind-text' },
       template: (cmp,state,h) => h('input', { 
           class: 'mdl-textfield__input',
-          value: cmp.jbModel(), 
+          value: state.model, 
           onchange: e => cmp.jbModel(e.target.value), 
           onkeyup: e => cmp.jbModel(e.target.value,'keyup')
       }),
-    css: `{ width: 367px}
-    `,
-	  css2: `
-{ display: block; width: 146px; height: 19px; padding-left: 2px;
-	font-size: 12px; color: #555555; background-color: #fff; 
-	border: 1px solid #ccc; border-radius: 4px;
-	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); 
-	transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; 
-}
-:focus { width: 300px; transition: width: 1s; border-color: #66afe9; outline: 0; 
-	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
-::placeholder { color: #999; opacity: 1; }`
+    css: `{ width: 367px}`,
 	}
 })
 
@@ -52,7 +41,7 @@ jb.component('editable-text.jb-editor-floating-input', {
   impl :{$: 'custom-style', 
    template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[ 
         h('input', { class: 'mdl-textfield__input', id: 'jb_input_' + state.fieldId, type: 'text',
-            value: cmp.jbModel(),
+            value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
             onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
         }),
@@ -60,7 +49,7 @@ jb.component('editable-text.jb-editor-floating-input', {
       ]),
       css: '{ margin-right: 13px; }', // for the x-button
       features :[
-          {$: 'field.databind', noUpdates: true },
+          {$: 'field.databind-text', noUpdates: true },
           {$: 'mdl-style.init-dynamic'}
       ],
   }
@@ -104,11 +93,22 @@ jb.component('button.studio-script', {
 // })
 
 
+// todo: take from http://creativeit.github.io/getmdl-select/
+ // <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fullwidth">
+ //            <input class="mdl-textfield__input" type="text" id="sample1" value="Belarus" readonly tabIndex="-1">
+ //            <label for="sample1" class="mdl-textfield__label">Country</label>
+ //            <ul for="sample1" class="mdl-menu mdl-menu--bottom-left mdl-js-menu">
+ //                <li class="mdl-menu__item">Germany</li>
+ //                <li class="mdl-menu__item">Belarus</li>
+ //                <li class="mdl-menu__item">Russia</li>
+ //            </ul>
+ //        </div>
+
 jb.component('picklist.studio-enum', {
   type: 'picklist.style',
   impl :{$: 'custom-style', 
       features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('select', { value: cmp.jbModel(), onchange: e => cmp.jbModel(e.target.value) },
+      template: (cmp,state,h) => h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
