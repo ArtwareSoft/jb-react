@@ -399,11 +399,10 @@ jb.component('filter',{
 			filter(context,item))
 });
 
-jb.component('count',{
+jb.component('count', {
 	type: 'aggregator',
-	params: [
-		{ id: 'items', as:'array', defaultValue: '%%'}
-	],
+	description: 'length, size of array',
+	params: [{ id: 'items', as:'array', defaultValue: '%%'}],
 	impl: (ctx,items) =>
 		items.length
 });

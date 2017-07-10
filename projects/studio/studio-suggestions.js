@@ -61,7 +61,7 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
           .flatMap(_=>
             getProbe())
           .map(res=>
-              res && res.finalResult && res.finalResult[0] && res.finalResult[0].in)
+              res && res.result && res.result[0] && res.result[0].in)
           .map(probeCtx=> 
             new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,ctx.params.path))
           .catch(e=>
@@ -71,8 +71,6 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
           .do(e=>jb.logPerformance('suggestions','event',e))
           .takeUntil( cmp.destroyed )
           .subscribe(e=> {
-              // if (!jb.val(cmp.ctx.exp('%$suggestionData%'))) // after dialog closed
-              //   return; 
               cmp.ctx.run({$:'write-value', to: '%$suggestionData/tail%', value: ctx => e.tail })
               cmp.ctx.run({$:'write-value', to: '%$suggestionData/options%', value: ctx => e.options });
           });
@@ -83,13 +81,8 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
           var probePath = ctx.params.path;
           if (st.valOfPath(probePath) == null)
             jb.writeValue(st.refOfPath(probePath),'',ctx);
-          var _probe = jb.rx.Observable.fromPromise(ctx.run({$: 'studio.probe', path: probePath }));
-          _probe.subscribe(res=>
-            cmp.probeResult = res);
-          // do not wait more than 500 mSec
-          return _probe.race(jb.rx.Observable.of({finalResult: [ctx] }).delay(500))
-            .catch(e=>
-                jb.logException(e,'in probe exception'))
+
+          return ctx.run({$: 'studio.probe', path: probePath }).then(res=>cmp.probeResult = res);
         }
       }
   })

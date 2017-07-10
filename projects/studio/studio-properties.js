@@ -166,6 +166,10 @@ jb.component('studio.property-field', {
         control :{$: 'studio.property-script', path: '%$path%' }
       }, 
       {$: 'control-with-condition', 
+        condition: '%$paramDef/options%', 
+        control :{$: 'studio.property-enum', path: '%$path%' }
+      }, 
+      {$: 'control-with-condition', 
         condition: '%$paramDef/as%=="number"', 
         control :{$: 'studio.property-slider', path: '%$path%' }
       }, 

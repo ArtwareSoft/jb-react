@@ -81,23 +81,33 @@ jb.component('studio.jb-editor', {
                   controls :{$: 'group', 
                     controls: [
                       {$: 'label', 
-                        title: '{? closest Path: %$probeResult/probe/closestPath% ?}',
+                        title: '{? closest Path: %$probeResult/closestPath% ?}', 
                         features :{$: 'css', css: '{ color: red}' }
                       }, 
                       {$: 'label', 
-                        title: 'circuit %$probeResult/probe/circuitType%: %$probeResult/circuit%', 
+                        title: 'circuit %$probeResult/circuitType%: %$probeResult/circuit.$%, time: %$probeResult/totalTime% mSec'
                       }, 
                       {$: 'label', 
                         title: 'action circuits are not supported', 
                         features :{$: 'hidden', 
-                          showCondition: '%$probeResult/probe/circuitType% == "action"'
+                          showCondition: '%$probeResult/circuitType% == "action"'
                         }
                       }, 
                       {$: 'table', 
-                        items: '%$probeResult/finalResult%', 
+                        items :{
+                          $pipeline: [
+                            '%$probeResult/result%', 
+                            {$: 'slice', end: '5' }
+                          ]
+                        }, 
                         fields: [
                           {$: 'field.control', 
-                            title: 'in', 
+                            title :{
+                              $pipeline: [
+                                {$: 'count', items: '%$probeResult/result%' }, 
+                                'in (%%)'
+                              ]
+                            }, 
                             control :{$: 'studio.data-browse', obj: '%in/data%' }, 
                             width: '100'
                           }, 
@@ -153,16 +163,18 @@ jb.component('studio.data-browse', {
         {$: 'control.first-succeeding', 
           controls: [
             {$: 'control-with-condition', 
-              condition :{$: 'is-of-type', 
-                type: 'string,boolean,number', 
-                obj: '%$obj%'
-              }, 
+              condition :{$: 'is-of-type', type: 'string,boolean,number', obj: '%$obj%' }, 
               control :{$: 'label', title: '%$obj%' }
             }, 
             {$: 'control-with-condition', 
               condition :{$: 'is-of-type', type: 'array', obj: '%$obj%' }, 
               control :{$: 'table', 
-                items: '%$obj%', 
+                items :{
+                  $pipeline: [
+                    '%$obj%', 
+                    {$: 'slice', end: '5' }
+                  ]
+                }, 
                 fields :{$: 'field.control', 
                   title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] }, 
                   control :{$: 'studio.data-browse', a: 'label', obj: '%%', width: 200 }
@@ -176,9 +188,12 @@ jb.component('studio.data-browse', {
             {$: 'control-with-condition', 
               condition :{$: 'isNull', obj: '%$obj%' }, 
               control :{$: 'label', title: 'null' }
-            },
+            }, 
             {$: 'tree', 
-              nodeModel :{$: 'tree.json-read-only', object: '%$obj%', rootPath: '%$title%' }, 
+              nodeModel :{$: 'tree.json-read-only', 
+                object: '%$obj%', 
+                rootPath: '%$title%'
+              }, 
               style :{$: 'tree.no-head' }, 
               features: [
                 {$: 'css.class', class: 'jb-control-tree' }, 
@@ -186,8 +201,8 @@ jb.component('studio.data-browse', {
                 {$: 'tree.keyboard-selection' }, 
                 {$: 'css.width', width: '%$width%', minMax: 'max' }
               ]
-            }            
-          ], 
+            }
+          ]
         }
       ]
     }
@@ -352,6 +367,11 @@ jb.component('studio.jb-editor-menu', {
         components :{$: 'list', items: ['runActions', 'runActionOnItems'] }
       }, 
       {$: 'menu.studio-wrap-with-array', path: '%$path%' }, 
+      {$: 'menu.action', 
+        title: 'Duplicate', 
+        action :{$: 'studio.duplicate', path: '%$path%' },
+        showCondition: {$: 'studio.is-array-item', path: '%$path%'}
+      }, 
       {$: 'menu.separator' }, 
       {$: 'menu.end-with-separator', 
         options :{$: 'studio.goto-references', path: '%$path%' }

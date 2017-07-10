@@ -279,9 +279,17 @@ jb.component('studio.wrap-with-array',{
 })
 
 jb.component('studio.can-wrap-with-array', {
+  type: 'boolean',
   params: [ {id: 'path', as: 'string' } ],
   impl: (ctx,path) => 
       st.paramDef(path) && (st.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(st.valOfPath(path))
+})
+
+jb.component('studio.is-array-item', {
+  type: 'boolean',
+  params: [ {id: 'path', as: 'string' } ],
+  impl: (ctx,path) => 
+      Array.isArray(st.valOfPath(st.parentPath(path)))
 })
 
 

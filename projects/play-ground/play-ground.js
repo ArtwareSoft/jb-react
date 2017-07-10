@@ -13,7 +13,13 @@ jb.component('play-ground.main', {
         style :{$: 'label.p' }
       }, 
       {$: 'button', 
-        title: 'click me', 
+        title :{
+          $pipeline: [
+            ctx=>window.jb, 
+            '%comps%', 
+            {$: 'property-names', obj: '%%' }
+          ]
+        }, 
         action: [{$: 'action.switch', cases: [] }], 
         style :{$: 'button.mdl-raised' }
       }, 

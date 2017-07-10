@@ -145,7 +145,7 @@ jb.component('probe-test.pathSrc-through-$call', {
    	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrc-caller'}, path: '' } ),true)
       .runCircuit('test.pathSrc-comp~impl~items~1');
     return probe1.then(res=>
-    	''+res.finalResult.visits)
+    	''+res.result.visits)
    },
    expectedResult :{$: 'contains', text: '0' }
   }
@@ -157,7 +157,7 @@ jb.component('probe-test.pathSrc-through-$call-2', {
    	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrc-caller'}, path: '' } ),true)
       .runCircuit('test.pathSrc-caller~impl~items~1');
     return probe1.then(res=>
-    	''+res.finalResult.visits)
+    	''+res.result.visits)
    },
    expectedResult :{$: 'contains', text: '1' }
   }

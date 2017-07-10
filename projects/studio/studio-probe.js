@@ -1,4 +1,4 @@
-
+  
 jb.studio.Probe = class {
   constructor(ctx, noGaps) {
     if (ctx.probe)
@@ -11,18 +11,26 @@ jb.studio.Probe = class {
     this.circuit = this.context.profile;
   }
 
-  runCircuit(pathToTrace) {
+  runCircuit(pathToTrace,maxTime) {
+    this.maxTime = maxTime || 500;
+    this.startTime = new Date().getTime();
+    jb.logPerformance('probe','start',this);
+    this.result = [];
+    this.result.visits = 0;
+    this.probe[pathToTrace] = this.result;
     this.pathToTrace = pathToTrace;
-    this.probe[this.pathToTrace] = [];
-    this.probe[this.pathToTrace].visits = 0;
 
-    return this.simpleRun().then( res =>
-          this.handleGaps().then( res2 =>
-            jb.extend({finalResult: this.probe[this.pathToTrace], 
-                probe: this, 
-                circuit: jb.compName(this.circuit),
-            },res,res2)
-    ))
+    return this.simpleRun().catch(e => 
+        this)
+      .then( res => {
+            this.handleGaps();
+            this.completed = true;
+            this.totalTime = new Date().getTime()-this.startTime;
+            jb.logPerformance('probe','finished',this);
+            return this;
+    });
+    // this.asObservable = jb.rx.Observable.fromPromise(out);
+    // return this.asObservable.race(jb.rx.Observable.of(this).delay(500)).toPromise();
   }
 
   simpleRun() {
@@ -53,22 +61,26 @@ jb.studio.Probe = class {
 
   handleGaps() {
     if (this.noGaps) 
-      return Promise.resolve();
+      return;
     var st = jb.studio;
-    if (this.probe[this.pathToTrace].length == 0) {
+    if (this.result.length == 0) {
       // find closest path
       var _path = st.parentPath(this.pathToTrace);
       while (!this.probe[_path] && _path.indexOf('~') != -1)
         _path = st.parentPath(_path);
       if (this.probe[_path]) {
         this.closestPath = _path;
-        this.probe[this.pathToTrace] = this.probe[_path];
+        this.result = this.probe[_path];
       }
     }
-    return Promise.resolve();
   }
 
   record(context,parentParam) {
+      var now = new Date().getTime();
+      if (now - this.startTime > this.maxTime) {
+        jb.logPerformance('probe','out of time',this,now);
+        throw 'out of time';
+      }
       var path = context.path;
       var input = context.ctx({probe: null});
       var out = input.runItself(parentParam,{noprobe: true});
@@ -84,8 +96,10 @@ jb.studio.Probe = class {
       })
       if (found)
         found.counter++;
-      else 
-        this.probe[path].push({in: input, out: out, counter: 0});
+      else {
+        var rec = {in: input, out: out, counter: 0};
+        this.probe[path].push(rec);
+      }
       return out;
   }
 }

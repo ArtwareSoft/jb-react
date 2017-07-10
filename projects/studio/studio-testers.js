@@ -16,7 +16,7 @@ jb.component('suggestions-test', {
       var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: { $: circuit }, comp: circuit, path: '', data: null }))
         .runCircuit(params.path);
       return probeRes.then(res=>{
-        var probeCtx = res.finalResult[0] && res.finalResult[0].in;
+        var probeCtx = res.result[0] && res.result[0].in;
         var obj = new jb.studio.suggestions({ value: params.expression, selectionStart: selectionStart })
           .extendWithOptions(probeCtx,probeCtx.path);
         return JSON.stringify(JSON.stringify(obj.options.map(x=>x.text)));
@@ -64,9 +64,9 @@ jb.component('studio-probe-test', {
       .runCircuit(full_path);
     return probeRes.then(res=>{
           try {
-            if (res.finalResult.visits != expectedVisits && expectedVisits != -1)
-              return failure(`expected visits error actual/expected: ${res.finalResult.visits}/${expectedVisits}`);
-            if (!res.finalResult[0])
+            if (res.result.visits != expectedVisits && expectedVisits != -1)
+              return failure(`expected visits error actual/expected: ${res.result.visits}/${expectedVisits}`);
+            if (!res.result[0])
                 return failure('no probe results at path ' + probePath);
           } catch(e) {
             jb.logException(e,'jb-path-test');
