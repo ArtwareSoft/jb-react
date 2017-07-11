@@ -302,7 +302,7 @@ jb.component('group.auto-focus-on-first-input', {
       afterViewInit: cmp => {
           var elem = Array.from(cmp.base.querySelectorAll('input,textarea,select'))
             .filter(e => e.getAttribute('type') != 'checkbox')[0];
-          jb.ui.focus(elem,'group.auto-focus-on-first-input',ctx); 
+          elem && jb.ui.focus(elem,'group.auto-focus-on-first-input',ctx); 
         }
   })
 })

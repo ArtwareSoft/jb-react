@@ -370,7 +370,7 @@ jb.component('studio.watch-typeof-script', {
       init: cmp =>
     	jb.ui.refObservable(st.refOfPath(path),cmp,true)
     		.filter(e=>
-    			typeof e.oldVal != typeof e.newVal)
+    			(typeof e.oldVal == 'object') != (typeof e.newVal == 'object'))
     		.subscribe(e=>
         		jb.ui.setState(cmp,null,e,ctx))
    })

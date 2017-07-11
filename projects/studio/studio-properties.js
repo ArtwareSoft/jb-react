@@ -125,7 +125,8 @@ jb.component('studio.properties-in-tgp',{
     controls :{$: 'dynamic-controls', 
         controlItems :{$: 'studio.non-control-children', path: '%$path%', includeFeatures: true },
         genericControl :{$: 'studio.property-field', path: '%$controlItem%' } 
-    }
+    },
+    features:{$: 'group.auto-focus-on-first-input'}
   }
 })
 
