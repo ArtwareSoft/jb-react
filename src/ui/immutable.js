@@ -55,21 +55,21 @@ class ImmutableWithPath {
     var deleteOp = typeof opOnRef.$set == 'object' && opOnRef.$set == null;
     jb.path(op,ref.$jb_path,opOnRef); // create op as nested object 
     this.markPath(ref.$jb_path);
-    var opEvent = {op: op, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
+    var opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
         oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
     this.resources(jb.ui.update(this.resources(),op),opEvent);
     this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
-    if (deleteOp) {
-      if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
-        return delete this.resourceVersions[resource];
-      ref.$jb_cache = null;
-      ref.$jb_resourceV = this.resourceVersions[resource];
-    }
     this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
+    this.refresh(ref,opEvent);
     opEvent.newVal = jb.val(ref);
     if (opOnRef.$push)
       opEvent.insertedPath = opEvent.path.concat([opEvent.newVal.length - 1]);
     opEvent.resourceVersionsAfter = this.resourceVersions;
+    if (deleteOp) {
+      if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
+        return delete this.resourceVersions[resource];
+      delete ref.$jb_parentOfPrim[ref.$jb_path.slice(-1)[0]]
+    }
     this.resourceChange.next(opEvent);
     return ref;
   }
@@ -119,14 +119,25 @@ class ImmutableWithPath {
       return obj[prop]; // not reffable
     }
   }
-  refresh(ref) {
+  refresh(ref,lastOpEvent,silent) {
     if (!ref) debugger;
     try {
       var path = ref.$jb_path, new_ref = {};
       if (!path)
         return jb.logError('refresh: empty path');
+      var currentVersion = this.resourceVersions[path[0]] || 0;
       if (path.length == 1) return true;
-      if (this.resourceVersions[path[0]] == ref.$jb_resourceV) return true;
+      if (currentVersion == ref.$jb_resourceV) return true;
+      if (currentVersion == ref.$jb_resourceV + 1 && lastOpEvent && typeof lastOpEvent.op.$set != 'undefined') {
+        var res = this.refOfPath(ref.$jb_path,silent); // recalc ref by path
+        if (res)
+          return Object.assign(ref,res)
+        ref.$jb_invalid = true;
+        if (!silent)
+          jb.logError('refresh: parent not found: '+ path.join('~'));
+        return
+      }
+
       if (ref.$jb_parentOfPrim) {
         var parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
         if (!parent || !this.isRef(parent)) {
@@ -143,13 +154,13 @@ class ImmutableWithPath {
           handler: this,
         }
       } else {
-        var found_path = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
-        if (!found_path) {
+        var object_path_found = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+        if (!object_path_found) {
           this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
           ref.$jb_invalid = true;
           return jb.logError('refresh: object not found: ' + path.join('~'));
         }
-        var new_path = [path[0]].concat(found_path);
+        var new_path = [path[0]].concat(object_path_found);
         if (new_path) new_ref = {
           $jb_path: new_path,
           $jb_resourceV: this.resourceVersions[new_path[0]],
@@ -220,10 +231,11 @@ class ImmutableWithPath {
         .filter(e=>
             e.ref.$jb_path[0] == ref.$jb_path[0])
         .filter(e=> { 
+          this.refresh(ref,e,true);
+          if (ref.$jb_invalid) 
+            return false;
           var path = e.ref.$jb_path;
           var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
-          if (changeInParent) // change in self or parent - refind itself
-            jb.refreshRef(ref);
           if (includeChildren)
             return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
           return changeInParent;

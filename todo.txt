@@ -3,34 +3,24 @@ allow studio editing
 	open inteli for studio
 	add conditional 'save studio component' as inteli option
 
-'studio.pick-enum' - similar to 'studio.pick-profile'
-studio.property-enum
-
-slider data binding interaction arrow key takeuntil bug
-
 essential -> mandatory
 
 open profile chooser in suggestions
 	choose data
 
-table
-  editable table with add + delete
-  test changeSelectionBeforeDelete
-  table with max items - add max items filter and button (button title 'XX more items')
+table with max items - add max items filter and button (button title 'XX more items') use in probe results
 
-sublime javascript editor - should create js funtion and use eval
+codemirror javascript editor - should create js funtion and use eval
 		result preview at the bottom
 
 jbEditor
-  duplicate in array
   $vars support
   $if support - edit + should show then/else
   javascript - should create js funtion and use eval
   opening jbEditor history - back to XX
   horizonal auto scroll bug
-  in/out special viewers by type
-  	control
   resizer (dialog resizer)
+  show profile/property description at the bottom
 
 select profile 
 	show component description and usage at the bottom line
