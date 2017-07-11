@@ -53,7 +53,7 @@ jb.component('editable-text.mdl-input-no-floating-label', {
             onchange: e => cmp.jbModel(e.target.value),
             onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
         }),
-      css: '{ {?width: %$width%px?} }',
+      css: '{ {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
       features :[
           {$: 'field.databind-text' },
           {$: 'mdl-style.init-dynamic'}

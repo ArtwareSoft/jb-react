@@ -13,8 +13,48 @@ jb.component('picklist.native', {
   }
 })
 
+jb.component('picklist.native-md-look', {
+  type: 'picklist.style',
+  impl :{$: 'custom-style', 
+      features :{$: 'field.databind' },
+      template: (cmp,state,h) => h('div',{},h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
+          state.options.map(option=>h('option',{value: option.code},option.text)))),
+    css: `>select {  appearance: none; -webkit-appearance: none; font-family: inherit;
+  background-color: transparent;
+  padding: 6px 0;
+  font-size: 14px;
+  width: 100%;
+  color: rgba(0,0,0, 0.82);
+  border: none;
+  border-bottom: 1px solid rgba(0,0,0, 0.12); }
+
+  {
+    font-family: 'Roboto','Helvetica','Arial',sans-serif;
+    position: relative;
+  }
+  >select:focus { border-color: #3F51B5; border-width: 2px}
+
+  :after { position: absolute;
+        top: 0.75em;
+        right: 0.5em;
+        /* Styling the down arrow */
+        width: 0;
+        height: 0;
+        padding: 0;
+        content: '';
+        border-left: .25em solid transparent;
+        border-right: .25em solid transparent;
+        border-top: .375em solid rgba(0,0,0, 0.12);
+        pointer-events: none; }`
+  }
+})
+
+
 jb.component('picklist.mdl', {
   type: 'picklist.style',
+  params: [
+    {id: 'noLabel', type: 'boolean', as: 'boolean'},
+  ],
   impl :{$: 'custom-style', 
       template: (cmp,state,h) => h('div',{ class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fix-height'},[
         h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
@@ -25,7 +65,7 @@ jb.component('picklist.mdl', {
         h('label',{for: 'input_' + state.fieldId},
           h('i',{class: 'mdl-icon-toggle__label material-icons'},'keyboard_arrow_down')
         ),
-        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title),
+//        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title),
         h('ul',{for: 'input_' + state.fieldId, class: 'mdl-menu mdl-menu--bottom-left mdl-js-menu',
             onclick: e =>
               cmp.jbModel(e.target.getAttribute('code'))

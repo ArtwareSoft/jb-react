@@ -129,11 +129,20 @@ Object.assign(st, {
 		st.writeValueOfPath(path,result);
 	},
 
-	duplicate: path => {
+	duplicateControl: path => {
 		var prop = path.split('~').pop();
 		var val = st.valOfPath(path);
 		var parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
 		if (parent_ref) {
+			var clone = st.evalProfile(st.prettyPrint(val));
+			st.splice(parent_ref,[[Number(prop), 0,clone]]);
+		}
+	},
+	duplicateArrayItem: path => {
+		var prop = path.split('~').pop();
+		var val = st.valOfPath(path);
+		var parent_ref = st.refOfPath(st.parentPath(path));
+		if (parent_ref && Array.isArray(st.val(parent_ref))) {
 			var clone = st.evalProfile(st.prettyPrint(val));
 			st.splice(parent_ref,[[Number(prop), 0,clone]]);
 		}

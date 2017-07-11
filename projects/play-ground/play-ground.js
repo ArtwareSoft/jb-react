@@ -27,12 +27,23 @@ jb.component('play-ground.main', {
         title: 'name', 
         databind: '%$name%', 
         options :{$: 'picklist.options', options: '%$people/name%' }, 
-        style :{$: 'picklist.mdl' }
+        style :{$: 'picklist.native-md-look' }, 
+        features :{$: 'css.width', width: '200' }
+      }, 
+      {$: 'editable-number', 
+        databind: '%$num%', 
+        style :{$: 'editable-number.slider' }, 
+        max: 100, 
+        displayString: '%$Value%%$Symbol%', 
+        dataString: '%$Value%%$Symbol%', 
+        autoScale: true, 
+        step: 1
       }
     ], 
     features: [
       {$: 'var', name: 'male', value: true, mutable: true }, 
-      {$: 'var', name: 'name', mutable: true }
+      {$: 'var', name: 'male', value: true, mutable: true }, 
+      {$: 'var', name: 'num', mutable: true }
     ]
   }, 
   controls: [

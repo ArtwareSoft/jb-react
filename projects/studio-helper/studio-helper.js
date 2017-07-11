@@ -320,7 +320,8 @@ jb.component('studio-helper-sample.picklist', {
     style :{$: 'picklist.selection-list', width: '33' }, 
     features: [
       {$: 'css.padding' }, 
-      {$: 'css.padding' }
+      {$: 'css.padding' }, 
+      {$: 'css.width' }
     ]
   }
 })

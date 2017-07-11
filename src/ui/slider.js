@@ -2,10 +2,10 @@ jb.component('editable-number.slider-no-text', {
   type: 'editable-number.style',
   impl :{$: 'custom-style', 
       template: (cmp,state,h) => h('input',{ type: 'range', 
-        min: state.min, max: state.max, step: state.step,
-        value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: 0}),
+        min: state.min, max: state.max, step: state.step, 
+        value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: -1}),
       features :[
-          {$: 'field.databind' },
+          {$: 'field.databind-range' },
           {$: 'slider.init'},
       ],
   }
@@ -57,7 +57,7 @@ jb.component('slider.init', {
           if (val == cmp.min && ctx.vars.$model.autoScale)
             cmp.min -= cmp.max - cmp.min;
 
-          jb.ui.setState(cmp,{ min: cmp.min, max: cmp.max, step: ctx.vars.$model.step, val: cmp.jbModel() })
+          jb.ui.setState(cmp,{ min: cmp.min, max: cmp.max, step: ctx.vars.$model.step, val: cmp.jbModel() },null,ctx);
         },
 
       afterViewInit: cmp => {
@@ -76,30 +76,16 @@ jb.component('slider.init', {
               }
           }
 
-          cmp.setValueBySlider = _ => {
-              // if (cmp.jbModel() == null) // first time
-              //   return cmp.jbModel(0);
-              cmp.jbModel(cmp.base.value);
-              //cmp.refresh();
-          }
-
-          cmp.onkeydown.flatMap(e=>
-            jb.rx.Observable.interval(100).map(_=>e).takeUntil(cmp.onkeyup)
-          ).subscribe(e=> {              
-              cmp.handleArrowKey(e)
-              cmp.refresh();
-          });
+          cmp.onkeydown.subscribe(e=>
+              cmp.handleArrowKey(e));
 
           // drag
           cmp.onmousedown.flatMap(e=>
             cmp.onmousemove.takeUntil(cmp.onmouseup)
-            ).subscribe(e=>cmp.setValueBySlider())
+            ).subscribe(e=>cmp.jbModel(cmp.base.value))
 
-          if (ctx.vars.sliderCtx) {
+          if (ctx.vars.sliderCtx) // supporting left/right arrow keys in the text field as well
             ctx.vars.sliderCtx.handleArrowKey = e => cmp.handleArrowKey(e);
-            ctx.vars.sliderCtx.refresh = _ => cmp.refresh()
-          }
-
         }
     })
 })
@@ -113,11 +99,8 @@ jb.component('slider-text.handleArrowKeys', {
           jb.delay(1).then(_=>{
             var sliderCtx = ctx.vars.sliderCtx;
             if (sliderCtx)
-              cmp.onkeydown.flatMap(e=>
-                jb.rx.Observable.interval(100).map(_=>e).takeUntil(cmp.onkeyup)).subscribe(e=> {              
-                  sliderCtx.handleArrowKey(e)
-                  sliderCtx.refresh();
-              });
+              cmp.onkeydown.subscribe(e=>              
+                  sliderCtx.handleArrowKey(e));
           })
       }
     })

@@ -8,7 +8,7 @@ jb.component('editable-text.studio-primitive-text', {
           onchange: e => cmp.jbModel(e.target.value), 
           onkeyup: e => cmp.jbModel(e.target.value,'keyup')
       }),
-    css: `{ width: 367px}`,
+    css: `{ width: 367px} :focus { border-color: #3F51B5; border-width: 2px}`,
 	}
 })
 
@@ -21,7 +21,7 @@ jb.component('button.select-profile-style', {
             onmouseup:ev => cmp.clicked(ev),
             onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
         }),
-        css: `{ cursor: pointer;width: 367px }`
+        css: `{ cursor: pointer;width: 367px } :focus { border-color: #3F51B5; border-width: 2px}`
   }
 })
 

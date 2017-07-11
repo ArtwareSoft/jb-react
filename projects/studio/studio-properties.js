@@ -144,7 +144,7 @@ jb.component('studio.property-field', {
           $and: [
             {
               $not :{$: 'is-of-type', 
-                type: 'string,undefined', 
+                type: 'string,number,boolean,undefined', 
                 obj :{$: 'studio.val', path: '%$path%' }
               }
             }, 
@@ -281,14 +281,14 @@ jb.component('studio.property-boolean', {
   }
 })
 
-jb.component('studio.property-enum',{
-	type: 'control',
-	params: [ {id: 'path', as: 'string' } ],
-	impl :{$: 'picklist', 
-		style :{$: 'picklist.studio-enum'},
-		databind :{$: 'studio.ref', path: '%$path%' },
-		options :{$: 'studio.enum-options', path: '%$path%' },
-	}
+jb.component('studio.property-enum', {
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'picklist', 
+    databind :{$: 'studio.ref', path: '%$path%' }, 
+    options :{$: 'studio.enum-options', path: '%$path%' }, 
+    style :{$: 'picklist.native-md-look' }
+  }
 })
 
 jb.component('studio.property-slider', {
@@ -464,8 +464,7 @@ jb.component('studio.property-tgp-in-array', {
       }, 
       {$: 'studio.watch-path', 
         path: '%$path%', 
-         
-        includeChildren: 'true'
+//        includeChildren: 'true'
       }
     ]
   }

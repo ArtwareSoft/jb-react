@@ -50,7 +50,7 @@ jb.component('studio.tree-menu', {
       }, 
       {$: 'menu.action', 
         title: 'Duplicate', 
-        action :{$: 'studio.duplicate', path: '%$path%' }
+        action :{$: 'studio.duplicate-control', path: '%$path%' }
       }, 
       {$: 'menu.separator' }, 
       {$: 'menu.action', 

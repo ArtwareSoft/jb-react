@@ -233,13 +233,18 @@ jb.component('studio.add-property', {
 		st.addProperty(path)
 })
 
-jb.component('studio.duplicate',{
+jb.component('studio.duplicate-control',{
 	type: 'action',
-	params: [ 
-		{ id: 'path', as: 'string' },
-	],
+	params: [ { id: 'path', as: 'string' } ],
 	impl: (ctx,path) => 
-		st.duplicate(path)
+		st.duplicateControl(path)
+})
+
+jb.component('studio.duplicate-array-item',{
+	type: 'action',
+	params: [ { id: 'path', as: 'string' } ],
+	impl: (ctx,path) => 
+		st.duplicateArrayItem(path)
 })
 
 // jb.component('studio.move-in-array',{

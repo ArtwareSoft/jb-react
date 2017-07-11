@@ -369,7 +369,7 @@ jb.component('studio.jb-editor-menu', {
       {$: 'menu.studio-wrap-with-array', path: '%$path%' }, 
       {$: 'menu.action', 
         title: 'Duplicate', 
-        action :{$: 'studio.duplicate', path: '%$path%' },
+        action :{$: 'studio.duplicate-array-item', path: '%$path%' },
         showCondition: {$: 'studio.is-array-item', path: '%$path%'}
       }, 
       {$: 'menu.separator' }, 

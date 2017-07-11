@@ -16,12 +16,11 @@ jb.component('field.databind', {
           cmp.extendRefresh && cmp.extendRefresh();
         }
 
-        var srcCtx = cmp.ctxForPick || cmp.ctx;
         cmp.jbModel = (val,source) => {
           if (val === undefined) 
             return jb.val(ctx.vars.$model.databind);
           else { // write
-              jb.writeValue(ctx.vars.$model.databind,val,srcCtx);
+              jb.writeValue(ctx.vars.$model.databind,val,ctx);
           }
         }
 
@@ -33,6 +32,9 @@ jb.component('field.databind', {
 
 jb.component('field.databind-text', {
   type: 'feature',
+  params: [
+    { id: 'debounceTime', as: 'number', defaultValue: 500 },
+  ],
   impl: ctx => ({
       beforeInit: cmp => {
         if (!ctx.vars.$model || !ctx.vars.$model.databind)
@@ -41,7 +43,6 @@ jb.component('field.databind-text', {
         cmp.state.fieldId = jb.ui.field_id_counter++;
         cmp.state.model = jb.val(ctx.vars.$model.databind);
 
-        var srcCtx = cmp.ctxForPick || cmp.ctx;
         cmp.jbModel = (val,source) => {
           if (source == 'keyup') // make sure the input is inside the value
             return jb.delay(1).then(_=>cmp.jbModel(val));
@@ -49,14 +50,38 @@ jb.component('field.databind-text', {
           if (val === undefined) 
             return jb.val(ctx.vars.$model.databind);
           else { // write
-            // if (cmp.inputEvents && source == 'keyup')
-            //   cmp.inputEvents.next(val); // used for debounce
-            // else if (source != 'keyup') { // !ctx.vars.$model.updateOnBlur || 
               cmp.setState({model: val});
-              jb.writeValue(ctx.vars.$model.databind,val,srcCtx);
+              jb.writeValue(ctx.vars.$model.databind,val,ctx);
           }
         }
 
+        var srcCtx = cmp.ctxForPick || cmp.ctx;
+        jb.ui.refObservable(ctx.vars.$model.databind,cmp)
+            .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
+            .subscribe(e=>jb.ui.setState(cmp,{model: cmp.jbModel()},e,ctx))
+      }
+  })
+})
+
+jb.component('field.databind-range', {
+  type: 'feature',
+  impl: ctx => ({
+      beforeInit: cmp => {
+        if (!ctx.vars.$model || !ctx.vars.$model.databind)
+          return jb.logError('bind-field: No databind in model', ctx.vars.$model, ctx);
+        cmp.state.title = ctx.vars.$model.title();
+        cmp.state.fieldId = jb.ui.field_id_counter++;
+        cmp.state.model = jb.val(ctx.vars.$model.databind);
+
+        cmp.jbModel = (val,source) => {
+          if (val === undefined) 
+            return jb.val(ctx.vars.$model.databind);
+          else { // write
+              jb.writeValue(ctx.vars.$model.databind,val,ctx);
+          }
+        }
+
+        var srcCtx = cmp.ctxForPick || cmp.ctx;
         jb.ui.refObservable(ctx.vars.$model.databind,cmp)
             .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
             .subscribe(e=>jb.ui.setState(cmp,{model: cmp.jbModel()},e,ctx))
@@ -101,25 +126,25 @@ jb.component('field.databind-text', {
 //   }}
 // })
 
-jb.component('field.debounce-databind', {
-  type: 'feature',
-  description: 'debounce input content writing to databind via keyup',
-  params: [
-    { id: 'debounceTime', as: 'number', defaultValue: 500 },
-  ],
-  impl: (ctx,debounceTime) =>
-    ({
-      init: cmp => {
-          cmp.inputEvents = cmp.inputEvents || new jb.rx.Subject();
-          cmp.inputEvents.takeUntil( cmp.destroyed )
-            .distinctUntilChanged()
-            .debounceTime(debounceTime)
-            .subscribe(val=>
-              jb.writeValue(ctx.vars.$model.databind,val)
-          )
-      },
-    })
-})
+// jb.component('field.debounce-databind', {
+//   type: 'feature',
+//   description: 'debounce input content writing to databind via keyup',
+//   params: [
+//     { id: 'debounceTime', as: 'number', defaultValue: 500 },
+//   ],
+//   impl: (ctx,debounceTime) =>
+//     ({
+//       init: cmp => {
+//           cmp.inputEvents = cmp.inputEvents || new jb.rx.Subject();
+//           cmp.inputEvents.takeUntil( cmp.destroyed )
+//             .distinctUntilChanged()
+//             .debounceTime(debounceTime)
+//             .subscribe(val=>
+//               jb.writeValue(ctx.vars.$model.databind,val)
+//           )
+//       },
+//     })
+// })
 
 jb.component('field.data', {
   type: 'data',

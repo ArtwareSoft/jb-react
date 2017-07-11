@@ -6,6 +6,8 @@ allow studio editing
 'studio.pick-enum' - similar to 'studio.pick-profile'
 studio.property-enum
 
+slider data binding interaction arrow key takeuntil bug
+
 essential -> mandatory
 
 open profile chooser in suggestions
