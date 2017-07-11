@@ -7,6 +7,7 @@ jb.resource('people',[
 jb.component('play-ground.main', {
   type: 'control', 
   impl :{$: 'group', 
+    title: 'ert', 
     controls: [
       {$: 'label', 
         title :{$: 'is-of-type', type: 'string', obj: '123' }, 
@@ -42,7 +43,7 @@ jb.component('play-ground.main', {
     ], 
     features: [
       {$: 'var', name: 'male', value: true, mutable: true }, 
-      {$: 'var', name: 'male', value: true, mutable: true }, 
+      {$: 'var', name: 'name', value: true, mutable: true }, 
       {$: 'var', name: 'num', mutable: true }
     ]
   }, 
@@ -51,7 +52,8 @@ jb.component('play-ground.main', {
       title: 'my label', 
       style :{$: 'label.span' }
     }
-  ]
+  ], 
+  title: 'aa'
 })
 
 
@@ -66,5 +68,6 @@ jb.component('play-ground.t', {
         style :{$: 'button.mdl-icon', icon: 'b' }
       }
     ]
-  }
+  }, 
+  features :{$: 'css.height' }
 })

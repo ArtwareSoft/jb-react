@@ -44,8 +44,8 @@ jb.component('studio.preview-widget-impl', {
 
 jb.component('studio.refresh-preview', {
   type: 'action',
-  impl: _ => {}
-//    previewRefreshCounter++
+  impl: _ =>
+    jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
 })
 
 jb.component('studio.wait-for-preview-iframe', {

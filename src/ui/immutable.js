@@ -52,12 +52,19 @@ class ImmutableWithPath {
       return jb.logError('doOp: ref not found');
 
     var op = {}, resource = ref.$jb_path[0], oldResources = this.resources();
+    var deleteOp = typeof opOnRef.$set == 'object' && opOnRef.$set == null;
     jb.path(op,ref.$jb_path,opOnRef); // create op as nested object 
     this.markPath(ref.$jb_path);
     var opEvent = {op: op, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
         oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
     this.resources(jb.ui.update(this.resources(),op),opEvent);
     this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
+    if (deleteOp) {
+      if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
+        return delete this.resourceVersions[resource];
+      ref.$jb_cache = null;
+      ref.$jb_resourceV = this.resourceVersions[resource];
+    }
     this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
     opEvent.newVal = jb.val(ref);
     if (opOnRef.$push)

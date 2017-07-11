@@ -286,10 +286,14 @@ ui.renderWidget = function(profile,elem) {
 			this.state.profile = profile;
 			if (jb.studio.studioWindow) {
 				var st = jb.studio.studioWindow.jb.studio;
+				st.refreshPreviewWidget = _ => {
+					$(elem).empty();
+					ui.render(ui.h(R),elem);
+				}
 				st.pageChange.subscribe(page=>
 					this.setState({profile: {$: page}}));
 				st.scriptChange.subscribe(_=>
-					this.forceUpdate());
+					this.setState(null));
 			}
 		}
 		render(pros,state) {
