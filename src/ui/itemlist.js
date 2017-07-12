@@ -17,20 +17,13 @@ jb.component('itemlist.init', {
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
-        cmp.state.ctrls = calcCtrls();
-        
         cmp.refresh = _ =>
-            cmp.setState({ctrls: calcCtrls()})  
+            cmp.setState({ctrls: cmp.calcCtrls()})  
 
         if (ctx.vars.$model.watchItems && ctx.vars.$model.items)
           jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
 
-        function controlsOfItem(item) {
-          return ctx.vars.$model.controls(cmp.ctx.setData(item).setVars(jb.obj(ctx.vars.$model.itemVariable,item)))
-            .map(c=>jb.ui.renderable(c)).filter(x=>x);
-        }
-
-        function calcCtrls() {
+        cmp.calcCtrls = _ => {
             var _items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
             if (jb.compareArrays(_items,cmp.items))
               return cmp.state.ctrls;
@@ -38,8 +31,16 @@ jb.component('itemlist.init', {
               cmp.ctx.vars.itemlistCntr.items = _items;
             cmp.items = _items;
             return _items.map(item=>
-              Object.assign(controlsOfItem(item),{item:item}));
+              Object.assign(controlsOfItem(item),{item:item})).filter(x=>x.length > 0);
         }
+
+        function controlsOfItem(item) {
+          return ctx.vars.$model.controls(cmp.ctx.setData(item).setVars(jb.obj(ctx.vars.$model.itemVariable,item)))
+            .filter(x=>x).map(c=>jb.ui.renderable(c)).filter(x=>x);
+        }
+      },
+      init: cmp => {
+        cmp.state.ctrls = cmp.calcCtrls();
       },
   })
 })

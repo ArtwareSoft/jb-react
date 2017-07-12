@@ -7,6 +7,7 @@ class ImmutableWithPath {
     this.pathId = 0;
     this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
     this.resourceChange = new jb.rx.Subject();
+    jb.delay(1).then(_=>jb.ui.originalResources = jb.resources)
   }
   val(ref) {
     if (ref == null) return ref;
@@ -233,7 +234,7 @@ class ImmutableWithPath {
         .filter(e=> { 
           this.refresh(ref,e,true);
           if (ref.$jb_invalid) 
-            return false;
+            throw 'invalid ref';
           var path = e.ref.$jb_path;
           var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
           if (includeChildren)

@@ -3,6 +3,7 @@ allow studio editing
 	open inteli for studio
 	add conditional 'save studio component' as inteli option
 
+write ref refresh tests - deleting object with references to its children
 essential -> mandatory
 
 open profile chooser in suggestions

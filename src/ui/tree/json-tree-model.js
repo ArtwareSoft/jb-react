@@ -48,7 +48,7 @@ class ROjson {
 			return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,20))]);
 
 		return h('div',{},[h('span',{},prop + ': ')].concat(
-			Object.getOwnPropertyNames(val).filter(p=> ['string','boolean','number'].indexOf(typeof val[p]) != -1)
+			Object.getOwnPropertyNames(val).filter(p=>p.indexOf('$jb_') != 0).filter(p=> ['string','boolean','number'].indexOf(typeof val[p]) != -1)
 			.map(p=> [h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)) ])))
 	}
 }

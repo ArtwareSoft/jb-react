@@ -104,7 +104,7 @@ class JbComponent {
 
 	injectCss(cmp) {
 		var elem = cmp.base;
-		if (!elem.setAttribute)
+		if (!elem || !elem.setAttribute)
 			return;
 		var ctx = this.ctx;
 	  	while (ctx.profile.__innerImplementation)
@@ -288,6 +288,7 @@ ui.renderWidget = function(profile,elem) {
 				var st = jb.studio.studioWindow.jb.studio;
 				st.refreshPreviewWidget = _ => {
 					$(elem).empty();
+					jb.resources = jb.ui.originalResources || jb.resources;
 					ui.render(ui.h(R),elem);
 				}
 				st.pageChange.subscribe(page=>

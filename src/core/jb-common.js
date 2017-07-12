@@ -261,11 +261,16 @@ jb.component('write-value',{
 jb.component('remove-from-array',{
 	type: 'action',
 	params: [
-		{ id: 'array', as: 'ref' },
-		{ id: 'item', as: 'single' },
+		{ id: 'array', as: 'ref', essential: true },
+		{ id: 'itemToRemove', as: 'single', description: 'choose item or index' },
+		{ id: 'index', as: 'number', description: 'choose item or index' },
 	],
-	impl: (ctx,array,item) =>
-		jb.splice(array,[[(jb.val(array)||[]).indexOf(item),1]],ctx)
+	impl: (ctx,array,itemToRemove,index) => {
+		var ar = jb.toarray(array);
+		var index = itemToRemove ? ar.indexOf(item) : index;
+		if (index != -1 && ar.length > index)
+			jb.splice(array,[[index,1]],ctx)
+	}
 });
 
 jb.component('toggle-boolean-value',{
@@ -703,6 +708,21 @@ jb.component('extract-suffix',{
 		}
 	}
 });
+
+jb.component('range', {
+	type: 'data',
+	params: [
+		{ id: 'from', as: 'number', defaultValue: 1 },
+		{ id: 'to', as: 'number', defaultValue: 10 },
+	],
+	impl: (ctx,from,to) => {
+	  	var res = [];
+	  	if (from <= to) 
+	  	  for(var i=from;i<=to;i++)
+	  		res.push(i)
+		return res;
+	}
+})
 
 jb.component('type-of', {
 	type: 'data',

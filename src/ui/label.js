@@ -17,12 +17,16 @@ jb.component('label.bind-title', {
       cmp.state.title = fixTitleVal(ref);
       if (jb.isRef(ref))
         jb.ui.refObservable(ref,cmp)
+            .catch(e=> cmp.refresh() || [] )
             .subscribe(e=>jb.ui.setState(cmp,{title: fixTitleVal(ref)},e,ctx));
+
       cmp.refresh = _ => 
         cmp.setState({title: fixTitleVal(ctx.vars.$model.title(cmp.ctx))})
 
-      function fixTitleVal(titleVal) {
-        var val = jb.val(titleVal);
+      function fixTitleVal(titleRef) {
+        if (titleRef  == null|| titleRef.$jb_invalid)
+            return 'ref error';
+        var val = jb.val(titleRef);
         return (typeof val == 'boolean') ? (''+val) : val
       }
     }

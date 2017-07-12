@@ -71,3 +71,61 @@ jb.component('play-ground.t', {
   }, 
   features :{$: 'css.height' }
 })
+
+jb.component('play-ground.invalid-ref', {
+  type: 'control', 
+  impl :{$: 'group', 
+    title: 'invalid-ref', 
+    style :{$: 'layout.horizontal', spacing: '86' }, 
+    controls: [
+      {$: 'button', 
+        title: 'delete parent', 
+        action :{$: 'write-value', 
+          item: '0', 
+          array: '%$people%', 
+          index: '0', 
+          to: '%$Customer/contact%'
+        }, 
+        style :{$: 'button.mdl-raised' }
+      }, 
+      {$: 'label', 
+        title: '%$Customer/contact/name%', 
+        style :{$: 'label.span' }
+      }
+    ], 
+    features :{$: 'var', 
+      name: 'Customer', 
+      value :{$: 'object', 
+        contact :{$: 'object', name: 'Homer' }
+      }, 
+      mutable: true
+    }
+  }
+})
+
+jb.component('play-ground.more-items', {
+  type: 'control', 
+  impl :{$: 'group', 
+    title: 'more-items', 
+    controls: [
+      {$: 'itemlist', 
+        items :{
+          $pipeline: [
+            {$: 'range', from: 1, to: '20' }, 
+            {$: 'itemlist-container.filter' }
+          ]
+        }, 
+        controls :{$: 'label', title: '%%' }, 
+        style :{$: 'itemlist.ul-li' }, 
+        itemVariable: 'item', 
+        features :{$: 'watch-ref', ref: '%$itemlistCntrData%', includeChildren: true }
+      }, 
+      {$: 'itemlist-container.more-items-button', 
+        title: 'show %$itemlistCntrData/itemsToAdd% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeFilter%)', 
+        maxItemsRef: '%$itemlistCntrData/maxItems%', 
+        style :{$: 'button.href' }
+      }
+    ], 
+    features :{$: 'group.itemlist-container', id: '', maxItems: '10', itemsToAdd: '2' }
+  }
+})
