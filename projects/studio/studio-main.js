@@ -31,10 +31,11 @@ jb.component('studio.top-bar', {
     style :{$: 'layout.horizontal', spacing: '3' }, 
     controls: [
       {$: 'image', 
-        url: '/projects/studio/css/logo90.png', 
-        imageHeight: '90', 
+        url: '/projects/studio/css/jbartlogo.png', 
+        imageHeight: '60', 
         units: 'px', 
-        style :{$: 'image.default' }
+        style :{$: 'image.default' }, 
+        features :{$: 'css.margin', top: '15', left: '5' }
       }, 
       {$: 'group', 
         title: 'title and menu', 

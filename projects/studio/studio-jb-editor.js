@@ -318,6 +318,57 @@ jb.component('studio.jb-editor-menu', {
           item2: 'object'
         }
       }, 
+      {$: 'menu.action', 
+        title: 'Add variable', 
+        action :{$: 'open-dialog', 
+          id: 'add variable', 
+          style :{$: 'dialog.popup', okLabel: 'OK', cancelLabel: 'Cancel' }, 
+          content :{$: 'group', 
+            controls: [
+              {$: 'editable-text', 
+                title: 'variable name', 
+                databind: '%$name%', 
+                style :{$: 'editable-text.mdl-input' }, 
+                features: [
+                  {$: 'feature.onEnter', 
+                    action: [
+                      {$: 'write-value', 
+                        to :{$: 'studio.ref', path: '%$path%~%$name%' }, 
+                        value: ''
+                      }, 
+                      {$: 'dialog.close-containing-popup', OK: true }, 
+                      {$: 'tree.regain-focus' }
+                    ]
+                  }
+                ]
+              }
+            ], 
+            features :{$: 'css.padding', top: '9', left: '20', right: '20' }
+          }, 
+          title: 'New variable', 
+          onOK :{$: 'write-value', 
+            to :{$: 'studio.ref', path: '%$path%~%$name%' }, 
+            value: ''
+          }, 
+          modal: 'true', 
+          features: [
+            {$: 'var', name: 'name', mutable: true }, 
+            {$: 'dialog-feature.near-launcher-position' }, 
+            {$: 'dialog-feature.auto-focus-on-first-input' }
+          ]
+        }, 
+        showCondition :{$: 'ends-with', endsWith: '~$vars', text: '%$path%' }
+      }, 
+      {$: 'menu.action', 
+        title: 'Variables', 
+        action :{$: 'write-value', 
+            to :{$: 'studio.ref', path: '%$path%~$vars' }, 
+            value: {$: 'object'}
+        }, 
+        showCondition : {$and: [ 
+          {$isEmpty: {$: 'studio.val', path: '%$path%~$vars' } }, 
+          {$: 'is-of-type', obj: {$: 'studio.val', path: '%$path%' }, type: 'object' } ] }
+      }, 
       {$: 'menu.end-with-separator', 
         options :{$: 'menu.dynamic-options', 
           endsWithSeparator: true, 
