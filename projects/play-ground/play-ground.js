@@ -121,11 +121,12 @@ jb.component('play-ground.more-items', {
         features :{$: 'watch-ref', ref: '%$itemlistCntrData%', includeChildren: true }
       }, 
       {$: 'itemlist-container.more-items-button', 
-        title: 'show %$itemlistCntrData/itemsToAdd% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeFilter%)', 
         maxItemsRef: '%$itemlistCntrData/maxItems%', 
+        title: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeFilter%)', 
+        delta: '3', 
         style :{$: 'button.href' }
       }
     ], 
-    features :{$: 'group.itemlist-container', id: '', maxItems: '10', itemsToAdd: '2' }
+    features :{$: 'group.itemlist-container', itemsToAdd: '2', id: '', maxItems: '10' }
   }
 })

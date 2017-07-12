@@ -41,8 +41,6 @@ jb.component('group.itemlist-container', {
     { id: 'id', as: 'string' },
     { id: 'defaultItem', as: 'single' },
     { id: 'maxItems', as: 'number' , defaultValue: 100 },
-    { id: 'itemsToAdd', as: 'number' , defaultValue: 200 },
-
   ],
   impl :{$list : [
     {$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '' } , mutable: true},
@@ -51,9 +49,7 @@ jb.component('group.itemlist-container', {
       init: cmp => {
         var maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
         jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
-        jb.writeValue(cmp.ctx.exp('%$itemlistCntrData/itemsToAdd%','ref'),ctx.componentContext.params.itemsToAdd);
-        cmp.ctx.vars.itemlistCntr.filters.push( items => 
-          items.slice(0,jb.tonumber(maxItemsRef)));
+        cmp.ctx.vars.itemlistCntr.maxItemsFilter = items => items.slice(0,jb.tonumber(maxItemsRef));
       }
     })
   ]}
@@ -85,9 +81,10 @@ jb.component('itemlist-container.filter', {
   requires: ctx => ctx.vars.itemlistCntr,
   impl: ctx => {
       if (!ctx.vars.itemlistCntr) return;
-      jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),ctx.data.length);
       var res = ctx.vars.itemlistCntr.filters.reduce((items,filter) => 
                   filter(items), ctx.data || []);
+      jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),res.length);
+      res = ctx.vars.itemlistCntr.maxItemsFilter(res);
       jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length);
       return res;
    }
@@ -128,30 +125,32 @@ jb.component('itemlist-container.more-items-button', {
   type: 'control', category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
-    { id: 'title', as: 'string' , dynamic: true, defaultValue: 'show %$itemlistCntrData/itemsToAdd% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeFilter%)' },
-    { id: 'maxItemsRef', as: 'ref', defaultValue: '%$itemlistCntrData/maxItems%'},
+    { id: 'title', as: 'string' , dynamic: true, defaultValue: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeFilter%)' },
+    { id: 'delta', as: 'number' , defaultValue: 200 },
     { id: 'style', type: 'button.style', defaultValue: { $: 'button.href' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
-  impl: (ctx,title,maxItemsRef) => 
-    jb.ui.ctrl(ctx,{
+  impl: (ctx,title,delta) => {
+    return jb.ui.ctrl(ctx,{
       beforeInit: cmp => {
         if (!ctx.vars.itemlistCntr) return;
+        var maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
         cmp.clicked = _ => 
-          jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + cmp.ctx.exp('%$itemlistCntrData/itemsToAdd%','number'));
+          jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta);
         cmp.refresh = _ => 
-          cmp.setState({title: jb.val(ctx.params.title(cmp.ctx))});
+          cmp.setState({title: jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta})))});
         jb.ui.watchRef(ctx,cmp,maxItemsRef);
       },
       init: cmp =>
-        cmp.state.title = jb.val(ctx.params.title(cmp.ctx)),
-      // hide the button when not needed
-      templateModifier: (vdom,cmp,state) => {
-        if (!ctx.vars.itemlistCntrData || ctx.vars.itemlistCntrData.countBeforeFilter <= jb.tonumber(maxItemsRef)) 
+        cmp.state.title = jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta}))),
+      
+      templateModifier: (vdom,cmp,state) => { // hide the button when not needed
+        if (cmp.ctx.exp('%$itemlistCntrData/countBeforeFilter%','number') == cmp.ctx.exp('%$itemlistCntrData/countAfterFilter%','number')) 
           return jb.ui.h('span');
         return vdom;
       }
     })
+  }
 });
 
 jb.ui.extractPropFromExpression = exp => { // performance for simple cases such as %prop1%
