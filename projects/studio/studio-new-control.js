@@ -23,11 +23,6 @@ jb.component('studio.open-new-profile-dialog', {
           {$: 'studio.insert-control', path: '%$path%', comp: '%%' }, 
           {$: 'on-next-timer', 
             action:{$:'studio.goto-last-edit'} 
-            // [
-            //   {$: 'studio.open-properties' }, 
-            //   {$: 'studio.open-control-tree' }, 
-            //   {$: 'studio.refresh-preview' }
-            // ]
           }
         ], 
         else :{
@@ -237,6 +232,7 @@ jb.component('studio.select-profile', {
             features: [
               {$: 'css.height', height: '300', overflow: 'auto', minMax: '' }, 
               {$: 'itemlist.selection', 
+                databind: '%$itemlistCntrData/selected%', 
                 onDoubleClick :{$: 'runActions', 
                   actions: [{$: 'dialog.close-containing-popup' }, { $call: 'onSelect' }]
                 }, 
@@ -247,15 +243,22 @@ jb.component('studio.select-profile', {
                   actions: [{$: 'dialog.close-containing-popup' }, { $call: 'onSelect' }]
                 }
               }, 
-              {$: 'watch-ref', ref: '%$SelectedCategory%',  }, 
-              {$: 'watch-ref', 
-                ref: '%$itemlistCntrData/search_pattern%', 
-                
-              }, 
+              {$: 'watch-ref', ref: '%$SelectedCategory%' }, 
+              {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' }, 
               {$: 'css.margin', top: '3', selector: '>li' }
             ]
           }
         ]
+      }, 
+      {$: 'label', 
+        title :{
+          $pipeline: [
+            '%$itemlistCntrData/selected%', 
+            {$: 'studio.val', path: '%%' }, 
+            'aa %description%'
+          ]
+        }, 
+        style :{$: 'label.span' }
       }
     ], 
     features: [

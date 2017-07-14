@@ -52,6 +52,7 @@ jb.pipe = function(context,items,ptName) {
 
 jb.component('pipeline',{
 	type: 'data',
+	description: 'map data arrays one after the other',
 	params: [
 		{ id: 'items', type: "data,aggregator[]", ignore: true, essential: true, composite: true },
 	],
@@ -60,6 +61,7 @@ jb.component('pipeline',{
 
 jb.component('pipe', { // synched pipeline
 	type: 'data',
+	description: 'map asynch data arrays',
 	params: [
 		{ id: 'items', type: "data,aggregator[]", ignore: true, essential: true, composite: true },
 	],
@@ -79,6 +81,7 @@ jb.component('data.if', {
 
 jb.component('action.if', {
  	type: 'action',
+ 	description: 'if then else',
  	params: [
  		{ id: 'condition', type: 'boolean', as: 'boolean', essential: true},
  		{ id: 'then', type: 'action', essential: true, dynamic: true },

@@ -391,7 +391,7 @@ var jstypes = {
     'string': function(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null) return '';
-      value = val(value,true);
+      value = val(value);
       if (typeof(value) == 'undefined') return '';
       return '' + value;
     },
@@ -412,17 +412,18 @@ var jstypes = {
     },
     'boolean': function(value) {
       if (Array.isArray(value)) value = value[0];
-      return val(value,true) ? true : false;
+      return val(value) ? true : false;
     },
     'single': function(value) {
-      if (Array.isArray(value)) return value[0];
-      if (!value) return value;
-      value = val(value,true);
-      return value;
+      if (Array.isArray(value)) 
+        value = value[0];
+      return val(value);
     },
     'ref': function(value) {
 //      if (Array.isArray(value)) value = value[0];
-      if (value == null) return value;
+//      if (value == null) return value;
+      if (Array.isArray(value) && value.length == 1)
+        value = value[0]; 
       return jb.valueByRefHandler.asRef(value);
     }
 }

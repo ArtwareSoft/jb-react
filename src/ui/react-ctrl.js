@@ -376,6 +376,13 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren) {
         ui.setState(cmp,null,e,ctx))
 }
 
+ui.toVdomOrStr = val => {
+	var res = jb.val((Array.isArray(val) && val.length == 1) ? val[0] : val);
+	if (typeof res == 'boolean')
+		res = '' + res;
+	return res;
+}
+
 // ****************** components ****************
 
 jb.component('custom-style', {

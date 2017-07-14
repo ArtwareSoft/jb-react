@@ -26,8 +26,7 @@ jb.component('label.bind-title', {
       function fixTitleVal(titleRef) {
         if (titleRef  == null|| titleRef.$jb_invalid)
             return 'ref error';
-        var val = jb.val(titleRef);
-        return (typeof val == 'boolean') ? (''+val) : val
+        return jb.ui.toVdomOrStr(titleRef);
       }
     }
   })

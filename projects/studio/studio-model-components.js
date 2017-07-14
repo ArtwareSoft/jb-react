@@ -2,13 +2,13 @@
 var st = jb.studio;
 
 jb.component('studio.val', {
-	params: [ {id: 'path', as: 'string' } ],
+	params: [ {id: 'path', as: 'string', essential: true } ],
 	impl: (ctx,path) => 
 		st.valOfPath(path)
 })
 
 jb.component('studio.is-primitive-value', {
-  params: [ {id: 'path', as: 'string' } ],
+  params: [ {id: 'path', as: 'string', essential: true } ],
   impl: (ctx,path) => 
       st.isPrimitiveValue(st.valOfPath(path))
 })

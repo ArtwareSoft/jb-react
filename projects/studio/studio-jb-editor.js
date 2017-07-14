@@ -359,16 +359,6 @@ jb.component('studio.jb-editor-menu', {
         }, 
         showCondition :{$: 'ends-with', endsWith: '~$vars', text: '%$path%' }
       }, 
-      {$: 'menu.action', 
-        title: 'Variables', 
-        action :{$: 'write-value', 
-            to :{$: 'studio.ref', path: '%$path%~$vars' }, 
-            value: {$: 'object'}
-        }, 
-        showCondition : {$and: [ 
-          {$isEmpty: {$: 'studio.val', path: '%$path%~$vars' } }, 
-          {$: 'is-of-type', obj: {$: 'studio.val', path: '%$path%' }, type: 'object' } ] }
-      }, 
       {$: 'menu.end-with-separator', 
         options :{$: 'menu.dynamic-options', 
           endsWithSeparator: true, 
@@ -385,6 +375,16 @@ jb.component('studio.jb-editor-menu', {
             }
           }
         }
+      }, 
+      {$: 'menu.action', 
+        title: 'Variables', 
+        action :{$: 'write-value', 
+            to :{$: 'studio.ref', path: '%$path%~$vars' }, 
+            value: {$: 'object'}
+        }, 
+        showCondition : {$and: [ 
+          {$isEmpty: {$: 'studio.val', path: '%$path%~$vars' } }, 
+          {$: 'is-of-type', obj: {$: 'studio.val', path: '%$path%' }, type: 'object' } ] }
       }, 
       {$: 'menu.action', 
         $vars: {

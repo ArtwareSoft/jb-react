@@ -49,17 +49,18 @@ jb.component('group.itemlist-container', {
       init: cmp => {
         var maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
         jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
-        cmp.ctx.vars.itemlistCntr.maxItemsFilter = items => items.slice(0,jb.tonumber(maxItemsRef));
+        cmp.ctx.vars.itemlistCntr.maxItemsFilter = items => 
+          items.slice(0,jb.tonumber(maxItemsRef));
       }
     })
   ]}
 })
 
-jb.component('group.itemlist-selected', {
+jb.component('itemlist.itemlist-selected', {
   type: 'feature',   category: 'itemlist:20,group:0',
   impl :{ $list : [ 	
-  			{$: 'group.data', data : '%itemlistCntrData/selected%'},
-  			{$: 'hidden', showCondition: {$notEmpty: '%itemlistCntrData/selected%' } }
+  			{$: 'group.data', data : '%$itemlistCntrData/selected%'},
+  			{$: 'hidden', showCondition: {$notEmpty: '%$itemlistCntrData/selected%' } }
   		]}
 })
 

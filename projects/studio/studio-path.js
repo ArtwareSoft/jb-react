@@ -98,10 +98,6 @@ Object.assign(st, {
 		}
 	},
 
-//	newComp:(path,profile) =>
-//        st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] })
-//        st.compsRefHandler.doOp({$jb_path: [path]},{$set: profile}),
-
 	wrapWithGroup: (path) =>
 		st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] }),
 

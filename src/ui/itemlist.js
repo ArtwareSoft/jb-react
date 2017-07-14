@@ -139,7 +139,7 @@ jb.component('itemlist.divider', {
 jb.component('itemlist.selection', {
   type: 'feature',
   params: [
-    { id: 'databind', as: 'ref', defaultValue: '%itemlistCntrData/selected%' },
+    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%' },
     { id: 'selectedToDatabind', dynamic: true ,defaultValue: '%%' },
     { id: 'databindToSelected', dynamic: true ,defaultValue: '%%' },
     { id: 'onSelection', type: 'action', dynamic: true },

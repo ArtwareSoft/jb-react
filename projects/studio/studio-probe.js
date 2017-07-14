@@ -8,6 +8,7 @@ jb.studio.Probe = class {
     this.context = ctx.ctx({});
     this.probe = {};
     this.context.probe = this;
+    this.context.profile = jb.studio.valOfPath(this.context.path); // recalc last version of profile
     this.circuit = this.context.profile;
   }
 
@@ -111,6 +112,7 @@ jb.component('studio.probe', {
       var _jb = jb.studio.previewjb;
       var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
       var context = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
-      return new (_jb.studio.Probe || jb.studio.Probe)(context).runCircuit(path());
+      var pickSelection = ctx.vars.pickSelection && ctx.vars.pickSelection.ctx;
+      return new (_jb.studio.Probe || jb.studio.Probe)(pickSelection || context).runCircuit(path());
     }
 })
