@@ -73,7 +73,7 @@ jb.component('studio.tree-menu', {
         action :{$: 'studio.goto-path', path: '%$compName%' }, 
         showCondition: '%$compName%'
       }, 
-      {$: 'studio.goto-sublime', path: '%$path%' }, 
+      {$: 'studio.goto-editor', path: '%$path%' }, 
       {$: 'menu.separator' }, 
       {$: 'menu.end-with-separator', 
         options :{$: 'studio.goto-references', 

@@ -395,7 +395,7 @@ jb.component('studio.jb-editor-menu', {
         showCondition: '%$compName%'
       }, 
       {$: 'menu.end-with-separator', 
-        options :{$: 'studio.goto-sublime', path: '%$path%' }
+        options :{$: 'studio.goto-editor', path: '%$path%' }
       }, 
       {$: 'menu.studio-wrap-with', 
         path: '%$path%', 

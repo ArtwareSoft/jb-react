@@ -132,7 +132,7 @@ jb.component('test.dialog-content', {
 var jb_success_counter = 0;
 var jb_fail_counter = 0;
 
-function goto_sublime(id) {
+function goto_editor(id) {
 	$.ajax(`/?op=gotoSource&comp=${id}`)
 }
 function hide_success_lines() {
@@ -161,7 +161,7 @@ jb.testers.runTests = function(testType,specificTest,show) {
 			else
 				jb_fail_counter++;
 			var elem = `<div class="${res.success ? 'success' : 'failure'}""><a href="/projects/ui-tests/tests.html?test=${res.id}&show" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
-			<button class="sublime" onclick="goto_sublime('${res.id}')">src</button><span>${res.reason||''}</span>
+			<button class="editor" onclick="goto_editor('${res.id}')">src</button><span>${res.reason||''}</span>
 			</div>`;
 
 			document.getElementById('success-counter').innerHTML = ', success ' + jb_success_counter;

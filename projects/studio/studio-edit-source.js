@@ -34,7 +34,7 @@ jb.component('studio.string-property-ref', {
 		})
 })
 
-jb.component('studio.goto-sublime', {
+jb.component('studio.goto-editor', {
 	type: 'menu.option',
 	params: [
 		{ id: 'path', as: 'string'},
@@ -44,9 +44,9 @@ jb.component('studio.goto-sublime', {
         genericOption :{$: 'menu.action', 
           title: { $pipeline: [
             {$: 'split', separator: '~', part: 'first' },
-            'Goto sublime: %%'
+            'Goto editor: %%'
           ]}, 
-          action :{$: 'studio.open-sublime-editor', path: '%%' } 
+          action :{$: 'studio.open-editor-editor', path: '%%' } 
         }
       }, 
 }) 
@@ -62,7 +62,7 @@ jb.component('studio.goto-targets', {
 				x.split('~')[0]))
 }) 
 
-jb.component('studio.open-sublime-editor', {
+jb.component('studio.open-editor-editor', {
 	type: 'action',
 	params: [
 		{ id: 'path', as: 'string'},

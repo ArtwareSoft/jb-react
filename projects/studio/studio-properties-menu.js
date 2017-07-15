@@ -62,7 +62,7 @@ jb.component('studio.open-property-menu', {
           icon: 'code', 
           action :{$: 'studio.edit-source', path: '%$path%' }
         }, 
-        {$: 'studio.goto-sublime', path: '%$path%' },
+        {$: 'studio.goto-editor', path: '%$path%' },
         {$: 'menu.action', 
           title: 'Delete', 
           icon: 'delete', 
