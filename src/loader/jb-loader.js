@@ -84,7 +84,7 @@ var resources = {
           'node_modules/dragula/dist/dragula.css',
       ],
       studio: [
-        'utils','path','main', 'pretty-print', 
+        'utils','path','main', 'pretty-print',
         'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'tgp-model', 'model-components',
         'tree','popups','properties','pick','properties-menu','save','open-project',
         'suggestions','undo','edit-source','jb-editor','jb-editor-styles','probe','testers', 'event-tracker'
@@ -98,6 +98,10 @@ var resources = {
 
         'css/font.css',
         'css/styles.css',
+      ],
+      babel: [
+        'node_modules/babel-standalone/babel.js',
+        'dist/babel_h_to_jsx.js'
       ]
 };
 
