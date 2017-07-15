@@ -87,7 +87,7 @@ var resources = {
         'utils','path','main', 'pretty-print',
         'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'tgp-model', 'model-components',
         'tree','popups','properties','pick','properties-menu','save','open-project',
-        'suggestions','undo','edit-source','jb-editor','jb-editor-styles','probe','testers', 'event-tracker'
+        'suggestions','undo','edit-source','jb-editor','jb-editor-styles','probe','testers', 'event-tracker','h-to-jsx'
       ],
       'studio-tests': [
         'probe','model','tree','suggestion'
@@ -101,7 +101,6 @@ var resources = {
       ],
       babel: [
         'node_modules/babel-standalone/babel.js',
-        'dist/babel_h_to_jsx.js'
       ]
 };
 
