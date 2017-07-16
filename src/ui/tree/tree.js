@@ -9,7 +9,7 @@ class NodeLine extends jb.ui.Component {
 			icon: model.icon ? model.icon(path) : 'radio_button_unchecked'
 		})
 
-		this.state.flip = _ => { 
+		this.state.flip = _ => {
 			tree.expanded[path] = !(tree.expanded[path]);
 			this.setState({expanded:tree.expanded[path]});
 			tree.redraw();
@@ -37,7 +37,7 @@ class NodeLine extends jb.ui.Component {
 			]),
 			h('i',{class: 'material-icons', style: 'font-size: 16px; margin-left: -4px; padding-right:2px'},state.icon),
 			h('span',{class: 'treenode-label'}, state.title),
-		])		
+		])
 	}
 }
 
@@ -51,7 +51,7 @@ class TreeNode extends jb.ui.Component {
 		var clz = [props.class, model.isArray(path) ? 'jb-array-node': '',disabled].filter(x=>x).join(' ');
 
 		return h('div',{class: clz, path: props.path},
-			[h(NodeLine,{ tree: tree, path: path })].concat(!tree.expanded[path] ? [] : h('div',{ class: 'treenode-children'} , 
+			[h(NodeLine,{ tree: tree, path: path })].concat(!tree.expanded[path] ? [] : h('div',{ class: 'treenode-children'} ,
 					tree.nodeModel.children(path).map(childPath=>
 						h(TreeNode,{ tree: tree, path: childPath, class: 'treenode' + (tree.selected == childPath ? ' selected' : '') })
 					))
@@ -69,7 +69,7 @@ jb.component('tree', {
 		{ id: 'style', type: "tree.style", defaultValue: { $: "tree.ul-li" }, dynamic: true },
 		{ id: 'features', type: "feature[]", dynamic: true }
 	],
-	impl: ctx => { 
+	impl: ctx => {
 		var nodeModel = ctx.params.nodeModel();
 		if (!nodeModel)
 			return jb.logException('missing nodeModel in tree');
@@ -83,14 +83,14 @@ jb.component('tree', {
 						cmp.setState({});
 					},
 					expanded: jb.obj(tree.nodeModel.rootPath, true),
-					elemToPath: el => 
+					elemToPath: el =>
 						$(el).closest('.treenode').attr('path'),
 					selectionEmitter: new jb.rx.Subject(),
 				})
 			},
 			afterViewInit: cmp =>
 				tree.el = cmp.base
-		}) 
+		})
 	}
 })
 
@@ -99,7 +99,7 @@ jb.component('tree.ul-li', {
 	impl :{$: 'custom-style',
 		template: (cmp,state,h) => {
 			var tree = cmp.tree;
-			return h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath, 
+			return h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath,
 				class: 'jb-control-tree treenode' + (tree.selected == tree.nodeModel.rootPath ? ' selected': '') })
 		}
 	}
@@ -132,7 +132,7 @@ jb.component('tree.selection', {
 
 		  tree.selectionEmitter
 		  	.merge(databindObs)
-		  	.merge(cmp.onclick.map(event => 
+		  	.merge(cmp.onclick.map(event =>
 		  		tree.elemToPath(event.target)))
 		  	.filter(x=>x)
 	  		.distinctUntilChanged()
@@ -140,10 +140,10 @@ jb.component('tree.selection', {
 		  	  if (tree.selected == selected)
 		  	  	return;
 			  tree.selected = selected;
-			  selected.split('~').slice(0,-1).reduce(function(base, x) { 
+			  selected.split('~').slice(0,-1).reduce(function(base, x) {
 				  var path = base ? (base + '~' + x) : x;
 				  tree.expanded[path] = true;
-				  return path; 
+				  return path;
 			  },'')
 			  if (context.params.databind)
 				  jb.writeValue(context.params.databind, selected);
@@ -162,7 +162,7 @@ jb.component('tree.selection', {
 			  first_selected = tree.elemToPath(first);
 		  }
 		  if (first_selected)
-			jb.delay(1).then(() => 
+			jb.delay(1).then(() =>
 				tree.selectionEmitter.next(first_selected))
   		},
   	})
@@ -183,7 +183,7 @@ jb.component('tree.keyboard-selection', {
 				var tree = cmp.tree;
 				cmp.base.setAttribute('tabIndex','0');
 
-				var keyDownNoAlts = cmp.onkeydown.filter(e=> 
+				var keyDownNoAlts = cmp.onkeydown.filter(e=>
 					!e.ctrlKey && !e.altKey);
 
 				tree.regainFocus = cmp.getKeyboardFocus = cmp.getKeyboardFocus || (_ => {
@@ -206,7 +206,7 @@ jb.component('tree.keyboard-selection', {
 						var nodes = Array.from(tree.el.parentNode.querySelectorAll('.treenode'));
 						var selected = tree.el.parentNode.querySelector('.treenode.selected');
 						return tree.elemToPath(nodes[nodes.indexOf(selected) + diff]) || tree.selected;
-					}).subscribe(x=> 
+					}).subscribe(x=>
 						tree.selectionEmitter.next(x))
 				// expand collapse
 				keyDownNoAlts
@@ -215,7 +215,7 @@ jb.component('tree.keyboard-selection', {
 //						event.stopPropagation();
 						var isArray = tree.nodeModel.isArray(tree.selected);
 						if (!isArray || (tree.expanded[tree.selected] && event.keyCode == 39))
-							runActionInTreeContext(context.params.onRightClickOfExpanded);	
+							runActionInTreeContext(context.params.onRightClickOfExpanded);
 						if (isArray && tree.selected) {
 							tree.expanded[tree.selected] = (event.keyCode == 39);
 							tree.redraw()
@@ -223,11 +223,11 @@ jb.component('tree.keyboard-selection', {
 					});
 
 				function runActionInTreeContext(action) {
-					jb.ui.wrapWithLauchingElement(action, 
+					jb.ui.wrapWithLauchingElement(action,
 						context.setData(tree.selected), tree.el.parentNode.querySelector('.treenode.selected>.treenode-line'))()
 				}
-				// menu shortcuts
-		        cmp.base.onkeydown = e => {
+				// menu shortcuts - delay in order not to block registration of other features
+		    jb.delay(1).then(_=> cmp.base.onkeydown = e => {
 					if ((e.ctrlKey || e.altKey || e.keyCode == 46) // also Delete
 					 && (e.keyCode != 17 && e.keyCode != 18)) { // ctrl or alt alone
 						var menu = context.params.applyMenuShortcuts(context.setData(tree.selected));
@@ -235,7 +235,7 @@ jb.component('tree.keyboard-selection', {
 						return false;  // stop propagation
 					}
 					return true;
-				}
+				})
 			}
 		})
 })
@@ -258,13 +258,13 @@ jb.component('tree.drag-and-drop', {
   		afterViewInit: cmp => {
   			var tree = cmp.tree;
 			var drake = tree.drake = dragula([], {
-				moves: function(el) { 
-					return $(el).is('.jb-array-node>.treenode-children>div') 
+				moves: function(el) {
+					return $(el).is('.jb-array-node>.treenode-children>div')
 				}
 	        });
 			drake.containers = $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
 
-	        drake.on('drag', function(el, source) { 
+	        drake.on('drag', function(el, source) {
 	          var path = tree.elemToPath(el.firstElementChild)
 	          el.dragged = { path: path, expanded: tree.expanded[path]}
 	          tree.expanded[path] = false; // collapse when dragging
@@ -290,7 +290,7 @@ jb.component('tree.drag-and-drop', {
 	        });
 
 	        // ctrl up and down
-			cmp.onkeydown.filter(e=> 
+			cmp.onkeydown.filter(e=>
 				e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
 				.subscribe(e=> {
 					var diff = e.keyCode == 40 ? 1 : -1;
@@ -306,7 +306,7 @@ jb.component('tree.drag-and-drop', {
   		doCheck: function(cmp) {
   			var tree = cmp.tree;
 		  	if (tree.drake)
-			  tree.drake.containers = 
+			  tree.drake.containers =
 				  $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
   		}
   	}

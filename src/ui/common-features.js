@@ -68,7 +68,7 @@ jb.component('bind-refs', {
   ],
   impl: (ctx,ref,includeChildren,updateRef,value) => ({
       init: cmp =>
-        jb.ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
+        jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren}).subscribe(e=>
           jb.writeValue(updateRef,value(cmp.ctx),ctx))
   })
 })

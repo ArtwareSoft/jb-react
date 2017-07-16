@@ -1,7 +1,7 @@
 (function() { var st = jb.studio;
 
 function compsRef(val,opEvent) {
-  if (typeof val == 'undefined') 
+  if (typeof val == 'undefined')
     return st.previewjb.comps;
   else {
   	st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex});
@@ -34,17 +34,17 @@ Object.assign(st,{
   refreshRef: (ref) =>
     st.compsRefHandler.refresh(ref),
   scriptChange: st.compsRefHandler.resourceChange,
-  refObservable: (ref,cmp,includeChildren) => 
-  	st.compsRefHandler.refObservable(ref,cmp,includeChildren),
+  refObservable: (ref,cmp,settings) =>
+  	st.compsRefHandler.refObservable(ref,cmp,settings),
   refOfPath: (path,silent) =>
   	st.compsRefHandler.refOfPath(path.split('~'),silent),
   parentPath: path =>
 	path.split('~').slice(0,-1).join('~'),
   valOfPath: (path,silent) =>
   	st.val(st.refOfPath(path,silent)),
-  compNameOfPath: (path,silent) => 
+  compNameOfPath: (path,silent) =>
   	jb.compName(st.valOfPath(path + (path.indexOf('~') == -1 ? '~impl' : ''),silent)),
-  compOfPath: (path,silent) => 
+  compOfPath: (path,silent) =>
   	st.getComp(st.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) =>
   	jb.compParams(st.compOfPath(path,silent)),
@@ -66,7 +66,7 @@ Object.assign(st, {
 		if (Array.isArray(parent)) {
 			var index = Number(prop);
 			st.splice(st.refOfPath(st.parentPath(path)),[[index, 1]])
-		} else { 
+		} else {
 			st.writeValueOfPath(path,null);
 		}
 	},
@@ -89,7 +89,7 @@ Object.assign(st, {
 		var dragged = st.valOfPath(draggedPath);
 		var array = st.valOfPath(path);
 		if (Array.isArray(array)) {
-			if (index < 0 || index >= array.length) 
+			if (index < 0 || index >= array.length)
 				return 'moveInArray: out of array index ' + index + ' in array of size ' + array.length;
 			st._delete(draggedPath);
 			array = st.valOfPath(path);
@@ -120,7 +120,7 @@ Object.assign(st, {
 		var result = param.defaultValue || {$: ''};
 		if (st.paramTypeOfPath(path).indexOf('data') != -1)
 			result = '';
-		if (param.type.indexOf('[') != -1) 
+		if (param.type.indexOf('[') != -1)
 			result = [];
 		st.writeValueOfPath(path,result);
 	},
@@ -149,7 +149,7 @@ Object.assign(st, {
 	},
 	toggleDisabled: path => {
 		var prof = st.valOfPath(path);
-		if (prof && typeof prof == 'object' && !Array.isArray(prof)) 
+		if (prof && typeof prof == 'object' && !Array.isArray(prof))
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true)
 	},
 	setComp: (path,compName) => {
@@ -238,7 +238,7 @@ Object.assign(st, {
 
 		var profile = st.valOfPath(path);
 		// inject conditional param values
-		jb.compParams(comp).forEach(p=>{ 
+		jb.compParams(comp).forEach(p=>{
 				var pUsage = '%$'+p.id+'%';
 				var pVal = '' + (profile[p.id] || p.defaultValue || '');
 				res = res.replace(new RegExp('{\\?(.*?)\\?}','g'),(match,condition_exp)=>{ // conditional exp
@@ -247,8 +247,8 @@ Object.assign(st, {
 						return match;
 					});
 		});
-		// inject param values 
-		jb.compParams(comp).forEach(p=>{ 
+		// inject param values
+		jb.compParams(comp).forEach(p=>{
 				var pVal = '' + (profile[p.id] || p.defaultValue || ''); // only primitives
 				res = res.replace(new RegExp(`%\\$${p.id}%`,'g') , pVal);
 		});
@@ -278,16 +278,16 @@ Object.assign(st, {
 
   	pathOfRef: ref =>
   		ref && ref.$jb_path && ref.$jb_path.join('~'),
-	nameOfRef: ref => 
+	nameOfRef: ref =>
 		(ref && ref.$jb_path) ? ref.$jb_path.slice(-1)[0].split(':')[0] : 'ref',
-	valSummaryOfRef: ref => 
+	valSummaryOfRef: ref =>
 		st.valSummary(jb.val(ref)),
 	valSummary: val => {
 		if (val && typeof val == 'object')
 			return val.id || val.name
 		return '' + val;
 	},
-	pathSummary: path => 
+	pathSummary: path =>
 		path.replace(/~controls~/g,'~').replace(/~impl~/g,'~').replace(/^[^\.]*./,''),
 	isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,
 })
@@ -296,19 +296,19 @@ Object.assign(st, {
 
 jb.component('studio.ref', {
 	params: [ {id: 'path', as: 'string', essential: true } ],
-	impl: (ctx,path) => 
+	impl: (ctx,path) =>
 		st.refOfPath(path)
 });
 
 jb.component('studio.path-of-ref', {
 	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
-	impl: (ctx,ref) => 
+	impl: (ctx,ref) =>
 		st.pathOfRef(ref)
 });
 
 jb.component('studio.name-of-ref', {
 	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
-	impl: (ctx,ref) => 
+	impl: (ctx,ref) =>
 		st.nameOfRef(ref)
 });
 
@@ -325,14 +325,14 @@ jb.component('studio.is-new', {
 });
 
 jb.component('studio.watch-path', {
-  type: 'feature', 
-  category: 'group:0', 
+  type: 'feature',
+  category: 'group:0',
   params: [
-    { id: 'path', as: 'string', essential: true }, 
+    { id: 'path', as: 'string', essential: true },
     { id: 'includeChildren', as: 'boolean' },
-  ], 
+  ],
   impl: (ctx,path,includeChildren) => ({
-      init: cmp => 
+      init: cmp =>
       	jb.ui.watchRef(ctx,cmp,st.refOfPath(path),includeChildren)
   })
 })
@@ -359,12 +359,12 @@ jb.component('studio.watch-components', {
 
 jb.component('studio.watch-typeof-script', {
   params: [
-    { id: 'path', as: 'string', essential: true }, 
+    { id: 'path', as: 'string', essential: true },
   ],
   type: 'feature',
   impl: (ctx,path) => ({
       init: cmp =>
-    	jb.ui.refObservable(st.refOfPath(path),cmp,true)
+    	jb.ui.refObservable(st.refOfPath(path),cmp,{ includeChildren: true})
     		.filter(e=>
     			(typeof e.oldVal == 'object') != (typeof e.newVal == 'object'))
     		.subscribe(e=>
@@ -373,23 +373,23 @@ jb.component('studio.watch-typeof-script', {
 })
 
 jb.component('studio.path-hyperlink', {
-  type: 'control', 
+  type: 'control',
   params: [
-    { id: 'path', as: 'string', essential: true }, 
+    { id: 'path', as: 'string', essential: true },
     { id: 'prefix', as: 'string' }
-  ], 
-  impl :{$: 'group', 
-    style :{$: 'layout.horizontal', spacing: '9' }, 
+  ],
+  impl :{$: 'group',
+    style :{$: 'layout.horizontal', spacing: '9' },
     controls: [
-      {$: 'label', title: '%$prefix%' }, 
-      {$: 'button', 
+      {$: 'label', title: '%$prefix%' },
+      {$: 'button',
         title: ctx => {
 	  		var path = ctx.componentContext.params.path;
 	  		var title = st.shortTitle(path) || '',compName = st.compNameOfPath(path) || '';
 	  		return title == compName ? title : compName + ' ' + title;
-	  	}, 
-        action :{$: 'studio.goto-path', path: '%$path%' }, 
-        style :{$: 'button.href' }, 
+	  	},
+        action :{$: 'studio.goto-path', path: '%$path%' },
+        style :{$: 'button.href' },
         features :{$: 'feature.hover-title', title: '%$path%' }
       }
     ]

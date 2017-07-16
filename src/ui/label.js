@@ -16,11 +16,11 @@ jb.component('label.bind-title', {
       var ref = ctx.vars.$model.title(cmp.ctx);
       cmp.state.title = fixTitleVal(ref);
       if (jb.isRef(ref))
-        jb.ui.refObservable(ref,cmp)
+        jb.ui.refObservable(ref,cmp,{throw: true})
             .catch(e=> cmp.refresh() || [] )
             .subscribe(e=>jb.ui.setState(cmp,{title: fixTitleVal(ref)},e,ctx));
 
-      cmp.refresh = _ => 
+      cmp.refresh = _ =>
         cmp.setState({title: fixTitleVal(ctx.vars.$model.title(cmp.ctx))})
 
       function fixTitleVal(titleRef) {
@@ -34,7 +34,7 @@ jb.component('label.bind-title', {
 
 jb.component('label.span', {
     type: 'label.style',
-    impl :{$: 'custom-style', 
+    impl :{$: 'custom-style',
         template: (cmp,state,h) => h('span',{},state.title),
         features :{$: 'label.bind-title' }
     }
@@ -42,7 +42,7 @@ jb.component('label.span', {
 
 jb.component('label.p', {
     type: 'label.style',
-    impl :{$: 'custom-style', 
+    impl :{$: 'custom-style',
         template: (cmp,state,h) => h('p',{},state.title),
         features :{$: 'label.bind-title' }
     }
@@ -51,7 +51,7 @@ jb.component('label.p', {
 
 jb.component('label.h1', {
     type: 'label.style',
-    impl :{$: 'custom-style', 
+    impl :{$: 'custom-style',
         template: (cmp,state,h) => h('h1',{},state.title),
         features :{$: 'label.bind-title' }
     }
@@ -60,7 +60,7 @@ jb.component('label.h1', {
 jb.component('label.heading', {
     type: 'label.style',
     params: [{ id: 'level', as: 'string', defaultValue: 'h1', options: 'h1,h2,h3,h4,h5'}],
-    impl :{$: 'custom-style', 
+    impl :{$: 'custom-style',
         template: (cmp,state,h) => h(cmp.level,{},state.title),
         features :{$: 'label.bind-title' }
     }
@@ -83,4 +83,3 @@ jb.component('highlight', {
         b.split(highlight)[1]]
   }
 })
-

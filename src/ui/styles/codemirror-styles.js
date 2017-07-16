@@ -41,10 +41,11 @@ jb.component('editable-text.codemirror', {
 				}
 				//cmp.lastEdit = new Date().getTime();
 				$(editor.getWrapperElement()).css('box-shadow', 'none');
-				jb.ui.refObservable(data_ref,cmp)
+				jb.ui.refObservable(data_ref,cmp,{throw: true})
 					.map(e=>jb.tostring(data_ref))
 //					.filter(x => new Date().getTime() - cmp.lastEdit > 500)
 					.filter(x => x != editor.getValue())
+					.catch(x=>editor.setValue('error')) // todo: also set to readOnly
 					.subscribe(x=>
 						editor.setValue(x));
 

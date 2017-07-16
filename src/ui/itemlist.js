@@ -112,8 +112,10 @@ jb.component('itemlist.selection', {
               ctx.params.onSelection(cmp.ctx.setData(selected));
           });
 
-        jb.ui.refObservable(ctx.params.databind,cmp).subscribe(e=>
-          jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
+        jb.ui.refObservable(ctx.params.databind,cmp,{throw: true})
+          .catch(e=>jb.ui.setState(cmp,{selected: null }))
+          .subscribe(e=>
+            jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
 
         // double click
         var clickEm = cmp.clickEmitter.takeUntil( cmp.destroyed );

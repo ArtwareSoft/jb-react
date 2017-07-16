@@ -17,14 +17,15 @@ jb.component('field.databind', {
         }
 
         cmp.jbModel = (val,source) => {
-          if (val === undefined) 
+          if (val === undefined)
             return jb.val(ctx.vars.$model.databind);
           else { // write
               jb.writeValue(ctx.vars.$model.databind,val,ctx);
           }
         }
 
-        jb.ui.refObservable(ctx.vars.$model.databind,cmp)
+        jb.ui.refObservable(ctx.vars.$model.databind,cmp,{throw: true})
+            .catch(e=>cmp.refresh())
             .subscribe(e=>jb.ui.setState(cmp,null,e,ctx))
       }
   })
@@ -47,7 +48,7 @@ jb.component('field.databind-text', {
           if (source == 'keyup') // make sure the input is inside the value
             return jb.delay(1).then(_=>cmp.jbModel(val));
 
-          if (val === undefined) 
+          if (val === undefined)
             return jb.val(ctx.vars.$model.databind);
           else { // write
               cmp.setState({model: val});
@@ -56,8 +57,9 @@ jb.component('field.databind-text', {
         }
 
         var srcCtx = cmp.ctxForPick || cmp.ctx;
-        jb.ui.refObservable(ctx.vars.$model.databind,cmp)
+        jb.ui.refObservable(ctx.vars.$model.databind,cmp,{ throw: true})
             .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
+            .catch(e=>cmp.setState({model: null}))
             .subscribe(e=>jb.ui.setState(cmp,{model: cmp.jbModel()},e,ctx))
       }
   })
@@ -74,7 +76,7 @@ jb.component('field.databind-range', {
         cmp.state.model = jb.val(ctx.vars.$model.databind);
 
         cmp.jbModel = (val,source) => {
-          if (val === undefined) 
+          if (val === undefined)
             return jb.val(ctx.vars.$model.databind);
           else { // write
               jb.writeValue(ctx.vars.$model.databind,val,ctx);
@@ -106,7 +108,7 @@ jb.component('field.databind-range', {
 
 //         var srcCtx = cmp.ctxForPick || cmp.ctx;
 //         cmp.jbModel = (val,source) => {
-//           if (val === undefined) 
+//           if (val === undefined)
 //             return jb.val(ctx.vars.$model.databind);
 //           else { // write
 //             if (cmp.inputEvents && source == 'keyup')
@@ -180,7 +182,7 @@ jb.component('field.subscribe', {
             .merge(includeFirstEm)
             .filter(x=>x)
             .subscribe(x=>
-              action(context.setData(x)));  
+              action(context.setData(x)));
     }
   })
 })
@@ -190,7 +192,7 @@ jb.component('field.toolbar', {
   params: [
     { id: 'toolbar', type: 'control', essential: true, dynamic: true },
   ],
-  impl: (context,toolbar) => 
+  impl: (context,toolbar) =>
   ({
     toolbar: toolbar().reactComp()
   })

@@ -9,7 +9,7 @@ ui.ctrl = function(context,options) {
 		styleOptions.ctxForPick = ctx;
 		return styleOptions.jbExtend(options).applyFeatures(ctx);
 	}
-	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx); 
+	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx);
 
 	function defaultStyle(ctx) {
 		var profile = context.profile;
@@ -31,7 +31,7 @@ class JbComponent {
 		this.cssSelectors = [];
 
 		this.jb_profile = ctx.profile;
-		var title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => ''); 
+		var title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => '');
 		this.jb_title = (typeof title == 'function') ? title : () => ''+title;
 //		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
 	}
@@ -64,7 +64,7 @@ class JbComponent {
 			}
 			render(props,state) {
 				jb.logPerformance('render',state,props,this);
-				if (!jbComp.template) 
+				if (!jbComp.template)
 					return ui.h('span',{display: 'none'});
 				//console.log('render',jb.studio.shortTitle(this.ctx.path));
 				var vdom = jbComp.template(this,state,ui.h);
@@ -82,7 +82,7 @@ class JbComponent {
 					this.jbEmitter.next('after-init');
 			}
 	  		componentWillUnmount() {
-				jbComp.jbDestroyFuncs.forEach(f=> 
+				jbComp.jbDestroyFuncs.forEach(f=>
 					f(this));
 				if (this.jbEmitter) {
 					 this.jbEmitter.next('destroy');
@@ -90,7 +90,7 @@ class JbComponent {
 				}
 				this.resolveDestroyed();
 			}
-		}; 
+		};
 		injectLifeCycleMethods(ReactComp,this);
 		ReactComp.ctx = this.ctx;
 		ReactComp.title = this.jb_title();
@@ -158,9 +158,9 @@ class JbComponent {
 		if (options.doCheck) this.jbCheckFuncs.push(options.doCheck);
 		if (options.destroy) this.jbDestroyFuncs.push(options.destroy);
 		if (options.templateModifier) this.modifierFuncs.push(options.templateModifier);
-		if (typeof options.class == 'string') 
+		if (typeof options.class == 'string')
 			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class));
-		if (typeof options.class == 'function') 
+		if (typeof options.class == 'function')
 			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class()));
 		// events
 		var events = Object.getOwnPropertyNames(options).filter(op=>op.indexOf('on') == 0);
@@ -173,7 +173,7 @@ class JbComponent {
 		if (options.ctxForPick) this.ctxForPick=options.ctxForPick;
 		if (options.extendCtx) this.extendCtxFuncs.push(options.extendCtx);
 		if (options.extendCtxOnce) this.extendCtxOnceFuncs.push(options.extendCtxOnce);
-		if (options.extendItem) 
+		if (options.extendItem)
 			this.extendItemFuncs.push(options.extendItem);
 		this.styleCtx = this.styleCtx || options.styleCtx;
 		this.toolbar = this.toolbar || options.toolbar;
@@ -188,7 +188,7 @@ class JbComponent {
     				.map(x=>x.replace(/^!/,' '))
     			);
 
-		(options.featuresOptions || []).forEach(f => 
+		(options.featuresOptions || []).forEach(f =>
 			this.jbExtend(f, context))
 		return this;
 	}
@@ -197,7 +197,7 @@ class JbComponent {
 function injectLifeCycleMethods(Comp,jbComp) {
 	if (jbComp.jbCheckFuncs.length)
 	  Comp.prototype.componentWillUpdate = function() {
-		jbComp.jbCheckFuncs.forEach(f=> 
+		jbComp.jbCheckFuncs.forEach(f=>
 			f(this));
 //		this.refreshModel && this.refreshModel();
 //		this.jbEmitter && this.jbEmitter.next('check');
@@ -214,7 +214,7 @@ function garbageCollectCtxDictionary() {
 	var now = new Date().getTime();
 	ui.ctxDictionaryLastCleanUp = ui.ctxDictionaryLastCleanUp || now;
 	var timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp;
-	if (timeSinceLastCleanUp < 10000) 
+	if (timeSinceLastCleanUp < 10000)
 		return;
 	ui.ctxDictionaryLastCleanUp = now;
 
@@ -242,7 +242,7 @@ ui.focus = function(elem,logTxt,srcCtx) {
     })
 }
 
-ui.wrapWithLauchingElement = (f,context,elem) => 
+ui.wrapWithLauchingElement = (f,context,elem) =>
 	ctx2 => {
 		if (!elem) debugger;
 		return f(context.extendVars(ctx2).setVars({ $launchingElement: { $el : $(elem) }}));
@@ -252,8 +252,8 @@ ui.wrapWithLauchingElement = (f,context,elem) =>
 // ****************** generic utils ***************
 
 if (typeof $ != 'undefined' && $.fn)
-    $.fn.findIncludeSelf = function(selector) { 
-    	return this.find(selector).addBack(selector); }  
+    $.fn.findIncludeSelf = function(selector) {
+    	return this.find(selector).addBack(selector); }
 
 jb.jstypes.renderable = value => {
   if (value == null) return '';
@@ -268,11 +268,11 @@ jb.jstypes.renderable = value => {
   return '' + value;
 }
 
-ui.renderable = ctrl => 
+ui.renderable = ctrl =>
 	ctrl && ctrl.reactComp();
 
-// prevent garbadge collection and preserve the ctx as long as it is in the dom 
-ui.preserveCtx = ctx => { 
+// prevent garbadge collection and preserve the ctx as long as it is in the dom
+ui.preserveCtx = ctx => {
   jb.ctxDictionary[ctx.id] = ctx;
   return ctx.id;
 }
@@ -326,7 +326,7 @@ ui.waitFor = function(check,times,interval) {
           resolve(v);
         else
           wait_and_check(counter-1)
-      }, interval);  
+      }, interval);
     }
     return wait_and_check(times);
   })
@@ -343,7 +343,7 @@ ui.stateChangeEm = new jb.rx.Subject();
 
 ui.setState = function(cmp,state,opEvent,watchedAt) {
 	jb.logPerformance('setState',cmp.ctx,state);
-	if (state == null && cmp.refresh)	
+	if (state == null && cmp.refresh)
 		cmp.refresh();
 	else
 		cmp.setState(state || {});
@@ -372,7 +372,7 @@ ui.item = function(cmp,vdom,data) {
 }
 
 ui.watchRef = function(ctx,cmp,ref,includeChildren) {
-    ref && ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
+    ref && ui.refObservable(ref,cmp,{includeChildren: includeChildren}).subscribe(e=>
         ui.setState(cmp,null,e,ctx))
 }
 

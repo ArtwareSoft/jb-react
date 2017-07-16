@@ -154,7 +154,7 @@ jb.component('studio.comp-name-ref', {
 					st.setComp(path,value)
 			},
 			$jb_observable: cmp =>
-				st.refObservable(st.refOfPath(path),cmp,true)
+				st.refObservable(st.refOfPath(path),cmp,{includeChildren: true})
 	})
 })
 
@@ -177,7 +177,7 @@ jb.component('studio.profile-as-text', {
 				}
 			},
 			$jb_observable: cmp =>
-				st.refObservable(st.refOfPath(ctx.params.path()),cmp,true)
+				st.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
 		})
 })
 
