@@ -113,7 +113,7 @@ jb.component('itemlist.selection', {
           });
 
         jb.ui.refObservable(ctx.params.databind,cmp,{throw: true})
-          .catch(e=>jb.ui.setState(cmp,{selected: null }))
+          .catch(e=>jb.ui.setState(cmp,{selected: null }) || [])
           .subscribe(e=>
             jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
 

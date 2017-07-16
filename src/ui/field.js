@@ -25,7 +25,7 @@ jb.component('field.databind', {
         }
 
         jb.ui.refObservable(ctx.vars.$model.databind,cmp,{throw: true})
-            .catch(e=>cmp.refresh())
+            .catch(e=>cmp.refresh() || [])
             .subscribe(e=>jb.ui.setState(cmp,null,e,ctx))
       }
   })
@@ -59,7 +59,7 @@ jb.component('field.databind-text', {
         var srcCtx = cmp.ctxForPick || cmp.ctx;
         jb.ui.refObservable(ctx.vars.$model.databind,cmp,{ throw: true})
             .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
-            .catch(e=>cmp.setState({model: null}))
+            .catch(e=>cmp.setState({model: null}) || [])
             .subscribe(e=>jb.ui.setState(cmp,{model: cmp.jbModel()},e,ctx))
       }
   })

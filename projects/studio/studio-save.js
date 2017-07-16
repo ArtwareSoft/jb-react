@@ -6,7 +6,7 @@ jb.component('studio.save-components', {
 	params: [
 		{ id: 'force',as: 'boolean', type: 'boolean' }
 	],
-	impl : (ctx,force) => 
+	impl : (ctx,force) =>
 		jb.rx.Observable.from(Object.getOwnPropertyNames(st.previewjb.comps))
 			.filter(id=>id.indexOf('$jb') != 0)
 			.filter(id=>st.previewjb.comps[id] != st.serverComps[id])
@@ -16,11 +16,11 @@ jb.component('studio.save-components', {
 				if (force && !original)
 					original = `jb.component('${id}', {`;
 
-				return $.ajax({ 
-					url: `/?op=saveComp&comp=${id}&project=${ctx.exp('%$studio/project%')}&force=${force}`, 
-					type: 'POST', 
+				return $.ajax({
+					url: `/?op=saveComp&comp=${id}&project=${ctx.exp('%$studio/project%')}&force=${force}`,
+					type: 'POST',
 					data: JSON.stringify({ original: original, toSave: st.compAsStr(id) }),
-					headers: { 'Content-Type': 'application/json; charset=UTF-8' } 
+					headers: { 'Content-Type': 'application/json; charset=UTF-8' }
 				}).then(
 					res=>({ res: res , id: id }),
 					e=> { throw { e: e , id: id } }
@@ -28,7 +28,7 @@ jb.component('studio.save-components', {
 			})
 			.catch(e=>{
 				st.message('error saving: ' + e.e);
-				jb.logException(e,'error while saving ' + e.id)
+				return jb.logException(e,'error while saving ' + e.id) || []
 			})
 			.subscribe(entry=>{
 				var result = entry.res;

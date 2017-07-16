@@ -65,8 +65,7 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
               res && res.result && res.result[0] && res.result[0].in)
           .map(probeCtx=>
             new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,ctx.params.path))
-          .catch(e=>
-            jb.logException(e,'suggestions'))
+          .catch(e=> jb.logException(e,'suggestions') || [])
           .distinctUntilChanged((e1,e2)=>
             e1.key == e2.key) // compare options - if options are the same - leave it.
           .do(e=>jb.logPerformance('suggestions','event',e))

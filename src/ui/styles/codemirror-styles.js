@@ -45,7 +45,7 @@ jb.component('editable-text.codemirror', {
 					.map(e=>jb.tostring(data_ref))
 //					.filter(x => new Date().getTime() - cmp.lastEdit > 500)
 					.filter(x => x != editor.getValue())
-					.catch(x=>editor.setValue('error')) // todo: also set to readOnly
+					.catch(x=>editor.setValue('error') || []) // todo: also set to readOnly
 					.subscribe(x=>
 						editor.setValue(x));
 

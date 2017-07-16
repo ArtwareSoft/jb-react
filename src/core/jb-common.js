@@ -771,8 +771,7 @@ jb.component('http.get', {
 		return fetch(url)
 			  .then(r =>
 			  		json ? r.json() : r.text())
-			  .catch(e =>
-			  		jb.logException(e))
+			  .catch(e => jb.logException(e) || [])
 	}
 });
 
