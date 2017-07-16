@@ -59,33 +59,43 @@ jb.component('studio.style-editor', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'group', 
-    style :{$: 'property-sheet.titles-above' }, 
+    style :{$: 'property-sheet.studio-properties', spacing: 3 }, 
     controls: [
       {$: 'editable-text', 
         title: 'css', 
-        databind :{$: 'studio.profile-as-text', 
-          stringOnly: true, 
-          path: '%$styleSource/path%~css'
-        }, 
+        databind :{$: 'studio.profile-as-text', stringOnly: true, path: '%$path%~css' }, 
         style :{$: 'editable-text.codemirror', 
-          height: 300, 
+          cm_settings :{$: 'object', width: '400px' }, 
+          height: '161', 
           mode: 'css', 
           onCtrlEnter :{$: 'studio.refresh-preview' }
         }, 
-//        features :{$: 'studio.undo-support', path: '%styleSource/path%' }
+        features :{$: 'css.width', width: '600' }
       }, 
       {$: 'editable-text', 
-        title: 'template', 
+        title: 'template-js', 
         databind :{$: 'studio.profile-as-text', 
           stringOnly: true, 
-          path: '%$styleSource/path%~template'
+          path: '%$path%~template'
         }, 
         style :{$: 'editable-text.codemirror', 
-          height: '200', 
+          height: '130', 
           mode: 'htmlmixed', 
           onCtrlEnter :{$: 'studio.refresh-preview' }
+        }
+      }, 
+      {$: 'editable-text', 
+        title: 'template-jsx', 
+        databind :{$: 'studio.template-as-jsx', 
+          stringOnly: true, 
+          path: '%$path%~template'
         }, 
-//        features :{$: 'studio.undo-support', path: '%$styleSource/path%' }
+        style :{$: 'editable-text.codemirror', 
+          cm_settings: '', 
+          height: '130', 
+          mode: 'htmlmixed', 
+          onCtrlEnter :{$: 'studio.refresh-preview' }
+        }
       }
     ]
   }

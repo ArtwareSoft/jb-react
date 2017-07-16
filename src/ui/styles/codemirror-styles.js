@@ -12,21 +12,20 @@ jb.component('editable-text.codemirror', {
 	],
 	impl: function(context, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
-			template: (cmp,state,h) => h('textarea', {class: 'jb-codemirror'}),
-			afterViewInit: function(cmp) {
-				mode = mode || 'javascript';
+			template: (cmp,state,h) => h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind) }),
+			afterViewInit: cmp => {
 				var data_ref = cmp.ctx.vars.$model.databind;
-				cm_settings = Object.assign(cm_settings||{}, { 
-					mode: mode, 
+				var _cm_settings = Object.assign(cm_settings||{}, {
+					mode: mode || 'javascript',
 					lineWrapping: lineWrapping,
-					theme: 'solarized light', 
-					extraKeys: { 
+					theme: 'solarized light',
+					extraKeys: {
 						'Ctrl-Space': 'autocomplete',
 						'Ctrl-Enter': () => context.params.onCtrlEnter()
 					},
 				});
 				try {
-					var editor = CodeMirror.fromTextArea(cmp.base, cm_settings);
+					var editor = CodeMirror.fromTextArea(cmp.base, _cm_settings);
 					var $wrapper = $(editor.getWrapperElement());
 					if (height)
 						$wrapper.css('height', height + 'px');
@@ -40,29 +39,28 @@ jb.component('editable-text.codemirror', {
 					jb.logException(e,'editable-text.codemirror');
 					return;
 				}
-				cmp.lastEdit = new Date().getTime();
+				//cmp.lastEdit = new Date().getTime();
 				$(editor.getWrapperElement()).css('box-shadow', 'none');
 				jb.ui.refObservable(data_ref,cmp)
-					.map(e=>jb.val(e.ref))
-					.filter(x => new Date().getTime() - cmp.lastEdit > 500 &&
-						x != editor.getValue())
+					.map(e=>jb.tostring(data_ref))
+//					.filter(x => new Date().getTime() - cmp.lastEdit > 500)
+					.filter(x => x != editor.getValue())
 					.subscribe(x=>
-						editor.setValue(x||''));
+						editor.setValue(x));
 
 				var editorTextChange = jb.rx.Observable.create(obs=>
 					editor.on('change', () => {
-						cmp.lastEdit = new Date().getTime();
+						//cmp.lastEdit = new Date().getTime();
 						obs.next(editor.getValue())
 					})
 				);
 				editorTextChange.takeUntil( cmp.destroyed )
-					.distinctUntilChanged()
 					.debounceTime(debounceTime)
-					.filter(x => 
-						x != jb.val(data_ref))
+					.filter(x =>
+						x != jb.tostring(data_ref))
+					.distinctUntilChanged()
 					.subscribe(x=>
 						jb.writeValue(data_ref,x));
-
 			}
 		}
 	}
@@ -73,9 +71,9 @@ function enableFullScreen(editor,width,height) {
 	var fullScreenBtnHtml = '<div><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
 	var lineNumbers = true;
 	var css = `
-		.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; } 
+		.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
 		.jb-codemirror-escCss:hover { text-decoration: underline; }
-		.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:5px; -webkit-transition: opacity 1s; z-index: 20; } 
+		.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:5px; -webkit-transition: opacity 1s; z-index: 20; }
 		.jb-codemirror-fullScreenBtnCss.hidden { opacity:0; }
 		.jb-codemirror-editorCss { position:relative; }
 		.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
@@ -95,7 +93,7 @@ function enableFullScreen(editor,width,height) {
 		mouseout(function() {
 			jFullScreenButton.addClass('hidden');
 		});
-	
+
 	var fullScreenClass = 'jb-codemirror-fullScreenEditorCss';
 
 	function onresize() {
@@ -156,11 +154,11 @@ jb.component('text.codemirror', {
 			template: (cmp,state,h) => h('textarea', {class: 'jb-codemirror'}),
 			afterViewInit: function(cmp) {
                 mode = mode || 'javascript';
-                cm_settings = { 
+                cm_settings = {
                     readOnly: true,
                     mode: mode,
                     lineWrapping: lineWrapping,
-                    theme: 'solarized light', 
+                    theme: 'solarized light',
                 };
                 try {
 					var editor = CodeMirror.fromTextArea(cmp.base, cm_settings);
@@ -178,7 +176,7 @@ jb.component('text.codemirror', {
                 $(editor.getWrapperElement()).css('box-shadow', 'none'); //.css('height', '200px');
                 jb.ui.resourceChange.takeUntil(cmp.destroyed)
                     .map(()=> context.vars.$model.text())
-                    .filter(x=>x) 
+                    .filter(x=>x)
                     .distinctUntilChanged()
                     .subscribe(x=>
                         editor.setValue(x));
