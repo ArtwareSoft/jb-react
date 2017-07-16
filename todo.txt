@@ -1,3 +1,6 @@
+new project
+
+
 allow studio editing
 	studio editing popups should have different header background
 	open inteli for studio

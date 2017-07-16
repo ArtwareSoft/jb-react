@@ -3,6 +3,9 @@ var resources = {
         'src/core/jb-core.js',
         'src/core/jb-common.js',
       ],
+      'xml': [
+        'src/core/xml.js',
+      ],
       'ui-common': [
         'node_modules/jquery/dist/jquery.min.js',
         'node_modules/material-design-lite/material.js',

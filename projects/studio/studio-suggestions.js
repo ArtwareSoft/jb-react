@@ -2,39 +2,40 @@
   var st = jb.studio;
 
 jb.component('studio.suggestions-itemlist', {
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'itemlist', 
-    items: '%$suggestionData/options%', 
-    controls :{$: 'label', 
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'itemlist',
+    items: '%$suggestionData/options%',
+    controls :{$: 'label',
       title: '%text%',
 //      title: {$: 'highlight', base: '%text%', highlight: '%$suggestionData/tail%'},
-    }, 
-    watchItems: true, 
+    },
+    watchItems: true,
     features: [
-      {$: 'itemlist.studio-refresh-suggestions-options', 
-        path: '%$path%', 
+      {$: 'itemlist.no-container'},
+      {$: 'itemlist.studio-refresh-suggestions-options',
+        path: '%$path%',
 //        expressionOnly: true
-      }, 
-      {$: 'itemlist.selection', 
-        databind: '%$suggestionData/selected%', 
-        onDoubleClick :{$: 'studio.paste-suggestion' }, 
+      },
+      {$: 'itemlist.selection',
+        databind: '%$suggestionData/selected%',
+        onDoubleClick :{$: 'studio.paste-suggestion' },
         autoSelectFirst: true
-      }, 
-      {$: 'itemlist.keyboard-selection', 
+      },
+      {$: 'itemlist.keyboard-selection',
         onEnter : [
           {$: 'studio.paste-suggestion', close: true },
-        ], 
+        ],
         autoFocus: false
-      }, 
+      },
       {$: 'feature.onKey', code: 39, action :{$: 'studio.paste-suggestion', option: '%$suggestionData/selected%', close: false }}, // right arrow should drill down
-      {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' }, 
-      {$: 'css.width', width: '300', overflow: 'auto', minMax: 'min' }, 
-      {$: 'css', 
+      {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' },
+      {$: 'css.width', width: '300', overflow: 'auto', minMax: 'min' },
+      {$: 'css',
         css: '{ position: absolute; z-index:1000; background: white }'
-      }, 
-      {$: 'css.border', width: '1', color: '#cdcdcd' }, 
+      },
+      {$: 'css.border', width: '1', color: '#cdcdcd' },
       {$: 'css.padding', top: '2', left: '3', selector: 'li' },
-      {$: 'hidden', showCondition :{ $notEmpty: '%$suggestionData/options%' } }, 
+      {$: 'hidden', showCondition :{ $notEmpty: '%$suggestionData/options%' } },
     ]
   }
 })
@@ -56,13 +57,13 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
           .debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
           .do(e=>jb.logPerformance('suggestions','input: ' + input.value))
-          .map(e=> 
+          .map(e=>
               input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
           .flatMap(_=>
             getProbe())
           .map(res=>
               res && res.result && res.result[0] && res.result[0].in)
-          .map(probeCtx=> 
+          .map(probeCtx=>
             new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,ctx.params.path))
           .catch(e=>
             jb.logException(e,'suggestions'))
@@ -94,91 +95,91 @@ jb.component('studio.show-suggestions', {
 })
 
 jb.component('studio.property-primitive', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
-//    title :{$: 'studio.prop-name', path: '%$path%' }, 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'group',
+//    title :{$: 'studio.prop-name', path: '%$path%' },
     controls: [
-      {$: 'editable-text', 
-        databind :{$: 'studio.ref', path: '%$path%' }, 
-        style :{$: 'editable-text.studio-primitive-text' }, 
+      {$: 'editable-text',
+        databind :{$: 'studio.ref', path: '%$path%' },
+        style :{$: 'editable-text.studio-primitive-text' },
         features: [
-//          {$: 'studio.undo-support', path: '%$path%' }, 
-//          {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
-          {$: 'editable-text.helper-popup', 
-            features :{$: 'dialog-feature.near-launcher-position' }, 
-            control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
-            popupId: 'suggestions', 
-            popupStyle :{$: 'dialog.popup' }, 
+//          {$: 'studio.undo-support', path: '%$path%' },
+//          {$: 'studio.property-toolbar-feature', path: '%$path%' },
+          {$: 'editable-text.helper-popup',
+            features :{$: 'dialog-feature.near-launcher-position' },
+            control :{$: 'studio.suggestions-itemlist', path: '%$path%' },
+            popupId: 'suggestions',
+            popupStyle :{$: 'dialog.popup' },
             showHelper :{$: 'studio.show-suggestions' }
           }
         ]
       }
-    ], 
+    ],
     features: [
-      {$: 'var', 
-        name: 'suggestionData', 
-        value :{$: 'object', selected: '', options: [], path: '%$path%' }, 
+      {$: 'var',
+        name: 'suggestionData',
+        value :{$: 'object', selected: '', options: [], path: '%$path%' },
         mutable: true
-      }, 
+      },
 //      {$: 'studio.property-toolbar-feature', path: '%$path%' }
     ]
   }
 })
 
 jb.component('studio.jb-floating-input', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
-     controls:{$: 'editable-text', 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'group',
+     controls:{$: 'editable-text',
         title :{$: 'studio.prop-name', path: '%$path%' },
-        databind :{$: 'studio.profile-value-as-text', path: '%$path%' }, 
-        updateOnBlur: true, 
-        style :{$: 'editable-text.jb-editor-floating-input'}, 
+        databind :{$: 'studio.profile-value-as-text', path: '%$path%' },
+        updateOnBlur: true,
+        style :{$: 'editable-text.jb-editor-floating-input'},
         features: [
-          {$: 'var', 
-            name: 'suggestionData', 
-            value :{$: 'object', selected: '', options: [], path: '%$path%' }, 
+          {$: 'var',
+            name: 'suggestionData',
+            value :{$: 'object', selected: '', options: [], path: '%$path%' },
             mutable: true
-          }, 
-//          {$: 'studio.undo-support', path: '%$path%' }, 
-          {$: 'editable-text.helper-popup', 
+          },
+//          {$: 'studio.undo-support', path: '%$path%' },
+          {$: 'editable-text.helper-popup',
             showHelper :{$: 'studio.show-suggestions' },
-            features :{$: 'dialog-feature.near-launcher-position' }, 
-            control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
-            popupId: 'suggestions', 
+            features :{$: 'dialog-feature.near-launcher-position' },
+            control :{$: 'studio.suggestions-itemlist', path: '%$path%' },
+            popupId: 'suggestions',
             popupStyle :{$: 'dialog.popup' }
-          }, 
+          },
         ],
       },
-      features :[ 
+      features :[
         {$: 'css.padding', left: '4', right: '4' },
         {$: 'feature.onEnter', action: { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } },
         {$: 'feature.onEsc', action: { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } },
       ],
-    } 
+    }
 })
-//       {$: 'itemlist-with-groups', 
-//         items: '%$suggestionCtx/options%', 
-//         controls :{$: 'label', title: '%text%' }, 
-//         watchItems: true, 
+//       {$: 'itemlist-with-groups',
+//         items: '%$suggestionCtx/options%',
+//         controls :{$: 'label', title: '%text%' },
+//         watchItems: true,
 //         features: [
-//           {$: 'itemlist.studio-suggestions-options' }, 
+//           {$: 'itemlist.studio-suggestions-options' },
 //           {$: 'itemlist.selection', databind: '%$suggestionCtx/selected%',
 //             onDoubleClick: ctx => ctx.data.paste(ctx),
 //             autoSelectFirst: true
-//           }, 
-//           {$: 'hidden', showCondition: '%$suggestionCtx/show%' }, 
-//           {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' }, 
+//           },
+//           {$: 'hidden', showCondition: '%$suggestionCtx/show%' },
+//           {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' },
 //           {$: 'css.padding', top: '3', left: '3', selector: 'li' }
 //         ]
 //       }
-//     ], 
+//     ],
 //     features : [
-//       {$: 'group.studio-suggestions', 
-//         path: '%$path%', 
+//       {$: 'group.studio-suggestions',
+//         path: '%$path%',
 //         closeFloatingInput: [
-//           {$: 'dialog.close-containing-popup', OK: true }, 
+//           {$: 'dialog.close-containing-popup', OK: true },
 //           {$: 'tree.regain-focus' }
 //         ]
 //       },
@@ -187,11 +188,11 @@ jb.component('studio.jb-floating-input', {
 // })
 
 jb.component('studio.paste-suggestion', {
-  type: 'control', 
+  type: 'control',
   params: [
     { id: 'option', as: 'single', defaultValue: '%%' },
     { id: 'close', as: 'boolean', description: 'ends with % or /' }
-  ], 
+  ],
   impl: (ctx,option,close) =>
     option.paste(ctx,close)
 })
@@ -222,7 +223,7 @@ st.suggestions = class {
 
   suggestionsRelevant() {
     return (this.inputVal.indexOf('=') == 0 && !this.expressionOnly)
-      || ['%','%$','/','.'].indexOf(this.tailSymbol) != -1  
+      || ['%','%$','/','.'].indexOf(this.tailSymbol) != -1
   }
 
   extendWithOptions(probeCtx,path) {
@@ -240,12 +241,12 @@ st.suggestions = class {
             var ns = compName.substring(0,compName.indexOf('.'));
             return new CompOption(compName, compName, ns ? `${name} (${ns})` : name, st.getComp(compName).description || '')
         })
-    else if (this.tailSymbol == '%') 
+    else if (this.tailSymbol == '%')
       options = [].concat.apply([],jb.toarray(probeCtx.exp('%%'))
         .map(x=>
           jb.entries(x).map(x=> new ValueOption(x[0],x[1],this.pos,this.tail))))
         .concat(vars)
-    else if (this.tailSymbol == '%$') 
+    else if (this.tailSymbol == '%$')
       options = vars
     else if (this.tailSymbol == '/' || this.tailSymbol == '.')
       options = [].concat.apply([],

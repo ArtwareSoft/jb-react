@@ -9,20 +9,20 @@ jb.component('editable-text', {
     { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-input' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
-  impl: ctx => 
+  impl: ctx =>
     jb.ui.ctrl(ctx)
 });
 
 jb.component('editable-text.x-button', {
   type: 'feature',
   impl : ctx =>({
-    templateModifier: (vdom,cmp,state) => 
+    templateModifier: (vdom,cmp,state) =>
       jb.ui.h('div', {},[vdom].concat(cmp.jbModel() ? [jb.ui.h('button', { class: 'delete', onclick: e => cmp.jbModel(null)} ,'×')]  : []) ),
     css: `>.delete {
           margin-left: -16px;
           float: right;
-          cursor: pointer; font: 20px sans-serif; 
-          border: none; background: transparent; color: #000; 
+          cursor: pointer; font: 20px sans-serif;
+          border: none; background: transparent; color: #000;
           text-shadow: 0 1px 0 #fff; opacity: .1;
       }
       { display : flex }
@@ -41,9 +41,9 @@ jb.component('editable-text.helper-popup', {
   impl : ctx =>({
     onkeyup: true,
     onkeydown: true, // used for arrows
-    extendCtx: (ctx,cmp) => 
+    extendCtx: (ctx,cmp) =>
       ctx.setVars({selectionKeySource: {}}),
-      
+
     afterViewInit: cmp => {
       var input = $(cmp.base).findIncludeSelf('input')[0];
       if (!input) return;
@@ -81,7 +81,7 @@ jb.component('editable-text.helper-popup', {
       keyup.filter(e=>e.keyCode == 27) // ESC
           .subscribe(_=>cmp.closePopup())
     },
-    destroy: cmp => 
+    destroy: cmp =>
         cmp.closePopup(),
   })
 })

@@ -9,8 +9,16 @@ jb.component('itemlist', {
     { id: 'itemVariable', as: 'string', defaultValue: 'item' },
     { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
   ],
-  impl: ctx => 
+  impl: ctx =>
     jb.ui.ctrl(ctx)
+})
+
+jb.component('itemlist.no-container', {
+  type: 'feature',
+  impl: ctx => ({
+    extendCtxOnce: (ctx,cmp) =>
+      ctx.setVars({itemlistCntr: null})
+    })
 })
 
 jb.component('itemlist.init', {
@@ -18,7 +26,7 @@ jb.component('itemlist.init', {
   impl: ctx => ({
       beforeInit: cmp => {
         cmp.refresh = _ =>
-            cmp.setState({ctrls: cmp.calcCtrls()})  
+            cmp.setState({ctrls: cmp.calcCtrls()})
 
         if (ctx.vars.$model.watchItems && ctx.vars.$model.items)
           jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
@@ -49,7 +57,7 @@ jb.component('itemlist.ul-li', {
   type: 'itemlist.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li', 
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li',
           {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
           ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
     css: `{ list-style: none; padding: 0; margin: 0;}
@@ -73,65 +81,6 @@ jb.component('itemlist.horizontal', {
         >*:last-child { margin-right:0 }`,
     features:{$: 'itemlist.init'},
   }
-})
-
-// jb.component('itemlist.init', {
-//   type: 'feature',
-//   params: [
-//     { id: 'itemVariableName', as: 'string' },
-//   ],
-//   impl: (ctx, itemVariableName) => ({
-//       beforeInit: cmp => {
-//         var $model = ctx.vars.itemlistModel;
-//         if (!$model) return;
-//         cmp.items2ctrls = function(items) {
-//             if (ctx.vars.itemlistCntr)
-//               ctx.vars.itemlistCntr.items = items;
-//             var ctx2 = (cmp.refreshCtx ? cmp.refreshCtx() : cmp.ctx).setData(items);
-//             var ctx3 = itemVariableName ? ctx2.setVars(jb.obj(itemVariableName,items)) : ctx2;
-//             var ctrls = ctx.vars.$model.controls(ctx3);
-//             return ctrls;
-//         }
-
-//         cmp.calcCtrls = _ =>
-//           cmp.items2ctrls(jb.toarray(jb.val($model.items(cmp.ctx)))).map(c=>jb.ui.renderable(c)).filter(x=>x)
-//         // if (!cmp.state.ctrls)
-//         //   cmp.state.ctrls = cmp.calcCtrls()
-//         cmp.refresh = _ =>
-//             cmp.setState({ctrls: cmp.calcCtrls() }) 
-
-//         if (ctx.vars.itemlistModel.watchItems)
-//           jb.ui.watchRef(ctx,cmp,$model.items(cmp.ctx))
-
-//         // cmp.initWatchByRef = (refToWatch,includeChildren) =>
-//         //     jb.ui.refObservable(refToWatch,cmp,includeChildren)
-//         //       .subscribe(e=> {
-//         //         var _items = jb.toarray(jb.val(items(cmp.ctx)));
-//         //         if (_items.length != 0 && jb.compareArrays(_items,cmp.items))
-//         //           return;
-//         //         cmp.items = _items;
-//         //         var ctrls = cmp.items2ctrls(cmp.items); 
-//         //         jb.ui.setState(cmp,{ctrls:ctrls.map(c=>c.reactComp())},e,context)
-//         //       });
-//       },
-//   })
-// })
-
-// jb.component('itemlist.watch-items', {
-//   type: 'feature', category: 'itemlist:70',
-//   impl: ctx => ({
-//       init: cmp =>
-//         jb.ui.watchRef(ctx,cmp,ref)
-//   })
-// })
-
-jb.component('itemlist.divider', {
-  type: 'feature',
-  params: [
-    { id: 'space', as: 'number', defaultValue: 5}
-  ],
-  impl : (ctx,space) =>
-    ({css: `>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: ${space}px }`})
 })
 
 // ****************** Selection ******************
@@ -179,7 +128,7 @@ jb.component('itemlist.selection', {
           if (!cmp.state.selected)
             autoSelectFirst()
         })
-        
+
         function autoSelectFirst() {
           if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
               cmp.selectionEmitter.next(cmp.items[0])
@@ -194,7 +143,7 @@ jb.component('itemlist.selection', {
     },
     extendItem: (cmp,vdom,data) => {
       jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == data);
-      vdom.attributes.onclick = _ => 
+      vdom.attributes.onclick = _ =>
         cmp.clickEmitter.next(data)
     },
     css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
@@ -209,20 +158,24 @@ jb.component('itemlist.keyboard-selection', {
   ],
   impl: ctx => ({
       afterViewInit: function(cmp) {
-        var onkeydown = (ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.keydown) || (ctx.vars.selectionKeySource && ctx.vars.selectionKeySource.keydown);
+        var onkeydown = (cmp.ctx.vars.itemlistCntr && cmp.ctx.vars.itemlistCntr.keydown) || (cmp.ctx.vars.selectionKeySource && cmp.ctx.vars.selectionKeySource.keydown);
         if (!onkeydown) {
+          console.log('keyboard-selection - create key down');
           cmp.base.setAttribute('tabIndex','0');
           onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
 
           if (ctx.params.autoFocus)
             jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus',ctx)
         }
-        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );          
+        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );
+
+        onkeydown.subscribe(e=>console.log(1,e));
+        cmp.onkeydown.subscribe(e=>console.log(2,e));
 
         cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
           .subscribe(x=>
             ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
-    
+
         cmp.onkeydown.filter(e=> !e.ctrlKey &&
               (e.keyCode == 38 || e.keyCode == 40))
             .map(event => {
@@ -244,17 +197,17 @@ jb.component('itemlist.drag-and-drop', {
   impl: ctx => ({
       afterViewInit: function(cmp) {
         var drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
-          moves: (el,source,handle) => 
+          moves: (el,source,handle) =>
             $(handle).hasClass('drag-handle')
         });
 
-        drake.on('drag', function(el, source) { 
+        drake.on('drag', function(el, source) {
           var item = el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data;
           if (!item) {
             var item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
             item = item_comp && item_comp.ctx.data;
           }
-          el.dragged = { 
+          el.dragged = {
             item: item,
             remove: item => cmp.items.splice(cmp.items.indexOf(item), 1)
           }
@@ -271,7 +224,7 @@ jb.component('itemlist.drag-and-drop', {
         // ctrl + Up/Down
 //        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
           if (!cmp.onkeydown) return;
-          cmp.onkeydown.filter(e=> 
+          cmp.onkeydown.filter(e=>
             e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
             .subscribe(e=> {
               var diff = e.keyCode == 40 ? 1 : -1;
@@ -298,4 +251,13 @@ jb.component('itemlist.shown-only-on-item-hover', {
     class: 'jb-shown-on-item-hover',
     css: '{ display: none }'
   })
+})
+
+jb.component('itemlist.divider', {
+  type: 'feature',
+  params: [
+    { id: 'space', as: 'number', defaultValue: 5}
+  ],
+  impl : (ctx,space) =>
+    ({css: `>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: ${space}px }`})
 })

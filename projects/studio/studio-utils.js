@@ -26,19 +26,19 @@ st.message = function(message,error) {
 jb.component('studio.message', {
 	type: 'action',
 	params: [ { id: 'message', as: 'string' } ],
-	impl: (ctx,message) => 
+	impl: (ctx,message) =>
 		st.message(message)
 })
 
 jb.component('studio.redraw-studio', {
 	type: 'action',
-	impl: ctx => 
+	impl: ctx =>
     	st.redrawStudio && st.redrawStudio()
 })
 
 jb.component('studio.last-edit', {
 	type: 'data',
-	params: [ 
+	params: [
 		{ id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true },
 	],
 	impl: (ctx,justNow) => {
@@ -57,16 +57,16 @@ jb.component('studio.goto-last-edit', {
 
 jb.component('studio.goto-path', {
 	type: 'action',
-	params: [ 
+	params: [
 		{ id: 'path', as: 'string' },
 	],
-	impl :{$runActions: [ 
+	impl :{$runActions: [
 		{$: 'dialog.close-containing-popup' },
-		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' }, 
+		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' },
 		{$if :{$: 'studio.is-of-type', type: 'control', path: '%$path%'},
-			then: {$runActions: [ 
-				{$: 'studio.open-properties'},
-				{$: 'studio.open-control-tree'} 
+			then: {$runActions: [
+				{$: 'studio.open-control-tree'},
+//				{$: 'studio.open-properties', focus: true}
 			]},
 			else :{$: 'studio.open-component-in-jb-editor', path: '%$path%' }
 		}
@@ -74,8 +74,8 @@ jb.component('studio.goto-path', {
 })
 
 jb.component('studio.project-source',{
-	params: [ 
-		{ id: 'project', as: 'string', defaultValue: '%$studio/project%' } 
+	params: [
+		{ id: 'project', as: 'string', defaultValue: '%$studio/project%' }
 	],
 	impl: (context,project) => {
 		if (!project) return;
@@ -85,17 +85,17 @@ jb.component('studio.project-source',{
 })
 
 jb.component('studio.comp-source',{
-	params: [ 
-		{ id: 'comp', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } } 
+	params: [
+		{ id: 'comp', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } }
 	],
-	impl: (context,comp) => 
+	impl: (context,comp) =>
 		st.compAsStr(comp.split('~')[0])
 })
 
 jb.component('studio.dynamic-options-watch-new-comp', {
   type: 'feature',
-  impl :{$: 'picklist.dynamic-options', 
-        recalcEm: () => 
+  impl :{$: 'picklist.dynamic-options',
+        recalcEm: () =>
           st.scriptChange.filter(e => e.path.length == 1)
   }
 })

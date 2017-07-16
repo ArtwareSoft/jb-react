@@ -1,21 +1,21 @@
 jb.component('group.wait', {
   type: 'feature', category: 'group:70',
-  params: [ 
+  params: [
     { id: 'for', essential: true, dynamic: true },
     { id: 'loadingControl', type: 'control', defaultValue: { $:'label', title: 'loading ...'} , dynamic: true },
     { id: 'error', type: 'control', defaultValue: { $:'label', title: 'error: %$error%', css: '{color: red; font-weight: bold}'} , dynamic: true },
-    { id: 'resource', as: 'string' },    
+    { id: 'resource', as: 'string' },
   ],
   impl: (context,waitFor,loading,error,resource) => ({
       beforeInit: cmp => {
         cmp.ctrlEmitter = jb.rx.Observable.from(waitFor()).take(1)
             .do(data => {
-              if (resource) 
+              if (resource)
                 jb.resources[resource] = data;
             })
             .map(data=>
               context.vars.$model.controls(cmp.ctx.setData(data)))
-            .catch(e=> 
+            .catch(e=>
                 jb.rx.Observable.of([error(context.setVars({error:e}))]));
 
         cmp.state.ctrls = [loading(context)].map(c=>c.reactComp());
@@ -30,27 +30,27 @@ jb.component('group.wait', {
 
 jb.component('watch-ref', {
   type: 'feature', category: '70',
-  params: [ 
+  params: [
     { id: 'ref', essential: true, as: 'ref' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
   ],
   impl: (ctx,ref,includeChildren) => ({
-      init: cmp => 
+      init: cmp =>
         jb.ui.watchRef(ctx,cmp,ref,includeChildren)
   })
 })
 
 jb.component('watch-observable', {
   type: 'feature', category: '20',
-  params: [ 
+  params: [
     { id: 'toWatch', essential: true },
   ],
   impl: (ctx,toWatch) => ({
       init: cmp => {
         if (!toWatch.subscribe)
           return jb.logError('watch-observable: non obsevable parameter');
-        var virtualRef = { $jb_observable: cmp => 
-          toWatch 
+        var virtualRef = { $jb_observable: cmp =>
+          toWatch
         };
         jb.ui.watchRef(ctx,cmp,virtualRef)
       }
@@ -60,16 +60,16 @@ jb.component('watch-observable', {
 jb.component('bind-refs', {
   type: 'feature', category: '20',
   description: 'automatically update a mutual variable when other value is changing',
-  params: [ 
+  params: [
     { id: 'watchRef', essential: true, as: 'ref' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
     { id: 'updateRef', essential: true, as: 'ref' },
     { id: 'value', essential: true, as: 'single', dynamic: true },
   ],
   impl: (ctx,ref,includeChildren,updateRef,value) => ({
-      init: cmp => 
+      init: cmp =>
         jb.ui.refObservable(ref,cmp,includeChildren).subscribe(e=>
-          jb.writeValue(updateRef,value(cmp.ctx),ctx)) 
+          jb.writeValue(updateRef,value(cmp.ctx),ctx))
   })
 })
 
@@ -99,7 +99,7 @@ jb.component('group.data', {
 
 jb.component('id', {
   type: 'feature',
-  params: [ 
+  params: [
     { id: 'id', essential: true, as: 'string' },
   ],
   impl: (ctx,id) => ({
@@ -115,7 +115,7 @@ jb.component('var', {
   params: [
     { id: 'name', as: 'string', essential: true },
     { id: 'value', dynamic: true, defaultValue: '' },
-    { id: 'mutable', as: 'boolean' },    
+    { id: 'mutable', as: 'boolean' },
   ],
   impl: (context, name, value,mutable) => ({
       destroy: cmp => {
@@ -141,7 +141,7 @@ jb.component('features', {
   params: [
     { id: 'features', type: 'feature[]', flattenArray: true, dynamic: true },
   ],
-  impl: (ctx,features) => 
+  impl: (ctx,features) =>
     features()
 })
 
@@ -151,7 +151,7 @@ jb.component('feature.init', {
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
-  impl: (ctx,action) => ({ init: cmp => 
+  impl: (ctx,action) => ({ init: cmp =>
       action(cmp.ctx)
   })
 })
@@ -161,7 +161,7 @@ jb.component('feature.after-load', {
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
-  impl: ctx => ({ afterViewInit: cmp => 
+  impl: ctx => ({ afterViewInit: cmp =>
       jb.delay(1).then(_ => ctx.params.action(cmp.ctx))
     })
 })
@@ -172,7 +172,7 @@ jb.component('feature.if', {
     { id: 'showCondition', essential: true, dynamic: true },
   ],
   impl: (ctx, condition,watch) => ({
-    templateModifier: (vdom,cmp,state) => 
+    templateModifier: (vdom,cmp,state) =>
         jb.toboolean(condition()) ? vdom : jb.ui.h('div',{style: {display: 'none'}})
   })
 })
@@ -230,13 +230,14 @@ jb.component('feature.keyboard-shortcut', {
         jb.rx.Observable.fromEvent(cmp.base.ownerDocument, 'keydown')
             .takeUntil( cmp.destroyed )
             .subscribe(event=>{
-              var keyCode = key.split('+').pop().charCodeAt(0);
+              var keyStr = key.split('+').slice(1).join('+');
+              var keyCode = keyStr.charCodeAt(0);
               if (key == 'Delete') keyCode = 46;
 
               var helper = (key.match('([A-Za-z]*)+') || ['',''])[1];
               if (helper == 'Ctrl' && !event.ctrlKey) return
               if (helper == 'Alt' && !event.altKey) return
-              if (event.keyCode == keyCode)
+              if (event.keyCode == keyCode || (event.key && event.key == keyStr))
                 action();
             })
       })
@@ -247,7 +248,7 @@ jb.component('feature.onHover', {
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
-  impl: (ctx,code) => ({ 
+  impl: (ctx,code) => ({
       onmouseenter: true,
       afterViewInit: cmp=>
         cmp.onmouseenter.debounceTime(500).subscribe(()=>
@@ -261,7 +262,7 @@ jb.component('feature.onKey', {
     { id: 'code', as: 'number' },
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
-  impl: (ctx,code) => ({ 
+  impl: (ctx,code) => ({
       onkeydown: true,
       afterViewInit: cmp=> {
         cmp.base.setAttribute('tabIndex','0');
@@ -298,11 +299,11 @@ jb.component('feature.onDelete', {
 
 jb.component('group.auto-focus-on-first-input', {
   type: 'feature',
-  impl: ctx => ({ 
+  impl: ctx => ({
       afterViewInit: cmp => {
           var elem = Array.from(cmp.base.querySelectorAll('input,textarea,select'))
             .filter(e => e.getAttribute('type') != 'checkbox')[0];
-          elem && jb.ui.focus(elem,'group.auto-focus-on-first-input',ctx); 
+          elem && jb.ui.focus(elem,'group.auto-focus-on-first-input',ctx);
         }
   })
 })

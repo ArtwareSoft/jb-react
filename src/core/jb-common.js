@@ -6,9 +6,9 @@ jb.component('call', {
  	impl: function(context,param) {
  	  var paramObj = context.componentContext && context.componentContext.params[param];
       if (typeof(paramObj) == 'function')
- 		return paramObj(new jb.jbCtx(context, { 
- 			data: context.data, 
- 			vars: context.vars, 
+ 		return paramObj(new jb.jbCtx(context, {
+ 			data: context.data,
+ 			vars: context.vars,
  			componentContext: context.componentContext.componentContext,
  			forcePath: paramObj.srcPath // overrides path - use the former path
  		}));
@@ -24,7 +24,7 @@ jb.pipe = function(context,items,ptName) {
 	var profiles = jb.toarray(context.profile.items || context.profile[ptName]);
 	if (context.profile.items && context.profile.items.sugar)
 		var innerPath =  '' ;
-	else 
+	else
 		var innerPath = context.profile[ptName] ? (ptName + '~') : 'items~';
 
 	if (ptName == '$pipe') // promise pipe
@@ -35,7 +35,7 @@ jb.pipe = function(context,items,ptName) {
 				step(prof,index,data))
 		}, Promise.resolve(start))
 
-	return profiles.reduce((data,prof,index) => 
+	return profiles.reduce((data,prof,index) =>
 		step(prof,index,data), start)
 
 
@@ -141,7 +141,7 @@ jb.component('firstSucceeding', {
 		for(var i=0;i<items.length;i++)
 			if (jb.val(items[i]))
 				return items[i];
-		// return last one if zero or empty string			
+		// return last one if zero or empty string
 		var last = items.slice(-1)[0];
 		return (last != null) && jb.val(last);
 	}
@@ -181,7 +181,7 @@ jb.component('properties',{
 		{ id: 'obj', defaultValue: '%%', as: 'single' }
 	],
 	impl: (context,obj) =>
-		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) => 
+		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
 			({id: id, val: obj[id], index: index}))
 });
 
@@ -305,22 +305,22 @@ jb.component('numeric-sort', { // with side effects!!! decision made for perform
 	],
 	impl: (ctx,prop) => {
 		if (!ctx.data || ! Array.isArray(ctx.data)) return null;
-		return ctx.data.sort((x,y)=>y[prop] - x[prop]); 
+		return ctx.data.sort((x,y)=>y[prop] - x[prop]);
 	}
 });
 
 jb.component('not', {
 	type: 'boolean',
-	params: [ 
-		{ id: 'of', type: 'boolean', as: 'boolean', essential: true, composite: true} 
+	params: [
+		{ id: 'of', type: 'boolean', as: 'boolean', essential: true, composite: true}
 	],
 	impl: (context, of) => !of
 });
 
 jb.component('and', {
 	type: 'boolean',
-	params: [ 
-		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true } 
+	params: [
+		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true }
 	],
 	impl: function(context) {
 		var items = context.profile.$and || context.profile.items || [];
@@ -335,8 +335,8 @@ jb.component('and', {
 
 jb.component('or', {
 	type: 'boolean',
-	params: [ 
-		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true } 
+	params: [
+		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true }
 	],
 	impl: function(context) {
 		var items = context.profile.$or || context.profile.items || [];
@@ -373,7 +373,7 @@ jb.component('not-contains', {
 		{ id: 'text', type: 'data[]', as: 'array', essential: true },
 		{ id: 'allText', defaultValue: '%%', as:'array'}
 	],
-	impl :{$not: {$: 'contains', text: '%$text%', allText :'%$allText%'}} 
+	impl :{$not: {$: 'contains', text: '%$text%', allText :'%$allText%'}}
 })
 
 jb.component('starts-with', {
@@ -518,7 +518,7 @@ jb.component('json.stringify', {
 		{ id: 'value', defaultValue: '%%', as:'single'},
 		{ id: 'space', as: 'string', description: 'use space or tab to make pretty output' }
 	],
-	impl: (context,value,space) =>		
+	impl: (context,value,space) =>
 			JSON.stringify(value,null,space)
 });
 
@@ -634,11 +634,11 @@ jb.component('parent', {
 	],
 	impl: (ctx,item) =>
 		item && item.$jb_parent
-});	
+});
 
 jb.component('runActions', {
 	type: 'action',
-	params: [ 
+	params: [
 		{ id: 'actions', type:'action[]', ignore: true, composite: true, essential: true }
 	],
 	impl: function(context) {
@@ -646,7 +646,7 @@ jb.component('runActions', {
 		var actions = jb.toarray(context.profile.actions || context.profile['$runActions']);
 		if (context.profile.actions && context.profile.actions.sugar)
 			var innerPath =  '' ;
-		else 
+		else
 			var innerPath = context.profile['$runActions'] ? '$runActions~' : 'items~';
 		return actions.reduce((def,action,index) =>
 			def.then(() =>
@@ -667,10 +667,10 @@ jb.component('on-next-timer', {
 	type: 'action',
 	params: [
 		{ id: 'action', type: 'action', dynamic: true, essential: true },
-		{ id: 'mSec', type: 'number', defaultValue: 1}
+		{ id: 'delay', type: 'number', defaultValue: 1}
 	],
-	impl: (ctx,action,mSec) =>
-		jb.delay(mSec,ctx).then(()=>
+	impl: (ctx,action,delay) =>
+		jb.delay(delay,ctx).then(()=>
 			action())
 })
 
@@ -720,7 +720,7 @@ jb.component('range', {
 	],
 	impl: (ctx,from,to) => {
 	  	var res = [];
-	  	if (from <= to) 
+	  	if (from <= to)
 	  	  for(var i=from;i<=to;i++)
 	  		res.push(i)
 		return res;
@@ -740,7 +740,7 @@ jb.component('type-of', {
 
 jb.component('is-of-type', {
   type: 'boolean',
-  params: [ 
+  params: [
   	{ id: 'type', as: 'string', essential: true, description: 'string,boolean' },
   	{ id: 'obj', defaultValue: '%%' },
   ],
@@ -753,7 +753,7 @@ jb.component('is-of-type', {
 
 jb.component('in-group', {
   type: 'boolean',
-  params: [ 
+  params: [
   	{ id: 'group', as: 'array', essential: true },
   	{ id: 'item', as: 'single', defaultValue: '%%' },
   ],
@@ -769,7 +769,7 @@ jb.component('http.get', {
 	impl: (ctx,url,_json) => {
 		var json = _json || url.match(/json$/);
 		return fetch(url)
-			  .then(r => 
+			  .then(r =>
 			  		json ? r.json() : r.text())
 			  .catch(e =>
 			  		jb.logException(e))
@@ -777,7 +777,7 @@ jb.component('http.get', {
 });
 
 jb.component('data.switch', {
-  params: [ 
+  params: [
   	{ id: 'cases', type: 'data.switch-case[]', as: 'array', essential: true, defaultValue: [] },
   	{ id: 'default', dynamic: true },
   ],
@@ -791,7 +791,7 @@ jb.component('data.switch', {
 
 jb.component('data.case', {
   type: 'data.switch-case',
-  params: [ 
+  params: [
   	{ id: 'condition', type: 'boolean', essential: true, dynamic: true },
   	{ id: 'value', essential: true, dynamic: true },
   ],
@@ -800,7 +800,7 @@ jb.component('data.case', {
 
 jb.component('action.switch', {
   type: 'action',
-  params: [ 
+  params: [
   	{ id: 'cases', type: 'action.switch-case[]', as: 'array', essential: true, defaultValue: [] },
   	{ id: 'defaultAction', type: 'action', dynamic: true },
   ],
@@ -814,7 +814,7 @@ jb.component('action.switch', {
 
 jb.component('action.case', {
   type: 'action.switch-case',
-  params: [ 
+  params: [
   	{ id: 'condition', type: 'boolean', essential: true, dynamic: true },
   	{ id: 'action', type: 'action' ,essential: true, dynamic: true },
   ],

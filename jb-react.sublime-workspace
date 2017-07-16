@@ -550,7 +550,7 @@
 			"file": "jbart.json",
 			"settings":
 			{
-				"buffer_size": 160,
+				"buffer_size": 159,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -684,7 +684,7 @@
 			"file": "projects/studio/studio-jb-editor.js",
 			"settings":
 			{
-				"buffer_size": 19071,
+				"buffer_size": 19070,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -817,7 +817,7 @@
 			"file": "src/testing/testers.js",
 			"settings":
 			{
-				"buffer_size": 6185,
+				"buffer_size": 6182,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -861,12 +861,11 @@
 		{
 			"contents": "style editor with babel transpiler\nLMC room\n\nallow studio editing\n\tstudio editing popups should have different header background\n\topen inteli for studio\n\tadd conditional 'save studio component' as inteli option\n\nopen profile chooser in suggestions\n\tchoose data\n\ntable with max items - use in probe results\n\ncodemirror javascript editor - should create js function and use eval\n\t\tresult preview at the bottom\n\njbEditor\n  $if support - edit + should show then/else\n  javascript - should create js function and use eval\n  opening jbEditor history - back to XX\n  horizontal auto scroll bug\n  resizer (dialog resizer)\n  show profile/property description at the bottom\n\nselect profile\n\tshow component description and usage at the bottom line\n\tshould use context object\n\n\ncontext (data) viewer lightly attached to popups after pick, drag & drop context\n\ntooltip from material design\n\nlogo\n\natom plugin with jbEditor\n\nitemlist with group - fix watch\nessential -> mandatory\n",
 			"file": "todo.txt",
-			"file_size": 956,
-			"file_write_time": 131444885120212271,
+			"file_size": 973,
+			"file_write_time": 131445910531291739,
 			"settings":
 			{
 				"buffer_size": 965,
-				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
 		},
@@ -883,9 +882,21 @@
 			"file": "package.json",
 			"settings":
 			{
-				"buffer_size": 1570,
+				"buffer_size": 1626,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "jb.resource('room',jb.ui.xml2json(new DOMParser().parseFromString(`\n<room customerName=\"פתאל\" customerCompany=\"\" phone=\"0527757757\" createdByTemplate=\"\" id=\"hcb7a8\" createdDate=\"1415786383476\" modifiedDate=\"1450271662632\" url=\"http://jb-letmesee.appspot.com/LetMeSee/bmbqji1boc.html?roomid=hcb7a8\" tinyUrl=\"http://tinyurl.com/naa4f8b\" version=\"1_1\" agent=\"ירון\" agentPhone=\"052-6589539\" agentID=\"yaronby@artwaresoft.com\" agentEmail=\"yaronby@artwaresoft.com\" sendEmailToAgent=\"true\" createdByUser=\"ירון\" eMail=\"\" smsTitle=\"FATAL\">\n  <style>\n    <general mainImageHeight=\"200\" paragraphTextMaxLength=\"\" textForBack=\"\" marginForImageInItem=\"40\" paragraphCounter=\"false\" mobileViewInDesktop=\"false\" rtl=\"true\" textForNoDetails=\"\" marginForImageInMainMenu=\"20\"/>\n    <css id=\"item\"><![CDATA[#this.logo {\n  margin:0 !important;\n}\n.aa_image_outer {\n  margin-top1:6px;\n}\n#this.paragraph_in_main_menu {\n  border:none;\n  -webkit-box-shadow:none;\n  background:transparent;\n  border-bottom1:1px solid #CCD7DD;\n}\n#this.paragraph_in_main_menu.paragraph_image {\n  margin:0;\n}\n#this {\n  margin:12px;\n}\n#this.lmc_item {\n  border-top:1px solid #00BAC1;\n  margin:12px;\n  -webkit-box-shadow:0px 0px 5px 0px rgba(50, 50, 50, 0.75);\n  background:#F5F5F5;\n  border-radius:8px;\n  border-top-left-radius:5px;\n}\n#this.after_item {\n  border-top1:1px solid #919191;\n}\n.right_to_left #this .item_text {\n  text-align:right;\n  direction:rtl;\n  padding-right:45px;\n}\n.item_text {\n  background:#2F3949;\n  min-height:50px;\n  text-align:left;\n  color:white;\n  font-weight1:bold;\n  font-size:20px;\n  box-sizing:border-box;\n  padding-top:12px;\n  padding-left:15px !important;\n}\n#this:hover .item_text {\n  text-decoration:underline;\n}\n.item_image {\n  background:#fff;\n}\n.aa_lmc_selectedItem #this {\n  background:#BDE0E9;\n}\n.item_arrow {\n  position:absolute;\n  top:0;\n  right:23px;\n  margin-top:-35px;\n  width:5px;\n  height:18px;\n}\n.item_arrow:after, .item_arrow:before {\n  content:\"\";\n  height:12px;\n  width:2px;\n  border-radius:3px;\n  background:#04AFB7;\n  position:absolute;\n  left:0;\n  top:0;\n}\n.item_arrow:after {\n  -webkit-transform:rotate(45deg);\n  top:8px;\n}\n.item_arrow:before {\n  -webkit-transform:rotate(-45deg);\n}\n.nocss3 #this .item_arrow {\n  width:0px;\n  height:0px;\n  border-style:solid;\n  border-width:9px 0 9px 10px;\n  border-color:transparent transparent transparent #777777;\n}\n.nocss3 #this .item_arrow:after, .nocss3 #this .item_arrow:before {\n  display:none;\n}\n.paragraph_text,\n.paragraph_html {\n  padding:0 3px;\n}\n.paragraph_property_sheet {\n  padding:5px;\n}\n.paragraph_inner {\n  padding:0;\n}\n#this.after_item .paragraph_inner {\n  padding:10px 0;\n}\n.paragraph_youtube {\n  margin:0 5px;\n}\n.aa_active_in_transition #this {\n  background:#ccc;\n}]]></css>\n    <css id=\"heading\"><![CDATA[#this {\n  padding:7px 0;\n  color:#2F3949;\n  text-align:left;\n  font-weight:bold;\n  font-size:22px;\n  border-bottom:2px solid #D8D8D8;\n  box-shadow1:0px 0px 1px 0px #D8D8D8;\n  margin:0 13px;\n}\n.heading_text {\n  width:100%;\n  text-align:center;\n}]]></css>\n    <css id=\"all\"><![CDATA[#this { background-color: #ffffff; }\n]]></css>\n    <css id=\"paragraph\"><![CDATA[.lmc_item_details #this.paragraph_outer {\n  margin:10px;\n  padding:10px;\n  background-color1:#ffffff;\n  border-radius:2px;\n}\n.lmc_item_details .paragraph_inner {\n  width:100%;\n  position:relative;\n  padding-top:15px;\n}\n.paragraph_counter {\n  position:absolute;\n  top:0;\n  right:0;\n  height:40px;\n  color:#888;\n  font-size:10px;\n}\n#this .paragraph_text,\n#this .paragraph_html {\n  font-size:16px;\n  line-height:21px;\n}\nimg.aa_image.loading_image {\n  background:#EFEFEF;\n}\n.paragraph_property_sheet table {\n  width:100%;\n  color:#404040;\n  border:1px #ccc solid;\n  border-collapse:collapse;\n  border-spacing:0px;\n  border:1px solid #CCC;\n}\n.paragraph_property_sheet table>tbody>tr>td {\n  border-bottom:1px solid #ccc;\n  border-top:0px;\n  border-left:1px solid #ccc;\n  border-right:0px;\n  padding:5px;\n  color:#404040;\n  border-collapse:collapse;\n  border-spacing:0px;\n}\n.paragraph_property_sheet .paragraph_property_section {\n  font-weight:bold;\n  background-color:#d9d9d9;\n}\n#this.welcome_text .paragraph_text {} .right_to_left #this .paragraph_inner {\n  direction:rtl;\n}\n.paragraph_image_text {\n  margin-bottom:8px;\n  font-weight:bold;\n}\n#this.paragraph_call_me_button {\n  text-align:center;\n}\n.callme_success {\n  width:95%;\n  padding:12px 0px;\n  font-size:18px;\n  font-weight:bold;\n  color:#000;\n}\n.callme_button {\n  cursor:pointer;\n  width:95%;\n  padding:6px 0px;\n  font-size:18px;\n  font-weight:bold;\n}]]></css>\n    <css id=\"details topbar\"><![CDATA[#this {\n  height:46px;\n  background:#2F3949;\n  opacity:0.9;\n  border-bottom:2px solid #148590;\n}\n.topbar_button {\n  top:15px;\n  width:25px;\n  height:20px;\n}\n.topbar_next_button {\n  right:40px;\n}\n.topbar_prev_button {\n  right:10px;\n}\n.topbar_back_button {\n  left:0px;\n  width:50px;\n  top:0px;\n  height:45px;\n}\n.topbar_back_button .dropdown {\n  position:absolute;\n  top:15px;\n  left:15px;\n}\n.dropdown:before, .dropdown:after {\n  border-radius:3px;\n  width:4px;\n  background:#01B2BA;\n  height:17px;\n}\n.disabled .dropdown:before, .disabled .dropdown:after {\n  background:#666;\n}\n.topbar_next_button .dropdown:before, .topbar_next_button .dropdown:after {\n  left:15px;\n  -webkit-transform:rotate(45deg);\n}\n.topbar_next_button .dropdown:after {\n  left:6px;\n  -webkit-transform:rotate(-45deg);\n}\n.topbar_prev_button .dropdown:before, .topbar_prev_button .dropdown:after {\n  left:15px;\n  -webkit-transform:rotate(-45deg);\n}\n.topbar_prev_button .dropdown:after {\n  left:6px;\n  -webkit-transform:rotate(45deg);\n}\n.topbar_back_button .dropdown:before, .topbar_back_button .dropdown:after {\n  height:12px;\n  top:0px;\n  left:5px;\n  border-radius:3px;\n  width:4px;\n  -webkit-transform:rotate(45deg);\n}\n#this .aa_active_in_transition.topbar_back_button .dropdown:before, #this .aa_active_in_transition.topbar_back_button .dropdown:after {\n  background:#aaa;\n}\n.topbar_back_button .dropdown:after {\n  top:6px;\n  -webkit-transform:rotate(-45deg);\n}\n.item_title {\n  top:14px;\n  left:50px;\n  right:70px;\n  font-size:18px;\n  font-weight:bold;\n  color:#fff;\n}\n.right_to_left #this .item_title {\n  direction:rtl;\n}\n.long_item_title {\n  font-size:12px;\n}\n.nocss3 #this .dropdown:before, .nocss3 #this .dropdown:after {\n  display:none;\n}\n.nocss3 #this .topbar_back_button {\n  top:12px;\n  left:15px;\n  width:0px;\n  height:0px;\n  border-style:solid;\n  border-width:9px 10px 9px 0;\n  border-color:transparent #777777 transparent transparent;\n}\n.nocss3 #this .topbar_next_button {\n  width:0px;\n  height:0px;\n  border-style:solid;\n  border-width:13px 9px 0 9px;\n  border-color:#777777 transparent transparent transparent;\n}\n.nocss3 #this .disabled.topbar_next_button {\n  border-color:#ddd transparent transparent transparent;\n}\n.nocss3 #this .topbar_prev_button {\n  width:0px;\n  height:0px;\n  border-style:solid;\n  border-width:0 9px 13px 9px;\n  border-color:transparent transparent #777777 transparent;\n}\n.nocss3 #this .disabled.topbar_prev_button {\n  border-color:transparent transparent #ddd transparent;\n}]]></css>\n    <css id=\"desktop\"><![CDATA[.desktop_top_title {\n  position:absolute;\n  top:0;\n  height:55px;\n  background-color:#F5F5F5;\n  border-bottom:1px solid #D0D2D3;\n  width:902px;\n  left:50%;\n  margin-left:-450px;\n}\n.desktop_top_title_text {\n  font:20px arial;\n  padding:15px 20px 0 20px;\n}\n.desktop_body {\n  position:absolute;\n  left:50%;\n  margin-left:-450px;\n  width:900px;\n  top:56px;\n  bottom:0px;\n  background:#fff;\n  border-left:1px solid #F4F4F4;\n  border-right:1px solid #F4F4F4;\n}\n.desktop_navigation {} .desktop_details {\n  position:absolute;\n  top:0;\n  bottom:0;\n}\n.details_pane {\n  width:560px;\n  margin:0 !important;\n  box-sizing:content-box;\n}\n.navigation_pane {\n  width:320px;\n  box-sizing:content-box;\n}\n.details_pane .paragraph_outer {\n  margin:0;\n  padding-left:0;\n}\n.left_to_right #this .desktop_details {\n  right:0;\n}\n.vertical_line {\n  width:9px;\n  background-color:#EBEBEB;\n}\n.left_to_right #this .vertical_line {\n  right:580px;\n}\n.heading_text,\n.item {\n  width:230px;\n  box-sizing:padding-box;\n}\n.item .item_text {\n  width:210px;\n}\n.heading_text {\n  padding:25px 0 3px 0px;\n  margin-top:2px;\n  cursor:pointer;\n  font:bold 16px arial;\n}\n.aa_item_items_desktop:first-child .heading_text {\n  margin-top:0;\n  padding-top:0px;\n}\n.item {\n  padding:15px;\n  margin:3px 0;\n  background-color:#DEE1E3;\n  cursor:pointer;\n  font:14px arial;\n  position:relative;\n}\n.item:hover {} .aa_lmc_selectedItem .item {\n  background:#00BAC1;\n  color:#fff;\n}\n.aa_lmc_selectedItem .item_text:after, .aa_lmc_selectedItem .item_text:before {\n  content:'';\n  position:absolute;\n  top:50%;\n  margin-top:-10px;\n  right:16px;\n  height:12px;\n  width:3px;\n  border-radius:1px;\n  background:#fff;\n  -webkit-transform:rotate(-45deg);\n}\n.aa_lmc_selectedItem .item_text:after {\n  -webkit-transform:rotate(45deg);\n  margin-top:-3px;\n}\n.with_scrollbar {\n  padding-top:20px;\n}\n.with_scrollbar.details_pane::-webkit-scrollbar-track {\n  background:#EBEBEB;\n}\n.with_scrollbar::-webkit-scrollbar {\n  width:9px;\n}\n.with_scrollbar::-webkit-scrollbar-thumb {\n  background:#46C9CE;\n}\n.item_contents {\n  padding:0 !important;\n}\n.item_topbar {\n  background:transparent;\n  height:35px;\n  width:520px;\n  opacity:1;\n  position:static;\n}\n.item_topbar .item_title {\n  left:0px;\n  top:2px;\n  font:normal 22px arial !important;\n  position:static;\n}\n.left_to_right #this .item_topbar .item_title {\n  text-align:left !important;\n}\n.left_to_right #this .item_text {\n  padding-right:2px;\n}\n.lmc_desktop_main_details .lmc_item {\n  font:14px arial;\n  color:#1E64B5;\n  margin:5px 0 20px 0;\n  cursor:pointer;\n}\n.lmc_desktop_main_details .lmc_item.no_image {\n  margin-bottom:3px;\n}\n.lmc_desktop_main_details .heading_text_in_main_content {\n  font:bold 18px arial;\n  margin:20px 0 10px 0;\n}\n.main_item_list {\n  width:500px;\n}\n.lmc_desktop_main_details .heading_text_in_main_content:first-item {\n  margin-top:0;\n}\n.lmc_desktop_main_details .lmc_item:hover .item_text {\n  text-decoration:underline;\n}\n.paragraph_in_main_menu {\n  background:transparent;\n  border:none;\n}\n.paragraph_in_main_menu .paragraph_text,\n.paragraph_in_main_menu .paragraph_html {\n  padding:5px 0 0 0 !important;\n}\n.navigation_pane>div {\n  padding:20px;\n}\n.right_to_left #this .with_scrollbar {\n  direction:rtl;\n}\n.right_to_left #this .desktop_top_title_text {\n  text-align:right;\n}\n.right_to_left #this .heading_text {\n  text-align:right;\n}\n.right_to_left #this .item_text {\n  padding-left:2px;\n  text-align:right;\n}\n.right_to_left #this .item_topbar {\n  margin-right:10px;\n  width:inherit;\n}\n.right_to_left #this .item_topbar .item_title {\n  text-align:right !important;\n}\n.right_to_left #this .aa_lmc_selectedItem .item_text:after, .right_to_left #this .aa_lmc_selectedItem .item_text:before {\n  right:inherit;\n  left:20px;\n  margin-top:-9px;\n}\n.right_to_left #this .aa_lmc_selectedItem .item_text:before {\n  margin-top:-2px;\n}\n.right_to_left #this .lmc_desktop_main_details .lmc_item {} .right_to_left #this .details_pane {\n  left:0px;\n  padding-left:30px;\n}\n.right_to_left #this .navigation_pane {\n  width:305px;\n}\n.right_to_left #this .vertical_line {\n  right:296px;\n}\n.right_to_left #this .lmc_desktop_main_details .fld_items_cntr {\n  margin-right:10px;\n}\n.item_topbar .item_title {\n  color:#000;\n}]]></css>\n  </style>\n  <items>\n    <paragraph type=\"image\" id=\"khhe\" image=\"http://www.fattal.co.il/App_Themes/images/logos/logo.png\" imageWidth=\"\" imageHeight=\"\" text=\"\" hpadding=\"\" vpadding=\"0\" imageBoxHeight=\"\" background=\"#ffffff\"/>\n    <paragraph type=\"rich text\" id=\"yj6f\" image=\"\">\n      <html><![CDATA[שלום לקוח,<div>ברוך הבא למלון הרודס,</div><div><br></div><div>כלקוח Premium הכנו עבורך את חדר הלקוח האישי בו תמצא את מגוון הפעילויות המעניינות אותך ואת משפחתך עם מבצעים ופינוקים.</div><div><br></div><div>בברכה, צוות המלון<br></div>]]></html>\n    </paragraph>\n    <paragraph type=\"image\" id=\"atj7\" image=\"//storage.googleapis.com/letmesee1/v1of10sm6o/files/7baa4dfc332045ccb1e7ab79167ca6f0_output_7omP1a.gif\" imageWidth=\"\" imageHeight=\"\" text=\"\" hpadding=\"\" vpadding=\"\" imageBoxHeight=\"\" background=\"\"/>\n    <item name=\"מבצע - ספא לך ולמשפחתך\" id=\"gctu\" Image=\"\" imageWidth=\"\" imageHeight=\"\">\n      <paragraph type=\"rich text\" text=\"מבצע במיוחד בשבילך 2 טיפולים במחיר אחד לבחירתך ממגוון הטיפולים \" image=\"\" id=\"3\" welcome=\"\">\n        <html><![CDATA[<b>ללקוחות Premium שני טיפולים במחיר אחד לבחירתך ממגוון הטיפולים&nbsp;</b><br>]]></html>\n      </paragraph>\n      <paragraph type=\"image\" text=\"\" image=\"//storage.googleapis.com/letmesee1/v1of10sm6o/files/f6852654e0844a818aa816c73c003f95_1001.jpg\" id=\"2\" imageWidth=\"500\" imageHeight=\"332\"/>\n      <paragraph type=\"rich text\" text=\"\" image=\"\" id=\"4\" welcome=\"\">\n        <html><![CDATA[<div><b>מתקני הספא הטובים בעולם !</b></div><div><br></div><div>• ג'קוזי גדול מקורה וג'קוזי חיצוני (אינו מקורה).</div><div><br></div><div>• טיפולי ספא מפנקים על-ידי צוות מטפלים מנוסה<br></div><div><br></div><div>• סאונה רטובה וסאונה יבשה המסייעות בהרפיית המתח לקראת הטיפולים.<br></div><div><br></div><div>• בריכת מפלי מים חיצונית עם מפל סילוני מים חמים או קרים. המפלים ניתכים בעוצמה על הגוף מגובה של 3 מטרים, &nbsp; ומדמים חוויית עיסוי במעיינות טבעיים.</div><div><br></div><div>* ניתן להשכיר במקום אופניים המצוידים בהילוכים לרכיבה חופשית, או להשתתף ברכיבה מודרכת מטעם המלון לאורך הגבול עם ירדן. השירות ניתן ללא תשלום לאורחי הויטאליס בלבד.</div>]]></html>\n      </paragraph>\n    </item>\n    <item name=\"תכנית המלון להיום\" id=\"qk7g\" Image=\"\" imageWidth=\"\" imageHeight=\"\">\n      <paragraph type=\"rich text\" text=\"\" image=\"\" id=\"1\">\n        <html><![CDATA[<h3 style=\"font-weight: bold; font-style: normal; outline: 0px; padding: 0px; margin: 0px 0px 5px; border: 0px; color: rgb(0, 44, 92); font-size: 20px; font-family: Arial; font-variant: normal; letter-spacing: normal; line-height: 18px; orphans: auto; text-align: justify; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px;\">קרקס קברט Black &amp; White</h3><div class=\"facilActivechild-content\" style=\"font-weight: normal; font-style: normal; outline: 0px; padding: 0px; margin: 0px; border: 0px; color: rgb(76, 75, 75); font-family: Arial; font-size: 13px; font-variant: normal; letter-spacing: normal; line-height: 18px; orphans: auto; text-align: justify; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px;\">מופע אקרובטי עוצר נשימה עם רקדנים מדהימים שהגיעו להופיע בפניכם היישר מחו\"ל.</div><div class=\"facilActivechild-content\" style=\"font-weight: normal; font-style: normal; outline: 0px; padding: 0px; margin: 0px; border: 0px; color: rgb(76, 75, 75); font-family: Arial; font-size: 13px; font-variant: normal; letter-spacing: normal; line-height: 18px; orphans: auto; text-align: justify; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px;\"><br></div><div class=\"facilActivechild-content\" style=\"font-style: normal; outline: 0px; padding: 0px; margin: 0px; border: 0px; color: rgb(76, 75, 75); font-family: Arial; font-variant: normal; letter-spacing: normal; line-height: 18px; orphans: auto; text-align: justify; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px;\"><b><font size=\"3\">הערב יום שני בשעה 20:30 באולם הגדול</font></b></div>]]></html>\n      </paragraph>\n      <paragraph type=\"image\" text=\"\" image=\"http://www.fattal.co.il/octopus/Upload/files/black-and-white-1.JPG\" id=\"2\" imageWidth=\"900\" imageHeight=\"600\"/>\n      <paragraph type=\"rich text\" text=\"\" image=\"\" id=\"3\">\n        <html><![CDATA[<h3 style=\"font-weight: bold; font-style: normal; outline: 0px; padding: 0px; margin: 0px 0px 5px; border: 0px; color: rgb(0, 44, 92); font-size: 20px; font-family: Arial; font-variant: normal; letter-spacing: normal; line-height: 18px; orphans: auto; text-align: justify; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px;\">שכחו אותי בבית</h3><div class=\"facilActivechild-content\" style=\"font-weight: normal; font-style: normal; outline: 0px; padding: 0px; margin: 0px; border: 0px; color: rgb(76, 75, 75); font-family: Arial; font-size: 13px; font-variant: normal; letter-spacing: normal; line-height: 18px; orphans: auto; text-align: justify; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px;\">מחזמר משעשע לילדים המבוסס על הסרט המצליח \"שכחו אותי בבית\". בואו לצפות וליהנות ממופע סוחף עם שירים מקוריים בהגשת צוותי הבידור.</div><div class=\"facilActivechild-content\" style=\"font-weight: normal; font-style: normal; outline: 0px; padding: 0px; margin: 0px; border: 0px; color: rgb(76, 75, 75); font-family: Arial; font-size: 13px; font-variant: normal; letter-spacing: normal; line-height: 18px; orphans: auto; text-align: justify; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px;\"><br></div><div class=\"facilActivechild-content\" style=\"font-weight: normal; font-style: normal; outline: 0px; padding: 0px; margin: 0px; border: 0px; color: rgb(76, 75, 75); font-family: Arial; font-size: 13px; font-variant: normal; letter-spacing: normal; line-height: 18px; orphans: auto; text-align: justify; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px;\"><b style=\"font-size: 16px;\"><font size=\"3\">היום בשעה 16:30 באולם הילדים</font></b></div><div class=\"facilActivechild-content\" style=\"font-weight: normal; font-style: normal; outline: 0px; padding: 0px; margin: 0px; border: 0px; color: rgb(76, 75, 75); font-family: Arial; font-size: 13px; font-variant: normal; letter-spacing: normal; line-height: 18px; orphans: auto; text-align: justify; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px;\"><b style=\"font-size: 16px;\"><font size=\"3\">במיוחד למנויי Premium, פופקורן חינם</font></b><br></div>]]></html>\n      </paragraph>\n      <paragraph type=\"image\" text=\"\" image=\"http://www.fattal.co.il/octopus/Upload/files/BaBait.jpg\" id=\"4\" imageWidth=\"672\" imageHeight=\"448\"/>\n    </item>\n    <item name=\"תפריט ומנות הספיישל של השף להיום\" id=\"7488\" Image=\"\" imageWidth=\"\" imageHeight=\"\">\n      <paragraph type=\"rich text\" text=\"\" image=\"\" id=\"8\" welcome=\"\">\n        <html><![CDATA[<p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b style=\"font-size: 16px; background-color: rgb(255, 255, 255);\">הכנו עבור ביתך מספר מנות ללא גלוטן :</b></p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b style=\"font-size: 16px; background-color: rgb(255, 255, 255);\"><br></b></p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>סלט בגריל&nbsp;</b>–<b>&nbsp;</b>עגבניות, ארטישוק, פלפל אדום, פלפל ירוק, אספרגוס, פטריות פורטובלו, עגבניות שרי טריות, צנונית טרייה, עלים פריכים בוויניגרט, לימון ושמן זית.<br></p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>עלים וסלמון<span class=\"Apple-converted-space\">&nbsp;</span></b>–<b><span class=\"Apple-converted-space\">&nbsp;</span></b>סשימי סלמון, לבבות חסה, ירקות שורש, ופיצוחים קלויים בוינגרט, סילאן וטחינה גולמית.</p>]]></html>\n      </paragraph>\n      <paragraph type=\"rich text\" text=\"\" image=\"\" id=\"1\" welcome=\"\">\n        <html><![CDATA[<div><b>מסעדת לורנס – מסעדה יוקרתית, אישית ומפנקת</b><br></div><div><br></div><div>בואו ליהנות מחוויה קולינרית מלכותית במסעדת לורנס של מלון הרודס ויטאליס אילת. כל הארוחות מורכבות מחומרי גלם איכותיים שנבחרו בקפידה ויחד עם עיצוב הפנים הייחודי מתקבלת חגיגה מרגשת של טעמים, ריחות וצבעים. בתיאבון!</div><div><br></div>]]></html>\n      </paragraph>\n      <paragraph type=\"image\" text=\"\" image=\"http://www.herods.co.il/wp-content/uploads/2014/06/Herods-vitalis-lowrance-5-300-dpi_600x400.jpg\" id=\"2\" imageWidth=\"600\" imageHeight=\"400\"/>\n      <paragraph type=\"html\" text=\"\" image=\"\" id=\"3\">\n        <html><![CDATA[<p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>ראשונות</b></p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>אספרגוס</b><span class=\"Apple-converted-space\"> </span>–<b><span class=\"Apple-converted-space\"> </span></b>אספרגוס בגריל, פלפל וחציל בלאדי מעושן עם קונפי שום.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>קרפצ'יו בקר<span class=\"Apple-converted-space\"> </span></b>–<b><span class=\"Apple-converted-space\"> </span></b>זוקיני חרוך בגריל, סלסת עגבניות, צנוברים וארוגולה.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>ארטישוק א-לה רומנה<span class=\"Apple-converted-space\"> </span></b>–<b><span class=\"Apple-converted-space\"> </span></b>מקלות אספרגוס, עלי תרד, בצל סגול, זוקיני ירוק מוקפץ בשמן זית, שום ויין לבן חצי יבש.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>שקדי עגל בגריל</b><span class=\"Apple-converted-space\"> </span>– שקדי עגל בגריל עם קרם שום, לימון כבוש, עגבניות אש, תפוח אדמה, פלפל קלוי וזיתי קלמטה.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>כבד אווז<span class=\"Apple-converted-space\"> </span></b>–<b><span class=\"Apple-converted-space\"> </span></b>פולנטה אוורירית עם קרם חציל ופטריות יער.<b></b></p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>סלט בגריל<span class=\"Apple-converted-space\"> </span></b>–<b><span class=\"Apple-converted-space\"> </span></b>עגבניות, ארטישוק, פלפל אדום, פלפל ירוק, אספרגוס, פטריות פורטובלו, עגבניות שרי טריות, צנונית טרייה, עלים פריכים בוויניגרט, לימון ושמן זית.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>עלים וסלמון<span class=\"Apple-converted-space\"> </span></b>–<b><span class=\"Apple-converted-space\"> </span></b>סשימי סלמון, לבבות חסה, ירקות שורש, ופיצוחים קלויים בוינגרט, סילאן וטחינה גולמית.</p>]]></html>\n      </paragraph>\n      <paragraph type=\"image\" text=\"\" image=\"http://www.herods.co.il/wp-content/uploads/2014/06/Herods-vitalis-lowrance-4-300-dpi_600x400.jpg\" id=\"4\" imageWidth=\"600\" imageHeight=\"400\"/>\n      <paragraph type=\"html\" text=\"\" image=\"\" id=\"5\">\n        <html><![CDATA[<p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>עיקריות</b></p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>פילה בורי<span class=\"Apple-converted-space\"> </span></b>–<b><span class=\"Apple-converted-space\"> </span></b>ראגו עדשים וירקות שורש, לימונים כבושים בצלי שאלוט וטחינה גולמית.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>פילה מוסר ים צרוב</b><span class=\"Apple-converted-space\"> </span>– ירקות ירוקים מוקפצים בשמן זית ושום, קולי פלפל אדום, שמן עשבים ברוטב חלב קוקוס ויין לבן.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>פרפדלה אינטיאס<span class=\"Apple-converted-space\"> </span></b>– פסטה ביתית בציר ירקות, ארטישוק א-לה רומנה, פטריות פורטובלו ועלי מרווה.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>נתח פרגית</b><span class=\"Apple-converted-space\"> </span>– קרפצ'יו ירקות כתומים, טורטליני פטריות וסלט עשבים.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>נתח קצבים<span class=\"Apple-converted-space\"> </span></b>–<b><span class=\"Apple-converted-space\"> </span></b>רוטב בצלי שאלוט ויין אדום מונח על ריזוטו ירקות שורש וזעפרן.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>תבשיל אוסובוקו טלה<span class=\"Apple-converted-space\"> </span></b>– ירקות שורש ארטישוק, נוקולי בבירה שחורה ועשבי בר.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>אנטרקוט 300 גרם<span class=\"Apple-converted-space\"> </span></b>– נתח אנטרקוט מיושן, פירה תפוח אדמה מבושם בשום קונפי ובצלצלים, ומח עצם ברוטב פלפלת.</p>]]></html>\n      </paragraph>\n      <paragraph type=\"image\" text=\"\" image=\"http://www.herods.co.il/wp-content/uploads/2014/06/herods_vitalis_eilat_-_lawrence_restaurant_ossobuco_600x398.jpg\" id=\"6\" imageWidth=\"600\" imageHeight=\"398\"/>\n      <paragraph type=\"html\" text=\"\" image=\"\" id=\"7\">\n        <html><![CDATA[<p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>מנות אחרונות</b></p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>טעימות שוקולד<span class=\"Apple-converted-space\"> </span></b>– מנג'רי שוקולד, סיגר שוקולד בלגי, סורבה שוקולד.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>מנגו<span class=\"Apple-converted-space\"> </span></b>– פרפה מנגו חצי קפוא, מרנג פיסטוק ברוטב וניל.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>סורבה<span class=\"Apple-converted-space\"> </span></b>– שלישיית כדורי סורבה – משתנה מדי יום.</p><p dir=\"RTL\" style=\"color: rgb(63, 41, 28); font-family: arial; font-size: 15px; font-style: normal; font-variant: normal; font-weight: normal; letter-spacing: normal; line-height: 22px; orphans: auto; text-align: right; text-indent: 0px; text-transform: none; white-space: normal; widows: auto; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(247, 242, 234);\"><b>אננס<span class=\"Apple-converted-space\"> </span></b>– עוגיית סבלה אגוזים, קרם שקדים, אננס מבושם, גלידת קרמל ושטרויזל.</p>]]></html>\n      </paragraph>\n    </item>\n    <item name=\"Check Out בלי תור\" id=\"pmbe\" Image=\"\" imageWidth=\"\" imageHeight=\"\">\n      <paragraph type=\"image\" text=\"\" image=\"//storage.googleapis.com/letmesee1/v1of10sm6o/files/d38920b632cb4643a909e605dd754277_LeonardoReceptionDeskIXL.jpg\" id=\"2\" imageWidth=\"478\" imageHeight=\"270\"/>\n      <paragraph type=\"call me button\" text=\"\" image=\"\" id=\"1\" welcome=\"\" title=\"לביצוע Check Out בלי תור, לחץ כאן\" successText=\"עלות השימוש בשירותי המלון: 2730 ש&quot;ח כולל מע&quot;מ יחוייבו מחשבונך, קבלה תישלח לביתך, תודה שבחרת בפתאל\"/>\n    </item>\n    <paragraph type=\"youtube\" id=\"13vu\" image=\"\" video=\"https://www.youtube.com/watch?v=ERoDVGpNDTY\" text=\"\">\n      <html><![CDATA[<br>]]></html>\n    </paragraph>\n    <paragraph type=\"html\" id=\"hgng\" image=\"\">\n      <html><![CDATA[<div style=\"text-align:center\">\n<a class=\"callme_button callme\" href=\"tel:0526032699\" title=\"\" target=\"_blank\"><b><font size=\"4\">חייג לקבלה</font></b></a>\n</div>]]></html>\n    </paragraph>\n  </items>\n  <sms/>\n</room>\n`)))",
+			"file": "projects/letmesee/room.xml",
+			"file_size": 37251,
+			"file_write_time": 131445918500471094,
+			"settings":
+			{
+				"buffer_size": 33999,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
 			}
 		},
 		{
@@ -909,7 +920,7 @@
 			"file": "projects/play-ground/play-ground.html",
 			"settings":
 			{
-				"buffer_size": 445,
+				"buffer_size": 444,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -980,7 +991,7 @@
 			"file": "projects/studio/studio-edit-source.js",
 			"settings":
 			{
-				"buffer_size": 1829,
+				"buffer_size": 1825,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -995,13 +1006,10 @@
 			}
 		},
 		{
-			"contents": "(function() {\n  var st = jb.studio;\n\njb.component('studio.suggestions-itemlist', {\n  params: [{ id: 'path', as: 'string' }], \n  impl :{$: 'itemlist', \n    items: '%$suggestionData/options%', \n    controls :{$: 'label', \n      title: '%text%',\n//      title: {$: 'highlight', base: '%text%', highlight: '%$suggestionData/tail%'},\n    }, \n    watchItems: true, \n    features: [\n      {$: 'itemlist.studio-refresh-suggestions-options', \n        path: '%$path%', \n//        expressionOnly: true\n      }, \n      {$: 'itemlist.selection', \n        databind: '%$suggestionData/selected%', \n        onDoubleClick :{$: 'studio.paste-suggestion' }, \n        autoSelectFirst: true\n      }, \n      {$: 'itemlist.keyboard-selection', \n        onEnter : [\n          {$: 'studio.paste-suggestion', close: true },\n        ], \n        autoFocus: false\n      }, \n      {$: 'feature.onKey', code: 39, action :{$: 'studio.paste-suggestion', option: '%$suggestionData/selected%', close: false }}, // right arrow should drill down\n      {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' }, \n      {$: 'css.width', width: '300', overflow: 'auto', minMax: 'min' }, \n      {$: 'css', \n        css: '{ position: absolute; z-index:1000; background: white }'\n      }, \n      {$: 'css.border', width: '1', color: '#cdcdcd' }, \n      {$: 'css.padding', top: '2', left: '3', selector: 'li' },\n      {$: 'hidden', showCondition :{ $notEmpty: '%$suggestionData/options%' } }, \n    ]\n  }\n})\n\njb.component('itemlist.studio-refresh-suggestions-options', {\n  type: 'feature',\n  params: [\n    {id: 'path', as: 'string'},\n    {id: 'expressionOnly', as: 'boolean'}\n  ],\n  impl: ctx => ({\n      afterViewInit: cmp => {\n        var selectionKeySource = cmp.ctx.vars.selectionKeySource;\n        var keyup = selectionKeySource.keyup.takeUntil( cmp.destroyed );\n        var input = selectionKeySource.input;\n\n        keyup\n//          .delay(1) // we use keyup - let the input fill itself\n          .debounceTime(20) // solves timing of closing the floating input\n          .startWith(1) // compensation for loosing the first event from selectionKeySource\n          .do(e=>jb.logPerformance('suggestions','input: ' + input.value))\n          .map(e=> \n              input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here\n          .flatMap(_=>\n            getProbe())\n          .map(res=>\n              res && res.result && res.result[0] && res.result[0].in)\n          .map(probeCtx=> \n            new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,ctx.params.path))\n          .catch(e=>\n            jb.logException(e,'suggestions'))\n          .distinctUntilChanged((e1,e2)=>\n            e1.key == e2.key) // compare options - if options are the same - leave it.\n          .do(e=>jb.logPerformance('suggestions','event',e))\n          .takeUntil( cmp.destroyed )\n          .subscribe(e=> {\n              cmp.ctx.run({$:'write-value', to: '%$suggestionData/tail%', value: ctx => e.tail })\n              cmp.ctx.run({$:'write-value', to: '%$suggestionData/options%', value: ctx => e.options });\n          });\n\n        function getProbe() {\n          if (cmp.probeResult)\n            return [cmp.probeResult];\n          var probePath = ctx.params.path;\n          if (st.valOfPath(probePath) == null)\n            jb.writeValue(st.refOfPath(probePath),'',ctx);\n\n          return ctx.run({$: 'studio.probe', path: probePath }).then(res=>cmp.probeResult = res);\n        }\n      }\n  })\n})\n\njb.component('studio.show-suggestions', {\n  impl: ctx =>\n    new st.suggestions(ctx.data,false).suggestionsRelevant()\n})\n\njb.component('studio.property-primitive', {\n  type: 'control', \n  params: [{ id: 'path', as: 'string' }], \n  impl :{$: 'group', \n    controls: [\n      {$: 'editable-text', \n        databind :{$: 'studio.ref', path: '%$path%' }, \n        style :{$: 'editable-text.studio-primitive-text' }, \n        features: [\n          {$: 'editable-text.helper-popup', \n            features :{$: 'dialog-feature.near-launcher-position' }, \n            control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, \n            popupId: 'suggestions', \n            popupStyle :{$: 'dialog.popup' }, \n            showHelper :{$: 'studio.show-suggestions' }\n          }\n        ]\n      }\n    ], \n    features: [\n      {$: 'var', \n        name: 'suggestionData', \n        value :{$: 'object', selected: '', options: [], path: '%$path%' }, \n        mutable: true\n      }, \n//      {$: 'studio.property-toolbar-feature', path: '%$path%' }\n    ]\n  }\n})\n\njb.component('studio.jb-floating-input', {\n  type: 'control', \n  params: [{ id: 'path', as: 'string' }], \n  impl :{$: 'group', \n     controls:{$: 'editable-text', \n        title :{$: 'studio.prop-name', path: '%$path%' },\n        databind :{$: 'studio.profile-value-as-text', path: '%$path%' }, \n        updateOnBlur: true, \n        style :{$: 'editable-text.jb-editor-floating-input'}, \n        features: [\n          {$: 'var', \n            name: 'suggestionData', \n            value :{$: 'object', selected: '', options: [], path: '%$path%' }, \n            mutable: true\n          }, \n//          {$: 'studio.undo-support', path: '%$path%' }, \n          {$: 'editable-text.helper-popup', \n            showHelper :{$: 'studio.show-suggestions' },\n            features :{$: 'dialog-feature.near-launcher-position' }, \n            control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, \n            popupId: 'suggestions', \n            popupStyle :{$: 'dialog.popup' }\n          }, \n        ],\n      },\n      features :[ \n        {$: 'css.padding', left: '4', right: '4' },\n        {$: 'feature.onEnter', action: { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } },\n        {$: 'feature.onEsc', action: { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } },\n      ],\n    } \n})\n//       {$: 'itemlist-with-groups', \n//         items: '%$suggestionCtx/options%', \n//         controls :{$: 'label', title: '%text%' }, \n//         watchItems: true, \n//         features: [\n//           {$: 'itemlist.studio-suggestions-options' }, \n//           {$: 'itemlist.selection', databind: '%$suggestionCtx/selected%',\n//             onDoubleClick: ctx => ctx.data.paste(ctx),\n//             autoSelectFirst: true\n//           }, \n//           {$: 'hidden', showCondition: '%$suggestionCtx/show%' }, \n//           {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' }, \n//           {$: 'css.padding', top: '3', left: '3', selector: 'li' }\n//         ]\n//       }\n//     ], \n//     features : [\n//       {$: 'group.studio-suggestions', \n//         path: '%$path%', \n//         closeFloatingInput: [\n//           {$: 'dialog.close-containing-popup', OK: true }, \n//           {$: 'tree.regain-focus' }\n//         ]\n//       },\n//     ]\n//   }\n// })\n\njb.component('studio.paste-suggestion', {\n  type: 'control', \n  params: [\n    { id: 'option', as: 'single', defaultValue: '%%' },\n    { id: 'close', as: 'boolean', description: 'ends with % or /' }\n  ], \n  impl: (ctx,option,close) =>\n    option.paste(ctx,close)\n})\n\n\nfunction rev(str) {\n  return str.split('').reverse().join('');\n}\n\nst.suggestions = class {\n  constructor(input,expressionOnly) {\n    this.input = input;\n    this.expressionOnly = expressionOnly;\n    this.pos = input.selectionStart;\n    this.text = input.value.substr(0,this.pos).trim();\n    this.text_with_open_close = this.text.replace(/%([^%;{}\\s><\"']*)%/g, (match,contents) =>\n      '{' + contents + '}');\n    this.exp = rev((rev(this.text_with_open_close).match(/([^\\}%]*%)/) || ['',''])[1]);\n    this.exp = this.exp || rev((rev(this.text_with_open_close).match(/([^\\}=]*=)/) || ['',''])[1]);\n    this.tail = rev((rev(this.exp).match(/([^%.\\/=]*)(\\/|\\.|%|=)/)||['',''])[1]);\n    this.tailSymbol = this.text_with_open_close.slice(-1-this.tail.length).slice(0,1); // % or /\n    if (this.tailSymbol == '%' && this.exp.slice(0,2) == '%$')\n      this.tailSymbol = '%$';\n    this.base = this.exp.slice(0,-1-this.tail.length) + '%';\n    this.inputVal = input.value;\n    this.inputPos = input.selectionStart;\n  }\n\n  suggestionsRelevant() {\n    return (this.inputVal.indexOf('=') == 0 && !this.expressionOnly)\n      || ['%','%$','/','.'].indexOf(this.tailSymbol) != -1  \n  }\n\n  extendWithOptions(probeCtx,path) {\n    var options = [];\n    probeCtx = probeCtx || new st.previewjb.jbCtx();\n    var vars = jb.entries(jb.extend({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources))\n        .map(x=>new ValueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail))\n        .filter(x=> x.toPaste.indexOf('$$') != 0)\n        .filter(x=> x.toPaste.indexOf(':') == -1)\n        .filter(x=>['$window'].indexOf(x.toPaste) == -1)\n\n    if (this.inputVal.indexOf('=') == 0 && !this.expressionOnly)\n      options = st.PTsOfPath(path).map(compName=> {\n            var name = compName.substring(compName.indexOf('.')+1);\n            var ns = compName.substring(0,compName.indexOf('.'));\n            return new CompOption(compName, compName, ns ? `${name} (${ns})` : name, st.getComp(compName).description || '')\n        })\n    else if (this.tailSymbol == '%') \n      options = [].concat.apply([],jb.toarray(probeCtx.exp('%%'))\n        .map(x=>\n          jb.entries(x).map(x=> new ValueOption(x[0],x[1],this.pos,this.tail))))\n        .concat(vars)\n    else if (this.tailSymbol == '%$') \n      options = vars\n    else if (this.tailSymbol == '/' || this.tailSymbol == '.')\n      options = [].concat.apply([],\n        jb.toarray(probeCtx.exp(this.base))\n          .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail))) )\n\n    options = jb.unique(options,x=>x.toPaste)\n        .filter(x=> x.toPaste != this.tail)\n        .filter(x=>\n          this.tail == '' || typeof x.toPaste != 'string' || (x.description + x.toPaste).toLowerCase().indexOf(this.tail.toLowerCase()) != -1)\n    if (this.tail)\n      options.sort((x,y)=> (y.toPaste.toLowerCase().indexOf(this.tail.toLowerCase()) == 0 ? 1 : 0) - (x.toPaste.toLowerCase().indexOf(this.tail.toLowerCase()) == 0 ? 1 : 0));\n\n    this.options = options;\n    this.key = options.map(o=>o.toPaste).join(','); // build hash for the options to detect options change\n    return this;\n  }\n}\n\nclass ValueOption {\n    constructor(toPaste,value,pos,tail) {\n      this.toPaste = toPaste;\n      this.value = value;\n      this.pos = pos;\n      this.tail = tail;\n      this.text = toPaste + this.valAsText();\n    }\n    valAsText() {\n      var val = this.value;\n      if (typeof val == 'string' && val.length > 20)\n        return ` (${val.substring(0,20)}...)`;\n      else if (typeof val == 'string' || typeof val == 'number' || typeof val == 'boolean')\n        return ` (${val})`;\n      else if (Array.isArray(val))\n        return ` (${val.length} items)`\n      return ``;\n    }\n    paste(ctx,_close) {\n      //var close = typeof this.value != 'object' || Array.isArray(this.value) || _close;\n\n      var toPaste = this.toPaste + (_close ? '%' : '/');\n      var input = ctx.vars.selectionKeySource.input;\n      var pos = this.pos + 1;\n      input.value = input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos);\n      this.writeValue(ctx);\n//      suggestionCtx.selected = null;\n      return jb.delay(1,ctx).then (() => {\n        input.selectionStart = pos + toPaste.length;\n        input.selectionEnd = input.selectionStart;\n      })\n    }\n    writeValue(ctx) {\n      var input = ctx.vars.selectionKeySource.input;\n      var path = ctx.exp('%$suggestionData/path%','string');\n      st.writeValueOfPath(path,input.value);\n    }\n}\n\nclass CompOption {\n    constructor(toPaste,value,text,description) {\n       this.toPaste = toPaste;\n       this.value = value;\n       this.text = text;\n       this.description = description;\n    }\n    paste(ctx) {\n      var input = ctx.vars.selectionKeySource.input;\n      input.value = '=' + this.toPaste;\n      this.writeValue(ctx);\n      // dirty design ?\n//      ctx.run({$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' });\n        // var closeAndWriteValue = _ => {\n        //   params.closeFloatingInput();\n        //   var option = input.value.indexOf('=') == 0 ? new CompOption(input.value.substr(1)) : new ValueOption();\n        //   option.writeValue(cmp.ctx);\n        // };\n    }\n    writeValue(ctx) {\n      st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste);\n      ctx.run({$:'studio.expand-and-select-first-child-in-jb-editor' });\n    }\n}\n\n\n})()",
 			"file": "projects/studio/studio-suggestions.js",
-			"file_size": 13046,
-			"file_write_time": 131441773826000812,
 			"settings":
 			{
-				"buffer_size": 12527,
+				"buffer_size": 12637,
 				"line_ending": "Windows"
 			}
 		},
@@ -1027,7 +1035,7 @@
 			"file": "projects/studio/studio-properties-menu.js",
 			"settings":
 			{
-				"buffer_size": 2509,
+				"buffer_size": 2508,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -1116,7 +1124,7 @@
 			"file": "src/loader/jb-loader.js",
 			"settings":
 			{
-				"buffer_size": 4684,
+				"buffer_size": 4819,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -1314,7 +1322,7 @@
 			"file": "projects/studio/studio-tree.js",
 			"settings":
 			{
-				"buffer_size": 6028,
+				"buffer_size": 6027,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
@@ -1827,7 +1835,7 @@
 	"groups":
 	[
 		{
-			"selected": 40,
+			"selected": 41,
 			"sheets":
 			[
 				{
@@ -1857,7 +1865,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 36,
+					"stack_index": 37,
 					"type": "text"
 				},
 				{
@@ -34175,7 +34183,7 @@
 						"translation.y": 1071158.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 5,
 					"type": "text"
 				},
 				{
@@ -34205,7 +34213,7 @@
 						"translation.y": 660.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 4,
 					"type": "text"
 				},
 				{
@@ -34214,15 +34222,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 160,
+						"buffer_size": 159,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								160,
-								160
+								0,
+								0
 							]
 						],
 						"settings":
@@ -34233,7 +34241,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 2,
 					"type": "text"
 				},
 				{
@@ -34263,7 +34271,7 @@
 						"translation.y": 618.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 46,
+					"stack_index": 47,
 					"type": "text"
 				},
 				{
@@ -34292,7 +34300,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 76,
+					"stack_index": 77,
 					"type": "text"
 				},
 				{
@@ -34320,7 +34328,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 16,
+					"stack_index": 17,
 					"type": "text"
 				},
 				{
@@ -34350,7 +34358,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 82,
+					"stack_index": 83,
 					"type": "text"
 				},
 				{
@@ -34380,7 +34388,7 @@
 						"translation.y": 2716.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 51,
+					"stack_index": 52,
 					"type": "text"
 				},
 				{
@@ -34409,7 +34417,7 @@
 						"translation.y": 794.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 55,
+					"stack_index": 56,
 					"type": "text"
 				},
 				{
@@ -34439,7 +34447,7 @@
 						"translation.y": 3080.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 73,
+					"stack_index": 74,
 					"type": "text"
 				},
 				{
@@ -34469,7 +34477,7 @@
 						"translation.y": 2618.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 57,
+					"stack_index": 58,
 					"type": "text"
 				},
 				{
@@ -34499,7 +34507,7 @@
 						"translation.y": 538.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 20,
+					"stack_index": 21,
 					"type": "text"
 				},
 				{
@@ -34529,7 +34537,7 @@
 						"translation.y": 660.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 40,
+					"stack_index": 41,
 					"type": "text"
 				},
 				{
@@ -34559,7 +34567,7 @@
 						"translation.y": 660.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 33,
+					"stack_index": 34,
 					"type": "text"
 				},
 				{
@@ -34589,7 +34597,7 @@
 						"translation.y": 1787.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 79,
+					"stack_index": 80,
 					"type": "text"
 				},
 				{
@@ -34618,7 +34626,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 88,
+					"stack_index": 89,
 					"type": "text"
 				},
 				{
@@ -34648,7 +34656,7 @@
 						"translation.y": 2203.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 30,
+					"stack_index": 31,
 					"type": "text"
 				},
 				{
@@ -34657,15 +34665,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 19071,
+						"buffer_size": 19070,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								14219,
-								14219
+								0,
+								0
 							]
 						],
 						"settings":
@@ -34678,7 +34686,7 @@
 						"translation.y": 7658.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 10,
+					"stack_index": 11,
 					"type": "text"
 				},
 				{
@@ -34706,7 +34714,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 75,
+					"stack_index": 76,
 					"type": "text"
 				},
 				{
@@ -34736,7 +34744,7 @@
 						"translation.y": 1407.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 74,
+					"stack_index": 75,
 					"type": "text"
 				},
 				{
@@ -34764,7 +34772,7 @@
 						"translation.y": 2870.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 37,
+					"stack_index": 38,
 					"type": "text"
 				},
 				{
@@ -34794,7 +34802,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 35,
+					"stack_index": 36,
 					"type": "text"
 				},
 				{
@@ -34822,7 +34830,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 86,
+					"stack_index": 87,
 					"type": "text"
 				},
 				{
@@ -34852,7 +34860,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 85,
+					"stack_index": 86,
 					"type": "text"
 				},
 				{
@@ -34882,7 +34890,7 @@
 						"translation.y": 952.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 70,
+					"stack_index": 71,
 					"type": "text"
 				},
 				{
@@ -34911,7 +34919,7 @@
 						"translation.y": 924.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 7,
+					"stack_index": 8,
 					"type": "text"
 				},
 				{
@@ -34940,7 +34948,7 @@
 						"translation.y": 440.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 27,
+					"stack_index": 28,
 					"type": "text"
 				},
 				{
@@ -34970,7 +34978,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 26,
+					"stack_index": 27,
 					"type": "text"
 				},
 				{
@@ -35000,7 +35008,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 65,
+					"stack_index": 66,
 					"type": "text"
 				},
 				{
@@ -35030,7 +35038,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 9,
+					"stack_index": 10,
 					"type": "text"
 				},
 				{
@@ -35058,7 +35066,7 @@
 						"translation.y": 6493.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 64,
+					"stack_index": 65,
 					"type": "text"
 				},
 				{
@@ -35088,7 +35096,7 @@
 						"translation.y": 263.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 71,
+					"stack_index": 72,
 					"type": "text"
 				},
 				{
@@ -35097,15 +35105,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 6185,
+						"buffer_size": 6182,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								541,
-								541
+								0,
+								0
 							]
 						],
 						"settings":
@@ -35117,7 +35125,7 @@
 						"translation.y": 330.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 48,
+					"stack_index": 49,
 					"type": "text"
 				},
 				{
@@ -35147,7 +35155,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 45,
+					"stack_index": 46,
 					"type": "text"
 				},
 				{
@@ -35176,7 +35184,7 @@
 						"translation.y": 7897.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 32,
+					"stack_index": 33,
 					"type": "text"
 				},
 				{
@@ -35206,7 +35214,7 @@
 						"translation.y": 5720.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 8,
+					"stack_index": 9,
 					"type": "text"
 				},
 				{
@@ -35236,7 +35244,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 67,
+					"stack_index": 68,
 					"type": "text"
 				},
 				{
@@ -35264,7 +35272,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 6,
+					"stack_index": 7,
 					"type": "text"
 				},
 				{
@@ -35294,7 +35302,7 @@
 						"translation.y": 110.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 34,
+					"stack_index": 35,
 					"type": "text"
 				},
 				{
@@ -35303,15 +35311,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1570,
+						"buffer_size": 1626,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								990,
-								990
+								901,
+								901
 							]
 						],
 						"settings":
@@ -35324,11 +35332,41 @@
 						"translation.y": 110.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 1,
 					"type": "text"
 				},
 				{
 					"buffer": 41,
+					"file": "projects/letmesee/room.xml",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 33999,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								33808,
+								33808
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/XML/XML.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 15405.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 42,
 					"file": "node_modules/preact/package.json",
 					"semi_transient": false,
 					"settings":
@@ -35354,11 +35392,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 49,
+					"stack_index": 50,
 					"type": "text"
 				},
 				{
-					"buffer": 42,
+					"buffer": 43,
 					"file": "projects/play-ground/play-ground.js",
 					"semi_transient": false,
 					"settings":
@@ -35384,24 +35422,24 @@
 						"translation.y": 88.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 61,
+					"stack_index": 62,
 					"type": "text"
 				},
 				{
-					"buffer": 43,
+					"buffer": 44,
 					"file": "projects/play-ground/play-ground.html",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 445,
+						"buffer_size": 444,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								16,
-								16
+								0,
+								0
 							]
 						],
 						"settings":
@@ -35412,11 +35450,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 81,
+					"stack_index": 82,
 					"type": "text"
 				},
 				{
-					"buffer": 44,
+					"buffer": 45,
 					"file": "src/ui/css-features.js",
 					"semi_transient": false,
 					"settings":
@@ -35442,11 +35480,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 41,
+					"stack_index": 42,
 					"type": "text"
 				},
 				{
-					"buffer": 45,
+					"buffer": 46,
 					"file": "projects/itemlists/itemlists.html",
 					"semi_transient": false,
 					"settings":
@@ -35470,11 +35508,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 78,
+					"stack_index": 79,
 					"type": "text"
 				},
 				{
-					"buffer": 46,
+					"buffer": 47,
 					"file": "projects/itemlists/itemlists.js",
 					"semi_transient": false,
 					"settings":
@@ -35500,11 +35538,11 @@
 						"translation.y": 2305.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 69,
+					"stack_index": 70,
 					"type": "text"
 				},
 				{
-					"buffer": 47,
+					"buffer": 48,
 					"file": "projects/studio-helper/studio-suggestion-tests.js",
 					"semi_transient": false,
 					"settings":
@@ -35529,11 +35567,11 @@
 						"translation.y": 417.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 87,
+					"stack_index": 88,
 					"type": "text"
 				},
 				{
-					"buffer": 48,
+					"buffer": 49,
 					"file": "projects/studio/studio-probe.js",
 					"semi_transient": false,
 					"settings":
@@ -35559,11 +35597,11 @@
 						"translation.y": 1369.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 13,
+					"stack_index": 14,
 					"type": "text"
 				},
 				{
-					"buffer": 49,
+					"buffer": 50,
 					"file": "projects/studio/studio-toolbar.js",
 					"semi_transient": false,
 					"settings":
@@ -35589,11 +35627,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 15,
+					"stack_index": 16,
 					"type": "text"
 				},
 				{
-					"buffer": 50,
+					"buffer": 51,
 					"file": "projects/studio/studio-main.js",
 					"semi_transient": false,
 					"settings":
@@ -35619,24 +35657,24 @@
 						"translation.y": 2234.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 84,
+					"stack_index": 85,
 					"type": "text"
 				},
 				{
-					"buffer": 51,
+					"buffer": 52,
 					"file": "projects/studio/studio-edit-source.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1829,
+						"buffer_size": 1825,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1777,
-								1787
+								0,
+								0
 							]
 						],
 						"settings":
@@ -35648,11 +35686,11 @@
 						"translation.y": 948.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 6,
 					"type": "text"
 				},
 				{
-					"buffer": 52,
+					"buffer": 53,
 					"file": "projects/studio/studio-model-components.js",
 					"semi_transient": false,
 					"settings":
@@ -35676,16 +35714,16 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 11,
+					"stack_index": 12,
 					"type": "text"
 				},
 				{
-					"buffer": 53,
+					"buffer": 54,
 					"file": "projects/studio/studio-suggestions.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 12527,
+						"buffer_size": 12637,
 						"regions":
 						{
 						},
@@ -35706,11 +35744,11 @@
 						"translation.y": 1353.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 25,
+					"stack_index": 26,
 					"type": "text"
 				},
 				{
-					"buffer": 54,
+					"buffer": 55,
 					"file": "projects/studio/studio-path.js",
 					"semi_transient": false,
 					"settings":
@@ -35734,11 +35772,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 24,
+					"stack_index": 25,
 					"type": "text"
 				},
 				{
-					"buffer": 55,
+					"buffer": 56,
 					"file": "projects/studio/studio-data-browse.js",
 					"semi_transient": false,
 					"settings":
@@ -35764,24 +35802,24 @@
 						"translation.y": 230.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 77,
+					"stack_index": 78,
 					"type": "text"
 				},
 				{
-					"buffer": 56,
+					"buffer": 57,
 					"file": "projects/studio/studio-properties-menu.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 2509,
+						"buffer_size": 2508,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								248,
-								273
+								0,
+								0
 							]
 						],
 						"settings":
@@ -35794,11 +35832,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 58,
+					"stack_index": 59,
 					"type": "text"
 				},
 				{
-					"buffer": 57,
+					"buffer": 58,
 					"file": "projects/studio/studio-event-tracker.js",
 					"semi_transient": false,
 					"settings":
@@ -35822,11 +35860,11 @@
 						"translation.y": 2469.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 53,
+					"stack_index": 54,
 					"type": "text"
 				},
 				{
-					"buffer": 58,
+					"buffer": 59,
 					"file": "projects/studio/studio-undo.js",
 					"semi_transient": false,
 					"settings":
@@ -35850,11 +35888,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 29,
+					"stack_index": 30,
 					"type": "text"
 				},
 				{
-					"buffer": 59,
+					"buffer": 60,
 					"file": "projects/studio-helper/studio-helper.js",
 					"semi_transient": false,
 					"settings":
@@ -35880,11 +35918,11 @@
 						"translation.y": 1430.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 72,
+					"stack_index": 73,
 					"type": "text"
 				},
 				{
-					"buffer": 60,
+					"buffer": 61,
 					"file": "projects/studio/studio-preview.js",
 					"semi_transient": false,
 					"settings":
@@ -35910,11 +35948,11 @@
 						"translation.y": 516.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 31,
+					"stack_index": 32,
 					"type": "text"
 				},
 				{
-					"buffer": 61,
+					"buffer": 62,
 					"file": "projects/hello-world/hello-world.js",
 					"semi_transient": false,
 					"settings":
@@ -35940,11 +35978,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 60,
+					"stack_index": 61,
 					"type": "text"
 				},
 				{
-					"buffer": 62,
+					"buffer": 63,
 					"file": "src/ui/url.js",
 					"semi_transient": false,
 					"settings":
@@ -35969,11 +36007,11 @@
 						"translation.y": 220.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 56,
+					"stack_index": 57,
 					"type": "text"
 				},
 				{
-					"buffer": 63,
+					"buffer": 64,
 					"file": "projects/studio/studio-tgp-model.js",
 					"semi_transient": false,
 					"settings":
@@ -35998,11 +36036,11 @@
 						"translation.y": 4597.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 17,
+					"stack_index": 18,
 					"type": "text"
 				},
 				{
-					"buffer": 64,
+					"buffer": 65,
 					"file": "projects/studio/studio-pick.js",
 					"semi_transient": false,
 					"settings":
@@ -36027,11 +36065,11 @@
 						"translation.y": 1507.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 14,
+					"stack_index": 15,
 					"type": "text"
 				},
 				{
-					"buffer": 65,
+					"buffer": 66,
 					"file": "projects/studio/studio-search.js",
 					"semi_transient": false,
 					"settings":
@@ -36057,24 +36095,24 @@
 						"translation.y": 616.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 68,
+					"stack_index": 69,
 					"type": "text"
 				},
 				{
-					"buffer": 66,
+					"buffer": 67,
 					"file": "src/loader/jb-loader.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4684,
+						"buffer_size": 4819,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1050,
-								1050
+								0,
+								0
 							]
 						],
 						"settings":
@@ -36087,11 +36125,11 @@
 						"translation.y": 462.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 63,
+					"stack_index": 64,
 					"type": "text"
 				},
 				{
-					"buffer": 67,
+					"buffer": 68,
 					"file": "src/core/jb-core.js",
 					"semi_transient": false,
 					"settings":
@@ -36117,11 +36155,11 @@
 						"translation.y": 8491.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 18,
+					"stack_index": 19,
 					"type": "text"
 				},
 				{
-					"buffer": 68,
+					"buffer": 69,
 					"file": "projects/studio-helper/studio-probe-tests.js",
 					"semi_transient": false,
 					"settings":
@@ -36146,11 +36184,11 @@
 						"translation.y": 2774.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 42,
+					"stack_index": 43,
 					"type": "text"
 				},
 				{
-					"buffer": 69,
+					"buffer": 70,
 					"file": "projects/studio/studio-testers.js",
 					"semi_transient": false,
 					"settings":
@@ -36176,11 +36214,11 @@
 						"translation.y": 242.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 43,
+					"stack_index": 44,
 					"type": "text"
 				},
 				{
-					"buffer": 70,
+					"buffer": 71,
 					"file": "projects/studio-helper/studio-model-tests.js",
 					"semi_transient": false,
 					"settings":
@@ -36205,11 +36243,11 @@
 						"translation.y": 1523.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 80,
+					"stack_index": 81,
 					"type": "text"
 				},
 				{
-					"buffer": 71,
+					"buffer": 72,
 					"file": "src/ui/tree/tree.js",
 					"semi_transient": false,
 					"settings":
@@ -36234,11 +36272,11 @@
 						"translation.y": 3193.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 54,
+					"stack_index": 55,
 					"type": "text"
 				},
 				{
-					"buffer": 72,
+					"buffer": 73,
 					"file": "src/ui/immutable.js",
 					"semi_transient": false,
 					"settings":
@@ -36264,11 +36302,11 @@
 						"translation.y": 4840.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 28,
+					"stack_index": 29,
 					"type": "text"
 				},
 				{
-					"buffer": 73,
+					"buffer": 74,
 					"file": "src/ui/styles/codemirror-styles.js",
 					"semi_transient": false,
 					"settings":
@@ -36293,11 +36331,11 @@
 						"translation.y": 1100.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 47,
+					"stack_index": 48,
 					"type": "text"
 				},
 				{
-					"buffer": 74,
+					"buffer": 75,
 					"file": "src/ui/picklist.js",
 					"semi_transient": false,
 					"settings":
@@ -36323,11 +36361,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 38,
+					"stack_index": 39,
 					"type": "text"
 				},
 				{
-					"buffer": 75,
+					"buffer": 76,
 					"file": "src/ui/label.js",
 					"semi_transient": false,
 					"settings":
@@ -36353,11 +36391,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 19,
+					"stack_index": 20,
 					"type": "text"
 				},
 				{
-					"buffer": 76,
+					"buffer": 77,
 					"file": "src/ui/table.js",
 					"semi_transient": false,
 					"settings":
@@ -36383,11 +36421,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 50,
+					"stack_index": 51,
 					"type": "text"
 				},
 				{
-					"buffer": 77,
+					"buffer": 78,
 					"file": "src/ui/styles/table-styles.js",
 					"semi_transient": false,
 					"settings":
@@ -36413,11 +36451,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 66,
+					"stack_index": 67,
 					"type": "text"
 				},
 				{
-					"buffer": 78,
+					"buffer": 79,
 					"file": "src/ui/itemlist.js",
 					"semi_transient": false,
 					"settings":
@@ -36443,11 +36481,11 @@
 						"translation.y": 2695.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 23,
+					"stack_index": 24,
 					"type": "text"
 				},
 				{
-					"buffer": 79,
+					"buffer": 80,
 					"file": "src/ui/react-ctrl.js",
 					"semi_transient": false,
 					"settings":
@@ -36472,11 +36510,11 @@
 						"translation.y": 7551.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 21,
+					"stack_index": 22,
 					"type": "text"
 				},
 				{
-					"buffer": 80,
+					"buffer": 81,
 					"file": "src/ui/styles/group-styles.js",
 					"semi_transient": false,
 					"settings":
@@ -36502,11 +36540,11 @@
 						"translation.y": 122.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 59,
+					"stack_index": 60,
 					"type": "text"
 				},
 				{
-					"buffer": 81,
+					"buffer": 82,
 					"file": "src/ui/common-features.js",
 					"semi_transient": false,
 					"settings":
@@ -36532,11 +36570,11 @@
 						"translation.y": 5873.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 12,
+					"stack_index": 13,
 					"type": "text"
 				},
 				{
-					"buffer": 82,
+					"buffer": 83,
 					"file": "src/ui/button.js",
 					"semi_transient": false,
 					"settings":
@@ -36562,11 +36600,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 3,
 					"type": "text"
 				},
 				{
-					"buffer": 83,
+					"buffer": 84,
 					"file": "src/ui/editable-boolean.js",
 					"semi_transient": false,
 					"settings":
@@ -36592,11 +36630,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 44,
+					"stack_index": 45,
 					"type": "text"
 				},
 				{
-					"buffer": 84,
+					"buffer": 85,
 					"file": "projects/studio-helper/studio-tree-tests.js",
 					"semi_transient": false,
 					"settings":
@@ -36620,11 +36658,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 62,
+					"stack_index": 63,
 					"type": "text"
 				},
 				{
-					"buffer": 85,
+					"buffer": 86,
 					"file": "src/ui/jb-rx.js",
 					"semi_transient": false,
 					"settings":
@@ -36648,11 +36686,11 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 83,
+					"stack_index": 84,
 					"type": "text"
 				},
 				{
-					"buffer": 86,
+					"buffer": 87,
 					"file": "projects/ui-tests/ui-tests.js",
 					"semi_transient": false,
 					"settings":
@@ -36678,11 +36716,11 @@
 						"translation.y": 9022.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 22,
+					"stack_index": 23,
 					"type": "text"
 				},
 				{
-					"buffer": 87,
+					"buffer": 88,
 					"file": "src/ui/jb-preact.js",
 					"semi_transient": false,
 					"settings":
@@ -36706,24 +36744,24 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 89,
+					"stack_index": 90,
 					"type": "text"
 				},
 				{
-					"buffer": 88,
+					"buffer": 89,
 					"file": "projects/studio/studio-tree.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 6028,
+						"buffer_size": 6027,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1536,
-								1536
+								0,
+								0
 							]
 						],
 						"settings":
@@ -36736,11 +36774,11 @@
 						"translation.y": 684.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 39,
+					"stack_index": 40,
 					"type": "text"
 				},
 				{
-					"buffer": 89,
+					"buffer": 90,
 					"file": "src/ui/group.js",
 					"semi_transient": false,
 					"settings":
@@ -36766,7 +36804,7 @@
 						"translation.y": 1191.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 52,
+					"stack_index": 53,
 					"type": "text"
 				}
 			]
@@ -36824,6 +36862,10 @@
 		"last_filter": "",
 		"selected_items":
 		[
+			[
+				"roo",
+				"projects\\letmesee\\room.xml"
+			],
 			[
 				"pack",
 				"package.json"
@@ -37331,10 +37373,6 @@
 			[
 				"immu",
 				"src\\ui\\immutable.js"
-			],
-			[
-				"tgp-",
-				"projects\\studio\\studio-tgp-model.js"
 			]
 		],
 		"width": 0.0

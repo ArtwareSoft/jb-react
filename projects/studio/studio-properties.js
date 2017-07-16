@@ -1,32 +1,32 @@
 
 jb.component('studio.open-properties', {
-  type: 'action', 
-  params: [{ id: 'focus', as: 'boolean' }], 
-  impl :{$: 'open-dialog', 
-    style :{$: 'dialog.studio-floating', id: 'studio-properties', width: '500' }, 
-    content :{$: 'studio.properties', 
+  type: 'action',
+  params: [{ id: 'focus', type: 'boolean', as: 'boolean' }], 
+  impl :{$: 'open-dialog',
+    style :{$: 'dialog.studio-floating', id: 'studio-properties', width: '500' },
+    content :{$: 'studio.properties',
       path :{$: 'studio.currentProfilePath' }
-    }, 
+    },
     title :{
       $pipeline: [
-        {$: 'object', 
-          title :{$: 'studio.short-title', 
+        {$: 'object',
+          title :{$: 'studio.short-title',
             path :{$: 'studio.currentProfilePath' }
-          }, 
-          comp :{$: 'studio.comp-name', 
+          },
+          comp :{$: 'studio.comp-name',
             path :{$: 'studio.currentProfilePath' }
           }
-        }, 
+        },
         'Properties of %comp% %title%'
       ]
-    }, 
+    },
     features: [
       {
-        $if: '%$focus%', 
+        $if: '%$focus%',
         then :{$: 'dialog-feature.auto-focus-on-first-input' }
-      }, 
-      {$: 'dialog-feature.keyboard-shortcut', 
-        shortcut: 'Ctrl+Left', 
+      },
+      {$: 'dialog-feature.keyboard-shortcut',
+        shortcut: 'Ctrl+Left',
         action :{$: 'studio.open-control-tree' }
       }
     ]
@@ -39,7 +39,7 @@ jb.component('studio.open-source-dialog', {
 			modal: true,
 			title: 'Source',
         	style :{$: 'dialog.dialog-ok-cancel' },
-			content :{$: 'text', 
+			content :{$: 'text',
 				text :{$: 'studio.comp-source'},
 				style:{$: 'text.codemirror'}
 			},
@@ -47,71 +47,71 @@ jb.component('studio.open-source-dialog', {
 })
 
 jb.component('studio.properties', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'group',
     controls: [
-      {$: 'group', 
-        title: 'accordion', 
-        style :{$: 'group.studio-properties-accordion' }, 
+      {$: 'group',
+        title: 'accordion',
+        style :{$: 'group.studio-properties-accordion' },
         controls: [
-          {$: 'group', 
-            remark: 'properties', 
+          {$: 'group',
+            remark: 'properties',
             title :{
               $pipeline: [
-                {$: 'count', 
+                {$: 'count',
                   items :{$: 'studio.non-control-children', path: '%$path%' }
-                }, 
+                },
                 'Properties (%%)'
               ]
-            }, 
-            style :{$: 'property-sheet.studio-properties' }, 
+            },
+            style :{$: 'property-sheet.studio-properties' },
             controls: [
-              {$: 'dynamic-controls', 
-                controlItems :{$: 'studio.non-control-children', path: '%$path%' }, 
+              {$: 'dynamic-controls',
+                controlItems :{$: 'studio.non-control-children', path: '%$path%' },
                 genericControl :{$: 'studio.property-field', path: '%$controlItem%' }
               }
             ]
-          }, 
-          {$: 'group', 
-            remark: 'features', 
+          },
+          {$: 'group',
+            remark: 'features',
             title :{
               $pipeline: [
-                {$: 'count', 
+                {$: 'count',
                   items :{$: 'studio.val', path: '%$path%~features' }
-                }, 
+                },
                 'Features (%%)'
               ]
-            }, 
+            },
             controls :{$: 'studio.property-array', path: '%$path%~features' }
           }
-        ], 
+        ],
         features: [
-          {$: 'group.dynamic-titles' }, 
-          {$: 'hidden', 
-            showCondition :{$: 'studio.has-param', 
-              remark: 'not a control', 
-              path: '%$path%', 
+          {$: 'group.dynamic-titles' },
+          {$: 'hidden',
+            showCondition :{$: 'studio.has-param',
+              remark: 'not a control',
+              path: '%$path%',
               param: 'features'
             }
           }
         ]
-      }, 
-      {$: 'button', 
-        title: 'new feature', 
-        action :{$: 'studio.open-new-profile-dialog', 
-          path: '%$path%~features', 
-          type: 'feature', 
-          onClose: ctx => 
+      },
+      {$: 'button',
+        title: 'new feature',
+        action :{$: 'studio.open-new-profile-dialog',
+          path: '%$path%~features',
+          type: 'feature',
+          onClose: ctx =>
             ctx.vars.PropertiesDialog.openFeatureSection()
-        }, 
-        style :{$: 'button.href' }, 
+        },
+        style :{$: 'button.href' },
         features :{$: 'css.margin', top: '20', left: '5' }
       }
-    ], 
-    features :{$: 'var', 
-      name: 'PropertiesDialog', 
-      value :{$: 'object' }, 
+    ],
+    features :{$: 'var',
+      name: 'PropertiesDialog',
+      value :{$: 'object' },
       mutable: false
     }
   }
@@ -122,70 +122,70 @@ jb.component('studio.properties-in-tgp',{
   params: [ {id: 'path', as: 'string' } ],
   impl :{$: 'group',
     style :{$: 'property-sheet.studio-properties-in-tgp'},
-    controls :{$: 'dynamic-controls', 
+    controls :{$: 'dynamic-controls',
         controlItems :{$: 'studio.non-control-children', path: '%$path%', includeFeatures: true },
-        genericControl :{$: 'studio.property-field', path: '%$controlItem%' } 
+        genericControl :{$: 'studio.property-field', path: '%$controlItem%' }
     },
     features:{$: 'group.auto-focus-on-first-input'}
   }
 })
 
 jb.component('studio.property-field', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'control.first-succeeding', 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'control.first-succeeding',
     $vars: {
-      paramType :{$: 'studio.param-type', path: '%$path%' }, 
+      paramType :{$: 'studio.param-type', path: '%$path%' },
       paramDef :{$: 'studio.param-def', path: '%$path%' }
-    }, 
-    title :{$: 'studio.prop-name', path: '%$path%' }, 
+    },
+    title :{$: 'studio.prop-name', path: '%$path%' },
     controls: [
-      {$: 'control-with-condition', 
+      {$: 'control-with-condition',
         condition :{
           $and: [
             {
-              $not :{$: 'is-of-type', 
-                type: 'string,number,boolean,undefined', 
+              $not :{$: 'is-of-type',
+                type: 'string,number,boolean,undefined',
                 obj :{$: 'studio.val', path: '%$path%' }
               }
-            }, 
+            },
             {$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }
           ]
-        }, 
+        },
         control :{$: 'studio.property-script', path: '%$path%' }
-      }, 
-      {$: 'control-with-condition', 
+      },
+      {$: 'control-with-condition',
         condition :{
           $and: [
-            {$: 'is-of-type', 
-              type: 'array', 
+            {$: 'is-of-type',
+              type: 'array',
               obj :{$: 'studio.val', path: '%$path%' }
-            }, 
+            },
             {$: 'studio.is-of-type', path: '%$path%', type: 'action' }
           ]
-        }, 
+        },
         control :{$: 'studio.property-script', path: '%$path%' }
-      }, 
-      {$: 'control-with-condition', 
-        condition: '%$paramDef/options%', 
+      },
+      {$: 'control-with-condition',
+        condition: '%$paramDef/options%',
         control :{$: 'studio.property-enum', path: '%$path%' }
-      }, 
-      {$: 'control-with-condition', 
-        condition: '%$paramDef/as%=="number"', 
+      },
+      {$: 'control-with-condition',
+        condition: '%$paramDef/as%=="number"',
         control :{$: 'studio.property-slider', path: '%$path%' }
-      }, 
-      {$: 'control-with-condition', 
-        condition: '%$paramDef/as%=="boolean"', 
+      },
+      {$: 'control-with-condition',
+        condition: '%$paramDef/as%=="boolean"',
         control :{$: 'studio.property-boolean', path: '%$path%' }
-      }, 
-      {$: 'control-with-condition', 
-        condition :{$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }, 
+      },
+      {$: 'control-with-condition',
+        condition :{$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' },
         control :{$: 'studio.property-primitive', path: '%$path%' }
-      }, 
+      },
       {$: 'studio.property-tgp', path: '%$path%' }
-    ], 
+    ],
     features: [
-      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
+      {$: 'studio.property-toolbar-feature', path: '%$path%' },
       {$: 'studio.watch-typeof-script', path: '%$path%' }
     ]
   }
@@ -221,7 +221,7 @@ jb.component('studio.property-field', {
 // 		}
 // 		else if ( (paramDef.type || '').indexOf('[]') != -1 && isNaN(Number(path.split('~').pop())))
 // 			fieldPT = 'studio.property-script';
-// 		else 
+// 		else
 // 			fieldPT = 'studio.property-tgp';
 
 // 		return context.run({ $: fieldPT, path: path });
@@ -231,19 +231,19 @@ jb.component('studio.property-field', {
 jb.component('studio.property-label',{
 	type: 'control',
 	params: [ {id: 'path', as: 'string' } ],
-	impl :{$: 'label', 
+	impl :{$: 'label',
 		title :{$: 'studio.prop-name', path: '%$path%' },
 	}
 });
 
 jb.component('studio.property-script', {
-  type: 'control', 
+  type: 'control',
   params: [
     { id: 'path', as: 'string' }
-  ], 
-  impl :{$: 'group', 
-    controls :{$: 'button', 
-        title :{$: 'studio.data-script-summary', path: '%$path%' }, 
+  ],
+  impl :{$: 'group',
+    controls :{$: 'button',
+        title :{$: 'studio.data-script-summary', path: '%$path%' },
         action :{$: 'studio.open-jb-editor',path: '%$path%' } ,
         style :{$: 'button.studio-script'}
     }
@@ -251,10 +251,10 @@ jb.component('studio.property-script', {
 })
 
 jb.component('studio.data-script-summary', {
-  type: 'data', 
+  type: 'data',
   params: [
     { id: 'path', as: 'string' }
-  ], 
+  ],
   impl: (ctx,path) => {
     var st = jb.studio;
     return st.prettyPrint(st.valOfPath(path));
@@ -269,43 +269,43 @@ jb.component('studio.data-script-summary', {
 })
 
 jb.component('studio.property-boolean', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'editable-boolean', 
-    databind :{$: 'studio.ref', path: '%$path%' }, 
-    style :{$: 'editable-boolean.mdl-slide-toggle' }, 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'editable-boolean',
+    databind :{$: 'studio.ref', path: '%$path%' },
+    style :{$: 'editable-boolean.mdl-slide-toggle' },
     features: [
-//      {$: 'studio.undo-support', path: '%$path%' }, 
-//      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
+//      {$: 'studio.undo-support', path: '%$path%' },
+//      {$: 'studio.property-toolbar-feature', path: '%$path%' },
       {$: 'css.width', width: '150' }
     ]
   }
 })
 
 jb.component('studio.property-enum', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'picklist', 
-    databind :{$: 'studio.ref', path: '%$path%' }, 
-    options :{$: 'studio.enum-options', path: '%$path%' }, 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'picklist',
+    databind :{$: 'studio.ref', path: '%$path%' },
+    options :{$: 'studio.enum-options', path: '%$path%' },
     style :{$: 'picklist.native-md-look' }
   }
 })
 
 jb.component('studio.property-slider', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'editable-number', 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'editable-number',
     $vars: {
       paramDef :{$: 'studio.param-def', path: '%$path%' }
-    }, 
-    databind :{$: 'studio.ref', path: '%$path%' }, 
-    style :{$: 'editable-number.slider', width: '120' }, 
-    min :{ $firstSucceeding: ['%$paramDef/min%', 0] }, 
-    max :{ $firstSucceeding: ['%$paramDef/max%', 100] }, 
-    step :{ $firstSucceeding: ['%$paramDef/step%', 1] }, 
-    features :{$: 'css', 
-      width: '212', 
+    },
+    databind :{$: 'studio.ref', path: '%$path%' },
+    style :{$: 'editable-number.slider', width: '120' },
+    min :{ $firstSucceeding: ['%$paramDef/min%', 0] },
+    max :{ $firstSucceeding: ['%$paramDef/max%', 100] },
+    step :{ $firstSucceeding: ['%$paramDef/step%', 1] },
+    features :{$: 'css',
+      width: '212',
       css: `>input-slider { width: 110px; }
 >.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }`
     }
@@ -313,92 +313,92 @@ jb.component('studio.property-slider', {
 })
 
 jb.component('studio.property-tgp', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
-    // title :{$: 'studio.prop-name', path: '%$path%' }, 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'group',
+    // title :{$: 'studio.prop-name', path: '%$path%' },
     controls: [
-      {$: 'group', 
-        title: 'header', 
-        style :{$: 'layout.horizontal', spacing: '0' }, 
+      {$: 'group',
+        title: 'header',
+        style :{$: 'layout.horizontal', spacing: '0' },
         controls: [
-          {$: 'editable-boolean', 
-            databind: '%$expanded%', 
-            style :{$: 'editable-boolean.expand-collapse' }, 
+          {$: 'editable-boolean',
+            databind: '%$expanded%',
+            style :{$: 'editable-boolean.expand-collapse' },
             features: [
-              {$: 'studio.watch-path', path: '%$path%', includeChildren: true }, 
-              {$: 'css', 
+              {$: 'studio.watch-path', path: '%$path%', includeChildren: true },
+              {$: 'css',
                 css: '{ position: absolute; margin-left: -20px; margin-top: 5px }'
-              }, 
-              {$: 'hidden', 
+              },
+              {$: 'hidden',
                 showCondition :{
                   $and: [
                     {
                       $notEmpty :{$: 'studio.non-control-children', path: '%$path%' }
-                    }, 
+                    },
                     {
                       $notEmpty :{$: 'studio.val', path: '%$path%' }
-                    }, 
-                    {$: 'not-equals', 
-                      item1 :{$: 'studio.comp-name', path: '%$path%' }, 
+                    },
+                    {$: 'not-equals',
+                      item1 :{$: 'studio.comp-name', path: '%$path%' },
                       item2: 'custom-style'
                     }
                   ]
                 }
               }
             ]
-          }, 
-          {$: 'group', 
-            controls: [{$: 'studio.pick-profile', path: '%$path%' }], 
+          },
+          {$: 'group',
+            controls: [{$: 'studio.pick-profile', path: '%$path%' }],
             features: [{$: 'css.width', width: '150' }]
           }
-        ], 
+        ],
         features :{$: 'css', css: '{ position: relative }' }
-      }, 
-      {$: 'group', 
-        title: 'inner', 
-        controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
+      },
+      {$: 'group',
+        title: 'inner',
+        controls :{$: 'studio.properties-in-tgp', path: '%$path%' },
         features: [
-          {$: 'studio.watch-path', path: '%$path%' }, 
-          {$: 'watch-ref', ref: '%$expanded%',  }, 
-          {$: 'hidden', 
+          {$: 'studio.watch-path', path: '%$path%' },
+          {$: 'watch-ref', ref: '%$expanded%',  },
+          {$: 'hidden',
             showCondition :{
               $and: [
-                '%$expanded%', 
+                '%$expanded%',
                 {
                   $notEmpty :{$: 'studio.non-control-children', path: '%$path%' }
-                }, 
+                },
                 {
                   $notEmpty :{$: 'studio.val', path: '%$path%' }
-                }, 
-                {$: 'not-equals', 
-                  item1 :{$: 'studio.comp-name', path: '%$path%' }, 
+                },
+                {$: 'not-equals',
+                  item1 :{$: 'studio.comp-name', path: '%$path%' },
                   item2: 'custom-style'
                 }
               ]
             }
-          }, 
-          {$: 'css', 
+          },
+          {$: 'css',
             css: '{ margin-top: 9px; margin-left: -83px; margin-bottom: 4px;}'
-          }, 
-          {$: 'bind-refs', 
-            watchRef: '%$path%', 
-            updateRef: '%$expanded%', 
+          },
+          {$: 'bind-refs',
+            watchRef: '%$path%',
+            updateRef: '%$expanded%',
             value :{
               $or: [
-                '%$expanded%', 
+                '%$expanded%',
                 {$: 'studio.is-new', path: '%$path%' }
               ]
             }
           }
         ]
       }
-    ], 
+    ],
     features: [
-//      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
-      {$: 'var', 
-        name: 'expanded', 
-        value :{$: 'studio.is-new', path: '%$path%' }, 
+//      {$: 'studio.property-toolbar-feature', path: '%$path%' },
+      {$: 'var',
+        name: 'expanded',
+        value :{$: 'studio.is-new', path: '%$path%' },
         mutable: true
       }
     ]
@@ -406,65 +406,65 @@ jb.component('studio.property-tgp', {
 })
 
 jb.component('studio.property-tgp-in-array', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'group',
     controls: [
-      {$: 'group', 
-        style :{$: 'layout.flex', align: 'space-between' }, 
+      {$: 'group',
+        style :{$: 'layout.flex', align: 'space-between' },
         controls: [
-          {$: 'editable-boolean', 
-            databind: '%$expanded%', 
-            style :{$: 'editable-boolean.expand-collapse' }, 
+          {$: 'editable-boolean',
+            databind: '%$expanded%',
+            style :{$: 'editable-boolean.expand-collapse' },
             features: [{$: 'css.padding', top: '4' }]
-          }, 
-          {$: 'label', 
-            title :{$: 'pipeline', 
+          },
+          {$: 'label',
+            title :{$: 'pipeline',
               items: [
-                {$: 'studio.comp-name', path: '%$path%' }, 
+                {$: 'studio.comp-name', path: '%$path%' },
                 {$: 'suffix', separator: '.', text: '%%' }
               ]
-            }, 
-            style :{$: 'label.p' }, 
+            },
+            style :{$: 'label.p' },
             features: [
-              {$: 'css.width', width: '100' }, 
+              {$: 'css.width', width: '100' },
               {$: 'css.class', class: 'drag-handle' }
             ]
-          }, 
-          {$: 'label', 
-            title :{$: 'studio.summary', path: '%$path%' }, 
-            style :{$: 'label.p' }, 
+          },
+          {$: 'label',
+            title :{$: 'studio.summary', path: '%$path%' },
+            style :{$: 'label.p' },
             features: [
-              {$: 'css.width', width: '335' }, 
+              {$: 'css.width', width: '335' },
               {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
             ]
-          }, 
-          {$: 'studio.property-toolbar', 
-            features :{$: 'css', css: '{ position: absolute; left: 20px }' }, 
+          },
+          {$: 'studio.property-toolbar',
+            features :{$: 'css', css: '{ position: absolute; left: 20px }' },
             path: '%$path%'
           }
-        ], 
+        ],
         features: [{$: 'studio.disabled-support', path: '%$path%' }]
-      }, 
-      {$: 'group', 
-        controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
+      },
+      {$: 'group',
+        controls :{$: 'studio.properties-in-tgp', path: '%$path%' },
         features: [
           {$: 'feature.if', showCondition: '%$expanded%'},
-          {$: 'watch-ref', ref: '%$expanded%',  }, 
-          {$: 'css', css: '{ margin-left: 10px; margin-bottom: 4px;}' }, 
+          {$: 'watch-ref', ref: '%$expanded%',  },
+          {$: 'css', css: '{ margin-left: 10px; margin-bottom: 4px;}' },
           {$: 'studio.disabled-support', path: '%$path%' }
         ]
       }
-    ], 
+    ],
     features: [
-      {$: 'css.margin', left: '-100' }, 
-      {$: 'var', 
-        name: 'expanded', 
-        value :{$: 'studio.is-new', path: '%$path%' }, 
+      {$: 'css.margin', left: '-100' },
+      {$: 'var',
+        name: 'expanded',
+        value :{$: 'studio.is-new', path: '%$path%' },
         mutable: true
-      }, 
-      {$: 'studio.watch-path', 
-        path: '%$path%', 
+      },
+      {$: 'studio.watch-path',
+        path: '%$path%',
 //        includeChildren: 'true'
       }
     ]
@@ -472,47 +472,46 @@ jb.component('studio.property-tgp-in-array', {
 })
 
 jb.component('studio.property-array', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
-    style :{$: 'layout.vertical', spacing: '7' }, 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'group',
+    style :{$: 'layout.vertical', spacing: '7' },
     controls: [
-      {$: 'group', 
-        title: 'items', 
+      {$: 'group',
+        title: 'items',
         controls: [
-          {$: 'itemlist', 
-            items :{$: 'studio.as-array-children', path: '%$path%' }, 
-            controls :{$: 'group', 
-              style :{$: 'property-sheet.studio-plain' }, 
+          {$: 'itemlist',
+            items :{$: 'studio.as-array-children', path: '%$path%' },
+            controls :{$: 'group',
+              style :{$: 'property-sheet.studio-plain' },
               controls :{$: 'studio.property-tgp-in-array', path: '%$arrayItem%' }
-            }, 
-            itemVariable: 'arrayItem', 
+            },
+            itemVariable: 'arrayItem',
             features: [
               {$: 'studio.watch-path', path: '%$path%', },
-              {$: 'itemlist.divider' }, 
+              {$: 'itemlist.divider' },
               {$: 'itemlist.drag-and-drop' }
             ]
           }
         ]
-      }, 
-      // {$: 'button', 
-      //   title: 'new feature', 
-      //   action :{$: 'studio.open-new-profile-dialog', type: 'feature', path: '%$path%' }, 
-      //   style :{$: 'button.href' }, 
+      },
+      // {$: 'button',
+      //   title: 'new feature',
+      //   action :{$: 'studio.open-new-profile-dialog', type: 'feature', path: '%$path%' },
+      //   style :{$: 'button.href' },
       //   features :{$: 'css.margin', top: '20', left: '20' }
       // }
-    ], 
+    ],
   }
 })
 
 
 jb.component('studio.tgp-path-options',{
 	type: 'picklist.options',
-	params: [ 
+	params: [
 		{ id: 'path', as: 'string' },
 	],
-	impl: (context,path) => 
+	impl: (context,path) =>
 		[{code:'',text:''}]
 			.concat(jb.studio.PTsOfPath(path).map(op=> ({ code: op, text: op})))
 })
-
