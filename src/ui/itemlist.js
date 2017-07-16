@@ -160,7 +160,6 @@ jb.component('itemlist.keyboard-selection', {
       afterViewInit: function(cmp) {
         var onkeydown = (cmp.ctx.vars.itemlistCntr && cmp.ctx.vars.itemlistCntr.keydown) || (cmp.ctx.vars.selectionKeySource && cmp.ctx.vars.selectionKeySource.keydown);
         if (!onkeydown) {
-          console.log('keyboard-selection - create key down');
           cmp.base.setAttribute('tabIndex','0');
           onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
 
@@ -168,9 +167,6 @@ jb.component('itemlist.keyboard-selection', {
             jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus',ctx)
         }
         cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );
-
-        onkeydown.subscribe(e=>console.log(1,e));
-        cmp.onkeydown.subscribe(e=>console.log(2,e));
 
         cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
           .subscribe(x=>

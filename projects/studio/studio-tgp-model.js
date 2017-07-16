@@ -5,8 +5,8 @@ st.ControlTree = class {
 	constructor(rootPath) {
 		this.rootPath = rootPath;
 	}
-	title(path) {
-		return st.shortTitle(path)
+	title(path,collapsed) {
+		return this.fixTitles(st.shortTitle(path),path,collapsed)
 	}
 	// differnt from children() == 0, beacuse in the control tree you can drop into empty group
 	isArray(path) {
@@ -15,7 +15,7 @@ st.ControlTree = class {
 	children(path,nonRecursive) {
 		return [].concat.apply([],st.controlParams(path).map(prop=>path + '~' + prop)
 				.map(innerPath=>Array.isArray(st.valOfPath(innerPath)) ? st.arrayChildren(innerPath,true) : [innerPath] ))
-				.concat(nonRecursive ? [] : this.innerControlPaths(path));		
+				.concat(nonRecursive ? [] : this.innerControlPaths(path));
 	}
 	move(path,draggedPath,index) {
 		if (st.parentPath(draggedPath) == path)
@@ -39,6 +39,11 @@ st.ControlTree = class {
 			.map(x=>path+'~'+x)
 			.filter(p=>
 				st.paramTypeOfPath(p) == 'control');
+	}
+	fixTitles(title,path) {
+		if (title == 'control-with-condition')
+			return jb.ui.h('div',{},[this.title(path+'~control'),jb.ui.h('span',{class:'treenode-val'},'conditional') ]);
+		return title;
 	}
 }
 
@@ -90,7 +95,7 @@ st.jbEditorTree = class {
 	icon(path) {
 		return st.icon(path)
 	}
-	
+
 	// private
 	sugarChildren(path,val) {
 		var compName = jb.compName(val);
@@ -189,7 +194,7 @@ Object.assign(st,{
 				return 'view_column'
 			return 'folder_open'; //'view_headline' , 'folder_open'
 		}
-		var comp2icon = { 
+		var comp2icon = {
 			label: 'font_download',
 			button: 'crop_landscape',
 			tab: 'tab',
@@ -256,7 +261,7 @@ Object.assign(st,{
 		var types = [].concat.apply([],(type||'').split(',')
 			.map(x=>
 				x.match(single)[1])
-			.map(x=> 
+			.map(x=>
 				x=='data' ? ['data','aggregator','boolean'] : [x]));
 		var comp_arr = types.map(t=>
 			jb.entries(st.previewjb.comps)

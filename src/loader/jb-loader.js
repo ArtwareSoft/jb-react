@@ -58,6 +58,9 @@ var resources = {
         'src/ui/tree/tree.js',
         'src/ui/tree/json-tree-model.js',
       ],
+      'inner-html': [ // unsafe
+        'src/ui/inner-html.js',
+      ],
       'testers': [
         'src/testing/testers.js',
       ],

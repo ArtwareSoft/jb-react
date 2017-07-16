@@ -19,7 +19,7 @@ jb.component('group.init-group', {
       if (!cmp.state.ctrls)
         cmp.state.ctrls = cmp.calcCtrls()
       cmp.refresh = cmp.refresh || (_ =>
-          cmp.setState({ctrls: cmp.calcCtrls() })) 
+          cmp.setState({ctrls: cmp.calcCtrls() }))
 
       if (cmp.ctrlEmitter)
         cmp.ctrlEmitter.subscribe(ctrls=>
@@ -46,7 +46,7 @@ jb.component('group.dynamic-titles', {
   type: 'feature', category: 'group:30',
   description: 'dynamic titles for sub controls',
   impl: ctx => ({
-    doCheck: cmp => 
+    doCheck: cmp =>
       (cmp.state.ctrls || []).forEach(ctrl=>
         ctrl.title = ctrl.jbComp.jb_title ? ctrl.jbComp.jb_title() : '')
   })
@@ -65,11 +65,11 @@ jb.component('control.first-succeeding', {
 })
 
 jb.component('control-with-condition', {
-  type: 'control-with-condition',
+  type: 'control',
   params: [
     { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
     { id: 'control', type: 'control', essential: true, dynamic: true },
   ],
-  impl: (ctx,condition,ctrl) => 
+  impl: (ctx,condition,ctrl) =>
     condition && ctrl(ctx)
 })

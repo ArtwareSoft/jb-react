@@ -7,7 +7,7 @@ jb.component('suggestions-test', {
     { id: 'path', as: 'string', defaultValue: 'suggestions-test.default-probe~impl~title' },
     { id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean' },
   ],
-  impl :{$: 'data-test', 
+  impl :{$: 'data-test',
     calculate: ctx => {
       var params = ctx.componentContext.params;
       var selectionStart = params.selectionStart == -1 ? params.expression.length : params.selectionStart;
@@ -33,7 +33,7 @@ jb.component('jb-editor-children-test', {
     { id: 'childrenType', as: 'string', type: ',jb-editor' },
     { id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean' }
   ],
-  impl :{$: 'data-test', 
+  impl :{$: 'data-test',
     calculate: ctx => {
       var params = ctx.componentContext.params;
       var mdl = new jb.studio.jbEditorTree('');
@@ -59,8 +59,8 @@ jb.component('studio-probe-test', {
     var failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
     var success = _ => ({ id: testId, title: testId, success: true });
 
-    var full_path = testId + '~impl~' + probePath;
-    var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, comp: testId, path: '' } ))
+    var full_path = testId + '~impl~circuit~' + probePath;
+    var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
       .runCircuit(full_path);
     return probeRes.then(res=>{
           try {

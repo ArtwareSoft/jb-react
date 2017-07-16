@@ -1,7 +1,7 @@
 jb.component('image', {
 	type: 'control', category: 'control:50',
 	params: [
-		{ id: 'url', as: 'string' },
+		{ id: 'url', as: 'string', essential: true },
 		{ id: 'imageWidth', as: 'number' },
 		{ id: 'imageHeight', as: 'number' },
 		{ id: 'width', as: 'number' },
@@ -10,17 +10,20 @@ jb.component('image', {
 		{ id: 'style', type: 'image.style', dynamic: true, defaultValue: { $: 'image.default' } },
 		{ id: 'features', type: 'feature[]', dynamic: true }
 	],
-	impl: ctx =>
-		jb.ui.ctrl(ctx, { 
-			init: cmp =>
-				cmp.state.url = ctx.params.url
-		})
+	impl: ctx => {
+			['imageWidth','imageHeight','width','height'].forEach(prop=>
+					ctx.params[prop] = ctx.params[prop] || null);
+			return jb.ui.ctrl(ctx, {
+				init: cmp =>
+					cmp.state.url = ctx.params.url
+			})
+		}
 })
 
 jb.component('image.default', {
 	type: 'image.style',
 	impl :{$: 'custom-style',
-		template: (cmp,state,h) => 
+		template: (cmp,state,h) =>
 			h('div',{}, h('img', {src: state.url})),
 
 		css: `{ {? width: %$$model/width%%$$model/units%; ?} {? height: %$$model/height%%$$model/units%; ?} }

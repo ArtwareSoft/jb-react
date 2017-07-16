@@ -1,7 +1,7 @@
 jb.component('probe-test.single-control', {
-	impl :{$: 'studio-probe-test', 
-		circuit: {$: 'group', 
-			controls :{$: 'label', title: 'hello' } 
+	impl :{$: 'studio-probe-test',
+		circuit: {$: 'group',
+			controls :{$: 'label', title: 'hello' }
 		},
 		probePath : 'controls',
 		expectedVisits: 1,
@@ -9,11 +9,11 @@ jb.component('probe-test.single-control', {
 })
 
 jb.component('probe-test.pt-by-example', {
-	 impl :{$: 'studio-probe-test', 
-		circuit: {$: 'group', 
-			controls :{$: 'itemlist', 
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'group',
+			controls :{$: 'itemlist',
 				items :{$list: [1,2]},
-				controls :{$: 'label', title: 'hello' } 
+				controls :{$: 'label', title: 'hello' }
 			}
 		},
 		probePath : 'controls~controls',
@@ -22,9 +22,9 @@ jb.component('probe-test.pt-by-example', {
 })
 
 jb.component('probe-test.using-global', {
-	 impl :{$: 'studio-probe-test', 
-		circuit: {$: 'group', 
-			controls :{$: 'test.inner-label' } 
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'group',
+			controls :{$: 'test.inner-label' }
 		},
 		probePath : 'controls',
 		expectedVisits: 1,
@@ -45,11 +45,11 @@ jb.component('test.inner-label-template', {
 })
 
 jb.component('probe-test.inner-in-template', {
-	 impl :{$: 'studio-probe-test', 
-		circuit: {$: 'group', 
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'group',
 			controls :{$: 'test.inner-label-template',
-				ctrl :{$: 'label', title: 'hello' } 
-			} 
+				ctrl :{$: 'label', title: 'hello' }
+			}
 		},
 		probePath : 'controls~ctrl',
 		expectedVisits: 1,
@@ -57,36 +57,36 @@ jb.component('probe-test.inner-in-template', {
 })
 
 jb.component('probe-test.pipeline-sugar', {
-	 impl :{$: 'studio-probe-test', 
-		circuit: {$: 'group', 
-			controls :{$: 'label', title: {$pipeline: ['hello'] } } 
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'group',
+			controls :{$: 'label', title: {$pipeline: ['hello'] } }
 		},
 		probePath : 'controls~title~$pipeline~0',
 	}
 })
 
 jb.component('probe-test.pipeline-no-sugar', {
-	 impl :{$: 'studio-probe-test', 
-		circuit: {$: 'group', 
-			controls :{$: 'label', title :{$: 'pipeline', items: ['hello'] } } 
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'group',
+			controls :{$: 'label', title :{$: 'pipeline', items: ['hello'] } }
 		},
 		probePath : 'controls~title~items~0',
 	}
 })
 
 jb.component('probe-test.pipeline-one-elem', {
-	 impl :{$: 'studio-probe-test', 
-		circuit: {$: 'group', 
-			controls :{$: 'label', title :{$: 'pipeline', items: 'hello' } } 
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'group',
+			controls :{$: 'label', title :{$: 'pipeline', items: 'hello' } }
 		},
 		probePath : 'controls~title~items',
 	}
 })
 
 jb.component('probe-test.actions-sugar', {
-	 impl :{$: 'studio-probe-test', 
-		circuit: {$: 'group', 
-			controls :{$: 'button', title : 'hello', action: [ {$: 'goto-url', url: 'google' }] } 
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'group',
+			controls :{$: 'button', title : 'hello', action: [ {$: 'goto-url', url: 'google' }] }
 		},
 		probePath : 'controls~action~0',
 		expectedVisits: 1,
@@ -94,7 +94,7 @@ jb.component('probe-test.actions-sugar', {
 })
 
 jb.component('probe-test.inside-action', {
-	 impl :{$: 'studio-probe-test', 
+	 impl :{$: 'studio-probe-test',
 		circuit: {$: 'button', action :{$: 'goto-url', url: 'google' } },
 		probePath : 'action~url',
 		expectedVisits: 1,
@@ -103,9 +103,9 @@ jb.component('probe-test.inside-action', {
 
 
 jb.component('probe-test.filter-no-sugar', {
-	 impl :{$: 'studio-probe-test', 
-		circuit: {$: 'group', 
-			controls :{$: 'label', title : {$:'pipeline', items: ['hello', {$: 'filter', filter :'%% == "hello"'}] }} 
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'group',
+			controls :{$: 'label', title : {$:'pipeline', items: ['hello', {$: 'filter', filter :'%% == "hello"'}] }}
 		},
 		probePath : 'controls~title~items~1~filter',
 	}
@@ -117,7 +117,7 @@ jb.component('test.label1', {
 })
 
 jb.component('path-change-test.wrap', {
-	 impl :{$: 'path-change-test', 
+	 impl :{$: 'path-change-test',
 	 	path: 'test.label1~impl',
 	 	action :{$: 'studio.wrap-with-group', path: 'test.label1~impl' },
 	 	expectedPathAfter: 'test.label1~impl~controls~0',
@@ -140,9 +140,9 @@ jb.component('test.pathSrc-caller', {
 })
 
 jb.component('probe-test.pathSrc-through-$call', {
-   impl :{$: 'data-test', 
+   impl :{$: 'data-test',
    calculate: ctx => {
-   	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrc-caller'}, path: '' } ),true)
+   	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrc-caller'}, comp: 'test.pathSrc-caller', path: '' } ),true)
       .runCircuit('test.pathSrc-comp~impl~items~1');
     return probe1.then(res=>
     	''+res.result.visits)
@@ -152,9 +152,9 @@ jb.component('probe-test.pathSrc-through-$call', {
 })
 
 jb.component('probe-test.pathSrc-through-$call-2', {
-   impl :{$: 'data-test', 
+   impl :{$: 'data-test',
    calculate: ctx => {
-   	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrc-caller'}, path: '' } ),true)
+   	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrc-caller'}, comp: 'test.pathSrc-caller', path: '' } ),true)
       .runCircuit('test.pathSrc-caller~impl~items~1');
     return probe1.then(res=>
     	''+res.result.visits)
@@ -165,7 +165,7 @@ jb.component('probe-test.pathSrc-through-$call-2', {
 
 
 // jb.component('path-change-test.insert-comp', {
-// 	 impl :{$: 'path-change-test', 
+// 	 impl :{$: 'path-change-test',
 // 	 	path: 'test.group1~impl',
 // 	 	action :{$: 'studio.insert-control', path: 'test.group1~impl', comp: 'label' },
 // 	 	expectedPathAfter: 'test.group1~impl~controls',
@@ -174,8 +174,8 @@ jb.component('probe-test.pathSrc-through-$call-2', {
 // })
 
 // jb.component('probe-test.asIs', {
-// // 	 impl :{$: 'studio-probe-test', 
-// // 		circuit: {$: 'group', 
+// // 	 impl :{$: 'studio-probe-test',
+// // 		circuit: {$: 'group',
 // 			controls :{$: 'label', title :{ $asIs: 'hello'} },
 // 		},
 // 		probePath : 'controls~title~$asIs',
