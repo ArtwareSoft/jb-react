@@ -80,7 +80,7 @@ jb.component('studio.style-editor', {
         }, 
         style :{$: 'editable-text.codemirror', 
           height: '130', 
-          mode: 'htmlmixed', 
+          mode: 'javascript', 
           onCtrlEnter :{$: 'studio.refresh-preview' }
         }
       }, 

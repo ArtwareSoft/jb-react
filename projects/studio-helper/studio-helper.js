@@ -188,23 +188,23 @@ jb.component('studio-helper.edit-style', {
 
 
 jb.component('studio-helper-dummy.label', {
-  type: 'control',
-  impl :{$: 'label',
+  type: 'control', 
+  impl :{$: 'label', 
     title :{
       $pipeline: [
-        '%$people-array/people%',
-        '%name% aa aa a a a a a sa fds ds f sd fsd fsd fsd fs sdf faaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        '%%',
+        '%%', 
+        '%$people-array/people%', 
+        '%name% aa aa a a a a a sa fds ds f sd fsd fsd fsd fs sdf faaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 
         {$: 'object', dd: '%%', mkmk: '' }
       ]
-    },
+    }, 
     features: [
-      {$: 'css',
+      {$: 'css', 
         css: '{ position: absolute; margin-left: -20px; margin-top: 2px }'
-      },
+      }, 
       {$: 'hidden', showCondition: true }
     ]
-  },
+  }, 
   style :{$: 'label.span' }
 })
 
@@ -294,15 +294,38 @@ jb.component('studio-helper-sample.table', {
 })
 
 jb.component('studio-helper-sample.picklist', {
-  type: 'control',
-  impl :{$: 'picklist',
-    title :{ $pipeline: ['aa'] },
-    databind: 'ada',
-    options :{$: 'picklist.options', options: '%' },
-    style :{$: 'picklist.selection-list', width: '33' },
+  type: 'control', 
+  impl :{$: 'picklist', 
+    title :{ $pipeline: ['aa'] }, 
+    databind: 'ada', 
+    options :{$: 'picklist.options', options: '%' }, 
+    style :{$: 'custom-style', 
+      template: (cmp,state,h) => h('div',{ class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fix-height'},[
+        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
+            value: state.model,
+            readonly: true,
+            tabIndex: -1
+        }),
+        h('label',{for: 'input_' + state.fieldId},
+          h('i',{class: 'mdl-icon-toggle__label material-icons'},'keyboard_arrow_down')
+        ),
+//        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title),
+        h('ul',{for: 'input_' + state.fieldId, class: 'mdl-menu mdl-menu--bottom-left mdl-js-menu',
+            onclick: e =>
+              cmp.jbModel(e.target.getAttribute('code'))
+          },
+          state.options.map(option=>h('li',{class: 'mdl-menu__item', code: option.code},option.text))
+        )
+      ]), 
+      css: '>label>i {float: right; margin-top: -30px;}', 
+      features: [
+        {$: 'field.databind' }, 
+        {$: 'mdl-style.init-dynamic' }
+      ]
+    }, 
     features: [
-      {$: 'css.padding' },
-      {$: 'css.padding' },
+      {$: 'css.padding' }, 
+      {$: 'css.padding' }, 
       {$: 'css.width' }
     ]
   }

@@ -78,7 +78,7 @@ jb.component('itemlists.editable-table', {
           classForTd: 'mdl-data-table__cell--non-numeric'
         }, 
         watchItems: 'true', 
-        features :{$: 'itemlist.drag-and-drop' }
+        features: [{$: 'itemlist.drag-and-drop' }]
       }, 
       {$: 'button', 
         title: 'add', 
@@ -116,11 +116,14 @@ jb.component('itemlists.table-with-search', {
               {$: 'field', title: 'age', data: '%age%' }
             ], 
             watchItems: 'true', 
-            features :{$: 'watch-ref', 
-              ref: '%$itemlistCntrData/search_pattern%', 
-               
-              includeChildren: ''
-            }
+            features: [
+              {$: 'watch-ref', 
+                ref: '%$itemlistCntrData/search_pattern%', 
+                includeChildren: ''
+              }, 
+              {$: 'itemlist.selection', autoSelectFirst: 'true' }, 
+              {$: 'itemlist.keyboard-selection' }
+            ]
           }
         ], 
         features :{$: 'group.itemlist-container' }

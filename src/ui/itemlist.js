@@ -124,7 +124,7 @@ jb.component('itemlist.selection', {
           .subscribe(buff=>
             ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
 
-        cmp.jbEmitter.filter(x=> x =='after-update').subscribe(x=>{
+        cmp.jbEmitter.filter(x=> x =='after-update').startWith(jb.delay(1)).subscribe(x=>{
           if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
               cmp.setState({selected: null});
           if (!cmp.state.selected)
@@ -149,6 +149,7 @@ jb.component('itemlist.selection', {
         cmp.clickEmitter.next(data)
     },
     css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
+    createjbEmitter: true,
   })
 })
 

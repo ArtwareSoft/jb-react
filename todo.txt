@@ -1,9 +1,8 @@
 new project
+multi selection
+resizer (dialog resizer)
 
-allow studio editing
-	studio editing popups should have different header background
-	open inteli for studio
-	add conditional 'save studio component' as inteli option
+re-select first in search
 
 open profile chooser in suggestions
 	choose data
@@ -14,15 +13,13 @@ codemirror javascript editor - should create js function and use eval
 		result preview at the bottom
 
 jbEditor
+	horizontal auto scroll bug
   $if support - edit + should show then/else
   javascript - should create js function and use eval
   opening jbEditor history - back to XX
-  horizontal auto scroll bug
   resizer (dialog resizer)
-  show profile/property description at the bottom
 
 select profile
-	show component description and usage at the bottom line
 	should use context object
 
 
@@ -30,9 +27,12 @@ context (data) viewer lightly attached to popups after pick, drag & drop context
 
 tooltip from material design
 
-logo
-
 atom plugin with jbEditor
 
 itemlist with group - fix watch
 essential -> mandatory
+
+studio editing
+	studio editing popups should have different header background
+	open inteli for studio
+	add conditional 'save studio component' as inteli option
