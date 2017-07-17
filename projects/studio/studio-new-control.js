@@ -97,18 +97,8 @@ jb.component('studio.categories-marks', {
               }
             ]
           },
-          data :{$: 'pipeline',
-            items: [
-              {$: 'list', items: [] },
-            ]
-          },
-          action :{$: 'pipeline',
-            items: [
-              {$: 'list', items: [] },
-            ]
-          }
         },
-      '%{%$type%}%'
+       {$firstSucceeding: ['%{%$type%}%', {$: 'object', code: 'all', mark: '100' }]}
     ]
   }
 })

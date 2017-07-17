@@ -44,7 +44,7 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
   type: 'feature',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'expressionOnly', as: 'boolean'}
+    {id: 'expressionOnly', as: 'boolean'},
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -53,7 +53,6 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
         var input = selectionKeySource.input;
 
         keyup
-//          .delay(1) // we use keyup - let the input fill itself
           .debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
           .do(e=>jb.logPerformance('suggestions','input: ' + input.value))
@@ -71,8 +70,16 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
           .do(e=>jb.logPerformance('suggestions','event',e))
           .takeUntil( cmp.destroyed )
           .subscribe(e=> {
+            //   if (input.value.indexOf('=') == 0) {
+            //     cmp.ctx.run({$:'write-value', to: {$: 'studio.ref', path: ctx.params.path}, value: '' });
+            //     return cmp.ctx.run({$: 'studio.open-new-profile-dialog',
+            //       path: ctx.params.path, mode: 'update',
+            //       type: {$:'studio.param-type', path: ctx.params.path}
+            //    });
+            //  }
               cmp.ctx.run({$:'write-value', to: '%$suggestionData/tail%', value: ctx => e.tail })
               cmp.ctx.run({$:'write-value', to: '%$suggestionData/options%', value: ctx => e.options });
+              cmp.ctx.run({$:'write-value', to: '%$suggestionData/selected%', value: ctx => e.options[0] });
           });
 
         function getProbe() {
@@ -158,33 +165,6 @@ jb.component('studio.jb-floating-input', {
       ],
     }
 })
-//       {$: 'itemlist-with-groups',
-//         items: '%$suggestionCtx/options%',
-//         controls :{$: 'label', title: '%text%' },
-//         watchItems: true,
-//         features: [
-//           {$: 'itemlist.studio-suggestions-options' },
-//           {$: 'itemlist.selection', databind: '%$suggestionCtx/selected%',
-//             onDoubleClick: ctx => ctx.data.paste(ctx),
-//             autoSelectFirst: true
-//           },
-//           {$: 'hidden', showCondition: '%$suggestionCtx/show%' },
-//           {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' },
-//           {$: 'css.padding', top: '3', left: '3', selector: 'li' }
-//         ]
-//       }
-//     ],
-//     features : [
-//       {$: 'group.studio-suggestions',
-//         path: '%$path%',
-//         closeFloatingInput: [
-//           {$: 'dialog.close-containing-popup', OK: true },
-//           {$: 'tree.regain-focus' }
-//         ]
-//       },
-//     ]
-//   }
-// })
 
 jb.component('studio.paste-suggestion', {
   type: 'control',
@@ -228,7 +208,7 @@ st.suggestions = class {
   extendWithOptions(probeCtx,path) {
     var options = [];
     probeCtx = probeCtx || new st.previewjb.jbCtx();
-    var vars = jb.entries(jb.extend({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources))
+    var vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources))
         .map(x=>new ValueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
         .filter(x=> x.toPaste.indexOf(':') == -1)
@@ -253,6 +233,7 @@ st.suggestions = class {
           .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail))) )
 
     options = jb.unique(options,x=>x.toPaste)
+        .filter(x=> x.toPaste.indexOf('$jb_') != 0)
         .filter(x=> x.toPaste != this.tail)
         .filter(x=>
           this.tail == '' || typeof x.toPaste != 'string' || (x.description + x.toPaste).toLowerCase().indexOf(this.tail.toLowerCase()) != -1)
