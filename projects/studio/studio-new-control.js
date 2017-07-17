@@ -22,7 +22,7 @@ jb.component('studio.open-new-profile-dialog', {
         then: [
           {$: 'studio.insert-control', path: '%$path%', comp: '%%' },
           {$: 'on-next-timer', delay: 1,
-            action:{$:'studio.goto-last-edit'}
+            action: [ {$:'studio.goto-last-edit'}, {$: 'studio.focus-on-first-property'}]
           }
         ],
         else :{

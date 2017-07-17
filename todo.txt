@@ -2,8 +2,6 @@ new project
 multi selection
 resizer (dialog resizer)
 
-re-select first in search
-
 open profile chooser in suggestions
 	choose data
 

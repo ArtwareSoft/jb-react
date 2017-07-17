@@ -1,7 +1,7 @@
 
 jb.component('studio.open-properties', {
   type: 'action',
-  params: [{ id: 'focus', type: 'boolean', as: 'boolean' }], 
+  params: [{ id: 'focus', type: 'boolean', as: 'boolean' }],
   impl :{$: 'open-dialog',
     style :{$: 'dialog.studio-floating', id: 'studio-properties', width: '500' },
     content :{$: 'studio.properties',
@@ -30,6 +30,18 @@ jb.component('studio.open-properties', {
         action :{$: 'studio.open-control-tree' }
       }
     ]
+  }
+})
+
+jb.component('studio.focus-on-first-property', {
+  type: 'action',
+  params: [{ id: 'delay', as: 'number', defaultValue: 100 }],
+  impl: (ctx,delay) => {
+    jb.delay(delay).then ( _=> {
+    var elem =  Array.from(document.querySelectorAll('[dialogid="studio-properties"] input,textarea,select'))
+      .filter(e => e.getAttribute('type') != 'checkbox')[0];
+    elem && jb.ui.focus(elem,'studio.focus-on-first-property',ctx);
+    })
   }
 })
 
@@ -131,69 +143,69 @@ jb.component('studio.properties-in-tgp',{
 })
 
 jb.component('studio.property-field', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'control.first-succeeding', 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'control.first-succeeding',
     $vars: {
-      paramType :{$: 'studio.param-type', path: '%$path%' }, 
+      paramType :{$: 'studio.param-type', path: '%$path%' },
       paramDef :{$: 'studio.param-def', path: '%$path%' }
-    }, 
-    title :{$: 'studio.prop-name', path: '%$path%' }, 
+    },
+    title :{$: 'studio.prop-name', path: '%$path%' },
     controls: [
-      {$: 'control-with-condition', 
+      {$: 'control-with-condition',
         condition :{
           $and: [
             {
-              $not :{$: 'is-of-type', 
-                type: 'string,number,boolean,undefined', 
+              $not :{$: 'is-of-type',
+                type: 'string,number,boolean,undefined',
                 obj :{$: 'studio.val', path: '%$path%' }
               }
-            }, 
+            },
             {$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }
           ]
-        }, 
+        },
         control :{$: 'studio.property-script', path: '%$path%' }
-      }, 
-      {$: 'control-with-condition', 
+      },
+      {$: 'control-with-condition',
         condition :{
           $and: [
-            {$: 'is-of-type', 
-              type: 'array', 
+            {$: 'is-of-type',
+              type: 'array',
               obj :{$: 'studio.val', path: '%$path%' }
-            }, 
+            },
             {$: 'studio.is-of-type', path: '%$path%', type: 'action' }
           ]
-        }, 
+        },
         control :{$: 'studio.property-script', path: '%$path%' }
-      }, 
-      {$: 'control-with-condition', 
-        condition: '%$paramDef/options%', 
+      },
+      {$: 'control-with-condition',
+        condition: '%$paramDef/options%',
         control :{$: 'studio.property-enum', path: '%$path%' }
-      }, 
-      {$: 'control-with-condition', 
-        condition: '%$paramDef/as%=="number"', 
+      },
+      {$: 'control-with-condition',
+        condition: '%$paramDef/as%=="number"',
         control :{$: 'studio.property-slider', path: '%$path%' }
-      }, 
-      {$: 'control-with-condition', 
+      },
+      {$: 'control-with-condition',
         condition :{
           $and: [
-            '%$paramDef/as%=="boolean"', 
-            {$: 'in-group', 
-              group :{ $list: ['true', 'false'] }, 
+            '%$paramDef/as%=="boolean"',
+            {$: 'in-group',
+              group :{ $list: ['true', 'false'] },
               item :{$: 'studio.val', path: '%$path%' }
             }
           ]
-        }, 
+        },
         control :{$: 'studio.property-boolean', path: '%$path%' }
-      }, 
-      {$: 'control-with-condition', 
-        condition :{$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }, 
+      },
+      {$: 'control-with-condition',
+        condition :{$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' },
         control :{$: 'studio.property-primitive', path: '%$path%' }
-      }, 
+      },
       {$: 'studio.property-tgp', path: '%$path%' }
-    ], 
+    ],
     features: [
-      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
+      {$: 'studio.property-toolbar-feature', path: '%$path%' },
       {$: 'studio.watch-typeof-script', path: '%$path%' }
     ]
   }
