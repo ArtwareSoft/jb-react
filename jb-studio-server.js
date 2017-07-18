@@ -53,7 +53,7 @@ function serve(req, res) {
       var st = e.stack || ''
   }
 }
-http.createServer(serve).listen(settings.port); 
+http.createServer(serve).listen(settings.port);
 
 console.log('open studio with http://localhost:' + settings.port + '/project/studio/material-demo/');
 
@@ -107,10 +107,10 @@ function serveFile(req,res,path) {
         }
       })
     }
-  });     
+  });
 }
 
-extend(op_post_handlers, {   
+extend(op_post_handlers, {
     'saveComp': function(req, res,body,path) {
         var clientReq;
         try {
@@ -138,11 +138,11 @@ extend(op_post_handlers, {
         if (!clientReq.original) { // new comp
           var srcPath = `projects/${project}/${project}.ts`;
           try {
-            fs.statSync(srcPath) 
+            fs.statSync(srcPath)
           } catch(e) {
             srcPath = srcPath.replace(/ts$/,'js');
           }
-          try { 
+          try {
             var current = ('' + fs.readFileSync(srcPath));
             var toStore =  current + '\n\n' + clientReq.toSave;
             var cleanNL = toStore.replace(/\r/g,'');
@@ -201,18 +201,9 @@ extend(op_post_handlers, {
                 console.log(index + '-' +line + '#versus source#' + src[index]);
             })
 
-            // var err = .reduce(function(diff_line,line,index) {
-            //   if (diff_line) return diff_line;
-            //   if (line != toFind[index])
-            //     return index + '#' + line + '# versus #' + toFind(index) + '#';
-            // });
-            // err = source.slice(index,index+toFind.length).join('#') + '\n\n' + toFind.join('#');
-
             endWithFailure(res,`${comp} found with a different source, use "force save" to save. ${err}`);
           }
         }
-
-
         function compareArrays(arr1,arr2) {
           return arr1.join('\n') == arr2.join('\n')
         }
@@ -225,15 +216,31 @@ extend(op_post_handlers, {
         if (!clientReq)
            return endWithFailure(res,'Can not parse json request');
         fs.writeFile(clientReq.Path || '', clientReq.Contents || '' , function (err) {
-          if (err) 
+          if (err)
             endWithFailure(res,'Can not write to file ' + clientReq.Path);
           else
             endWithSuccess(res,'File saved to ' + clientReq.Path);
         });
+    },
+    createProject: function(req, res,body,path) {
+      var clientReq;
+      try {
+        clientReq = JSON.parse(body);
+        if (!clientReq)
+           return endWithFailure(res,'Can not parse json request');
+        var projDir = 'projects/' + clientReq.project;
+        fs.mkdirSync(projDir);
+        (clientReq.files || []).forEach(f=>
+          fs.writeFileSync(projDir+ '/' + f.fileName,f.content)
+        )
+      } catch(e) {
+        endWithFailure(res,e)
+      }
+      endWithSuccess(res,'Project Created');
     }
 });
 
-extend(base_get_handlers, {   
+extend(base_get_handlers, {
   'project': function(req,res,path) {
       var project_with_params = req.url.split('/')[2];
       var project = project_with_params.split('?')[0];
@@ -243,7 +250,7 @@ extend(base_get_handlers, {
   }
 });
 
-extend(op_get_handlers, {   
+extend(op_get_handlers, {
     'runCmd': function(req,res,path) {
       if (!settings.allowCmd) return endWithFailure(res,'no permission to run cmd. allowCmd in jbart.json');
 
@@ -258,16 +265,16 @@ extend(op_get_handlers, {
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify({type:'error', desc:'Can not run cmd', cmd: cmd, stdout: stdout, stderr: stderr, exitcode: error }));
         } else {
-          var out = { 
+          var out = {
             type: 'success',
             outfiles: {},
             stdout: stdout, stderr: stderr
           };
-          (getURLParam(req,'outfiles') || '').split(',').forEach(function(outfile) { 
+          (getURLParam(req,'outfiles') || '').split(',').forEach(function(outfile) {
               var content = '';
               try { content = '' + fs.readFileSync(outfile); } catch(e) {}
               out.outfiles[outfile] = content;
-          });          
+          });
           res.setHeader('Content-Type', 'application/json; charset=utf8');
           res.end(JSON.stringify(out));
         }
@@ -295,7 +302,7 @@ extend(op_get_handlers, {
           res.setHeader('Content-Type', 'application/text;charset=utf8');
           res.end(content);
         }
-      });     
+      });
     },
     'download': function(req,res,path) {
       res.writeHead(200, {'Content-Type': 'application/csv', 'Content-disposition': 'attachment; filename=' + path });
@@ -367,10 +374,10 @@ function walk(dir) {
     list.forEach( file => {
         var full_path = dir + '/' + file;
         var stat = fs.statSync(full_path);
-        if (stat && stat.isDirectory()) 
+        if (stat && stat.isDirectory())
           results = results.concat(walk(full_path))
-        else 
+        else
           results.push(full_path)
     })
     return results;
-}      
+}

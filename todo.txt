@@ -1,3 +1,5 @@
+cards for letmesee
+
 new project
 	server - create file structure command with json
 		{ directory: {
@@ -5,8 +7,6 @@ new project
 				files: [ {	name: 'proj1.js',	content: 'xxx',	}, ..	]
 		}}
 
-
-resizer (dialog resizer)
 
 open profile chooser in suggestions
 	choose data
@@ -21,15 +21,13 @@ codemirror javascript editor
 		result preview at the bottom
 
 jbEditor
+	do not show ctx & control object in output
 	horizontal auto scroll bug
   $if support - edit + should show then/else
   opening jbEditor history - back to XX
-  resizer (dialog resizer)
+  resizer (use dialog resizer)
 
 tooltip from material design
-
-multi selection
-	look at the
 
 atom plugin with jbEditor
 
