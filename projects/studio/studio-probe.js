@@ -109,10 +109,12 @@ jb.component('studio.probe', {
   type:'data',
   params: [ { id: 'path', as: 'string', dynamic: true } ],
   impl: (ctx,path) => {
-      var _jb = jb.studio.previewjb;
-      var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
-      var context = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
-      var pickSelection = ctx.vars.pickSelection && ctx.vars.pickSelection.ctx;
-      return new (_jb.studio.Probe || jb.studio.Probe)(pickSelection || context).runCircuit(path());
+      var st = jb.studio,_jb = st.previewjb;
+      var circuitCtx = (ctx.vars.pickSelection && ctx.vars.pickSelection.ctx) || st.closestCtxInPreview(path());
+      if (!circuitCtx) {
+        var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
+        circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
+      }
+      return new (_jb.studio.Probe || jb.studio.Probe)(circuitCtx).runCircuit(path());
     }
 })

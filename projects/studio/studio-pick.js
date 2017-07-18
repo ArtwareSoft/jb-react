@@ -1,4 +1,5 @@
 (function() {
+var st = jb.studio;
 
 jb.component('studio.pick', {
 	type: 'action',
@@ -26,7 +27,7 @@ jb.component('dialog.studio-pick-dialog', {
 	impl: {$: 'custom-style',
 	      template: (cmp,state,h) => h('div',{ class: 'jb-dialog' },[
 h('div',{ class: 'edge top', style: { width: state.width + 'px', top: state.top + 'px', left: state.left + 'px' }}) ,
-h('div',{ class: 'edge left', style: { height: state.height +'px', top: state.top + 'px', left: state.left + 'px' }}), 
+h('div',{ class: 'edge left', style: { height: state.height +'px', top: state.top + 'px', left: state.left + 'px' }}),
 h('div',{ class: 'edge right', style: { height: state.height +'px', top: state.top + 'px', left: (state.left + state.width) + 'px' }}) ,
 h('div',{ class: 'edge bottom', style: { width: state.width + 'px', top: (state.top + state.height) +'px', left: state.left + 'px' }}) ,
 h('div',{ class: 'title' + (state.titleBelow ? ' bottom' : ''), style: { top: state.titleTop + 'px', left: state.titleLeft + 'px'} },[
@@ -34,7 +35,7 @@ h('div',{ class: 'title' + (state.titleBelow ? ' bottom' : ''), style: { top: st
 			h('div',{ class: 'triangle'}),
 	])]),
 		css: `
->.edge { 
+>.edge {
 	z-index: 6001;
 	position: absolute;
 	background: red;
@@ -69,16 +70,16 @@ jb.component('dialog-feature.studio-pick', {
 	({
 	  disableChangeDetection: true,
       init: cmp=> {
-		  var _window = ctx.params.from == 'preview' ? jb.studio.previewWindow : window;
+		  var _window = ctx.params.from == 'preview' ? st.previewWindow : window;
 		  var previewOffset = ctx.params.from == 'preview' ? $('#jb-preview').offset().top : 0;
 		  cmp.titleBelow = false;
 
 		  var mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
 		  var userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
 		  var keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
-		  if (jb.studio.previewWindow) {
-		  	userPick = userPick.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousedown'));
-		  	keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'keyup'));
+		  if (st.previewWindow) {
+		  	userPick = userPick.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'mousedown'));
+		  	keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'keyup'));
 		  };
 
 		  mouseMoveEm
@@ -89,7 +90,7 @@ jb.component('dialog-feature.studio-pick', {
 		  			  .merge(userPick))
 		  	.do(e=>{
 		  		if (e.keyCode == 27)
-		  			ctx.vars.$dialog.close({OK:false});	
+		  			ctx.vars.$dialog.close({OK:false});
 		  	})
 		  	.map(e=>
 		  		eventToProfile(e,_window))
@@ -102,10 +103,10 @@ jb.component('dialog-feature.studio-pick', {
 		  	.subscribe(x=> {
 		  		ctx.vars.$dialog.close({OK:true});
 		  		jb.delay(200).then(_=>
-		  			jb.studio.previewWindow && jb.studio.previewWindow.getSelection() && jb.studio.previewWindow.getSelection().empty())
+		  			st.previewWindow && st.previewWindow.getSelection() && st.previewWindow.getSelection().empty())
 		  	})
 		}
-	})			
+	})
 })
 
 function pathFromElem(_window,profElem) {
@@ -118,13 +119,13 @@ function pathFromElem(_window,profElem) {
 }
 
 function eventToProfile(e,_window) {
-	var mousePos = { 
+	var mousePos = {
 		x: e.pageX - $(_window).scrollLeft(), y: e.pageY - $(_window).scrollTop()
 	};
 	var $el = $(_window.document.elementFromPoint(mousePos.x, mousePos.y));
 	if (!$el[0]) return;
 	var results = Array.from($($el.get().concat($el.parents().get()))
-		.filter((i,e) => 
+		.filter((i,e) =>
 			$(e).attr('jb-ctx') ));
 	if (results.length == 0) return [];
 
@@ -140,7 +141,7 @@ function eventToProfile(e,_window) {
 }
 
 function showBox(cmp,profElem,_window,previewOffset) {
-	if (profElem.offset() == null || $('#jb-preview').offset() == null) 
+	if (profElem.offset() == null || $('#jb-preview').offset() == null)
 		return;
 
 	cmp.setState({
@@ -148,7 +149,7 @@ function showBox(cmp,profElem,_window,previewOffset) {
 		left: profElem.offset().left,
 		width: profElem.outerWidth() == $(_window.document.body).width() ? profElem.outerWidth() -10 : cmp.width = profElem.outerWidth(),
 		height: profElem.outerHeight(),
-		title: jb.studio.shortTitle(pathFromElem(_window,profElem)),
+		title: st.shortTitle(pathFromElem(_window,profElem)),
 		titleTop: previewOffset + profElem.offset().top - 20,
 		titleLeft: profElem.offset().left
 	});
@@ -161,13 +162,13 @@ function highlight(elems,_window) {
 			var $box = $('<div class="jbstudio_highlight_in_preview"/>');
 			$box.css({ position: 'absolute', background: 'rgb(193, 224, 228)', border: '1px solid blue', opacity: '1', zIndex: 5000 }); // cannot assume css class in preview window
 			var offset = $el.offset();
-			$box.css('left',offset.left).css('top',offset.top).width($el.outerWidth()).height($el.outerHeight());				
+			$box.css('left',offset.left).css('top',offset.top).width($el.outerWidth()).height($el.outerHeight());
 			if ($box.width() == $(_window.document.body).width())
 				$box.width($box.width()-10);
 			boxes.push($box[0]);
 	})
 
-	$(_window.document.body).append($(boxes));	
+	$(_window.document.body).append($(boxes));
 
 	$(boxes).css({ opacity: 0.5 }).
 		fadeTo(500,0,function() {
@@ -181,7 +182,7 @@ jb.component('studio.highlight-in-preview',{
 		{ id: 'path', as: 'string' }
 	],
 	impl: (ctx,path) => {
-		var _window = jb.studio.previewWindow || window;
+		var _window = st.previewWindow || window;
 		if (!_window) return;
 		var elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
 			.filter(e=>{
@@ -196,9 +197,25 @@ jb.component('studio.highlight-in-preview',{
 				var _ctx = jb.ctxDictionary[e.getAttribute('jb-ctx')];
 				return _ctx && _ctx.path == path
 			})
-	
+
 		highlight(elems,_window);
   }
 })
+
+st.closestCtxInPreview = path => {
+	var _window = st.previewWindow || window;
+	if (!_window) return;
+	var closest = null;
+	var elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
+	for(var i=0;i<elems.length;i++) {
+		var _ctx = jb.ctxDictionary[elems[i].getAttribute('jb-ctx')];
+		if (!_ctx) continue;
+		if (_ctx.path == path)
+			return _ctx;
+		if (path.indexOf(_ctx.path) == 0 && (!closest || closest.path.length < _ctx_path.length))
+			closest = _ctx;
+	}
+	return closest;
+}
 
 })()
