@@ -5,6 +5,7 @@ new project
 				files: [ {	name: 'proj1.js',	content: 'xxx',	}, ..	]
 		}}
 
+
 resizer (dialog resizer)
 
 open profile chooser in suggestions
@@ -28,6 +29,7 @@ jbEditor
 tooltip from material design
 
 multi selection
+	look at the
 
 atom plugin with jbEditor
 

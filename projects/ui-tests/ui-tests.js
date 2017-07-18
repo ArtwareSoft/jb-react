@@ -6,14 +6,14 @@ jb.resource('people',[
   { "name": "Bart Simpson"  ,age: 12 , male: true}
 ]);
 
-jb.resource('person',{ 
-  name: "Homer Simpson", 
+jb.resource('person',{
+  name: "Homer Simpson",
   male: true,
-  isMale: 'yes', 
-  age: 42 
+  isMale: 'yes',
+  age: 42
 });
 
-jb.resource('personWithAddress',{ 
+jb.resource('personWithAddress',{
   "name": "Homer Simpson",
   "address": {
     "city": "Springfield",
@@ -21,21 +21,21 @@ jb.resource('personWithAddress',{
   }
 })
 
-jb.resource('personWithChildren',{ 
-  name: "Homer Simpson", 
+jb.resource('personWithChildren',{
+  name: "Homer Simpson",
   children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ],
   friends: [{ name: 'Barnie' } ],
 })
 
 jb.component('ui-test.label', {
-   impl :{$: 'ui-test', 
+   impl :{$: 'ui-test',
     control:{$:'label', title: 'hello world'},
     expectedResult :{$: 'contains', text: 'hello world' }
   },
 })
 
 jb.component('ui-test.group', {
-   impl :{$: 'ui-test', 
+   impl :{$: 'ui-test',
     control: { $: 'group', controls: [
       {$:'label', title: 'hello world'},
       {$:'label', title: '2'},
@@ -45,32 +45,32 @@ jb.component('ui-test.group', {
 })
 
 jb.component('ui-test.wait-for', {
-   impl :{$: 'ui-test', 
-    control :{$: 'group', 
-      features :{$: 'group.wait', 
+   impl :{$: 'ui-test',
+    control :{$: 'group',
+      features :{$: 'group.wait',
         for: ctx => new Promise(res => setTimeout(()=>{res('hello')}, 100))
       },
       controls: [
         {$:'label', title: '%%'},
-      ] 
+      ]
     },
     expectedResult :{$: 'contains', text: 'hello' }
   },
 })
 
 jb.component('ui-test.button', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
   control :{$: 'button', title: 'btn1', action: ctx => alert(1) },
   expectedResult: { $: 'contains', text: 'btn1' }
 },
 })
 
 jb.component('ui-test.button.mdl-icon', {
-  impl :{$: 'ui-test',  
-  control :{$: 'button', 
-    title: 'btn1', 
+  impl :{$: 'ui-test',
+  control :{$: 'button',
+    title: 'btn1',
     style :{ $: 'button.mdl-icon', icon: 'build' },
-    action: ctx => alert(1) 
+    action: ctx => alert(1)
   },
   expectedResult: { $: 'contains', text: 'build' }
 },
@@ -78,9 +78,9 @@ jb.component('ui-test.button.mdl-icon', {
 
 
 jb.component('ui-test.group2', {
-  impl :{$: 'ui-test',  
-  control :{$: 'group', controls: 
-    [ 
+  impl :{$: 'ui-test',
+  control :{$: 'group', controls:
+    [
       { $: 'button', title: 'button1' } ,
       { $: 'label' , title: 'label1' } ,
     ]
@@ -90,31 +90,31 @@ jb.component('ui-test.group2', {
 })
 
 jb.component('ui-test.editable-text', {
-  impl :{$: 'ui-test',  
-    control :{$: 'editable-text', 
+  impl :{$: 'ui-test',
+    control :{$: 'editable-text',
     style :{$: 'editable-text.input'},
-      title: 'name', 
-      databind: '%$person/name%' 
+      title: 'name',
+      databind: '%$person/name%'
     },
     expectedResult :{$: 'contains', text: ['input','Homer Simpson'] },
 },
 })
 
 jb.component('ui-test.editable-text-mdl', {
-  impl :{$: 'ui-test',  
-    control :{$: 'editable-text', 
+  impl :{$: 'ui-test',
+    control :{$: 'editable-text',
     style :{$: 'editable-text.mdl-input'},
-      title: 'name', 
-      databind: '%$person/name%' 
+      title: 'name',
+      databind: '%$person/name%'
     },
     expectedResult :{$: 'contains', text: ['input','Homer Simpson'] },
 },
 })
 
 jb.component('ui-test.editable-text.x-button', {
-  impl :{$: 'ui-test',  
-    control :{$: 'editable-text', 
-      title: 'name', 
+  impl :{$: 'ui-test',
+    control :{$: 'editable-text',
+      title: 'name',
       databind: '%$person/name%',
       features: [{ $: 'editable-text.x-button'}],
     },
@@ -123,11 +123,11 @@ jb.component('ui-test.editable-text.x-button', {
 })
 
 jb.component('ui-test.two-way-binding', {
-  impl :{$: 'ui-test',  
-  control :{$: 'group', 
-    controls: [ 
-        {$: 'editable-text', 
-          title: 'name', 
+  impl :{$: 'ui-test',
+  control :{$: 'group',
+    controls: [
+        {$: 'editable-text',
+          title: 'name',
           databind: '%$person/name%',
           features :{$:'id', id:'inp'}
         },
@@ -140,11 +140,11 @@ jb.component('ui-test.two-way-binding', {
 })
 
 jb.component('ui-test.group-horizontal', {
-  impl :{$: 'ui-test',  
-  control :{$: 'group', 
+  impl :{$: 'ui-test',
+  control :{$: 'group',
     style: {$: 'layout.horizontal' },
-    controls: 
-      [ 
+    controls:
+      [
         { $: 'button', title: 'button1' } ,
         { $: 'label' , title: 'label1' } ,
       ]
@@ -154,42 +154,45 @@ jb.component('ui-test.group-horizontal', {
 })
 
 jb.component('ui-test.tree', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
   control: {$: 'tree',
-    nodeModel :{$: 'tree.json-read-only', 
-      object: '%$personWithAddress%', rootPath: 'personWithAddress' 
+    nodeModel :{$: 'tree.json-read-only',
+      object: '%$personWithAddress%', rootPath: 'personWithAddress'
     },
     features: [
         { $: 'tree.selection' },
         { $: 'tree.keyboard-selection'},
-    ] 
+    ]
   },
   expectedResult :{$: 'contains', text: ['address'] } ,
 },
 })
 
 jb.component('ui-test.tree-DD', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
   control :{$: 'tree',
-    nodeModel :{$: 'tree.json', 
-      object: '%$personWithChildren%', rootPath: 'Homer' 
+    nodeModel :{$: 'tree.json',
+      object: '%$personWithChildren%', rootPath: 'Homer'
     },
     features: [
         { $: 'tree.selection' },
         { $: 'tree.drag-and-drop'},
-        { $: 'tree.keyboard-selection'} 
-    ] 
+        { $: 'tree.keyboard-selection'}
+    ]
   },
   expectedResult: { $: 'contains', text: ['Homer'] } ,
 },
 })
 
 jb.component('ui-test.open-dialog', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
   control :{$: 'button', title: 'click me',
-    action :{$: 'open-dialog', title: 'hello', id:'hello', 
+    action :{$: 'open-dialog', title: 'hello', id:'hello',
       content :{$: 'group', controls: [ {$: 'label', title: 'jbart'} ] },
-      features:{$: 'dialog-feature.near-launcher-position', offsetTop: ctx=> Math.floor(Math.random()*20+2)*10 }
+      features: [
+        {$: 'dialog-feature.near-launcher-position', offsetTop: ctx=> Math.floor(Math.random()*20+2)*10 },
+        {$: 'dialog-feature.resizer' }
+      ]
     }
   },
   action :{$: 'ui-action.click', selector: 'button' },
@@ -198,10 +201,10 @@ jb.component('ui-test.open-dialog', {
 })
 
 jb.component('ui-test.renderable', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
   control :{$: 'button', title: 'click me',
-    action :{$: 'open-dialog', 
-      title: {$:'label' , title: 'hello as label' }, id:'hello', 
+    action :{$: 'open-dialog',
+      title: {$:'label' , title: 'hello as label' }, id:'hello',
       content :{$: 'label', title: 'jbart'},
     }
   },
@@ -213,9 +216,9 @@ jb.component('ui-test.renderable', {
 var ui_test_dialog_isAttached = false;
 
 jb.component('ui-test.dialog-cleanup', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
   control :{$: 'button', title: 'click me',
-    action :{$: 'open-dialog', title: 'hello', id:'hello', 
+    action :{$: 'open-dialog', title: 'hello', id:'hello',
       content :{$: 'label', title: 'world'},
       features: ctx => ({
            destroy: cmp =>
@@ -227,15 +230,15 @@ jb.component('ui-test.dialog-cleanup', {
     {$: 'ui-action.click', selector: 'button' },
     {$: 'dialog.close-all' }
   ],
-  expectedResult : ctx => 
+  expectedResult : ctx =>
     ui_test_dialog_isAttached
 },
 })
 
 jb.component('ui-test.dialog-cleanup-bug', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
   control :{$: 'button', title: 'click me',
-    action :{$: 'open-dialog', title: 'hello', id:'hello', 
+    action :{$: 'open-dialog', title: 'hello', id:'hello',
       content :{$: 'label', title: 'world'},
     }
   },
@@ -243,17 +246,17 @@ jb.component('ui-test.dialog-cleanup-bug', {
     {$: 'ui-action.click', selector: 'button' },
     {$: 'dialog.close-all' }
   ],
-  expectedResult : ctx => 
+  expectedResult : ctx =>
     ! jb.resources['jb_dialog_hello']
 },
 })
 
 jb.component('ui-test.group-flex', {
-  impl :{$: 'ui-test',  
-  control :{$: 'group', 
+  impl :{$: 'ui-test',
+  control :{$: 'group',
     style: {$: 'layout.flex', direction: 'row' },
-    controls: 
-      [ 
+    controls:
+      [
         { $: 'button', title: 'button1' } ,
         { $: 'label' , title: 'label1' } ,
       ]
@@ -263,38 +266,38 @@ jb.component('ui-test.group-flex', {
 })
 
 jb.component('ui-test.button-click', {
-  impl :{$: 'ui-test',  
-  control :{$: 'button', 
-    //style :{$: 'button.x'}, 
-    title: 'Click Me', 
-    action: () => alert(1) 
+  impl :{$: 'ui-test',
+  control :{$: 'button',
+    //style :{$: 'button.x'},
+    title: 'Click Me',
+    action: () => alert(1)
   },
   expectedResult: true
 },
 })
 
 jb.component('ui-test.button-x', {
-  impl :{$: 'ui-test',  
-  control :{$: 'button', 
-    style :{$: 'button.x'}, 
-    title: 'Click Me', 
-    action: () => alert(1) 
+  impl :{$: 'ui-test',
+  control :{$: 'button',
+    style :{$: 'button.x'},
+    title: 'Click Me',
+    action: () => alert(1)
   },
   expectedResult: true
 },
 })
 
 jb.component('ui-test.resource', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
   control :{$: 'button', title: '%$person.name%' } ,
   expectedResult: { $: 'contains', text: ['Homer'] },
 },
 })
 
 jb.component('ui-test.features-css', {
-  impl :{$: 'ui-test',  
-  control :{$: 'label', 
-    title: 'Hello World2', 
+  impl :{$: 'ui-test',
+  control :{$: 'label',
+    title: 'Hello World2',
     features :{ $css: '{color: cyan; font-weight: bold}' },
   },
   expectedResult: { $: 'contains', text: ['Hello'] }
@@ -302,38 +305,38 @@ jb.component('ui-test.features-css', {
 })
 
 jb.component('ui-test.itemlist', {
-  impl :{$: 'ui-test',  
-  control :{$: 'itemlist', items: '%$people%', 
-      controls :{ $: 'label', title: '%$item.name% - %name%' }, 
+  impl :{$: 'ui-test',
+  control :{$: 'itemlist', items: '%$people%',
+      controls :{ $: 'label', title: '%$item.name% - %name%' },
   },
   expectedResult: { $: 'contains', text: ['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'] },
 },
 })
 
 jb.component('ui-test.itemlist-with-select', {
-  impl :{$: 'ui-test',  
-  control :{$: 'itemlist', items: '%$people%', 
-      controls :{$: 'label', title: '%$item.name% - %name%' }, 
-      features :{$: 'itemlist.selection' }, 
+  impl :{$: 'ui-test',
+  control :{$: 'itemlist', items: '%$people%',
+      controls :{$: 'label', title: '%$item.name% - %name%' },
+      features :{$: 'itemlist.selection' },
   },
   expectedResult: { $: 'contains', text: ['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'] },
 },
 })
 
 jb.component('ui-test.itemlist-DD', {
-  impl :{$: 'ui-test', control :{$: 'group', 
+  impl :{$: 'ui-test', control :{$: 'group',
   controls: [
       { $: 'itemlist', items: '%$people%', watchItems: true,
-          controls :{$: 'label', title: '%name%', features:{$: 'css.class', class: 'drag-handle'} }, 
+          controls :{$: 'label', title: '%name%', features:{$: 'css.class', class: 'drag-handle'} },
           features: [
-              { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+              { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true },
               { $: 'itemlist.keyboard-selection', autoFocus: true },
               { $: 'itemlist.drag-and-drop' },
               { $: 'id', id: 'itemlist' },
           ],
       },
       { $: 'itemlist', items: '%$people%', watchItems: true,
-        controls :{$: 'label', title: '%name%' } 
+        controls :{$: 'label', title: '%name%' }
       },
     ],
   },
@@ -345,23 +348,23 @@ jb.component('ui-test.itemlist-DD', {
 jb.component('ui-test.itemlist-basic', {
   impl :{$: 'ui-test', control :
     { $: 'itemlist', items: '%$people%',
-      controls :{$: 'label', title: '%name%' } 
+      controls :{$: 'label', title: '%name%' }
     },
   expectedResult: { $: 'contains', text: ['Homer Simpson', 'Bart Simpson'] },
 },
 })
 
 // jb.component('ui-test.itemlist-heading', {
-//   impl :{$: 'ui-test', control :{$: 'group', controls: 
+//   impl :{$: 'ui-test', control :{$: 'group', controls:
 //   [
-//     { $: 'itemlist-with-groups', items: '%$people%', 
-//         controls :{$: 'label', title: '%name%' }, 
-//         groupBy :{$: 'itemlist-heading.group-by', 
+//     { $: 'itemlist-with-groups', items: '%$people%',
+//         controls :{$: 'label', title: '%name%' },
+//         groupBy :{$: 'itemlist-heading.group-by',
 //           itemToGroupID :{$if: '%male%', then: 'male', else: 'female'}
 //         },
-// //        headingCtrl :{$: 'label', title: '%title%' }, 
+// //        headingCtrl :{$: 'label', title: '%title%' },
 //         features: [
-//             { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+//             { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true },
 //             { $: 'itemlist.keyboard-selection', autoFocus: true },
 //             {$: 'css', css: '.jb-item:not(.heading) { margin-left: 30px }' }
 //         ],
@@ -373,14 +376,14 @@ jb.component('ui-test.itemlist-basic', {
 
 
 jb.component('ui-test.itemlist-add-button', {
-  impl :{$: 'ui-test',  
-  control: { $: 'group', controls: 
+  impl :{$: 'ui-test',
+  control: { $: 'group', controls:
     [
-      { $: 'itemlist', 
-        items: '%$people%', 
-        controls :{$: 'label', title: '%$item.name% - %name%' }, 
-      }, 
-      { $: 'button', title: 'add', 
+      { $: 'itemlist',
+        items: '%$people%',
+        controls :{$: 'label', title: '%$item.name% - %name%' },
+      },
+      { $: 'button', title: 'add',
         action: (ctx) => ctx.exp('%$people%').push({ name: "Magi"})
       }
     ]
@@ -391,10 +394,10 @@ jb.component('ui-test.itemlist-add-button', {
 
 jb.component('ui-test.itemlist-selection', {
   impl :{$: 'ui-test',
-  control :{$: 'itemlist', items: '%$people%', 
-        controls :{$: 'label', title: '%$item.name%' }, 
+  control :{$: 'itemlist', items: '%$people%',
+        controls :{$: 'label', title: '%$item.name%' },
         features: [
-            { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+            { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true },
         ],
   },
   expectedResult: { $: 'contains', text: ['Homer Simpson'] },
@@ -403,18 +406,18 @@ jb.component('ui-test.itemlist-selection', {
 
 jb.component('ui-test.itemlist-MD', {
   impl :{$: 'ui-test',
-control :{$: 'group', 
-  controls: 
+control :{$: 'group',
+  controls:
     [
-      { $: 'itemlist', items: '%$people%', 
-        controls :{$: 'label', title: '%$item.name%' }, 
+      { $: 'itemlist', items: '%$people%',
+        controls :{$: 'label', title: '%$item.name%' },
         features: [
-            { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+            { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true },
             { $: 'itemlist.keyboard-selection', autoFocus: true },
         ],
       },
-      { $: 'group', 
-        features :{$: 'group.data', data: '%$globals/selectedPerson%', watch: true,  } , 
+      { $: 'group',
+        features :{$: 'group.data', data: '%$globals/selectedPerson%', watch: true,  } ,
          controls :{$: 'label' , title: '%name% selected' },
       }
     ]
@@ -426,35 +429,35 @@ control :{$: 'group',
 
 jb.component('ui-test.itemlist-container-search', {
   impl :{$: 'ui-test',
-      control :{$: 'group', 
+      control :{$: 'group',
         controls: [
           {$: 'itemlist-container.search' },
-          {$: 'itemlist', 
+          {$: 'itemlist',
             items :{
               $pipeline: [
-                '%$people%', 
-                {$: 'itemlist-container.filter' }, 
+                '%$people%',
+                {$: 'itemlist-container.filter' },
               ]
-            }, 
+            },
             controls :{$: 'label', title1: '%name%',
-                title :{$: 'highlight', 
-                  base: '%name%', 
-                  highlight: '%$itemlistCntrData/search_pattern%', 
-                }, 
-            }, 
+                title :{$: 'highlight',
+                  base: '%name%',
+                  highlight: '%$itemlistCntrData/search_pattern%',
+                },
+            },
             features: [
-                { $: 'itemlist.selection', autoSelectFirst: true }, 
+                { $: 'itemlist.selection', autoSelectFirst: true },
                 { $: 'itemlist.keyboard-selection', autoFocus: true },
                 { $: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', }
             ],
           },
-        ], 
+        ],
         features: [
-          {$: 'group.itemlist-container' }, 
+          {$: 'group.itemlist-container' },
         ]
       },
       action :{$: 'ui-action.set-text', value: 'ho', selector: '.mdl-textfield'},
-      expectedResult :{$and: [ 
+      expectedResult :{$and: [
         {$: 'contains', text: ['Ho','mer'] },
         {$: 'not-contains', text: 'Marge' },
         {$: 'not-contains', text: 'Homer' }, // highlight selection - 'Homer' should be separated to Ho-Mer
@@ -464,13 +467,13 @@ jb.component('ui-test.itemlist-container-search', {
 
 jb.component('ui-test.table', {
   impl :{$: 'ui-test',
-  control :{$: 'table', items: '%$people%', 
+  control :{$: 'table', items: '%$people%',
         fields : [
           {$: 'field', data: '%name%', title: 'name' },
           {$: 'field', data: '%age%', title: 'age' },
-        ], 
+        ],
         features: [
-            { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+            { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true },
         ],
   },
   expectedResult: { $: 'contains', text: ['age','Homer Simpson','12'] },
@@ -478,26 +481,26 @@ jb.component('ui-test.table', {
 })
 
 jb.component('ui-test.table-DD', {
-  impl :{$: 'ui-test',  control :{$: 'group', 
+  impl :{$: 'ui-test',  control :{$: 'group',
   controls: [
     {$: 'table', items: '%$people%', watchItems: true,
         fields : [
           {$: 'field', data: '%name%', title: 'name', class: 'drag-handle', width: 300},
           {$: 'field', data: '%age%', title: 'age', width: 50 },
-          {$: 'field.control', control: {$: 'button', 
-            title: 'delete', 
+          {$: 'field.control', control: {$: 'button',
+            title: 'delete',
             style:{$: 'button.x'},
-            action :{ $:'remove-from-array', array: '%$people%', item: '%%'} 
+            action :{ $:'remove-from-array', array: '%$people%', item: '%%'}
           } },
-        ], 
+        ],
           features: [
-              { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true }, 
+              { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true },
               { $: 'itemlist.keyboard-selection', autoFocus: true },
               { $: 'itemlist.drag-and-drop' },
 //              { $: 'id', id: 'itemlist' },
           ],
     },
-    {$: 'label', 
+    {$: 'label',
       title :{ $pipeline: ['%$people/name%', {$:'join' , separated: ', '}] },
       features: {$: 'watch-ref', ref: '%$people%'}
     },
@@ -508,23 +511,23 @@ jb.component('ui-test.table-DD', {
 })
 
 // jb.component('ui-test.ngShow-label', {
-// //   impl :{$: 'ui-test',  
-//   control :{$: 'label', 
+// //   impl :{$: 'ui-test',
+//   control :{$: 'label',
 //         title: 'Dan',
 //         features :{$ngAtts: {'[hidden]': '12==12'} }
-//    }, 
+//    },
 //     expectedResult: { $contains: ['hidden' , 'Dan'] }
 // },
 // })
 
 // jb.component('ui-test.ngShow-list', {
-// //   impl :{$: 'ui-test',  
-//   control :{$: 'itemlist', 
-//       items: '%$people%', 
-//       controls :{$: 'label', 
+// //   impl :{$: 'ui-test',
+//   control :{$: 'itemlist',
+//       items: '%$people%',
+//       controls :{$: 'label',
 //         title: '%$item.name% - %age%',
 //         features :{ $ngAtts: {'[hidden]': '%age%==12'} }
-//       }, 
+//       },
 //     },
 //     expectedResult: { $contains: ['Homer','Marge', 'hidden' , 'Bart'] }
 // },
@@ -532,15 +535,15 @@ jb.component('ui-test.table-DD', {
 
 // jb.component('ui-test.ngIf', {
 // type: 'test',
-//   impl :{$: 'ui-test', 
-//   control :{$: 'itemlist', 
-//       items: '%$people%', 
-//       controls :{$: 'label', 
-//         title: '%$item.name% - %age%', 
+//   impl :{$: 'ui-test',
+//   control :{$: 'itemlist',
+//       items: '%$people%',
+//       controls :{$: 'label',
+//         title: '%$item.name% - %age%',
 //         atts: {'*ngIf': '%age%>12'}
-//       }, 
+//       },
 //     },
-//     expectedResult :{$and: 
+//     expectedResult :{$and:
 //       [
 //         { $contains: ['Homer','Marge'] },
 // //        { $not: { $contains: 'Bart'}}
@@ -550,8 +553,8 @@ jb.component('ui-test.table-DD', {
 // })
 
 jb.component('ui-test.editable-text-in-group', {
-  impl :{$: 'ui-test',  
-  control :{$: 'group', 
+  impl :{$: 'ui-test',
+  control :{$: 'group',
         controls: [
           { $: 'editable-text', title: 'name', databind: '%$person/name%' },
           { $: 'editable-text', title: 'name', databind: '%$person/name%' },
@@ -563,7 +566,7 @@ jb.component('ui-test.editable-text-in-group', {
 })
 
 jb.component('ui-test.editable-text-with-jb-val', {
-  impl :{$: 'ui-test2',  
+  impl :{$: 'ui-test2',
   control :{$: 'group',
       $vars: {
         a1 : ctx => { return {
@@ -578,10 +581,10 @@ jb.component('ui-test.editable-text-with-jb-val', {
       controls: [
           { $: 'editable-text', title: 'name', databind: '%$a1%' },
           { $: 'editable-text', title: 'name', databind: '%$a1%' },
-          { $: 'picklist', title: 'name', databind: '%$a1%', 
-            options :{$: 'picklist.optionsByComma', 
-              options: 'Homer,Marge' 
-            } 
+          { $: 'picklist', title: 'name', databind: '%$a1%',
+            options :{$: 'picklist.optionsByComma',
+              options: 'Homer,Marge'
+            }
           },
           { $: 'label', title: '%$a1%' }
         ]
@@ -591,7 +594,7 @@ jb.component('ui-test.editable-text-with-jb-val', {
 })
 
 jb.component('ui-test.property-sheet.titles-above', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
   control :{$: 'group',
     controls : [
       {$: 'group',
@@ -609,7 +612,7 @@ jb.component('ui-test.property-sheet.titles-above', {
 })
 
 jb.component('ui-test.property-sheet.titles-left', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
   control :{$: 'group',
     controls : [
       {$: 'group',
@@ -626,10 +629,10 @@ jb.component('ui-test.property-sheet.titles-left', {
 })
 
 jb.component('ui-test.editable-number', {
-  impl :{$: 'ui-test',  
-  control :{$: 'group', 
+  impl :{$: 'ui-test',
+  control :{$: 'group',
   style: {$: 'layout.vertical'},
-  controls: 
+  controls:
     [
       {$: 'editable-number', title: 'age',
           databind: '%$person/age%',
@@ -651,7 +654,7 @@ jb.component('ui-test.editable-number', {
 })
 
 jb.component('ui-test.editable-number-slider', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
     control :{$: 'editable-number', title: 'age',
         databind: '%$person/age%',
         style :{$: 'editable-number.slider'},
@@ -661,7 +664,7 @@ jb.component('ui-test.editable-number-slider', {
 })
 
 jb.component('ui-test.editable-number-slider-empty', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
     control :{$: 'editable-number', title: 'age',
         databind: '%$person/age1%',
         style :{$: 'editable-number.slider'},
@@ -671,8 +674,8 @@ jb.component('ui-test.editable-number-slider-empty', {
 })
 
 jb.component('ui-test.editable-boolean.all-styles', {
-  impl :{$: 'ui-test',  
-  control :{$: 'group', controls: 
+  impl :{$: 'ui-test',
+  control :{$: 'group', controls:
     [
       {$: 'editable-boolean',
           title: 'male',
@@ -704,8 +707,8 @@ jb.component('ui-test.editable-boolean.all-styles', {
 })
 
 jb.component('ui-test.editable-boolean-settings', {
-  impl :{$: 'ui-test',  
-  control :{$: 'group', controls: 
+  impl :{$: 'ui-test',
+  control :{$: 'group', controls:
     [
       {$: 'editable-boolean',
           title: 'male',
@@ -721,18 +724,18 @@ jb.component('ui-test.editable-boolean-settings', {
 })
 
 jb.component('ui-test.editable-boolean.expand-collapse', {
-  impl :{$: 'ui-test',  
-  control :{$: 'group', 
+  impl :{$: 'ui-test',
+  control :{$: 'group',
   $vars: {
       MyWidget :{$:'object', expanded: true}
   },
-  controls: 
+  controls:
     [
       {$: 'editable-boolean',
           style :{$: 'editable-boolean.expand-collapse'},
           databind: '%$MyWidget/expanded%',
       },
-      { $: 'label', title: 'inner text', 
+      { $: 'label', title: 'inner text',
         features :{ $: 'hidden', showCondition: '%$MyWidget.expanded%' }
       }
     ]
@@ -742,24 +745,24 @@ jb.component('ui-test.editable-boolean.expand-collapse', {
 })
 
 jb.component('ui-test.code-mirror', {
-  impl :{$: 'ui-test',  
-  control :{$: 'group', 
+  impl :{$: 'ui-test',
+  control :{$: 'group',
     $vars: {
       js: { $: 'object', text: 'function f1() { return 15 }'},
       css: { $: 'object', text: '{ width: 15px; }' },
       html: { $: 'object', text: '<div><span>hello</span></div>' },
     },
-    controls: 
+    controls:
     [
-      { $: 'editable-text', 
+      { $: 'editable-text',
           databind: '%$js/text%',
           style :{$: 'editable-text.codemirror', mode: 'javascript'}
       },
-      { $: 'editable-text', 
+      { $: 'editable-text',
           databind: '%$css/text%',
           style :{$: 'editable-text.codemirror', mode: 'css'}
       },
-      { $: 'editable-text', 
+      { $: 'editable-text',
           databind: '%$html/text%',
           style :{$: 'editable-text.codemirror', mode: 'htmlmixed'}
       },
@@ -772,11 +775,11 @@ jb.component('ui-test.code-mirror', {
 jb.component('ui-test.prettyPrintComp', {
   impl :{$: 'ui-test2',  waitForPromise: {$delay: 50},
   control :{$: 'group', controls: [
-      {$: 'text', 
+      {$: 'text',
           text: ctx => jb_prettyPrintComp('inner-label1-tst',jbart.comps['inner-label1-tst']),
           style :{$: 'text.multi-line'}
       },
-      {$: 'text', 
+      {$: 'text',
           text: ctx => jb_prettyPrintComp('editable-text.codemirror',jbart.comps['editable-text.codemirror']),
           style :{$: 'text.codemirror'}
       },
@@ -787,17 +790,17 @@ jb.component('ui-test.prettyPrintComp', {
 })
 
 jb.component('ui-test.picklist', {
-  impl :{$: 'ui-test',  
-  control :{$: 'group', controls: 
+  impl :{$: 'ui-test',
+  control :{$: 'group', controls:
       [
-        { $: 'group', 
+        { $: 'group',
             style :{$: 'property-sheet.titles-left' },
-            controls :{$: 'picklist', 
-                    title: 'city', 
-                    databind: '%$personWithAddress/address/city%', 
-                    options :{$: 'picklist.optionsByComma', 
-                      options: 'Springfield,New York,Tel Aviv,London' 
-                    } 
+            controls :{$: 'picklist',
+                    title: 'city',
+                    databind: '%$personWithAddress/address/city%',
+                    options :{$: 'picklist.optionsByComma',
+                      options: 'Springfield,New York,Tel Aviv,London'
+                    }
             }
         },
         { $: 'label',  title: '%$personWithAddress/address/city%' }
@@ -808,39 +811,39 @@ jb.component('ui-test.picklist', {
 })
 
 jb.component('ui-test.picklist-sort', {
-   impl :{$: 'data-test', 
-    calculate: {$pipeline: [ 
-        { $: 'picklist.sorted-options' , 
+   impl :{$: 'data-test',
+    calculate: {$pipeline: [
+        { $: 'picklist.sorted-options' ,
           options: {$: 'picklist.optionsByComma', options: 'a,b,c,d' },
-          marks: {$pipeline : [ 
+          marks: {$pipeline : [
             'c:100,d:50,b:0,a:20',
             {$: 'split', separator: ',' },
-            {$: 'object', 
-              code: {$: 'split', separator: ':', part: 'first'  },  
-              mark: {$: 'split', separator: ':', part: 'second'  },  
+            {$: 'object',
+              code: {$: 'split', separator: ':', part: 'first'  },
+              mark: {$: 'split', separator: ':', part: 'second'  },
             }
           ] }
-        }, 
-        '%text%', 
-        {$: 'join'} 
+        },
+        '%text%',
+        {$: 'join'}
       ]},
     expectedResult :{$: 'contains', text: 'c,d,a' }
   },
 })
 
 jb.component('ui-test.picklist-groups', {
-  impl :{$: 'ui-test',  
-  control :{$: 'group', controls: 
+  impl :{$: 'ui-test',
+  control :{$: 'group', controls:
       [
-        { $: 'group', 
+        { $: 'group',
             style :{$: 'property-sheet.titles-left' },
             controls :{$: 'picklist',
-                    style :{$: 'picklist.groups'}, 
-                    title: 'city', 
-                    databind: '%$personWithAddress/address/city%', 
-                    options :{$: 'picklist.optionsByComma', 
-                      options: 'US.Springfield,US.New York,Israel.Tel Aviv,UK.London,mooncity' 
-                    } 
+                    style :{$: 'picklist.groups'},
+                    title: 'city',
+                    databind: '%$personWithAddress/address/city%',
+                    options :{$: 'picklist.optionsByComma',
+                      options: 'US.Springfield,US.New York,Israel.Tel Aviv,UK.London,mooncity'
+                    }
             }
         },
         { $: 'label',  title: '%$personWithAddress/address/city%' }
@@ -851,10 +854,10 @@ jb.component('ui-test.picklist-groups', {
 })
 
 jb.component('ui-test.dynamic-controls', {
-  impl :{$: 'ui-test', 
+  impl :{$: 'ui-test',
   control :{$: 'group',
       style :{$: 'property-sheet.titles-left' },
-      controls :{$: 'dynamic-controls', 
+      controls :{$: 'dynamic-controls',
           controlItems: {$list: ['name','age']},
           genericControl: { $: 'editable-text', databind: '%$person/{%$controlItem%}%', title: '%$controlItem%' }
       }
@@ -864,7 +867,7 @@ jb.component('ui-test.dynamic-controls', {
 })
 
 jb.component('ui-test.tabs', {
-  impl :{$: 'ui-test', 
+  impl :{$: 'ui-test',
   control :{$: 'group',
       style:{$: 'group.tabs'},
       controls:[
@@ -872,7 +875,7 @@ jb.component('ui-test.tabs', {
         {$: 'group', title: 'tab2', controls :{$: 'label', title: 'in tab2' }},
     ]
   },
-  expectedResult :{$and: [ 
+  expectedResult :{$and: [
     {$: 'contains', text: ['tab1','in tab1'] },
     {$: 'contains', text: 'tab2' },
     {$not: {$: 'contains', text: 'in tab2' } }
@@ -895,14 +898,14 @@ jb.component('ui-test.group.accordion', {
 })
 
 jb.component('ui-test.inner-label', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
     control :{$: 'inner-label3-tst', title: 'Hello World2' },
     expectedResult: { $: 'contains', text: 'Hello World2' }
 },
 })
 
 jb.component('ui-test.markdown', {
-  impl :{$: 'ui-test2',  
+  impl :{$: 'ui-test2',
     control :{$: 'markdown', markdown: `| Day     | Meal    | Price |
 | --------|---------|-------|
 | Monday  | pasta   | $6    |
@@ -912,12 +915,12 @@ jb.component('ui-test.markdown', {
 })
 
 jb.component('ui-test.style-by-control', {
-  impl :{$: 'ui-test',  
-    control :{$: 'label', 
+  impl :{$: 'ui-test',
+    control :{$: 'label',
         title: 'Hello World',
-        style :{$: 'style-by-control', 
+        style :{$: 'style-by-control',
           modelVar: 'labelModel',
-          control :{$: 'button', 
+          control :{$: 'button',
             title: '%$labelModel/title%2',
           }
         }
@@ -927,14 +930,14 @@ jb.component('ui-test.style-by-control', {
 })
 
 jb.component('ui-test.picklist-as-itemlist', {
-  impl :{$: 'ui-test',  
-    control :{$: 'group', 
+  impl :{$: 'ui-test',
+    control :{$: 'group',
       controls: [
-          {$: 'picklist', 
+          {$: 'picklist',
             style :{$: 'picklist.selection-list', width: '300' } ,
-            databind: '%$personWithAddress/address/city%', 
-            options :{$: 'picklist.optionsByComma', 
-                   options: 'Springfield,New York,Tel Aviv,London' 
+            databind: '%$personWithAddress/address/city%',
+            options :{$: 'picklist.optionsByComma',
+                   options: 'Springfield,New York,Tel Aviv,London'
             },
           },
           { $: 'label',  title: '%$personWithAddress/address/city%' }
@@ -971,7 +974,7 @@ jb.component('menu-test.menu1', {
             {$: 'menu.action', title: 'Paste' }
           ]
         },
-        {$:'menu.dynamic-options', 
+        {$:'menu.dynamic-options',
           items: {$list: [1,2,3]} ,
           genericOption :{$: 'menu.action', title: 'dynamic-%%' },
         }
@@ -980,7 +983,7 @@ jb.component('menu-test.menu1', {
 })
 
 jb.component('menu-test.pulldown', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
     control :{$: 'menu.control',
       style :{$: 'menu-style.pulldown'},
       menu :{$: 'menu-test.menu1'},
@@ -991,7 +994,7 @@ jb.component('menu-test.pulldown', {
 })
 
 jb.component('menu-test.context-menu', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
     control: {$: 'menu.control',
       menu :{$: 'menu-test.menu1'}
     },
@@ -1001,10 +1004,10 @@ jb.component('menu-test.context-menu', {
 })
 
 jb.component('menu-test.open-context-menu', {
-  impl :{$: 'ui-test',  
-  control :{$: 'button', 
-    title: 'open', 
-    action :{$: 'menu.open-context-menu', 
+  impl :{$: 'ui-test',
+  control :{$: 'button',
+    title: 'open',
+    action :{$: 'menu.open-context-menu',
       menu :{$: 'menu-test.menu1'},
     }
   },
@@ -1013,9 +1016,9 @@ jb.component('menu-test.open-context-menu', {
 })
 
 jb.component('ui-test.immutable-var', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
     control: {$: 'label', title: '%$var1%',
-      features: [ 
+      features: [
         {$:'var', name: 'var1', value: 'hello' },
 //        {$: 'feature.after-load', action: {$: 'write-value', to: '%$var1%', value: 'foo'}}
         ]
@@ -1026,17 +1029,17 @@ jb.component('ui-test.immutable-var', {
 })
 
 // jb.component('ui-test.raw-vdom', {
-//   impl :{$: 'ui-test',  
-//     control: ctx => 
+//   impl :{$: 'ui-test',
+//     control: ctx =>
 //       jb.ui.h('div',{},'hello world'),
 //     expectedResult :{$: 'contains', text: 'hello world' },
 //   },
 // })
 
 // jb.component('ui-test.raw-vdom-in-group', {
-//   impl :{$: 'ui-test',  
-//     control: { $: 'group', 
-//       controls: ctx => 
+//   impl :{$: 'ui-test',
+//     control: { $: 'group',
+//       controls: ctx =>
 //           jb.ui.h('div',{},'hello world')
 //     },
 //     expectedResult :{$: 'contains', text: 'hello world' },
@@ -1044,9 +1047,9 @@ jb.component('ui-test.immutable-var', {
 // })
 
 jb.component('ui-test.mutable-var', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
     control: {$: 'label', title: '%$var1%',
-      features: [ 
+      features: [
         {$:'var', name: 'var1', value: 'hello', mutable: true },
         {$: 'feature.after-load', action: {$: 'write-value', to: '%$var1%', value: 'foo'}}
         ]
@@ -1057,9 +1060,9 @@ jb.component('ui-test.mutable-var', {
 })
 
 jb.component('ui-test.mutable-var-as-object', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
     control: {$: 'label', title: '%$obj1/txt%',
-      features: [ 
+      features: [
         {$:'var', name: 'obj1', value: {$: 'object', txt: 'hello' }, mutable: true },
         {$: 'feature.after-load', action: {$: 'write-value', to: '%$obj1/txt%', value: 'foo'}}
         ]
@@ -1070,9 +1073,9 @@ jb.component('ui-test.mutable-var-as-object', {
 })
 
 jb.component('ui-test.mutable-var-as-object-not-initialized', {
-  impl :{$: 'ui-test',  
+  impl :{$: 'ui-test',
     control: {$: 'label', title: '%$obj1/txt%',
-      features: [ 
+      features: [
         {$:'var', name: 'obj1', value: {$: 'object' }, mutable: true },
         {$: 'feature.after-load', action: {$: 'write-value', to: '%$obj1/txt%', value: 'foo'}}
         ]
@@ -1104,43 +1107,43 @@ jb.component('inner-label3-tst', {
 })
 
 jb.component('ui-test.control.first-succeeding', {
-  impl :{$: 'ui-test',  
-    control :{$: 'group', 
+  impl :{$: 'ui-test',
+    control :{$: 'group',
       controls: [
-        {$: 'control.first-succeeding', 
+        {$: 'control.first-succeeding',
           controls: [
-            {$: 'control-with-condition', 
-              condition: '%$gender% == "male"', 
+            {$: 'control-with-condition',
+              condition: '%$gender% == "male"',
               control :{$: 'label', title: 'male' }
-            }, 
-          ], 
+            },
+          ],
         },
-        {$: 'control.first-succeeding', 
+        {$: 'control.first-succeeding',
           controls: [
-            {$: 'control-with-condition', 
-              condition: '%$gender% == "female"', 
+            {$: 'control-with-condition',
+              condition: '%$gender% == "female"',
               control :{$: 'label', title: 'female' }
-            }, 
-            {$: 'control-with-condition', 
-              condition: '%$gender% != "female"', 
+            },
+            {$: 'control-with-condition',
+              condition: '%$gender% != "female"',
               control :{$: 'label', title: 'male2' }
             }
-          ], 
+          ],
         },
-        {$: 'control.first-succeeding', 
+        {$: 'control.first-succeeding',
           controls: [
-            {$: 'control-with-condition', 
-              condition: '%$gender% == "female"', 
+            {$: 'control-with-condition',
+              condition: '%$gender% == "female"',
               control :{$: 'label', title: 'female' }
-            }, 
-            {$: 'control-with-condition', 
-              condition: '%$gender% == "lale"', 
+            },
+            {$: 'control-with-condition',
+              condition: '%$gender% == "lale"',
               control :{$: 'label', title: 'male2' }
             },
             {$: 'label', title: 'default' }
-          ], 
+          ],
         }
-      ], 
+      ],
       features: [{$: 'var', name: 'gender', value: 'male' }]
     },
     expectedResult :{$: 'contains', text: ['male','male2','default'] },
@@ -1148,23 +1151,23 @@ jb.component('ui-test.control.first-succeeding', {
 })
 
 jb.component('ui-test.dynamic-first-succeeding', {
-  impl :{$: 'ui-test',  
-    control :{$: 'group', 
+  impl :{$: 'ui-test',
+    control :{$: 'group',
       controls: [
         {$: 'editable-boolean', databind: '%$male%'},
-        {$: 'button', title: 'change', 
-          action: {$:'write-value', to: '%$male%', value: false } 
+        {$: 'button', title: 'change',
+          action: {$:'write-value', to: '%$male%', value: false }
         },
-        {$: 'control.first-succeeding', 
+        {$: 'control.first-succeeding',
           controls: [
-            {$: 'control-with-condition', 
-              condition: '%$male%', 
+            {$: 'control-with-condition',
+              condition: '%$male%',
               control :{$: 'label', title: 'male' }
-            }, 
-            {$: 'control-with-condition', 
-              condition: {$not: '%$male%'}, 
+            },
+            {$: 'control-with-condition',
+              condition: {$not: '%$male%'},
               control :{$: 'label', title: 'female' }
-            }, 
+            },
           ],
           features: {$: 'watch-ref', ref: '%$male%'}
         },
@@ -1179,18 +1182,18 @@ jb.component('ui-test.dynamic-first-succeeding', {
 })
 
 jb.component('ui-test.boolean-not-reffable-true', {
-  impl :{$: 'ui-test',  
-    control :{$: 'label', 
-      title :{$: 'is-of-type', type: 'string', obj: '123' }, 
+  impl :{$: 'ui-test',
+    control :{$: 'label',
+      title :{$: 'is-of-type', type: 'string', obj: '123' },
     },
     expectedResult :{$: 'contains', text: 'true' },
   }
 })
 
 jb.component('ui-test.boolean-not-reffable-false', {
-  impl :{$: 'ui-test',  
-    control :{$: 'label', 
-      title :{$: 'is-of-type', type: 'string2', obj: '123' }, 
+  impl :{$: 'ui-test',
+    control :{$: 'label',
+      title :{$: 'is-of-type', type: 'string2', obj: '123' },
     },
     expectedResult :{$: 'contains', text: 'false' },
   }

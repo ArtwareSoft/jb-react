@@ -12,14 +12,14 @@ jb.component('open-dialog', {
 	],
 	impl: function(context,id) {
 		var modal = context.params.modal;
-		var dialog = { 
-			id: id, 
-			modal: modal, 
+		var dialog = {
+			id: id,
+			modal: modal,
 			em: new jb.rx.Subject(),
 		};
 
 		var ctx = context.setVars({
-			$dialog: dialog 
+			$dialog: dialog
 		});
 		dialog.comp = jb.ui.ctrl(ctx,{
 			beforeInit: cmp => {
@@ -34,11 +34,11 @@ jb.component('open-dialog', {
 				} catch (e) {
 					jb.logException(e,'dialog');
 				}
-				dialog.onOK = ctx2 => 
+				dialog.onOK = ctx2 =>
 					context.params.onOK(cmp.ctx.extendVars(ctx2));
-				cmp.dialogClose = args => 
+				cmp.dialogClose = args =>
 					dialog.close(args);
-				cmp.recalcTitle = (e,srcCtx) => 
+				cmp.recalcTitle = (e,srcCtx) =>
 					jb.ui.setState(cmp,{title: ctx.params.title(ctx)},e,srcCtx)
 			},
 			afterViewInit: cmp => {
@@ -65,7 +65,7 @@ jb.component('dialog.default', {
 	impl :{$: 'custom-style',
 		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
 			h('div',{class: 'dialog-title'},state.title),
-			h('button',{class: 'dialog-close', onclick: 
+			h('button',{class: 'dialog-close', onclick:
 				_=> cmp.dialogClose() },'×'),
 			h(state.contentComp),
 		]),
@@ -100,7 +100,7 @@ jb.component('dialog-feature.unique-dialog', {
 		if (!id) return;
 		var dialog = context.vars.$dialog;
 		dialog.id = id;
-		dialog.em.filter(e=> 
+		dialog.em.filter(e=>
 			e.type == 'new-dialog')
 			.subscribe(e=> {
 				if (e.dialog != dialog && e.dialog.id == id )
@@ -190,7 +190,7 @@ jb.component('dialog-feature.onClose', {
 	params: [
 		{ id: 'action', type: 'action', dynamic: true}
 	],
-	impl: function(context,action) { 
+	impl: function(context,action) {
 		context.vars.$dialog.em
 			.filter(e => e.type == 'close')
 			.take(1)
@@ -204,10 +204,10 @@ jb.component('dialog-feature.close-when-clicking-outside', {
 	params: [
 		{ id: 'delay', as: 'number', defaultValue: 100 }
 	],
-	impl: function(context,delay) { 
+	impl: function(context,delay) {
 		var dialog = context.vars.$dialog;
 		dialog.isPopup = true;
-		jb.delay(10).then(() =>  { // delay - close older before    		
+		jb.delay(10).then(() =>  { // delay - close older before
 			var clickoutEm = jb.rx.Observable.fromEvent(document, 'mousedown');
 			if (jb.studio.previewWindow)
 				clickoutEm = clickoutEm.merge(jb.rx.Observable.fromEvent(
@@ -227,14 +227,14 @@ jb.component('dialog.close-dialog', {
 		{ id: 'id', as: 'string' },
 		{ id: 'delay', as: 'number', defaultValue: 200 },
 	],
-	impl: (ctx,id,delay) => 
+	impl: (ctx,id,delay) =>
 		jb.ui.dialogs.dialogs.filter(d=>d.id == id)
   			.forEach(d=>jb.delay(delay).then(d.close()))
 })
 
 jb.component('dialog.close-all-popups', {
 	type: 'action',
-	impl: ctx => 
+	impl: ctx =>
 		jb.ui.dialogs.dialogs.filter(d=>d.isPopup)
   			.forEach(d=>d.close())
 })
@@ -250,7 +250,7 @@ jb.component('dialog-feature.auto-focus-on-first-input', {
 	params: [
 		{ id: 'selectText', as: 'boolean' }
 	],
-	impl: (ctx,selectText) => ({ 
+	impl: (ctx,selectText) => ({
 		afterViewInit: cmp => {
 			jb.delay(1).then(_=> {
 				var elem = ctx.vars.$dialog.el.querySelector('input,textarea,select');
@@ -265,7 +265,7 @@ jb.component('dialog-feature.auto-focus-on-first-input', {
 
 jb.component('dialog-feature.css-class-on-launching-element', {
 	type: 'dialog-feature',
-	impl: context => ({ 
+	impl: context => ({
 		afterViewInit: cmp => {
 			var dialog = context.vars.$dialog;
 			var $control = context.vars.$launchingElement.$el;
@@ -296,7 +296,7 @@ jb.component('dialog-feature.max-zIndex-on-click', {
 		})
 
 		function setAsMaxZIndex() {
-			var maxIndex = jb.ui.dialogs.dialogs.reduce(function(max,d) { 
+			var maxIndex = jb.ui.dialogs.dialogs.reduce(function(max,d) {
 				return Math.max(max,(d.el && parseInt(d.el.style.zIndex || 100)+1))
 			}, minZIndex || 100)
 			dialog.el.style.zIndex = maxIndex;
@@ -309,7 +309,7 @@ jb.component('dialog-feature.drag-title', {
 	params: [
 		{ id: 'id', as: 'string' }
 	],
-	impl: function(context, id) { 
+	impl: function(context, id) {
 		var dialog = context.vars.$dialog;
 		return {
 		       css: '>.dialog-title { cursor: pointer }',
@@ -317,7 +317,7 @@ jb.component('dialog-feature.drag-title', {
 		       	  var titleElem = cmp.base.querySelector('.dialog-title');
 		       	  cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
 		       	  	.takeUntil( cmp.destroyed );
-		       	  
+
 				  if (id && sessionStorage.getItem(id)) {
 						var pos = JSON.parse(sessionStorage.getItem(id));
 					    dialog.el.style.top  = pos.top  + 'px';
@@ -335,13 +335,13 @@ jb.component('dialog-feature.drag-title', {
 				  }
 
 				  var mousedrag = cmp.mousedownEm
-				  		.do(e => 
+				  		.do(e =>
 				  			e.preventDefault())
 				  		.map(e =>  ({
 				          left: e.clientX - dialog.el.getBoundingClientRect().left,
 				          top:  e.clientY - dialog.el.getBoundingClientRect().top
 				        }))
-				      	.flatMap(imageOffset => 
+				      	.flatMap(imageOffset =>
 			      			 mouseMoveEm.takeUntil(mouseUpEm)
 			      			 .map(pos => ({
 						        top:  pos.clientY - imageOffset.top,
@@ -353,6 +353,59 @@ jb.component('dialog-feature.drag-title', {
 			        dialog.el.style.top  = pos.top  + 'px';
 			        dialog.el.style.left = pos.left + 'px';
 			        if (id) sessionStorage.setItem(id, JSON.stringify(pos))
+			      });
+			  }
+	       }
+	}
+});
+
+jb.component('dialog-feature.resizer', {
+	type: 'dialog-feature',
+	params: [
+		{ id: 'id', as: 'string' }
+	],
+	impl: function(context, id) {
+		var dialog = context.vars.$dialog;
+		return {
+					templateModifier: (vdom,cmp,state) => {
+						vdom.children.push(jb.ui.h('img', {src: '/css/resizer.gif', class: 'resizer'}));
+			      return vdom;
+			    },
+		       css: '>.resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
+		       afterViewInit: function(cmp) {
+		       	  var resizerElem = cmp.base.querySelector('.resizer');
+		       	  cmp.mousedownEm = jb.rx.Observable.fromEvent(resizerElem, 'mousedown')
+		       	  	.takeUntil( cmp.destroyed );
+
+				  var mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
+				  var mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
+
+				  if (jb.studio.previewWindow) {
+				  	mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
+				  		.takeUntil( cmp.destroyed );
+				  	mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
+				  		.takeUntil( cmp.destroyed );
+				  }
+
+				  var mousedrag = cmp.mousedownEm
+				  		.do(e =>
+				  			e.preventDefault())
+				  		.map(e =>  ({
+				          left: dialog.el.getBoundingClientRect().left,
+				          top:  dialog.el.getBoundingClientRect().top
+				        }))
+				      	.flatMap(imageOffset =>
+			      			 mouseMoveEm.takeUntil(mouseUpEm)
+									 .do(pos=>console.log(pos.clientY,pos.clientX,imageOffset,pos.clientY - imageOffset.top,pos.clientX - imageOffset.left))
+			      			 .map(pos => ({
+						        top:  pos.clientY - imageOffset.top,
+						        left: pos.clientX - imageOffset.left
+						     }))
+				      	);
+
+				  mousedrag.distinctUntilChanged().subscribe(pos => {
+			        dialog.el.style.height  = pos.top  + 'px';
+			        dialog.el.style.width = pos.left + 'px';
 			      });
 			  }
 	       }
@@ -410,7 +463,7 @@ jb.ui.dialogs = {
 				if (dialog.modal)
 					$('.modal-overlay').remove();
 				jb.ui.dialogs.redraw();
-			})				
+			})
 		},
 		dialog.closed = _ =>
 			self.dialogs.indexOf(dialog) == -1;
@@ -422,4 +475,3 @@ jb.ui.dialogs = {
 			d.close());
 	}
 }
-
