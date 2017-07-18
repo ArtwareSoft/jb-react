@@ -1,4 +1,4 @@
-  
+
 jb.studio.Probe = class {
   constructor(ctx, noGaps) {
     if (ctx.probe)
@@ -13,7 +13,7 @@ jb.studio.Probe = class {
   }
 
   runCircuit(pathToTrace,maxTime) {
-    this.maxTime = maxTime || 500;
+    this.maxTime = maxTime || 50;
     this.startTime = new Date().getTime();
     jb.logPerformance('probe','start',this);
     this.result = [];
@@ -21,7 +21,7 @@ jb.studio.Probe = class {
     this.probe[pathToTrace] = this.result;
     this.pathToTrace = pathToTrace;
 
-    return this.simpleRun().catch(e => 
+    return this.simpleRun().catch(e =>
         this)
       .then( res => {
             this.handleGaps();
@@ -54,14 +54,14 @@ jb.studio.Probe = class {
             jb.studio.probeResEl = jb.ui.render(ctrl, jb.studio.probeEl, jb.studio.probeResEl);
           } catch (e) {
             jb.logException(e,'probe run')
-          }          
+          }
           return Promise.resolve({element: jb.studio.probeResEl});
       } else if (this.circuitType != 'action')
         return Promise.resolve(this.context.runItself());
   }
 
   handleGaps() {
-    if (this.noGaps) 
+    if (this.noGaps)
       return;
     var st = jb.studio;
     if (this.result.length == 0) {

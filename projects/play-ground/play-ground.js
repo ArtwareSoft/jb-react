@@ -39,6 +39,19 @@ jb.component('play-ground.main', {
         dataString: '%$Value%%$Symbol%', 
         autoScale: true, 
         step: 1
+      }, 
+      {$: 'tabs', 
+        tabs: [
+          {$: 'label', 
+            title: 'a', 
+            style :{$: 'label.span' }
+          }, 
+          {$: 'label', 
+            title: 'b', 
+            style :{$: 'label.span' }
+          }
+        ], 
+        style :{$: 'tabs.simple' }
       }
     ], 
     features: [

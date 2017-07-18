@@ -42,6 +42,7 @@ var resources = {
         'src/ui/icon.js',
         'src/ui/slider.js',
         'src/ui/table.js',
+        'src/ui/tabs.js',
         'src/ui/window.js',
 
         'src/ui/styles/mdl-styles.js',
@@ -91,7 +92,7 @@ var resources = {
       ],
       studio: [
         'utils','path','main', 'pretty-print',
-        'toolbar','styles', 'search', 'new-control', 'data-browse', 'preview', 'tgp-model', 'model-components',
+        'toolbar','styles', 'search', 'new-profile', 'data-browse', 'preview', 'tgp-model', 'model-components',
         'tree','popups','properties','pick','properties-menu','save','open-project',
         'suggestions','undo','edit-source','jb-editor','jb-editor-styles','style-editor','probe','testers', 'event-tracker','h-to-jsx'
       ],

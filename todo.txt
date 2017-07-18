@@ -1,5 +1,10 @@
 new project
-multi selection
+	server - create file structure command with json
+		{ directory: {
+				name: 'proj1',
+				files: [ {	name: 'proj1.js',	content: 'xxx',	}, ..	]
+		}}
+
 resizer (dialog resizer)
 
 open profile chooser in suggestions
@@ -7,23 +12,22 @@ open profile chooser in suggestions
 
 table with max items - use in probe results
 
-codemirror javascript editor - should create js function and use eval
+style editor
+	activate with make local
+
+codemirror javascript editor
+		should create js function and use eval
 		result preview at the bottom
 
 jbEditor
 	horizontal auto scroll bug
   $if support - edit + should show then/else
-  javascript - should create js function and use eval
   opening jbEditor history - back to XX
   resizer (dialog resizer)
 
-select profile
-	should use context object
-
-
-context (data) viewer lightly attached to popups after pick, drag & drop context
-
 tooltip from material design
+
+multi selection
 
 atom plugin with jbEditor
 

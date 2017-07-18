@@ -5,7 +5,7 @@ jb.component('tabs', {
 		{ id: 'style', type: 'tabs.style', dynamic: true, defaultValue: { $: 'tabs.simple' } },
 		{ id: 'features', type: 'feature[]', dynamic: true },
 	],
-  impl: ctx =>  
+  impl: ctx =>
     jb.ui.ctrl(ctx)
 })
 
@@ -16,60 +16,31 @@ jb.component('group.init-tabs', {
     { id: 'autoFocus', as: 'boolean' }
   ],
   impl: ctx => ({
-    onkeydown: ctx.params.keyboardSupport,
     init: cmp => {
-      cmp.state.shown = 0;
-      cmp.expand_title = index => 
-        index == cmp.state.shown ? 'collapse' : 'expand';
+			cmp.tabs = ctx.vars.$model.tabs();
+      cmp.titles = cmp.tabs.map(tab=>tab.jb_title(ctx));
+			cmp.state.shown = 0;
 
-      cmp.show = index => 
-        cmp.setState({shown: index});
+      cmp.show = index =>
+        jb.ui.setState(cmp,{shown: index},null,ctx);
 
       cmp.next = diff =>
         cmp.setState({shown: (cmp.state.index + diff + cmp.ctrls.length) % cmp.ctrls.length});
-
-      if (ctx.params.keyboardSupport) {
-        keydown.filter(e=> e.keyCode == 33 || e.keyCode == 34) // pageUp/Down
-            .subscribe(e=>
-              cmp.next(e.keyCode == 33 ? -1 : 1))
-      }
     },
   })
 })
 
 jb.component('tabs.simple', {
-  type: 'tabs.style',
-  params: [
-    { id: 'width', as : 'number' },
-  ],
-  impl2 :{$: 'style-by-control', __innerImplementation: true,
-    modelVar: 'tabsModel',
-    control :{$: 'group', controls: [
-      { $: 'itemlist',
-        watchItems: false, 
-        items: '%$tabsModel/tabs%',
-        style :{ $: 'layout.horizontal' },
-        controls :{$: 'button', 
-          title: ctx => ctx.data.title(), 
-          style :{$: 'button.mdl-flat-ripple' }, 
-          features: [
-            {$: 'css.width', width: '%$width%' }, 
-            {$: 'css', css: '{text-align: left}' }
-          ]
-        },
-        features :{$: 'itemlist.selection', 
-          onSelection :{$: 'write-value', 
-            value: ctx => 
-              ctx.exp('%$tabsModel/tabs%').indexOf(ctx.exp('%%')), 
-            to: '%$tabsModel/shown%' 
-          } 
-        }
-      },
-      { $: 'group', 
-        features :{$: 'group.data', data: '%$tabsModel/shown%', watch: true} , 
-         controls: ctx => 
-              ctx.exp('%$tabsModel/tabs%')[ctx.exp('%%')], 
-      }
-    ]}
+  type: 'group.style',
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('div',{}, [
+			  h('div',{class: 'tabs-header'}, cmp.titles.map((title,index)=>
+					h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect' + (index == state.shown ? ' selected-tab': ''),
+						onclick: ev=>cmp.show(index)},title))),
+				h('div',{class: 'tabs-content'}, h(jb.ui.renderable(cmp.tabs[state.shown]) )) ,
+				]),
+		css : `>.tabs-header>.selected-tab { border-bottom: 2px solid #66afe9 }
+		`,
+    features :[{$: 'group.init-tabs'}, {$: 'mdl-style.init-dynamic', query: '.mdl-js-button'}]
   }
 })

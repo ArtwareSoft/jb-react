@@ -5,7 +5,7 @@ jb.component('studio.preview-widget', {
     { id: 'width', as: 'number'},
     { id: 'height', as: 'number'},
   ],
-  impl: ctx => 
+  impl: ctx =>
     jb.ui.ctrl(ctx,{
       init: cmp => {
         cmp.state.project = ctx.exp('%$studio/project%');
@@ -32,13 +32,16 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
 jb.component('studio.preview-widget-impl', {
   type: 'preview-style',
   impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('iframe', { 
-          id:'jb-preview', 
-          sandbox: 'allow-same-origin allow-forms allow-scripts', 
-          frameborder: 0, 
+      template: (cmp,state,h) => h('iframe', {
+          id:'jb-preview',
+          sandbox: 'allow-same-origin allow-forms allow-scripts',
+          frameborder: 0,
+          class: 'preview-iframe',
+          width: cmp.ctx.vars.$model.width,
+          height: cmp.ctx.vars.$model.height,
           src: '/project/'+ state.project + '?' + state.cacheKiller
       }),
-      css: `{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; width: %$$model/width%px; height: %$$model/height%px; }`
+      css: `{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px;  }`
   }
 })
 
@@ -48,11 +51,24 @@ jb.component('studio.refresh-preview', {
     jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
 })
 
+jb.component('studio.set-preview-size', {
+  type: 'action',
+  params: [
+    { id: 'width', as: 'number'},
+    { id: 'height', as: 'number'},
+  ],
+  impl: (ctx,width,height) => {
+    if (width)
+      $('.preview-iframe').attr('width',width);
+    if (height)
+      $('.preview-iframe').attr('height',height);
+  }
+})
+
 jb.component('studio.wait-for-preview-iframe', {
-  impl: _ => 
-    jb.ui.waitFor(()=> 
+  impl: _ =>
+    jb.ui.waitFor(()=>
       jb.studio.previewWindow)
-//    previewRefreshCounter++
 })
 
 jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studio/page')
