@@ -278,6 +278,7 @@ ui.preserveCtx = ctx => {
 }
 
 ui.renderWidget = function(profile,elem) {
+	var previewElem;
 	if (window.parent != window && window.parent.jb)
 		window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
 	class R extends jb.ui.Component {
@@ -287,9 +288,9 @@ ui.renderWidget = function(profile,elem) {
 			if (jb.studio.studioWindow) {
 				var st = jb.studio.studioWindow.jb.studio;
 				st.refreshPreviewWidget = _ => {
-					$(elem).empty();
+					//$(elem).empty();
 					jb.resources = jb.ui.originalResources || jb.resources;
-					ui.render(ui.h(R),elem);
+					previewElem = ui.render(ui.h(R),elem,previewElem);
 				}
 				st.pageChange.subscribe(page=>
 					this.setState({profile: {$: page}}));
@@ -304,7 +305,7 @@ ui.renderWidget = function(profile,elem) {
 			return ui.h(new jb.jbCtx().run(state.profile).reactComp())
 		}
 	}
-	ui.render(ui.h(R),elem);
+	previewElem = ui.render(ui.h(R),elem);
 }
 
 ui.applyAfter = function(promise,ctx) {

@@ -47,7 +47,9 @@ function jb_run(context,parentParam,settings) {
           switch (paramObj.type) {
             case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
             case 'array': run.ctx.params[paramObj.name] =
-                paramObj.array.map((prof,i) => run.ctx.runInner(prof, paramObj.param, paramObj.path+'~'+i) )
+                paramObj.array.map((prof,i) =>
+                  jb_run(new jbCtx(run.ctx,{profile: prof, forcePath: context.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param))
+                  //run.ctx.runInner(prof, paramObj.param, paramObj.path+'~'+i) )
               ; break;  // maybe we should [].concat and handle nulls
             default: run.ctx.params[paramObj.name] =
               jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: context.path + '~' + paramObj.path, path: ''}), paramObj.param);

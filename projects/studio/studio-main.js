@@ -17,7 +17,7 @@ jb.component('studio.all', {
         action :{$: 'url-history.map-url-to-resource',
           params: ['project', 'page', 'profile_path'],
           resource: 'studio', base: 'studio',
-          onUrlChange :{$: 'studio.refresh-preview' }
+//          onUrlChange :{$: 'studio.refresh-preview' }
         }
       }
     ]
