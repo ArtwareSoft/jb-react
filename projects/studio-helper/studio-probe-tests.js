@@ -44,6 +44,24 @@ jb.component('test.inner-label-template', {
 	impl :{$: 'group', controls :{ $call: 'ctrl'} }
 })
 
+jb.component('test.inner-label-template-static-param', {
+	type: 'control',
+	params: [
+		{ id: 'param1', type: 'string' }
+	],
+	impl :{$: 'group', controls : [] }
+})
+
+jb.component('probe-test.static-inner-in-template', {
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'group',
+			controls :{$: 'test.inner-label-template-static-param', param1: 'hello'	}
+		},
+		probePath : 'controls~param1',
+		expectedVisits: 1,
+	}
+})
+
 jb.component('probe-test.inner-in-template', {
 	 impl :{$: 'studio-probe-test',
 		circuit: {$: 'group',
@@ -51,8 +69,8 @@ jb.component('probe-test.inner-in-template', {
 				ctrl :{$: 'label', title: 'hello' }
 			}
 		},
-		probePath : 'controls~ctrl',
-		expectedVisits: 1,
+		probePath : 'controls~ctrl~title',
+		expectedVisits: 2,
 	}
 })
 
@@ -88,6 +106,7 @@ jb.component('probe-test.actions-sugar', {
 		circuit: {$: 'group',
 			controls :{$: 'button', title : 'hello', action: [ {$: 'goto-url', url: 'google' }] }
 		},
+		allowClosestPath: true,
 		probePath : 'controls~action~0',
 		expectedVisits: 1,
 	}
@@ -97,6 +116,7 @@ jb.component('probe-test.inside-action', {
 	 impl :{$: 'studio-probe-test',
 		circuit: {$: 'button', action :{$: 'goto-url', url: 'google' } },
 		probePath : 'action~url',
+		allowClosestPath: true,
 		expectedVisits: 1,
 	}
 })

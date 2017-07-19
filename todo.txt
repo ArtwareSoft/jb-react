@@ -1,12 +1,15 @@
 cards for letmesee
 
-new project
-	server - create file structure command with json
-		{ directory: {
-				name: 'proj1',
-				files: [ {	name: 'proj1.js',	content: 'xxx',	}, ..	]
-		}}
+preview leaks
+	check refresh preview time
+	refresh only relevant ctx - first closest to path changed
+	check when editing studio properties script
 
+Studio helper property stylesheet
+	js editing - studio.property-js-script
+
+helper
+	property sheet with all types
 
 open profile chooser in suggestions
 	choose data

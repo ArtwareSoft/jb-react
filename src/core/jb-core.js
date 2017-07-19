@@ -27,29 +27,31 @@ function jb_run(context,parentParam,settings) {
       case 'function': return castToParam(profile(context),parentParam);
       case 'null': return castToParam(null,parentParam);
       case 'ignore': return context.data;
-      case 'list': { return profile.map((inner,i) => 
-            context.runInner(inner,null,i)) };
+      case 'list': return profile.map((inner,i) =>
+            context.runInner(inner,null,i));
       case 'runActions': return jb.comps.runActions.impl(new jbCtx(context,{profile: { actions : profile },path:''}));
       case 'if': {
           var cond = jb_run(run.ifContext, run.IfParentParam);
-          if (cond && cond.then) 
+          if (cond && cond.then)
             return cond.then(res=>
               res ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam))
           return cond ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam);
-      } 
+      }
       case 'profile':
         for(var varname in profile.$vars || {})
           run.ctx = new jbCtx(run.ctx,{ vars: jb.obj(varname,run.ctx.runInner(profile.$vars[varname], null,'$vars~'+varname)) });
-        if (!run.impl) 
+        if (!run.impl)
           run.ctx.callerPath = context.path;
 
         run.preparedParams.forEach(paramObj => {
           switch (paramObj.type) {
             case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
-            case 'array': run.ctx.params[paramObj.name] = 
+            case 'array': run.ctx.params[paramObj.name] =
                 paramObj.array.map((prof,i) => run.ctx.runInner(prof, paramObj.param, paramObj.path+'~'+i) )
               ; break;  // maybe we should [].concat and handle nulls
-            default: run.ctx.params[paramObj.name] = run.ctx.runInner(paramObj.prof, paramObj.param, paramObj.path)
+            default: run.ctx.params[paramObj.name] =
+              jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: context.path + '~' + paramObj.path, path: ''}), paramObj.param);
+            //run.ctx.runInner(paramObj.prof, paramObj.param, paramObj.path)
             //jb_run(paramObj.context, paramObj.param);
           }
         });
@@ -71,7 +73,7 @@ function jb_run(context,parentParam,settings) {
           console.log(context.run(profile.$log));
 
         if (profile.$trace) console.log('trace: ' + context.path, compName(profile),context,out,run);
-          
+
         return castToParam(out,parentParam);
     }
   } catch (e) {
@@ -98,21 +100,21 @@ function jb_run(context,parentParam,settings) {
 }
 
 function compParams(comp) {
-  if (!comp || !comp.params) 
+  if (!comp || !comp.params)
     return [];
   return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>extend(x[1],jb.obj('id',x[0])));
 }
 
 function prepareParams(comp,profile,ctx) {
   return compParams(comp)
-    .filter(comp=> 
+    .filter(comp=>
       !comp.ignore)
     .map((param,index) => {
       var p = param.id;
       var val = profile[p], path =p, sugar = sugarProp(profile);
       if (!val && index == 0 && sugar) {
         path = sugar[0];
-        val = sugar[1]; 
+        val = sugar[1];
       }
       var valOrDefault = (typeof val != "undefined" && val != null) ? val : (typeof param.defaultValue != 'undefined' ? param.defaultValue : null);
       var valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
@@ -121,11 +123,11 @@ function prepareParams(comp,profile,ctx) {
       if (param.dynamic) {
         var outerFunc = runCtx => {
           if (arrayParam)
-            var func = (ctx2,data2) => 
+            var func = (ctx2,data2) =>
               jb.flattenArray(valOrDefaultArray.map((prof,i)=>
                 runCtx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
           else
-            var func = (ctx2,data2) => 
+            var func = (ctx2,data2) =>
                   valOrDefault != null ? runCtx.extendVars(ctx2,data2).runInner(valOrDefault,param,path) : valOrDefault;
 
           Object.defineProperty(func, "name", { value: p }); // for debug
@@ -134,11 +136,11 @@ function prepareParams(comp,profile,ctx) {
           return func;
         }
         return { name: p, type: 'function', outerFunc: outerFunc, path: path };
-      } 
+      }
 
       if (arrayParam) // array of profiles
         return { name: p, type: 'array', array: valOrDefaultArray, param: {}, path: path };
-      else 
+      else
         return { name: p, type: 'run', prof: valOrDefault, param: param, path: path }; // context: new jbCtx(ctx,{profile: valOrDefault, path: p}),
   })
 }
@@ -167,7 +169,7 @@ function prepare(context,parentParam) {
       profile.sugar = true;
       return { type: 'runActions' };
     }
-  } else if (profile.$if) 
+  } else if (profile.$if)
   return {
       type: 'if',
       ifContext: new jbCtx(context,{profile: profile.$if || profile.condition, path: '$if'}),
@@ -178,7 +180,7 @@ function prepare(context,parentParam) {
       elseParentParam: { type: parentParam_type, as:jstype }
     }
   var comp_name = compName(profile);
-  if (!comp_name) 
+  if (!comp_name)
     return { type: 'ignore' }
   var comp = jb.comps[comp_name];
   if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined'); return { type:'null' } }
@@ -197,22 +199,22 @@ function prepare(context,parentParam) {
 
 function resolveFinishedPromise(val) {
   if (!val) return val;
-  if (val.$jb_parent) 
+  if (val.$jb_parent)
     val.$jb_parent = resolveFinishedPromise(val.$jb_parent);
   if (val && typeof val == 'object' && val._state == 1) // finished promise
-    return val._result; 
-  return val; 
+    return val._result;
+  return val;
 }
 
 function calcVar(context,varname) {
   var res;
-  if (context.componentContext && typeof context.componentContext.params[varname] != 'undefined') 
+  if (context.componentContext && typeof context.componentContext.params[varname] != 'undefined')
     res = context.componentContext.params[varname];
-  else if (context.vars[varname] != null) 
+  else if (context.vars[varname] != null)
     res = context.vars[varname];
-  else if (context.vars.scope && context.vars.scope[varname] != null) 
+  else if (context.vars.scope && context.vars.scope[varname] != null)
     res = context.vars.scope[varname];
-  else if (jb.resources && jb.resources[varname] != null) 
+  else if (jb.resources && jb.resources[varname] != null)
     res = jb.resources[varname];
   return resolveFinishedPromise(res);
 }
@@ -269,11 +271,11 @@ function expression(exp, context, parentParam) {
 
 
 function evalExpressionPart(expressionPart,context,jstype) {
-  // example: %$person.name%.     
+  // example: %$person.name%.
   if (expressionPart == ".") expressionPart = "";
 
   // empty primitive expression
-  if (!expressionPart && (jstype == 'string' || jstype == 'boolean' || jstype == 'number')) 
+  if (!expressionPart && (jstype == 'string' || jstype == 'boolean' || jstype == 'number'))
     return jstypes[jstype](context.data);
 
   if (expressionPart.indexOf('=') == 0) { // function
@@ -293,7 +295,7 @@ function evalExpressionPart(expressionPart,context,jstype) {
       index = Number(match[2]);
     }
     if (part == '') ;
-    else if (part == '$parent' && item.$jb_parent && i > 0) 
+    else if (part == '$parent' && item.$jb_parent && i > 0)
       item = item.$jb_parent
     else if (part.charAt(0) == '$' && i == 0 && part.length > 1)
       item = calcVar(context,part.substr(1))
@@ -308,10 +310,10 @@ function evalExpressionPart(expressionPart,context,jstype) {
     else
       item = null; // no match
 
-    if (!isNaN(index) && Array.isArray(item)) 
+    if (!isNaN(index) && Array.isArray(item))
       item = item[index];
 
-    if (!item) 
+    if (!item)
       return item;	// 0 should return 0
   }
   return item;
@@ -415,7 +417,7 @@ var jstypes = {
       return val(value) ? true : false;
     },
     'single': function(value) {
-      if (Array.isArray(value)) 
+      if (Array.isArray(value))
         value = value[0];
       return val(value);
     },
@@ -423,7 +425,7 @@ var jstypes = {
 //      if (Array.isArray(value)) value = value[0];
 //      if (value == null) return value;
       if (Array.isArray(value) && value.length == 1)
-        value = value[0]; 
+        value = value[0];
       return jb.valueByRefHandler.asRef(value);
     }
 }
@@ -431,12 +433,12 @@ var jstypes = {
 function objectProperty(_object,property,jstype,lastInExpression) {
   var object = val(_object);
   if (!object) return null;
-  if (typeof object[property] == 'undefined') 
+  if (typeof object[property] == 'undefined')
     object[property] = lastInExpression ? null : {};
   if (lastInExpression) {
     if (jstype == 'string' || jstype == 'boolean' || jstype == 'number')
       return jstypes[jstype](object[property]); // no need for valueByRef
-    if (jstype == 'ref') 
+    if (jstype == 'ref')
       return jb.valueByRefHandler.objectProperty(object,property)
   }
   return object[property];
@@ -468,7 +470,7 @@ function compName(profile) {
 function assignNameToFunc(name, fn) {
   Object.defineProperty(fn, "name", { value: name });
   return fn;
-} 
+}
 
 var ctxCounter = 0;
 
@@ -499,8 +501,8 @@ class jbCtx {
       this.probe= context.probe;
     }
   }
-  run(profile,parentParam) { 
-    return jb_run(new jbCtx(this,{ profile: profile, comp: profile.$ , path: ''}), parentParam) 
+  run(profile,parentParam) {
+    return jb_run(new jbCtx(this,{ profile: profile, comp: profile.$ , path: ''}), parentParam)
   }
   exp(exp,jstype) { return expression(exp, this, {as: jstype}) }
   setVars(vars) { return new jbCtx(this,{vars: vars}) }
@@ -510,13 +512,13 @@ class jbCtx {
   // keeps the context vm and not the caller vm - needed in studio probe
   ctx(ctx2) { return new jbCtx(this,ctx2) }
   win() { // used for multi windows apps. e.g., studio
-    return window 
-  } 
-  extendVars(ctx2,data2) { 
+    return window
+  }
+  extendVars(ctx2,data2) {
     if (ctx2 == null && data2 == null)
       return this;
-    return new jbCtx(this,{ 
-      vars: ctx2 ? ctx2.vars : null, 
+    return new jbCtx(this,{
+      vars: ctx2 ? ctx2.vars : null,
       data: (data2 == null) ? ctx2.data : data2,
       forcePath: (ctx2 && ctx2.forcePath) ? ctx2.forcePath : null
     })
@@ -557,7 +559,7 @@ function entries(obj) {
   if (!obj || typeof obj != 'object') return [];
   var ret = [];
   for(var i in obj) // please do not change. its keeps definition order !!!!
-      if (obj.hasOwnProperty(i)) 
+      if (obj.hasOwnProperty(i))
         ret.push([i,obj[i]])
   return ret;
 }
@@ -578,7 +580,7 @@ var valueByRefHandlerWithjbParent = {
   writeValue: function(to,value,srcCtx) {
     jb.logPerformance('writeValue',value,to,srcCtx);
     if (!to) return;
-    if (to.$jb_val) 
+    if (to.$jb_val)
       to.$jb_val(this.val(value))
     else if (to.$jb_parent)
       to.$jb_parent[to.$jb_property] = this.val(value);
@@ -635,7 +637,7 @@ return {
 
 Object.assign(jb,{
   comps: {}, functions: {}, resources: {},
-  studio: { previewjb: jb }, 
+  studio: { previewjb: jb },
   component: (id,val) => jb.comps[id] = val,
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => typeof val == 'undefined' ? jb.resources[id] : (jb.resources[id] = val || {}),
@@ -685,15 +687,15 @@ Object.assign(jb,{
     }
     return true;
   },
-  range: (start, count) => 
+  range: (start, count) =>
     Array.apply(0, Array(count)).map((element, index) => index + start),
 
   flattenArray: items => {
     var out = [];
-    items.filter(i=>i).forEach(function(item) { 
-      if (Array.isArray(item)) 
+    items.filter(i=>i).forEach(function(item) {
+      if (Array.isArray(item))
         out = out.concat(item);
-      else 
+      else
         out.push(item);
     })
     return out;
@@ -707,7 +709,7 @@ Object.assign(jb,{
 
     return jb.rx.Observable.from(_ar)
           .concatMap(x=>x)
-          .flatMap(v => 
+          .flatMap(v =>
             Array.isArray(v) ? v : [v])
           .toArray()
           .toPromise()
@@ -743,9 +745,6 @@ Object.assign(jb,{
     jb.refHandler(ref).refresh(ref),
   asRef: (obj) =>
     jb.valueByRefHandler.asRef(obj),
-  resourceChange: _ => 
+  resourceChange: _ =>
     jb.valueByRefHandler.resourceChange,
 })
-
-
-

@@ -83,8 +83,9 @@ jb.component('studio-dialog-feature.studio-popup-location',{
 	impl: ctx => ({
 		afterViewInit: cmp => {
 			var dialog = cmp.dialog;
-			if (dialog.id && !sessionStorage[dialog.id]) {
-				dialog.el.classList.add(dialog.id);
+			var id = (dialog.id||'').replace(/\s/g,'_');
+			if (id && !sessionStorage[id]) {
+				dialog.el.classList.add(id);
 				dialog.el.classList.add('default-location')
 			}
 		}

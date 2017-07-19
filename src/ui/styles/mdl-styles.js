@@ -3,7 +3,7 @@ jb.component('mdl-style.init-dynamic', {
   params: [
   	{id: 'query', as: 'string'}
   ],
-  impl: (ctx,query) => 
+  impl: (ctx,query) =>
     ({
       afterViewInit: cmp => {
         var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
@@ -15,21 +15,24 @@ jb.component('mdl-style.init-dynamic', {
             componentHandler.upgradeElement(el);
           }))
         };
-        jb.delay(1).then(_ =>
+        jb.delay(1).catch(e=>{}).then(_ =>
       	 elems.forEach(el=>
-      	 	$.contains(document, el) && componentHandler.upgradeElement(el)))
+      	 	$.contains(document, el) && componentHandler.upgradeElement(el))).catch(e=>{})
       },
-      destroy: cmp => 
-      	 $.contains(document.documentElement, cmp.base) && 
+      destroy: cmp => {
+        try {
+      	 $.contains(document.documentElement, cmp.base) &&
           (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
       	 	   $.contains(document, el) && componentHandler.downgradeElements(el))
+        } catch(e) {}
+       }
     })
 })
 
-jb.component('mdl.ripple-effect', { 
+jb.component('mdl.ripple-effect', {
   type: 'feature',
   description: 'add ripple effect to buttons',
-  impl: ctx => ({ 
+  impl: ctx => ({
       templateModifier: (vdom,cmp,state) => {
         vdom.children.push(jb.ui.h('span',{class:'mdl-ripple'}));
         return vdom;
@@ -39,7 +42,7 @@ jb.component('mdl.ripple-effect', {
           cmp.base.classList.add('mdl-js-ripple-effect');
           $.contains(document, $(cmp.base)[0]) && componentHandler.upgradeElement(cmp.base);
       },
-      destroy: cmp => 
+      destroy: cmp =>
           $.contains(document, $(cmp.base)[0]) && componentHandler.downgradeElements(cmp.base)
    }),
 })
@@ -49,7 +52,7 @@ jb.component('mdl.ripple-effect', {
 
 jb.component('label.mdl-ripple-effect', {
     type: 'label.style',
-    impl :{$: 'custom-style', 
+    impl :{$: 'custom-style',
         template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button mdl-js-ripple-effect'},state.title),
         features :[
           {$: 'label.bind-title' },
@@ -63,7 +66,7 @@ jb.component('label.mdl-button', {
     params: [
       {id: 'width', as: 'number' }
     ],
-    impl :{$: 'custom-style', 
+    impl :{$: 'custom-style',
         template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button'},state.title),
         features :[
           {$: 'label.bind-title' },
@@ -72,4 +75,3 @@ jb.component('label.mdl-button', {
         css: '{? {width:%$width%px} ?}'
     }
 });
-

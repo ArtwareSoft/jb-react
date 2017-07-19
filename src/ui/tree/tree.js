@@ -227,7 +227,7 @@ jb.component('tree.keyboard-selection', {
 						context.setData(tree.selected), tree.el.parentNode.querySelector('.treenode.selected>.treenode-line'))()
 				}
 				// menu shortcuts - delay in order not to block registration of other features
-		    jb.delay(1).then(_=> cmp.base.onkeydown = e => {
+		    jb.delay(1).then(_=> cmp.base && (cmp.base.onkeydown = e => {
 					if ((e.ctrlKey || e.altKey || e.keyCode == 46) // also Delete
 					 && (e.keyCode != 17 && e.keyCode != 18)) { // ctrl or alt alone
 						var menu = context.params.applyMenuShortcuts(context.setData(tree.selected));
@@ -235,7 +235,7 @@ jb.component('tree.keyboard-selection', {
 						return false;  // stop propagation
 					}
 					return true;
-				})
+				}))
 			}
 		})
 })

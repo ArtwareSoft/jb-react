@@ -111,7 +111,7 @@ class JbComponent {
 	  		ctx = ctx.componentContext._parent;
 	  	var attachedCtx = this.ctxForPick || ctx;
 	  	elem.setAttribute('jb-ctx',attachedCtx.id);
-		garbageCollectCtxDictionary();
+		ui.garbageCollectCtxDictionary();
 		jb.ctxDictionary[attachedCtx.id] = attachedCtx;
 
 		if (this.cssSelectors && this.cssSelectors.length > 0) {
@@ -210,11 +210,11 @@ function injectLifeCycleMethods(Comp,jbComp) {
 		Comp.prototype.shouldComponentUpdate = _ => false;
 }
 
-function garbageCollectCtxDictionary() {
+ui.garbageCollectCtxDictionary = function(force) {
 	var now = new Date().getTime();
 	ui.ctxDictionaryLastCleanUp = ui.ctxDictionaryLastCleanUp || now;
 	var timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp;
-	if (timeSinceLastCleanUp < 10000)
+	if (!force && timeSinceLastCleanUp < 10000)
 		return;
 	ui.ctxDictionaryLastCleanUp = now;
 
@@ -224,7 +224,7 @@ function garbageCollectCtxDictionary() {
 	for(var i=0;i<dict.length;i++) {
 		while (used[lastUsedIndex] < dict[i])
 			lastUsedIndex++;
-		if (used[lastUsedIndex] > dict[i])
+		if (used[lastUsedIndex] != dict[i])
 			delete jb.ctxDictionary[''+dict[i]];
 	}
 }
@@ -293,8 +293,10 @@ ui.renderWidget = function(profile,elem) {
 				}
 				st.pageChange.subscribe(page=>
 					this.setState({profile: {$: page}}));
-				st.scriptChange.subscribe(_=>
-					this.setState(null));
+				// st.scriptChange.subscribe(_=>
+				// 		this.setState(null));
+				st.scriptChange.subscribe(e=>
+					st.refreshPreviewOfPath(e.path.join('~')));
 			}
 		}
 		render(pros,state) {
@@ -383,6 +385,12 @@ ui.toVdomOrStr = val => {
 	return res;
 }
 
+ui.refreshComp = (ctx,el) => {
+	var nextElem = el.nextElementSibling;
+	var newElem = ui.render(ui.h(ctx.runItself().reactComp()),el.parentElement,el);
+	if (nextElem)
+		newElem.parentElement.insertBefore(newElem,nextElem);
+}
 // ****************** components ****************
 
 jb.component('custom-style', {

@@ -205,17 +205,26 @@ jb.component('studio.highlight-in-preview',{
 st.closestCtxInPreview = path => {
 	var _window = st.previewWindow || window;
 	if (!_window) return;
-	var closest = null;
+	var closest,closestElem;
 	var elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
 	for(var i=0;i<elems.length;i++) {
-		var _ctx = jb.ctxDictionary[elems[i].getAttribute('jb-ctx')];
-		if (!_ctx) continue;
+		var _ctx = _window.jb.ctxDictionary[elems[i].getAttribute('jb-ctx')];
+		if (!_ctx || !st.isOfType(_ctx.path,'control')) continue;
 		if (_ctx.path == path)
-			return _ctx;
-		if (path.indexOf(_ctx.path) == 0 && (!closest || closest.path.length < _ctx_path.length))
-			closest = _ctx;
+			return {ctx: _ctx, elem: elems[i]} ;
+		if (path.indexOf(_ctx.path) == 0 && (!closest || closest.path.length < _ctx.path.length)) {
+			closest = _ctx; closestElem = elems[i]
+		}
 	}
-	return closest;
+	return {ctx: closest, elem: closestElem};
+}
+
+st.refreshPreviewOfPath = path => {
+	var closest = st.closestCtxInPreview(path);
+	if (!closest.ctx) return;
+	closest.ctx.profile = st.valOfPath(closest.ctx.path); // recalc last version of profile
+	if (closest.ctx.profile)
+		jb.ui.refreshComp(closest.ctx,closest.elem);
 }
 
 })()

@@ -51,9 +51,10 @@ jb.component('studio-probe-test', {
   params: [
     { id: 'circuit', type: 'control', dynamic: true },
     { id: 'probePath', as: 'string' },
+    { id: 'allowClosestPath', as: 'boolean' },
     { id: 'expectedVisits', as: 'number', defaultValue : -1 },
   ],
-  impl: (ctx,circuit,probePath,expectedVisits)=> {
+  impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits)=> {
 
     var testId = ctx.vars.testID;
     var failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
@@ -64,6 +65,8 @@ jb.component('studio-probe-test', {
       .runCircuit(full_path);
     return probeRes.then(res=>{
           try {
+            if (!allowClosestPath && res.closestPath)
+              return failure('no probe results at path ' + probePath);
             if (res.result.visits != expectedVisits && expectedVisits != -1)
               return failure(`expected visits error actual/expected: ${res.result.visits}/${expectedVisits}`);
             if (!res.result[0])

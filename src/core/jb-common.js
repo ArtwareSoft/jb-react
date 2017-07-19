@@ -718,13 +718,8 @@ jb.component('range', {
 		{ id: 'from', as: 'number', defaultValue: 1 },
 		{ id: 'to', as: 'number', defaultValue: 10 },
 	],
-	impl: (ctx,from,to) => {
-	  	var res = [];
-	  	if (from <= to)
-	  	  for(var i=from;i<=to;i++)
-	  		res.push(i)
-		return res;
-	}
+	impl: (ctx,from,to) =>
+    Array.from(Array(to-from+1).keys()).map(x=>x+from)
 })
 
 jb.component('type-of', {
@@ -735,6 +730,17 @@ jb.component('type-of', {
 	impl: (ctx,_obj) => {
 	  	var obj = jb.val(_obj);
 		return Array.isArray(obj) ? 'array' : typeof obj
+	}
+})
+
+jb.component('class-name', {
+	type: 'data',
+	params: [
+		{ id: 'obj', defaultValue: '%%' },
+	],
+	impl: (ctx,_obj) => {
+	  	var obj = jb.val(_obj);
+		return obj && obj.constructor && obj.constructor.name
 	}
 })
 

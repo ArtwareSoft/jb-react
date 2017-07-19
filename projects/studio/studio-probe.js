@@ -78,7 +78,7 @@ jb.studio.Probe = class {
 
   record(context,parentParam) {
       var now = new Date().getTime();
-      if (now - this.startTime > this.maxTime) {
+      if (now - this.startTime > this.maxTime && !context.vars.testID) {
         jb.logPerformance('probe','out of time',this,now);
         throw 'out of time';
       }
@@ -110,7 +110,7 @@ jb.component('studio.probe', {
   params: [ { id: 'path', as: 'string', dynamic: true } ],
   impl: (ctx,path) => {
       var st = jb.studio,_jb = st.previewjb;
-      var circuitCtx = (ctx.vars.pickSelection && ctx.vars.pickSelection.ctx) || st.closestCtxInPreview(path());
+      var circuitCtx = (ctx.vars.pickSelection && ctx.vars.pickSelection.ctx) || st.closestCtxInPreview(path()).ctx;
       if (!circuitCtx) {
         var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
         circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );

@@ -190,9 +190,16 @@ jb.component('studio.property-field', {
         condition :{
           $and: [
             '%$paramDef/as%=="boolean"',
-            {$: 'in-group',
-              group :{ $list: ['true', 'false'] },
-              item :{$: 'studio.val', path: '%$path%' }
+            {
+              $or: [
+                {$: 'in-group',
+                  group :{ $list: ['true', 'false'] },
+                  item :{$: 'studio.val', path: '%$path%' }
+                },
+                {$: 'isEmpty',
+                  item :{$: 'studio.val', path: '%$path%' }
+                }
+              ]
             }
           ]
         },
@@ -270,6 +277,20 @@ jb.component('studio.property-script', {
   }
 })
 
+jb.component('studio.property-js-script', {
+  type: 'control',
+  params: [
+    { id: 'path', as: 'string' }
+  ],
+  impl :{$: 'group',
+    controls :{$: 'button',
+        title :{$: 'studio.js-script-summary', path: '%$path%' },
+        action :{$: 'studio.open-js-editor',path: '%$path%' } ,
+        style :{$: 'button.studio-script'}
+    }
+  }
+})
+
 jb.component('studio.data-script-summary', {
   type: 'data',
   params: [
@@ -308,7 +329,8 @@ jb.component('studio.property-enum', {
   impl :{$: 'picklist',
     databind :{$: 'studio.ref', path: '%$path%' },
     options :{$: 'studio.enum-options', path: '%$path%' },
-    style :{$: 'picklist.native-md-look' }
+    style :{$: 'picklist.native-md-look' },
+    features: {$: 'css.width', width: '370' }
   }
 })
 
