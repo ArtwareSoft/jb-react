@@ -47,8 +47,11 @@ jb.component('studio.preview-widget-impl', {
 
 jb.component('studio.refresh-preview', {
   type: 'action',
-  impl: _ =>
+  impl: _ => {
+    jb.ui.garbageCollectCtxDictionary(true);
+    jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
     jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
+  }
 })
 
 jb.component('studio.set-preview-size', {
