@@ -1,84 +1,84 @@
 jb.component('studio.property-toolbar-feature', {
-  type: 'feature', 
+  type: 'feature',
   params: [
     { id: 'path', as: 'string' }
-  ], 
+  ],
   impl : {$list: [
-    {$: 'field.toolbar', 
-        toolbar :{$: 'studio.property-toolbar', path: '%$path%' } 
+    {$: 'field.toolbar',
+        toolbar :{$: 'studio.property-toolbar', path: '%$path%' }
     },
     {$: 'studio.disabled-support', path: '%$path%' }
   ]}
-}) 
+})
 
 jb.component('studio.property-toolbar', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'button', 
-    title: 'more...', 
-    action :{$: 'studio.open-property-menu', path: '%$path%' }, 
-    style :{$: 'studio.property-toolbar-style' }, 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'button',
+    title: 'more...',
+    action :{$: 'studio.open-property-menu', path: '%$path%' },
+    style :{$: 'studio.property-toolbar-style' },
 //    features :{$: 'css.margin', top: '5', left: '4' }
   }
 })
 
 jb.component('studio.open-property-menu', {
-  type: 'action', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'menu.open-context-menu', 
+  type: 'action',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'menu.open-context-menu',
     $vars: {
       compName :{$: 'studio.comp-name', path: '%$path%' }
-    }, 
-    menu :{$: 'menu.menu', 
+    },
+    menu :{$: 'menu.menu',
       options: [
-        {$: 'menu.action', 
-          title: 'Style editor', 
+        {$: 'menu.action',
+          title: 'Style editor',
           action :{
             $runActions: [
-              {$: 'studio.make-local', path: '%$path%' }, 
+              {$: 'studio.make-local', path: '%$path%' },
               {$: 'studio.open-style-editor', path: '%$path%' }
             ]
-          }, 
+          },
           showCondition :{$: 'ends-with', endsWith: '~style', text: '%$path%' }
-        }, 
-        {$: 'menu.action', 
-          title: 'multiline edit', 
-          action :{$: 'studio.open-multiline-edit', path: '%$path%' }, 
-          showCondition :{$: 'equals', 
-            item1 :{ $pipeline: [{$: 'studio.param-def', path: '%$path%' }, '%as%'] }, 
+        },
+        {$: 'menu.action',
+          title: 'multiline edit',
+          action :{$: 'studio.open-multiline-edit', path: '%$path%' },
+          showCondition :{$: 'equals',
+            item1 :{ $pipeline: [{$: 'studio.param-def', path: '%$path%' }, '%as%'] },
             item2: 'string'
           }
-        }, 
-        {$: 'menu.action', 
-          title: 'Goto %$compName%', 
-          action :{$: 'studio.goto-path', path: '%$compName%' }, 
+        },
+        {$: 'menu.action',
+          title: 'Goto %$compName%',
+          action :{$: 'studio.goto-path', path: '%$compName%' },
           showCondition: '%$compName%'
-        }, 
-        {$: 'menu.action', 
-          title: 'Inteliscript editor', 
-          action :{$: 'studio.open-jb-editor', path: '%$path%' }, 
+        },
+        {$: 'menu.action',
+          title: 'Inteliscript editor',
+          action :{$: 'studio.open-jb-editor', path: '%$path%' },
+          icon: 'code'
+        },
+        {$: 'menu.action',
+          title: 'Javascript editor',
+          action :{$: 'studio.edit-source', path: '%$path%' },
           icon: 'code'
         }, 
-        {$: 'menu.action', 
-          title: 'Javascript editor', 
-          action :{$: 'studio.edit-source', path: '%$path%' }, 
-          icon: 'code'
-        }, 
-        {$: 'studio.goto-editor', path: '%$path%' }, 
-        {$: 'menu.action', 
-          title: 'Delete', 
-          action :{$: 'studio.delete', path: '%$path%' }, 
-          icon: 'delete', 
+        {$: 'studio.goto-editor-options', path: '%$path%' },
+        {$: 'menu.action',
+          title: 'Delete',
+          action :{$: 'studio.delete', path: '%$path%' },
+          icon: 'delete',
           shortcut: 'Delete'
-        }, 
-        {$: 'menu.action', 
+        },
+        {$: 'menu.action',
           title :{
-            $if :{$: 'studio.disabled', path: '%$path%' }, 
-            then: 'Enable', 
+            $if :{$: 'studio.disabled', path: '%$path%' },
+            then: 'Enable',
             else: 'Disable'
-          }, 
-          action :{$: 'studio.toggle-disabled', path: '%$path%' }, 
-          icon: 'do_not_disturb', 
+          },
+          action :{$: 'studio.toggle-disabled', path: '%$path%' },
+          icon: 'do_not_disturb',
           shortcut: 'Ctrl+D'
         }
       ]

@@ -175,18 +175,6 @@ jb.component('studio-helper-sample.control', {
   }
 })
 
-jb.component('studio-helper.edit-style', {
-  type: 'control',
-  impl :{$: 'group',
-    controls: [
-      {$: 'studio.style-editor',
-        path: 'studio-helper.editable-text-input~impl'
-      }
-    ]
-  }
-})
-
-
 jb.component('studio-helper-dummy.label', {
   type: 'control',
   impl :{$: 'label',
@@ -336,8 +324,8 @@ jb.component('studio-helper.studio-properties', {
   type: 'control',
   remark: 1,
   impl :{$: 'group',
-    $vars: { circuit: 'studio-helper.properties-params-prof' },
-    controls :{$: 'studio.properties', path: 'studio-helper.properties-params-prof~impl' }
+    $vars: { circuit: 'studio-helper-sample.properties-params-prof' },
+    controls :{$: 'studio.properties', path: 'studio-helper-sample.properties-params-prof~impl' }
   }
 })
 
@@ -371,7 +359,7 @@ jb.component('studio-helper.editable-text-input', {
   }
 })
 
-jb.component('studio-helper.properties-params-sample', {
+jb.component('studio-helper-sample.properties-params', {
   type: 'control',
   params: [
     { id: 'str', as: 'string' },
@@ -388,15 +376,64 @@ jb.component('studio-helper.properties-params-sample', {
   impl :{$: 'group' }
 })
 
-jb.component('studio-helper.properties-params-prof', {
-  type: 'control', 
-  impl :{$: 'studio-helper.properties-params-sample', 
-    strAsComp :{ $pipeline: ['a', '%%'] }, 
-    strAsJs: ctx => ctx.vars.aa, 
-    boolAsComp :{ $pipeline: ['a', '%%=="a"'] }, 
-    boolAsJs: ctx => ctx.vars.aa, 
-    enumStr: 'b', 
-    enumNum: '2', 
+jb.component('studio-helper-sample.properties-params-prof', {
+  type: 'control',
+  impl :{$: 'studio-helper-sample.properties-params',
+    strAsComp :{ $pipeline: ['a', '%%'] },
+    strAsJs: ctx => ctx.vars.aa,
+    boolAsComp :{ $pipeline: ['a', '%%=="a"'] },
+    boolAsJs: ctx => ctx.vars.aa,
+    enumStr: 'b',
+    enumNum: '2',
     bool :{ $or: [false] }
+  }
+})
+
+jb.component('studio-helper-sample.custom-style-comp', {
+  type: 'control', 
+  impl :{$: 'label', 
+    title: 'hello', 
+    style :{$: 'custom-style', 
+      template: (cmp,state,h) => h(
+  "div", { "class": "demo-card-square mdl-card mdl-shadow--2dp" }, h(
+    "div", { "class": "mdl-card__title mdl-card--expand" },
+    h(
+      "h2",
+      { "class": "mdl-card__title-text" },
+      "Update"
+    )
+  ),
+  h(
+    "div",
+    { "class": "mdl-card__supporting-text" },
+    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenan convallis."
+  ),
+  h(
+    "div",
+    { "class": "mdl-card__actions mdl-card--border" },
+    h(
+      "a",
+      { "class": "mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" },
+      "View Updates"
+    )
+  )
+), 
+      css: '', 
+      features: [
+        {$: 'label.bind-title' }, 
+        {$: 'mdl-style.init-dynamic' }
+      ]
+    }
+  }
+})
+
+jb.component('studio-helper.edit-style', {
+  type: 'control',
+  impl :{$: 'group',
+    controls: [
+      {$: 'studio.style-editor',
+        path: 'studio-helper-sample.custom-style-comp~impl~style'
+      }
+    ]
   }
 })

@@ -12,7 +12,8 @@ jb.component('editable-text.codemirror', {
 	],
 	impl: function(context, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
-			template: (cmp,state,h) => h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind) }),
+			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind) })),
+			css: '{width: 100%}',
 			afterViewInit: cmp => {
 				var data_ref = cmp.ctx.vars.$model.databind;
 				var _cm_settings = Object.assign(cm_settings||{}, {
@@ -25,7 +26,7 @@ jb.component('editable-text.codemirror', {
 					},
 				});
 				try {
-					var editor = CodeMirror.fromTextArea(cmp.base, _cm_settings);
+					var editor = CodeMirror.fromTextArea(cmp.base.firstChild, _cm_settings);
 					var $wrapper = $(editor.getWrapperElement());
 					if (height)
 						$wrapper.css('height', height + 'px');

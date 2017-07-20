@@ -406,7 +406,10 @@ jb.component('studio.jb-editor-menu', {
         showCondition: '%$compName%'
       },
       {$: 'menu.end-with-separator',
-        options :{$: 'studio.goto-editor', path: '%$path%' }
+        options :[
+          {$: 'studio.goto-editor-first', path: '%$path%'},
+          {$: 'studio.goto-editor-secondary', path: '%$path%'},
+        ]
       },
       {$: 'menu.studio-wrap-with',
         path: '%$path%',

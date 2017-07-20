@@ -1,23 +1,32 @@
 cards for letmesee
 
-preview leaks
-	check refresh preview time
-	refresh only relevant ctx - first closest to path changed
-	check when editing studio properties script
+empty group in control tree
+	controls (which is empty should be 'add control' button)
 
-Studio helper property stylesheet
-	js editing - studio.property-js-script
+change refresh in label
+	title - just define as ref, do not use dynamic. put in infra.
 
-helper
-	property sheet with all types
+choose style
+	should visually change the style on selection
+	use immutable to change the profile in the preview
+	on dialog close do refresh.
+
+new component
+	choose file: http://localhost:8082/?op=ls&path=projects/studio
+
+comp editor
+	type/params editor
+
+
+js editing - studio.property-js-script
+	properties upport
+	jb-editor support
+
 
 open profile chooser in suggestions
 	choose data
 
 table with max items - use in probe results
-
-style editor
-	activate with make local
 
 codemirror javascript editor
 		should create js function and use eval

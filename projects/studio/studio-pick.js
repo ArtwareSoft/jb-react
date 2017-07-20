@@ -219,19 +219,21 @@ st.closestCtxInPreview = path => {
 	return {ctx: closest, elem: closestElem};
 }
 
-st.refreshPreviewOfPath = path => {
-	var closest = st.closestCtxInPreview(path);
-	if (!closest.ctx) return;
-	var closest_path = closest.ctx.path;
-	var _window = st.previewWindow || window;
-	Array.from(_window.document.querySelectorAll('[jb-ctx]'))
-		.map(el=> ({el:el, ctx: _window.jb.ctxDictionary[el.getAttribute('jb-ctx')]}))
-		.filter(elCtx => (elCtx.ctx||{}).path == closest_path )
-		.forEach(elCtx=>{
-			elCtx.ctx.profile = st.valOfPath(elCtx.ctx.path); // recalc last version of profile
-			if (elCtx.ctx.profile)
-				jb.ui.refreshComp(elCtx.ctx,elCtx.el);
-		})
-}
+// st.refreshPreviewOfPath = path => {
+// 	var closest = st.closestCtxInPreview(path);
+// 	if (!closest.ctx) return;
+// 	var closest_path = closest.ctx.path;
+// 	var _window = st.previewWindow || window;
+// 	Array.from(_window.document.querySelectorAll('[jb-ctx]'))
+// 		.map(el=> ({el:el, ctx: _window.jb.ctxDictionary[el.getAttribute('jb-ctx')]}))
+// 		.filter(elCtx => (elCtx.ctx||{}).path == closest_path )
+// 		.forEach(elCtx=>{
+// 			try {
+// 			elCtx.ctx.profile = st.valOfPath(elCtx.ctx.path); // recalc last version of profile
+// 			if (elCtx.ctx.profile)
+// 				jb.ui.refreshComp(elCtx.ctx,elCtx.el);
+// 			} catch(e) { jb.logException(e) };
+// 		})
+// }
 
 })()

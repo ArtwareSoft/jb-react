@@ -45,13 +45,17 @@ var jbImmutable = {
   resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
 };
 
-var babel_h_to_jsx = {
-  entry: JBART_DIR + 'projects/studio/studio-babel.js',
+var babel_ext = {
+  entry: JBART_DIR + 'projects/studio/studio-babel-ext.js',
   output: {
     path: JBART_DIR + 'dist',
-    filename: 'babel_h_to_jsx.js',
+    filename: 'babel-ext.js',
   },
-  resolve: { modules: [path.resolve(JBART_DIR, "node_modules")] },
+  node: {
+    fs: 'empty',
+    child_process: 'empty',
+  },
+  resolve: { modules: [ 'node_modules' ] },
 };
 
 var jbRxMin = {
@@ -65,4 +69,4 @@ var jbRxMin = {
   plugins: [ new UglifyJSPlugin() ],
 };
 
-module.exports = [jbPreact,jbImmutable,jbRx,babel_h_to_jsx];
+module.exports = [jbPreact,jbImmutable,jbRx,babel_ext];

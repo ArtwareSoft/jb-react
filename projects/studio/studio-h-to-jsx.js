@@ -51,11 +51,15 @@ jb.studio.initJsxToH = _ => {
   jb.studio._initJsxToH = true;
 }
 
-// jb.studio.testJsxToH = _ => {    input = (state,h) => h('div',{a: state.a},h('span'));
-//     var res = jb.studio.hToJSX(input.toString().split('=>').slice(1).join('=>'));
-//     console.log('jsx',res);
-//     console.log('back to h',jb.studio.jsxToH(res))
-// }
+jb.studio.testJsxToH = _ => {
+    input = (state,h) => h('div',{a: state.a},h('span'));
+    var res = jb.studio.hToJSX(input.toString().split('=>').slice(1).join('=>'));
+    console.log('jsx',jb.studio.pretty(res));
+    console.log('back to h',jb.studio.jsxToH(res))
+}
+
+//jb.delay(500).then(_ => jb.studio.testJsxToH())
+
 
 jb.studio.jsxToH = jsx => {
   jb.studio.initJsxToH();
@@ -63,16 +67,20 @@ jb.studio.jsxToH = jsx => {
   return Babel.transform(jsx, {
     "plugins": [["transform-react-jsx", { "pragma": "h"  }]]
   }).code
-  } catch(e) {}
+  } catch(e) {
+    jb.logException(e)
+  }
 }
 
 jb.studio.hToJSX = hFunc => {
     jb.studio.initJsxToH();
     try {
-    return Babel.transform(hFunc, {
+    return jb.studio.pretty(Babel.transform(hFunc, {
       "plugins": ['h-to-jsx']
-    }).code
-  } catch(e) {}
+    }).code)
+  } catch(e) {
+    jb.logException(e)
+  }
 }
 
 jb.component('studio.template-as-jsx', {

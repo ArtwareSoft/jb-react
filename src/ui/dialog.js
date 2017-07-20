@@ -359,59 +359,6 @@ jb.component('dialog-feature.drag-title', {
 	}
 });
 
-jb.component('dialog-feature.resizer', {
-	type: 'dialog-feature',
-	params: [
-		{ id: 'id', as: 'string' }
-	],
-	impl: function(context, id) {
-		var dialog = context.vars.$dialog;
-		return {
-					templateModifier: (vdom,cmp,state) => {
-						vdom.children.push(jb.ui.h('img', {src: '/css/resizer.gif', class: 'resizer'}));
-			      return vdom;
-			    },
-		       css: '>.resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
-		       afterViewInit: function(cmp) {
-		       	  var resizerElem = cmp.base.querySelector('.resizer');
-		       	  cmp.mousedownEm = jb.rx.Observable.fromEvent(resizerElem, 'mousedown')
-		       	  	.takeUntil( cmp.destroyed );
-
-				  var mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
-				  var mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
-
-				  if (jb.studio.previewWindow) {
-				  	mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
-				  		.takeUntil( cmp.destroyed );
-				  	mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
-				  		.takeUntil( cmp.destroyed );
-				  }
-
-				  var mousedrag = cmp.mousedownEm
-				  		.do(e =>
-				  			e.preventDefault())
-				  		.map(e =>  ({
-				          left: dialog.el.getBoundingClientRect().left,
-				          top:  dialog.el.getBoundingClientRect().top
-				        }))
-				      	.flatMap(imageOffset =>
-			      			 mouseMoveEm.takeUntil(mouseUpEm)
-									 .do(pos=>console.log(pos.clientY,pos.clientX,imageOffset,pos.clientY - imageOffset.top,pos.clientX - imageOffset.left))
-			      			 .map(pos => ({
-						        top:  pos.clientY - imageOffset.top,
-						        left: pos.clientX - imageOffset.left
-						     }))
-				      	);
-
-				  mousedrag.distinctUntilChanged().subscribe(pos => {
-			        dialog.el.style.height  = pos.top  + 'px';
-			        dialog.el.style.width = pos.left + 'px';
-			      });
-			  }
-	       }
-	}
-});
-
 jb.component('dialog.dialog-ok-cancel', {
 	type: 'dialog.style',
 	params: [
@@ -431,6 +378,53 @@ jb.component('dialog.dialog-ok-cancel', {
 	  css: `>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }`,
 	}
 })
+
+jb.component('dialog-feature.resizer', {
+	type: 'dialog-feature',
+	impl: ctx => ({
+					templateModifier: (vdom,cmp,state) => {
+            if (vdom && vdom.nodeName != 'div') return vdom;
+						vdom.children.push(jb.ui.h('img', {src: '/css/resizer.gif', class: 'resizer'}));
+			      return vdom;
+			    },
+		      css: '>.resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
+
+		      afterViewInit: function(cmp) {
+		       	  var resizerElem = cmp.base.querySelector('.resizer');
+		       	  cmp.mousedownEm = jb.rx.Observable.fromEvent(resizerElem, 'mousedown')
+		       	  	.takeUntil( cmp.destroyed );
+
+						  var mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
+						  var mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
+
+						  if (jb.studio.previewWindow) {
+						  	mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
+						  		.takeUntil( cmp.destroyed );
+						  	mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
+						  		.takeUntil( cmp.destroyed );
+						  }
+
+						  var mousedrag = cmp.mousedownEm
+						  		.map(e =>  ({
+						          left: cmp.base.getBoundingClientRect().left,
+						          top:  cmp.base.getBoundingClientRect().top
+						        }))
+						      	.flatMap(imageOffset =>
+					      			 mouseMoveEm.takeUntil(mouseUpEm)
+					      			 .map(pos => ({
+								        top:  pos.clientY - imageOffset.top,
+								        left: pos.clientX - imageOffset.left
+								     }))
+						      	);
+
+						  mousedrag.distinctUntilChanged().subscribe(pos => {
+					        cmp.base.style.height  = pos.top  + 'px';
+					        cmp.base.style.width = pos.left + 'px';
+					      });
+					  }
+	     })
+})
+
 
 jb.ui.dialogs = {
  	dialogs: [],

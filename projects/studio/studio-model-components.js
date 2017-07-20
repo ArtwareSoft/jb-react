@@ -164,12 +164,12 @@ jb.component('studio.profile-as-text', {
 	impl: ctx => ({
 			$jb_val: function(value) {
 				var path = ctx.params.path();
-				if (!path) return;
+				if (!path) return '';
 				if (typeof value == 'undefined') {
 					var val = st.valOfPath(path);
 					if (st.isPrimitiveValue(val))
 						return ''+val;
-					return st.prettyPrint(val);
+					return st.prettyPrint(val || '');
 				} else {
 					var newVal = value.match(/^\s*(\(|{|\[)/) ? st.evalProfile(value) : value;
 					if (newVal != null)

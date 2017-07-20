@@ -64,7 +64,7 @@ class JbComponent {
 			}
 			render(props,state) {
 				jb.logPerformance('render',state,props,this);
-				if (!jbComp.template)
+				if (!jbComp.template || typeof jbComp.template != 'function')
 					return ui.h('span',{display: 'none'});
 				//console.log('render',jb.studio.shortTitle(this.ctx.path));
 				var vdom = jbComp.template(this,state,ui.h);
@@ -294,10 +294,10 @@ ui.renderWidget = function(profile,elem) {
 				}
 				st.pageChange.subscribe(page=>
 					this.setState({profile: {$: page}}));
-				// st.scriptChange.subscribe(_=>
-				// 		this.setState(null));
-				st.scriptChange.subscribe(e=>
-					st.refreshPreviewOfPath(e.path.join('~')));
+				st.scriptChange.subscribe(_=>
+						this.setState(null));
+				// st.scriptChange.subscribe(e=>
+				// 	st.refreshPreviewOfPath(e.path.join('~')))
 			}
 		}
 		render(pros,state) {
