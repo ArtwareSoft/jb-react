@@ -10,7 +10,7 @@ class NodeLine extends jb.ui.Component {
 		})
 
 		this.state.flip = _ => {
-			tree.expanded[path] = !(tree.expanded[path]);
+			tree.setExpanded(path,!tree.expanded[path]);
 			this.setState({expanded:tree.expanded[path]});
 			tree.redraw();
 		};
@@ -79,14 +79,38 @@ jb.component('tree', {
 			class: 'jb-tree', // define host element to keep the wrapper
 			beforeInit: (cmp,props) => {
 				cmp.tree = Object.assign( tree, {
-					redraw: _ => { // needed after dragula that changes the DOM
+					redraw: function() { // needed after dragula that changes the DOM
 						cmp.setState({});
+						// if (this.nodeModel.refHandler) {
+						// 	this.selectionPathObs && this.selectionPathObs.unsubscribe();
+						// 	this.selectionPathObs = jb.ui.pathObservable(this.selected,this.nodeModel.refHandler,cmp)
+						// 		.subscribe(e=>
+						// 			this.selectionEmitter.next(e.newPath))
+						// }
 					},
-					expanded: jb.obj(tree.nodeModel.rootPath, true),
+					expanded: {},
+					setExpanded: function(path,expanded) {
+						if (!tree.nodeModel.refHandler)
+							return this.expanded[path] = expanded;
+						if (this.expanded[path] && !this.expanded[path].unsubscribe)
+							debugger;
+						if (!expanded && this.expanded[path]) {
+							this.expanded[path].unsubscribe();
+							delete this.expanded[path];
+						} else {
+							this.expanded[path] && this.expanded[path].unsubscribe();
+							this.expanded[path] = jb.ui.pathObservable(path,tree.nodeModel.refHandler,cmp)
+							.subscribe(e=> {
+								this.setExpanded(e.newPath,true);
+								this.setExpanded(e.oldPath,false);
+							})
+						}
+					},
 					elemToPath: el =>
 						$(el).closest('.treenode').attr('path'),
 					selectionEmitter: new jb.rx.Subject(),
-				})
+				});
+				tree.setExpanded(tree.nodeModel.rootPath, true);
 			},
 			afterViewInit: cmp =>
 				tree.el = cmp.base
@@ -142,7 +166,7 @@ jb.component('tree.selection', {
 			  tree.selected = selected;
 			  selected.split('~').slice(0,-1).reduce(function(base, x) {
 				  var path = base ? (base + '~' + x) : x;
-				  tree.expanded[path] = true;
+				  tree.setExpanded(path,true);
 				  return path;
 			  },'')
 			  if (context.params.databind)
@@ -217,7 +241,7 @@ jb.component('tree.keyboard-selection', {
 						if (!isArray || (tree.expanded[tree.selected] && event.keyCode == 39))
 							runActionInTreeContext(context.params.onRightClickOfExpanded);
 						if (isArray && tree.selected) {
-							tree.expanded[tree.selected] = (event.keyCode == 39);
+							tree.setExpanded(tree.selected,(event.keyCode == 39));
 							tree.redraw()
 						}
 					});
@@ -262,31 +286,36 @@ jb.component('tree.drag-and-drop', {
 					return $(el).is('.jb-array-node>.treenode-children>div')
 				}
 	        });
-			drake.containers = $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
+					drake.containers = $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
 
 	        drake.on('drag', function(el, source) {
 	          var path = tree.elemToPath(el.firstElementChild)
 	          el.dragged = { path: path, expanded: tree.expanded[path]}
-	          tree.expanded[path] = false; // collapse when dragging
+	          tree.setExpanded(path,false); // collapse when dragging
 	        })
 
 	        drake.on('drop', (dropElm, target, source,sibling) => {
 	            if (!dropElm.dragged) return;
-				$(dropElm).remove();
-	            tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
+							$(dropElm).remove();
+	            tree.setExpanded(dropElm.dragged.path,dropElm.dragged.expanded); // restore expanded state
 	            var index =  sibling ? $(sibling).index() : -1;
-				var path = tree.elemToPath(target);
-				tree.nodeModel.move(path, dropElm.dragged.path,index);
-				// refresh the nodes on the tree - to avoid bugs
-				tree.expanded[tree.nodeModel.rootPath] = false;
-				jb.delay(1).then(()=> {
-					tree.expanded[tree.nodeModel.rootPath] = true;
-					context.params.afterDrop(context.setData({ dragged: dropElm.dragged.path, index: index }));
-					var newSelection = dropElm.dragged.path.split('~').slice(0,-1).concat([''+index]).join('~');
-					tree.selectionEmitter.next(newSelection);
-					dropElm.dragged = null;
-					tree.redraw();
-				})
+							var path = tree.elemToPath(target);
+							var selectedRef = tree.selected && tree.nodeModel.refHandler && tree.nodeModel.refHandler.refOfPath(tree.selected.split('~'));
+							var selectedObj = selectedRef && tree.nodeModel.refHandler.val(selectedRef);
+							tree.nodeModel.move(path, dropElm.dragged.path,index);
+							// refresh the nodes on the tree - to avoid bugs
+							//tree.expanded[tree.nodeModel.rootPath] = false;
+							jb.delay(1).then(()=> {
+								//tree.expanded[tree.nodeModel.rootPath] = true;
+								context.params.afterDrop(context.setData({ dragged: dropElm.dragged.path, index: index }));
+								if (selectedObj) {
+									var path = tree.nodeModel.refHandler.asRef(selectedObj,{resource: tree.selected.split('~')[0]}).$jb_path.join('~');
+									tree.selectionEmitter.next(path);
+								}
+								//var newSelection = dropElm.dragged.path.split('~').slice(0,-1).concat([''+index]).join('~');
+								dropElm.dragged = null;
+								tree.redraw();
+							})
 	        });
 
 	        // ctrl up and down

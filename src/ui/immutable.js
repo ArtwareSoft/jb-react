@@ -263,4 +263,21 @@ jb.ui.refObservable = (ref,cmp,settings) =>
 jb.ui.ImmutableWithPath = ImmutableWithPath;
 jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
 
+jb.ui.pathObservable = (path,handler,cmp) => {
+  var ref = handler.refOfPath(path.split('~'));
+  return handler.resourceChange
+    .takeUntil(cmp.destroyed)
+    .filter(e=>
+        path.indexOf(e.oldRef.$jb_path.join('~')) == 0)
+    .map(e=> {
+    handler.refresh(ref,e,true);
+    if (!ref.$jb_invalid)
+        return ref.$jb_path.join('~')
+    })
+    .filter(newPath=>newPath != path)
+    .take(1)
+    .map(newPath=>({newPath: newPath, oldPath: path}))
+}
+
+
 })()

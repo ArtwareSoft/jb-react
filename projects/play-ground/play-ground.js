@@ -52,6 +52,9 @@ jb.component('play-ground.main', {
           }
         ], 
         style :{$: 'tabs.simple' }
+      }, 
+      {$: 'group', 
+        style :{$: 'layout.vertical' }
       }
     ], 
     features: [
@@ -77,8 +80,25 @@ jb.component('play-ground.t', {
     title: 't', 
     controls: [
       {$: 'button', 
-        title: 'click me', 
-        style :{$: 'button.mdl-icon', icon: 'b' }
+        title: 'click me1', 
+        style :{$: 'button.mdl-raised' }
+      }, 
+      {$: 'button', 
+        title: 'click me2', 
+        style :{$: 'button.mdl-raised' }
+      }, 
+      {$: 'button', 
+        title: 'click me3', 
+        style :{$: 'button.mdl-raised' }
+      }, 
+      {$: 'group', 
+        style :{$: 'layout.vertical' }, 
+        controls: [
+          {$: 'label', 
+            title: 'my label', 
+            style :{$: 'label.span' }
+          }
+        ]
       }
     ]
   }, 

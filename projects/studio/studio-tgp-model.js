@@ -4,8 +4,11 @@ var st = jb.studio;
 st.ControlTree = class {
 	constructor(rootPath) {
 		this.rootPath = rootPath;
+		this.refHandler = st.compsRefHandler;
 	}
 	title(path,collapsed) {
+		if (path && st.valOfPath(path) == null && path.match(/~controls$/))
+			return jb.ui.h('a',{style: {cursor: 'pointer', 'text-decoration': 'underline'}, onclick: e => st.newControl(path) },'new control');
 		return this.fixTitles(st.shortTitle(path),path,collapsed)
 	}
 	// differnt from children() == 0, beacuse in the control tree you can drop into empty group
@@ -14,7 +17,12 @@ st.ControlTree = class {
 	}
 	children(path,nonRecursive) {
 		return [].concat.apply([],st.controlParams(path).map(prop=>path + '~' + prop)
-				.map(innerPath=>Array.isArray(st.valOfPath(innerPath)) ? st.arrayChildren(innerPath,true) : [innerPath] ))
+				.map(innerPath=> {
+					var val = st.valOfPath(innerPath);
+					if (Array.isArray(val))
+					 return st.arrayChildren(innerPath,true);
+					return [innerPath]
+				}))
 				.concat(nonRecursive ? [] : this.innerControlPaths(path));
 	}
 	move(path,draggedPath,index) {
@@ -50,6 +58,7 @@ st.ControlTree = class {
 st.jbEditorTree = class {
 	constructor(rootPath) {
 		this.rootPath = rootPath;
+		this.refHandler = st.compsRefHandler;
 	}
 	title(path, collapsed) {
 		var val = st.valOfPath(path);

@@ -375,7 +375,9 @@ ui.item = function(cmp,vdom,data) {
 }
 
 ui.watchRef = function(ctx,cmp,ref,includeChildren) {
-    ref && ui.refObservable(ref,cmp,{includeChildren: includeChildren}).subscribe(e=>
+    ref && ui.refObservable(ref,cmp,{includeChildren: includeChildren, throw: true})
+			.catch(e=>{ jb.logException(e); return []})
+			.subscribe(e=>
         ui.setState(cmp,null,e,ctx))
 }
 

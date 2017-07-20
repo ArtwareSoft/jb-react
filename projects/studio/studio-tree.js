@@ -178,16 +178,26 @@ jb.component('studio.control-tree.nodes', {
 //   type: 'feature',
 //   impl: ctx => ({
 //     init : cmp => {
-//       var tree = ctx.vars.$tree;
-//       jb.studio.scriptChanges.takeUntil( cmp.destroyed )
-//         .subscribe(fixer => {
+//       var tree = cmp.ctx.vars.$tree;
+//       if (!tree) return;
+//       jb.studio.compsRefHandler.resourceChange.takeUntil( cmp.destroyed )
+//         .subscribe(opEvent => {
 //           var new_expanded = {};
 //           jb.entries(tree.expanded)
-//             .filter(e=>e[1])
-//             .forEach(e => new_expanded[fixer.fix(e[0])] = true)
+//             .filter(e=>e[1]).map(e=>e[0])
+//             .map(path=> fixPath(path,opEvent))
+//             .filter(x=>x)
+//             .forEach(path => new_expanded[path] = true)
 //           tree.expanded = new_expanded;
-//           tree.selected = fixer.fix(tree.selected);
+//           tree.selectionEmitter.next(fixPath(tree.selected,opEvent));
 //         })
+//
+//         function fixPath(path,opEvent) {
+//           var oldPath = opEvent.oldRef.$jb_path.join('~');
+//           if (path.indexOf(oldPath) == 0)
+//             return opEvent.ref.$jb_invalid ? null : path.replace(oldPath,opEvent.ref.$jb_path.join('~'));
+//           return path;
+//         }
 //     }
 //   })
 // })

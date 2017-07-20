@@ -78,7 +78,7 @@ jb.component('studio-helper.pages', {
 
 jb.component('studio-helper.control-tree', {
   type: 'control',
-  params: [{ id: 'path', defaultValue: 'studio.search-component' }],
+  params: [{ id: 'path', defaultValue: 'studio-helper-sample.control' }],
   impl :{$: 'studio.control-tree',
     $vars: { simulateProfilePath: '%$path%' }
   }
@@ -390,10 +390,10 @@ jb.component('studio-helper-sample.properties-params-prof', {
 })
 
 jb.component('studio-helper-sample.custom-style-comp', {
-  type: 'control', 
-  impl :{$: 'label', 
-    title: 'hello', 
-    style :{$: 'custom-style', 
+  type: 'control',
+  impl :{$: 'label',
+    title: 'hello',
+    style :{$: 'custom-style',
       template: (cmp,state,h) => h(
   "div", { "class": "demo-card-square mdl-card mdl-shadow--2dp" }, h(
     "div", { "class": "mdl-card__title mdl-card--expand" },
@@ -417,10 +417,10 @@ jb.component('studio-helper-sample.custom-style-comp', {
       "View Updates"
     )
   )
-), 
-      css: '', 
+),
+      css: '',
       features: [
-        {$: 'label.bind-title' }, 
+        {$: 'label.bind-title' },
         {$: 'mdl-style.init-dynamic' }
       ]
     }
