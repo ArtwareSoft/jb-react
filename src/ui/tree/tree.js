@@ -280,7 +280,7 @@ jb.component('tree.drag-and-drop', {
 				$(dropElm).remove();
 	            tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
 				var state = treeStateAsVals(tree);
-				var targetPath = targetSibling ? tree.elemToPath(targetSibling) : addOneToIndex(tree.elemToPath(source.lastElementChild));
+				var targetPath = targetSibling ? tree.elemToPath(targetSibling) : addOneToIndex(tree.elemToPath(target.lastElementChild));
 				if (!targetPath)
 					debugger;
 				tree.nodeModel.move(dropElm.dragged.path,targetPath);
@@ -334,6 +334,7 @@ valToPath = (model,val) => {
 }
 
 addOneToIndex = path => {
+	if (!path) debugger;
 	var index = Number(path.slice(-1)) + 1;
 	return path.split('~').slice(0,-1).concat([index]).join('~')
 }

@@ -1,5 +1,5 @@
 jb.component('url-history.map-url-to-resource', {
-	type: 'application-feature',
+	type: 'action',
 	params: [
 		{ id: 'params', type: 'data[]', as: 'array'},
 		{ id: 'resource', as: 'string' , essential: true },
@@ -49,5 +49,14 @@ jb.component('url-history.map-url-to-resource', {
 		    		jb.writeValue(context.exp(`%$${resource}/${p}%`,'ref'),jb.tostring(obj[p])));
 		    	context.params.onUrlChange(context.setData(url));
 	    	})
+	}
+})
+
+jb.component('studio.fix-invalid-url', {
+	type: 'action',
+	impl: ctx => {
+		var profile_path = location.href.split('/project/studio/').pop().split('/')[2];
+		if (profile_path && jb.studio.valOfPath(profile_path) == null)
+			window.open(location.href.split('/').slice(0,-1).join('/'),'_self')
 	}
 })

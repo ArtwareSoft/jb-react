@@ -14,11 +14,13 @@ jb.component('studio.all', {
     features: [
       {$: 'group.data', data: '%$studio/project%', watch: true },
       {$: 'feature.init',
-        action :{$: 'url-history.map-url-to-resource',
+        action :[
+            {$: 'studio.fix-invalid-url'},
+            {$: 'url-history.map-url-to-resource',
           params: ['project', 'page', 'profile_path'],
           resource: 'studio', base: 'studio',
 //          onUrlChange :{$: 'studio.refresh-preview' }
-        }
+        }]
       }
     ]
   }

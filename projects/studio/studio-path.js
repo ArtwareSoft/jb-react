@@ -182,6 +182,15 @@ Object.assign(st, {
 		if (group_ref)
 			st.push(group_ref,[newCtrl]);
 	},
+    // if dest is not an array item, fix it
+    moveFixDestination(from,to) {
+		if (isNaN(Number(to.split('~').slice(-1)))) {
+            if (st.valOfPath(to) === undefined)
+                jb.writeValue(st.refOfPath(to),[]);
+            to += '~' + st.valOfPath(to).length;
+		}
+		return jb.move(st.refOfPath(from),st.refOfPath(to))
+	},
 
 	addArrayItem: (path,toAdd) => {
 		var val = st.valOfPath(path);
@@ -228,7 +237,7 @@ Object.assign(st, {
 
 		st.writeValueOfPath(path,st.evalProfile(res));
 	},
-	getOrCreateControlArrayRef: (path) => {
+	getOrCreateControlArrayRef: path => {
 		var val = st.valOfPath(path);
 		var prop = st.controlParams(path)[0];
 		if (!prop)

@@ -8,6 +8,7 @@ jb.component('data-test', {
 	],
 	impl: function(context,calculate,runBefore,expectedResult,cleanUp) {
 		var initial_resources = jb.valueByRefHandler.resources();
+		var initial_comps = jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 		return Promise.resolve(runBefore())
 			.then(_ =>
 				calculate())
@@ -17,6 +18,7 @@ jb.component('data-test', {
 				!! expectedResult(new jb.jbCtx(context,{ data: value })))
 			.then(result => { // default cleanup
 				jb.valueByRefHandler.resources(initial_resources);
+				jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 				return result;
 			}).then(result =>
 					Promise.resolve(cleanUp()).then(_=>result) )
@@ -36,6 +38,7 @@ jb.component('ui-test', {
 	],
 	impl: function(context,control,runBefore,action,expectedResult,cleanUp) {
 		var initial_resources = jb.valueByRefHandler.resources();
+		var initial_comps = jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 		return Promise.resolve(runBefore())
 			.then(_ => {
 				try {
@@ -62,6 +65,7 @@ jb.component('ui-test', {
 			}).then(result=> { // default cleanup
 				jb.ui.dialogs.dialogs.forEach(d=>d.close())
 				jb.valueByRefHandler.resources(initial_resources);
+				jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 				return result;
 			}).then(result =>
 				Promise.resolve(cleanUp()).then(_=>result) )

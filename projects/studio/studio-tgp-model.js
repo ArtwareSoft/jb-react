@@ -7,8 +7,9 @@ st.ControlTree = class {
 		this.refHandler = st.compsRefHandler;
 	}
 	title(path,collapsed) {
-		if (path && st.valOfPath(path) == null && path.match(/~controls$/))
-			return jb.ui.h('a',{style: {cursor: 'pointer', 'text-decoration': 'underline'}, onclick: e => st.newControl(path) },'new control');
+		var val = st.valOfPath(path);
+		if (path &&  (val == null || Array.isArray(val) && val.length == 0)  && path.match(/~controls$/))
+			return jb.ui.h('a',{style: {cursor: 'pointer', 'text-decoration': 'underline'}, onclick: e => st.newControl(path) },'add new');
 		return this.fixTitles(st.shortTitle(path),path,collapsed)
 	}
 	// differnt from children() == 0, beacuse in the control tree you can drop into empty group
@@ -19,14 +20,14 @@ st.ControlTree = class {
 		return [].concat.apply([],st.controlParams(path).map(prop=>path + '~' + prop)
 				.map(innerPath=> {
 					var val = st.valOfPath(innerPath);
-					if (Array.isArray(val))
+					if (Array.isArray(val) && val.length > 0)
 					 return st.arrayChildren(innerPath,true);
 					return [innerPath]
 				}))
 				.concat(nonRecursive ? [] : this.innerControlPaths(path));
 	}
 	move(from,to) {
-		return jb.move(st.refOfPath(from),st.refOfPath(to))
+		return st.moveFixDestination(from,to)
 	}
 	disabled(path) {
 		return st.disabled(path)

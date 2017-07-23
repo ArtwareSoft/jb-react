@@ -40,8 +40,50 @@ jb.component('test.move-in-tree', {
         {$: 'label', title: 'a' },
         {$: 'label', title: 'b' },
 		{$: 'label', title: 'c' },
-      ]
+		{$: 'group' },
+		{$: 'group', controls: [] },
+	]
   }
+})
+
+jb.component('studio-data-test.jb-editor-move', {
+	 impl :{$: 'data-test',
+	 	runBefore : ctx =>
+	 		jb.move(jb.studio.refOfPath('test.move-in-tree~impl~controls~1'), jb.studio.refOfPath('test.move-in-tree~impl~controls~0')),
+		calculate :{$pipeline: [{$: 'studio.val' , path: 'test.move-in-tree~impl~controls' }, '%title%', {$: 'join'} ]},
+		expectedResult : ctx =>
+			ctx.data == 'b,a,c'
+	},
+})
+
+jb.component('studio-data-test.moveFixDestination-null-group', {
+	 impl :{$: 'data-test',
+	 	runBefore : ctx =>
+	 		jb.studio.moveFixDestination('test.move-in-tree~impl~controls~1', 'test.move-in-tree~impl~controls~3~controls'),
+		calculate :{$pipeline: [
+			{$list: [
+				{$: 'studio.val' , path: 'test.move-in-tree~impl~controls' },
+				{$: 'studio.val' , path: 'test.move-in-tree~impl~controls~2~controls' },
+			] },
+			, '%title%', {$: 'join'} ]},
+		expectedResult : ctx =>
+			ctx.data == 'a,c,b'
+	},
+})
+
+jb.component('studio-data-test.moveFixDestination-empty-group', {
+	 impl :{$: 'data-test',
+	 	runBefore : ctx =>
+	 		jb.studio.moveFixDestination('test.move-in-tree~impl~controls~1', 'test.move-in-tree~impl~controls~4~controls'),
+		calculate :{$pipeline: [
+			{$list: [
+				{$: 'studio.val' , path: 'test.move-in-tree~impl~controls' },
+				{$: 'studio.val' , path: 'test.move-in-tree~impl~controls~3~controls' },
+			] },
+			, '%title%', {$: 'join'} ]},
+		expectedResult : ctx =>
+			ctx.data == 'a,c,b'
+	},
 })
 
 jb.component('studio-data-test.jb-editor-move', {
