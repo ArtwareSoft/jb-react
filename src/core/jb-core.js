@@ -274,51 +274,56 @@ function expression(exp, context, parentParam) {
 
 function evalExpressionPart(expressionPart,context,jstype) {
   // example: %$person.name%.
-  if (expressionPart == ".") expressionPart = "";
 
-  // empty primitive expression
-  if (!expressionPart && (jstype == 'string' || jstype == 'boolean' || jstype == 'number'))
-    return jstypes[jstype](context.data);
-
-  if (expressionPart.indexOf('=') == 0) { // function
-    var parsed = expressionPart.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
-    var funcName = parsed && parsed[1];
-    if (funcName && jb.functions[funcName])
-      return tojstype(jb.functions[funcName](context,parsed[2]),jstype,context);
-  }
+  var primitiveJsType = ['string','boolean','number'].indexOf(jstype) != -1;
+  // empty primitive expression - perfomance
+  // if (expressionPart == "")
+  //   return context.data;
 
   var parts = expressionPart.split(/[.\/]/);
-  var item = context.data;
+  return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),context.data)
 
-  for(var i=0;i<parts.length;i++) {
-    var part = parts[i], index, match;
-    if ((match = part.match(/(.*)\[([0-9]+)\]/)) != null) { // x[y]
-      part = match[1];
-      index = Number(match[2]);
-    }
-    if (part == '') ;
-    else if (part == '$parent' && item.$jb_parent && i > 0)
-      item = item.$jb_parent
-    else if (part.charAt(0) == '$' && i == 0 && part.length > 1)
-      item = calcVar(context,part.substr(1))
-    else if (Array.isArray(item))
-      item = item.map(inner =>
-        typeof inner === "object" ? objectProperty(inner,part,jstype,i == parts.length -1) : inner)
-        .filter(x=>x != null)
-    else if (item && typeof item === 'object' && typeof item[part] === 'function' && item[part].profile)
-      item = item[part](context)
-    else if (item && typeof item === 'object')
-      item = item && objectProperty(item,part,jstype,i == parts.length -1)
-    else
-      item = null; // no match
+  function pipe(input,subExp,last,first) {
+      if (subExp == '')
+          return input;
 
-    if (!isNaN(index) && Array.isArray(item))
-      item = item[index];
+      var arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
+      if (arrayIndexMatch) {
+        var arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1]);
+        var index = arrayIndexMatch[2];
+        if (!Array.isArray(arr))
+            return jb.logError('expecting array instead of ' + typeof arr, context);
 
-    if (!item)
-      return item;	// 0 should return 0
+        if (last && (jstype == 'ref' || !primitiveJsType))
+           return jb.valueByRefHandler.objectProperty(arr,index);
+        if (typeof arr[index] == 'undefined')
+           arr[index] = last ? null : [];
+        return jstypes[jstype](arr[index]);
+      }
+
+      var functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
+      if (functionCallMatch && jb.functions[functionCallMatch[1]])
+        return tojstype(jb.functions[functionCallMatch[1]](context,functionCallMatch[2]),jstype,context);
+
+      if (first && subExp.charAt(0) == '$' && subExp.length > 1)
+        return calcVar(context,subExp.substr(1))
+      if (Array.isArray(input))
+        return input.map(item=>pipe(item,subExp)).filter(x=>x!=null);
+
+      if (input != null && typeof input == 'object') {
+        var obj = val(input);
+        if (obj == null) return;
+        if (typeof obj[subExp] === 'function' && obj[subExp].profile)
+            return obj[subExp](context);
+        if (last && jstype == 'ref')
+           return jb.valueByRefHandler.objectProperty(obj,subExp);
+        if (typeof obj[subExp] == 'undefined')
+           obj[subExp] = last ? null : {};
+        if (last && jstype)
+            return jstypes[jstype](obj[subExp]);
+        return obj[subExp];
+      }
   }
-  return item;
 }
 
 function bool_expression(exp, context) {
@@ -431,21 +436,6 @@ var jstypes = {
       return jb.valueByRefHandler.asRef(value);
     }
 }
-
-function objectProperty(_object,property,jstype,lastInExpression) {
-  var object = val(_object);
-  if (!object) return null;
-  if (typeof object[property] == 'undefined')
-    object[property] = lastInExpression ? null : {};
-  if (lastInExpression) {
-    if (jstype == 'string' || jstype == 'boolean' || jstype == 'number')
-      return jstypes[jstype](object[property]); // no need for valueByRef
-    if (jstype == 'ref')
-      return jb.valueByRefHandler.objectProperty(object,property)
-  }
-  return object[property];
-}
-
 
 function profileType(profile) {
   if (!profile) return '';
@@ -574,37 +564,38 @@ function extend(obj,obj1,obj2,obj3) {
 }
 
 
-var valueByRefHandlerWithjbParent = {
-  val: function(v) {
-    if (v.$jb_val) return v.$jb_val();
-    return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
-  },
-  writeValue: function(to,value,srcCtx) {
-    jb.logPerformance('writeValue',value,to,srcCtx);
-    if (!to) return;
-    if (to.$jb_val)
-      to.$jb_val(this.val(value))
-    else if (to.$jb_parent)
-      to.$jb_parent[to.$jb_property] = this.val(value);
-    return to;
-  },
-  asRef: function(value) {
-    if (value && (value.$jb_parent || value.$jb_val))
-        return value;
-    return { $jb_val: () => value }
-  },
-  isRef: function(value) {
-    return value && (value.$jb_parent || value.$jb_val);
-  },
-  objectProperty: function(obj,prop) {
-      if (this.isRef(obj[prop]))
-        return obj[prop];
-      else
-        return { $jb_parent: obj, $jb_property: prop };
-  }
-}
+// var valueByRefHandlerWithjbParent = {
+//   val: function(v) {
+//     if (v.$jb_val) return v.$jb_val();
+//     return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
+//   },
+//   writeValue: function(to,value,srcCtx) {
+//     jb.logPerformance('writeValue',value,to,srcCtx);
+//     if (!to) return;
+//     if (to.$jb_val)
+//       to.$jb_val(this.val(value))
+//     else if (to.$jb_parent)
+//       to.$jb_parent[to.$jb_property] = this.val(value);
+//     return to;
+//   },
+//   asRef: function(value) {
+//     if (value && (value.$jb_parent || value.$jb_val))
+//         return value;
+//     return { $jb_val: () => value }
+//   },
+//   isRef: function(value) {
+//     return value && (value.$jb_parent || value.$jb_val);
+//   },
+//   objectProperty: function(obj,prop) {
+//       if (this.isRef(obj[prop]))
+//         return obj[prop];
+//       else
+//         return { $jb_parent: obj, $jb_property: prop };
+//   }
+// }
+//
+var valueByRefHandler = null; // valueByRefHandlerWithjbParent;
 
-var valueByRefHandler = valueByRefHandlerWithjbParent;
 var types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 
 return {
@@ -632,7 +623,6 @@ return {
   val: val,
   entries: entries,
   extend: extend,
-  objectProperty: objectProperty
 }
 
 })();
@@ -741,6 +731,8 @@ Object.assign(jb,{
     jb.refHandler(ref).writeValue(ref,value,srcCtx),
   splice: (ref,args,srcCtx) =>
     jb.refHandler(ref).splice(ref,args,srcCtx),
+  move: (fromRef,toRef,srcCtx) =>
+    jb.refHandler(fromRef).move(fromRef,toRef,srcCtx),
   isRef: (ref) =>
     jb.refHandler(ref).isRef(ref),
   refreshRef: (ref) =>

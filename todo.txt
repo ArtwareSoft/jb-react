@@ -1,5 +1,10 @@
 cards for letmesee
 
+change file names
+	studio-model-read
+	studio-model-write
+	studio-model-trees
+
 empty group in control tree
 	controls (which is empty should be 'add control' button)
 

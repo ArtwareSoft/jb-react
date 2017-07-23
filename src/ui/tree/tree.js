@@ -1,3 +1,5 @@
+(function() {
+
 class NodeLine extends jb.ui.Component {
 	constructor(props) {
 		super();
@@ -10,7 +12,7 @@ class NodeLine extends jb.ui.Component {
 		})
 
 		this.state.flip = _ => {
-			tree.setExpanded(path,!tree.expanded[path]);
+			tree.expanded[path] = !(tree.expanded[path]);
 			this.setState({expanded:tree.expanded[path]});
 			tree.redraw();
 		};
@@ -79,38 +81,17 @@ jb.component('tree', {
 			class: 'jb-tree', // define host element to keep the wrapper
 			beforeInit: (cmp,props) => {
 				cmp.tree = Object.assign( tree, {
-					redraw: function() { // needed after dragula that changes the DOM
-						cmp.setState({});
-						// if (this.nodeModel.refHandler) {
-						// 	this.selectionPathObs && this.selectionPathObs.unsubscribe();
-						// 	this.selectionPathObs = jb.ui.pathObservable(this.selected,this.nodeModel.refHandler,cmp)
-						// 		.subscribe(e=>
-						// 			this.selectionEmitter.next(e.newPath))
-						// }
+					redraw: strong => { // needed after dragula that changes the DOM
+						cmp.setState({empty: strong});
+						if (strong)
+							jb.delay(1).then(_=>
+								cmp.setState({empty: false}))
 					},
-					expanded: {},
-					setExpanded: function(path,expanded) {
-						if (!tree.nodeModel.refHandler)
-							return this.expanded[path] = expanded;
-						if (this.expanded[path] && !this.expanded[path].unsubscribe)
-							debugger;
-						if (!expanded && this.expanded[path]) {
-							this.expanded[path].unsubscribe();
-							delete this.expanded[path];
-						} else {
-							this.expanded[path] && this.expanded[path].unsubscribe();
-							this.expanded[path] = jb.ui.pathObservable(path,tree.nodeModel.refHandler,cmp)
-							.subscribe(e=> {
-								this.setExpanded(e.newPath,true);
-								this.setExpanded(e.oldPath,false);
-							})
-						}
-					},
+					expanded: jb.obj(tree.nodeModel.rootPath, true),
 					elemToPath: el =>
 						$(el).closest('.treenode').attr('path'),
 					selectionEmitter: new jb.rx.Subject(),
-				});
-				tree.setExpanded(tree.nodeModel.rootPath, true);
+				})
 			},
 			afterViewInit: cmp =>
 				tree.el = cmp.base
@@ -123,8 +104,10 @@ jb.component('tree.ul-li', {
 	impl :{$: 'custom-style',
 		template: (cmp,state,h) => {
 			var tree = cmp.tree;
-			return h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath,
+			return h('div',{},
+				state.empty ? h('span') : h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath,
 				class: 'jb-control-tree treenode' + (tree.selected == tree.nodeModel.rootPath ? ' selected': '') })
+			)
 		}
 	}
 })
@@ -159,14 +142,14 @@ jb.component('tree.selection', {
 		  	.merge(cmp.onclick.map(event =>
 		  		tree.elemToPath(event.target)))
 		  	.filter(x=>x)
-	  		.distinctUntilChanged()
+//	  		.distinctUntilChanged()
 		  	.subscribe(selected=> {
 		  	  if (tree.selected == selected)
 		  	  	return;
 			  tree.selected = selected;
 			  selected.split('~').slice(0,-1).reduce(function(base, x) {
 				  var path = base ? (base + '~' + x) : x;
-				  tree.setExpanded(path,true);
+				  tree.expanded[path] = true;
 				  return path;
 			  },'')
 			  if (context.params.databind)
@@ -241,7 +224,7 @@ jb.component('tree.keyboard-selection', {
 						if (!isArray || (tree.expanded[tree.selected] && event.keyCode == 39))
 							runActionInTreeContext(context.params.onRightClickOfExpanded);
 						if (isArray && tree.selected) {
-							tree.setExpanded(tree.selected,(event.keyCode == 39));
+							tree.expanded[tree.selected] = (event.keyCode == 39);
 							tree.redraw()
 						}
 					});
@@ -270,14 +253,12 @@ jb.component('tree.regain-focus', {
 		ctx.vars.$tree && ctx.vars.$tree.regainFocus && ctx.vars.$tree.regainFocus()
 })
 
-
 jb.component('tree.drag-and-drop', {
   type: 'feature',
   params: [
-	  { id: 'afterDrop', type: 'action', dynamic: true, essential: true },
+//	  { id: 'afterDrop', type: 'action', dynamic: true, essential: true },
   ],
-  impl: function(context) {
-  	return {
+  impl: ctx => ({
   		onkeydown: true,
   		afterViewInit: cmp => {
   			var tree = cmp.tree;
@@ -286,50 +267,41 @@ jb.component('tree.drag-and-drop', {
 					return $(el).is('.jb-array-node>.treenode-children>div')
 				}
 	        });
-					drake.containers = $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
+			drake.containers = $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
 
 	        drake.on('drag', function(el, source) {
 	          var path = tree.elemToPath(el.firstElementChild)
 	          el.dragged = { path: path, expanded: tree.expanded[path]}
-	          tree.setExpanded(path,false); // collapse when dragging
+	          delete tree.expanded[path]; // collapse when dragging
 	        })
 
-	        drake.on('drop', (dropElm, target, source,sibling) => {
+	        drake.on('drop', (dropElm, target, source,targetSibling) => {
 	            if (!dropElm.dragged) return;
-							$(dropElm).remove();
-	            tree.setExpanded(dropElm.dragged.path,dropElm.dragged.expanded); // restore expanded state
-	            var index =  sibling ? $(sibling).index() : -1;
-							var path = tree.elemToPath(target);
-							var selectedRef = tree.selected && tree.nodeModel.refHandler && tree.nodeModel.refHandler.refOfPath(tree.selected.split('~'));
-							var selectedObj = selectedRef && tree.nodeModel.refHandler.val(selectedRef);
-							tree.nodeModel.move(path, dropElm.dragged.path,index);
-							// refresh the nodes on the tree - to avoid bugs
-							//tree.expanded[tree.nodeModel.rootPath] = false;
-							jb.delay(1).then(()=> {
-								//tree.expanded[tree.nodeModel.rootPath] = true;
-								context.params.afterDrop(context.setData({ dragged: dropElm.dragged.path, index: index }));
-								if (selectedObj) {
-									var path = tree.nodeModel.refHandler.asRef(selectedObj,{resource: tree.selected.split('~')[0]}).$jb_path.join('~');
-									tree.selectionEmitter.next(path);
-								}
-								//var newSelection = dropElm.dragged.path.split('~').slice(0,-1).concat([''+index]).join('~');
-								dropElm.dragged = null;
-								tree.redraw();
-							})
+				$(dropElm).remove();
+	            tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
+				var state = treeStateAsVals(tree);
+				var targetPath = targetSibling ? tree.elemToPath(targetSibling) : addOneToIndex(tree.elemToPath(source.lastElementChild));
+				if (!targetPath)
+					debugger;
+				tree.nodeModel.move(dropElm.dragged.path,targetPath);
+				restoreTreeStateFromVals(tree,state);
+				dropElm.dragged = null;
+				tree.redraw(true);
 	        });
 
 	        // ctrl up and down
 			cmp.onkeydown.filter(e=>
 				e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
 				.subscribe(e=> {
-					var diff = e.keyCode == 40 ? 1 : -1;
+					var diff = e.keyCode == 40 ? 2 : -1;
 					var selectedIndex = Number(tree.selected.split('~').pop());
 					if (isNaN(selectedIndex)) return;
 					var no_of_siblings = $($('.treenode.selected').parents('.treenode-children')[0]).children().length;
-					var index = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
+					var index = (selectedIndex + diff+ no_of_siblings+1) % (no_of_siblings + 1);
 					var path = tree.selected.split('~').slice(0,-1).join('~');
-					if (!tree.nodeModel.move(path, tree.selected, index))
-						tree.selectionEmitter.next(path+'~'+index);
+					var state = treeStateAsVals(tree);
+					tree.nodeModel.move(tree.selected, tree.selected.split('~').slice(0,-1).concat([index]).join('~'))
+					restoreTreeStateFromVals(tree,state);
 			})
   		},
   		doCheck: function(cmp) {
@@ -338,6 +310,33 @@ jb.component('tree.drag-and-drop', {
 			  tree.drake.containers =
 				  $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
   		}
-  	}
-  }
+  	})
 })
+
+
+treeStateAsVals = tree => ({
+	selected: pathToVal(tree.nodeModel,tree.selected),
+	expanded: jb.entries(tree.expanded).filter(e=>e[1]).map(e=>pathToVal(tree.nodeModel,e[0]))
+})
+
+restoreTreeStateFromVals = (tree,vals) => {
+	tree.selected = valToPath(tree.nodeModel,vals.selected);
+	tree.expanded = {};
+	vals.expanded.forEach(v=>tree.expanded[valToPath(tree.nodeModel,v)] = true)
+}
+
+pathToVal = (model,path) =>
+	model.refHandler.val(model.refHandler.refOfPath(path.split('~')))
+
+valToPath = (model,val) => {
+	var ref = model.refHandler.asRef(val);
+	return ref ? ref.$jb_path.join('~') : ''
+}
+
+addOneToIndex = path => {
+	var index = Number(path.slice(-1)) + 1;
+	return path.split('~').slice(0,-1).concat([index]).join('~')
+}
+
+
+})()

@@ -180,8 +180,46 @@ jb.component('ui-test.tree-DD', {
         { $: 'tree.keyboard-selection'}
     ]
   },
-  expectedResult: { $: 'contains', text: ['Homer'] } ,
-},
+  action: ctx =>
+    jb.move(ctx.exp('%$personWithChildren/children[1]%','ref'),
+        ctx.exp('%$personWithChildren/friends[0]%','ref')),
+  expectedResult :{$: 'equals',
+    item1 :{$pipeline: [
+        {$list: ['%$personWithChildren/children%', '%$personWithChildren/friends%'] } ,
+        '%name%',
+        {$: 'join'}
+        ]
+    },
+    item2: 'Bart,Maggie,Lisa,Barnie',
+  },
+  }
+})
+
+jb.component('ui-test.tree-DD-after-last', {
+  impl :{$: 'ui-test',
+  control :{$: 'tree',
+    nodeModel :{$: 'tree.json',
+      object: '%$personWithChildren%', rootPath: 'Homer'
+    },
+    features: [
+        { $: 'tree.selection' },
+        { $: 'tree.drag-and-drop'},
+        { $: 'tree.keyboard-selection'}
+    ]
+  },
+  action: ctx =>
+    jb.move(ctx.exp('%$personWithChildren/children[1]%','ref'),
+        ctx.exp('%$personWithChildren/friends[1]%','ref')),
+  expectedResult :{$: 'equals',
+    item1 :{$pipeline: [
+        {$list: ['%$personWithChildren/children%', '%$personWithChildren/friends%'] } ,
+        '%name%',
+        {$: 'join'}
+        ]
+    },
+    item2: 'Bart,Maggie,Barnie,Lisa',
+  },
+  }
 })
 
 jb.component('ui-test.open-dialog', {

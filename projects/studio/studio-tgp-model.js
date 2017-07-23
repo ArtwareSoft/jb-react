@@ -25,11 +25,8 @@ st.ControlTree = class {
 				}))
 				.concat(nonRecursive ? [] : this.innerControlPaths(path));
 	}
-	move(path,draggedPath,index) {
-		if (st.parentPath(draggedPath) == path)
-			return st.moveInArray(path,draggedPath,index)
-		else
-			return st.moveInTree(path,draggedPath,index)
+	move(from,to) {
+		return jb.move(st.refOfPath(from),st.refOfPath(to))
 	}
 	disabled(path) {
 		return st.disabled(path)
@@ -95,8 +92,8 @@ st.jbEditorTree = class {
 				.concat(this.specialCases(path,val) || [])
 				.concat(this.innerProfiles(path,val) || [])
 	}
-	move(path,draggedPath,index) {
-		return st.moveInArray(path,draggedPath,index)
+	move(from,to) {
+		return jb.move(st.refOfPath(from),st.refOfPath(to))
 	}
 	disabled(path) {
 		return st.disabled(path)

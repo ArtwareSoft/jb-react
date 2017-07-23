@@ -261,7 +261,7 @@ jb.component('write-value',{
 		jb.writeValue(to,value,ctx)
 });
 
-jb.component('remove-from-array',{
+jb.component('remove-from-array', {
 	type: 'action',
 	params: [
 		{ id: 'array', as: 'ref', essential: true },

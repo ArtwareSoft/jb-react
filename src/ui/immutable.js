@@ -36,13 +36,36 @@ class ImmutableWithPath {
   splice(ref,args,srcCtx) {
     return this.doOp(ref,{$splice: args },srcCtx)
   }
+  move(fromRef,toRef,srcCtx) {
+    var sameArray = fromRef.$jb_path.slice(0,-1).join('~') == toRef.$jb_path.slice(0,-1).join('~');
+    var fromIndex = Number(fromRef.$jb_path.slice(-1));
+    var toIndex = Number(toRef.$jb_path.slice(-1));
+    var fromArray = this.refOfPath(fromRef.$jb_path.slice(0,-1)),toArray = this.refOfPath(toRef.$jb_path.slice(0,-1));
+    if (isNaN(fromIndex) || isNaN(toIndex))
+        return jb.logError('move: not array element',fromRef,toRef);
+
+    var valToMove = jb.val(fromRef);
+    if (sameArray) {
+        if (fromIndex < toIndex) toIndex--; // the deletion changes the index
+        return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
+    }
+    var events = [
+        this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx,true),
+        this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx,true),
+    ]
+    events.forEach(opEvent=>{
+        this.refresh(opEvent.ref,opEvent);
+        opEvent.newVal = this.val(opEvent.ref);
+        this.resourceChange.next(opEvent)
+    })
+  }
   push(ref,value,srcCtx) {
     return this.doOp(ref,{$push: value},srcCtx)
   }
   merge(ref,value,srcCtx) {
     return this.doOp(ref,{$merge: value},srcCtx)
   }
-  doOp(ref,opOnRef,srcCtx) {
+  doOp(ref,opOnRef,srcCtx,doNotNotify) {
     if (!this.isRef(ref))
       ref = this.asRef(ref);
     if (!ref) return;
@@ -61,18 +84,20 @@ class ImmutableWithPath {
     this.resources(jb.ui.update(this.resources(),op),opEvent);
     this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
     this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
-    this.refresh(ref,opEvent);
-    opEvent.newVal = jb.val(ref);
-    if (opOnRef.$push)
-      opEvent.insertedPath = opEvent.path.concat([opEvent.newVal.length - 1]);
     opEvent.resourceVersionsAfter = this.resourceVersions;
+    if (opOnRef.$push)
+      opEvent.insertedPath = opEvent.path.concat([opEvent.oldVal.length]);
     if (deleteOp) {
       if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
         return delete this.resourceVersions[resource];
       delete ref.$jb_parentOfPrim[ref.$jb_path.slice(-1)[0]]
     }
-    this.resourceChange.next(opEvent);
-    return ref;
+    if (!doNotNotify) {
+        this.refresh(ref,opEvent);
+        opEvent.newVal = this.val(ref);
+        this.resourceChange.next(opEvent);
+    }
+    return opEvent;
   }
   restoreArrayIds(from,to,path) {
     if (from && to && from.$jb_id && Array.isArray(from) && Array.isArray(to) && !to.$jb_id && typeof to == 'object')

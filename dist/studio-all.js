@@ -741,6 +741,8 @@ Object.assign(jb,{
     jb.refHandler(ref).writeValue(ref,value,srcCtx),
   splice: (ref,args,srcCtx) =>
     jb.refHandler(ref).splice(ref,args,srcCtx),
+  move: (fromRef,toRef,srcCtx) =>
+    jb.refHandler(ref).splice(fromRef,toRef,srcCtx),
   isRef: (ref) =>
     jb.refHandler(ref).isRef(ref),
   refreshRef: (ref) =>
@@ -1015,7 +1017,7 @@ jb.component('write-value',{
 		jb.writeValue(to,value,ctx)
 });
 
-jb.component('remove-from-array',{
+jb.component('remove-from-array', {
 	type: 'action',
 	params: [
 		{ id: 'array', as: 'ref', essential: true },
@@ -12441,291 +12443,6 @@ jb.rx.Subject = __WEBPACK_IMPORTED_MODULE_0_rxjs_Subject__["Subject"];
 /***/ })
 /******/ ]);;
 
-(function() {
-
-class ImmutableWithPath {
-  constructor(resources) {
-    this.resources = resources;
-    this.resourceVersions = {};
-    this.pathId = 0;
-    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
-    this.resourceChange = new jb.rx.Subject();
-    jb.delay(1).then(_=>jb.ui.originalResources = jb.resources)
-  }
-  val(ref) {
-    if (ref == null) return ref;
-    if (ref.$jb_val) return ref.$jb_val();
-    if (!ref.$jb_path) return ref;
-    if (ref.handler != this)
-      return ref.handler.val(ref)
-
-    var resource = ref.$jb_path[0];
-    if (ref.$jb_resourceV == this.resourceVersions[resource])
-      return ref.$jb_cache;
-    this.refresh(ref);
-    if (ref.$jb_invalid)
-      return null;
-    return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
-  }
-  writeValue(ref,value,srcCtx) {
-    if (!ref)
-      return jb.logError('writeValue: null ref');
-    if (this.val(ref) === value) return;
-    jb.logPerformance('writeValue',value,ref,srcCtx);
-    if (ref.$jb_val)
-      return ref.$jb_val(value);
-    return this.doOp(ref,{$set: value},srcCtx)
-  }
-  splice(ref,args,srcCtx) {
-    return this.doOp(ref,{$splice: args },srcCtx)
-  }
-  push(ref,value,srcCtx) {
-    return this.doOp(ref,{$push: value},srcCtx)
-  }
-  merge(ref,value,srcCtx) {
-    return this.doOp(ref,{$merge: value},srcCtx)
-  }
-  doOp(ref,opOnRef,srcCtx) {
-    if (!this.isRef(ref))
-      ref = this.asRef(ref);
-    if (!ref) return;
-    var oldRef = Object.assign({},ref);
-
-    if (!this.refresh(ref)) return;
-    if (ref.$jb_path.length == 0)
-      return jb.logError('doOp: ref not found');
-
-    var op = {}, resource = ref.$jb_path[0], oldResources = this.resources();
-    var deleteOp = typeof opOnRef.$set == 'object' && opOnRef.$set == null;
-    jb.path(op,ref.$jb_path,opOnRef); // create op as nested object
-    this.markPath(ref.$jb_path);
-    var opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
-        oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
-    this.resources(jb.ui.update(this.resources(),op),opEvent);
-    this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
-    this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
-    this.refresh(ref,opEvent);
-    opEvent.newVal = jb.val(ref);
-    if (opOnRef.$push)
-      opEvent.insertedPath = opEvent.path.concat([opEvent.newVal.length - 1]);
-    opEvent.resourceVersionsAfter = this.resourceVersions;
-    if (deleteOp) {
-      if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
-        return delete this.resourceVersions[resource];
-      delete ref.$jb_parentOfPrim[ref.$jb_path.slice(-1)[0]]
-    }
-    this.resourceChange.next(opEvent);
-    return ref;
-  }
-  restoreArrayIds(from,to,path) {
-    if (from && to && from.$jb_id && Array.isArray(from) && Array.isArray(to) && !to.$jb_id && typeof to == 'object')
-      to.$jb_id = from.$jb_id;
-    if (path.length > 0)
-      this.restoreArrayIds(from[path[0]], to[path[0]], path.slice(1))
-  }
-  asRef(obj,hint) {
-    if (!obj) return obj;
-    if (obj && (obj.$jb_path || obj.$jb_val))
-        return obj;
-
-    var path;
-    if (hint && hint.resource) {
-      var res = this.pathOfObject(obj,this.resources()[hint.resource]);
-      path = res && [hint.resource].concat(res);
-    }
-    path = path || this.pathOfObject(obj,this.resources()); // try without the hint
-
-    if (path)
-      return {
-        $jb_path: path,
-        $jb_resourceV: this.resourceVersions[path[0]],
-        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
-        handler: this,
-      }
-    return obj;
-  }
-  isRef(ref) {
-    return ref && (ref.$jb_path || ref.$jb_val);
-  }
-  objectProperty(obj,prop) {
-    if (!obj)
-      return jb.logError('objectProperty: null obj');
-    var objRef = this.asRef(obj);
-    if (objRef && objRef.$jb_path) {
-      return {
-        $jb_path: objRef.$jb_path.concat([prop]),
-        $jb_resourceV: objRef.$jb_resourceV,
-        $jb_cache: objRef.$jb_cache[prop],
-        $jb_parentOfPrim: objRef.$jb_cache,
-        handler: this,
-      }
-    } else {
-      return obj[prop]; // not reffable
-    }
-  }
-  refresh(ref,lastOpEvent,silent) {
-    if (!ref) debugger;
-    try {
-      var path = ref.$jb_path, new_ref = {};
-      if (!path)
-        return jb.logError('refresh: empty path');
-      var currentVersion = this.resourceVersions[path[0]] || 0;
-      if (path.length == 1) return true;
-      if (currentVersion == ref.$jb_resourceV) return true;
-      if (currentVersion == ref.$jb_resourceV + 1 && lastOpEvent && typeof lastOpEvent.op.$set != 'undefined') {
-        var res = this.refOfPath(ref.$jb_path,silent); // recalc ref by path
-        if (res)
-          return Object.assign(ref,res)
-        ref.$jb_invalid = true;
-        if (!silent)
-          jb.logError('refresh: parent not found: '+ path.join('~'));
-        return
-      }
-
-      if (ref.$jb_parentOfPrim) {
-        var parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
-        if (!parent || !this.isRef(parent)) {
-          this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
-          ref.$jb_invalid = true;
-          return jb.logError('refresh: parent not found: '+ path.join('~'));
-        }
-        var prop = path.slice(-1)[0];
-        new_ref = {
-          $jb_path: parent.$jb_path.concat([prop]),
-          $jb_resourceV: this.resourceVersions[path[0]],
-          $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
-          $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
-          handler: this,
-        }
-      } else {
-        var object_path_found = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
-        if (!object_path_found) {
-          this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
-          ref.$jb_invalid = true;
-          return jb.logError('refresh: object not found: ' + path.join('~'));
-        }
-        var new_path = [path[0]].concat(object_path_found);
-        if (new_path) new_ref = {
-          $jb_path: new_path,
-          $jb_resourceV: this.resourceVersions[new_path[0]],
-          $jb_cache: new_path.reduce((o,p)=>o[p],this.resources()),
-          handler: this,
-        }
-      }
-      Object.assign(ref,new_ref);
-    } catch (e) {
-       ref.$jb_invalid = true;
-       return jb.logException(e,'ref refresh ',ref);
-    }
-    return true;
-  }
-  refOfPath(path,silent) {
-      try {
-        var val = path.reduce((o,p)=>o[p],this.resources());
-        if (val == null || typeof val != 'object' || Array.isArray(val))
-          var parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
-        else
-          var parent = null
-
-        return {
-            $jb_path: path,
-            $jb_resourceV: this.resourceVersions[path[0]],
-            $jb_cache: val,
-            $jb_parentOfPrim: parent,
-            handler: this,
-          }
-      } catch (e) {
-        if (!silent)
-          jb.logException(e,'ref from path ' + path);
-      }
-  }
-  markPath(path) {
-    var leaf = path.reduce((o,p)=>{
-      o.$jb_id = o.$jb_id || (++this.pathId);
-      return o[p]
-    }, this.resources());
-    if (leaf && typeof leaf == 'object')
-      leaf.$jb_id = leaf.$jb_id || (++this.pathId);
-  }
-  pathOfObject(obj,lookIn,depth) {
-    if (!obj || !lookIn || typeof lookIn != 'object' || typeof obj != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50)
-      return;
-    if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1)
-      return;
-
-    if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id))
-      return [];
-    for(var p in lookIn) {
-      var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
-      if (res)
-        return [p].concat(res);
-    }
-  }
-  // valid(ref) {
-  //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
-  // }
-  refObservable(ref,cmp,settings) {
-    if (ref && ref.$jb_observable)
-      return ref.$jb_observable(cmp);
-    if (!ref || !this.isRef(ref))
-      return jb.rx.Observable.of();
-    if (ref.$jb_path) {
-      return this.resourceChange
-        .takeUntil(cmp.destroyed)
-        .filter(e=>
-            e.ref.$jb_path[0] == ref.$jb_path[0])
-        .filter(e=> {
-          this.refresh(ref,e,true);
-          if (settings && settings.throw && ref.$jb_invalid)
-            throw 'invalid ref';
-          var path = e.ref.$jb_path;
-          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
-          if (settings && settings.includeChildren)
-            return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
-          return changeInParent;
-        })
-        .distinctUntilChanged((e1,e2)=>
-          e1.newVal == e2.newVal)
-    }
-    return jb.rx.Observable.of(jb.val(ref));
-  }
-}
-
-function resourcesRef(val) {
-  if (typeof val == 'undefined')
-    return jb.resources;
-  else
-    jb.resources = val;
-}
-
-jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
-
-jb.ui.refObservable = (ref,cmp,settings) =>
-  jb.refHandler(ref).refObservable(ref,cmp,settings);
-
-jb.ui.ImmutableWithPath = ImmutableWithPath;
-jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
-
-jb.ui.pathObservable = (path,handler,cmp) => {
-  var ref = handler.refOfPath(path.split('~'));
-  return handler.resourceChange
-    .takeUntil(cmp.destroyed)
-    .filter(e=>
-        path.indexOf(e.oldRef.$jb_path.join('~')) == 0)
-    .map(e=> {
-    handler.refresh(ref,e,true);
-    if (!ref.$jb_invalid)
-        return ref.$jb_path.join('~')
-    })
-    .filter(newPath=>newPath != path)
-    .take(1)
-    .map(newPath=>({newPath: newPath, oldPath: path}))
-}
-
-
-})()
-;
-
 (function(){
 
 var ui = jb.ui;
@@ -13148,6 +12865,315 @@ jb.component('style-by-control', {
 	impl: (ctx,control,modelVar) =>
 		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
 })
+
+})()
+;
+
+(function() {
+
+class ImmutableWithPath {
+  constructor(resources) {
+    this.resources = resources;
+    this.resourceVersions = {};
+    this.pathId = 0;
+    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
+    this.resourceChange = new jb.rx.Subject();
+    jb.delay(1).then(_=>jb.ui.originalResources = jb.resources)
+  }
+  val(ref) {
+    if (ref == null) return ref;
+    if (ref.$jb_val) return ref.$jb_val();
+    if (!ref.$jb_path) return ref;
+    if (ref.handler != this)
+      return ref.handler.val(ref)
+
+    var resource = ref.$jb_path[0];
+    if (ref.$jb_resourceV == this.resourceVersions[resource])
+      return ref.$jb_cache;
+    this.refresh(ref);
+    if (ref.$jb_invalid)
+      return null;
+    return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
+  }
+  writeValue(ref,value,srcCtx) {
+    if (!ref)
+      return jb.logError('writeValue: null ref');
+    if (this.val(ref) === value) return;
+    jb.logPerformance('writeValue',value,ref,srcCtx);
+    if (ref.$jb_val)
+      return ref.$jb_val(value);
+    return this.doOp(ref,{$set: value},srcCtx)
+  }
+  splice(ref,args,srcCtx) {
+    return this.doOp(ref,{$splice: args },srcCtx)
+  }
+  move(fromRef,toRef,srcCtx) {
+    var sameArray = fromRef.$jb_path.slice(0,-1).join('~') == toRef.$jb_path.slice(0,-1).join('~');
+    var fromIndex = Number(fromRef.$jb_path.slice(-1));
+    var toIndex = Number(toRef.$jb_path.slice(-1));
+    var fromArray = this.refOfPath(fromRef.$jb_path.slice(0,-1)),toArray = this.refOfPath(toRef.$jb_path.slice(0,-1));
+    if (isNaN(fromIndex) || isNaN(toIndex))
+        return jb.logError('move: not array element',fromRef,toRef);
+
+    var valToMove = jb.val(fromRef);
+    if (sameArray)
+        return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
+
+    var events = [
+        this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx,true),
+        this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx,true),
+    ]
+    events.forEach(opEvent=>{
+        this.refresh(opEvent.ref,opEvent);
+        opEvent.newVal = this.val(opEvent.ref);
+        this.resourceChange.next(opEvent)
+    })
+  }
+  push(ref,value,srcCtx) {
+    return this.doOp(ref,{$push: value},srcCtx)
+  }
+  merge(ref,value,srcCtx) {
+    return this.doOp(ref,{$merge: value},srcCtx)
+  }
+  doOp(ref,opOnRef,srcCtx,doNotNotify) {
+    if (!this.isRef(ref))
+      ref = this.asRef(ref);
+    if (!ref) return;
+    var oldRef = Object.assign({},ref);
+
+    if (!this.refresh(ref)) return;
+    if (ref.$jb_path.length == 0)
+      return jb.logError('doOp: ref not found');
+
+    var op = {}, resource = ref.$jb_path[0], oldResources = this.resources();
+    var deleteOp = typeof opOnRef.$set == 'object' && opOnRef.$set == null;
+    jb.path(op,ref.$jb_path,opOnRef); // create op as nested object
+    this.markPath(ref.$jb_path);
+    var opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
+        oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
+    this.resources(jb.ui.update(this.resources(),op),opEvent);
+    this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
+    this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
+    opEvent.resourceVersionsAfter = this.resourceVersions;
+    if (opOnRef.$push)
+      opEvent.insertedPath = opEvent.path.concat([opEvent.oldVal.length]);
+    if (deleteOp) {
+      if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
+        return delete this.resourceVersions[resource];
+      delete ref.$jb_parentOfPrim[ref.$jb_path.slice(-1)[0]]
+    }
+    if (!doNotNotify) {
+        this.refresh(ref,opEvent);
+        opEvent.newVal = this.val(ref);
+        this.resourceChange.next(opEvent);
+    }
+    return opEvent;
+  }
+  restoreArrayIds(from,to,path) {
+    if (from && to && from.$jb_id && Array.isArray(from) && Array.isArray(to) && !to.$jb_id && typeof to == 'object')
+      to.$jb_id = from.$jb_id;
+    if (path.length > 0)
+      this.restoreArrayIds(from[path[0]], to[path[0]], path.slice(1))
+  }
+  asRef(obj,hint) {
+    if (!obj) return obj;
+    if (obj && (obj.$jb_path || obj.$jb_val))
+        return obj;
+
+    var path;
+    if (hint && hint.resource) {
+      var res = this.pathOfObject(obj,this.resources()[hint.resource]);
+      path = res && [hint.resource].concat(res);
+    }
+    path = path || this.pathOfObject(obj,this.resources()); // try without the hint
+
+    if (path)
+      return {
+        $jb_path: path,
+        $jb_resourceV: this.resourceVersions[path[0]],
+        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
+        handler: this,
+      }
+    return obj;
+  }
+  isRef(ref) {
+    return ref && (ref.$jb_path || ref.$jb_val);
+  }
+  objectProperty(obj,prop) {
+    if (!obj)
+      return jb.logError('objectProperty: null obj');
+    var objRef = this.asRef(obj);
+    if (objRef && objRef.$jb_path) {
+      return {
+        $jb_path: objRef.$jb_path.concat([prop]),
+        $jb_resourceV: objRef.$jb_resourceV,
+        $jb_cache: objRef.$jb_cache[prop],
+        $jb_parentOfPrim: objRef.$jb_cache,
+        handler: this,
+      }
+    } else {
+      return obj[prop]; // not reffable
+    }
+  }
+  refresh(ref,lastOpEvent,silent) {
+    if (!ref) debugger;
+    try {
+      var path = ref.$jb_path, new_ref = {};
+      if (!path)
+        return jb.logError('refresh: empty path');
+      var currentVersion = this.resourceVersions[path[0]] || 0;
+      if (path.length == 1) return true;
+      if (currentVersion == ref.$jb_resourceV) return true;
+      if (currentVersion == ref.$jb_resourceV + 1 && lastOpEvent && typeof lastOpEvent.op.$set != 'undefined') {
+        var res = this.refOfPath(ref.$jb_path,silent); // recalc ref by path
+        if (res)
+          return Object.assign(ref,res)
+        ref.$jb_invalid = true;
+        if (!silent)
+          jb.logError('refresh: parent not found: '+ path.join('~'));
+        return
+      }
+
+      if (ref.$jb_parentOfPrim) {
+        var parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
+        if (!parent || !this.isRef(parent)) {
+          this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
+          ref.$jb_invalid = true;
+          return jb.logError('refresh: parent not found: '+ path.join('~'));
+        }
+        var prop = path.slice(-1)[0];
+        new_ref = {
+          $jb_path: parent.$jb_path.concat([prop]),
+          $jb_resourceV: this.resourceVersions[path[0]],
+          $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
+          $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
+      } else {
+        var object_path_found = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+        if (!object_path_found) {
+          this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+          ref.$jb_invalid = true;
+          return jb.logError('refresh: object not found: ' + path.join('~'));
+        }
+        var new_path = [path[0]].concat(object_path_found);
+        if (new_path) new_ref = {
+          $jb_path: new_path,
+          $jb_resourceV: this.resourceVersions[new_path[0]],
+          $jb_cache: new_path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
+      }
+      Object.assign(ref,new_ref);
+    } catch (e) {
+       ref.$jb_invalid = true;
+       return jb.logException(e,'ref refresh ',ref);
+    }
+    return true;
+  }
+  refOfPath(path,silent) {
+      try {
+        var val = path.reduce((o,p)=>o[p],this.resources());
+        if (val == null || typeof val != 'object' || Array.isArray(val))
+          var parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
+        else
+          var parent = null
+
+        return {
+            $jb_path: path,
+            $jb_resourceV: this.resourceVersions[path[0]],
+            $jb_cache: val,
+            $jb_parentOfPrim: parent,
+            handler: this,
+          }
+      } catch (e) {
+        if (!silent)
+          jb.logException(e,'ref from path ' + path);
+      }
+  }
+  markPath(path) {
+    var leaf = path.reduce((o,p)=>{
+      o.$jb_id = o.$jb_id || (++this.pathId);
+      return o[p]
+    }, this.resources());
+    if (leaf && typeof leaf == 'object')
+      leaf.$jb_id = leaf.$jb_id || (++this.pathId);
+  }
+  pathOfObject(obj,lookIn,depth) {
+    if (!obj || !lookIn || typeof lookIn != 'object' || typeof obj != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50)
+      return;
+    if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1)
+      return;
+
+    if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id))
+      return [];
+    for(var p in lookIn) {
+      var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
+      if (res)
+        return [p].concat(res);
+    }
+  }
+  // valid(ref) {
+  //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
+  // }
+  refObservable(ref,cmp,settings) {
+    if (ref && ref.$jb_observable)
+      return ref.$jb_observable(cmp);
+    if (!ref || !this.isRef(ref))
+      return jb.rx.Observable.of();
+    if (ref.$jb_path) {
+      return this.resourceChange
+        .takeUntil(cmp.destroyed)
+        .filter(e=>
+            e.ref.$jb_path[0] == ref.$jb_path[0])
+        .filter(e=> {
+          this.refresh(ref,e,true);
+          if (settings && settings.throw && ref.$jb_invalid)
+            throw 'invalid ref';
+          var path = e.ref.$jb_path;
+          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
+          if (settings && settings.includeChildren)
+            return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
+          return changeInParent;
+        })
+        .distinctUntilChanged((e1,e2)=>
+          e1.newVal == e2.newVal)
+    }
+    return jb.rx.Observable.of(jb.val(ref));
+  }
+}
+
+function resourcesRef(val) {
+  if (typeof val == 'undefined')
+    return jb.resources;
+  else
+    jb.resources = val;
+}
+
+jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
+
+jb.ui.refObservable = (ref,cmp,settings) =>
+  jb.refHandler(ref).refObservable(ref,cmp,settings);
+
+jb.ui.ImmutableWithPath = ImmutableWithPath;
+jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
+
+jb.ui.pathObservable = (path,handler,cmp) => {
+  var ref = handler.refOfPath(path.split('~'));
+  return handler.resourceChange
+    .takeUntil(cmp.destroyed)
+    .filter(e=>
+        path.indexOf(e.oldRef.$jb_path.join('~')) == 0)
+    .map(e=> {
+    handler.refresh(ref,e,true);
+    if (!ref.$jb_invalid)
+        return ref.$jb_path.join('~')
+    })
+    .filter(newPath=>newPath != path)
+    .take(1)
+    .map(newPath=>({newPath: newPath, oldPath: path}))
+}
+
 
 })()
 ;
@@ -15175,258 +15201,6 @@ jb.component('menu-separator.line', {
 })
 ;
 
-(function() {
-
-createItemlistCntr = (ctx,params) => ({
-  id: params.id,
-  defaultItem: params.defaultItem,
-  filter_data: {},
-  filters: [],
-  selectedRef: ctx.exp('%$itemlistCntrData/selected%','ref'),
-  selected: function(selected) {
-    return (typeof selected != 'undefined') ?
-      jb.writeValue(this.selectedRef,selected,this.ctx) : jb.val(this.selectedRef)
-  },
-  add: function(item) {
-    var newItem = item || JSON.parse(JSON.stringify(this.defaultItem || {}));
-    if (this.items) {
-      jb.splice(this.items,[[this.items.length,0,newItem]]);
-      this.selected(newItem);
-    }
-  },
-  delete: function(item) {
-    if (this.items && this.items.indexOf(item) != -1) {
-      this.changeSelectionBeforeDelete();
-      jb.splice(this.items,[[this.items.indexOf(item),1]]);
-    }
-  },
-  reSelectAfterFilter: function(filteredItems) {
-      this.selected(filteredItems[0])
-  },
-  changeSelectionBeforeDelete: function() {
-    if (this.items && this.selected) {
-      var curIndex = this.items.indexOf(this.selected);
-      if (curIndex == -1)
-        this.selected = null;
-      else if (curIndex == 0 && this.items.length > 0)
-        this.selected = this.items[1];
-      else if (this.items.length > 0)
-        this.selected = this.items[curIndex -1];
-      else
-        this.selected = null;
-    }
-  }
-})
-
-jb.component('group.itemlist-container', {
-  description: 'itemlist writable container to support addition, deletion and selection',
-  type: 'feature', category: 'itemlist:20,group:0',
-  params: [
-    { id: 'id', as: 'string' },
-    { id: 'defaultItem', as: 'single' },
-    { id: 'maxItems', as: 'number' , defaultValue: 100 },
-  ],
-  impl :{$list : [
-    {$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '', maxItems: '%$maxItems%' } , mutable: true},
-    {$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
-    ctx => ({
-      init: cmp => {
-        var maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
-//        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
-        cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>
-          items.slice(0,jb.tonumber(maxItemsRef));
-      }
-    })
-  ]}
-})
-
-jb.component('itemlist.itemlist-selected', {
-  type: 'feature',   category: 'itemlist:20,group:0',
-  impl :{ $list : [
-  			{$: 'group.data', data : '%$itemlistCntrData/selected%'},
-  			{$: 'hidden', showCondition: {$notEmpty: '%$itemlistCntrData/selected%' } }
-  		]}
-})
-
-jb.component('itemlist-container.add', {
-  type: 'action',
-  impl: ctx =>
-  		ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.add()
-})
-
-jb.component('itemlist-container.delete', {
-  type: 'action',
-  params: [{ id: 'item', as: 'single', defaultValue: '%%'} ],
-  impl: (ctx,item) =>
-      ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.delete(item)
-})
-
-jb.component('itemlist-container.filter', {
-  type: 'aggregator', category: 'itemlist-filter:100',
-  requires: ctx => ctx.vars.itemlistCntr,
-  impl: ctx => {
-      if (!ctx.vars.itemlistCntr) return;
-      jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length);
-      var res = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
-                  filter(items), ctx.data || []);
-      jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),res.length);
-      res = ctx.vars.itemlistCntr.maxItemsFilter(res);
-      if (ctx.exp('%$itemlistCntrData/countAfterFilter%','number') != res.length)
-        jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
-      jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length);
-      return res;
-   }
-})
-
-jb.component('itemlist-container.search', {
-  type: 'control', category: 'itemlist-filter:100',
-  requires: ctx => ctx.vars.itemlistCntr,
-  params: [
-    { id: 'title', as: 'string' , dynamic: true, defaultValue: 'Search' },
-    { id: 'searchIn', as: 'string' , dynamic: true, defaultValue: {$: 'itemlist-container.search-in-all-properties'} },
-    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/search_pattern%'},
-    { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-search' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: (ctx,title,searchIn,databind) =>
-    jb.ui.ctrl(ctx,{
-      afterViewInit: cmp => {
-        if (ctx.vars.itemlistCntr) {
-          ctx.vars.itemlistCntr.filters.push( items => {
-            var toSearch = jb.val(databind) || '';
-            if (typeof searchIn.profile == 'function') { // improved performance
-              return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-            }
-
-            return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-          });
-        // allow itemlist selection use up/down arrows
-        ctx.vars.itemlistCntr.keydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
-            .takeUntil( cmp.destroyed )
-            .filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1);
-        }
-      }
-    })
-});
-
-jb.component('itemlist-container.more-items-button', {
-  type: 'control', category: 'itemlist-filter:100',
-  requires: ctx => ctx.vars.itemlistCntr,
-  params: [
-    { id: 'title', as: 'string' , dynamic: true, defaultValue: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeMaxFilter%)' },
-    { id: 'delta', as: 'number' , defaultValue: 200 },
-    { id: 'style', type: 'button.style', defaultValue: { $: 'button.href' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: (ctx,title,delta) => {
-    return jb.ui.ctrl(ctx,{
-      beforeInit: cmp => {
-        if (!ctx.vars.itemlistCntr) return;
-        var maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
-        cmp.clicked = _ =>
-          jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta);
-        cmp.refresh = _ =>
-          cmp.setState({title: jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta})))});
-        jb.ui.watchRef(ctx,cmp,maxItemsRef);
-      },
-      init: cmp =>
-        cmp.state.title = jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta}))),
-
-      templateModifier: (vdom,cmp,state) => { // hide the button when not needed
-        if (cmp.ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','number') == cmp.ctx.exp('%$itemlistCntrData/countAfterFilter%','number'))
-          return jb.ui.h('span');
-        return vdom;
-      }
-    })
-  }
-});
-
-jb.ui.extractPropFromExpression = exp => { // performance for simple cases such as %prop1%
-  if (exp.match(/^%.*%$/) && !exp.match(/[./[]/))
-    return exp.match(/^%(.*)%$/)[1]
-}
-
-// match fields in pattern itemlistCntrData/FLDNAME_filter to data
-jb.component('itemlist-container.filter-field', {
-  type: 'feature', category: 'itemlist-filter:80',
-  requires: ctx => ctx.vars.itemlistCntr,
-  params: [
-    { id: 'fieldData', dynamic: true, essential: true },
-    { id: 'filterType', type: 'filter-type' },
-  ],
-  impl: (ctx,fieldData,filterType) => ({
-      afterViewInit: cmp => {
-        var propToFilter = jb.ui.extractPropFromExpression(ctx.params.fieldData.profile);
-        if (propToFilter)
-          cmp.itemToFilterData = item => item[propToFilter];
-        else
-          cmp.itemToFilterData = item => fieldData(ctx.setData(item));
-
-        ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.filters.push(items=>{
-            var filterValue = cmp.jbModel();
-            if (!filterValue) return items;
-            var res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
-            if (filterType.sort)
-              filterType.sort(res,cmp.itemToFilterData,filterValue);
-            return res;
-        })
-    }
-  })
-});
-
-jb.component('filter-type.text', {
-  type: 'filter-type',
-  params: [
-    { id: 'ignoreCase', as: 'boolean', defaultValue: true }
-  ],
-  impl: (ctx,ignoreCase) => ignoreCase ? ({
-    filter: (filter,data) => (data||'').toLowerCase().indexOf((filter||'').toLowerCase()) != -1,
-    sort: (items,itemToData,filter) =>  {
-      var asWord = new RegExp('\\b' + filter + '\\b','i');
-      var score = txt => (asWord.test(txt) ? 5 : 0) + (txt.toLowerCase().indexOf(filter.toLowerCase()) == 0 ? 3 : 0); // higher score for wholeWord or beginsWith
-      items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
-    }
-  }) : ({
-    filter: (filter,data) => (data||'').indexOf(filter||'') != -1,
-    sort: (items,itemToData,filter) =>  {
-      var asWord = new RegExp('\\b' + filter + '\\b');
-      var score = txt => (asWord.test(txt) ? 5 : 0) + (txt.indexOf(filter) == 0 ? 3 : 0);
-      items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
-    }
-  })
-})
-
-jb.component('filter-type.exact-match', {
-  type: 'filter-type',
-  impl: ctx => ({
-    filter: (filter,data) =>  {
-      var _filter = (filter||'').trim(), _data = (data||'').trim();
-      return _data.indexOf(_filter) == 0 && _data.length == _filter.length;
-    }
-  })
-})
-
-jb.component('filter-type.numeric', {
-  type: 'filter-type',
-  impl: ctx => ({
-    filter: (filter,data) => Number(data) >= Number(filter),
-    sort: (items,itemToData) => items.sort((item1,item2)=> Number(itemToData(item1)) - Number(itemToData(item2)))
-  })
-})
-
-jb.component('itemlist-container.search-in-all-properties', {
-  type: 'data', category: 'itemlist-filter:40',
-  impl: ctx => {
-    if (typeof ctx.data == 'string') return ctx.data;
-    if (typeof ctx.data != 'object') return '';
-    return jb.entries(ctx.data).map(e=>e[1]).filter(v=>typeof v == 'string').join('#');
-   }
-})
-
-
-})()
-;
-
 jb.component('itemlist', {
   type: 'control', category: 'group:80,common:80',
   params: [
@@ -15691,6 +15465,428 @@ jb.component('itemlist.divider', {
 })
 ;
 
+(function() {
+
+createItemlistCntr = (ctx,params) => ({
+  id: params.id,
+  defaultItem: params.defaultItem,
+  filter_data: {},
+  filters: [],
+  selectedRef: ctx.exp('%$itemlistCntrData/selected%','ref'),
+  selected: function(selected) {
+    return (typeof selected != 'undefined') ?
+      jb.writeValue(this.selectedRef,selected,this.ctx) : jb.val(this.selectedRef)
+  },
+  add: function(item) {
+    var newItem = item || JSON.parse(JSON.stringify(this.defaultItem || {}));
+    if (this.items) {
+      jb.splice(this.items,[[this.items.length,0,newItem]]);
+      this.selected(newItem);
+    }
+  },
+  delete: function(item) {
+    if (this.items && this.items.indexOf(item) != -1) {
+      this.changeSelectionBeforeDelete();
+      jb.splice(this.items,[[this.items.indexOf(item),1]]);
+    }
+  },
+  reSelectAfterFilter: function(filteredItems) {
+      this.selected(filteredItems[0])
+  },
+  changeSelectionBeforeDelete: function() {
+    if (this.items && this.selected) {
+      var curIndex = this.items.indexOf(this.selected);
+      if (curIndex == -1)
+        this.selected = null;
+      else if (curIndex == 0 && this.items.length > 0)
+        this.selected = this.items[1];
+      else if (this.items.length > 0)
+        this.selected = this.items[curIndex -1];
+      else
+        this.selected = null;
+    }
+  }
+})
+
+jb.component('group.itemlist-container', {
+  description: 'itemlist writable container to support addition, deletion and selection',
+  type: 'feature', category: 'itemlist:20,group:0',
+  params: [
+    { id: 'id', as: 'string' },
+    { id: 'defaultItem', as: 'single' },
+    { id: 'maxItems', as: 'number' , defaultValue: 100 },
+  ],
+  impl :{$list : [
+    {$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '', maxItems: '%$maxItems%' } , mutable: true},
+    {$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
+    ctx => ({
+      init: cmp => {
+        var maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
+//        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
+        cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>
+          items.slice(0,jb.tonumber(maxItemsRef));
+      }
+    })
+  ]}
+})
+
+jb.component('itemlist.itemlist-selected', {
+  type: 'feature',   category: 'itemlist:20,group:0',
+  impl :{ $list : [
+  			{$: 'group.data', data : '%$itemlistCntrData/selected%'},
+  			{$: 'hidden', showCondition: {$notEmpty: '%$itemlistCntrData/selected%' } }
+  		]}
+})
+
+jb.component('itemlist-container.add', {
+  type: 'action',
+  impl: ctx =>
+  		ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.add()
+})
+
+jb.component('itemlist-container.delete', {
+  type: 'action',
+  params: [{ id: 'item', as: 'single', defaultValue: '%%'} ],
+  impl: (ctx,item) =>
+      ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.delete(item)
+})
+
+jb.component('itemlist-container.filter', {
+  type: 'aggregator', category: 'itemlist-filter:100',
+  requires: ctx => ctx.vars.itemlistCntr,
+  impl: ctx => {
+      if (!ctx.vars.itemlistCntr) return;
+      jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length);
+      var res = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
+                  filter(items), ctx.data || []);
+      jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),res.length);
+      res = ctx.vars.itemlistCntr.maxItemsFilter(res);
+      if (ctx.exp('%$itemlistCntrData/countAfterFilter%','number') != res.length)
+        jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
+      jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length);
+      return res;
+   }
+})
+
+jb.component('itemlist-container.search', {
+  type: 'control', category: 'itemlist-filter:100',
+  requires: ctx => ctx.vars.itemlistCntr,
+  params: [
+    { id: 'title', as: 'string' , dynamic: true, defaultValue: 'Search' },
+    { id: 'searchIn', as: 'string' , dynamic: true, defaultValue: {$: 'itemlist-container.search-in-all-properties'} },
+    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/search_pattern%'},
+    { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-search' }, dynamic: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: (ctx,title,searchIn,databind) =>
+    jb.ui.ctrl(ctx,{
+      afterViewInit: cmp => {
+        if (ctx.vars.itemlistCntr) {
+          ctx.vars.itemlistCntr.filters.push( items => {
+            var toSearch = jb.val(databind) || '';
+            if (typeof searchIn.profile == 'function') { // improved performance
+              return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+            }
+
+            return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+          });
+        // allow itemlist selection use up/down arrows
+        ctx.vars.itemlistCntr.keydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
+            .takeUntil( cmp.destroyed )
+            .filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1);
+        }
+      }
+    })
+});
+
+jb.component('itemlist-container.more-items-button', {
+  type: 'control', category: 'itemlist-filter:100',
+  requires: ctx => ctx.vars.itemlistCntr,
+  params: [
+    { id: 'title', as: 'string' , dynamic: true, defaultValue: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeMaxFilter%)' },
+    { id: 'delta', as: 'number' , defaultValue: 200 },
+    { id: 'style', type: 'button.style', defaultValue: { $: 'button.href' }, dynamic: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: (ctx,title,delta) => {
+    return jb.ui.ctrl(ctx,{
+      beforeInit: cmp => {
+        if (!ctx.vars.itemlistCntr) return;
+        var maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
+        cmp.clicked = _ =>
+          jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta);
+        cmp.refresh = _ =>
+          cmp.setState({title: jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta})))});
+        jb.ui.watchRef(ctx,cmp,maxItemsRef);
+      },
+      init: cmp =>
+        cmp.state.title = jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta}))),
+
+      templateModifier: (vdom,cmp,state) => { // hide the button when not needed
+        if (cmp.ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','number') == cmp.ctx.exp('%$itemlistCntrData/countAfterFilter%','number'))
+          return jb.ui.h('span');
+        return vdom;
+      }
+    })
+  }
+});
+
+jb.ui.extractPropFromExpression = exp => { // performance for simple cases such as %prop1%
+  if (exp.match(/^%.*%$/) && !exp.match(/[./[]/))
+    return exp.match(/^%(.*)%$/)[1]
+}
+
+// match fields in pattern itemlistCntrData/FLDNAME_filter to data
+jb.component('itemlist-container.filter-field', {
+  type: 'feature', category: 'itemlist-filter:80',
+  requires: ctx => ctx.vars.itemlistCntr,
+  params: [
+    { id: 'fieldData', dynamic: true, essential: true },
+    { id: 'filterType', type: 'filter-type' },
+  ],
+  impl: (ctx,fieldData,filterType) => ({
+      afterViewInit: cmp => {
+        var propToFilter = jb.ui.extractPropFromExpression(ctx.params.fieldData.profile);
+        if (propToFilter)
+          cmp.itemToFilterData = item => item[propToFilter];
+        else
+          cmp.itemToFilterData = item => fieldData(ctx.setData(item));
+
+        ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.filters.push(items=>{
+            var filterValue = cmp.jbModel();
+            if (!filterValue) return items;
+            var res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
+            if (filterType.sort)
+              filterType.sort(res,cmp.itemToFilterData,filterValue);
+            return res;
+        })
+    }
+  })
+});
+
+jb.component('filter-type.text', {
+  type: 'filter-type',
+  params: [
+    { id: 'ignoreCase', as: 'boolean', defaultValue: true }
+  ],
+  impl: (ctx,ignoreCase) => ignoreCase ? ({
+    filter: (filter,data) => (data||'').toLowerCase().indexOf((filter||'').toLowerCase()) != -1,
+    sort: (items,itemToData,filter) =>  {
+      var asWord = new RegExp('\\b' + filter + '\\b','i');
+      var score = txt => (asWord.test(txt) ? 5 : 0) + (txt.toLowerCase().indexOf(filter.toLowerCase()) == 0 ? 3 : 0); // higher score for wholeWord or beginsWith
+      items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
+    }
+  }) : ({
+    filter: (filter,data) => (data||'').indexOf(filter||'') != -1,
+    sort: (items,itemToData,filter) =>  {
+      var asWord = new RegExp('\\b' + filter + '\\b');
+      var score = txt => (asWord.test(txt) ? 5 : 0) + (txt.indexOf(filter) == 0 ? 3 : 0);
+      items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
+    }
+  })
+})
+
+jb.component('filter-type.exact-match', {
+  type: 'filter-type',
+  impl: ctx => ({
+    filter: (filter,data) =>  {
+      var _filter = (filter||'').trim(), _data = (data||'').trim();
+      return _data.indexOf(_filter) == 0 && _data.length == _filter.length;
+    }
+  })
+})
+
+jb.component('filter-type.numeric', {
+  type: 'filter-type',
+  impl: ctx => ({
+    filter: (filter,data) => Number(data) >= Number(filter),
+    sort: (items,itemToData) => items.sort((item1,item2)=> Number(itemToData(item1)) - Number(itemToData(item2)))
+  })
+})
+
+jb.component('itemlist-container.search-in-all-properties', {
+  type: 'data', category: 'itemlist-filter:40',
+  impl: ctx => {
+    if (typeof ctx.data == 'string') return ctx.data;
+    if (typeof ctx.data != 'object') return '';
+    return jb.entries(ctx.data).map(e=>e[1]).filter(v=>typeof v == 'string').join('#');
+   }
+})
+
+
+})()
+;
+
+jb.component('picklist', {
+  type: 'control', category: 'input:80',
+  params: [
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'databind', as: 'ref'},
+    { id: 'options', type: 'picklist.options', dynamic: true, essential: true, defaultValue: {$ : 'picklist.optionsByComma'} },
+    { id: 'promote', type: 'picklist.promote', dynamic: true },
+    { id: 'style', type: 'picklist.style', defaultValue: { $: 'picklist.native' }, dynamic: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx => 
+    jb.ui.ctrl(ctx,{
+      beforeInit: function(cmp) {
+        cmp.recalcOptions = function() {
+          var options = ctx.params.options(ctx);
+          var groupsHash = {};
+          var promotedGroups = (ctx.params.promote() || {}).groups || [];
+          var groups = [];
+          options.filter(x=>x.text).forEach(o=>{
+            var groupId = groupOfOpt(o);
+            var group = groupsHash[groupId] || { options: [], text: groupId};
+            if (!groupsHash[groupId]) {
+              groups.push(group);
+              groupsHash[groupId] = group;
+            }
+            group.options.push({text: o.text.split('.').pop(), code: o.code });
+          })
+          groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
+          jb.ui.setState(cmp,{
+            groups: groups,
+            options: options,
+            hasEmptyOption: options.filter(x=>!x.text)[0]
+          })
+        }
+        cmp.recalcOptions();
+        jb.ui.refObservable(ctx.params.databind,cmp).subscribe(e=>
+          cmp.onChange && cmp.onChange(jb.val(e.ref)))
+      },
+    })
+})
+
+function groupOfOpt(opt) {
+  if (!opt.group && opt.text.indexOf('.') == -1)
+    return '---';
+  return opt.group || opt.text.split('.').shift();
+}
+
+jb.component('picklist.dynamic-options', {
+  type: 'feature',
+  params: [
+    { id: 'recalcEm', as: 'single'}
+  ],
+  impl: (ctx,recalcEm) => ({
+    init: cmp => 
+      recalcEm && recalcEm.subscribe &&
+        recalcEm.takeUntil( cmp.destroyed )
+        .subscribe(e=>
+            cmp.recalcOptions()) 
+  })
+})
+
+jb.component('picklist.onChange', {
+  type: 'feature',
+  description: 'action on picklist selection',
+  params: [
+    { id: 'action', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,action) => ({
+    init: cmp => 
+      cmp.onChange = val => action(ctx.setData(val))
+  })
+})
+
+// ********* options
+
+jb.component('picklist.optionsByComma',{
+  type: 'picklist.options',
+  params: [ 
+    { id: 'options', as: 'string', essential: true},
+    { id: 'allowEmptyValue', type: 'boolean' },
+  ],
+  impl: function(context,options,allowEmptyValue) {
+    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+    return emptyValue.concat((options||'').split(',').map(code=> ({ code: code, text: code })));
+  }
+});
+
+jb.component('picklist.options',{
+  type: 'picklist.options',
+  params: [ 
+    { id: 'options', type: 'data', as: 'array', essential: true},
+    { id: 'allowEmptyValue', type: 'boolean' },
+  ],
+  impl: function(context,options,allowEmptyValue) {
+    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+    return emptyValue.concat(options.map(code=> ({ code: code, text: code })));
+  }
+})
+
+jb.component('picklist.coded-options',{
+  type: 'picklist.options',
+  params: [ 
+    { id: 'options', as: 'array',essential: true },
+    { id: 'code', as: 'string', dynamic:true , essential: true }, 
+    { id: 'text', as: 'string', dynamic:true, essential: true } ,
+    { id: 'allowEmptyValue', type: 'boolean' },
+  ],
+  impl: function(context,options,code,text,allowEmptyValue) {
+    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+    return emptyValue.concat(options.map(function(option) { 
+      return { 
+        code: code(null,option), text: text(null,option) 
+      }
+    }))
+  }
+})
+
+jb.component('picklist.sorted-options', {
+  type: 'picklist.options',
+  params: [ 
+    { id: 'options', type: 'picklist.options', dynamic: true, essential: true, composite: true },
+    { id: 'marks', as: 'array', description: 'e.g input:80,group:90. 0 mark means hidden' },
+  ],
+  impl: (ctx,optionsFunc,marks) => {
+    var options = optionsFunc() || [];
+    marks.forEach(mark=> { 
+        var option = options.filter(opt=>opt.code == mark.code)[0];
+        if (option)
+          option.mark = Number(mark.mark || 50);
+    });
+    options = options.filter(op=>op.mark != 0);
+    options.sort((o1,o2)=>(o2.mark || 50) - (o1.mark || 50));
+    return options;
+  }
+})
+
+
+jb.component('picklist.promote',{
+  type: 'picklist.promote',
+  params: [ 
+    { id: 'groups', as: 'array'},
+    { id: 'options', as: 'array'},
+  ],
+  impl: (context,groups,options) => 
+    ({ groups: groups, options: options})
+});
+
+;
+
+jb.type('theme');
+
+jb.component('group.theme', {
+  type: 'feature',
+  params: [
+    { id: 'theme', type: 'theme' },
+  ],
+  impl: (context,theme) => ({
+    extendCtx: (ctx,cmp) => 
+      ctx.setVars(theme)
+  })
+})
+
+jb.component('theme.material-design', {
+  type: 'theme',
+  impl: () => ({
+  	'$theme.editable-text': 'editable-text.mdl-input'
+  })
+})
+;
+
 
 jb.component('material-icon', {
 	type: 'control', category: 'control:50',
@@ -15887,155 +16083,6 @@ jb.component('editable-number.mdl-slider', {
 })
 ;
 
-jb.component('picklist', {
-  type: 'control', category: 'input:80',
-  params: [
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'databind', as: 'ref'},
-    { id: 'options', type: 'picklist.options', dynamic: true, essential: true, defaultValue: {$ : 'picklist.optionsByComma'} },
-    { id: 'promote', type: 'picklist.promote', dynamic: true },
-    { id: 'style', type: 'picklist.style', defaultValue: { $: 'picklist.native' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx => 
-    jb.ui.ctrl(ctx,{
-      beforeInit: function(cmp) {
-        cmp.recalcOptions = function() {
-          var options = ctx.params.options(ctx);
-          var groupsHash = {};
-          var promotedGroups = (ctx.params.promote() || {}).groups || [];
-          var groups = [];
-          options.filter(x=>x.text).forEach(o=>{
-            var groupId = groupOfOpt(o);
-            var group = groupsHash[groupId] || { options: [], text: groupId};
-            if (!groupsHash[groupId]) {
-              groups.push(group);
-              groupsHash[groupId] = group;
-            }
-            group.options.push({text: o.text.split('.').pop(), code: o.code });
-          })
-          groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
-          jb.ui.setState(cmp,{
-            groups: groups,
-            options: options,
-            hasEmptyOption: options.filter(x=>!x.text)[0]
-          })
-        }
-        cmp.recalcOptions();
-        jb.ui.refObservable(ctx.params.databind,cmp).subscribe(e=>
-          cmp.onChange && cmp.onChange(jb.val(e.ref)))
-      },
-    })
-})
-
-function groupOfOpt(opt) {
-  if (!opt.group && opt.text.indexOf('.') == -1)
-    return '---';
-  return opt.group || opt.text.split('.').shift();
-}
-
-jb.component('picklist.dynamic-options', {
-  type: 'feature',
-  params: [
-    { id: 'recalcEm', as: 'single'}
-  ],
-  impl: (ctx,recalcEm) => ({
-    init: cmp => 
-      recalcEm && recalcEm.subscribe &&
-        recalcEm.takeUntil( cmp.destroyed )
-        .subscribe(e=>
-            cmp.recalcOptions()) 
-  })
-})
-
-jb.component('picklist.onChange', {
-  type: 'feature',
-  description: 'action on picklist selection',
-  params: [
-    { id: 'action', type: 'action', dynamic: true}
-  ],
-  impl: (ctx,action) => ({
-    init: cmp => 
-      cmp.onChange = val => action(ctx.setData(val))
-  })
-})
-
-// ********* options
-
-jb.component('picklist.optionsByComma',{
-  type: 'picklist.options',
-  params: [ 
-    { id: 'options', as: 'string', essential: true},
-    { id: 'allowEmptyValue', type: 'boolean' },
-  ],
-  impl: function(context,options,allowEmptyValue) {
-    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
-    return emptyValue.concat((options||'').split(',').map(code=> ({ code: code, text: code })));
-  }
-});
-
-jb.component('picklist.options',{
-  type: 'picklist.options',
-  params: [ 
-    { id: 'options', type: 'data', as: 'array', essential: true},
-    { id: 'allowEmptyValue', type: 'boolean' },
-  ],
-  impl: function(context,options,allowEmptyValue) {
-    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
-    return emptyValue.concat(options.map(code=> ({ code: code, text: code })));
-  }
-})
-
-jb.component('picklist.coded-options',{
-  type: 'picklist.options',
-  params: [ 
-    { id: 'options', as: 'array',essential: true },
-    { id: 'code', as: 'string', dynamic:true , essential: true }, 
-    { id: 'text', as: 'string', dynamic:true, essential: true } ,
-    { id: 'allowEmptyValue', type: 'boolean' },
-  ],
-  impl: function(context,options,code,text,allowEmptyValue) {
-    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
-    return emptyValue.concat(options.map(function(option) { 
-      return { 
-        code: code(null,option), text: text(null,option) 
-      }
-    }))
-  }
-})
-
-jb.component('picklist.sorted-options', {
-  type: 'picklist.options',
-  params: [ 
-    { id: 'options', type: 'picklist.options', dynamic: true, essential: true, composite: true },
-    { id: 'marks', as: 'array', description: 'e.g input:80,group:90. 0 mark means hidden' },
-  ],
-  impl: (ctx,optionsFunc,marks) => {
-    var options = optionsFunc() || [];
-    marks.forEach(mark=> { 
-        var option = options.filter(opt=>opt.code == mark.code)[0];
-        if (option)
-          option.mark = Number(mark.mark || 50);
-    });
-    options = options.filter(op=>op.mark != 0);
-    options.sort((o1,o2)=>(o2.mark || 50) - (o1.mark || 50));
-    return options;
-  }
-})
-
-
-jb.component('picklist.promote',{
-  type: 'picklist.promote',
-  params: [ 
-    { id: 'groups', as: 'array'},
-    { id: 'options', as: 'array'},
-  ],
-  impl: (context,groups,options) => 
-    ({ groups: groups, options: options})
-});
-
-;
-
 jb.component('table', {
   type: 'control', category: 'group:80,common:70',
   params: [
@@ -16105,27 +16152,6 @@ jb.component('table.init', {
   })
 })
 
-;
-
-jb.type('theme');
-
-jb.component('group.theme', {
-  type: 'feature',
-  params: [
-    { id: 'theme', type: 'theme' },
-  ],
-  impl: (context,theme) => ({
-    extendCtx: (ctx,cmp) => 
-      ctx.setVars(theme)
-  })
-})
-
-jb.component('theme.material-design', {
-  type: 'theme',
-  impl: () => ({
-  	'$theme.editable-text': 'editable-text.mdl-input'
-  })
-})
 ;
 
 jb.component('tabs', {
@@ -16761,88 +16787,44 @@ jb.component('toolbar.simple', {
 
 ;
 
-jb.component('property-sheet.titles-above', {
-  type: 'group.style',
-  params: [
-    { id: 'spacing', as: 'number', defaultValue: 20 }
-  ],
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group'},
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property'},[
-            h('label',{ class: 'property-title'},ctrl.title),
-            h(ctrl)
-    ]))),
-    css: `>.property { margin-bottom: %$spacing%px }
-      >.property:last-child { margin-bottom:0 }
-      >.property>.property-title {
-        width:100px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        margin-top:2px;
-        font-size:14px;
-      }
-      >.property>div { display:inline-block }`
+jb.component('table.with-headers', {
+  type: 'table.style',
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('table',{},[
+        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
+        h('tbody',{class: 'jb-drag-parent'},
+            state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
+              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item)) : f.fieldData(item))))
+              ,item))
+        ),
+        state.items.length == 0 ? 'no items' : ''
+        ]),
+    features:{$: 'table.init'},
+    css: `{border-spacing: 0; text-align: left}
+    >tbody>tr>td { padding-right: 2px }
+    `
   }
 })
 
-jb.component('property-sheet.titles-above-float-left', {
-  type: 'group.style',
-  params: [
-    { id: 'spacing', as: 'number', defaultValue: 20 },
-    { id: 'fieldWidth', as: 'number', defaultValue: 200 },
-  ],
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group'},
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property'},[
-          h('label',{ class: 'property-title'},ctrl.title),
-          h(ctrl)
-    ]))),
-    css: `>.property { 
-          float: left;
-          width: %$fieldWidth%px;
-          margin-right: %$spacing%px;
-        }
-      .clearfix { clear: both }
-      >.property:last-child { margin-right:0 }
-      >.property>.property-title {
-        margin-bottom: 3px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        font-size:14px;
-      }`,
-  }
-})
 
-jb.component('property-sheet.titles-left', {
-  type: 'group.style',
+
+jb.component('table.mdl', {
+  type: 'table.style',
   params: [
-    { id: 'vSpacing', as: 'number', defaultValue: 20 },
-    { id: 'hSpacing', as: 'number', defaultValue: 20 },
-    { id: 'titleWidth', as: 'number', defaultValue: 100 },
+    { id: 'classForTable', as: 'string', defaultValue: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp'},
+    { id: 'classForTd', as: 'string', defaultValue: 'mdl-data-table__cell--non-numeric'},
   ],
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group'},
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property'},[
-          h('label',{ class: 'property-title'}, ctrl.title),
-          h(ctrl)
-    ]))),
-    css: `>.property { margin-bottom: %$vSpacing%px; display: flex }
-      >.property:last-child { margin-bottom:0px }
-      >.property>.property-title {
-        width: %$titleWidth%px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        margin-top:2px;
-        font-size:14px;
-        margin-right: %$hSpacing%px;
-      }
-      >.property>*:last-child { margin-right:0 }`
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('table',{ class: cmp.classForTable },[
+        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, class: cmp.classForTd, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
+        h('tbody',{class: 'jb-drag-parent'},
+            state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
+              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item)) : f.fieldData(item))))
+              ,item))
+        ),
+        state.items.length == 0 ? 'no items' : ''
+        ]),
+    features:{$: 'table.init'},
   }
 })
 ;
@@ -16974,7 +16956,151 @@ select::-webkit-input-placeholder { color: #999; }`
 })
 ;
 
-class NodeLine extends jb.ui.Component {
+jb.component('property-sheet.titles-above', {
+  type: 'group.style',
+  params: [
+    { id: 'spacing', as: 'number', defaultValue: 20 }
+  ],
+  impl :{$: 'custom-style', 
+    features :{$: 'group.init-group'},
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property'},[
+            h('label',{ class: 'property-title'},ctrl.title),
+            h(ctrl)
+    ]))),
+    css: `>.property { margin-bottom: %$spacing%px }
+      >.property:last-child { margin-bottom:0 }
+      >.property>.property-title {
+        width:100px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        vertical-align:top;
+        margin-top:2px;
+        font-size:14px;
+      }
+      >.property>div { display:inline-block }`
+  }
+})
+
+jb.component('property-sheet.titles-above-float-left', {
+  type: 'group.style',
+  params: [
+    { id: 'spacing', as: 'number', defaultValue: 20 },
+    { id: 'fieldWidth', as: 'number', defaultValue: 200 },
+  ],
+  impl :{$: 'custom-style', 
+    features :{$: 'group.init-group'},
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property'},[
+          h('label',{ class: 'property-title'},ctrl.title),
+          h(ctrl)
+    ]))),
+    css: `>.property { 
+          float: left;
+          width: %$fieldWidth%px;
+          margin-right: %$spacing%px;
+        }
+      .clearfix { clear: both }
+      >.property:last-child { margin-right:0 }
+      >.property>.property-title {
+        margin-bottom: 3px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        vertical-align:top;
+        font-size:14px;
+      }`,
+  }
+})
+
+jb.component('property-sheet.titles-left', {
+  type: 'group.style',
+  params: [
+    { id: 'vSpacing', as: 'number', defaultValue: 20 },
+    { id: 'hSpacing', as: 'number', defaultValue: 20 },
+    { id: 'titleWidth', as: 'number', defaultValue: 100 },
+  ],
+  impl :{$: 'custom-style', 
+    features :{$: 'group.init-group'},
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property'},[
+          h('label',{ class: 'property-title'}, ctrl.title),
+          h(ctrl)
+    ]))),
+    css: `>.property { margin-bottom: %$vSpacing%px; display: flex }
+      >.property:last-child { margin-bottom:0px }
+      >.property>.property-title {
+        width: %$titleWidth%px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        vertical-align:top;
+        margin-top:2px;
+        font-size:14px;
+        margin-right: %$hSpacing%px;
+      }
+      >.property>*:last-child { margin-right:0 }`
+  }
+})
+;
+
+jb.component('editable-boolean.checkbox', {
+  type: 'editable-boolean.style',
+  impl :{$: 'custom-style', 
+      features :{$: 'field.databind' },
+      template: (cmp,state,h) => h('input', { type: 'checkbox',
+        checked: state.model, 
+        onchange: e => cmp.jbModel(e.target.checked), 
+        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  })
+    }
+})
+
+jb.component('editable-boolean.checkbox-with-title', {
+  type: 'editable-boolean.style',
+  impl :{$: 'custom-style', 
+      features :{$: 'field.databind' },
+      template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
+        checked: state.model, 
+        onchange: e => cmp.jbModel(e.target.checked), 
+        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }), state.text])
+  }
+})
+
+
+jb.component('editable-boolean.expand-collapse', {
+  type: 'editable-boolean.style',
+  impl :{$: 'custom-style', 
+      features :{$: 'field.databind' },
+      template: (cmp,state,h) => h('div',{},[
+          h('input', { type: 'checkbox',
+            checked: state.model, 
+            onchange: e => cmp.jbModel(e.target.checked), 
+            onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }, state.text),
+          h('i',{class:'material-icons noselect', onclick: _=> cmp.toggle() }, state.model ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
+      ]),
+      css: `>i { font-size:16px; cursor: pointer; }
+          >input { display: none }`
+  }
+})
+
+jb.component('editable-boolean.mdl-slide-toggle', {
+  type: 'editable-boolean.style',
+  impl :{$: 'custom-style', 
+      template: (cmp,state,h) => h('label',{class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
+        h('input', { type: 'checkbox', class: 'mdl-switch__input', id: 'switch_' + state.fieldId,
+          checked: state.model, onchange: e => cmp.jbModel(e.target.checked) }),
+        h('span',{class:'mdl-switch__label'},state.text)
+      ]),
+      features :[
+          {$: 'field.databind' },
+          {$: 'editable-boolean.keyboard-support' },
+          {$: 'mdl-style.init-dynamic'}
+      ],
+  }
+})
+;
+
+(function() {
+
+	class NodeLine extends jb.ui.Component {
 	constructor(props) {
 		super();
 		this.state.expanded = props.tree.expanded[props.path];
@@ -16986,7 +17112,7 @@ class NodeLine extends jb.ui.Component {
 		})
 
 		this.state.flip = _ => {
-			tree.setExpanded(path,!tree.expanded[path]);
+			tree.expanded[path] = !(tree.expanded[path]);
 			this.setState({expanded:tree.expanded[path]});
 			tree.redraw();
 		};
@@ -17058,30 +17184,10 @@ jb.component('tree', {
 					redraw: _ => { // needed after dragula that changes the DOM
 						cmp.setState({});
 					},
-					expanded: {},
-					setExpanded: function(path,expanded) {
-						if (!expanded && this.expanded[path]) {
-							this.expanded[path].unsubscribe();
-							delete this.expanded[path];
-						} else {
-						this.expanded[path] = jb.ui.pathObservable(path,tree.nodeModel.refHandler,cmp)
-							.subscribe(e=> {
-								this.setExpanded(e.newPath,true);
-								this.setExpanded(e.oldPath,false);
-							})
-						}
-					},
+					expanded: jb.obj(tree.nodeModel.rootPath, true),
 					elemToPath: el =>
 						$(el).closest('.treenode').attr('path'),
 					selectionEmitter: new jb.rx.Subject(),
-				});
-				tree.setExpanded(tree.nodeModel.rootPath, true);
-				tree.selectionEmitter.subscribe(path=>{
-					if (tree.selectionPathObs)
-						tree.selectionPathObs.unsubscribe();
-					tree.selectionPathObs = jb.ui.pathObservable(path,tree.nodeModel.refHandler,cmp)
-						.subscribe(e=>
-							tree.selectionEmitter.next(e.newPath))
 				})
 			},
 			afterViewInit: cmp =>
@@ -17138,7 +17244,7 @@ jb.component('tree.selection', {
 			  tree.selected = selected;
 			  selected.split('~').slice(0,-1).reduce(function(base, x) {
 				  var path = base ? (base + '~' + x) : x;
-				  tree.setExpanded(path,true);
+				  tree.expanded[path] = true;
 				  return path;
 			  },'')
 			  if (context.params.databind)
@@ -17242,14 +17348,12 @@ jb.component('tree.regain-focus', {
 		ctx.vars.$tree && ctx.vars.$tree.regainFocus && ctx.vars.$tree.regainFocus()
 })
 
-
 jb.component('tree.drag-and-drop', {
   type: 'feature',
   params: [
-	  { id: 'afterDrop', type: 'action', dynamic: true, essential: true },
+//	  { id: 'afterDrop', type: 'action', dynamic: true, essential: true },
   ],
-  impl: function(context) {
-  	return {
+  impl: ctx => ({
   		onkeydown: true,
   		afterViewInit: cmp => {
   			var tree = cmp.tree;
@@ -17258,7 +17362,7 @@ jb.component('tree.drag-and-drop', {
 					return $(el).is('.jb-array-node>.treenode-children>div')
 				}
 	        });
-					drake.containers = $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
+			drake.containers = $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
 
 	        drake.on('drag', function(el, source) {
 	          var path = tree.elemToPath(el.firstElementChild)
@@ -17268,20 +17372,19 @@ jb.component('tree.drag-and-drop', {
 
 	        drake.on('drop', (dropElm, target, source,sibling) => {
 	            if (!dropElm.dragged) return;
-							$(dropElm).remove();
-	            tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
-	            var index =  sibling ? $(sibling).index() : -1;
-							var path = tree.elemToPath(target);
-							tree.nodeModel.move(path, dropElm.dragged.path,index);
-							// refresh the nodes on the tree - to avoid bugs
-							//tree.expanded[tree.nodeModel.rootPath] = false;
-							jb.delay(1).then(()=> {
-								//tree.expanded[tree.nodeModel.rootPath] = true;
-								context.params.afterDrop(context.setData({ dragged: dropElm.dragged.path, index: index }));
-								//var newSelection = dropElm.dragged.path.split('~').slice(0,-1).concat([''+index]).join('~');
-								dropElm.dragged = null;
-								//tree.redraw();
-							})
+				$(dropElm).remove();
+	            tree.setExpanded(dropElm.dragged.path,dropElm.dragged.expanded); // restore expanded state
+	            var index =  sibling ? $(sibling).index() : target.parentElement.children.length;
+				var path = tree.elemToPath(target)+'~'+index;
+
+				var state = treeStateAsVals(tree);
+				tree.nodeModel.move(path, dropElm.dragged.path);
+				restoreTreeStateFromVals(tree,state);
+				jb.delay(1).then(()=> {
+//					context.params.afterDrop(context.setData({ dragged: dropElm.dragged.path, index: index }));
+					dropElm.dragged = null;
+					tree.redraw();
+				})
 	        });
 
 	        // ctrl up and down
@@ -17304,65 +17407,30 @@ jb.component('tree.drag-and-drop', {
 			  tree.drake.containers =
 				  $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
   		}
-  	}
-  }
-})
-;
-
-jb.component('editable-boolean.checkbox', {
-  type: 'editable-boolean.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('input', { type: 'checkbox',
-        checked: state.model, 
-        onchange: e => cmp.jbModel(e.target.checked), 
-        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  })
-    }
+  	})
 })
 
-jb.component('editable-boolean.checkbox-with-title', {
-  type: 'editable-boolean.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.model, 
-        onchange: e => cmp.jbModel(e.target.checked), 
-        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }), state.text])
-  }
+treeStateAsVals = tree => ({
+	selected: pathToVal(tree.selected),
+	expanded: jb.entries(tree.expanded).filter(e=>e[1]).map(e=>pathToVal(e[0]))
 })
 
+restoreTreeStateFromVals = (tree,vals) => {
+	tree.selected: valToPath(vals.selected);
+	tree.expanded = {};
+	vals.expanded.forEach(v=>tree.expanded[valToPath(v)] = true)
+}
 
-jb.component('editable-boolean.expand-collapse', {
-  type: 'editable-boolean.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('div',{},[
-          h('input', { type: 'checkbox',
-            checked: state.model, 
-            onchange: e => cmp.jbModel(e.target.checked), 
-            onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }, state.text),
-          h('i',{class:'material-icons noselect', onclick: _=> cmp.toggle() }, state.model ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
-      ]),
-      css: `>i { font-size:16px; cursor: pointer; }
-          >input { display: none }`
-  }
-})
+pathToVal = (model,path) =>
+	model.refHandler.val(model.refHandler.refOfPath(path.split('~')))
 
-jb.component('editable-boolean.mdl-slide-toggle', {
-  type: 'editable-boolean.style',
-  impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('label',{class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
-        h('input', { type: 'checkbox', class: 'mdl-switch__input', id: 'switch_' + state.fieldId,
-          checked: state.model, onchange: e => cmp.jbModel(e.target.checked) }),
-        h('span',{class:'mdl-switch__label'},state.text)
-      ]),
-      features :[
-          {$: 'field.databind' },
-          {$: 'editable-boolean.keyboard-support' },
-          {$: 'mdl-style.init-dynamic'}
-      ],
-  }
-})
+valToPath = (model,val) => {
+	var ref = model.refHandler.asRef(val);
+	return ref ? val.$jb_path.join('~') : ''
+}
+
+
+})()
 ;
 
 jb.component('tree.json-read-only',{
@@ -17493,6 +17561,112 @@ class Json {
 
 (function() { var st = jb.studio;
 
+st.message = function(message,error) {
+	$('.studio-message').text(message); // add animation
+	$('.studio-message').css('background', error ? 'red' : '#327DC8');
+	$('.studio-message').css('animation','');
+	jb.delay(1).then(()=>
+		$('.studio-message').css('animation','slide_from_top 5s ease')
+	)
+}
+
+// st.jbart_base = function() {
+// 	return jb.studio.previewjb || jb;
+// }
+
+// st.findjBartToLook = function(path) {
+// 	var id = path.split('~')[0];
+// 	if (st.jbart_base().comps[id])
+// 		return st.jbart_base();
+// 	if (jb.comps[id])
+// 		return jb;
+// }
+
+// ********* Components ************
+
+jb.component('studio.message', {
+	type: 'action',
+	params: [ { id: 'message', as: 'string' } ],
+	impl: (ctx,message) =>
+		st.message(message)
+})
+
+jb.component('studio.redraw-studio', {
+	type: 'action',
+	impl: ctx =>
+    	st.redrawStudio && st.redrawStudio()
+})
+
+jb.component('studio.last-edit', {
+	type: 'data',
+	params: [
+		{ id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true },
+	],
+	impl: (ctx,justNow) => {
+		var now = new Date().getTime();
+		var lastEvent = st.compsHistory.slice(-1).map(x=>x.opEvent).filter(x=>x)
+			.filter(r=>
+				!justNow || now - r.timeStamp < 1000)[0];
+		return lastEvent && (lastEvent.insertedPath || lastEvent.path).join('~');
+	}
+})
+
+jb.component('studio.goto-last-edit', {
+	type: 'action',
+	impl: {$:'action.if', condition: {$: 'studio.last-edit'}, then: {$: 'studio.goto-path', path: {$: 'studio.last-edit'}} }
+})
+
+jb.component('studio.goto-path', {
+	type: 'action',
+	params: [
+		{ id: 'path', as: 'string' },
+	],
+	impl :{$runActions: [
+		{$: 'dialog.close-containing-popup' },
+		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' },
+		{$if :{$: 'studio.is-of-type', type: 'control', path: '%$path%'},
+			then: {$runActions: [
+				{$: 'studio.open-control-tree'},
+//				{$: 'studio.open-properties', focus: true}
+			]},
+			else :{$: 'studio.open-component-in-jb-editor', path: '%$path%' }
+		}
+	]}
+})
+
+jb.component('studio.project-source',{
+	params: [
+		{ id: 'project', as: 'string', defaultValue: '%$studio/project%' }
+	],
+	impl: (context,project) => {
+		if (!project) return;
+		var comps = jb.entries(st.previewjb.comps).map(x=>x[0]).filter(x=>x.indexOf(project) == 0);
+		return comps.map(comp=>st.compAsStr(comp)).join('\n\n')
+	}
+})
+
+jb.component('studio.comp-source',{
+	params: [
+		{ id: 'comp', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } }
+	],
+	impl: (context,comp) =>
+		st.compAsStr(comp.split('~')[0])
+})
+
+jb.component('studio.dynamic-options-watch-new-comp', {
+  type: 'feature',
+  impl :{$: 'picklist.dynamic-options',
+        recalcEm: () =>
+          st.scriptChange.filter(e => e.path.length == 1)
+  }
+})
+
+
+})();
+;
+
+(function() { var st = jb.studio;
+
 function compsRef(val,opEvent) {
   if (typeof val == 'undefined')
     return st.previewjb.comps;
@@ -17561,33 +17735,6 @@ Object.assign(st, {
 			st.splice(st.refOfPath(st.parentPath(path)),[[index, 1]])
 		} else {
 			st.writeValueOfPath(path,null);
-		}
-	},
-
-	moveInTree: (path,draggedPath,index) => { // drag & drop
-		var draggedRef = st.refOfPath(draggedPath);
-		var dragged = st.valOfPath(draggedPath);
-		var dest = st.getOrCreateControlArrayRef(path);
-		if (!st.refreshRef(draggedRef))
-			return;
-		var _draggedPath = draggedRef.$jb_path.join('~');
-		if (dest) {
-			st._delete(_draggedPath);
-			var _index = (index == -1) ? jb.val(dest).length : index;
-			st.splice(dest,[[_index,0,dragged]]);
-		}
- 	},
-
-	moveInArray: (path,draggedPath,index) => { // drag & drop
-		var dragged = st.valOfPath(draggedPath);
-		var array = st.valOfPath(path);
-		if (Array.isArray(array)) {
-			if (index < 0 || index >= array.length)
-				return 'moveInArray: out of array index ' + index + ' in array of size ' + array.length;
-			st._delete(draggedPath);
-			array = st.valOfPath(path);
-			var _index = (index == -1) ? jb.val(array).length : index;
-			st.splice(array,[[_index,0,dragged]]);
 		}
 	},
 
@@ -18454,154 +18601,6 @@ jb.component('studio-toolbar', {
 })
 ;
 
-(function() { var st = jb.studio;
-
-st.message = function(message,error) {
-	$('.studio-message').text(message); // add animation
-	$('.studio-message').css('background', error ? 'red' : '#327DC8');
-	$('.studio-message').css('animation','');
-	jb.delay(1).then(()=>
-		$('.studio-message').css('animation','slide_from_top 5s ease')
-	)
-}
-
-// st.jbart_base = function() {
-// 	return jb.studio.previewjb || jb;
-// }
-
-// st.findjBartToLook = function(path) {
-// 	var id = path.split('~')[0];
-// 	if (st.jbart_base().comps[id])
-// 		return st.jbart_base();
-// 	if (jb.comps[id])
-// 		return jb;
-// }
-
-// ********* Components ************
-
-jb.component('studio.message', {
-	type: 'action',
-	params: [ { id: 'message', as: 'string' } ],
-	impl: (ctx,message) =>
-		st.message(message)
-})
-
-jb.component('studio.redraw-studio', {
-	type: 'action',
-	impl: ctx =>
-    	st.redrawStudio && st.redrawStudio()
-})
-
-jb.component('studio.last-edit', {
-	type: 'data',
-	params: [
-		{ id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true },
-	],
-	impl: (ctx,justNow) => {
-		var now = new Date().getTime();
-		var lastEvent = st.compsHistory.slice(-1).map(x=>x.opEvent).filter(x=>x)
-			.filter(r=>
-				!justNow || now - r.timeStamp < 1000)[0];
-		return lastEvent && (lastEvent.insertedPath || lastEvent.path).join('~');
-	}
-})
-
-jb.component('studio.goto-last-edit', {
-	type: 'action',
-	impl: {$:'action.if', condition: {$: 'studio.last-edit'}, then: {$: 'studio.goto-path', path: {$: 'studio.last-edit'}} }
-})
-
-jb.component('studio.goto-path', {
-	type: 'action',
-	params: [
-		{ id: 'path', as: 'string' },
-	],
-	impl :{$runActions: [
-		{$: 'dialog.close-containing-popup' },
-		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' },
-		{$if :{$: 'studio.is-of-type', type: 'control', path: '%$path%'},
-			then: {$runActions: [
-				{$: 'studio.open-control-tree'},
-//				{$: 'studio.open-properties', focus: true}
-			]},
-			else :{$: 'studio.open-component-in-jb-editor', path: '%$path%' }
-		}
-	]}
-})
-
-jb.component('studio.project-source',{
-	params: [
-		{ id: 'project', as: 'string', defaultValue: '%$studio/project%' }
-	],
-	impl: (context,project) => {
-		if (!project) return;
-		var comps = jb.entries(st.previewjb.comps).map(x=>x[0]).filter(x=>x.indexOf(project) == 0);
-		return comps.map(comp=>st.compAsStr(comp)).join('\n\n')
-	}
-})
-
-jb.component('studio.comp-source',{
-	params: [
-		{ id: 'comp', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } }
-	],
-	impl: (context,comp) =>
-		st.compAsStr(comp.split('~')[0])
-})
-
-jb.component('studio.dynamic-options-watch-new-comp', {
-  type: 'feature',
-  impl :{$: 'picklist.dynamic-options',
-        recalcEm: () =>
-          st.scriptChange.filter(e => e.path.length == 1)
-  }
-})
-
-
-})();
-;
-
-jb.component('table.with-headers', {
-  type: 'table.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('table',{},[
-        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
-        h('tbody',{class: 'jb-drag-parent'},
-            state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item)) : f.fieldData(item))))
-              ,item))
-        ),
-        state.items.length == 0 ? 'no items' : ''
-        ]),
-    features:{$: 'table.init'},
-    css: `{border-spacing: 0; text-align: left}
-    >tbody>tr>td { padding-right: 2px }
-    `
-  }
-})
-
-
-
-jb.component('table.mdl', {
-  type: 'table.style',
-  params: [
-    { id: 'classForTable', as: 'string', defaultValue: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp'},
-    { id: 'classForTd', as: 'string', defaultValue: 'mdl-data-table__cell--non-numeric'},
-  ],
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('table',{ class: cmp.classForTable },[
-        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, class: cmp.classForTd, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
-        h('tbody',{class: 'jb-drag-parent'},
-            state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item)) : f.fieldData(item))))
-              ,item))
-        ),
-        state.items.length == 0 ? 'no items' : ''
-        ]),
-    features:{$: 'table.init'},
-  }
-})
-;
-
 jb.component('editable-text.studio-primitive-text', {
   type: 'editable-text.style',
   impl :{$: 'custom-style', 
@@ -19439,6 +19438,179 @@ jb.studio.newControl = path =>
         });
 ;
 
+
+jb.component('studio.data-resources', {
+  type: 'control', 
+  impl :{$: 'group', 
+    controls: [
+      {$: 'itemlist', 
+        items: '%$samples%', 
+        controls: [
+          {$: 'button', 
+            title: '%%', 
+            style :{$: 'button.mdl-flat-ripple' }
+          }
+        ], 
+        style :{$: 'itemlist.ul-li' }, 
+        watchItems: true, 
+        itemVariable: 'item'
+      }, 
+      {$: 'button', 
+        title: 'add resource', 
+        style :{$: 'button.mdl-icon', icon: 'add', size: 20 }
+      }, 
+      {$: 'group', 
+        style :{$: 'group.section' }, 
+        controls: [
+          {$: 'itemlist', 
+            items :{$: 'list', items: ['1', '2', '3'] }, 
+            style :{$: 'itemlist.ul-li' }, 
+            watchItems: true, 
+            itemVariable: 'item'
+          }
+        ], 
+        features :{$: 'var', name: 'selected_in_itemlist', mutable: true }
+      }
+    ], 
+    features :{$: 'group.wait', 
+      for :{$: 'level-up.entries', 
+        db :{$: 'level-up.file-db', rootDirectory: '/projects/data-tests/samples' }
+      }, 
+      resource: 'samples', 
+      mapToResource: '%%'
+    }
+  }
+})
+
+jb.component('studio.open-resource', {
+	type: 'action',
+	params: [
+	    { id: 'resource', type: 'data' },
+	    { id: 'id', as: 'string' }
+	], 
+	impl :{$: 'open-dialog',
+		title: '%$id%',
+		style :{$: 'dialog.studio-floating', id: 'resource %$id%', width: 500 },
+		content :{$: 'tree',
+		    nodeModel :{$: 'tree.json-read-only', 
+		      object: '%$resource%', rootPath: '%$id%' 
+		    },
+		    features: [
+	   	        { $: 'css.class', class: 'jb-control-tree'},
+		        { $: 'tree.selection' },
+		        { $: 'tree.keyboard-selection'} 
+		    ] 
+		 },
+	}
+})
+
+jb.component('studio.data-resource-menu', {
+  type: 'menu.option',
+  impl :{$: 'menu.menu', title: 'Data',
+      options: [
+          {$: 'dynamic-controls', 
+            controlItems: function (ctx) {
+              var res = jb.path(jb, ['previewWindow', 'jbart_widgets', ctx.exp('%$studio/project%'), 'resources']);
+              return Object.getOwnPropertyNames(res)
+                  .filter(function (x) { return x != 'window'; });
+            }, 
+            genericControl :{$: 'menu.action', 
+              title: '%$controlItem%', 
+              action :{$: 'studio.open-resource', 
+                id: '%$controlItem%',
+                resource: function (ctx) {
+                     return jb.path(jb, ['previewWindow', 'jbart_widgets', ctx.exp('%$studio/project%'), 'resources', ctx.exp('%$controlItem%')]);
+                }, 
+              }
+            }
+          }
+      ]
+    }
+})
+
+;
+
+jb.component('studio.preview-widget', {
+  type: 'control',
+  params: [
+    { id: 'style', type: 'preview-style', dynamic: true, defaultValue :{$: 'studio.preview-widget-impl'}  },
+    { id: 'width', as: 'number'},
+    { id: 'height', as: 'number'},
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx,{
+      init: cmp => {
+        cmp.state.project = ctx.exp('%$studio/project%');
+        cmp.state.cacheKiller = 'cacheKiller='+(''+Math.random()).slice(10);
+        document.title = cmp.state.project + ' with jBart';
+      },
+    })
+})
+
+jb.studio.initPreview = function(preview_window,allowedTypes) {
+      var st = jb.studio;
+      st.previewWindow = preview_window;
+      st.previewjb = preview_window.jb;
+      st.serverComps = st.previewjb.comps;
+      st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
+
+      preview_window.jb.studio.studioWindow = window;
+      preview_window.jb.studio.previewjb = preview_window.jb;
+      st.initEventTracker();
+      if (preview_window.location.href.match(/\/studio-helper/))
+        st.previewjb.studio.initEventTracker();
+}
+
+jb.component('studio.preview-widget-impl', {
+  type: 'preview-style',
+  impl :{$: 'custom-style',
+      template: (cmp,state,h) => h('iframe', {
+          id:'jb-preview',
+          sandbox: 'allow-same-origin allow-forms allow-scripts',
+          frameborder: 0,
+          class: 'preview-iframe',
+          width: cmp.ctx.vars.$model.width,
+          height: cmp.ctx.vars.$model.height,
+          src: '/project/'+ state.project + '?' + state.cacheKiller
+      }),
+      css: `{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px;  }`
+  }
+})
+
+jb.component('studio.refresh-preview', {
+  type: 'action',
+  impl: _ => {
+    jb.ui.garbageCollectCtxDictionary(true);
+    jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
+    jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
+  }
+})
+
+jb.component('studio.set-preview-size', {
+  type: 'action',
+  params: [
+    { id: 'width', as: 'number'},
+    { id: 'height', as: 'number'},
+  ],
+  impl: (ctx,width,height) => {
+    if (width)
+      $('.preview-iframe').attr('width',width);
+    if (height)
+      $('.preview-iframe').attr('height',height);
+  }
+})
+
+jb.component('studio.wait-for-preview-iframe', {
+  impl: _ =>
+    jb.ui.waitFor(()=>
+      jb.studio.previewWindow)
+})
+
+jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studio/page')
+      .startWith(1)
+      .map(e=>jb.resources.studio.project + '.' + jb.resources.studio.page);
+;
+
 (function() {
 var st = jb.studio;
 
@@ -19466,11 +19638,8 @@ st.ControlTree = class {
 				}))
 				.concat(nonRecursive ? [] : this.innerControlPaths(path));
 	}
-	move(path,draggedPath,index) {
-		if (st.parentPath(draggedPath) == path)
-			return st.moveInArray(path,draggedPath,index)
-		else
-			return st.moveInTree(path,draggedPath,index)
+	move(from,to) {
+		return jb.move(st.refOfPath(from),st.refOfPath(to))
 	}
 	disabled(path) {
 		return st.disabled(path)
@@ -19536,8 +19705,8 @@ st.jbEditorTree = class {
 				.concat(this.specialCases(path,val) || [])
 				.concat(this.innerProfiles(path,val) || [])
 	}
-	move(path,draggedPath,index) {
-		return st.moveInArray(path,draggedPath,index)
+	move(from,to) {
+		return jb.move(st.refOfPath(from),st.refOfPath(to))
 	}
 	disabled(path) {
 		return st.disabled(path)
@@ -19741,98 +19910,6 @@ Object.assign(st,{
 })
 
 })()
-;
-
-
-jb.component('studio.data-resources', {
-  type: 'control', 
-  impl :{$: 'group', 
-    controls: [
-      {$: 'itemlist', 
-        items: '%$samples%', 
-        controls: [
-          {$: 'button', 
-            title: '%%', 
-            style :{$: 'button.mdl-flat-ripple' }
-          }
-        ], 
-        style :{$: 'itemlist.ul-li' }, 
-        watchItems: true, 
-        itemVariable: 'item'
-      }, 
-      {$: 'button', 
-        title: 'add resource', 
-        style :{$: 'button.mdl-icon', icon: 'add', size: 20 }
-      }, 
-      {$: 'group', 
-        style :{$: 'group.section' }, 
-        controls: [
-          {$: 'itemlist', 
-            items :{$: 'list', items: ['1', '2', '3'] }, 
-            style :{$: 'itemlist.ul-li' }, 
-            watchItems: true, 
-            itemVariable: 'item'
-          }
-        ], 
-        features :{$: 'var', name: 'selected_in_itemlist', mutable: true }
-      }
-    ], 
-    features :{$: 'group.wait', 
-      for :{$: 'level-up.entries', 
-        db :{$: 'level-up.file-db', rootDirectory: '/projects/data-tests/samples' }
-      }, 
-      resource: 'samples', 
-      mapToResource: '%%'
-    }
-  }
-})
-
-jb.component('studio.open-resource', {
-	type: 'action',
-	params: [
-	    { id: 'resource', type: 'data' },
-	    { id: 'id', as: 'string' }
-	], 
-	impl :{$: 'open-dialog',
-		title: '%$id%',
-		style :{$: 'dialog.studio-floating', id: 'resource %$id%', width: 500 },
-		content :{$: 'tree',
-		    nodeModel :{$: 'tree.json-read-only', 
-		      object: '%$resource%', rootPath: '%$id%' 
-		    },
-		    features: [
-	   	        { $: 'css.class', class: 'jb-control-tree'},
-		        { $: 'tree.selection' },
-		        { $: 'tree.keyboard-selection'} 
-		    ] 
-		 },
-	}
-})
-
-jb.component('studio.data-resource-menu', {
-  type: 'menu.option',
-  impl :{$: 'menu.menu', title: 'Data',
-      options: [
-          {$: 'dynamic-controls', 
-            controlItems: function (ctx) {
-              var res = jb.path(jb, ['previewWindow', 'jbart_widgets', ctx.exp('%$studio/project%'), 'resources']);
-              return Object.getOwnPropertyNames(res)
-                  .filter(function (x) { return x != 'window'; });
-            }, 
-            genericControl :{$: 'menu.action', 
-              title: '%$controlItem%', 
-              action :{$: 'studio.open-resource', 
-                id: '%$controlItem%',
-                resource: function (ctx) {
-                     return jb.path(jb, ['previewWindow', 'jbart_widgets', ctx.exp('%$studio/project%'), 'resources', ctx.exp('%$controlItem%')]);
-                }, 
-              }
-            }
-          }
-      ]
-    }
-})
-
 ;
 
 (function() {
@@ -20424,8 +20501,8 @@ jb.component('studio.control-tree', {
 //            autoFocus: true,
           },
           {$: 'tree.drag-and-drop' },
-          {$: 'studio.control-tree.refresh-path-changes' },
-//          {$: 'studio.watch-script-changes' }
+//          {$: 'studio.control-tree.refresh-path-changes' },
+          {$: 'studio.watch-script-changes' }
           // {$: 'tree.onMouseRight',
           //   action :{$: 'studio.open-tree-menu', path: '%%' }
           // }
@@ -20449,114 +20526,33 @@ jb.component('studio.control-tree.nodes', {
 })
 
 // after model modifications the paths of the selected and expanded nodes may change and the tree should fix it.
-jb.component('studio.control-tree.refresh-path-changes', {
-  type: 'feature',
-  impl: ctx => ({
-    init : cmp => {
-      var tree = cmp.ctx.vars.$tree;
-      if (!tree) return;
-      jb.studio.compsRefHandler.resourceChange.takeUntil( cmp.destroyed )
-        .subscribe(opEvent => {
-          var new_expanded = {};
-          jb.entries(tree.expanded)
-            .filter(e=>e[1]).map(e=>e[0])
-            .map(path=> fixPath(path,opEvent))
-            .filter(x=>x)
-            .forEach(path => new_expanded[path] = true)
-          tree.expanded = new_expanded;
-          tree.selectionEmitter.next(fixPath(tree.selected,opEvent));
-        })
-
-        function fixPath(path,opEvent) {
-          var oldPath = opEvent.oldRef.$jb_path.join('~');
-          if (path.indexOf(oldPath) == 0)
-            return opEvent.ref.$jb_invalid ? null : path.replace(oldPath,opEvent.ref.$jb_path.join('~'));
-          return path;
-        }
-    }
-  })
-})
-;
-
-jb.component('studio.preview-widget', {
-  type: 'control',
-  params: [
-    { id: 'style', type: 'preview-style', dynamic: true, defaultValue :{$: 'studio.preview-widget-impl'}  },
-    { id: 'width', as: 'number'},
-    { id: 'height', as: 'number'},
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx,{
-      init: cmp => {
-        cmp.state.project = ctx.exp('%$studio/project%');
-        cmp.state.cacheKiller = 'cacheKiller='+(''+Math.random()).slice(10);
-        document.title = cmp.state.project + ' with jBart';
-      },
-    })
-})
-
-jb.studio.initPreview = function(preview_window,allowedTypes) {
-      var st = jb.studio;
-      st.previewWindow = preview_window;
-      st.previewjb = preview_window.jb;
-      st.serverComps = st.previewjb.comps;
-      st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
-
-      preview_window.jb.studio.studioWindow = window;
-      preview_window.jb.studio.previewjb = preview_window.jb;
-      st.initEventTracker();
-      if (preview_window.location.href.match(/\/studio-helper/))
-        st.previewjb.studio.initEventTracker();
-}
-
-jb.component('studio.preview-widget-impl', {
-  type: 'preview-style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('iframe', {
-          id:'jb-preview',
-          sandbox: 'allow-same-origin allow-forms allow-scripts',
-          frameborder: 0,
-          class: 'preview-iframe',
-          width: cmp.ctx.vars.$model.width,
-          height: cmp.ctx.vars.$model.height,
-          src: '/project/'+ state.project + '?' + state.cacheKiller
-      }),
-      css: `{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px;  }`
-  }
-})
-
-jb.component('studio.refresh-preview', {
-  type: 'action',
-  impl: _ => {
-    jb.ui.garbageCollectCtxDictionary(true);
-    jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
-    jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
-  }
-})
-
-jb.component('studio.set-preview-size', {
-  type: 'action',
-  params: [
-    { id: 'width', as: 'number'},
-    { id: 'height', as: 'number'},
-  ],
-  impl: (ctx,width,height) => {
-    if (width)
-      $('.preview-iframe').attr('width',width);
-    if (height)
-      $('.preview-iframe').attr('height',height);
-  }
-})
-
-jb.component('studio.wait-for-preview-iframe', {
-  impl: _ =>
-    jb.ui.waitFor(()=>
-      jb.studio.previewWindow)
-})
-
-jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studio/page')
-      .startWith(1)
-      .map(e=>jb.resources.studio.project + '.' + jb.resources.studio.page);
+// jb.component('studio.control-tree.refresh-path-changes', {
+//   type: 'feature',
+//   impl: ctx => ({
+//     init : cmp => {
+//       var tree = cmp.ctx.vars.$tree;
+//       if (!tree) return;
+//       jb.studio.compsRefHandler.resourceChange.takeUntil( cmp.destroyed )
+//         .subscribe(opEvent => {
+//           var new_expanded = {};
+//           jb.entries(tree.expanded)
+//             .filter(e=>e[1]).map(e=>e[0])
+//             .map(path=> fixPath(path,opEvent))
+//             .filter(x=>x)
+//             .forEach(path => new_expanded[path] = true)
+//           tree.expanded = new_expanded;
+//           tree.selectionEmitter.next(fixPath(tree.selected,opEvent));
+//         })
+//
+//         function fixPath(path,opEvent) {
+//           var oldPath = opEvent.oldRef.$jb_path.join('~');
+//           if (path.indexOf(oldPath) == 0)
+//             return opEvent.ref.$jb_invalid ? null : path.replace(oldPath,opEvent.ref.$jb_path.join('~'));
+//           return path;
+//         }
+//     }
+//   })
+// })
 ;
 
 jb.component('studio.open-multiline-edit', {
@@ -21307,95 +21303,6 @@ jb.component('studio.tgp-path-options',{
 })
 ;
 
-jb.component('studio.property-toolbar-feature', {
-  type: 'feature',
-  params: [
-    { id: 'path', as: 'string' }
-  ],
-  impl : {$list: [
-    {$: 'field.toolbar',
-        toolbar :{$: 'studio.property-toolbar', path: '%$path%' }
-    },
-    {$: 'studio.disabled-support', path: '%$path%' }
-  ]}
-})
-
-jb.component('studio.property-toolbar', {
-  type: 'control',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'button',
-    title: 'more...',
-    action :{$: 'studio.open-property-menu', path: '%$path%' },
-    style :{$: 'studio.property-toolbar-style' },
-//    features :{$: 'css.margin', top: '5', left: '4' }
-  }
-})
-
-jb.component('studio.open-property-menu', {
-  type: 'action',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'menu.open-context-menu',
-    $vars: {
-      compName :{$: 'studio.comp-name', path: '%$path%' }
-    },
-    menu :{$: 'menu.menu',
-      options: [
-        {$: 'menu.action',
-          title: 'Style editor',
-          action :{
-            $runActions: [
-              {$: 'studio.make-local', path: '%$path%' },
-              {$: 'studio.open-style-editor', path: '%$path%' }
-            ]
-          },
-          showCondition :{$: 'ends-with', endsWith: '~style', text: '%$path%' }
-        },
-        {$: 'menu.action',
-          title: 'multiline edit',
-          action :{$: 'studio.open-multiline-edit', path: '%$path%' },
-          showCondition :{$: 'equals',
-            item1 :{ $pipeline: [{$: 'studio.param-def', path: '%$path%' }, '%as%'] },
-            item2: 'string'
-          }
-        },
-        {$: 'menu.action',
-          title: 'Goto %$compName%',
-          action :{$: 'studio.goto-path', path: '%$compName%' },
-          showCondition: '%$compName%'
-        },
-        {$: 'menu.action',
-          title: 'Inteliscript editor',
-          action :{$: 'studio.open-jb-editor', path: '%$path%' },
-          icon: 'code'
-        },
-        {$: 'menu.action',
-          title: 'Javascript editor',
-          action :{$: 'studio.edit-source', path: '%$path%' },
-          icon: 'code'
-        }, 
-        {$: 'studio.goto-editor-options', path: '%$path%' },
-        {$: 'menu.action',
-          title: 'Delete',
-          action :{$: 'studio.delete', path: '%$path%' },
-          icon: 'delete',
-          shortcut: 'Delete'
-        },
-        {$: 'menu.action',
-          title :{
-            $if :{$: 'studio.disabled', path: '%$path%' },
-            then: 'Enable',
-            else: 'Disable'
-          },
-          action :{$: 'studio.toggle-disabled', path: '%$path%' },
-          icon: 'do_not_disturb',
-          shortcut: 'Ctrl+D'
-        }
-      ]
-    }
-  }
-})
-;
-
 (function() {
 var st = jb.studio;
 
@@ -21637,6 +21544,201 @@ st.closestCtxInPreview = path => {
 })()
 ;
 
+jb.component('studio.property-toolbar-feature', {
+  type: 'feature',
+  params: [
+    { id: 'path', as: 'string' }
+  ],
+  impl : {$list: [
+    {$: 'field.toolbar',
+        toolbar :{$: 'studio.property-toolbar', path: '%$path%' }
+    },
+    {$: 'studio.disabled-support', path: '%$path%' }
+  ]}
+})
+
+jb.component('studio.property-toolbar', {
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'button',
+    title: 'more...',
+    action :{$: 'studio.open-property-menu', path: '%$path%' },
+    style :{$: 'studio.property-toolbar-style' },
+//    features :{$: 'css.margin', top: '5', left: '4' }
+  }
+})
+
+jb.component('studio.open-property-menu', {
+  type: 'action',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'menu.open-context-menu',
+    $vars: {
+      compName :{$: 'studio.comp-name', path: '%$path%' }
+    },
+    menu :{$: 'menu.menu',
+      options: [
+        {$: 'menu.action',
+          title: 'Style editor',
+          action :{
+            $runActions: [
+              {$: 'studio.make-local', path: '%$path%' },
+              {$: 'studio.open-style-editor', path: '%$path%' }
+            ]
+          },
+          showCondition :{$: 'ends-with', endsWith: '~style', text: '%$path%' }
+        },
+        {$: 'menu.action',
+          title: 'multiline edit',
+          action :{$: 'studio.open-multiline-edit', path: '%$path%' },
+          showCondition :{$: 'equals',
+            item1 :{ $pipeline: [{$: 'studio.param-def', path: '%$path%' }, '%as%'] },
+            item2: 'string'
+          }
+        },
+        {$: 'menu.action',
+          title: 'Goto %$compName%',
+          action :{$: 'studio.goto-path', path: '%$compName%' },
+          showCondition: '%$compName%'
+        },
+        {$: 'menu.action',
+          title: 'Inteliscript editor',
+          action :{$: 'studio.open-jb-editor', path: '%$path%' },
+          icon: 'code'
+        },
+        {$: 'menu.action',
+          title: 'Javascript editor',
+          action :{$: 'studio.edit-source', path: '%$path%' },
+          icon: 'code'
+        }, 
+        {$: 'studio.goto-editor-options', path: '%$path%' },
+        {$: 'menu.action',
+          title: 'Delete',
+          action :{$: 'studio.delete', path: '%$path%' },
+          icon: 'delete',
+          shortcut: 'Delete'
+        },
+        {$: 'menu.action',
+          title :{
+            $if :{$: 'studio.disabled', path: '%$path%' },
+            then: 'Enable',
+            else: 'Disable'
+          },
+          action :{$: 'studio.toggle-disabled', path: '%$path%' },
+          icon: 'do_not_disturb',
+          shortcut: 'Ctrl+D'
+        }
+      ]
+    }
+  }
+})
+;
+
+(function() {
+var st = jb.studio;
+
+jb.component('studio.save-components', {
+	type: 'action',
+	params: [
+		{ id: 'force',as: 'boolean', type: 'boolean' }
+	],
+	impl : (ctx,force) =>
+		jb.rx.Observable.from(Object.getOwnPropertyNames(st.previewjb.comps))
+			.filter(id=>id.indexOf('$jb') != 0)
+			.filter(id=>st.previewjb.comps[id] != st.serverComps[id])
+			.concatMap(id=>{
+				var original = st.serverComps[id] ? st.prettyPrintComp(id,st.serverComps[id]) : '';
+				st.message('saving ' + id);
+				if (force && !original)
+					original = `jb.component('${id}', {`;
+
+				return $.ajax({
+					url: `/?op=saveComp&comp=${id}&project=${ctx.exp('%$studio/project%')}&force=${force}`,
+					type: 'POST',
+					data: JSON.stringify({ original: original, toSave: st.compAsStr(id) }),
+					headers: { 'Content-Type': 'application/json; charset=UTF-8' }
+				}).then(
+					res=>({ res: res , id: id }),
+					e=> { throw { e: e , id: id } }
+				)
+			})
+			.catch(e=>{
+				st.message('error saving: ' + e.e);
+				return jb.logException(e,'error while saving ' + e.id) || []
+			})
+			.subscribe(entry=>{
+				var result = entry.res;
+				st.message((result.type || '') + ': ' + (result.desc || '') + (result.message || ''), result.type != 'success');
+				if (result.type == 'success')
+					st.serverComps[entry.id] = st.previewjb.comps[entry.id];
+			})
+});
+
+})();
+;
+
+jb.component('studio.open-project', {
+  type: 'action', 
+  impl :{$: 'open-dialog', 
+    title: 'Open project', 
+    style :{$: 'dialog.dialog-ok-cancel', okLabel: 'OK', cancelLabel: 'Cancel' }, 
+    content :{$: 'studio.choose-project' }
+  }
+})
+
+jb.component('studio.goto-project', {
+  type: 'action', 
+  impl :{$: 'runActions', 
+    actions: [
+      {$: 'goto-url', 
+        url: '/project/studio/%%', 
+        target: 'new tab'
+      }, 
+      {$: 'dialog.close-containing-popup' }
+    ]
+  }
+})
+
+jb.component('studio.choose-project', {
+  type: 'control', 
+  impl :{$: 'group', 
+    title: 'itemlist-with-find', 
+    controls: [
+      {$: 'itemlist-container.search', features: {$: 'css.width', width: '250'} },
+      {$: 'itemlist', 
+        items :{
+          $pipeline: [
+            '%projects%', 
+            {$: 'itemlist-container.filter' }, 
+          ]
+        }, 
+        features: [
+            { $: 'itemlist.selection' }, 
+            { $: 'itemlist.keyboard-selection', autoFocus: true, onEnter :{$: 'studio.goto-project' } },
+            { $: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', }
+        ],
+        controls :{$: 'button', 
+          title :{$: 'highlight', 
+            base: '%%', 
+            highlight: '%$itemlistCntrData/search_pattern%', 
+          }, 
+          action :{$: 'studio.goto-project' }, 
+          style :{$: 'button.mdl-flat-ripple' }, 
+          features :{$: 'css', css: '{ text-align: left; width: 250px }' }
+        }, 
+//        style :{$: 'itemlist.ul-li' }, 
+//        itemVariable: 'project'
+      }
+    ], 
+    features: [
+      {$: 'group.wait', for :{$: 'http.get', url: '/?op=projects', json: 'true' }},
+      {$: 'css.padding', top: '15', left: '15' },
+      {$: 'group.itemlist-container' }, 
+    ]
+  }
+})
+
+;
+
 
 jb.component('studio.new-project', {
 	type: 'action',
@@ -21718,112 +21820,6 @@ jb.component('studio.open-new-project', {
     ]
   }
 })
-;
-
-jb.component('studio.open-project', {
-  type: 'action', 
-  impl :{$: 'open-dialog', 
-    title: 'Open project', 
-    style :{$: 'dialog.dialog-ok-cancel', okLabel: 'OK', cancelLabel: 'Cancel' }, 
-    content :{$: 'studio.choose-project' }
-  }
-})
-
-jb.component('studio.goto-project', {
-  type: 'action', 
-  impl :{$: 'runActions', 
-    actions: [
-      {$: 'goto-url', 
-        url: '/project/studio/%%', 
-        target: 'new tab'
-      }, 
-      {$: 'dialog.close-containing-popup' }
-    ]
-  }
-})
-
-jb.component('studio.choose-project', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'itemlist-with-find', 
-    controls: [
-      {$: 'itemlist-container.search', features: {$: 'css.width', width: '250'} },
-      {$: 'itemlist', 
-        items :{
-          $pipeline: [
-            '%projects%', 
-            {$: 'itemlist-container.filter' }, 
-          ]
-        }, 
-        features: [
-            { $: 'itemlist.selection' }, 
-            { $: 'itemlist.keyboard-selection', autoFocus: true, onEnter :{$: 'studio.goto-project' } },
-            { $: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', }
-        ],
-        controls :{$: 'button', 
-          title :{$: 'highlight', 
-            base: '%%', 
-            highlight: '%$itemlistCntrData/search_pattern%', 
-          }, 
-          action :{$: 'studio.goto-project' }, 
-          style :{$: 'button.mdl-flat-ripple' }, 
-          features :{$: 'css', css: '{ text-align: left; width: 250px }' }
-        }, 
-//        style :{$: 'itemlist.ul-li' }, 
-//        itemVariable: 'project'
-      }
-    ], 
-    features: [
-      {$: 'group.wait', for :{$: 'http.get', url: '/?op=projects', json: 'true' }},
-      {$: 'css.padding', top: '15', left: '15' },
-      {$: 'group.itemlist-container' }, 
-    ]
-  }
-})
-
-;
-
-(function() {
-var st = jb.studio;
-
-jb.component('studio.save-components', {
-	type: 'action',
-	params: [
-		{ id: 'force',as: 'boolean', type: 'boolean' }
-	],
-	impl : (ctx,force) =>
-		jb.rx.Observable.from(Object.getOwnPropertyNames(st.previewjb.comps))
-			.filter(id=>id.indexOf('$jb') != 0)
-			.filter(id=>st.previewjb.comps[id] != st.serverComps[id])
-			.concatMap(id=>{
-				var original = st.serverComps[id] ? st.prettyPrintComp(id,st.serverComps[id]) : '';
-				st.message('saving ' + id);
-				if (force && !original)
-					original = `jb.component('${id}', {`;
-
-				return $.ajax({
-					url: `/?op=saveComp&comp=${id}&project=${ctx.exp('%$studio/project%')}&force=${force}`,
-					type: 'POST',
-					data: JSON.stringify({ original: original, toSave: st.compAsStr(id) }),
-					headers: { 'Content-Type': 'application/json; charset=UTF-8' }
-				}).then(
-					res=>({ res: res , id: id }),
-					e=> { throw { e: e , id: id } }
-				)
-			})
-			.catch(e=>{
-				st.message('error saving: ' + e.e);
-				return jb.logException(e,'error while saving ' + e.id) || []
-			})
-			.subscribe(entry=>{
-				var result = entry.res;
-				st.message((result.type || '') + ': ' + (result.desc || '') + (result.message || ''), result.type != 'success');
-				if (result.type == 'success')
-					st.serverComps[entry.id] = st.previewjb.comps[entry.id];
-			})
-});
-
-})();
 ;
 
 (function() {
@@ -22956,125 +22952,69 @@ jb.component('studio.expand-and-select-first-child-in-jb-editor', {
 })
 ;
 
-
-jb.studio.Probe = class {
-  constructor(ctx, noGaps) {
-    if (ctx.probe)
-      debugger;
-    this.noGaps = noGaps;
-
-    this.context = ctx.ctx({});
-    this.probe = {};
-    this.context.probe = this;
-    this.context.profile = jb.studio.valOfPath(this.context.path); // recalc last version of profile
-    this.circuit = this.context.profile;
+jb.component('dialog.studio-jb-editor-popup', {
+  type: 'dialog.style',
+  impl: {$: 'custom-style',
+      template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
+        h('button',{class: 'dialog-close', onclick: _=> cmp.dialogClose() },'×'),
+        h(state.contentComp),
+      ]),
+      css: `{ background: #fff; position: absolute }
+        >.dialog-close {
+            position: absolute; 
+            cursor: pointer; 
+            right: 0;
+            font: 21px sans-serif; 
+            border: none; 
+            background: transparent; 
+            color: #000; 
+            text-shadow: 0 1px 0 #fff; 
+            font-weight: 700; 
+            opacity: .2;
+        }
+        >.dialog-close:hover { opacity: .5 }
+        `,
+      features: [
+        { $: 'dialog-feature.max-zIndex-on-click' },
+        { $: 'dialog-feature.close-when-clicking-outside' },
+        { $: 'dialog-feature.near-launcher-position' },
+        { $: 'dialog-feature.unique-dialog', id: 'studio-jb-editor-popup' },
+        {$: 'css.box-shadow', 
+          blurRadius: 5, 
+          spreadRadius: 0, 
+          shadowColor: '#000000', 
+          opacity: 0.75, 
+          horizontal: 0, 
+          vertical: 0, 
+        }
+   ]
   }
+})
 
-  runCircuit(pathToTrace,maxTime) {
-    this.maxTime = maxTime || 50;
-    this.startTime = new Date().getTime();
-    jb.logPerformance('probe','start',this);
-    this.result = [];
-    this.result.visits = 0;
-    this.probe[pathToTrace] = this.result;
-    this.pathToTrace = pathToTrace;
-
-    return this.simpleRun().catch(e =>
-        this)
-      .then( res => {
-            this.handleGaps();
-            this.completed = true;
-            this.totalTime = new Date().getTime()-this.startTime;
-            jb.logPerformance('probe','finished',this);
-            return this;
-    });
-    // this.asObservable = jb.rx.Observable.fromPromise(out);
-    // return this.asObservable.race(jb.rx.Observable.of(this).delay(500)).toPromise();
+jb.component('dialog.studio-suggestions-popup',{
+  type: 'dialog.style',
+  impl: {$: 'custom-style',
+      template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
+        h(state.contentComp),
+      ]),
+      css: `{ background: #fff; position: absolute; padding: 3px 5px }`,
+      features: [
+        { $: 'dialog-feature.max-zIndex-on-click' },
+        { $: 'dialog-feature.close-when-clicking-outside' },
+        { $: 'dialog-feature.css-class-on-launching-element' },
+        { $: 'dialog-feature.near-launcher-position' },
+//        { $: 'studio.fix-suggestions-margin' } ,
+        { $: 'dialog-feature.unique-dialog', id: 'studio-suggestions-popup' },
+        { $: 'css.box-shadow', 
+          blurRadius: 5, 
+          spreadRadius: 0, 
+          shadowColor: '#000000', 
+          opacity: 0.75, 
+          horizontal: 0, 
+          vertical: 0, 
+        }
+   ]
   }
-
-  simpleRun() {
-      var st = jb.studio;
-      var _win = st.previewWindow || window;
-      if (st.isCompNameOfType(jb.compName(this.circuit),'control'))
-        this.circuitType = 'control'
-      else if (st.isCompNameOfType(jb.compName(this.circuit),'action'))
-        this.circuitType = 'action'
-      else if (st.isCompNameOfType(jb.compName(this.circuit),'data'))
-        this.circuitType = 'data'
-      else
-        this.circuitType = 'unknown';
-
-      if (this.circuitType == 'control') { // running circuit in a group to get the 'ready' event
-        //return testControl(this.context, this.forTests);
-          var ctrl = jb.ui.h(this.context.runItself().reactComp());
-          jb.studio.probeEl = jb.studio.probeEl || document.createElement('div');
-          try {
-            jb.studio.probeResEl = jb.ui.render(ctrl, jb.studio.probeEl, jb.studio.probeResEl);
-          } catch (e) {
-            jb.logException(e,'probe run')
-          }
-          return Promise.resolve({element: jb.studio.probeResEl});
-      } else if (this.circuitType != 'action')
-        return Promise.resolve(this.context.runItself());
-  }
-
-  handleGaps() {
-    if (this.noGaps)
-      return;
-    var st = jb.studio;
-    if (this.result.length == 0) {
-      // find closest path
-      var _path = st.parentPath(this.pathToTrace);
-      while (!this.probe[_path] && _path.indexOf('~') != -1)
-        _path = st.parentPath(_path);
-      if (this.probe[_path]) {
-        this.closestPath = _path;
-        this.result = this.probe[_path];
-      }
-    }
-  }
-
-  record(context,parentParam) {
-      var now = new Date().getTime();
-      if (now - this.startTime > this.maxTime && !context.vars.testID) {
-        jb.logPerformance('probe','out of time',this,now);
-        throw 'out of time';
-      }
-      var path = context.path;
-      var input = context.ctx({probe: null});
-      var out = input.runItself(parentParam,{noprobe: true});
-
-      if (!this.probe[path]) {
-        this.probe[path] = [];
-        this.probe[path].visits = 0;
-      }
-      this.probe[path].visits++;
-      var found;
-      this.probe[path].forEach(x=>{
-        found = jb.compareArrays(x.in.data,input.data) ? x : found;
-      })
-      if (found)
-        found.counter++;
-      else {
-        var rec = {in: input, out: out, counter: 0};
-        this.probe[path].push(rec);
-      }
-      return out;
-  }
-}
-
-jb.component('studio.probe', {
-  type:'data',
-  params: [ { id: 'path', as: 'string', dynamic: true } ],
-  impl: (ctx,path) => {
-      var st = jb.studio,_jb = st.previewjb;
-      var circuitCtx = (ctx.vars.pickSelection && ctx.vars.pickSelection.ctx) || st.closestCtxInPreview(path()).ctx;
-      if (!circuitCtx) {
-        var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
-        circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
-      }
-      return new (_jb.studio.Probe || jb.studio.Probe)(circuitCtx).runCircuit(path());
-    }
 })
 ;
 
@@ -23265,68 +23205,233 @@ jb.component('studio.custom-style-make-local', {
 })
 ;
 
-jb.component('dialog.studio-jb-editor-popup', {
-  type: 'dialog.style',
-  impl: {$: 'custom-style',
-      template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
-        h('button',{class: 'dialog-close', onclick: _=> cmp.dialogClose() },'×'),
-        h(state.contentComp),
-      ]),
-      css: `{ background: #fff; position: absolute }
-        >.dialog-close {
-            position: absolute; 
-            cursor: pointer; 
-            right: 0;
-            font: 21px sans-serif; 
-            border: none; 
-            background: transparent; 
-            color: #000; 
-            text-shadow: 0 1px 0 #fff; 
-            font-weight: 700; 
-            opacity: .2;
-        }
-        >.dialog-close:hover { opacity: .5 }
-        `,
-      features: [
-        { $: 'dialog-feature.max-zIndex-on-click' },
-        { $: 'dialog-feature.close-when-clicking-outside' },
-        { $: 'dialog-feature.near-launcher-position' },
-        { $: 'dialog-feature.unique-dialog', id: 'studio-jb-editor-popup' },
-        {$: 'css.box-shadow', 
-          blurRadius: 5, 
-          spreadRadius: 0, 
-          shadowColor: '#000000', 
-          opacity: 0.75, 
-          horizontal: 0, 
-          vertical: 0, 
-        }
-   ]
+
+jb.studio.Probe = class {
+  constructor(ctx, noGaps) {
+    if (ctx.probe)
+      debugger;
+    this.noGaps = noGaps;
+
+    this.context = ctx.ctx({});
+    this.probe = {};
+    this.context.probe = this;
+    this.context.profile = jb.studio.valOfPath(this.context.path); // recalc last version of profile
+    this.circuit = this.context.profile;
+  }
+
+  runCircuit(pathToTrace,maxTime) {
+    this.maxTime = maxTime || 50;
+    this.startTime = new Date().getTime();
+    jb.logPerformance('probe','start',this);
+    this.result = [];
+    this.result.visits = 0;
+    this.probe[pathToTrace] = this.result;
+    this.pathToTrace = pathToTrace;
+
+    return this.simpleRun().catch(e =>
+        this)
+      .then( res => {
+            this.handleGaps();
+            this.completed = true;
+            this.totalTime = new Date().getTime()-this.startTime;
+            jb.logPerformance('probe','finished',this);
+            return this;
+    });
+    // this.asObservable = jb.rx.Observable.fromPromise(out);
+    // return this.asObservable.race(jb.rx.Observable.of(this).delay(500)).toPromise();
+  }
+
+  simpleRun() {
+      var st = jb.studio;
+      var _win = st.previewWindow || window;
+      if (st.isCompNameOfType(jb.compName(this.circuit),'control'))
+        this.circuitType = 'control'
+      else if (st.isCompNameOfType(jb.compName(this.circuit),'action'))
+        this.circuitType = 'action'
+      else if (st.isCompNameOfType(jb.compName(this.circuit),'data'))
+        this.circuitType = 'data'
+      else
+        this.circuitType = 'unknown';
+
+      if (this.circuitType == 'control') { // running circuit in a group to get the 'ready' event
+        //return testControl(this.context, this.forTests);
+          var ctrl = jb.ui.h(this.context.runItself().reactComp());
+          jb.studio.probeEl = jb.studio.probeEl || document.createElement('div');
+          try {
+            jb.studio.probeResEl = jb.ui.render(ctrl, jb.studio.probeEl, jb.studio.probeResEl);
+          } catch (e) {
+            jb.logException(e,'probe run')
+          }
+          return Promise.resolve({element: jb.studio.probeResEl});
+      } else if (this.circuitType != 'action')
+        return Promise.resolve(this.context.runItself());
+  }
+
+  handleGaps() {
+    if (this.noGaps)
+      return;
+    var st = jb.studio;
+    if (this.result.length == 0) {
+      // find closest path
+      var _path = st.parentPath(this.pathToTrace);
+      while (!this.probe[_path] && _path.indexOf('~') != -1)
+        _path = st.parentPath(_path);
+      if (this.probe[_path]) {
+        this.closestPath = _path;
+        this.result = this.probe[_path];
+      }
+    }
+  }
+
+  record(context,parentParam) {
+      var now = new Date().getTime();
+      if (now - this.startTime > this.maxTime && !context.vars.testID) {
+        jb.logPerformance('probe','out of time',this,now);
+        throw 'out of time';
+      }
+      var path = context.path;
+      var input = context.ctx({probe: null});
+      var out = input.runItself(parentParam,{noprobe: true});
+
+      if (!this.probe[path]) {
+        this.probe[path] = [];
+        this.probe[path].visits = 0;
+      }
+      this.probe[path].visits++;
+      var found;
+      this.probe[path].forEach(x=>{
+        found = jb.compareArrays(x.in.data,input.data) ? x : found;
+      })
+      if (found)
+        found.counter++;
+      else {
+        var rec = {in: input, out: out, counter: 0};
+        this.probe[path].push(rec);
+      }
+      return out;
+  }
+}
+
+jb.component('studio.probe', {
+  type:'data',
+  params: [ { id: 'path', as: 'string', dynamic: true } ],
+  impl: (ctx,path) => {
+      var st = jb.studio,_jb = st.previewjb;
+      var circuitCtx = (ctx.vars.pickSelection && ctx.vars.pickSelection.ctx) || st.closestCtxInPreview(path()).ctx;
+      if (!circuitCtx) {
+        var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
+        circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
+      }
+      return new (_jb.studio.Probe || jb.studio.Probe)(circuitCtx).runCircuit(path());
+    }
+})
+;
+
+
+jb.component('suggestions-test', {
+  type: 'test',
+  params: [
+    { id: 'expression', as: 'string' },
+    { id: 'selectionStart', as: 'number', defaultValue: -1 },
+    { id: 'path', as: 'string', defaultValue: 'suggestions-test.default-probe~impl~title' },
+    { id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean' },
+  ],
+  impl :{$: 'data-test',
+    calculate: ctx => {
+      var params = ctx.componentContext.params;
+      var selectionStart = params.selectionStart == -1 ? params.expression.length : params.selectionStart;
+
+      var circuit = params.path.split('~')[0];
+      var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: { $: circuit }, comp: circuit, path: '', data: null }))
+        .runCircuit(params.path);
+      return probeRes.then(res=>{
+        var probeCtx = res.result[0] && res.result[0].in;
+        var obj = new jb.studio.suggestions({ value: params.expression, selectionStart: selectionStart })
+          .extendWithOptions(probeCtx,probeCtx.path);
+        return JSON.stringify(JSON.stringify(obj.options.map(x=>x.text)));
+      })
+    },
+    expectedResult :{$call: 'expectedResult' }
+  },
+})
+
+jb.component('jb-editor-children-test', {
+  type: 'test',
+  params: [
+    { id: 'path', as: 'string' },
+    { id: 'childrenType', as: 'string', type: ',jb-editor' },
+    { id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean' }
+  ],
+  impl :{$: 'data-test',
+    calculate: ctx => {
+      var params = ctx.componentContext.params;
+      var mdl = new jb.studio.jbEditorTree('');
+      var titles = mdl.children(params.path)
+        .map(path=>
+          mdl.title(path,true));
+      return JSON.stringify(titles);
+    },
+    expectedResult :{$call: 'expectedResult' }
+  },
+})
+
+jb.component('studio-probe-test', {
+  type: 'test',
+  params: [
+    { id: 'circuit', type: 'control', dynamic: true },
+    { id: 'probePath', as: 'string' },
+    { id: 'allowClosestPath', as: 'boolean' },
+    { id: 'expectedVisits', as: 'number', defaultValue : -1 },
+  ],
+  impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits)=> {
+
+    var testId = ctx.vars.testID;
+    var failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
+    var success = _ => ({ id: testId, title: testId, success: true });
+
+    var full_path = testId + '~impl~circuit~' + probePath;
+    var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
+      .runCircuit(full_path);
+    return probeRes.then(res=>{
+          try {
+            if (!allowClosestPath && res.closestPath)
+              return failure('no probe results at path ' + probePath);
+            if (res.result.visits != expectedVisits && expectedVisits != -1)
+              return failure(`expected visits error actual/expected: ${res.result.visits}/${expectedVisits}`);
+            if (!res.result[0])
+                return failure('no probe results at path ' + probePath);
+          } catch(e) {
+            jb.logException(e,'jb-path-test');
+            return failure('exception');
+          }
+          return success();
+    })
   }
 })
 
-jb.component('dialog.studio-suggestions-popup',{
-  type: 'dialog.style',
-  impl: {$: 'custom-style',
-      template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
-        h(state.contentComp),
-      ]),
-      css: `{ background: #fff; position: absolute; padding: 3px 5px }`,
-      features: [
-        { $: 'dialog-feature.max-zIndex-on-click' },
-        { $: 'dialog-feature.close-when-clicking-outside' },
-        { $: 'dialog-feature.css-class-on-launching-element' },
-        { $: 'dialog-feature.near-launcher-position' },
-//        { $: 'studio.fix-suggestions-margin' } ,
-        { $: 'dialog-feature.unique-dialog', id: 'studio-suggestions-popup' },
-        { $: 'css.box-shadow', 
-          blurRadius: 5, 
-          spreadRadius: 0, 
-          shadowColor: '#000000', 
-          opacity: 0.75, 
-          horizontal: 0, 
-          vertical: 0, 
-        }
-   ]
+jb.component('path-change-test', {
+  type: 'test',
+  params: [
+    { id: 'path', as: 'string' },
+    { id: 'action', type: 'action', dynamic: true },
+    { id: 'expectedPathAfter', as: 'string' },
+    { id: 'cleanUp', type: 'action', dynamic: true  },
+  ],
+  impl: (ctx,path,action,expectedPathAfter,cleanUp)=> {
+    var testId = ctx.vars.testID;
+    var failure = (part,reason) => ({ id: testId, title: testId + '- ' + part, success:false, reason: reason });
+    var success = _ => ({ id: testId, title: testId, success: true });
+
+    var pathRef = jb.studio.refOfPath(path);
+    action();
+    pathRef.handler.refresh(pathRef);
+    if (pathRef.$jb_path.join('~') != expectedPathAfter)
+      var res = { id: testId, title: testId, success: false , reason: pathRef.$jb_path.join('~') + ' instead of ' + expectedPathAfter }
+    else
+      var res = { id: testId, title: testId, success: true };
+    cleanUp();
+
+    return res;
   }
 })
 ;
@@ -23487,115 +23592,6 @@ jb.component('studio.event-tracker', {
 })
 
 })();
-
-
-jb.component('suggestions-test', {
-  type: 'test',
-  params: [
-    { id: 'expression', as: 'string' },
-    { id: 'selectionStart', as: 'number', defaultValue: -1 },
-    { id: 'path', as: 'string', defaultValue: 'suggestions-test.default-probe~impl~title' },
-    { id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean' },
-  ],
-  impl :{$: 'data-test',
-    calculate: ctx => {
-      var params = ctx.componentContext.params;
-      var selectionStart = params.selectionStart == -1 ? params.expression.length : params.selectionStart;
-
-      var circuit = params.path.split('~')[0];
-      var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: { $: circuit }, comp: circuit, path: '', data: null }))
-        .runCircuit(params.path);
-      return probeRes.then(res=>{
-        var probeCtx = res.result[0] && res.result[0].in;
-        var obj = new jb.studio.suggestions({ value: params.expression, selectionStart: selectionStart })
-          .extendWithOptions(probeCtx,probeCtx.path);
-        return JSON.stringify(JSON.stringify(obj.options.map(x=>x.text)));
-      })
-    },
-    expectedResult :{$call: 'expectedResult' }
-  },
-})
-
-jb.component('jb-editor-children-test', {
-  type: 'test',
-  params: [
-    { id: 'path', as: 'string' },
-    { id: 'childrenType', as: 'string', type: ',jb-editor' },
-    { id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean' }
-  ],
-  impl :{$: 'data-test',
-    calculate: ctx => {
-      var params = ctx.componentContext.params;
-      var mdl = new jb.studio.jbEditorTree('');
-      var titles = mdl.children(params.path)
-        .map(path=>
-          mdl.title(path,true));
-      return JSON.stringify(titles);
-    },
-    expectedResult :{$call: 'expectedResult' }
-  },
-})
-
-jb.component('studio-probe-test', {
-  type: 'test',
-  params: [
-    { id: 'circuit', type: 'control', dynamic: true },
-    { id: 'probePath', as: 'string' },
-    { id: 'allowClosestPath', as: 'boolean' },
-    { id: 'expectedVisits', as: 'number', defaultValue : -1 },
-  ],
-  impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits)=> {
-
-    var testId = ctx.vars.testID;
-    var failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
-    var success = _ => ({ id: testId, title: testId, success: true });
-
-    var full_path = testId + '~impl~circuit~' + probePath;
-    var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
-      .runCircuit(full_path);
-    return probeRes.then(res=>{
-          try {
-            if (!allowClosestPath && res.closestPath)
-              return failure('no probe results at path ' + probePath);
-            if (res.result.visits != expectedVisits && expectedVisits != -1)
-              return failure(`expected visits error actual/expected: ${res.result.visits}/${expectedVisits}`);
-            if (!res.result[0])
-                return failure('no probe results at path ' + probePath);
-          } catch(e) {
-            jb.logException(e,'jb-path-test');
-            return failure('exception');
-          }
-          return success();
-    })
-  }
-})
-
-jb.component('path-change-test', {
-  type: 'test',
-  params: [
-    { id: 'path', as: 'string' },
-    { id: 'action', type: 'action', dynamic: true },
-    { id: 'expectedPathAfter', as: 'string' },
-    { id: 'cleanUp', type: 'action', dynamic: true  },
-  ],
-  impl: (ctx,path,action,expectedPathAfter,cleanUp)=> {
-    var testId = ctx.vars.testID;
-    var failure = (part,reason) => ({ id: testId, title: testId + '- ' + part, success:false, reason: reason });
-    var success = _ => ({ id: testId, title: testId, success: true });
-
-    var pathRef = jb.studio.refOfPath(path);
-    action();
-    pathRef.handler.refresh(pathRef);
-    if (pathRef.$jb_path.join('~') != expectedPathAfter)
-      var res = { id: testId, title: testId, success: false , reason: pathRef.$jb_path.join('~') + ' instead of ' + expectedPathAfter }
-    else
-      var res = { id: testId, title: testId, success: true };
-    cleanUp();
-
-    return res;
-  }
-})
-;
 
 function h_to_jsx({types: t}) {
   const getAttributes = (props) => {

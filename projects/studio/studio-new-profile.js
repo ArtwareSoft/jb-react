@@ -287,7 +287,7 @@ jb.component('studio.pick-profile', {
       ]
     },
     style :{$: 'button.select-profile-style' },
-    features :{$: 'studio.watch-path', path: '%$path%' }
+//    features :{$: 'studio.watch-path', path: '%$path%' }
   }
 })
 

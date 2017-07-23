@@ -71,33 +71,6 @@ Object.assign(st, {
 		}
 	},
 
-	moveInTree: (path,draggedPath,index) => { // drag & drop
-		var draggedRef = st.refOfPath(draggedPath);
-		var dragged = st.valOfPath(draggedPath);
-		var dest = st.getOrCreateControlArrayRef(path);
-		if (!st.refreshRef(draggedRef))
-			return;
-		var _draggedPath = draggedRef.$jb_path.join('~');
-		if (dest) {
-			st._delete(_draggedPath);
-			var _index = (index == -1) ? jb.val(dest).length : index;
-			st.splice(dest,[[_index,0,dragged]]);
-		}
- 	},
-
-	moveInArray: (path,draggedPath,index) => { // drag & drop
-		var dragged = st.valOfPath(draggedPath);
-		var array = st.valOfPath(path);
-		if (Array.isArray(array)) {
-			if (index < 0 || index >= array.length)
-				return 'moveInArray: out of array index ' + index + ' in array of size ' + array.length;
-			st._delete(draggedPath);
-			array = st.valOfPath(path);
-			var _index = (index == -1) ? jb.val(array).length : index;
-			st.splice(array,[[_index,0,dragged]]);
-		}
-	},
-
 	wrapWithGroup: (path) =>
 		st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] }),
 
