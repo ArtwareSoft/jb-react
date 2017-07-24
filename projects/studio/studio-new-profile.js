@@ -97,8 +97,24 @@ jb.component('studio.categories-marks', {
               }
             ]
           },
+		  'group.style' :{$: 'pipeline',
+            items: [
+              {$: 'list',
+                items: [
+                  'layout:100',
+                  'group:90',
+                  'tabs:0',
+                ]
+              },
+              {$: 'split', separator: ',' },
+              {$: 'object',
+                code: {$: 'split', separator: ':', part: 'first'  },
+                mark: {$: 'split', separator: ':', part: 'second'  },
+              }
+            ]
+          },
         },
-       {$firstSucceeding: ['%{%$type%}%', {$: 'object', code: 'all', mark: '100' }]}
+       {$firstSucceeding: [ ctx => ctx.data[ctx.exp('%$type%','string')], {$: 'object', code: 'all', mark: '100' }]}
     ]
   }
 })
@@ -287,7 +303,7 @@ jb.component('studio.pick-profile', {
       ]
     },
     style :{$: 'button.select-profile-style' },
-//    features :{$: 'studio.watch-path', path: '%$path%' }
+    features :{$: 'studio.watch-path', path: '%$path%' }
   }
 })
 

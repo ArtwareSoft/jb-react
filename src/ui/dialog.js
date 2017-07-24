@@ -46,7 +46,12 @@ jb.component('open-dialog', {
 				cmp.dialog.el.style.zIndex = 100;
 			},
 		}).reactComp();
-		jb.ui.dialogs.addDialog(dialog,ctx);
+
+		if (!context.probe)
+			jb.ui.dialogs.addDialog(dialog,ctx);
+		else
+			jb.studio.probeResEl = jb.ui.render(jb.ui.h(dialog.comp), jb.studio.probeEl || document.createElement('div'), jb.studio.probeResEl);
+
 		return dialog;
 	}
 })

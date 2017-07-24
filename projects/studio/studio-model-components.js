@@ -162,23 +162,41 @@ jb.component('studio.profile-as-text', {
 	type: 'data',
 	params: [{ id: 'path', as: 'string', dynamic: true } ],
 	impl: ctx => ({
-			$jb_val: function(value) {
-				var path = ctx.params.path();
-				if (!path) return '';
-				if (typeof value == 'undefined') {
-					var val = st.valOfPath(path);
-					if (st.isPrimitiveValue(val))
-						return ''+val;
-					return st.prettyPrint(val || '');
-				} else {
-					var newVal = value.match(/^\s*(\(|{|\[)/) ? st.evalProfile(value) : value;
-					if (newVal != null)
-						st.writeValueOfPath(path, newVal);
-				}
-			},
-			$jb_observable: cmp =>
-				st.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
-		})
+		$jb_val: function(value) {
+			var path = ctx.params.path();
+			if (!path) return '';
+			if (typeof value == 'undefined') {
+				var val = st.valOfPath(path);
+				if (st.isPrimitiveValue(val))
+					return ''+val;
+				return st.prettyPrint(val || '');
+			} else {
+				var newVal = value.match(/^\s*(\(|{|\[)/) ? st.evalProfile(value) : value;
+				if (newVal != null)
+					st.writeValueOfPath(path, newVal);
+			}
+		},
+		$jb_observable: cmp =>
+			st.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+	})
+})
+
+jb.component('studio.profile-as-string-byref', {
+	type: 'data',
+	params: [{ id: 'path', as: 'string', dynamic: true } ],
+	impl: ctx => ({
+		$jb_val: function(value) {
+			var path = ctx.params.path();
+			if (!path) return '';
+			if (typeof value == 'undefined') {
+				return st.valOfPath(path) || '';
+			} else {
+				st.writeValueOfPath(path, value);
+			}
+		},
+		$jb_observable: cmp =>
+			st.refObservable(st.refOfPath(ctx.params.path()),cmp)
+	})
 })
 
 jb.component('studio.profile-value-as-text', {

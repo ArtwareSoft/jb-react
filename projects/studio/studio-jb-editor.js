@@ -397,6 +397,7 @@ jb.component('studio.jb-editor-menu', {
           {$isEmpty: {$: 'studio.val', path: '%$path%~$vars' } },
           {$: 'is-of-type', obj: {$: 'studio.val', path: '%$path%' }, type: 'object' } ] }
       },
+	  {$: 'studio.style-editor-options', path: '%$path%' },
       {$: 'menu.action',
         $vars: {
           compName :{$: 'studio.comp-name', path: '%$path%' }

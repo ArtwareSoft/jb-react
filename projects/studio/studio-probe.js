@@ -13,6 +13,7 @@ jb.studio.Probe = class {
   }
 
   runCircuit(pathToTrace,maxTime) {
+		var st = jb.studio;
     this.maxTime = maxTime || 50;
     this.startTime = new Date().getTime();
     jb.logPerformance('probe','start',this);
@@ -20,67 +21,72 @@ jb.studio.Probe = class {
     this.result.visits = 0;
     this.probe[pathToTrace] = this.result;
     this.pathToTrace = pathToTrace;
+		var initial_resources = st.previewjb.valueByRefHandler.resources();
+		var initial_comps = st.compsRefHandler.resources();
 
-    return this.simpleRun().catch(e =>
-        this)
-      .then( res => {
-            this.handleGaps();
-            this.completed = true;
-            this.totalTime = new Date().getTime()-this.startTime;
-            jb.logPerformance('probe','finished',this);
-            return this;
-    });
-    // this.asObservable = jb.rx.Observable.fromPromise(out);
-    // return this.asObservable.race(jb.rx.Observable.of(this).delay(500)).toPromise();
-  }
+    return this.simpleRun()
+		  .catch(e => null)
+	    .then( res =>
+	      this.handleGaps())
+		  .catch(e => null)
+		  .then(res=>{
+					this.completed = true;
+		      this.totalTime = new Date().getTime()-this.startTime;
+		      jb.logPerformance('probe','finished',this);
+					st.previewjb.valueByRefHandler.resources(initial_resources);
+					st.compsRefHandler.resources(initial_comps);
+		      return this;
+				})
+	}
 
-  simpleRun() {
+	simpleRun() {
       var st = jb.studio;
-      var _win = st.previewWindow || window;
-      if (st.isCompNameOfType(jb.compName(this.circuit),'control'))
-        this.circuitType = 'control'
-      else if (st.isCompNameOfType(jb.compName(this.circuit),'action'))
-        this.circuitType = 'action'
-      else if (st.isCompNameOfType(jb.compName(this.circuit),'data'))
-        this.circuitType = 'data'
-      else
-        this.circuitType = 'unknown';
-
-      if (this.circuitType == 'control') { // running circuit in a group to get the 'ready' event
-        //return testControl(this.context, this.forTests);
-          var ctrl = jb.ui.h(this.context.runItself().reactComp());
-          jb.studio.probeEl = jb.studio.probeEl || document.createElement('div');
+			return Promise.resolve(this.context.runItself()).then(res=>{
+				if (st.isCompNameOfType(jb.compName(this.circuit),'control')) {
+					var ctrl = jb.ui.h(res.reactComp());
+          st.probeEl = st.probeEl || document.createElement('div');
           try {
-            jb.studio.probeResEl = jb.ui.render(ctrl, jb.studio.probeEl, jb.studio.probeResEl);
+            st.probeResEl = jb.ui.render(ctrl, st.probeEl, st.probeResEl);
           } catch (e) {
             jb.logException(e,'probe run')
           }
-          return Promise.resolve({element: jb.studio.probeResEl});
-      } else if (this.circuitType != 'action')
-        return Promise.resolve(this.context.runItself());
-  }
+          return ({element: st.probeResEl});
+				} else if (st.isCompNameOfType(jb.compName(this.circuit),'menu.option')) {
+					return res.options()
+				}
+				return res;
+			})
+	}
 
-  handleGaps() {
-    if (this.noGaps)
+  handleGaps(formerGap) {
+    if (this.result.length > 0 || this.noGaps)
       return;
     var st = jb.studio;
-    if (this.result.length == 0) {
-      // find closest path
-      var _path = st.parentPath(this.pathToTrace);
-      while (!this.probe[_path] && _path.indexOf('~') != -1)
-        _path = st.parentPath(_path);
-      if (this.probe[_path]) {
-        this.closestPath = _path;
-        this.result = this.probe[_path];
-      }
-    }
+
+		// find closest path
+    var _path = st.parentPath(this.pathToTrace),breakingProp='';
+    while (!this.probe[_path] && _path.indexOf('~') != -1) {
+			breakingProp = _path.split('~').pop();
+    	_path = st.parentPath(_path);
+		}
+		if (formerGap == _path) { // can not break through the gap
+			this.closestPath = _path;
+			this.result = this.probe[_path];
+			return;
+		}
+		// use the ctx to run the breaking param
+		var parentCtx = this.probe[_path][0].ctx, breakingPath = _path+'~'+breakingProp;
+		if (!st.isOfType(breakingPath,'has-side-effects'))
+			return Promise.resolve(parentCtx.runInner(parentCtx.profile[breakingProp],st.paramDef(breakingPath),breakingProp))
+				.then(_=>this.handleGaps(_path));
   }
 
   record(context,parentParam) {
       var now = new Date().getTime();
-      if (now - this.startTime > this.maxTime && !context.vars.testID) {
+      if (!this.outOfTime && now - this.startTime > this.maxTime && !context.vars.testID) {
         jb.logPerformance('probe','out of time',this,now);
-        throw 'out of time';
+				this.outOfTime = true;
+        //throw 'out of time';
       }
       var path = context.path;
       var input = context.ctx({probe: null});
@@ -98,7 +104,7 @@ jb.studio.Probe = class {
       if (found)
         found.counter++;
       else {
-        var rec = {in: input, out: out, counter: 0};
+        var rec = {in: input, out: out, counter: 0, ctx: context};
         this.probe[path].push(rec);
       }
       return out;
@@ -106,15 +112,22 @@ jb.studio.Probe = class {
 }
 
 jb.component('studio.probe', {
-  type:'data',
-  params: [ { id: 'path', as: 'string', dynamic: true } ],
-  impl: (ctx,path) => {
-      var st = jb.studio,_jb = st.previewjb;
-      var circuitCtx = (ctx.vars.pickSelection && ctx.vars.pickSelection.ctx) || st.closestCtxInPreview(path()).ctx;
-      if (!circuitCtx) {
-        var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
-        circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
-      }
-      return new (_jb.studio.Probe || jb.studio.Probe)(circuitCtx).runCircuit(path());
-    }
+	type:'data',
+	params: [ { id: 'path', as: 'string', dynamic: true } ],
+	impl: (ctx,path) => {
+		var st = jb.studio,_jb = st.previewjb;
+		var circuitCtx = ctx.vars.pickSelection && ctx.vars.pickSelection.ctx;
+		if (!circuitCtx) {
+			var circuitInPreview = st.closestCtxInPreview(path());
+			if (circuitInPreview.ctx) {
+			   jb.studio.highlight([circuitInPreview.elem]);
+			   circuitCtx = circuitInPreview.ctx;
+			}
+		}
+		if (!circuitCtx) {
+			var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
+			circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
+		}
+		return new (_jb.studio.Probe || jb.studio.Probe)(circuitCtx).runCircuit(path());
+  }
 })

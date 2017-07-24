@@ -78,6 +78,7 @@ jb.component('play-ground.t', {
   type: 'control', 
   impl :{$: 'group', 
     title: 't', 
+    style :{$: 'layout.vertical', spacing: 3 }, 
     controls: [
       {$: 'button', 
         title: 'click me1', 

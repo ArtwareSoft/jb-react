@@ -2,7 +2,7 @@
 var st = jb.studio;
 
 jb.component('studio.save-components', {
-	type: 'action',
+	type: 'action,has-side-effects',
 	params: [
 		{ id: 'force',as: 'boolean', type: 'boolean' }
 	],

@@ -5,7 +5,7 @@ jb.component('studio.open-style-editor', {
     $vars: {
       styleSource :{$: 'studio.style-source', path: '%$path%' }
     },
-    style :{$: 'dialog.studio-floating', id: 'style editor', width: '350' },
+    style :{$: 'dialog.studio-floating', id: 'style editor', width: '800' },
     content :{$: 'studio.style-editor', path: '%$path%' },
     features: {$: 'dialog-feature.resizer'},
     menu :{$: 'button',
@@ -65,15 +65,16 @@ jb.component('studio.style-editor', {
         tabs: [
           {$: 'group', 
             title: 'css', 
-            style :{$: 'property-sheet.titles-left', 
+            style :{$: 'layout.vertical', 
               vSpacing: 20, 
               hSpacing: 20, 
-              titleWidth: 100
+              titleWidth: 100, 
+              spacing: 3
             }, 
             controls: [
               {$: 'editable-text', 
                 title: 'css', 
-                databind :{$: 'studio.profile-as-text', 
+                databind :{$: 'studio.profile-as-string-byref', 
                   stringOnly: true, 
                   path: '%$path%~css'
                 }, 
@@ -82,28 +83,30 @@ jb.component('studio.style-editor', {
                   enableFullScreen: false, 
                   height: '300', 
                   mode: 'css', 
+                  debounceTime: '2000', 
                   onCtrlEnter :{$: 'studio.refresh-preview' }
                 }
               }, 
+              {$: 'label', 
+                title: 'jsx', 
+                style :{$: 'label.heading', level: 'h5' }
+              }, 
               {$: 'editable-text', 
                 title: 'template', 
-                databind :{$: 'studio.template-as-jsx', path: '%$path%~template' }, 
+                databind :{
+                  $pipeline: [
+                    {$: 'studio.template-as-jsx', path: '%$path%~template' }, 
+                    {$: 'studio.pretty', text: '%%' }
+                  ]
+                }, 
                 style :{$: 'editable-text.codemirror', 
                   cm_settings: '', 
                   height: '200', 
-                  mode: 'javascript', 
+                  mode: 'jsx', 
                   onCtrlEnter :{$: 'studio.refresh-preview' }
                 }
               }
             ]
-          }, 
-          {$: 'editable-text', 
-            title: 'html / jsx', 
-            databind :{$: 'studio.template-as-jsx', path: '%$path%~template' }, 
-            style :{$: 'editable-text.codemirror', 
-              enableFullScreen: true, 
-              debounceTime: 300
-            }
           }, 
           {$: 'group', 
             title: 'js', 
@@ -128,10 +131,32 @@ jb.component('studio.style-editor', {
                     okLabel: 'OK', 
                     cancelLabel: 'Cancel'
                   }, 
-                  title: 'Paste html / jsx'
+                  content :{$: 'group', 
+                    controls: [
+                      {$: 'editable-text', 
+                        title: 'jsx', 
+                        databind: '%$jsx%', 
+                        style :{$: 'editable-text.codemirror', 
+                          enableFullScreen: true, 
+                          debounceTime: 300
+                        }
+                      }
+                    ]
+                  }, 
+                  title: 'Paste html / jsx', 
+                  onOK :{$: 'write-value', 
+                    to :{$: 'studio.ref', path: '%$path%~template' }, 
+                    value :{$: 'studio.template-as-jsx', path: '%$path%~template' }
+                  }, 
+                  features: [
+                    {$: 'var', 
+                      name: 'jsx', 
+                      value: 'paste your jsx here', 
+                      mutable: 'true'
+                    }
+                  ]
                 }, 
-                style :{$: 'button.mdl-raised' }, 
-                features :{$: 'group.auto-focus-on-first-input' }
+                style :{$: 'button.mdl-raised' }
               }
             ]
           }, 
@@ -146,6 +171,41 @@ jb.component('studio.style-editor', {
     ]
   }
 })
+
+jb.component('studio.style-editor-options', {
+	type: 'menu.option',
+	params: [
+		{ id: 'path', as: 'string'},
+	],
+    impl :{$: 'menu.end-with-separator',
+		$vars: {
+		  compName :{$: 'studio.comp-name', path: '%$path%' }
+		},
+	  options: [
+			{$: 'menu.action',
+			  title: 'Style editor',
+			  action :{
+				$runActions: [
+				  {$: 'studio.make-local', path: '%$path%' },
+				  {$: 'studio.open-style-editor', path: '%$path%' }
+				]
+			  },
+			  showCondition :{$: 'ends-with', endsWith: '~style', text: '%$path%' }
+			},
+			{$: 'menu.action',
+			  title: 'Style editor of %$compName%',
+			  action :{$: 'studio.open-style-editor', path: '%$compName%~impl' },
+			  showCondition :{
+				$and: [
+				  {$: 'ends-with', endsWith: '~style', text: '%$path%' },
+				  {$: 'notEmpty', item: '%$compName%' }
+				]
+			  }
+			},
+		]
+    }
+})
+
 
 jb.component('studio.style-source', {
   params: [
@@ -174,12 +234,4 @@ jb.component('studio.format-css', {
       .replace(/}[^$]/mg,'}\n\n')
       .replace(/^\s*/mg,'')
   }
-})
-
-jb.component('studio.custom-style-make-local', {
-  params: [
-    { id: 'template', as: 'string'},
-    { id: 'css', as: 'string'},
-  ],
-  impl: {$: 'object', template: '%$template%', css: '%$css%' }
 })

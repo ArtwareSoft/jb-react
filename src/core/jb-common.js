@@ -254,8 +254,8 @@ jb.component('remove-suffix-regex',{
 jb.component('write-value',{
 	type: 'action',
 	params: [
-		{ id: 'to', as: 'ref' },
-		{ id: 'value'}
+		{ id: 'to', as: 'ref', essential: true },
+		{ id: 'value', essential: true}
 	],
 	impl: (ctx,to,value) =>
 		jb.writeValue(to,value,ctx)
@@ -773,10 +773,13 @@ jb.component('http.get', {
 		{ id: 'json', as: 'boolean' }
 	],
 	impl: (ctx,url,_json) => {
+		if (ctx.probe)
+			return jb.http_get_cache[url];
 		var json = _json || url.match(/json$/);
 		return fetch(url)
 			  .then(r =>
 			  		json ? r.json() : r.text())
+				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
 			  .catch(e => jb.logException(e) || [])
 	}
 });

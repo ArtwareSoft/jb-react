@@ -57,7 +57,7 @@ jb.component('studio.goto-editor-first', {
     action :{$: 'studio.open-editor-editor',
       path :{$: 'studio.comp-name', path: '%$path%' }
     },
-    shortcut: 'Alt+E', 
+    shortcut: 'Alt+E',
     showCondition :{$: 'notEmpty',
       item :{$: 'studio.comp-name', path: '%$path%' }
     }
@@ -75,7 +75,7 @@ jb.component('studio.goto-editor-secondary', {
       ]
     },
     action :{$: 'studio.open-editor-editor',
-      path :{$: 'studio.comp-name', path: '%$path%' }
+      path :{$: 'split', path: '%$path%', separator: '~', part: 'first' }
     },
     showCondition :{$: 'not-equals',
       item1 :{$: 'studio.comp-name', path: '%$path%' },

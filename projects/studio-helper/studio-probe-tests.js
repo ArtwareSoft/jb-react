@@ -112,12 +112,51 @@ jb.component('probe-test.actions-sugar', {
 	}
 })
 
-jb.component('probe-test.inside-action', {
+jb.component('probe-test.inside-write-value', {
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'button', action :{$: 'write-value', to: '%$person/name%', value: 'homer' } },
+		probePath : 'action~to',
+		expectedVisits: 1,
+	}
+})
+
+jb.component('probe-test.inside-open-dialog', {
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'button', action :{$: 'open-dialog', content :{$: 'label', title: 'hello'} } },
+		probePath : 'action~content~title',
+		expectedVisits: 2,
+	}
+})
+
+jb.component('probe-test.inside-open-dialog-onOk', {
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'button', action :{$: 'open-dialog', content :{$: 'label', title: 'hello'}, onOK:{$: 'write-value', to: '%$person/name%', value: 'homer' } } },
+		probePath : 'action~onOK~value',
+		expectedVisits: 1,
+	}
+})
+
+jb.component('probe-test.inside-goto-url', {
 	 impl :{$: 'studio-probe-test',
 		circuit: {$: 'button', action :{$: 'goto-url', url: 'google' } },
 		probePath : 'action~url',
-		allowClosestPath: true,
 		expectedVisits: 1,
+	}
+})
+
+jb.component('test.action-with-side-effects', {
+	type: 'action,has-side-effects',
+	params: [
+		{id: 'text', as: 'string'}
+	],
+	impl: _ => 0
+})
+
+jb.component('probe-test.inside-action-with-side-effects', {
+	 impl :{$: 'studio-probe-test',
+		circuit: {$: 'button', action :{$: 'test.action-with-side-effect', text: 'hello' } },
+		probePath : 'action~text',
+		expectedVisits: 0,
 	}
 })
 

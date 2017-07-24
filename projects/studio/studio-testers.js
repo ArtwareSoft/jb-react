@@ -65,6 +65,8 @@ jb.component('studio-probe-test', {
       .runCircuit(full_path);
     return probeRes.then(res=>{
           try {
+						if (expectedVisits == 0 && res.closestPath)
+							return success();
             if (!allowClosestPath && res.closestPath)
               return failure('no probe results at path ' + probePath);
             if (res.result.visits != expectedVisits && expectedVisits != -1)

@@ -155,7 +155,8 @@ function showBox(cmp,profElem,_window,previewOffset) {
 	});
 }
 
-function highlight(elems,_window) {
+jb.studio.highlight = function(elems) {
+	var _window = st.previewWindow || window;
 	var boxes = [];
 	elems.map(el=>$(el))
 		.forEach($el => {
@@ -198,7 +199,7 @@ jb.component('studio.highlight-in-preview',{
 				return _ctx && _ctx.path == path
 			})
 
-		highlight(elems,_window);
+		jb.studio.highlight(elems);
   }
 })
 
@@ -209,7 +210,7 @@ st.closestCtxInPreview = path => {
 	var elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
 	for(var i=0;i<elems.length;i++) {
 		var _ctx = _window.jb.ctxDictionary[elems[i].getAttribute('jb-ctx')];
-		if (!_ctx || !st.isOfType(_ctx.path,'control')) continue;
+		if (!_ctx) continue; //  || !st.isOfType(_ctx.path,'control'))
 		if (_ctx.path == path)
 			return {ctx: _ctx, elem: elems[i]} ;
 		if (path.indexOf(_ctx.path) == 0 && (!closest || closest.path.length < _ctx.path.length)) {

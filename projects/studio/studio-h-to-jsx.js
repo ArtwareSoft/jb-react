@@ -66,7 +66,7 @@ jb.studio.jsxToH = jsx => {
   try  {
   return Babel.transform(jsx, {
     "plugins": [["transform-react-jsx", { "pragma": "h"  }]]
-  }).code
+  }).code.replace(/;$/,'')
   } catch(e) {
     jb.logException(e)
   }
@@ -75,33 +75,39 @@ jb.studio.jsxToH = jsx => {
 jb.studio.hToJSX = hFunc => {
     jb.studio.initJsxToH();
     try {
-    return jb.studio.pretty(Babel.transform(hFunc, {
+    return Babel.transform(hFunc, {
       "plugins": ['h-to-jsx']
-    }).code)
+  }).code
   } catch(e) {
     jb.logException(e)
   }
 }
 
+jb.component('studio.pretty', {
+	type: 'data',
+	params: [{ id: 'text', as: 'string', defaultValue: '%%' } ],
+	impl: (ctx,text) => jb.studio.pretty(text)
+})
+
 jb.component('studio.template-as-jsx', {
 	type: 'data',
 	params: [{ id: 'path', as: 'string', dynamic: true } ],
 	impl: ctx => ({
-			$jb_val: function(value) {
-        var st = jb.studio;
-				var path = ctx.params.path();
-				if (!path) return;
-				if (typeof value == 'undefined') {
-          var func = st.valOfPath(path);
-          if (typeof func == 'function')
-            return jb.studio.hToJSX(func.toString().split('=>').slice(1).join('=>') );
-				} else {
-					var funcStr = jb.studio.jsxToH(value);
-					if (funcStr)
-            st.writeValueOfPath(path,st.evalProfile('(cmp,state,h) => ' + funcStr.slice(0,-1)) );
-				}
-			},
-      $jb_observable: cmp =>
-				jb.studio.refObservable(jb.studio.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
-		})
+		$jb_val: function(value) {
+			var st = jb.studio;
+			var path = ctx.params.path();
+			if (!path) return;
+			if (typeof value == 'undefined') {
+				var func = st.valOfPath(path);
+				if (typeof func == 'function')
+            		return jb.studio.hToJSX(func.toString().split('=>').slice(1).join('=>') );
+			} else {
+				var funcStr = jb.studio.jsxToH(value);
+				if (funcStr)
+            		st.writeValueOfPath(path,st.evalProfile('(cmp,state,h) => ' + funcStr) );
+			}
+		},
+		$jb_observable: cmp =>
+			jb.studio.refObservable(jb.studio.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+	})
 })

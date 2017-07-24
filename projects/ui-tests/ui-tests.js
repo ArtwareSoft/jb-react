@@ -222,33 +222,6 @@ jb.component('ui-test.tree-DD-after-last', {
   }
 })
 
-jb.component('ui-test.tree-DD-to-empty-group-1', {
-  impl :{$: 'ui-test',
-  control :{$: 'tree',
-    nodeModel :{$: 'tree.json',
-      object: '%$personWithChildren%', rootPath: 'Homer'
-    },
-    features: [
-        { $: 'tree.selection' },
-        { $: 'tree.drag-and-drop'},
-        { $: 'tree.keyboard-selection'}
-    ]
-  },
-  action: ctx =>
-    jb.move(ctx.exp('%$personWithChildren/children[1]%','ref'),
-        ctx.exp('%$personWithChildren/friends[1]%','ref')),
-  expectedResult :{$: 'equals',
-    item1 :{$pipeline: [
-        {$list: ['%$personWithChildren/children%', '%$personWithChildren/friends%'] } ,
-        '%name%',
-        {$: 'join'}
-        ]
-    },
-    item2: 'Bart,Maggie,Barnie,Lisa',
-  },
-  }
-})
-
 jb.component('ui-test.open-dialog', {
   impl :{$: 'ui-test',
   control :{$: 'button', title: 'click me',

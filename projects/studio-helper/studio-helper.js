@@ -377,23 +377,24 @@ jb.component('studio-helper-sample.properties-params', {
 })
 
 jb.component('studio-helper-sample.properties-params-prof', {
-  type: 'control',
-  impl :{$: 'studio-helper-sample.properties-params',
-    strAsComp :{ $pipeline: ['a', '%%'] },
-    strAsJs: ctx => ctx.vars.aa,
-    boolAsComp :{ $pipeline: ['a', '%%=="a"'] },
-    boolAsJs: ctx => ctx.vars.aa,
-    enumStr: 'b',
-    enumNum: '2',
-    bool :{ $or: [false] }
+  type: 'control', 
+  impl :{$: 'studio-helper-sample.properties-params', 
+    strAsComp :{ $pipeline: ['a', '%%'] }, 
+    strAsJs: ctx => ctx.vars.aa, 
+    boolAsComp :{ $pipeline: ['a', '%%=="a"'] }, 
+    boolAsJs: ctx => ctx.vars.aa, 
+    enumStr: 'b', 
+    enumNum: '2', 
+    bool :{ $or: [false] }, 
+    style :{$: 'button.href' }
   }
 })
 
 jb.component('studio-helper-sample.custom-style-comp', {
-  type: 'control',
-  impl :{$: 'label',
-    title: 'hello',
-    style :{$: 'custom-style',
+  type: 'control', 
+  impl :{$: 'label', 
+    title: 'hello', 
+    style :{$: 'custom-style', 
       template: (cmp,state,h) => h(
   "div", { "class": "demo-card-square mdl-card mdl-shadow--2dp" }, h(
     "div", { "class": "mdl-card__title mdl-card--expand" },
@@ -417,10 +418,10 @@ jb.component('studio-helper-sample.custom-style-comp', {
       "View Updates"
     )
   )
-),
-      css: '',
+), 
+      css: '', 
       features: [
-        {$: 'label.bind-title' },
+        {$: 'label.bind-title' }, 
         {$: 'mdl-style.init-dynamic' }
       ]
     }

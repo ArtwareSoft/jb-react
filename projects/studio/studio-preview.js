@@ -22,8 +22,10 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       st.serverComps = st.previewjb.comps;
       st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
 
-      preview_window.jb.studio.studioWindow = window;
-      preview_window.jb.studio.previewjb = preview_window.jb;
+      st.previewjb.studio.studioWindow = window;
+      st.previewjb.studio.previewjb = st.previewjb;
+			st.previewjb.http_get_cache = {}
+
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
         st.previewjb.studio.initEventTracker();

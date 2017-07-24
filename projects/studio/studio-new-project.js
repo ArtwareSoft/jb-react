@@ -1,6 +1,6 @@
 
 jb.component('studio.new-project', {
-	type: 'action',
+	type: 'action,has-side-effects',
 	params: [
 		{ id: 'name',as: 'string' },
     { id: 'onSuccess', type: 'action', dynamic: true }

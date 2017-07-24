@@ -61,7 +61,7 @@ jb.component('studio.toolbar', {
       },
       {$: 'button',
         title: 'jbEditor',
-        action :{$: 'studio.open-jb-editor', path: '%$studio/profile_path%' },
+        action :{$: 'studio.open-jb-editor', path :{$firstSucceeding: [ '%$studio/profile_path%', '%$studio/project%.%$studio/page%'] } },
         style :{$: 'button.mdl-icon', icon: 'build' },
         features :{$: 'ctrl-action',
           action :{$: 'studio.open-jb-editor',
@@ -118,9 +118,9 @@ jb.component('studio.toolbar', {
         key: 'Alt+N',
         action :{$: 'studio.pickAndOpen', from: 'studio' }
       },
-			{$: 'feature.keyboard-shortcut',
+		{$: 'feature.keyboard-shortcut',
         key: 'Alt+X',
-        action :{$: 'studio.open-jb-editor', path: '%$studio/profile_path%' }
+        action :{$: 'studio.open-jb-editor', path :{$firstSucceeding: [ '%$studio/profile_path%', '%$studio/project%.%$studio/page%'] } }
       }
     ]
   }

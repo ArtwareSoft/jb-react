@@ -5,8 +5,9 @@ jb.component('goto-url', {
 		{ id: 'url', as:'string', essential: true },
 		{ id: 'target', type:'enum', values: ['new tab','self'], defaultValue:'new tab', as:'string'}
 	],
-	impl: function(context,url,target) {
+	impl: (ctx,url,target) => {
 		var _target = (target == 'new tab') ? '_blank' : '_self';
-		window.open(url,_target);
+		if (!ctx.probe)
+			window.open(url,_target);
 	}
 })

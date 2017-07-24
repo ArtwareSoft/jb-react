@@ -216,26 +216,28 @@ Object.assign(st, {
 	makeLocal: (path) =>{
 		var comp = st.compOfPath(path);
 		if (!comp || typeof comp.impl != 'object') return;
-		var res = JSON.stringify(comp.impl, (key, val) => typeof val === 'function' ? ''+val : val , 4);
+		st.writeValueOfPath(path,st.evalProfile(st.prettyPrint(comp.impl)));
 
-		var profile = st.valOfPath(path);
-		// inject conditional param values
-		jb.compParams(comp).forEach(p=>{
-				var pUsage = '%$'+p.id+'%';
-				var pVal = '' + (profile[p.id] || p.defaultValue || '');
-				res = res.replace(new RegExp('{\\?(.*?)\\?}','g'),(match,condition_exp)=>{ // conditional exp
-						if (condition_exp.indexOf(pUsage) != -1)
-							return pVal ? condition_exp : '';
-						return match;
-					});
-		});
-		// inject param values
-		jb.compParams(comp).forEach(p=>{
-				var pVal = '' + (profile[p.id] || p.defaultValue || ''); // only primitives
-				res = res.replace(new RegExp(`%\\$${p.id}%`,'g') , pVal);
-		});
-
-		st.writeValueOfPath(path,st.evalProfile(res));
+		// var res = JSON.stringify(comp.impl, (key, val) => typeof val === 'function' ? ''+val : val , 4);
+		//
+		// var profile = st.valOfPath(path);
+		// // inject conditional param values
+		// jb.compParams(comp).forEach(p=>{
+		// 		var pUsage = '%$'+p.id+'%';
+		// 		var pVal = '' + (profile[p.id] || p.defaultValue || '');
+		// 		res = res.replace(new RegExp('{\\?(.*?)\\?}','g'),(match,condition_exp)=>{ // conditional exp
+		// 				if (condition_exp.indexOf(pUsage) != -1)
+		// 					return pVal ? condition_exp : '';
+		// 				return match;
+		// 			});
+		// });
+		// // inject param values
+		// jb.compParams(comp).forEach(p=>{
+		// 		var pVal = '' + (profile[p.id] || p.defaultValue || ''); // only primitives
+		// 		res = res.replace(new RegExp(`%\\$${p.id}%`,'g') , pVal);
+		// });
+		//
+		// st.writeValueOfPath(path,st.evalProfile(res));
 	},
 	getOrCreateControlArrayRef: path => {
 		var val = st.valOfPath(path);

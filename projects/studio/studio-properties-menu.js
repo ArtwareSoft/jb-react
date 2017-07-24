@@ -26,21 +26,12 @@ jb.component('studio.open-property-menu', {
   type: 'action',
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'menu.open-context-menu',
-    $vars: {
-      compName :{$: 'studio.comp-name', path: '%$path%' }
-    },
     menu :{$: 'menu.menu',
+		$vars: {
+	      compName :{$: 'studio.comp-name', path: '%$path%' }
+	    },
       options: [
-        {$: 'menu.action',
-          title: 'Style editor',
-          action :{
-            $runActions: [
-              {$: 'studio.make-local', path: '%$path%' },
-              {$: 'studio.open-style-editor', path: '%$path%' }
-            ]
-          },
-          showCondition :{$: 'ends-with', endsWith: '~style', text: '%$path%' }
-        },
+        {$: 'studio.style-editor-options', path: '%$path%' },
         {$: 'menu.action',
           title: 'multiline edit',
           action :{$: 'studio.open-multiline-edit', path: '%$path%' },
@@ -63,7 +54,7 @@ jb.component('studio.open-property-menu', {
           title: 'Javascript editor',
           action :{$: 'studio.edit-source', path: '%$path%' },
           icon: 'code'
-        }, 
+        },
         {$: 'studio.goto-editor-options', path: '%$path%' },
         {$: 'menu.action',
           title: 'Delete',
