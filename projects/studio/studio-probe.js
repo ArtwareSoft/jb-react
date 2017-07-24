@@ -25,10 +25,10 @@ jb.studio.Probe = class {
 		var initial_comps = st.compsRefHandler.resources();
 
     return this.simpleRun()
-		  .catch(e => null)
+//		  .catch(e => jb.logException(e,'probe run'))
 	    .then( res =>
 	      this.handleGaps())
-		  .catch(e => null)
+		  .catch(e => jb.logException(e,'probe run'))
 		  .then(res=>{
 					this.completed = true;
 		      this.totalTime = new Date().getTime()-this.startTime;
@@ -47,14 +47,8 @@ jb.studio.Probe = class {
 				if (st.isCompNameOfType(jb.compName(this.circuit),'control')) {
 					var ctrl = jb.ui.h(res.reactComp());
           st.probeEl = st.probeEl || document.createElement('div');
-          try {
-            st.probeResEl = jb.ui.render(ctrl, st.probeEl, st.probeResEl);
-          } catch (e) {
-            jb.logException(e,'probe run')
-          }
+          st.probeResEl = jb.ui.render(ctrl, st.probeEl, st.probeResEl);
           return ({element: st.probeResEl});
-				} else if (st.isCompNameOfType(jb.compName(this.circuit),'menu.option')) {
-					return res.options()
 				}
 				return res;
 			})
@@ -76,23 +70,26 @@ jb.studio.Probe = class {
 			this.result = this.probe[_path];
 			return;
 		}
-		// use the ctx to run the breaking param
+
+		// check if parent ctx returns object with method name of breakprop as in dialog.onOK
 		var parentCtx = this.probe[_path][0].ctx, breakingPath = _path+'~'+breakingProp;
-		// check if parent ctx returns object with methods as in dialog.onOK
-		var obj = parentCtx.runItself();
+		var obj = this.probe[_path][0].out;
 		if (obj[breakingProp] && typeof obj[breakingProp] == 'function')
 			return Promise.resolve(obj[breakingProp]())
 				.then(_=>this.handleGaps(_path));
 
+	  // use the ctx to run the breaking param if it has no side effects
 		var hasSideEffect = st.previewjb.comps[st.compNameOfPath(breakingPath)] && (st.previewjb.comps[st.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1;
 		if (!hasSideEffect)
 			return Promise.resolve(parentCtx.runInner(parentCtx.profile[breakingProp],st.paramDef(breakingPath),breakingProp))
 				.then(_=>this.handleGaps(_path));
 
+		// could not solve the gap
 		this.closestPath = _path;
 		this.result = this.probe[_path];
   }
 
+	// called from jb_run
   record(context,parentParam) {
       var now = new Date().getTime();
       if (!this.outOfTime && now - this.startTime > this.maxTime && !context.vars.testID) {
