@@ -33,6 +33,8 @@ jb.studio.Probe = class {
 					this.completed = true;
 		      this.totalTime = new Date().getTime()-this.startTime;
 		      jb.logPerformance('probe','finished',this);
+					// make values out of ref
+					this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)});
 					st.previewjb.valueByRefHandler.resources(initial_resources);
 					st.compsRefHandler.resources(initial_comps);
 		      return this;
@@ -76,9 +78,19 @@ jb.studio.Probe = class {
 		}
 		// use the ctx to run the breaking param
 		var parentCtx = this.probe[_path][0].ctx, breakingPath = _path+'~'+breakingProp;
-		if (!st.isOfType(breakingPath,'has-side-effects'))
+		// check if parent ctx returns object with methods as in dialog.onOK
+		var obj = parentCtx.runItself();
+		if (obj[breakingProp] && typeof obj[breakingProp] == 'function')
+			return Promise.resolve(obj[breakingProp]())
+				.then(_=>this.handleGaps(_path));
+
+		var hasSideEffect = st.previewjb.comps[st.compNameOfPath(breakingPath)] && (st.previewjb.comps[st.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1;
+		if (!hasSideEffect)
 			return Promise.resolve(parentCtx.runInner(parentCtx.profile[breakingProp],st.paramDef(breakingPath),breakingProp))
 				.then(_=>this.handleGaps(_path));
+
+		this.closestPath = _path;
+		this.result = this.probe[_path];
   }
 
   record(context,parentParam) {

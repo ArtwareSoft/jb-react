@@ -106,7 +106,6 @@ jb.component('probe-test.actions-sugar', {
 		circuit: {$: 'group',
 			controls :{$: 'button', title : 'hello', action: [ {$: 'goto-url', url: 'google' }] }
 		},
-		allowClosestPath: true,
 		probePath : 'controls~action~0',
 		expectedVisits: 1,
 	}
@@ -154,7 +153,7 @@ jb.component('test.action-with-side-effects', {
 
 jb.component('probe-test.inside-action-with-side-effects', {
 	 impl :{$: 'studio-probe-test',
-		circuit: {$: 'button', action :{$: 'test.action-with-side-effect', text: 'hello' } },
+		circuit: {$: 'button', action :{$: 'test.action-with-side-effects', text: 'hello' } },
 		probePath : 'action~text',
 		expectedVisits: 0,
 	}

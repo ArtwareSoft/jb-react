@@ -146,7 +146,7 @@ jb.component('studio.style-editor', {
                   title: 'Paste html / jsx', 
                   onOK :{$: 'write-value', 
                     to :{$: 'studio.ref', path: '%$path%~template' }, 
-                    value :{$: 'studio.template-as-jsx', path: '%$path%~template' }
+                    value: '%$jsx%'
                   }, 
                   features: [
                     {$: 'var', 

@@ -258,7 +258,7 @@ jb.component('write-value',{
 		{ id: 'value', essential: true}
 	],
 	impl: (ctx,to,value) =>
-		jb.writeValue(to,value,ctx)
+		jb.writeValue(to,jb.val(value),ctx)
 });
 
 jb.component('remove-from-array', {
@@ -783,6 +783,20 @@ jb.component('http.get', {
 			  .catch(e => jb.logException(e) || [])
 	}
 });
+
+jb.component('isRef', {
+	params: [
+		{ id: 'obj', essential: true }
+	],
+	impl: (ctx,obj) => jb.isRef(obj)
+})
+
+jb.component('asRef', {
+	params: [
+		{ id: 'obj', essential: true }
+	],
+	impl: (ctx,obj) => jb.asRef(obj)
+})
 
 jb.component('data.switch', {
   params: [

@@ -395,30 +395,7 @@ jb.component('studio-helper-sample.custom-style-comp', {
   impl :{$: 'label', 
     title: 'hello', 
     style :{$: 'custom-style', 
-      template: (cmp,state,h) => h(
-  "div", { "class": "demo-card-square mdl-card mdl-shadow--2dp" }, h(
-    "div", { "class": "mdl-card__title mdl-card--expand" },
-    h(
-      "h2",
-      { "class": "mdl-card__title-text" },
-      "Update"
-    )
-  ),
-  h(
-    "div",
-    { "class": "mdl-card__supporting-text" },
-    "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenan convallis."
-  ),
-  h(
-    "div",
-    { "class": "mdl-card__actions mdl-card--border" },
-    h(
-      "a",
-      { "class": "mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" },
-      "View Updates"
-    )
-  )
-), 
+      template: '%', 
       css: '', 
       features: [
         {$: 'label.bind-title' }, 
