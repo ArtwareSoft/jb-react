@@ -292,7 +292,7 @@ function evalExpressionPart(expressionPart,context,jstype) {
         var arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1]);
         var index = arrayIndexMatch[2];
         if (!Array.isArray(arr))
-            return jb.logError('expecting array instead of ' + typeof arr, context);
+            return null; //jb.logError('expecting array instead of ' + typeof arr, context);
 
         if (last && (jstype == 'ref' || !primitiveJsType))
            return jb.valueByRefHandler.objectProperty(arr,index);

@@ -66,7 +66,7 @@ jb.studio.jsxToH = jsx => {
   try  {
   return Babel.transform(jsx, {
     "plugins": [["transform-react-jsx", { "pragma": "h"  }]]
-  }).code.replace(/;$/,'')
+  }).code.replace(/;$/,'').replace(/\(\s*/mg,'(').replace(/\s*\)/mg,')').replace(/,null,/mg,',{},').replace(/,\s*\{/mg,',{').replace(/"class"/mg,'class').replace(/"/mg,"'")
   } catch(e) {
     jb.logException(e)
   }
@@ -88,6 +88,19 @@ jb.component('studio.pretty', {
 	params: [{ id: 'text', as: 'string', defaultValue: '%%' } ],
 	impl: (ctx,text) => jb.studio.pretty(text)
 })
+
+jb.component('studio.jsx-to-h', {
+	type: 'data',
+	params: [{ id: 'text', as: 'string', defaultValue: '%%' } ],
+	impl: (ctx,text) => jb.studio.jsxToH(text)
+})
+
+jb.component('studio.h-to-jsx', {
+	type: 'data',
+	params: [{ id: 'text', as: 'string', defaultValue: '%%' } ],
+	impl: (ctx,text) => jb.studio.hToJSX(text)
+})
+
 
 jb.component('studio.template-as-jsx', {
 	type: 'data',

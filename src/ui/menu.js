@@ -96,11 +96,11 @@ jb.component('menu.action', {
 // ********* actions / controls ************
 
 jb.component('menu.control', {
-  type: 'control',
+  type: 'control,clickable,menu',
   params: [
   	{id: 'menu', type: 'menu.option', dynamic: true, essential: true },
     {id: 'style', type: 'menu.style', defaultValue :{$: 'menu-style.context-menu' }, dynamic: true },
-	{id: 'features', type: 'feature[]', dynamic: true },
+		{id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx => {
   	var menuModel = ctx.params.menu() || { options: [], ctx: ctx, title: ''};

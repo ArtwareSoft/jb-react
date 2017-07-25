@@ -3,7 +3,7 @@ jb.component('css', {
   params: [
     { id: 'css', essential: true, as: 'string' },
   ],
-  impl: (context,css) => 
+  impl: (context,css) =>
     ({css:css})
 })
 
@@ -12,7 +12,7 @@ jb.component('css.class', {
   params: [
     { id: 'class', essential: true, as: 'string' },
   ],
-  impl: (context,clz) => 
+  impl: (context,clz) =>
     ({class :clz})
 })
 
@@ -24,7 +24,7 @@ jb.component('css.width', {
     { id: 'minMax', as: 'string', options: ',min,max'},
     { id: 'selector', as: 'string' },
 ],
-  impl: (ctx,width,overflow,minMax) => 
+  impl: (ctx,width,overflow,minMax) =>
     ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${width}px ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
 })
 
@@ -97,6 +97,22 @@ jb.component('css.transform-rotate', {
   }
 })
 
+jb.component('css.color', {
+  type: 'feature',
+  params: [
+		{ id: 'color', as: 'string' },
+		{ id: 'background', as: 'string' },
+    { id: 'selector', as: 'string' },
+  ],
+  impl: (ctx,color) => {
+		var css = ['color','background']
+      .filter(x=>ctx.params[x])
+      .map(x=> `${x}: ${ctx.params[x]}`)
+      .join('; ');
+    return css && ({css: `${ctx.params.selector} {${css}}`});
+  }
+})
+
 jb.component('css.transform-scale', {
   type: 'feature',
   params: [
@@ -136,6 +152,6 @@ jb.component('css.border', {
     { id: 'color', as: 'string', defaultValue: 'black' },
     { id: 'selector', as: 'string' },
   ],
-  impl: (context,width,side,style,color,selector) => 
+  impl: (context,width,side,style,color,selector) =>
     ({css: `${selector} { border${side?'-'+side:''}: ${width}px ${style} ${color} }`})
 })

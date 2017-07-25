@@ -54,6 +54,7 @@ var resources = {
         'src/ui/styles/picklist-styles.js',
         'src/ui/styles/property-sheet-styles.js',
         'src/ui/styles/editable-boolean-styles.js',
+				'src/ui/styles/card-styles.js',
       ],
       'ui-tree':[
         'src/ui/tree/tree.js',

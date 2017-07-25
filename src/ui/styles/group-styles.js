@@ -10,9 +10,13 @@ jb.component('group.section', {
 
 jb.component('group.div', {
   type: 'group.style',
+	params: [
+		{ id: 'groupClass', as: 'string' },
+		{ id: 'itemClass', as: 'string' },
+	],
   impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
+    template: (cmp,state,h) => h('div',{ class: cmp.groupClass },
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl,{class: cmp.itemClass}),ctrl.ctx.data))),
     features :{$: 'group.init-group'}
   }
 })
@@ -40,7 +44,7 @@ jb.component('group.ul-li', {
 
 jb.component('group.expandable', {
   type: 'group.style',
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},[
         h('div',{ class: 'header'},[
           h('div',{ class: 'title'}, state.title),
@@ -53,12 +57,12 @@ jb.component('group.expandable', {
     css: `>.header { display: flex; flex-direction: row; }
         >.header>button:hover { background: none }
         >.header>button { margin-left: auto }
-        >.header.title { margin: 5px }`, 
-    features :[ 
+        >.header.title { margin: 5px }`,
+    features :[
         {$: 'group.init-group' },
         {$: 'group.init-expandable' },
       ]
-    }, 
+    },
 })
 
 jb.component('group.init-expandable', {
@@ -74,25 +78,25 @@ jb.component('group.init-expandable', {
 
 jb.component('group.accordion', {
   type: 'group.style',
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
         state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
           h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
             h('div',{ class: 'title'}, ctrl.title),
-            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) }, 
+            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) },
               h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
             )
-          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)        
+          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)
     )),
     css: `>.accordion-section>.header { display: flex; flex-direction: row; }
         >.accordion-section>.header>button:hover { background: none }
         >.accordion-section>.header>button { margin-left: auto }
-        >.accordion-section>.header>.title { margin: 5px }`, 
-      features : [ 
+        >.accordion-section>.header>.title { margin: 5px }`,
+      features : [
         {$: 'group.init-group' },
         {$: 'group.init-accordion' },
       ]
-    }, 
+    },
 })
 
 jb.component('group.init-accordion', {
@@ -105,10 +109,10 @@ jb.component('group.init-accordion', {
     onkeydown: ctx.params.keyboardSupport,
     init: cmp => {
       cmp.state.shown = 0;
-      cmp.expand_title = index => 
+      cmp.expand_title = index =>
         index == cmp.state.shown ? 'collapse' : 'expand';
 
-      cmp.show = index => 
+      cmp.show = index =>
         cmp.setState({shown: index});
 
       cmp.next = diff =>
@@ -120,7 +124,7 @@ jb.component('group.init-accordion', {
             .subscribe(e=>
               cmp.next(e.keyCode == 33 ? -1 : 1))
       }
-    }    
+    }
   })
 })
 
@@ -133,26 +137,26 @@ jb.component('group.tabs', {
     modelVar: 'tabsModel',
     control :{$: 'group', controls: [
       {$: 'group', title: 'thumbs',
-        features :{$: 'group.init-group'}, 
+        features :{$: 'group.init-group'},
         style :{$: 'layout.horizontal' },
-        controls :{$: 'dynamic-controls', 
+        controls :{$: 'dynamic-controls',
           itemVariable: 'tab',
           controlItems : '%$tabsModel/controls%',
-          genericControl: {$: 'button', 
-            title: '%$tab/jb_title%', 
+          genericControl: {$: 'button',
+            title: '%$tab/jb_title%',
             action :{$: 'write-value', value: '%$tab%', to: '%$selectedTab%' },
-            style :{$: 'button.mdl-flat-ripple' }, 
+            style :{$: 'button.mdl-flat-ripple' },
             features: [
-              {$: 'css.width', width: '%$width%' }, 
+              {$: 'css.width', width: '%$width%' },
               {$: 'css', css: '{text-align: left}' }
             ]
           },
         },
       },
-      ctx => 
-        jb.val(ctx.exp('%$selectedTab%')), 
+      ctx =>
+        jb.val(ctx.exp('%$selectedTab%')),
     ],
-    features : [ 
+    features : [
         {$: 'var', name: 'selectedTab', value: '%$tabsModel/controls[0]%', mutable: true },
         {$: 'group.init-group'},
     ]
@@ -164,16 +168,15 @@ jb.component('toolbar.simple', {
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{class:'toolbar'},
         state.ctrls.map(ctrl=> h(ctrl))),
-    css: `{ 
+    css: `{
             display: flex;
-            background: #F5F5F5; 
-            height: 33px; 
+            background: #F5F5F5;
+            height: 33px;
             width: 100%;
-            border-bottom: 1px solid #D9D9D9; 
+            border-bottom: 1px solid #D9D9D9;
             border-top: 1px solid #fff;
         }
         >* { margin-right: 0 }`,
     features :{$: 'group.init-group'}
   }
 })
-

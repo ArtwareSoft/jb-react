@@ -66,6 +66,23 @@ jb.component('label.heading', {
     }
 })
 
+jb.component('label.card-title', {
+    type: 'label.style',
+    impl :{$: 'custom-style',
+        template: (cmp,state,h) => h('div',{ class: 'mdl-card__title' },
+    				h('h2',{ class: 'mdl-card__title-text' },	state.title)),
+        features :{$: 'label.bind-title' }
+    }
+})
+
+jb.component('label.card-supporting-text', {
+    type: 'label.style',
+    impl :{$: 'custom-style',
+        template: (cmp,state,h) => h('div',{ class: 'mdl-card__supporting-text' },	state.title),
+        features :{$: 'label.bind-title' }
+    }
+})
+
 jb.component('highlight', {
   params: [
     { id: 'base', as: 'string', dynamic: true },

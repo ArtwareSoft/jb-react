@@ -1,7 +1,7 @@
 jb.type('button.style')
 
 jb.component('button', {
-  type: 'control', category: 'control:100,common:100',
+  type: 'control,clickable', category: 'control:100,common:100',
   params: [
     { id: 'title', as: 'ref', essential: true, defaultTValue: 'click me', dynamic: true },
     { id: 'action', type: 'action', essential: true, dynamic: true },
@@ -12,9 +12,9 @@ jb.component('button', {
     jb.ui.ctrl(ctx,{
       beforeInit: cmp => {
         cmp.state.title = jb.val(ctx.params.title());
-        cmp.refresh = _ => 
+        cmp.refresh = _ =>
           cmp.setState({title: jb.val(ctx.params.title(cmp.ctx))});
-          
+
         cmp.clicked = ev => {
           if (ev && ev.ctrlKey && cmp.ctrlAction)
             cmp.ctrlAction()
@@ -24,7 +24,7 @@ jb.component('button', {
             cmp.action();
         }
       },
-      afterViewInit: cmp => 
+      afterViewInit: cmp =>
           cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
     })
 })
@@ -32,11 +32,11 @@ jb.component('button', {
 jb.component('ctrl-action', {
   type: 'feature', category: 'button:70',
   description: 'action to perform on control+click',
-  params: [ 
+  params: [
     { id: 'action', type: 'action', essential: true, dynamic: true },
   ],
   impl: (ctx,action) => ({
-      afterViewInit: cmp => 
+      afterViewInit: cmp =>
         cmp.ctrlAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
   })
 })
@@ -44,11 +44,11 @@ jb.component('ctrl-action', {
 jb.component('alt-action', {
   type: 'feature', category: 'button:70',
   description: 'action to perform on alt+click',
-  params: [ 
+  params: [
     { id: 'action', type: 'action', essential: true, dynamic: true },
   ],
   impl: (ctx,action) => ({
-      afterViewInit: cmp => 
+      afterViewInit: cmp =>
         cmp.altAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
   })
 })
@@ -56,11 +56,31 @@ jb.component('alt-action', {
 jb.component('button-disabled', {
   type: 'feature', category: 'button:70',
   description: 'define condition when button is enabled',
-  params: [ 
+  params: [
     { id: 'enabledCondition', type: 'boolean', essential: true, dynamic: true },
   ],
   impl: (ctx,cond) => ({
-      init: cmp => 
-        cmp.isEnabled = ctx2 => cond(ctx.extendVars(ctx2))
+      init: cmp =>
+        cmp.state.isEnabled = ctx2 => cond(ctx.extendVars(ctx2))
   })
+})
+
+jb.component('icon-with-action', {
+  type: 'control,clickable', category: 'control:30',
+  params: [
+		{ id: 'icon', as: 'string', essential: true },
+		{ id: 'title', as: 'string' },
+		{ id: 'action', type: 'action', essential: true, dynamic: true },
+		{ id: 'style', type: 'icon-with-action.style', dynamic: true, defaultValue :{$: 'button.mdl-icon' } },
+		{ id: 'features', type: 'feature[]', dynamic: true }
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx, {
+			init: cmp=>  {
+					cmp.icon = ctx.params.icon;
+					cmp.state.title = ctx.params.title;
+			},
+      afterViewInit: cmp =>
+          cmp.clicked = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
+    })
 })

@@ -82,7 +82,11 @@ jb.component('play-ground.t', {
     controls: [
       {$: 'button', 
         title: 'click me1', 
-        style :{$: 'button.mdl-raised' }
+        style :{$: 'custom-style', 
+          template: (cmp,state,h) => h('button',{class: 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev)},state.title), 
+          css: '{ color: red }', 
+          features :{$: 'mdl-style.init-dynamic' }
+        }
       }, 
       {$: 'button', 
         title: 'click me2', 
@@ -162,5 +166,73 @@ jb.component('play-ground.more-items', {
       }
     ], 
     features :{$: 'group.itemlist-container', itemsToAdd: '2', id: '', maxItems: '10' }
+  }
+})
+
+jb.component('play-ground.cards', {
+  type: 'control', 
+  impl :{$: 'group', 
+    title: 'cards', 
+    style :{$: 'group.div', groupClass: 'mdl-card mdl-shadow--2dp' }, 
+    controls: [
+      {$: 'group', 
+        title: 'image', 
+        style :{$: 'group.div', groupClass: 'mdl-card__media' }, 
+        controls: [
+          {$: 'image', 
+            url: '//getmdl.io/assets/demos/welcome_card.jpg', 
+            imageHeight: '176', 
+            units: 'px', 
+            style :{$: 'image.default' }
+          }
+        ], 
+        features :{$: 'css.color', color: '', background: '#422196' }
+      }, 
+      {$: 'label', 
+        title: 'Welcome', 
+        style :{$: 'label.card-title', 
+          template: (cmp,state,h) => h('span',{},state.title), 
+          features :{$: 'label.bind-title' }
+        }, 
+        features: [
+          {$: 'css', css: '{ color: #fff }' }, 
+          {$: 'css.margin', top: '-55' }
+        ]
+      }, 
+      {$: 'label', 
+        title: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.     Mauris sagittis pellentesque lacus eleifend lacinia...', 
+        style :{$: 'label.card-supporting-text', 
+          template: (cmp,state,h) => h('span',{},state.title), 
+          features :{$: 'label.bind-title' }
+        }
+      }, 
+      {$: 'group', 
+        title: 'actions', 
+        style :{$: 'group.div', groupClass: 'mdl-card__actions mdl-card--border' }, 
+        controls: [
+          {$: 'button', 
+            title: 'Get Started', 
+            style :{$: 'button.mdl-card-flat', 
+              template: (cmp,state,h) => h('a',{class:'mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title), 
+              css: '{ text-transform: none }', 
+              features :{$: 'mdl-style.init-dynamic' }
+            }, 
+            features :{$: 'css.class', class: '' }
+          }
+        ]
+      }, 
+      {$: 'group', 
+        title: 'menu', 
+        style :{$: 'group.div', groupClass: 'mdl-card__menu' }, 
+        controls: [
+          {$: 'icon-with-action', 
+            icon: 'share', 
+            style :{$: 'button.mdl-round-icon' }, 
+            features :{$: 'css.color', color: 'white' }
+          }
+        ]
+      }
+    ], 
+    features :{$: 'css.width', width: '512' }
   }
 })
