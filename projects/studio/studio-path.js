@@ -4,7 +4,13 @@ function compsRef(val,opEvent) {
   if (typeof val == 'undefined')
     return st.previewjb.comps;
   else {
-  	st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex});
+		if (val.$jb_historyIndex && val == st.compsHistory[val.$jb_historyIndex].after)
+			st.compsHistory.slice()
+
+		val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
+		if (!val.$jb_selectionPreview)
+  		st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex});
+
     st.previewjb.comps = val;
     st.undoIndex = st.compsHistory.length;
   }
@@ -39,7 +45,7 @@ Object.assign(st,{
   refOfPath: (path,silent) =>
   	st.compsRefHandler.refOfPath(path.split('~'),silent),
   parentPath: path =>
-	path.split('~').slice(0,-1).join('~'),
+		path.split('~').slice(0,-1).join('~'),
   valOfPath: (path,silent) =>
   	st.val(st.refOfPath(path,silent)),
   compNameOfPath: (path,silent) =>
@@ -48,33 +54,33 @@ Object.assign(st,{
   	st.getComp(st.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) =>
   	jb.compParams(st.compOfPath(path,silent)),
-  writeValueOfPath: (path,value) =>
-	st.writeValue(st.refOfPath(path),value),
+  writeValueOfPath: (path,value,srcCtx) =>
+		st.writeValue(st.refOfPath(path),value,srcCtx),
   getComp: id =>
-	st.previewjb.comps[id],
+		st.previewjb.comps[id],
   compAsStr: id =>
-	st.prettyPrintComp(id,st.getComp(id)),
+		st.prettyPrintComp(id,st.getComp(id)),
 });
 
 
 // write operations with logic
 
 Object.assign(st, {
-	_delete: (path) => {
+	_delete: (path,srcCtx) => {
 		var prop = path.split('~').pop();
 		var parent = st.valOfPath(st.parentPath(path))
 		if (Array.isArray(parent)) {
 			var index = Number(prop);
-			st.splice(st.refOfPath(st.parentPath(path)),[[index, 1]])
+			st.splice(st.refOfPath(st.parentPath(path)),[[index, 1]],srcCtx)
 		} else {
-			st.writeValueOfPath(path,null);
+			st.writeValueOfPath(path,null,srcCtx);
 		}
 	},
 
-	wrapWithGroup: (path) =>
-		st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] }),
+	wrapWithGroup: (path,srcCtx) =>
+		st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] },srcCtx),
 
-	wrap: (path,compName) => {
+	wrap: (path,compName,srcCtx) => {
 		var comp = st.getComp(compName);
 		var compositeParam = jb.compParams(comp).filter(p=>p.composite)[0];
 		if (compositeParam) {
@@ -83,10 +89,10 @@ Object.assign(st, {
 				var result = jb.obj('$'+compName,singleOrArray);
 			else
 				var result = Object.assign({ $: compName }, jb.obj(compositeParam.id,singleOrArray));
-			st.writeValueOfPath(path,result);
+			st.writeValueOfPath(path,result,srcCtx);
 		}
 	},
-	addProperty: (path) => {
+	addProperty: (path,srcCtx) => {
 		// if (st.paramTypeOfPath(path) == 'data')
 		// 	return st.writeValueOfPath(path,'');
 		var param = st.paramDef(path);
@@ -95,42 +101,42 @@ Object.assign(st, {
 			result = '';
 		if (param.type.indexOf('[') != -1)
 			result = [];
-		st.writeValueOfPath(path,result);
+		st.writeValueOfPath(path,result,srcCtx);
 	},
 
-	duplicateControl: path => {
+	duplicateControl: (path,srcCtx) => {
 		var prop = path.split('~').pop();
 		var val = st.valOfPath(path);
 		var parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
 		if (parent_ref) {
 			var clone = st.evalProfile(st.prettyPrint(val));
-			st.splice(parent_ref,[[Number(prop), 0,clone]]);
+			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
-	duplicateArrayItem: path => {
+	duplicateArrayItem: (path,srcCtx) => {
 		var prop = path.split('~').pop();
 		var val = st.valOfPath(path);
 		var parent_ref = st.refOfPath(st.parentPath(path));
 		if (parent_ref && Array.isArray(st.val(parent_ref))) {
 			var clone = st.evalProfile(st.prettyPrint(val));
-			st.splice(parent_ref,[[Number(prop), 0,clone]]);
+			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
 	disabled: path => {
 		var prof = st.valOfPath(path);
 		return prof && typeof prof == 'object' && prof.$disabled;
 	},
-	toggleDisabled: path => {
+	toggleDisabled: (path,srcCtx) => {
 		var prof = st.valOfPath(path);
 		if (prof && typeof prof == 'object' && !Array.isArray(prof))
-			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true)
+			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
-	setComp: (path,compName) => {
+	setComp: (path,compName,srcCtx) => {
 		var comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
 		var params = jb.compParams(comp);
 		if (params.length == 1 && params[0].composite == true)
-			return st.setSugarComp(path,compName,params[0]);
+			return st.setSugarComp(path,compName,params[0],srcCtx);
 
 		var result = { $: compName };
 		params.forEach(p=>{
@@ -143,12 +149,12 @@ Object.assign(st, {
 		})
 		var currentVal = st.valOfPath(path);
 		if (!currentVal || typeof currentVal != 'object')
-			st.writeValue(st.refOfPath(path),result)
+			st.writeValue(st.refOfPath(path),result,srcCtx)
 		else
-			st.merge(st.refOfPath(path),result);
+			st.merge(st.refOfPath(path),result,srcCtx);
 	},
 
-	setSugarComp: (path,compName,param) => {
+	setSugarComp: (path,compName,param,srcCtx) => {
 		var emptyVal = (param.type||'').indexOf('[') == -1 ? '' : [];
 		var currentVal = st.valOfPath(path);
 		if (typeof currentVal == 'object') {
@@ -160,10 +166,10 @@ Object.assign(st, {
 		}
 		if (currentVal && !Array.isArray(currentVal) && (param.type||'').indexOf('[') != -1)
 			currentVal = [currentVal];
-		st.writeValue(st.refOfPath(path),jb.obj('$'+compName,currentVal || emptyVal))
+		st.writeValue(st.refOfPath(path),jb.obj('$'+compName,currentVal || emptyVal),srcCtx)
 	},
 
-	insertControl: (path,compName) => {
+	insertControl: (path,compName,srcCtx) => {
 		var comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
 		var newCtrl = { $: compName };
@@ -178,45 +184,45 @@ Object.assign(st, {
 		var group_path = path;
 		while (st.controlParams(group_path).length == 0 && group_path)
 			group_path = st.parentPath(group_path);
-		var group_ref = st.getOrCreateControlArrayRef(group_path);
+		var group_ref = st.getOrCreateControlArrayRef(group_path,srcCtx);
 		if (group_ref)
-			st.push(group_ref,[newCtrl]);
+			st.push(group_ref,[newCtrl],srcCtx);
 	},
     // if dest is not an array item, fix it
-    moveFixDestination(from,to) {
+   moveFixDestination(from,to,srcCtx) {
 		if (isNaN(Number(to.split('~').slice(-1)))) {
             if (st.valOfPath(to) === undefined)
-                jb.writeValue(st.refOfPath(to),[]);
+                jb.writeValue(st.refOfPath(to),[],srcCtx);
             to += '~' + st.valOfPath(to).length;
 		}
-		return jb.move(st.refOfPath(from),st.refOfPath(to))
+		return jb.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
 	},
 
-	addArrayItem: (path,toAdd) => {
+	addArrayItem: (path,toAdd,srcCtx) => {
 		var val = st.valOfPath(path);
 		var toAdd = toAdd || {$:''};
 		if (Array.isArray(val)) {
-			st.push(st.refOfPath(path),[toAdd]);
+			st.push(st.refOfPath(path),[toAdd],srcCtx);
 //			return { newPath: path + '~' + (val.length-1) }
 		}
 		else if (!val) {
-			st.writeValueOfPath(path,toAdd);
+			st.writeValueOfPath(path,toAdd,srcCtx);
 		} else {
-			st.writeValueOfPath(path,[val].concat(toAdd));
+			st.writeValueOfPath(path,[val].concat(toAdd),srcCtx);
 //			return { newPath: path + '~1' }
 		}
 	},
 
-	wrapWithArray: (path) => {
+	wrapWithArray: (path,srcCtx) => {
 		var val = st.valOfPath(path);
 		if (val && !Array.isArray(val))
-			st.writeValueOfPath(path,[val]);
+			st.writeValueOfPath(path,[val],srcCtx);
 	},
 
-	makeLocal: (path) =>{
+	makeLocal: (path,srcCtx) =>{
 		var comp = st.compOfPath(path);
 		if (!comp || typeof comp.impl != 'object') return;
-		st.writeValueOfPath(path,st.evalProfile(st.prettyPrint(comp.impl)));
+		st.writeValueOfPath(path,st.evalProfile(st.prettyPrint(comp.impl)),srcCtx);
 
 		// var res = JSON.stringify(comp.impl, (key, val) => typeof val === 'function' ? ''+val : val , 4);
 		//
@@ -239,16 +245,16 @@ Object.assign(st, {
 		//
 		// st.writeValueOfPath(path,st.evalProfile(res));
 	},
-	getOrCreateControlArrayRef: path => {
+	getOrCreateControlArrayRef: (path,srcCtx) => {
 		var val = st.valOfPath(path);
 		var prop = st.controlParams(path)[0];
 		if (!prop)
 			return console.log('getOrCreateControlArrayRef: no control param');
 		var ref = st.refOfPath(path+'~'+prop);
 		if (val[prop] === undefined)
-			jb.writeValue(ref,[]);
+			jb.writeValue(ref,[],srcCtx);
 		else if (!Array.isArray(val[prop])) // wrap
-			jb.writeValue(ref,[val[prop]]);
+			jb.writeValue(ref,[val[prop]],srcCtx);
 		ref = st.refOfPath(path+'~'+prop);
 		return ref;
 	},
@@ -260,7 +266,7 @@ Object.assign(st, {
 		}
 	},
 
-  	pathOfRef: ref =>
+  pathOfRef: ref =>
   		ref && ref.$jb_path && ref.$jb_path.join('~'),
 	nameOfRef: ref =>
 		(ref && ref.$jb_path) ? ref.$jb_path.slice(-1)[0].split(':')[0] : 'ref',
@@ -301,9 +307,10 @@ jb.component('studio.is-new', {
 	type: 'boolean',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) => {
-		if (st.compsHistory.length == 0) return false;
+		if (st.compsHistory.length == 0 || st.previewjb.comps.$jb_selectionPreview) return false;
 		var version_before = new jb.ui.ImmutableWithPath(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
-		var res =  st.valOfPath(path) && !st.val(version_before);
+		var res =  JSON.stringify(st.valOfPath(path)) != JSON.stringify(st.val(version_before));
+//		var res =  st.valOfPath(path) && !st.val(version_before);
 		return res;
 	}
 });

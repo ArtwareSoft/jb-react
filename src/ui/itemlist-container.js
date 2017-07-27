@@ -24,6 +24,7 @@ createItemlistCntr = (ctx,params) => ({
     }
   },
   reSelectAfterFilter: function(filteredItems) {
+		if (filteredItems.indexOf(this.selected()) == -1)
       this.selected(filteredItems[0])
   },
   changeSelectionBeforeDelete: function() {
@@ -48,9 +49,10 @@ jb.component('group.itemlist-container', {
     { id: 'id', as: 'string' },
     { id: 'defaultItem', as: 'single' },
     { id: 'maxItems', as: 'number' , defaultValue: 100 },
+		{ id: 'initialSelection', as: 'single' },
   ],
   impl :{$list : [
-    {$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '', maxItems: '%$maxItems%' } , mutable: true},
+    {$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , mutable: true},
     {$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
     ctx => ({
       init: cmp => {
@@ -58,7 +60,7 @@ jb.component('group.itemlist-container', {
 //        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
         cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>
           items.slice(0,jb.tonumber(maxItemsRef));
-      }
+      },
     })
   ]}
 })

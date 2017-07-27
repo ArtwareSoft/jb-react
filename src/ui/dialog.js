@@ -195,13 +195,12 @@ jb.component('dialog-feature.onClose', {
 	params: [
 		{ id: 'action', type: 'action', dynamic: true}
 	],
-	impl: function(context,action) {
-		context.vars.$dialog.em
+	impl: (ctx,action) =>
+		ctx.vars.$dialog.em
 			.filter(e => e.type == 'close')
 			.take(1)
-			.subscribe(()=>
-				action())
-	}
+			.subscribe(e=>
+				action(ctx.setData(e.OK)))
 })
 
 jb.component('dialog-feature.close-when-clicking-outside', {
@@ -453,7 +452,7 @@ jb.ui.dialogs = {
 				if (dialog.onOK && args && args.OK)
 					return dialog.onOK(context)
 			}).then( _ => {
-				dialog.em.next({type: 'close'});
+				dialog.em.next({type: 'close', OK: args && args.OK});
 				dialog.em.complete();
 
 				var index = self.dialogs.indexOf(dialog);

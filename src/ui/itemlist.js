@@ -126,14 +126,16 @@ jb.component('itemlist.selection', {
 
         cmp.jbEmitter.filter(x=> x =='after-update').startWith(jb.delay(1)).subscribe(x=>{
           if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
-              cmp.setState({selected: null});
+            cmp.state.selected = null;
+					if (jb.val(ctx.params.databind))
+						cmp.setState({selected: selectedOfDatabind()});
           if (!cmp.state.selected)
             autoSelectFirst()
         })
 
         function autoSelectFirst() {
           if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
-              cmp.selectionEmitter.next(cmp.items[0])
+              return cmp.selectionEmitter.next(cmp.items[0])
         }
         function writeSelectedToDatabind(selected) {
           return ctx.params.databind && jb.writeValue(ctx.params.databind,ctx.params.selectedToDatabind(ctx.setData(selected)))
@@ -141,7 +143,7 @@ jb.component('itemlist.selection', {
         function selectedOfDatabind() {
           return ctx.params.databind && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(ctx.params.databind))))
         }
-        autoSelectFirst();
+        //autoSelectFirst();
     },
     extendItem: (cmp,vdom,data) => {
       jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == data);

@@ -1,5 +1,6 @@
 jb.component('group.wait', {
   type: 'feature', category: 'group:70',
+	description: 'wait for asynch data before showing the control',
   params: [
     { id: 'for', essential: true, dynamic: true },
     { id: 'loadingControl', type: 'control', defaultValue: { $:'label', title: 'loading ...'} , dynamic: true },
@@ -29,9 +30,10 @@ jb.component('group.wait', {
 })
 
 jb.component('watch-ref', {
-  type: 'feature', category: '70',
+  type: 'feature', category: 'watch:100',
+	description: 'subscribes to data changes to refresh component',
   params: [
-    { id: 'ref', essential: true, as: 'ref' },
+    { id: 'ref', essential: true, as: 'ref', description: 'reference to data' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
   ],
   impl: (ctx,ref,includeChildren) => ({
@@ -41,7 +43,8 @@ jb.component('watch-ref', {
 })
 
 jb.component('watch-observable', {
-  type: 'feature', category: '20',
+  type: 'feature', category: 'watch',
+	description: 'subscribes to a custom rx.observable to refresh component',
   params: [
     { id: 'toWatch', essential: true },
   ],
@@ -58,8 +61,8 @@ jb.component('watch-observable', {
 })
 
 jb.component('bind-refs', {
-  type: 'feature', category: '20',
-  description: 'automatically update a mutual variable when other value is changing',
+  type: 'feature', category: 'watch',
+  description: 'automatically updates a mutual variable when other value is changing',
   params: [
     { id: 'watchRef', essential: true, as: 'ref' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
@@ -75,10 +78,10 @@ jb.component('bind-refs', {
 
 
 jb.component('group.data', {
-  type: 'feature', category: 'group:100',
+  type: 'feature', category: 'general:100,watch:80',
   params: [
     { id: 'data', essential: true, dynamic: true, as: 'ref' },
-    { id: 'itemVariable', as: 'string' },
+    { id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable' },
     { id: 'watch', as: 'boolean' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
   ],
@@ -99,6 +102,7 @@ jb.component('group.data', {
 
 jb.component('id', {
   type: 'feature',
+	description: 'adds id to html element',
   params: [
     { id: 'id', essential: true, as: 'string' },
   ],
@@ -111,11 +115,12 @@ jb.component('id', {
 })
 
 jb.component('var', {
-  type: 'feature', category: 'group:80',
+  type: 'feature', category: 'general:90',
+	description: 'defines a local variable',
   params: [
     { id: 'name', as: 'string', essential: true },
     { id: 'value', dynamic: true, defaultValue: '' },
-    { id: 'mutable', as: 'boolean' },
+    { id: 'mutable', as: 'boolean', description: 'E.g., selected item variable' },
   ],
   impl: (context, name, value,mutable) => ({
       destroy: cmp => {
@@ -138,6 +143,7 @@ jb.component('var', {
 
 jb.component('features', {
   type: 'feature',
+	description: 'list of features',
   params: [
     { id: 'features', type: 'feature[]', flattenArray: true, dynamic: true },
   ],
@@ -147,7 +153,7 @@ jb.component('features', {
 
 
 jb.component('feature.init', {
-  type: 'feature',
+  type: 'feature', category: 'lifecycle',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
@@ -157,7 +163,7 @@ jb.component('feature.init', {
 })
 
 jb.component('feature.after-load', {
-  type: 'feature',
+  type: 'feature', category: 'lifecycle',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
@@ -167,18 +173,20 @@ jb.component('feature.after-load', {
 })
 
 jb.component('feature.if', {
-  type: 'feature',
+  type: 'feature', category: 'feature:85',
+	description: 'adds element to dom by condition. no watch',
   params: [
     { id: 'showCondition', essential: true, dynamic: true },
   ],
   impl: (ctx, condition,watch) => ({
     templateModifier: (vdom,cmp,state) =>
-        jb.toboolean(condition()) ? vdom : jb.ui.h('div',{style: {display: 'none'}})
+        jb.toboolean(condition()) ? vdom : jb.ui.h('span',{style: {display: 'none'}})
   })
 })
 
 jb.component('hidden', {
   type: 'feature', category: 'feature:85',
+	description: 'adds display:none to element by condition. no watch',
   params: [
     { id: 'showCondition', type: 'boolean', essential: true, dynamic: true },
   ],
@@ -192,7 +200,8 @@ jb.component('hidden', {
 })
 
 jb.component('conditional-class', {
-  type: 'feature', category: 'feature:75',
+  type: 'feature',
+	description: 'toggle class by condition',
   params: [
     { id: 'cssClass', as: 'string', essential: true, dynamic: true },
     { id: 'condition', type: 'boolean', essential: true, dynamic: true },
@@ -207,6 +216,7 @@ jb.component('conditional-class', {
 
 jb.component('feature.hover-title', {
   type: 'feature',
+	description: 'set element title, usually shown by browser on hover',
   params: [
     { id: 'title', as: 'string', dynamic: true },
   ],
@@ -220,7 +230,8 @@ jb.component('feature.hover-title', {
 })
 
 jb.component('feature.keyboard-shortcut', {
-  type: 'feature',
+  type: 'feature', category: 'events',
+	description: 'listen to events at the document level even when the component is not active',
   params: [
     { id: 'key', as: 'string', description: 'e.g. Alt+C' },
     { id: 'action', type: 'action', dynamic: true }
@@ -244,7 +255,7 @@ jb.component('feature.keyboard-shortcut', {
 })
 
 jb.component('feature.onHover', {
-  type: 'feature', category: 'feature:60',
+  type: 'feature', category: 'events',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
@@ -257,7 +268,7 @@ jb.component('feature.onHover', {
 })
 
 jb.component('feature.onKey', {
-  type: 'feature', category: 'feature:60',
+  type: 'feature', category: 'events',
   params: [
     { id: 'code', as: 'number' },
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
@@ -273,7 +284,7 @@ jb.component('feature.onKey', {
 })
 
 jb.component('feature.onEnter', {
-  type: 'feature', category: 'feature:60',
+  type: 'feature', category: 'events',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
@@ -281,7 +292,7 @@ jb.component('feature.onEnter', {
 })
 
 jb.component('feature.onEsc', {
-  type: 'feature', category: 'feature:60',
+  type: 'feature', category: 'events',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
@@ -289,7 +300,7 @@ jb.component('feature.onEsc', {
 })
 
 jb.component('feature.onDelete', {
-  type: 'feature', category: 'feature:60',
+  type: 'feature', category: 'events',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],

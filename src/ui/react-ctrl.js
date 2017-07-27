@@ -67,12 +67,17 @@ class JbComponent {
 				if (!jbComp.template || typeof jbComp.template != 'function')
 					return ui.h('span',{display: 'none'});
 				//console.log('render',jb.studio.shortTitle(this.ctx.path));
-				var vdom = jbComp.template(this,state,ui.h);
-				jbComp.modifierFuncs.forEach(modifier=> {
-					if (typeof vdom == 'object')
-						vdom = modifier(vdom,this,state) || vdom
-				});
-				return vdom;
+				try {
+					var vdom = jbComp.template(this,state,ui.h);
+					jbComp.modifierFuncs.forEach(modifier=> {
+						if (typeof vdom == 'object')
+							vdom = modifier(vdom,this,state) || vdom
+					});
+					return vdom;
+				} catch (e) {
+					jb.logException('render',e);
+					return ui.h('span',{display: 'none'});
+				}
 			}
     		componentDidMount() {
 				jbComp.injectCss(this);
@@ -376,7 +381,7 @@ ui.item = function(cmp,vdom,data) {
 
 ui.watchRef = function(ctx,cmp,ref,includeChildren) {
     ref && ui.refObservable(ref,cmp,{includeChildren: includeChildren, throw: true})
-			.catch(e=>{ jb.logException(e); return []})
+			.catch(e=>{ return []}) // jb.logException(e,'watch ref',cmp,ref); 
 			.subscribe(e=>
         ui.setState(cmp,null,e,ctx))
 }
@@ -397,7 +402,7 @@ ui.refreshComp = (ctx,el) => {
 // ****************** components ****************
 
 jb.component('custom-style', {
-	typePattern: /.*-style/,
+	typePattern: /.*-style/, category: 'advanced:10,all:10',
 	params: [
 		{ id: 'template', as: 'single', essential: true, dynamic: true, ignore: true },
 		{ id: 'css', as: 'string' },
@@ -412,7 +417,7 @@ jb.component('custom-style', {
 })
 
 jb.component('style-by-control', {
-	typePattern: /.*-style/,
+	typePattern: /.*-style/,category: 'advanced:10,all:20',
 	params: [
 		{ id: 'control', type: 'control', essential: true, dynamic: true },
 		{ id: 'modelVar', as: 'string', essential: true }

@@ -237,7 +237,7 @@ jb.component('studio-helper.select-feature', {
   impl :{$: 'group',
     title: 'select-feature',
     style :{$: 'layout.horizontal', spacing: '53' },
-    controls: [{$: 'studio.select-profile', type: 'feature' }]
+    controls: [{$: 'studio.select-profile', type: 'feature', path: 'studio-helper-sample.picklist~impl~features~0' }]
   }
 })
 
@@ -312,6 +312,7 @@ jb.component('studio-helper-sample.picklist', {
       ]
     },
     features: [
+			{$: 'feature.onKey' },
       {$: 'css.padding' },
       {$: 'css.padding' },
       {$: 'css.width' }
@@ -377,24 +378,24 @@ jb.component('studio-helper-sample.properties-params', {
 })
 
 jb.component('studio-helper-sample.properties-params-prof', {
-  type: 'control', 
-  impl :{$: 'studio-helper-sample.properties-params', 
-    strAsComp :{ $pipeline: ['a', '%%'] }, 
-    strAsJs: ctx => ctx.vars.aa, 
-    boolAsComp :{ $pipeline: ['a', '%%=="a"'] }, 
-    boolAsJs: ctx => ctx.vars.aa, 
-    enumStr: 'b', 
-    enumNum: '2', 
-    bool :{ $or: [false] }, 
+  type: 'control',
+  impl :{$: 'studio-helper-sample.properties-params',
+    strAsComp :{ $pipeline: ['a', '%%'] },
+    strAsJs: ctx => ctx.vars.aa,
+    boolAsComp :{ $pipeline: ['a', '%%=="a"'] },
+    boolAsJs: ctx => ctx.vars.aa,
+    enumStr: 'b',
+    enumNum: '2',
+    bool :{ $or: [false] },
     style :{$: 'button.href' }
   }
 })
 
 jb.component('studio-helper-sample.custom-style-comp', {
-  type: 'control', 
-  impl :{$: 'label', 
-    title: 'hello', 
-    style :{$: 'custom-style', 
+  type: 'control',
+  impl :{$: 'label',
+    title: 'hello',
+    style :{$: 'custom-style',
       template: `
 h('div',{ class: 'demo-card-wide mdl-card mdl-shadow--2dp' },
   h('div',{ class: 'mdl-card__title' },
@@ -408,10 +409,10 @@ h('div',{ class: 'demo-card-wide mdl-card mdl-shadow--2dp' },
   h('div',{ class: 'mdl-card__menu' },
     h('button',{ class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect' },
       h('i',{ class: 'material-icons' },
-        'share'))))`, 
-      css: '', 
+        'share'))))`,
+      css: '',
       features: [
-        {$: 'label.bind-title' }, 
+        {$: 'label.bind-title' },
         {$: 'mdl-style.init-dynamic' }
       ]
     }

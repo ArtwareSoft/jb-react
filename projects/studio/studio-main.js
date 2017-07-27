@@ -15,7 +15,6 @@ jb.component('studio.all', {
       {$: 'group.data', data: '%$studio/project%', watch: true },
       {$: 'feature.init',
         action :[
-            {$: 'studio.fix-invalid-url'},
             {$: 'url-history.map-url-to-resource',
           params: ['project', 'page', 'profile_path'],
           resource: 'studio', base: 'studio',
@@ -77,34 +76,34 @@ jb.component('studio.top-bar', {
 })
 
 jb.component('studio.pages', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'pages', 
-    style :{$: 'layout.horizontal' }, 
+  type: 'control',
+  impl :{$: 'group',
+    title: 'pages',
+    style :{$: 'layout.horizontal' },
     controls: [
-      {$: 'button', 
-        title: 'new page', 
-        action :{$: 'studio.open-new-page' }, 
-        style :{$: 'button.mdl-icon-12', icon: 'add' }, 
+      {$: 'button',
+        title: 'new page',
+        action :{$: 'studio.open-new-page' },
+        style :{$: 'button.mdl-icon-12', icon: 'add' },
         features :{$: 'css', css: '{margin: 5px}' }
-      }, 
-      {$: 'itemlist', 
-        items :{$: 'studio.project-pages' }, 
-        controls :{$: 'label', 
-          title :{$: 'extract-suffix', separator: '.' }, 
+      },
+      {$: 'itemlist',
+        items :{$: 'studio.project-pages' },
+        controls :{$: 'label',
+          title :{$: 'extract-suffix', separator: '.' },
           features :{$: 'css.class', class: 'studio-page' }
-        }, 
-        style :{$: 'itemlist.horizontal' }, 
+        },
+        style :{$: 'itemlist.horizontal' },
         features: [
-          {$: 'itemlist.selection', 
-            databind: '%$studio/page%', 
-            onSelection :{$: 'write-value', 
-              to: '%$studio/profile_path%', 
+          {$: 'itemlist.selection',
+            databind: '%$studio/page%',
+            onSelection :{$: 'write-value',
+              to: '%$studio/profile_path%',
               value: '{%$studio/project%}.{%$studio/page%}'
-            }, 
+            },
             autoSelectFirst: true
-          }, 
-          {$: 'css', 
+          },
+          {$: 'css',
             css: `{ list-style: none; padding: 0;
               margin: 0; margin-left: 20px; font-family: "Arial"}
                   >* { list-style: none; display: inline-block; padding: 0 5px; font-size: 12px; border: 1px solid transparent; cursor: pointer;}
@@ -113,15 +112,15 @@ jb.component('studio.pages', {
           }
         ]
       }
-    ], 
+    ],
     features: [
-      {$: 'css', 
+      {$: 'css',
         css: '{ background: #F5F5F5; position: absolute; bottom: 0; left: 0; width: 100%; border-top: 1px solid #aaa}'
-      }, 
-      {$: 'group.wait', 
-        for :{$: 'studio.wait-for-preview-iframe' }, 
+      },
+      {$: 'group.wait',
+        for :{$: 'studio.wait-for-preview-iframe' },
         loadingControl :{ $label: '...' }
-      }, 
+      },
       {$: 'studio.watch-components' }
     ]
   }

@@ -1,17 +1,15 @@
 cards for letmesee
 
-change file names
-	studio-model-read
-	studio-model-write
-	studio-model-trees
+check install
 
-empty group in control tree
-	controls (which is empty should be 'add control' button)
+fix group.wait.resource to variable
 
-change refresh in label
-	title - just define as ref, do not use dynamic. put in infra.
+revertToversion (no undo)
+	use 'studio.revert' in probe,tests and select profile for comps. keep version id and revert to it.
+	test - check history index in probe call
 
 choose style
+	call studio.revert before selection and in exit on cancel
 	should visually change the style on selection
 	use immutable to change the profile in the preview
 	on dialog close do refresh.
@@ -24,8 +22,9 @@ comp editor
 
 
 js editing - studio.property-js-script
-	properties upport
+	properties support
 	jb-editor support
+	result preview at the bottom
 
 
 open profile chooser in suggestions
@@ -33,9 +32,6 @@ open profile chooser in suggestions
 
 table with max items - use in probe results
 
-codemirror javascript editor
-		should create js function and use eval
-		result preview at the bottom
 
 jbEditor
   $if support - edit + should show then/else

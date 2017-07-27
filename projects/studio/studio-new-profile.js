@@ -19,12 +19,7 @@ jb.component('studio.open-new-profile-dialog', {
     content :{$: 'studio.select-profile',
       onSelect :{$: 'action.if',
         condition: '%$mode% == "insert-control"',
-        then: [
-          {$: 'studio.insert-control', path: '%$path%', comp: '%%' },
-          {$: 'on-next-timer', delay: 1,
-            action: [ {$:'studio.goto-last-edit'}, {$: 'studio.focus-on-first-property'}]
-          }
-        ],
+        then: {$: 'studio.insert-control', path: '%$path%', comp: '%%' },
         else :{
           $if: '%$mode% == "insert"',
           then :{$: 'studio.add-array-item',
@@ -45,9 +40,16 @@ jb.component('studio.open-new-profile-dialog', {
       {$: 'css.width', width: '450', overflow: 'hidden' },
       {$: 'dialog-feature.drag-title', id: 'new %$type%' },
       {$: 'dialog-feature.near-launcher-position', offsetLeft: 0, offsetTop: 0 },
-      {$: 'group.auto-focus-on-first-input' },
+      {$: 'dialog-feature.auto-focus-on-first-input' },
+//			{$: 'var', name: 'initial-comps-index', value: {$: 'studio.comps-undo-index'}},
       {$: 'dialog-feature.onClose',
-        action :{ $call: 'onClose' }
+        action : [
+					{ $if: {$not:'%%'},
+	//					then: {$: 'studio.revert', toIndex: '%$initial-comps-index%' },
+						else: [ {$:'studio.goto-last-edit'}, {$: 'studio.focus-on-first-property'}]
+					},
+					{ $call: 'onClose' }
+				]
       }
     ]
   }
@@ -84,9 +86,12 @@ jb.component('studio.categories-marks', {
               {$: 'list',
                 items: [
                   'css:100',
-                  'feature:95',
-                  'group:90',
-                  'tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0',
+                  'watch:95',
+									'lifecycle:90',
+                  'events:85',
+									'group:80',
+									'all:20',
+                  'feature:0,tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0,itemlist-container:0,editable-text:0,editable-boolean:0',
                   'mdl-style:0'
                 ]
               },
@@ -138,7 +143,7 @@ jb.component('studio.select-profile', {
         features :{$: 'feature.onEsc',
           action :{$: 'dialog.close-containing-popup',
             id: 'studio-jb-editor-popup',
-            OK: true
+            OK: false
           }
         }
       },
@@ -151,7 +156,7 @@ jb.component('studio.select-profile', {
             databind: '%$SelectedCategory%',
             options :{$: 'picklist.sorted-options',
               options :{$: 'picklist.coded-options',
-                options :{$: 'studio.categories-of-type', type: '%$type%' },
+                options : '%$Categories%',
                 code: '%name%',
                 text: '%name%'
               },
@@ -160,9 +165,9 @@ jb.component('studio.select-profile', {
             style :{$: 'style-by-control',
               control :{$: 'group',
                 controls :{$: 'itemlist',
-                  items: '%$picklistModel/options%',
+                  items: '%$picklistModel/options/code%',
                   controls :{$: 'label',
-                    title: '%text%',
+                    title: '%%',
                     style :{$: 'label.mdl-button' },
                     features: [
                       {$: 'css.width', width: '120' },
@@ -174,11 +179,12 @@ jb.component('studio.select-profile', {
                   features: [
                     {$: 'itemlist.selection',
                       cssForActive: 'background: white',
-                      onSelection :{$: 'write-value',
-                        to: '%$picklistModel/databind%',
-                        value: '%code%'
-                      },
-                      autoSelectFirst: 'true',
+											databind: '%$SelectedCategory%',
+                      // onSelection :{$: 'write-value',
+                      //   to: '%$picklistModel/databind%',
+                      //   value: '%code%'
+                      // },
+                      //autoSelectFirst: 'true',
                       cssForSelected: 'box-shadow: 3px 0px 0 0 #304ffe inset; background: none !important'
                     }
                   ]
@@ -216,7 +222,6 @@ jb.component('studio.select-profile', {
             },
             controls: [
               {$: 'label',
-                action: [{$: 'dialog.close-containing-popup' }, { $call: 'onSelect' }],
                 title :{$: 'highlight',
                   base: '%%',
                   highlight: '%$itemlistCntrData/search_pattern%'
@@ -239,16 +244,24 @@ jb.component('studio.select-profile', {
               {$: 'css.height', height: '300', overflow: 'auto', minMax: '' },
               {$: 'itemlist.selection',
                 databind: '%$itemlistCntrData/selected%',
-                onDoubleClick :{$: 'runActions',
-                  actions: [{$: 'dialog.close-containing-popup' }, { $call: 'onSelect' }]
-                },
+								onDoubleClick :{$runActions: [
+										{ $: 'studio.clean-selection-preview'},
+										{ $call: 'onSelect' },
+										{$: 'dialog.close-containing-popup' },
+								]},
+								onSelection :{$runActions: [
+										// todo: add setfocus to search
+										{ $call: 'onSelect', $vars: { selectionPreview: true } },
+								]},
                 autoSelectFirst: true
               },
               {$: 'itemlist.keyboard-selection',
-                onEnter :{$: 'runActions',
-                  actions: [{$: 'dialog.close-containing-popup' }, { $call: 'onSelect' }]
-                }
-              },
+								onEnter :{$runActions: [
+										{ $: 'studio.clean-selection-preview'},
+										{ $call: 'onSelect' },
+										{$: 'dialog.close-containing-popup' },
+								]}
+ 							},
               {$: 'watch-ref', ref: '%$SelectedCategory%' },
               {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' },
               {$: 'css.margin', top: '3', selector: '>li' }
@@ -261,7 +274,7 @@ jb.component('studio.select-profile', {
           $pipeline: [
             '%$itemlistCntrData/selected%',
             {$: 'studio.val', path: '%%' },
-            'aa %description%'
+            '%description%'
           ]
         },
         style :{$: 'label.span' }
@@ -271,15 +284,15 @@ jb.component('studio.select-profile', {
       {$: 'css.margin', top: '10', left: '20' },
       {$: 'var',
         name: 'Categories',
-        value :{$: 'studio.categories-of-type', type: '%$type%' }
+        value :{$: 'studio.categories-of-type', type: '%$type%', path: '%$path%' }
       },
       {$: 'var',
         name: 'SelectedCategory',
-        value: '%$Categories[0]%',
+        value: '%$Categories[0]/name%',
         mutable: true
       },
       {$: 'var', name: 'SearchPattern', value: '', mutable: true },
-      {$: 'group.itemlist-container' }
+      {$: 'group.itemlist-container', initialSelection: {$: 'studio.comp-name', path: '%$path%'} }
     ]
   }
 })
@@ -298,8 +311,12 @@ jb.component('studio.pick-profile', {
         path: '%$path%'
       },
       features: [
-        {$: 'group.auto-focus-on-first-input' },
-        {$: 'css.padding', right: '20' }
+        {$: 'dialog-feature.auto-focus-on-first-input' },
+        {$: 'css.padding', right: '20' },
+//				{$: 'var', name: 'initial-comps-index', value: {$: 'studio.comps-undo-index'}},
+//	      {$: 'dialog-feature.onClose',
+//	        action :{ $if: {$not:'%%'},	then: {$: 'studio.revert', toIndex: '%$initial-comps-index%' }}
+//				},
       ]
     },
     style :{$: 'button.select-profile-style' },
@@ -310,9 +327,11 @@ jb.component('studio.pick-profile', {
 jb.component('studio.open-new-page', {
   type: 'action',
   impl :{$: 'open-dialog',
-    style :{$: 'dialog.dialog-ok-cancel',
-      features :{$: 'dialog-feature.auto-focus-on-first-input' }
-    },
+    style :{$: 'dialog.dialog-ok-cancel' },
+		modal: true,
+    features : [{$: 'var', name: 'name', mutable: true },
+			{$: 'dialog-feature.auto-focus-on-first-input' }
+		],
     content :{$: 'group',
       style :{$: 'group.div' },
       controls: [
@@ -345,8 +364,6 @@ jb.component('studio.open-new-page', {
         action: {$: 'write-value', to: '%$studio/page%', value: '%$newName%' },
       }
     ],
-    modal: true,
-    features :{$: 'var', name: 'name', mutable: true }
   }
 })
 

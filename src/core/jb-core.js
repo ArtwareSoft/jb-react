@@ -289,7 +289,7 @@ function evalExpressionPart(expressionPart,context,jstype) {
 
       var arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
       if (arrayIndexMatch) {
-        var arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1]);
+        var arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1],false,first);
         var index = arrayIndexMatch[2];
         if (!Array.isArray(arr))
             return null; //jb.logError('expecting array instead of ' + typeof arr, context);
@@ -298,8 +298,10 @@ function evalExpressionPart(expressionPart,context,jstype) {
            return jb.valueByRefHandler.objectProperty(arr,index);
         if (typeof arr[index] == 'undefined')
            arr[index] = last ? null : [];
-        return jstypes[jstype](arr[index]);
-      }
+			  if (last && jstype)
+           return jstypes[jstype](arr[index]);
+        return arr[index];
+     }
 
       var functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
       if (functionCallMatch && jb.functions[functionCallMatch[1]])
@@ -526,20 +528,20 @@ class jbCtx {
 }
 
 var logs = {};
-function logError(errorStr,errorObj,ctx) {
+function logError(errorStr,p1,p2,p3) {
   logs.error = logs.error || [];
   logs.error.push(errorStr);
-  console.error(errorStr,errorObj,ctx);
+  console.error(errorStr,p1,p2,p3);
 }
 
 function logPerformance(type,p1,p2,p3) {
   var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
-  if ([].indexOf(type) == -1) return; // filter. TBD take from somewhere else
+  if (['focus'].indexOf(type) == -1) return; // filter. TBD take from somewhere else
   console.log(type, p1 || '', p2 || '', p3 ||'');
 }
 
-function logException(e,errorStr) {
-  logError('exception: ' + errorStr + "\n" + (e.stack||''));
+function logException(e,errorStr,p1,p2,p3) {
+  logError('exception: ' + errorStr + "\n" + (e.stack||''),p1,p2,p3);
 }
 
 function val(v) {
@@ -551,7 +553,7 @@ function entries(obj) {
   if (!obj || typeof obj != 'object') return [];
   var ret = [];
   for(var i in obj) // please do not change. its keeps definition order !!!!
-      if (obj.hasOwnProperty(i))
+      if (obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
         ret.push([i,obj[i]])
   return ret;
 }

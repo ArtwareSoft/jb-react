@@ -285,6 +285,7 @@ Object.assign(st,{
 			return st.parentPath(path).split('~').pop().replace(/s$/,'');
 
 		var paramDef = st.paramDef(path);
+		if (!paramDef) return '';
 		var val = st.valOfPath(path);
 		if ((paramDef.type ||'').indexOf('[]') != -1) {
 			var length = st.arrayChildren(path).length;

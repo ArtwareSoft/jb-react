@@ -51,12 +51,3 @@ jb.component('url-history.map-url-to-resource', {
 	    	})
 	}
 })
-
-jb.component('studio.fix-invalid-url', {
-	type: 'action',
-	impl: ctx => {
-		var profile_path = location.href.split('/project/studio/').pop().split('/')[2];
-		if (profile_path && jb.studio.valOfPath(profile_path) == null)
-			window.open(location.href.split('/').slice(0,-1).join('/'),'_self')
-	}
-})

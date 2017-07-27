@@ -41,23 +41,36 @@ jb.component('studio.PTs-of-type', {
 jb.component('studio.categories-of-type', {
   params: [
   	{ id: 'type', as: 'string', essential: true },
+		{ id: 'path', as: 'string' },
   ],
-  impl: (ctx,_type,marks,allCategory) => {
+  impl: (ctx,_type,path) => {
+		var val = st.valOfPath(path);
   	var comps = st.previewjb.comps;
   	var pts = st.PTsOfType(_type);
   	var categories = jb.unique([].concat.apply([],pts.map(pt=>
   		(comps[pt].category||'').split(',').map(c=>c.split(':')[0])
   			.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
-  			.filter(x=>x))))
-  			.map(c=>({
+  			.filter(x=>x).filter(c=>c!='all')
+			))).map(c=>({
   				name: c,
   				pts: ptsOfCategory(c)
   			}));
-  	return categories.concat({name: 'all', pts: pts });
+  	var res = categories.concat({name: 'all', pts: ptsOfCategory('all') });
+		if (val && val.$) // promote categories with current value
+			res.sort((c1,c2) => promoteCurrentValue(c1,c2) );
+
+		return res;
+
+		function promoteCurrentValue(c1,c2) {
+			var c1Index = c1.pts.indexOf(val.$), c2Index = c2.pts.indexOf(val.$);
+			var c1mark = c1Index == -1 ? 1000 : c1Index;
+			var c2mark = c2Index == -1 ? 1000 : c2Index;
+			return c1mark - c2mark;
+		}
 
   	function ptsOfCategory(category) {
       var pts_with_marks = pts.filter(pt=>
-      		pt.split('.')[0] == category ||
+      		category == 'all' || pt.split('.')[0] == category ||
       		(comps[pt].category||'').split(',').map(x=>x.split(':')[0]).indexOf(category) != -1)
       	.map(pt=>({
 	      	pt: pt,
@@ -71,8 +84,9 @@ jb.component('studio.categories-of-type', {
       		return x;
       	})
       	.filter(x=>x.mark != 0);
-	  pts_with_marks.sort((c1,c2)=>c2.mark-c1.mark);
-	  return pts_with_marks.map(pt=>pt.pt)
+	  	pts_with_marks.sort((c1,c2)=>c2.mark-c1.mark);
+	  	var out = pts_with_marks.map(pt=>pt.pt);
+			return out;
   	}
   }
 })
@@ -151,7 +165,7 @@ jb.component('studio.comp-name-ref', {
 				if (typeof value == 'undefined')
 					return st.compNameOfPath(path);
 				else
-					st.setComp(path,value)
+					st.setComp(path,value,ctx)
 			},
 			$jb_observable: cmp =>
 				st.refObservable(st.refOfPath(path),cmp,{includeChildren: true})
@@ -173,7 +187,7 @@ jb.component('studio.profile-as-text', {
 			} else {
 				var newVal = value.match(/^\s*(\(|{|\[)/) ? st.evalProfile(value) : value;
 				if (newVal != null)
-					st.writeValueOfPath(path, newVal);
+					st.writeValueOfPath(path, newVal,ctx);
 			}
 		},
 		$jb_observable: cmp =>
@@ -191,7 +205,7 @@ jb.component('studio.profile-as-string-byref', {
 			if (typeof value == 'undefined') {
 				return st.valOfPath(path) || '';
 			} else {
-				st.writeValueOfPath(path, value);
+				st.writeValueOfPath(path, value,ctx);
 			}
 		},
 		$jb_observable: cmp =>
@@ -214,7 +228,7 @@ jb.component('studio.profile-value-as-text', {
             return '=' + st.compNameOfPath(path);
         }
         else if (value.indexOf('=') != 0)
-          st.writeValueOfPath(path, value);
+          st.writeValueOfPath(path, value,ctx);
       }
     })
 })
@@ -226,7 +240,7 @@ jb.component('studio.insert-control',{
 		{ id: 'comp', as: 'string' },
 	],
 	impl: (ctx,path,comp,type) =>
-		st.insertControl(path, comp)
+		st.insertControl(path, comp,ctx)
 })
 
 jb.component('studio.wrap', {
@@ -236,35 +250,35 @@ jb.component('studio.wrap', {
 		{ id: 'comp', as: 'string' }
 	],
 	impl: (ctx,path,comp) =>
-		st.wrap(path,comp)
+		st.wrap(path,comp,ctx)
 })
 
 jb.component('studio.wrap-with-group', {
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		st.wrapWithGroup(path)
+		st.wrapWithGroup(path,ctx)
 })
 
 jb.component('studio.add-property', {
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		st.addProperty(path)
+		st.addProperty(path,ctx)
 })
 
 jb.component('studio.duplicate-control',{
 	type: 'action',
 	params: [ { id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		st.duplicateControl(path)
+		st.duplicateControl(path,ctx)
 })
 
 jb.component('studio.duplicate-array-item',{
 	type: 'action',
 	params: [ { id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		st.duplicateArrayItem(path)
+		st.duplicateArrayItem(path,ctx)
 })
 
 // jb.component('studio.move-in-array',{
@@ -281,7 +295,7 @@ jb.component('studio.new-array-item', {
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		st.addArrayItem(path)
+		st.addArrayItem(path,ctx)
 })
 
 jb.component('studio.add-array-item',{
@@ -291,7 +305,7 @@ jb.component('studio.add-array-item',{
 		{id: 'toAdd', as: 'single' }
 	],
 	impl: (ctx,path,toAdd) =>
-		st.addArrayItem(path, toAdd)
+		st.addArrayItem(path, toAdd,ctx)
 })
 
 jb.component('studio.wrap-with-array',{
@@ -300,7 +314,7 @@ jb.component('studio.wrap-with-array',{
 		{id: 'path', as: 'string' },
 	],
 	impl: (ctx,path,toAdd) =>
-		st.wrapWithArray(path)
+		st.wrapWithArray(path,ctx)
 })
 
 jb.component('studio.can-wrap-with-array', {
@@ -325,31 +339,31 @@ jb.component('studio.set-comp',{
 		{id: 'comp', as: 'single' }
 	],
 	impl: (ctx,path,comp) =>
-		st.setComp(path, comp)
+		st.setComp(path, comp,ctx)
 })
 
 jb.component('studio.delete',{
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st._delete(path)
+	impl: (ctx,path) => st._delete(path,ctx)
 })
 
 jb.component('studio.disabled',{
 	type: 'boolean',
 	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.disabled(path)
+	impl: (ctx,path) => st.disabled(path,ctx)
 })
 
 jb.component('studio.toggle-disabled',{
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.toggleDisabled(path)
+	impl: (ctx,path) => st.toggleDisabled(path,ctx)
 })
 
 jb.component('studio.make-local',{
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.makeLocal(path)
+	impl: (ctx,path) => st.makeLocal(path,ctx)
 })
 
 jb.component('studio.components-cross-ref',{

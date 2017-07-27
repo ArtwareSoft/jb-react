@@ -358,36 +358,20 @@ jb.component('studio.property-tgp', {
   type: 'control',
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'group',
-    // title :{$: 'studio.prop-name', path: '%$path%' },
     controls: [
       {$: 'group',
         title: 'header',
         style :{$: 'layout.horizontal', spacing: '0' },
         controls: [
           {$: 'editable-boolean',
-            databind: '%$expanded%',
+            databind: '%$userExpanded%',
             style :{$: 'editable-boolean.expand-collapse' },
             features: [
               {$: 'studio.watch-path', path: '%$path%', includeChildren: true },
               {$: 'css',
                 css: '{ position: absolute; margin-left: -20px; margin-top: 5px }'
               },
-              {$: 'hidden',
-                showCondition :{
-                  $and: [
-                    {
-                      $notEmpty :{$: 'studio.non-control-children', path: '%$path%' }
-                    },
-                    {
-                      $notEmpty :{$: 'studio.val', path: '%$path%' }
-                    },
-                    {$: 'not-equals',
-                      item1 :{$: 'studio.comp-name', path: '%$path%' },
-                      item2: 'custom-style'
-                    }
-                  ]
-                }
-              }
+              {$: 'hidden',  showCondition :{$: 'studio.properties-expanded-relevant', path: '%$path%' } },
             ]
           },
           {$: 'group',
@@ -402,49 +386,44 @@ jb.component('studio.property-tgp', {
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' },
         features: [
           {$: 'studio.watch-path', path: '%$path%' },
-          {$: 'watch-ref', ref: '%$expanded%',  },
-          {$: 'hidden',
-            showCondition :{
-              $and: [
-                '%$expanded%',
-                {
-                  $notEmpty :{$: 'studio.non-control-children', path: '%$path%' }
-                },
-                {
-                  $notEmpty :{$: 'studio.val', path: '%$path%' }
-                },
-                {$: 'not-equals',
-                  item1 :{$: 'studio.comp-name', path: '%$path%' },
-                  item2: 'custom-style'
-                }
-              ]
-            }
-          },
+          {$: 'watch-ref', ref: '%$userExpanded%'  },
+          {$: 'feature.if', showCondition :{$: 'studio.properties-show-expanded', path: '%$path%' } },
           {$: 'css',
             css: '{ margin-top: 9px; margin-left: -83px; margin-bottom: 4px;}'
           },
-          {$: 'bind-refs',
-            watchRef: '%$path%',
-            updateRef: '%$expanded%',
-            value :{
-              $or: [
-                '%$expanded%',
-                {$: 'studio.is-new', path: '%$path%' }
-              ]
-            }
-          }
         ]
       }
     ],
     features: [
-//      {$: 'studio.property-toolbar-feature', path: '%$path%' },
-      {$: 'var',
-        name: 'expanded',
-        value :{$: 'studio.is-new', path: '%$path%' },
-        mutable: true
-      }
+      {$: 'var', name: 'userExpanded', value : false, mutable: true },
     ]
   }
+})
+
+jb.component('studio.properties-expanded-relevant', {
+	type: 'boolean',
+	params: [{ id: 'path', as: 'string', essential: true }],
+	impl:{ $and: [
+		{
+			$notEmpty :{$: 'studio.non-control-children', path: '%$path%' }
+		},
+		{
+			$notEmpty :{$: 'studio.val', path: '%$path%' }
+		},
+		{$: 'not-equals',
+			item1 :{$: 'studio.comp-name', path: '%$path%' },
+			item2: 'custom-style'
+		}
+	]}
+})
+
+jb.component('studio.properties-show-expanded', {
+	type: 'boolean',
+	params: [{ id: 'path', as: 'string', essential: true }],
+	impl:{ $and: [
+		{$: 'studio.properties-expanded-relevant', path: '%$path%'},
+		{ $or: [ {$: 'studio.is-new', path: '%$path%' },	'%$userExpanded%' ] },
+	]}
 })
 
 jb.component('studio.property-tgp-in-array', {

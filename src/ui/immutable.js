@@ -150,7 +150,7 @@ class ImmutableWithPath {
     try {
       var path = ref.$jb_path, new_ref = {};
       if (!path)
-        return jb.logError('refresh: empty path');
+        return !silent && jb.logError('refresh: empty path');
       var currentVersion = this.resourceVersions[path[0]] || 0;
       if (path.length == 1) return true;
       if (currentVersion == ref.$jb_resourceV) return true;
@@ -159,9 +159,7 @@ class ImmutableWithPath {
         if (res)
           return Object.assign(ref,res)
         ref.$jb_invalid = true;
-        if (!silent)
-          jb.logError('refresh: parent not found: '+ path.join('~'));
-        return
+        return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
       }
 
       if (ref.$jb_parentOfPrim) {
@@ -169,7 +167,7 @@ class ImmutableWithPath {
         if (!parent || !this.isRef(parent)) {
           this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
           ref.$jb_invalid = true;
-          return jb.logError('refresh: parent not found: '+ path.join('~'));
+          return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
         }
         var prop = path.slice(-1)[0];
         new_ref = {
@@ -184,7 +182,7 @@ class ImmutableWithPath {
         if (!object_path_found) {
           this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
           ref.$jb_invalid = true;
-          return jb.logError('refresh: object not found: ' + path.join('~'));
+          return !silent && jb.logError('refresh: object not found: ' + path.join('~'));
         }
         var new_path = [path[0]].concat(object_path_found);
         if (new_path) new_ref = {
@@ -197,7 +195,7 @@ class ImmutableWithPath {
       Object.assign(ref,new_ref);
     } catch (e) {
        ref.$jb_invalid = true;
-       return jb.logException(e,'ref refresh ',ref);
+       return !silent && jb.logException(e,'ref refresh ',ref);
     }
     return true;
   }

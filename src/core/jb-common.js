@@ -648,10 +648,12 @@ jb.component('runActions', {
 			var innerPath =  '' ;
 		else
 			var innerPath = context.profile['$runActions'] ? '$runActions~' : 'items~';
-		return actions.reduce((def,action,index) =>
-			def.then(() =>
-				Promise.resolve(context.runInner(action, { as: 'single'}, innerPath + index ))),
-			Promise.resolve())
+		return actions.reduce((def,action,index) => {
+			if (def && def.then)
+				return def.then(_ =>	context.runInner(action, { as: 'single'}, innerPath + index ))
+			else
+				return context.runInner(action, { as: 'single'}, innerPath + index );
+			},null)
 	}
 });
 

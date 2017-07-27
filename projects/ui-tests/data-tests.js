@@ -38,7 +38,7 @@ jb.component('data-test.ref-api', {
 	 impl :{$: 'data-test',
 	 calculate: '',
 	 expectedResult : ctx =>
-        ctx.exp('%$personWithChildren/friends[0]%','ref').$jb_path.join('/') == 'personWithChildren/friends/0' && 
+        ctx.exp('%$personWithChildren/friends[0]%','ref').$jb_path.join('/') == 'personWithChildren/friends/0' &&
         ctx.exp('%$person/name%') == 'Homer Simpson' &&
         ctx.exp('%$person/name%','ref').$jb_path.join('/') == 'person/name'
 	}
@@ -51,6 +51,21 @@ jb.component('data-test.ref-of-array-item', {
 	 expectedResult : ctx =>
         ctx.exp('%$personWithChildren/children[1]%','ref').$jb_path.join('/') == 'personWithChildren/children/1'
 	}
+})
+
+jb.component('data-test.exp-with-array', {
+	 impl :{$: 'data-test',
+	 calculate: '%$personWithChildren/children[0]/name%',
+	 expectedResult :{$: 'equals' , item1: '%%', item2: 'Bart' }
+ }
+})
+
+jb.component('data-test.exp-with-array-var', {
+	 impl :{$: 'data-test',
+	 $vars: { children: '%$personWithChildren/children%'},
+	 calculate: '%$children[0]/name%',
+	 expectedResult :{$: 'equals' , item1: '%%', item2: 'Bart' }
+ }
 })
 
 jb.component('data-test.conditional-text', {
