@@ -60,6 +60,13 @@ jb.component('data-test.exp-with-array', {
  }
 })
 
+jb.component('data-test.array-length', {
+	 impl :{$: 'data-test',
+	 calculate: '%$personWithChildren/children/length%',
+	 expectedResult :{$: 'equals' , item1: '%%', item2: 3 }
+ }
+})
+
 jb.component('data-test.exp-with-array-var', {
 	 impl :{$: 'data-test',
 	 $vars: { children: '%$personWithChildren/children%'},

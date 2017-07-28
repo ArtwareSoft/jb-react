@@ -65,26 +65,31 @@ jb.component('studio.open-resource', {
 })
 
 jb.component('studio.data-resource-menu', {
-  type: 'menu.option',
-  impl :{$: 'menu.menu', title: 'Data',
-      options: [
-          {$: 'dynamic-controls', 
-            controlItems: function (ctx) {
-              var res = jb.path(jb, ['previewWindow', 'jbart_widgets', ctx.exp('%$studio/project%'), 'resources']);
-              return Object.getOwnPropertyNames(res)
-                  .filter(function (x) { return x != 'window'; });
-            }, 
-            genericControl :{$: 'menu.action', 
-              title: '%$controlItem%', 
-              action :{$: 'studio.open-resource', 
-                id: '%$controlItem%',
-                resource: function (ctx) {
+  type: 'menu.option', 
+  impl :{$: 'menu.menu', 
+    title: 'Data', 
+    options: [
+      {$: 'dynamic-controls', 
+        controlItems :{
+          $pipeline: [
+            ctx => jb.studio.previewjb.resources, 
+            {$: 'property-names', obj: '%%' }, 
+            {$: 'filter', 
+              filter :{$: 'not-contains', inOrder: true, text: ':', allText: '%%' }
+            }
+          ]
+        }, 
+        genericControl :{$: 'menu.action', 
+          title: '%$controlItem%', 
+          action :{$: 'studio.open-resource', 
+            resource: function (ctx) {
                      return jb.path(jb, ['previewWindow', 'jbart_widgets', ctx.exp('%$studio/project%'), 'resources', ctx.exp('%$controlItem%')]);
                 }, 
-              }
-            }
+            id: '%$controlItem%'
           }
-      ]
-    }
+        }
+      }
+    ]
+  }
 })
 

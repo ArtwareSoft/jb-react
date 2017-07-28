@@ -169,8 +169,8 @@ jb.component('tree.selection', {
 			  first_selected = tree.elemToPath(first);
 		  }
 		  if (first_selected)
-			jb.delay(1).then(() =>
-				tree.selectionEmitter.next(first_selected))
+  			jb.delay(1).then(() =>
+  				tree.selectionEmitter.next(first_selected))
   		},
   	})
 })

@@ -14,24 +14,8 @@ jb.component('studio.edit-source', {
 		content :{$: 'editable-text',
 			databind :{$: 'studio.profile-as-text', path: '%$path%' },
 			style :{$: 'editable-text.codemirror', mode: 'javascript'},
-//			features: {$: 'studio.undo-support', path: '%$path%' },
 		}
 	}
-})
-
-jb.component('studio.string-property-ref', {
-	type: 'data',
-	params: [
-		{ id: 'path', as: 'string' },
-	],
-	impl: (context,path) => ({
-			$jb_val: value => {
-				if (typeof value == 'undefined')
-					return st.valOfPath(path);
-				else
-					st.writeValueOfPath(path, newVal);
-			}
-		})
 })
 
 jb.component('studio.goto-editor-options', {
@@ -54,7 +38,7 @@ jb.component('studio.goto-editor-first', {
     title :{
       $pipeline: [{$: 'studio.comp-name', path: '%$path%' }, 'Goto editor: %%']
     },
-    action :{$: 'studio.open-editor-editor',
+    action :{$: 'studio.open-editor',
       path :{$: 'studio.comp-name', path: '%$path%' }
     },
     shortcut: 'Alt+E',
@@ -68,34 +52,17 @@ jb.component('studio.goto-editor-secondary', {
   type: 'action',
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'menu.action',
-    title :{
-      $pipeline: [
-        {$: 'split', path: '%$path%', separator: '~', part: 'first' },
-        'Goto editor: %%'
-      ]
-    },
-    action :{$: 'studio.open-editor-editor',
-      path :{$: 'split', path: '%$path%', separator: '~', part: 'first' }
-    },
+    $vars: { baseComp: {$: 'split', text: '%$path%', separator: '~', part: 'first' }},
+    title :  'Goto editor: %$baseComp%',
+    action :{$: 'studio.open-editor', path: '%$baseComp%' },
     showCondition :{$: 'not-equals',
       item1 :{$: 'studio.comp-name', path: '%$path%' },
-      item2 :{$: 'split', path: '%$path%', separator: '~', part: 'first' }
+      item2 : '%$baseComp%'
     }
   }
 })
 
-// jb.component('studio.goto-targets', {
-// 	params: [
-// 		{ id: 'path', as: 'string'},
-// 	],
-// 	impl: (ctx,path) =>
-// 		jb.unique([st.compNameOfPath(path),path]
-// 			.filter(x=>x)
-// 			.map(x=>
-// 				x.split('~')[0]))
-// })
-
-jb.component('studio.open-editor-editor', {
+jb.component('studio.open-editor', {
 	type: 'action',
 	params: [
 		{ id: 'path', as: 'string'},

@@ -2,17 +2,21 @@ cards for letmesee
 
 check install
 
+
+vars inside if
+
+fix studio.goto-references
+  refernces button
+
+profile selection preview
+	limit to control & style
+  use seletionPreview mode in probe
+
 fix group.wait.resource to variable
 
 revertToversion (no undo)
 	use 'studio.revert' in probe,tests and select profile for comps. keep version id and revert to it.
 	test - check history index in probe call
-
-choose style
-	call studio.revert before selection and in exit on cancel
-	should visually change the style on selection
-	use immutable to change the profile in the preview
-	on dialog close do refresh.
 
 new component
 	choose file: http://localhost:8082/?op=ls&path=projects/studio

@@ -180,15 +180,19 @@ jb.component('studio.profile-as-text', {
 			var path = ctx.params.path();
 			if (!path) return '';
 			if (typeof value == 'undefined') {
-				var val = st.valOfPath(path);
-				if (st.isPrimitiveValue(val))
-					return ''+val;
-				return st.prettyPrint(val || '');
-			} else {
-				var newVal = value.match(/^\s*(\(|{|\[)/) ? st.evalProfile(value) : value;
-				if (newVal != null)
-					st.writeValueOfPath(path, newVal,ctx);
-			}
+      	var val = st.valOfPath(path);
+      	if (typeof val == 'function')
+            return val.toString();
+
+      	if (st.isPrimitiveValue(val))
+      		return ''+val;
+      	return st.prettyPrint(val || '');
+      } else {
+      	var notPrimitive = value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
+      	var newVal = notPrimitive ? st.evalProfile(value) : value;
+      	if (newVal != null)
+      		st.writeValueOfPath(path, newVal,ctx);
+      }
 		},
 		$jb_observable: cmp =>
 			st.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
@@ -405,7 +409,7 @@ jb.component('studio.components-cross-ref',{
 	}
 })
 
-jb.component('studio.references',{
+jb.component('studio.references', {
 	type: 'data',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) => {

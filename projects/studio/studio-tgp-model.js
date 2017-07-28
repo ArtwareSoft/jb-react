@@ -8,7 +8,7 @@ st.ControlTree = class {
 	}
 	title(path,collapsed) {
 		var val = st.valOfPath(path);
-		if (path &&  (val == null || Array.isArray(val) && val.length == 0)  && path.match(/~controls$/))
+		if (path &&  (val == null || Array.isArray(val) && val.length == 0) && path.match(/~controls$/))
 			return jb.ui.h('a',{style: {cursor: 'pointer', 'text-decoration': 'underline'}, onclick: e => st.newControl(path) },'add new');
 		return this.fixTitles(st.shortTitle(path),path,collapsed)
 	}
@@ -66,13 +66,11 @@ st.jbEditorTree = class {
 			prop = path.split('~').slice(-2)
 				.map(x=>x.replace(/\$pipeline/,''))
 				.join('[') + ']';
-		// if (Array.isArray(val) && st.paramTypeOfPath(path) == 'data')
-		// 	compName = `pipeline (${val.length})`;
-		// if (Array.isArray(val) && st.paramTypeOfPath(path) == 'action')
-		// 	compName = `actions (${val.length})`;
 		var summary = '';
 		if (collapsed && typeof val == 'object')
 			summary = ': ' + st.summary(path).substr(0,20);
+    if (typeof val == 'function')
+      val = val.toString();
 
 		if (compName)
 			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);

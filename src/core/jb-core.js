@@ -16,20 +16,21 @@ function jb_run(context,parentParam,settings) {
 
     if (typeof profile === 'object' && Object.getOwnPropertyNames(profile).length == 0)
       return;
-    var run = prepare(context,parentParam);
+    var contextWithVars = extendWithVars(context,profile.$vars);
+    var run = prepare(contextWithVars,parentParam);
     var jstype = parentParam && parentParam.as;
     context.parentParam = parentParam;
     switch (run.type) {
       case 'booleanExp': return bool_expression(profile, context);
       case 'expression': return castToParam(expression(profile, context,parentParam), parentParam);
       case 'asIs': return profile;
-      case 'object': return entriesToObject(entries(profile).map(e=>[e[0],context.runInner(e[1],null,e[0])]));
+      case 'object': return entriesToObject(entries(profile).map(e=>[e[0],contextWithVars.runInner(e[1],null,e[0])]));
       case 'function': return castToParam(profile(context),parentParam);
       case 'null': return castToParam(null,parentParam);
       case 'ignore': return context.data;
       case 'list': return profile.map((inner,i) =>
-            context.runInner(inner,null,i));
-      case 'runActions': return jb.comps.runActions.impl(new jbCtx(context,{profile: { actions : profile },path:''}));
+            contextWithVars.runInner(inner,null,i));
+      case 'runActions': return jb.comps.runActions.impl(new jbCtx(contextWithVars,{profile: { actions : profile },path:''}));
       case 'if': {
           var cond = jb_run(run.ifContext, run.IfParentParam);
           if (cond && cond.then)
@@ -38,8 +39,6 @@ function jb_run(context,parentParam,settings) {
           return cond ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam);
       }
       case 'profile':
-        for(var varname in profile.$vars || {})
-          run.ctx = new jbCtx(run.ctx,{ vars: jb.obj(varname,run.ctx.runInner(profile.$vars[varname], null,'$vars~'+varname)) });
         if (!run.impl)
           run.ctx.callerPath = context.path;
 
@@ -72,9 +71,9 @@ function jb_run(context,parentParam,settings) {
         }
 
         if (profile.$log)
-          console.log(context.run(profile.$log));
+          console.log(contextWithVars.run(profile.$log));
 
-        if (profile.$trace) console.log('trace: ' + context.path, compName(profile),context,out,run);
+        if (profile.$trace) console.log('trace: ' + context.path, compName(profile),contextWithVars,out,run);
 
         return castToParam(out,parentParam);
     }
@@ -99,6 +98,14 @@ function jb_run(context,parentParam,settings) {
           [ctx].concat(x))
         .toPromise()
   }
+}
+
+function extendWithVars(context,vars) {
+  if (!vars) return context;
+  var res = context;
+  for(var varname in vars || {})
+    res = new jbCtx(res,{ vars: jb.obj(varname,res.runInner(vars[varname], null,'$vars~'+varname)) });
+  return res;
 }
 
 function compParams(comp) {
@@ -309,6 +316,8 @@ function evalExpressionPart(expressionPart,context,jstype) {
 
       if (first && subExp.charAt(0) == '$' && subExp.length > 1)
         return calcVar(context,subExp.substr(1))
+      if (Array.isArray(input) && subExp == 'length')
+        return input.length;
       if (Array.isArray(input))
         return input.map(item=>pipe(item,subExp)).filter(x=>x!=null);
 
@@ -535,8 +544,8 @@ function logError(errorStr,p1,p2,p3) {
 }
 
 function logPerformance(type,p1,p2,p3) {
-  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
-  if (['focus'].indexOf(type) == -1) return; // filter. TBD take from somewhere else
+//  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
+  if ((jb.issuesTolog || []).indexOf(type) == -1) return; // filter. TBD take from somewhere else
   console.log(type, p1 || '', p2 || '', p3 ||'');
 }
 

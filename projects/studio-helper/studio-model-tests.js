@@ -147,3 +147,22 @@ jb.component('studio-data-test.set-sugar-comp-override2', {
 			JSON.stringify(ctx.data) == '["a","b"]'
 	},
 })
+
+jb.component('test.referee', {
+  impl: ctx => ''
+})
+
+jb.component('test.referer1', {
+  impl: {$pipline: [{$: 'test.referee'}]}
+})
+
+jb.component('test.referer2', {
+  impl: {$pipline: [{$: 'test.referee'},{$: 'test.referee'} ]}
+})
+
+jb.component('studio-ui-test.goto-references-button', {
+	 impl :{$: 'ui-test',
+	 	control: {$: 'studio.goto-references-button', path: 'test.referee' },
+		expectedResult :{$: 'contains', text: '3 references'}
+	},
+})

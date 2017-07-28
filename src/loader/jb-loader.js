@@ -95,7 +95,7 @@ var resources = {
       studio: [
         'utils','path','main', 'pretty-print',
         'toolbar','styles', 'search', 'new-profile', 'data-browse', 'preview', 'tgp-model', 'model-components',
-        'tree','popups','properties','pick','properties-menu','save','open-project','new-project',
+        'tree','popups','properties','pick','properties-menu','save','open-project','new-project', 'references',
         'suggestions','undo','edit-source','jb-editor','jb-editor-styles','style-editor','probe','testers', 'event-tracker','h-to-jsx',
       ],
       'studio-tests': [

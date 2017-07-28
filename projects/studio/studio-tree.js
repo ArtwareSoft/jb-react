@@ -76,7 +76,7 @@ jb.component('studio.tree-menu', {
       {$: 'studio.goto-editor-options', path: '%$path%' },
       {$: 'menu.separator' },
       {$: 'menu.end-with-separator',
-        options :{$: 'studio.goto-references',
+        options :{$: 'studio.goto-references-options',
           path: '%$path%',
           action: [
             {$: 'write-value', to: '%$studio/profile_path%', value: '%%' },

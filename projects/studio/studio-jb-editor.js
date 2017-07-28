@@ -3,17 +3,19 @@ jb.component('studio.open-jb-editor', {
   type: 'action',
   params: [
     { id: 'path', as: 'string' },
+    { id: 'fromPath', as: 'string' },
     { id: 'newWindow', type: 'boolean', as: 'boolean' }
   ],
   impl :{$: 'open-dialog',
     $vars: {
       dialogId: {$if : '%$newWindow%', then: '', else: 'jb-editor'},
+      fromPath: '%$fromPath%'
     },
-    features :{$: 'var', name: 'jbEditor_selection', mutable: true },
+    features :{$: 'var', name: 'jbEditor_selection', mutable: true, value: '%$path%' },
     style :{$: 'dialog.studio-floating', id: '%$dialogId%', width: '750', height: '400' },
     content :{$: 'studio.jb-editor', path: '%$path%' },
     menu :{$: 'button',
-      action :{$: 'studio.open-jb-editor-menu', path: '%$jbEditor_selection%' },
+      action :{$: 'studio.open-jb-editor-menu', path: '%$jbEditor_selection%', root: '%$path%' },
       style :{$: 'button.mdl-icon', icon: 'menu' }
     },
     title :{$: 'studio.path-hyperlink', path: '%$path%', prefix: 'Inteliscript' }
@@ -22,18 +24,22 @@ jb.component('studio.open-jb-editor', {
 
 jb.component('studio.open-component-in-jb-editor', {
   type: 'action',
-  params: [{ id: 'path', as: 'string' }],
+  params: [
+    { id: 'path', as: 'string' },
+    { id: 'fromPath', as: 'string' },
+  ],
   impl : {
    $vars: {
     compPath: {$: 'split', text: '%$path%', separator: '~', part: 'first'},
+    fromPath: '%$fromPath%'
    },
     $runActions: [
   {$: 'open-dialog',
-    features :{$: 'var', name: 'jbEditor_selection', mutable: true },
+    features :{$: 'var', name: 'jbEditor_selection', mutable: true, value: '%$path%' },
     style :{$: 'dialog.studio-floating', id: 'jb-editor', width: '750', height: '400' },
     content :{$: 'studio.jb-editor', path: '%$compPath%' },
     menu :{$: 'button',
-      action :{$: 'studio.open-jb-editor-menu', path: '%$jbEditor_selection%' },
+      action :{$: 'studio.open-jb-editor-menu', path: '%$jbEditor_selection%' , root: '%$path%' },
       style :{$: 'button.mdl-icon', icon: 'menu' }
     },
     title :{$: 'studio.path-hyperlink', path: '%$compPath%', prefix: 'Inteliscript' }
@@ -59,9 +65,9 @@ jb.component('studio.jb-editor', {
           },
           {$: 'tree.keyboard-selection',
             onEnter :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' },
-            onRightClickOfExpanded :{$: 'studio.open-jb-editor-menu', path: '%%' },
+            onRightClickOfExpanded :{$: 'studio.open-jb-editor-menu', path: '%%', root: '%$path%'  },
             autoFocus: true,
-            applyMenuShortcuts :{$: 'studio.jb-editor-menu', path: '%%' }
+            applyMenuShortcuts :{$: 'studio.jb-editor-menu', path: '%%', root: '%$path%' }
           },
           {$: 'tree.drag-and-drop' },
           {$: 'css.width', width: '500', selector: 'jb-editor' },
@@ -223,32 +229,38 @@ jb.component('studio.data-browse', {
 jb.component('studio.open-jb-edit-property', {
   type: 'action',
   params: [{ id: 'path', as: 'string' }],
-  impl :{
-      $vars: {
-          actualPath: {$: 'studio.jb-editor-path-for-edit', path: '%$path%'}
-      },
-      $runActions: [{ // $vars can not be used with $if
-        $if :{$: 'studio.is-of-type', type: 'data,boolean', path: '%$actualPath%' },
-        then :{$: 'open-dialog',
-          style :{$: 'dialog.studio-jb-editor-popup' },
-          content :{$: 'studio.jb-floating-input', path: '%$actualPath%' },
-          features: [
-            {$: 'dialog-feature.auto-focus-on-first-input' },
-            {$: 'dialog-feature.onClose',
-              action : {$runActions: [
-                {$: 'toggle-boolean-value', of: '%$studio/jb_preview_result_counter%'},
-                {$: 'tree.regain-focus' }
-              ]}
-            }
-          ],
+  impl :{$: 'action.switch',
+        $vars: {
+            actualPath: {$: 'studio.jb-editor-path-for-edit', path: '%$path%'}
         },
-        else :{$: 'studio.open-new-profile-dialog',
+        cases: [
+          {$:'action.case',
+            condition:{$: 'is-of-type', type: 'function', obj:{$:'studio.val', path: '%$actualPath%'}  },
+            action:{$: 'studio.edit-source',path: '%$actualPath%'}
+          },
+          {$:'action.case',
+            condition:{$: 'studio.is-of-type', type: 'data,boolean', path: '%$actualPath%' },
+            action:{$: 'open-dialog',
+              style :{$: 'dialog.studio-jb-editor-popup' },
+              content :{$: 'studio.jb-floating-input', path: '%$actualPath%' },
+              features: [
+                {$: 'dialog-feature.auto-focus-on-first-input' },
+                {$: 'dialog-feature.onClose',
+                  action : {$runActions: [
+                    {$: 'toggle-boolean-value', of: '%$studio/jb_preview_result_counter%'},
+                    {$: 'tree.regain-focus' }
+                  ]}
+                }
+              ],
+            }
+         },
+        ],
+        defaultAction:{$: 'studio.open-new-profile-dialog',
           path: '%$actualPath%',
           mode: 'update',
           type :{$: 'studio.param-type', path: '%$actualPath%'},
           onClose :{$: 'tree.regain-focus' }
         }
-      }]
   }
 })
 
@@ -268,10 +280,11 @@ jb.component('studio.jb-editor-path-for-edit', {
 jb.component('studio.open-jb-editor-menu', {
   type: 'action',
   params: [
-    { id: 'path', as: 'string' }
+    { id: 'path', as: 'string' },
+    { id: 'root', as: 'string' },
   ],
   impl :{$: 'menu.open-context-menu',
-    menu :{$: 'studio.jb-editor-menu', path: '%$path%' } ,
+    menu :{$: 'studio.jb-editor-menu', path: '%$path%', root: '%$root%' } ,
     features :{$: 'dialog-feature.onClose',
       action :{$: 'tree.regain-focus'}
     },
@@ -280,7 +293,10 @@ jb.component('studio.open-jb-editor-menu', {
 
 jb.component('studio.jb-editor-menu', {
   type: 'menu.option',
-  params: [{ id: 'path', as: 'string' }],
+  params: [
+    { id: 'path', as: 'string' },
+    { id: 'root', as: 'string' }
+  ],
   impl :{$: 'menu.menu',
     style :{$: 'menu.context-menu' },
     features :{$: 'group.menu-keyboard-selection', autoFocus: true },
@@ -397,21 +413,31 @@ jb.component('studio.jb-editor-menu', {
           {$isEmpty: {$: 'studio.val', path: '%$path%~$vars' } },
           {$: 'is-of-type', obj: {$: 'studio.val', path: '%$path%' }, type: 'object' } ] }
       },
-	  {$: 'studio.style-editor-options', path: '%$path%' },
-      {$: 'menu.action',
-        $vars: {
-          compName :{$: 'studio.comp-name', path: '%$path%' }
-        },
-        title: 'Goto %$compName%',
-        action :{$: 'studio.open-jb-editor', path: '%$compName%' },
-        showCondition: '%$compName%'
-      },
+	    {$: 'studio.style-editor-options', path: '%$path%' },
       {$: 'menu.end-with-separator',
-        options :[
-          {$: 'studio.goto-editor-first', path: '%$path%'},
-          {$: 'studio.goto-editor-secondary', path: '%$path%'},
+        options: [
+          {$: 'menu.action',
+            $vars: { compName :{$: 'studio.comp-name', path: '%$path%' } },
+            title: 'Goto %$compName%',
+            action :{$: 'studio.open-jb-editor', path: '%$compName%', fromPath: '%$path%' },
+            showCondition: '%$compName%'
+          },
+          {$: 'menu.action',
+            $vars: { compName :{$: 'split', separator: '~', text: '%$fromPath%', part: 'first' } },
+            title: 'Back to %$compName%',
+            action :{$: 'studio.open-component-in-jb-editor', path: '%$fromPath%', fromPath: '%$path%' },
+            showCondition: '%$fromPath%'
+          },
+          {$: 'menu.action',
+            $vars: { compName :{$: 'split', separator: '~', text: '%$root%', part: 'first' } },
+            title: 'Open parent %$compName%',
+            action :{$: 'studio.open-component-in-jb-editor', path: '%$path%', fromPath: '%$fromPath%' },
+            showCondition: {$: 'contains', text: '~', allText: '%$root%' }
+          },
         ]
       },
+
+      {$: 'studio.goto-editor-options' },
       {$: 'menu.studio-wrap-with',
         path: '%$path%',
         type: 'control',
@@ -439,9 +465,7 @@ jb.component('studio.jb-editor-menu', {
         showCondition: {$: 'studio.is-array-item', path: '%$path%'}
       },
       {$: 'menu.separator' },
-      {$: 'menu.end-with-separator',
-        options :{$: 'studio.goto-references', path: '%$path%' }
-      },
+      {$: 'studio.goto-references-menu', path: '%$path%' },
       {$: 'menu.action',
         title: 'Javascript',
         action :{$: 'studio.edit-source', path: '%$path%' },
@@ -527,24 +551,6 @@ jb.component('menu.studio-wrap-with-array', {
             {$:'studio.expand-and-select-first-child-in-jb-editor' }
           ]
     }, else: []
-  }
-})
-
-
-jb.component('studio.goto-references', {
-  type: 'menu.option',
-  params: [
-    { id: 'path', as: 'string'},
-    { id: 'action', type: 'action', dynamic: 'true',
-      defaultValue :{$: 'studio.open-component-in-jb-editor', path: '%%' }
-    },
-  ],
-  impl :{$: 'menu.dynamic-options',
-    items :{$: 'studio.references', path: '%$path%' },
-    genericOption :{$: 'menu.action',
-          title: 'Goto ref %%',
-          action :{$call: 'action'},
-    },
   }
 })
 
