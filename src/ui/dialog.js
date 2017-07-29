@@ -14,6 +14,7 @@ jb.component('open-dialog', {
 		var modal = context.params.modal;
 		var dialog = {
 			id: id,
+      instanceId: context.id,
 			modal: modal,
 			em: new jb.rx.Subject(),
 		};
@@ -85,10 +86,10 @@ jb.component('dialog.popup', {
 			h(state.contentComp),
 		]),
       features: [
-        { $: 'dialog-feature.max-zIndex-on-click' },
-        { $: 'dialog-feature.close-when-clicking-outside' },
-        { $: 'dialog-feature.css-class-on-launching-element' },
-        { $: 'dialog-feature.near-launcher-position' }
+       { $: 'dialog-feature.max-zIndex-on-click' },
+       { $: 'dialog-feature.close-when-clicking-outside' },
+       { $: 'dialog-feature.css-class-on-launching-element' },
+       { $: 'dialog-feature.near-launcher-position' }
       ],
       css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }'
   }
@@ -432,10 +433,6 @@ jb.component('dialog-feature.resizer', {
 
 jb.ui.dialogs = {
  	dialogs: [],
- 	redraw: function() {
-		jb.ui.render(jb.ui.h('div',{ class: 'jb-dialogs'}, jb.ui.dialogs.dialogs.map(d=>jb.ui.h(d.comp)) )
-			, document.body, document.querySelector('body>.jb-dialogs'));
- 	},
 	addDialog: function(dialog,context) {
 		var self = this;
 		dialog.context = context;
@@ -460,16 +457,32 @@ jb.ui.dialogs = {
 					self.dialogs.splice(index, 1);
 				if (dialog.modal)
 					$('.modal-overlay').remove();
-				jb.ui.dialogs.redraw();
+				jb.ui.dialogs.remove(dialog);
 			})
 		},
 		dialog.closed = _ =>
 			self.dialogs.indexOf(dialog) == -1;
 
-		this.redraw();
+		this.render(dialog);
 	},
 	closeAll: function() {
 		this.dialogs.forEach(d=>
 			d.close());
-	}
+	},
+  getOrCreateDialogsElem() {
+    if (!document.querySelector('.jb-dialogs'))
+      $('body').append(`<div class="jb-dialogs"/>`);
+    return document.querySelector('.jb-dialogs');
+  },
+  render(dialog) {
+    $(this.getOrCreateDialogsElem()).append(`<div id="${dialog.instanceId}"/>`);
+    var elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
+    jb.ui.render(jb.ui.h(dialog.comp),elem);
+  },
+  remove(dialog) {
+    var elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
+    jb.ui.unmountComponent(elem.firstElementChild._component);
+    //jb.ui.render(jb.ui.h('span'),elem,elem.firstChild); // react - remove
+    $(elem).remove();
+  }
 }

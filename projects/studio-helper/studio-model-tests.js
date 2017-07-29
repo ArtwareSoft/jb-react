@@ -148,6 +148,13 @@ jb.component('studio-data-test.set-sugar-comp-override2', {
 	},
 })
 
+// jb.component('studio-data-test.components-cross-ref', {
+// 	 impl :{$: 'data-test',
+// 		calculate :{$: 'studio.components-cross-ref' },
+// 		expectedResult : ctx => ctx.data.length > 500
+// 	},
+// })
+
 jb.component('test.referee', {
   impl: ctx => ''
 })

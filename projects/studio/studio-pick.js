@@ -8,9 +8,8 @@ jb.component('studio.pick', {
 		{ id: 'onSelect', type:'action', dynamic:true }
 	],
 	impl :{$: 'open-dialog',
-		$vars: {
-			pickSelection: { path: '' }
-		},
+		$vars: { pickSelection: ctx =>
+      ctx.vars.pickSelection || {} },
 		style: {$: 'dialog.studio-pick-dialog', from: '%$from%'},
 		content: {$: 'label', title: ''}, // dummy
 		onOK: ctx =>

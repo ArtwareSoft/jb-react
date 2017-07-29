@@ -97,6 +97,6 @@ jb.component('highlight', {
     return [
         b.split(highlight)[0],
         jb.ui.h('span',{class: cssClass},highlight),
-        b.split(highlight)[1]]
+        b.split(highlight).slice(1).join(highlight)]
   }
 })

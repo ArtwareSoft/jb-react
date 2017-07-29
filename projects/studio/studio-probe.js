@@ -65,7 +65,7 @@ jb.studio.Probe = class {
 			breakingProp = _path.split('~').pop();
     	_path = st.parentPath(_path);
 		}
-		if (formerGap == _path) { // can not break through the gap
+		if (!this.probe[_path] || formerGap == _path) { // can not break through the gap
 			this.closestPath = _path;
 			this.result = this.probe[_path];
 			return;

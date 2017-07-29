@@ -30,7 +30,7 @@ jb.component('studio.components-cross-ref',{
 
 
       function calcRefs(profile) {
-      	if (typeof profile != 'object') return [];
+      	if (profile == null || typeof profile != 'object') return [];
       	return Object.getOwnPropertyNames(profile).reduce((res,prop)=>
       		res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
       }
@@ -92,15 +92,15 @@ jb.component('studio.goto-references-menu', {
       noOfReferences: ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0),
     },
     then: {$: 'menu.menu',
-      title: '%$noOfReferences% references',
+      title: '%$noOfReferences% references for %$path%',
       options :{$: 'studio.goto-references-options', path: '%$path%', refs: '%$refs%' } ,
     },
-    else: {$: 'menu.action', title: 'no references'}
+    else: {$: 'menu.action', title: 'no references for %$path%'}
   }
 })
 
 jb.component('studio.goto-references-options', {
-  type: 'control',
+  type: 'menu.option',
   params: [
     { id: 'path', as: 'string'},
     { id: 'refs', as: 'array' },

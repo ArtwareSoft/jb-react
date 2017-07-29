@@ -9,7 +9,8 @@ jb.component('studio.open-jb-editor', {
   impl :{$: 'open-dialog',
     $vars: {
       dialogId: {$if : '%$newWindow%', then: '', else: 'jb-editor'},
-      fromPath: '%$fromPath%'
+      fromPath: '%$fromPath%',
+      pickSelection: {$: 'object'},
     },
     features :{$: 'var', name: 'jbEditor_selection', mutable: true, value: '%$path%' },
     style :{$: 'dialog.studio-floating', id: '%$dialogId%', width: '750', height: '400' },
@@ -31,7 +32,8 @@ jb.component('studio.open-component-in-jb-editor', {
   impl : {
    $vars: {
     compPath: {$: 'split', text: '%$path%', separator: '~', part: 'first'},
-    fromPath: '%$fromPath%'
+    fromPath: '%$fromPath%',
+    pickSelection: {$: 'object'},
    },
     $runActions: [
   {$: 'open-dialog',
@@ -436,8 +438,7 @@ jb.component('studio.jb-editor-menu', {
           },
         ]
       },
-
-      {$: 'studio.goto-editor-options' },
+      {$: 'studio.goto-editor-options', path: '%$path%' },
       {$: 'menu.studio-wrap-with',
         path: '%$path%',
         type: 'control',
@@ -465,7 +466,8 @@ jb.component('studio.jb-editor-menu', {
         showCondition: {$: 'studio.is-array-item', path: '%$path%'}
       },
       {$: 'menu.separator' },
-      {$: 'studio.goto-references-menu', path: '%$path%' },
+      {$: 'menu.action', title: 'Pick context', action:{$:'studio.pick'}},
+      {$: 'studio.goto-references-menu', path:{$: 'split', separator: '~', text: '%$path%', part: 'first' } },
       {$: 'menu.action',
         title: 'Javascript',
         action :{$: 'studio.edit-source', path: '%$path%' },
