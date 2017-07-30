@@ -260,7 +260,7 @@ jb.component('ui-test.dialog-cleanup', {
       content :{$: 'label', title: 'world'},
       features: ctx => ({
            destroy: cmp =>
-            ui_test_dialog_isAttached = cmp.base.parentNode.parentNode
+            ui_test_dialog_isAttached = cmp.base && cmp.base.parentNode && cmp.base.parentNode.parentNode
       })
     }
   },
@@ -269,7 +269,7 @@ jb.component('ui-test.dialog-cleanup', {
     {$: 'dialog.close-all' }
   ],
   expectedResult : ctx =>
-    ui_test_dialog_isAttached
+    !ui_test_dialog_isAttached
 },
 })
 

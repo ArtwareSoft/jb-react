@@ -242,7 +242,7 @@ jb.component('itemlist.drag-and-drop', {
 jb.component('itemlist.drag-handle', {
   description: 'put on the control inside the item which is used to drag the whole line',
   type: 'feature',
-  impl: {$: 'css.class', class: 'drag-handle' }
+  impl: {$list: [ {$: 'css.class', class: 'drag-handle' }, {$: 'css', css:'{cursor: pointer}'} ] }
 })
 
 jb.component('itemlist.shown-only-on-item-hover', {

@@ -229,40 +229,59 @@ jb.component('studio.data-browse', {
 })
 
 jb.component('studio.open-jb-edit-property', {
-  type: 'action',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'action.switch',
-        $vars: {
-            actualPath: {$: 'studio.jb-editor-path-for-edit', path: '%$path%'}
-        },
-        cases: [
-          {$:'action.case',
-            condition:{$: 'is-of-type', type: 'function', obj:{$:'studio.val', path: '%$actualPath%'}  },
-            action:{$: 'studio.edit-source',path: '%$actualPath%'}
-          },
-          {$:'action.case',
-            condition:{$: 'studio.is-of-type', type: 'data,boolean', path: '%$actualPath%' },
-            action:{$: 'open-dialog',
-              style :{$: 'dialog.studio-jb-editor-popup' },
-              content :{$: 'studio.jb-floating-input', path: '%$actualPath%' },
-              features: [
-                {$: 'dialog-feature.auto-focus-on-first-input' },
-                {$: 'dialog-feature.onClose',
-                  action : {$runActions: [
-                    {$: 'toggle-boolean-value', of: '%$studio/jb_preview_result_counter%'},
-                    {$: 'tree.regain-focus' }
-                  ]}
-                }
-              ],
+  type: 'action', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'action.switch', 
+    $vars: {
+      actualPath :{$: 'studio.jb-editor-path-for-edit', path: '%$path%' }
+    }, 
+    cases: [
+      {$: 'action.case', 
+        condition :{$: 'is-of-type', 
+          type: 'function', 
+          obj :{$: 'studio.val', path: '%$actualPath%' }
+        }, 
+        action :{$: 'studio.edit-source', path: '%$actualPath%' }
+      }, 
+      {$: 'action.case', 
+        condition :{$: 'studio.is-of-type', path: '%$actualPath%', type: 'data,boolean' }, 
+        action :{$: 'open-dialog', 
+          style :{$: 'dialog.studio-jb-editor-popup' }, 
+          content :{$: 'studio.jb-floating-input', path: '%$actualPath%' }, 
+          features: [
+            {$: 'dialog-feature.auto-focus-on-first-input' }, 
+            {$: 'dialog-feature.onClose', 
+              action :{
+                $runActions: [
+                  {$: 'toggle-boolean-value', 
+                    of: '%$studio/jb_preview_result_counter%'
+                  }, 
+                  {$: 'tree.regain-focus' }
+                ]
+              }
             }
-         },
-        ],
-        defaultAction:{$: 'studio.open-new-profile-dialog',
-          path: '%$actualPath%',
-          mode: 'update',
-          type :{$: 'studio.param-type', path: '%$actualPath%'},
-          onClose :{$: 'tree.regain-focus' }
+          ]
         }
+      }, 
+      {$: 'action.case', 
+        $vars: {
+          ptsOfType :{$: 'studio.PTs-of-type', 
+            type :{$: 'studio.param-type', path: '%$actualPath%' }
+          }
+        }, 
+        condition :{$: 'equals', 
+          item1 :{$: 'count', items: '%$ptsOfType%' }, 
+          item2: '1'
+        }, 
+        action :{$: 'studio.set-comp', path: '%$path%', comp: '%$ptsOfType[0]%' }
+      }
+    ], 
+    defaultAction :{$: 'studio.open-new-profile-dialog', 
+      path: '%$actualPath%', 
+      type :{$: 'studio.param-type', path: '%$actualPath%' }, 
+      mode: 'update', 
+      onClose :{$: 'tree.regain-focus' }
+    }
   }
 })
 

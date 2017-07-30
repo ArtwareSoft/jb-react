@@ -91,12 +91,12 @@ jb.component('studio-helper.pick-profile', {
 
 jb.component('studio-helper.jb-editor', {
   type: 'control',
-  params: [{ id: 'path', defaultValue: 'studio-helper-dummy.label' }],
+  params: [{ id: 'path', defaultValue: 'studio-helper-sample.component-header' }],
   impl :{$: 'group',
     controls: [
       {$: 'button',
         title: 'open jbEditor',
-        action :{$: 'studio.open-jb-editor', path: 'studio-helper-dummy.label' },
+        action :{$: 'studio.open-jb-editor', path: 'studio-helper-sample.component-header' },
         style :{$: 'button.href' }
       },
       {$: 'group',
@@ -193,7 +193,6 @@ jb.component('studio-helper-dummy.label', {
       {$: 'hidden', showCondition: true }
     ]
   },
-  style :{$: 'label.span' }
 })
 
 
@@ -428,4 +427,34 @@ jb.component('studio-helper.edit-style', {
       }
     ]
   }
+})
+
+jb.component('studio-helper-sample.component-header', {
+  type: 'control',
+  category: 'group:100,common:90',
+  params: [
+    { id: 'title12', as: 'string', dynamic: true },
+    {
+      id: 'style11',
+      type: 'group.style',
+      defaultValue :{$: 'layout.vertical' },
+      essential: true,
+      dynamic: true
+    },
+    {
+      id: 'controls',
+      type: 'control[]',
+      essential: true,
+      flattenArray: true,
+      dynamic: true,
+      composite: true
+    },
+    { id: 'features', type: 'feature[]', dynamic: true }
+  ],
+  impl: ctx => ''
+})
+
+jb.component('studio-helper.component-header', {
+  type: 'control',
+  impl :{$: 'studio.component-header', component: 'studio-helper-sample.component-header' }
 })

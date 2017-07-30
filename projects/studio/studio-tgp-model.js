@@ -54,9 +54,10 @@ st.ControlTree = class {
 }
 
 st.jbEditorTree = class {
-	constructor(rootPath) {
+	constructor(rootPath,includeCompHeader) {
 		this.rootPath = rootPath;
 		this.refHandler = st.compsRefHandler;
+    this.includeCompHeader= includeCompHeader;
 	}
 	title(path, collapsed) {
 		var val = st.valOfPath(path);
@@ -71,11 +72,15 @@ st.jbEditorTree = class {
 			summary = ': ' + st.summary(path).substr(0,20);
     if (typeof val == 'function')
       val = val.toString();
+    if (path.indexOf('~impl~') == -1 && path.match(/~params~[0-9]*$/) && val)
+      summary = val.id;
 
 		if (compName)
 			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
 		else if (['string','boolean','number'].indexOf(typeof val) != -1)
 			return jb.ui.h('div',{},[prop + (collapsed ? ': ': ''),jb.ui.h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,50))]);
+    else if (summary)
+  			return jb.ui.h('div',{},[prop + ': ',jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
 
 		return prop + (Array.isArray(val) ? ` (${val.length})` : '');
 	}
@@ -86,6 +91,7 @@ st.jbEditorTree = class {
 		var val = st.valOfPath(path);
 		if (!val) return [];
 		return (st.arrayChildren(path) || [])
+        .concat((this.includeCompHeader && this.compHeader(path,val)) || [])
 				.concat(this.vars(path,val) || [])
 				.concat(this.sugarChildren(path,val) || [])
 				.concat(this.specialCases(path,val) || [])
@@ -113,8 +119,11 @@ st.jbEditorTree = class {
 	}
 	innerProfiles(path,val) {
 		if (this.sugarChildren(path,val)) return [];
+    if (this.includeCompHeader && path.indexOf('~') == -1) return [];
+    var rootExtension = (!this.includeCompHeader && path.indexOf('~') == -1) ? '~impl' : '';
 		return st.paramsOfPath(path)
-			.map(p=> ({ path: path + (path.indexOf('~') == -1 ? '~impl' : '') + '~' + p.id, param: p}))
+      //.map(p=> ({ path: path + (path.indexOf('~') == -1 ? '~impl' : '') + '~' + p.id, param: p}))
+			.map(p=> ({ path: path + rootExtension + '~' + p.id, param: p}))
 			.filter(e=>st.valOfPath(e.path) != null || e.param.essential)
 			.map(e=>e.path)
 	}
@@ -132,6 +141,13 @@ st.jbEditorTree = class {
 			return ['then','else']
 		return []
 	}
+  compHeader(path,val) {
+		if (path.indexOf('~impl') == -1 && !st.isPrimitiveValue(val) && !Array.isArray(val))
+      return Object.getOwnPropertyNames(val)
+        .filter(p=>p!='$' && p.indexOf('$jb_') != 0)
+        .map(p=>path+'~'+p);
+	}
+
 }
 
 
@@ -272,7 +288,7 @@ Object.assign(st,{
 			jb.entries(st.previewjb.comps)
 				.filter(c=>
 					(c[1].type||'data').split(',').indexOf(t) != -1
-					|| (c[1].typePattern && t.match(c[1].typePattern.match))
+					|| (c[1].typePattern && t.match(c[1].typePattern))
 				)
 				.map(c=>c[0]));
 		return comp_arr.reduce((all,ar)=>all.concat(ar),[]);

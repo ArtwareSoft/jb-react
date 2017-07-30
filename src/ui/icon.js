@@ -11,10 +11,17 @@ jb.component('material-icon', {
 		jb.ui.ctrl(ctx,{init: cmp=> cmp.state.icon = ctx.params.icon})
 })
 
-jb.component('icon.material', {
+jb.component('icon.icon-in-button', {
     type: 'icon-with-action.style',
     impl :{$: 'custom-style',
         template: (cmp,state,h) => h('button',{ class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev) },
 		      h('i',{ class: 'material-icons' }, state.icon)),
+    }
+})
+
+jb.component('icon.material', {
+    type: 'icon-with-action.style',
+    impl :{$: 'custom-style',
+        template: (cmp,state,h) => h('i',{ class: 'material-icons' }, state.icon),
     }
 })

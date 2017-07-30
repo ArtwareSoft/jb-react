@@ -125,174 +125,197 @@ jb.component('studio.categories-marks', {
 })
 
 jb.component('studio.select-profile', {
-  type: 'control',
+  type: 'control', 
   params: [
-    { id: 'onSelect', type: 'action', dynamic: true },
-    { id: 'type', as: 'string' },
+    { id: 'onSelect', type: 'action', dynamic: true }, 
+    { id: 'type', as: 'string' }, 
     { id: 'path', as: 'string' }
-  ],
-  impl :{$: 'group',
-    title: 'itemlist-with-find',
-    style :{$: 'layout.vertical', spacing: 3 },
+  ], 
+  impl :{$: 'group', 
+    title: 'itemlist-with-find', 
+    style :{$: 'layout.vertical', spacing: 3 }, 
     controls: [
-      {$: 'itemlist-container.search',
-        title :{$: 'studio.prop-name', path: '%$path%' },
-        searchIn :{$: 'itemlist-container.search-in-all-properties' },
-        databind: '%$itemlistCntrData/search_pattern%',
-        style :{$: 'editable-text.mdl-input' },
-        features :{$: 'feature.onEsc',
-          action :{$: 'dialog.close-containing-popup',
-            id: 'studio-jb-editor-popup',
+      {$: 'itemlist-container.search', 
+        title :{$: 'studio.prop-name', path: '%$path%' }, 
+        searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
+        databind: '%$itemlistCntrData/search_pattern%', 
+        style :{$: 'editable-text.mdl-input', width: '200' }, 
+        features :{$: 'feature.onEsc', 
+          action :{$: 'dialog.close-containing-popup', 
+            id: 'studio-jb-editor-popup', 
             OK: false
           }
         }
-      },
-      {$: 'group',
-        title: 'categories and items',
-        style :{$: 'layout.horizontal', spacing: 3 },
+      }, 
+      {$: 'group', 
+        title: 'categories and items', 
+        style :{$: 'layout.horizontal', spacing: '33' }, 
         controls: [
-          {$: 'picklist',
-            title: '',
-            databind: '%$SelectedCategory%',
-            options :{$: 'picklist.sorted-options',
-              options :{$: 'picklist.coded-options',
-                options : '%$Categories%',
-                code: '%name%',
-                text: '%name%'
-              },
-              marks :{$: 'studio.categories-marks', type: '%$type%', path: '%$path%' }
-            },
-            style :{$: 'style-by-control',
-              control :{$: 'group',
-                controls :{$: 'itemlist',
-                  items: '%$picklistModel/options/code%',
-                  controls :{$: 'label',
-                    title: '%%',
-                    style :{$: 'label.mdl-button' },
-                    features: [
-                      {$: 'css.width', width: '120' },
-                      {$: 'css', css: '{text-align: left}' }
-                    ]
-                  },
-                  style :{$: 'itemlist.ul-li' },
-                  watchItems: false,
-                  features: [
-                    {$: 'itemlist.selection',
-                      cssForActive: 'background: white',
-											databind: '%$SelectedCategory%',
-                      // onSelection :{$: 'write-value',
-                      //   to: '%$picklistModel/databind%',
-                      //   value: '%code%'
-                      // },
-                      //autoSelectFirst: 'true',
-                      cssForSelected: 'box-shadow: 3px 0px 0 0 #304ffe inset; background: none !important'
-                    }
-                  ]
-                },
-                features :{$: 'group.itemlist-container' }
-              },
-              modelVar: 'picklistModel'
-            },
-            features :{$: 'picklist.onChange',
-              action :{$: 'write-value', to: '%$itemlistCntrData/search_pattern%' }
-            }
-          },
-          {$: 'itemlist',
-            title: 'items',
+          {$: 'itemlist', 
+            title: 'items', 
             items :{
               $pipeline: [
-                '%$Categories%',
-                {$: 'filter',
-                  filter :{$: 'or',
+                '%$Categories%', 
+                {$: 'filter', 
+                  filter :{$: 'or', 
                     items: [
-                      {$: 'equals',
-                        item1: '%name%',
+                      {$: 'equals', 
+                        item1: '%code%', 
                         item2: '%$SelectedCategory%'
-                      },
-                      {$: 'notEmpty',
+                      }, 
+                      {$: 'notEmpty', 
                         item: '%$itemlistCntrData/search_pattern%'
                       }
                     ]
                   }
-                },
-                '%pts%',
-                {$: 'itemlist-container.filter' },
+                }, 
+                '%pts%', 
+                {$: 'itemlist-container.filter' }, 
                 {$: 'unique', id: '%%', items: '%%' }
               ]
-            },
+            }, 
             controls: [
-              {$: 'label',
-                title :{$: 'highlight',
-                  base: '%%',
+              {$: 'label', 
+                title :{$: 'highlight', 
+                  base: '%%', 
                   highlight: '%$itemlistCntrData/search_pattern%'
-                },
-                style :{$: 'label.span', level: 'h3' },
+                }, 
+                style :{$: 'label.span', level: 'h3' }, 
                 features: [
-                  {$: 'css', css: '{ text-align: left; }' },
-                  {$: 'css.padding',
-                    top: '0',
-                    left: '4',
-                    right: '4',
+                  {$: 'css', css: '{ text-align: left; }' }, 
+                  {$: 'css.padding', 
+                    top: '0', 
+                    left: '4', 
+                    right: '4', 
                     bottom: '0'
-                  },
+                  }, 
                   {$: 'css.width', width: '250', minMax: 'min' }
                 ]
               }
-            ],
-            itemVariable: 'item',
+            ], 
+            itemVariable: 'item', 
             features: [
-              {$: 'css.height', height: '300', overflow: 'auto', minMax: '' },
-              {$: 'itemlist.selection',
-                databind: '%$itemlistCntrData/selected%',
-								onDoubleClick :{$runActions: [
-										{ $: 'studio.clean-selection-preview'},
-										{ $call: 'onSelect' },
-										{$: 'dialog.close-containing-popup' },
-								]},
-								onSelection :{$runActions: [
-										// todo: add setfocus to search
-										{ $call: 'onSelect', $vars: { selectionPreview: true } },
-								]},
+              {$: 'css.height', height: '300', overflow: 'auto', minMax: '' }, 
+              {$: 'itemlist.selection', 
+                databind: '%$itemlistCntrData/selected%', 
+                onSelection :{
+                  $runActions: [
+                    {
+                      $if :{$: 'contains', 
+                        text: ['control', 'style'], 
+                        allText: '%$type%'
+                      }, 
+                      then :{
+                        $call: 'onSelect', 
+                        $vars: { selectionPreview: true }
+                      }
+                    }
+                  ]
+                }, 
+                onDoubleClick :{
+                  $runActions: [
+                    {$: 'studio.clean-selection-preview' }, 
+                    { $call: 'onSelect' }, 
+                    {$: 'dialog.close-containing-popup' }
+                  ]
+                }, 
                 autoSelectFirst: true
-              },
-              {$: 'itemlist.keyboard-selection',
-								onEnter :{$runActions: [
-										{ $: 'studio.clean-selection-preview'},
-										{ $call: 'onSelect' },
-										{$: 'dialog.close-containing-popup' },
-								]}
- 							},
-              {$: 'watch-ref', ref: '%$SelectedCategory%' },
-              {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' },
-              {$: 'css.margin', top: '3', selector: '>li' }
+              }, 
+              {$: 'itemlist.keyboard-selection', 
+                onEnter :{
+                  $runActions: [
+                    {$: 'studio.clean-selection-preview' }, 
+                    { $call: 'onSelect' }, 
+                    {$: 'dialog.close-containing-popup' }
+                  ]
+                }
+              }, 
+              {$: 'watch-ref', ref: '%$SelectedCategory%' }, 
+              {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' }, 
+              {$: 'css.margin', top: '3', selector: '>li' }, 
+              {$: 'css.width', width: '200' }
             ]
+          }, 
+          {$: 'picklist', 
+            title: '', 
+            databind: '%$SelectedCategory%', 
+            options: '%$Categories%', 
+            style :{$: 'style-by-control', 
+              control :{$: 'group', 
+                controls :{$: 'itemlist', 
+                  items: '%$picklistModel/options/code%', 
+                  controls :{$: 'label', 
+                    title :{
+                      $pipeline: [
+                        '%$Categories%', 
+                        {$: 'filter', filter: '%code% == %$item%' }, 
+                        '%code% (%pts/length%)'
+                      ]
+                    }, 
+                    style :{$: 'label.span' }, 
+                    features: [
+                      {$: 'css.width', width: '120' }, 
+                      {$: 'css', css: '{text-align: left}' }, 
+                      {$: 'css.padding', left: '10' }
+                    ]
+                  }, 
+                  style :{$: 'itemlist.ul-li' }, 
+                  watchItems: false, 
+                  features: [
+                    {$: 'itemlist.selection', 
+                      cssForActive: 'background: white', 
+                      databind: '%$SelectedCategory%', 
+                      cssForSelected: 'box-shadow: 3px 0px 0 0 #304ffe inset; color: black !important; background: none !important; !important'
+                    }
+                  ]
+                }, 
+                features :{$: 'group.itemlist-container' }
+              }, 
+              modelVar: 'picklistModel'
+            }, 
+            features :{$: 'picklist.onChange', 
+              action :{$: 'write-value', to: '%$itemlistCntrData/search_pattern%' }
+            }
           }
         ]
-      },
-      {$: 'label',
+      }, 
+      {$: 'label', 
         title :{
           $pipeline: [
-            '%$itemlistCntrData/selected%',
-            {$: 'studio.val', path: '%%' },
+            '%$itemlistCntrData/selected%', 
+            {$: 'studio.val', path: '%%' }, 
             '%description%'
           ]
-        },
+        }, 
         style :{$: 'label.span' }
       }
-    ],
+    ], 
     features: [
-      {$: 'css.margin', top: '10', left: '20' },
-      {$: 'var',
-        name: 'Categories',
+      {$: 'css.margin', top: '10', left: '20' }, 
+      {$: 'var', 
+        name: 'unsortedCategories', 
         value :{$: 'studio.categories-of-type', type: '%$type%', path: '%$path%' }
-      },
-      {$: 'var',
-        name: 'SelectedCategory',
-        value: '%$Categories[0]/name%',
+      }, 
+      {$: 'var', 
+        name: 'Categories', 
+        value :{$: 'picklist.sorted-options', 
+          options: '%$unsortedCategories%', 
+          marks :{$: 'studio.categories-marks', type: '%$type%', path: '%$path%' }
+        }
+      }, 
+      {$: 'var', 
+        name: 'SelectedCategory', 
+        value :{
+          $if :{$: 'studio.val', path: '%$path%' }, 
+          then: 'all', 
+          else: '%$Categories[0]/code%'
+        }, 
         mutable: true
-      },
-      {$: 'var', name: 'SearchPattern', value: '', mutable: true },
-      {$: 'group.itemlist-container', initialSelection: {$: 'studio.comp-name', path: '%$path%'} }
+      }, 
+      {$: 'var', name: 'SearchPattern', value: '', mutable: true }, 
+      {$: 'group.itemlist-container', 
+        initialSelection :{$: 'studio.comp-name', path: '%$path%' }
+      }
     ]
   }
 })

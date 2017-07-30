@@ -290,19 +290,20 @@ function evalExpressionPart(expressionPart,context,jstype) {
   var parts = expressionPart.split(/[.\/]/);
   return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),context.data)
 
-  function pipe(input,subExp,last,first) {
+  function pipe(input,subExp,last,first,refHandler) {
       if (subExp == '')
           return input;
 
       var arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
+      var refHandler = refHandler || (input && input.handler) || jb.valueByRefHandler;
       if (arrayIndexMatch) {
-        var arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1],false,first);
+        var arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1],false,first,refHandler);
         var index = arrayIndexMatch[2];
         if (!Array.isArray(arr))
             return null; //jb.logError('expecting array instead of ' + typeof arr, context);
 
         if (last && (jstype == 'ref' || !primitiveJsType))
-           return jb.valueByRefHandler.objectProperty(arr,index);
+           return refHandler.objectProperty(arr,index);
         if (typeof arr[index] == 'undefined')
            arr[index] = last ? null : [];
 			  if (last && jstype)
@@ -316,18 +317,18 @@ function evalExpressionPart(expressionPart,context,jstype) {
 
       if (first && subExp.charAt(0) == '$' && subExp.length > 1)
         return calcVar(context,subExp.substr(1))
-      if (Array.isArray(input) && subExp == 'length')
-        return input.length;
-      if (Array.isArray(input))
-        return input.map(item=>pipe(item,subExp)).filter(x=>x!=null);
+      var obj = arrValue = val(input);
+      if (Array.isArray(arrValue) && subExp == 'length')
+        return arrValue.length;
+      if (Array.isArray(arrValue))
+        return arrValue.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null);
 
       if (input != null && typeof input == 'object') {
-        var obj = val(input);
         if (obj == null) return;
         if (typeof obj[subExp] === 'function' && obj[subExp].profile)
             return obj[subExp](context);
         if (last && jstype == 'ref')
-           return jb.valueByRefHandler.objectProperty(obj,subExp);
+           return refHandler.objectProperty(obj,subExp);
         if (typeof obj[subExp] == 'undefined')
            obj[subExp] = last ? null : {};
         if (last && jstype)

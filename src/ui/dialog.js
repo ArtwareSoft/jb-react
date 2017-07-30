@@ -481,8 +481,9 @@ jb.ui.dialogs = {
   },
   remove(dialog) {
     var elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
-    jb.ui.unmountComponent(elem.firstElementChild._component);
-    //jb.ui.render(jb.ui.h('span'),elem,elem.firstChild); // react - remove
+    if (!elem) return; // already closed due to asynch request handling and multiple requests to close
+    jb.ui.render('', elem, elem.firstElementChild);// react - remove
+    // jb.ui.unmountComponent(elem.firstElementChild._component);
     $(elem).remove();
   }
 }

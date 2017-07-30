@@ -839,7 +839,7 @@ jb.component('action.switch', {
 jb.component('action.case', {
   type: 'action.switch-case',
   params: [
-  	{ id: 'condition', type: 'boolean', essential: true, dynamic: true },
+  	{ id: 'condition', type: 'boolean', as: 'boolean', essential: true, dynamic: true },
   	{ id: 'action', type: 'action' ,essential: true, dynamic: true },
   ],
   impl: ctx => ctx.params

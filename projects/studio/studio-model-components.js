@@ -52,21 +52,11 @@ jb.component('studio.categories-of-type', {
   			.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
   			.filter(x=>x).filter(c=>c!='all')
 			))).map(c=>({
-  				name: c,
+  				code: c,
   				pts: ptsOfCategory(c)
   			}));
-  	var res = categories.concat({name: 'all', pts: ptsOfCategory('all') });
-		if (val && val.$) // promote categories with current value
-			res.sort((c1,c2) => promoteCurrentValue(c1,c2) );
-
+  	var res = categories.concat({code: 'all', pts: ptsOfCategory('all') });
 		return res;
-
-		function promoteCurrentValue(c1,c2) {
-			var c1Index = c1.pts.indexOf(val.$), c2Index = c2.pts.indexOf(val.$);
-			var c1mark = c1Index == -1 ? 1000 : c1Index;
-			var c2mark = c2Index == -1 ? 1000 : c2Index;
-			return c1mark - c2mark;
-		}
 
   	function ptsOfCategory(category) {
       var pts_with_marks = pts.filter(pt=>
@@ -370,69 +360,11 @@ jb.component('studio.make-local',{
 	impl: (ctx,path) => st.makeLocal(path,ctx)
 })
 
-jb.component('studio.components-cross-ref',{
-	type: 'data',
-	impl: ctx => {
-	  var _jb = st.previewjb;
-	  st.scriptChange.subscribe(_=>_jb.statistics = null);
-	  if (_jb.statistics) return _jb.statistics;
-
-	  var refs = {}, comps = _jb.comps;
-
-      Object.getOwnPropertyNames(comps).forEach(k=>
-      	refs[k] = {
-      		refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
-      		by: []
-      });
-      Object.getOwnPropertyNames(comps).forEach(k=>
-      	refs[k].refs.forEach(cross=>
-      		refs[cross] && refs[cross].by.push(k))
-      );
-
-      return _jb.statistics = jb.entries(comps).map(e=>({
-          	id: e[0],
-          	refs: refs[e[0]].refs,
-          	referredBy: refs[e[0]].by,
-          	type: e[1].type || 'data',
-          	implType: typeof e[1].impl,
-          	refCount: refs[e[0]].by.length
-          	//text: jb_prettyPrintComp(comps[k]),
-          	//size: jb_prettyPrintComp(e[0],e[1]).length
-          }));
-
-
-      function calcRefs(profile) {
-      	if (typeof profile != 'object') return [];
-      	return Object.getOwnPropertyNames(profile).reduce((res,prop)=>
-      		res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
-      }
-	}
-})
-
-jb.component('studio.references', {
-	type: 'data',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => {
-	  if (path.indexOf('~') != -1) return [];
-
-      return jb.entries(st.previewjb.comps)
-      	.filter(e=>
-      		isRef(e[1].impl))
-      	.map(e=>e[0]).slice(0,10);
-
-      function isRef(profile) {
-      	if (profile && typeof profile == 'object')
-	      	return profile.$ == path || Object.getOwnPropertyNames(profile).reduce((res,prop)=>
-	      		res || isRef(profile[prop]),false)
-      }
-	}
-})
-
 jb.component('studio.jb-editor.nodes', {
 	type: 'tree.nodeModel',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		  new st.jbEditorTree(path)
+		  new st.jbEditorTree(path,true)
 })
 
 jb.component('studio.icon-of-type', {

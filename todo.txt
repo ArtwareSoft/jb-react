@@ -2,8 +2,10 @@ cards for letmesee
 
 check install
 
-refernces button in search
-  fix search
+ctx counters
+probe record -
+  activate from jb-editor when not found.
+  close (show) when found
 
 profile selection preview
 	limit to control & style

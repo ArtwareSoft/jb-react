@@ -90,7 +90,8 @@ class ImmutableWithPath {
     if (deleteOp) {
       if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
         return delete this.resourceVersions[resource];
-      delete ref.$jb_parentOfPrim[ref.$jb_path.slice(-1)[0]]
+      if (ref.$jb_parentOfPrim && ref.$jb_parentOfPrim[ref.$jb_path.slice(-1)[0]])
+        delete ref.$jb_parentOfPrim[ref.$jb_path.slice(-1)[0]]
     }
     if (!doNotNotify) {
         this.refresh(ref,opEvent);

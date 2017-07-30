@@ -67,7 +67,7 @@ jb.studio.Probe = class {
 		}
 		if (!this.probe[_path] || formerGap == _path) { // can not break through the gap
 			this.closestPath = _path;
-			this.result = this.probe[_path];
+			this.result = this.probe[_path] || [];
 			return;
 		}
 
@@ -86,7 +86,7 @@ jb.studio.Probe = class {
 
 		// could not solve the gap
 		this.closestPath = _path;
-		this.result = this.probe[_path];
+		this.result = this.probe[_path] || [];
   }
 
 	// called from jb_run
