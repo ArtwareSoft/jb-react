@@ -61,7 +61,9 @@ st.jbEditorTree = class {
 	}
 	title(path, collapsed) {
 		var val = st.valOfPath(path);
-		var compName = jb.compName(val||{});
+		var compName = st.compNameOfPath(path);
+    if (path.indexOf('~') == -1)
+      compName = 'jb-component';
 		var prop = path.split('~').pop();
 		if (!isNaN(Number(prop))) // array value - title as a[i]
 			prop = path.split('~').slice(-2)
@@ -72,15 +74,15 @@ st.jbEditorTree = class {
 			summary = ': ' + st.summary(path).substr(0,20);
     if (typeof val == 'function')
       val = val.toString();
-    if (path.indexOf('~impl~') == -1 && path.match(/~params~[0-9]*$/) && val)
-      summary = val.id;
+    // if (path.indexOf('~impl~') == -1 && path.match(/~params~[0-9]*$/) && val)
+    //   summary = val.id;
 
 		if (compName)
 			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
 		else if (['string','boolean','number'].indexOf(typeof val) != -1)
 			return jb.ui.h('div',{},[prop + (collapsed ? ': ': ''),jb.ui.h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,50))]);
-    else if (summary)
-  			return jb.ui.h('div',{},[prop + ': ',jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
+    // else if (summary)
+  	// 		return jb.ui.h('div',{},[prop + ': ',jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
 
 		return prop + (Array.isArray(val) ? ` (${val.length})` : '');
 	}
@@ -91,7 +93,7 @@ st.jbEditorTree = class {
 		var val = st.valOfPath(path);
 		if (!val) return [];
 		return (st.arrayChildren(path) || [])
-        .concat((this.includeCompHeader && this.compHeader(path,val)) || [])
+//        .concat((this.includeCompHeader && this.compHeader(path,val)) || [])
 				.concat(this.vars(path,val) || [])
 				.concat(this.sugarChildren(path,val) || [])
 				.concat(this.specialCases(path,val) || [])
@@ -119,11 +121,9 @@ st.jbEditorTree = class {
 	}
 	innerProfiles(path,val) {
 		if (this.sugarChildren(path,val)) return [];
-    if (this.includeCompHeader && path.indexOf('~') == -1) return [];
-    var rootExtension = (!this.includeCompHeader && path.indexOf('~') == -1) ? '~impl' : '';
-		return st.paramsOfPath(path)
-      //.map(p=> ({ path: path + (path.indexOf('~') == -1 ? '~impl' : '') + '~' + p.id, param: p}))
-			.map(p=> ({ path: path + rootExtension + '~' + p.id, param: p}))
+    if (!this.includeCompHeader && path.indexOf('~') == -1)
+      path = path + '~impl';
+		return st.paramsOfPath(path).map(p=> ({ path: path + '~' + p.id, param: p}))
 			.filter(e=>st.valOfPath(e.path) != null || e.param.essential)
 			.map(e=>e.path)
 	}
@@ -141,12 +141,12 @@ st.jbEditorTree = class {
 			return ['then','else']
 		return []
 	}
-  compHeader(path,val) {
-		if (path.indexOf('~impl') == -1 && !st.isPrimitiveValue(val) && !Array.isArray(val))
-      return Object.getOwnPropertyNames(val)
-        .filter(p=>p!='$' && p.indexOf('$jb_') != 0)
-        .map(p=>path+'~'+p);
-	}
+  // compHeader(path,val) {
+	// 	if (path.indexOf('~impl') == -1 && !st.isPrimitiveValue(val) && !Array.isArray(val))
+  //     return Object.getOwnPropertyNames(val)
+  //       .filter(p=>p!='$' && p.indexOf('$jb_') != 0)
+  //       .map(p=>path+'~'+p);
+	// }
 
 }
 
@@ -156,6 +156,13 @@ Object.assign(st,{
 		st.paramsOfPath(path)
 			.filter(p=>st.valOfPath(path+'~'+p.id) == null && !p.essential)
 			.map(p=> path + '~' + p.id),
+
+  // compHeaderParams: path => {
+  //   if (path.indexOf('~') == -1)
+  //     return [
+  //   if (path.indexOf('~impl~') == -1 && path.match(/~params~[0-9]*$/))
+  //     return ['id','type','as','essential']
+  // }
 	nonControlChildren: (path,includeFeatures) =>
 		st.paramsOfPath(path).filter(p=>!st.isControlType(p.type))
 			.filter(p=>includeFeatures || p.id != 'features')
@@ -202,7 +209,7 @@ Object.assign(st,{
 			return path.split('~')[0];
 
 		var val = st.valOfPath(path);
-		return (val && typeof val.title == 'string' && val.title) || (val && val.remark) || (val && jb.compName(val)) || path.split('~').pop();
+		return (val && typeof val.title == 'string' && val.title) || (val && val.remark) || (val && st.compNameOfPath(path)) || path.split('~').pop();
 	},
 	icon: path => {
 		if (st.parentPath(path)) {

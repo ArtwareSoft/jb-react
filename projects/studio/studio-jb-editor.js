@@ -13,7 +13,7 @@ jb.component('studio.open-jb-editor', {
       pickSelection: {$: 'object'},
     },
     features :{$: 'var', name: 'jbEditor_selection', mutable: true, value: '%$path%' },
-    style :{$: 'dialog.studio-floating', id: '%$dialogId%', width: '750', height: '400' },
+    style :{$: 'dialog.studio-floating', id: '%$dialogId%', width: '860', height: '400' },
     content :{$: 'studio.jb-editor', path: '%$path%' },
     menu :{$: 'button',
       action :{$: 'studio.open-jb-editor-menu', path: '%$jbEditor_selection%', root: '%$path%' },
@@ -38,7 +38,7 @@ jb.component('studio.open-component-in-jb-editor', {
     $runActions: [
   {$: 'open-dialog',
     features :{$: 'var', name: 'jbEditor_selection', mutable: true, value: '%$path%' },
-    style :{$: 'dialog.studio-floating', id: 'jb-editor', width: '750', height: '400' },
+    style :{$: 'dialog.studio-floating', id: 'jb-editor', width: '860', height: '400' },
     content :{$: 'studio.jb-editor', path: '%$compPath%' },
     menu :{$: 'button',
       action :{$: 'studio.open-jb-editor-menu', path: '%$jbEditor_selection%' , root: '%$path%' },
@@ -54,7 +54,13 @@ jb.component('studio.jb-editor', {
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'group',
     title: 'main',
-    style :{$: 'layout.horizontal', align: 'space-between', direction: '', spacing: 3 },
+    style :{$: 'layout.horizontal-fixed-split',
+      align: 'space-between',
+      direction: '',
+      leftWidth: '350',
+      rightWidth: '500',
+      spacing: 3
+    },
     controls: [
       {$: 'tree',
         nodeModel :{$: 'studio.jb-editor.nodes', path: '%$path%' },
@@ -67,7 +73,7 @@ jb.component('studio.jb-editor', {
           },
           {$: 'tree.keyboard-selection',
             onEnter :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' },
-            onRightClickOfExpanded :{$: 'studio.open-jb-editor-menu', path: '%%', root: '%$path%'  },
+            onRightClickOfExpanded :{$: 'studio.open-jb-editor-menu', path: '%%', root: '%$path%' },
             autoFocus: true,
             applyMenuShortcuts :{$: 'studio.jb-editor-menu', path: '%%', root: '%$path%' }
           },
@@ -229,57 +235,57 @@ jb.component('studio.data-browse', {
 })
 
 jb.component('studio.open-jb-edit-property', {
-  type: 'action', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'action.switch', 
+  type: 'action',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'action.switch',
     $vars: {
       actualPath :{$: 'studio.jb-editor-path-for-edit', path: '%$path%' }
-    }, 
+    },
     cases: [
-      {$: 'action.case', 
-        condition :{$: 'is-of-type', 
-          type: 'function', 
+      {$: 'action.switch-case',
+        condition :{$: 'is-of-type',
+          type: 'function',
           obj :{$: 'studio.val', path: '%$actualPath%' }
-        }, 
+        },
         action :{$: 'studio.edit-source', path: '%$actualPath%' }
-      }, 
-      {$: 'action.case', 
-        condition :{$: 'studio.is-of-type', path: '%$actualPath%', type: 'data,boolean' }, 
-        action :{$: 'open-dialog', 
-          style :{$: 'dialog.studio-jb-editor-popup' }, 
-          content :{$: 'studio.jb-floating-input', path: '%$actualPath%' }, 
+      },
+      {$: 'action.switch-case',
+        condition :{$: 'studio.is-of-type', path: '%$actualPath%', type: 'data,boolean' },
+        action :{$: 'open-dialog',
+          style :{$: 'dialog.studio-jb-editor-popup' },
+          content :{$: 'studio.jb-floating-input', path: '%$actualPath%' },
           features: [
-            {$: 'dialog-feature.auto-focus-on-first-input' }, 
-            {$: 'dialog-feature.onClose', 
+            {$: 'dialog-feature.auto-focus-on-first-input' },
+            {$: 'dialog-feature.onClose',
               action :{
                 $runActions: [
-                  {$: 'toggle-boolean-value', 
+                  {$: 'toggle-boolean-value',
                     of: '%$studio/jb_preview_result_counter%'
-                  }, 
+                  },
                   {$: 'tree.regain-focus' }
                 ]
               }
             }
           ]
         }
-      }, 
-      {$: 'action.case', 
+      },
+      {$: 'action.switch-case',
         $vars: {
-          ptsOfType :{$: 'studio.PTs-of-type', 
+          ptsOfType :{$: 'studio.PTs-of-type',
             type :{$: 'studio.param-type', path: '%$actualPath%' }
           }
-        }, 
-        condition :{$: 'equals', 
-          item1 :{$: 'count', items: '%$ptsOfType%' }, 
+        },
+        condition :{$: 'equals',
+          item1 :{$: 'count', items: '%$ptsOfType%' },
           item2: '1'
-        }, 
+        },
         action :{$: 'studio.set-comp', path: '%$path%', comp: '%$ptsOfType[0]%' }
       }
-    ], 
-    defaultAction :{$: 'studio.open-new-profile-dialog', 
-      path: '%$actualPath%', 
-      type :{$: 'studio.param-type', path: '%$actualPath%' }, 
-      mode: 'update', 
+    ],
+    defaultAction :{$: 'studio.open-new-profile-dialog',
+      path: '%$actualPath%',
+      type :{$: 'studio.param-type', path: '%$actualPath%' },
+      mode: 'update',
       onClose :{$: 'tree.regain-focus' }
     }
   }

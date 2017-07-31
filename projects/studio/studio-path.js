@@ -1,5 +1,8 @@
 (function() { var st = jb.studio;
 
+//  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
+jb.issuesTolog = ['focus'];
+
 function compsRef(val,opEvent) {
   if (typeof val == 'undefined')
     return st.previewjb.comps;
@@ -48,12 +51,16 @@ Object.assign(st,{
 		path.split('~').slice(0,-1).join('~'),
   valOfPath: (path,silent) =>
   	st.val(st.refOfPath(path,silent)),
-  compNameOfPath: (path,silent) =>
-  	jb.compName(st.valOfPath(path + (path.indexOf('~') == -1 ? '~impl' : ''),silent)),
+  compNameOfPath: (path,silent) => {
+    if (path.indexOf('~') == -1)
+      return 'jb-component';
+    var prof = st.valOfPath(path,silent); // + (path.indexOf('~') == -1 ? '~impl' : '');
+  	return jb.compName(prof) || jb.compName(prof,st.paramDef(path))
+  },
   compOfPath: (path,silent) =>
   	st.getComp(st.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) =>
-  	jb.compParams(st.compOfPath(path,silent)),
+  	jb.compParams(st.compOfPath(path,silent)), //.concat(st.compHeaderParams(path)),
   writeValueOfPath: (path,value,srcCtx) =>
 		st.writeValue(st.refOfPath(path),value,srcCtx),
   getComp: id =>

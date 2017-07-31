@@ -49,7 +49,7 @@ jb.component('dialog.studio-floating', {
 						box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
 				}
 				>.dialog-title { background: none; padding: 10px 5px; }
-				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; max-height1: 500px }
+				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }
 				>.dialog-close {
 						position: absolute;
 						cursor: pointer;

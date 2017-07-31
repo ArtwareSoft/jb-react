@@ -152,6 +152,16 @@ jb.component('data-test.pipe-with-observable', {
   },
 })
 
+jb.component('data-test.data-switch-singleInType', {
+   impl :{$: 'data-test',
+    calculate: {$: 'data.switch',  cases: [
+      { condition: '1==2', value: 'a'},
+      { condition: '1==1', value: 'b'},
+    ] },
+    expectedResult :{$: 'contains', text: 'b' }
+  },
+})
+
 jb.resource('ar-test',{ ar: ['0'] })
 
 jb.component('data-test.restoreArrayIds-bug', {

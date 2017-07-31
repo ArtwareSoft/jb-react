@@ -7,9 +7,13 @@ probe record -
   activate from jb-editor when not found.
   close (show) when found
 
-profile selection preview
-	limit to control & style
-  use seletionPreview mode in probe
+component header
+  param properties
+  add param
+
+jb-editor variables -
+  enter name of first var
+  do not allow to override the $vars obj by Enter
 
 fix group.wait.resource to variable
 

@@ -73,7 +73,7 @@ function jb_run(context,parentParam,settings) {
         if (profile.$log)
           console.log(contextWithVars.run(profile.$log));
 
-        if (profile.$trace) console.log('trace: ' + context.path, compName(profile),contextWithVars,out,run);
+        if (profile.$trace) console.log('trace: ' + context.path, compName(profile,parentParam),contextWithVars,out,run);
 
         return castToParam(out,parentParam);
     }
@@ -144,11 +144,11 @@ function prepareParams(comp,profile,ctx) {
           func.srcPath = ctx.path;
           return func;
         }
-        return { name: p, type: 'function', outerFunc: outerFunc, path: path };
+        return { name: p, type: 'function', outerFunc: outerFunc, path: path, param: param };
       }
 
       if (arrayParam) // array of profiles
-        return { name: p, type: 'array', array: valOrDefaultArray, param: {}, path: path };
+        return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), path: path };
       else
         return { name: p, type: 'run', prof: valOrDefault, param: param, path: path }; // context: new jbCtx(ctx,{profile: valOrDefault, path: p}),
   })
@@ -166,7 +166,7 @@ function prepare(context,parentParam) {
   if (profile_jstype === 'object' && jstype === 'object') return { type: 'object' };
   if (profile_jstype === 'string') return { type: 'expression' };
   if (profile_jstype === 'function') return { type: 'function' };
-  if (profile_jstype === 'object' && !isArray && entries(profile).filter(p=>p[0].indexOf('$') == 0).length == 0) return { type: 'asIs' };
+//  if (profile_jstype === 'object' && !isArray && entries(profile).filter(p=>p[0].indexOf('$') == 0).length == 0) return { type: 'asIs' };
   if (profile_jstype === 'object' && (profile instanceof RegExp)) return { type: 'asIs' };
   if (profile == null) return { type: 'asIs' };
 
@@ -188,9 +188,11 @@ function prepare(context,parentParam) {
       elseContext: new jbCtx(context,{profile: profile['else'] || 0 , path: '~else'}),
       elseParentParam: { type: parentParam_type, as:jstype }
     }
-  var comp_name = compName(profile);
+  var comp_name = compName(profile,parentParam);
   if (!comp_name)
-    return { type: 'ignore' }
+    return { type: 'asIs' }
+  // if (!comp_name)
+  //   return { type: 'ignore' }
   var comp = jb.comps[comp_name];
   if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined'); return { type:'null' } }
   if (!comp.impl) { logError('component ' + comp_name + ' has no implementation'); return { type:'null' } }
@@ -463,11 +465,16 @@ function sugarProp(profile) {
     .filter(p=>['$vars','$debugger','$log'].indexOf(p[0]) == -1)[0]
 }
 
-function compName(profile) {
-  if (!profile) return;
+function singleInType(profile,parentParam) {
+  var _type = parentParam && parentParam.type && parentParam.type.split('[')[0];
+  return _type && jb.comps[_type] && jb.comps[_type].singleInType && _type;
+}
+
+function compName(profile,parentParam) {
+  if (!profile || Array.isArray(profile)) return;
   if (profile.$) return profile.$;
   var f = sugarProp(profile);
-  return f && f[0].slice(1);
+  return (f && f[0].slice(1)) || singleInType(profile,parentParam);
 }
 
 // give a name to the impl function. Used for tgp debugging

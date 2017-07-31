@@ -38,8 +38,9 @@ jb.component('menu.dynamic-options', {
 jb.component('menu.end-with-separator', {
   type: 'menu.option',
   params: [
-	{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
-	{ id: 'separator', type: 'menu.option', as: 'array',defaultValue :{$: 'menu.separator'} },
+    { id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
+    { id: 'separator', type: 'menu.option', as: 'array', defaultValue :{$: 'menu.separator' } }, 
+    { id: 'title', as: 'string' }
   ],
   impl: (ctx) => {
   	var options = ctx.params.options();

@@ -35,7 +35,7 @@ jb.component('studio.suggestions-itemlist', {
       },
       {$: 'css.border', width: '1', color: '#cdcdcd' },
       {$: 'css.padding', top: '2', left: '3', selector: 'li' },
-      {$: 'hidden', showCondition :{ $notEmpty: '%$suggestionData/options%' } },
+      {$: 'feature.if', showCondition :{ $notEmpty: '%$suggestionData/options%' } },
     ]
   }
 })
@@ -160,8 +160,8 @@ jb.component('studio.jb-floating-input', {
       },
       features :[
         {$: 'css.padding', left: '4', right: '4' },
-        {$: 'feature.onEnter', action: { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } },
-        {$: 'feature.onEsc', action: { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } },
+        {$: 'feature.onEnter', action: [{ $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } ,   {$: 'tree.regain-focus' }]},
+        {$: 'feature.onEsc', action: [{ $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } ,   {$: 'tree.regain-focus' }]},
       ],
     }
 })

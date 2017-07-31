@@ -27,6 +27,23 @@ jb.component('layout.horizontal', {
   }
 })
 
+jb.component('layout.horizontal-fixed-split', {
+  type: 'group.style',
+  params: [,
+    { id: 'leftWidth', as: 'number', defaultValue: 200, essential: true },
+    { id: 'rightWidth', as: 'number', defaultValue: 200, essential: true },
+    { id: 'spacing', as: 'number', defaultValue: 3 },
+  ],
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('div',{},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
+    css: `{display: flex}
+        >*:first-child { margin-right: %$spacing%px; flex: 0 0 %$leftWidth%px; width: %$leftWidth%px; }
+        >*:last-child { margin-right:0; flex: 0 0 %$rightWidth%px; width: %$rightWidth%px; }`,
+    features :{$: 'group.init-group'}
+  }
+})
+
 jb.component('layout.horizontal-wrapped', {
   type: 'group.style',
   params: [,
@@ -107,9 +124,9 @@ jb.component('flex-item.align-self', {
 //     ],
 //     impl: (ctx,title,basis,grow,shrink) => {
 //       var css = [
-//         `flex-basis: ${basis}`, 
-//         `flex-grow: ${grow}`, 
-//         `flex-shrink: ${shrink}`, 
+//         `flex-basis: ${basis}`,
+//         `flex-grow: ${grow}`,
+//         `flex-shrink: ${shrink}`,
 //       ].join('; ');
 
 //       return jb_ui.Comp({ template: `<div style="${css}"></div>`},ctx)
