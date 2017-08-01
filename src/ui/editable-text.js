@@ -37,6 +37,8 @@ jb.component('editable-text.helper-popup', {
     { id: 'popupId', as: 'string', essential: true },
     { id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.popup' } },
     { id: 'showHelper', as: 'boolean', dynamic: true, defaultValue :{$notEmpty: '%value%' }, description: 'show/hide helper according to input content' },
+    { id: 'onEnter', type: 'action', dynamic: true },
+    { id: 'onEsc', type: 'action', dynamic: true },
   ],
   impl : ctx =>({
     onkeyup: true,
@@ -66,9 +68,16 @@ jb.component('editable-text.helper-popup', {
       var keyup = cmp.ctx.vars.selectionKeySource.keyup = cmp.onkeyup.delay(1); // delay to have input updated
       cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown;
 
+      jb.delay(500).then(_=>{
+        cmp.onkeydown.filter(e=> e.keyCode == 13 && !ctx.params.showHelper(cmp.ctx.setData(input)) ).subscribe(_=>
+          ctx.params.onEnter(cmp.ctx));
+        cmp.onkeydown.filter(e=> e.keyCode == 27 ).subscribe(_=>
+          ctx.params.onEsc(cmp.ctx));
+      })
+
       keyup.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)
         .subscribe(_=>{
-          jb.logPerformance('helper-popup', ''+ctx.params.showHelper(ctx.setData(input)), ''+input.value );
+          jb.logPerformance('helper-popup', ''+ctx.params.showHelper(cmp.ctx.setData(input)), ''+input.value );
           if (!ctx.params.showHelper(cmp.ctx.setData(input))) {
             jb.logPerformance('helper-popup', 'close popup' );
             cmp.closePopup();

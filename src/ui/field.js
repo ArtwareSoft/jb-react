@@ -34,10 +34,18 @@ jb.component('field.databind', {
 jb.component('field.databind-text', {
   type: 'feature',
   params: [
-    { id: 'debounceTime', as: 'number', defaultValue: 500 },
+    { id: 'debounceTime', as: 'number', defaultValue: 0 },
   ],
-  impl: ctx => ({
+  impl: (ctx,debounceTime) => ({
       beforeInit: cmp => {
+        if (debounceTime) {
+          cmp.debouncer = new jb.rx.Subject();
+          cmp.debouncer.takeUntil( cmp.destroyed )
+          .distinctUntilChanged()
+          .debounceTime(debounceTime)
+          .subscribe(val=>cmp.jbModel(val))
+        }
+
         if (!ctx.vars.$model || !ctx.vars.$model.databind)
           return jb.logError('bind-field: No databind in model', ctx.vars.$model, ctx);
         cmp.state.title = ctx.vars.$model.title();
@@ -45,8 +53,11 @@ jb.component('field.databind-text', {
         cmp.state.model = jb.val(ctx.vars.$model.databind);
 
         cmp.jbModel = (val,source) => {
-          if (source == 'keyup') // make sure the input is inside the value
-            return jb.delay(1).then(_=>cmp.jbModel(val));
+          if (source == 'keyup') {
+            if (cmp.debouncer)
+              return cmp.debouncer.next(val);
+            return jb.delay(1).then(_=>cmp.jbModel(val)); // make sure the input is inside the value
+          }
 
           if (val === undefined)
             return jb.val(ctx.vars.$model.databind);

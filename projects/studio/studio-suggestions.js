@@ -154,14 +154,15 @@ jb.component('studio.jb-floating-input', {
             features :{$: 'dialog-feature.near-launcher-position' },
             control :{$: 'studio.suggestions-itemlist', path: '%$path%' },
             popupId: 'suggestions',
-            popupStyle :{$: 'dialog.popup' }
+            popupStyle :{$: 'dialog.popup' },
+            onEnter: [ { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } ,   {$: 'tree.regain-focus' }],
+            onEsc: [ { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } ,   {$: 'tree.regain-focus' }],
           },
         ],
       },
       features :[
         {$: 'css.padding', left: '4', right: '4' },
-        {$: 'feature.onEnter', action: [{ $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } ,   {$: 'tree.regain-focus' }]},
-        {$: 'feature.onEsc', action: [{ $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } ,   {$: 'tree.regain-focus' }]},
+//        {$: 'feature.onEsc', action: [{ $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } ,   {$: 'tree.regain-focus' }]},
       ],
     }
 })

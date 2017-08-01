@@ -1,11 +1,11 @@
 jb.component('editable-text.studio-primitive-text', {
   type: 'editable-text.style',
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
       features :{$: 'field.databind-text' },
-      template: (cmp,state,h) => h('input', { 
+      template: (cmp,state,h) => h('input', {
           class: 'mdl-textfield__input',
-          value: state.model, 
-          onchange: e => cmp.jbModel(e.target.value), 
+          value: state.model,
+          onchange: e => cmp.jbModel(e.target.value),
           onkeyup: e => cmp.jbModel(e.target.value,'keyup')
       }),
     css: `{ width: 367px} :focus { border-color: #3F51B5; border-width: 2px}`,
@@ -14,8 +14,8 @@ jb.component('editable-text.studio-primitive-text', {
 
 jb.component('button.select-profile-style', {
   type: 'button.style',
-  impl :{$: 'custom-style', 
-   template: (cmp,state,h) => 
+  impl :{$: 'custom-style',
+   template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup:ev => cmp.clicked(ev),
@@ -27,8 +27,8 @@ jb.component('button.select-profile-style', {
 
 jb.component('studio.property-toolbar-style', {
   type: 'button.style',
-  impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('i',{class: 'material-icons', 
+  impl :{$: 'custom-style',
+      template: (cmp,state,h) => h('i',{class: 'material-icons',
         onclick: ev => cmp.clicked(ev)
       },'more_vert'),
       css: `{ cursor: pointer;width: 16px; font-size: 16px; padding-top: 3px }`,
@@ -38,8 +38,8 @@ jb.component('studio.property-toolbar-style', {
 
 jb.component('editable-text.jb-editor-floating-input', {
   type: 'editable-text.style',
-  impl :{$: 'custom-style', 
-   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[ 
+  impl :{$: 'custom-style',
+   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
         h('input', { class: 'mdl-textfield__input', id: 'jb_input_' + state.fieldId, type: 'text',
             value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
@@ -49,7 +49,7 @@ jb.component('editable-text.jb-editor-floating-input', {
       ]),
       css: '{ margin-right: 13px; }', // for the x-button
       features :[
-          {$: 'field.databind-text', noUpdates: true },
+          {$: 'field.databind-text', debounceTime: 300 },
           {$: 'mdl-style.init-dynamic'}
       ],
   }
@@ -57,8 +57,8 @@ jb.component('editable-text.jb-editor-floating-input', {
 
 jb.component('button.studio-script', {
   type: 'button.style',
-  impl :{$: 'custom-style', 
-   template: (cmp,state,h) => 
+  impl :{$: 'custom-style',
+   template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup:ev => cmp.clicked(ev),
@@ -70,25 +70,25 @@ jb.component('button.studio-script', {
 
 // jb.component('button.studio-script2', {
 //   type: 'button.style',
-//   impl :{$: 'custom-style', 
-//       template: (cmp,state,h) => h('div', { title: state.title, onclick: _ => cmp.clicked() }, 
+//   impl :{$: 'custom-style',
+//       template: (cmp,state,h) => h('div', { title: state.title, onclick: _ => cmp.clicked() },
 //         h('div',{class:'inner-text'},state.title)),
 //           css: `>.inner-text {
 //   white-space: nowrap; overflow-x: hidden;
-//   display: inline; height: 16px; 
+//   display: inline; height: 16px;
 //   padding-left: 4px; padding-top: 2px;
-//   font: 12px "arial"; color: #555555; 
+//   font: 12px "arial"; color: #555555;
 // }
 
 // {
 //   width: 149px;
 //   border: 1px solid #ccc; border-radius: 4px;
 //   cursor: pointer;
-//   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); 
+//   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
 //   background: #eee;
 //   white-space: nowrap; overflow-x: hidden;
 //   text-overflow: ellipsis;
-// }`, 
+// }`,
 // }
 // })
 
@@ -106,19 +106,19 @@ jb.component('button.studio-script', {
 
 jb.component('picklist.studio-enum', {
   type: 'picklist.style',
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
       features :{$: 'field.databind' },
       template: (cmp,state,h) => h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
 { display: block; padding: 0; width: 150px; font-size: 12px; height: 23px;
-	color: #555555; background-color: #fff; 
+	color: #555555; background-color: #fff;
 	border: 1px solid #ccc; border-radius: 4px;
-	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); 
-	transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; 
+	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+	transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
 }
-:focus { border-color: #66afe9; outline: 0; 
+:focus { border-color: #66afe9; outline: 0;
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
 ::placeholder { color: #999; opacity: 1; }
     `
@@ -127,9 +127,9 @@ jb.component('picklist.studio-enum', {
 
 
 jb.component('property-sheet.studio-properties', {
-  type: 'group.style', 
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group' }, 
+  type: 'group.style',
+  impl :{$: 'custom-style',
+    features :{$: 'group.init-group' },
     template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
       h('tr',{ class: 'property' },[
           h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
@@ -146,9 +146,9 @@ jb.component('property-sheet.studio-properties', {
 })
 
 jb.component('property-sheet.studio-properties-in-tgp', {
-  type: 'group.style', 
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group' }, 
+  type: 'group.style',
+  impl :{$: 'custom-style',
+    features :{$: 'group.init-group' },
     template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
       h('tr',{ class: 'property' },[
           h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
@@ -183,15 +183,15 @@ jb.component('property-sheet.studio-properties-in-tgp', {
 
 
 jb.component('property-sheet.studio-plain', {
-  type: 'group.style', 
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group' }, 
+  type: 'group.style',
+  impl :{$: 'custom-style',
+    features :{$: 'group.init-group' },
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property' },[
           h('label',{ class: 'property-title', title: ctrl.title}, ctrl.title),
           h('div',{ class: 'input-and-toolbar'}, [
             h(ctrl),
-            h(ctrl.jbComp.toolbar)  
+            h(ctrl.jbComp.toolbar)
           ])
     ]))),
     css: `>.property { margin-bottom: 5px; display: flex }
@@ -216,8 +216,8 @@ jb.component('property-sheet.studio-plain', {
 jb.component('editable-boolean.studio-expand-collapse-in-toolbar', {
   type: 'editable-boolean.style',
   impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button', 
-          onclick: _=> cmp.toggle(), 
+      template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
+          onclick: _=> cmp.toggle(),
           title: cmp.jbModel() ? 'collapse' : 'expand'},
             h('i',{class: 'material-icons'}, cmp.jbModel() ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
           ),
@@ -229,8 +229,8 @@ jb.component('editable-boolean.studio-expand-collapse-in-toolbar', {
 jb.component('editable-boolean.studio-expand-collapse-in-array', {
   type: 'editable-boolean.style',
   impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button', 
-          onclick: _=> cmp.toggle(), 
+      template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
+          onclick: _=> cmp.toggle(),
           title: cmp.jbModel() ? 'collapse' : 'expand'},
             h('i',{class: 'material-icons'}, cmp.jbModel() ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
           ),
@@ -245,7 +245,7 @@ jb.component('dialog.studio-multiline-edit',{
 	type: 'dialog.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
-      h('button',{class: 'dialog-close', onclick: 
+      h('button',{class: 'dialog-close', onclick:
         _=> cmp.dialogClose() },'×'),
       h(state.contentComp),
     ]),
@@ -253,15 +253,15 @@ jb.component('dialog.studio-multiline-edit',{
 					box-shadow: 2px 2px 3px #d5d5d5; padding: 3px; border: 1px solid rgb(213, 213, 213)
 				  }
 				>.dialog-close {
-						position: absolute; 
-						cursor: pointer; 
-						right: -7px; top: -22px; 
-						font: 21px sans-serif; 
-						border: none; 
-						background: transparent; 
-						color: #000; 
-						text-shadow: 0 1px 0 #fff; 
-						font-weight: 700; 
+						position: absolute;
+						cursor: pointer;
+						right: -7px; top: -22px;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
 						opacity: .2;
 				}
 				>.dialog-close:hover { opacity: .5 }
@@ -292,29 +292,29 @@ jb.component('dialog-feature.studio-position-under-property', {
 })
 
 jb.component('group.studio-properties-accordion', {
-  type: 'group.style', 
-  impl :{$: 'custom-style', 
+  type: 'group.style',
+  impl :{$: 'custom-style',
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
         state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
           h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
             h('div',{ class: 'title'}, ctrl.title),
-            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) }, 
+            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) },
               h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
             )
-          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)        
+          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)
     )),
     css: `>.accordion-section>.header { cursor: pointer; display: flex; flex-direction: row; background: #eee; margin-bottom: 2px; justify-content: space-between}
 >.accordion-section>.header>button:hover { background: none }
 >.accordion-section>.header>button { margin-left: auto }
 >.accordion-section>.header>button>i { color: #; cursor: pointer }
->.accordion-section>.header>.title { margin: 5px } 
+>.accordion-section>.header>.title { margin: 5px }
 >.accordion-section:last-child() { padding-top: 2px }
-`, 
-      features : [ 
+`,
+      features : [
         {$: 'group.init-group' },
         {$: 'group.init-accordion', keyboardSupport: true, autoFocus: true },
         ctx =>({
-          afterViewInit: cmp => 
+          afterViewInit: cmp =>
             ctx.vars.PropertiesDialog.openFeatureSection = _ => cmp.show(1)
         })
       ]
@@ -322,7 +322,7 @@ jb.component('group.studio-properties-accordion', {
 })
 
 jb.component('label.studio-message', {
-  type: 'label.style', 
+  type: 'label.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.title),
     css: `{ position: absolute;
