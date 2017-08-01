@@ -29,9 +29,10 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
         st.previewjb.studio.initEventTracker();
+      ['jb-component','jb-param'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
 
 			fixInvalidUrl()
-			
+
 			function fixInvalidUrl() {
 				var profile_path = location.href.split('/project/studio/').pop().split('/')[2] || '';
 				if (!profile_path || jb.studio.valOfPath(profile_path,true) != null) return;

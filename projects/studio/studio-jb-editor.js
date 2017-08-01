@@ -159,7 +159,9 @@ jb.component('studio.jb-editor', {
         ]
       }
     ],
-    features :{$: 'css.padding', top: '10' }
+    features: [
+      {$: 'css.padding', top: '10' },
+    ]
   }
 })
 
@@ -235,57 +237,89 @@ jb.component('studio.data-browse', {
 })
 
 jb.component('studio.open-jb-edit-property', {
-  type: 'action',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'action.switch',
+  type: 'action', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'action.switch', 
     $vars: {
-      actualPath :{$: 'studio.jb-editor-path-for-edit', path: '%$path%' }
-    },
+      actualPath :{$: 'studio.jb-editor-path-for-edit', path: '%$path%' }, 
+      paramDef :{$: 'studio.param-def', path: '%$actualPath%' }
+    }, 
     cases: [
-      {$: 'action.switch-case',
-        condition :{$: 'is-of-type',
-          type: 'function',
-          obj :{$: 'studio.val', path: '%$actualPath%' }
-        },
-        action :{$: 'studio.edit-source', path: '%$actualPath%' }
-      },
-      {$: 'action.switch-case',
-        condition :{$: 'studio.is-of-type', path: '%$actualPath%', type: 'data,boolean' },
-        action :{$: 'open-dialog',
-          style :{$: 'dialog.studio-jb-editor-popup' },
-          content :{$: 'studio.jb-floating-input', path: '%$actualPath%' },
+      {$: 'action.switch-case', 
+        condition :{$: 'ends-with', 
+          type: 'array', 
+          obj :{$: 'studio.val', path: '%$actualPath%' }, 
+          endsWith: '$vars', 
+          text: '%$path%'
+        }
+      }, 
+      {$: 'action.switch-case', 
+        condition: '%$paramDef/options%', 
+        action :{$: 'open-dialog', 
+          style :{$: 'dialog.studio-jb-editor-popup' }, 
+          content :{$: 'group', 
+            controls: [{$: 'studio.jb-floating-input-rich', path: '%$actualPath%' }], 
+            features: [
+              {$: 'feature.onEsc', 
+                action :{$: 'dialog.close-containing-popup', OK: true }
+              }, 
+              {$: 'feature.onEnter', 
+                action: [
+                  {$: 'dialog.close-containing-popup', OK: true }, 
+                  {$: 'tree.regain-focus' }
+                ]
+              }
+            ]
+          }, 
           features: [
-            {$: 'dialog-feature.auto-focus-on-first-input' },
-            {$: 'dialog-feature.onClose',
+            {$: 'dialog-feature.auto-focus-on-first-input' }, 
+            {$: 'dialog-feature.onClose', 
+              action :{$: 'tree.regain-focus' }
+            }
+          ]
+        }
+      }, 
+      {$: 'action.switch-case', 
+        condition :{$: 'is-of-type', 
+          type: 'function', 
+          obj :{$: 'studio.val', path: '%$actualPath%' }
+        }, 
+        action :{$: 'studio.edit-source', path: '%$actualPath%' }
+      }, 
+      {$: 'action.switch-case', 
+        condition :{$: 'studio.is-of-type', path: '%$actualPath%', type: 'data,boolean' }, 
+        action :{$: 'open-dialog', 
+          style :{$: 'dialog.studio-jb-editor-popup' }, 
+          content :{$: 'studio.jb-floating-input', path: '%$actualPath%' }, 
+          features: [
+            {$: 'dialog-feature.auto-focus-on-first-input' }, 
+            {$: 'dialog-feature.onClose', 
               action :{
                 $runActions: [
-                  {$: 'toggle-boolean-value',
+                  {$: 'toggle-boolean-value', 
                     of: '%$studio/jb_preview_result_counter%'
-                  },
+                  }, 
                   {$: 'tree.regain-focus' }
                 ]
               }
             }
           ]
         }
-      },
-      {$: 'action.switch-case',
+      }, 
+      {$: 'action.switch-case', 
         $vars: {
-          ptsOfType :{$: 'studio.PTs-of-type',
+          ptsOfType :{$: 'studio.PTs-of-type', 
             type :{$: 'studio.param-type', path: '%$actualPath%' }
           }
-        },
-        condition :{$: 'equals',
-          item1 :{$: 'count', items: '%$ptsOfType%' },
-          item2: '1'
-        },
+        }, 
+        condition: '%$ptsOfType/length% == 1', 
         action :{$: 'studio.set-comp', path: '%$path%', comp: '%$ptsOfType[0]%' }
       }
-    ],
-    defaultAction :{$: 'studio.open-new-profile-dialog',
-      path: '%$actualPath%',
-      type :{$: 'studio.param-type', path: '%$actualPath%' },
-      mode: 'update',
+    ], 
+    defaultAction :{$: 'studio.open-new-profile-dialog', 
+      path: '%$actualPath%', 
+      type :{$: 'studio.param-type', path: '%$actualPath%' }, 
+      mode: 'update', 
       onClose :{$: 'tree.regain-focus' }
     }
   }
@@ -347,6 +381,7 @@ jb.component('studio.jb-editor-menu', {
                         value: ''
                       },
                       {$: 'dialog.close-containing-popup', OK: true },
+                      {$:'tree.redraw' },
                       {$: 'tree.regain-focus' }
                     ]
                   }
@@ -356,10 +391,11 @@ jb.component('studio.jb-editor-menu', {
             features :{$: 'css.padding', top: '9', left: '20', right: '20' }
           },
           title: 'Add Property',
-          onOK :{$: 'write-value',
-            to :{$: 'studio.ref', path: '%$path%~%$name%' },
-            value: ''
-          },
+          // onOK : [{$: 'write-value',
+          //   to :{$: 'studio.ref', path: '%$path%~%$name%' },
+          //   value: ''
+          // },
+          // ],
           modal: 'true',
           features: [
             {$: 'var', name: 'name', mutable: true },
@@ -374,43 +410,7 @@ jb.component('studio.jb-editor-menu', {
       },
       {$: 'menu.action',
         title: 'Add variable',
-        action :{$: 'open-dialog',
-          id: 'add variable',
-          style :{$: 'dialog.popup', okLabel: 'OK', cancelLabel: 'Cancel' },
-          content :{$: 'group',
-            controls: [
-              {$: 'editable-text',
-                title: 'variable name',
-                databind: '%$name%',
-                style :{$: 'editable-text.mdl-input' },
-                features: [
-                  {$: 'feature.onEnter',
-                    action: [
-                      {$: 'write-value',
-                        to :{$: 'studio.ref', path: '%$path%~%$name%' },
-                        value: ''
-                      },
-                      {$: 'dialog.close-containing-popup', OK: true },
-                      {$: 'tree.regain-focus' }
-                    ]
-                  }
-                ]
-              }
-            ],
-            features :{$: 'css.padding', top: '9', left: '20', right: '20' }
-          },
-          title: 'New variable',
-          onOK :{$: 'write-value',
-            to :{$: 'studio.ref', path: '%$path%~%$name%' },
-            value: ''
-          },
-          modal: 'true',
-          features: [
-            {$: 'var', name: 'name', mutable: true },
-            {$: 'dialog-feature.near-launcher-position' },
-            {$: 'dialog-feature.auto-focus-on-first-input' }
-          ]
-        },
+        action :{$: 'studio.add-variable', path: '%$path%' },
         showCondition :{$: 'ends-with', endsWith: '~$vars', text: '%$path%' }
       },
       {$: 'menu.end-with-separator',
@@ -422,6 +422,7 @@ jb.component('studio.jb-editor-menu', {
             action :{$: 'runActions',
               actions: [
                 {$: 'studio.add-property', path: '%%' },
+                {$:'tree.redraw' },
                 {$: 'dialog.close-containing-popup' },
                 {$: 'write-value', to: '%$jbEditor_selection%', value: '%%' },
                 {$: 'studio.open-jb-edit-property', path: '%%' }
@@ -432,10 +433,15 @@ jb.component('studio.jb-editor-menu', {
       },
       {$: 'menu.action',
         title: 'Variables',
-        action :{$: 'write-value',
+        action :[
+          {$: 'write-value',
             to :{$: 'studio.ref', path: '%$path%~$vars' },
             value: {$: 'object'}
-        },
+          },
+          {$: 'write-value', to: '%$jbEditor_selection%', value: '%$path%~$vars' },
+          {$:'tree.redraw' },
+          {$: 'studio.add-variable', path: '%$path%~$vars' }
+        ],
         showCondition : {$and: [
           {$isEmpty: {$: 'studio.val', path: '%$path%~$vars' } },
           {$: 'is-of-type', obj: {$: 'studio.val', path: '%$path%' }, type: 'object' } ] }
@@ -580,6 +586,58 @@ jb.component('menu.studio-wrap-with-array', {
     }, else: []
   }
 })
+
+jb.component('studio.add-variable', {
+  type: 'action',
+  params: [
+    { id: 'path', as: 'string'},
+  ],
+  impl :{$: 'on-next-timer', action:{$: 'open-dialog',
+    id: 'add variable',
+    style :{$: 'dialog.popup', okLabel: 'OK', cancelLabel: 'Cancel' },
+    content :{$: 'group',
+      controls: [
+        {$: 'editable-text',
+          title: 'variable name',
+          databind: '%$name%',
+          style :{$: 'editable-text.mdl-input' },
+          features: [
+            {$: 'feature.onEnter',
+              action: [
+                {$: 'write-value',
+                  to :{$: 'studio.ref', path: '%$path%~%$name%' },
+                  value: ''
+                },
+                {$: 'dialog.close-containing-popup', OK: true },
+                {$: 'write-value', to: '%$jbEditor_selection%', value: '%$path%~%$name%' },
+                {$: 'tree.redraw', strong: true },
+                {$: 'tree.regain-focus' }
+              ]
+            }
+          ]
+        }
+      ],
+      features :{$: 'css.padding', top: '9', left: '20', right: '20' }
+    },
+    title: 'New variable',
+    // onOK :[
+    //   {$: 'write-value',
+    //     to :{$: 'studio.ref', path: '%$path%~%$name%' },
+    //     value: ''
+    //   },
+    //   {$: 'write-value', to: '%$jbEditor_selection%', value: '%$path%~%$name%' },
+    //   {$:'tree.redraw' },
+    //   {$: 'tree.regain-focus' },
+    // ],
+    modal: 'true',
+    features: [
+      {$: 'var', name: 'name', mutable: true },
+      {$: 'dialog-feature.near-launcher-position' },
+      {$: 'dialog-feature.auto-focus-on-first-input' }
+    ]
+  }}
+})
+
 
 jb.component('studio.expand-and-select-first-child-in-jb-editor', {
   type: 'action',

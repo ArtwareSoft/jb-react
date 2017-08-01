@@ -54,6 +54,7 @@ Object.assign(st,{
   compNameOfPath: (path,silent) => {
     if (path.indexOf('~') == -1)
       return 'jb-component';
+    if (path.match(/~\$vars$/)) return;
     var prof = st.valOfPath(path,silent); // + (path.indexOf('~') == -1 ? '~impl' : '');
   	return jb.compName(prof) || jb.compName(prof,st.paramDef(path))
   },
@@ -145,7 +146,7 @@ Object.assign(st, {
 		if (params.length == 1 && params[0].composite == true)
 			return st.setSugarComp(path,compName,params[0],srcCtx);
 
-		var result = { $: compName };
+		var result = comp.singleInType ? {} : { $: compName };
 		params.forEach(p=>{
 			if (p.composite)
 				result[p.id] = [];

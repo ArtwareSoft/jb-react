@@ -1,10 +1,14 @@
 cards for letmesee
 
+property description in jb-editor popup
+enums in jb-editor
+
 check install
+  fix babel to dev dependencies
 
 ctx counters
 probe record -
-  activate from jb-editor when not found.
+  show button (link) "detect in interaction".
   close (show) when found
 
 component header
@@ -19,14 +23,6 @@ fix group.wait.resource to variable
 
 new component
 	choose file: http://localhost:8082/?op=ls&path=projects/studio
-
-comp editor
-	type/params editor
-  open from inteli top
-
-
-js editing - studio.property-js-script
-  default value for empty ctx => ctx.data
 
 open profile chooser in suggestions
 	choose data

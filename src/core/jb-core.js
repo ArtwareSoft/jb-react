@@ -6,7 +6,7 @@ function jb_run(context,parentParam,settings) {
       if (context.probe.pathToTrace.indexOf(context.path) == 0)
         return context.probe.record(context,parentParam)
     }
-    if (profile === null || (typeof profile == 'object' && profile.$disabled))
+    if (profile == null || (typeof profile == 'object' && profile.$disabled))
       return castToParam(null,parentParam);
 
     if (profile.$debugger == 0) debugger;
@@ -639,6 +639,7 @@ return {
   ctxDictionary: ctxDictionary,
   testers: testers,
   compParams: compParams,
+  singleInType: singleInType,
   val: val,
   entries: entries,
   extend: extend,

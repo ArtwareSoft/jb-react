@@ -253,6 +253,15 @@ jb.component('tree.regain-focus', {
 		ctx.vars.$tree && ctx.vars.$tree.regainFocus && ctx.vars.$tree.regainFocus()
 })
 
+jb.component('tree.redraw', {
+	type: 'action',
+  params: [
+    { id: 'strong', type: 'boolean', as: 'boolean' }
+  ],
+	impl : (ctx,strong) =>
+		ctx.vars.$tree && ctx.vars.$tree.regainFocus && ctx.vars.$tree.redraw(strong)
+})
+
 jb.component('tree.drag-and-drop', {
   type: 'feature',
   params: [

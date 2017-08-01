@@ -90,39 +90,49 @@ jb.component('studio-helper.pick-profile', {
 })
 
 jb.component('studio-helper.jb-editor', {
-  type: 'control',
-  params: [{ id: 'path', defaultValue: 'studio-helper-sample.component-header' }],
-  impl :{$: 'group',
+  type: 'control', 
+  params: [{ id: 'path', defaultValue: 'studio-helper-sample.component-header' }], 
+  impl :{$: 'group', 
+    title: 'main', 
+    style :{$: 'layout.flex', align: 'flex-start' }, 
     controls: [
-      {$: 'button',
-        title: 'open jbEditor',
-        action :{$: 'studio.open-jb-editor', path: 'studio-helper-sample.component-header' },
-        style :{$: 'button.href' }
-      },
-      {$: 'group',
-        $vars: {
-          circuit: 'studio-helper-dummy.label',
-          jbEditor :{$: 'object', selection: '' }
-        },
-        title: 'main',
-        style :{$: 'layout.flex', align: 'flex-start' },
+      {$: 'studio.jb-editor', 
+        path: 'studio-helper-sample.properties-params-prof'
+      }, 
+      {$: 'group', 
         controls: [
-          {$: 'studio.jb-editor', path: '%$path%' },
-          {$: 'editable-text',
-            databind :{$: 'studio.profile-as-text', path: '%$jbEditor_selection%' },
-            style :{$: 'editable-text.textarea' },
+          {$: 'label', 
+            title: 'aa -%$jbEditor_selection%', 
+            style :{$: 'label.span' }
+          }, 
+          {$: 'editable-text', 
+            databind :{$: 'studio.profile-as-text', path: '%$jbEditor_selection%' }, 
+            style :{$: 'editable-text.textarea' }, 
             features: [
-              {$: 'watch-ref', ref: '%$jbEditor_selection%' },
-              {$: 'css.width', width: '450' },
-              {$: 'css.height', height: '200' },
+              {$: 'css.width', width: '300' }, 
+              {$: 'css.height', height: '200' }, 
               {$: 'css.margin', left: '10' }
             ]
           }
-        ],
+        ], 
         features: [
-          {$: 'css', css: '{ height: 200px; padding: 50px }' },
-          {$: 'var', name: 'jbEditor_selection', mutable: true }
+          {$: 'watch-ref', 
+            path: '%$jbEditor_selection%', 
+            ref: '%$jbEditor_selection%'
+          }
         ]
+      }
+    ], 
+    features: [
+      {$: 'css', css: '{ height: 200px; padding: 50px }' }, 
+      {$: 'var', 
+        name: 'jbEditor_selection', 
+        value: 'studio-helper-sample.properties-params-prof', 
+        mutable: true
+      }, 
+      {$: 'var', 
+        name: 'circuit', 
+        value: 'studio-helper-sample.properties-params-prof'
       }
     ]
   }
@@ -377,17 +387,18 @@ jb.component('studio-helper-sample.properties-params', {
 })
 
 jb.component('studio-helper-sample.properties-params-prof', {
-  type: 'control',
-  impl :{$: 'studio-helper-sample.properties-params',
-    strAsComp :{ $pipeline: ['a', '%%'] },
-    strAsJs: ctx => ctx.vars.aa,
-    boolAsComp :{ $pipeline: ['a', '%%=="a"'] },
-    boolAsJs: ctx => ctx.vars.aa,
-    enumStr: 'b',
-    enumNum: '2',
-    bool :{ $or: [false] },
+  type: 'control', 
+  impl :{$: 'studio-helper-sample.properties-params', 
+    strAsComp :{ $pipeline: ['a', '%%'] }, 
+    strAsJs: ctx => ctx.vars.aa, 
+    boolAsComp :{ $pipeline: ['a', '%%=="a"'] }, 
+    boolAsJs: ctx => ctx.vars.aa, 
+    enumStr: 'c', 
+    enumNum: '1', 
+    bool :{ $or: [false] }, 
     style :{$: 'button.href' }
-  }
+  }, 
+  $vars: ''
 })
 
 jb.component('studio-helper-sample.custom-style-comp', {

@@ -64,6 +64,8 @@ st.jbEditorTree = class {
 		var compName = st.compNameOfPath(path);
     if (path.indexOf('~') == -1)
       compName = 'jb-component';
+    if (compName && compName.match(/case$/))
+      compName = 'case';
 		var prop = path.split('~').pop();
 		if (!isNaN(Number(prop))) // array value - title as a[i]
 			prop = path.split('~').slice(-2)
@@ -74,15 +76,11 @@ st.jbEditorTree = class {
 			summary = ': ' + st.summary(path).substr(0,20);
     if (typeof val == 'function')
       val = val.toString();
-    // if (path.indexOf('~impl~') == -1 && path.match(/~params~[0-9]*$/) && val)
-    //   summary = val.id;
 
 		if (compName)
 			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
 		else if (['string','boolean','number'].indexOf(typeof val) != -1)
 			return jb.ui.h('div',{},[prop + (collapsed ? ': ': ''),jb.ui.h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,50))]);
-    // else if (summary)
-  	// 		return jb.ui.h('div',{},[prop + ': ',jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
 
 		return prop + (Array.isArray(val) ? ` (${val.length})` : '');
 	}
@@ -192,6 +190,8 @@ Object.assign(st,{
 
 	summary: path => {
 		var val = st.valOfPath(path);
+    if (path.match(/~cases~[0-9]*$/))
+      return st.summary(path+'~condition');
 		if (val == null || typeof val != 'object') return '';
 		return Object.getOwnPropertyNames(val)
 			.filter(p=> p != '$')
