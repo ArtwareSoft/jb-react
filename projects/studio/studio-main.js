@@ -3,23 +3,26 @@ jb.resource('studio',{});
 jb.component('studio.all', {
   type: 'control',
   impl :{$: 'group',
-    style :{$: 'layout.vertical', spacing: '0' },
+//    style :{$: 'layout.vertical', spacing: '0' }, 
     controls: [
-      {$:'studio.top-bar' },
-      {$: 'studio.preview-widget', width: 1280, height: 520,
-        features :{$: 'watch-ref', ref: '%$studio/page%'}
+      {$: 'studio.top-bar' },
+      {$: 'studio.preview-widget',
+        features :{$: 'watch-ref', ref: '%$studio/page%' },
+        width: 1280,
+        height: 520
       },
-      {$: 'studio.pages' },
+      {$: 'studio.pages' }
     ],
     features: [
       {$: 'group.data', data: '%$studio/project%', watch: true },
       {$: 'feature.init',
-        action :[
-            {$: 'url-history.map-url-to-resource',
-          params: ['project', 'page', 'profile_path'],
-          resource: 'studio', base: 'studio',
-//          onUrlChange :{$: 'studio.refresh-preview' }
-        }]
+        action: [
+          {$: 'url-history.map-url-to-resource',
+            params: ['project', 'page', 'profile_path'],
+            resource: 'studio',
+            base: 'studio'
+          }
+        ]
       }
     ]
   }
