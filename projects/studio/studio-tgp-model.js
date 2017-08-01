@@ -268,11 +268,12 @@ Object.assign(st,{
 	},
 
 	isOfType: (path,type) => {
+    if (path.indexOf('~') == -1)
+		  return st.isCompNameOfType(path,type);
 		var paramDef = st.paramDef(path);
 		if (paramDef)
 			return (paramDef.type || 'data').split(',')
 				.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length;
-		return st.isCompNameOfType(st.compNameOfPath(path),type);
 	},
 	// single first param type
 	paramTypeOfPath: path => {

@@ -7,12 +7,12 @@ jb.component('studio.components-cross-ref',{
 
 	  var refs = {}, comps = _jb.comps;
 
-      Object.getOwnPropertyNames(comps).forEach(k=>
+      Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
       	refs[k] = {
       		refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
       		by: []
       });
-      Object.getOwnPropertyNames(comps).forEach(k=>
+      Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
       	refs[k].refs.forEach(cross=>
       		refs[cross] && refs[cross].by.push(k))
       );
