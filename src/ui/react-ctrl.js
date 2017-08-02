@@ -381,9 +381,12 @@ ui.item = function(cmp,vdom,data) {
 
 ui.watchRef = function(ctx,cmp,ref,includeChildren) {
     ref && ui.refObservable(ref,cmp,{includeChildren: includeChildren, throw: true})
-			.catch(e=>{ return []}) // jb.logException(e,'watch ref',cmp,ref); 
-			.subscribe(e=>
-        ui.setState(cmp,null,e,ctx))
+			.catch(e=>{ return []}) // jb.logException(e,'watch ref',cmp,ref);
+			.subscribe(e=>{
+        if (ctx && ctx.profile && ctx.profile.$trace)
+          console.log('ref change watched: ' + (ref && ref.$jb_path && ref.$jb_path.join('~')),e,cmp,ref,ctx);
+        return ui.setState(cmp,null,e,ctx);
+      })
 }
 
 ui.toVdomOrStr = val => {

@@ -39,7 +39,7 @@ jb.component('menu.end-with-separator', {
   type: 'menu.option',
   params: [
     { id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
-    { id: 'separator', type: 'menu.option', as: 'array', defaultValue :{$: 'menu.separator' } }, 
+    { id: 'separator', type: 'menu.option', as: 'array', defaultValue :{$: 'menu.separator' } },
     { id: 'title', as: 'string' }
   ],
   impl: (ctx) => {
@@ -204,23 +204,24 @@ jb.component('menu.init-popup-menu', {
 	  			cmp.ctx.vars.topMenu.popups.pop();
 			};
 
-			if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
-				var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
+      jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
+  			if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
+  				var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
 
-			    keydown.filter(e=>e.keyCode == 39) // right arrow
-		    	    .subscribe(x=>{
-		        		if (ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup)
-		        			cmp.openPopup();
-		        	})
-			    keydown.filter(e=>e.keyCode == 37) // left arrow
-		    	    .subscribe(x=>{
-		        		if (cmp.ctx.vars.topMenu.popups.slice(-1)[0] == ctx.vars.menuModel) {
-		        			ctx.vars.topMenu.selected = ctx.vars.menuModel;
-		        			cmp.closePopup();
-		        		}
-		        	})
-			}
-
+  			    keydown.filter(e=>e.keyCode == 39) // right arrow
+  		    	    .subscribe(x=>{
+  		        		if (ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup)
+  		        			cmp.openPopup();
+  		        	})
+  			    keydown.filter(e=>e.keyCode == 37) // left arrow
+  		    	    .subscribe(x=>{
+  		        		if (cmp.ctx.vars.topMenu.popups.slice(-1)[0] == ctx.vars.menuModel) {
+  		        			ctx.vars.topMenu.selected = ctx.vars.menuModel;
+  		        			cmp.closePopup();
+  		        		}
+  		        	})
+          }
+      })
 		}
   	})
 })

@@ -106,7 +106,7 @@ jb.component('action.if', {
 jb.component('jb-run', {
  	type: 'action',
  	params: [
- 		{ id: 'profile', as: 'string', essential: true},
+ 		{ id: 'profile', as: 'string', essential: true, description: 'profile name'},
  		{ id: 'params', as: 'single' },
  	],
  	impl: (ctx,profile,params) =>
@@ -157,6 +157,7 @@ jb.component('first', {
 
 jb.component('property-names', {
 	type: 'data',
+  description: 'Object.getOwnPropertyNames',
 	params: [
 		{ id: 'obj', defaultValue: '%%', as: 'single' }
 	],
@@ -166,6 +167,7 @@ jb.component('property-names', {
 
 jb.component('assign', {
 	type: 'data',
+  description: 'Object.assign',
 	params: [
 		{ id: 'property', essential: true, as: 'string' },
 		{ id: 'value', essential: true },
@@ -241,7 +243,7 @@ jb.component('remove-suffix',{
 jb.component('remove-suffix-regex',{
 	type: 'data',
 	params: [
-		{ id: 'suffix', as: 'string', essential: true },
+		{ id: 'suffix', as: 'string', essential: true, description: 'regular expression. e.g [0-9]*' },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: function(context,suffix,text) {

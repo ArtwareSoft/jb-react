@@ -1,7 +1,7 @@
 (function() { var st = jb.studio;
 
 //  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
-jb.issuesTolog = ['focus'];
+jb.issuesTolog = [];
 
 function compsRef(val,opEvent) {
   if (typeof val == 'undefined')

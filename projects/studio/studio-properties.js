@@ -100,6 +100,7 @@ jb.component('studio.properties', {
         ],
         features: [
           {$: 'group.dynamic-titles' },
+          {$: 'studio.watch-path', path: '%$path%~features' },
           {$: 'hidden',
             showCondition :{$: 'studio.has-param',
               remark: 'not a control',

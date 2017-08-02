@@ -389,7 +389,7 @@ jb.component('studio-helper-sample.properties-params', {
 jb.component('studio-helper-sample.properties-params-prof', {
   type: 'control', 
   impl :{$: 'studio-helper-sample.properties-params', 
-    strAsComp :{ $pipeline: ['a', '%%'] }, 
+    strAsComp :{ $pipeline: [{$: 'slice' }, '%%'] }, 
     strAsJs: ctx => ctx.vars.aa, 
     boolAsComp :{ $pipeline: ['a', '%%=="a"'] }, 
     boolAsJs: ctx => ctx.vars.aa, 

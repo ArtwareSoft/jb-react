@@ -3,7 +3,6 @@ jb.resource('studio',{});
 jb.component('studio.all', {
   type: 'control',
   impl :{$: 'group',
-//    style :{$: 'layout.vertical', spacing: '0' }, 
     controls: [
       {$: 'studio.top-bar' },
       {$: 'studio.preview-widget',
@@ -11,7 +10,8 @@ jb.component('studio.all', {
         width: 1280,
         height: 520
       },
-      {$: 'studio.pages' }
+      {$: 'studio.pages' },
+      {$: 'studio.ctx-counters' },
     ],
     features: [
       {$: 'group.data', data: '%$studio/project%', watch: true },
@@ -125,6 +125,22 @@ jb.component('studio.pages', {
         loadingControl :{ $label: '...' }
       },
       {$: 'studio.watch-components' }
+    ]
+  }
+})
+
+jb.component('studio.ctx-counters', {
+  type: 'control',
+  impl :{$: 'label',
+    title: ctx => Math.floor(100 * performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit) + '% memory',
+    //jb.ctxCounter() + '/' + jb.studio.previewjb.ctxCounter(),
+    features: [
+      {$: 'css',
+        css: '{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'
+      },
+      {$: 'watch-observable', $trace1: true,
+        toWatch: ctx => jb.studio.compsRefHandler.resourceChange.debounceTime(500).do(_=console.log('hello'))
+      }
     ]
   }
 })

@@ -143,37 +143,49 @@ jb.component('studio.jb-floating-input-rich', {
 })
 
 jb.component('studio.jb-floating-input', {
-  type: 'control',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'group',
-     controls:{$: 'editable-text',
-        title :{$: 'studio.prop-name', path: '%$path%' },
-        databind :{$: 'studio.profile-value-as-text', path: '%$path%' },
-        updateOnBlur: true,
-        style :{$: 'editable-text.jb-editor-floating-input'},
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'group', 
+    controls: [
+      {$: 'editable-text', 
+        title :{$: 'studio.prop-name', path: '%$path%' }, 
+        databind :{$: 'studio.profile-value-as-text', path: '%$path%' }, 
+        updateOnBlur: true, 
+        style :{$: 'editable-text.jb-editor-floating-input' }, 
         features: [
-          {$: 'var',
-            name: 'suggestionData',
-            value :{$: 'object', selected: '', options: [], path: '%$path%' },
+          {$: 'var', 
+            name: 'suggestionData', 
+            value :{$: 'object', selected: '', options: [], path: '%$path%' }, 
             mutable: true
-          },
-//          {$: 'studio.undo-support', path: '%$path%' },
-          {$: 'editable-text.helper-popup',
-            showHelper :{$: 'studio.show-suggestions' },
-            features :{$: 'dialog-feature.near-launcher-position' },
-            control :{$: 'studio.suggestions-itemlist', path: '%$path%' },
-            popupId: 'suggestions',
-            popupStyle :{$: 'dialog.popup' },
-            onEnter: [ { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } ,   {$: 'tree.regain-focus' }],
-            onEsc: [ { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } ,   {$: 'tree.regain-focus' }],
-          },
-        ],
-      },
-      features :[
-        {$: 'css.padding', left: '4', right: '4' },
-//        {$: 'feature.onEsc', action: [{ $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } ,   {$: 'tree.regain-focus' }]},
-      ],
-    }
+          }, 
+          {$: 'editable-text.helper-popup', 
+            features :{$: 'dialog-feature.near-launcher-position' }, 
+            control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
+            popupId: 'suggestions', 
+            popupStyle :{$: 'dialog.popup' }, 
+            showHelper :{$: 'studio.show-suggestions' }, 
+            onEnter: [
+              {$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' }, 
+              {$: 'tree.regain-focus' }
+            ], 
+            onEsc: [
+              {$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' }, 
+              {$: 'tree.regain-focus' }
+            ]
+          }
+        ]
+      }, 
+      {$: 'label', 
+        title :{
+          $pipeline: [{$: 'studio.param-def', path: '%$path%' }, '%description%']
+        }
+      }
+    ], 
+    features: [
+      {$: 'css.padding', left: '4', right: '4' }, 
+      {$: 'css.margin', top: '-20', selector: '>*:last-child' }
+    ]
+  }
 })
 
 jb.component('studio.paste-suggestion', {

@@ -73,7 +73,7 @@ function jb_run(context,parentParam,settings) {
         if (profile.$log)
           console.log(contextWithVars.run(profile.$log));
 
-        if (profile.$trace) console.log('trace: ' + context.path, compName(profile,parentParam),contextWithVars,out,run);
+        if (profile.$trace) console.log('trace: ' + context.path,context,out,run);
 
         return castToParam(out,parentParam);
     }
@@ -643,6 +643,7 @@ return {
   val: val,
   entries: entries,
   extend: extend,
+  ctxCounter: _ => ctxCounter
 }
 
 })();

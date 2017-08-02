@@ -1,23 +1,26 @@
 cards for letmesee
 
+suggestions css width
+  =sl -> jb-core.js:551 refresh: object not found: suggestionData:36859~selected
+
 property description in jb-editor popup
-enums in jb-editor
+  css
+
+add studio-settings.js
+  synonyms (use for search)
+    separator - delimiter
+  auto description by param obj
+    as: ref
+
+
+fix padding of tgp-in-array
 
 check install
   fix babel to dev dependencies
 
-ctx counters
 probe record -
-  show button (link) "detect in interaction".
+  show button (link) "detect input with interaction".
   close (show) when found
-
-component header
-  param properties
-  add param
-
-jb-editor variables -
-  enter name of first var
-  do not allow to override the $vars obj by Enter
 
 fix group.wait.resource to variable
 
