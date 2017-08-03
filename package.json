@@ -13,6 +13,7 @@
   ],
   "scripts": {
     "start": "npm run studio",
+    "jb-elec": "node_modules/electron/dist/electron jb-electron",
     "dev": "concurrently \"npm run webpack\" \"npm run studio\" ",
     "webpack": "node node_modules/webpack/bin/webpack.js --watch",
     "studio": "npm run openStudio & node jb-studio-server.js",
@@ -36,6 +37,7 @@
     "babel-preset-react": "^6.24.1",
     "babel-standalone": "^6.24.0",
     "concurrently": "^2.2.0",
+    "electron": "^1.6.11",
     "pretty": "^2.0.0",
     "uglifyjs-webpack-plugin": "^0.4.3"
   },

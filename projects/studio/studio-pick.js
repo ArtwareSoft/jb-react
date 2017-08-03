@@ -70,7 +70,7 @@ jb.component('dialog-feature.studio-pick', {
 	  disableChangeDetection: true,
       init: cmp=> {
 		  var _window = ctx.params.from == 'preview' ? st.previewWindow : window;
-		  var previewOffset = ctx.params.from == 'preview' ? $('#jb-preview').offset().top : 0;
+		  var previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
 		  cmp.titleBelow = false;
 
 		  var mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
@@ -101,8 +101,10 @@ jb.component('dialog-feature.studio-pick', {
 		  	.last()
 		  	.subscribe(x=> {
 		  		ctx.vars.$dialog.close({OK:true});
-		  		jb.delay(200).then(_=>
-		  			st.previewWindow && st.previewWindow.getSelection() && st.previewWindow.getSelection().empty())
+		  		jb.delay(200).then(_=> {
+            if (st.previewWindow && st.previewWindow.getSelection())
+              st.previewWindow.getSelection().innerHTML = ''
+            })
 		  	})
 		}
 	})
@@ -110,7 +112,7 @@ jb.component('dialog-feature.studio-pick', {
 
 function pathFromElem(_window,profElem) {
 	try {
-		return _window.jb.ctxDictionary[profElem.attr('jb-ctx') || profElem.parent().attr('jb-ctx')].path;
+		return _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx') || profElem.parentElement.getAttribute('jb-ctx')].path;
 	} catch (e) {
 		return '';
 	}
@@ -119,61 +121,62 @@ function pathFromElem(_window,profElem) {
 
 function eventToProfile(e,_window) {
 	var mousePos = {
-		x: e.pageX - $(_window).scrollLeft(), y: e.pageY - $(_window).scrollTop()
+		x: e.pageX - document.body.scrollLeft, y: e.pageY - - document.body.scrollTop
 	};
-	var $el = $(_window.document.elementFromPoint(mousePos.x, mousePos.y));
-	if (!$el[0]) return;
-	var results = Array.from($($el.get().concat($el.parents().get()))
+	var el = _window.document.elementFromPoint(mousePos.x, mousePos.y);
+	if (!el) return;
+	var results = Array.from([el].concat(jb.ui.parents(el))
 		.filter((i,e) =>
-			$(e).attr('jb-ctx') ));
+			e.getAttribute('jb-ctx') ));
 	if (results.length == 0) return [];
 
 	// promote parents if the mouse is near the edge
 	var first_result = results.shift(); // shift also removes first item from results!
-	var edgeY = Math.max(3,Math.floor($(first_result).height() / 10));
-	var edgeX = Math.max(3,Math.floor($(first_result).width() / 10));
+	var edgeY = Math.max(3,Math.floor(jb.ui.outerHeight(first_result) / 10));
+	var edgeX = Math.max(3,Math.floor(jb.ui.outerWidth(first_result) / 10));
 
 	var orderedResults = results.filter(elem=>{
-		return Math.abs(mousePos.y - $(elem).offset().top) < edgeY || Math.abs(mousePos.x - $(elem).offset().left) < edgeX;
+		return Math.abs(mousePos.y - jb.ui.offset(elem).top) < edgeY || Math.abs(mousePos.x - jb.ui.offset(elem).left) < edgeX;
 	}).concat([first_result]);
-	return $(orderedResults[0]);
+	return orderedResults[0];
 }
 
 function showBox(cmp,profElem,_window,previewOffset) {
-	if (profElem.offset() == null || $('#jb-preview').offset() == null)
+  var profElem_offset = jb.ui.offset(profElem);
+	if (profElem_offset == null || jb.ui.offset(document.querySelector('#jb-preview')) == null)
 		return;
 
 	cmp.setState({
-		top: previewOffset + profElem.offset().top,
-		left: profElem.offset().left,
-		width: profElem.outerWidth() == $(_window.document.body).width() ? profElem.outerWidth() -10 : cmp.width = profElem.outerWidth(),
-		height: profElem.outerHeight(),
+		top: previewOffset + profElem_offset.top,
+		left: profElem_offset.left,
+		width: jb.ui.outerWidth(profElem) == jb.ui.outerWidth(_window.document.body) ? jb.ui.outerWidth(profElem) -10 : cmp.width = jb.ui.outerWidth(profElem),
+		height: jb.ui.outerHeight(profElem),
 		title: st.shortTitle(pathFromElem(_window,profElem)),
-		titleTop: previewOffset + profElem.offset().top - 20,
-		titleLeft: profElem.offset().left
+		titleTop: previewOffset + profElem_offset.top - 20,
+		titleLeft: profElem_offset.left
 	});
 }
 
+jb.studio.getOrCreateHighlightBox = function() {
+  var _window = st.previewWindow || window;
+  if (!_window.document.querySelector('#preview-box')) {
+    var elem = _window.document.createElement('div');
+    elem.setAttribute('id','preview-box');
+    !_window.document.appendChild(elem);
+  }
+  return _window.document.querySelector('#preview-box');
+}
+
 jb.studio.highlight = function(elems) {
-	var _window = st.previewWindow || window;
-	var boxes = [];
-	elems.map(el=>$(el))
-		.forEach($el => {
-			var $box = $('<div class="jbstudio_highlight_in_preview"/>');
-			$box.css({ position: 'absolute', background: 'rgb(193, 224, 228)', border: '1px solid blue', opacity: '1', zIndex: 5000 }); // cannot assume css class in preview window
-			var offset = $el.offset();
-			$box.css('left',offset.left).css('top',offset.top).width($el.outerWidth()).height($el.outerHeight());
-			if ($box.width() == $(_window.document.body).width())
-				$box.width($box.width()-10);
-			boxes.push($box[0]);
-	})
-
-	$(_window.document.body).append($(boxes));
-
-	$(boxes).css({ opacity: 0.5 }).
-		fadeTo(500,0,function() {
-			$(boxes).remove();
-		});
+	//var boxes = [];
+	var html = elems.forEach(el => {
+			var offset = jb.ui.offset(el);
+			var width = jb.ui.outerWidth(el);
+      if (width == jb.ui.outerWidth(document.body)) width -= 10;
+      return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="width: ${width}; left: ${offset.left};top: ${offset.top}; width: ${width}; height: ${jb.ui.outerHeight(el)}"/>`
+	}).join('');
+  jb.studio.getOrCreateHighlightBox().innerHTML = html;
+  jb.delay(1000).then(_=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
 }
 
 jb.component('studio.highlight-in-preview',{

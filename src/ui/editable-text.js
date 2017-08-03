@@ -47,7 +47,7 @@ jb.component('editable-text.helper-popup', {
       ctx.setVars({selectionKeySource: {}}),
 
     afterViewInit: cmp => {
-      var input = $(cmp.base).findIncludeSelf('input')[0];
+      var input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
       if (!input) return;
 
       cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 =>
@@ -57,7 +57,7 @@ jb.component('editable-text.helper-popup', {
               content: _ctx => ctx.params.control(_ctx),
               features: {$: 'dialog-feature.unique-dialog', id: ctx.params.popupId}
             })
-          , cmp.ctx, input );
+          , cmp.ctx, cmp.base );
 
       cmp.popup = _ =>
         jb.ui.dialogs.dialogs.filter(d=>d.id == ctx.params.popupId)[0];

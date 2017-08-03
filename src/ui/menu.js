@@ -185,7 +185,7 @@ jb.component('menu.init-popup-menu', {
  			cmp.setState({title: ctx.vars.menuModel.title});
 
 			cmp.mouseEnter = _ => {
-				if ($('.context-menu-popup')[0])
+				if (jb.ui.find('.context-menu-popup')[0])
 					cmp.openPopup()
 			};
 			cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<title>tests</title>
+<head>
+	<script type="text/javascript">
+		startTime = new Date().getTime();
+	</script>
+	<script type="text/javascript" src="../src/loader/jb-loader.js" electron="true"
+		modules="common,ui-common,ui-tree,dragula,codemirror,testers,studio,studio-tests"></script>
+	<script type="text/javascript" src="data-tests.js"></script>
+	<script type="text/javascript" src="ui-tests.js"></script>
+	<style>
+		.editor { opacity: 0 }
+		.editor:hover { opacity: 1 }
+	</style>
+</head>
+<body>
+<div id="test"> </div>
+<script>
+	var test = (location.href.match(/test=([^&]*)/) || [])[1]; //.split('?test=').pop().split('&')[0];
+	jb.testers.runTests('',test,location.href.indexOf('&show') != -1, (location.href.match('&rerun=([0-9]*)') || [])[1] );
+</script>
+</body>
+</html>

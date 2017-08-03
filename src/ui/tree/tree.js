@@ -89,7 +89,7 @@ jb.component('tree', {
 					},
 					expanded: jb.obj(tree.nodeModel.rootPath, true),
 					elemToPath: el =>
-						$(el).closest('.treenode').attr('path'),
+						jb.ui.closest(el,'.treenode') && jb.ui.closest(el,'.treenode').getAttribute('path'),
 					selectionEmitter: new jb.rx.Subject(),
 				})
 			},
@@ -271,54 +271,55 @@ jb.component('tree.drag-and-drop', {
   		onkeydown: true,
   		afterViewInit: cmp => {
   			var tree = cmp.tree;
-			var drake = tree.drake = dragula([], {
-				moves: function(el) {
-					return $(el).is('.jb-array-node>.treenode-children>div')
-				}
-	        });
-			drake.containers = $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
+        var drake = tree.drake = dragula([], {
+				      moves: el =>
+					         jb.ui.match(el,'.jb-array-node>.treenode-children>div')
+	      });
+        drake.containers = cmp.base.querySelectorAll('.jb-array-node>.treenode-children');
+        //jb.ui.findIncludeSelf(cmp.base,'.jb-array-node').map(el=>el.children()).filter('.treenode-children').get();
 
-	        drake.on('drag', function(el, source) {
+	      drake.on('drag', function(el, source) {
 	          var path = tree.elemToPath(el.firstElementChild)
 	          el.dragged = { path: path, expanded: tree.expanded[path]}
 	          delete tree.expanded[path]; // collapse when dragging
 	        })
 
-	        drake.on('drop', (dropElm, target, source,targetSibling) => {
+	      drake.on('drop', (dropElm, target, source,targetSibling) => {
 	            if (!dropElm.dragged) return;
-				$(dropElm).remove();
+				      dropElm.parentNode.removeChild(dropElm);
 	            tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
-				var state = treeStateAsVals(tree);
-				var targetPath = targetSibling ? tree.elemToPath(targetSibling) : addOneToIndex(tree.elemToPath(target.lastElementChild));
-				if (!targetPath)
-					debugger;
-				tree.nodeModel.move(dropElm.dragged.path,targetPath);
-				restoreTreeStateFromVals(tree,state);
-				dropElm.dragged = null;
-				tree.redraw(true);
-	        });
+      				var state = treeStateAsVals(tree);
+      				var targetPath = targetSibling ? tree.elemToPath(targetSibling) : addOneToIndex(tree.elemToPath(target.lastElementChild));
+      				if (!targetPath)
+      					debugger;
+      				tree.nodeModel.move(dropElm.dragged.path,targetPath);
+      				restoreTreeStateFromVals(tree,state);
+      				dropElm.dragged = null;
+      				tree.redraw(true);
+	      });
 
 	        // ctrl up and down
-			cmp.onkeydown.filter(e=>
-				e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
-				.subscribe(e=> {
-					var diff = e.keyCode == 40 ? 2 : -1;
-					var selectedIndex = Number(tree.selected.split('~').pop());
-					if (isNaN(selectedIndex)) return;
-					var no_of_siblings = $($('.treenode.selected').parents('.treenode-children')[0]).children().length;
-					var index = (selectedIndex + diff+ no_of_siblings+1) % (no_of_siblings + 1);
-					var path = tree.selected.split('~').slice(0,-1).join('~');
-					var state = treeStateAsVals(tree);
-					tree.nodeModel.move(tree.selected, tree.selected.split('~').slice(0,-1).concat([index]).join('~'))
-					restoreTreeStateFromVals(tree,state);
-			})
-  		},
-  		doCheck: function(cmp) {
-  			var tree = cmp.tree;
-		  	if (tree.drake)
-			  tree.drake.containers =
-				  $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
-  		}
+    		cmp.onkeydown.filter(e=>
+    				e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
+    				.subscribe(e=> {
+      					var diff = e.keyCode == 40 ? 2 : -1;
+      					var selectedIndex = Number(tree.selected.split('~').pop());
+      					if (isNaN(selectedIndex)) return;
+      					var no_of_siblings = cmp.base.querySelector('.treenode.selected').parentNode.children().length;
+                //$($('.treenode.selected').parents('.treenode-children')[0]).children().length;
+      					var index = (selectedIndex + diff+ no_of_siblings+1) % (no_of_siblings + 1);
+      					var path = tree.selected.split('~').slice(0,-1).join('~');
+      					var state = treeStateAsVals(tree);
+      					tree.nodeModel.move(tree.selected, tree.selected.split('~').slice(0,-1).concat([index]).join('~'))
+      					restoreTreeStateFromVals(tree,state);
+      			})
+      		},
+      		doCheck: function(cmp) {
+      			var tree = cmp.tree;
+    		  	if (tree.drake)
+    			     tree.drake.containers = cmp.base.querySelectorAll('.jb-array-node>.treenode-children');
+    				       //$(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
+      		}
   	})
 })
 

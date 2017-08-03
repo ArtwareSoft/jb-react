@@ -7,7 +7,7 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-}   
+}
 
 
 @media only screen and (max-width: 479px) {
@@ -54,15 +54,15 @@
 .jb-titlesAboveFields {}
 
 /*clearfix*/
-.jb-titlesAboveFields:after { 
+.jb-titlesAboveFields:after {
   display: block; clear: both;  content: '';
 }
 
-.clearfix:after { 
-   content: "."; 
-   visibility: hidden; 
-   display: block; 
-   height: 0; 
+.clearfix:after {
+   content: ".";
+   visibility: hidden;
+   display: block;
+   height: 0;
    clear: both;
 }
 
@@ -71,7 +71,7 @@
   margin-bottom:20px;
 }
 .jb-titlesAboveFields .property>.property-title {
-  padding-bottom:3px; 
+  padding-bottom:3px;
   color: #666;
   font-weight: bold;
   font-size: 11px;
@@ -125,7 +125,7 @@ box-sizing: border-box;
 padding: 10px 10px 10px 27px; color: #6D6E71; min-height: 12px; border-bottom: 1px solid #BEBEBE; text-transform: capitalize;}
 .jb-default-dialog>.dialog-close { position: absolute; cursor: pointer; right: 4px; top: 4px; font: 21px sans-serif; border: none; background: transparent; color: #000; text-shadow: 0 1px 0 #fff; font-weight: 700; opacity: .2;}
 .jb-default-dialog>.dialog-close:hover { opacity: .5; }
- 
+
  /* .jb-accordion */
  .jb-accordion>.panel.collapsed>.panel-collapse { display: none; }
 
@@ -140,13 +140,13 @@ padding: 10px 10px 10px 27px; color: #6D6E71; min-height: 12px; border-bottom: 1
 .jb-control-tree .treenode-children { margin: 0; padding: 0 0 0 10px; min-height: 7px}
 .jb-control-tree ul,li { list-style: none; padding: 1px 0;}
 .jb-control-tree .treenode-line { width:300px; display: flex; box-orient: horizontal; padding-bottom: 3px; }
-.jb-control-tree .treenode-label { margin-top: -3px; display: block; color: #3D443D; font-size: 12px; vertical-align: top; padding: 0; 
+.jb-control-tree .treenode-label { margin-top: -3px; display: block; color: #3D443D; font-size: 12px; vertical-align: top; padding: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-.jb-control-tree .treenode-label .treenode-val { color: red; padding-left: 4px; } 
-.jb-control-tree .treenode-icon { width: 16px; height1:14px; display: inline-block;  background: url('icons1.png?v=16_02') no-repeat; 
+.jb-control-tree .treenode-label .treenode-val { color: red; padding-left: 4px; }
+.jb-control-tree .treenode-icon { width: 16px; height1:14px; display: inline-block;  background: url('icons1.png?v=16_02') no-repeat;
   margin-right: 2px; vertical-align: top; background-position: 0px -16px;} /* fix background position to get other icons */
 
-.jb-control-tree .treenode-expandbox { border: none; background: none; position: relative; width:9px; height:9px; padding: 0; vertical-align: top;  
+.jb-control-tree .treenode-expandbox { border: none; background: none; position: relative; width:9px; height:9px; padding: 0; vertical-align: top;
     margin-top: 3px;  margin-right: 5px;  cursor: pointer;}
 .jb-control-tree .treenode-expandbox div { position: absolute; }
 .jb-control-tree1 .treenode-expandbox:focus { outline: none; }
@@ -167,7 +167,7 @@ padding: 10px 10px 10px 27px; color: #6D6E71; min-height: 12px; border-bottom: 1
 
 .pulldown-top-menu { background: #fff; position: absolute; top:0; height: 60px; left: 40px;right:0; border-bottom: 1px solid #E5E5E5;}
 .pulldown-main-menu { position: absolute; top: 31px; left: 8px; display: -webkit-box; -webkit-box-orient: horizontal; }
-.pulldown-top-menu-item { 
+.pulldown-top-menu-item {
   cursor: pointer; font-size: 13px; padding: 5px 7px; color: #000; -webkit-user-select: none;
     display: block;  background: #fff;  border: none; text-align: left;
 }
@@ -186,7 +186,7 @@ border: 1px solid rgb(213, 213, 213);}
 
 .pulldown-mainmenu-popup .pulldown-menu-remove-top-border { background: #fff; height: 3px; position: absolute; top: -2px; left: 0; }
 /* .pulldown-menu-item */
-.pulldown-menu-item { -webkit-user-select: none;  padding: 6px 10px 6px 29px; font-size: 13px; display: block; background: #fff;  border: none; width: 100%; text-align: left; cursor: pointer;   position: relative;} 
+.pulldown-menu-item { -webkit-user-select: none;  padding: 6px 10px 6px 29px; font-size: 13px; display: block; background: #fff;  border: none; width: 100%; text-align: left; cursor: pointer;   position: relative;}
 .pulldown-menu-item:hover { background: #eee; }
 .pulldown-menu-item1:focus { outline: none; }
 .pulldown-menu-item span { background: url('icons1.png?v=16_02') no-repeat; width: 16px; height: 16px; display: block; position: absolute; top: 5px; left: 6px;}
@@ -209,7 +209,7 @@ border: 1px solid rgb(213, 213, 213);}
    opacity: 0.8;
    background: gray;
    top: 0;
-   left: 0; 
+   left: 0;
 }
 
 @keyframes jb-highlight-comp-changed {
@@ -218,7 +218,16 @@ border: 1px solid rgb(213, 213, 213);}
     100% { opacity: 1; }
 }
 
-.jb-highlight-comp-changed { 
+@keyframes jb-fade {
+    0% { opacity: 0.5; }
+    100% { opacity: 0; }
+}
+
+.jb-fade-500ms {
+   animation: jb-fade 0.5s;
+}
+
+.jb-highlight-comp-changed {
    animation: jb-highlight-comp-changed 1s;
 }
 

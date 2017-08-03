@@ -237,89 +237,89 @@ jb.component('studio.data-browse', {
 })
 
 jb.component('studio.open-jb-edit-property', {
-  type: 'action', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'action.switch', 
+  type: 'action',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'action.switch',
     $vars: {
-      actualPath :{$: 'studio.jb-editor-path-for-edit', path: '%$path%' }, 
+      actualPath :{$: 'studio.jb-editor-path-for-edit', path: '%$path%' },
       paramDef :{$: 'studio.param-def', path: '%$actualPath%' }
-    }, 
+    },
     cases: [
-      {$: 'action.switch-case', 
-        condition :{$: 'ends-with', 
-          type: 'array', 
-          obj :{$: 'studio.val', path: '%$actualPath%' }, 
-          endsWith: '$vars', 
+      {$: 'action.switch-case',
+        condition :{$: 'ends-with',
+          type: 'array',
+          obj :{$: 'studio.val', path: '%$actualPath%' },
+          endsWith: '$vars',
           text: '%$path%'
         }
-      }, 
-      {$: 'action.switch-case', 
-        condition: '%$paramDef/options%', 
-        action :{$: 'open-dialog', 
-          style :{$: 'dialog.studio-jb-editor-popup' }, 
-          content :{$: 'group', 
-            controls: [{$: 'studio.jb-floating-input-rich', path: '%$actualPath%' }], 
+      },
+      {$: 'action.switch-case',
+        condition: '%$paramDef/options%',
+        action :{$: 'open-dialog',
+          style :{$: 'dialog.studio-jb-editor-popup' },
+          content :{$: 'group',
+            controls: [{$: 'studio.jb-floating-input-rich', path: '%$actualPath%' }],
             features: [
-              {$: 'feature.onEsc', 
+              {$: 'feature.onEsc',
                 action :{$: 'dialog.close-containing-popup', OK: true }
-              }, 
-              {$: 'feature.onEnter', 
+              },
+              {$: 'feature.onEnter',
                 action: [
-                  {$: 'dialog.close-containing-popup', OK: true }, 
+                  {$: 'dialog.close-containing-popup', OK: true },
                   {$: 'tree.regain-focus' }
                 ]
               }
             ]
-          }, 
+          },
           features: [
-            {$: 'dialog-feature.auto-focus-on-first-input' }, 
-            {$: 'dialog-feature.onClose', 
+            {$: 'dialog-feature.auto-focus-on-first-input' },
+            {$: 'dialog-feature.onClose',
               action :{$: 'tree.regain-focus' }
             }
           ]
         }
-      }, 
-      {$: 'action.switch-case', 
-        condition :{$: 'is-of-type', 
-          type: 'function', 
+      },
+      {$: 'action.switch-case',
+        condition :{$: 'is-of-type',
+          type: 'function',
           obj :{$: 'studio.val', path: '%$actualPath%' }
-        }, 
+        },
         action :{$: 'studio.edit-source', path: '%$actualPath%' }
-      }, 
-      {$: 'action.switch-case', 
-        condition :{$: 'studio.is-of-type', path: '%$actualPath%', type: 'data,boolean' }, 
-        action :{$: 'open-dialog', 
-          style :{$: 'dialog.studio-jb-editor-popup' }, 
-          content :{$: 'studio.jb-floating-input', path: '%$actualPath%' }, 
+      },
+      {$: 'action.switch-case',
+        condition :{$: 'studio.is-of-type', path: '%$actualPath%', type: 'data,boolean' },
+        action :{$: 'open-dialog',
+          style :{$: 'dialog.studio-jb-editor-popup' },
+          content :{$: 'studio.jb-floating-input', path: '%$actualPath%' },
           features: [
-            {$: 'dialog-feature.auto-focus-on-first-input' }, 
-            {$: 'dialog-feature.onClose', 
+            {$: 'dialog-feature.auto-focus-on-first-input' },
+            {$: 'dialog-feature.onClose',
               action :{
                 $runActions: [
-                  {$: 'toggle-boolean-value', 
+                  {$: 'toggle-boolean-value',
                     of: '%$studio/jb_preview_result_counter%'
-                  }, 
+                  },
                   {$: 'tree.regain-focus' }
                 ]
               }
             }
           ]
         }
-      }, 
-      {$: 'action.switch-case', 
+      },
+      {$: 'action.switch-case',
         $vars: {
-          ptsOfType :{$: 'studio.PTs-of-type', 
+          ptsOfType :{$: 'studio.PTs-of-type',
             type :{$: 'studio.param-type', path: '%$actualPath%' }
           }
-        }, 
-        condition: '%$ptsOfType/length% == 1', 
+        },
+        condition: '%$ptsOfType/length% == 1',
         action :{$: 'studio.set-comp', path: '%$path%', comp: '%$ptsOfType[0]%' }
       }
-    ], 
-    defaultAction :{$: 'studio.open-new-profile-dialog', 
-      path: '%$actualPath%', 
-      type :{$: 'studio.param-type', path: '%$actualPath%' }, 
-      mode: 'update', 
+    ],
+    defaultAction :{$: 'studio.open-new-profile-dialog',
+      path: '%$actualPath%',
+      type :{$: 'studio.param-type', path: '%$actualPath%' },
+      mode: 'update',
       onClose :{$: 'tree.regain-focus' }
     }
   }
@@ -642,7 +642,7 @@ jb.component('studio.add-variable', {
 jb.component('studio.expand-and-select-first-child-in-jb-editor', {
   type: 'action',
   impl: ctx => {
-    var ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[$('.jb-editor').attr('jb-ctx')];
+    var ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[document.querySelector('.jb-editor').getAttribute('jb-ctx')];
     var tree = ctxOfTree.vars.$tree;
     if (!tree) return;
     tree.expanded[tree.selected] = true;

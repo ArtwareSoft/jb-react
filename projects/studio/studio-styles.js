@@ -281,12 +281,14 @@ jb.component('dialog-feature.studio-position-under-property', {
 			afterViewInit: function(cmp) {
 				if (!context.vars.$launchingElement)
 					return console.log('no launcher for dialog');
-				var $control = context.vars.$launchingElement.$el.parents('.input-and-toolbar');
-				var pos = $control.offset();
-				var $jbDialog = $(cmp.base).findIncludeSelf('.jb-dialog');
-				$jbDialog.css('left', `${pos.left}px`)
-					.css('top', `${pos.top}px`)
-					.css('display','block');
+				var control = jb.ui.parents(context.vars.$launchingElement.el).filter(el=>jb.ui.matches(el,'.input-and-toolbar'));
+				var pos = jb.ui.offset(control);
+				var jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
+        if (jbDialog) {
+  				jbDialog.style.left = `${pos.left}px`;
+          jbDialog.style.top = `${pos.top}px`;
+          jbDialog.style.display = 'block';
+        }
 			}
 		})
 })

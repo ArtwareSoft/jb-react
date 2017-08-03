@@ -7,7 +7,7 @@ var resources = {
         'src/core/xml.js',
       ],
       'ui-common': [
-        'node_modules/jquery/dist/jquery.min.js',
+//        'node_modules/jquery/dist/jquery.min.js',
         'node_modules/material-design-lite/material.js',
         'node_modules/material-design-lite/material.css',
         'node_modules/material-design-lite/dist/material.indigo-pink.min.css',
@@ -72,7 +72,7 @@ var resources = {
         'node_modules/codemirror/mode/xml/xml.js',
         'node_modules/codemirror/mode/javascript/javascript.js',
         'node_modules/codemirror/mode/css/css.js',
-		'node_modules/codemirror/mode/jsx/jsx.js',
+        'node_modules/codemirror/mode/jsx/jsx.js',
         'node_modules/codemirror/mode/htmlmixed/htmlmixed.js',
         'node_modules/codemirror/addon/hint/show-hint.js',
         'node_modules/codemirror/addon/hint/javascript-hint.js',
@@ -122,12 +122,16 @@ function jb_dynamicLoad(modules,prefix) {
         file = 'projects/studio/studio-' + file + '.js';
       if (m == 'studio-tests')
         file = 'projects/studio-helper/studio-' + file + '-tests.js';
+      // if (m=='node_modules/jquery/dist/jquery.min.js' && electron)
+      //   return document.write('<script src="../node_modules/jquery/dist/jquery.min.js" onload="global.$ = window.$ = window.jQuery = module.exports;"></script>');
 
       if (prefix) { // avoid muliple source files with the same name in the debugger
         var file_path = file.split('/');
         file_path.push(prefix+file_path.pop());
         file = file_path.join('/');
       }
+      // if (win.electron)
+      //   return win.loadURL(`file://${win.jbartBase}/../${file}`)
 
       var url = (window.jbLoaderRelativePath ? '' : '/') + file;
       if (file.match(/\.js$/))

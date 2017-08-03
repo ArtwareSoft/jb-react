@@ -56,8 +56,10 @@ jb.component('ui-test', {
 				Promise.resolve(action(context.setVars({elemToTest : elem }))).then(_=>elem))
 			.then(elem=> {
 				// put input values as text
-				Array.from(elem.querySelectorAll('input')).forEach(e=>
-					e.parentNode.appendChild($(`<input-val style="display:none">${e.value}</input-val>`)[0]));
+				Array.from(elem.querySelectorAll('input')).forEach(e=>{
+          if (e.parentNode)
+            jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`)
+        })
 				var success = !! expectedResult(new jb.jbCtx(context,{ data: elem.outerHTML }));
 				if (!success)
 					t = 5; // just a breakpoint for debugger
@@ -118,7 +120,7 @@ jb.component('ui-action.set-text', {
 		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=> {
 			e._component.jbModel(value);
-			$(e).findIncludeSelf('input').val(value);
+			jb.ui.findIncludeSelf(e,'input').forEach(el=>el.value = value);
 		})
 		return jb.delay(delay);
 	}
@@ -140,7 +142,7 @@ function goto_editor(id) {
 	$.ajax(`/?op=gotoSource&comp=${id}`)
 }
 function hide_success_lines() {
-	$('.success').hide()
+	document.querySelectorAll('.success').forEach(e=>e.style.display = 'none')
 }
 
 startTime = startTime || new Date().getTime();
@@ -160,8 +162,6 @@ jb.testers.runTests = function(testType,specificTest,show,rerun) {
 		.concatMap(_=>
 		jb.rx.Observable.from(tests).concatMap(e=>
 				Promise.resolve(new jb.jbCtx().setVars({testID: e[0]}).run({$:e[0]}))))
-			// .finally( _=>
-			// 	$('.jb-dialogs').empty() )
 			.subscribe(res=> {
 				if (res.success)
 					jb_success_counter++;
@@ -177,7 +177,7 @@ jb.testers.runTests = function(testType,specificTest,show,rerun) {
 				document.getElementById('fail-counter').style.cursor = 'pointer';
 
 				document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - startTime) +' mSec';
-				document.body.innerHTML += elem;
+				jb.ui.addHTML(document.body,elem);
 				if (show && res.elem)
 					document.body.appendChild(res.elem);
 				jb.ui.garbageCollectCtxDictionary(true)

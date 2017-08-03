@@ -130,7 +130,9 @@ class JbComponent {
 					return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
 				}).join('\n');
 				var remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-				$(`<style type="text/css">${remark}${cssStyle}</style>`).appendTo($('head'));
+        var style_elem = document.createElement('style');
+        style_elem.innerHTML = remark + cssStyle;
+        document.head.appendChild(style_elem);
 			}
 			elem.classList.add(`jb-${cssSelectors_hash[cssKey]}`);
 		}
@@ -250,7 +252,7 @@ ui.focus = function(elem,logTxt,srcCtx) {
 ui.wrapWithLauchingElement = (f,context,elem) =>
 	ctx2 => {
 		if (!elem) debugger;
-		return f(context.extendVars(ctx2).setVars({ $launchingElement: { $el : $(elem) }}));
+		return f(context.extendVars(ctx2).setVars({ $launchingElement: { el : elem }}));
 	}
 
 
@@ -293,7 +295,6 @@ ui.renderWidget = function(profile,elem) {
 			if (jb.studio.studioWindow) {
 				var st = jb.studio.studioWindow.jb.studio;
 				st.refreshPreviewWidget = _ => {
-					//$(elem).empty();
 					jb.resources = jb.ui.originalResources || jb.resources;
 					previewElem = ui.render(ui.h(R),elem,previewElem);
 				}
@@ -301,8 +302,6 @@ ui.renderWidget = function(profile,elem) {
 					this.setState({profile: {$: page}}));
 				st.scriptChange.subscribe(_=>
 						this.setState(null));
-				// st.scriptChange.subscribe(e=>
-				// 	st.refreshPreviewOfPath(e.path.join('~')))
 			}
 		}
 		render(pros,state) {
@@ -401,6 +400,50 @@ ui.refreshComp = (ctx,el) => {
 	var newElem = ui.render(ui.h(ctx.runItself().reactComp()),el.parentElement,el);
 	if (nextElem)
 		newElem.parentElement.insertBefore(newElem,nextElem);
+}
+
+ui.outerWidth  = el => {
+  var style = getComputedStyle(el);
+  return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
+}
+ui.outerHeight = el => {
+  var style = getComputedStyle(el);
+  return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+}
+ui.offset = el => {
+  var rect = el.getBoundingClientRect();
+  return {
+    top: rect.top + document.body.scrollTop,
+    left: rect.left + document.body.scrollLeft
+  }
+}
+ui.parents = el => {
+  var res = [];
+  el = el.parentNode;
+  while(el) {
+    res.push(el);
+    el = el.parentNode;
+  }
+  return res;
+}
+ui.closest = (el,query) => {
+  while(el) {
+    if (ui.matches(el,query)) return el;
+    el = el.parentNode;
+  }
+}
+ui.find = (el,query) => typeof el == 'string' ? Array.from(document.querySelectorAll(el)) : Array.from(el.querySelectorAll(query))
+ui.findIncludeSelf = (el,query) => (ui.matches(el,query) ? [el] : []).concat(Array.from(el.querySelectorAll(query)))
+ui.addClass = (el,clz) => el.classList.add(clz);
+ui.removeClass = (el,clz) => el.classList.remove(clz);
+ui.hasClass = (el,clz) => el.classList.contains(clz);
+ui.matches = (el,query) => el && el.matches && el.matches(query)
+ui.index = el => Array.from(el.parentNode.children).indexOf(el)
+ui.inDocument = el => el && (ui.parents(el).slice(-1)[0]||{}).nodeType == 9
+ui.addHTML = (el,html) => {
+  var elem = document.createElement('div');
+  elem.innerHTML = html;
+  el.appendChild(elem.firstChild)
 }
 // ****************** components ****************
 

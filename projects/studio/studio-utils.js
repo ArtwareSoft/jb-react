@@ -1,25 +1,12 @@
 (function() { var st = jb.studio;
 
 st.message = function(message,error) {
-	$('.studio-message').text(message); // add animation
-	$('.studio-message').css('background', error ? 'red' : '#327DC8');
-	$('.studio-message').css('animation','');
-	jb.delay(1).then(()=>
-		$('.studio-message').css('animation','slide_from_top 5s ease')
-	)
+  var el = document.querySelector('.studio-message');
+	el.textContent = message;
+  el.style.background = error ? 'red' : '#327DC8';
+  el.style.animation = '';
+	jb.delay(1).then(()=>	el.style.animation = 'slide_from_top 5s ease')
 }
-
-// st.jbart_base = function() {
-// 	return jb.studio.previewjb || jb;
-// }
-
-// st.findjBartToLook = function(path) {
-// 	var id = path.split('~')[0];
-// 	if (st.jbart_base().comps[id])
-// 		return st.jbart_base();
-// 	if (jb.comps[id])
-// 		return jb;
-// }
 
 // ********* Components ************
 

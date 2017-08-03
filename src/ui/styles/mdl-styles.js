@@ -9,7 +9,7 @@ jb.component('mdl-style.init-dynamic', {
         var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
         cmp.refreshMdl = _ => {
           jb.delay(1).then(_ => elems.forEach(el=> {
-            if (!$.contains(document, el))
+            if (!jb.ui.inDocument(el))
               return;
             componentHandler.downgradeElements(el);
             componentHandler.upgradeElement(el);
@@ -17,13 +17,13 @@ jb.component('mdl-style.init-dynamic', {
         };
         jb.delay(1).catch(e=>{}).then(_ =>
       	 elems.forEach(el=>
-      	 	$.contains(document, el) && componentHandler.upgradeElement(el))).catch(e=>{})
+      	 	jb.ui.inDocument(el) && componentHandler.upgradeElement(el))).catch(e=>{})
       },
       destroy: cmp => {
         try {
       	 $.contains(document.documentElement, cmp.base) &&
           (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
-      	 	   $.contains(document, el) && componentHandler.downgradeElements(el))
+      	 	   jb.ui.inDocument(el) && componentHandler.downgradeElements(el))
         } catch(e) {}
        }
     })
@@ -40,10 +40,10 @@ jb.component('mdl.ripple-effect', {
       css: '{ position: relative; overflow:hidden }',
       afterViewInit: cmp => {
           cmp.base.classList.add('mdl-js-ripple-effect');
-          $.contains(document, $(cmp.base)[0]) && componentHandler.upgradeElement(cmp.base);
+          jb.ui.inDocument(cmp.base) && componentHandler.upgradeElement(cmp.base);
       },
       destroy: cmp =>
-          $.contains(document, $(cmp.base)[0]) && componentHandler.downgradeElements(cmp.base)
+          jb.ui.inDocument(cmp.base) && componentHandler.downgradeElements(cmp.base)
    }),
 })
 

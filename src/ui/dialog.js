@@ -163,30 +163,25 @@ jb.component('dialog-feature.near-launcher-position', {
 				offsetLeft = offsetLeft || 0; offsetTop = offsetTop || 0;
 				if (!context.vars.$launchingElement)
 					return console.log('no launcher for dialog');
-				var $control = context.vars.$launchingElement.$el;
-				var pos = $control.offset();
-				var $jbDialog = $(cmp.base).findIncludeSelf('.jb-dialog');
-				offsetLeft += rightSide ? $control.outerWidth() : 0;
-				var fixedPosition = fixDialogOverflow($control,$jbDialog,offsetLeft,offsetTop);
-				if (fixedPosition)
-					$jbDialog.css('left', `${fixedPosition.left}px`)
-						.css('top', `${fixedPosition.top}px`)
-						.css('display','block');
-				else
-					$jbDialog.css('left', `${pos.left + offsetLeft}px`)
-						.css('top', `${pos.top + $control.outerHeight() + offsetTop}px`)
-						.css('display','block');
+				var control = context.vars.$launchingElement.el;
+				var pos = jb.ui.offset(control);
+				var jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
+				offsetLeft += rightSide ? jb.ui.outerWidth(control) : 0;
+				var fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
+        jbDialog.style.display = 'block';
+        jbDialog.style.left = (fixedPosition ? fixedPosition.left : pos.left + offsetLeft) + 'px';
+        jbDialog.style.top = (fixedPosition ? fixedPosition.top : pos.top + jb.ui.outerHeight(control) + offsetTop) + 'px';
 			}
 		}
 
-		function fixDialogOverflow($control,$dialog,offsetLeft,offsetTop) {
-			var padding = 2,top,left;
-			if ($control.offset().top > $dialog.height() && $control.offset().top + $dialog.height() + padding + (offsetTop||0) > window.innerHeight + window.pageYOffset)
-				top = $control.offset().top - $dialog.height();
-			if ($control.offset().left > $dialog.width() && $control.offset().left + $dialog.width() + padding + (offsetLeft||0) > window.innerWidth + window.pageXOffset)
-				left = $control.offset().left - $dialog.width();
+		function fixDialogOverflow(control,dialog,offsetLeft,offsetTop) {
+			var padding = 2,top,left,control_offset = jb.ui.offset(control), dialog_height = jb.ui.outerHeight(dialog), dialog_width = jb.ui.outerWidth(dialog);
+			if (control_offset.top > dialog_height && control_offset.top + dialog_height + padding + (offsetTop||0) > window.innerHeight + window.pageYOffset)
+				top = control_offset.top - dialog_height;
+			if (control_offset.left > dialog_width && control_offset.left + dialog_width + padding + (offsetLeft||0) > window.innerWidth + window.pageXOffset)
+				left = control_offset.left - dialog_width;
 			if (top || left)
-				return { top: top || $control.offset().top , left: left || $control.offset().left}
+				return { top: top || control_offset.top , left: left || control_offset.left}
 		}
 	}
 })
@@ -218,7 +213,7 @@ jb.component('dialog-feature.close-when-clicking-outside', {
 				clickoutEm = clickoutEm.merge(jb.rx.Observable.fromEvent(
 			      				(jb.studio.previewWindow || {}).document, 'mousedown'));
 
-		 	clickoutEm.filter(e => $(e.target).closest(dialog.el).length == 0)
+		 	clickoutEm.filter(e => jb.ui.closest(e.target,'.jb-dialog') == null)
    				.takeUntil(dialog.em.filter(e => e.type == 'close'))
    				.take(1).delay(delay).subscribe(()=>
 		  			dialog.close())
@@ -273,14 +268,13 @@ jb.component('dialog-feature.css-class-on-launching-element', {
 	impl: context => ({
 		afterViewInit: cmp => {
 			var dialog = context.vars.$dialog;
-			var $control = context.vars.$launchingElement.$el;
-			$control.addClass('dialog-open');
+			var control = context.vars.$launchingElement.el;
+			jb.ui.addClass(control,'dialog-open');
 			dialog.em.filter(e=>
 				e.type == 'close')
 				.take(1)
-				.subscribe(()=> {
-					$control.removeClass('dialog-open');
-				})
+				.subscribe(()=>
+          jb.ui.removeClass(control,'dialog-open'))
 		}
 	})
 })
@@ -296,7 +290,7 @@ jb.component('dialog-feature.max-zIndex-on-click', {
 		return ({
 			afterViewInit: cmp => {
 				setAsMaxZIndex();
-				$(dialog.el).mousedown(setAsMaxZIndex);
+				dialog.el.onmousedown = setAsMaxZIndex;
 			}
 		})
 
@@ -439,8 +433,8 @@ jb.ui.dialogs = {
 		this.dialogs.forEach(d=>
 			d.em.next({ type: 'new-dialog', dialog: dialog }));
 		this.dialogs.push(dialog);
-		if (dialog.modal && !$('body>.modal-overlay')[0])
-			$('body').prepend('<div class="modal-overlay"></div>');
+		if (dialog.modal && !document.querySelector('.modal-overlay'))
+			jb.ui.addHTML(document.body,'<div class="modal-overlay"></div>');
 
 		dialog.close = function(args) {
 			return Promise.resolve().then(_=>{
@@ -455,8 +449,8 @@ jb.ui.dialogs = {
 				var index = self.dialogs.indexOf(dialog);
 				if (index != -1)
 					self.dialogs.splice(index, 1);
-				if (dialog.modal)
-					$('.modal-overlay').remove();
+				if (dialog.modal && document.querySelector('.modal-overlay'))
+					document.body.removeChild(document.querySelector('.modal-overlay'));
 				jb.ui.dialogs.remove(dialog);
 			})
 		},
@@ -471,11 +465,11 @@ jb.ui.dialogs = {
 	},
   getOrCreateDialogsElem() {
     if (!document.querySelector('.jb-dialogs'))
-      $('body').append(`<div class="jb-dialogs"/>`);
+      jb.ui.addHTML(document.body,'<div class="jb-dialogs"/>');
     return document.querySelector('.jb-dialogs');
   },
   render(dialog) {
-    $(this.getOrCreateDialogsElem()).append(`<div id="${dialog.instanceId}"/>`);
+    jb.ui.addHTML(this.getOrCreateDialogsElem(),`<div id="${dialog.instanceId}"/>`);
     var elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
     jb.ui.render(jb.ui.h(dialog.comp),elem);
   },
@@ -484,6 +478,6 @@ jb.ui.dialogs = {
     if (!elem) return; // already closed due to asynch request handling and multiple requests to close
     jb.ui.render('', elem, elem.firstElementChild);// react - remove
     // jb.ui.unmountComponent(elem.firstElementChild._component);
-    $(elem).remove();
+    this.getOrCreateDialogsElem().removeChild(elem);
   }
 }

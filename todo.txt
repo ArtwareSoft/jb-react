@@ -3,8 +3,9 @@ cards for letmesee
 suggestions css width
   =sl -> jb-core.js:551 refresh: object not found: suggestionData:36859~selected
 
-property description in jb-editor popup
-  css
+property description in jb-editor popup (slice/start)
+  fix css
+
 
 add studio-settings.js
   synonyms (use for search)

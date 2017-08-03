@@ -27,21 +27,21 @@ jb.component('editable-text.codemirror', {
 				});
 				try {
 					var editor = CodeMirror.fromTextArea(cmp.base.firstChild, _cm_settings);
-					var $wrapper = $(editor.getWrapperElement());
+					var wrapper = editor.getWrapperElement();
 					if (height)
-						$wrapper.css('height', height + 'px');
-					jb.delay(1).then(() => {
-						if (_enableFullScreen)
-							enableFullScreen(editor,$wrapper.width(), $wrapper.height())
-						editor.refresh(); // ????
-					});
+						wrapper.style.height = height + 'px';
+					// jb.delay(1).then(() => {
+					// 	if (_enableFullScreen)
+					// 		enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
+					// 	editor.refresh(); // ????
+					// });
 					editor.setValue(jb.tostring(data_ref));
 				} catch(e) {
 					jb.logException(e,'editable-text.codemirror');
 					return;
 				}
 				//cmp.lastEdit = new Date().getTime();
-				$(editor.getWrapperElement()).css('box-shadow', 'none');
+				editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
 				jb.ui.refObservable(data_ref,cmp,{throw: true})
 					.map(e=>jb.tostring(data_ref))
 //					.filter(x => new Date().getTime() - cmp.lastEdit > 500)
@@ -69,8 +69,8 @@ jb.component('editable-text.codemirror', {
 })
 
 function enableFullScreen(editor,width,height) {
-	var escText = "<span>Press ESC or F11 to exit full screen</span>";
-	var fullScreenBtnHtml = '<div><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
+	var escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>';
+	var fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
 	var lineNumbers = true;
 	var css = `
 		.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
@@ -80,52 +80,45 @@ function enableFullScreen(editor,width,height) {
 		.jb-codemirror-editorCss { position:relative; }
 		.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
 	`;
-	if (!$('#jb_codemirror_fullscreen')[0])
-		$(`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`).appendTo($('head'));
+	if (!jb.ui.find('#jb_codemirror_fullscreen')[0])
+    jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`);
 
-	var jEditorElem = $(editor.getWrapperElement()).addClass('jb-codemirror-editorCss');
+	var jEditorElem = editor.getWrapperElement();
+  jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
 	var prevLineNumbers = editor.getOption("lineNumbers");
-	var jFullScreenButton = $(fullScreenBtnHtml).addClass('jb-codemirror-fullScreenBtnCss').appendTo(jEditorElem)
-			.addClass('hidden').click(function() {
-			switchMode();
-		});
-	jEditorElem.mouseover(function() {
-			jFullScreenButton.removeClass('hidden');
-		}).
-		mouseout(function() {
-			jFullScreenButton.addClass('hidden');
-		});
+  jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
+	var fullScreenButton =jb.ui.find('.jb-codemirror-fullScreenBtnCss')[0];
+  fullScreenButton.onclick = _ => switchMode();
+  fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
+  fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
 
 	var fullScreenClass = 'jb-codemirror-fullScreenEditorCss';
 
 	function onresize() {
-		var $wrapper = $(editor.getWrapperElement());
-		$wrapper.css('width', window.innerWidth + 'px');
-		$wrapper.css('height', window.innerHeight + 'px');
+		var wrapper = editor.getWrapperElement();
+		wrapper.style.width = window.innerWidth + 'px';
+		wrapper.style.height = window.innerHeight + 'px';
 		editor.setSize(window.innerWidth, window.innerHeight - 20);
-		jEditorElem.height( Math.max($(document).height(), $(window).height()) + 'px' );
+		jEditorElem.style.height = document.body.innerHeight + 'px'; //Math.max( document.body.innerHeight, $(window).height()) + 'px' );
 	}
 
 	function switchMode(onlyBackToNormal) {
-		if (jEditorElem.hasClass(fullScreenClass)) {
-			jEditorElem.removeClass(fullScreenClass);
+		if (jb.ui.hasClass(jEditorElem,fullScreenClass)) {
+			jb.ui.removeClass(jEditorElem,fullScreenClass);
 			window.removeEventListener('resize', onresize);
 			editor.setOption("lineNumbers", prevLineNumbers);
 			editor.setSize(width, height);
 			editor.refresh();
-			jEditorElem[0].jEsc.remove();
+      jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0]);
 		} else if (!onlyBackToNormal) {
-			jEditorElem.addClass(fullScreenClass);
+      jb.ui.addClass(jEditorElem,fullScreenClass);
 			window.addEventListener('resize', onresize);
 			onresize();
 			document.documentElement.style.overflow = "hidden";
 			if (lineNumbers) editor.setOption("lineNumbers", true);
 			editor.refresh();
-			var jEsc = $(escText).addClass('jb-codemirror-escCss').click(function() {
-				switchMode(true)
-			});
-			jEditorElem.append(jEsc);
-			jEditorElem[0].jEsc = jEsc;
+			jb.ui.addHTML(jEditorElem,escText);
+      jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true);
 			jb.ui.focus(editor,'code mirror',ctx);
 		}
 	}
@@ -145,9 +138,9 @@ jb.component('text.codemirror', {
     type: 'text.style',
     params: [
         { id: 'cm_settings', as: 'single' },
-		{ id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
+        { id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
         { id: 'resizer', type: 'boolean', as: 'boolean', description: 'resizer id or true (id is used to keep size in session storage)' },
-		{ id: 'height', as: 'number' },
+        { id: 'height', as: 'number' },
         { id: 'mode', as: 'string', options: 'htmlmixed,javascript,css' },
         { id: 'lineWrapping', as: 'boolean' },
     ],
@@ -163,19 +156,20 @@ jb.component('text.codemirror', {
                     theme: 'solarized light',
                 };
                 try {
-					var editor = CodeMirror.fromTextArea(cmp.base, cm_settings);
-					var $wrapper = $(editor.getWrapperElement());
-					if (height)
-						$wrapper.css('height', height + 'px');
-					jb.delay(1).then(() => {
-						if (_enableFullScreen)
-							enableFullScreen(editor,$wrapper.width(), $wrapper.height())
-					});
+                  var editor = CodeMirror.fromTextArea(cmp.base.firstChild, _cm_settings);
+        					var wrapper = editor.getWrapperElement();
+        					if (height)
+        						wrapper.style.height = height + 'px';
+        					jb.delay(1).then(() => {
+        						if (_enableFullScreen)
+        							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
+        						editor.refresh(); // ????
+        					});
                 } catch(e) {
                     jb.logException(e,'editable-text.codemirror');
                     return;
                 }
-                $(editor.getWrapperElement()).css('box-shadow', 'none'); //.css('height', '200px');
+                editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
                 jb.ui.resourceChange.takeUntil(cmp.destroyed)
                     .map(()=> context.vars.$model.text())
                     .filter(x=>x)

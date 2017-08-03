@@ -75,9 +75,9 @@ jb.component('studio.set-preview-size', {
   ],
   impl: (ctx,width,height) => {
     if (width)
-      $('.preview-iframe').attr('width',width);
+      document.querySelector('.preview-iframe').setAttribute('width',width);
     if (height)
-      $('.preview-iframe').attr('height',height);
+      document.querySelector('.preview-iframe').setAttribute('height',height);
   }
 })
 

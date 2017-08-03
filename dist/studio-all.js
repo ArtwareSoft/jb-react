@@ -6,7 +6,7 @@ function jb_run(context,parentParam,settings) {
       if (context.probe.pathToTrace.indexOf(context.path) == 0)
         return context.probe.record(context,parentParam)
     }
-    if (profile === null || (typeof profile == 'object' && profile.$disabled))
+    if (profile == null || (typeof profile == 'object' && profile.$disabled))
       return castToParam(null,parentParam);
 
     if (profile.$debugger == 0) debugger;
@@ -16,20 +16,21 @@ function jb_run(context,parentParam,settings) {
 
     if (typeof profile === 'object' && Object.getOwnPropertyNames(profile).length == 0)
       return;
-    var run = prepare(context,parentParam);
+    var contextWithVars = extendWithVars(context,profile.$vars);
+    var run = prepare(contextWithVars,parentParam);
     var jstype = parentParam && parentParam.as;
     context.parentParam = parentParam;
     switch (run.type) {
       case 'booleanExp': return bool_expression(profile, context);
       case 'expression': return castToParam(expression(profile, context,parentParam), parentParam);
       case 'asIs': return profile;
-      case 'object': return entriesToObject(entries(profile).map(e=>[e[0],context.runInner(e[1],null,e[0])]));
+      case 'object': return entriesToObject(entries(profile).map(e=>[e[0],contextWithVars.runInner(e[1],null,e[0])]));
       case 'function': return castToParam(profile(context),parentParam);
       case 'null': return castToParam(null,parentParam);
       case 'ignore': return context.data;
       case 'list': return profile.map((inner,i) =>
-            context.runInner(inner,null,i));
-      case 'runActions': return jb.comps.runActions.impl(new jbCtx(context,{profile: { actions : profile },path:''}));
+            contextWithVars.runInner(inner,null,i));
+      case 'runActions': return jb.comps.runActions.impl(new jbCtx(contextWithVars,{profile: { actions : profile },path:''}));
       case 'if': {
           var cond = jb_run(run.ifContext, run.IfParentParam);
           if (cond && cond.then)
@@ -38,8 +39,6 @@ function jb_run(context,parentParam,settings) {
           return cond ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam);
       }
       case 'profile':
-        for(var varname in profile.$vars || {})
-          run.ctx = new jbCtx(run.ctx,{ vars: jb.obj(varname,run.ctx.runInner(profile.$vars[varname], null,'$vars~'+varname)) });
         if (!run.impl)
           run.ctx.callerPath = context.path;
 
@@ -72,9 +71,9 @@ function jb_run(context,parentParam,settings) {
         }
 
         if (profile.$log)
-          console.log(context.run(profile.$log));
+          console.log(contextWithVars.run(profile.$log));
 
-        if (profile.$trace) console.log('trace: ' + context.path, compName(profile),context,out,run);
+        if (profile.$trace) console.log('trace: ' + context.path,context,out,run);
 
         return castToParam(out,parentParam);
     }
@@ -99,6 +98,14 @@ function jb_run(context,parentParam,settings) {
           [ctx].concat(x))
         .toPromise()
   }
+}
+
+function extendWithVars(context,vars) {
+  if (!vars) return context;
+  var res = context;
+  for(var varname in vars || {})
+    res = new jbCtx(res,{ vars: jb.obj(varname,res.runInner(vars[varname], null,'$vars~'+varname)) });
+  return res;
 }
 
 function compParams(comp) {
@@ -137,11 +144,11 @@ function prepareParams(comp,profile,ctx) {
           func.srcPath = ctx.path;
           return func;
         }
-        return { name: p, type: 'function', outerFunc: outerFunc, path: path };
+        return { name: p, type: 'function', outerFunc: outerFunc, path: path, param: param };
       }
 
       if (arrayParam) // array of profiles
-        return { name: p, type: 'array', array: valOrDefaultArray, param: {}, path: path };
+        return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), path: path };
       else
         return { name: p, type: 'run', prof: valOrDefault, param: param, path: path }; // context: new jbCtx(ctx,{profile: valOrDefault, path: p}),
   })
@@ -159,7 +166,7 @@ function prepare(context,parentParam) {
   if (profile_jstype === 'object' && jstype === 'object') return { type: 'object' };
   if (profile_jstype === 'string') return { type: 'expression' };
   if (profile_jstype === 'function') return { type: 'function' };
-  if (profile_jstype === 'object' && !isArray && entries(profile).filter(p=>p[0].indexOf('$') == 0).length == 0) return { type: 'asIs' };
+//  if (profile_jstype === 'object' && !isArray && entries(profile).filter(p=>p[0].indexOf('$') == 0).length == 0) return { type: 'asIs' };
   if (profile_jstype === 'object' && (profile instanceof RegExp)) return { type: 'asIs' };
   if (profile == null) return { type: 'asIs' };
 
@@ -181,9 +188,11 @@ function prepare(context,parentParam) {
       elseContext: new jbCtx(context,{profile: profile['else'] || 0 , path: '~else'}),
       elseParentParam: { type: parentParam_type, as:jstype }
     }
-  var comp_name = compName(profile);
+  var comp_name = compName(profile,parentParam);
   if (!comp_name)
-    return { type: 'ignore' }
+    return { type: 'asIs' }
+  // if (!comp_name)
+  //   return { type: 'ignore' }
   var comp = jb.comps[comp_name];
   if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined'); return { type:'null' } }
   if (!comp.impl) { logError('component ' + comp_name + ' has no implementation'); return { type:'null' } }
@@ -274,51 +283,61 @@ function expression(exp, context, parentParam) {
 
 function evalExpressionPart(expressionPart,context,jstype) {
   // example: %$person.name%.
-  if (expressionPart == ".") expressionPart = "";
 
-  // empty primitive expression
-  if (!expressionPart && (jstype == 'string' || jstype == 'boolean' || jstype == 'number'))
-    return jstypes[jstype](context.data);
-
-  if (expressionPart.indexOf('=') == 0) { // function
-    var parsed = expressionPart.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
-    var funcName = parsed && parsed[1];
-    if (funcName && jb.functions[funcName])
-      return tojstype(jb.functions[funcName](context,parsed[2]),jstype,context);
-  }
+  var primitiveJsType = ['string','boolean','number'].indexOf(jstype) != -1;
+  // empty primitive expression - perfomance
+  // if (expressionPart == "")
+  //   return context.data;
 
   var parts = expressionPart.split(/[.\/]/);
-  var item = context.data;
+  return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),context.data)
 
-  for(var i=0;i<parts.length;i++) {
-    var part = parts[i], index, match;
-    if ((match = part.match(/(.*)\[([0-9]+)\]/)) != null) { // x[y]
-      part = match[1];
-      index = Number(match[2]);
-    }
-    if (part == '') ;
-    else if (part == '$parent' && item.$jb_parent && i > 0)
-      item = item.$jb_parent
-    else if (part.charAt(0) == '$' && i == 0 && part.length > 1)
-      item = calcVar(context,part.substr(1))
-    else if (Array.isArray(item))
-      item = item.map(inner =>
-        typeof inner === "object" ? objectProperty(inner,part,jstype,i == parts.length -1) : inner)
-        .filter(x=>x != null)
-    else if (item && typeof item === 'object' && typeof item[part] === 'function' && item[part].profile)
-      item = item[part](context)
-    else if (item && typeof item === 'object')
-      item = item && objectProperty(item,part,jstype,i == parts.length -1)
-    else
-      item = null; // no match
+  function pipe(input,subExp,last,first,refHandler) {
+      if (subExp == '')
+          return input;
 
-    if (!isNaN(index) && Array.isArray(item))
-      item = item[index];
+      var arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
+      var refHandler = refHandler || (input && input.handler) || jb.valueByRefHandler;
+      if (arrayIndexMatch) {
+        var arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1],false,first,refHandler);
+        var index = arrayIndexMatch[2];
+        if (!Array.isArray(arr))
+            return null; //jb.logError('expecting array instead of ' + typeof arr, context);
 
-    if (!item)
-      return item;	// 0 should return 0
+        if (last && (jstype == 'ref' || !primitiveJsType))
+           return refHandler.objectProperty(arr,index);
+        if (typeof arr[index] == 'undefined')
+           arr[index] = last ? null : [];
+			  if (last && jstype)
+           return jstypes[jstype](arr[index]);
+        return arr[index];
+     }
+
+      var functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
+      if (functionCallMatch && jb.functions[functionCallMatch[1]])
+        return tojstype(jb.functions[functionCallMatch[1]](context,functionCallMatch[2]),jstype,context);
+
+      if (first && subExp.charAt(0) == '$' && subExp.length > 1)
+        return calcVar(context,subExp.substr(1))
+      var obj = arrValue = val(input);
+      if (Array.isArray(arrValue) && subExp == 'length')
+        return arrValue.length;
+      if (Array.isArray(arrValue))
+        return arrValue.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null);
+
+      if (input != null && typeof input == 'object') {
+        if (obj == null) return;
+        if (typeof obj[subExp] === 'function' && obj[subExp].profile)
+            return obj[subExp](context);
+        if (last && jstype == 'ref')
+           return refHandler.objectProperty(obj,subExp);
+        if (typeof obj[subExp] == 'undefined')
+           obj[subExp] = last ? null : {};
+        if (last && jstype)
+            return jstypes[jstype](obj[subExp]);
+        return obj[subExp];
+      }
   }
-  return item;
 }
 
 function bool_expression(exp, context) {
@@ -432,21 +451,6 @@ var jstypes = {
     }
 }
 
-function objectProperty(_object,property,jstype,lastInExpression) {
-  var object = val(_object);
-  if (!object) return null;
-  if (typeof object[property] == 'undefined')
-    object[property] = lastInExpression ? null : {};
-  if (lastInExpression) {
-    if (jstype == 'string' || jstype == 'boolean' || jstype == 'number')
-      return jstypes[jstype](object[property]); // no need for valueByRef
-    if (jstype == 'ref')
-      return jb.valueByRefHandler.objectProperty(object,property)
-  }
-  return object[property];
-}
-
-
 function profileType(profile) {
   if (!profile) return '';
   if (typeof profile == 'string') return 'data';
@@ -461,11 +465,16 @@ function sugarProp(profile) {
     .filter(p=>['$vars','$debugger','$log'].indexOf(p[0]) == -1)[0]
 }
 
-function compName(profile) {
-  if (!profile) return;
+function singleInType(profile,parentParam) {
+  var _type = parentParam && parentParam.type && parentParam.type.split('[')[0];
+  return _type && jb.comps[_type] && jb.comps[_type].singleInType && _type;
+}
+
+function compName(profile,parentParam) {
+  if (!profile || Array.isArray(profile)) return;
   if (profile.$) return profile.$;
   var f = sugarProp(profile);
-  return f && f[0].slice(1);
+  return (f && f[0].slice(1)) || singleInType(profile,parentParam);
 }
 
 // give a name to the impl function. Used for tgp debugging
@@ -536,20 +545,20 @@ class jbCtx {
 }
 
 var logs = {};
-function logError(errorStr,errorObj,ctx) {
+function logError(errorStr,p1,p2,p3) {
   logs.error = logs.error || [];
   logs.error.push(errorStr);
-  console.error(errorStr,errorObj,ctx);
+  console.error(errorStr,p1,p2,p3);
 }
 
 function logPerformance(type,p1,p2,p3) {
-  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
-  if ([].indexOf(type) == -1) return; // filter. TBD take from somewhere else
+//  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
+  if ((jb.issuesTolog || []).indexOf(type) == -1) return; // filter. TBD take from somewhere else
   console.log(type, p1 || '', p2 || '', p3 ||'');
 }
 
-function logException(e,errorStr) {
-  logError('exception: ' + errorStr + "\n" + (e.stack||''));
+function logException(e,errorStr,p1,p2,p3) {
+  logError('exception: ' + errorStr + "\n" + (e.stack||''),p1,p2,p3);
 }
 
 function val(v) {
@@ -561,7 +570,7 @@ function entries(obj) {
   if (!obj || typeof obj != 'object') return [];
   var ret = [];
   for(var i in obj) // please do not change. its keeps definition order !!!!
-      if (obj.hasOwnProperty(i))
+      if (obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
         ret.push([i,obj[i]])
   return ret;
 }
@@ -574,37 +583,38 @@ function extend(obj,obj1,obj2,obj3) {
 }
 
 
-var valueByRefHandlerWithjbParent = {
-  val: function(v) {
-    if (v.$jb_val) return v.$jb_val();
-    return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
-  },
-  writeValue: function(to,value,srcCtx) {
-    jb.logPerformance('writeValue',value,to,srcCtx);
-    if (!to) return;
-    if (to.$jb_val)
-      to.$jb_val(this.val(value))
-    else if (to.$jb_parent)
-      to.$jb_parent[to.$jb_property] = this.val(value);
-    return to;
-  },
-  asRef: function(value) {
-    if (value && (value.$jb_parent || value.$jb_val))
-        return value;
-    return { $jb_val: () => value }
-  },
-  isRef: function(value) {
-    return value && (value.$jb_parent || value.$jb_val);
-  },
-  objectProperty: function(obj,prop) {
-      if (this.isRef(obj[prop]))
-        return obj[prop];
-      else
-        return { $jb_parent: obj, $jb_property: prop };
-  }
-}
+// var valueByRefHandlerWithjbParent = {
+//   val: function(v) {
+//     if (v.$jb_val) return v.$jb_val();
+//     return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
+//   },
+//   writeValue: function(to,value,srcCtx) {
+//     jb.logPerformance('writeValue',value,to,srcCtx);
+//     if (!to) return;
+//     if (to.$jb_val)
+//       to.$jb_val(this.val(value))
+//     else if (to.$jb_parent)
+//       to.$jb_parent[to.$jb_property] = this.val(value);
+//     return to;
+//   },
+//   asRef: function(value) {
+//     if (value && (value.$jb_parent || value.$jb_val))
+//         return value;
+//     return { $jb_val: () => value }
+//   },
+//   isRef: function(value) {
+//     return value && (value.$jb_parent || value.$jb_val);
+//   },
+//   objectProperty: function(obj,prop) {
+//       if (this.isRef(obj[prop]))
+//         return obj[prop];
+//       else
+//         return { $jb_parent: obj, $jb_property: prop };
+//   }
+// }
+//
+var valueByRefHandler = null; // valueByRefHandlerWithjbParent;
 
-var valueByRefHandler = valueByRefHandlerWithjbParent;
 var types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 
 return {
@@ -629,10 +639,11 @@ return {
   ctxDictionary: ctxDictionary,
   testers: testers,
   compParams: compParams,
+  singleInType: singleInType,
   val: val,
   entries: entries,
   extend: extend,
-  objectProperty: objectProperty
+  ctxCounter: _ => ctxCounter
 }
 
 })();
@@ -742,7 +753,7 @@ Object.assign(jb,{
   splice: (ref,args,srcCtx) =>
     jb.refHandler(ref).splice(ref,args,srcCtx),
   move: (fromRef,toRef,srcCtx) =>
-    jb.refHandler(ref).splice(fromRef,toRef,srcCtx),
+    jb.refHandler(fromRef).move(fromRef,toRef,srcCtx),
   isRef: (ref) =>
     jb.refHandler(ref).isRef(ref),
   refreshRef: (ref) =>
@@ -862,7 +873,7 @@ jb.component('action.if', {
 jb.component('jb-run', {
  	type: 'action',
  	params: [
- 		{ id: 'profile', as: 'string', essential: true},
+ 		{ id: 'profile', as: 'string', essential: true, description: 'profile name'},
  		{ id: 'params', as: 'single' },
  	],
  	impl: (ctx,profile,params) =>
@@ -913,6 +924,7 @@ jb.component('first', {
 
 jb.component('property-names', {
 	type: 'data',
+  description: 'Object.getOwnPropertyNames',
 	params: [
 		{ id: 'obj', defaultValue: '%%', as: 'single' }
 	],
@@ -922,6 +934,7 @@ jb.component('property-names', {
 
 jb.component('assign', {
 	type: 'data',
+  description: 'Object.assign',
 	params: [
 		{ id: 'property', essential: true, as: 'string' },
 		{ id: 'value', essential: true },
@@ -997,7 +1010,7 @@ jb.component('remove-suffix',{
 jb.component('remove-suffix-regex',{
 	type: 'data',
 	params: [
-		{ id: 'suffix', as: 'string', essential: true },
+		{ id: 'suffix', as: 'string', essential: true, description: 'regular expression. e.g [0-9]*' },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: function(context,suffix,text) {
@@ -1010,11 +1023,11 @@ jb.component('remove-suffix-regex',{
 jb.component('write-value',{
 	type: 'action',
 	params: [
-		{ id: 'to', as: 'ref' },
-		{ id: 'value'}
+		{ id: 'to', as: 'ref', essential: true },
+		{ id: 'value', essential: true}
 	],
 	impl: (ctx,to,value) =>
-		jb.writeValue(to,value,ctx)
+		jb.writeValue(to,jb.val(value),ctx)
 });
 
 jb.component('remove-from-array', {
@@ -1404,10 +1417,12 @@ jb.component('runActions', {
 			var innerPath =  '' ;
 		else
 			var innerPath = context.profile['$runActions'] ? '$runActions~' : 'items~';
-		return actions.reduce((def,action,index) =>
-			def.then(() =>
-				Promise.resolve(context.runInner(action, { as: 'single'}, innerPath + index ))),
-			Promise.resolve())
+		return actions.reduce((def,action,index) => {
+			if (def && def.then)
+				return def.then(_ =>	context.runInner(action, { as: 'single'}, innerPath + index ))
+			else
+				return context.runInner(action, { as: 'single'}, innerPath + index );
+			},null)
 	}
 });
 
@@ -1529,13 +1544,30 @@ jb.component('http.get', {
 		{ id: 'json', as: 'boolean' }
 	],
 	impl: (ctx,url,_json) => {
+		if (ctx.probe)
+			return jb.http_get_cache[url];
 		var json = _json || url.match(/json$/);
 		return fetch(url)
 			  .then(r =>
 			  		json ? r.json() : r.text())
+				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
 			  .catch(e => jb.logException(e) || [])
 	}
 });
+
+jb.component('isRef', {
+	params: [
+		{ id: 'obj', essential: true }
+	],
+	impl: (ctx,obj) => jb.isRef(obj)
+})
+
+jb.component('asRef', {
+	params: [
+		{ id: 'obj', essential: true }
+	],
+	impl: (ctx,obj) => jb.asRef(obj)
+})
 
 jb.component('data.switch', {
   params: [
@@ -1550,8 +1582,9 @@ jb.component('data.switch', {
   }
 })
 
-jb.component('data.case', {
+jb.component('data.switch-case', {
   type: 'data.switch-case',
+  singleInType: true,
   params: [
   	{ id: 'condition', type: 'boolean', essential: true, dynamic: true },
   	{ id: 'value', essential: true, dynamic: true },
@@ -1573,20 +1606,15 @@ jb.component('action.switch', {
   }
 })
 
-jb.component('action.case', {
+jb.component('action.switch-case', {
   type: 'action.switch-case',
+  singleInType: true,
   params: [
-  	{ id: 'condition', type: 'boolean', essential: true, dynamic: true },
+  	{ id: 'condition', type: 'boolean', as: 'boolean', essential: true, dynamic: true },
   	{ id: 'action', type: 'action' ,essential: true, dynamic: true },
   ],
   impl: ctx => ctx.params
 })
-;
-
-/*! jQuery v3.2.1 | (c) JS Foundation and other contributors | jquery.org/license */
-!function(a,b){"use strict";"object"==typeof module&&"object"==typeof module.exports?module.exports=a.document?b(a,!0):function(a){if(!a.document)throw new Error("jQuery requires a window with a document");return b(a)}:b(a)}("undefined"!=typeof window?window:this,function(a,b){"use strict";var c=[],d=a.document,e=Object.getPrototypeOf,f=c.slice,g=c.concat,h=c.push,i=c.indexOf,j={},k=j.toString,l=j.hasOwnProperty,m=l.toString,n=m.call(Object),o={};function p(a,b){b=b||d;var c=b.createElement("script");c.text=a,b.head.appendChild(c).parentNode.removeChild(c)}var q="3.2.1",r=function(a,b){return new r.fn.init(a,b)},s=/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g,t=/^-ms-/,u=/-([a-z])/g,v=function(a,b){return b.toUpperCase()};r.fn=r.prototype={jquery:q,constructor:r,length:0,toArray:function(){return f.call(this)},get:function(a){return null==a?f.call(this):a<0?this[a+this.length]:this[a]},pushStack:function(a){var b=r.merge(this.constructor(),a);return b.prevObject=this,b},each:function(a){return r.each(this,a)},map:function(a){return this.pushStack(r.map(this,function(b,c){return a.call(b,c,b)}))},slice:function(){return this.pushStack(f.apply(this,arguments))},first:function(){return this.eq(0)},last:function(){return this.eq(-1)},eq:function(a){var b=this.length,c=+a+(a<0?b:0);return this.pushStack(c>=0&&c<b?[this[c]]:[])},end:function(){return this.prevObject||this.constructor()},push:h,sort:c.sort,splice:c.splice},r.extend=r.fn.extend=function(){var a,b,c,d,e,f,g=arguments[0]||{},h=1,i=arguments.length,j=!1;for("boolean"==typeof g&&(j=g,g=arguments[h]||{},h++),"object"==typeof g||r.isFunction(g)||(g={}),h===i&&(g=this,h--);h<i;h++)if(null!=(a=arguments[h]))for(b in a)c=g[b],d=a[b],g!==d&&(j&&d&&(r.isPlainObject(d)||(e=Array.isArray(d)))?(e?(e=!1,f=c&&Array.isArray(c)?c:[]):f=c&&r.isPlainObject(c)?c:{},g[b]=r.extend(j,f,d)):void 0!==d&&(g[b]=d));return g},r.extend({expando:"jQuery"+(q+Math.random()).replace(/\D/g,""),isReady:!0,error:function(a){throw new Error(a)},noop:function(){},isFunction:function(a){return"function"===r.type(a)},isWindow:function(a){return null!=a&&a===a.window},isNumeric:function(a){var b=r.type(a);return("number"===b||"string"===b)&&!isNaN(a-parseFloat(a))},isPlainObject:function(a){var b,c;return!(!a||"[object Object]"!==k.call(a))&&(!(b=e(a))||(c=l.call(b,"constructor")&&b.constructor,"function"==typeof c&&m.call(c)===n))},isEmptyObject:function(a){var b;for(b in a)return!1;return!0},type:function(a){return null==a?a+"":"object"==typeof a||"function"==typeof a?j[k.call(a)]||"object":typeof a},globalEval:function(a){p(a)},camelCase:function(a){return a.replace(t,"ms-").replace(u,v)},each:function(a,b){var c,d=0;if(w(a)){for(c=a.length;d<c;d++)if(b.call(a[d],d,a[d])===!1)break}else for(d in a)if(b.call(a[d],d,a[d])===!1)break;return a},trim:function(a){return null==a?"":(a+"").replace(s,"")},makeArray:function(a,b){var c=b||[];return null!=a&&(w(Object(a))?r.merge(c,"string"==typeof a?[a]:a):h.call(c,a)),c},inArray:function(a,b,c){return null==b?-1:i.call(b,a,c)},merge:function(a,b){for(var c=+b.length,d=0,e=a.length;d<c;d++)a[e++]=b[d];return a.length=e,a},grep:function(a,b,c){for(var d,e=[],f=0,g=a.length,h=!c;f<g;f++)d=!b(a[f],f),d!==h&&e.push(a[f]);return e},map:function(a,b,c){var d,e,f=0,h=[];if(w(a))for(d=a.length;f<d;f++)e=b(a[f],f,c),null!=e&&h.push(e);else for(f in a)e=b(a[f],f,c),null!=e&&h.push(e);return g.apply([],h)},guid:1,proxy:function(a,b){var c,d,e;if("string"==typeof b&&(c=a[b],b=a,a=c),r.isFunction(a))return d=f.call(arguments,2),e=function(){return a.apply(b||this,d.concat(f.call(arguments)))},e.guid=a.guid=a.guid||r.guid++,e},now:Date.now,support:o}),"function"==typeof Symbol&&(r.fn[Symbol.iterator]=c[Symbol.iterator]),r.each("Boolean Number String Function Array Date RegExp Object Error Symbol".split(" "),function(a,b){j["[object "+b+"]"]=b.toLowerCase()});function w(a){var b=!!a&&"length"in a&&a.length,c=r.type(a);return"function"!==c&&!r.isWindow(a)&&("array"===c||0===b||"number"==typeof b&&b>0&&b-1 in a)}var x=function(a){var b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u="sizzle"+1*new Date,v=a.document,w=0,x=0,y=ha(),z=ha(),A=ha(),B=function(a,b){return a===b&&(l=!0),0},C={}.hasOwnProperty,D=[],E=D.pop,F=D.push,G=D.push,H=D.slice,I=function(a,b){for(var c=0,d=a.length;c<d;c++)if(a[c]===b)return c;return-1},J="checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped",K="[\\x20\\t\\r\\n\\f]",L="(?:\\\\.|[\\w-]|[^\0-\\xa0])+",M="\\["+K+"*("+L+")(?:"+K+"*([*^$|!~]?=)"+K+"*(?:'((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\"|("+L+"))|)"+K+"*\\]",N=":("+L+")(?:\\((('((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\")|((?:\\\\.|[^\\\\()[\\]]|"+M+")*)|.*)\\)|)",O=new RegExp(K+"+","g"),P=new RegExp("^"+K+"+|((?:^|[^\\\\])(?:\\\\.)*)"+K+"+$","g"),Q=new RegExp("^"+K+"*,"+K+"*"),R=new RegExp("^"+K+"*([>+~]|"+K+")"+K+"*"),S=new RegExp("="+K+"*([^\\]'\"]*?)"+K+"*\\]","g"),T=new RegExp(N),U=new RegExp("^"+L+"$"),V={ID:new RegExp("^#("+L+")"),CLASS:new RegExp("^\\.("+L+")"),TAG:new RegExp("^("+L+"|[*])"),ATTR:new RegExp("^"+M),PSEUDO:new RegExp("^"+N),CHILD:new RegExp("^:(only|first|last|nth|nth-last)-(child|of-type)(?:\\("+K+"*(even|odd|(([+-]|)(\\d*)n|)"+K+"*(?:([+-]|)"+K+"*(\\d+)|))"+K+"*\\)|)","i"),bool:new RegExp("^(?:"+J+")$","i"),needsContext:new RegExp("^"+K+"*[>+~]|:(even|odd|eq|gt|lt|nth|first|last)(?:\\("+K+"*((?:-\\d)?\\d*)"+K+"*\\)|)(?=[^-]|$)","i")},W=/^(?:input|select|textarea|button)$/i,X=/^h\d$/i,Y=/^[^{]+\{\s*\[native \w/,Z=/^(?:#([\w-]+)|(\w+)|\.([\w-]+))$/,$=/[+~]/,_=new RegExp("\\\\([\\da-f]{1,6}"+K+"?|("+K+")|.)","ig"),aa=function(a,b,c){var d="0x"+b-65536;return d!==d||c?b:d<0?String.fromCharCode(d+65536):String.fromCharCode(d>>10|55296,1023&d|56320)},ba=/([\0-\x1f\x7f]|^-?\d)|^-$|[^\0-\x1f\x7f-\uFFFF\w-]/g,ca=function(a,b){return b?"\0"===a?"\ufffd":a.slice(0,-1)+"\\"+a.charCodeAt(a.length-1).toString(16)+" ":"\\"+a},da=function(){m()},ea=ta(function(a){return a.disabled===!0&&("form"in a||"label"in a)},{dir:"parentNode",next:"legend"});try{G.apply(D=H.call(v.childNodes),v.childNodes),D[v.childNodes.length].nodeType}catch(fa){G={apply:D.length?function(a,b){F.apply(a,H.call(b))}:function(a,b){var c=a.length,d=0;while(a[c++]=b[d++]);a.length=c-1}}}function ga(a,b,d,e){var f,h,j,k,l,o,r,s=b&&b.ownerDocument,w=b?b.nodeType:9;if(d=d||[],"string"!=typeof a||!a||1!==w&&9!==w&&11!==w)return d;if(!e&&((b?b.ownerDocument||b:v)!==n&&m(b),b=b||n,p)){if(11!==w&&(l=Z.exec(a)))if(f=l[1]){if(9===w){if(!(j=b.getElementById(f)))return d;if(j.id===f)return d.push(j),d}else if(s&&(j=s.getElementById(f))&&t(b,j)&&j.id===f)return d.push(j),d}else{if(l[2])return G.apply(d,b.getElementsByTagName(a)),d;if((f=l[3])&&c.getElementsByClassName&&b.getElementsByClassName)return G.apply(d,b.getElementsByClassName(f)),d}if(c.qsa&&!A[a+" "]&&(!q||!q.test(a))){if(1!==w)s=b,r=a;else if("object"!==b.nodeName.toLowerCase()){(k=b.getAttribute("id"))?k=k.replace(ba,ca):b.setAttribute("id",k=u),o=g(a),h=o.length;while(h--)o[h]="#"+k+" "+sa(o[h]);r=o.join(","),s=$.test(a)&&qa(b.parentNode)||b}if(r)try{return G.apply(d,s.querySelectorAll(r)),d}catch(x){}finally{k===u&&b.removeAttribute("id")}}}return i(a.replace(P,"$1"),b,d,e)}function ha(){var a=[];function b(c,e){return a.push(c+" ")>d.cacheLength&&delete b[a.shift()],b[c+" "]=e}return b}function ia(a){return a[u]=!0,a}function ja(a){var b=n.createElement("fieldset");try{return!!a(b)}catch(c){return!1}finally{b.parentNode&&b.parentNode.removeChild(b),b=null}}function ka(a,b){var c=a.split("|"),e=c.length;while(e--)d.attrHandle[c[e]]=b}function la(a,b){var c=b&&a,d=c&&1===a.nodeType&&1===b.nodeType&&a.sourceIndex-b.sourceIndex;if(d)return d;if(c)while(c=c.nextSibling)if(c===b)return-1;return a?1:-1}function ma(a){return function(b){var c=b.nodeName.toLowerCase();return"input"===c&&b.type===a}}function na(a){return function(b){var c=b.nodeName.toLowerCase();return("input"===c||"button"===c)&&b.type===a}}function oa(a){return function(b){return"form"in b?b.parentNode&&b.disabled===!1?"label"in b?"label"in b.parentNode?b.parentNode.disabled===a:b.disabled===a:b.isDisabled===a||b.isDisabled!==!a&&ea(b)===a:b.disabled===a:"label"in b&&b.disabled===a}}function pa(a){return ia(function(b){return b=+b,ia(function(c,d){var e,f=a([],c.length,b),g=f.length;while(g--)c[e=f[g]]&&(c[e]=!(d[e]=c[e]))})})}function qa(a){return a&&"undefined"!=typeof a.getElementsByTagName&&a}c=ga.support={},f=ga.isXML=function(a){var b=a&&(a.ownerDocument||a).documentElement;return!!b&&"HTML"!==b.nodeName},m=ga.setDocument=function(a){var b,e,g=a?a.ownerDocument||a:v;return g!==n&&9===g.nodeType&&g.documentElement?(n=g,o=n.documentElement,p=!f(n),v!==n&&(e=n.defaultView)&&e.top!==e&&(e.addEventListener?e.addEventListener("unload",da,!1):e.attachEvent&&e.attachEvent("onunload",da)),c.attributes=ja(function(a){return a.className="i",!a.getAttribute("className")}),c.getElementsByTagName=ja(function(a){return a.appendChild(n.createComment("")),!a.getElementsByTagName("*").length}),c.getElementsByClassName=Y.test(n.getElementsByClassName),c.getById=ja(function(a){return o.appendChild(a).id=u,!n.getElementsByName||!n.getElementsByName(u).length}),c.getById?(d.filter.ID=function(a){var b=a.replace(_,aa);return function(a){return a.getAttribute("id")===b}},d.find.ID=function(a,b){if("undefined"!=typeof b.getElementById&&p){var c=b.getElementById(a);return c?[c]:[]}}):(d.filter.ID=function(a){var b=a.replace(_,aa);return function(a){var c="undefined"!=typeof a.getAttributeNode&&a.getAttributeNode("id");return c&&c.value===b}},d.find.ID=function(a,b){if("undefined"!=typeof b.getElementById&&p){var c,d,e,f=b.getElementById(a);if(f){if(c=f.getAttributeNode("id"),c&&c.value===a)return[f];e=b.getElementsByName(a),d=0;while(f=e[d++])if(c=f.getAttributeNode("id"),c&&c.value===a)return[f]}return[]}}),d.find.TAG=c.getElementsByTagName?function(a,b){return"undefined"!=typeof b.getElementsByTagName?b.getElementsByTagName(a):c.qsa?b.querySelectorAll(a):void 0}:function(a,b){var c,d=[],e=0,f=b.getElementsByTagName(a);if("*"===a){while(c=f[e++])1===c.nodeType&&d.push(c);return d}return f},d.find.CLASS=c.getElementsByClassName&&function(a,b){if("undefined"!=typeof b.getElementsByClassName&&p)return b.getElementsByClassName(a)},r=[],q=[],(c.qsa=Y.test(n.querySelectorAll))&&(ja(function(a){o.appendChild(a).innerHTML="<a id='"+u+"'></a><select id='"+u+"-\r\\' msallowcapture=''><option selected=''></option></select>",a.querySelectorAll("[msallowcapture^='']").length&&q.push("[*^$]="+K+"*(?:''|\"\")"),a.querySelectorAll("[selected]").length||q.push("\\["+K+"*(?:value|"+J+")"),a.querySelectorAll("[id~="+u+"-]").length||q.push("~="),a.querySelectorAll(":checked").length||q.push(":checked"),a.querySelectorAll("a#"+u+"+*").length||q.push(".#.+[+~]")}),ja(function(a){a.innerHTML="<a href='' disabled='disabled'></a><select disabled='disabled'><option/></select>";var b=n.createElement("input");b.setAttribute("type","hidden"),a.appendChild(b).setAttribute("name","D"),a.querySelectorAll("[name=d]").length&&q.push("name"+K+"*[*^$|!~]?="),2!==a.querySelectorAll(":enabled").length&&q.push(":enabled",":disabled"),o.appendChild(a).disabled=!0,2!==a.querySelectorAll(":disabled").length&&q.push(":enabled",":disabled"),a.querySelectorAll("*,:x"),q.push(",.*:")})),(c.matchesSelector=Y.test(s=o.matches||o.webkitMatchesSelector||o.mozMatchesSelector||o.oMatchesSelector||o.msMatchesSelector))&&ja(function(a){c.disconnectedMatch=s.call(a,"*"),s.call(a,"[s!='']:x"),r.push("!=",N)}),q=q.length&&new RegExp(q.join("|")),r=r.length&&new RegExp(r.join("|")),b=Y.test(o.compareDocumentPosition),t=b||Y.test(o.contains)?function(a,b){var c=9===a.nodeType?a.documentElement:a,d=b&&b.parentNode;return a===d||!(!d||1!==d.nodeType||!(c.contains?c.contains(d):a.compareDocumentPosition&&16&a.compareDocumentPosition(d)))}:function(a,b){if(b)while(b=b.parentNode)if(b===a)return!0;return!1},B=b?function(a,b){if(a===b)return l=!0,0;var d=!a.compareDocumentPosition-!b.compareDocumentPosition;return d?d:(d=(a.ownerDocument||a)===(b.ownerDocument||b)?a.compareDocumentPosition(b):1,1&d||!c.sortDetached&&b.compareDocumentPosition(a)===d?a===n||a.ownerDocument===v&&t(v,a)?-1:b===n||b.ownerDocument===v&&t(v,b)?1:k?I(k,a)-I(k,b):0:4&d?-1:1)}:function(a,b){if(a===b)return l=!0,0;var c,d=0,e=a.parentNode,f=b.parentNode,g=[a],h=[b];if(!e||!f)return a===n?-1:b===n?1:e?-1:f?1:k?I(k,a)-I(k,b):0;if(e===f)return la(a,b);c=a;while(c=c.parentNode)g.unshift(c);c=b;while(c=c.parentNode)h.unshift(c);while(g[d]===h[d])d++;return d?la(g[d],h[d]):g[d]===v?-1:h[d]===v?1:0},n):n},ga.matches=function(a,b){return ga(a,null,null,b)},ga.matchesSelector=function(a,b){if((a.ownerDocument||a)!==n&&m(a),b=b.replace(S,"='$1']"),c.matchesSelector&&p&&!A[b+" "]&&(!r||!r.test(b))&&(!q||!q.test(b)))try{var d=s.call(a,b);if(d||c.disconnectedMatch||a.document&&11!==a.document.nodeType)return d}catch(e){}return ga(b,n,null,[a]).length>0},ga.contains=function(a,b){return(a.ownerDocument||a)!==n&&m(a),t(a,b)},ga.attr=function(a,b){(a.ownerDocument||a)!==n&&m(a);var e=d.attrHandle[b.toLowerCase()],f=e&&C.call(d.attrHandle,b.toLowerCase())?e(a,b,!p):void 0;return void 0!==f?f:c.attributes||!p?a.getAttribute(b):(f=a.getAttributeNode(b))&&f.specified?f.value:null},ga.escape=function(a){return(a+"").replace(ba,ca)},ga.error=function(a){throw new Error("Syntax error, unrecognized expression: "+a)},ga.uniqueSort=function(a){var b,d=[],e=0,f=0;if(l=!c.detectDuplicates,k=!c.sortStable&&a.slice(0),a.sort(B),l){while(b=a[f++])b===a[f]&&(e=d.push(f));while(e--)a.splice(d[e],1)}return k=null,a},e=ga.getText=function(a){var b,c="",d=0,f=a.nodeType;if(f){if(1===f||9===f||11===f){if("string"==typeof a.textContent)return a.textContent;for(a=a.firstChild;a;a=a.nextSibling)c+=e(a)}else if(3===f||4===f)return a.nodeValue}else while(b=a[d++])c+=e(b);return c},d=ga.selectors={cacheLength:50,createPseudo:ia,match:V,attrHandle:{},find:{},relative:{">":{dir:"parentNode",first:!0}," ":{dir:"parentNode"},"+":{dir:"previousSibling",first:!0},"~":{dir:"previousSibling"}},preFilter:{ATTR:function(a){return a[1]=a[1].replace(_,aa),a[3]=(a[3]||a[4]||a[5]||"").replace(_,aa),"~="===a[2]&&(a[3]=" "+a[3]+" "),a.slice(0,4)},CHILD:function(a){return a[1]=a[1].toLowerCase(),"nth"===a[1].slice(0,3)?(a[3]||ga.error(a[0]),a[4]=+(a[4]?a[5]+(a[6]||1):2*("even"===a[3]||"odd"===a[3])),a[5]=+(a[7]+a[8]||"odd"===a[3])):a[3]&&ga.error(a[0]),a},PSEUDO:function(a){var b,c=!a[6]&&a[2];return V.CHILD.test(a[0])?null:(a[3]?a[2]=a[4]||a[5]||"":c&&T.test(c)&&(b=g(c,!0))&&(b=c.indexOf(")",c.length-b)-c.length)&&(a[0]=a[0].slice(0,b),a[2]=c.slice(0,b)),a.slice(0,3))}},filter:{TAG:function(a){var b=a.replace(_,aa).toLowerCase();return"*"===a?function(){return!0}:function(a){return a.nodeName&&a.nodeName.toLowerCase()===b}},CLASS:function(a){var b=y[a+" "];return b||(b=new RegExp("(^|"+K+")"+a+"("+K+"|$)"))&&y(a,function(a){return b.test("string"==typeof a.className&&a.className||"undefined"!=typeof a.getAttribute&&a.getAttribute("class")||"")})},ATTR:function(a,b,c){return function(d){var e=ga.attr(d,a);return null==e?"!="===b:!b||(e+="","="===b?e===c:"!="===b?e!==c:"^="===b?c&&0===e.indexOf(c):"*="===b?c&&e.indexOf(c)>-1:"$="===b?c&&e.slice(-c.length)===c:"~="===b?(" "+e.replace(O," ")+" ").indexOf(c)>-1:"|="===b&&(e===c||e.slice(0,c.length+1)===c+"-"))}},CHILD:function(a,b,c,d,e){var f="nth"!==a.slice(0,3),g="last"!==a.slice(-4),h="of-type"===b;return 1===d&&0===e?function(a){return!!a.parentNode}:function(b,c,i){var j,k,l,m,n,o,p=f!==g?"nextSibling":"previousSibling",q=b.parentNode,r=h&&b.nodeName.toLowerCase(),s=!i&&!h,t=!1;if(q){if(f){while(p){m=b;while(m=m[p])if(h?m.nodeName.toLowerCase()===r:1===m.nodeType)return!1;o=p="only"===a&&!o&&"nextSibling"}return!0}if(o=[g?q.firstChild:q.lastChild],g&&s){m=q,l=m[u]||(m[u]={}),k=l[m.uniqueID]||(l[m.uniqueID]={}),j=k[a]||[],n=j[0]===w&&j[1],t=n&&j[2],m=n&&q.childNodes[n];while(m=++n&&m&&m[p]||(t=n=0)||o.pop())if(1===m.nodeType&&++t&&m===b){k[a]=[w,n,t];break}}else if(s&&(m=b,l=m[u]||(m[u]={}),k=l[m.uniqueID]||(l[m.uniqueID]={}),j=k[a]||[],n=j[0]===w&&j[1],t=n),t===!1)while(m=++n&&m&&m[p]||(t=n=0)||o.pop())if((h?m.nodeName.toLowerCase()===r:1===m.nodeType)&&++t&&(s&&(l=m[u]||(m[u]={}),k=l[m.uniqueID]||(l[m.uniqueID]={}),k[a]=[w,t]),m===b))break;return t-=e,t===d||t%d===0&&t/d>=0}}},PSEUDO:function(a,b){var c,e=d.pseudos[a]||d.setFilters[a.toLowerCase()]||ga.error("unsupported pseudo: "+a);return e[u]?e(b):e.length>1?(c=[a,a,"",b],d.setFilters.hasOwnProperty(a.toLowerCase())?ia(function(a,c){var d,f=e(a,b),g=f.length;while(g--)d=I(a,f[g]),a[d]=!(c[d]=f[g])}):function(a){return e(a,0,c)}):e}},pseudos:{not:ia(function(a){var b=[],c=[],d=h(a.replace(P,"$1"));return d[u]?ia(function(a,b,c,e){var f,g=d(a,null,e,[]),h=a.length;while(h--)(f=g[h])&&(a[h]=!(b[h]=f))}):function(a,e,f){return b[0]=a,d(b,null,f,c),b[0]=null,!c.pop()}}),has:ia(function(a){return function(b){return ga(a,b).length>0}}),contains:ia(function(a){return a=a.replace(_,aa),function(b){return(b.textContent||b.innerText||e(b)).indexOf(a)>-1}}),lang:ia(function(a){return U.test(a||"")||ga.error("unsupported lang: "+a),a=a.replace(_,aa).toLowerCase(),function(b){var c;do if(c=p?b.lang:b.getAttribute("xml:lang")||b.getAttribute("lang"))return c=c.toLowerCase(),c===a||0===c.indexOf(a+"-");while((b=b.parentNode)&&1===b.nodeType);return!1}}),target:function(b){var c=a.location&&a.location.hash;return c&&c.slice(1)===b.id},root:function(a){return a===o},focus:function(a){return a===n.activeElement&&(!n.hasFocus||n.hasFocus())&&!!(a.type||a.href||~a.tabIndex)},enabled:oa(!1),disabled:oa(!0),checked:function(a){var b=a.nodeName.toLowerCase();return"input"===b&&!!a.checked||"option"===b&&!!a.selected},selected:function(a){return a.parentNode&&a.parentNode.selectedIndex,a.selected===!0},empty:function(a){for(a=a.firstChild;a;a=a.nextSibling)if(a.nodeType<6)return!1;return!0},parent:function(a){return!d.pseudos.empty(a)},header:function(a){return X.test(a.nodeName)},input:function(a){return W.test(a.nodeName)},button:function(a){var b=a.nodeName.toLowerCase();return"input"===b&&"button"===a.type||"button"===b},text:function(a){var b;return"input"===a.nodeName.toLowerCase()&&"text"===a.type&&(null==(b=a.getAttribute("type"))||"text"===b.toLowerCase())},first:pa(function(){return[0]}),last:pa(function(a,b){return[b-1]}),eq:pa(function(a,b,c){return[c<0?c+b:c]}),even:pa(function(a,b){for(var c=0;c<b;c+=2)a.push(c);return a}),odd:pa(function(a,b){for(var c=1;c<b;c+=2)a.push(c);return a}),lt:pa(function(a,b,c){for(var d=c<0?c+b:c;--d>=0;)a.push(d);return a}),gt:pa(function(a,b,c){for(var d=c<0?c+b:c;++d<b;)a.push(d);return a})}},d.pseudos.nth=d.pseudos.eq;for(b in{radio:!0,checkbox:!0,file:!0,password:!0,image:!0})d.pseudos[b]=ma(b);for(b in{submit:!0,reset:!0})d.pseudos[b]=na(b);function ra(){}ra.prototype=d.filters=d.pseudos,d.setFilters=new ra,g=ga.tokenize=function(a,b){var c,e,f,g,h,i,j,k=z[a+" "];if(k)return b?0:k.slice(0);h=a,i=[],j=d.preFilter;while(h){c&&!(e=Q.exec(h))||(e&&(h=h.slice(e[0].length)||h),i.push(f=[])),c=!1,(e=R.exec(h))&&(c=e.shift(),f.push({value:c,type:e[0].replace(P," ")}),h=h.slice(c.length));for(g in d.filter)!(e=V[g].exec(h))||j[g]&&!(e=j[g](e))||(c=e.shift(),f.push({value:c,type:g,matches:e}),h=h.slice(c.length));if(!c)break}return b?h.length:h?ga.error(a):z(a,i).slice(0)};function sa(a){for(var b=0,c=a.length,d="";b<c;b++)d+=a[b].value;return d}function ta(a,b,c){var d=b.dir,e=b.next,f=e||d,g=c&&"parentNode"===f,h=x++;return b.first?function(b,c,e){while(b=b[d])if(1===b.nodeType||g)return a(b,c,e);return!1}:function(b,c,i){var j,k,l,m=[w,h];if(i){while(b=b[d])if((1===b.nodeType||g)&&a(b,c,i))return!0}else while(b=b[d])if(1===b.nodeType||g)if(l=b[u]||(b[u]={}),k=l[b.uniqueID]||(l[b.uniqueID]={}),e&&e===b.nodeName.toLowerCase())b=b[d]||b;else{if((j=k[f])&&j[0]===w&&j[1]===h)return m[2]=j[2];if(k[f]=m,m[2]=a(b,c,i))return!0}return!1}}function ua(a){return a.length>1?function(b,c,d){var e=a.length;while(e--)if(!a[e](b,c,d))return!1;return!0}:a[0]}function va(a,b,c){for(var d=0,e=b.length;d<e;d++)ga(a,b[d],c);return c}function wa(a,b,c,d,e){for(var f,g=[],h=0,i=a.length,j=null!=b;h<i;h++)(f=a[h])&&(c&&!c(f,d,e)||(g.push(f),j&&b.push(h)));return g}function xa(a,b,c,d,e,f){return d&&!d[u]&&(d=xa(d)),e&&!e[u]&&(e=xa(e,f)),ia(function(f,g,h,i){var j,k,l,m=[],n=[],o=g.length,p=f||va(b||"*",h.nodeType?[h]:h,[]),q=!a||!f&&b?p:wa(p,m,a,h,i),r=c?e||(f?a:o||d)?[]:g:q;if(c&&c(q,r,h,i),d){j=wa(r,n),d(j,[],h,i),k=j.length;while(k--)(l=j[k])&&(r[n[k]]=!(q[n[k]]=l))}if(f){if(e||a){if(e){j=[],k=r.length;while(k--)(l=r[k])&&j.push(q[k]=l);e(null,r=[],j,i)}k=r.length;while(k--)(l=r[k])&&(j=e?I(f,l):m[k])>-1&&(f[j]=!(g[j]=l))}}else r=wa(r===g?r.splice(o,r.length):r),e?e(null,g,r,i):G.apply(g,r)})}function ya(a){for(var b,c,e,f=a.length,g=d.relative[a[0].type],h=g||d.relative[" "],i=g?1:0,k=ta(function(a){return a===b},h,!0),l=ta(function(a){return I(b,a)>-1},h,!0),m=[function(a,c,d){var e=!g&&(d||c!==j)||((b=c).nodeType?k(a,c,d):l(a,c,d));return b=null,e}];i<f;i++)if(c=d.relative[a[i].type])m=[ta(ua(m),c)];else{if(c=d.filter[a[i].type].apply(null,a[i].matches),c[u]){for(e=++i;e<f;e++)if(d.relative[a[e].type])break;return xa(i>1&&ua(m),i>1&&sa(a.slice(0,i-1).concat({value:" "===a[i-2].type?"*":""})).replace(P,"$1"),c,i<e&&ya(a.slice(i,e)),e<f&&ya(a=a.slice(e)),e<f&&sa(a))}m.push(c)}return ua(m)}function za(a,b){var c=b.length>0,e=a.length>0,f=function(f,g,h,i,k){var l,o,q,r=0,s="0",t=f&&[],u=[],v=j,x=f||e&&d.find.TAG("*",k),y=w+=null==v?1:Math.random()||.1,z=x.length;for(k&&(j=g===n||g||k);s!==z&&null!=(l=x[s]);s++){if(e&&l){o=0,g||l.ownerDocument===n||(m(l),h=!p);while(q=a[o++])if(q(l,g||n,h)){i.push(l);break}k&&(w=y)}c&&((l=!q&&l)&&r--,f&&t.push(l))}if(r+=s,c&&s!==r){o=0;while(q=b[o++])q(t,u,g,h);if(f){if(r>0)while(s--)t[s]||u[s]||(u[s]=E.call(i));u=wa(u)}G.apply(i,u),k&&!f&&u.length>0&&r+b.length>1&&ga.uniqueSort(i)}return k&&(w=y,j=v),t};return c?ia(f):f}return h=ga.compile=function(a,b){var c,d=[],e=[],f=A[a+" "];if(!f){b||(b=g(a)),c=b.length;while(c--)f=ya(b[c]),f[u]?d.push(f):e.push(f);f=A(a,za(e,d)),f.selector=a}return f},i=ga.select=function(a,b,c,e){var f,i,j,k,l,m="function"==typeof a&&a,n=!e&&g(a=m.selector||a);if(c=c||[],1===n.length){if(i=n[0]=n[0].slice(0),i.length>2&&"ID"===(j=i[0]).type&&9===b.nodeType&&p&&d.relative[i[1].type]){if(b=(d.find.ID(j.matches[0].replace(_,aa),b)||[])[0],!b)return c;m&&(b=b.parentNode),a=a.slice(i.shift().value.length)}f=V.needsContext.test(a)?0:i.length;while(f--){if(j=i[f],d.relative[k=j.type])break;if((l=d.find[k])&&(e=l(j.matches[0].replace(_,aa),$.test(i[0].type)&&qa(b.parentNode)||b))){if(i.splice(f,1),a=e.length&&sa(i),!a)return G.apply(c,e),c;break}}}return(m||h(a,n))(e,b,!p,c,!b||$.test(a)&&qa(b.parentNode)||b),c},c.sortStable=u.split("").sort(B).join("")===u,c.detectDuplicates=!!l,m(),c.sortDetached=ja(function(a){return 1&a.compareDocumentPosition(n.createElement("fieldset"))}),ja(function(a){return a.innerHTML="<a href='#'></a>","#"===a.firstChild.getAttribute("href")})||ka("type|href|height|width",function(a,b,c){if(!c)return a.getAttribute(b,"type"===b.toLowerCase()?1:2)}),c.attributes&&ja(function(a){return a.innerHTML="<input/>",a.firstChild.setAttribute("value",""),""===a.firstChild.getAttribute("value")})||ka("value",function(a,b,c){if(!c&&"input"===a.nodeName.toLowerCase())return a.defaultValue}),ja(function(a){return null==a.getAttribute("disabled")})||ka(J,function(a,b,c){var d;if(!c)return a[b]===!0?b.toLowerCase():(d=a.getAttributeNode(b))&&d.specified?d.value:null}),ga}(a);r.find=x,r.expr=x.selectors,r.expr[":"]=r.expr.pseudos,r.uniqueSort=r.unique=x.uniqueSort,r.text=x.getText,r.isXMLDoc=x.isXML,r.contains=x.contains,r.escapeSelector=x.escape;var y=function(a,b,c){var d=[],e=void 0!==c;while((a=a[b])&&9!==a.nodeType)if(1===a.nodeType){if(e&&r(a).is(c))break;d.push(a)}return d},z=function(a,b){for(var c=[];a;a=a.nextSibling)1===a.nodeType&&a!==b&&c.push(a);return c},A=r.expr.match.needsContext;function B(a,b){return a.nodeName&&a.nodeName.toLowerCase()===b.toLowerCase()}var C=/^<([a-z][^\/\0>:\x20\t\r\n\f]*)[\x20\t\r\n\f]*\/?>(?:<\/\1>|)$/i,D=/^.[^:#\[\.,]*$/;function E(a,b,c){return r.isFunction(b)?r.grep(a,function(a,d){return!!b.call(a,d,a)!==c}):b.nodeType?r.grep(a,function(a){return a===b!==c}):"string"!=typeof b?r.grep(a,function(a){return i.call(b,a)>-1!==c}):D.test(b)?r.filter(b,a,c):(b=r.filter(b,a),r.grep(a,function(a){return i.call(b,a)>-1!==c&&1===a.nodeType}))}r.filter=function(a,b,c){var d=b[0];return c&&(a=":not("+a+")"),1===b.length&&1===d.nodeType?r.find.matchesSelector(d,a)?[d]:[]:r.find.matches(a,r.grep(b,function(a){return 1===a.nodeType}))},r.fn.extend({find:function(a){var b,c,d=this.length,e=this;if("string"!=typeof a)return this.pushStack(r(a).filter(function(){for(b=0;b<d;b++)if(r.contains(e[b],this))return!0}));for(c=this.pushStack([]),b=0;b<d;b++)r.find(a,e[b],c);return d>1?r.uniqueSort(c):c},filter:function(a){return this.pushStack(E(this,a||[],!1))},not:function(a){return this.pushStack(E(this,a||[],!0))},is:function(a){return!!E(this,"string"==typeof a&&A.test(a)?r(a):a||[],!1).length}});var F,G=/^(?:\s*(<[\w\W]+>)[^>]*|#([\w-]+))$/,H=r.fn.init=function(a,b,c){var e,f;if(!a)return this;if(c=c||F,"string"==typeof a){if(e="<"===a[0]&&">"===a[a.length-1]&&a.length>=3?[null,a,null]:G.exec(a),!e||!e[1]&&b)return!b||b.jquery?(b||c).find(a):this.constructor(b).find(a);if(e[1]){if(b=b instanceof r?b[0]:b,r.merge(this,r.parseHTML(e[1],b&&b.nodeType?b.ownerDocument||b:d,!0)),C.test(e[1])&&r.isPlainObject(b))for(e in b)r.isFunction(this[e])?this[e](b[e]):this.attr(e,b[e]);return this}return f=d.getElementById(e[2]),f&&(this[0]=f,this.length=1),this}return a.nodeType?(this[0]=a,this.length=1,this):r.isFunction(a)?void 0!==c.ready?c.ready(a):a(r):r.makeArray(a,this)};H.prototype=r.fn,F=r(d);var I=/^(?:parents|prev(?:Until|All))/,J={children:!0,contents:!0,next:!0,prev:!0};r.fn.extend({has:function(a){var b=r(a,this),c=b.length;return this.filter(function(){for(var a=0;a<c;a++)if(r.contains(this,b[a]))return!0})},closest:function(a,b){var c,d=0,e=this.length,f=[],g="string"!=typeof a&&r(a);if(!A.test(a))for(;d<e;d++)for(c=this[d];c&&c!==b;c=c.parentNode)if(c.nodeType<11&&(g?g.index(c)>-1:1===c.nodeType&&r.find.matchesSelector(c,a))){f.push(c);break}return this.pushStack(f.length>1?r.uniqueSort(f):f)},index:function(a){return a?"string"==typeof a?i.call(r(a),this[0]):i.call(this,a.jquery?a[0]:a):this[0]&&this[0].parentNode?this.first().prevAll().length:-1},add:function(a,b){return this.pushStack(r.uniqueSort(r.merge(this.get(),r(a,b))))},addBack:function(a){return this.add(null==a?this.prevObject:this.prevObject.filter(a))}});function K(a,b){while((a=a[b])&&1!==a.nodeType);return a}r.each({parent:function(a){var b=a.parentNode;return b&&11!==b.nodeType?b:null},parents:function(a){return y(a,"parentNode")},parentsUntil:function(a,b,c){return y(a,"parentNode",c)},next:function(a){return K(a,"nextSibling")},prev:function(a){return K(a,"previousSibling")},nextAll:function(a){return y(a,"nextSibling")},prevAll:function(a){return y(a,"previousSibling")},nextUntil:function(a,b,c){return y(a,"nextSibling",c)},prevUntil:function(a,b,c){return y(a,"previousSibling",c)},siblings:function(a){return z((a.parentNode||{}).firstChild,a)},children:function(a){return z(a.firstChild)},contents:function(a){return B(a,"iframe")?a.contentDocument:(B(a,"template")&&(a=a.content||a),r.merge([],a.childNodes))}},function(a,b){r.fn[a]=function(c,d){var e=r.map(this,b,c);return"Until"!==a.slice(-5)&&(d=c),d&&"string"==typeof d&&(e=r.filter(d,e)),this.length>1&&(J[a]||r.uniqueSort(e),I.test(a)&&e.reverse()),this.pushStack(e)}});var L=/[^\x20\t\r\n\f]+/g;function M(a){var b={};return r.each(a.match(L)||[],function(a,c){b[c]=!0}),b}r.Callbacks=function(a){a="string"==typeof a?M(a):r.extend({},a);var b,c,d,e,f=[],g=[],h=-1,i=function(){for(e=e||a.once,d=b=!0;g.length;h=-1){c=g.shift();while(++h<f.length)f[h].apply(c[0],c[1])===!1&&a.stopOnFalse&&(h=f.length,c=!1)}a.memory||(c=!1),b=!1,e&&(f=c?[]:"")},j={add:function(){return f&&(c&&!b&&(h=f.length-1,g.push(c)),function d(b){r.each(b,function(b,c){r.isFunction(c)?a.unique&&j.has(c)||f.push(c):c&&c.length&&"string"!==r.type(c)&&d(c)})}(arguments),c&&!b&&i()),this},remove:function(){return r.each(arguments,function(a,b){var c;while((c=r.inArray(b,f,c))>-1)f.splice(c,1),c<=h&&h--}),this},has:function(a){return a?r.inArray(a,f)>-1:f.length>0},empty:function(){return f&&(f=[]),this},disable:function(){return e=g=[],f=c="",this},disabled:function(){return!f},lock:function(){return e=g=[],c||b||(f=c=""),this},locked:function(){return!!e},fireWith:function(a,c){return e||(c=c||[],c=[a,c.slice?c.slice():c],g.push(c),b||i()),this},fire:function(){return j.fireWith(this,arguments),this},fired:function(){return!!d}};return j};function N(a){return a}function O(a){throw a}function P(a,b,c,d){var e;try{a&&r.isFunction(e=a.promise)?e.call(a).done(b).fail(c):a&&r.isFunction(e=a.then)?e.call(a,b,c):b.apply(void 0,[a].slice(d))}catch(a){c.apply(void 0,[a])}}r.extend({Deferred:function(b){var c=[["notify","progress",r.Callbacks("memory"),r.Callbacks("memory"),2],["resolve","done",r.Callbacks("once memory"),r.Callbacks("once memory"),0,"resolved"],["reject","fail",r.Callbacks("once memory"),r.Callbacks("once memory"),1,"rejected"]],d="pending",e={state:function(){return d},always:function(){return f.done(arguments).fail(arguments),this},"catch":function(a){return e.then(null,a)},pipe:function(){var a=arguments;return r.Deferred(function(b){r.each(c,function(c,d){var e=r.isFunction(a[d[4]])&&a[d[4]];f[d[1]](function(){var a=e&&e.apply(this,arguments);a&&r.isFunction(a.promise)?a.promise().progress(b.notify).done(b.resolve).fail(b.reject):b[d[0]+"With"](this,e?[a]:arguments)})}),a=null}).promise()},then:function(b,d,e){var f=0;function g(b,c,d,e){return function(){var h=this,i=arguments,j=function(){var a,j;if(!(b<f)){if(a=d.apply(h,i),a===c.promise())throw new TypeError("Thenable self-resolution");j=a&&("object"==typeof a||"function"==typeof a)&&a.then,r.isFunction(j)?e?j.call(a,g(f,c,N,e),g(f,c,O,e)):(f++,j.call(a,g(f,c,N,e),g(f,c,O,e),g(f,c,N,c.notifyWith))):(d!==N&&(h=void 0,i=[a]),(e||c.resolveWith)(h,i))}},k=e?j:function(){try{j()}catch(a){r.Deferred.exceptionHook&&r.Deferred.exceptionHook(a,k.stackTrace),b+1>=f&&(d!==O&&(h=void 0,i=[a]),c.rejectWith(h,i))}};b?k():(r.Deferred.getStackHook&&(k.stackTrace=r.Deferred.getStackHook()),a.setTimeout(k))}}return r.Deferred(function(a){c[0][3].add(g(0,a,r.isFunction(e)?e:N,a.notifyWith)),c[1][3].add(g(0,a,r.isFunction(b)?b:N)),c[2][3].add(g(0,a,r.isFunction(d)?d:O))}).promise()},promise:function(a){return null!=a?r.extend(a,e):e}},f={};return r.each(c,function(a,b){var g=b[2],h=b[5];e[b[1]]=g.add,h&&g.add(function(){d=h},c[3-a][2].disable,c[0][2].lock),g.add(b[3].fire),f[b[0]]=function(){return f[b[0]+"With"](this===f?void 0:this,arguments),this},f[b[0]+"With"]=g.fireWith}),e.promise(f),b&&b.call(f,f),f},when:function(a){var b=arguments.length,c=b,d=Array(c),e=f.call(arguments),g=r.Deferred(),h=function(a){return function(c){d[a]=this,e[a]=arguments.length>1?f.call(arguments):c,--b||g.resolveWith(d,e)}};if(b<=1&&(P(a,g.done(h(c)).resolve,g.reject,!b),"pending"===g.state()||r.isFunction(e[c]&&e[c].then)))return g.then();while(c--)P(e[c],h(c),g.reject);return g.promise()}});var Q=/^(Eval|Internal|Range|Reference|Syntax|Type|URI)Error$/;r.Deferred.exceptionHook=function(b,c){a.console&&a.console.warn&&b&&Q.test(b.name)&&a.console.warn("jQuery.Deferred exception: "+b.message,b.stack,c)},r.readyException=function(b){a.setTimeout(function(){throw b})};var R=r.Deferred();r.fn.ready=function(a){return R.then(a)["catch"](function(a){r.readyException(a)}),this},r.extend({isReady:!1,readyWait:1,ready:function(a){(a===!0?--r.readyWait:r.isReady)||(r.isReady=!0,a!==!0&&--r.readyWait>0||R.resolveWith(d,[r]))}}),r.ready.then=R.then;function S(){d.removeEventListener("DOMContentLoaded",S),
-a.removeEventListener("load",S),r.ready()}"complete"===d.readyState||"loading"!==d.readyState&&!d.documentElement.doScroll?a.setTimeout(r.ready):(d.addEventListener("DOMContentLoaded",S),a.addEventListener("load",S));var T=function(a,b,c,d,e,f,g){var h=0,i=a.length,j=null==c;if("object"===r.type(c)){e=!0;for(h in c)T(a,b,h,c[h],!0,f,g)}else if(void 0!==d&&(e=!0,r.isFunction(d)||(g=!0),j&&(g?(b.call(a,d),b=null):(j=b,b=function(a,b,c){return j.call(r(a),c)})),b))for(;h<i;h++)b(a[h],c,g?d:d.call(a[h],h,b(a[h],c)));return e?a:j?b.call(a):i?b(a[0],c):f},U=function(a){return 1===a.nodeType||9===a.nodeType||!+a.nodeType};function V(){this.expando=r.expando+V.uid++}V.uid=1,V.prototype={cache:function(a){var b=a[this.expando];return b||(b={},U(a)&&(a.nodeType?a[this.expando]=b:Object.defineProperty(a,this.expando,{value:b,configurable:!0}))),b},set:function(a,b,c){var d,e=this.cache(a);if("string"==typeof b)e[r.camelCase(b)]=c;else for(d in b)e[r.camelCase(d)]=b[d];return e},get:function(a,b){return void 0===b?this.cache(a):a[this.expando]&&a[this.expando][r.camelCase(b)]},access:function(a,b,c){return void 0===b||b&&"string"==typeof b&&void 0===c?this.get(a,b):(this.set(a,b,c),void 0!==c?c:b)},remove:function(a,b){var c,d=a[this.expando];if(void 0!==d){if(void 0!==b){Array.isArray(b)?b=b.map(r.camelCase):(b=r.camelCase(b),b=b in d?[b]:b.match(L)||[]),c=b.length;while(c--)delete d[b[c]]}(void 0===b||r.isEmptyObject(d))&&(a.nodeType?a[this.expando]=void 0:delete a[this.expando])}},hasData:function(a){var b=a[this.expando];return void 0!==b&&!r.isEmptyObject(b)}};var W=new V,X=new V,Y=/^(?:\{[\w\W]*\}|\[[\w\W]*\])$/,Z=/[A-Z]/g;function $(a){return"true"===a||"false"!==a&&("null"===a?null:a===+a+""?+a:Y.test(a)?JSON.parse(a):a)}function _(a,b,c){var d;if(void 0===c&&1===a.nodeType)if(d="data-"+b.replace(Z,"-$&").toLowerCase(),c=a.getAttribute(d),"string"==typeof c){try{c=$(c)}catch(e){}X.set(a,b,c)}else c=void 0;return c}r.extend({hasData:function(a){return X.hasData(a)||W.hasData(a)},data:function(a,b,c){return X.access(a,b,c)},removeData:function(a,b){X.remove(a,b)},_data:function(a,b,c){return W.access(a,b,c)},_removeData:function(a,b){W.remove(a,b)}}),r.fn.extend({data:function(a,b){var c,d,e,f=this[0],g=f&&f.attributes;if(void 0===a){if(this.length&&(e=X.get(f),1===f.nodeType&&!W.get(f,"hasDataAttrs"))){c=g.length;while(c--)g[c]&&(d=g[c].name,0===d.indexOf("data-")&&(d=r.camelCase(d.slice(5)),_(f,d,e[d])));W.set(f,"hasDataAttrs",!0)}return e}return"object"==typeof a?this.each(function(){X.set(this,a)}):T(this,function(b){var c;if(f&&void 0===b){if(c=X.get(f,a),void 0!==c)return c;if(c=_(f,a),void 0!==c)return c}else this.each(function(){X.set(this,a,b)})},null,b,arguments.length>1,null,!0)},removeData:function(a){return this.each(function(){X.remove(this,a)})}}),r.extend({queue:function(a,b,c){var d;if(a)return b=(b||"fx")+"queue",d=W.get(a,b),c&&(!d||Array.isArray(c)?d=W.access(a,b,r.makeArray(c)):d.push(c)),d||[]},dequeue:function(a,b){b=b||"fx";var c=r.queue(a,b),d=c.length,e=c.shift(),f=r._queueHooks(a,b),g=function(){r.dequeue(a,b)};"inprogress"===e&&(e=c.shift(),d--),e&&("fx"===b&&c.unshift("inprogress"),delete f.stop,e.call(a,g,f)),!d&&f&&f.empty.fire()},_queueHooks:function(a,b){var c=b+"queueHooks";return W.get(a,c)||W.access(a,c,{empty:r.Callbacks("once memory").add(function(){W.remove(a,[b+"queue",c])})})}}),r.fn.extend({queue:function(a,b){var c=2;return"string"!=typeof a&&(b=a,a="fx",c--),arguments.length<c?r.queue(this[0],a):void 0===b?this:this.each(function(){var c=r.queue(this,a,b);r._queueHooks(this,a),"fx"===a&&"inprogress"!==c[0]&&r.dequeue(this,a)})},dequeue:function(a){return this.each(function(){r.dequeue(this,a)})},clearQueue:function(a){return this.queue(a||"fx",[])},promise:function(a,b){var c,d=1,e=r.Deferred(),f=this,g=this.length,h=function(){--d||e.resolveWith(f,[f])};"string"!=typeof a&&(b=a,a=void 0),a=a||"fx";while(g--)c=W.get(f[g],a+"queueHooks"),c&&c.empty&&(d++,c.empty.add(h));return h(),e.promise(b)}});var aa=/[+-]?(?:\d*\.|)\d+(?:[eE][+-]?\d+|)/.source,ba=new RegExp("^(?:([+-])=|)("+aa+")([a-z%]*)$","i"),ca=["Top","Right","Bottom","Left"],da=function(a,b){return a=b||a,"none"===a.style.display||""===a.style.display&&r.contains(a.ownerDocument,a)&&"none"===r.css(a,"display")},ea=function(a,b,c,d){var e,f,g={};for(f in b)g[f]=a.style[f],a.style[f]=b[f];e=c.apply(a,d||[]);for(f in b)a.style[f]=g[f];return e};function fa(a,b,c,d){var e,f=1,g=20,h=d?function(){return d.cur()}:function(){return r.css(a,b,"")},i=h(),j=c&&c[3]||(r.cssNumber[b]?"":"px"),k=(r.cssNumber[b]||"px"!==j&&+i)&&ba.exec(r.css(a,b));if(k&&k[3]!==j){j=j||k[3],c=c||[],k=+i||1;do f=f||".5",k/=f,r.style(a,b,k+j);while(f!==(f=h()/i)&&1!==f&&--g)}return c&&(k=+k||+i||0,e=c[1]?k+(c[1]+1)*c[2]:+c[2],d&&(d.unit=j,d.start=k,d.end=e)),e}var ga={};function ha(a){var b,c=a.ownerDocument,d=a.nodeName,e=ga[d];return e?e:(b=c.body.appendChild(c.createElement(d)),e=r.css(b,"display"),b.parentNode.removeChild(b),"none"===e&&(e="block"),ga[d]=e,e)}function ia(a,b){for(var c,d,e=[],f=0,g=a.length;f<g;f++)d=a[f],d.style&&(c=d.style.display,b?("none"===c&&(e[f]=W.get(d,"display")||null,e[f]||(d.style.display="")),""===d.style.display&&da(d)&&(e[f]=ha(d))):"none"!==c&&(e[f]="none",W.set(d,"display",c)));for(f=0;f<g;f++)null!=e[f]&&(a[f].style.display=e[f]);return a}r.fn.extend({show:function(){return ia(this,!0)},hide:function(){return ia(this)},toggle:function(a){return"boolean"==typeof a?a?this.show():this.hide():this.each(function(){da(this)?r(this).show():r(this).hide()})}});var ja=/^(?:checkbox|radio)$/i,ka=/<([a-z][^\/\0>\x20\t\r\n\f]+)/i,la=/^$|\/(?:java|ecma)script/i,ma={option:[1,"<select multiple='multiple'>","</select>"],thead:[1,"<table>","</table>"],col:[2,"<table><colgroup>","</colgroup></table>"],tr:[2,"<table><tbody>","</tbody></table>"],td:[3,"<table><tbody><tr>","</tr></tbody></table>"],_default:[0,"",""]};ma.optgroup=ma.option,ma.tbody=ma.tfoot=ma.colgroup=ma.caption=ma.thead,ma.th=ma.td;function na(a,b){var c;return c="undefined"!=typeof a.getElementsByTagName?a.getElementsByTagName(b||"*"):"undefined"!=typeof a.querySelectorAll?a.querySelectorAll(b||"*"):[],void 0===b||b&&B(a,b)?r.merge([a],c):c}function oa(a,b){for(var c=0,d=a.length;c<d;c++)W.set(a[c],"globalEval",!b||W.get(b[c],"globalEval"))}var pa=/<|&#?\w+;/;function qa(a,b,c,d,e){for(var f,g,h,i,j,k,l=b.createDocumentFragment(),m=[],n=0,o=a.length;n<o;n++)if(f=a[n],f||0===f)if("object"===r.type(f))r.merge(m,f.nodeType?[f]:f);else if(pa.test(f)){g=g||l.appendChild(b.createElement("div")),h=(ka.exec(f)||["",""])[1].toLowerCase(),i=ma[h]||ma._default,g.innerHTML=i[1]+r.htmlPrefilter(f)+i[2],k=i[0];while(k--)g=g.lastChild;r.merge(m,g.childNodes),g=l.firstChild,g.textContent=""}else m.push(b.createTextNode(f));l.textContent="",n=0;while(f=m[n++])if(d&&r.inArray(f,d)>-1)e&&e.push(f);else if(j=r.contains(f.ownerDocument,f),g=na(l.appendChild(f),"script"),j&&oa(g),c){k=0;while(f=g[k++])la.test(f.type||"")&&c.push(f)}return l}!function(){var a=d.createDocumentFragment(),b=a.appendChild(d.createElement("div")),c=d.createElement("input");c.setAttribute("type","radio"),c.setAttribute("checked","checked"),c.setAttribute("name","t"),b.appendChild(c),o.checkClone=b.cloneNode(!0).cloneNode(!0).lastChild.checked,b.innerHTML="<textarea>x</textarea>",o.noCloneChecked=!!b.cloneNode(!0).lastChild.defaultValue}();var ra=d.documentElement,sa=/^key/,ta=/^(?:mouse|pointer|contextmenu|drag|drop)|click/,ua=/^([^.]*)(?:\.(.+)|)/;function va(){return!0}function wa(){return!1}function xa(){try{return d.activeElement}catch(a){}}function ya(a,b,c,d,e,f){var g,h;if("object"==typeof b){"string"!=typeof c&&(d=d||c,c=void 0);for(h in b)ya(a,h,c,d,b[h],f);return a}if(null==d&&null==e?(e=c,d=c=void 0):null==e&&("string"==typeof c?(e=d,d=void 0):(e=d,d=c,c=void 0)),e===!1)e=wa;else if(!e)return a;return 1===f&&(g=e,e=function(a){return r().off(a),g.apply(this,arguments)},e.guid=g.guid||(g.guid=r.guid++)),a.each(function(){r.event.add(this,b,e,d,c)})}r.event={global:{},add:function(a,b,c,d,e){var f,g,h,i,j,k,l,m,n,o,p,q=W.get(a);if(q){c.handler&&(f=c,c=f.handler,e=f.selector),e&&r.find.matchesSelector(ra,e),c.guid||(c.guid=r.guid++),(i=q.events)||(i=q.events={}),(g=q.handle)||(g=q.handle=function(b){return"undefined"!=typeof r&&r.event.triggered!==b.type?r.event.dispatch.apply(a,arguments):void 0}),b=(b||"").match(L)||[""],j=b.length;while(j--)h=ua.exec(b[j])||[],n=p=h[1],o=(h[2]||"").split(".").sort(),n&&(l=r.event.special[n]||{},n=(e?l.delegateType:l.bindType)||n,l=r.event.special[n]||{},k=r.extend({type:n,origType:p,data:d,handler:c,guid:c.guid,selector:e,needsContext:e&&r.expr.match.needsContext.test(e),namespace:o.join(".")},f),(m=i[n])||(m=i[n]=[],m.delegateCount=0,l.setup&&l.setup.call(a,d,o,g)!==!1||a.addEventListener&&a.addEventListener(n,g)),l.add&&(l.add.call(a,k),k.handler.guid||(k.handler.guid=c.guid)),e?m.splice(m.delegateCount++,0,k):m.push(k),r.event.global[n]=!0)}},remove:function(a,b,c,d,e){var f,g,h,i,j,k,l,m,n,o,p,q=W.hasData(a)&&W.get(a);if(q&&(i=q.events)){b=(b||"").match(L)||[""],j=b.length;while(j--)if(h=ua.exec(b[j])||[],n=p=h[1],o=(h[2]||"").split(".").sort(),n){l=r.event.special[n]||{},n=(d?l.delegateType:l.bindType)||n,m=i[n]||[],h=h[2]&&new RegExp("(^|\\.)"+o.join("\\.(?:.*\\.|)")+"(\\.|$)"),g=f=m.length;while(f--)k=m[f],!e&&p!==k.origType||c&&c.guid!==k.guid||h&&!h.test(k.namespace)||d&&d!==k.selector&&("**"!==d||!k.selector)||(m.splice(f,1),k.selector&&m.delegateCount--,l.remove&&l.remove.call(a,k));g&&!m.length&&(l.teardown&&l.teardown.call(a,o,q.handle)!==!1||r.removeEvent(a,n,q.handle),delete i[n])}else for(n in i)r.event.remove(a,n+b[j],c,d,!0);r.isEmptyObject(i)&&W.remove(a,"handle events")}},dispatch:function(a){var b=r.event.fix(a),c,d,e,f,g,h,i=new Array(arguments.length),j=(W.get(this,"events")||{})[b.type]||[],k=r.event.special[b.type]||{};for(i[0]=b,c=1;c<arguments.length;c++)i[c]=arguments[c];if(b.delegateTarget=this,!k.preDispatch||k.preDispatch.call(this,b)!==!1){h=r.event.handlers.call(this,b,j),c=0;while((f=h[c++])&&!b.isPropagationStopped()){b.currentTarget=f.elem,d=0;while((g=f.handlers[d++])&&!b.isImmediatePropagationStopped())b.rnamespace&&!b.rnamespace.test(g.namespace)||(b.handleObj=g,b.data=g.data,e=((r.event.special[g.origType]||{}).handle||g.handler).apply(f.elem,i),void 0!==e&&(b.result=e)===!1&&(b.preventDefault(),b.stopPropagation()))}return k.postDispatch&&k.postDispatch.call(this,b),b.result}},handlers:function(a,b){var c,d,e,f,g,h=[],i=b.delegateCount,j=a.target;if(i&&j.nodeType&&!("click"===a.type&&a.button>=1))for(;j!==this;j=j.parentNode||this)if(1===j.nodeType&&("click"!==a.type||j.disabled!==!0)){for(f=[],g={},c=0;c<i;c++)d=b[c],e=d.selector+" ",void 0===g[e]&&(g[e]=d.needsContext?r(e,this).index(j)>-1:r.find(e,this,null,[j]).length),g[e]&&f.push(d);f.length&&h.push({elem:j,handlers:f})}return j=this,i<b.length&&h.push({elem:j,handlers:b.slice(i)}),h},addProp:function(a,b){Object.defineProperty(r.Event.prototype,a,{enumerable:!0,configurable:!0,get:r.isFunction(b)?function(){if(this.originalEvent)return b(this.originalEvent)}:function(){if(this.originalEvent)return this.originalEvent[a]},set:function(b){Object.defineProperty(this,a,{enumerable:!0,configurable:!0,writable:!0,value:b})}})},fix:function(a){return a[r.expando]?a:new r.Event(a)},special:{load:{noBubble:!0},focus:{trigger:function(){if(this!==xa()&&this.focus)return this.focus(),!1},delegateType:"focusin"},blur:{trigger:function(){if(this===xa()&&this.blur)return this.blur(),!1},delegateType:"focusout"},click:{trigger:function(){if("checkbox"===this.type&&this.click&&B(this,"input"))return this.click(),!1},_default:function(a){return B(a.target,"a")}},beforeunload:{postDispatch:function(a){void 0!==a.result&&a.originalEvent&&(a.originalEvent.returnValue=a.result)}}}},r.removeEvent=function(a,b,c){a.removeEventListener&&a.removeEventListener(b,c)},r.Event=function(a,b){return this instanceof r.Event?(a&&a.type?(this.originalEvent=a,this.type=a.type,this.isDefaultPrevented=a.defaultPrevented||void 0===a.defaultPrevented&&a.returnValue===!1?va:wa,this.target=a.target&&3===a.target.nodeType?a.target.parentNode:a.target,this.currentTarget=a.currentTarget,this.relatedTarget=a.relatedTarget):this.type=a,b&&r.extend(this,b),this.timeStamp=a&&a.timeStamp||r.now(),void(this[r.expando]=!0)):new r.Event(a,b)},r.Event.prototype={constructor:r.Event,isDefaultPrevented:wa,isPropagationStopped:wa,isImmediatePropagationStopped:wa,isSimulated:!1,preventDefault:function(){var a=this.originalEvent;this.isDefaultPrevented=va,a&&!this.isSimulated&&a.preventDefault()},stopPropagation:function(){var a=this.originalEvent;this.isPropagationStopped=va,a&&!this.isSimulated&&a.stopPropagation()},stopImmediatePropagation:function(){var a=this.originalEvent;this.isImmediatePropagationStopped=va,a&&!this.isSimulated&&a.stopImmediatePropagation(),this.stopPropagation()}},r.each({altKey:!0,bubbles:!0,cancelable:!0,changedTouches:!0,ctrlKey:!0,detail:!0,eventPhase:!0,metaKey:!0,pageX:!0,pageY:!0,shiftKey:!0,view:!0,"char":!0,charCode:!0,key:!0,keyCode:!0,button:!0,buttons:!0,clientX:!0,clientY:!0,offsetX:!0,offsetY:!0,pointerId:!0,pointerType:!0,screenX:!0,screenY:!0,targetTouches:!0,toElement:!0,touches:!0,which:function(a){var b=a.button;return null==a.which&&sa.test(a.type)?null!=a.charCode?a.charCode:a.keyCode:!a.which&&void 0!==b&&ta.test(a.type)?1&b?1:2&b?3:4&b?2:0:a.which}},r.event.addProp),r.each({mouseenter:"mouseover",mouseleave:"mouseout",pointerenter:"pointerover",pointerleave:"pointerout"},function(a,b){r.event.special[a]={delegateType:b,bindType:b,handle:function(a){var c,d=this,e=a.relatedTarget,f=a.handleObj;return e&&(e===d||r.contains(d,e))||(a.type=f.origType,c=f.handler.apply(this,arguments),a.type=b),c}}}),r.fn.extend({on:function(a,b,c,d){return ya(this,a,b,c,d)},one:function(a,b,c,d){return ya(this,a,b,c,d,1)},off:function(a,b,c){var d,e;if(a&&a.preventDefault&&a.handleObj)return d=a.handleObj,r(a.delegateTarget).off(d.namespace?d.origType+"."+d.namespace:d.origType,d.selector,d.handler),this;if("object"==typeof a){for(e in a)this.off(e,b,a[e]);return this}return b!==!1&&"function"!=typeof b||(c=b,b=void 0),c===!1&&(c=wa),this.each(function(){r.event.remove(this,a,c,b)})}});var za=/<(?!area|br|col|embed|hr|img|input|link|meta|param)(([a-z][^\/\0>\x20\t\r\n\f]*)[^>]*)\/>/gi,Aa=/<script|<style|<link/i,Ba=/checked\s*(?:[^=]|=\s*.checked.)/i,Ca=/^true\/(.*)/,Da=/^\s*<!(?:\[CDATA\[|--)|(?:\]\]|--)>\s*$/g;function Ea(a,b){return B(a,"table")&&B(11!==b.nodeType?b:b.firstChild,"tr")?r(">tbody",a)[0]||a:a}function Fa(a){return a.type=(null!==a.getAttribute("type"))+"/"+a.type,a}function Ga(a){var b=Ca.exec(a.type);return b?a.type=b[1]:a.removeAttribute("type"),a}function Ha(a,b){var c,d,e,f,g,h,i,j;if(1===b.nodeType){if(W.hasData(a)&&(f=W.access(a),g=W.set(b,f),j=f.events)){delete g.handle,g.events={};for(e in j)for(c=0,d=j[e].length;c<d;c++)r.event.add(b,e,j[e][c])}X.hasData(a)&&(h=X.access(a),i=r.extend({},h),X.set(b,i))}}function Ia(a,b){var c=b.nodeName.toLowerCase();"input"===c&&ja.test(a.type)?b.checked=a.checked:"input"!==c&&"textarea"!==c||(b.defaultValue=a.defaultValue)}function Ja(a,b,c,d){b=g.apply([],b);var e,f,h,i,j,k,l=0,m=a.length,n=m-1,q=b[0],s=r.isFunction(q);if(s||m>1&&"string"==typeof q&&!o.checkClone&&Ba.test(q))return a.each(function(e){var f=a.eq(e);s&&(b[0]=q.call(this,e,f.html())),Ja(f,b,c,d)});if(m&&(e=qa(b,a[0].ownerDocument,!1,a,d),f=e.firstChild,1===e.childNodes.length&&(e=f),f||d)){for(h=r.map(na(e,"script"),Fa),i=h.length;l<m;l++)j=e,l!==n&&(j=r.clone(j,!0,!0),i&&r.merge(h,na(j,"script"))),c.call(a[l],j,l);if(i)for(k=h[h.length-1].ownerDocument,r.map(h,Ga),l=0;l<i;l++)j=h[l],la.test(j.type||"")&&!W.access(j,"globalEval")&&r.contains(k,j)&&(j.src?r._evalUrl&&r._evalUrl(j.src):p(j.textContent.replace(Da,""),k))}return a}function Ka(a,b,c){for(var d,e=b?r.filter(b,a):a,f=0;null!=(d=e[f]);f++)c||1!==d.nodeType||r.cleanData(na(d)),d.parentNode&&(c&&r.contains(d.ownerDocument,d)&&oa(na(d,"script")),d.parentNode.removeChild(d));return a}r.extend({htmlPrefilter:function(a){return a.replace(za,"<$1></$2>")},clone:function(a,b,c){var d,e,f,g,h=a.cloneNode(!0),i=r.contains(a.ownerDocument,a);if(!(o.noCloneChecked||1!==a.nodeType&&11!==a.nodeType||r.isXMLDoc(a)))for(g=na(h),f=na(a),d=0,e=f.length;d<e;d++)Ia(f[d],g[d]);if(b)if(c)for(f=f||na(a),g=g||na(h),d=0,e=f.length;d<e;d++)Ha(f[d],g[d]);else Ha(a,h);return g=na(h,"script"),g.length>0&&oa(g,!i&&na(a,"script")),h},cleanData:function(a){for(var b,c,d,e=r.event.special,f=0;void 0!==(c=a[f]);f++)if(U(c)){if(b=c[W.expando]){if(b.events)for(d in b.events)e[d]?r.event.remove(c,d):r.removeEvent(c,d,b.handle);c[W.expando]=void 0}c[X.expando]&&(c[X.expando]=void 0)}}}),r.fn.extend({detach:function(a){return Ka(this,a,!0)},remove:function(a){return Ka(this,a)},text:function(a){return T(this,function(a){return void 0===a?r.text(this):this.empty().each(function(){1!==this.nodeType&&11!==this.nodeType&&9!==this.nodeType||(this.textContent=a)})},null,a,arguments.length)},append:function(){return Ja(this,arguments,function(a){if(1===this.nodeType||11===this.nodeType||9===this.nodeType){var b=Ea(this,a);b.appendChild(a)}})},prepend:function(){return Ja(this,arguments,function(a){if(1===this.nodeType||11===this.nodeType||9===this.nodeType){var b=Ea(this,a);b.insertBefore(a,b.firstChild)}})},before:function(){return Ja(this,arguments,function(a){this.parentNode&&this.parentNode.insertBefore(a,this)})},after:function(){return Ja(this,arguments,function(a){this.parentNode&&this.parentNode.insertBefore(a,this.nextSibling)})},empty:function(){for(var a,b=0;null!=(a=this[b]);b++)1===a.nodeType&&(r.cleanData(na(a,!1)),a.textContent="");return this},clone:function(a,b){return a=null!=a&&a,b=null==b?a:b,this.map(function(){return r.clone(this,a,b)})},html:function(a){return T(this,function(a){var b=this[0]||{},c=0,d=this.length;if(void 0===a&&1===b.nodeType)return b.innerHTML;if("string"==typeof a&&!Aa.test(a)&&!ma[(ka.exec(a)||["",""])[1].toLowerCase()]){a=r.htmlPrefilter(a);try{for(;c<d;c++)b=this[c]||{},1===b.nodeType&&(r.cleanData(na(b,!1)),b.innerHTML=a);b=0}catch(e){}}b&&this.empty().append(a)},null,a,arguments.length)},replaceWith:function(){var a=[];return Ja(this,arguments,function(b){var c=this.parentNode;r.inArray(this,a)<0&&(r.cleanData(na(this)),c&&c.replaceChild(b,this))},a)}}),r.each({appendTo:"append",prependTo:"prepend",insertBefore:"before",insertAfter:"after",replaceAll:"replaceWith"},function(a,b){r.fn[a]=function(a){for(var c,d=[],e=r(a),f=e.length-1,g=0;g<=f;g++)c=g===f?this:this.clone(!0),r(e[g])[b](c),h.apply(d,c.get());return this.pushStack(d)}});var La=/^margin/,Ma=new RegExp("^("+aa+")(?!px)[a-z%]+$","i"),Na=function(b){var c=b.ownerDocument.defaultView;return c&&c.opener||(c=a),c.getComputedStyle(b)};!function(){function b(){if(i){i.style.cssText="box-sizing:border-box;position:relative;display:block;margin:auto;border:1px;padding:1px;top:1%;width:50%",i.innerHTML="",ra.appendChild(h);var b=a.getComputedStyle(i);c="1%"!==b.top,g="2px"===b.marginLeft,e="4px"===b.width,i.style.marginRight="50%",f="4px"===b.marginRight,ra.removeChild(h),i=null}}var c,e,f,g,h=d.createElement("div"),i=d.createElement("div");i.style&&(i.style.backgroundClip="content-box",i.cloneNode(!0).style.backgroundClip="",o.clearCloneStyle="content-box"===i.style.backgroundClip,h.style.cssText="border:0;width:8px;height:0;top:0;left:-9999px;padding:0;margin-top:1px;position:absolute",h.appendChild(i),r.extend(o,{pixelPosition:function(){return b(),c},boxSizingReliable:function(){return b(),e},pixelMarginRight:function(){return b(),f},reliableMarginLeft:function(){return b(),g}}))}();function Oa(a,b,c){var d,e,f,g,h=a.style;return c=c||Na(a),c&&(g=c.getPropertyValue(b)||c[b],""!==g||r.contains(a.ownerDocument,a)||(g=r.style(a,b)),!o.pixelMarginRight()&&Ma.test(g)&&La.test(b)&&(d=h.width,e=h.minWidth,f=h.maxWidth,h.minWidth=h.maxWidth=h.width=g,g=c.width,h.width=d,h.minWidth=e,h.maxWidth=f)),void 0!==g?g+"":g}function Pa(a,b){return{get:function(){return a()?void delete this.get:(this.get=b).apply(this,arguments)}}}var Qa=/^(none|table(?!-c[ea]).+)/,Ra=/^--/,Sa={position:"absolute",visibility:"hidden",display:"block"},Ta={letterSpacing:"0",fontWeight:"400"},Ua=["Webkit","Moz","ms"],Va=d.createElement("div").style;function Wa(a){if(a in Va)return a;var b=a[0].toUpperCase()+a.slice(1),c=Ua.length;while(c--)if(a=Ua[c]+b,a in Va)return a}function Xa(a){var b=r.cssProps[a];return b||(b=r.cssProps[a]=Wa(a)||a),b}function Ya(a,b,c){var d=ba.exec(b);return d?Math.max(0,d[2]-(c||0))+(d[3]||"px"):b}function Za(a,b,c,d,e){var f,g=0;for(f=c===(d?"border":"content")?4:"width"===b?1:0;f<4;f+=2)"margin"===c&&(g+=r.css(a,c+ca[f],!0,e)),d?("content"===c&&(g-=r.css(a,"padding"+ca[f],!0,e)),"margin"!==c&&(g-=r.css(a,"border"+ca[f]+"Width",!0,e))):(g+=r.css(a,"padding"+ca[f],!0,e),"padding"!==c&&(g+=r.css(a,"border"+ca[f]+"Width",!0,e)));return g}function $a(a,b,c){var d,e=Na(a),f=Oa(a,b,e),g="border-box"===r.css(a,"boxSizing",!1,e);return Ma.test(f)?f:(d=g&&(o.boxSizingReliable()||f===a.style[b]),"auto"===f&&(f=a["offset"+b[0].toUpperCase()+b.slice(1)]),f=parseFloat(f)||0,f+Za(a,b,c||(g?"border":"content"),d,e)+"px")}r.extend({cssHooks:{opacity:{get:function(a,b){if(b){var c=Oa(a,"opacity");return""===c?"1":c}}}},cssNumber:{animationIterationCount:!0,columnCount:!0,fillOpacity:!0,flexGrow:!0,flexShrink:!0,fontWeight:!0,lineHeight:!0,opacity:!0,order:!0,orphans:!0,widows:!0,zIndex:!0,zoom:!0},cssProps:{"float":"cssFloat"},style:function(a,b,c,d){if(a&&3!==a.nodeType&&8!==a.nodeType&&a.style){var e,f,g,h=r.camelCase(b),i=Ra.test(b),j=a.style;return i||(b=Xa(h)),g=r.cssHooks[b]||r.cssHooks[h],void 0===c?g&&"get"in g&&void 0!==(e=g.get(a,!1,d))?e:j[b]:(f=typeof c,"string"===f&&(e=ba.exec(c))&&e[1]&&(c=fa(a,b,e),f="number"),null!=c&&c===c&&("number"===f&&(c+=e&&e[3]||(r.cssNumber[h]?"":"px")),o.clearCloneStyle||""!==c||0!==b.indexOf("background")||(j[b]="inherit"),g&&"set"in g&&void 0===(c=g.set(a,c,d))||(i?j.setProperty(b,c):j[b]=c)),void 0)}},css:function(a,b,c,d){var e,f,g,h=r.camelCase(b),i=Ra.test(b);return i||(b=Xa(h)),g=r.cssHooks[b]||r.cssHooks[h],g&&"get"in g&&(e=g.get(a,!0,c)),void 0===e&&(e=Oa(a,b,d)),"normal"===e&&b in Ta&&(e=Ta[b]),""===c||c?(f=parseFloat(e),c===!0||isFinite(f)?f||0:e):e}}),r.each(["height","width"],function(a,b){r.cssHooks[b]={get:function(a,c,d){if(c)return!Qa.test(r.css(a,"display"))||a.getClientRects().length&&a.getBoundingClientRect().width?$a(a,b,d):ea(a,Sa,function(){return $a(a,b,d)})},set:function(a,c,d){var e,f=d&&Na(a),g=d&&Za(a,b,d,"border-box"===r.css(a,"boxSizing",!1,f),f);return g&&(e=ba.exec(c))&&"px"!==(e[3]||"px")&&(a.style[b]=c,c=r.css(a,b)),Ya(a,c,g)}}}),r.cssHooks.marginLeft=Pa(o.reliableMarginLeft,function(a,b){if(b)return(parseFloat(Oa(a,"marginLeft"))||a.getBoundingClientRect().left-ea(a,{marginLeft:0},function(){return a.getBoundingClientRect().left}))+"px"}),r.each({margin:"",padding:"",border:"Width"},function(a,b){r.cssHooks[a+b]={expand:function(c){for(var d=0,e={},f="string"==typeof c?c.split(" "):[c];d<4;d++)e[a+ca[d]+b]=f[d]||f[d-2]||f[0];return e}},La.test(a)||(r.cssHooks[a+b].set=Ya)}),r.fn.extend({css:function(a,b){return T(this,function(a,b,c){var d,e,f={},g=0;if(Array.isArray(b)){for(d=Na(a),e=b.length;g<e;g++)f[b[g]]=r.css(a,b[g],!1,d);return f}return void 0!==c?r.style(a,b,c):r.css(a,b)},a,b,arguments.length>1)}});function _a(a,b,c,d,e){return new _a.prototype.init(a,b,c,d,e)}r.Tween=_a,_a.prototype={constructor:_a,init:function(a,b,c,d,e,f){this.elem=a,this.prop=c,this.easing=e||r.easing._default,this.options=b,this.start=this.now=this.cur(),this.end=d,this.unit=f||(r.cssNumber[c]?"":"px")},cur:function(){var a=_a.propHooks[this.prop];return a&&a.get?a.get(this):_a.propHooks._default.get(this)},run:function(a){var b,c=_a.propHooks[this.prop];return this.options.duration?this.pos=b=r.easing[this.easing](a,this.options.duration*a,0,1,this.options.duration):this.pos=b=a,this.now=(this.end-this.start)*b+this.start,this.options.step&&this.options.step.call(this.elem,this.now,this),c&&c.set?c.set(this):_a.propHooks._default.set(this),this}},_a.prototype.init.prototype=_a.prototype,_a.propHooks={_default:{get:function(a){var b;return 1!==a.elem.nodeType||null!=a.elem[a.prop]&&null==a.elem.style[a.prop]?a.elem[a.prop]:(b=r.css(a.elem,a.prop,""),b&&"auto"!==b?b:0)},set:function(a){r.fx.step[a.prop]?r.fx.step[a.prop](a):1!==a.elem.nodeType||null==a.elem.style[r.cssProps[a.prop]]&&!r.cssHooks[a.prop]?a.elem[a.prop]=a.now:r.style(a.elem,a.prop,a.now+a.unit)}}},_a.propHooks.scrollTop=_a.propHooks.scrollLeft={set:function(a){a.elem.nodeType&&a.elem.parentNode&&(a.elem[a.prop]=a.now)}},r.easing={linear:function(a){return a},swing:function(a){return.5-Math.cos(a*Math.PI)/2},_default:"swing"},r.fx=_a.prototype.init,r.fx.step={};var ab,bb,cb=/^(?:toggle|show|hide)$/,db=/queueHooks$/;function eb(){bb&&(d.hidden===!1&&a.requestAnimationFrame?a.requestAnimationFrame(eb):a.setTimeout(eb,r.fx.interval),r.fx.tick())}function fb(){return a.setTimeout(function(){ab=void 0}),ab=r.now()}function gb(a,b){var c,d=0,e={height:a};for(b=b?1:0;d<4;d+=2-b)c=ca[d],e["margin"+c]=e["padding"+c]=a;return b&&(e.opacity=e.width=a),e}function hb(a,b,c){for(var d,e=(kb.tweeners[b]||[]).concat(kb.tweeners["*"]),f=0,g=e.length;f<g;f++)if(d=e[f].call(c,b,a))return d}function ib(a,b,c){var d,e,f,g,h,i,j,k,l="width"in b||"height"in b,m=this,n={},o=a.style,p=a.nodeType&&da(a),q=W.get(a,"fxshow");c.queue||(g=r._queueHooks(a,"fx"),null==g.unqueued&&(g.unqueued=0,h=g.empty.fire,g.empty.fire=function(){g.unqueued||h()}),g.unqueued++,m.always(function(){m.always(function(){g.unqueued--,r.queue(a,"fx").length||g.empty.fire()})}));for(d in b)if(e=b[d],cb.test(e)){if(delete b[d],f=f||"toggle"===e,e===(p?"hide":"show")){if("show"!==e||!q||void 0===q[d])continue;p=!0}n[d]=q&&q[d]||r.style(a,d)}if(i=!r.isEmptyObject(b),i||!r.isEmptyObject(n)){l&&1===a.nodeType&&(c.overflow=[o.overflow,o.overflowX,o.overflowY],j=q&&q.display,null==j&&(j=W.get(a,"display")),k=r.css(a,"display"),"none"===k&&(j?k=j:(ia([a],!0),j=a.style.display||j,k=r.css(a,"display"),ia([a]))),("inline"===k||"inline-block"===k&&null!=j)&&"none"===r.css(a,"float")&&(i||(m.done(function(){o.display=j}),null==j&&(k=o.display,j="none"===k?"":k)),o.display="inline-block")),c.overflow&&(o.overflow="hidden",m.always(function(){o.overflow=c.overflow[0],o.overflowX=c.overflow[1],o.overflowY=c.overflow[2]})),i=!1;for(d in n)i||(q?"hidden"in q&&(p=q.hidden):q=W.access(a,"fxshow",{display:j}),f&&(q.hidden=!p),p&&ia([a],!0),m.done(function(){p||ia([a]),W.remove(a,"fxshow");for(d in n)r.style(a,d,n[d])})),i=hb(p?q[d]:0,d,m),d in q||(q[d]=i.start,p&&(i.end=i.start,i.start=0))}}function jb(a,b){var c,d,e,f,g;for(c in a)if(d=r.camelCase(c),e=b[d],f=a[c],Array.isArray(f)&&(e=f[1],f=a[c]=f[0]),c!==d&&(a[d]=f,delete a[c]),g=r.cssHooks[d],g&&"expand"in g){f=g.expand(f),delete a[d];for(c in f)c in a||(a[c]=f[c],b[c]=e)}else b[d]=e}function kb(a,b,c){var d,e,f=0,g=kb.prefilters.length,h=r.Deferred().always(function(){delete i.elem}),i=function(){if(e)return!1;for(var b=ab||fb(),c=Math.max(0,j.startTime+j.duration-b),d=c/j.duration||0,f=1-d,g=0,i=j.tweens.length;g<i;g++)j.tweens[g].run(f);return h.notifyWith(a,[j,f,c]),f<1&&i?c:(i||h.notifyWith(a,[j,1,0]),h.resolveWith(a,[j]),!1)},j=h.promise({elem:a,props:r.extend({},b),opts:r.extend(!0,{specialEasing:{},easing:r.easing._default},c),originalProperties:b,originalOptions:c,startTime:ab||fb(),duration:c.duration,tweens:[],createTween:function(b,c){var d=r.Tween(a,j.opts,b,c,j.opts.specialEasing[b]||j.opts.easing);return j.tweens.push(d),d},stop:function(b){var c=0,d=b?j.tweens.length:0;if(e)return this;for(e=!0;c<d;c++)j.tweens[c].run(1);return b?(h.notifyWith(a,[j,1,0]),h.resolveWith(a,[j,b])):h.rejectWith(a,[j,b]),this}}),k=j.props;for(jb(k,j.opts.specialEasing);f<g;f++)if(d=kb.prefilters[f].call(j,a,k,j.opts))return r.isFunction(d.stop)&&(r._queueHooks(j.elem,j.opts.queue).stop=r.proxy(d.stop,d)),d;return r.map(k,hb,j),r.isFunction(j.opts.start)&&j.opts.start.call(a,j),j.progress(j.opts.progress).done(j.opts.done,j.opts.complete).fail(j.opts.fail).always(j.opts.always),r.fx.timer(r.extend(i,{elem:a,anim:j,queue:j.opts.queue})),j}r.Animation=r.extend(kb,{tweeners:{"*":[function(a,b){var c=this.createTween(a,b);return fa(c.elem,a,ba.exec(b),c),c}]},tweener:function(a,b){r.isFunction(a)?(b=a,a=["*"]):a=a.match(L);for(var c,d=0,e=a.length;d<e;d++)c=a[d],kb.tweeners[c]=kb.tweeners[c]||[],kb.tweeners[c].unshift(b)},prefilters:[ib],prefilter:function(a,b){b?kb.prefilters.unshift(a):kb.prefilters.push(a)}}),r.speed=function(a,b,c){var d=a&&"object"==typeof a?r.extend({},a):{complete:c||!c&&b||r.isFunction(a)&&a,duration:a,easing:c&&b||b&&!r.isFunction(b)&&b};return r.fx.off?d.duration=0:"number"!=typeof d.duration&&(d.duration in r.fx.speeds?d.duration=r.fx.speeds[d.duration]:d.duration=r.fx.speeds._default),null!=d.queue&&d.queue!==!0||(d.queue="fx"),d.old=d.complete,d.complete=function(){r.isFunction(d.old)&&d.old.call(this),d.queue&&r.dequeue(this,d.queue)},d},r.fn.extend({fadeTo:function(a,b,c,d){return this.filter(da).css("opacity",0).show().end().animate({opacity:b},a,c,d)},animate:function(a,b,c,d){var e=r.isEmptyObject(a),f=r.speed(b,c,d),g=function(){var b=kb(this,r.extend({},a),f);(e||W.get(this,"finish"))&&b.stop(!0)};return g.finish=g,e||f.queue===!1?this.each(g):this.queue(f.queue,g)},stop:function(a,b,c){var d=function(a){var b=a.stop;delete a.stop,b(c)};return"string"!=typeof a&&(c=b,b=a,a=void 0),b&&a!==!1&&this.queue(a||"fx",[]),this.each(function(){var b=!0,e=null!=a&&a+"queueHooks",f=r.timers,g=W.get(this);if(e)g[e]&&g[e].stop&&d(g[e]);else for(e in g)g[e]&&g[e].stop&&db.test(e)&&d(g[e]);for(e=f.length;e--;)f[e].elem!==this||null!=a&&f[e].queue!==a||(f[e].anim.stop(c),b=!1,f.splice(e,1));!b&&c||r.dequeue(this,a)})},finish:function(a){return a!==!1&&(a=a||"fx"),this.each(function(){var b,c=W.get(this),d=c[a+"queue"],e=c[a+"queueHooks"],f=r.timers,g=d?d.length:0;for(c.finish=!0,r.queue(this,a,[]),e&&e.stop&&e.stop.call(this,!0),b=f.length;b--;)f[b].elem===this&&f[b].queue===a&&(f[b].anim.stop(!0),f.splice(b,1));for(b=0;b<g;b++)d[b]&&d[b].finish&&d[b].finish.call(this);delete c.finish})}}),r.each(["toggle","show","hide"],function(a,b){var c=r.fn[b];r.fn[b]=function(a,d,e){return null==a||"boolean"==typeof a?c.apply(this,arguments):this.animate(gb(b,!0),a,d,e)}}),r.each({slideDown:gb("show"),slideUp:gb("hide"),slideToggle:gb("toggle"),fadeIn:{opacity:"show"},fadeOut:{opacity:"hide"},fadeToggle:{opacity:"toggle"}},function(a,b){r.fn[a]=function(a,c,d){return this.animate(b,a,c,d)}}),r.timers=[],r.fx.tick=function(){var a,b=0,c=r.timers;for(ab=r.now();b<c.length;b++)a=c[b],a()||c[b]!==a||c.splice(b--,1);c.length||r.fx.stop(),ab=void 0},r.fx.timer=function(a){r.timers.push(a),r.fx.start()},r.fx.interval=13,r.fx.start=function(){bb||(bb=!0,eb())},r.fx.stop=function(){bb=null},r.fx.speeds={slow:600,fast:200,_default:400},r.fn.delay=function(b,c){return b=r.fx?r.fx.speeds[b]||b:b,c=c||"fx",this.queue(c,function(c,d){var e=a.setTimeout(c,b);d.stop=function(){a.clearTimeout(e)}})},function(){var a=d.createElement("input"),b=d.createElement("select"),c=b.appendChild(d.createElement("option"));a.type="checkbox",o.checkOn=""!==a.value,o.optSelected=c.selected,a=d.createElement("input"),a.value="t",a.type="radio",o.radioValue="t"===a.value}();var lb,mb=r.expr.attrHandle;r.fn.extend({attr:function(a,b){return T(this,r.attr,a,b,arguments.length>1)},removeAttr:function(a){return this.each(function(){r.removeAttr(this,a)})}}),r.extend({attr:function(a,b,c){var d,e,f=a.nodeType;if(3!==f&&8!==f&&2!==f)return"undefined"==typeof a.getAttribute?r.prop(a,b,c):(1===f&&r.isXMLDoc(a)||(e=r.attrHooks[b.toLowerCase()]||(r.expr.match.bool.test(b)?lb:void 0)),void 0!==c?null===c?void r.removeAttr(a,b):e&&"set"in e&&void 0!==(d=e.set(a,c,b))?d:(a.setAttribute(b,c+""),c):e&&"get"in e&&null!==(d=e.get(a,b))?d:(d=r.find.attr(a,b),
-null==d?void 0:d))},attrHooks:{type:{set:function(a,b){if(!o.radioValue&&"radio"===b&&B(a,"input")){var c=a.value;return a.setAttribute("type",b),c&&(a.value=c),b}}}},removeAttr:function(a,b){var c,d=0,e=b&&b.match(L);if(e&&1===a.nodeType)while(c=e[d++])a.removeAttribute(c)}}),lb={set:function(a,b,c){return b===!1?r.removeAttr(a,c):a.setAttribute(c,c),c}},r.each(r.expr.match.bool.source.match(/\w+/g),function(a,b){var c=mb[b]||r.find.attr;mb[b]=function(a,b,d){var e,f,g=b.toLowerCase();return d||(f=mb[g],mb[g]=e,e=null!=c(a,b,d)?g:null,mb[g]=f),e}});var nb=/^(?:input|select|textarea|button)$/i,ob=/^(?:a|area)$/i;r.fn.extend({prop:function(a,b){return T(this,r.prop,a,b,arguments.length>1)},removeProp:function(a){return this.each(function(){delete this[r.propFix[a]||a]})}}),r.extend({prop:function(a,b,c){var d,e,f=a.nodeType;if(3!==f&&8!==f&&2!==f)return 1===f&&r.isXMLDoc(a)||(b=r.propFix[b]||b,e=r.propHooks[b]),void 0!==c?e&&"set"in e&&void 0!==(d=e.set(a,c,b))?d:a[b]=c:e&&"get"in e&&null!==(d=e.get(a,b))?d:a[b]},propHooks:{tabIndex:{get:function(a){var b=r.find.attr(a,"tabindex");return b?parseInt(b,10):nb.test(a.nodeName)||ob.test(a.nodeName)&&a.href?0:-1}}},propFix:{"for":"htmlFor","class":"className"}}),o.optSelected||(r.propHooks.selected={get:function(a){var b=a.parentNode;return b&&b.parentNode&&b.parentNode.selectedIndex,null},set:function(a){var b=a.parentNode;b&&(b.selectedIndex,b.parentNode&&b.parentNode.selectedIndex)}}),r.each(["tabIndex","readOnly","maxLength","cellSpacing","cellPadding","rowSpan","colSpan","useMap","frameBorder","contentEditable"],function(){r.propFix[this.toLowerCase()]=this});function pb(a){var b=a.match(L)||[];return b.join(" ")}function qb(a){return a.getAttribute&&a.getAttribute("class")||""}r.fn.extend({addClass:function(a){var b,c,d,e,f,g,h,i=0;if(r.isFunction(a))return this.each(function(b){r(this).addClass(a.call(this,b,qb(this)))});if("string"==typeof a&&a){b=a.match(L)||[];while(c=this[i++])if(e=qb(c),d=1===c.nodeType&&" "+pb(e)+" "){g=0;while(f=b[g++])d.indexOf(" "+f+" ")<0&&(d+=f+" ");h=pb(d),e!==h&&c.setAttribute("class",h)}}return this},removeClass:function(a){var b,c,d,e,f,g,h,i=0;if(r.isFunction(a))return this.each(function(b){r(this).removeClass(a.call(this,b,qb(this)))});if(!arguments.length)return this.attr("class","");if("string"==typeof a&&a){b=a.match(L)||[];while(c=this[i++])if(e=qb(c),d=1===c.nodeType&&" "+pb(e)+" "){g=0;while(f=b[g++])while(d.indexOf(" "+f+" ")>-1)d=d.replace(" "+f+" "," ");h=pb(d),e!==h&&c.setAttribute("class",h)}}return this},toggleClass:function(a,b){var c=typeof a;return"boolean"==typeof b&&"string"===c?b?this.addClass(a):this.removeClass(a):r.isFunction(a)?this.each(function(c){r(this).toggleClass(a.call(this,c,qb(this),b),b)}):this.each(function(){var b,d,e,f;if("string"===c){d=0,e=r(this),f=a.match(L)||[];while(b=f[d++])e.hasClass(b)?e.removeClass(b):e.addClass(b)}else void 0!==a&&"boolean"!==c||(b=qb(this),b&&W.set(this,"__className__",b),this.setAttribute&&this.setAttribute("class",b||a===!1?"":W.get(this,"__className__")||""))})},hasClass:function(a){var b,c,d=0;b=" "+a+" ";while(c=this[d++])if(1===c.nodeType&&(" "+pb(qb(c))+" ").indexOf(b)>-1)return!0;return!1}});var rb=/\r/g;r.fn.extend({val:function(a){var b,c,d,e=this[0];{if(arguments.length)return d=r.isFunction(a),this.each(function(c){var e;1===this.nodeType&&(e=d?a.call(this,c,r(this).val()):a,null==e?e="":"number"==typeof e?e+="":Array.isArray(e)&&(e=r.map(e,function(a){return null==a?"":a+""})),b=r.valHooks[this.type]||r.valHooks[this.nodeName.toLowerCase()],b&&"set"in b&&void 0!==b.set(this,e,"value")||(this.value=e))});if(e)return b=r.valHooks[e.type]||r.valHooks[e.nodeName.toLowerCase()],b&&"get"in b&&void 0!==(c=b.get(e,"value"))?c:(c=e.value,"string"==typeof c?c.replace(rb,""):null==c?"":c)}}}),r.extend({valHooks:{option:{get:function(a){var b=r.find.attr(a,"value");return null!=b?b:pb(r.text(a))}},select:{get:function(a){var b,c,d,e=a.options,f=a.selectedIndex,g="select-one"===a.type,h=g?null:[],i=g?f+1:e.length;for(d=f<0?i:g?f:0;d<i;d++)if(c=e[d],(c.selected||d===f)&&!c.disabled&&(!c.parentNode.disabled||!B(c.parentNode,"optgroup"))){if(b=r(c).val(),g)return b;h.push(b)}return h},set:function(a,b){var c,d,e=a.options,f=r.makeArray(b),g=e.length;while(g--)d=e[g],(d.selected=r.inArray(r.valHooks.option.get(d),f)>-1)&&(c=!0);return c||(a.selectedIndex=-1),f}}}}),r.each(["radio","checkbox"],function(){r.valHooks[this]={set:function(a,b){if(Array.isArray(b))return a.checked=r.inArray(r(a).val(),b)>-1}},o.checkOn||(r.valHooks[this].get=function(a){return null===a.getAttribute("value")?"on":a.value})});var sb=/^(?:focusinfocus|focusoutblur)$/;r.extend(r.event,{trigger:function(b,c,e,f){var g,h,i,j,k,m,n,o=[e||d],p=l.call(b,"type")?b.type:b,q=l.call(b,"namespace")?b.namespace.split("."):[];if(h=i=e=e||d,3!==e.nodeType&&8!==e.nodeType&&!sb.test(p+r.event.triggered)&&(p.indexOf(".")>-1&&(q=p.split("."),p=q.shift(),q.sort()),k=p.indexOf(":")<0&&"on"+p,b=b[r.expando]?b:new r.Event(p,"object"==typeof b&&b),b.isTrigger=f?2:3,b.namespace=q.join("."),b.rnamespace=b.namespace?new RegExp("(^|\\.)"+q.join("\\.(?:.*\\.|)")+"(\\.|$)"):null,b.result=void 0,b.target||(b.target=e),c=null==c?[b]:r.makeArray(c,[b]),n=r.event.special[p]||{},f||!n.trigger||n.trigger.apply(e,c)!==!1)){if(!f&&!n.noBubble&&!r.isWindow(e)){for(j=n.delegateType||p,sb.test(j+p)||(h=h.parentNode);h;h=h.parentNode)o.push(h),i=h;i===(e.ownerDocument||d)&&o.push(i.defaultView||i.parentWindow||a)}g=0;while((h=o[g++])&&!b.isPropagationStopped())b.type=g>1?j:n.bindType||p,m=(W.get(h,"events")||{})[b.type]&&W.get(h,"handle"),m&&m.apply(h,c),m=k&&h[k],m&&m.apply&&U(h)&&(b.result=m.apply(h,c),b.result===!1&&b.preventDefault());return b.type=p,f||b.isDefaultPrevented()||n._default&&n._default.apply(o.pop(),c)!==!1||!U(e)||k&&r.isFunction(e[p])&&!r.isWindow(e)&&(i=e[k],i&&(e[k]=null),r.event.triggered=p,e[p](),r.event.triggered=void 0,i&&(e[k]=i)),b.result}},simulate:function(a,b,c){var d=r.extend(new r.Event,c,{type:a,isSimulated:!0});r.event.trigger(d,null,b)}}),r.fn.extend({trigger:function(a,b){return this.each(function(){r.event.trigger(a,b,this)})},triggerHandler:function(a,b){var c=this[0];if(c)return r.event.trigger(a,b,c,!0)}}),r.each("blur focus focusin focusout resize scroll click dblclick mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave change select submit keydown keypress keyup contextmenu".split(" "),function(a,b){r.fn[b]=function(a,c){return arguments.length>0?this.on(b,null,a,c):this.trigger(b)}}),r.fn.extend({hover:function(a,b){return this.mouseenter(a).mouseleave(b||a)}}),o.focusin="onfocusin"in a,o.focusin||r.each({focus:"focusin",blur:"focusout"},function(a,b){var c=function(a){r.event.simulate(b,a.target,r.event.fix(a))};r.event.special[b]={setup:function(){var d=this.ownerDocument||this,e=W.access(d,b);e||d.addEventListener(a,c,!0),W.access(d,b,(e||0)+1)},teardown:function(){var d=this.ownerDocument||this,e=W.access(d,b)-1;e?W.access(d,b,e):(d.removeEventListener(a,c,!0),W.remove(d,b))}}});var tb=a.location,ub=r.now(),vb=/\?/;r.parseXML=function(b){var c;if(!b||"string"!=typeof b)return null;try{c=(new a.DOMParser).parseFromString(b,"text/xml")}catch(d){c=void 0}return c&&!c.getElementsByTagName("parsererror").length||r.error("Invalid XML: "+b),c};var wb=/\[\]$/,xb=/\r?\n/g,yb=/^(?:submit|button|image|reset|file)$/i,zb=/^(?:input|select|textarea|keygen)/i;function Ab(a,b,c,d){var e;if(Array.isArray(b))r.each(b,function(b,e){c||wb.test(a)?d(a,e):Ab(a+"["+("object"==typeof e&&null!=e?b:"")+"]",e,c,d)});else if(c||"object"!==r.type(b))d(a,b);else for(e in b)Ab(a+"["+e+"]",b[e],c,d)}r.param=function(a,b){var c,d=[],e=function(a,b){var c=r.isFunction(b)?b():b;d[d.length]=encodeURIComponent(a)+"="+encodeURIComponent(null==c?"":c)};if(Array.isArray(a)||a.jquery&&!r.isPlainObject(a))r.each(a,function(){e(this.name,this.value)});else for(c in a)Ab(c,a[c],b,e);return d.join("&")},r.fn.extend({serialize:function(){return r.param(this.serializeArray())},serializeArray:function(){return this.map(function(){var a=r.prop(this,"elements");return a?r.makeArray(a):this}).filter(function(){var a=this.type;return this.name&&!r(this).is(":disabled")&&zb.test(this.nodeName)&&!yb.test(a)&&(this.checked||!ja.test(a))}).map(function(a,b){var c=r(this).val();return null==c?null:Array.isArray(c)?r.map(c,function(a){return{name:b.name,value:a.replace(xb,"\r\n")}}):{name:b.name,value:c.replace(xb,"\r\n")}}).get()}});var Bb=/%20/g,Cb=/#.*$/,Db=/([?&])_=[^&]*/,Eb=/^(.*?):[ \t]*([^\r\n]*)$/gm,Fb=/^(?:about|app|app-storage|.+-extension|file|res|widget):$/,Gb=/^(?:GET|HEAD)$/,Hb=/^\/\//,Ib={},Jb={},Kb="*/".concat("*"),Lb=d.createElement("a");Lb.href=tb.href;function Mb(a){return function(b,c){"string"!=typeof b&&(c=b,b="*");var d,e=0,f=b.toLowerCase().match(L)||[];if(r.isFunction(c))while(d=f[e++])"+"===d[0]?(d=d.slice(1)||"*",(a[d]=a[d]||[]).unshift(c)):(a[d]=a[d]||[]).push(c)}}function Nb(a,b,c,d){var e={},f=a===Jb;function g(h){var i;return e[h]=!0,r.each(a[h]||[],function(a,h){var j=h(b,c,d);return"string"!=typeof j||f||e[j]?f?!(i=j):void 0:(b.dataTypes.unshift(j),g(j),!1)}),i}return g(b.dataTypes[0])||!e["*"]&&g("*")}function Ob(a,b){var c,d,e=r.ajaxSettings.flatOptions||{};for(c in b)void 0!==b[c]&&((e[c]?a:d||(d={}))[c]=b[c]);return d&&r.extend(!0,a,d),a}function Pb(a,b,c){var d,e,f,g,h=a.contents,i=a.dataTypes;while("*"===i[0])i.shift(),void 0===d&&(d=a.mimeType||b.getResponseHeader("Content-Type"));if(d)for(e in h)if(h[e]&&h[e].test(d)){i.unshift(e);break}if(i[0]in c)f=i[0];else{for(e in c){if(!i[0]||a.converters[e+" "+i[0]]){f=e;break}g||(g=e)}f=f||g}if(f)return f!==i[0]&&i.unshift(f),c[f]}function Qb(a,b,c,d){var e,f,g,h,i,j={},k=a.dataTypes.slice();if(k[1])for(g in a.converters)j[g.toLowerCase()]=a.converters[g];f=k.shift();while(f)if(a.responseFields[f]&&(c[a.responseFields[f]]=b),!i&&d&&a.dataFilter&&(b=a.dataFilter(b,a.dataType)),i=f,f=k.shift())if("*"===f)f=i;else if("*"!==i&&i!==f){if(g=j[i+" "+f]||j["* "+f],!g)for(e in j)if(h=e.split(" "),h[1]===f&&(g=j[i+" "+h[0]]||j["* "+h[0]])){g===!0?g=j[e]:j[e]!==!0&&(f=h[0],k.unshift(h[1]));break}if(g!==!0)if(g&&a["throws"])b=g(b);else try{b=g(b)}catch(l){return{state:"parsererror",error:g?l:"No conversion from "+i+" to "+f}}}return{state:"success",data:b}}r.extend({active:0,lastModified:{},etag:{},ajaxSettings:{url:tb.href,type:"GET",isLocal:Fb.test(tb.protocol),global:!0,processData:!0,async:!0,contentType:"application/x-www-form-urlencoded; charset=UTF-8",accepts:{"*":Kb,text:"text/plain",html:"text/html",xml:"application/xml, text/xml",json:"application/json, text/javascript"},contents:{xml:/\bxml\b/,html:/\bhtml/,json:/\bjson\b/},responseFields:{xml:"responseXML",text:"responseText",json:"responseJSON"},converters:{"* text":String,"text html":!0,"text json":JSON.parse,"text xml":r.parseXML},flatOptions:{url:!0,context:!0}},ajaxSetup:function(a,b){return b?Ob(Ob(a,r.ajaxSettings),b):Ob(r.ajaxSettings,a)},ajaxPrefilter:Mb(Ib),ajaxTransport:Mb(Jb),ajax:function(b,c){"object"==typeof b&&(c=b,b=void 0),c=c||{};var e,f,g,h,i,j,k,l,m,n,o=r.ajaxSetup({},c),p=o.context||o,q=o.context&&(p.nodeType||p.jquery)?r(p):r.event,s=r.Deferred(),t=r.Callbacks("once memory"),u=o.statusCode||{},v={},w={},x="canceled",y={readyState:0,getResponseHeader:function(a){var b;if(k){if(!h){h={};while(b=Eb.exec(g))h[b[1].toLowerCase()]=b[2]}b=h[a.toLowerCase()]}return null==b?null:b},getAllResponseHeaders:function(){return k?g:null},setRequestHeader:function(a,b){return null==k&&(a=w[a.toLowerCase()]=w[a.toLowerCase()]||a,v[a]=b),this},overrideMimeType:function(a){return null==k&&(o.mimeType=a),this},statusCode:function(a){var b;if(a)if(k)y.always(a[y.status]);else for(b in a)u[b]=[u[b],a[b]];return this},abort:function(a){var b=a||x;return e&&e.abort(b),A(0,b),this}};if(s.promise(y),o.url=((b||o.url||tb.href)+"").replace(Hb,tb.protocol+"//"),o.type=c.method||c.type||o.method||o.type,o.dataTypes=(o.dataType||"*").toLowerCase().match(L)||[""],null==o.crossDomain){j=d.createElement("a");try{j.href=o.url,j.href=j.href,o.crossDomain=Lb.protocol+"//"+Lb.host!=j.protocol+"//"+j.host}catch(z){o.crossDomain=!0}}if(o.data&&o.processData&&"string"!=typeof o.data&&(o.data=r.param(o.data,o.traditional)),Nb(Ib,o,c,y),k)return y;l=r.event&&o.global,l&&0===r.active++&&r.event.trigger("ajaxStart"),o.type=o.type.toUpperCase(),o.hasContent=!Gb.test(o.type),f=o.url.replace(Cb,""),o.hasContent?o.data&&o.processData&&0===(o.contentType||"").indexOf("application/x-www-form-urlencoded")&&(o.data=o.data.replace(Bb,"+")):(n=o.url.slice(f.length),o.data&&(f+=(vb.test(f)?"&":"?")+o.data,delete o.data),o.cache===!1&&(f=f.replace(Db,"$1"),n=(vb.test(f)?"&":"?")+"_="+ub++ +n),o.url=f+n),o.ifModified&&(r.lastModified[f]&&y.setRequestHeader("If-Modified-Since",r.lastModified[f]),r.etag[f]&&y.setRequestHeader("If-None-Match",r.etag[f])),(o.data&&o.hasContent&&o.contentType!==!1||c.contentType)&&y.setRequestHeader("Content-Type",o.contentType),y.setRequestHeader("Accept",o.dataTypes[0]&&o.accepts[o.dataTypes[0]]?o.accepts[o.dataTypes[0]]+("*"!==o.dataTypes[0]?", "+Kb+"; q=0.01":""):o.accepts["*"]);for(m in o.headers)y.setRequestHeader(m,o.headers[m]);if(o.beforeSend&&(o.beforeSend.call(p,y,o)===!1||k))return y.abort();if(x="abort",t.add(o.complete),y.done(o.success),y.fail(o.error),e=Nb(Jb,o,c,y)){if(y.readyState=1,l&&q.trigger("ajaxSend",[y,o]),k)return y;o.async&&o.timeout>0&&(i=a.setTimeout(function(){y.abort("timeout")},o.timeout));try{k=!1,e.send(v,A)}catch(z){if(k)throw z;A(-1,z)}}else A(-1,"No Transport");function A(b,c,d,h){var j,m,n,v,w,x=c;k||(k=!0,i&&a.clearTimeout(i),e=void 0,g=h||"",y.readyState=b>0?4:0,j=b>=200&&b<300||304===b,d&&(v=Pb(o,y,d)),v=Qb(o,v,y,j),j?(o.ifModified&&(w=y.getResponseHeader("Last-Modified"),w&&(r.lastModified[f]=w),w=y.getResponseHeader("etag"),w&&(r.etag[f]=w)),204===b||"HEAD"===o.type?x="nocontent":304===b?x="notmodified":(x=v.state,m=v.data,n=v.error,j=!n)):(n=x,!b&&x||(x="error",b<0&&(b=0))),y.status=b,y.statusText=(c||x)+"",j?s.resolveWith(p,[m,x,y]):s.rejectWith(p,[y,x,n]),y.statusCode(u),u=void 0,l&&q.trigger(j?"ajaxSuccess":"ajaxError",[y,o,j?m:n]),t.fireWith(p,[y,x]),l&&(q.trigger("ajaxComplete",[y,o]),--r.active||r.event.trigger("ajaxStop")))}return y},getJSON:function(a,b,c){return r.get(a,b,c,"json")},getScript:function(a,b){return r.get(a,void 0,b,"script")}}),r.each(["get","post"],function(a,b){r[b]=function(a,c,d,e){return r.isFunction(c)&&(e=e||d,d=c,c=void 0),r.ajax(r.extend({url:a,type:b,dataType:e,data:c,success:d},r.isPlainObject(a)&&a))}}),r._evalUrl=function(a){return r.ajax({url:a,type:"GET",dataType:"script",cache:!0,async:!1,global:!1,"throws":!0})},r.fn.extend({wrapAll:function(a){var b;return this[0]&&(r.isFunction(a)&&(a=a.call(this[0])),b=r(a,this[0].ownerDocument).eq(0).clone(!0),this[0].parentNode&&b.insertBefore(this[0]),b.map(function(){var a=this;while(a.firstElementChild)a=a.firstElementChild;return a}).append(this)),this},wrapInner:function(a){return r.isFunction(a)?this.each(function(b){r(this).wrapInner(a.call(this,b))}):this.each(function(){var b=r(this),c=b.contents();c.length?c.wrapAll(a):b.append(a)})},wrap:function(a){var b=r.isFunction(a);return this.each(function(c){r(this).wrapAll(b?a.call(this,c):a)})},unwrap:function(a){return this.parent(a).not("body").each(function(){r(this).replaceWith(this.childNodes)}),this}}),r.expr.pseudos.hidden=function(a){return!r.expr.pseudos.visible(a)},r.expr.pseudos.visible=function(a){return!!(a.offsetWidth||a.offsetHeight||a.getClientRects().length)},r.ajaxSettings.xhr=function(){try{return new a.XMLHttpRequest}catch(b){}};var Rb={0:200,1223:204},Sb=r.ajaxSettings.xhr();o.cors=!!Sb&&"withCredentials"in Sb,o.ajax=Sb=!!Sb,r.ajaxTransport(function(b){var c,d;if(o.cors||Sb&&!b.crossDomain)return{send:function(e,f){var g,h=b.xhr();if(h.open(b.type,b.url,b.async,b.username,b.password),b.xhrFields)for(g in b.xhrFields)h[g]=b.xhrFields[g];b.mimeType&&h.overrideMimeType&&h.overrideMimeType(b.mimeType),b.crossDomain||e["X-Requested-With"]||(e["X-Requested-With"]="XMLHttpRequest");for(g in e)h.setRequestHeader(g,e[g]);c=function(a){return function(){c&&(c=d=h.onload=h.onerror=h.onabort=h.onreadystatechange=null,"abort"===a?h.abort():"error"===a?"number"!=typeof h.status?f(0,"error"):f(h.status,h.statusText):f(Rb[h.status]||h.status,h.statusText,"text"!==(h.responseType||"text")||"string"!=typeof h.responseText?{binary:h.response}:{text:h.responseText},h.getAllResponseHeaders()))}},h.onload=c(),d=h.onerror=c("error"),void 0!==h.onabort?h.onabort=d:h.onreadystatechange=function(){4===h.readyState&&a.setTimeout(function(){c&&d()})},c=c("abort");try{h.send(b.hasContent&&b.data||null)}catch(i){if(c)throw i}},abort:function(){c&&c()}}}),r.ajaxPrefilter(function(a){a.crossDomain&&(a.contents.script=!1)}),r.ajaxSetup({accepts:{script:"text/javascript, application/javascript, application/ecmascript, application/x-ecmascript"},contents:{script:/\b(?:java|ecma)script\b/},converters:{"text script":function(a){return r.globalEval(a),a}}}),r.ajaxPrefilter("script",function(a){void 0===a.cache&&(a.cache=!1),a.crossDomain&&(a.type="GET")}),r.ajaxTransport("script",function(a){if(a.crossDomain){var b,c;return{send:function(e,f){b=r("<script>").prop({charset:a.scriptCharset,src:a.url}).on("load error",c=function(a){b.remove(),c=null,a&&f("error"===a.type?404:200,a.type)}),d.head.appendChild(b[0])},abort:function(){c&&c()}}}});var Tb=[],Ub=/(=)\?(?=&|$)|\?\?/;r.ajaxSetup({jsonp:"callback",jsonpCallback:function(){var a=Tb.pop()||r.expando+"_"+ub++;return this[a]=!0,a}}),r.ajaxPrefilter("json jsonp",function(b,c,d){var e,f,g,h=b.jsonp!==!1&&(Ub.test(b.url)?"url":"string"==typeof b.data&&0===(b.contentType||"").indexOf("application/x-www-form-urlencoded")&&Ub.test(b.data)&&"data");if(h||"jsonp"===b.dataTypes[0])return e=b.jsonpCallback=r.isFunction(b.jsonpCallback)?b.jsonpCallback():b.jsonpCallback,h?b[h]=b[h].replace(Ub,"$1"+e):b.jsonp!==!1&&(b.url+=(vb.test(b.url)?"&":"?")+b.jsonp+"="+e),b.converters["script json"]=function(){return g||r.error(e+" was not called"),g[0]},b.dataTypes[0]="json",f=a[e],a[e]=function(){g=arguments},d.always(function(){void 0===f?r(a).removeProp(e):a[e]=f,b[e]&&(b.jsonpCallback=c.jsonpCallback,Tb.push(e)),g&&r.isFunction(f)&&f(g[0]),g=f=void 0}),"script"}),o.createHTMLDocument=function(){var a=d.implementation.createHTMLDocument("").body;return a.innerHTML="<form></form><form></form>",2===a.childNodes.length}(),r.parseHTML=function(a,b,c){if("string"!=typeof a)return[];"boolean"==typeof b&&(c=b,b=!1);var e,f,g;return b||(o.createHTMLDocument?(b=d.implementation.createHTMLDocument(""),e=b.createElement("base"),e.href=d.location.href,b.head.appendChild(e)):b=d),f=C.exec(a),g=!c&&[],f?[b.createElement(f[1])]:(f=qa([a],b,g),g&&g.length&&r(g).remove(),r.merge([],f.childNodes))},r.fn.load=function(a,b,c){var d,e,f,g=this,h=a.indexOf(" ");return h>-1&&(d=pb(a.slice(h)),a=a.slice(0,h)),r.isFunction(b)?(c=b,b=void 0):b&&"object"==typeof b&&(e="POST"),g.length>0&&r.ajax({url:a,type:e||"GET",dataType:"html",data:b}).done(function(a){f=arguments,g.html(d?r("<div>").append(r.parseHTML(a)).find(d):a)}).always(c&&function(a,b){g.each(function(){c.apply(this,f||[a.responseText,b,a])})}),this},r.each(["ajaxStart","ajaxStop","ajaxComplete","ajaxError","ajaxSuccess","ajaxSend"],function(a,b){r.fn[b]=function(a){return this.on(b,a)}}),r.expr.pseudos.animated=function(a){return r.grep(r.timers,function(b){return a===b.elem}).length},r.offset={setOffset:function(a,b,c){var d,e,f,g,h,i,j,k=r.css(a,"position"),l=r(a),m={};"static"===k&&(a.style.position="relative"),h=l.offset(),f=r.css(a,"top"),i=r.css(a,"left"),j=("absolute"===k||"fixed"===k)&&(f+i).indexOf("auto")>-1,j?(d=l.position(),g=d.top,e=d.left):(g=parseFloat(f)||0,e=parseFloat(i)||0),r.isFunction(b)&&(b=b.call(a,c,r.extend({},h))),null!=b.top&&(m.top=b.top-h.top+g),null!=b.left&&(m.left=b.left-h.left+e),"using"in b?b.using.call(a,m):l.css(m)}},r.fn.extend({offset:function(a){if(arguments.length)return void 0===a?this:this.each(function(b){r.offset.setOffset(this,a,b)});var b,c,d,e,f=this[0];if(f)return f.getClientRects().length?(d=f.getBoundingClientRect(),b=f.ownerDocument,c=b.documentElement,e=b.defaultView,{top:d.top+e.pageYOffset-c.clientTop,left:d.left+e.pageXOffset-c.clientLeft}):{top:0,left:0}},position:function(){if(this[0]){var a,b,c=this[0],d={top:0,left:0};return"fixed"===r.css(c,"position")?b=c.getBoundingClientRect():(a=this.offsetParent(),b=this.offset(),B(a[0],"html")||(d=a.offset()),d={top:d.top+r.css(a[0],"borderTopWidth",!0),left:d.left+r.css(a[0],"borderLeftWidth",!0)}),{top:b.top-d.top-r.css(c,"marginTop",!0),left:b.left-d.left-r.css(c,"marginLeft",!0)}}},offsetParent:function(){return this.map(function(){var a=this.offsetParent;while(a&&"static"===r.css(a,"position"))a=a.offsetParent;return a||ra})}}),r.each({scrollLeft:"pageXOffset",scrollTop:"pageYOffset"},function(a,b){var c="pageYOffset"===b;r.fn[a]=function(d){return T(this,function(a,d,e){var f;return r.isWindow(a)?f=a:9===a.nodeType&&(f=a.defaultView),void 0===e?f?f[b]:a[d]:void(f?f.scrollTo(c?f.pageXOffset:e,c?e:f.pageYOffset):a[d]=e)},a,d,arguments.length)}}),r.each(["top","left"],function(a,b){r.cssHooks[b]=Pa(o.pixelPosition,function(a,c){if(c)return c=Oa(a,b),Ma.test(c)?r(a).position()[b]+"px":c})}),r.each({Height:"height",Width:"width"},function(a,b){r.each({padding:"inner"+a,content:b,"":"outer"+a},function(c,d){r.fn[d]=function(e,f){var g=arguments.length&&(c||"boolean"!=typeof e),h=c||(e===!0||f===!0?"margin":"border");return T(this,function(b,c,e){var f;return r.isWindow(b)?0===d.indexOf("outer")?b["inner"+a]:b.document.documentElement["client"+a]:9===b.nodeType?(f=b.documentElement,Math.max(b.body["scroll"+a],f["scroll"+a],b.body["offset"+a],f["offset"+a],f["client"+a])):void 0===e?r.css(b,c,h):r.style(b,c,e,h)},b,g?e:void 0,g)}})}),r.fn.extend({bind:function(a,b,c){return this.on(a,null,b,c)},unbind:function(a,b){return this.off(a,null,b)},delegate:function(a,b,c,d){return this.on(b,a,c,d)},undelegate:function(a,b,c){return 1===arguments.length?this.off(a,"**"):this.off(b,a||"**",c)}}),r.holdReady=function(a){a?r.readyWait++:r.ready(!0)},r.isArray=Array.isArray,r.parseJSON=JSON.parse,r.nodeName=B,"function"==typeof define&&define.amd&&define("jquery",[],function(){return r});var Vb=a.jQuery,Wb=a.$;return r.noConflict=function(b){return a.$===r&&(a.$=Wb),b&&a.jQuery===r&&(a.jQuery=Vb),r},b||(a.jQuery=a.$=r),r});
 ;
 
 ;(function() {
@@ -6054,7 +6082,8 @@ componentHandler.register({
         Component: Component,
         render: render,
         rerender: rerender,
-        options: options
+        options: options,
+        unmountComponent: unmountComponent,
     };
     if (true) module.exports = preact; else self.preact = preact;
 }();
@@ -6073,10 +6102,12 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 jb.ui.render = __WEBPACK_IMPORTED_MODULE_0_preact__["render"];
 jb.ui.h = __WEBPACK_IMPORTED_MODULE_0_preact__["h"];
 jb.ui.Component = __WEBPACK_IMPORTED_MODULE_0_preact__["Component"];
+jb.ui.unmountComponent = __WEBPACK_IMPORTED_MODULE_0_preact__["unmountComponent"];
 
 
 /***/ })
-/******/ ]);;
+/******/ ]);
+;
 
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -12443,6 +12474,320 @@ jb.rx.Subject = __WEBPACK_IMPORTED_MODULE_0_rxjs_Subject__["Subject"];
 /***/ })
 /******/ ]);;
 
+(function() {
+
+class ImmutableWithPath {
+  constructor(resources) {
+    this.resources = resources;
+    this.resourceVersions = {};
+    this.pathId = 0;
+    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
+    this.resourceChange = new jb.rx.Subject();
+    jb.delay(1).then(_=>jb.ui.originalResources = jb.resources)
+  }
+  val(ref) {
+    if (ref == null) return ref;
+    if (ref.$jb_val) return ref.$jb_val();
+    if (!ref.$jb_path) return ref;
+    if (ref.handler != this)
+      return ref.handler.val(ref)
+
+    var resource = ref.$jb_path[0];
+    if (ref.$jb_resourceV == this.resourceVersions[resource])
+      return ref.$jb_cache;
+    this.refresh(ref);
+    if (ref.$jb_invalid)
+      return null;
+    return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
+  }
+  writeValue(ref,value,srcCtx) {
+    if (!ref)
+      return jb.logError('writeValue: null ref');
+    if (this.val(ref) === value) return;
+    jb.logPerformance('writeValue',value,ref,srcCtx);
+    if (ref.$jb_val)
+      return ref.$jb_val(value);
+    return this.doOp(ref,{$set: value},srcCtx)
+  }
+  splice(ref,args,srcCtx) {
+    return this.doOp(ref,{$splice: args },srcCtx)
+  }
+  move(fromRef,toRef,srcCtx) {
+    var sameArray = fromRef.$jb_path.slice(0,-1).join('~') == toRef.$jb_path.slice(0,-1).join('~');
+    var fromIndex = Number(fromRef.$jb_path.slice(-1));
+    var toIndex = Number(toRef.$jb_path.slice(-1));
+    var fromArray = this.refOfPath(fromRef.$jb_path.slice(0,-1)),toArray = this.refOfPath(toRef.$jb_path.slice(0,-1));
+    if (isNaN(fromIndex) || isNaN(toIndex))
+        return jb.logError('move: not array element',fromRef,toRef);
+
+    var valToMove = jb.val(fromRef);
+    if (sameArray) {
+        if (fromIndex < toIndex) toIndex--; // the deletion changes the index
+        return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
+    }
+    var events = [
+        this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx,true),
+        this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx,true),
+    ]
+    events.forEach(opEvent=>{
+        this.refresh(opEvent.ref,opEvent);
+        opEvent.newVal = this.val(opEvent.ref);
+        this.resourceChange.next(opEvent)
+    })
+  }
+  push(ref,value,srcCtx) {
+    return this.doOp(ref,{$push: value},srcCtx)
+  }
+  merge(ref,value,srcCtx) {
+    return this.doOp(ref,{$merge: value},srcCtx)
+  }
+  doOp(ref,opOnRef,srcCtx,doNotNotify) {
+    if (!this.isRef(ref))
+      ref = this.asRef(ref);
+    if (!ref) return;
+    var oldRef = Object.assign({},ref);
+
+    if (!this.refresh(ref)) return;
+    if (ref.$jb_path.length == 0)
+      return jb.logError('doOp: ref not found');
+
+    var op = {}, resource = ref.$jb_path[0], oldResources = this.resources();
+    var deleteOp = typeof opOnRef.$set == 'object' && opOnRef.$set == null;
+    jb.path(op,ref.$jb_path,opOnRef); // create op as nested object
+    this.markPath(ref.$jb_path);
+    var opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
+        oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
+    this.resources(jb.ui.update(this.resources(),op),opEvent);
+    this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
+    this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
+    opEvent.resourceVersionsAfter = this.resourceVersions;
+    if (opOnRef.$push)
+      opEvent.insertedPath = opEvent.path.concat([opEvent.oldVal.length]);
+    if (deleteOp) {
+      if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
+        return delete this.resourceVersions[resource];
+      try {
+        var parent = ref.$jb_path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
+        if (parent)
+          delete parent[ref.$jb_path.slice(-1)[0]]
+      } catch(e) {
+        jb.logException('delete',e);
+      }
+    }
+    if (!doNotNotify) {
+        this.refresh(ref,opEvent);
+        opEvent.newVal = this.val(ref);
+        this.resourceChange.next(opEvent);
+    }
+    return opEvent;
+  }
+  restoreArrayIds(from,to,path) {
+    if (from && to && from.$jb_id && Array.isArray(from) && Array.isArray(to) && !to.$jb_id && typeof to == 'object')
+      to.$jb_id = from.$jb_id;
+    if (path.length > 0)
+      this.restoreArrayIds(from[path[0]], to[path[0]], path.slice(1))
+  }
+  asRef(obj,hint) {
+    if (!obj) return obj;
+    if (obj && (obj.$jb_path || obj.$jb_val))
+        return obj;
+
+    var path;
+    if (hint && hint.resource) {
+      var res = this.pathOfObject(obj,this.resources()[hint.resource]);
+      path = res && [hint.resource].concat(res);
+    }
+    path = path || this.pathOfObject(obj,this.resources()); // try without the hint
+
+    if (path)
+      return {
+        $jb_path: path,
+        $jb_resourceV: this.resourceVersions[path[0]],
+        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
+        handler: this,
+      }
+    return obj;
+  }
+  isRef(ref) {
+    return ref && (ref.$jb_path || ref.$jb_val);
+  }
+  objectProperty(obj,prop) {
+    if (!obj)
+      return jb.logError('objectProperty: null obj');
+    var objRef = this.asRef(obj);
+    if (objRef && objRef.$jb_path) {
+      return {
+        $jb_path: objRef.$jb_path.concat([prop]),
+        $jb_resourceV: objRef.$jb_resourceV,
+        $jb_cache: objRef.$jb_cache[prop],
+        $jb_parentOfPrim: objRef.$jb_cache,
+        handler: this,
+      }
+    } else {
+      return obj[prop]; // not reffable
+    }
+  }
+  refresh(ref,lastOpEvent,silent) {
+    if (!ref) debugger;
+    try {
+      var path = ref.$jb_path, new_ref = {};
+      if (!path)
+        return !silent && jb.logError('refresh: empty path');
+      var currentVersion = this.resourceVersions[path[0]] || 0;
+      if (path.length == 1) return true;
+      if (currentVersion == ref.$jb_resourceV) return true;
+      if (currentVersion == ref.$jb_resourceV + 1 && lastOpEvent && typeof lastOpEvent.op.$set != 'undefined') {
+        var res = this.refOfPath(ref.$jb_path,silent); // recalc ref by path
+        if (res)
+          return Object.assign(ref,res)
+        ref.$jb_invalid = true;
+        return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
+      }
+
+      if (ref.$jb_parentOfPrim) {
+        var parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
+        if (!parent || !this.isRef(parent)) {
+          this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
+          ref.$jb_invalid = true;
+          return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
+        }
+        var prop = path.slice(-1)[0];
+        new_ref = {
+          $jb_path: parent.$jb_path.concat([prop]),
+          $jb_resourceV: this.resourceVersions[path[0]],
+          $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
+          $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
+      } else {
+        var object_path_found = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+        if (!object_path_found) {
+          this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+          ref.$jb_invalid = true;
+          return !silent && jb.logError('refresh: object not found: ' + path.join('~'));
+        }
+        var new_path = [path[0]].concat(object_path_found);
+        if (new_path) new_ref = {
+          $jb_path: new_path,
+          $jb_resourceV: this.resourceVersions[new_path[0]],
+          $jb_cache: new_path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
+      }
+      Object.assign(ref,new_ref);
+    } catch (e) {
+       ref.$jb_invalid = true;
+       return !silent && jb.logException(e,'ref refresh ',ref);
+    }
+    return true;
+  }
+  refOfPath(path,silent) {
+      try {
+        var val = path.reduce((o,p)=>o[p],this.resources());
+        if (val == null || typeof val != 'object' || Array.isArray(val))
+          var parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
+        else
+          var parent = null
+
+        return {
+            $jb_path: path,
+            $jb_resourceV: this.resourceVersions[path[0]],
+            $jb_cache: val,
+            $jb_parentOfPrim: parent,
+            handler: this,
+          }
+      } catch (e) {
+        if (!silent)
+          jb.logException(e,'ref from path ' + path);
+      }
+  }
+  markPath(path) {
+    var leaf = path.reduce((o,p)=>{
+      o.$jb_id = o.$jb_id || (++this.pathId);
+      return o[p]
+    }, this.resources());
+    if (leaf && typeof leaf == 'object')
+      leaf.$jb_id = leaf.$jb_id || (++this.pathId);
+  }
+  pathOfObject(obj,lookIn,depth) {
+    if (!obj || !lookIn || typeof lookIn != 'object' || typeof obj != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50)
+      return;
+    if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1)
+      return;
+
+    if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id))
+      return [];
+    for(var p in lookIn) {
+      var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
+      if (res)
+        return [p].concat(res);
+    }
+  }
+  // valid(ref) {
+  //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
+  // }
+  refObservable(ref,cmp,settings) {
+    if (ref && ref.$jb_observable)
+      return ref.$jb_observable(cmp);
+    if (!ref || !this.isRef(ref))
+      return jb.rx.Observable.of();
+    if (ref.$jb_path) {
+      return this.resourceChange
+        .takeUntil(cmp.destroyed)
+        .filter(e=>
+            e.ref.$jb_path[0] == ref.$jb_path[0])
+        .filter(e=> {
+          this.refresh(ref,e,true);
+          if (settings && settings.throw && ref.$jb_invalid)
+            throw 'invalid ref';
+          var path = e.ref.$jb_path;
+          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
+          if (settings && settings.includeChildren)
+            return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
+          return changeInParent;
+        })
+        .distinctUntilChanged((e1,e2)=>
+          e1.newVal == e2.newVal)
+    }
+    return jb.rx.Observable.of(jb.val(ref));
+  }
+}
+
+function resourcesRef(val) {
+  if (typeof val == 'undefined')
+    return jb.resources;
+  else
+    jb.resources = val;
+}
+
+jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
+
+jb.ui.refObservable = (ref,cmp,settings) =>
+  jb.refHandler(ref).refObservable(ref,cmp,settings);
+
+jb.ui.ImmutableWithPath = ImmutableWithPath;
+jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
+
+jb.ui.pathObservable = (path,handler,cmp) => {
+  var ref = handler.refOfPath(path.split('~'));
+  return handler.resourceChange
+    .takeUntil(cmp.destroyed)
+    .filter(e=>
+        path.indexOf(e.oldRef.$jb_path.join('~')) == 0)
+    .map(e=> {
+    handler.refresh(ref,e,true);
+    if (!ref.$jb_invalid)
+        return ref.$jb_path.join('~')
+    })
+    .filter(newPath=>newPath != path)
+    .take(1)
+    .map(newPath=>({newPath: newPath, oldPath: path}))
+}
+
+
+})()
+;
+
 (function(){
 
 var ui = jb.ui;
@@ -12512,12 +12857,17 @@ class JbComponent {
 				if (!jbComp.template || typeof jbComp.template != 'function')
 					return ui.h('span',{display: 'none'});
 				//console.log('render',jb.studio.shortTitle(this.ctx.path));
-				var vdom = jbComp.template(this,state,ui.h);
-				jbComp.modifierFuncs.forEach(modifier=> {
-					if (typeof vdom == 'object')
-						vdom = modifier(vdom,this,state) || vdom
-				});
-				return vdom;
+				try {
+					var vdom = jbComp.template(this,state,ui.h);
+					jbComp.modifierFuncs.forEach(modifier=> {
+						if (typeof vdom == 'object')
+							vdom = modifier(vdom,this,state) || vdom
+					});
+					return vdom;
+				} catch (e) {
+					jb.logException('render',e);
+					return ui.h('span',{display: 'none'});
+				}
 			}
     		componentDidMount() {
 				jbComp.injectCss(this);
@@ -12570,7 +12920,9 @@ class JbComponent {
 					return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
 				}).join('\n');
 				var remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-				$(`<style type="text/css">${remark}${cssStyle}</style>`).appendTo($('head'));
+        var style_elem = document.createElement('style');
+        style_elem.innerHTML = remark + cssStyle;
+        document.head.appendChild(style_elem);
 			}
 			elem.classList.add(`jb-${cssSelectors_hash[cssKey]}`);
 		}
@@ -12690,7 +13042,7 @@ ui.focus = function(elem,logTxt,srcCtx) {
 ui.wrapWithLauchingElement = (f,context,elem) =>
 	ctx2 => {
 		if (!elem) debugger;
-		return f(context.extendVars(ctx2).setVars({ $launchingElement: { $el : $(elem) }}));
+		return f(context.extendVars(ctx2).setVars({ $launchingElement: { el : elem }}));
 	}
 
 
@@ -12733,7 +13085,6 @@ ui.renderWidget = function(profile,elem) {
 			if (jb.studio.studioWindow) {
 				var st = jb.studio.studioWindow.jb.studio;
 				st.refreshPreviewWidget = _ => {
-					//$(elem).empty();
 					jb.resources = jb.ui.originalResources || jb.resources;
 					previewElem = ui.render(ui.h(R),elem,previewElem);
 				}
@@ -12741,8 +13092,6 @@ ui.renderWidget = function(profile,elem) {
 					this.setState({profile: {$: page}}));
 				st.scriptChange.subscribe(_=>
 						this.setState(null));
-				// st.scriptChange.subscribe(e=>
-				// 	st.refreshPreviewOfPath(e.path.join('~')))
 			}
 		}
 		render(pros,state) {
@@ -12821,9 +13170,12 @@ ui.item = function(cmp,vdom,data) {
 
 ui.watchRef = function(ctx,cmp,ref,includeChildren) {
     ref && ui.refObservable(ref,cmp,{includeChildren: includeChildren, throw: true})
-			.catch(e=>{ jb.logException(e); return []})
-			.subscribe(e=>
-        ui.setState(cmp,null,e,ctx))
+			.catch(e=>{ return []}) // jb.logException(e,'watch ref',cmp,ref);
+			.subscribe(e=>{
+        if (ctx && ctx.profile && ctx.profile.$trace)
+          console.log('ref change watched: ' + (ref && ref.$jb_path && ref.$jb_path.join('~')),e,cmp,ref,ctx);
+        return ui.setState(cmp,null,e,ctx);
+      })
 }
 
 ui.toVdomOrStr = val => {
@@ -12839,10 +13191,50 @@ ui.refreshComp = (ctx,el) => {
 	if (nextElem)
 		newElem.parentElement.insertBefore(newElem,nextElem);
 }
+
+ui.outerWidth  = el => {
+  var style = getComputedStyle(el);
+  return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
+}
+ui.outerHeight = el => {
+  var style = getComputedStyle(el);
+  return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+}
+ui.offset = el => {
+  var rect = el.getBoundingClientRect();
+  return {
+    top: rect.top + document.body.scrollTop,
+    left: rect.left + document.body.scrollLeft
+  }
+}
+ui.parents = el => {
+  var res = [];
+  el = el.parentNode;
+  while(el) {
+    res.push(el);
+    el = el.parentNode;
+  }
+  return res;
+}
+ui.closest = (el,query) => {
+  while(el) {
+    if (ui.matches(el,query)) return el;
+    el = el.parentNode;
+  }
+}
+ui.find = (el,query) => Array.from(el.querySelectorAll(query))
+ui.findIncludeSelf = (el,query) => (ui.matches(el,query) ? [el] : []).concat(Array.from(el.querySelectorAll(query)))
+ui.addClass = (el,clz) => el.classList.add(clz);
+ui.removeClass = (el,clz) => el.classList.remove(clz);
+ui.hasClass = (el,clz) => el.classList.contains(clz);
+ui.matches = (el,query) => el.matches(query)
+ui.index = el => Array.from(el.parentNode.children).indexOf(el)
+ui.inDocument = el => el && (ui.parents(el).slice(-1)[0]||{}).nodeType == 9
+
 // ****************** components ****************
 
 jb.component('custom-style', {
-	typePattern: /.*-style/,
+	typePattern: /.*-style/, category: 'advanced:10,all:10',
 	params: [
 		{ id: 'template', as: 'single', essential: true, dynamic: true, ignore: true },
 		{ id: 'css', as: 'string' },
@@ -12857,7 +13249,7 @@ jb.component('custom-style', {
 })
 
 jb.component('style-by-control', {
-	typePattern: /.*-style/,
+	typePattern: /.*-style/,category: 'advanced:10,all:20',
 	params: [
 		{ id: 'control', type: 'control', essential: true, dynamic: true },
 		{ id: 'modelVar', as: 'string', essential: true }
@@ -12866,314 +13258,8 @@ jb.component('style-by-control', {
 		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
 })
 
-})()
-;
-
-(function() {
-
-class ImmutableWithPath {
-  constructor(resources) {
-    this.resources = resources;
-    this.resourceVersions = {};
-    this.pathId = 0;
-    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
-    this.resourceChange = new jb.rx.Subject();
-    jb.delay(1).then(_=>jb.ui.originalResources = jb.resources)
-  }
-  val(ref) {
-    if (ref == null) return ref;
-    if (ref.$jb_val) return ref.$jb_val();
-    if (!ref.$jb_path) return ref;
-    if (ref.handler != this)
-      return ref.handler.val(ref)
-
-    var resource = ref.$jb_path[0];
-    if (ref.$jb_resourceV == this.resourceVersions[resource])
-      return ref.$jb_cache;
-    this.refresh(ref);
-    if (ref.$jb_invalid)
-      return null;
-    return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
-  }
-  writeValue(ref,value,srcCtx) {
-    if (!ref)
-      return jb.logError('writeValue: null ref');
-    if (this.val(ref) === value) return;
-    jb.logPerformance('writeValue',value,ref,srcCtx);
-    if (ref.$jb_val)
-      return ref.$jb_val(value);
-    return this.doOp(ref,{$set: value},srcCtx)
-  }
-  splice(ref,args,srcCtx) {
-    return this.doOp(ref,{$splice: args },srcCtx)
-  }
-  move(fromRef,toRef,srcCtx) {
-    var sameArray = fromRef.$jb_path.slice(0,-1).join('~') == toRef.$jb_path.slice(0,-1).join('~');
-    var fromIndex = Number(fromRef.$jb_path.slice(-1));
-    var toIndex = Number(toRef.$jb_path.slice(-1));
-    var fromArray = this.refOfPath(fromRef.$jb_path.slice(0,-1)),toArray = this.refOfPath(toRef.$jb_path.slice(0,-1));
-    if (isNaN(fromIndex) || isNaN(toIndex))
-        return jb.logError('move: not array element',fromRef,toRef);
-
-    var valToMove = jb.val(fromRef);
-    if (sameArray)
-        return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
-
-    var events = [
-        this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx,true),
-        this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx,true),
-    ]
-    events.forEach(opEvent=>{
-        this.refresh(opEvent.ref,opEvent);
-        opEvent.newVal = this.val(opEvent.ref);
-        this.resourceChange.next(opEvent)
-    })
-  }
-  push(ref,value,srcCtx) {
-    return this.doOp(ref,{$push: value},srcCtx)
-  }
-  merge(ref,value,srcCtx) {
-    return this.doOp(ref,{$merge: value},srcCtx)
-  }
-  doOp(ref,opOnRef,srcCtx,doNotNotify) {
-    if (!this.isRef(ref))
-      ref = this.asRef(ref);
-    if (!ref) return;
-    var oldRef = Object.assign({},ref);
-
-    if (!this.refresh(ref)) return;
-    if (ref.$jb_path.length == 0)
-      return jb.logError('doOp: ref not found');
-
-    var op = {}, resource = ref.$jb_path[0], oldResources = this.resources();
-    var deleteOp = typeof opOnRef.$set == 'object' && opOnRef.$set == null;
-    jb.path(op,ref.$jb_path,opOnRef); // create op as nested object
-    this.markPath(ref.$jb_path);
-    var opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
-        oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
-    this.resources(jb.ui.update(this.resources(),op),opEvent);
-    this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
-    this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
-    opEvent.resourceVersionsAfter = this.resourceVersions;
-    if (opOnRef.$push)
-      opEvent.insertedPath = opEvent.path.concat([opEvent.oldVal.length]);
-    if (deleteOp) {
-      if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
-        return delete this.resourceVersions[resource];
-      delete ref.$jb_parentOfPrim[ref.$jb_path.slice(-1)[0]]
-    }
-    if (!doNotNotify) {
-        this.refresh(ref,opEvent);
-        opEvent.newVal = this.val(ref);
-        this.resourceChange.next(opEvent);
-    }
-    return opEvent;
-  }
-  restoreArrayIds(from,to,path) {
-    if (from && to && from.$jb_id && Array.isArray(from) && Array.isArray(to) && !to.$jb_id && typeof to == 'object')
-      to.$jb_id = from.$jb_id;
-    if (path.length > 0)
-      this.restoreArrayIds(from[path[0]], to[path[0]], path.slice(1))
-  }
-  asRef(obj,hint) {
-    if (!obj) return obj;
-    if (obj && (obj.$jb_path || obj.$jb_val))
-        return obj;
-
-    var path;
-    if (hint && hint.resource) {
-      var res = this.pathOfObject(obj,this.resources()[hint.resource]);
-      path = res && [hint.resource].concat(res);
-    }
-    path = path || this.pathOfObject(obj,this.resources()); // try without the hint
-
-    if (path)
-      return {
-        $jb_path: path,
-        $jb_resourceV: this.resourceVersions[path[0]],
-        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
-        handler: this,
-      }
-    return obj;
-  }
-  isRef(ref) {
-    return ref && (ref.$jb_path || ref.$jb_val);
-  }
-  objectProperty(obj,prop) {
-    if (!obj)
-      return jb.logError('objectProperty: null obj');
-    var objRef = this.asRef(obj);
-    if (objRef && objRef.$jb_path) {
-      return {
-        $jb_path: objRef.$jb_path.concat([prop]),
-        $jb_resourceV: objRef.$jb_resourceV,
-        $jb_cache: objRef.$jb_cache[prop],
-        $jb_parentOfPrim: objRef.$jb_cache,
-        handler: this,
-      }
-    } else {
-      return obj[prop]; // not reffable
-    }
-  }
-  refresh(ref,lastOpEvent,silent) {
-    if (!ref) debugger;
-    try {
-      var path = ref.$jb_path, new_ref = {};
-      if (!path)
-        return jb.logError('refresh: empty path');
-      var currentVersion = this.resourceVersions[path[0]] || 0;
-      if (path.length == 1) return true;
-      if (currentVersion == ref.$jb_resourceV) return true;
-      if (currentVersion == ref.$jb_resourceV + 1 && lastOpEvent && typeof lastOpEvent.op.$set != 'undefined') {
-        var res = this.refOfPath(ref.$jb_path,silent); // recalc ref by path
-        if (res)
-          return Object.assign(ref,res)
-        ref.$jb_invalid = true;
-        if (!silent)
-          jb.logError('refresh: parent not found: '+ path.join('~'));
-        return
-      }
-
-      if (ref.$jb_parentOfPrim) {
-        var parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
-        if (!parent || !this.isRef(parent)) {
-          this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
-          ref.$jb_invalid = true;
-          return jb.logError('refresh: parent not found: '+ path.join('~'));
-        }
-        var prop = path.slice(-1)[0];
-        new_ref = {
-          $jb_path: parent.$jb_path.concat([prop]),
-          $jb_resourceV: this.resourceVersions[path[0]],
-          $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
-          $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
-          handler: this,
-        }
-      } else {
-        var object_path_found = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
-        if (!object_path_found) {
-          this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
-          ref.$jb_invalid = true;
-          return jb.logError('refresh: object not found: ' + path.join('~'));
-        }
-        var new_path = [path[0]].concat(object_path_found);
-        if (new_path) new_ref = {
-          $jb_path: new_path,
-          $jb_resourceV: this.resourceVersions[new_path[0]],
-          $jb_cache: new_path.reduce((o,p)=>o[p],this.resources()),
-          handler: this,
-        }
-      }
-      Object.assign(ref,new_ref);
-    } catch (e) {
-       ref.$jb_invalid = true;
-       return jb.logException(e,'ref refresh ',ref);
-    }
-    return true;
-  }
-  refOfPath(path,silent) {
-      try {
-        var val = path.reduce((o,p)=>o[p],this.resources());
-        if (val == null || typeof val != 'object' || Array.isArray(val))
-          var parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
-        else
-          var parent = null
-
-        return {
-            $jb_path: path,
-            $jb_resourceV: this.resourceVersions[path[0]],
-            $jb_cache: val,
-            $jb_parentOfPrim: parent,
-            handler: this,
-          }
-      } catch (e) {
-        if (!silent)
-          jb.logException(e,'ref from path ' + path);
-      }
-  }
-  markPath(path) {
-    var leaf = path.reduce((o,p)=>{
-      o.$jb_id = o.$jb_id || (++this.pathId);
-      return o[p]
-    }, this.resources());
-    if (leaf && typeof leaf == 'object')
-      leaf.$jb_id = leaf.$jb_id || (++this.pathId);
-  }
-  pathOfObject(obj,lookIn,depth) {
-    if (!obj || !lookIn || typeof lookIn != 'object' || typeof obj != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50)
-      return;
-    if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1)
-      return;
-
-    if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id))
-      return [];
-    for(var p in lookIn) {
-      var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
-      if (res)
-        return [p].concat(res);
-    }
-  }
-  // valid(ref) {
-  //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
-  // }
-  refObservable(ref,cmp,settings) {
-    if (ref && ref.$jb_observable)
-      return ref.$jb_observable(cmp);
-    if (!ref || !this.isRef(ref))
-      return jb.rx.Observable.of();
-    if (ref.$jb_path) {
-      return this.resourceChange
-        .takeUntil(cmp.destroyed)
-        .filter(e=>
-            e.ref.$jb_path[0] == ref.$jb_path[0])
-        .filter(e=> {
-          this.refresh(ref,e,true);
-          if (settings && settings.throw && ref.$jb_invalid)
-            throw 'invalid ref';
-          var path = e.ref.$jb_path;
-          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
-          if (settings && settings.includeChildren)
-            return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
-          return changeInParent;
-        })
-        .distinctUntilChanged((e1,e2)=>
-          e1.newVal == e2.newVal)
-    }
-    return jb.rx.Observable.of(jb.val(ref));
-  }
-}
-
-function resourcesRef(val) {
-  if (typeof val == 'undefined')
-    return jb.resources;
-  else
-    jb.resources = val;
-}
-
-jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
-
-jb.ui.refObservable = (ref,cmp,settings) =>
-  jb.refHandler(ref).refObservable(ref,cmp,settings);
-
-jb.ui.ImmutableWithPath = ImmutableWithPath;
-jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
-
-jb.ui.pathObservable = (path,handler,cmp) => {
-  var ref = handler.refOfPath(path.split('~'));
-  return handler.resourceChange
-    .takeUntil(cmp.destroyed)
-    .filter(e=>
-        path.indexOf(e.oldRef.$jb_path.join('~')) == 0)
-    .map(e=> {
-    handler.refresh(ref,e,true);
-    if (!ref.$jb_invalid)
-        return ref.$jb_path.join('~')
-    })
-    .filter(newPath=>newPath != path)
-    .take(1)
-    .map(newPath=>({newPath: newPath, oldPath: path}))
-}
-
+jb.delay(100).then(_=>
+console.log(window,global));
 
 })()
 ;
@@ -13323,6 +13409,23 @@ jb.component('label.heading', {
     }
 })
 
+jb.component('label.card-title', {
+    type: 'label.style',
+    impl :{$: 'custom-style',
+        template: (cmp,state,h) => h('div',{ class: 'mdl-card__title' },
+    				h('h2',{ class: 'mdl-card__title-text' },	state.title)),
+        features :{$: 'label.bind-title' }
+    }
+})
+
+jb.component('label.card-supporting-text', {
+    type: 'label.style',
+    impl :{$: 'custom-style',
+        template: (cmp,state,h) => h('div',{ class: 'mdl-card__supporting-text' },	state.title),
+        features :{$: 'label.bind-title' }
+    }
+})
+
 jb.component('highlight', {
   params: [
     { id: 'base', as: 'string', dynamic: true },
@@ -13337,7 +13440,7 @@ jb.component('highlight', {
     return [
         b.split(highlight)[0],
         jb.ui.h('span',{class: cssClass},highlight),
-        b.split(highlight)[1]]
+        b.split(highlight).slice(1).join(highlight)]
   }
 })
 ;
@@ -13379,7 +13482,7 @@ jb.component('image.default', {
 jb.type('button.style')
 
 jb.component('button', {
-  type: 'control', category: 'control:100,common:100',
+  type: 'control,clickable', category: 'control:100,common:100',
   params: [
     { id: 'title', as: 'ref', essential: true, defaultTValue: 'click me', dynamic: true },
     { id: 'action', type: 'action', essential: true, dynamic: true },
@@ -13390,9 +13493,9 @@ jb.component('button', {
     jb.ui.ctrl(ctx,{
       beforeInit: cmp => {
         cmp.state.title = jb.val(ctx.params.title());
-        cmp.refresh = _ => 
+        cmp.refresh = _ =>
           cmp.setState({title: jb.val(ctx.params.title(cmp.ctx))});
-          
+
         cmp.clicked = ev => {
           if (ev && ev.ctrlKey && cmp.ctrlAction)
             cmp.ctrlAction()
@@ -13402,7 +13505,7 @@ jb.component('button', {
             cmp.action();
         }
       },
-      afterViewInit: cmp => 
+      afterViewInit: cmp =>
           cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
     })
 })
@@ -13410,11 +13513,11 @@ jb.component('button', {
 jb.component('ctrl-action', {
   type: 'feature', category: 'button:70',
   description: 'action to perform on control+click',
-  params: [ 
+  params: [
     { id: 'action', type: 'action', essential: true, dynamic: true },
   ],
   impl: (ctx,action) => ({
-      afterViewInit: cmp => 
+      afterViewInit: cmp =>
         cmp.ctrlAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
   })
 })
@@ -13422,11 +13525,11 @@ jb.component('ctrl-action', {
 jb.component('alt-action', {
   type: 'feature', category: 'button:70',
   description: 'action to perform on alt+click',
-  params: [ 
+  params: [
     { id: 'action', type: 'action', essential: true, dynamic: true },
   ],
   impl: (ctx,action) => ({
-      afterViewInit: cmp => 
+      afterViewInit: cmp =>
         cmp.altAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
   })
 })
@@ -13434,13 +13537,33 @@ jb.component('alt-action', {
 jb.component('button-disabled', {
   type: 'feature', category: 'button:70',
   description: 'define condition when button is enabled',
-  params: [ 
+  params: [
     { id: 'enabledCondition', type: 'boolean', essential: true, dynamic: true },
   ],
   impl: (ctx,cond) => ({
-      init: cmp => 
-        cmp.isEnabled = ctx2 => cond(ctx.extendVars(ctx2))
+      init: cmp =>
+        cmp.state.isEnabled = ctx2 => cond(ctx.extendVars(ctx2))
   })
+})
+
+jb.component('icon-with-action', {
+  type: 'control,clickable', category: 'control:30',
+  params: [
+		{ id: 'icon', as: 'string', essential: true },
+		{ id: 'title', as: 'string' },
+		{ id: 'action', type: 'action', essential: true, dynamic: true },
+		{ id: 'style', type: 'icon-with-action.style', dynamic: true, defaultValue :{$: 'button.mdl-icon' } },
+		{ id: 'features', type: 'feature[]', dynamic: true }
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx, {
+			init: cmp=>  {
+					cmp.icon = ctx.params.icon;
+					cmp.state.title = ctx.params.title;
+			},
+      afterViewInit: cmp =>
+          cmp.clicked = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
+    })
 })
 ;
 
@@ -13480,10 +13603,18 @@ jb.component('field.databind', {
 jb.component('field.databind-text', {
   type: 'feature',
   params: [
-    { id: 'debounceTime', as: 'number', defaultValue: 500 },
+    { id: 'debounceTime', as: 'number', defaultValue: 0 },
   ],
-  impl: ctx => ({
+  impl: (ctx,debounceTime) => ({
       beforeInit: cmp => {
+        if (debounceTime) {
+          cmp.debouncer = new jb.rx.Subject();
+          cmp.debouncer.takeUntil( cmp.destroyed )
+          .distinctUntilChanged()
+          .debounceTime(debounceTime)
+          .subscribe(val=>cmp.jbModel(val))
+        }
+
         if (!ctx.vars.$model || !ctx.vars.$model.databind)
           return jb.logError('bind-field: No databind in model', ctx.vars.$model, ctx);
         cmp.state.title = ctx.vars.$model.title();
@@ -13491,8 +13622,11 @@ jb.component('field.databind-text', {
         cmp.state.model = jb.val(ctx.vars.$model.databind);
 
         cmp.jbModel = (val,source) => {
-          if (source == 'keyup') // make sure the input is inside the value
-            return jb.delay(1).then(_=>cmp.jbModel(val));
+          if (source == 'keyup') {
+            if (cmp.debouncer)
+              return cmp.debouncer.next(val);
+            return jb.delay(1).then(_=>cmp.jbModel(val)); // make sure the input is inside the value
+          }
 
           if (val === undefined)
             return jb.val(ctx.vars.$model.databind);
@@ -13651,7 +13785,7 @@ jb.component('editable-text', {
   type: 'control', category: 'input:100,common:80',
   params: [
     { id: 'title', as: 'string' , dynamic: true },
-    { id: 'databind', as: 'ref'},
+    { id: 'databind', as: 'ref', essential: true},
     { id: 'updateOnBlur', as: 'boolean', type: 'boolean' },
     { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-input' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
@@ -13684,6 +13818,8 @@ jb.component('editable-text.helper-popup', {
     { id: 'popupId', as: 'string', essential: true },
     { id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.popup' } },
     { id: 'showHelper', as: 'boolean', dynamic: true, defaultValue :{$notEmpty: '%value%' }, description: 'show/hide helper according to input content' },
+    { id: 'onEnter', type: 'action', dynamic: true },
+    { id: 'onEsc', type: 'action', dynamic: true },
   ],
   impl : ctx =>({
     onkeyup: true,
@@ -13692,7 +13828,7 @@ jb.component('editable-text.helper-popup', {
       ctx.setVars({selectionKeySource: {}}),
 
     afterViewInit: cmp => {
-      var input = $(cmp.base).findIncludeSelf('input')[0];
+      var input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
       if (!input) return;
 
       cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 =>
@@ -13713,9 +13849,16 @@ jb.component('editable-text.helper-popup', {
       var keyup = cmp.ctx.vars.selectionKeySource.keyup = cmp.onkeyup.delay(1); // delay to have input updated
       cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown;
 
+      jb.delay(500).then(_=>{
+        cmp.onkeydown.filter(e=> e.keyCode == 13 && !ctx.params.showHelper(cmp.ctx.setData(input)) ).subscribe(_=>
+          ctx.params.onEnter(cmp.ctx));
+        cmp.onkeydown.filter(e=> e.keyCode == 27 ).subscribe(_=>
+          ctx.params.onEsc(cmp.ctx));
+      })
+
       keyup.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)
         .subscribe(_=>{
-          jb.logPerformance('helper-popup', ''+ctx.params.showHelper(ctx.setData(input)), ''+input.value );
+          jb.logPerformance('helper-popup', ''+ctx.params.showHelper(cmp.ctx.setData(input)), ''+input.value );
           if (!ctx.params.showHelper(cmp.ctx.setData(input))) {
             jb.logPerformance('helper-popup', 'close popup' );
             cmp.closePopup();
@@ -13841,6 +13984,7 @@ jb.component('editable-number.input',{
 
 jb.component('group.wait', {
   type: 'feature', category: 'group:70',
+	description: 'wait for asynch data before showing the control',
   params: [
     { id: 'for', essential: true, dynamic: true },
     { id: 'loadingControl', type: 'control', defaultValue: { $:'label', title: 'loading ...'} , dynamic: true },
@@ -13870,9 +14014,10 @@ jb.component('group.wait', {
 })
 
 jb.component('watch-ref', {
-  type: 'feature', category: '70',
+  type: 'feature', category: 'watch:100',
+	description: 'subscribes to data changes to refresh component',
   params: [
-    { id: 'ref', essential: true, as: 'ref' },
+    { id: 'ref', essential: true, as: 'ref', description: 'reference to data' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
   ],
   impl: (ctx,ref,includeChildren) => ({
@@ -13882,7 +14027,8 @@ jb.component('watch-ref', {
 })
 
 jb.component('watch-observable', {
-  type: 'feature', category: '20',
+  type: 'feature', category: 'watch',
+	description: 'subscribes to a custom rx.observable to refresh component',
   params: [
     { id: 'toWatch', essential: true },
   ],
@@ -13899,8 +14045,8 @@ jb.component('watch-observable', {
 })
 
 jb.component('bind-refs', {
-  type: 'feature', category: '20',
-  description: 'automatically update a mutual variable when other value is changing',
+  type: 'feature', category: 'watch',
+  description: 'automatically updates a mutual variable when other value is changing',
   params: [
     { id: 'watchRef', essential: true, as: 'ref' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
@@ -13916,10 +14062,10 @@ jb.component('bind-refs', {
 
 
 jb.component('group.data', {
-  type: 'feature', category: 'group:100',
+  type: 'feature', category: 'general:100,watch:80',
   params: [
     { id: 'data', essential: true, dynamic: true, as: 'ref' },
-    { id: 'itemVariable', as: 'string' },
+    { id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable' },
     { id: 'watch', as: 'boolean' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
   ],
@@ -13940,6 +14086,7 @@ jb.component('group.data', {
 
 jb.component('id', {
   type: 'feature',
+	description: 'adds id to html element',
   params: [
     { id: 'id', essential: true, as: 'string' },
   ],
@@ -13952,11 +14099,12 @@ jb.component('id', {
 })
 
 jb.component('var', {
-  type: 'feature', category: 'group:80',
+  type: 'feature', category: 'general:90',
+	description: 'defines a local variable',
   params: [
     { id: 'name', as: 'string', essential: true },
     { id: 'value', dynamic: true, defaultValue: '' },
-    { id: 'mutable', as: 'boolean' },
+    { id: 'mutable', as: 'boolean', description: 'E.g., selected item variable' },
   ],
   impl: (context, name, value,mutable) => ({
       destroy: cmp => {
@@ -13979,6 +14127,7 @@ jb.component('var', {
 
 jb.component('features', {
   type: 'feature',
+	description: 'list of features',
   params: [
     { id: 'features', type: 'feature[]', flattenArray: true, dynamic: true },
   ],
@@ -13988,7 +14137,7 @@ jb.component('features', {
 
 
 jb.component('feature.init', {
-  type: 'feature',
+  type: 'feature', category: 'lifecycle',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
@@ -13998,7 +14147,7 @@ jb.component('feature.init', {
 })
 
 jb.component('feature.after-load', {
-  type: 'feature',
+  type: 'feature', category: 'lifecycle',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
@@ -14008,18 +14157,20 @@ jb.component('feature.after-load', {
 })
 
 jb.component('feature.if', {
-  type: 'feature',
+  type: 'feature', category: 'feature:85',
+	description: 'adds element to dom by condition. no watch',
   params: [
     { id: 'showCondition', essential: true, dynamic: true },
   ],
   impl: (ctx, condition,watch) => ({
     templateModifier: (vdom,cmp,state) =>
-        jb.toboolean(condition()) ? vdom : jb.ui.h('div',{style: {display: 'none'}})
+        jb.toboolean(condition()) ? vdom : jb.ui.h('span',{style: {display: 'none'}})
   })
 })
 
 jb.component('hidden', {
   type: 'feature', category: 'feature:85',
+	description: 'adds display:none to element by condition. no watch',
   params: [
     { id: 'showCondition', type: 'boolean', essential: true, dynamic: true },
   ],
@@ -14033,7 +14184,8 @@ jb.component('hidden', {
 })
 
 jb.component('conditional-class', {
-  type: 'feature', category: 'feature:75',
+  type: 'feature',
+	description: 'toggle class by condition',
   params: [
     { id: 'cssClass', as: 'string', essential: true, dynamic: true },
     { id: 'condition', type: 'boolean', essential: true, dynamic: true },
@@ -14048,6 +14200,7 @@ jb.component('conditional-class', {
 
 jb.component('feature.hover-title', {
   type: 'feature',
+	description: 'set element title, usually shown by browser on hover',
   params: [
     { id: 'title', as: 'string', dynamic: true },
   ],
@@ -14061,7 +14214,8 @@ jb.component('feature.hover-title', {
 })
 
 jb.component('feature.keyboard-shortcut', {
-  type: 'feature',
+  type: 'feature', category: 'events',
+	description: 'listen to events at the document level even when the component is not active',
   params: [
     { id: 'key', as: 'string', description: 'e.g. Alt+C' },
     { id: 'action', type: 'action', dynamic: true }
@@ -14085,7 +14239,7 @@ jb.component('feature.keyboard-shortcut', {
 })
 
 jb.component('feature.onHover', {
-  type: 'feature', category: 'feature:60',
+  type: 'feature', category: 'events',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
@@ -14098,7 +14252,7 @@ jb.component('feature.onHover', {
 })
 
 jb.component('feature.onKey', {
-  type: 'feature', category: 'feature:60',
+  type: 'feature', category: 'events',
   params: [
     { id: 'code', as: 'number' },
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
@@ -14114,7 +14268,7 @@ jb.component('feature.onKey', {
 })
 
 jb.component('feature.onEnter', {
-  type: 'feature', category: 'feature:60',
+  type: 'feature', category: 'events',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
@@ -14122,7 +14276,7 @@ jb.component('feature.onEnter', {
 })
 
 jb.component('feature.onEsc', {
-  type: 'feature', category: 'feature:60',
+  type: 'feature', category: 'events',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
@@ -14130,7 +14284,7 @@ jb.component('feature.onEsc', {
 })
 
 jb.component('feature.onDelete', {
-  type: 'feature', category: 'feature:60',
+  type: 'feature', category: 'events',
   params: [
     { id: 'action', type: 'action[]', essential: true, dynamic: true }
   ],
@@ -14155,7 +14309,7 @@ jb.component('css', {
   params: [
     { id: 'css', essential: true, as: 'string' },
   ],
-  impl: (context,css) => 
+  impl: (context,css) =>
     ({css:css})
 })
 
@@ -14164,7 +14318,7 @@ jb.component('css.class', {
   params: [
     { id: 'class', essential: true, as: 'string' },
   ],
-  impl: (context,clz) => 
+  impl: (context,clz) =>
     ({class :clz})
 })
 
@@ -14176,7 +14330,7 @@ jb.component('css.width', {
     { id: 'minMax', as: 'string', options: ',min,max'},
     { id: 'selector', as: 'string' },
 ],
-  impl: (ctx,width,overflow,minMax) => 
+  impl: (ctx,width,overflow,minMax) =>
     ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${width}px ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
 })
 
@@ -14249,6 +14403,22 @@ jb.component('css.transform-rotate', {
   }
 })
 
+jb.component('css.color', {
+  type: 'feature',
+  params: [
+		{ id: 'color', as: 'string' },
+		{ id: 'background', as: 'string' },
+    { id: 'selector', as: 'string' },
+  ],
+  impl: (ctx,color) => {
+		var css = ['color','background']
+      .filter(x=>ctx.params[x])
+      .map(x=> `${x}: ${ctx.params[x]}`)
+      .join('; ');
+    return css && ({css: `${ctx.params.selector} {${css}}`});
+  }
+})
+
 jb.component('css.transform-scale', {
   type: 'feature',
   params: [
@@ -14288,7 +14458,7 @@ jb.component('css.border', {
     { id: 'color', as: 'string', defaultValue: 'black' },
     { id: 'selector', as: 'string' },
   ],
-  impl: (context,width,side,style,color,selector) => 
+  impl: (context,width,side,style,color,selector) =>
     ({css: `${selector} { border${side?'-'+side:''}: ${width}px ${style} ${color} }`})
 })
 ;
@@ -14309,6 +14479,7 @@ jb.component('open-dialog', {
 		var modal = context.params.modal;
 		var dialog = {
 			id: id,
+      instanceId: context.id,
 			modal: modal,
 			em: new jb.rx.Subject(),
 		};
@@ -14341,7 +14512,12 @@ jb.component('open-dialog', {
 				cmp.dialog.el.style.zIndex = 100;
 			},
 		}).reactComp();
-		jb.ui.dialogs.addDialog(dialog,ctx);
+
+		if (!context.probe)
+			jb.ui.dialogs.addDialog(dialog,ctx);
+		else
+			jb.studio.probeResEl = jb.ui.render(jb.ui.h(dialog.comp), jb.studio.probeEl || document.createElement('div'), jb.studio.probeResEl);
+
 		return dialog;
 	}
 })
@@ -14375,10 +14551,10 @@ jb.component('dialog.popup', {
 			h(state.contentComp),
 		]),
       features: [
-        { $: 'dialog-feature.max-zIndex-on-click' },
-        { $: 'dialog-feature.close-when-clicking-outside' },
-        { $: 'dialog-feature.css-class-on-launching-element' },
-        { $: 'dialog-feature.near-launcher-position' }
+       { $: 'dialog-feature.max-zIndex-on-click' },
+       { $: 'dialog-feature.close-when-clicking-outside' },
+       { $: 'dialog-feature.css-class-on-launching-element' },
+       { $: 'dialog-feature.near-launcher-position' }
       ],
       css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }'
   }
@@ -14452,30 +14628,25 @@ jb.component('dialog-feature.near-launcher-position', {
 				offsetLeft = offsetLeft || 0; offsetTop = offsetTop || 0;
 				if (!context.vars.$launchingElement)
 					return console.log('no launcher for dialog');
-				var $control = context.vars.$launchingElement.$el;
-				var pos = $control.offset();
-				var $jbDialog = $(cmp.base).findIncludeSelf('.jb-dialog');
-				offsetLeft += rightSide ? $control.outerWidth() : 0;
-				var fixedPosition = fixDialogOverflow($control,$jbDialog,offsetLeft,offsetTop);
-				if (fixedPosition)
-					$jbDialog.css('left', `${fixedPosition.left}px`)
-						.css('top', `${fixedPosition.top}px`)
-						.css('display','block');
-				else
-					$jbDialog.css('left', `${pos.left + offsetLeft}px`)
-						.css('top', `${pos.top + $control.outerHeight() + offsetTop}px`)
-						.css('display','block');
+				var control = context.vars.$launchingElement.el;
+				var pos = jb.ui.offset(control);
+				var jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
+				offsetLeft += rightSide ? jb.ui.outerWidth(control) : 0;
+				var fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
+        jbDialog.style.display = 'block';
+        jbDialog.style.left = (fixedPosition ? fixedPosition.left : pos.left + offsetLeft) + 'px';
+        jbDialog.style.top = (fixedPosition ? fixedPosition.top : pos.top + jb.ui.outerHeight(control) + offsetTop) + 'px';
 			}
 		}
 
-		function fixDialogOverflow($control,$dialog,offsetLeft,offsetTop) {
-			var padding = 2,top,left;
-			if ($control.offset().top > $dialog.height() && $control.offset().top + $dialog.height() + padding + (offsetTop||0) > window.innerHeight + window.pageYOffset)
-				top = $control.offset().top - $dialog.height();
-			if ($control.offset().left > $dialog.width() && $control.offset().left + $dialog.width() + padding + (offsetLeft||0) > window.innerWidth + window.pageXOffset)
-				left = $control.offset().left - $dialog.width();
+		function fixDialogOverflow(control,dialog,offsetLeft,offsetTop) {
+			var padding = 2,top,left,control_offset = jb.ui.offset(control), dialog_height = jb.ui.outerHeight(dialog), dialog_width = jb.ui.outerWidth(dialog);
+			if (control_offset.top > dialog_height && control_offset.top + dialog_height + padding + (offsetTop||0) > window.innerHeight + window.pageYOffset)
+				top = control_offset.top - dialog_height;
+			if (control_offset.left > dialog_width && control_offset.left + dialog_width + padding + (offsetLeft||0) > window.innerWidth + window.pageXOffset)
+				left = control_offset.left - dialog_width;
 			if (top || left)
-				return { top: top || $control.offset().top , left: left || $control.offset().left}
+				return { top: top || control_offset.top , left: left || control_offset.left}
 		}
 	}
 })
@@ -14485,13 +14656,12 @@ jb.component('dialog-feature.onClose', {
 	params: [
 		{ id: 'action', type: 'action', dynamic: true}
 	],
-	impl: function(context,action) {
-		context.vars.$dialog.em
+	impl: (ctx,action) =>
+		ctx.vars.$dialog.em
 			.filter(e => e.type == 'close')
 			.take(1)
-			.subscribe(()=>
-				action())
-	}
+			.subscribe(e=>
+				action(ctx.setData(e.OK)))
 })
 
 jb.component('dialog-feature.close-when-clicking-outside', {
@@ -14508,7 +14678,7 @@ jb.component('dialog-feature.close-when-clicking-outside', {
 				clickoutEm = clickoutEm.merge(jb.rx.Observable.fromEvent(
 			      				(jb.studio.previewWindow || {}).document, 'mousedown'));
 
-		 	clickoutEm.filter(e => $(e.target).closest(dialog.el).length == 0)
+		 	clickoutEm.filter(e => jb.ui.closest(e.target,'.jb-dialog') == null)
    				.takeUntil(dialog.em.filter(e => e.type == 'close'))
    				.take(1).delay(delay).subscribe(()=>
 		  			dialog.close())
@@ -14563,14 +14733,13 @@ jb.component('dialog-feature.css-class-on-launching-element', {
 	impl: context => ({
 		afterViewInit: cmp => {
 			var dialog = context.vars.$dialog;
-			var $control = context.vars.$launchingElement.$el;
-			$control.addClass('dialog-open');
+			var control = context.vars.$launchingElement.el;
+			jb.ui.addClass(control,'dialog-open');
 			dialog.em.filter(e=>
 				e.type == 'close')
 				.take(1)
-				.subscribe(()=> {
-					$control.removeClass('dialog-open');
-				})
+				.subscribe(()=>
+          jb.ui.removeClass(control,'dialog-open'))
 		}
 	})
 })
@@ -14586,7 +14755,7 @@ jb.component('dialog-feature.max-zIndex-on-click', {
 		return ({
 			afterViewInit: cmp => {
 				setAsMaxZIndex();
-				$(dialog.el).mousedown(setAsMaxZIndex);
+				dialog.el.onmousedown = setAsMaxZIndex;
 			}
 		})
 
@@ -14723,18 +14892,14 @@ jb.component('dialog-feature.resizer', {
 
 jb.ui.dialogs = {
  	dialogs: [],
- 	redraw: function() {
-		jb.ui.render(jb.ui.h('div',{ class: 'jb-dialogs'}, jb.ui.dialogs.dialogs.map(d=>jb.ui.h(d.comp)) )
-			, document.body, document.querySelector('body>.jb-dialogs'));
- 	},
 	addDialog: function(dialog,context) {
 		var self = this;
 		dialog.context = context;
 		this.dialogs.forEach(d=>
 			d.em.next({ type: 'new-dialog', dialog: dialog }));
 		this.dialogs.push(dialog);
-		if (dialog.modal && !$('body>.modal-overlay')[0])
-			$('body').prepend('<div class="modal-overlay"></div>');
+		if (dialog.modal && !document.querySelector('.modal-overlay'))
+			document.body.innerHTML += '<div class="modal-overlay"></div>';
 
 		dialog.close = function(args) {
 			return Promise.resolve().then(_=>{
@@ -14743,26 +14908,43 @@ jb.ui.dialogs = {
 				if (dialog.onOK && args && args.OK)
 					return dialog.onOK(context)
 			}).then( _ => {
-				dialog.em.next({type: 'close'});
+				dialog.em.next({type: 'close', OK: args && args.OK});
 				dialog.em.complete();
 
 				var index = self.dialogs.indexOf(dialog);
 				if (index != -1)
 					self.dialogs.splice(index, 1);
-				if (dialog.modal)
-					$('.modal-overlay').remove();
-				jb.ui.dialogs.redraw();
+				if (dialog.modal && document.querySelector('.modal-overlay'))
+					document.body.removeChild(document.querySelector('.modal-overlay'));
+				jb.ui.dialogs.remove(dialog);
 			})
 		},
 		dialog.closed = _ =>
 			self.dialogs.indexOf(dialog) == -1;
 
-		this.redraw();
+		this.render(dialog);
 	},
 	closeAll: function() {
 		this.dialogs.forEach(d=>
 			d.close());
-	}
+	},
+  getOrCreateDialogsElem() {
+    if (!document.querySelector('.jb-dialogs'))
+      document.body.innerHTML += '<div class="jb-dialogs"/>';
+    return document.querySelector('.jb-dialogs');
+  },
+  render(dialog) {
+    this.getOrCreateDialogsElem().innerHTML += `<div id="${dialog.instanceId}"/>`;
+    var elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
+    jb.ui.render(jb.ui.h(dialog.comp),elem);
+  },
+  remove(dialog) {
+    var elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
+    if (!elem) return; // already closed due to asynch request handling and multiple requests to close
+    jb.ui.render('', elem, elem.firstElementChild);// react - remove
+    // jb.ui.unmountComponent(elem.firstElementChild._component);
+    this.getOrCreateDialogsElem().removeChild(elem);
+  }
 }
 ;
 
@@ -14806,8 +14988,9 @@ jb.component('menu.dynamic-options', {
 jb.component('menu.end-with-separator', {
   type: 'menu.option',
   params: [
-	{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
-	{ id: 'separator', type: 'menu.option', as: 'array',defaultValue :{$: 'menu.separator'} },
+    { id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
+    { id: 'separator', type: 'menu.option', as: 'array', defaultValue :{$: 'menu.separator' } },
+    { id: 'title', as: 'string' }
   ],
   impl: (ctx) => {
   	var options = ctx.params.options();
@@ -14864,11 +15047,11 @@ jb.component('menu.action', {
 // ********* actions / controls ************
 
 jb.component('menu.control', {
-  type: 'control',
+  type: 'control,clickable,menu',
   params: [
   	{id: 'menu', type: 'menu.option', dynamic: true, essential: true },
     {id: 'style', type: 'menu.style', defaultValue :{$: 'menu-style.context-menu' }, dynamic: true },
-	{id: 'features', type: 'feature[]', dynamic: true },
+		{id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx => {
   	var menuModel = ctx.params.menu() || { options: [], ctx: ctx, title: ''};
@@ -14952,7 +15135,7 @@ jb.component('menu.init-popup-menu', {
  			cmp.setState({title: ctx.vars.menuModel.title});
 
 			cmp.mouseEnter = _ => {
-				if ($('.context-menu-popup')[0])
+				if (!document.querySelector('.context-menu-popup'))
 					cmp.openPopup()
 			};
 			cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {
@@ -14971,23 +15154,24 @@ jb.component('menu.init-popup-menu', {
 	  			cmp.ctx.vars.topMenu.popups.pop();
 			};
 
-			if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
-				var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
+      jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
+  			if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
+  				var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
 
-			    keydown.filter(e=>e.keyCode == 39) // right arrow
-		    	    .subscribe(x=>{
-		        		if (ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup)
-		        			cmp.openPopup();
-		        	})
-			    keydown.filter(e=>e.keyCode == 37) // left arrow
-		    	    .subscribe(x=>{
-		        		if (cmp.ctx.vars.topMenu.popups.slice(-1)[0] == ctx.vars.menuModel) {
-		        			ctx.vars.topMenu.selected = ctx.vars.menuModel;
-		        			cmp.closePopup();
-		        		}
-		        	})
-			}
-
+  			    keydown.filter(e=>e.keyCode == 39) // right arrow
+  		    	    .subscribe(x=>{
+  		        		if (ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup)
+  		        			cmp.openPopup();
+  		        	})
+  			    keydown.filter(e=>e.keyCode == 37) // left arrow
+  		    	    .subscribe(x=>{
+  		        		if (cmp.ctx.vars.topMenu.popups.slice(-1)[0] == ctx.vars.menuModel) {
+  		        			ctx.vars.topMenu.selected = ctx.vars.menuModel;
+  		        			cmp.closePopup();
+  		        		}
+  		        	})
+          }
+      })
 		}
   	})
 })
@@ -15329,14 +15513,16 @@ jb.component('itemlist.selection', {
 
         cmp.jbEmitter.filter(x=> x =='after-update').startWith(jb.delay(1)).subscribe(x=>{
           if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
-              cmp.setState({selected: null});
+            cmp.state.selected = null;
+					if (jb.val(ctx.params.databind))
+						cmp.setState({selected: selectedOfDatabind()});
           if (!cmp.state.selected)
             autoSelectFirst()
         })
 
         function autoSelectFirst() {
           if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
-              cmp.selectionEmitter.next(cmp.items[0])
+              return cmp.selectionEmitter.next(cmp.items[0])
         }
         function writeSelectedToDatabind(selected) {
           return ctx.params.databind && jb.writeValue(ctx.params.databind,ctx.params.selectedToDatabind(ctx.setData(selected)))
@@ -15344,7 +15530,7 @@ jb.component('itemlist.selection', {
         function selectedOfDatabind() {
           return ctx.params.databind && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(ctx.params.databind))))
         }
-        autoSelectFirst();
+        //autoSelectFirst();
     },
     extendItem: (cmp,vdom,data) => {
       jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == data);
@@ -15400,7 +15586,7 @@ jb.component('itemlist.drag-and-drop', {
       afterViewInit: function(cmp) {
         var drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
           moves: (el,source,handle) =>
-            $(handle).hasClass('drag-handle')
+            jb.ui.hasClass(handle,'drag-handle')
         });
 
         drake.on('drag', function(el, source) {
@@ -15417,7 +15603,7 @@ jb.component('itemlist.drag-and-drop', {
         });
         drake.on('drop', (dropElm, target, source,sibling) => {
             var draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
-            var targetIndex = sibling ? $(sibling).index() : cmp.items.length;
+            var targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
             jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
 
             dropElm.dragged = null;
@@ -15443,7 +15629,7 @@ jb.component('itemlist.drag-and-drop', {
 jb.component('itemlist.drag-handle', {
   description: 'put on the control inside the item which is used to drag the whole line',
   type: 'feature',
-  impl: {$: 'css.class', class: 'drag-handle' }
+  impl: {$list: [ {$: 'css.class', class: 'drag-handle' }, {$: 'css', css:'{cursor: pointer}'} ] }
 })
 
 jb.component('itemlist.shown-only-on-item-hover', {
@@ -15491,6 +15677,7 @@ createItemlistCntr = (ctx,params) => ({
     }
   },
   reSelectAfterFilter: function(filteredItems) {
+		if (filteredItems.indexOf(this.selected()) == -1)
       this.selected(filteredItems[0])
   },
   changeSelectionBeforeDelete: function() {
@@ -15515,9 +15702,10 @@ jb.component('group.itemlist-container', {
     { id: 'id', as: 'string' },
     { id: 'defaultItem', as: 'single' },
     { id: 'maxItems', as: 'number' , defaultValue: 100 },
+		{ id: 'initialSelection', as: 'single' },
   ],
   impl :{$list : [
-    {$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '', maxItems: '%$maxItems%' } , mutable: true},
+    {$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , mutable: true},
     {$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
     ctx => ({
       init: cmp => {
@@ -15525,7 +15713,7 @@ jb.component('group.itemlist-container', {
 //        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
         cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>
           items.slice(0,jb.tonumber(maxItemsRef));
-      }
+      },
     })
   ]}
 })
@@ -15727,7 +15915,7 @@ jb.component('picklist', {
     { id: 'style', type: 'picklist.style', defaultValue: { $: 'picklist.native' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
-  impl: ctx => 
+  impl: ctx =>
     jb.ui.ctrl(ctx,{
       beforeInit: function(cmp) {
         cmp.recalcOptions = function() {
@@ -15770,11 +15958,11 @@ jb.component('picklist.dynamic-options', {
     { id: 'recalcEm', as: 'single'}
   ],
   impl: (ctx,recalcEm) => ({
-    init: cmp => 
+    init: cmp =>
       recalcEm && recalcEm.subscribe &&
         recalcEm.takeUntil( cmp.destroyed )
         .subscribe(e=>
-            cmp.recalcOptions()) 
+            cmp.recalcOptions())
   })
 })
 
@@ -15785,7 +15973,7 @@ jb.component('picklist.onChange', {
     { id: 'action', type: 'action', dynamic: true}
   ],
   impl: (ctx,action) => ({
-    init: cmp => 
+    init: cmp =>
       cmp.onChange = val => action(ctx.setData(val))
   })
 })
@@ -15794,7 +15982,7 @@ jb.component('picklist.onChange', {
 
 jb.component('picklist.optionsByComma',{
   type: 'picklist.options',
-  params: [ 
+  params: [
     { id: 'options', as: 'string', essential: true},
     { id: 'allowEmptyValue', type: 'boolean' },
   ],
@@ -15806,7 +15994,7 @@ jb.component('picklist.optionsByComma',{
 
 jb.component('picklist.options',{
   type: 'picklist.options',
-  params: [ 
+  params: [
     { id: 'options', type: 'data', as: 'array', essential: true},
     { id: 'allowEmptyValue', type: 'boolean' },
   ],
@@ -15818,17 +16006,17 @@ jb.component('picklist.options',{
 
 jb.component('picklist.coded-options',{
   type: 'picklist.options',
-  params: [ 
+  params: [
     { id: 'options', as: 'array',essential: true },
-    { id: 'code', as: 'string', dynamic:true , essential: true }, 
+    { id: 'code', as: 'string', dynamic:true , essential: true },
     { id: 'text', as: 'string', dynamic:true, essential: true } ,
     { id: 'allowEmptyValue', type: 'boolean' },
   ],
   impl: function(context,options,code,text,allowEmptyValue) {
     var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
-    return emptyValue.concat(options.map(function(option) { 
-      return { 
-        code: code(null,option), text: text(null,option) 
+    return emptyValue.concat(options.map(function(option) {
+      return {
+        code: code(null,option), text: text(null,option)
       }
     }))
   }
@@ -15836,13 +16024,13 @@ jb.component('picklist.coded-options',{
 
 jb.component('picklist.sorted-options', {
   type: 'picklist.options',
-  params: [ 
+  params: [
     { id: 'options', type: 'picklist.options', dynamic: true, essential: true, composite: true },
-    { id: 'marks', as: 'array', description: 'e.g input:80,group:90. 0 mark means hidden' },
+    { id: 'marks', as: 'array', description: 'e.g input:80,group:90. 0 mark means hidden. no mark means 50' },
   ],
   impl: (ctx,optionsFunc,marks) => {
     var options = optionsFunc() || [];
-    marks.forEach(mark=> { 
+    marks.forEach(mark=> {
         var option = options.filter(opt=>opt.code == mark.code)[0];
         if (option)
           option.mark = Number(mark.mark || 50);
@@ -15853,17 +16041,15 @@ jb.component('picklist.sorted-options', {
   }
 })
 
-
 jb.component('picklist.promote',{
   type: 'picklist.promote',
-  params: [ 
+  params: [
     { id: 'groups', as: 'array'},
     { id: 'options', as: 'array'},
   ],
-  impl: (context,groups,options) => 
+  impl: (context,groups,options) =>
     ({ groups: groups, options: options})
 });
-
 ;
 
 jb.type('theme');
@@ -15900,28 +16086,19 @@ jb.component('material-icon', {
 		jb.ui.ctrl(ctx,{init: cmp=> cmp.state.icon = ctx.params.icon})
 })
 
-jb.component('icon.material', {
-    type: 'icon.style,icon-with-action.style',
+jb.component('icon.icon-in-button', {
+    type: 'icon-with-action.style',
     impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: ev => cmp.clicked(ev)},state.icon),
+        template: (cmp,state,h) => h('button',{ class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev) },
+		      h('i',{ class: 'material-icons' }, state.icon)),
     }
 })
 
-jb.component('icon-with-action', {
-  type: 'control', category: 'control:100,common:100',
-  params: [
-		{ id: 'icon', as: 'string', essential: true },
-		{ id: 'title', as: 'string' },
-		{ id: 'action', type: 'action', essential: true, dynamic: true },
-		{ id: 'style', type: 'icon-with-action.style', dynamic: true, defaultValue :{$: 'icon.material' } },
-		{ id: 'features', type: 'feature[]', dynamic: true }
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx,{
-			init: cmp=> cmp.state.icon = ctx.params.icon,
-      afterViewInit: cmp =>
-          cmp.clicked = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
-    })
+jb.component('icon.material', {
+    type: 'icon-with-action.style',
+    impl :{$: 'custom-style',
+        template: (cmp,state,h) => h('i',{ class: 'material-icons' }, state.icon),
+    }
 })
 ;
 
@@ -16209,9 +16386,10 @@ jb.component('goto-url', {
 		{ id: 'url', as:'string', essential: true },
 		{ id: 'target', type:'enum', values: ['new tab','self'], defaultValue:'new tab', as:'string'}
 	],
-	impl: function(context,url,target) {
+	impl: (ctx,url,target) => {
 		var _target = (target == 'new tab') ? '_blank' : '_self';
-		window.open(url,_target);
+		if (!ctx.probe)
+			window.open(url,_target);
 	}
 })
 ;
@@ -16227,7 +16405,7 @@ jb.component('mdl-style.init-dynamic', {
         var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
         cmp.refreshMdl = _ => {
           jb.delay(1).then(_ => elems.forEach(el=> {
-            if (!$.contains(document, el))
+            if (!jb.ui.inDocument(el))
               return;
             componentHandler.downgradeElements(el);
             componentHandler.upgradeElement(el);
@@ -16235,13 +16413,13 @@ jb.component('mdl-style.init-dynamic', {
         };
         jb.delay(1).catch(e=>{}).then(_ =>
       	 elems.forEach(el=>
-      	 	$.contains(document, el) && componentHandler.upgradeElement(el))).catch(e=>{})
+      	 	jb.ui.inDocument(el) && componentHandler.upgradeElement(el))).catch(e=>{})
       },
       destroy: cmp => {
         try {
       	 $.contains(document.documentElement, cmp.base) &&
           (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
-      	 	   $.contains(document, el) && componentHandler.downgradeElements(el))
+      	 	   jb.ui.inDocument(el) && componentHandler.downgradeElements(el))
         } catch(e) {}
        }
     })
@@ -16258,10 +16436,10 @@ jb.component('mdl.ripple-effect', {
       css: '{ position: relative; overflow:hidden }',
       afterViewInit: cmp => {
           cmp.base.classList.add('mdl-js-ripple-effect');
-          $.contains(document, $(cmp.base)[0]) && componentHandler.upgradeElement(cmp.base);
+          jb.ui.inDocument(cmp.base) && componentHandler.upgradeElement(cmp.base);
       },
       destroy: cmp =>
-          $.contains(document, $(cmp.base)[0]) && componentHandler.downgradeElements(cmp.base)
+          jb.ui.inDocument(cmp.base) && componentHandler.downgradeElements(cmp.base)
    }),
 })
 
@@ -16297,7 +16475,7 @@ jb.component('label.mdl-button', {
 
 jb.component('button.href', {
   type: 'button.style',
-    impl :{$: 'custom-style', 
+    impl :{$: 'custom-style',
         template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
         css: `{color: grey}`
     }
@@ -16308,17 +16486,17 @@ jb.component('button.x', {
   params: [
     { id: 'size', as: 'number', defaultValue: '21'}
   ],
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
       template: (cmp,state,h) => h('button',{title: state.title, onclick: ev => cmp.clicked(ev)},'×'),
       css: `{
             padding: 0;
-            cursor: pointer; 
-            font: %$size%px sans-serif; 
-            border: none; 
-            background: transparent; 
-            color: #000; 
-            text-shadow: 0 1px 0 #fff; 
-            font-weight: 700; 
+            cursor: pointer;
+            font: %$size%px sans-serif;
+            border: none;
+            background: transparent;
+            color: #000;
+            text-shadow: 0 1px 0 #fff;
+            font-weight: 700;
             opacity: .2;
         }
         :hover { opacity: .5 }`
@@ -16327,7 +16505,7 @@ jb.component('button.x', {
 
 jb.component('button.mdl-raised', {
   type: 'button.style',
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
       template: (cmp,state,h) => h('button',{class: 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev)},state.title),
       features :{$: 'mdl-style.init-dynamic'},
   }
@@ -16335,7 +16513,7 @@ jb.component('button.mdl-raised', {
 
 jb.component('button.mdl-flat-ripple', {
   type: 'button.style',
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
       template: (cmp,state,h) => h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
       features :{$: 'mdl-style.init-dynamic'},
       css: '{ text-transform: none }'
@@ -16343,33 +16521,49 @@ jb.component('button.mdl-flat-ripple', {
 })
 
 jb.component('button.mdl-icon', {
-  type: 'button.style',
+  type: 'button.style,icon-with-action.style',
   params: [
     { id: 'icon', as: 'string', default: 'code' },
   ],
   impl :{$: 'custom-style',
       template: (cmp,state,h) => h('button',{
-          class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect', 
-          title: state.title, tabIndex: -1, 
-          onclick:  ev => cmp.clicked(ev) }, 
+          class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
+          title: state.title, tabIndex: -1,
+          onclick:  ev => cmp.clicked(ev) },
         h('i',{class: 'material-icons'},cmp.icon)
       ),
-      css: `{ border-radius: 2px} 
+      css: `{ border-radius: 2px}
       >i {border-radius: 2px}`,
       features :{$: 'mdl-style.init-dynamic'},
   }
 })
 
-jb.component('button.mdl-icon-12-with-ripple', {
-  type: 'button.style',
+jb.component('button.mdl-round-icon', {
+  type: 'button.style,icon-with-action.style',
   params: [
     { id: 'icon', as: 'string', default: 'code' },
   ],
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
       template: (cmp,state,h) => h('button',{
-          class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect', 
-          title: state.title, tabIndex: -1, 
-          onclick: ev => cmp.clicked(ev) }, 
+          class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
+          title: state.title, tabIndex: -1,
+          onclick:  ev => cmp.clicked(ev) },
+        h('i',{class: 'material-icons'},cmp.icon)
+      ),
+      features :{$: 'mdl-style.init-dynamic'},
+  }
+})
+
+jb.component('button.mdl-icon-12-with-ripple', {
+  type: 'button.style,icon-with-action.style',
+  params: [
+    { id: 'icon', as: 'string', default: 'code' },
+  ],
+  impl :{$: 'custom-style',
+      template: (cmp,state,h) => h('button',{
+          class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
+          title: state.title, tabIndex: -1,
+          onclick: ev => cmp.clicked(ev) },
         h('i',{class: 'material-icons'},cmp.icon)
       ),
       css: `>.material-icons { font-size:12px;  }`,
@@ -16378,15 +16572,23 @@ jb.component('button.mdl-icon-12-with-ripple', {
 })
 
 jb.component('button.mdl-icon-12', {
-  type: 'button.style',
+  type: 'button.style,icon-with-action.style',
   params: [
     { id: 'icon', as: 'string', default: 'code' },
   ],
-  impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('i',{class: 'material-icons', 
+  impl :{$: 'custom-style',
+      template: (cmp,state,h) => h('i',{class: 'material-icons',
         onclick: ev => cmp.clicked(ev)
       },cmp.icon),
       css: `{ font-size:12px; cursor: pointer }`,
+  }
+})
+
+jb.component('button.mdl-card-flat', {
+  type: 'button.style',
+  impl :{$: 'custom-style',
+      template: (cmp,state,h) => h('a',{class:'mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
+      features :{$: 'mdl-style.init-dynamic'},
   }
 })
 ;
@@ -16502,6 +16704,23 @@ jb.component('layout.horizontal', {
   }
 })
 
+jb.component('layout.horizontal-fixed-split', {
+  type: 'group.style',
+  params: [,
+    { id: 'leftWidth', as: 'number', defaultValue: 200, essential: true },
+    { id: 'rightWidth', as: 'number', defaultValue: 200, essential: true },
+    { id: 'spacing', as: 'number', defaultValue: 3 },
+  ],
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('div',{},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
+    css: `{display: flex}
+        >*:first-child { margin-right: %$spacing%px; flex: 0 0 %$leftWidth%px; width: %$leftWidth%px; }
+        >*:last-child { margin-right:0; flex: 0 0 %$rightWidth%px; width: %$rightWidth%px; }`,
+    features :{$: 'group.init-group'}
+  }
+})
+
 jb.component('layout.horizontal-wrapped', {
   type: 'group.style',
   params: [,
@@ -16582,9 +16801,9 @@ jb.component('flex-item.align-self', {
 //     ],
 //     impl: (ctx,title,basis,grow,shrink) => {
 //       var css = [
-//         `flex-basis: ${basis}`, 
-//         `flex-grow: ${grow}`, 
-//         `flex-shrink: ${shrink}`, 
+//         `flex-basis: ${basis}`,
+//         `flex-grow: ${grow}`,
+//         `flex-shrink: ${shrink}`,
 //       ].join('; ');
 
 //       return jb_ui.Comp({ template: `<div style="${css}"></div>`},ctx)
@@ -16604,7 +16823,8 @@ jb.component('responsive.not-for-phone', {
     impl : () => ({
       cssClass: 'not-for-phone'
     })
-});
+})
+;
 
 jb.component('group.section', {
   type: 'group.style',
@@ -16618,9 +16838,13 @@ jb.component('group.section', {
 
 jb.component('group.div', {
   type: 'group.style',
+	params: [
+		{ id: 'groupClass', as: 'string' },
+		{ id: 'itemClass', as: 'string' },
+	],
   impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
+    template: (cmp,state,h) => h('div',{ class: cmp.groupClass },
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl,{class: cmp.itemClass}),ctrl.ctx.data))),
     features :{$: 'group.init-group'}
   }
 })
@@ -16648,7 +16872,7 @@ jb.component('group.ul-li', {
 
 jb.component('group.expandable', {
   type: 'group.style',
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},[
         h('div',{ class: 'header'},[
           h('div',{ class: 'title'}, state.title),
@@ -16661,12 +16885,12 @@ jb.component('group.expandable', {
     css: `>.header { display: flex; flex-direction: row; }
         >.header>button:hover { background: none }
         >.header>button { margin-left: auto }
-        >.header.title { margin: 5px }`, 
-    features :[ 
+        >.header.title { margin: 5px }`,
+    features :[
         {$: 'group.init-group' },
         {$: 'group.init-expandable' },
       ]
-    }, 
+    },
 })
 
 jb.component('group.init-expandable', {
@@ -16682,25 +16906,25 @@ jb.component('group.init-expandable', {
 
 jb.component('group.accordion', {
   type: 'group.style',
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
         state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
           h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
             h('div',{ class: 'title'}, ctrl.title),
-            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) }, 
+            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) },
               h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
             )
-          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)        
+          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)
     )),
     css: `>.accordion-section>.header { display: flex; flex-direction: row; }
         >.accordion-section>.header>button:hover { background: none }
         >.accordion-section>.header>button { margin-left: auto }
-        >.accordion-section>.header>.title { margin: 5px }`, 
-      features : [ 
+        >.accordion-section>.header>.title { margin: 5px }`,
+      features : [
         {$: 'group.init-group' },
         {$: 'group.init-accordion' },
       ]
-    }, 
+    },
 })
 
 jb.component('group.init-accordion', {
@@ -16713,10 +16937,10 @@ jb.component('group.init-accordion', {
     onkeydown: ctx.params.keyboardSupport,
     init: cmp => {
       cmp.state.shown = 0;
-      cmp.expand_title = index => 
+      cmp.expand_title = index =>
         index == cmp.state.shown ? 'collapse' : 'expand';
 
-      cmp.show = index => 
+      cmp.show = index =>
         cmp.setState({shown: index});
 
       cmp.next = diff =>
@@ -16728,7 +16952,7 @@ jb.component('group.init-accordion', {
             .subscribe(e=>
               cmp.next(e.keyCode == 33 ? -1 : 1))
       }
-    }    
+    }
   })
 })
 
@@ -16741,26 +16965,26 @@ jb.component('group.tabs', {
     modelVar: 'tabsModel',
     control :{$: 'group', controls: [
       {$: 'group', title: 'thumbs',
-        features :{$: 'group.init-group'}, 
+        features :{$: 'group.init-group'},
         style :{$: 'layout.horizontal' },
-        controls :{$: 'dynamic-controls', 
+        controls :{$: 'dynamic-controls',
           itemVariable: 'tab',
           controlItems : '%$tabsModel/controls%',
-          genericControl: {$: 'button', 
-            title: '%$tab/jb_title%', 
+          genericControl: {$: 'button',
+            title: '%$tab/jb_title%',
             action :{$: 'write-value', value: '%$tab%', to: '%$selectedTab%' },
-            style :{$: 'button.mdl-flat-ripple' }, 
+            style :{$: 'button.mdl-flat-ripple' },
             features: [
-              {$: 'css.width', width: '%$width%' }, 
+              {$: 'css.width', width: '%$width%' },
               {$: 'css', css: '{text-align: left}' }
             ]
           },
         },
       },
-      ctx => 
-        jb.val(ctx.exp('%$selectedTab%')), 
+      ctx =>
+        jb.val(ctx.exp('%$selectedTab%')),
     ],
-    features : [ 
+    features : [
         {$: 'var', name: 'selectedTab', value: '%$tabsModel/controls[0]%', mutable: true },
         {$: 'group.init-group'},
     ]
@@ -16772,19 +16996,18 @@ jb.component('toolbar.simple', {
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{class:'toolbar'},
         state.ctrls.map(ctrl=> h(ctrl))),
-    css: `{ 
+    css: `{
             display: flex;
-            background: #F5F5F5; 
-            height: 33px; 
+            background: #F5F5F5;
+            height: 33px;
             width: 100%;
-            border-bottom: 1px solid #D9D9D9; 
+            border-bottom: 1px solid #D9D9D9;
             border-top: 1px solid #fff;
         }
         >* { margin-right: 0 }`,
     features :{$: 'group.init-group'}
   }
 })
-
 ;
 
 jb.component('table.with-headers', {
@@ -17098,9 +17321,39 @@ jb.component('editable-boolean.mdl-slide-toggle', {
 })
 ;
 
+jb.component('card.card', {
+  type: 'group.style',
+	params: [
+    { id: 'width', as: 'number', defaultValue: 320 },
+		{ id: 'shadow', as: 'string', options: '2,3,4,6,8,16', defaultValue: '2' }
+	],
+	impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('div',{ class: `mdl-card mdl-shadow--${cmp.shadow}dp` },
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl,{class: cmp.itemClass}),ctrl.ctx.data))),
+    features :{$: 'group.init-group'},
+		css: '{ width: %$width%px }'
+  }
+})
+
+jb.component('card.media-group', {
+  type: 'group.style',
+  impl :{$:'group.div', groupClass: 'mdl-card__media' },
+})
+
+jb.component('card.actions-group', {
+  type: 'group.style',
+  impl :{$:'group.div', groupClass: 'mdl-card__actions mdl-card--border' },
+})
+
+jb.component('card.menu', {
+  type: 'group.style',
+  impl :{$:'group.div', groupClass: 'mdl-card__menu' },
+})
+;
+
 (function() {
 
-	class NodeLine extends jb.ui.Component {
+class NodeLine extends jb.ui.Component {
 	constructor(props) {
 		super();
 		this.state.expanded = props.tree.expanded[props.path];
@@ -17181,12 +17434,15 @@ jb.component('tree', {
 			class: 'jb-tree', // define host element to keep the wrapper
 			beforeInit: (cmp,props) => {
 				cmp.tree = Object.assign( tree, {
-					redraw: _ => { // needed after dragula that changes the DOM
-						cmp.setState({});
+					redraw: strong => { // needed after dragula that changes the DOM
+						cmp.setState({empty: strong});
+						if (strong)
+							jb.delay(1).then(_=>
+								cmp.setState({empty: false}))
 					},
 					expanded: jb.obj(tree.nodeModel.rootPath, true),
 					elemToPath: el =>
-						$(el).closest('.treenode').attr('path'),
+						jb.ui.closest(el,'.treenode') && jb.ui.closest(el,'.treenode').getAttribute('path'),
 					selectionEmitter: new jb.rx.Subject(),
 				})
 			},
@@ -17201,8 +17457,10 @@ jb.component('tree.ul-li', {
 	impl :{$: 'custom-style',
 		template: (cmp,state,h) => {
 			var tree = cmp.tree;
-			return h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath,
+			return h('div',{},
+				state.empty ? h('span') : h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath,
 				class: 'jb-control-tree treenode' + (tree.selected == tree.nodeModel.rootPath ? ' selected': '') })
+			)
 		}
 	}
 })
@@ -17237,7 +17495,7 @@ jb.component('tree.selection', {
 		  	.merge(cmp.onclick.map(event =>
 		  		tree.elemToPath(event.target)))
 		  	.filter(x=>x)
-	  		.distinctUntilChanged()
+//	  		.distinctUntilChanged()
 		  	.subscribe(selected=> {
 		  	  if (tree.selected == selected)
 		  	  	return;
@@ -17264,8 +17522,8 @@ jb.component('tree.selection', {
 			  first_selected = tree.elemToPath(first);
 		  }
 		  if (first_selected)
-			jb.delay(1).then(() =>
-				tree.selectionEmitter.next(first_selected))
+  			jb.delay(1).then(() =>
+  				tree.selectionEmitter.next(first_selected))
   		},
   	})
 })
@@ -17348,6 +17606,15 @@ jb.component('tree.regain-focus', {
 		ctx.vars.$tree && ctx.vars.$tree.regainFocus && ctx.vars.$tree.regainFocus()
 })
 
+jb.component('tree.redraw', {
+	type: 'action',
+  params: [
+    { id: 'strong', type: 'boolean', as: 'boolean' }
+  ],
+	impl : (ctx,strong) =>
+		ctx.vars.$tree && ctx.vars.$tree.regainFocus && ctx.vars.$tree.redraw(strong)
+})
+
 jb.component('tree.drag-and-drop', {
   type: 'feature',
   params: [
@@ -17357,68 +17624,68 @@ jb.component('tree.drag-and-drop', {
   		onkeydown: true,
   		afterViewInit: cmp => {
   			var tree = cmp.tree;
-			var drake = tree.drake = dragula([], {
-				moves: function(el) {
-					return $(el).is('.jb-array-node>.treenode-children>div')
-				}
-	        });
-			drake.containers = $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
+        var drake = tree.drake = dragula([], {
+				      moves: el =>
+					         jb.ui.match(el,'.jb-array-node>.treenode-children>div')
+	      });
+        drake.containers = cmp.base.querySelectorAll('.jb-array-node>.treenode-children');
+        //jb.ui.findIncludeSelf(cmp.base,'.jb-array-node').map(el=>el.children()).filter('.treenode-children').get();
 
-	        drake.on('drag', function(el, source) {
+	      drake.on('drag', function(el, source) {
 	          var path = tree.elemToPath(el.firstElementChild)
 	          el.dragged = { path: path, expanded: tree.expanded[path]}
-	          tree.setExpanded(path,false); // collapse when dragging
+	          delete tree.expanded[path]; // collapse when dragging
 	        })
 
-	        drake.on('drop', (dropElm, target, source,sibling) => {
+	      drake.on('drop', (dropElm, target, source,targetSibling) => {
 	            if (!dropElm.dragged) return;
-				$(dropElm).remove();
-	            tree.setExpanded(dropElm.dragged.path,dropElm.dragged.expanded); // restore expanded state
-	            var index =  sibling ? $(sibling).index() : target.parentElement.children.length;
-				var path = tree.elemToPath(target)+'~'+index;
-
-				var state = treeStateAsVals(tree);
-				tree.nodeModel.move(path, dropElm.dragged.path);
-				restoreTreeStateFromVals(tree,state);
-				jb.delay(1).then(()=> {
-//					context.params.afterDrop(context.setData({ dragged: dropElm.dragged.path, index: index }));
-					dropElm.dragged = null;
-					tree.redraw();
-				})
-	        });
+				      dropElm.parentNode.removeChild(dropElm);
+	            tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
+      				var state = treeStateAsVals(tree);
+      				var targetPath = targetSibling ? tree.elemToPath(targetSibling) : addOneToIndex(tree.elemToPath(target.lastElementChild));
+      				if (!targetPath)
+      					debugger;
+      				tree.nodeModel.move(dropElm.dragged.path,targetPath);
+      				restoreTreeStateFromVals(tree,state);
+      				dropElm.dragged = null;
+      				tree.redraw(true);
+	      });
 
 	        // ctrl up and down
-			cmp.onkeydown.filter(e=>
-				e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
-				.subscribe(e=> {
-					var diff = e.keyCode == 40 ? 1 : -1;
-					var selectedIndex = Number(tree.selected.split('~').pop());
-					if (isNaN(selectedIndex)) return;
-					var no_of_siblings = $($('.treenode.selected').parents('.treenode-children')[0]).children().length;
-					var index = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
-					var path = tree.selected.split('~').slice(0,-1).join('~');
-					if (!tree.nodeModel.move(path, tree.selected, index))
-						tree.selectionEmitter.next(path+'~'+index);
-			})
-  		},
-  		doCheck: function(cmp) {
-  			var tree = cmp.tree;
-		  	if (tree.drake)
-			  tree.drake.containers =
-				  $(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
-  		}
+    		cmp.onkeydown.filter(e=>
+    				e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
+    				.subscribe(e=> {
+      					var diff = e.keyCode == 40 ? 2 : -1;
+      					var selectedIndex = Number(tree.selected.split('~').pop());
+      					if (isNaN(selectedIndex)) return;
+      					var no_of_siblings = cmp.base.querySelector('.treenode.selected').parentNode.children().length;
+                //$($('.treenode.selected').parents('.treenode-children')[0]).children().length;
+      					var index = (selectedIndex + diff+ no_of_siblings+1) % (no_of_siblings + 1);
+      					var path = tree.selected.split('~').slice(0,-1).join('~');
+      					var state = treeStateAsVals(tree);
+      					tree.nodeModel.move(tree.selected, tree.selected.split('~').slice(0,-1).concat([index]).join('~'))
+      					restoreTreeStateFromVals(tree,state);
+      			})
+      		},
+      		doCheck: function(cmp) {
+      			var tree = cmp.tree;
+    		  	if (tree.drake)
+    			     tree.drake.containers = cmp.base.querySelectorAll('.jb-array-node>.treenode-children');
+    				       //$(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
+      		}
   	})
 })
 
+
 treeStateAsVals = tree => ({
-	selected: pathToVal(tree.selected),
-	expanded: jb.entries(tree.expanded).filter(e=>e[1]).map(e=>pathToVal(e[0]))
+	selected: pathToVal(tree.nodeModel,tree.selected),
+	expanded: jb.entries(tree.expanded).filter(e=>e[1]).map(e=>pathToVal(tree.nodeModel,e[0]))
 })
 
 restoreTreeStateFromVals = (tree,vals) => {
-	tree.selected: valToPath(vals.selected);
+	tree.selected = valToPath(tree.nodeModel,vals.selected);
 	tree.expanded = {};
-	vals.expanded.forEach(v=>tree.expanded[valToPath(v)] = true)
+	vals.expanded.forEach(v=>tree.expanded[valToPath(tree.nodeModel,v)] = true)
 }
 
 pathToVal = (model,path) =>
@@ -17426,7 +17693,13 @@ pathToVal = (model,path) =>
 
 valToPath = (model,val) => {
 	var ref = model.refHandler.asRef(val);
-	return ref ? val.$jb_path.join('~') : ''
+	return ref ? ref.$jb_path.join('~') : ''
+}
+
+addOneToIndex = path => {
+	if (!path) debugger;
+	var index = Number(path.slice(-1)) + 1;
+	return path.split('~').slice(0,-1).concat([index]).join('~')
 }
 
 
@@ -17561,26 +17834,413 @@ class Json {
 
 (function() { var st = jb.studio;
 
-st.message = function(message,error) {
-	$('.studio-message').text(message); // add animation
-	$('.studio-message').css('background', error ? 'red' : '#327DC8');
-	$('.studio-message').css('animation','');
-	jb.delay(1).then(()=>
-		$('.studio-message').css('animation','slide_from_top 5s ease')
-	)
+//  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
+jb.issuesTolog = [];
+
+function compsRef(val,opEvent) {
+  if (typeof val == 'undefined')
+    return st.previewjb.comps;
+  else {
+		if (val.$jb_historyIndex && val == st.compsHistory[val.$jb_historyIndex].after)
+			st.compsHistory.slice()
+
+		val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
+		if (!val.$jb_selectionPreview)
+  		st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex});
+
+    st.previewjb.comps = val;
+    st.undoIndex = st.compsHistory.length;
+  }
 }
 
-// st.jbart_base = function() {
-// 	return jb.studio.previewjb || jb;
-// }
+st.compsRefHandler = new jb.ui.ImmutableWithPath(compsRef);
+st.compsRefHandler.resourceChange.subscribe(_=>st.lastStudioActivity= new Date().getTime())
+// adaptors
 
-// st.findjBartToLook = function(path) {
-// 	var id = path.split('~')[0];
-// 	if (st.jbart_base().comps[id])
-// 		return st.jbart_base();
-// 	if (jb.comps[id])
-// 		return jb;
-// }
+Object.assign(st,{
+  val: (v) =>
+    st.compsRefHandler.val(v),
+  writeValue: (ref,value,srcCtx) =>
+    st.compsRefHandler.writeValue(ref,value,srcCtx),
+  objectProperty: (obj,prop) =>
+    st.compsRefHandler.objectProperty(obj,prop),
+  splice: (ref,args,srcCtx) =>
+    st.compsRefHandler.splice(ref,args,srcCtx),
+  push: (ref,value,srcCtx) =>
+    st.compsRefHandler.push(ref,value,srcCtx),
+  merge: (ref,value,srcCtx) =>
+    st.compsRefHandler.merge(ref,value,srcCtx),
+  isRef: (ref) =>
+    st.compsRefHandler.isRef(ref),
+  asRef: (obj) =>
+    st.compsRefHandler.asRef(obj),
+  refreshRef: (ref) =>
+    st.compsRefHandler.refresh(ref),
+  scriptChange: st.compsRefHandler.resourceChange,
+  refObservable: (ref,cmp,settings) =>
+  	st.compsRefHandler.refObservable(ref,cmp,settings),
+  refOfPath: (path,silent) =>
+  	st.compsRefHandler.refOfPath(path.split('~'),silent),
+  parentPath: path =>
+		path.split('~').slice(0,-1).join('~'),
+  valOfPath: (path,silent) =>
+  	st.val(st.refOfPath(path,silent)),
+  compNameOfPath: (path,silent) => {
+    if (path.indexOf('~') == -1)
+      return 'jb-component';
+    if (path.match(/~\$vars$/)) return;
+    var prof = st.valOfPath(path,silent); // + (path.indexOf('~') == -1 ? '~impl' : '');
+  	return jb.compName(prof) || jb.compName(prof,st.paramDef(path))
+  },
+  compOfPath: (path,silent) =>
+  	st.getComp(st.compNameOfPath(path,silent)),
+  paramsOfPath: (path,silent) =>
+  	jb.compParams(st.compOfPath(path,silent)), //.concat(st.compHeaderParams(path)),
+  writeValueOfPath: (path,value,srcCtx) =>
+		st.writeValue(st.refOfPath(path),value,srcCtx),
+  getComp: id =>
+		st.previewjb.comps[id],
+  compAsStr: id =>
+		st.prettyPrintComp(id,st.getComp(id)),
+});
+
+
+// write operations with logic
+
+Object.assign(st, {
+	_delete: (path,srcCtx) => {
+		var prop = path.split('~').pop();
+		var parent = st.valOfPath(st.parentPath(path))
+		if (Array.isArray(parent)) {
+			var index = Number(prop);
+			st.splice(st.refOfPath(st.parentPath(path)),[[index, 1]],srcCtx)
+		} else {
+			st.writeValueOfPath(path,null,srcCtx);
+		}
+	},
+
+	wrapWithGroup: (path,srcCtx) =>
+		st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] },srcCtx),
+
+	wrap: (path,compName,srcCtx) => {
+		var comp = st.getComp(compName);
+		var compositeParam = jb.compParams(comp).filter(p=>p.composite)[0];
+		if (compositeParam) {
+			var singleOrArray = compositeParam.type.indexOf('[') == -1 ? st.valOfPath(path) : [st.valOfPath(path)];
+			if (jb.compParams(comp).length == 1) // use sugar
+				var result = jb.obj('$'+compName,singleOrArray);
+			else
+				var result = Object.assign({ $: compName }, jb.obj(compositeParam.id,singleOrArray));
+			st.writeValueOfPath(path,result,srcCtx);
+		}
+	},
+	addProperty: (path,srcCtx) => {
+		// if (st.paramTypeOfPath(path) == 'data')
+		// 	return st.writeValueOfPath(path,'');
+		var param = st.paramDef(path);
+		var result = param.defaultValue || {$: ''};
+		if (st.paramTypeOfPath(path).indexOf('data') != -1)
+			result = '';
+		if (param.type.indexOf('[') != -1)
+			result = [];
+		st.writeValueOfPath(path,result,srcCtx);
+	},
+
+	duplicateControl: (path,srcCtx) => {
+		var prop = path.split('~').pop();
+		var val = st.valOfPath(path);
+		var parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
+		if (parent_ref) {
+			var clone = st.evalProfile(st.prettyPrint(val));
+			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
+		}
+	},
+	duplicateArrayItem: (path,srcCtx) => {
+		var prop = path.split('~').pop();
+		var val = st.valOfPath(path);
+		var parent_ref = st.refOfPath(st.parentPath(path));
+		if (parent_ref && Array.isArray(st.val(parent_ref))) {
+			var clone = st.evalProfile(st.prettyPrint(val));
+			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
+		}
+	},
+	disabled: path => {
+		var prof = st.valOfPath(path);
+		return prof && typeof prof == 'object' && prof.$disabled;
+	},
+	toggleDisabled: (path,srcCtx) => {
+		var prof = st.valOfPath(path);
+		if (prof && typeof prof == 'object' && !Array.isArray(prof))
+			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
+	},
+	setComp: (path,compName,srcCtx) => {
+		var comp = compName && st.getComp(compName);
+		if (!compName || !comp) return;
+		var params = jb.compParams(comp);
+		if (params.length == 1 && params[0].composite == true)
+			return st.setSugarComp(path,compName,params[0],srcCtx);
+
+		var result = comp.singleInType ? {} : { $: compName };
+		params.forEach(p=>{
+			if (p.composite)
+				result[p.id] = [];
+			if (p.defaultValue && typeof p.defaultValue != 'object')
+				result[p.id] = p.defaultValue;
+			if (p.defaultValue && typeof p.defaultValue == 'object' && (p.forceDefaultCreation || Array.isArray(p.defaultValue)))
+				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue));
+		})
+		var currentVal = st.valOfPath(path);
+		if (!currentVal || typeof currentVal != 'object')
+			st.writeValue(st.refOfPath(path),result,srcCtx)
+		else
+			st.merge(st.refOfPath(path),result,srcCtx);
+	},
+
+	setSugarComp: (path,compName,param,srcCtx) => {
+		var emptyVal = (param.type||'').indexOf('[') == -1 ? '' : [];
+		var currentVal = st.valOfPath(path);
+		if (typeof currentVal == 'object') {
+			var properties = Object.getOwnPropertyNames(currentVal);
+			if (properties.length == 1 && properties[0].indexOf('$') == 0)
+				currentVal = currentVal[properties[0]];
+			else
+				currentVal = st.valOfPath(path+'~'+param.id,true) || st.valOfPath(path+'~$'+compName,true);
+		}
+		if (currentVal && !Array.isArray(currentVal) && (param.type||'').indexOf('[') != -1)
+			currentVal = [currentVal];
+		st.writeValue(st.refOfPath(path),jb.obj('$'+compName,currentVal || emptyVal),srcCtx)
+	},
+
+	insertControl: (path,compName,srcCtx) => {
+		var comp = compName && st.getComp(compName);
+		if (!compName || !comp) return;
+		var newCtrl = { $: compName };
+		// copy default values
+		jb.compParams(comp).forEach(p=>{
+			if (p.defaultValue || p.defaultTValue)
+				newCtrl[p.id] = JSON.parse(JSON.stringify(p.defaultValue || p.defaultTValue))
+		})
+		if (st.controlParams(path)[0] == 'fields')
+			newCtrl = { $: 'field.control', control : newCtrl};
+		// find group parent that can insert the control
+		var group_path = path;
+		while (st.controlParams(group_path).length == 0 && group_path)
+			group_path = st.parentPath(group_path);
+		var group_ref = st.getOrCreateControlArrayRef(group_path,srcCtx);
+		if (group_ref)
+			st.push(group_ref,[newCtrl],srcCtx);
+	},
+    // if dest is not an array item, fix it
+   moveFixDestination(from,to,srcCtx) {
+		if (isNaN(Number(to.split('~').slice(-1)))) {
+            if (st.valOfPath(to) === undefined)
+                jb.writeValue(st.refOfPath(to),[],srcCtx);
+            to += '~' + st.valOfPath(to).length;
+		}
+		return jb.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
+	},
+
+	addArrayItem: (path,toAdd,srcCtx) => {
+		var val = st.valOfPath(path);
+		var toAdd = toAdd || {$:''};
+		if (Array.isArray(val)) {
+			st.push(st.refOfPath(path),[toAdd],srcCtx);
+//			return { newPath: path + '~' + (val.length-1) }
+		}
+		else if (!val) {
+			st.writeValueOfPath(path,toAdd,srcCtx);
+		} else {
+			st.writeValueOfPath(path,[val].concat(toAdd),srcCtx);
+//			return { newPath: path + '~1' }
+		}
+	},
+
+	wrapWithArray: (path,srcCtx) => {
+		var val = st.valOfPath(path);
+		if (val && !Array.isArray(val))
+			st.writeValueOfPath(path,[val],srcCtx);
+	},
+
+	makeLocal: (path,srcCtx) =>{
+		var comp = st.compOfPath(path);
+		if (!comp || typeof comp.impl != 'object') return;
+		st.writeValueOfPath(path,st.evalProfile(st.prettyPrint(comp.impl)),srcCtx);
+
+		// var res = JSON.stringify(comp.impl, (key, val) => typeof val === 'function' ? ''+val : val , 4);
+		//
+		// var profile = st.valOfPath(path);
+		// // inject conditional param values
+		// jb.compParams(comp).forEach(p=>{
+		// 		var pUsage = '%$'+p.id+'%';
+		// 		var pVal = '' + (profile[p.id] || p.defaultValue || '');
+		// 		res = res.replace(new RegExp('{\\?(.*?)\\?}','g'),(match,condition_exp)=>{ // conditional exp
+		// 				if (condition_exp.indexOf(pUsage) != -1)
+		// 					return pVal ? condition_exp : '';
+		// 				return match;
+		// 			});
+		// });
+		// // inject param values
+		// jb.compParams(comp).forEach(p=>{
+		// 		var pVal = '' + (profile[p.id] || p.defaultValue || ''); // only primitives
+		// 		res = res.replace(new RegExp(`%\\$${p.id}%`,'g') , pVal);
+		// });
+		//
+		// st.writeValueOfPath(path,st.evalProfile(res));
+	},
+	getOrCreateControlArrayRef: (path,srcCtx) => {
+		var val = st.valOfPath(path);
+		var prop = st.controlParams(path)[0];
+		if (!prop)
+			return console.log('getOrCreateControlArrayRef: no control param');
+		var ref = st.refOfPath(path+'~'+prop);
+		if (val[prop] === undefined)
+			jb.writeValue(ref,[],srcCtx);
+		else if (!Array.isArray(val[prop])) // wrap
+			jb.writeValue(ref,[val[prop]],srcCtx);
+		ref = st.refOfPath(path+'~'+prop);
+		return ref;
+	},
+	evalProfile: prof_str => {
+		try {
+			return eval('('+prof_str+')')
+		} catch (e) {
+			jb.logException(e,'eval profile:'+prof_str);
+		}
+	},
+
+  pathOfRef: ref =>
+  		ref && ref.$jb_path && ref.$jb_path.join('~'),
+	nameOfRef: ref =>
+		(ref && ref.$jb_path) ? ref.$jb_path.slice(-1)[0].split(':')[0] : 'ref',
+	valSummaryOfRef: ref =>
+		st.valSummary(jb.val(ref)),
+	valSummary: val => {
+		if (val && typeof val == 'object')
+			return val.id || val.name
+		return '' + val;
+	},
+	pathSummary: path =>
+		path.replace(/~controls~/g,'~').replace(/~impl~/g,'~').replace(/^[^\.]*./,''),
+	isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,
+})
+
+// ******* components ***************
+
+jb.component('studio.ref', {
+	params: [ {id: 'path', as: 'string', essential: true } ],
+	impl: (ctx,path) =>
+		st.refOfPath(path)
+});
+
+jb.component('studio.path-of-ref', {
+	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
+	impl: (ctx,ref) =>
+		st.pathOfRef(ref)
+});
+
+jb.component('studio.name-of-ref', {
+	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
+	impl: (ctx,ref) =>
+		st.nameOfRef(ref)
+});
+
+
+jb.component('studio.is-new', {
+	type: 'boolean',
+	params: [ {id: 'path', as: 'string' } ],
+	impl: (ctx,path) => {
+		if (st.compsHistory.length == 0 || st.previewjb.comps.$jb_selectionPreview) return false;
+		var version_before = new jb.ui.ImmutableWithPath(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
+		var res =  JSON.stringify(st.valOfPath(path)) != JSON.stringify(st.val(version_before));
+//		var res =  st.valOfPath(path) && !st.val(version_before);
+		return res;
+	}
+});
+
+jb.component('studio.watch-path', {
+  type: 'feature',
+  category: 'group:0',
+  params: [
+    { id: 'path', as: 'string', essential: true },
+    { id: 'includeChildren', as: 'boolean' },
+  ],
+  impl: (ctx,path,includeChildren) => ({
+      init: cmp =>
+      	jb.ui.watchRef(ctx,cmp,st.refOfPath(path),includeChildren)
+  })
+})
+
+jb.component('studio.watch-script-changes', {
+  type: 'feature',
+  impl: ctx => ({
+      init: cmp =>
+        st.compsRefHandler.resourceChange.debounceTime(200).subscribe(e=>
+            jb.ui.setState(cmp,null,e,ctx))
+   })
+})
+
+jb.component('studio.watch-components', {
+  type: 'feature',
+  impl: ctx => ({
+      init: cmp =>
+        st.compsRefHandler.resourceChange.filter(e=>e.path.length == 1)
+        	.subscribe(e=>
+            	jb.ui.setState(cmp,null,e,ctx))
+   })
+})
+
+
+jb.component('studio.watch-typeof-script', {
+  params: [
+    { id: 'path', as: 'string', essential: true },
+  ],
+  type: 'feature',
+  impl: (ctx,path) => ({
+      init: cmp =>
+    	jb.ui.refObservable(st.refOfPath(path),cmp,{ includeChildren: true})
+    		.filter(e=>
+    			(typeof e.oldVal == 'object') != (typeof e.newVal == 'object'))
+    		.subscribe(e=>
+        		jb.ui.setState(cmp,null,e,ctx))
+   })
+})
+
+jb.component('studio.path-hyperlink', {
+  type: 'control',
+  params: [
+    { id: 'path', as: 'string', essential: true },
+    { id: 'prefix', as: 'string' }
+  ],
+  impl :{$: 'group',
+    style :{$: 'layout.horizontal', spacing: '9' },
+    controls: [
+      {$: 'label', title: '%$prefix%' },
+      {$: 'button',
+        title: ctx => {
+	  		var path = ctx.componentContext.params.path;
+	  		var title = st.shortTitle(path) || '',compName = st.compNameOfPath(path) || '';
+	  		return title == compName ? title : compName + ' ' + title;
+	  	},
+        action :{$: 'studio.goto-path', path: '%$path%' },
+        style :{$: 'button.href' },
+        features :{$: 'feature.hover-title', title: '%$path%' }
+      }
+    ]
+  }
+})
+
+})()
+;
+
+(function() { var st = jb.studio;
+
+st.message = function(message,error) {
+  var el = document.querySelector('.studio-message');
+	el.textContent = message;
+  el.style.background = error ? 'red' : '#327DC8';
+  el.style.animation = '';
+	jb.delay(1).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+}
 
 // ********* Components ************
 
@@ -17665,401 +18325,31 @@ jb.component('studio.dynamic-options-watch-new-comp', {
 })();
 ;
 
-(function() { var st = jb.studio;
-
-function compsRef(val,opEvent) {
-  if (typeof val == 'undefined')
-    return st.previewjb.comps;
-  else {
-  	st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex});
-    st.previewjb.comps = val;
-    st.undoIndex = st.compsHistory.length;
-  }
-}
-
-st.compsRefHandler = new jb.ui.ImmutableWithPath(compsRef);
-st.compsRefHandler.resourceChange.subscribe(_=>st.lastStudioActivity= new Date().getTime())
-// adaptors
-
-Object.assign(st,{
-  val: (v) =>
-    st.compsRefHandler.val(v),
-  writeValue: (ref,value,srcCtx) =>
-    st.compsRefHandler.writeValue(ref,value,srcCtx),
-  objectProperty: (obj,prop) =>
-    st.compsRefHandler.objectProperty(obj,prop),
-  splice: (ref,args,srcCtx) =>
-    st.compsRefHandler.splice(ref,args,srcCtx),
-  push: (ref,value,srcCtx) =>
-    st.compsRefHandler.push(ref,value,srcCtx),
-  merge: (ref,value,srcCtx) =>
-    st.compsRefHandler.merge(ref,value,srcCtx),
-  isRef: (ref) =>
-    st.compsRefHandler.isRef(ref),
-  asRef: (obj) =>
-    st.compsRefHandler.asRef(obj),
-  refreshRef: (ref) =>
-    st.compsRefHandler.refresh(ref),
-  scriptChange: st.compsRefHandler.resourceChange,
-  refObservable: (ref,cmp,settings) =>
-  	st.compsRefHandler.refObservable(ref,cmp,settings),
-  refOfPath: (path,silent) =>
-  	st.compsRefHandler.refOfPath(path.split('~'),silent),
-  parentPath: path =>
-	path.split('~').slice(0,-1).join('~'),
-  valOfPath: (path,silent) =>
-  	st.val(st.refOfPath(path,silent)),
-  compNameOfPath: (path,silent) =>
-  	jb.compName(st.valOfPath(path + (path.indexOf('~') == -1 ? '~impl' : ''),silent)),
-  compOfPath: (path,silent) =>
-  	st.getComp(st.compNameOfPath(path,silent)),
-  paramsOfPath: (path,silent) =>
-  	jb.compParams(st.compOfPath(path,silent)),
-  writeValueOfPath: (path,value) =>
-	st.writeValue(st.refOfPath(path),value),
-  getComp: id =>
-	st.previewjb.comps[id],
-  compAsStr: id =>
-	st.prettyPrintComp(id,st.getComp(id)),
-});
-
-
-// write operations with logic
-
-Object.assign(st, {
-	_delete: (path) => {
-		var prop = path.split('~').pop();
-		var parent = st.valOfPath(st.parentPath(path))
-		if (Array.isArray(parent)) {
-			var index = Number(prop);
-			st.splice(st.refOfPath(st.parentPath(path)),[[index, 1]])
-		} else {
-			st.writeValueOfPath(path,null);
-		}
-	},
-
-	wrapWithGroup: (path) =>
-		st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] }),
-
-	wrap: (path,compName) => {
-		var comp = st.getComp(compName);
-		var compositeParam = jb.compParams(comp).filter(p=>p.composite)[0];
-		if (compositeParam) {
-			var singleOrArray = compositeParam.type.indexOf('[') == -1 ? st.valOfPath(path) : [st.valOfPath(path)];
-			if (jb.compParams(comp).length == 1) // use sugar
-				var result = jb.obj('$'+compName,singleOrArray);
-			else
-				var result = Object.assign({ $: compName }, jb.obj(compositeParam.id,singleOrArray));
-			st.writeValueOfPath(path,result);
-		}
-	},
-	addProperty: (path) => {
-		// if (st.paramTypeOfPath(path) == 'data')
-		// 	return st.writeValueOfPath(path,'');
-		var param = st.paramDef(path);
-		var result = param.defaultValue || {$: ''};
-		if (st.paramTypeOfPath(path).indexOf('data') != -1)
-			result = '';
-		if (param.type.indexOf('[') != -1)
-			result = [];
-		st.writeValueOfPath(path,result);
-	},
-
-	duplicateControl: path => {
-		var prop = path.split('~').pop();
-		var val = st.valOfPath(path);
-		var parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
-		if (parent_ref) {
-			var clone = st.evalProfile(st.prettyPrint(val));
-			st.splice(parent_ref,[[Number(prop), 0,clone]]);
-		}
-	},
-	duplicateArrayItem: path => {
-		var prop = path.split('~').pop();
-		var val = st.valOfPath(path);
-		var parent_ref = st.refOfPath(st.parentPath(path));
-		if (parent_ref && Array.isArray(st.val(parent_ref))) {
-			var clone = st.evalProfile(st.prettyPrint(val));
-			st.splice(parent_ref,[[Number(prop), 0,clone]]);
-		}
-	},
-	disabled: path => {
-		var prof = st.valOfPath(path);
-		return prof && typeof prof == 'object' && prof.$disabled;
-	},
-	toggleDisabled: path => {
-		var prof = st.valOfPath(path);
-		if (prof && typeof prof == 'object' && !Array.isArray(prof))
-			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true)
-	},
-	setComp: (path,compName) => {
-		var comp = compName && st.getComp(compName);
-		if (!compName || !comp) return;
-		var params = jb.compParams(comp);
-		if (params.length == 1 && params[0].composite == true)
-			return st.setSugarComp(path,compName,params[0]);
-
-		var result = { $: compName };
-		params.forEach(p=>{
-			if (p.composite)
-				result[p.id] = [];
-			if (p.defaultValue && typeof p.defaultValue != 'object')
-				result[p.id] = p.defaultValue;
-			if (p.defaultValue && typeof p.defaultValue == 'object' && (p.forceDefaultCreation || Array.isArray(p.defaultValue)))
-				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue));
-		})
-		var currentVal = st.valOfPath(path);
-		if (!currentVal || typeof currentVal != 'object')
-			st.writeValue(st.refOfPath(path),result)
-		else
-			st.merge(st.refOfPath(path),result);
-	},
-
-	setSugarComp: (path,compName,param) => {
-		var emptyVal = (param.type||'').indexOf('[') == -1 ? '' : [];
-		var currentVal = st.valOfPath(path);
-		if (typeof currentVal == 'object') {
-			var properties = Object.getOwnPropertyNames(currentVal);
-			if (properties.length == 1 && properties[0].indexOf('$') == 0)
-				currentVal = currentVal[properties[0]];
-			else
-				currentVal = st.valOfPath(path+'~'+param.id,true) || st.valOfPath(path+'~$'+compName,true);
-		}
-		if (currentVal && !Array.isArray(currentVal) && (param.type||'').indexOf('[') != -1)
-			currentVal = [currentVal];
-		st.writeValue(st.refOfPath(path),jb.obj('$'+compName,currentVal || emptyVal))
-	},
-
-	insertControl: (path,compName) => {
-		var comp = compName && st.getComp(compName);
-		if (!compName || !comp) return;
-		var newCtrl = { $: compName };
-		// copy default values
-		jb.compParams(comp).forEach(p=>{
-			if (p.defaultValue || p.defaultTValue)
-				newCtrl[p.id] = JSON.parse(JSON.stringify(p.defaultValue || p.defaultTValue))
-		})
-		if (st.controlParams(path)[0] == 'fields')
-			newCtrl = { $: 'field.control', control : newCtrl};
-		// find group parent that can insert the control
-		var group_path = path;
-		while (st.controlParams(group_path).length == 0 && group_path)
-			group_path = st.parentPath(group_path);
-		var group_ref = st.getOrCreateControlArrayRef(group_path);
-		if (group_ref)
-			st.push(group_ref,[newCtrl]);
-	},
-
-	addArrayItem: (path,toAdd) => {
-		var val = st.valOfPath(path);
-		var toAdd = toAdd || {$:''};
-		if (Array.isArray(val)) {
-			st.push(st.refOfPath(path),[toAdd]);
-//			return { newPath: path + '~' + (val.length-1) }
-		}
-		else if (!val) {
-			st.writeValueOfPath(path,toAdd);
-		} else {
-			st.writeValueOfPath(path,[val].concat(toAdd));
-//			return { newPath: path + '~1' }
-		}
-	},
-
-	wrapWithArray: (path) => {
-		var val = st.valOfPath(path);
-		if (val && !Array.isArray(val))
-			st.writeValueOfPath(path,[val]);
-	},
-
-	makeLocal: (path) =>{
-		var comp = st.compOfPath(path);
-		if (!comp || typeof comp.impl != 'object') return;
-		var res = JSON.stringify(comp.impl, (key, val) => typeof val === 'function' ? ''+val : val , 4);
-
-		var profile = st.valOfPath(path);
-		// inject conditional param values
-		jb.compParams(comp).forEach(p=>{
-				var pUsage = '%$'+p.id+'%';
-				var pVal = '' + (profile[p.id] || p.defaultValue || '');
-				res = res.replace(new RegExp('{\\?(.*?)\\?}','g'),(match,condition_exp)=>{ // conditional exp
-						if (condition_exp.indexOf(pUsage) != -1)
-							return pVal ? condition_exp : '';
-						return match;
-					});
-		});
-		// inject param values
-		jb.compParams(comp).forEach(p=>{
-				var pVal = '' + (profile[p.id] || p.defaultValue || ''); // only primitives
-				res = res.replace(new RegExp(`%\\$${p.id}%`,'g') , pVal);
-		});
-
-		st.writeValueOfPath(path,st.evalProfile(res));
-	},
-	getOrCreateControlArrayRef: (path) => {
-		var val = st.valOfPath(path);
-		var prop = st.controlParams(path)[0];
-		if (!prop)
-			return console.log('getOrCreateControlArrayRef: no control param');
-		var ref = st.refOfPath(path+'~'+prop);
-		if (val[prop] === undefined)
-			jb.writeValue(ref,[]);
-		else if (!Array.isArray(val[prop])) // wrap
-			jb.writeValue(ref,[val[prop]]);
-		ref = st.refOfPath(path+'~'+prop);
-		return ref;
-	},
-	evalProfile: prof_str => {
-		try {
-			return eval('('+prof_str+')')
-		} catch (e) {
-			jb.logException(e,'eval profile:'+prof_str);
-		}
-	},
-
-  	pathOfRef: ref =>
-  		ref && ref.$jb_path && ref.$jb_path.join('~'),
-	nameOfRef: ref =>
-		(ref && ref.$jb_path) ? ref.$jb_path.slice(-1)[0].split(':')[0] : 'ref',
-	valSummaryOfRef: ref =>
-		st.valSummary(jb.val(ref)),
-	valSummary: val => {
-		if (val && typeof val == 'object')
-			return val.id || val.name
-		return '' + val;
-	},
-	pathSummary: path =>
-		path.replace(/~controls~/g,'~').replace(/~impl~/g,'~').replace(/^[^\.]*./,''),
-	isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,
-})
-
-// ******* components ***************
-
-jb.component('studio.ref', {
-	params: [ {id: 'path', as: 'string', essential: true } ],
-	impl: (ctx,path) =>
-		st.refOfPath(path)
-});
-
-jb.component('studio.path-of-ref', {
-	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
-	impl: (ctx,ref) =>
-		st.pathOfRef(ref)
-});
-
-jb.component('studio.name-of-ref', {
-	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
-	impl: (ctx,ref) =>
-		st.nameOfRef(ref)
-});
-
-
-jb.component('studio.is-new', {
-	type: 'boolean',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => {
-		if (st.compsHistory.length == 0) return false;
-		var version_before = new jb.ui.ImmutableWithPath(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
-		var res =  st.valOfPath(path) && !st.val(version_before);
-		return res;
-	}
-});
-
-jb.component('studio.watch-path', {
-  type: 'feature',
-  category: 'group:0',
-  params: [
-    { id: 'path', as: 'string', essential: true },
-    { id: 'includeChildren', as: 'boolean' },
-  ],
-  impl: (ctx,path,includeChildren) => ({
-      init: cmp =>
-      	jb.ui.watchRef(ctx,cmp,st.refOfPath(path),includeChildren)
-  })
-})
-
-jb.component('studio.watch-script-changes', {
-  type: 'feature',
-  impl: ctx => ({
-      init: cmp =>
-        st.compsRefHandler.resourceChange.debounceTime(200).subscribe(e=>
-            jb.ui.setState(cmp,null,e,ctx))
-   })
-})
-
-jb.component('studio.watch-components', {
-  type: 'feature',
-  impl: ctx => ({
-      init: cmp =>
-        st.compsRefHandler.resourceChange.filter(e=>e.path.length == 1)
-        	.subscribe(e=>
-            	jb.ui.setState(cmp,null,e,ctx))
-   })
-})
-
-
-jb.component('studio.watch-typeof-script', {
-  params: [
-    { id: 'path', as: 'string', essential: true },
-  ],
-  type: 'feature',
-  impl: (ctx,path) => ({
-      init: cmp =>
-    	jb.ui.refObservable(st.refOfPath(path),cmp,{ includeChildren: true})
-    		.filter(e=>
-    			(typeof e.oldVal == 'object') != (typeof e.newVal == 'object'))
-    		.subscribe(e=>
-        		jb.ui.setState(cmp,null,e,ctx))
-   })
-})
-
-jb.component('studio.path-hyperlink', {
-  type: 'control',
-  params: [
-    { id: 'path', as: 'string', essential: true },
-    { id: 'prefix', as: 'string' }
-  ],
-  impl :{$: 'group',
-    style :{$: 'layout.horizontal', spacing: '9' },
-    controls: [
-      {$: 'label', title: '%$prefix%' },
-      {$: 'button',
-        title: ctx => {
-	  		var path = ctx.componentContext.params.path;
-	  		var title = st.shortTitle(path) || '',compName = st.compNameOfPath(path) || '';
-	  		return title == compName ? title : compName + ' ' + title;
-	  	},
-        action :{$: 'studio.goto-path', path: '%$path%' },
-        style :{$: 'button.href' },
-        features :{$: 'feature.hover-title', title: '%$path%' }
-      }
-    ]
-  }
-})
-
-})()
-;
-
 jb.resource('studio',{});
 
 jb.component('studio.all', {
   type: 'control',
   impl :{$: 'group',
-    style :{$: 'layout.vertical', spacing: '0' },
     controls: [
-      {$:'studio.top-bar' },
-      {$: 'studio.preview-widget', width: 1280, height: 520,
-        features :{$: 'watch-ref', ref: '%$studio/page%'}
+      {$: 'studio.top-bar' },
+      {$: 'studio.preview-widget',
+        features :{$: 'watch-ref', ref: '%$studio/page%' },
+        width: 1280,
+        height: 520
       },
       {$: 'studio.pages' },
+      {$: 'studio.ctx-counters' },
     ],
     features: [
       {$: 'group.data', data: '%$studio/project%', watch: true },
       {$: 'feature.init',
-        action :{$: 'url-history.map-url-to-resource',
-          params: ['project', 'page', 'profile_path'],
-          resource: 'studio', base: 'studio',
-//          onUrlChange :{$: 'studio.refresh-preview' }
-        }
+        action: [
+          {$: 'url-history.map-url-to-resource',
+            params: ['project', 'page', 'profile_path'],
+            resource: 'studio',
+            base: 'studio'
+          }
+        ]
       }
     ]
   }
@@ -18125,7 +18415,7 @@ jb.component('studio.pages', {
         title: 'new page',
         action :{$: 'studio.open-new-page' },
         style :{$: 'button.mdl-icon-12', icon: 'add' },
-        features :{$: 'css', css: '{margin: 3px}' }
+        features :{$: 'css', css: '{margin: 5px}' }
       },
       {$: 'itemlist',
         items :{$: 'studio.project-pages' },
@@ -18162,6 +18452,22 @@ jb.component('studio.pages', {
         loadingControl :{ $label: '...' }
       },
       {$: 'studio.watch-components' }
+    ]
+  }
+})
+
+jb.component('studio.ctx-counters', {
+  type: 'control',
+  impl :{$: 'label',
+    title: ctx => Math.floor(100 * performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit) + '% memory',
+    //jb.ctxCounter() + '/' + jb.studio.previewjb.ctxCounter(),
+    features: [
+      {$: 'css',
+        css: '{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'
+      },
+      {$: 'watch-observable', $trace1: true,
+        toWatch: ctx => jb.studio.compsRefHandler.resourceChange.debounceTime(500).do(_=console.log('hello'))
+      }
     ]
   }
 })
@@ -18506,7 +18812,7 @@ jb.component('studio.toolbar', {
       },
       {$: 'button',
         title: 'jbEditor',
-        action :{$: 'studio.open-jb-editor', path: '%$studio/profile_path%' },
+        action :{$: 'studio.open-jb-editor', path :{$firstSucceeding: [ '%$studio/profile_path%', '%$studio/project%.%$studio/page%'] } },
         style :{$: 'button.mdl-icon', icon: 'build' },
         features :{$: 'ctrl-action',
           action :{$: 'studio.open-jb-editor',
@@ -18563,9 +18869,9 @@ jb.component('studio.toolbar', {
         key: 'Alt+N',
         action :{$: 'studio.pickAndOpen', from: 'studio' }
       },
-			{$: 'feature.keyboard-shortcut',
+		{$: 'feature.keyboard-shortcut',
         key: 'Alt+X',
-        action :{$: 'studio.open-jb-editor', path: '%$studio/profile_path%' }
+        action :{$: 'studio.open-jb-editor', path :{$firstSucceeding: [ '%$studio/profile_path%', '%$studio/project%.%$studio/page%'] } }
       }
     ]
   }
@@ -18603,12 +18909,12 @@ jb.component('studio-toolbar', {
 
 jb.component('editable-text.studio-primitive-text', {
   type: 'editable-text.style',
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
       features :{$: 'field.databind-text' },
-      template: (cmp,state,h) => h('input', { 
+      template: (cmp,state,h) => h('input', {
           class: 'mdl-textfield__input',
-          value: state.model, 
-          onchange: e => cmp.jbModel(e.target.value), 
+          value: state.model,
+          onchange: e => cmp.jbModel(e.target.value),
           onkeyup: e => cmp.jbModel(e.target.value,'keyup')
       }),
     css: `{ width: 367px} :focus { border-color: #3F51B5; border-width: 2px}`,
@@ -18617,8 +18923,8 @@ jb.component('editable-text.studio-primitive-text', {
 
 jb.component('button.select-profile-style', {
   type: 'button.style',
-  impl :{$: 'custom-style', 
-   template: (cmp,state,h) => 
+  impl :{$: 'custom-style',
+   template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup:ev => cmp.clicked(ev),
@@ -18630,8 +18936,8 @@ jb.component('button.select-profile-style', {
 
 jb.component('studio.property-toolbar-style', {
   type: 'button.style',
-  impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('i',{class: 'material-icons', 
+  impl :{$: 'custom-style',
+      template: (cmp,state,h) => h('i',{class: 'material-icons',
         onclick: ev => cmp.clicked(ev)
       },'more_vert'),
       css: `{ cursor: pointer;width: 16px; font-size: 16px; padding-top: 3px }`,
@@ -18641,8 +18947,8 @@ jb.component('studio.property-toolbar-style', {
 
 jb.component('editable-text.jb-editor-floating-input', {
   type: 'editable-text.style',
-  impl :{$: 'custom-style', 
-   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[ 
+  impl :{$: 'custom-style',
+   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
         h('input', { class: 'mdl-textfield__input', id: 'jb_input_' + state.fieldId, type: 'text',
             value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
@@ -18652,7 +18958,7 @@ jb.component('editable-text.jb-editor-floating-input', {
       ]),
       css: '{ margin-right: 13px; }', // for the x-button
       features :[
-          {$: 'field.databind-text', noUpdates: true },
+          {$: 'field.databind-text', debounceTime: 300 },
           {$: 'mdl-style.init-dynamic'}
       ],
   }
@@ -18660,8 +18966,8 @@ jb.component('editable-text.jb-editor-floating-input', {
 
 jb.component('button.studio-script', {
   type: 'button.style',
-  impl :{$: 'custom-style', 
-   template: (cmp,state,h) => 
+  impl :{$: 'custom-style',
+   template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup:ev => cmp.clicked(ev),
@@ -18673,25 +18979,25 @@ jb.component('button.studio-script', {
 
 // jb.component('button.studio-script2', {
 //   type: 'button.style',
-//   impl :{$: 'custom-style', 
-//       template: (cmp,state,h) => h('div', { title: state.title, onclick: _ => cmp.clicked() }, 
+//   impl :{$: 'custom-style',
+//       template: (cmp,state,h) => h('div', { title: state.title, onclick: _ => cmp.clicked() },
 //         h('div',{class:'inner-text'},state.title)),
 //           css: `>.inner-text {
 //   white-space: nowrap; overflow-x: hidden;
-//   display: inline; height: 16px; 
+//   display: inline; height: 16px;
 //   padding-left: 4px; padding-top: 2px;
-//   font: 12px "arial"; color: #555555; 
+//   font: 12px "arial"; color: #555555;
 // }
 
 // {
 //   width: 149px;
 //   border: 1px solid #ccc; border-radius: 4px;
 //   cursor: pointer;
-//   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); 
+//   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
 //   background: #eee;
 //   white-space: nowrap; overflow-x: hidden;
 //   text-overflow: ellipsis;
-// }`, 
+// }`,
 // }
 // })
 
@@ -18709,19 +19015,19 @@ jb.component('button.studio-script', {
 
 jb.component('picklist.studio-enum', {
   type: 'picklist.style',
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
       features :{$: 'field.databind' },
       template: (cmp,state,h) => h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
 { display: block; padding: 0; width: 150px; font-size: 12px; height: 23px;
-	color: #555555; background-color: #fff; 
+	color: #555555; background-color: #fff;
 	border: 1px solid #ccc; border-radius: 4px;
-	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); 
-	transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; 
+	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+	transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s;
 }
-:focus { border-color: #66afe9; outline: 0; 
+:focus { border-color: #66afe9; outline: 0;
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
 ::placeholder { color: #999; opacity: 1; }
     `
@@ -18730,9 +19036,9 @@ jb.component('picklist.studio-enum', {
 
 
 jb.component('property-sheet.studio-properties', {
-  type: 'group.style', 
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group' }, 
+  type: 'group.style',
+  impl :{$: 'custom-style',
+    features :{$: 'group.init-group' },
     template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
       h('tr',{ class: 'property' },[
           h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
@@ -18749,9 +19055,9 @@ jb.component('property-sheet.studio-properties', {
 })
 
 jb.component('property-sheet.studio-properties-in-tgp', {
-  type: 'group.style', 
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group' }, 
+  type: 'group.style',
+  impl :{$: 'custom-style',
+    features :{$: 'group.init-group' },
     template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
       h('tr',{ class: 'property' },[
           h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
@@ -18786,15 +19092,15 @@ jb.component('property-sheet.studio-properties-in-tgp', {
 
 
 jb.component('property-sheet.studio-plain', {
-  type: 'group.style', 
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group' }, 
+  type: 'group.style',
+  impl :{$: 'custom-style',
+    features :{$: 'group.init-group' },
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property' },[
           h('label',{ class: 'property-title', title: ctrl.title}, ctrl.title),
           h('div',{ class: 'input-and-toolbar'}, [
             h(ctrl),
-            h(ctrl.jbComp.toolbar)  
+            h(ctrl.jbComp.toolbar)
           ])
     ]))),
     css: `>.property { margin-bottom: 5px; display: flex }
@@ -18819,8 +19125,8 @@ jb.component('property-sheet.studio-plain', {
 jb.component('editable-boolean.studio-expand-collapse-in-toolbar', {
   type: 'editable-boolean.style',
   impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button', 
-          onclick: _=> cmp.toggle(), 
+      template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
+          onclick: _=> cmp.toggle(),
           title: cmp.jbModel() ? 'collapse' : 'expand'},
             h('i',{class: 'material-icons'}, cmp.jbModel() ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
           ),
@@ -18832,8 +19138,8 @@ jb.component('editable-boolean.studio-expand-collapse-in-toolbar', {
 jb.component('editable-boolean.studio-expand-collapse-in-array', {
   type: 'editable-boolean.style',
   impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button', 
-          onclick: _=> cmp.toggle(), 
+      template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
+          onclick: _=> cmp.toggle(),
           title: cmp.jbModel() ? 'collapse' : 'expand'},
             h('i',{class: 'material-icons'}, cmp.jbModel() ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
           ),
@@ -18848,7 +19154,7 @@ jb.component('dialog.studio-multiline-edit',{
 	type: 'dialog.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
-      h('button',{class: 'dialog-close', onclick: 
+      h('button',{class: 'dialog-close', onclick:
         _=> cmp.dialogClose() },'×'),
       h(state.contentComp),
     ]),
@@ -18856,15 +19162,15 @@ jb.component('dialog.studio-multiline-edit',{
 					box-shadow: 2px 2px 3px #d5d5d5; padding: 3px; border: 1px solid rgb(213, 213, 213)
 				  }
 				>.dialog-close {
-						position: absolute; 
-						cursor: pointer; 
-						right: -7px; top: -22px; 
-						font: 21px sans-serif; 
-						border: none; 
-						background: transparent; 
-						color: #000; 
-						text-shadow: 0 1px 0 #fff; 
-						font-weight: 700; 
+						position: absolute;
+						cursor: pointer;
+						right: -7px; top: -22px;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
 						opacity: .2;
 				}
 				>.dialog-close:hover { opacity: .5 }
@@ -18884,40 +19190,42 @@ jb.component('dialog-feature.studio-position-under-property', {
 			afterViewInit: function(cmp) {
 				if (!context.vars.$launchingElement)
 					return console.log('no launcher for dialog');
-				var $control = context.vars.$launchingElement.$el.parents('.input-and-toolbar');
-				var pos = $control.offset();
-				var $jbDialog = $(cmp.base).findIncludeSelf('.jb-dialog');
-				$jbDialog.css('left', `${pos.left}px`)
-					.css('top', `${pos.top}px`)
-					.css('display','block');
+				var control = jb.ui.parents(context.vars.$launchingElement.el).filter(el=>jb.ui.matches(el,'.input-and-toolbar'));
+				var pos = jb.ui.offset(control);
+				var jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
+        if (jbDialog) {
+  				jbDialog.style.left = `${pos.left}px`;
+          jbDialog.style.top = `${pos.top}px`;
+          jbDialog.style.display = 'block';
+        }
 			}
 		})
 })
 
 jb.component('group.studio-properties-accordion', {
-  type: 'group.style', 
-  impl :{$: 'custom-style', 
+  type: 'group.style',
+  impl :{$: 'custom-style',
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
         state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
           h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
             h('div',{ class: 'title'}, ctrl.title),
-            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) }, 
+            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) },
               h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
             )
-          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)        
+          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)
     )),
     css: `>.accordion-section>.header { cursor: pointer; display: flex; flex-direction: row; background: #eee; margin-bottom: 2px; justify-content: space-between}
 >.accordion-section>.header>button:hover { background: none }
 >.accordion-section>.header>button { margin-left: auto }
 >.accordion-section>.header>button>i { color: #; cursor: pointer }
->.accordion-section>.header>.title { margin: 5px } 
+>.accordion-section>.header>.title { margin: 5px }
 >.accordion-section:last-child() { padding-top: 2px }
-`, 
-      features : [ 
+`,
+      features : [
         {$: 'group.init-group' },
         {$: 'group.init-accordion', keyboardSupport: true, autoFocus: true },
         ctx =>({
-          afterViewInit: cmp => 
+          afterViewInit: cmp =>
             ctx.vars.PropertiesDialog.openFeatureSection = _ => cmp.show(1)
         })
       ]
@@ -18925,7 +19233,7 @@ jb.component('group.studio-properties-accordion', {
 })
 
 jb.component('label.studio-message', {
-  type: 'label.style', 
+  type: 'label.style',
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.title),
     css: `{ position: absolute;
@@ -18940,106 +19248,117 @@ jb.component('label.studio-message', {
 
 
 jb.component('studio.search-component', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
-    title: 'itemlist-with-find', 
-    style :{$: 'layout.horizontal', spacing: '' }, 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'group',
+    title: 'itemlist-with-find',
+    style :{$: 'layout.horizontal', spacing: '' },
     controls: [
-      {$: 'itemlist-container.search', 
-        control :{$: 'studio.search-list', path: '%$path%' }, 
-        title: 'Search', 
-        searchIn: item => 
-          item.id, 
-        databind: '%$itemlistCntrData/search_pattern%', 
-        style :{$: 'editable-text.mdl-input', width: '200' }, 
+      {$: 'itemlist-container.search',
+        control :{$: 'studio.search-list', path: '%$path%' },
+        title: 'Search',
+        searchIn: item =>
+          item.id,
+        databind: '%$itemlistCntrData/search_pattern%',
+        style :{$: 'editable-text.mdl-input', width: '200' },
         features: [
-          {$: 'editable-text.helper-popup', 
-            features :{$: 'dialog-feature.near-launcher-position' }, 
-            control :{$: 'studio.search-list' }, 
-            popupId: 'search-component', 
+          {$: 'editable-text.helper-popup',
+            features :{$: 'dialog-feature.near-launcher-position' },
+            control :{$: 'studio.search-list' },
+            popupId: 'search-component',
             popupStyle :{$: 'dialog.popup' }
           }
         ]
       }
-    ], 
+    ],
     features: [
-      {$: 'group.itemlist-container' }, 
+      {$: 'group.itemlist-container' },
       {$: 'css.margin', top: '-13' }
     ]
   }
 })
 
 jb.component('studio.search-list', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'group',
     controls: [
-      {$: 'table', 
+      {$: 'table',
         items :{
           $pipeline: [
-            {$: 'studio.components-cross-ref' }, 
-            {$: 'itemlist-container.filter' }, 
-            {$: 'numeric-sort', propertyName: 'refCount' }, 
+            {$: 'studio.components-cross-ref' },
+            {$: 'itemlist-container.filter' },
+            {$: 'numeric-sort', propertyName: 'refCount' },
             {$: 'slice', start: '0', end: '50' }
           ]
-        }, 
+        },
         fields: [
-          {$: 'field.control', 
-            control :{$: 'material-icon', 
-              icon :{$: 'studio.icon-of-type', type: '%type%' }, 
+          {$: 'field.control',
+            control :{$: 'material-icon',
+              icon :{$: 'studio.icon-of-type', type: '%type%' },
               features: [
-                {$: 'css.opacity', opacity: '0.3' }, 
-                {$: 'css', css: '{ font-size: 16px }' }, 
+                {$: 'css.opacity', opacity: '0.3' },
+                {$: 'css', css: '{ font-size: 16px }' },
                 {$: 'css.padding', top: '5', left: '5' }
               ]
             }
-          }, 
-          {$: 'field.control', 
-            title: 'id', 
-            control :{$: 'button', 
-              title :{$: 'pipeline', 
-                items :{$: 'highlight', 
-                  base: '%id%', 
-                  highlight: '%$itemlistCntrData/search_pattern%', 
+          },
+          {$: 'field.control',
+            title: 'id',
+            control :{$: 'button',
+              title :{$: 'pipeline',
+                items :{$: 'highlight',
+                  base: '%id%',
+                  highlight: '%$itemlistCntrData/search_pattern%',
                   cssClass: 'mdl-color-text--indigo-A700'
                 }
-              }, 
-              action :{$: 'studio.goto-path', path: '%id%' }, 
+              },
+              action :{$: 'studio.goto-path', path: '%id%' },
               style :{$: 'button.href' }
-            }, 
+            },
             width: '200'
-          }, 
-          {$: 'field', title: 'refs', data: '%refCount%', width: '30' }, 
-          {$: 'field', title: 'type', data: '%type%' }, 
-          {$: 'field', 
-            title: 'impl', 
-            data :{$: 'pipeline', 
+          },
+          {$: 'field.control',
+            title: 'refs',
+            control :{$: 'button',
+              icon :{$: 'studio.icon-of-type', type: '%type%' },
+              title: '%refCount%',
+              action :{$: 'menu.open-context-menu',
+                menu :{$: 'menu.menu',
+                  options: [
+                    {$: 'studio.goto-references-options',
+                      path: '%id%',
+                      refs :{$: 'studio.references', path: '%id%' }
+                    }
+                  ]
+                },
+              },
+              style :{$: 'button.href' }
+            }
+          },
+          {$: 'field', title: 'type', data: '%type%' },
+          {$: 'field',
+            title: 'impl',
+            data :{$: 'pipeline',
               items: [
-                '%implType%', 
-                {$: 'data.if', 
-                  condition: '%% = "function"', 
-                  then: 'javascript', 
+                '%implType%',
+                {$: 'data.if',
+                  condition: '%% = "function"',
+                  then: 'javascript',
                   else: ''
                 }
               ]
             }
           }
-        ], 
-        style :{$: 'table.with-headers' }, 
-        features: [
-          {$: 'itemlist.selection', databind: '' }, 
-          {$: 'watch-ref', 
-            ref: '%$itemlistCntrData/search_pattern%', 
-            
-          }
-        ]
+        ],
+        style :{$: 'table.with-headers' },
+        features: [{$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' }]
       }
-    ], 
+    ],
     features: [
-      {$: 'css.box-shadow', shadowColor: '#cccccc' }, 
-      {$: 'css.padding', top: '4', right: '5' }, 
-      {$: 'css.height', height: '600', overflow: 'auto', minMax: 'max' }, 
+      {$: 'css.box-shadow', shadowColor: '#cccccc' },
+      {$: 'css.padding', top: '4', right: '5' },
+      {$: 'css.height', height: '600', overflow: 'auto', minMax: 'max' },
       {$: 'css.width', width: '400', minMax: 'min' }
     ]
   }
@@ -19055,7 +19374,8 @@ jb.component('studio.search-component-selected',{
     {$: 'studio.goto-path', path: '%$path%' },
     {$: 'dialog.close-containing-popup' }
   ]}
-});
+})
+;
 
 jb.component('studio.open-new-profile-dialog', {
   type: 'action',
@@ -19078,12 +19398,7 @@ jb.component('studio.open-new-profile-dialog', {
     content :{$: 'studio.select-profile',
       onSelect :{$: 'action.if',
         condition: '%$mode% == "insert-control"',
-        then: [
-          {$: 'studio.insert-control', path: '%$path%', comp: '%%' },
-          {$: 'on-next-timer', delay: 1,
-            action: [ {$:'studio.goto-last-edit'}, {$: 'studio.focus-on-first-property'}]
-          }
-        ],
+        then: {$: 'studio.insert-control', path: '%$path%', comp: '%%' },
         else :{
           $if: '%$mode% == "insert"',
           then :{$: 'studio.add-array-item',
@@ -19104,9 +19419,16 @@ jb.component('studio.open-new-profile-dialog', {
       {$: 'css.width', width: '450', overflow: 'hidden' },
       {$: 'dialog-feature.drag-title', id: 'new %$type%' },
       {$: 'dialog-feature.near-launcher-position', offsetLeft: 0, offsetTop: 0 },
-      {$: 'group.auto-focus-on-first-input' },
+      {$: 'dialog-feature.auto-focus-on-first-input' },
+//			{$: 'var', name: 'initial-comps-index', value: {$: 'studio.comps-undo-index'}},
       {$: 'dialog-feature.onClose',
-        action :{ $call: 'onClose' }
+        action : [
+					{ $if: {$not:'%%'},
+	//					then: {$: 'studio.revert', toIndex: '%$initial-comps-index%' },
+						else: [ {$:'studio.goto-last-edit'}, {$: 'studio.focus-on-first-property'}]
+					},
+					{ $call: 'onClose' }
+				]
       }
     ]
   }
@@ -19143,9 +19465,12 @@ jb.component('studio.categories-marks', {
               {$: 'list',
                 items: [
                   'css:100',
-                  'feature:95',
-                  'group:90',
-                  'tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0',
+                  'watch:95',
+									'lifecycle:90',
+                  'events:85',
+									'group:80',
+									'all:20',
+                  'feature:0,tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0,itemlist-container:0,editable-text:0,editable-boolean:0',
                   'mdl-style:0'
                 ]
               },
@@ -19156,173 +19481,220 @@ jb.component('studio.categories-marks', {
               }
             ]
           },
+		  'group.style' :{$: 'pipeline',
+            items: [
+              {$: 'list',
+                items: [
+                  'layout:100',
+                  'group:90',
+                  'tabs:0',
+                ]
+              },
+              {$: 'split', separator: ',' },
+              {$: 'object',
+                code: {$: 'split', separator: ':', part: 'first'  },
+                mark: {$: 'split', separator: ':', part: 'second'  },
+              }
+            ]
+          },
         },
-       {$firstSucceeding: ['%{%$type%}%', {$: 'object', code: 'all', mark: '100' }]}
+       {$firstSucceeding: [ ctx => ctx.data[ctx.exp('%$type%','string')], {$: 'object', code: 'all', mark: '100' }]}
     ]
   }
 })
 
 jb.component('studio.select-profile', {
-  type: 'control',
+  type: 'control', 
   params: [
-    { id: 'onSelect', type: 'action', dynamic: true },
-    { id: 'type', as: 'string' },
+    { id: 'onSelect', type: 'action', dynamic: true }, 
+    { id: 'type', as: 'string' }, 
     { id: 'path', as: 'string' }
-  ],
-  impl :{$: 'group',
-    title: 'itemlist-with-find',
-    style :{$: 'layout.vertical', spacing: 3 },
+  ], 
+  impl :{$: 'group', 
+    title: 'itemlist-with-find', 
+    style :{$: 'layout.vertical', spacing: 3 }, 
     controls: [
-      {$: 'itemlist-container.search',
-        title :{$: 'studio.prop-name', path: '%$path%' },
-        searchIn :{$: 'itemlist-container.search-in-all-properties' },
-        databind: '%$itemlistCntrData/search_pattern%',
-        style :{$: 'editable-text.mdl-input' },
-        features :{$: 'feature.onEsc',
-          action :{$: 'dialog.close-containing-popup',
-            id: 'studio-jb-editor-popup',
-            OK: true
+      {$: 'itemlist-container.search', 
+        title :{$: 'studio.prop-name', path: '%$path%' }, 
+        searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
+        databind: '%$itemlistCntrData/search_pattern%', 
+        style :{$: 'editable-text.mdl-input', width: '200' }, 
+        features :{$: 'feature.onEsc', 
+          action :{$: 'dialog.close-containing-popup', 
+            id: 'studio-jb-editor-popup', 
+            OK: false
           }
         }
-      },
-      {$: 'group',
-        title: 'categories and items',
-        style :{$: 'layout.horizontal', spacing: 3 },
+      }, 
+      {$: 'group', 
+        title: 'categories and items', 
+        style :{$: 'layout.horizontal', spacing: '33' }, 
         controls: [
-          {$: 'picklist',
-            title: '',
-            databind: '%$SelectedCategory%',
-            options :{$: 'picklist.sorted-options',
-              options :{$: 'picklist.coded-options',
-                options :{$: 'studio.categories-of-type', type: '%$type%' },
-                code: '%name%',
-                text: '%name%'
-              },
-              marks :{$: 'studio.categories-marks', type: '%$type%', path: '%$path%' }
-            },
-            style :{$: 'style-by-control',
-              control :{$: 'group',
-                controls :{$: 'itemlist',
-                  items: '%$picklistModel/options%',
-                  controls :{$: 'label',
-                    title: '%text%',
-                    style :{$: 'label.mdl-button' },
-                    features: [
-                      {$: 'css.width', width: '120' },
-                      {$: 'css', css: '{text-align: left}' }
-                    ]
-                  },
-                  style :{$: 'itemlist.ul-li' },
-                  watchItems: false,
-                  features: [
-                    {$: 'itemlist.selection',
-                      cssForActive: 'background: white',
-                      onSelection :{$: 'write-value',
-                        to: '%$picklistModel/databind%',
-                        value: '%code%'
-                      },
-                      autoSelectFirst: 'true',
-                      cssForSelected: 'box-shadow: 3px 0px 0 0 #304ffe inset; background: none !important'
-                    }
-                  ]
-                },
-                features :{$: 'group.itemlist-container' }
-              },
-              modelVar: 'picklistModel'
-            },
-            features :{$: 'picklist.onChange',
-              action :{$: 'write-value', to: '%$itemlistCntrData/search_pattern%' }
-            }
-          },
-          {$: 'itemlist',
-            title: 'items',
+          {$: 'itemlist', 
+            title: 'items', 
             items :{
               $pipeline: [
-                '%$Categories%',
-                {$: 'filter',
-                  filter :{$: 'or',
+                '%$Categories%', 
+                {$: 'filter', 
+                  filter :{$: 'or', 
                     items: [
-                      {$: 'equals',
-                        item1: '%name%',
+                      {$: 'equals', 
+                        item1: '%code%', 
                         item2: '%$SelectedCategory%'
-                      },
-                      {$: 'notEmpty',
+                      }, 
+                      {$: 'notEmpty', 
                         item: '%$itemlistCntrData/search_pattern%'
                       }
                     ]
                   }
-                },
-                '%pts%',
-                {$: 'itemlist-container.filter' },
+                }, 
+                '%pts%', 
+                {$: 'itemlist-container.filter' }, 
                 {$: 'unique', id: '%%', items: '%%' }
               ]
-            },
+            }, 
             controls: [
-              {$: 'label',
-                action: [{$: 'dialog.close-containing-popup' }, { $call: 'onSelect' }],
-                title :{$: 'highlight',
-                  base: '%%',
+              {$: 'label', 
+                title :{$: 'highlight', 
+                  base: '%%', 
                   highlight: '%$itemlistCntrData/search_pattern%'
-                },
-                style :{$: 'label.span', level: 'h3' },
+                }, 
+                style :{$: 'label.span', level: 'h3' }, 
                 features: [
-                  {$: 'css', css: '{ text-align: left; }' },
-                  {$: 'css.padding',
-                    top: '0',
-                    left: '4',
-                    right: '4',
+                  {$: 'css', css: '{ text-align: left; }' }, 
+                  {$: 'css.padding', 
+                    top: '0', 
+                    left: '4', 
+                    right: '4', 
                     bottom: '0'
-                  },
+                  }, 
                   {$: 'css.width', width: '250', minMax: 'min' }
                 ]
               }
-            ],
-            itemVariable: 'item',
+            ], 
+            itemVariable: 'item', 
             features: [
-              {$: 'css.height', height: '300', overflow: 'auto', minMax: '' },
-              {$: 'itemlist.selection',
-                databind: '%$itemlistCntrData/selected%',
-                onDoubleClick :{$: 'runActions',
-                  actions: [{$: 'dialog.close-containing-popup' }, { $call: 'onSelect' }]
-                },
+              {$: 'css.height', height: '300', overflow: 'auto', minMax: '' }, 
+              {$: 'itemlist.selection', 
+                databind: '%$itemlistCntrData/selected%', 
+                onSelection :{
+                  $runActions: [
+                    {
+                      $if :{$: 'contains', 
+                        text: ['control', 'style'], 
+                        allText: '%$type%'
+                      }, 
+                      then :{
+                        $call: 'onSelect', 
+                        $vars: { selectionPreview: true }
+                      }
+                    }
+                  ]
+                }, 
+                onDoubleClick :{
+                  $runActions: [
+                    {$: 'studio.clean-selection-preview' }, 
+                    { $call: 'onSelect' }, 
+                    {$: 'dialog.close-containing-popup' }
+                  ]
+                }, 
                 autoSelectFirst: true
-              },
-              {$: 'itemlist.keyboard-selection',
-                onEnter :{$: 'runActions',
-                  actions: [{$: 'dialog.close-containing-popup' }, { $call: 'onSelect' }]
+              }, 
+              {$: 'itemlist.keyboard-selection', 
+                onEnter :{
+                  $runActions: [
+                    {$: 'studio.clean-selection-preview' }, 
+                    { $call: 'onSelect' }, 
+                    {$: 'dialog.close-containing-popup' }
+                  ]
                 }
-              },
-              {$: 'watch-ref', ref: '%$SelectedCategory%' },
-              {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' },
-              {$: 'css.margin', top: '3', selector: '>li' }
+              }, 
+              {$: 'watch-ref', ref: '%$SelectedCategory%' }, 
+              {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' }, 
+              {$: 'css.margin', top: '3', selector: '>li' }, 
+              {$: 'css.width', width: '200' }
             ]
+          }, 
+          {$: 'picklist', 
+            title: '', 
+            databind: '%$SelectedCategory%', 
+            options: '%$Categories%', 
+            style :{$: 'style-by-control', 
+              control :{$: 'group', 
+                controls :{$: 'itemlist', 
+                  items: '%$picklistModel/options/code%', 
+                  controls :{$: 'label', 
+                    title :{
+                      $pipeline: [
+                        '%$Categories%', 
+                        {$: 'filter', filter: '%code% == %$item%' }, 
+                        '%code% (%pts/length%)'
+                      ]
+                    }, 
+                    style :{$: 'label.span' }, 
+                    features: [
+                      {$: 'css.width', width: '120' }, 
+                      {$: 'css', css: '{text-align: left}' }, 
+                      {$: 'css.padding', left: '10' }
+                    ]
+                  }, 
+                  style :{$: 'itemlist.ul-li' }, 
+                  watchItems: false, 
+                  features: [
+                    {$: 'itemlist.selection', 
+                      cssForActive: 'background: white', 
+                      databind: '%$SelectedCategory%', 
+                      cssForSelected: 'box-shadow: 3px 0px 0 0 #304ffe inset; color: black !important; background: none !important; !important'
+                    }
+                  ]
+                }, 
+                features :{$: 'group.itemlist-container' }
+              }, 
+              modelVar: 'picklistModel'
+            }, 
+            features :{$: 'picklist.onChange', 
+              action :{$: 'write-value', to: '%$itemlistCntrData/search_pattern%' }
+            }
           }
         ]
-      },
-      {$: 'label',
+      }, 
+      {$: 'label', 
         title :{
           $pipeline: [
-            '%$itemlistCntrData/selected%',
-            {$: 'studio.val', path: '%%' },
-            'aa %description%'
+            '%$itemlistCntrData/selected%', 
+            {$: 'studio.val', path: '%%' }, 
+            '%description%'
           ]
-        },
+        }, 
         style :{$: 'label.span' }
       }
-    ],
+    ], 
     features: [
-      {$: 'css.margin', top: '10', left: '20' },
-      {$: 'var',
-        name: 'Categories',
-        value :{$: 'studio.categories-of-type', type: '%$type%' }
-      },
-      {$: 'var',
-        name: 'SelectedCategory',
-        value: '%$Categories[0]%',
+      {$: 'css.margin', top: '10', left: '20' }, 
+      {$: 'var', 
+        name: 'unsortedCategories', 
+        value :{$: 'studio.categories-of-type', type: '%$type%', path: '%$path%' }
+      }, 
+      {$: 'var', 
+        name: 'Categories', 
+        value :{$: 'picklist.sorted-options', 
+          options: '%$unsortedCategories%', 
+          marks :{$: 'studio.categories-marks', type: '%$type%', path: '%$path%' }
+        }
+      }, 
+      {$: 'var', 
+        name: 'SelectedCategory', 
+        value :{
+          $if :{$: 'studio.val', path: '%$path%' }, 
+          then: 'all', 
+          else: '%$Categories[0]/code%'
+        }, 
         mutable: true
-      },
-      {$: 'var', name: 'SearchPattern', value: '', mutable: true },
-      {$: 'group.itemlist-container' }
+      }, 
+      {$: 'var', name: 'SearchPattern', value: '', mutable: true }, 
+      {$: 'group.itemlist-container', 
+        initialSelection :{$: 'studio.comp-name', path: '%$path%' }
+      }
     ]
   }
 })
@@ -19341,8 +19713,12 @@ jb.component('studio.pick-profile', {
         path: '%$path%'
       },
       features: [
-        {$: 'group.auto-focus-on-first-input' },
-        {$: 'css.padding', right: '20' }
+        {$: 'dialog-feature.auto-focus-on-first-input' },
+        {$: 'css.padding', right: '20' },
+//				{$: 'var', name: 'initial-comps-index', value: {$: 'studio.comps-undo-index'}},
+//	      {$: 'dialog-feature.onClose',
+//	        action :{ $if: {$not:'%%'},	then: {$: 'studio.revert', toIndex: '%$initial-comps-index%' }}
+//				},
       ]
     },
     style :{$: 'button.select-profile-style' },
@@ -19353,9 +19729,11 @@ jb.component('studio.pick-profile', {
 jb.component('studio.open-new-page', {
   type: 'action',
   impl :{$: 'open-dialog',
-    style :{$: 'dialog.dialog-ok-cancel',
-      features :{$: 'dialog-feature.auto-focus-on-first-input' }
-    },
+    style :{$: 'dialog.dialog-ok-cancel' },
+		modal: true,
+    features : [{$: 'var', name: 'name', mutable: true },
+			{$: 'dialog-feature.auto-focus-on-first-input' }
+		],
     content :{$: 'group',
       style :{$: 'group.div' },
       controls: [
@@ -19388,8 +19766,6 @@ jb.component('studio.open-new-page', {
         action: {$: 'write-value', to: '%$studio/page%', value: '%$newName%' },
       }
     ],
-    modal: true,
-    features :{$: 'var', name: 'name', mutable: true }
   }
 })
 
@@ -19505,27 +19881,32 @@ jb.component('studio.open-resource', {
 })
 
 jb.component('studio.data-resource-menu', {
-  type: 'menu.option',
-  impl :{$: 'menu.menu', title: 'Data',
-      options: [
-          {$: 'dynamic-controls', 
-            controlItems: function (ctx) {
-              var res = jb.path(jb, ['previewWindow', 'jbart_widgets', ctx.exp('%$studio/project%'), 'resources']);
-              return Object.getOwnPropertyNames(res)
-                  .filter(function (x) { return x != 'window'; });
-            }, 
-            genericControl :{$: 'menu.action', 
-              title: '%$controlItem%', 
-              action :{$: 'studio.open-resource', 
-                id: '%$controlItem%',
-                resource: function (ctx) {
+  type: 'menu.option', 
+  impl :{$: 'menu.menu', 
+    title: 'Data', 
+    options: [
+      {$: 'dynamic-controls', 
+        controlItems :{
+          $pipeline: [
+            ctx => jb.studio.previewjb.resources, 
+            {$: 'property-names', obj: '%%' }, 
+            {$: 'filter', 
+              filter :{$: 'not-contains', inOrder: true, text: ':', allText: '%%' }
+            }
+          ]
+        }, 
+        genericControl :{$: 'menu.action', 
+          title: '%$controlItem%', 
+          action :{$: 'studio.open-resource', 
+            resource: function (ctx) {
                      return jb.path(jb, ['previewWindow', 'jbart_widgets', ctx.exp('%$studio/project%'), 'resources', ctx.exp('%$controlItem%')]);
                 }, 
-              }
-            }
+            id: '%$controlItem%'
           }
-      ]
-    }
+        }
+      }
+    ]
+  }
 })
 
 ;
@@ -19554,11 +19935,24 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       st.serverComps = st.previewjb.comps;
       st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
 
-      preview_window.jb.studio.studioWindow = window;
-      preview_window.jb.studio.previewjb = preview_window.jb;
+      st.previewjb.studio.studioWindow = window;
+      st.previewjb.studio.previewjb = st.previewjb;
+			st.previewjb.http_get_cache = {}
+
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
         st.previewjb.studio.initEventTracker();
+      ['jb-component','jb-param'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
+
+			fixInvalidUrl()
+
+			function fixInvalidUrl() {
+				var profile_path = location.href.split('/project/studio/').pop().split('/')[2] || '';
+				if (!profile_path || jb.studio.valOfPath(profile_path,true) != null) return;
+				while (profile_path && jb.studio.valOfPath(profile_path,true) == null)
+					profile_path = jb.studio.parentPath(profile_path);
+				window.open(location.href.split('/').slice(0,-1).concat([profile_path]).join('/'),'_self')
+			}
 }
 
 jb.component('studio.preview-widget-impl', {
@@ -19594,9 +19988,9 @@ jb.component('studio.set-preview-size', {
   ],
   impl: (ctx,width,height) => {
     if (width)
-      $('.preview-iframe').attr('width',width);
+      document.querySelector('.preview-iframe').setAttribute('width',width);
     if (height)
-      $('.preview-iframe').attr('height',height);
+      document.querySelector('.preview-iframe').setAttribute('height',height);
   }
 })
 
@@ -19620,8 +20014,9 @@ st.ControlTree = class {
 		this.refHandler = st.compsRefHandler;
 	}
 	title(path,collapsed) {
-		if (path && st.valOfPath(path) == null && path.match(/~controls$/))
-			return jb.ui.h('a',{style: {cursor: 'pointer', 'text-decoration': 'underline'}, onclick: e => st.newControl(path) },'new control');
+		var val = st.valOfPath(path);
+		if (path &&  (val == null || Array.isArray(val) && val.length == 0) && path.match(/~controls$/))
+			return jb.ui.h('a',{style: {cursor: 'pointer', 'text-decoration': 'underline'}, onclick: e => st.newControl(path) },'add new');
 		return this.fixTitles(st.shortTitle(path),path,collapsed)
 	}
 	// differnt from children() == 0, beacuse in the control tree you can drop into empty group
@@ -19632,14 +20027,14 @@ st.ControlTree = class {
 		return [].concat.apply([],st.controlParams(path).map(prop=>path + '~' + prop)
 				.map(innerPath=> {
 					var val = st.valOfPath(innerPath);
-					if (Array.isArray(val))
+					if (Array.isArray(val) && val.length > 0)
 					 return st.arrayChildren(innerPath,true);
 					return [innerPath]
 				}))
 				.concat(nonRecursive ? [] : this.innerControlPaths(path));
 	}
 	move(from,to) {
-		return jb.move(st.refOfPath(from),st.refOfPath(to))
+		return st.moveFixDestination(from,to)
 	}
 	disabled(path) {
 		return st.disabled(path)
@@ -19666,25 +20061,28 @@ st.ControlTree = class {
 }
 
 st.jbEditorTree = class {
-	constructor(rootPath) {
+	constructor(rootPath,includeCompHeader) {
 		this.rootPath = rootPath;
 		this.refHandler = st.compsRefHandler;
+    this.includeCompHeader= includeCompHeader;
 	}
 	title(path, collapsed) {
 		var val = st.valOfPath(path);
-		var compName = jb.compName(val||{});
+		var compName = st.compNameOfPath(path);
+    if (path.indexOf('~') == -1)
+      compName = 'jb-component';
+    if (compName && compName.match(/case$/))
+      compName = 'case';
 		var prop = path.split('~').pop();
 		if (!isNaN(Number(prop))) // array value - title as a[i]
 			prop = path.split('~').slice(-2)
 				.map(x=>x.replace(/\$pipeline/,''))
 				.join('[') + ']';
-		// if (Array.isArray(val) && st.paramTypeOfPath(path) == 'data')
-		// 	compName = `pipeline (${val.length})`;
-		// if (Array.isArray(val) && st.paramTypeOfPath(path) == 'action')
-		// 	compName = `actions (${val.length})`;
 		var summary = '';
 		if (collapsed && typeof val == 'object')
 			summary = ': ' + st.summary(path).substr(0,20);
+    if (typeof val == 'function')
+      val = val.toString();
 
 		if (compName)
 			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
@@ -19700,6 +20098,7 @@ st.jbEditorTree = class {
 		var val = st.valOfPath(path);
 		if (!val) return [];
 		return (st.arrayChildren(path) || [])
+//        .concat((this.includeCompHeader && this.compHeader(path,val)) || [])
 				.concat(this.vars(path,val) || [])
 				.concat(this.sugarChildren(path,val) || [])
 				.concat(this.specialCases(path,val) || [])
@@ -19727,8 +20126,9 @@ st.jbEditorTree = class {
 	}
 	innerProfiles(path,val) {
 		if (this.sugarChildren(path,val)) return [];
-		return st.paramsOfPath(path)
-			.map(p=> ({ path: path + (path.indexOf('~') == -1 ? '~impl' : '') + '~' + p.id, param: p}))
+    if (!this.includeCompHeader && path.indexOf('~') == -1)
+      path = path + '~impl';
+		return st.paramsOfPath(path).map(p=> ({ path: path + '~' + p.id, param: p}))
 			.filter(e=>st.valOfPath(e.path) != null || e.param.essential)
 			.map(e=>e.path)
 	}
@@ -19746,6 +20146,13 @@ st.jbEditorTree = class {
 			return ['then','else']
 		return []
 	}
+  // compHeader(path,val) {
+	// 	if (path.indexOf('~impl') == -1 && !st.isPrimitiveValue(val) && !Array.isArray(val))
+  //     return Object.getOwnPropertyNames(val)
+  //       .filter(p=>p!='$' && p.indexOf('$jb_') != 0)
+  //       .map(p=>path+'~'+p);
+	// }
+
 }
 
 
@@ -19754,6 +20161,13 @@ Object.assign(st,{
 		st.paramsOfPath(path)
 			.filter(p=>st.valOfPath(path+'~'+p.id) == null && !p.essential)
 			.map(p=> path + '~' + p.id),
+
+  // compHeaderParams: path => {
+  //   if (path.indexOf('~') == -1)
+  //     return [
+  //   if (path.indexOf('~impl~') == -1 && path.match(/~params~[0-9]*$/))
+  //     return ['id','type','as','essential']
+  // }
 	nonControlChildren: (path,includeFeatures) =>
 		st.paramsOfPath(path).filter(p=>!st.isControlType(p.type))
 			.filter(p=>includeFeatures || p.id != 'features')
@@ -19783,6 +20197,8 @@ Object.assign(st,{
 
 	summary: path => {
 		var val = st.valOfPath(path);
+    if (path.match(/~cases~[0-9]*$/))
+      return st.summary(path+'~condition');
 		if (val == null || typeof val != 'object') return '';
 		return Object.getOwnPropertyNames(val)
 			.filter(p=> p != '$')
@@ -19800,7 +20216,7 @@ Object.assign(st,{
 			return path.split('~')[0];
 
 		var val = st.valOfPath(path);
-		return (val && typeof val.title == 'string' && val.title) || (val && val.remark) || (val && jb.compName(val)) || path.split('~').pop();
+		return (val && typeof val.title == 'string' && val.title) || (val && val.remark) || (val && st.compNameOfPath(path)) || path.split('~').pop();
 	},
 	icon: path => {
 		if (st.parentPath(path)) {
@@ -19859,11 +20275,12 @@ Object.assign(st,{
 	},
 
 	isOfType: (path,type) => {
+    if (path.indexOf('~') == -1)
+		  return st.isCompNameOfType(path,type);
 		var paramDef = st.paramDef(path);
 		if (paramDef)
 			return (paramDef.type || 'data').split(',')
 				.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length;
-		return st.isCompNameOfType(st.compNameOfPath(path),type);
 	},
 	// single first param type
 	paramTypeOfPath: path => {
@@ -19886,7 +20303,7 @@ Object.assign(st,{
 			jb.entries(st.previewjb.comps)
 				.filter(c=>
 					(c[1].type||'data').split(',').indexOf(t) != -1
-					|| (c[1].typePattern && t.match(c[1].typePattern.match))
+					|| (c[1].typePattern && t.match(c[1].typePattern))
 				)
 				.map(c=>c[0]));
 		return comp_arr.reduce((all,ar)=>all.concat(ar),[]);
@@ -19897,6 +20314,7 @@ Object.assign(st,{
 			return st.parentPath(path).split('~').pop().replace(/s$/,'');
 
 		var paramDef = st.paramDef(path);
+		if (!paramDef) return '';
 		var val = st.valOfPath(path);
 		if ((paramDef.type ||'').indexOf('[]') != -1) {
 			var length = st.arrayChildren(path).length;
@@ -19955,23 +20373,26 @@ jb.component('studio.PTs-of-type', {
 jb.component('studio.categories-of-type', {
   params: [
   	{ id: 'type', as: 'string', essential: true },
+		{ id: 'path', as: 'string' },
   ],
-  impl: (ctx,_type,marks,allCategory) => {
+  impl: (ctx,_type,path) => {
+		var val = st.valOfPath(path);
   	var comps = st.previewjb.comps;
   	var pts = st.PTsOfType(_type);
   	var categories = jb.unique([].concat.apply([],pts.map(pt=>
   		(comps[pt].category||'').split(',').map(c=>c.split(':')[0])
   			.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
-  			.filter(x=>x))))
-  			.map(c=>({
-  				name: c,
+  			.filter(x=>x).filter(c=>c!='all')
+			))).map(c=>({
+  				code: c,
   				pts: ptsOfCategory(c)
   			}));
-  	return categories.concat({name: 'all', pts: pts });
+  	var res = categories.concat({code: 'all', pts: ptsOfCategory('all') });
+		return res;
 
   	function ptsOfCategory(category) {
       var pts_with_marks = pts.filter(pt=>
-      		pt.split('.')[0] == category ||
+      		category == 'all' || pt.split('.')[0] == category ||
       		(comps[pt].category||'').split(',').map(x=>x.split(':')[0]).indexOf(category) != -1)
       	.map(pt=>({
 	      	pt: pt,
@@ -19985,8 +20406,9 @@ jb.component('studio.categories-of-type', {
       		return x;
       	})
       	.filter(x=>x.mark != 0);
-	  pts_with_marks.sort((c1,c2)=>c2.mark-c1.mark);
-	  return pts_with_marks.map(pt=>pt.pt)
+	  	pts_with_marks.sort((c1,c2)=>c2.mark-c1.mark);
+	  	var out = pts_with_marks.map(pt=>pt.pt);
+			return out;
   	}
   }
 })
@@ -20065,7 +20487,7 @@ jb.component('studio.comp-name-ref', {
 				if (typeof value == 'undefined')
 					return st.compNameOfPath(path);
 				else
-					st.setComp(path,value)
+					st.setComp(path,value,ctx)
 			},
 			$jb_observable: cmp =>
 				st.refObservable(st.refOfPath(path),cmp,{includeChildren: true})
@@ -20076,23 +20498,45 @@ jb.component('studio.profile-as-text', {
 	type: 'data',
 	params: [{ id: 'path', as: 'string', dynamic: true } ],
 	impl: ctx => ({
-			$jb_val: function(value) {
-				var path = ctx.params.path();
-				if (!path) return '';
-				if (typeof value == 'undefined') {
-					var val = st.valOfPath(path);
-					if (st.isPrimitiveValue(val))
-						return ''+val;
-					return st.prettyPrint(val || '');
-				} else {
-					var newVal = value.match(/^\s*(\(|{|\[)/) ? st.evalProfile(value) : value;
-					if (newVal != null)
-						st.writeValueOfPath(path, newVal);
-				}
-			},
-			$jb_observable: cmp =>
-				st.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
-		})
+		$jb_val: function(value) {
+			var path = ctx.params.path();
+			if (!path) return '';
+			if (typeof value == 'undefined') {
+      	var val = st.valOfPath(path);
+      	if (typeof val == 'function')
+            return val.toString();
+
+      	if (st.isPrimitiveValue(val))
+      		return ''+val;
+      	return st.prettyPrint(val || '');
+      } else {
+      	var notPrimitive = value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
+      	var newVal = notPrimitive ? st.evalProfile(value) : value;
+      	if (newVal != null)
+      		st.writeValueOfPath(path, newVal,ctx);
+      }
+		},
+		$jb_observable: cmp =>
+			st.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+	})
+})
+
+jb.component('studio.profile-as-string-byref', {
+	type: 'data',
+	params: [{ id: 'path', as: 'string', dynamic: true } ],
+	impl: ctx => ({
+		$jb_val: function(value) {
+			var path = ctx.params.path();
+			if (!path) return '';
+			if (typeof value == 'undefined') {
+				return st.valOfPath(path) || '';
+			} else {
+				st.writeValueOfPath(path, value,ctx);
+			}
+		},
+		$jb_observable: cmp =>
+			st.refObservable(st.refOfPath(ctx.params.path()),cmp)
+	})
 })
 
 jb.component('studio.profile-value-as-text', {
@@ -20110,7 +20554,7 @@ jb.component('studio.profile-value-as-text', {
             return '=' + st.compNameOfPath(path);
         }
         else if (value.indexOf('=') != 0)
-          st.writeValueOfPath(path, value);
+          st.writeValueOfPath(path, value,ctx);
       }
     })
 })
@@ -20122,7 +20566,7 @@ jb.component('studio.insert-control',{
 		{ id: 'comp', as: 'string' },
 	],
 	impl: (ctx,path,comp,type) =>
-		st.insertControl(path, comp)
+		st.insertControl(path, comp,ctx)
 })
 
 jb.component('studio.wrap', {
@@ -20132,35 +20576,35 @@ jb.component('studio.wrap', {
 		{ id: 'comp', as: 'string' }
 	],
 	impl: (ctx,path,comp) =>
-		st.wrap(path,comp)
+		st.wrap(path,comp,ctx)
 })
 
 jb.component('studio.wrap-with-group', {
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		st.wrapWithGroup(path)
+		st.wrapWithGroup(path,ctx)
 })
 
 jb.component('studio.add-property', {
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		st.addProperty(path)
+		st.addProperty(path,ctx)
 })
 
 jb.component('studio.duplicate-control',{
 	type: 'action',
 	params: [ { id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		st.duplicateControl(path)
+		st.duplicateControl(path,ctx)
 })
 
 jb.component('studio.duplicate-array-item',{
 	type: 'action',
 	params: [ { id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		st.duplicateArrayItem(path)
+		st.duplicateArrayItem(path,ctx)
 })
 
 // jb.component('studio.move-in-array',{
@@ -20177,7 +20621,7 @@ jb.component('studio.new-array-item', {
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		st.addArrayItem(path)
+		st.addArrayItem(path,ctx)
 })
 
 jb.component('studio.add-array-item',{
@@ -20187,7 +20631,7 @@ jb.component('studio.add-array-item',{
 		{id: 'toAdd', as: 'single' }
 	],
 	impl: (ctx,path,toAdd) =>
-		st.addArrayItem(path, toAdd)
+		st.addArrayItem(path, toAdd,ctx)
 })
 
 jb.component('studio.wrap-with-array',{
@@ -20196,7 +20640,7 @@ jb.component('studio.wrap-with-array',{
 		{id: 'path', as: 'string' },
 	],
 	impl: (ctx,path,toAdd) =>
-		st.wrapWithArray(path)
+		st.wrapWithArray(path,ctx)
 })
 
 jb.component('studio.can-wrap-with-array', {
@@ -20221,96 +20665,38 @@ jb.component('studio.set-comp',{
 		{id: 'comp', as: 'single' }
 	],
 	impl: (ctx,path,comp) =>
-		st.setComp(path, comp)
+		st.setComp(path, comp,ctx)
 })
 
 jb.component('studio.delete',{
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st._delete(path)
+	impl: (ctx,path) => st._delete(path,ctx)
 })
 
 jb.component('studio.disabled',{
 	type: 'boolean',
 	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.disabled(path)
+	impl: (ctx,path) => st.disabled(path,ctx)
 })
 
 jb.component('studio.toggle-disabled',{
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.toggleDisabled(path)
+	impl: (ctx,path) => st.toggleDisabled(path,ctx)
 })
 
 jb.component('studio.make-local',{
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.makeLocal(path)
-})
-
-jb.component('studio.components-cross-ref',{
-	type: 'data',
-	impl: ctx => {
-	  var _jb = st.previewjb;
-	  st.scriptChange.subscribe(_=>_jb.statistics = null);
-	  if (_jb.statistics) return _jb.statistics;
-
-	  var refs = {}, comps = _jb.comps;
-
-      Object.getOwnPropertyNames(comps).forEach(k=>
-      	refs[k] = {
-      		refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
-      		by: []
-      });
-      Object.getOwnPropertyNames(comps).forEach(k=>
-      	refs[k].refs.forEach(cross=>
-      		refs[cross] && refs[cross].by.push(k))
-      );
-
-      return _jb.statistics = jb.entries(comps).map(e=>({
-          	id: e[0],
-          	refs: refs[e[0]].refs,
-          	referredBy: refs[e[0]].by,
-          	type: e[1].type || 'data',
-          	implType: typeof e[1].impl,
-          	refCount: refs[e[0]].by.length
-          	//text: jb_prettyPrintComp(comps[k]),
-          	//size: jb_prettyPrintComp(e[0],e[1]).length
-          }));
-
-
-      function calcRefs(profile) {
-      	if (typeof profile != 'object') return [];
-      	return Object.getOwnPropertyNames(profile).reduce((res,prop)=>
-      		res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
-      }
-	}
-})
-
-jb.component('studio.references',{
-	type: 'data',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => {
-	  if (path.indexOf('~') != -1) return [];
-
-      return jb.entries(st.previewjb.comps)
-      	.filter(e=>
-      		isRef(e[1].impl))
-      	.map(e=>e[0]).slice(0,10);
-
-      function isRef(profile) {
-      	if (profile && typeof profile == 'object')
-	      	return profile.$ == path || Object.getOwnPropertyNames(profile).reduce((res,prop)=>
-	      		res || isRef(profile[prop]),false)
-      }
-	}
+	impl: (ctx,path) => st.makeLocal(path,ctx)
 })
 
 jb.component('studio.jb-editor.nodes', {
 	type: 'tree.nodeModel',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		  new st.jbEditorTree(path)
+		  new st.jbEditorTree(path,true)
 })
 
 jb.component('studio.icon-of-type', {
@@ -20428,7 +20814,7 @@ jb.component('studio.tree-menu', {
       {$: 'studio.goto-editor-options', path: '%$path%' },
       {$: 'menu.separator' },
       {$: 'menu.end-with-separator',
-        options :{$: 'studio.goto-references',
+        options :{$: 'studio.goto-references-options',
           path: '%$path%',
           action: [
             {$: 'write-value', to: '%$studio/profile_path%', value: '%%' },
@@ -20606,7 +20992,7 @@ jb.component('dialog.studio-floating', {
 						box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
 				}
 				>.dialog-title { background: none; padding: 10px 5px; }
-				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; max-height1: 500px }
+				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }
 				>.dialog-close {
 						position: absolute;
 						cursor: pointer;
@@ -20844,6 +21230,7 @@ jb.component('studio.properties', {
         ],
         features: [
           {$: 'group.dynamic-titles' },
+          {$: 'studio.watch-path', path: '%$path%~features' },
           {$: 'hidden',
             showCondition :{$: 'studio.has-param',
               remark: 'not a control',
@@ -21102,36 +21489,20 @@ jb.component('studio.property-tgp', {
   type: 'control',
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'group',
-    // title :{$: 'studio.prop-name', path: '%$path%' },
     controls: [
       {$: 'group',
         title: 'header',
         style :{$: 'layout.horizontal', spacing: '0' },
         controls: [
           {$: 'editable-boolean',
-            databind: '%$expanded%',
+            databind: '%$userExpanded%',
             style :{$: 'editable-boolean.expand-collapse' },
             features: [
               {$: 'studio.watch-path', path: '%$path%', includeChildren: true },
               {$: 'css',
                 css: '{ position: absolute; margin-left: -20px; margin-top: 5px }'
               },
-              {$: 'hidden',
-                showCondition :{
-                  $and: [
-                    {
-                      $notEmpty :{$: 'studio.non-control-children', path: '%$path%' }
-                    },
-                    {
-                      $notEmpty :{$: 'studio.val', path: '%$path%' }
-                    },
-                    {$: 'not-equals',
-                      item1 :{$: 'studio.comp-name', path: '%$path%' },
-                      item2: 'custom-style'
-                    }
-                  ]
-                }
-              }
+              {$: 'hidden',  showCondition :{$: 'studio.properties-expanded-relevant', path: '%$path%' } },
             ]
           },
           {$: 'group',
@@ -21146,49 +21517,44 @@ jb.component('studio.property-tgp', {
         controls :{$: 'studio.properties-in-tgp', path: '%$path%' },
         features: [
           {$: 'studio.watch-path', path: '%$path%' },
-          {$: 'watch-ref', ref: '%$expanded%',  },
-          {$: 'hidden',
-            showCondition :{
-              $and: [
-                '%$expanded%',
-                {
-                  $notEmpty :{$: 'studio.non-control-children', path: '%$path%' }
-                },
-                {
-                  $notEmpty :{$: 'studio.val', path: '%$path%' }
-                },
-                {$: 'not-equals',
-                  item1 :{$: 'studio.comp-name', path: '%$path%' },
-                  item2: 'custom-style'
-                }
-              ]
-            }
-          },
+          {$: 'watch-ref', ref: '%$userExpanded%'  },
+          {$: 'feature.if', showCondition :{$: 'studio.properties-show-expanded', path: '%$path%' } },
           {$: 'css',
             css: '{ margin-top: 9px; margin-left: -83px; margin-bottom: 4px;}'
           },
-          {$: 'bind-refs',
-            watchRef: '%$path%',
-            updateRef: '%$expanded%',
-            value :{
-              $or: [
-                '%$expanded%',
-                {$: 'studio.is-new', path: '%$path%' }
-              ]
-            }
-          }
         ]
       }
     ],
     features: [
-//      {$: 'studio.property-toolbar-feature', path: '%$path%' },
-      {$: 'var',
-        name: 'expanded',
-        value :{$: 'studio.is-new', path: '%$path%' },
-        mutable: true
-      }
+      {$: 'var', name: 'userExpanded', value : false, mutable: true },
     ]
   }
+})
+
+jb.component('studio.properties-expanded-relevant', {
+	type: 'boolean',
+	params: [{ id: 'path', as: 'string', essential: true }],
+	impl:{ $and: [
+		{
+			$notEmpty :{$: 'studio.non-control-children', path: '%$path%' }
+		},
+		{
+			$notEmpty :{$: 'studio.val', path: '%$path%' }
+		},
+		{$: 'not-equals',
+			item1 :{$: 'studio.comp-name', path: '%$path%' },
+			item2: 'custom-style'
+		}
+	]}
+})
+
+jb.component('studio.properties-show-expanded', {
+	type: 'boolean',
+	params: [{ id: 'path', as: 'string', essential: true }],
+	impl:{ $and: [
+		{$: 'studio.properties-expanded-relevant', path: '%$path%'},
+		{ $or: [ {$: 'studio.is-new', path: '%$path%' },	'%$userExpanded%' ] },
+	]}
 })
 
 jb.component('studio.property-tgp-in-array', {
@@ -21313,9 +21679,8 @@ jb.component('studio.pick', {
 		{ id: 'onSelect', type:'action', dynamic:true }
 	],
 	impl :{$: 'open-dialog',
-		$vars: {
-			pickSelection: { path: '' }
-		},
+		$vars: { pickSelection: ctx =>
+      ctx.vars.pickSelection || {} },
 		style: {$: 'dialog.studio-pick-dialog', from: '%$from%'},
 		content: {$: 'label', title: ''}, // dummy
 		onOK: ctx =>
@@ -21376,7 +21741,7 @@ jb.component('dialog-feature.studio-pick', {
 	  disableChangeDetection: true,
       init: cmp=> {
 		  var _window = ctx.params.from == 'preview' ? st.previewWindow : window;
-		  var previewOffset = ctx.params.from == 'preview' ? $('#jb-preview').offset().top : 0;
+		  var previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
 		  cmp.titleBelow = false;
 
 		  var mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
@@ -21407,8 +21772,10 @@ jb.component('dialog-feature.studio-pick', {
 		  	.last()
 		  	.subscribe(x=> {
 		  		ctx.vars.$dialog.close({OK:true});
-		  		jb.delay(200).then(_=>
-		  			st.previewWindow && st.previewWindow.getSelection() && st.previewWindow.getSelection().empty())
+		  		jb.delay(200).then(_=> {
+            if (st.previewWindow && st.previewWindow.getSelection())
+              st.previewWindow.getSelection().innerHTML = ''
+            })
 		  	})
 		}
 	})
@@ -21416,7 +21783,7 @@ jb.component('dialog-feature.studio-pick', {
 
 function pathFromElem(_window,profElem) {
 	try {
-		return _window.jb.ctxDictionary[profElem.attr('jb-ctx') || profElem.parent().attr('jb-ctx')].path;
+		return _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx') || profElem.parentElement.getAttribute('jb-ctx')].path;
 	} catch (e) {
 		return '';
 	}
@@ -21425,60 +21792,62 @@ function pathFromElem(_window,profElem) {
 
 function eventToProfile(e,_window) {
 	var mousePos = {
-		x: e.pageX - $(_window).scrollLeft(), y: e.pageY - $(_window).scrollTop()
+		x: e.pageX - document.body.scrollLeft, y: e.pageY - - document.body.scrollTop
 	};
-	var $el = $(_window.document.elementFromPoint(mousePos.x, mousePos.y));
-	if (!$el[0]) return;
-	var results = Array.from($($el.get().concat($el.parents().get()))
+	var el = _window.document.elementFromPoint(mousePos.x, mousePos.y);
+	if (!el) return;
+	var results = Array.from([el].concat(jb.ui.parents(el))
 		.filter((i,e) =>
-			$(e).attr('jb-ctx') ));
+			e.getAttribute('jb-ctx') ));
 	if (results.length == 0) return [];
 
 	// promote parents if the mouse is near the edge
 	var first_result = results.shift(); // shift also removes first item from results!
-	var edgeY = Math.max(3,Math.floor($(first_result).height() / 10));
-	var edgeX = Math.max(3,Math.floor($(first_result).width() / 10));
+	var edgeY = Math.max(3,Math.floor(jb.ui.outerHeight(first_result) / 10));
+	var edgeX = Math.max(3,Math.floor(jb.ui.outerWidth(first_result) / 10));
 
 	var orderedResults = results.filter(elem=>{
-		return Math.abs(mousePos.y - $(elem).offset().top) < edgeY || Math.abs(mousePos.x - $(elem).offset().left) < edgeX;
+		return Math.abs(mousePos.y - jb.ui.offset(elem).top) < edgeY || Math.abs(mousePos.x - jb.ui.offset(elem).left) < edgeX;
 	}).concat([first_result]);
-	return $(orderedResults[0]);
+	return orderedResults[0];
 }
 
 function showBox(cmp,profElem,_window,previewOffset) {
-	if (profElem.offset() == null || $('#jb-preview').offset() == null)
+  var profElem_offset = jb.ui.offset(profElem);
+	if (profElem_offset == null || jb.ui.offset(document.querySelector('#jb-preview')) == null)
 		return;
 
 	cmp.setState({
-		top: previewOffset + profElem.offset().top,
-		left: profElem.offset().left,
-		width: profElem.outerWidth() == $(_window.document.body).width() ? profElem.outerWidth() -10 : cmp.width = profElem.outerWidth(),
-		height: profElem.outerHeight(),
+		top: previewOffset + profElem_offset.top,
+		left: profElem_offset.left,
+		width: jb.ui.outerWidth(profElem) == jb.ui.outerWidth(_window.document.body) ? jb.ui.outerWidth(profElem) -10 : cmp.width = jb.ui.outerWidth(profElem),
+		height: jb.ui.outerHeight(profElem),
 		title: st.shortTitle(pathFromElem(_window,profElem)),
-		titleTop: previewOffset + profElem.offset().top - 20,
-		titleLeft: profElem.offset().left
+		titleTop: previewOffset + profElem_offset.top - 20,
+		titleLeft: profElem_offset.left
 	});
 }
 
-function highlight(elems,_window) {
-	var boxes = [];
-	elems.map(el=>$(el))
-		.forEach($el => {
-			var $box = $('<div class="jbstudio_highlight_in_preview"/>');
-			$box.css({ position: 'absolute', background: 'rgb(193, 224, 228)', border: '1px solid blue', opacity: '1', zIndex: 5000 }); // cannot assume css class in preview window
-			var offset = $el.offset();
-			$box.css('left',offset.left).css('top',offset.top).width($el.outerWidth()).height($el.outerHeight());
-			if ($box.width() == $(_window.document.body).width())
-				$box.width($box.width()-10);
-			boxes.push($box[0]);
-	})
+jb.studio.getOrCreateHighlightBox = function() {
+  var _window = st.previewWindow || window;
+  if (!_window.document.querySelector('#preview-box')) {
+    var elem = _window.document.createElement('div');
+    elem.setAttribute('id','preview-box');
+    !_window.document.appendChild(elem);
+  }
+  return _window.document.querySelector('#preview-box');
+}
 
-	$(_window.document.body).append($(boxes));
-
-	$(boxes).css({ opacity: 0.5 }).
-		fadeTo(500,0,function() {
-			$(boxes).remove();
-		});
+jb.studio.highlight = function(elems) {
+	//var boxes = [];
+	var html = elems.forEach(el => {
+			var offset = jb.ui.offset(el);
+			var width = jb.ui.outerWidth(el);
+      if (width == jb.ui.outerWidth(document.body)) width -= 10;
+      return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="width: ${width}; left: ${offset.left};top: ${offset.top}; width: ${width}; height: ${jb.ui.outerHeight(el)}"/>`
+	}).join('');
+  jb.studio.getOrCreateHighlightBox().innerHTML = html;
+  jb.delay(1000).then(_=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
 }
 
 jb.component('studio.highlight-in-preview',{
@@ -21503,7 +21872,7 @@ jb.component('studio.highlight-in-preview',{
 				return _ctx && _ctx.path == path
 			})
 
-		highlight(elems,_window);
+		jb.studio.highlight(elems);
   }
 })
 
@@ -21514,7 +21883,7 @@ st.closestCtxInPreview = path => {
 	var elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
 	for(var i=0;i<elems.length;i++) {
 		var _ctx = _window.jb.ctxDictionary[elems[i].getAttribute('jb-ctx')];
-		if (!_ctx || !st.isOfType(_ctx.path,'control')) continue;
+		if (!_ctx) continue; //  || !st.isOfType(_ctx.path,'control'))
 		if (_ctx.path == path)
 			return {ctx: _ctx, elem: elems[i]} ;
 		if (path.indexOf(_ctx.path) == 0 && (!closest || closest.path.length < _ctx.path.length)) {
@@ -21572,21 +21941,12 @@ jb.component('studio.open-property-menu', {
   type: 'action',
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'menu.open-context-menu',
-    $vars: {
-      compName :{$: 'studio.comp-name', path: '%$path%' }
-    },
     menu :{$: 'menu.menu',
+		$vars: {
+	      compName :{$: 'studio.comp-name', path: '%$path%' }
+	    },
       options: [
-        {$: 'menu.action',
-          title: 'Style editor',
-          action :{
-            $runActions: [
-              {$: 'studio.make-local', path: '%$path%' },
-              {$: 'studio.open-style-editor', path: '%$path%' }
-            ]
-          },
-          showCondition :{$: 'ends-with', endsWith: '~style', text: '%$path%' }
-        },
+        {$: 'studio.style-editor-options', path: '%$path%' },
         {$: 'menu.action',
           title: 'multiline edit',
           action :{$: 'studio.open-multiline-edit', path: '%$path%' },
@@ -21609,7 +21969,7 @@ jb.component('studio.open-property-menu', {
           title: 'Javascript editor',
           action :{$: 'studio.edit-source', path: '%$path%' },
           icon: 'code'
-        }, 
+        },
         {$: 'studio.goto-editor-options', path: '%$path%' },
         {$: 'menu.action',
           title: 'Delete',
@@ -21637,7 +21997,7 @@ jb.component('studio.open-property-menu', {
 var st = jb.studio;
 
 jb.component('studio.save-components', {
-	type: 'action',
+	type: 'action,has-side-effects',
 	params: [
 		{ id: 'force',as: 'boolean', type: 'boolean' }
 	],
@@ -21741,7 +22101,7 @@ jb.component('studio.choose-project', {
 
 
 jb.component('studio.new-project', {
-	type: 'action',
+	type: 'action,has-side-effects',
 	params: [
 		{ id: 'name',as: 'string' },
     { id: 'onSuccess', type: 'action', dynamic: true }
@@ -21822,6 +22182,304 @@ jb.component('studio.open-new-project', {
 })
 ;
 
+jb.component('studio.components-cross-ref',{
+	type: 'data',
+	impl: ctx => {
+	  var _jb = jb.studio.previewjb;
+	  jb.studio.scriptChange.subscribe(_=>_jb.statistics = null);
+	  if (_jb.statistics) return _jb.statistics;
+
+	  var refs = {}, comps = _jb.comps;
+
+      Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
+      	refs[k] = {
+      		refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
+      		by: []
+      });
+      Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
+      	refs[k].refs.forEach(cross=>
+      		refs[cross] && refs[cross].by.push(k))
+      );
+
+      return _jb.statistics = jb.entries(comps).map(e=>({
+          	id: e[0],
+          	refs: refs[e[0]].refs,
+          	referredBy: refs[e[0]].by,
+          	type: e[1].type || 'data',
+          	implType: typeof e[1].impl,
+          	refCount: refs[e[0]].by.length
+          	//text: jb_prettyPrintComp(comps[k]),
+          	//size: jb_prettyPrintComp(e[0],e[1]).length
+          }));
+
+
+      function calcRefs(profile) {
+      	if (profile == null || typeof profile != 'object') return [];
+      	return Object.getOwnPropertyNames(profile).reduce((res,prop)=>
+      		res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
+      }
+	}
+})
+
+jb.component('studio.references', {
+	type: 'data',
+	params: [ {id: 'path', as: 'string' } ],
+	impl: (ctx,path) => {
+	  if (path.indexOf('~') != -1) return [];
+
+    //debugger;refs(jb.studio.previewjb.comps['test.referer1']);
+
+    var res = jb.entries(jb.studio.previewjb.comps)
+    	.map(e=>({id: e[0], refs: refs(e[1].impl).map(obj=> e[0]+'~impl~'+ jb.studio.compsRefHandler.pathOfObject(obj,e[1].impl).join('~') ) }))
+      .filter(e=>e.refs.length > 0)
+    return res;
+
+    function refs(profile) {
+    	if (profile && typeof profile == 'object') {
+        var subResult = Object.getOwnPropertyNames(profile).reduce((res,prop)=>
+      		res.concat(refs(profile[prop])) ,[]);
+      	return (profile.$ == path ? [profile] : []).concat(subResult);
+      }
+      return [];
+    }
+	}
+})
+
+jb.component('studio.goto-references-button', {
+  type: 'control',
+  params: [
+    { id: 'path', as: 'string'},
+  ],
+  impl :{$: 'control-with-condition',
+        $vars: {
+          refs :{$: 'studio.references', path: '%$path%' },
+          noOfReferences: ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0),
+        },
+        condition: '%$refs/length%',
+        control :{$: 'button',
+            title: '%$noOfReferences% references',
+            action :{$: 'menu.open-context-menu',
+              menu :{$: 'menu.menu', options :{$: 'studio.goto-references-options', path: '%$path%', refs: '%$refs%' } },
+            }
+        },
+      },
+})
+
+jb.component('studio.goto-references-menu', {
+  type: 'menu.option',
+  params: [
+    { id: 'path', as: 'string'},
+  ],
+  impl :{$if: '%$noOfReferences% > 0',
+    $vars: {
+      refs :{$: 'studio.references', path: '%$path%' },
+      noOfReferences: ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0),
+    },
+    then: {$: 'menu.menu',
+      title: '%$noOfReferences% references for %$path%',
+      options :{$: 'studio.goto-references-options', path: '%$path%', refs: '%$refs%' } ,
+    },
+    else: {$: 'menu.action', title: 'no references for %$path%'}
+  }
+})
+
+jb.component('studio.goto-references-options', {
+  type: 'menu.option',
+  params: [
+    { id: 'path', as: 'string'},
+    { id: 'refs', as: 'array' },
+  ],
+  impl :{$: 'menu.dynamic-options',
+        items : '%$refs%',
+        genericOption :{$if: '%refs/length% > 1',
+          then:{$: 'menu.menu',
+            title: '%id% (%refs/length%)',
+            options:{$: 'menu.dynamic-options',
+              items : '%$menuData/refs%',
+              genericOption :{$: 'menu.action',
+                title: '%%',
+                action :{$: 'studio.open-component-in-jb-editor', path: '%%', fromPath: '%$path%' }
+              }
+            }
+          },
+          else: {$: 'menu.action',
+            $vars: { compName :{$: 'split', separator: '~', text: '%refs[0]%', part: 'first' } },
+            title: '%$compName%',
+            action :{$: 'studio.open-component-in-jb-editor', path: '%refs[0]%', fromPath: '%$path%' }
+          },
+        }
+      }
+})
+;
+
+jb.component('jb-component', {
+  type: '*',
+  params: [
+    { id: 'type', as: 'string', essential: true },
+    { id: 'category', as: 'string'},
+    { id: 'description', as: 'string'},
+    { id: 'params', type: 'jb-param[]'},
+    { id: 'impl', dynamicType: '%type%', essential: true  },
+  ],
+  impl: ctx => ctx.params
+})
+
+jb.component('jb-param', {
+  type: 'jb-param', singleInType: true,
+  params: [
+    { id: 'id', as: 'string', essential: true },
+    { id: 'type', as: 'string'},
+    { id: 'description', as: 'string'},
+    { id: 'as', as: 'string', options: 'string,number,boolean,ref,single,array'},
+    { id: 'dynamic', type: 'boolean', as: 'boolean'},
+    { id: 'essential', type: 'boolean', as: 'boolean'},
+    { id: 'composite', type: 'boolean', as: 'boolean'},
+    { id: 'singleInType', type: 'boolean', as: 'boolean'},
+    { id: 'defaultValue', dynamicType: '%type%' },
+  ],
+  impl: ctx => ctx.params
+})
+
+jb.component('studio.component-header', {
+  type: 'control',
+  params: [{ id: 'component', as: 'string' }],
+  impl :{$: 'group',
+    controls: [
+      {$: 'label',
+        title: '%$component%',
+        style :{$: 'label.heading', level: 'h5' }
+      },
+      {$: 'group',
+        title: 'type',
+        style :{$: 'layout.horizontal',
+          vSpacing: 20,
+          hSpacing: 20,
+          titleWidth: 100,
+          spacing: '20'
+        },
+        controls: [
+          {$: 'editable-text',
+            title: 'type',
+            databind: '%type%',
+            style :{$: 'editable-text.mdl-input', width: '100' }
+          },
+          {$: 'editable-text',
+            title: 'category',
+            databind: '%category%',
+            style :{$: 'editable-text.mdl-input', width: '250' }
+          }
+        ]
+      },
+      {$: 'group',
+        title: 'params',
+        controls: [
+          {$: 'table',
+            items: '%params%',
+            fields: [
+              {$: 'field.control',
+                title: '',
+                control :{$: 'material-icon',
+                  icon: 'home',
+                  style :{$: 'icon.material' },
+                  features :{$: 'itemlist.drag-handle' }
+                },
+                width: '60'
+              },
+              {$: 'field.control',
+                title: 'id',
+                control :{$: 'editable-text',
+                  icon: 'person',
+                  title: 'id',
+                  databind :{$: 'studio.ref',
+                    path :{
+                      $pipeline: [
+                        ctx => Number(ctx.vars.itemlistCntr.items.indexOf(ctx.data)).toString(),
+                        '%$component%~params~%%~id'
+                      ]
+                    }
+                  },
+                  style :{$: 'editable-text.mdl-input-no-floating-label',
+                    width: '101'
+                  }
+                }
+              },
+              {$: 'field.control',
+                title: 'type',
+                control :{$: 'editable-text',
+                  icon: 'person',
+                  title: 'type',
+                  databind :{$: 'studio.ref',
+                    path :{
+                      $pipeline: [
+                        ctx => Number(ctx.vars.itemlistCntr.items.indexOf(ctx.data)).toString(),
+                        '%$component%~params~%%~type'
+                      ]
+                    }
+                  },
+                  style :{$: 'editable-text.mdl-input-no-floating-label',
+                    width: '100'
+                  }
+                }
+              },
+              {$: 'field.control',
+                title: 'as',
+                control :{$: 'editable-text',
+                  icon: 'person',
+                  title: 'as',
+                  databind: '%as%',
+                  style :{$: 'editable-text.mdl-input-no-floating-label',
+                    width: '100'
+                  }
+                }
+              },
+              {$: 'field.control',
+                title: 'dynamic',
+                control :{$: 'editable-boolean',
+                  icon: 'person',
+                  databind: '%dynamic%',
+                  style :{$: 'editable-boolean.checkbox', width: '150' },
+                  title: 'as',
+                  textForTrue: 'yes',
+                  textForFalse: 'no'
+                }
+              },
+              {$: 'field.control',
+                title: '',
+                control :{$: 'button',
+                  icon: 'delete',
+                  title: 'delete',
+                  action :{$: 'itemlist-container.delete', item: '%%' },
+                  style :{$: 'button.x', size: '21' },
+                  features :{$: 'itemlist.shown-only-on-item-hover' }
+                },
+                width: '60'
+              }
+            ],
+            style :{$: 'table.mdl',
+              classForTable: 'mdl-data-table mdl-shadow--2dp',
+              classForTd: 'mdl-data-table__cell--non-numeric'
+            },
+            watchItems: 'true',
+            features: [{$: 'itemlist.drag-and-drop' }]
+          },
+          {$: 'button',
+            title: 'add',
+            action :{$: 'itemlist-container.add' },
+            style :{$: 'button.mdl-raised' }
+          }
+        ],
+        features :{$: 'group.itemlist-container',
+          defaultItem :{$: 'object' }
+        }
+      }
+    ],
+    features :{$: 'group.data',
+      data :{$: 'studio.ref', path: '%$component%' }
+    }
+  }
+})
+;
+
 (function() {
   var st = jb.studio;
 
@@ -21859,7 +22517,7 @@ jb.component('studio.suggestions-itemlist', {
       },
       {$: 'css.border', width: '1', color: '#cdcdcd' },
       {$: 'css.padding', top: '2', left: '3', selector: 'li' },
-      {$: 'hidden', showCondition :{ $notEmpty: '%$suggestionData/options%' } },
+      {$: 'feature.if', showCondition :{ $notEmpty: '%$suggestionData/options%' } },
     ]
   }
 })
@@ -21957,37 +22615,59 @@ jb.component('studio.property-primitive', {
   }
 })
 
-jb.component('studio.jb-floating-input', {
+jb.component('studio.jb-floating-input-rich', {
   type: 'control',
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'group',
-     controls:{$: 'editable-text',
-        title :{$: 'studio.prop-name', path: '%$path%' },
-        databind :{$: 'studio.profile-value-as-text', path: '%$path%' },
-        updateOnBlur: true,
-        style :{$: 'editable-text.jb-editor-floating-input'},
+    controls: {$: 'studio.property-field', path: '%$path%'},
+    features :{$: 'css', css: '{padding: 20px}' }
+  }
+})
+
+jb.component('studio.jb-floating-input', {
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'group', 
+    controls: [
+      {$: 'editable-text', 
+        title :{$: 'studio.prop-name', path: '%$path%' }, 
+        databind :{$: 'studio.profile-value-as-text', path: '%$path%' }, 
+        updateOnBlur: true, 
+        style :{$: 'editable-text.jb-editor-floating-input' }, 
         features: [
-          {$: 'var',
-            name: 'suggestionData',
-            value :{$: 'object', selected: '', options: [], path: '%$path%' },
+          {$: 'var', 
+            name: 'suggestionData', 
+            value :{$: 'object', selected: '', options: [], path: '%$path%' }, 
             mutable: true
-          },
-//          {$: 'studio.undo-support', path: '%$path%' },
-          {$: 'editable-text.helper-popup',
-            showHelper :{$: 'studio.show-suggestions' },
-            features :{$: 'dialog-feature.near-launcher-position' },
-            control :{$: 'studio.suggestions-itemlist', path: '%$path%' },
-            popupId: 'suggestions',
-            popupStyle :{$: 'dialog.popup' }
-          },
-        ],
-      },
-      features :[
-        {$: 'css.padding', left: '4', right: '4' },
-        {$: 'feature.onEnter', action: { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } },
-        {$: 'feature.onEsc', action: { $: 'dialog.close-dialog', id: 'studio-jb-editor-popup' } },
-      ],
-    }
+          }, 
+          {$: 'editable-text.helper-popup', 
+            features :{$: 'dialog-feature.near-launcher-position' }, 
+            control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
+            popupId: 'suggestions', 
+            popupStyle :{$: 'dialog.popup' }, 
+            showHelper :{$: 'studio.show-suggestions' }, 
+            onEnter: [
+              {$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' }, 
+              {$: 'tree.regain-focus' }
+            ], 
+            onEsc: [
+              {$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' }, 
+              {$: 'tree.regain-focus' }
+            ]
+          }
+        ]
+      }, 
+      {$: 'label', 
+        title :{
+          $pipeline: [{$: 'studio.param-def', path: '%$path%' }, '%description%']
+        }
+      }
+    ], 
+    features: [
+      {$: 'css.padding', left: '4', right: '4' }, 
+      {$: 'css.margin', top: '-20', selector: '>*:last-child' }
+    ]
+  }
 })
 
 jb.component('studio.paste-suggestion', {
@@ -22145,7 +22825,8 @@ st.compsHistory = [];
 st.undoIndex = 0;
 
 function setToVersion(versionIndex,ctx,after) {
-	var version = st.compsHistory[versionIndex];
+		var version = st.compsHistory[versionIndex];
+		if (!version) debugger;
     var opEvent = Object.assign({},version.opEvent);
     opEvent.oldVal = version.opEvent.newVal;
     opEvent.newVal = version.opEvent.oldVal;
@@ -22163,23 +22844,36 @@ function setToVersion(versionIndex,ctx,after) {
 }
 
 jb.component('studio.undo', {
+	type: 'action',
 	impl: ctx => {
 		if (st.undoIndex > 0)
 			setToVersion(--st.undoIndex,ctx)
 	}
 })
 
+jb.component('studio.clean-selection-preview', {
+	type: 'action',
+	impl: (ctx) => {
+		if (st.compsHistory.length > 0)
+			st.previewjb.comps = st.compsHistory.slice(-1)[0].after;
+	}
+})
+
 jb.component('studio.revert', {
+	type: 'action',
 	params: [
 		{ id: 'toIndex', as: 'number' }
 	],
 	impl: (ctx,toIndex) => {
+		if (st.compsHistory.length == 0 || toIndex < 0) return;
 		st.undoIndex = toIndex;
+		st.compsHistory = st.compsHistory.slice(0,toIndex+1);
 		setToVersion(st.undoIndex,ctx)
 	}
 })
 
 jb.component('studio.redo', {
+	type: 'action',
 	impl: ctx => {
 		if (st.undoIndex < st.compsHistory.length)
 			setToVersion(st.undoIndex++,ctx,true)
@@ -22187,91 +22881,96 @@ jb.component('studio.redo', {
 })
 
 jb.component('studio.copy', {
+	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => 
+	impl: (ctx,path) =>
 		st.clipboard = st.valOfPath(path)
 })
 
 jb.component('studio.paste', {
+	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
 		(st.clipboard != null) && jb.writeValue(st.refOfPath(path),st.clipboard,ctx)
 })
 
 jb.component('studio.script-history-items', {
-	type: 'data',
 	impl: ctx => st.compsHistory
 })
 
+jb.component('studio.comps-undo-index', {
+	impl: ctx => st.undoIndex-1
+})
+
 jb.component('studio.open-script-history', {
-  type: 'action', 
-  impl :{$: 'open-dialog', 
-      content :{$: 'studio.script-history' }, 
-      style :{$: 'dialog.studio-floating', 
-        id: 'script-history', 
-        width: '700', 
+  type: 'action',
+  impl :{$: 'open-dialog',
+      content :{$: 'studio.script-history' },
+      style :{$: 'dialog.studio-floating',
+        id: 'script-history',
+        width: '700',
         height: '400'
-      }, 
+      },
       title: 'Script History'
   }
-}) 
+})
 
 jb.component('studio.script-history', {
-  type: 'control', 
-  impl :{$: 'group', 
+  type: 'control',
+  impl :{$: 'group',
     controls: [
-      {$: 'table', 
-        items :{$: 'studio.script-history-items' }, 
+      {$: 'table',
+        items :{$: 'studio.script-history-items' },
         fields: [
-          {$: 'field.control', 
-            title: 'changed', 
-            control :{$: 'button', 
-              title :{$: 'studio.name-of-ref', ref: '%opEvent/ref%' }, 
-              action :{$: 'studio.goto-path', 
+          {$: 'field.control',
+            title: 'changed',
+            control :{$: 'button',
+              title :{$: 'studio.name-of-ref', ref: '%opEvent/ref%' },
+              action :{$: 'studio.goto-path',
                 path :{$: 'studio.path-of-ref', ref: '%opEvent/ref%' }
-              }, 
-              style :{$: 'button.href' }, 
-              features :{$: 'feature.hover-title', 
+              },
+              style :{$: 'button.href' },
+              features :{$: 'feature.hover-title',
                 title :{$: 'studio.path-of-ref', ref: '%opEvent/ref%' }
               }
-            }, 
+            },
             width: '100'
-          }, 
-          {$: 'field', 
-            title: 'from', 
-            data :{$: 'pretty-print', profile: '%opEvent/oldVal%' }, 
+          },
+          {$: 'field',
+            title: 'from',
+            data :{$: 'pretty-print', profile: '%opEvent/oldVal%' },
             width: '200'
-          }, 
-          {$: 'field', 
-            title: 'to', 
-            data :{$: 'pretty-print', profile: '%opEvent/newVal%' }, 
+          },
+          {$: 'field',
+            title: 'to',
+            data :{$: 'pretty-print', profile: '%opEvent/newVal%' },
             width: '200'
-          }, 
-          {$: 'field.control', 
-            title: 'undo/redo', 
-            control :{$: 'button', 
-              title: 'revert to here', 
-              action :{$: 'studio.revert', toIndex: '%undoIndex%' }, 
+          },
+          {$: 'field.control',
+            title: 'undo/redo',
+            control :{$: 'button',
+              title: 'revert to here',
+              action :{$: 'studio.revert', toIndex: '%undoIndex%' },
               style :{$: 'button.href' }
-            }, 
+            },
             width: '100'
           }
-        ], 
+        ],
         style :{$: 'table.with-headers' }
       }
-    ], 
+    ],
     features: [
-      {$: 'watch-observable', 
-        toWatch: ctx => st.compsRefHandler.resourceChange.debounceTime(500), 
-        
-      }, 
+      {$: 'watch-observable',
+        toWatch: ctx => st.compsRefHandler.resourceChange.debounceTime(500),
+      },
       {$: 'css.height', height: '400', overflow: 'auto', minMax: 'max' }
     ]
   }
 })
 
 
-})();
+})()
+;
 
 (function() {
   var st = jb.studio;
@@ -22289,24 +22988,8 @@ jb.component('studio.edit-source', {
 		content :{$: 'editable-text',
 			databind :{$: 'studio.profile-as-text', path: '%$path%' },
 			style :{$: 'editable-text.codemirror', mode: 'javascript'},
-//			features: {$: 'studio.undo-support', path: '%$path%' },
 		}
 	}
-})
-
-jb.component('studio.string-property-ref', {
-	type: 'data',
-	params: [
-		{ id: 'path', as: 'string' },
-	],
-	impl: (context,path) => ({
-			$jb_val: value => {
-				if (typeof value == 'undefined')
-					return st.valOfPath(path);
-				else
-					st.writeValueOfPath(path, newVal);
-			}
-		})
 })
 
 jb.component('studio.goto-editor-options', {
@@ -22329,10 +23012,10 @@ jb.component('studio.goto-editor-first', {
     title :{
       $pipeline: [{$: 'studio.comp-name', path: '%$path%' }, 'Goto editor: %%']
     },
-    action :{$: 'studio.open-editor-editor',
+    action :{$: 'studio.open-editor',
       path :{$: 'studio.comp-name', path: '%$path%' }
     },
-    shortcut: 'Alt+E', 
+    shortcut: 'Alt+E',
     showCondition :{$: 'notEmpty',
       item :{$: 'studio.comp-name', path: '%$path%' }
     }
@@ -22343,34 +23026,17 @@ jb.component('studio.goto-editor-secondary', {
   type: 'action',
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'menu.action',
-    title :{
-      $pipeline: [
-        {$: 'split', path: '%$path%', separator: '~', part: 'first' },
-        'Goto editor: %%'
-      ]
-    },
-    action :{$: 'studio.open-editor-editor',
-      path :{$: 'studio.comp-name', path: '%$path%' }
-    },
+    $vars: { baseComp: {$: 'split', text: '%$path%', separator: '~', part: 'first' }},
+    title :  'Goto editor: %$baseComp%',
+    action :{$: 'studio.open-editor', path: '%$baseComp%' },
     showCondition :{$: 'not-equals',
       item1 :{$: 'studio.comp-name', path: '%$path%' },
-      item2 :{$: 'split', path: '%$path%', separator: '~', part: 'first' }
+      item2 : '%$baseComp%'
     }
   }
 })
 
-// jb.component('studio.goto-targets', {
-// 	params: [
-// 		{ id: 'path', as: 'string'},
-// 	],
-// 	impl: (ctx,path) =>
-// 		jb.unique([st.compNameOfPath(path),path]
-// 			.filter(x=>x)
-// 			.map(x=>
-// 				x.split('~')[0]))
-// })
-
-jb.component('studio.open-editor-editor', {
+jb.component('studio.open-editor', {
 	type: 'action',
 	params: [
 		{ id: 'path', as: 'string'},
@@ -22388,17 +23054,20 @@ jb.component('studio.open-jb-editor', {
   type: 'action',
   params: [
     { id: 'path', as: 'string' },
+    { id: 'fromPath', as: 'string' },
     { id: 'newWindow', type: 'boolean', as: 'boolean' }
   ],
   impl :{$: 'open-dialog',
     $vars: {
       dialogId: {$if : '%$newWindow%', then: '', else: 'jb-editor'},
+      fromPath: '%$fromPath%',
+      pickSelection: {$: 'object'},
     },
-    features :{$: 'var', name: 'jbEditor_selection', mutable: true },
-    style :{$: 'dialog.studio-floating', id: '%$dialogId%', width: '750', height: '400' },
+    features :{$: 'var', name: 'jbEditor_selection', mutable: true, value: '%$path%' },
+    style :{$: 'dialog.studio-floating', id: '%$dialogId%', width: '860', height: '400' },
     content :{$: 'studio.jb-editor', path: '%$path%' },
     menu :{$: 'button',
-      action :{$: 'studio.open-jb-editor-menu', path: '%$jbEditor_selection%' },
+      action :{$: 'studio.open-jb-editor-menu', path: '%$jbEditor_selection%', root: '%$path%' },
       style :{$: 'button.mdl-icon', icon: 'menu' }
     },
     title :{$: 'studio.path-hyperlink', path: '%$path%', prefix: 'Inteliscript' }
@@ -22407,18 +23076,23 @@ jb.component('studio.open-jb-editor', {
 
 jb.component('studio.open-component-in-jb-editor', {
   type: 'action',
-  params: [{ id: 'path', as: 'string' }],
+  params: [
+    { id: 'path', as: 'string' },
+    { id: 'fromPath', as: 'string' },
+  ],
   impl : {
    $vars: {
     compPath: {$: 'split', text: '%$path%', separator: '~', part: 'first'},
+    fromPath: '%$fromPath%',
+    pickSelection: {$: 'object'},
    },
     $runActions: [
   {$: 'open-dialog',
-    features :{$: 'var', name: 'jbEditor_selection', mutable: true },
-    style :{$: 'dialog.studio-floating', id: 'jb-editor', width: '750', height: '400' },
+    features :{$: 'var', name: 'jbEditor_selection', mutable: true, value: '%$path%' },
+    style :{$: 'dialog.studio-floating', id: 'jb-editor', width: '860', height: '400' },
     content :{$: 'studio.jb-editor', path: '%$compPath%' },
     menu :{$: 'button',
-      action :{$: 'studio.open-jb-editor-menu', path: '%$jbEditor_selection%' },
+      action :{$: 'studio.open-jb-editor-menu', path: '%$jbEditor_selection%' , root: '%$path%' },
       style :{$: 'button.mdl-icon', icon: 'menu' }
     },
     title :{$: 'studio.path-hyperlink', path: '%$compPath%', prefix: 'Inteliscript' }
@@ -22431,7 +23105,13 @@ jb.component('studio.jb-editor', {
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'group',
     title: 'main',
-    style :{$: 'layout.horizontal', align: 'space-between', direction: '', spacing: 3 },
+    style :{$: 'layout.horizontal-fixed-split',
+      align: 'space-between',
+      direction: '',
+      leftWidth: '350',
+      rightWidth: '500',
+      spacing: 3
+    },
     controls: [
       {$: 'tree',
         nodeModel :{$: 'studio.jb-editor.nodes', path: '%$path%' },
@@ -22444,9 +23124,9 @@ jb.component('studio.jb-editor', {
           },
           {$: 'tree.keyboard-selection',
             onEnter :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' },
-            onRightClickOfExpanded :{$: 'studio.open-jb-editor-menu', path: '%%' },
+            onRightClickOfExpanded :{$: 'studio.open-jb-editor-menu', path: '%%', root: '%$path%' },
             autoFocus: true,
-            applyMenuShortcuts :{$: 'studio.jb-editor-menu', path: '%%' }
+            applyMenuShortcuts :{$: 'studio.jb-editor-menu', path: '%%', root: '%$path%' }
           },
           {$: 'tree.drag-and-drop' },
           {$: 'css.width', width: '500', selector: 'jb-editor' },
@@ -22530,7 +23210,9 @@ jb.component('studio.jb-editor', {
         ]
       }
     ],
-    features :{$: 'css.padding', top: '10' }
+    features: [
+      {$: 'css.padding', top: '10' },
+    ]
   }
 })
 
@@ -22608,32 +23290,89 @@ jb.component('studio.data-browse', {
 jb.component('studio.open-jb-edit-property', {
   type: 'action',
   params: [{ id: 'path', as: 'string' }],
-  impl :{
-      $vars: {
-          actualPath: {$: 'studio.jb-editor-path-for-edit', path: '%$path%'}
+  impl :{$: 'action.switch',
+    $vars: {
+      actualPath :{$: 'studio.jb-editor-path-for-edit', path: '%$path%' },
+      paramDef :{$: 'studio.param-def', path: '%$actualPath%' }
+    },
+    cases: [
+      {$: 'action.switch-case',
+        condition :{$: 'ends-with',
+          type: 'array',
+          obj :{$: 'studio.val', path: '%$actualPath%' },
+          endsWith: '$vars',
+          text: '%$path%'
+        }
       },
-      $runActions: [{ // $vars can not be used with $if
-        $if :{$: 'studio.is-of-type', type: 'data,boolean', path: '%$actualPath%' },
-        then :{$: 'open-dialog',
+      {$: 'action.switch-case',
+        condition: '%$paramDef/options%',
+        action :{$: 'open-dialog',
+          style :{$: 'dialog.studio-jb-editor-popup' },
+          content :{$: 'group',
+            controls: [{$: 'studio.jb-floating-input-rich', path: '%$actualPath%' }],
+            features: [
+              {$: 'feature.onEsc',
+                action :{$: 'dialog.close-containing-popup', OK: true }
+              },
+              {$: 'feature.onEnter',
+                action: [
+                  {$: 'dialog.close-containing-popup', OK: true },
+                  {$: 'tree.regain-focus' }
+                ]
+              }
+            ]
+          },
+          features: [
+            {$: 'dialog-feature.auto-focus-on-first-input' },
+            {$: 'dialog-feature.onClose',
+              action :{$: 'tree.regain-focus' }
+            }
+          ]
+        }
+      },
+      {$: 'action.switch-case',
+        condition :{$: 'is-of-type',
+          type: 'function',
+          obj :{$: 'studio.val', path: '%$actualPath%' }
+        },
+        action :{$: 'studio.edit-source', path: '%$actualPath%' }
+      },
+      {$: 'action.switch-case',
+        condition :{$: 'studio.is-of-type', path: '%$actualPath%', type: 'data,boolean' },
+        action :{$: 'open-dialog',
           style :{$: 'dialog.studio-jb-editor-popup' },
           content :{$: 'studio.jb-floating-input', path: '%$actualPath%' },
           features: [
             {$: 'dialog-feature.auto-focus-on-first-input' },
             {$: 'dialog-feature.onClose',
-              action : {$runActions: [
-                {$: 'toggle-boolean-value', of: '%$studio/jb_preview_result_counter%'},
-                {$: 'tree.regain-focus' }
-              ]}
+              action :{
+                $runActions: [
+                  {$: 'toggle-boolean-value',
+                    of: '%$studio/jb_preview_result_counter%'
+                  },
+                  {$: 'tree.regain-focus' }
+                ]
+              }
             }
-          ],
-        },
-        else :{$: 'studio.open-new-profile-dialog',
-          path: '%$actualPath%',
-          mode: 'update',
-          type :{$: 'studio.param-type', path: '%$actualPath%'},
-          onClose :{$: 'tree.regain-focus' }
+          ]
         }
-      }]
+      },
+      {$: 'action.switch-case',
+        $vars: {
+          ptsOfType :{$: 'studio.PTs-of-type',
+            type :{$: 'studio.param-type', path: '%$actualPath%' }
+          }
+        },
+        condition: '%$ptsOfType/length% == 1',
+        action :{$: 'studio.set-comp', path: '%$path%', comp: '%$ptsOfType[0]%' }
+      }
+    ],
+    defaultAction :{$: 'studio.open-new-profile-dialog',
+      path: '%$actualPath%',
+      type :{$: 'studio.param-type', path: '%$actualPath%' },
+      mode: 'update',
+      onClose :{$: 'tree.regain-focus' }
+    }
   }
 })
 
@@ -22653,10 +23392,11 @@ jb.component('studio.jb-editor-path-for-edit', {
 jb.component('studio.open-jb-editor-menu', {
   type: 'action',
   params: [
-    { id: 'path', as: 'string' }
+    { id: 'path', as: 'string' },
+    { id: 'root', as: 'string' },
   ],
   impl :{$: 'menu.open-context-menu',
-    menu :{$: 'studio.jb-editor-menu', path: '%$path%' } ,
+    menu :{$: 'studio.jb-editor-menu', path: '%$path%', root: '%$root%' } ,
     features :{$: 'dialog-feature.onClose',
       action :{$: 'tree.regain-focus'}
     },
@@ -22665,7 +23405,10 @@ jb.component('studio.open-jb-editor-menu', {
 
 jb.component('studio.jb-editor-menu', {
   type: 'menu.option',
-  params: [{ id: 'path', as: 'string' }],
+  params: [
+    { id: 'path', as: 'string' },
+    { id: 'root', as: 'string' }
+  ],
   impl :{$: 'menu.menu',
     style :{$: 'menu.context-menu' },
     features :{$: 'group.menu-keyboard-selection', autoFocus: true },
@@ -22689,6 +23432,7 @@ jb.component('studio.jb-editor-menu', {
                         value: ''
                       },
                       {$: 'dialog.close-containing-popup', OK: true },
+                      {$:'tree.redraw' },
                       {$: 'tree.regain-focus' }
                     ]
                   }
@@ -22698,10 +23442,11 @@ jb.component('studio.jb-editor-menu', {
             features :{$: 'css.padding', top: '9', left: '20', right: '20' }
           },
           title: 'Add Property',
-          onOK :{$: 'write-value',
-            to :{$: 'studio.ref', path: '%$path%~%$name%' },
-            value: ''
-          },
+          // onOK : [{$: 'write-value',
+          //   to :{$: 'studio.ref', path: '%$path%~%$name%' },
+          //   value: ''
+          // },
+          // ],
           modal: 'true',
           features: [
             {$: 'var', name: 'name', mutable: true },
@@ -22716,43 +23461,7 @@ jb.component('studio.jb-editor-menu', {
       },
       {$: 'menu.action',
         title: 'Add variable',
-        action :{$: 'open-dialog',
-          id: 'add variable',
-          style :{$: 'dialog.popup', okLabel: 'OK', cancelLabel: 'Cancel' },
-          content :{$: 'group',
-            controls: [
-              {$: 'editable-text',
-                title: 'variable name',
-                databind: '%$name%',
-                style :{$: 'editable-text.mdl-input' },
-                features: [
-                  {$: 'feature.onEnter',
-                    action: [
-                      {$: 'write-value',
-                        to :{$: 'studio.ref', path: '%$path%~%$name%' },
-                        value: ''
-                      },
-                      {$: 'dialog.close-containing-popup', OK: true },
-                      {$: 'tree.regain-focus' }
-                    ]
-                  }
-                ]
-              }
-            ],
-            features :{$: 'css.padding', top: '9', left: '20', right: '20' }
-          },
-          title: 'New variable',
-          onOK :{$: 'write-value',
-            to :{$: 'studio.ref', path: '%$path%~%$name%' },
-            value: ''
-          },
-          modal: 'true',
-          features: [
-            {$: 'var', name: 'name', mutable: true },
-            {$: 'dialog-feature.near-launcher-position' },
-            {$: 'dialog-feature.auto-focus-on-first-input' }
-          ]
-        },
+        action :{$: 'studio.add-variable', path: '%$path%' },
         showCondition :{$: 'ends-with', endsWith: '~$vars', text: '%$path%' }
       },
       {$: 'menu.end-with-separator',
@@ -22764,6 +23473,7 @@ jb.component('studio.jb-editor-menu', {
             action :{$: 'runActions',
               actions: [
                 {$: 'studio.add-property', path: '%%' },
+                {$:'tree.redraw' },
                 {$: 'dialog.close-containing-popup' },
                 {$: 'write-value', to: '%$jbEditor_selection%', value: '%%' },
                 {$: 'studio.open-jb-edit-property', path: '%%' }
@@ -22774,28 +23484,43 @@ jb.component('studio.jb-editor-menu', {
       },
       {$: 'menu.action',
         title: 'Variables',
-        action :{$: 'write-value',
+        action :[
+          {$: 'write-value',
             to :{$: 'studio.ref', path: '%$path%~$vars' },
             value: {$: 'object'}
-        },
+          },
+          {$: 'write-value', to: '%$jbEditor_selection%', value: '%$path%~$vars' },
+          {$:'tree.redraw' },
+          {$: 'studio.add-variable', path: '%$path%~$vars' }
+        ],
         showCondition : {$and: [
           {$isEmpty: {$: 'studio.val', path: '%$path%~$vars' } },
           {$: 'is-of-type', obj: {$: 'studio.val', path: '%$path%' }, type: 'object' } ] }
       },
-      {$: 'menu.action',
-        $vars: {
-          compName :{$: 'studio.comp-name', path: '%$path%' }
-        },
-        title: 'Goto %$compName%',
-        action :{$: 'studio.open-jb-editor', path: '%$compName%' },
-        showCondition: '%$compName%'
-      },
+	    {$: 'studio.style-editor-options', path: '%$path%' },
       {$: 'menu.end-with-separator',
-        options :[
-          {$: 'studio.goto-editor-first', path: '%$path%'},
-          {$: 'studio.goto-editor-secondary', path: '%$path%'},
+        options: [
+          {$: 'menu.action',
+            $vars: { compName :{$: 'studio.comp-name', path: '%$path%' } },
+            title: 'Goto %$compName%',
+            action :{$: 'studio.open-jb-editor', path: '%$compName%', fromPath: '%$path%' },
+            showCondition: '%$compName%'
+          },
+          {$: 'menu.action',
+            $vars: { compName :{$: 'split', separator: '~', text: '%$fromPath%', part: 'first' } },
+            title: 'Back to %$compName%',
+            action :{$: 'studio.open-component-in-jb-editor', path: '%$fromPath%', fromPath: '%$path%' },
+            showCondition: '%$fromPath%'
+          },
+          {$: 'menu.action',
+            $vars: { compName :{$: 'split', separator: '~', text: '%$root%', part: 'first' } },
+            title: 'Open parent %$compName%',
+            action :{$: 'studio.open-component-in-jb-editor', path: '%$path%', fromPath: '%$fromPath%' },
+            showCondition: {$: 'contains', text: '~', allText: '%$root%' }
+          },
         ]
       },
+      {$: 'studio.goto-editor-options', path: '%$path%' },
       {$: 'menu.studio-wrap-with',
         path: '%$path%',
         type: 'control',
@@ -22823,9 +23548,8 @@ jb.component('studio.jb-editor-menu', {
         showCondition: {$: 'studio.is-array-item', path: '%$path%'}
       },
       {$: 'menu.separator' },
-      {$: 'menu.end-with-separator',
-        options :{$: 'studio.goto-references', path: '%$path%' }
-      },
+      {$: 'menu.action', title: 'Pick context', action:{$:'studio.pick'}},
+      {$: 'studio.goto-references-menu', path:{$: 'split', separator: '~', text: '%$path%', part: 'first' } },
       {$: 'menu.action',
         title: 'Javascript',
         action :{$: 'studio.edit-source', path: '%$path%' },
@@ -22914,28 +23638,62 @@ jb.component('menu.studio-wrap-with-array', {
   }
 })
 
-
-jb.component('studio.goto-references', {
-  type: 'menu.option',
+jb.component('studio.add-variable', {
+  type: 'action',
   params: [
     { id: 'path', as: 'string'},
-    { id: 'action', type: 'action', dynamic: 'true',
-      defaultValue :{$: 'studio.open-component-in-jb-editor', path: '%%' }
-    },
   ],
-  impl :{$: 'menu.dynamic-options',
-    items :{$: 'studio.references', path: '%$path%' },
-    genericOption :{$: 'menu.action',
-          title: 'Goto ref %%',
-          action :{$call: 'action'},
+  impl :{$: 'on-next-timer', action:{$: 'open-dialog',
+    id: 'add variable',
+    style :{$: 'dialog.popup', okLabel: 'OK', cancelLabel: 'Cancel' },
+    content :{$: 'group',
+      controls: [
+        {$: 'editable-text',
+          title: 'variable name',
+          databind: '%$name%',
+          style :{$: 'editable-text.mdl-input' },
+          features: [
+            {$: 'feature.onEnter',
+              action: [
+                {$: 'write-value',
+                  to :{$: 'studio.ref', path: '%$path%~%$name%' },
+                  value: ''
+                },
+                {$: 'dialog.close-containing-popup', OK: true },
+                {$: 'write-value', to: '%$jbEditor_selection%', value: '%$path%~%$name%' },
+                {$: 'tree.redraw', strong: true },
+                {$: 'tree.regain-focus' }
+              ]
+            }
+          ]
+        }
+      ],
+      features :{$: 'css.padding', top: '9', left: '20', right: '20' }
     },
-  }
+    title: 'New variable',
+    // onOK :[
+    //   {$: 'write-value',
+    //     to :{$: 'studio.ref', path: '%$path%~%$name%' },
+    //     value: ''
+    //   },
+    //   {$: 'write-value', to: '%$jbEditor_selection%', value: '%$path%~%$name%' },
+    //   {$:'tree.redraw' },
+    //   {$: 'tree.regain-focus' },
+    // ],
+    modal: 'true',
+    features: [
+      {$: 'var', name: 'name', mutable: true },
+      {$: 'dialog-feature.near-launcher-position' },
+      {$: 'dialog-feature.auto-focus-on-first-input' }
+    ]
+  }}
 })
+
 
 jb.component('studio.expand-and-select-first-child-in-jb-editor', {
   type: 'action',
   impl: ctx => {
-    var ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[$('.jb-editor').attr('jb-ctx')];
+    var ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[document.querySelector('.jb-editor').getAttribute('jb-ctx')];
     var tree = ctxOfTree.vars.$tree;
     if (!tree) return;
     tree.expanded[tree.selected] = true;
@@ -23025,7 +23783,7 @@ jb.component('studio.open-style-editor', {
     $vars: {
       styleSource :{$: 'studio.style-source', path: '%$path%' }
     },
-    style :{$: 'dialog.studio-floating', id: 'style editor', width: '350' },
+    style :{$: 'dialog.studio-floating', id: 'style editor', width: '800' },
     content :{$: 'studio.style-editor', path: '%$path%' },
     features: {$: 'dialog-feature.resizer'},
     menu :{$: 'button',
@@ -23085,15 +23843,16 @@ jb.component('studio.style-editor', {
         tabs: [
           {$: 'group', 
             title: 'css', 
-            style :{$: 'property-sheet.titles-left', 
+            style :{$: 'layout.vertical', 
               vSpacing: 20, 
               hSpacing: 20, 
-              titleWidth: 100
+              titleWidth: 100, 
+              spacing: 3
             }, 
             controls: [
               {$: 'editable-text', 
                 title: 'css', 
-                databind :{$: 'studio.profile-as-text', 
+                databind :{$: 'studio.profile-as-string-byref', 
                   stringOnly: true, 
                   path: '%$path%~css'
                 }, 
@@ -23102,28 +23861,30 @@ jb.component('studio.style-editor', {
                   enableFullScreen: false, 
                   height: '300', 
                   mode: 'css', 
+                  debounceTime: '2000', 
                   onCtrlEnter :{$: 'studio.refresh-preview' }
                 }
               }, 
+              {$: 'label', 
+                title: 'jsx', 
+                style :{$: 'label.heading', level: 'h5' }
+              }, 
               {$: 'editable-text', 
                 title: 'template', 
-                databind :{$: 'studio.template-as-jsx', path: '%$path%~template' }, 
+                databind :{
+                  $pipeline: [
+                    {$: 'studio.template-as-jsx', path: '%$path%~template' }, 
+                    {$: 'studio.pretty', text: '%%' }
+                  ]
+                }, 
                 style :{$: 'editable-text.codemirror', 
                   cm_settings: '', 
                   height: '200', 
-                  mode: 'javascript', 
+                  mode: 'jsx', 
                   onCtrlEnter :{$: 'studio.refresh-preview' }
                 }
               }
             ]
-          }, 
-          {$: 'editable-text', 
-            title: 'html / jsx', 
-            databind :{$: 'studio.template-as-jsx', path: '%$path%~template' }, 
-            style :{$: 'editable-text.codemirror', 
-              enableFullScreen: true, 
-              debounceTime: 300
-            }
           }, 
           {$: 'group', 
             title: 'js', 
@@ -23148,10 +23909,32 @@ jb.component('studio.style-editor', {
                     okLabel: 'OK', 
                     cancelLabel: 'Cancel'
                   }, 
-                  title: 'Paste html / jsx'
+                  content :{$: 'group', 
+                    controls: [
+                      {$: 'editable-text', 
+                        title: 'jsx', 
+                        databind: '%$jsx%', 
+                        style :{$: 'editable-text.codemirror', 
+                          enableFullScreen: true, 
+                          debounceTime: 300
+                        }
+                      }
+                    ]
+                  }, 
+                  title: 'Paste html / jsx', 
+                  onOK :{$: 'write-value', 
+                    to :{$: 'studio.ref', path: '%$path%~template' }, 
+                    value :{$: 'studio.jsx-to-h', text: '%$jsx%' }
+                  }, 
+                  features: [
+                    {$: 'var', 
+                      name: 'jsx', 
+                      value: 'paste your jsx here', 
+                      mutable: 'true'
+                    }
+                  ]
                 }, 
-                style :{$: 'button.mdl-raised' }, 
-                features :{$: 'group.auto-focus-on-first-input' }
+                style :{$: 'button.mdl-raised' }
               }
             ]
           }, 
@@ -23166,6 +23949,41 @@ jb.component('studio.style-editor', {
     ]
   }
 })
+
+jb.component('studio.style-editor-options', {
+	type: 'menu.option',
+	params: [
+		{ id: 'path', as: 'string'},
+	],
+    impl :{$: 'menu.end-with-separator',
+		$vars: {
+		  compName :{$: 'studio.comp-name', path: '%$path%' }
+		},
+	  options: [
+			{$: 'menu.action',
+			  title: 'Style editor',
+			  action :{
+				$runActions: [
+				  {$: 'studio.make-local', path: '%$path%' },
+				  {$: 'studio.open-style-editor', path: '%$path%' }
+				]
+			  },
+			  showCondition :{$: 'ends-with', endsWith: '~style', text: '%$path%' }
+			},
+			{$: 'menu.action',
+			  title: 'Style editor of %$compName%',
+			  action :{$: 'studio.open-style-editor', path: '%$compName%~impl' },
+			  showCondition :{
+				$and: [
+				  {$: 'ends-with', endsWith: '~style', text: '%$path%' },
+				  {$: 'notEmpty', item: '%$compName%' }
+				]
+			  }
+			},
+		]
+    }
+})
+
 
 jb.component('studio.style-source', {
   params: [
@@ -23195,14 +24013,6 @@ jb.component('studio.format-css', {
       .replace(/^\s*/mg,'')
   }
 })
-
-jb.component('studio.custom-style-make-local', {
-  params: [
-    { id: 'template', as: 'string'},
-    { id: 'css', as: 'string'},
-  ],
-  impl: {$: 'object', template: '%$template%', css: '%$css%' }
-})
 ;
 
 
@@ -23220,6 +24030,7 @@ jb.studio.Probe = class {
   }
 
   runCircuit(pathToTrace,maxTime) {
+		var st = jb.studio;
     this.maxTime = maxTime || 50;
     this.startTime = new Date().getTime();
     jb.logPerformance('probe','start',this);
@@ -23227,67 +24038,81 @@ jb.studio.Probe = class {
     this.result.visits = 0;
     this.probe[pathToTrace] = this.result;
     this.pathToTrace = pathToTrace;
+		var initial_resources = st.previewjb.valueByRefHandler.resources();
+		var initial_comps = st.compsRefHandler.resources();
 
-    return this.simpleRun().catch(e =>
-        this)
-      .then( res => {
-            this.handleGaps();
-            this.completed = true;
-            this.totalTime = new Date().getTime()-this.startTime;
-            jb.logPerformance('probe','finished',this);
-            return this;
-    });
-    // this.asObservable = jb.rx.Observable.fromPromise(out);
-    // return this.asObservable.race(jb.rx.Observable.of(this).delay(500)).toPromise();
-  }
+    return this.simpleRun()
+//		  .catch(e => jb.logException(e,'probe run'))
+	    .then( res =>
+	      this.handleGaps())
+		  .catch(e => jb.logException(e,'probe run'))
+		  .then(res=>{
+					this.completed = true;
+		      this.totalTime = new Date().getTime()-this.startTime;
+		      jb.logPerformance('probe','finished',this);
+					// make values out of ref
+					this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)});
+					st.previewjb.valueByRefHandler.resources(initial_resources);
+					st.compsRefHandler.resources(initial_comps);
+		      return this;
+				})
+	}
 
-  simpleRun() {
+	simpleRun() {
       var st = jb.studio;
-      var _win = st.previewWindow || window;
-      if (st.isCompNameOfType(jb.compName(this.circuit),'control'))
-        this.circuitType = 'control'
-      else if (st.isCompNameOfType(jb.compName(this.circuit),'action'))
-        this.circuitType = 'action'
-      else if (st.isCompNameOfType(jb.compName(this.circuit),'data'))
-        this.circuitType = 'data'
-      else
-        this.circuitType = 'unknown';
+			return Promise.resolve(this.context.runItself()).then(res=>{
+				if (st.isCompNameOfType(jb.compName(this.circuit),'control')) {
+					var ctrl = jb.ui.h(res.reactComp());
+          st.probeEl = st.probeEl || document.createElement('div');
+          st.probeResEl = jb.ui.render(ctrl, st.probeEl, st.probeResEl);
+          return ({element: st.probeResEl});
+				}
+				return res;
+			})
+	}
 
-      if (this.circuitType == 'control') { // running circuit in a group to get the 'ready' event
-        //return testControl(this.context, this.forTests);
-          var ctrl = jb.ui.h(this.context.runItself().reactComp());
-          jb.studio.probeEl = jb.studio.probeEl || document.createElement('div');
-          try {
-            jb.studio.probeResEl = jb.ui.render(ctrl, jb.studio.probeEl, jb.studio.probeResEl);
-          } catch (e) {
-            jb.logException(e,'probe run')
-          }
-          return Promise.resolve({element: jb.studio.probeResEl});
-      } else if (this.circuitType != 'action')
-        return Promise.resolve(this.context.runItself());
-  }
-
-  handleGaps() {
-    if (this.noGaps)
+  handleGaps(formerGap) {
+    if (this.result.length > 0 || this.noGaps)
       return;
     var st = jb.studio;
-    if (this.result.length == 0) {
-      // find closest path
-      var _path = st.parentPath(this.pathToTrace);
-      while (!this.probe[_path] && _path.indexOf('~') != -1)
-        _path = st.parentPath(_path);
-      if (this.probe[_path]) {
-        this.closestPath = _path;
-        this.result = this.probe[_path];
-      }
-    }
+
+		// find closest path
+    var _path = st.parentPath(this.pathToTrace),breakingProp='';
+    while (!this.probe[_path] && _path.indexOf('~') != -1) {
+			breakingProp = _path.split('~').pop();
+    	_path = st.parentPath(_path);
+		}
+		if (!this.probe[_path] || formerGap == _path) { // can not break through the gap
+			this.closestPath = _path;
+			this.result = this.probe[_path] || [];
+			return;
+		}
+
+		// check if parent ctx returns object with method name of breakprop as in dialog.onOK
+		var parentCtx = this.probe[_path][0].ctx, breakingPath = _path+'~'+breakingProp;
+		var obj = this.probe[_path][0].out;
+		if (obj[breakingProp] && typeof obj[breakingProp] == 'function')
+			return Promise.resolve(obj[breakingProp]())
+				.then(_=>this.handleGaps(_path));
+
+	  // use the ctx to run the breaking param if it has no side effects
+		var hasSideEffect = st.previewjb.comps[st.compNameOfPath(breakingPath)] && (st.previewjb.comps[st.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1;
+		if (!hasSideEffect)
+			return Promise.resolve(parentCtx.runInner(parentCtx.profile[breakingProp],st.paramDef(breakingPath),breakingProp))
+				.then(_=>this.handleGaps(_path));
+
+		// could not solve the gap
+		this.closestPath = _path;
+		this.result = this.probe[_path] || [];
   }
 
+	// called from jb_run
   record(context,parentParam) {
       var now = new Date().getTime();
-      if (now - this.startTime > this.maxTime && !context.vars.testID) {
+      if (!this.outOfTime && now - this.startTime > this.maxTime && !context.vars.testID) {
         jb.logPerformance('probe','out of time',this,now);
-        throw 'out of time';
+				this.outOfTime = true;
+        //throw 'out of time';
       }
       var path = context.path;
       var input = context.ctx({probe: null});
@@ -23305,7 +24130,7 @@ jb.studio.Probe = class {
       if (found)
         found.counter++;
       else {
-        var rec = {in: input, out: out, counter: 0};
+        var rec = {in: input, out: out, counter: 0, ctx: context};
         this.probe[path].push(rec);
       }
       return out;
@@ -23313,17 +24138,24 @@ jb.studio.Probe = class {
 }
 
 jb.component('studio.probe', {
-  type:'data',
-  params: [ { id: 'path', as: 'string', dynamic: true } ],
-  impl: (ctx,path) => {
-      var st = jb.studio,_jb = st.previewjb;
-      var circuitCtx = (ctx.vars.pickSelection && ctx.vars.pickSelection.ctx) || st.closestCtxInPreview(path()).ctx;
-      if (!circuitCtx) {
-        var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
-        circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
-      }
-      return new (_jb.studio.Probe || jb.studio.Probe)(circuitCtx).runCircuit(path());
-    }
+	type:'data',
+	params: [ { id: 'path', as: 'string', dynamic: true } ],
+	impl: (ctx,path) => {
+		var st = jb.studio,_jb = st.previewjb;
+		var circuitCtx = ctx.vars.pickSelection && ctx.vars.pickSelection.ctx;
+		if (!circuitCtx) {
+			var circuitInPreview = st.closestCtxInPreview(path());
+			if (circuitInPreview.ctx) {
+			   jb.studio.highlight([circuitInPreview.elem]);
+			   circuitCtx = circuitInPreview.ctx;
+			}
+		}
+		if (!circuitCtx) {
+			var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
+			circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
+		}
+		return new (_jb.studio.Probe || jb.studio.Probe)(circuitCtx).runCircuit(path());
+  }
 })
 ;
 
@@ -23394,6 +24226,8 @@ jb.component('studio-probe-test', {
       .runCircuit(full_path);
     return probeRes.then(res=>{
           try {
+						if (expectedVisits == 0 && res.closestPath)
+							return success();
             if (!allowClosestPath && res.closestPath)
               return failure('no probe results at path ' + probePath);
             if (res.result.visits != expectedVisits && expectedVisits != -1)
@@ -23661,7 +24495,7 @@ jb.studio.jsxToH = jsx => {
   try  {
   return Babel.transform(jsx, {
     "plugins": [["transform-react-jsx", { "pragma": "h"  }]]
-  }).code
+  }).code.replace(/;$/,'').replace(/\(\s*/mg,'(').replace(/\s*\)/mg,')').replace(/,null,/mg,',{},').replace(/,\s*\{/mg,',{').replace(/"class"/mg,'class').replace(/"/mg,"'")
   } catch(e) {
     jb.logException(e)
   }
@@ -23670,35 +24504,54 @@ jb.studio.jsxToH = jsx => {
 jb.studio.hToJSX = hFunc => {
     jb.studio.initJsxToH();
     try {
-    return jb.studio.pretty(Babel.transform(hFunc, {
+    return Babel.transform(hFunc, {
       "plugins": ['h-to-jsx']
-    }).code)
+  }).code
   } catch(e) {
     jb.logException(e)
   }
 }
 
+jb.component('studio.pretty', {
+	type: 'data',
+	params: [{ id: 'text', as: 'string', defaultValue: '%%' } ],
+	impl: (ctx,text) => jb.studio.pretty(text)
+})
+
+jb.component('studio.jsx-to-h', {
+	type: 'data',
+	params: [{ id: 'text', as: 'string', defaultValue: '%%' } ],
+	impl: (ctx,text) => jb.studio.jsxToH(text)
+})
+
+jb.component('studio.h-to-jsx', {
+	type: 'data',
+	params: [{ id: 'text', as: 'string', defaultValue: '%%' } ],
+	impl: (ctx,text) => jb.studio.hToJSX(text)
+})
+
+
 jb.component('studio.template-as-jsx', {
 	type: 'data',
 	params: [{ id: 'path', as: 'string', dynamic: true } ],
 	impl: ctx => ({
-			$jb_val: function(value) {
-        var st = jb.studio;
-				var path = ctx.params.path();
-				if (!path) return;
-				if (typeof value == 'undefined') {
-          var func = st.valOfPath(path);
-          if (typeof func == 'function')
-            return jb.studio.hToJSX(func.toString().split('=>').slice(1).join('=>') );
-				} else {
-					var funcStr = jb.studio.jsxToH(value);
-					if (funcStr)
-            st.writeValueOfPath(path,st.evalProfile('(cmp,state,h) => ' + funcStr.slice(0,-1)) );
-				}
-			},
-      $jb_observable: cmp =>
-				jb.studio.refObservable(jb.studio.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
-		})
+		$jb_val: function(value) {
+			var st = jb.studio;
+			var path = ctx.params.path();
+			if (!path) return;
+			if (typeof value == 'undefined') {
+				var func = st.valOfPath(path);
+				if (typeof func == 'function')
+            		return jb.studio.hToJSX(func.toString().split('=>').slice(1).join('=>') );
+			} else {
+				var funcStr = jb.studio.jsxToH(value);
+				if (funcStr)
+            		st.writeValueOfPath(path,st.evalProfile('(cmp,state,h) => ' + funcStr) );
+			}
+		},
+		$jb_observable: cmp =>
+			jb.studio.refObservable(jb.studio.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+	})
 })
 ;
 

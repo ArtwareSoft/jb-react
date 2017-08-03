@@ -199,7 +199,7 @@ jb.component('itemlist.drag-and-drop', {
       afterViewInit: function(cmp) {
         var drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
           moves: (el,source,handle) =>
-            $(handle).hasClass('drag-handle')
+            jb.ui.hasClass(handle,'drag-handle')
         });
 
         drake.on('drag', function(el, source) {
@@ -216,7 +216,7 @@ jb.component('itemlist.drag-and-drop', {
         });
         drake.on('drop', (dropElm, target, source,sibling) => {
             var draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
-            var targetIndex = sibling ? $(sibling).index() : cmp.items.length;
+            var targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
             jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
 
             dropElm.dragged = null;
