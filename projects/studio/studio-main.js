@@ -139,7 +139,7 @@ jb.component('studio.ctx-counters', {
         css: '{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'
       },
       {$: 'watch-observable', $trace1: true,
-        toWatch: ctx => jb.studio.compsRefHandler.resourceChange.debounceTime(500).do(_=console.log('hello'))
+        toWatch: ctx => jb.studio.compsRefHandler.resourceChange.debounceTime(500)
       }
     ]
   }

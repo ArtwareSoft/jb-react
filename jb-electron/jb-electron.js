@@ -1,4 +1,5 @@
 const {app, protocol, BrowserWindow} = require('electron')
+const remote = require('electron').remote;
 
 console.log(process.argv);
 
@@ -18,14 +19,19 @@ let win
 
 function createWindow () {
   // Create the browser window.
-  win = new BrowserWindow({width: 800, height: 600});
+  win = new BrowserWindow({width: 1280, height: 800, webPreferences: { nodeIntegration: true }});
   win.electron = true;
   win.jbartBase = __dirname.replace(/\\jb-electron$/,'');
 
   protocol.interceptFileProtocol('file',(req,callback) => {
     var path = req.url;
+    if (path.indexOf('C:/project/') != -1) {
+        var project_with_params = path.split('/')[5];
+        var project = project_with_params.split('?')[0];
+        path= `C:/projects/${project}/${project}.html`
+    }
     ['src','css','node_modules','dist','projects'].forEach(dir=>path=path.replace(`C:/${dir}`,`${win.jbartBase}/${dir}`));
-    path = path.split('file:///').pop();
+    path = path.replace(/!st!/,'').split('file:///').pop();
     console.log(req,path);
     callback(path);
   })
@@ -35,10 +41,10 @@ function createWindow () {
   if (path)
     win.loadURL(`file://${win.jbartBase}/${path}`)
   else if (project)
-    win.loadURL(`file://${win.jbartBase}/projects/${project}/${project}.html`)
+    win.loadURL(`file://C:/project/studio/${project}`)
 
   // Open the DevTools.
-  win.webContents.openDevTools()
+  //win.webContents.openDevTools()
 
   // Emitted when the window is closed.
   win.on('closed', () => {

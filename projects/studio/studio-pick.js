@@ -92,13 +92,15 @@ jb.component('dialog-feature.studio-pick', {
 		  			ctx.vars.$dialog.close({OK:false});
 		  	})
 		  	.map(e=>
-		  		eventToProfile(e,_window))
-		  	.filter(x=> x && x.length > 0)
+		  		eventToElem(e,_window))
+		  	.filter(x=> x)
 		  	.do(profElem=> {
-		  		ctx.vars.pickSelection.ctx = _window.jb.ctxDictionary[profElem.attr('jb-ctx')];
-		  		showBox(cmp,profElem,_window,previewOffset);
+          if (profElem.getAttribute) {
+		  		    ctx.vars.pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];
+              showBox(cmp,profElem,_window,previewOffset);
+          }
 		  	})
-		  	.last()
+        .last()
 		  	.subscribe(x=> {
 		  		ctx.vars.$dialog.close({OK:true});
 		  		jb.delay(200).then(_=> {
@@ -119,15 +121,15 @@ function pathFromElem(_window,profElem) {
 	//profElem.attr('jb-path');
 }
 
-function eventToProfile(e,_window) {
+function eventToElem(e,_window) {
 	var mousePos = {
 		x: e.pageX - document.body.scrollLeft, y: e.pageY - - document.body.scrollTop
 	};
 	var el = _window.document.elementFromPoint(mousePos.x, mousePos.y);
 	if (!el) return;
-	var results = Array.from([el].concat(jb.ui.parents(el))
-		.filter((i,e) =>
-			e.getAttribute('jb-ctx') ));
+	var results = [el].concat(jb.ui.parents(el))
+		.filter(e =>
+			e && e.getAttribute && e.getAttribute('jb-ctx') );
 	if (results.length == 0) return [];
 
 	// promote parents if the mouse is near the edge
@@ -162,21 +164,25 @@ jb.studio.getOrCreateHighlightBox = function() {
   if (!_window.document.querySelector('#preview-box')) {
     var elem = _window.document.createElement('div');
     elem.setAttribute('id','preview-box');
-    !_window.document.appendChild(elem);
+    !_window.document.body.appendChild(elem);
   }
   return _window.document.querySelector('#preview-box');
 }
 
 jb.studio.highlight = function(elems) {
 	//var boxes = [];
-	var html = elems.forEach(el => {
+	var html = elems.map(el => {
 			var offset = jb.ui.offset(el);
 			var width = jb.ui.outerWidth(el);
       if (width == jb.ui.outerWidth(document.body)) width -= 10;
-      return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="width: ${width}; left: ${offset.left};top: ${offset.top}; width: ${width}; height: ${jb.ui.outerHeight(el)}"/>`
+      return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; zIndex: 5000;
+      width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
 	}).join('');
-  jb.studio.getOrCreateHighlightBox().innerHTML = html;
-  jb.delay(1000).then(_=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
+  var box = jb.studio.getOrCreateHighlightBox();
+  jb.ui.removeClass(box,'jb-fade-3s-transition');
+  box.innerHTML = html;
+  jb.delay(1).then(_=> jb.ui.addClass(box,'jb-fade-3s-transition'));
+//  jb.delay(1000).then(_=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
 }
 
 jb.component('studio.highlight-in-preview',{

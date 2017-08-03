@@ -165,7 +165,7 @@ jb.component('tree.selection', {
 		  // first auto selection selection
 		  var first_selected = jb.val(context.params.databind);
 		  if (!first_selected && context.params.autoSelectFirst) {
-			  var first = tree.el.parentNode.querySelectorAll('.treenode')[0];
+			  var first = jb.ui.find(tree.el.parentNode,'.treenode')[0];
 			  first_selected = tree.elemToPath(first);
 		  }
 		  if (first_selected)
@@ -210,8 +210,8 @@ jb.component('tree.keyboard-selection', {
 					.map(event => {
 //						event.stopPropagation();
 						var diff = event.keyCode == 40 ? 1 : -1;
-						var nodes = Array.from(tree.el.parentNode.querySelectorAll('.treenode'));
-						var selected = tree.el.parentNode.querySelector('.treenode.selected');
+						var nodes = jb.ui.findIncludeSelf(tree.el,'.treenode');
+						var selected = jb.ui.findIncludeSelf(tree.el,'.treenode.selected')[0];
 						return tree.elemToPath(nodes[nodes.indexOf(selected) + diff]) || tree.selected;
 					}).subscribe(x=>
 						tree.selectionEmitter.next(x))
@@ -231,7 +231,7 @@ jb.component('tree.keyboard-selection', {
 
 				function runActionInTreeContext(action) {
 					jb.ui.wrapWithLauchingElement(action,
-						context.setData(tree.selected), tree.el.parentNode.querySelector('.treenode.selected>.treenode-line'))()
+						context.setData(tree.selected), jb.ui.findIncludeSelf(tree.el,'.treenode.selected>.treenode-line')[0])()
 				}
 				// menu shortcuts - delay in order not to block registration of other features
 		    jb.delay(1).then(_=> cmp.base && (cmp.base.onkeydown = e => {
@@ -273,9 +273,9 @@ jb.component('tree.drag-and-drop', {
   			var tree = cmp.tree;
         var drake = tree.drake = dragula([], {
 				      moves: el =>
-					         jb.ui.match(el,'.jb-array-node>.treenode-children>div')
+					         jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
 	      });
-        drake.containers = cmp.base.querySelectorAll('.jb-array-node>.treenode-children');
+        drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
         //jb.ui.findIncludeSelf(cmp.base,'.jb-array-node').map(el=>el.children()).filter('.treenode-children').get();
 
 	      drake.on('drag', function(el, source) {
@@ -305,7 +305,7 @@ jb.component('tree.drag-and-drop', {
       					var diff = e.keyCode == 40 ? 2 : -1;
       					var selectedIndex = Number(tree.selected.split('~').pop());
       					if (isNaN(selectedIndex)) return;
-      					var no_of_siblings = cmp.base.querySelector('.treenode.selected').parentNode.children().length;
+      					var no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children()).length;
                 //$($('.treenode.selected').parents('.treenode-children')[0]).children().length;
       					var index = (selectedIndex + diff+ no_of_siblings+1) % (no_of_siblings + 1);
       					var path = tree.selected.split('~').slice(0,-1).join('~');
@@ -317,7 +317,7 @@ jb.component('tree.drag-and-drop', {
       		doCheck: function(cmp) {
       			var tree = cmp.tree;
     		  	if (tree.drake)
-    			     tree.drake.containers = cmp.base.querySelectorAll('.jb-array-node>.treenode-children');
+    			     tree.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
     				       //$(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
       		}
   	})

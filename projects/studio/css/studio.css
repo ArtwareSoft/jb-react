@@ -19,7 +19,3 @@
   top: 290px;
   left: 410px;
 }
-
-.jbstudio_highlight_in_preview {
-  position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; zIndex: 5000;
-}

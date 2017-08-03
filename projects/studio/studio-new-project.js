@@ -34,21 +34,22 @@ jb.component('${name}.main', {
 </html>
 ` },
       ]
-    }
-    return $.ajax({
-      url: `/?op=createProject`,
-      type: 'POST',
-      data: JSON.stringify(request),
-      headers: { 'Content-Type': 'application/json; charset=UTF-8' }
-    }).then(
-      res=> {
+    };
+    var headers = new Headers();
+    headers.append("Content-Type", "application/json; charset=UTF-8");
+    return fetch(`/?op=createProject`,{method: 'POST', headers: headers, body: JSON.stringify(request) })
+    .then(r =>
+        r.json())
+    .then(res=>{
         if (res.type == 'error')
             return jb.studio.message(`error creating project ${name}: ` + (e && e.desc));
         jb.studio.message(`project ${name} created`);
         return ctx.params.onSuccess();
-      }, e=>
-        jb.studio.message(`error creating project ${name}: ` + (e && e.desc))
-    )
+    })
+    .catch(e => {
+      jb.studio.message(`error creating project ${name}: ` + (e && e.desc));
+      jb.logException(e)
+    })
   }
 });
 

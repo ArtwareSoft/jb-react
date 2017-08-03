@@ -223,8 +223,13 @@ border: 1px solid rgb(213, 213, 213);}
     100% { opacity: 0; }
 }
 
-.jb-fade-500ms {
-   animation: jb-fade 0.5s;
+.jb-fade-3s-transition {
+  opacity: 0;
+  -webkit-transition: opacity 3s ease-in-out;
+}
+
+.jb-fade-3s {
+   animation: jb-fade 3s;
 }
 
 .jb-highlight-comp-changed {

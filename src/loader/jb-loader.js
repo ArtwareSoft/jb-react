@@ -111,6 +111,9 @@ var resources = {
       babel: [
         'node_modules/babel-standalone/babel.js',
         'dist/babel-ext.js'
+      ],
+      'node-adapter' : [
+          'src/node-adapter/node-adapter.js'
       ]
 };
 

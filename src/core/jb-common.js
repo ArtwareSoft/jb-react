@@ -774,7 +774,7 @@ jb.component('in-group', {
 jb.component('http.get', {
 	params: [
 		{ id: 'url', as: 'string' },
-		{ id: 'json', as: 'boolean' }
+		{ id: 'json', as: 'boolean', description: 'convert result to json' }
 	],
 	impl: (ctx,url,_json) => {
 		if (ctx.probe)
@@ -784,6 +784,23 @@ jb.component('http.get', {
 			  .then(r =>
 			  		json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
+			  .catch(e => jb.logException(e) || [])
+	}
+});
+
+jb.component('http.post', {
+  type: 'action',
+	params: [
+		{ id: 'url', as: 'string' },
+    { id: 'postData', as: 'single' },
+		{ id: 'jsonResult', as: 'boolean', description: 'convert result to json' }
+	],
+	impl: (ctx,url,postData,json) => {
+    var headers = new Headers();
+    headers.append("Content-Type", "application/json; charset=UTF-8");
+		return fetch(url,{method: 'POST', headers: headers, body: JSON.stringify(postData) })
+			  .then(r =>
+			  		json ? r.json() : r.text())
 			  .catch(e => jb.logException(e) || [])
 	}
 });
