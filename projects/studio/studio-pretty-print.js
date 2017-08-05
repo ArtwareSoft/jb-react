@@ -1,9 +1,10 @@
 jb.component('pretty-print', {
   params: [
-    { id: 'profile', defaultValue: '%%' }
+    { id: 'profile', defaultValue: '%%' },
+    { id: 'colWidth', as: 'number', defaultValue: 80 },
   ],
-  impl: (ctx,profile) => 
-    jb.studio.prettyPrint(profile)
+  impl: (ctx,profile,colWidth) => 
+    jb.studio.prettyPrint(profile,colWidth)
 })
 
 jb.studio.prettyPrintComp = function(compId,comp) {
@@ -56,7 +57,7 @@ jb.studio.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPa
     if (typeof val === 'object') return printObj(val,path);
     if (typeof val === 'function')
       result += val.toString();
-    else if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1) 
+    else if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
       result += "'" + val + "'";
     else if (typeof val === 'string' && val.indexOf('\n') != -1) {
       result += "`" + val.replace(/`/g,'\\`') + "`"
@@ -64,8 +65,8 @@ jb.studio.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPa
       // result += "`";
       // var lines = val.split('\n');
       // lines.forEach((line,index)=>{
-      //     result += line.trim(); 
-      //     if(index<lines.length-1) 
+      //     result += line.trim();
+      //     if(index<lines.length-1)
       //       newLine();
       // })
       // depth--;
@@ -146,7 +147,7 @@ jb.studio.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPa
     var props = sortedPropertyNames(obj)
       .filter(p=>obj[p] != null)
       .filter(x=>x!='$')
-      .map(prop => 
+      .map(prop =>
       quotePropName(prop) + ': ' + flat_val(obj[prop]));
     if (obj && obj.$) {
       props.unshift("$: '" + obj.$+ "'");
@@ -164,7 +165,7 @@ jb.studio.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPa
     if (Array.isArray(val)) return flat_array(val);
     if (typeof val === 'object') return flat_obj(val);
     if (typeof val === 'function') return val.toString();
-    if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1) 
+    if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
       return "'" + val + "'";
     else
       return JSON.stringify(val); // primitives

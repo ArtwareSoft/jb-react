@@ -69,6 +69,7 @@ jb.component('control-with-condition', {
   params: [
     { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
     { id: 'control', type: 'control', essential: true, dynamic: true },
+    { id: 'title', as: 'string' },
   ],
   impl: (ctx,condition,ctrl) =>
     condition && ctrl(ctx)

@@ -392,6 +392,8 @@ ui.toVdomOrStr = val => {
 	var res = jb.val((Array.isArray(val) && val.length == 1) ? val[0] : val);
 	if (typeof res == 'boolean')
 		res = '' + res;
+  if (res && res.slice)
+    res = res.slice(0,100);
 	return res;
 }
 

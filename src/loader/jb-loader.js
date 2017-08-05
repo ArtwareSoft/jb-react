@@ -114,6 +114,9 @@ var resources = {
       ],
       'node-adapter' : [
           'src/node-adapter/node-adapter.js'
+      ],
+      'pretty-print' : [
+        'projects/studio/studio-pretty-print.js'
       ]
 };
 
@@ -138,7 +141,7 @@ function jb_dynamicLoad(modules,prefix) {
 
       var url = (window.jbLoaderRelativePath ? '' : '/') + file;
       if (file.match(/\.js$/))
-        document.write('<script src="' + url + '"></script>')
+        document.write('<script src="' + url + '" charset="UTF-8"></script>')
       else
         document.write('<link rel="stylesheet" type="text/css" href="' + url + '" />');
     })

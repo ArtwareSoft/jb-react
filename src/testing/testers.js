@@ -139,7 +139,7 @@ var jb_success_counter = 0;
 var jb_fail_counter = 0;
 
 function goto_editor(id) {
-	$.ajax(`/?op=gotoSource&comp=${id}`)
+	fetch(`/?op=gotoSource&comp=${id}`)
 }
 function hide_success_lines() {
 	document.querySelectorAll('.success').forEach(e=>e.style.display = 'none')

@@ -90,49 +90,98 @@ jb.component('studio-helper.pick-profile', {
 })
 
 jb.component('studio-helper.jb-editor', {
-  type: 'control', 
-  params: [{ id: 'path', defaultValue: 'studio-helper-sample.component-header' }], 
-  impl :{$: 'group', 
-    title: 'main', 
-    style :{$: 'layout.flex', align: 'flex-start' }, 
+  type: 'control',
+  params: [{ id: 'path', defaultValue: 'studio-helper-sample.component-header' }],
+  impl :{$: 'group',
+    title: 'main',
+    style :{$: 'layout.flex', align: 'flex-start' },
     controls: [
-      {$: 'studio.jb-editor', 
+      {$: 'studio.jb-editor',
         path: 'studio-helper-sample.properties-params-prof'
-      }, 
-      {$: 'group', 
+      },
+      {$: 'group',
         controls: [
-          {$: 'label', 
-            title: 'aa -%$jbEditor_selection%', 
+          {$: 'label',
+            title: 'aa -%$jbEditor_selection%',
             style :{$: 'label.span' }
-          }, 
-          {$: 'editable-text', 
-            databind :{$: 'studio.profile-as-text', path: '%$jbEditor_selection%' }, 
-            style :{$: 'editable-text.textarea' }, 
+          },
+          {$: 'editable-text',
+            databind :{$: 'studio.profile-as-text', path: '%$jbEditor_selection%' },
+            style :{$: 'editable-text.textarea' },
             features: [
-              {$: 'css.width', width: '300' }, 
-              {$: 'css.height', height: '200' }, 
+              {$: 'css.width', width: '300' },
+              {$: 'css.height', height: '200' },
               {$: 'css.margin', left: '10' }
             ]
           }
-        ], 
+        ],
         features: [
-          {$: 'watch-ref', 
-            path: '%$jbEditor_selection%', 
+          {$: 'watch-ref',
+            path: '%$jbEditor_selection%',
             ref: '%$jbEditor_selection%'
           }
         ]
       }
-    ], 
+    ],
     features: [
-      {$: 'css', css: '{ height: 200px; padding: 50px }' }, 
-      {$: 'var', 
-        name: 'jbEditor_selection', 
-        value: 'studio-helper-sample.properties-params-prof', 
+      {$: 'css', css: '{ height: 200px; padding: 50px }' },
+      {$: 'var',
+        name: 'jbEditor_selection',
+        value: 'studio-helper-sample.properties-params-prof',
         mutable: true
-      }, 
-      {$: 'var', 
-        name: 'circuit', 
+      },
+      {$: 'var',
+        name: 'circuit',
         value: 'studio-helper-sample.properties-params-prof'
+      }
+    ]
+  }
+})
+
+jb.component('studio-helper.jb-editor2', {
+  type: 'control',
+  params: [{ id: 'path', defaultValue: 'studio-helper.group-with-label' }],
+  impl :{$: 'group',
+    title: 'main',
+    style :{$: 'layout.flex', align: 'flex-start' },
+    controls: [
+      {$: 'studio.jb-editor',
+        path: '%$path%'
+      },
+      {$: 'group',
+        controls: [
+          {$: 'label',
+            title: 'aa -%$jbEditor_selection%',
+            style :{$: 'label.span' }
+          },
+          {$: 'editable-text',
+            databind :{$: 'studio.profile-as-text', path: '%$jbEditor_selection%' },
+            style :{$: 'editable-text.textarea' },
+            features: [
+              {$: 'css.width', width: '300' },
+              {$: 'css.height', height: '200' },
+              {$: 'css.margin', left: '10' }
+            ]
+          }
+        ],
+        features: [
+          {$: 'watch-ref',
+            path: '%$jbEditor_selection%',
+            ref: '%$jbEditor_selection%'
+          }
+        ]
+      }
+    ],
+    features: [
+      {$: 'css', css: '{ height: 200px; padding: 50px }' },
+      {$: 'var',
+        name: 'jbEditor_selection',
+        value: '%$path%',
+        mutable: true
+      },
+      {$: 'var',
+        name: 'circuit',
+        value: '%$path%'
       }
     ]
   }
@@ -387,17 +436,17 @@ jb.component('studio-helper-sample.properties-params', {
 })
 
 jb.component('studio-helper-sample.properties-params-prof', {
-  type: 'control', 
-  impl :{$: 'studio-helper-sample.properties-params', 
-    strAsComp :{ $pipeline: [{$: 'slice' }, '%%'] }, 
-    strAsJs: ctx => ctx.vars.aa, 
-    boolAsComp :{ $pipeline: ['a', '%%=="a"'] }, 
-    boolAsJs: ctx => ctx.vars.aa, 
-    enumStr: 'c', 
-    enumNum: '1', 
-    bool :{ $or: [false] }, 
+  type: 'control',
+  impl :{$: 'studio-helper-sample.properties-params',
+    strAsComp :{ $pipeline: [{$: 'slice' }, '%%'] },
+    strAsJs: ctx => ctx.vars.aa,
+    boolAsComp :{ $pipeline: ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '%%=="a"'] },
+    boolAsJs: ctx => ctx.vars.aa,
+    enumStr: 'c',
+    enumNum: '1',
+    bool :{ $or: [false] },
     style :{$: 'button.href' }
-  }, 
+  },
   $vars: ''
 })
 

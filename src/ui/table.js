@@ -8,7 +8,7 @@ jb.component('table', {
     { id: 'watchItems', as: 'boolean' },
     { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
   ],
-  impl: ctx => 
+  impl: ctx =>
     jb.ui.ctrl(ctx)
 })
 
@@ -52,7 +52,7 @@ jb.component('table.init', {
         cmp.fields = ctx.vars.$model.fields();
 
         cmp.refresh = _ =>
-            cmp.setState({items: calcItems()}) 
+            cmp.setState({items: calcItems()})
 
         if (ctx.vars.$model.watchItems)
           jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
@@ -61,9 +61,8 @@ jb.component('table.init', {
           cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
           if (cmp.ctx.vars.itemlistCntr)
               cmp.ctx.vars.itemlistCntr.items = cmp.items;
-          return cmp.items;
+          return cmp.items.slice(0,100);
         }
       },
   })
 })
-

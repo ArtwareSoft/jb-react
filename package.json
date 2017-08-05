@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "start": "npm run studio",
-    "jb-elec": "node_modules\\electron\\dist\\electron jb-electron",
+    "jb": "node_modules\\electron\\dist\\electron jb-electron",
     "eStduio": "node_modules\\electron\\dist\\electron jb-electron -path:projects/studio/cards",
     "eTests": "node_modules\\electron\\dist\\electron jb-electron -path:projects/ui-tests/tests.html",
     "dev": "concurrently \"npm run webpack\" \"npm run studio\" ",

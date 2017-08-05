@@ -143,46 +143,46 @@ jb.component('studio.jb-floating-input-rich', {
 })
 
 jb.component('studio.jb-floating-input', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'group',
     controls: [
-      {$: 'editable-text', 
-        title :{$: 'studio.prop-name', path: '%$path%' }, 
-        databind :{$: 'studio.profile-value-as-text', path: '%$path%' }, 
-        updateOnBlur: true, 
-        style :{$: 'editable-text.jb-editor-floating-input' }, 
+      {$: 'editable-text',
+        title :{$: 'studio.prop-name', path: '%$path%' },
+        databind :{$: 'studio.profile-value-as-text', path: '%$path%' },
+        updateOnBlur: true,
+        style :{$: 'editable-text.jb-editor-floating-input' },
         features: [
-          {$: 'var', 
-            name: 'suggestionData', 
-            value :{$: 'object', selected: '', options: [], path: '%$path%' }, 
+          {$: 'var',
+            name: 'suggestionData',
+            value :{$: 'object', selected: '', options: [], path: '%$path%' },
             mutable: true
-          }, 
-          {$: 'editable-text.helper-popup', 
-            features :{$: 'dialog-feature.near-launcher-position' }, 
-            control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
-            popupId: 'suggestions', 
-            popupStyle :{$: 'dialog.popup' }, 
-            showHelper :{$: 'studio.show-suggestions' }, 
+          },
+          {$: 'editable-text.helper-popup',
+            features :{$: 'dialog-feature.near-launcher-position' },
+            control :{$: 'studio.suggestions-itemlist', path: '%$path%' },
+            popupId: 'suggestions',
+            popupStyle :{$: 'dialog.popup' },
+            showHelper :{$: 'studio.show-suggestions' },
             onEnter: [
-              {$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' }, 
+              {$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' },
               {$: 'tree.regain-focus' }
-            ], 
+            ],
             onEsc: [
-              {$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' }, 
+              {$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' },
               {$: 'tree.regain-focus' }
             ]
           }
         ]
-      }, 
-      {$: 'label', 
+      },
+      {$: 'label',
         title :{
           $pipeline: [{$: 'studio.param-def', path: '%$path%' }, '%description%']
         }
       }
-    ], 
+    ],
     features: [
-      {$: 'css.padding', left: '4', right: '4' }, 
+      {$: 'css.padding', left: '4', right: '4' },
       {$: 'css.margin', top: '-20', selector: '>*:last-child' }
     ]
   }
@@ -319,7 +319,6 @@ class CompOption {
       input.value = '=' + this.toPaste;
       this.writeValue(ctx);
       // dirty design ?
-//      ctx.run({$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' });
         // var closeAndWriteValue = _ => {
         //   params.closeFloatingInput();
         //   var option = input.value.indexOf('=') == 0 ? new CompOption(input.value.substr(1)) : new ValueOption();
@@ -328,6 +327,7 @@ class CompOption {
     }
     writeValue(ctx) {
       st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste);
+      ctx.run({$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' });
       ctx.run({$:'studio.expand-and-select-first-child-in-jb-editor' });
     }
 }

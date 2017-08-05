@@ -14,7 +14,7 @@ jb.component('itemlist', {
 })
 
 jb.component('itemlist.no-container', {
-  type: 'feature',
+  type: 'feature', category: 'group:20',
   impl: ctx => ({
     extendCtxOnce: (ctx,cmp) =>
       ctx.setVars({itemlistCntr: null})
@@ -38,7 +38,7 @@ jb.component('itemlist.init', {
             if (cmp.ctx.vars.itemlistCntr)
               cmp.ctx.vars.itemlistCntr.items = _items;
             cmp.items = _items;
-            return _items.map(item=>
+            return _items.slice(0,100).map(item=>
               Object.assign(controlsOfItem(item),{item:item})).filter(x=>x.length > 0);
         }
 

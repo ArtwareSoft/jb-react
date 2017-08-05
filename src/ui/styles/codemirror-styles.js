@@ -8,6 +8,8 @@ jb.component('editable-text.codemirror', {
 		{ id: 'mode', as: 'string' },
 		{ id: 'debounceTime', as: 'number', defaultValue: 300 },
 		{ id: 'lineWrapping', as: 'boolean' },
+    { id: 'lineNumbers', as: 'boolean' },
+    { id: 'readOnly', as: 'boolean' },
 		{ id: 'onCtrlEnter', type: 'action', dynamic: true },
 	],
 	impl: function(context, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
@@ -19,11 +21,13 @@ jb.component('editable-text.codemirror', {
 				var _cm_settings = Object.assign(cm_settings||{}, {
 					mode: mode || 'javascript',
 					lineWrapping: lineWrapping,
+          lineNumbers: context.params.lineNumbers,
 					theme: 'solarized light',
 					extraKeys: {
 						'Ctrl-Space': 'autocomplete',
 						'Ctrl-Enter': () => context.params.onCtrlEnter()
 					},
+          readOnly: context.params.readOnly,
 				});
 				try {
 					var editor = CodeMirror.fromTextArea(cmp.base.firstChild, _cm_settings);

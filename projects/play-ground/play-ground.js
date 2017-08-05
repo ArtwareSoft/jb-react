@@ -81,16 +81,16 @@ jb.component('play-ground.t', {
     style :{$: 'layout.vertical', spacing: 3 }, 
     controls: [
       {$: 'button', 
-        title: 'click me1', 
+        title: 'click me2', 
+        style :{$: 'button.mdl-raised' }
+      }, 
+      {$: 'button', 
+        title: 'click me1311', 
         style :{$: 'custom-style', 
           template: (cmp,state,h) => h('button',{class: 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev)},state.title), 
           css: '{ color: red }', 
           features :{$: 'mdl-style.init-dynamic' }
         }
-      }, 
-      {$: 'button', 
-        title: 'click me2', 
-        style :{$: 'button.mdl-raised' }
       }, 
       {$: 'button', 
         title: 'click me3', 

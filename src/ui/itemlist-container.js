@@ -44,7 +44,7 @@ createItemlistCntr = (ctx,params) => ({
 
 jb.component('group.itemlist-container', {
   description: 'itemlist writable container to support addition, deletion and selection',
-  type: 'feature', category: 'itemlist:20,group:0',
+  type: 'feature', category: 'itemlist:80,group:70',
   params: [
     { id: 'id', as: 'string' },
     { id: 'defaultItem', as: 'single' },

@@ -276,7 +276,7 @@ jb.component('tree.drag-and-drop', {
 					         jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
 	      });
         drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
-        //jb.ui.findIncludeSelf(cmp.base,'.jb-array-node').map(el=>el.children()).filter('.treenode-children').get();
+          //jb.ui.findIncludeSelf(cmp.base,'.jb-array-node').map(el=>el.children()).filter('.treenode-children').get();
 
 	      drake.on('drag', function(el, source) {
 	          var path = tree.elemToPath(el.firstElementChild)
@@ -305,7 +305,7 @@ jb.component('tree.drag-and-drop', {
       					var diff = e.keyCode == 40 ? 2 : -1;
       					var selectedIndex = Number(tree.selected.split('~').pop());
       					if (isNaN(selectedIndex)) return;
-      					var no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children()).length;
+      					var no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
                 //$($('.treenode.selected').parents('.treenode-children')[0]).children().length;
       					var index = (selectedIndex + diff+ no_of_siblings+1) % (no_of_siblings + 1);
       					var path = tree.selected.split('~').slice(0,-1).join('~');

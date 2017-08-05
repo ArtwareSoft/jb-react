@@ -319,11 +319,11 @@ function evalExpressionPart(expressionPart,context,jstype) {
 
       if (first && subExp.charAt(0) == '$' && subExp.length > 1)
         return calcVar(context,subExp.substr(1))
-      var obj = arrValue = val(input);
-      if (Array.isArray(arrValue) && subExp == 'length')
-        return arrValue.length;
-      if (Array.isArray(arrValue))
-        return arrValue.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null);
+      var obj = val(input);
+      if (subExp == 'length' && obj && typeof obj.length != 'undefined')
+        return obj.length;
+      if (Array.isArray(obj))
+        return obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null);
 
       if (input != null && typeof input == 'object') {
         if (obj == null) return;
