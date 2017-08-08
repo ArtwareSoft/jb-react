@@ -5,27 +5,31 @@ jb.component('group.wait', {
     { id: 'for', essential: true, dynamic: true },
     { id: 'loadingControl', type: 'control', defaultValue: { $:'label', title: 'loading ...'} , dynamic: true },
     { id: 'error', type: 'control', defaultValue: { $:'label', title: 'error: %$error%', css: '{color: red; font-weight: bold}'} , dynamic: true },
-    { id: 'resource', as: 'string' },
+    { id: 'varName', as: 'string' },
   ],
-  impl: (context,waitFor,loading,error,resource) => ({
-      beforeInit: cmp => {
-        cmp.ctrlEmitter = jb.rx.Observable.from(waitFor()).take(1)
-            .do(data => {
-              if (resource)
-                jb.resources[resource] = data;
+  impl: (context,waitFor,loading,error,varName) => ({
+      beforeInit : cmp =>
+        cmp.state.ctrls = [loading(context)].map(c=>c.reactComp()),
+
+      afterViewInit: cmp => {
+        jb.rx.Observable.from(waitFor()).takeUntil(cmp.destroyed).take(1)
+          .catch(e=>
+              cmp.setState( { ctrls: [error(context.setVars({error:e}))].map(c=>c.reactComp()) }) )
+          .subscribe(data => {
+              cmp.ctx = cmp.ctx.setData(data);
+              if (varName)
+                cmp.ctx = cmp.ctx.setVars(jb.obj(varName,data));
+              // strong refresh
+              cmp.setState({ctrls: []});
+              jb.delay(1).then(
+                _=>cmp.refresh())
             })
-            .map(data=>
-              context.vars.$model.controls(cmp.ctx.setData(data)))
-            .catch(e=>
-                jb.rx.Observable.of([error(context.setVars({error:e}))]));
 
-        cmp.state.ctrls = [loading(context)].map(c=>c.reactComp());
 
-        cmp.delayed = cmp.ctrlEmitter.toPromise().then(_=>
-          cmp.jbEmitter.filter(x=>
-            x=='after-update').take(1).toPromise());
+        // cmp.delayed = cmp.ctrlEmitter.toPromise().then(_=>
+        //   cmp.jbEmitter.filter(x=>
+        //     x=='after-update').take(1).toPromise());
       },
-      jbEmitter: true,
   })
 })
 

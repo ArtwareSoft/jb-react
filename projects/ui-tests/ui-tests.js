@@ -48,12 +48,27 @@ jb.component('ui-test.wait-for', {
    impl :{$: 'ui-test',
     control :{$: 'group',
       features :{$: 'group.wait',
-        for: ctx => new Promise(res => setTimeout(()=>{res('hello')}, 100))
+        for: ctx => new Promise(res => setTimeout(()=>{res('hello')}, 10))
+      },
+      controls: {$:'label', title: '%%'},
+    },
+    action: ctx=> jb.delay(40),
+    expectedResult :{$: 'contains', text: 'hello' }
+  },
+})
+
+jb.component('ui-test.wait-for-with-var', {
+   impl :{$: 'ui-test',
+    control :{$: 'group',
+      features :{$: 'group.wait',
+        for: ctx => jb.delay(10).then(_=>'hello'),
+        varName: 'txt'
       },
       controls: [
-        {$:'label', title: '%%'},
+        {$:'label', title: '%$txt%'},
       ]
     },
+    action: ctx=> jb.delay(40),
     expectedResult :{$: 'contains', text: 'hello' }
   },
 })

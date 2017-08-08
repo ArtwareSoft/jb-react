@@ -93,7 +93,7 @@ var resources = {
           'node_modules/dragula/dist/dragula.css',
       ],
       studio: [
-        'utils','path','main', 'pretty-print',
+        'utils','path','main',
         'toolbar','styles', 'search', 'new-profile', 'data-browse', 'preview', 'tgp-model', 'model-components',
         'tree','popups','properties','pick','properties-menu','save','open-project','new-project', 'references', 'component-header',
         'suggestions','undo','edit-source','jb-editor','jb-editor-styles','style-editor','probe','testers', 'event-tracker','h-to-jsx',
@@ -112,12 +112,9 @@ var resources = {
         'node_modules/babel-standalone/babel.js',
         'dist/babel-ext.js'
       ],
-      'node-adapter' : [
-          'src/node-adapter/node-adapter.js'
-      ],
-      'pretty-print' : [
-        'projects/studio/studio-pretty-print.js'
-      ]
+      'node-adapter' : [ 'src/node-adapter/node-adapter.js' ],
+      'pretty-print' : [ 'src/misc/pretty-print.js' ],
+      'parsing': [ 'src/misc/parsing.js' ]
 };
 
 function jb_dynamicLoad(modules,prefix) {

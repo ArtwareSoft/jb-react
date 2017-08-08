@@ -49,7 +49,7 @@ jb.component('editable-text.jb-editor-floating-input', {
       ]),
       css: '{ margin-right: 13px; }', // for the x-button
       features :[
-          {$: 'field.databind-text', debounceTime: 300 },
+          {$: 'field.databind-text', debounceTime: 300, oneWay: true },
           {$: 'mdl-style.init-dynamic'}
       ],
   }

@@ -1,72 +1,72 @@
 
 jb.component('studio.open-jb-editor', {
-  type: 'action', 
+  type: 'action',
   params: [
-    { id: 'path', as: 'string' }, 
-    { id: 'fromPath', as: 'string' }, 
+    { id: 'path', as: 'string' },
+    { id: 'fromPath', as: 'string' },
     { id: 'newWindow', type: 'boolean', as: 'boolean' }
-  ], 
-  impl :{$: 'open-dialog', 
+  ],
+  impl :{$: 'open-dialog',
     $vars: {
-      dialogId :{ $if: '%$newWindow%', then: '', else: 'jb-editor' }, 
-      fromPath: '%$fromPath%', 
+      dialogId :{ $if: '%$newWindow%', then: '', else: 'jb-editor' },
+      fromPath: '%$fromPath%',
       pickSelection :{$: 'object' }
-    }, 
-    style :{$: 'dialog.studio-floating', 
-      id: '%$dialogId%', 
-      width: '860', 
+    },
+    style :{$: 'dialog.studio-floating',
+      id: '%$dialogId%',
+      width: '860',
       height: '400'
-    }, 
-    content :{$: 'studio.jb-editor', path: '%$path%' }, 
-    menu :{$: 'button', 
-      action :{$: 'studio.open-jb-editor-menu', 
-        path: '%$jbEditor_selection%', 
+    },
+    content :{$: 'studio.jb-editor', path: '%$path%' },
+    menu :{$: 'button',
+      action :{$: 'studio.open-jb-editor-menu',
+        path: '%$jbEditor_selection%',
         root: '%$path%'
-      }, 
+      },
       style :{$: 'button.mdl-icon', icon: 'menu' }
-    }, 
-    title :{$: 'studio.path-hyperlink', path: '%$path%', prefix: 'Inteliscript' }, 
+    },
+    title :{$: 'studio.path-hyperlink', path: '%$path%', prefix: 'Inteliscript' },
     features: [
-      {$: 'var', name: 'jbEditor_selection', value: '%$path%', mutable: true }, 
+      {$: 'var', name: 'jbEditor_selection', value: '%$path%', mutable: true },
       {$: 'dialog-feature.resizer' }
     ]
   }
 })
 
 jb.component('studio.open-component-in-jb-editor', {
-  type: 'action', 
-  params: [{ id: 'path', as: 'string' }, { id: 'fromPath', as: 'string' }], 
+  type: 'action',
+  params: [{ id: 'path', as: 'string' }, { id: 'fromPath', as: 'string' }],
   impl :{
     $vars: {
-      compPath :{$: 'split', separator: '~', text: '%$path%', part: 'first' }, 
-      fromPath: '%$fromPath%', 
+      compPath :{$: 'split', separator: '~', text: '%$path%', part: 'first' },
+      fromPath: '%$fromPath%',
       pickSelection :{$: 'object' }
-    }, 
+    },
     $runActions: [
-      {$: 'open-dialog', 
-        style :{$: 'dialog.studio-floating', 
-          id: 'jb-editor', 
-          width: '860', 
+      {$: 'open-dialog',
+        style :{$: 'dialog.studio-floating',
+          id: 'jb-editor',
+          width: '860',
           height: '400'
-        }, 
-        content :{$: 'studio.jb-editor', path: '%$compPath%' }, 
-        menu :{$: 'button', 
-          action :{$: 'studio.open-jb-editor-menu', 
-            path: '%$jbEditor_selection%', 
+        },
+        content :{$: 'studio.jb-editor', path: '%$compPath%' },
+        menu :{$: 'button',
+          action :{$: 'studio.open-jb-editor-menu',
+            path: '%$jbEditor_selection%',
             root: '%$path%'
-          }, 
+          },
           style :{$: 'button.mdl-icon', icon: 'menu' }
-        }, 
-        title :{$: 'studio.path-hyperlink', 
-          path: '%$compPath%', 
+        },
+        title :{$: 'studio.path-hyperlink',
+          path: '%$compPath%',
           prefix: 'Inteliscript'
-        }, 
+        },
         features: [
-          {$: 'var', 
-            name: 'jbEditor_selection', 
-            value: '%$path%', 
+          {$: 'var',
+            name: 'jbEditor_selection',
+            value: '%$path%',
             mutable: true
-          }, 
+          },
           {$: 'dialog-feature.resizer' }
         ]
       }
@@ -117,20 +117,13 @@ jb.component('studio.jb-editor', {
                 title: 'watch selection content',
                 controls :{$: 'group',
                   title: 'wait for probe',
-                  controls :{$: 'group',
-                    controls: [
+                  controls : [
                       {$: 'label',
                         title: '{? closest Path: %$probeResult/closestPath% ?}',
                         features :{$: 'css', css: '{ color: red}' }
                       },
                       {$: 'label',
-                        title: 'circuit %$probeResult/circuitType%: %$probeResult/circuit.$%, time: %$probeResult/totalTime% mSec'
-                      },
-                      {$: 'label',
-                        title: 'action circuits are not supported',
-                        features :{$: 'hidden',
-                          showCondition: '%$probeResult/circuitType% == "action"'
-                        }
+                        title: 'circuit %$probeResult/circuit.$%, time: %$probeResult/totalTime% mSec'
                       },
                       {$: 'table',
                         items :{
@@ -162,12 +155,11 @@ jb.component('studio.jb-editor', {
                         },
                         features: [{$: 'css', css: '{white-space: normal}' }]
                       }
-                    ]
-                  },
+                    ],
                   features :{$: 'group.wait',
-                    for :{$: 'studio.probe', path: '%$jbEditor_selection%' },
-                    loadingControl :{$: 'label', title: 'calculating...' },
-                    resource: 'probeResult'
+                    for : {$: 'studio.probe', path: '%$jbEditor_selection%' },
+                    loadingControl :{$: 'label', title: '...', title1: 'calculating...' },
+                    varName: 'probeResult'
                   }
                 },
                 features :{$: 'watch-ref',
@@ -191,122 +183,122 @@ jb.component('studio.jb-editor', {
 })
 
 jb.component('studio.data-browse', {
-  type: 'control', 
+  type: 'control',
   params: [
-    { id: 'obj', essential: true, defaultValue: '%%' }, 
-    { id: 'title', as: 'string' }, 
+    { id: 'obj', essential: true, defaultValue: '%%' },
+    { id: 'title', as: 'string' },
     { id: 'width', as: 'number', defaultValue: 200 }
-  ], 
-  impl :{$: 'group', 
-    title: '%$title%', 
-    controls :{$: 'group', 
+  ],
+  impl :{$: 'group',
+    title: '%$title%',
+    controls :{$: 'group',
       controls: [
-        {$: 'control.first-succeeding', 
+        {$: 'control.first-succeeding',
           controls: [
-            {$: 'control-with-condition', 
-              condition :{$: 'in-group', 
-                obj: '%$obj%', 
-                group :{ $list: ['JbComponent', 'jbCtx'] }, 
+            {$: 'control-with-condition',
+              condition :{$: 'in-group',
+                obj: '%$obj%',
+                group :{ $list: ['JbComponent', 'jbCtx'] },
                 item :{$: 'class-name', obj: '%$obj%' }
-              }, 
-              control :{$: 'label', 
+              },
+              control :{$: 'label',
                 title :{$: 'class-name', obj: '%$obj%' }
               }
-            }, 
-            {$: 'control-with-condition', 
-              condition :{$: 'is-of-type', type: 'string,boolean,number', obj: '%$obj%' }, 
+            },
+            {$: 'control-with-condition',
+              condition :{$: 'is-of-type', type: 'string,boolean,number', obj: '%$obj%' },
               control :{$: 'label', title: '%$obj%' }
-            }, 
-            {$: 'control-with-condition', 
-              condition :{$: 'is-of-type', type: 'array', obj: '%$obj%' }, 
-              control :{$: 'table', 
+            },
+            {$: 'control-with-condition',
+              condition :{$: 'is-of-type', type: 'array', obj: '%$obj%' },
+              control :{$: 'table',
                 items :{
                   $pipeline: [
-                    '%$obj%', 
+                    '%$obj%',
                     {$: 'slice', end: '5' }
                   ]
-                }, 
-                fields :{$: 'field.control', 
-                  title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] }, 
+                },
+                fields :{$: 'field.control',
+                  title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] },
                   control :{$: 'studio.data-browse', a: 'label', obj: '%%', width: 200 }
-                }, 
-                style :{$: 'table.mdl', 
-                  classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp', 
+                },
+                style :{$: 'table.mdl',
+                  classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
                   classForTd: 'mdl-data-table__cell--non-numeric'
                 }
               }
-            }, 
-            {$: 'control-with-condition', 
-              condition :{$: 'isNull', obj: '%$obj%' }, 
+            },
+            {$: 'control-with-condition',
+              condition :{$: 'isNull', obj: '%$obj%' },
               control :{$: 'label', title: 'null' }
-            }, 
-            {$: 'tree', 
-              nodeModel :{$: 'tree.json-read-only', 
-                object: '%$obj%', 
+            },
+            {$: 'tree',
+              nodeModel :{$: 'tree.json-read-only',
+                object: '%$obj%',
                 rootPath: '%$title%'
-              }, 
-              style :{$: 'tree.no-head' }, 
+              },
+              style :{$: 'tree.no-head' },
               features: [
-                {$: 'css.class', class: 'jb-control-tree' }, 
-                {$: 'tree.selection' }, 
-                {$: 'tree.keyboard-selection' }, 
+                {$: 'css.class', class: 'jb-control-tree' },
+                {$: 'tree.selection' },
+                {$: 'tree.keyboard-selection' },
                 {$: 'css.width', width: '%$width%', minMax: 'max' }
               ]
             }
           ]
-        }, 
-        {$: 'control-with-condition', 
-          title: 'long text', 
-          style :{$: 'button.href' }, 
+        },
+        {$: 'control-with-condition',
+          title: 'long text',
+          style :{$: 'button.href' },
           condition :{
             $and: [
-              '%$obj/length% > 100', 
+              '%$obj/length% > 100',
               {$: 'is-of-type', type: 'string', obj: '%$obj%' }
             ]
-          }, 
-          control :{$: 'button', 
-            title: 'open (%$obj/length%)', 
-            action :{$: 'open-dialog', 
-              style :{$: 'dialog.popup' }, 
-              content :{$: 'editable-text', 
-                title: '', 
-                databind: '%$obj%', 
-                style :{$: 'editable-text.codemirror', 
-                  enableFullScreen: true, 
-                  height: '200', 
-                  mode: 'text', 
+          },
+          control :{$: 'button',
+            title: 'open (%$obj/length%)',
+            action :{$: 'open-dialog',
+              style :{$: 'dialog.popup' },
+              content :{$: 'editable-text',
+                title: '',
+                databind: '%$obj%',
+                style :{$: 'editable-text.codemirror',
+                  enableFullScreen: true,
+                  height: '200',
+                  mode: 'text',
                   debounceTime: 300
                 }
               }
-            }, 
+            },
             style :{$: 'button.href' }
           }
-        }, 
-        {$: 'control-with-condition', 
-          title: 'large array', 
-          style :{$: 'button.href' }, 
+        },
+        {$: 'control-with-condition',
+          title: 'large array',
+          style :{$: 'button.href' },
           condition :{
             $and: [
-              '%$obj/length% > 5', 
+              '%$obj/length% > 5',
               {$: 'is-of-type', type: 'array', obj: '%$obj%' }
             ]
-          }, 
-          control :{$: 'button', 
-            title: 'open (%$obj/length%)', 
-            action :{$: 'open-dialog', 
-              style :{$: 'dialog.popup' }, 
-              content :{$: 'table', 
-                items: '%$obj%', 
-                fields :{$: 'field.control', 
-                  title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] }, 
+          },
+          control :{$: 'button',
+            title: 'open (%$obj/length%)',
+            action :{$: 'open-dialog',
+              style :{$: 'dialog.popup' },
+              content :{$: 'table',
+                items: '%$obj%',
+                fields :{$: 'field.control',
+                  title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] },
                   control :{$: 'studio.data-browse', a: 'label', obj: '%%', width: 200 }
-                }, 
-                style :{$: 'table.mdl', 
-                  classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp', 
+                },
+                style :{$: 'table.mdl',
+                  classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
                   classForTd: 'mdl-data-table__cell--non-numeric'
                 }
               }
-            }, 
+            },
             style :{$: 'button.href' }
           }
         }

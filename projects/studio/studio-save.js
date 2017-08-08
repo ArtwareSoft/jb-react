@@ -53,7 +53,7 @@ function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
       projDir = 'projects/studio';
 
     if (!original) { // new comp
-      var srcPath = `${projectFolder(project)}/${destFileName || "project.js"}`;
+      var srcPath = `${projectDir}/${destFileName || (project+'.js')}`;
       try {
         var current = '' + fs.readFileSync(srcPath);
         var toStore =  current + '\n\n' + toSave;
