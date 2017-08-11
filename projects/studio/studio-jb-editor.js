@@ -75,253 +75,254 @@ jb.component('studio.open-component-in-jb-editor', {
 })
 
 jb.component('studio.jb-editor', {
-  type: 'control',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'group',
-    title: 'main',
-    style :{$: 'layout.horizontal-fixed-split', align: 'space-between', direction: '', leftWidth: '350', rightWidth: '500', spacing: 3 },
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'group', 
+    title: 'main', 
+    style :{$: 'layout.horizontal-fixed-split', align: 'space-between', direction: '', leftWidth: '350', rightWidth: '500', spacing: 3 }, 
     controls: [
-      {$: 'tree',
-        nodeModel :{$: 'studio.jb-editor.nodes', path: '%$path%' },
+      {$: 'tree', 
+        nodeModel :{$: 'studio.jb-editor.nodes', path: '%$path%' }, 
         features: [
-          {$: 'css.class', class: 'jb-editor jb-control-tree' },
-          {$: 'tree.selection',
-            onDoubleClick :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' },
-            databind: '%$jbEditor_selection%',
+          {$: 'css.class', class: 'jb-editor jb-control-tree' }, 
+          {$: 'tree.selection', 
+            onDoubleClick :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' }, 
+            databind: '%$jbEditor_selection%', 
             autoSelectFirst: true
-          },
-          {$: 'tree.keyboard-selection',
-            onEnter :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' },
-            onRightClickOfExpanded :{$: 'studio.open-jb-editor-menu', path: '%%', root: '%$path%' },
-            autoFocus: true,
+          }, 
+          {$: 'tree.keyboard-selection', 
+            onEnter :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' }, 
+            onRightClickOfExpanded :{$: 'studio.open-jb-editor-menu', path: '%%', root: '%$path%' }, 
+            autoFocus: true, 
             applyMenuShortcuts :{$: 'studio.jb-editor-menu', path: '%%', root: '%$path%' }
-          },
-          {$: 'tree.drag-and-drop' },
-          {$: 'css.width', width: '500', selector: 'jb-editor' },
-          {$: 'studio.watch-script-changes' },
-          {$: 'css.height', height: '850', overflow: 'scroll', minMax: 'max' }
+          }, 
+          {$: 'tree.drag-and-drop' }, 
+          {$: 'css.width', width: '500', selector: 'jb-editor' }, 
+          {$: 'studio.watch-script-changes' }
         ]
-      },
-      {$: 'group',
-        title: 'watch selection',
+      }, 
+      {$: 'group', 
+        title: 'watch selection', 
         controls: [
-          {$: 'group',
-            title: 'hide if selection empty',
+          {$: 'group', 
+            title: 'hide if selection empty', 
             controls: [
-              {$: 'group',
-                title: 'watch selection content',
-                controls :{$: 'group',
-                  title: 'wait for probe',
+              {$: 'group', 
+                title: 'watch selection content', 
+                controls :{$: 'group', 
+                  title: 'wait for probe', 
                   controls: [
-                    {$: 'label',
-                      title: '{? closest Path: %$probeResult/closestPath% ?}',
+                    {$: 'label', 
+                      title: '{? closest Path: %$probeResult/closestPath% ?}', 
                       features :{$: 'css', css: '{ color: red}' }
-                    },
-                    {$: 'label', title: 'circuit %$probeResult/circuit.$%, time: %$probeResult/totalTime% mSec' },
-                    {$: 'table',
+                    }, 
+                    {$: 'label', title: 'circuit %$probeResult/circuit.$%, time: %$probeResult/totalTime% mSec' }, 
+                    {$: 'table', 
                       items :{
                         $pipeline: [
-                          '%$probeResult/result%',
+                          '%$probeResult/result%', 
                           {$: 'slice', end: '%$maxInputs%' }
                         ]
-                      },
+                      }, 
                       fields: [
-                        {$: 'field.control',
-                          title: 'in (%$probeResult/result/length%)',
-                          control :{$: 'studio.data-browse', obj: '%in/data%' },
+                        {$: 'field.control', 
+                          title: 'in (%$probeResult/result/length%)', 
+                          control :{$: 'studio.data-browse', obj: '%in/data%' }, 
                           width: '100'
-                        },
-                        {$: 'field.control',
-                          title: 'out',
-                          control :{$: 'studio.data-browse', obj: '%out%' },
+                        }, 
+                        {$: 'field.control', 
+                          title: 'out', 
+                          control :{$: 'studio.data-browse', obj: '%out%' }, 
                           width: '100'
                         }
-                      ],
-                      style :{$: 'table.mdl', classForTable: 'mdl-data-table', classForTd: 'mdl-data-table__cell--non-numeric' },
+                      ], 
+                      style :{$: 'table.mdl', classForTable: 'mdl-data-table', classForTd: 'mdl-data-table__cell--non-numeric' }, 
                       features: [
-                        {$: 'css', css: '{white-space: normal}' },
+                        {$: 'css', css: '{white-space: normal}' }, 
                         {$: 'watch-ref', ref: '%$maxInputs%' }
                       ]
-                    },
-                    {$: 'button',
-                      title: 'open (%$probeResult/result/length%)',
-                      action :{$: 'write-value',
-                        style :{$: 'dialog.popup' },
-                        content :{$: 'table',
-                          items: '%$obj%',
-                          fields :{$: 'field.control',
-                            title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] },
+                    }, 
+                    {$: 'button', 
+                      title: 'show (%$probeResult/result/length%)', 
+                      action :{$: 'write-value', 
+                        style :{$: 'dialog.popup' }, 
+                        content :{$: 'table', 
+                          items: '%$obj%', 
+                          fields :{$: 'field.control', 
+                            title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] }, 
                             control :{$: 'studio.data-browse', a: 'label', obj: '%%', width: 200 }
-                          },
-                          style :{$: 'table.mdl',
-                            classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
+                          }, 
+                          style :{$: 'table.mdl', 
+                            classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp', 
                             classForTd: 'mdl-data-table__cell--non-numeric'
                           }
-                        },
-                        to: '%$maxInputs%',
+                        }, 
+                        to: '%$maxInputs%', 
                         value: '100'
-                      },
-                      style :{$: 'button.href' },
+                      }, 
+                      style :{$: 'button.href' }, 
                       features: [
-                        {$: 'watch-ref', ref: '%$maxInputs%' },
-                        {$: 'hidden', showCondition: '%$maxInputs% == 5' }
+                        {$: 'watch-ref', ref: '%$maxInputs%' }, 
+                        {$: 'hidden', 
+                          showCondition :{ $and: ['%$maxInputs% == 5', '%$probeResult/result/length% > 5'] }
+                        }
                       ]
                     }
-                  ],
+                  ], 
                   features: [
-                    {$: 'group.wait',
-                      for :{$: 'studio.probe', path: '%$jbEditor_selection%' },
-                      loadingControl :{$: 'label', title1: 'calculating...', title: '...' },
+                    {$: 'group.wait', 
+                      for :{$: 'studio.probe', path: '%$jbEditor_selection%' }, 
+                      loadingControl :{$: 'label', title1: 'calculating...', title: '...' }, 
                       varName: 'probeResult'
-                    },
+                    }, 
                     {$: 'var', name: 'maxInputs', value: '5', mutable: true }
                   ]
-                },
-                features :{$: 'watch-ref',
+                }, 
+                features :{$: 'watch-ref', 
                   ref :{$: 'studio.ref', path: '%$jbEditor_selection%' }
                 }
               }
-            ],
+            ], 
             features :{$: 'feature.if', showCondition: '%$jbEditor_selection%' }
           }
-        ],
+        ], 
         features: [
-          {$: 'watch-ref', ref: '%$jbEditor_selection%' },
+          {$: 'watch-ref', ref: '%$jbEditor_selection%' }, 
           {$: 'studio.watch-script-changes' }
         ]
       }
-    ],
+    ], 
     features: [
-      {$: 'css.padding', top: '10' },
+      {$: 'css.padding', top: '10' }, 
       {$: 'css.height', height: '800', minMax: 'max' }
     ]
   }
 })
 
 jb.component('studio.data-browse', {
-  type: 'control',
-  params: [{ id: 'obj', essential: true, defaultValue: '%%' }, { id: 'title', as: 'string' }, { id: 'width', as: 'number', defaultValue: 200 }],
-  impl :{$: 'group',
-    title: '%$title%',
-    controls :{$: 'group',
+  type: 'control', 
+  params: [{ id: 'obj', essential: true, defaultValue: '%%' }, { id: 'title', as: 'string' }, { id: 'width', as: 'number', defaultValue: 200 }], 
+  impl :{$: 'group', 
+    title: '%$title%', 
+    controls :{$: 'group', 
       controls: [
-        {$: 'control.first-succeeding',
+        {$: 'control.first-succeeding', 
           controls: [
-            {$: 'control-with-condition',
-              condition :{$: 'in-group',
-                obj: '%$obj%',
-                group :{ $list: ['JbComponent', 'jbCtx'] },
+            {$: 'control-with-condition', 
+              condition :{$: 'in-group', 
+                obj: '%$obj%', 
+                group :{ $list: ['JbComponent', 'jbCtx'] }, 
                 item :{$: 'class-name', obj: '%$obj%' }
-              },
-              control :{$: 'label',
+              }, 
+              control :{$: 'label', 
                 title :{$: 'class-name', obj: '%$obj%' }
               }
-            },
-            {$: 'control-with-condition',
-              condition :{$: 'is-of-type', type: 'string,boolean,number', obj: '%$obj%' },
+            }, 
+            {$: 'control-with-condition', 
+              condition :{$: 'is-of-type', type: 'string,boolean,number', obj: '%$obj%' }, 
               control :{$: 'label', title: '%$obj%' }
-            },
-            {$: 'control-with-condition',
-              condition :{$: 'is-of-type', type: 'array', obj: '%$obj%' },
-              control :{$: 'table',
+            }, 
+            {$: 'control-with-condition', 
+              condition :{$: 'is-of-type', type: 'array', obj: '%$obj%' }, 
+              control :{$: 'table', 
                 items :{
                   $pipeline: [
-                    '%$obj%',
+                    '%$obj%', 
                     {$: 'slice', end: '%$maxItems%' }
                   ]
-                },
-                fields :{$: 'field.control',
-                  title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] },
+                }, 
+                fields :{$: 'field.control', 
+                  title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] }, 
                   control :{$: 'studio.data-browse', a: 'label', obj: '%%', width: 200 }
-                },
-                style :{$: 'table.mdl',
-                  classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
+                }, 
+                style :{$: 'table.mdl', 
+                  classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp', 
                   classForTd: 'mdl-data-table__cell--non-numeric'
-                },
+                }, 
                 features: [{$: 'watch-ref', ref: '%$maxItems%' }]
               }
-            },
-            {$: 'control-with-condition',
-              condition :{$: 'isNull', obj: '%$obj%' },
+            }, 
+            {$: 'control-with-condition', 
+              condition :{$: 'isNull', obj: '%$obj%' }, 
               control :{$: 'label', title: 'null' }
-            },
-            {$: 'tree',
-              nodeModel :{$: 'tree.json-read-only', object: '%$obj%', rootPath: '%$title%' },
-              style :{$: 'tree.no-head' },
+            }, 
+            {$: 'tree', 
+              nodeModel :{$: 'tree.json-read-only', object: '%$obj%', rootPath: '%$title%' }, 
+              style :{$: 'tree.no-head' }, 
               features: [
-                {$: 'css.class', class: 'jb-control-tree' },
-                {$: 'tree.selection' },
-                {$: 'tree.keyboard-selection' },
+                {$: 'css.class', class: 'jb-control-tree' }, 
+                {$: 'tree.selection' }, 
+                {$: 'tree.keyboard-selection' }, 
                 {$: 'css.width', width: '%$width%', minMax: 'max' }
               ]
             }
           ]
-        },
-        {$: 'control-with-condition',
-          style :{$: 'button.href' },
+        }, 
+        {$: 'control-with-condition', 
+          style :{$: 'button.href' }, 
           condition :{
             $and: [
-              '%$obj/length% > 100',
+              '%$obj/length% > 100', 
               {$: 'is-of-type', type: 'string', obj: '%$obj%' }
             ]
-          },
-          control :{$: 'button',
-            title: 'open (%$obj/length%)',
-            action :{$: 'open-dialog',
-              style :{$: 'dialog.popup' },
-              content :{$: 'editable-text',
-                title: '',
-                databind: '%$obj%',
-                style :{$: 'editable-text.codemirror',
-                  enableFullScreen: true,
-                  height: '200',
-                  mode: 'text',
-                  debounceTime: 300,
-                  lineNumbers: true,
+          }, 
+          control :{$: 'button', 
+            title: 'open (%$obj/length%)', 
+            action :{$: 'open-dialog', 
+              style :{$: 'dialog.popup' }, 
+              content :{$: 'editable-text', 
+                title: '', 
+                databind: '%$obj%', 
+                style :{$: 'editable-text.codemirror', 
+                  enableFullScreen: true, 
+                  height: '200', 
+                  mode: 'text', 
+                  debounceTime: 300, 
+                  lineNumbers: true, 
                   readOnly: true
                 }
               }
-            },
+            }, 
             style :{$: 'button.href' }
-          },
+          }, 
           title: 'long text'
-        },
-        {$: 'control-with-condition',
-          style :{$: 'button.href' },
+        }, 
+        {$: 'control-with-condition', 
+          style :{$: 'button.href' }, 
           condition :{
             $and: [
-              '%$obj/length% > 5',
-              {$: 'is-of-type', type: 'array', obj: '%$obj%' },
+              '%$obj/length% > 5', 
+              {$: 'is-of-type', type: 'array', obj: '%$obj%' }, 
               '%$maxItems% == 5'
             ]
-          },
-          control :{$: 'button',
-            title: 'open (%$obj/length%)',
-            action :{$: 'write-value',
-              style :{$: 'dialog.popup' },
-              content :{$: 'table',
-                items: '%$obj%',
-                fields :{$: 'field.control',
-                  title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] },
+          }, 
+          control :{$: 'button', 
+            title: 'show (%$obj/length%)', 
+            action :{$: 'write-value', 
+              style :{$: 'dialog.popup' }, 
+              content :{$: 'table', 
+                items: '%$obj%', 
+                fields :{$: 'field.control', 
+                  title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] }, 
                   control :{$: 'studio.data-browse', a: 'label', obj: '%%', width: 200 }
-                },
-                style :{$: 'table.mdl',
-                  classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
+                }, 
+                style :{$: 'table.mdl', 
+                  classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp', 
                   classForTd: 'mdl-data-table__cell--non-numeric'
                 }
-              },
-              to: '%$maxItems%',
+              }, 
+              to: '%$maxItems%', 
               value: '100'
-            },
-            style :{$: 'button.href' },
+            }, 
+            style :{$: 'button.href' }, 
             features: [
-              {$: 'watch-ref', ref: '%$maxItems%' },
+              {$: 'watch-ref', ref: '%$maxItems%' }, 
               {$: 'hidden', showCondition: '%$maxItems% == 5' }
             ]
-          },
+          }, 
           title: 'large array'
         }
-      ],
+      ], 
       features: [{$: 'var', name: 'maxItems', value: '5', mutable: 'true' }]
     }
   }

@@ -256,15 +256,13 @@ jb.component('studio-helper-dummy.label', {
 
 
 jb.component('studio-helper.group-with-label', {
-  type: 'control',
-  impl :{$: 'group',
+  type: 'control', 
+  impl :{$: 'group', 
+    remark: 'adsas', 
     controls: [
-      {$: 'label',
-        title: {$pipeline: [ '%$people-array/people%',
-                {$filter: '%age% == 42'},
-                '%name%'
-        ]}
-      },
+      {$: 'label', 
+        title :{ $pipeline: ['%$people-array/people%', { $filter: '%age% == 42' }, '%name%'] }
+      }
     ]
   }
 })
