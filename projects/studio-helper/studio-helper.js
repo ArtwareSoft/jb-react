@@ -436,18 +436,18 @@ jb.component('studio-helper-sample.properties-params', {
 })
 
 jb.component('studio-helper-sample.properties-params-prof', {
-  type: 'control',
-  impl :{$: 'studio-helper-sample.properties-params',
-    strAsComp :{ $pipeline: [{$: 'slice' }, '%%'] },
-    strAsJs: ctx => ctx.vars.aa,
-    boolAsComp :{ $pipeline: ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '%%=="a"'] },
-    boolAsJs: ctx => ctx.vars.aa,
-    enumStr: 'c',
-    enumNum: '1',
-    bool :{ $or: [false] },
+  type: 'contsdfdswqeqweqwewqe ', 
+  impl :{$: 'studio-helper-sample.properties-params', 
+    strAsComp :{ $pipeline: [{$: 'split', separator: ',', text: '1,2,3,4,5,6,7,8' }, '%%'], remark: 'asad' }, 
+    strAsJs: ctx => ctx.vars.aa, 
+    boolAsComp :{ $pipeline: ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '%%==\"a\"'] }, 
+    boolAsJs: ctx => ctx.vars.aa, 
+    enumStr: 'c', 
+    enumNum: '1', 
+    bool :{ $or: [false] }, 
     style :{$: 'button.href' }
-  },
-  $vars: ''
+  }, 
+  $vars: {  }
 })
 
 jb.component('studio-helper-sample.custom-style-comp', {

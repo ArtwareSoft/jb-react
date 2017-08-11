@@ -1,5 +1,15 @@
 cards for letmesee
 
+remarks
+  use var - do not refresh
+  show with different class
+  
+itemlist.selected - move to selection index
+
+ctrl-Q on textbox - quite mode till leave
+  do not change model till enter
+  no suggestion
+
 suggestions css width
   =sl -> jb-core.js:551 refresh: object not found: suggestionData:36859~selected
 

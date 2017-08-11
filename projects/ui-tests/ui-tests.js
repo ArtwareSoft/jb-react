@@ -48,7 +48,7 @@ jb.component('ui-test.wait-for', {
    impl :{$: 'ui-test',
     control :{$: 'group',
       features :{$: 'group.wait',
-        for: ctx => new Promise(res => setTimeout(()=>{res('hello')}, 10))
+        for: ctx => jb.delay(10).then(_=>'hello'),
       },
       controls: {$:'label', title: '%%'},
     },
@@ -56,6 +56,30 @@ jb.component('ui-test.wait-for', {
     expectedResult :{$: 'contains', text: 'hello' }
   },
 })
+
+// jb.component('ui-test.asynch-label', {
+//    impl :{$: 'ui-test',
+//     control: {$:'label', title: ctx => jb.delay(10).then(_=>'hello') },
+//     action: ctx=> jb.delay(40),
+//     expectedResult :{$: 'contains', text: 'hello' }
+//   },
+// })
+//
+// jb.component('ui-test.asynch-label-with-pipeline1', {
+//    impl :{$: 'ui-test',
+//     control: {$:'label', title: {$pipeline: [ 'hello', ctx => jb.delay(10).then(ctx.data)] } },
+//     action: ctx=> jb.delay(40),
+//     expectedResult :{$: 'contains', text: 'hello' }
+//   },
+// })
+//
+// jb.component('ui-test.asynch-label-with-pipeline2', {
+//    impl :{$: 'ui-test',
+//     control: {$:'label', title: {$pipeline: [ ctx => jb.delay(10).then('hello'), '%%'] } },
+//     action: ctx=> jb.delay(40),
+//     expectedResult :{$: 'contains', text: 'hello' }
+//   },
+// })
 
 jb.component('ui-test.wait-for-with-var', {
    impl :{$: 'ui-test',

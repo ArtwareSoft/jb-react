@@ -15,7 +15,7 @@ jb.component('studio.save-components', {
 			.filter(id=>id.indexOf('$jb') != 0)
 			.filter(id=>st.previewjb.comps[id] != st.serverComps[id])
 			.concatMap(id=>{
-				var original = st.serverComps[id] ? st.prettyPrintComp(id,st.serverComps[id]) : '';
+				var original = st.serverComps[id] ? jb.prettyPrintComp(id,st.serverComps[id]) : '';
 				st.message('saving ' + id + '...');
 				if (force && !original)
 					original = `jb.component('${id}', {`;
@@ -33,7 +33,7 @@ jb.component('studio.save-components', {
         }
 			})
 			.catch(e=>{
-				st.message('error saving: ' + (typeof e == 'string' ? e : e.e));
+				st.message('error saving: ' + (typeof e == 'string' ? e : e.e), true);
 				return jb.logException(e,'error while saving ' + e.id) || []
 			})
 			.subscribe(entry=>{

@@ -1,24 +1,24 @@
 jb.component('pretty-print', {
   params: [
     { id: 'profile', defaultValue: '%%' },
-    { id: 'colWidth', as: 'number', defaultValue: 80 },
+    { id: 'colWidth', as: 'number', defaultValue: 140 },
   ],
-  impl: (ctx,profile,colWidth) => 
-    jb.studio.prettyPrint(profile,colWidth)
+  impl: (ctx,profile,colWidth) =>
+    jb.prettyPrint(profile,colWidth)
 })
 
-jb.studio.prettyPrintComp = function(compId,comp) {
+jb.prettyPrintComp = function(compId,comp) {
   if (comp)
     return "jb.component('" + compId + "', "
-      + jb.studio.prettyPrintWithPositions(comp).result + ')'
+      + jb.prettyPrintWithPositions(comp).result + ')'
 }
 
-jb.studio.prettyPrint = function(profile,colWidth,tabSize,initialPath) {
-  return jb.studio.prettyPrintWithPositions(profile,colWidth,tabSize,initialPath).result;
+jb.prettyPrint = function(profile,colWidth,tabSize,initialPath) {
+  return jb.prettyPrintWithPositions(profile,colWidth,tabSize,initialPath).result;
 }
 
-jb.studio.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
-  colWidth = colWidth || 80;
+jb.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
+  colWidth = colWidth || 140;
   tabSize = tabSize || 2;
 
   var remainedInLine = colWidth;
@@ -58,7 +58,7 @@ jb.studio.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPa
     if (typeof val === 'function')
       result += val.toString();
     else if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-      result += "'" + val + "'";
+      result += "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
     else if (typeof val === 'string' && val.indexOf('\n') != -1) {
       result += "`" + val.replace(/`/g,'\\`') + "`"
       // depth++;
@@ -166,7 +166,7 @@ jb.studio.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPa
     if (typeof val === 'object') return flat_obj(val);
     if (typeof val === 'function') return val.toString();
     if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-      return "'" + val + "'";
+      return "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
     else
       return JSON.stringify(val); // primitives
   }

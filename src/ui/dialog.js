@@ -343,8 +343,8 @@ jb.component('dialog-feature.drag-title', {
 				      	.flatMap(imageOffset =>
 			      			 mouseMoveEm.takeUntil(mouseUpEm)
 			      			 .map(pos => ({
-						        top:  pos.clientY - imageOffset.top,
-						        left: pos.clientX - imageOffset.left
+						        top:  Math.max(0,pos.clientY - imageOffset.top),
+						        left: Math.max(0,pos.clientX - imageOffset.left)
 						     }))
 				      	);
 

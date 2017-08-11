@@ -176,7 +176,7 @@ jb.component('studio.profile-as-text', {
 
       	if (st.isPrimitiveValue(val))
       		return ''+val;
-      	return st.prettyPrint(val || '');
+      	return jb.prettyPrint(val || '');
       } else {
       	var notPrimitive = value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
       	var newVal = notPrimitive ? st.evalProfile(value) : value;

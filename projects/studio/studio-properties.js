@@ -299,7 +299,7 @@ jb.component('studio.data-script-summary', {
   ],
   impl: (ctx,path) => {
     var st = jb.studio;
-    return st.prettyPrint(st.valOfPath(path));
+    return jb.prettyPrint(st.valOfPath(path));
   	// var val = st.valOfPath(path);
   	// if (st.compNameOfPath(path))
   	// 	return st.compNameOfPath(path);

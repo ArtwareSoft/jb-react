@@ -224,8 +224,10 @@ border: 1px solid rgb(213, 213, 213);}
 }
 
 .jb-fade-3s-transition {
+  visibility: hidden;
   opacity: 0;
-  -webkit-transition: opacity 3s ease-in-out;
+  transition: visibility 0s ease-in-out 3s, opacity 3s;
+//  -webkit-transition: opacity 3s ease-in-out;
 }
 
 .jb-fade-3s {

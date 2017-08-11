@@ -67,7 +67,7 @@ Object.assign(st,{
   getComp: id =>
 		st.previewjb.comps[id],
   compAsStr: id =>
-		st.prettyPrintComp(id,st.getComp(id)),
+		jb.prettyPrintComp(id,st.getComp(id)),
 });
 
 
@@ -117,7 +117,7 @@ Object.assign(st, {
 		var val = st.valOfPath(path);
 		var parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
 		if (parent_ref) {
-			var clone = st.evalProfile(st.prettyPrint(val));
+			var clone = st.evalProfile(jb.prettyPrint(val));
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
@@ -126,7 +126,7 @@ Object.assign(st, {
 		var val = st.valOfPath(path);
 		var parent_ref = st.refOfPath(st.parentPath(path));
 		if (parent_ref && Array.isArray(st.val(parent_ref))) {
-			var clone = st.evalProfile(st.prettyPrint(val));
+			var clone = st.evalProfile(jb.prettyPrint(val));
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
@@ -230,7 +230,7 @@ Object.assign(st, {
 	makeLocal: (path,srcCtx) =>{
 		var comp = st.compOfPath(path);
 		if (!comp || typeof comp.impl != 'object') return;
-		st.writeValueOfPath(path,st.evalProfile(st.prettyPrint(comp.impl)),srcCtx);
+		st.writeValueOfPath(path,st.evalProfile(jb.prettyPrint(comp.impl)),srcCtx);
 
 		// var res = JSON.stringify(comp.impl, (key, val) => typeof val === 'function' ? ''+val : val , 4);
 		//

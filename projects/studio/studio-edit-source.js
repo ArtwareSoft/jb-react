@@ -68,7 +68,7 @@ jb.component('studio.open-editor', {
 		{ id: 'path', as: 'string'},
 	],
 	impl: (ctx,path) => {
-		path && $.ajax(`/?op=gotoSource&comp=${path.split('~')[0]}`)
+		path && fetch(`/?op=gotoSource&comp=${path.split('~')[0]}`)
 	}
 })
 

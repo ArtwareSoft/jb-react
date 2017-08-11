@@ -34,7 +34,10 @@ jb.component('fs.readFile', {
   ],
   impl: (ctx,fileName,directory) =>
     getFromCache(directory+'/'+fileName,lastModified(directory,fileName),
-      _=> ''+funcWrapper('readFile',directory,fileName) )
+      _=> {
+        var x= funcWrapper('readFile',directory,fileName).toString('utf8');
+      return x;
+      })
 })
 
 jb.component('fs.stat', {

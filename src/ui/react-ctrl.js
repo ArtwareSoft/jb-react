@@ -298,9 +298,9 @@ ui.renderWidget = function(profile,elem) {
 					jb.resources = jb.ui.originalResources || jb.resources;
 					previewElem = ui.render(ui.h(R),elem,previewElem);
 				}
-				st.pageChange.subscribe(page=>
+				st.pageChange.debounceTime(500).subscribe(page=>
 					this.setState({profile: {$: page}}));
-				st.scriptChange.subscribe(_=>
+				st.scriptChange.debounceTime(500).subscribe(_=>
 						this.setState(null));
 			}
 		}

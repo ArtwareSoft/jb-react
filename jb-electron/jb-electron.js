@@ -42,13 +42,16 @@ app.on('ready', _ => {
     path = path.replace(/!st!/,'').split('file:///').pop();
     callback(path);
   })
+
   // and load the index.html of the app.
   var project = getProcessArgument('project');
   var path = getProcessArgument('path');
+  console.log(project,'#',path);
   if (path)
     win.loadURL(`file://${win.jbartBase}/${path}`)
   else if (project) {
-    win.jbProjectFolder = projectFolder(project);
+    console.log('project', project,projectFolder(project));
+//    win.jbProjectFolder = projectFolder(project);
 //    console.log(win.jbProjectFolder);
     win.loadURL(`file://C:/project/studio/${project}`)
   }

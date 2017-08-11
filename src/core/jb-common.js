@@ -40,6 +40,7 @@ jb.pipe = function(context,items,ptName) {
 
 
 	function step(profile,i,data) {
+    if (profile && profile.$disabled) return data;
 		var parentParam = (i == profiles.length - 1 && context.parentParam) ? context.parentParam : { as: 'array'};
 		if (jb.profileType(profile) == 'aggregator')
 			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
@@ -165,18 +166,6 @@ jb.component('property-names', {
 		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0)
 })
 
-jb.component('assign', {
-	type: 'data',
-  description: 'Object.assign',
-	params: [
-		{ id: 'property', essential: true, as: 'string' },
-		{ id: 'value', essential: true },
-		{ id: 'obj', defaultValue: '%%', as: 'single' },
-	],
-	impl: (ctx,prop,val,obj) =>
-		Object.assign({},obj,jb.obj(prop,val))
-})
-
 jb.component('properties',{
 	type: 'data',
 	params: [
@@ -214,20 +203,7 @@ jb.component('remove-prefix', {
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: (context,separator,text) =>
-		(text||'').substring(text.indexOf(separator)+separator.length)
-});
-
-jb.component('remove-prefix-regex',{
-	type: 'data',
-	params: [
-		{ id: 'prefix', as: 'string', essential: true },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-	],
-	impl: function(context,prefix,text) {
-		context.profile.prefixRegexp = context.profile.prefixRegexp || new RegExp('^'+prefix);
-		var m = (text||'').match(context.profile.prefixRegexp);
-		return ((m && m.index==0 && text || '').substring(m[0].length)) || text;
-	}
+		text.indexOf(separator) == -1 ? text : text.substring(text.indexOf(separator)+separator.length)
 });
 
 jb.component('remove-suffix',{
@@ -237,7 +213,7 @@ jb.component('remove-suffix',{
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: (context,separator,text) =>
-		(text||'').substring(0,text.lastIndexOf(separator))
+		text.lastIndexOf(separator) == -1 ? text : text.substring(0,text.lastIndexOf(separator))
 });
 
 jb.component('remove-suffix-regex',{
@@ -429,10 +405,9 @@ jb.component('count', {
 
 jb.component('to-string', {
 	params: [
-		{ id: 'text', as: 'string', defaultValue: '%%'}
+		{ id: 'text', as: 'string', defaultValue: '%%', composite: true}
 	],
-	impl: (ctx,text) =>
-		text
+	impl: (ctx,text) =>	text
 });
 
 jb.component('to-uppercase', {
@@ -567,8 +542,8 @@ jb.component('split', {
 jb.component('replace', {
 	type: 'data',
 	params: [
-		{ id: 'find', as: 'string' },
-		{ id: 'replace', as: 'string' },
+		{ id: 'find', as: 'string', essential: true },
+		{ id: 'replace', as: 'string', essential: true  },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 		{ id: 'useRegex', type: 'boolean', as: 'boolean', defaultValue: true},
 		{ id: 'regexFlags', as: 'string', defaultValue: 'g', description: 'g,i,m' }

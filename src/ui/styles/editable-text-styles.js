@@ -1,10 +1,10 @@
 jb.component('editable-text.input', {
   type: 'editable-text.style',
-  impl :{$: 'custom-style', 
+  impl :{$: 'custom-style',
       features :{$: 'field.databind-text' },
-      template: (cmp,state,h) => h('input', { 
-        value: state.model, 
-        onchange: e => cmp.jbModel(e.target.value), 
+      template: (cmp,state,h) => h('input', {
+        value: state.model,
+        onchange: e => cmp.jbModel(e.target.value),
         onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
     css: '{height: 16px}'
   }
@@ -12,9 +12,14 @@ jb.component('editable-text.input', {
 
 jb.component('editable-text.textarea', {
 	type: 'editable-text.style',
-	impl :{$: 'custom-style', 
+  params: [
+    { id: 'rows', as: 'number', defaultValue: 4 },
+    { id: 'cols', as: 'number', defaultValue: 120 },
+  ],
+  impl :{$: 'custom-style',
       features :{$: 'field.databind-text' },
-      template: (cmp,state,h) => h('textarea', { 
+      template: (cmp,state,h) => h('textarea', {
+        rows: cmp.rows, cols: cmp.cols,
         value: state.model, onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
 	}
 })
@@ -24,8 +29,8 @@ jb.component('editable-text.mdl-input', {
   params: [
     { id: 'width', as: 'number' },
   ],
-  impl :{$: 'custom-style', 
-   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label' },[ 
+  impl :{$: 'custom-style',
+   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label' },[
         h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
             value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
@@ -46,8 +51,8 @@ jb.component('editable-text.mdl-input-no-floating-label', {
   params: [
     { id: 'width', as: 'number' },
   ],
-  impl :{$: 'custom-style', 
-   template: (cmp,state,h) => 
+  impl :{$: 'custom-style',
+   template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text',
             value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
@@ -63,8 +68,8 @@ jb.component('editable-text.mdl-input-no-floating-label', {
 
 jb.component('editable-text.mdl-search', {
   type: 'editable-text.style',
-  impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[ 
+  impl :{$: 'custom-style',
+      template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[
         h('input', { class: 'mdl-textfield__input', id: 'search_' + state.fieldId, type: 'text',
             value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
