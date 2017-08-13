@@ -7,15 +7,16 @@ function compsRef(val,opEvent) {
   if (typeof val == 'undefined')
     return st.previewjb.comps;
   else {
-		if (val.$jb_historyIndex && val == st.compsHistory[val.$jb_historyIndex].after)
-			st.compsHistory.slice()
+		// if (val.$jb_historyIndex && val == st.compsHistory[val.$jb_historyIndex].after)
+		// 	st.compsHistory.slice()
 
 		val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
 		if (!val.$jb_selectionPreview)
   		st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex});
 
     st.previewjb.comps = val;
-    st.undoIndex = st.compsHistory.length;
+    if (opEvent)
+      st.undoIndex = st.compsHistory.length;
   }
 }
 

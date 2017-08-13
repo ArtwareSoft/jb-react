@@ -6,17 +6,18 @@ st.undoIndex = 0;
 
 function setToVersion(versionIndex,ctx,after) {
 		var version = st.compsHistory[versionIndex];
-		if (!version) debugger;
-    var opEvent = Object.assign({},version.opEvent);
+		if (!version || !version.opEvent) debugger;
+
+    opEvent = Object.assign({},version.opEvent);
     opEvent.oldVal = version.opEvent.newVal;
     opEvent.newVal = version.opEvent.oldVal;
     opEvent.srcCtx = ctx;
 
     if (after) {
-		st.previewjb.comps = version.after;
+      st.previewjb.comps = version.after;
 	    st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsAfter;
     } else {
-		st.previewjb.comps = version.before;
+      st.previewjb.comps = version.before;
 	    st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsBefore;
     }
 

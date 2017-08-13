@@ -70,7 +70,7 @@ jb.component('studio.open-property-menu', {
           },
           action :{$: 'studio.toggle-disabled', path: '%$path%' },
           icon: 'do_not_disturb',
-          shortcut: 'Ctrl+D'
+          shortcut: 'Ctrl+X'
         }
       ]
     }

@@ -50,7 +50,8 @@ jb.component('studio.tree-menu', {
       },
       {$: 'menu.action',
         title: 'Duplicate',
-        action :{$: 'studio.duplicate-control', path: '%$path%' }
+        action :{$: 'studio.duplicate-control', path: '%$path%' },
+        shortcut: 'Ctrl+D',
       },
       {$: 'menu.separator' },
       {$: 'menu.action',
@@ -93,7 +94,7 @@ jb.component('studio.tree-menu', {
       {$: 'menu.action',
         title: {$if: {$: 'studio.disabled', path: '%$path%'} , then: 'Enable', else: 'Disable' },
         icon: 'do_not_disturb',
-        shortcut: 'Ctrl+D',
+        shortcut: 'Ctrl+X',
         action: {$: 'studio.toggle-disabled', path: '%$path%' }
       },
       {$: 'menu.action',
