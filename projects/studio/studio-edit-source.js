@@ -2,20 +2,26 @@
   var st = jb.studio;
 
 jb.component('studio.edit-source', {
-	type: 'action',
-	params: [
-		{ id: 'path', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } }
-	],
-	impl: {
-		$: 'open-dialog',
-		title :{$: 'studio.short-title', path: '%$path%' },
-		style :{$: 'dialog.studio-floating', id: 'edit-source', width: 600 },
-		features :{$: 'css', css: '.jb-dialog-content-parent {overflow-y: hidden}'},
-		content :{$: 'editable-text',
-			databind :{$: 'studio.profile-as-text', path: '%$path%' },
-			style :{$: 'editable-text.codemirror', mode: 'javascript'},
-		}
-	}
+  type: 'action', 
+  params: [
+    {
+      id: 'path', 
+      as: 'string', 
+      defaultValue :{$: 'studio.currentProfilePath' }
+    }
+  ], 
+  impl :{$: 'open-dialog', 
+    style :{$: 'dialog.studio-floating', id: 'edit-source', width: 600 }, 
+    content :{$: 'editable-text', 
+      databind :{$: 'studio.profile-as-text', path: '%$path%' }, 
+      style :{$: 'editable-text.codemirror', mode: 'javascript' }
+    }, 
+    title :{$: 'studio.short-title', path: '%$path%' }, 
+    features: [
+      {$: 'css', css: '.jb-dialog-content-parent {overflow-y: hidden}' }, 
+      {$: 'dialog-feature.resizer', "resize-inner-codemirror": 'true', resizeInnerCodemirror: true }
+    ]
+  }
 })
 
 jb.component('studio.goto-editor-options', {

@@ -1,10 +1,7 @@
-var resources = {
+var resources = Object.assign((typeof resources != 'undefined' ? resources : {}), {
       'common': [
         'src/core/jb-core.js',
         'src/core/jb-common.js',
-      ],
-      'xml': [
-        'src/core/xml.js',
       ],
       'ui-common': [
 //        'node_modules/jquery/dist/jquery.min.js',
@@ -114,8 +111,10 @@ var resources = {
       ],
       'node-adapter' : [ 'src/node-adapter/node-adapter.js' ],
       'pretty-print' : [ 'src/misc/pretty-print.js' ],
+      'xml': [ 'src/misc/xml.js' ],
+      'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
       'parsing': [ 'src/misc/parsing.js' ]
-};
+});
 
 function jb_dynamicLoad(modules,prefix) {
   prefix = prefix || '';

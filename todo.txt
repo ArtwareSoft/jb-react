@@ -3,12 +3,15 @@ cards for letmesee
 remarks
   use var - do not refresh
   show with different class
-  
-itemlist.selected - move to selection index
 
-ctrl-Q on textbox - quite mode till leave
-  do not change model till enter
-  no suggestion
+ctrl-J - javascript
+
+one letter shortcuts on context menu.
+
+ctrl-o - open context menu
+ctrl-t - open navigation menu
+ctrl-w - open wrap menu
+ctrl-p - component search menu
 
 suggestions css width
   =sl -> jb-core.js:551 refresh: object not found: suggestionData:36859~selected

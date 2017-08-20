@@ -1,5 +1,6 @@
 (function() {
 var _window = window.parent || window;
+if (!_window || !_window.require) return;
 var elec_remote = _window.require('electron').remote;
 var fs = elec_remote.require('fs');
 

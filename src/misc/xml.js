@@ -4,11 +4,11 @@ jb.xml.xmlToJson = xml => {
   if (xml.nodeType == 9) // document
     return jb.xml.xmlToJson(xml.firstChild);
 
-    if (Array.from(xml.attributes) == 0 && xml.childElementCount == 0)
+    if (Array.from(xml.attributes || []) == 0 && xml.childElementCount == 0)
       return xml.textContent;
 
-    var props =  Array.from(xml.attributes).map(att=>({ id: att.name, val: att.value})).concat(
-      Array.from(xml.children).map(child=>({ id: child.tagName, val: jb.xml.xmlToJson(child) }))
+    var props =  Array.from(xml.attributes || []).map(att=>({ id: att.name, val: att.value})).concat(
+      Array.from(xml.childNodes).filter(x=>x.nodeType == 1).map(child=>({ id: child.tagName, val: jb.xml.xmlToJson(child) }))
     );
     var res = props.reduce((obj,prop)=>{
       if (typeof obj[prop.id] == 'undefined')

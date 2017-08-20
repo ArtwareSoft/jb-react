@@ -644,7 +644,8 @@ jb.component('studio.jb-editor-menu', {
       {$: 'menu.action',
         title: 'Javascript',
         action :{$: 'studio.edit-source', path: '%$path%' },
-        icon: 'code'
+        icon: 'code',
+        shortcut: 'Ctrl+J'
       },
       {$: 'menu.action',
         title: 'Delete',

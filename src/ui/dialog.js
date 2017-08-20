@@ -380,7 +380,10 @@ jb.component('dialog.dialog-ok-cancel', {
 
 jb.component('dialog-feature.resizer', {
 	type: 'dialog-feature',
-	impl: ctx => ({
+  params: [
+    { id: 'resizeInnerCodemirror', as: 'boolean', description: 'effective only for dialog with a single codemirror element' }
+  ],
+	impl: (ctx,codeMirror) => ({
 					templateModifier: (vdom,cmp,state) => {
             if (vdom && vdom.nodeName != 'div') return vdom;
 						vdom.children.push(jb.ui.h('img', {src: '/css/resizer.gif', class: 'resizer'}));
@@ -403,6 +406,14 @@ jb.component('dialog-feature.resizer', {
 						  		.takeUntil( cmp.destroyed );
 						  }
 
+              var codeMirrorElem,codeMirrorSizeDiff;
+              if (codeMirror) {
+                codeMirrorElem = cmp.base.querySelector('.CodeMirror');
+                if (codeMirrorElem)
+                  codeMirrorSizeDiff = codeMirrorElem.getBoundingClientRect().top - cmp.base.getBoundingClientRect().top
+                    + (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
+              }
+
 						  var mousedrag = cmp.mousedownEm
 						  		.map(e =>  ({
 						          left: cmp.base.getBoundingClientRect().left,
@@ -419,6 +430,8 @@ jb.component('dialog-feature.resizer', {
 						  mousedrag.distinctUntilChanged().subscribe(pos => {
 					        cmp.base.style.height  = pos.top  + 'px';
 					        cmp.base.style.width = pos.left + 'px';
+                  if (codeMirrorElem)
+                    codeMirrorElem.style.height  = (pos.top - codeMirrorSizeDiff) + 'px';
 					      });
 					  }
 	     })

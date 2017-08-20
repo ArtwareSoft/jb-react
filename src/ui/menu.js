@@ -160,11 +160,11 @@ jb.component('menu-style.context-menu', {
     	control :{$: 'itemlist',
 			$vars: {
 				optionsParentId: ctx => ctx.id,
-	    		leafOptionStyle: ctx => ctx.componentContext.params.leafOptionStyle,
+        leafOptionStyle: ctx => ctx.componentContext.params.leafOptionStyle,
 			},
 	    	watchItems: false,
     		items: '%$menuModel/options%',
-			controls :{$: 'menu.control', menu: '%$item%', style :{$: 'menu-style.apply-multi-level'} },
+        controls :{$: 'menu.control', menu: '%$item%', style :{$: 'menu-style.apply-multi-level'} },
     		features :{$: 'menu.selection', autoSelectFirst: true},
 		}
 	}
@@ -270,6 +270,22 @@ jb.component('menu-style.apply-multi-level', {
   			return ctx.params.menuStyle();
   	}
 })
+
+// jb.component('menu.apply-context-menu-shortcuts', {
+//   type: 'feature',
+//   impl: ctx => ({
+//   	 onkeydown: true,
+//      afterViewInit: cmp => {
+//         cmp.base.setAttribute('tabIndex','0');
+//         if (!ctx.vars.topMenu.keydown) {
+//   	        ctx.vars.topMenu.keydown = cmp.onkeydown;
+//             jb.ui.focus(cmp.base,'menu.keyboard init autoFocus',ctx);
+//       	};
+//         var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
+//         keydown.subscribe(e=>cmp.ctx.vars.topMenu.applyShortcut(e))
+//       }
+//     })
+// })
 
 jb.component('menu.selection', {
   type: 'feature',

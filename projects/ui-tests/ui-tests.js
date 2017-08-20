@@ -277,6 +277,41 @@ jb.component('ui-test.open-dialog', {
 },
 })
 
+jb.component('ui-test.code-mirror-dialog-resizer', {
+  impl :{$: 'ui-test',
+  control :{$: 'button', title: 'click me',
+    action :{$: 'open-dialog', title: 'resizer',
+      content :{ $: 'editable-text',  databind: '%$person/name%',
+                style :{$: 'editable-text.codemirror', mode: 'javascript'}
+      },
+      features: [
+        {$: 'dialog-feature.near-launcher-position' },
+        {$: 'dialog-feature.resizer', resizeInnerCodemirror: true }
+      ]
+    }
+  },
+  expectedResult:true ,
+},
+})
+
+jb.component('ui-test.code-mirror-dialog-resizer-ok-cancel', {
+  impl :{$: 'ui-test',
+  control :{$: 'button', title: 'click me',
+    action :{$: 'open-dialog', title: 'resizer',
+      content :{ $: 'editable-text',  databind: '%$person/name%',
+          style :{$: 'editable-text.codemirror', mode: 'javascript'}
+      },
+      style :{$: 'dialog.dialog-ok-cancel'},
+      features: [
+        {$: 'dialog-feature.near-launcher-position' },
+        {$: 'dialog-feature.resizer', resizeInnerCodemirror: true }
+      ]
+    }
+  },
+  expectedResult:true ,
+},
+})
+
 jb.component('ui-test.renderable', {
   impl :{$: 'ui-test',
   control :{$: 'button', title: 'click me',

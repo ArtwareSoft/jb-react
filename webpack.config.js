@@ -8,15 +8,22 @@ const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 
 function concatFiles(files,target) {
+  try {
   fs.unlink(JBART_DIR +target);
+  } catch (e) {}
   files.map(x=>JBART_DIR +x).forEach(f=>
     fs.appendFile(JBART_DIR +target,fs.readFileSync(f) + ';\n\n'));
 }
 
+var jbReactFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree']]).filter(x=>!x.match(/.css$/));
 var studioFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree']]).filter(x=>!x.match(/.css$/))
     .concat(resources.studio.map(x=>'projects/studio/studio-' + x + '.js'));
 
+console.log(jbReactFiles);
+
 concatFiles(studioFiles,'dist/studio-all.js');
+concatFiles(jbReactFiles,'dist/jb-react-all.js');
+
 
 var jbRx = {
   entry: JBART_DIR + 'src/ui/jb-rx.js',
@@ -42,7 +49,8 @@ var jbImmutable = {
     path: JBART_DIR + 'dist',
     filename: 'jb-immutable.js',
   },
-  resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
+  resolve: { modules: [ 'node_modules' ] },
+//  resolve1: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
 };
 
 var babel_ext = {
@@ -69,4 +77,17 @@ var jbRxMin = {
   plugins: [ new UglifyJSPlugin() ],
 };
 
-module.exports = [jbPreact,jbImmutable,jbRx,babel_ext];
+var jbJison = {
+  entry: JBART_DIR + 'src/misc/jb-jison.js',
+  output: {
+    path: JBART_DIR + 'dist',
+    filename: 'jb-jison.js',
+  },
+  node: {
+    fs: 'empty',
+    child_process: 'empty',
+  },
+  resolve: { modules: [ 'node_modules'] },
+};
+
+module.exports = [jbPreact,jbImmutable,jbRx,babel_ext,jbJison];

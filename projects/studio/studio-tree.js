@@ -64,7 +64,9 @@ jb.component('studio.tree-menu', {
       },
       {$: 'menu.action',
         title: 'javascript editor',
-        action :{$: 'studio.edit-source', path: '%$path%' }
+        action :{$: 'studio.edit-source', path: '%$path%' },
+        icon: 'code',
+        shortcut: 'Ctrl+J',
       },
       {$: 'menu.action',
         $vars: {

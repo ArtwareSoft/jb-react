@@ -53,7 +53,8 @@ jb.component('studio.open-property-menu', {
         {$: 'menu.action',
           title: 'Javascript editor',
           action :{$: 'studio.edit-source', path: '%$path%' },
-          icon: 'code'
+          icon: 'code',
+          shortcut: 'Ctrl+J'
         },
         {$: 'studio.goto-editor-options', path: '%$path%' },
         {$: 'menu.action',

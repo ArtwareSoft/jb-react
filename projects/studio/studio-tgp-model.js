@@ -209,7 +209,7 @@ Object.assign(st,{
 			return path.split('~')[0];
 
 		var val = st.valOfPath(path);
-		return (val && typeof val.title == 'string' && val.title) || (val && val.remark) || (val && st.compNameOfPath(path)) || path.split('~').pop();
+		return (val && typeof val.title == 'string' && val.title) || (val && val.Name) || (val && val.remark) || (val && st.compNameOfPath(path)) || path.split('~').pop();
 	},
 	icon: path => {
 		if (st.parentPath(path)) {

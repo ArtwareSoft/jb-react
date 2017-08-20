@@ -18,7 +18,15 @@ jb.component('menus.pulldown', {
         {$: 'menu.menu', 
           title: 'File', 
           options: [
-            {$: 'menu.action', title: 'Open', showCondition: true }, 
+            {$: 'menu.action', 
+              title: 'Open', 
+              action :{$: 'open-dialog', 
+                content :{$: 'group' }, 
+                title: 'open'
+              }, 
+              shortcut: 'o', 
+              showCondition: true
+            }, 
             {$: 'menu.action', title: 'Save', showCondition: true }
           ]
         }, 
@@ -53,7 +61,15 @@ jb.component('menus.popup', {
           menu :{$: 'menu.menu', 
             title: 'Edit', 
             options: [
-              {$: 'menu.action', title: 'Copy', showCondition: true }, 
+              {$: 'menu.action', 
+                title: 'Copy', 
+                action :{$: 'open-dialog', 
+                  content :{$: 'group' }, 
+                  title: 'hello'
+                }, 
+                shortcut: 'c', 
+                showCondition: true
+              }, 
               {$: 'menu.action', title: 'Paste', showCondition: true }, 
               {$: 'menu.menu', 
                 title: 'Change case', 
