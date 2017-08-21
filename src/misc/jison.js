@@ -23,7 +23,7 @@ jb.component('jison.parser', {
   ],
   impl: (ctx,lexRules,bnf,operators) => {
     var bnfRules = {};
-    var flattenRules = [].concat.apply(lexRules.filter(x=>!Array.isArray(x[0])), lexRules.filter(x=>Array.isArray(x[0]))).filter(x=>x);
+    var flattenRules = [].concat.apply(lexRules.filter(x=>x).filter(x=>!Array.isArray(x[0])), lexRules.filter(x=>x).filter(x=>Array.isArray(x[0])));
     bnf.filter(x=>x).forEach(e=>bnfRules[e.id] = e.options);
     return { lex: {rules: flattenRules } , bnf: bnfRules, operators: operators};
   }
@@ -68,7 +68,7 @@ jb.component('lexer-rule', {
     { id: 'regex', as: 'string', essential: true, description: '[a-f0-9]+'},
     { id: 'result', as: 'string', essential: true, description: "return 'Hex';"},
   ],
-  impl: ctx => ctx.params
+  impl: (ctx,regex,result) => [regex,result]
 })
 
 jb.component('bnf-expression', {

@@ -64,23 +64,6 @@ jb.component('watch-observable', {
   })
 })
 
-jb.component('bind-refs', {
-  type: 'feature', category: 'watch',
-  description: 'automatically updates a mutual variable when other value is changing',
-  params: [
-    { id: 'watchRef', essential: true, as: 'ref' },
-    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
-    { id: 'updateRef', essential: true, as: 'ref' },
-    { id: 'value', essential: true, as: 'single', dynamic: true },
-  ],
-  impl: (ctx,ref,includeChildren,updateRef,value) => ({
-      init: cmp =>
-        jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren}).subscribe(e=>
-          jb.writeValue(updateRef,value(cmp.ctx),ctx))
-  })
-})
-
-
 jb.component('group.data', {
   type: 'feature', category: 'general:100,watch:80',
   params: [
@@ -141,6 +124,47 @@ jb.component('var', {
           jb.writeValue(refToResource,value(ctx),context);
           return ctx.setVars(jb.obj(name, refToResource));
         }
+      }
+  })
+})
+
+jb.component('bind-refs', {
+  type: 'feature', category: 'watch',
+  description: 'automatically updates a mutual variable when other value is changing',
+  params: [
+    { id: 'watchRef', essential: true, as: 'ref' },
+    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+    { id: 'updateRef', essential: true, as: 'ref' },
+    { id: 'value', essential: true, as: 'single', dynamic: true },
+  ],
+  impl: (ctx,ref,includeChildren,updateRef,value) => ({
+      init: cmp =>
+        jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren}).subscribe(e=>
+          jb.writeValue(updateRef,value(cmp.ctx),ctx))
+  })
+})
+
+jb.component('calculated-var', {
+  type: 'feature', category: 'general:60',
+	description: 'defines a local variable that watches other variables with auto recalc',
+  params: [
+    { id: 'name', as: 'string', essential: true },
+    { id: 'value', dynamic: true, defaultValue: '', essential: true },
+    { id: 'watchRefs', as: 'array', dynamic: true, essential: true, defaultValue: [], description: 'variable to watch. needs to be in array' },
+  ],
+  impl: (context, name, value,watchRefs) => ({
+      destroy: cmp => {
+        jb.writeValue(jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]),null,context)
+      },
+      extendCtxOnce: (ctx,cmp) => {
+          cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
+          var refToResource = jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]);
+          jb.writeValue(refToResource,value(cmp.ctx),context);
+          (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
+            jb.ui.refObservable(ref,cmp,{includeChildren:true}).subscribe(e=>
+              jb.writeValue(refToResource,value(cmp.ctx),context))
+          )
+          return ctx.setVars(jb.obj(name, refToResource));
       }
   })
 })

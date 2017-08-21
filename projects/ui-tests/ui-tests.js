@@ -1197,6 +1197,51 @@ jb.component('ui-test.mutable-var-as-object-not-initialized', {
   },
 })
 
+jb.component('ui-test.calculated-var', {
+  impl :{$: 'ui-test',
+  control: {$: 'group',
+    controls: [
+      {$: 'editable-text',
+        databind: '%$var1%',
+        features :{$:'id', id:'var1'}
+      },
+      {$: 'editable-text', databind: '%$var2%' },
+      {$: 'label', title: '%$var3%'}
+    ],
+    features: [
+      {$:'var', name: 'var1', value: 'hello', mutable: true },
+      {$:'var', name: 'var2', value: 'world', mutable: true },
+      {$: 'calculated-var', name: 'var3', value: '%$var1% %$var2%', watchRefs: {$list: ['%$var1%','%$var2%']} },
+      ]
+    },
+    action :{$: 'ui-action.set-text', selector: '#var1', value: 'hi'},
+    expectedResult :{$: 'contains', text: 'hi world' },
+  },
+})
+
+jb.component('ui-test.calculated-var-cyclic', {
+  impl :{$: 'ui-test',
+  control: {$: 'group',
+    controls: [
+      {$: 'editable-text',
+        databind: '%$var1%',
+        features :{$:'id', id:'var1'}
+      },
+      {$: 'editable-text', databind: '%$var2%' },
+      {$: 'label', title: '%$var3%'}
+    ],
+    features: [
+//      {$:'var', name: 'var1', value: 'hello', mutable: true },
+      {$: 'calculated-var', name: 'var1', value: 'xx%$var3%', watchRefs: '%$var3%' },
+      {$:'var', name: 'var2', value: 'world', mutable: true },
+      {$: 'calculated-var', name: 'var3', value: '%$var1% %$var2%', watchRefs: {$list: ['%$var1%','%$var2%']} },
+      ]
+    },
+    action :{$: 'ui-action.set-text', selector: '#var1', value: 'hi'},
+    expectedResult :{$: 'contains', text: 'hi world' },
+  },
+})
+
 jb.component('inner-label1-tst', {
   params: [
      { id: 'title', essential: true, dynamic: true },

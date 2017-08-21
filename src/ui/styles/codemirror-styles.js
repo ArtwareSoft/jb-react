@@ -9,7 +9,8 @@ jb.component('editable-text.codemirror', {
 		{ id: 'debounceTime', as: 'number', defaultValue: 300 },
 		{ id: 'lineWrapping', as: 'boolean' },
     { id: 'lineNumbers', as: 'boolean' },
-    { id: 'readOnly', as: 'boolean' },
+    { id: 'readOnly', options: ',true,nocursor' },
+    { id: 'noCursor', as: 'boolean' },
 		{ id: 'onCtrlEnter', type: 'action', dynamic: true },
 	],
 	impl: function(context, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
@@ -23,6 +24,7 @@ jb.component('editable-text.codemirror', {
 					lineWrapping: lineWrapping,
           lineNumbers: context.params.lineNumbers,
 					theme: 'solarized light',
+          autofocus: false,
 					extraKeys: {
 						'Ctrl-Space': 'autocomplete',
 						'Ctrl-Enter': () => context.params.onCtrlEnter()
