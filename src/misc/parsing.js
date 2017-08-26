@@ -3,6 +3,7 @@ jb.component('newline', {
 })
 
 jb.component('extract-text', {
+  description: 'text breaking according to begin/end markers',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'startMarkers', as: 'array', essential: true},
@@ -27,14 +28,14 @@ jb.component('extract-text', {
 		  		startpos = startpos || 0;
 		  		var str = text.substring(startpos);
 		  		var marker_regex = new RegExp(marker,'m');
-		    	pos = str.search(marker_regex);
-		    	if (pos > -1) { // get the length of the regex
-		    		pos = (pos >= 0) ? pos + startpos : pos;
+          pos = str.search(marker_regex);
+		    	if (pos > -1) {
 		    		var match = str.match(marker_regex)[0];
-		    		len = match ? match.length : 0;
+            len = match ? match.length : 0;
+            if (len)
+              return { pos: pos+startpos, end: pos+ startpos+len };
 		    	}
 	  		} catch(e) {} // probably regex exception
-		    return { pos: pos , end: pos+length };
 	  }
 
     function findStartMarkers(startpos) {
@@ -49,9 +50,13 @@ jb.component('extract-text', {
       return firstMarkerPos && { pos: firstMarkerPos.pos, end: markerPos.end }
     }
 
-    var out = { match: [], unmatch: []},pos =0;
+    var out = { match: [], unmatch: []},pos =0,start=null; 
     while(start = findStartMarkers(pos)) {
-        var end = endMarker ? findMarker(endMarker,start.end) : findStartMarkers(start.end);
+        if (endMarker)
+          var end = findMarker(endMarker,start.end)
+        else
+          var end = findStartMarkers(start.end);
+
         if (!end) // if end not found use end of text
           end = { pos : text.length, end: text.length }
         var start_match = includingStartMarker ? start.pos : start.end;
@@ -69,6 +74,70 @@ jb.component('extract-text', {
     var res = exclude ? out.unmatch : out.match;
     return repeating ? res : res[0];
   }
+})
+
+jb.component('break-text', {
+  description: 'recursive text breaking according to multi level separators',
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'separators', as: 'array', essential: true, defaultValue: [], description: 'multi level separators'},
+    {id: 'useRegex', as: 'boolean', type: 'boolean', description: 'use regular expression in separators' },
+  ],
+  impl: (ctx,text,separators,regex) => {
+	  var findMarker = (text,marker, startpos) => {
+      var pos = text.indexOf(marker,startpos);
+      if (pos != -1)
+        return { pos: pos, end: pos + marker.length}
+    }
+	  if (regex)
+		  findMarker = (text,marker, startpos) => {
+	  		var len = 0, pos = -1;
+	  		try {
+		  		startpos = startpos || 0;
+		  		var str = text.substring(startpos);
+		  		var marker_regex = new RegExp(marker,'m');
+          pos = str.search(marker_regex);
+		    	if (pos > -1) {
+		    		var match = str.match(marker_regex)[0];
+            len = match ? match.length : 0;
+            if (len)
+              return { pos: pos+startpos, end: pos+ startpos+len };
+		    	}
+	  		} catch(e) {} // probably regex exception
+    }
+
+    var result = [text];
+    separators.forEach(sep=> result = recursiveSplit(result,sep));
+    return result[0];
+
+    function recursiveSplit(input,separator) {
+      if (Array.isArray(input))
+        return input.map(item=>recursiveSplit(item,separator))
+      if (typeof input == 'string')
+        return doSplit(input,separator)
+    }
+
+    function doSplit(text,separator) {
+      var out = [],pos =0,found=null; 
+      while(found = findMarker(text,separator,pos)) {
+        out.push(text.substring(pos,found.pos));
+        pos = found.end;
+      }
+      out.push(text.substring(pos));
+      return out;
+    }
+  }
+})
+
+
+jb.component('zip-arrays', {
+  description: '[[1,2],[10,20],[100,200]] => [[1,10,100],[2,20,200]]',
+  params: [
+    { id: 'value', description: 'array of arrays', as: 'array', essential: true },
+  ],
+  impl: (ctx,value) =>
+    value[0].map((x,i)=>
+      value.map(line=>line[i]))
 })
 
 jb.component('remove-sections', {

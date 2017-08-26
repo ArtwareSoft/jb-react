@@ -27,6 +27,11 @@ st.Probe = class {
     this.pathToTrace = pathToTrace;
 		var initial_resources = st.previewjb.valueByRefHandler.resources();
 		var initial_comps = st.compsRefHandler.resources();
+    if (st.probeDisabled) {
+      this.completed = false;
+      this.remark = 'probe disabled';
+      return Promise.resolve(this);
+    }
 
     return this.simpleRun()
 //		  .catch(e => jb.logException(e,'probe run'))

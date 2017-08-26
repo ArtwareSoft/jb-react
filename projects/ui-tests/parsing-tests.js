@@ -11,6 +11,9 @@ outside2
 `
 )
 
+jb.resource('textToBreak','l1-a1-b1-c1;l2-a2-b2-c2;l3-a3-b3-c3');
+jb.resource('textToBreak2','l1-a1-b1-c1;l2|a2|b2|c2;l3-a3-b3-c3')
+
 jb.component('data-test.extract-text-repeating', {
 	 impl :{$: 'data-test',
 		calculate: {$pipeline: [{$: 'extract-text', text: '%$textToParse%',  startMarkers: '#start', endMarker: '#end', repeating: true}, {$:'join'}]},
@@ -37,5 +40,26 @@ jb.component('data-test.extract-text-exclude', {
 	 impl :{$: 'data-test',
 		calculate: {$pipeline: [{$: 'extract-text', text: '%$textToParse%', startMarkers: '#start', endMarker: '#end', repeating: true, includingStartMarker: true, includingEndMarker: true, exclude: true}, {$:'join'}]},
     expectedResult : '%% == before,outside1,outside2'
+	},
+})
+
+jb.component('data-test.break-text', {
+	impl :{$: 'data-test',
+	   calculate: {$: 'json.stringify', value: {$: 'break-text', text: '%$textToBreak%', separators: [';','-'] } },
+	   expectedResult : '%% == [["l1","a1","b1","c1"],["l2","a2","b2","c2"],["l3","a3","b3","c3"]]'
+   },
+})
+
+jb.component('data-test.break-text-regex', {
+	impl :{$: 'data-test',
+	calculate: {$: 'json.stringify', value: {$: 'break-text', text: '%$textToBreak2%',separators: [';','-|\\|'], useRegex: true } },
+   	expectedResult : '%% == [["l1","a1","b1","c1"],["l2","a2","b2","c2"],["l3","a3","b3","c3"]]'
+	},
+})
+
+jb.component('data-test.zip-arrays', {
+	impl :{$: 'data-test',
+	calculate: {$: 'json.stringify', value: {$: 'zip-arrays', value: ctx => [[1,2],[10,20],[100,200]] } },
+   	expectedResult : '%% == [[1,10,100],[2,20,200]]'
 	},
 })

@@ -10,7 +10,6 @@ jb.component('editable-text.codemirror', {
 		{ id: 'lineWrapping', as: 'boolean' },
     { id: 'lineNumbers', as: 'boolean' },
     { id: 'readOnly', options: ',true,nocursor' },
-    { id: 'noCursor', as: 'boolean' },
 		{ id: 'onCtrlEnter', type: 'action', dynamic: true },
 	],
 	impl: function(context, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {

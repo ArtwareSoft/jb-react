@@ -1,14 +1,25 @@
+
 jb.component('jison.parse', {
   type: 'data',
   params: [
     { id: 'parser', type: 'jison.parser', essential: true, defaultValue: {$: 'jison.parser', lex: [], bnf: [] } },
+    { id: 'goal', as : 'string' },
     { id: 'text', as : 'string', defaultValue: '%%' },
+    { id: 'debug', as : 'boolean' },
   ],
-  impl: (ctx,parser,text) => {
+  impl: (ctx,parser,goal,text,debug) => {
     try {
-      return  { result: jb.jisonParser(parser).parse(text) }
+      if (!jb.jison) { // initialize
+        jb.jison = { buffer : ''};
+        jb.jisonParser.print = txt => jb.jison.buffer += txt;
+      }
+      jb.jison.buffer = '';
+      if (goal)
+        parser.bnf = Object.assign({goal: [[`${goal} EOF`, 'return $1']]},parser.bnf);
+          
+      return  { result: jb.jisonParser.Parser(parser,{debug: debug}).parse(text) }
     } catch (e) {
-      return { error: e, message: e.message }
+      return { error: e, message: e.message, console: jb.jison.buffer }
 //      jb.logException('jison',e,ctx)
     }
   }
@@ -20,12 +31,15 @@ jb.component('jison.parser', {
     { id: 'lex', type : 'lexer-rule[]', as : 'array', defaultValue: [] },
     { id: 'bnf', type : 'bnf-expression[]', as : 'array', defaultValue: [] },
     { id: 'operators', type : 'data[]', as : 'array', defaultValue: [], description: '[["left", "+", "-"]]' },
+//    { id: 'basedOn', type : 'jison.parser' },
   ],
   impl: (ctx,lexRules,bnf,operators) => {
     var bnfRules = {};
     var flattenRules = [].concat.apply(lexRules.filter(x=>x).filter(x=>!Array.isArray(x[0])), lexRules.filter(x=>x).filter(x=>Array.isArray(x[0])));
     bnf.filter(x=>x).forEach(e=>bnfRules[e.id] = e.options);
     return { lex: {rules: flattenRules } , bnf: bnfRules, operators: operators};
+    // var base = basedOn || { lex: {rules:[]}, bnf: {}, operators: []};
+    // return { lex: {rules: flattenRules.concat(base.lex.rules) } , bnf: Object.assign({},bnfRules,base.bnf), operators: operators.concat(base.operators)};
   }
 })
 
@@ -77,7 +91,7 @@ jb.component('bnf-expression', {
     { id: 'id', as: 'string', essential: true},
     { id: 'options', type: 'expression-option[]', essential: true, as: 'array', defaultValue: [] },
   ],
-  impl: ctx => ctx.params
+  impl: ctx => ({ id: ctx.params.id, options: ctx.params.options.filter(x=>x) })
 })
 
 jb.component('expression-option', {
@@ -86,5 +100,5 @@ jb.component('expression-option', {
     { id: 'syntax', as: 'string', essential: true, description: 'e + e'},
     { id: 'calculate', as: 'string', essential: true, description: '$$ = $1 + $2;' },
   ],
-  impl: ctx => jb.entries(ctx.params).map(e=>e[1])
+  impl: ctx => jb.entries(ctx.params).map(e=>e[1]).filter(x=>x)
 })

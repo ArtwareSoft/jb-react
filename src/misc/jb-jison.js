@@ -1,1 +1,1 @@
-jb.jisonParser = require("jison").Parser;
+jb.jisonParser = require("jison");

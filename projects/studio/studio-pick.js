@@ -182,7 +182,7 @@ jb.studio.highlight = function(elems) {
   jb.ui.removeClass(box,'jb-fade-3s-transition');
   box.innerHTML = html;
   jb.delay(1).then(_=> jb.ui.addClass(box,'jb-fade-3s-transition'));
-//  jb.delay(1000).then(_=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
+  jb.delay(1000).then(_=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
 }
 
 jb.component('studio.highlight-in-preview',{

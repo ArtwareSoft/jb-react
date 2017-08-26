@@ -16089,8 +16089,7 @@ module.exports = g;
 /* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
-jb.jisonParser = __webpack_require__(12).Parser;
-
+jb.jisonParser = __webpack_require__(12);
 
 /***/ })
 /******/ ]);

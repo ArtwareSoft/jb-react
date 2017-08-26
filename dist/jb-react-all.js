@@ -1,770 +1,3 @@
-var jb = (function() {
-function jb_run(context,parentParam,settings) {
-  try {
-    var profile = context.profile;
-    if (context.probe && (!settings || !settings.noprobe)) {
-      if (context.probe.pathToTrace.indexOf(context.path) == 0)
-        return context.probe.record(context,parentParam)
-    }
-    if (profile == null || (typeof profile == 'object' && profile.$disabled))
-      return castToParam(null,parentParam);
-
-    if (profile.$debugger == 0) debugger;
-    if (profile.$asIs) return profile.$asIs;
-    if (parentParam && (parentParam.type||'').indexOf('[]') > -1 && ! parentParam.as) // fix to array value. e.g. single feature not in array
-        parentParam.as = 'array';
-
-    if (typeof profile === 'object' && Object.getOwnPropertyNames(profile).length == 0)
-      return;
-    var contextWithVars = extendWithVars(context,profile.$vars);
-    var run = prepare(contextWithVars,parentParam);
-    var jstype = parentParam && parentParam.as;
-    context.parentParam = parentParam;
-    switch (run.type) {
-      case 'booleanExp': return bool_expression(profile, context);
-      case 'expression': return castToParam(expression(profile, context,parentParam), parentParam);
-      case 'asIs': return profile;
-      case 'object': return entriesToObject(entries(profile).map(e=>[e[0],contextWithVars.runInner(e[1],null,e[0])]));
-      case 'function': return castToParam(profile(context),parentParam);
-      case 'null': return castToParam(null,parentParam);
-      case 'ignore': return context.data;
-      case 'list': return profile.map((inner,i) =>
-            contextWithVars.runInner(inner,null,i));
-      case 'runActions': return jb.comps.runActions.impl(new jbCtx(contextWithVars,{profile: { actions : profile },path:''}));
-      case 'if': {
-          var cond = jb_run(run.ifContext, run.IfParentParam);
-          if (cond && cond.then)
-            return cond.then(res=>
-              res ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam))
-          return cond ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam);
-      }
-      case 'profile':
-        if (!run.impl)
-          run.ctx.callerPath = context.path;
-
-        run.preparedParams.forEach(paramObj => {
-          switch (paramObj.type) {
-            case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
-            case 'array': run.ctx.params[paramObj.name] =
-                paramObj.array.map((prof,i) =>
-                  jb_run(new jbCtx(run.ctx,{profile: prof, forcePath: context.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param))
-                  //run.ctx.runInner(prof, paramObj.param, paramObj.path+'~'+i) )
-              ; break;  // maybe we should [].concat and handle nulls
-            default: run.ctx.params[paramObj.name] =
-              jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: context.path + '~' + paramObj.path, path: ''}), paramObj.param);
-            //run.ctx.runInner(paramObj.prof, paramObj.param, paramObj.path)
-            //jb_run(paramObj.context, paramObj.param);
-          }
-        });
-        var out;
-        if (run.impl) {
-          var args = prepareGCArgs(run.ctx,run.preparedParams);
-          if (profile.$debugger) debugger;
-          if (! args.then)
-            out = run.impl.apply(null,args);
-          else
-            return args.then(args=>
-              castToParam(run.impl.apply(null,args),parentParam))
-        }
-        else {
-          out = jb_run(new jbCtx(run.ctx, { componentContext: run.ctx }),parentParam);
-        }
-
-        if (profile.$log)
-          console.log(contextWithVars.run(profile.$log));
-
-        if (profile.$trace) console.log('trace: ' + context.path,context,out,run);
-
-        return castToParam(out,parentParam);
-    }
-  } catch (e) {
-    if (context.vars.$throw) throw e;
-    logException(e,'exception while running run');
-  }
-
-  function prepareGCArgs(ctx,preparedParams) {
-    var delayed = preparedParams.filter(param => {
-      var v = ctx.params[param.name] || {};
-      return (v.then || v.subscribe ) && param.param.as != 'observable'
-    });
-    if (delayed.length == 0 || typeof Observable == 'undefined')
-      return [ctx].concat(preparedParams.map(param=>ctx.params[param.name]))
-
-    return Observable.from(preparedParams)
-        .concatMap(param=>
-          ctx.params[param.name])
-        .toArray()
-        .map(x=>
-          [ctx].concat(x))
-        .toPromise()
-  }
-}
-
-function extendWithVars(context,vars) {
-  if (!vars) return context;
-  var res = context;
-  for(var varname in vars || {})
-    res = new jbCtx(res,{ vars: jb.obj(varname,res.runInner(vars[varname], null,'$vars~'+varname)) });
-  return res;
-}
-
-function compParams(comp) {
-  if (!comp || !comp.params)
-    return [];
-  return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>extend(x[1],jb.obj('id',x[0])));
-}
-
-function prepareParams(comp,profile,ctx) {
-  return compParams(comp)
-    .filter(comp=>
-      !comp.ignore)
-    .map((param,index) => {
-      var p = param.id;
-      var val = profile[p], path =p, sugar = sugarProp(profile);
-      if (!val && index == 0 && sugar) {
-        path = sugar[0];
-        val = sugar[1];
-      }
-      var valOrDefault = (typeof val != "undefined" && val != null) ? val : (typeof param.defaultValue != 'undefined' ? param.defaultValue : null);
-      var valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
-      var arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
-
-      if (param.dynamic) {
-        var outerFunc = runCtx => {
-          if (arrayParam)
-            var func = (ctx2,data2) =>
-              jb.flattenArray(valOrDefaultArray.map((prof,i)=>
-                runCtx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
-          else
-            var func = (ctx2,data2) =>
-                  valOrDefault != null ? runCtx.extendVars(ctx2,data2).runInner(valOrDefault,param,path) : valOrDefault;
-
-          Object.defineProperty(func, "name", { value: p }); // for debug
-          func.profile = (typeof(val) != "undefined") ? val : (typeof(param.defaultValue) != 'undefined') ? param.defaultValue : null;
-          func.srcPath = ctx.path;
-          return func;
-        }
-        return { name: p, type: 'function', outerFunc: outerFunc, path: path, param: param };
-      }
-
-      if (arrayParam) // array of profiles
-        return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), path: path };
-      else
-        return { name: p, type: 'run', prof: valOrDefault, param: param, path: path }; // context: new jbCtx(ctx,{profile: valOrDefault, path: p}),
-  })
-}
-
-function prepare(context,parentParam) {
-  var profile = context.profile;
-  var profile_jstype = typeof profile;
-  var parentParam_type = parentParam && parentParam.type;
-  var jstype = parentParam && parentParam.as;
-  var isArray = Array.isArray(profile);
-
-  if (profile_jstype === 'string' && parentParam_type === 'boolean') return { type: 'booleanExp' };
-  if (profile_jstype === 'boolean' || profile_jstype === 'number' || parentParam_type == 'asIs') return { type: 'asIs' };// native primitives
-  if (profile_jstype === 'object' && jstype === 'object') return { type: 'object' };
-  if (profile_jstype === 'string') return { type: 'expression' };
-  if (profile_jstype === 'function') return { type: 'function' };
-//  if (profile_jstype === 'object' && !isArray && entries(profile).filter(p=>p[0].indexOf('$') == 0).length == 0) return { type: 'asIs' };
-  if (profile_jstype === 'object' && (profile instanceof RegExp)) return { type: 'asIs' };
-  if (profile == null) return { type: 'asIs' };
-
-  if (isArray) {
-    if (!profile.length) return { type: 'null' };
-    if (!parentParam || !parentParam.type || parentParam.type === 'data' ) //  as default for array
-      return { type: 'list' };
-    if (parentParam_type === 'action' || parentParam_type === 'action[]' && profile.isArray) {
-      profile.sugar = true;
-      return { type: 'runActions' };
-    }
-  } else if (profile.$if)
-  return {
-      type: 'if',
-      ifContext: new jbCtx(context,{profile: profile.$if || profile.condition, path: '$if'}),
-      IfParentParam: { type: 'boolean', as:'boolean' },
-      thenContext: new jbCtx(context,{profile: profile.then || 0 , path: '~then'}),
-      thenParentParam: { type: parentParam_type, as:jstype },
-      elseContext: new jbCtx(context,{profile: profile['else'] || 0 , path: '~else'}),
-      elseParentParam: { type: parentParam_type, as:jstype }
-    }
-  var comp_name = compName(profile,parentParam);
-  if (!comp_name)
-    return { type: 'asIs' }
-  // if (!comp_name)
-  //   return { type: 'ignore' }
-  var comp = jb.comps[comp_name];
-  if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined'); return { type:'null' } }
-  if (!comp.impl) { logError('component ' + comp_name + ' has no implementation'); return { type:'null' } }
-
-  var ctx = new jbCtx(context,{});
-  ctx.parentParam = parentParam;
-  ctx.params = {}; // TODO: try to delete this line
-  var preparedParams = prepareParams(comp,profile,ctx);
-  if (typeof comp.impl === 'function') {
-    Object.defineProperty(comp.impl, "name", { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
-    return { type: 'profile', impl: comp.impl, ctx: ctx, preparedParams: preparedParams }
-  } else
-    return { type:'profile', ctx: new jbCtx(ctx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
-}
-
-function resolveFinishedPromise(val) {
-  if (!val) return val;
-  if (val.$jb_parent)
-    val.$jb_parent = resolveFinishedPromise(val.$jb_parent);
-  if (val && typeof val == 'object' && val._state == 1) // finished promise
-    return val._result;
-  return val;
-}
-
-function calcVar(context,varname) {
-  var res;
-  if (context.componentContext && typeof context.componentContext.params[varname] != 'undefined')
-    res = context.componentContext.params[varname];
-  else if (context.vars[varname] != null)
-    res = context.vars[varname];
-  else if (context.vars.scope && context.vars.scope[varname] != null)
-    res = context.vars.scope[varname];
-  else if (jb.resources && jb.resources[varname] != null)
-    res = jb.resources[varname];
-  return resolveFinishedPromise(res);
-}
-
-function expression(exp, context, parentParam) {
-  var jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
-  exp = '' + exp;
-  if (jstype == 'boolean') return bool_expression(exp, context);
-  if (exp.indexOf('$debugger:') == 0) {
-    debugger;
-    exp = exp.split('$debugger:')[1];
-  }
-  if (exp.indexOf('$log:') == 0) {
-    var out = expression(exp.split('$log:')[1],context,parentParam);
-    jb.comps.log.impl(context, out);
-    return out;
-  }
-  if (exp.indexOf('%') == -1 && exp.indexOf('{') == -1) return exp;
-  // if (context && !context.ngMode)
-  //   exp = exp.replace(/{{/g,'{%').replace(/}}/g,'%}')
-  if (exp == '{%%}' || exp == '%%')
-      return expPart('',context,jstype);
-
-  if (exp.lastIndexOf('{%') == 0 && exp.indexOf('%}') == exp.length-2) // just one exp filling all string
-    return expPart(exp.substring(2,exp.length-2),context,jstype);
-
-  exp = exp.replace(/{%(.*?)%}/g, function(match,contents) {
-      return tostring(expPart(contents,context,'string'));
-  })
-  exp = exp.replace(/{\?(.*?)\?}/g, function(match,contents) {
-      return tostring(conditionalExp(contents));
-  })
-  if (exp.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
-    return expPart(exp.substring(1,exp.length-1),context,jstype);
-
-  exp = exp.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
-      return tostring(expPart(contents,context,'string'));
-  })
-  return exp;
-
-  function conditionalExp(exp) {
-    // check variable value - if not empty return all exp, otherwise empty
-    var match = exp.match(/%([^%;{}\s><"']*)%/);
-    if (match && tostring(expPart(match[1],context,'string')))
-      return expression(exp, context, { as: 'string' });
-    else
-      return '';
-  }
-
-  function expPart(expressionPart,context,jstype) {
-    return resolveFinishedPromise(evalExpressionPart(expressionPart,context,jstype))
-  }
-}
-
-
-function evalExpressionPart(expressionPart,context,jstype) {
-  // example: %$person.name%.
-
-  var primitiveJsType = ['string','boolean','number'].indexOf(jstype) != -1;
-  // empty primitive expression - perfomance
-  // if (expressionPart == "")
-  //   return context.data;
-
-  var parts = expressionPart.split(/[.\/]/);
-  return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),context.data)
-
-  function pipe(input,subExp,last,first,refHandler) {
-      if (subExp == '')
-          return input;
-
-      var arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      var refHandler = refHandler || (input && input.handler) || jb.valueByRefHandler;
-      if (arrayIndexMatch) {
-        var arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1],false,first,refHandler);
-        var index = arrayIndexMatch[2];
-        if (!Array.isArray(arr))
-            return null; //jb.logError('expecting array instead of ' + typeof arr, context);
-
-        if (last && (jstype == 'ref' || !primitiveJsType))
-           return refHandler.objectProperty(arr,index);
-        if (typeof arr[index] == 'undefined')
-           arr[index] = last ? null : [];
-			  if (last && jstype)
-           return jstypes[jstype](arr[index]);
-        return arr[index];
-     }
-
-      var functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
-      if (functionCallMatch && jb.functions[functionCallMatch[1]])
-        return tojstype(jb.functions[functionCallMatch[1]](context,functionCallMatch[2]),jstype,context);
-
-      if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(context,subExp.substr(1))
-      var obj = val(input);
-      if (subExp == 'length' && obj && typeof obj.length != 'undefined')
-        return obj.length;
-      if (Array.isArray(obj))
-        return obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null);
-
-      if (input != null && typeof input == 'object') {
-        if (obj == null) return;
-        if (typeof obj[subExp] === 'function' && obj[subExp].profile)
-            return obj[subExp](context);
-        if (last && jstype == 'ref')
-           return refHandler.objectProperty(obj,subExp);
-        if (typeof obj[subExp] == 'undefined')
-           obj[subExp] = last ? null : {};
-        if (last && jstype)
-            return jstypes[jstype](obj[subExp]);
-        return obj[subExp];
-      }
-  }
-}
-
-function bool_expression(exp, context) {
-  if (exp.indexOf('$debugger:') == 0) {
-    debugger;
-    exp = exp.split('$debugger:')[1];
-  }
-  if (exp.indexOf('$log:') == 0) {
-    var calculated = expression(exp.split('$log:')[1],context,{as: 'string'});
-    var result = bool_expression(exp.split('$log:')[1], context);
-    jb.comps.log.impl(context, calculated + ':' + result);
-    return result;
-  }
-  if (exp.indexOf('!') == 0)
-    return !bool_expression(exp.substring(1), context);
-  var parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
-  if (!parts) {
-    var val = jb.val(expression(exp, context));
-    if (typeof val == 'boolean') return val;
-    var asString = tostring(val);
-    return !!asString && asString != 'false';
-  }
-  if (parts.length != 4)
-    return logError('invalid boolean expression: ' + exp);
-  var op = parts[2].trim();
-
-  if (op == '==' || op == '!=' || op == '$=' || op == '^=') {
-    var p1 = tostring(expression(trim(parts[1]), context, {as: 'string'}))
-    var p2 = tostring(expression(trim(parts[3]), context, {as: 'string'}))
-    // var p1 = expression(trim(parts[1]), context, {as: 'string'});
-    // var p2 = expression(trim(parts[3]), context, {as: 'string'});
-    p2 = (p2.match(/^["'](.*)["']/) || [,p2])[1]; // remove quotes
-    if (op == '==') return p1 == p2;
-    if (op == '!=') return p1 != p2;
-    if (op == '^=') return p1.lastIndexOf(p2,0) == 0; // more effecient
-    if (op == '$=') return p1.indexOf(p2, p1.length - p2.length) !== -1;
-  }
-
-  var p1 = tonumber(expression(parts[1].trim(), context));
-  var p2 = tonumber(expression(parts[3].trim(), context));
-
-  if (op == '>') return p1 > p2;
-  if (op == '<') return p1 < p2;
-  if (op == '>=') return p1 >= p2;
-  if (op == '<=') return p1 <= p2;
-
-  function trim(str) {  // trims also " and '
-    return str.trim().replace(/^"(.*)"$/,'$1').replace(/^'(.*)'$/,'$1');
-  }
-}
-
-function castToParam(value,param) {
-  var res = tojstype(value,param ? param.as : null);
-  if (param && param.as == 'ref' && param.whenNotReffable && !jb.isRef(res))
-    res = tojstype(value,param.whenNotReffable);
-  return res;
-}
-
-function tojstype(value,jstype) {
-  if (!jstype) return value;
-  if (typeof jstypes[jstype] != 'function') debugger;
-  return jstypes[jstype](value);
-}
-
-var tostring = value => tojstype(value,'string');
-var toarray = value => tojstype(value,'array');
-var toboolean = value => tojstype(value,'boolean');
-var tosingle = value => tojstype(value,'single');
-var tonumber = value => tojstype(value,'number');
-
-var jstypes = {
-    'asIs': x => x,
-    'object': x => x,
-    'string': function(value) {
-      if (Array.isArray(value)) value = value[0];
-      if (value == null) return '';
-      value = val(value);
-      if (typeof(value) == 'undefined') return '';
-      return '' + value;
-    },
-    'number': function(value) {
-      if (Array.isArray(value)) value = value[0];
-      if (value == null || value == undefined) return null;	// 0 is not null
-      value = val(value);
-      var num = Number(value,true);
-      return isNaN(num) ? null : num;
-    },
-    'array': function(value) {
-      if (typeof value == 'function' && value.profile)
-        value = value();
-      value = val(value);
-      if (Array.isArray(value)) return value;
-      if (value == null) return [];
-      return [value];
-    },
-    'boolean': function(value) {
-      if (Array.isArray(value)) value = value[0];
-      return val(value) ? true : false;
-    },
-    'single': function(value) {
-      if (Array.isArray(value))
-        value = value[0];
-      return val(value);
-    },
-    'ref': function(value) {
-//      if (Array.isArray(value)) value = value[0];
-//      if (value == null) return value;
-      if (Array.isArray(value) && value.length == 1)
-        value = value[0];
-      return jb.valueByRefHandler.asRef(value);
-    }
-}
-
-function profileType(profile) {
-  if (!profile) return '';
-  if (typeof profile == 'string') return 'data';
-  var comp_name = compName(profile);
-  return (jb.comps[comp_name] && jb.comps[comp_name].type) || '';
-}
-
-function sugarProp(profile) {
-  return entries(profile)
-    .filter(p=>p[0].indexOf('$') == 0 && p[0].length > 1)
-    .filter(p=>p[0].indexOf('$jb_') != 0)
-    .filter(p=>['$vars','$debugger','$log'].indexOf(p[0]) == -1)[0]
-}
-
-function singleInType(profile,parentParam) {
-  var _type = parentParam && parentParam.type && parentParam.type.split('[')[0];
-  return _type && jb.comps[_type] && jb.comps[_type].singleInType && _type;
-}
-
-function compName(profile,parentParam) {
-  if (!profile || Array.isArray(profile)) return;
-  if (profile.$) return profile.$;
-  var f = sugarProp(profile);
-  return (f && f[0].slice(1)) || singleInType(profile,parentParam);
-}
-
-// give a name to the impl function. Used for tgp debugging
-function assignNameToFunc(name, fn) {
-  Object.defineProperty(fn, "name", { value: name });
-  return fn;
-}
-
-var ctxCounter = 0;
-
-class jbCtx {
-  constructor(context,ctx2) {
-    this.id = ctxCounter++;
-    this._parent = context;
-    if (typeof context == 'undefined') {
-      this.vars = {};
-      this.params = {};
-    }
-    else {
-      if (ctx2.profile && ctx2.path == null) {
-        debugger;
-      ctx2.path = '?';
-    }
-      this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : context.profile;
-
-      this.path = (context.path || '') + (ctx2.path ? '~' + ctx2.path : '');
-      if (ctx2.forcePath)
-        this.path = this.forcePath = ctx2.forcePath;
-      if (ctx2.comp)
-        this.path = ctx2.comp + '~impl';
-      this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : context.data;     // allow setting of data:null
-      this.vars= ctx2.vars ? Object.assign({},context.vars,ctx2.vars) : context.vars;
-      this.params= ctx2.params || context.params;
-      this.componentContext= (typeof ctx2.componentContext != 'undefined') ? ctx2.componentContext : context.componentContext;
-      this.probe= context.probe;
-    }
-  }
-  run(profile,parentParam) {
-    return jb_run(new jbCtx(this,{ profile: profile, comp: profile.$ , path: ''}), parentParam)
-  }
-  exp(exp,jstype) { return expression(exp, this, {as: jstype}) }
-  setVars(vars) { return new jbCtx(this,{vars: vars}) }
-  setData(data) { return new jbCtx(this,{data: data}) }
-  runInner(profile,parentParam, path) { return jb_run(new jbCtx(this,{profile: profile,path: path}), parentParam) }
-  bool(profile) { return this.run(profile, { as: 'boolean'}) }
-  // keeps the context vm and not the caller vm - needed in studio probe
-  ctx(ctx2) { return new jbCtx(this,ctx2) }
-  win() { // used for multi windows apps. e.g., studio
-    return window
-  }
-  extendVars(ctx2,data2) {
-    if (ctx2 == null && data2 == null)
-      return this;
-    return new jbCtx(this,{
-      vars: ctx2 ? ctx2.vars : null,
-      data: (data2 == null) ? ctx2.data : data2,
-      forcePath: (ctx2 && ctx2.forcePath) ? ctx2.forcePath : null
-    })
-  }
-  runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
-  parents() {
-    return this._parent ? [this._parent].concat(_this.parent.parents()) : []
-  }
-  isParentOf(childCtx) {
-    return childCtx.parents().filter(x == this).length > 0
-  }
-
-}
-
-var logs = {};
-function logError(errorStr,p1,p2,p3) {
-  logs.error = logs.error || [];
-  logs.error.push(errorStr);
-  console.error(errorStr,p1,p2,p3);
-}
-
-function logPerformance(type,p1,p2,p3) {
-//  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
-  if ((jb.issuesTolog || []).indexOf(type) == -1) return; // filter. TBD take from somewhere else
-  console.log(type, p1 || '', p2 || '', p3 ||'');
-}
-
-function logException(e,errorStr,p1,p2,p3) {
-  logError('exception: ' + errorStr + "\n" + (e.stack||''),p1,p2,p3);
-}
-
-function val(v) {
-  if (v == null) return v;
-  return jb.valueByRefHandler.val(v)
-}
-// Object.getOwnPropertyNames does not keep the order !!!
-function entries(obj) {
-  if (!obj || typeof obj != 'object') return [];
-  var ret = [];
-  for(var i in obj) // please do not change. its keeps definition order !!!!
-      if (obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
-        ret.push([i,obj[i]])
-  return ret;
-}
-function extend(obj,obj1,obj2,obj3) {
-  if (!obj) return;
-  obj1 && Object.assign(obj,obj1);
-  obj2 && Object.assign(obj,obj2);
-  obj3 && Object.assign(obj,obj3);
-  return obj;
-}
-
-
-// var valueByRefHandlerWithjbParent = {
-//   val: function(v) {
-//     if (v.$jb_val) return v.$jb_val();
-//     return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
-//   },
-//   writeValue: function(to,value,srcCtx) {
-//     jb.logPerformance('writeValue',value,to,srcCtx);
-//     if (!to) return;
-//     if (to.$jb_val)
-//       to.$jb_val(this.val(value))
-//     else if (to.$jb_parent)
-//       to.$jb_parent[to.$jb_property] = this.val(value);
-//     return to;
-//   },
-//   asRef: function(value) {
-//     if (value && (value.$jb_parent || value.$jb_val))
-//         return value;
-//     return { $jb_val: () => value }
-//   },
-//   isRef: function(value) {
-//     return value && (value.$jb_parent || value.$jb_val);
-//   },
-//   objectProperty: function(obj,prop) {
-//       if (this.isRef(obj[prop]))
-//         return obj[prop];
-//       else
-//         return { $jb_parent: obj, $jb_property: prop };
-//   }
-// }
-//
-var valueByRefHandler = null; // valueByRefHandlerWithjbParent;
-
-var types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
-
-return {
-  jbCtx: jbCtx,
-
-  run: jb_run,
-  expression: expression,
-  bool_expression: bool_expression,
-  profileType: profileType,
-  compName: compName,
-  logError: logError,
-  logPerformance: logPerformance,
-  logException: logException,
-
-  tojstype: tojstype, jstypes: jstypes,
-  tostring: tostring, toarray:toarray, toboolean: toboolean,tosingle:tosingle,tonumber:tonumber,
-
-  valueByRefHandler: valueByRefHandler,
-  types: types,
-  ui: ui,
-  rx: rx,
-  ctxDictionary: ctxDictionary,
-  testers: testers,
-  compParams: compParams,
-  singleInType: singleInType,
-  val: val,
-  entries: entries,
-  extend: extend,
-  ctxCounter: _ => ctxCounter
-}
-
-})();
-
-Object.assign(jb,{
-  comps: {}, functions: {}, resources: {},
-  studio: { previewjb: jb },
-  component: (id,val) => jb.comps[id] = val,
-  type: (id,val) => jb.types[id] = val || {},
-  resource: (id,val) => typeof val == 'undefined' ? jb.resources[id] : (jb.resources[id] = val || {}),
-  functionDef: (id,val) => jb.functions[id] = val,
-
-// force path - create objects in the path if not exist
-  path: (object,path,value) => {
-    var cur = object;
-
-    if (typeof value == 'undefined') {  // get
-      for(var i=0;i<path.length;i++) {
-        cur = cur[path[i]];
-        if (cur == null || typeof cur == 'undefined') return null;
-      }
-      return cur;
-    } else { // set
-      for(var i=0;i<path.length;i++)
-        if (i == path.length-1)
-          cur[path[i]] = value;
-        else
-          cur = cur[path[i]] = cur[path[i]] || {};
-      return value;
-    }
-  },
-  ownPropertyNames: obj => {
-    var res = [];
-    for (var i in (obj || {}))
-      if (obj.hasOwnProperty(i))
-        res.push(i);
-    return res;
-  },
-  obj: (k,v,base) => {
-    var ret = base || {};
-    ret[k] = v;
-    return ret;
-  },
-  compareArrays: (arr1, arr2) => {
-    if (arr1 == arr2)
-      return true;
-    if (!Array.isArray(arr1) && !Array.isArray(arr2)) return arr1 == arr2;
-    if (!arr1 || !arr2 || arr1.length != arr2.length) return false;
-    for (var i = 0; i < arr1.length; i++) {
-      var key1 = (arr1[i]||{}).key, key2 = (arr2[i]||{}).key;
-      if (key1 && key2 && key1 == key2 && arr1[i].val == arr2[i].val)
-        continue;
-      if (arr1[i] !== arr2[i]) return false;
-    }
-    return true;
-  },
-  range: (start, count) =>
-    Array.apply(0, Array(count)).map((element, index) => index + start),
-
-  flattenArray: items => {
-    var out = [];
-    items.filter(i=>i).forEach(function(item) {
-      if (Array.isArray(item))
-        out = out.concat(item);
-      else
-        out.push(item);
-    })
-    return out;
-  },
-  synchArray: ar => {
-    var isSynch = ar.filter(v=> v &&  (typeof v.then == 'function' || typeof v.subscribe == 'function')).length == 0;
-    if (isSynch) return ar;
-
-    var _ar = ar.filter(x=>x).map(v=>
-      (typeof v.then == 'function' || typeof v.subscribe == 'function') ? v : [v]);
-
-    return jb.rx.Observable.from(_ar)
-          .concatMap(x=>x)
-          .flatMap(v =>
-            Array.isArray(v) ? v : [v])
-          .toArray()
-          .toPromise()
-  },
-  unique: (ar,f) => {
-    f = f || (x=>x);
-    var keys = {}, res = [];
-    ar.forEach(e=>{
-      if (!keys[f(e)]) {
-        keys[f(e)] = true;
-        res.push(e)
-      }
-    })
-    return res;
-  },
-
-  equals: (x,y) =>
-    x == y || jb.val(x) == jb.val(y),
-
-  delay: mSec =>
-    new Promise(r=>{setTimeout(r,mSec)}),
-
-  // valueByRef API
-  refHandler: ref =>
-    (ref && ref.handler) || jb.valueByRefHandler,
-  writeValue: (ref,value,srcCtx) =>
-    jb.refHandler(ref).writeValue(ref,value,srcCtx),
-  splice: (ref,args,srcCtx) =>
-    jb.refHandler(ref).splice(ref,args,srcCtx),
-  move: (fromRef,toRef,srcCtx) =>
-    jb.refHandler(fromRef).move(fromRef,toRef,srcCtx),
-  isRef: (ref) =>
-    jb.refHandler(ref).isRef(ref),
-  refreshRef: (ref) =>
-    jb.refHandler(ref).refresh(ref),
-  asRef: (obj) =>
-    jb.valueByRefHandler.asRef(obj),
-  resourceChange: _ =>
-    jb.valueByRefHandler.resourceChange,
-})
-;
-
 jb.component('call', {
  	type: '*',
  	params: [
@@ -1613,6 +846,773 @@ jb.component('action.switch-case', {
   	{ id: 'action', type: 'action' ,essential: true, dynamic: true },
   ],
   impl: ctx => ctx.params
+})
+;
+
+var jb = (function() {
+function jb_run(context,parentParam,settings) {
+  try {
+    var profile = context.profile;
+    if (context.probe && (!settings || !settings.noprobe)) {
+      if (context.probe.pathToTrace.indexOf(context.path) == 0)
+        return context.probe.record(context,parentParam)
+    }
+    if (profile == null || (typeof profile == 'object' && profile.$disabled))
+      return castToParam(null,parentParam);
+
+    if (profile.$debugger == 0) debugger;
+    if (profile.$asIs) return profile.$asIs;
+    if (parentParam && (parentParam.type||'').indexOf('[]') > -1 && ! parentParam.as) // fix to array value. e.g. single feature not in array
+        parentParam.as = 'array';
+
+    if (typeof profile === 'object' && Object.getOwnPropertyNames(profile).length == 0)
+      return;
+    var contextWithVars = extendWithVars(context,profile.$vars);
+    var run = prepare(contextWithVars,parentParam);
+    var jstype = parentParam && parentParam.as;
+    context.parentParam = parentParam;
+    switch (run.type) {
+      case 'booleanExp': return bool_expression(profile, context);
+      case 'expression': return castToParam(expression(profile, context,parentParam), parentParam);
+      case 'asIs': return profile;
+      case 'object': return entriesToObject(entries(profile).map(e=>[e[0],contextWithVars.runInner(e[1],null,e[0])]));
+      case 'function': return castToParam(profile(context),parentParam);
+      case 'null': return castToParam(null,parentParam);
+      case 'ignore': return context.data;
+      case 'list': return profile.map((inner,i) =>
+            contextWithVars.runInner(inner,null,i));
+      case 'runActions': return jb.comps.runActions.impl(new jbCtx(contextWithVars,{profile: { actions : profile },path:''}));
+      case 'if': {
+          var cond = jb_run(run.ifContext, run.IfParentParam);
+          if (cond && cond.then)
+            return cond.then(res=>
+              res ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam))
+          return cond ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam);
+      }
+      case 'profile':
+        if (!run.impl)
+          run.ctx.callerPath = context.path;
+
+        run.preparedParams.forEach(paramObj => {
+          switch (paramObj.type) {
+            case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
+            case 'array': run.ctx.params[paramObj.name] =
+                paramObj.array.map((prof,i) =>
+                  jb_run(new jbCtx(run.ctx,{profile: prof, forcePath: context.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param))
+                  //run.ctx.runInner(prof, paramObj.param, paramObj.path+'~'+i) )
+              ; break;  // maybe we should [].concat and handle nulls
+            default: run.ctx.params[paramObj.name] =
+              jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: context.path + '~' + paramObj.path, path: ''}), paramObj.param);
+            //run.ctx.runInner(paramObj.prof, paramObj.param, paramObj.path)
+            //jb_run(paramObj.context, paramObj.param);
+          }
+        });
+        var out;
+        if (run.impl) {
+          var args = prepareGCArgs(run.ctx,run.preparedParams);
+          if (profile.$debugger) debugger;
+          if (! args.then)
+            out = run.impl.apply(null,args);
+          else
+            return args.then(args=>
+              castToParam(run.impl.apply(null,args),parentParam))
+        }
+        else {
+          out = jb_run(new jbCtx(run.ctx, { componentContext: run.ctx }),parentParam);
+        }
+
+        if (profile.$log)
+          console.log(contextWithVars.run(profile.$log));
+
+        if (profile.$trace) console.log('trace: ' + context.path,context,out,run);
+
+        return castToParam(out,parentParam);
+    }
+  } catch (e) {
+    if (context.vars.$throw) throw e;
+    logException(e,'exception while running run');
+  }
+
+  function prepareGCArgs(ctx,preparedParams) {
+    var delayed = preparedParams.filter(param => {
+      var v = ctx.params[param.name] || {};
+      return (v.then || v.subscribe ) && param.param.as != 'observable'
+    });
+    if (delayed.length == 0 || typeof Observable == 'undefined')
+      return [ctx].concat(preparedParams.map(param=>ctx.params[param.name]))
+
+    return Observable.from(preparedParams)
+        .concatMap(param=>
+          ctx.params[param.name])
+        .toArray()
+        .map(x=>
+          [ctx].concat(x))
+        .toPromise()
+  }
+}
+
+function extendWithVars(context,vars) {
+  if (!vars) return context;
+  var res = context;
+  for(var varname in vars || {})
+    res = new jbCtx(res,{ vars: jb.obj(varname,res.runInner(vars[varname], null,'$vars~'+varname)) });
+  return res;
+}
+
+function compParams(comp) {
+  if (!comp || !comp.params)
+    return [];
+  return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>extend(x[1],jb.obj('id',x[0])));
+}
+
+function prepareParams(comp,profile,ctx) {
+  return compParams(comp)
+    .filter(comp=>
+      !comp.ignore)
+    .map((param,index) => {
+      var p = param.id;
+      var val = profile[p], path =p, sugar = sugarProp(profile);
+      if (!val && index == 0 && sugar) {
+        path = sugar[0];
+        val = sugar[1];
+      }
+      var valOrDefault = (typeof val != "undefined" && val != null) ? val : (typeof param.defaultValue != 'undefined' ? param.defaultValue : null);
+      var valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
+      var arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
+
+      if (param.dynamic) {
+        var outerFunc = runCtx => {
+          if (arrayParam)
+            var func = (ctx2,data2) =>
+              jb.flattenArray(valOrDefaultArray.map((prof,i)=>
+                runCtx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
+          else
+            var func = (ctx2,data2) =>
+                  valOrDefault != null ? runCtx.extendVars(ctx2,data2).runInner(valOrDefault,param,path) : valOrDefault;
+
+          Object.defineProperty(func, "name", { value: p }); // for debug
+          func.profile = (typeof(val) != "undefined") ? val : (typeof(param.defaultValue) != 'undefined') ? param.defaultValue : null;
+          func.srcPath = ctx.path;
+          return func;
+        }
+        return { name: p, type: 'function', outerFunc: outerFunc, path: path, param: param };
+      }
+
+      if (arrayParam) // array of profiles
+        return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), path: path };
+      else
+        return { name: p, type: 'run', prof: valOrDefault, param: param, path: path }; // context: new jbCtx(ctx,{profile: valOrDefault, path: p}),
+  })
+}
+
+function prepare(context,parentParam) {
+  var profile = context.profile;
+  var profile_jstype = typeof profile;
+  var parentParam_type = parentParam && parentParam.type;
+  var jstype = parentParam && parentParam.as;
+  var isArray = Array.isArray(profile);
+
+  if (profile_jstype === 'string' && parentParam_type === 'boolean') return { type: 'booleanExp' };
+  if (profile_jstype === 'boolean' || profile_jstype === 'number' || parentParam_type == 'asIs') return { type: 'asIs' };// native primitives
+  if (profile_jstype === 'object' && jstype === 'object') return { type: 'object' };
+  if (profile_jstype === 'string') return { type: 'expression' };
+  if (profile_jstype === 'function') return { type: 'function' };
+//  if (profile_jstype === 'object' && !isArray && entries(profile).filter(p=>p[0].indexOf('$') == 0).length == 0) return { type: 'asIs' };
+  if (profile_jstype === 'object' && (profile instanceof RegExp)) return { type: 'asIs' };
+  if (profile == null) return { type: 'asIs' };
+
+  if (isArray) {
+    if (!profile.length) return { type: 'null' };
+    if (!parentParam || !parentParam.type || parentParam.type === 'data' ) //  as default for array
+      return { type: 'list' };
+    if (parentParam_type === 'action' || parentParam_type === 'action[]' && profile.isArray) {
+      profile.sugar = true;
+      return { type: 'runActions' };
+    }
+  } else if (profile.$if)
+  return {
+      type: 'if',
+      ifContext: new jbCtx(context,{profile: profile.$if || profile.condition, path: '$if'}),
+      IfParentParam: { type: 'boolean', as:'boolean' },
+      thenContext: new jbCtx(context,{profile: profile.then || 0 , path: '~then'}),
+      thenParentParam: { type: parentParam_type, as:jstype },
+      elseContext: new jbCtx(context,{profile: profile['else'] || 0 , path: '~else'}),
+      elseParentParam: { type: parentParam_type, as:jstype }
+    }
+  var comp_name = compName(profile,parentParam);
+  if (!comp_name)
+    return { type: 'asIs' }
+  // if (!comp_name)
+  //   return { type: 'ignore' }
+  var comp = jb.comps[comp_name];
+  if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined'); return { type:'null' } }
+  if (!comp.impl) { logError('component ' + comp_name + ' has no implementation'); return { type:'null' } }
+
+  var ctx = new jbCtx(context,{});
+  ctx.parentParam = parentParam;
+  ctx.params = {}; // TODO: try to delete this line
+  var preparedParams = prepareParams(comp,profile,ctx);
+  if (typeof comp.impl === 'function') {
+    Object.defineProperty(comp.impl, "name", { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
+    return { type: 'profile', impl: comp.impl, ctx: ctx, preparedParams: preparedParams }
+  } else
+    return { type:'profile', ctx: new jbCtx(ctx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
+}
+
+function resolveFinishedPromise(val) {
+  if (!val) return val;
+  if (val.$jb_parent)
+    val.$jb_parent = resolveFinishedPromise(val.$jb_parent);
+  if (val && typeof val == 'object' && val._state == 1) // finished promise
+    return val._result;
+  return val;
+}
+
+function calcVar(context,varname) {
+  var res;
+  if (context.componentContext && typeof context.componentContext.params[varname] != 'undefined')
+    res = context.componentContext.params[varname];
+  else if (context.vars[varname] != null)
+    res = context.vars[varname];
+  else if (context.vars.scope && context.vars.scope[varname] != null)
+    res = context.vars.scope[varname];
+  else if (jb.resources && jb.resources[varname] != null)
+    res = jb.resources[varname];
+  return resolveFinishedPromise(res);
+}
+
+function expression(exp, context, parentParam) {
+  var jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
+  exp = '' + exp;
+  if (jstype == 'boolean') return bool_expression(exp, context);
+  if (exp.indexOf('$debugger:') == 0) {
+    debugger;
+    exp = exp.split('$debugger:')[1];
+  }
+  if (exp.indexOf('$log:') == 0) {
+    var out = expression(exp.split('$log:')[1],context,parentParam);
+    jb.comps.log.impl(context, out);
+    return out;
+  }
+  if (exp.indexOf('%') == -1 && exp.indexOf('{') == -1) return exp;
+  // if (context && !context.ngMode)
+  //   exp = exp.replace(/{{/g,'{%').replace(/}}/g,'%}')
+  if (exp == '{%%}' || exp == '%%')
+      return expPart('',context,jstype);
+
+  if (exp.lastIndexOf('{%') == 0 && exp.indexOf('%}') == exp.length-2) // just one exp filling all string
+    return expPart(exp.substring(2,exp.length-2),context,jstype);
+
+  exp = exp.replace(/{%(.*?)%}/g, function(match,contents) {
+      return tostring(expPart(contents,context,'string'));
+  })
+  exp = exp.replace(/{\?(.*?)\?}/g, function(match,contents) {
+      return tostring(conditionalExp(contents));
+  })
+  if (exp.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
+    return expPart(exp.substring(1,exp.length-1),context,jstype);
+
+  exp = exp.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
+      return tostring(expPart(contents,context,'string'));
+  })
+  return exp;
+
+  function conditionalExp(exp) {
+    // check variable value - if not empty return all exp, otherwise empty
+    var match = exp.match(/%([^%;{}\s><"']*)%/);
+    if (match && tostring(expPart(match[1],context,'string')))
+      return expression(exp, context, { as: 'string' });
+    else
+      return '';
+  }
+
+  function expPart(expressionPart,context,jstype) {
+    return resolveFinishedPromise(evalExpressionPart(expressionPart,context,jstype))
+  }
+}
+
+
+function evalExpressionPart(expressionPart,context,jstype) {
+  // example: %$person.name%.
+
+  var primitiveJsType = ['string','boolean','number'].indexOf(jstype) != -1;
+  // empty primitive expression - perfomance
+  // if (expressionPart == "")
+  //   return context.data;
+
+  var parts = expressionPart.split(/[.\/]/);
+  return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),context.data)
+
+  function pipe(input,subExp,last,first,refHandler) {
+      if (subExp == '')
+          return input;
+
+      var arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
+      var refHandler = refHandler || (input && input.handler) || jb.valueByRefHandler;
+      if (arrayIndexMatch) {
+        var arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1],false,first,refHandler);
+        var index = arrayIndexMatch[2];
+        if (!Array.isArray(arr))
+            return null; //jb.logError('expecting array instead of ' + typeof arr, context);
+
+        if (last && (jstype == 'ref' || !primitiveJsType))
+           return refHandler.objectProperty(arr,index);
+        if (typeof arr[index] == 'undefined')
+           arr[index] = last ? null : [];
+			  if (last && jstype)
+           return jstypes[jstype](arr[index]);
+        return arr[index];
+     }
+
+      var functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
+      if (functionCallMatch && jb.functions[functionCallMatch[1]])
+        return tojstype(jb.functions[functionCallMatch[1]](context,functionCallMatch[2]),jstype,context);
+
+      if (first && subExp.charAt(0) == '$' && subExp.length > 1)
+        return calcVar(context,subExp.substr(1))
+      var obj = val(input);
+      if (subExp == 'length' && obj && typeof obj.length != 'undefined')
+        return obj.length;
+      if (Array.isArray(obj))
+        return obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null);
+
+      if (input != null && typeof input == 'object') {
+        if (obj == null) return;
+        if (typeof obj[subExp] === 'function' && obj[subExp].profile)
+            return obj[subExp](context);
+        if (last && jstype == 'ref')
+           return refHandler.objectProperty(obj,subExp);
+        if (typeof obj[subExp] == 'undefined')
+           obj[subExp] = last ? null : {};
+        if (last && jstype)
+            return jstypes[jstype](obj[subExp]);
+        return obj[subExp];
+      }
+  }
+}
+
+function bool_expression(exp, context) {
+  if (exp.indexOf('$debugger:') == 0) {
+    debugger;
+    exp = exp.split('$debugger:')[1];
+  }
+  if (exp.indexOf('$log:') == 0) {
+    var calculated = expression(exp.split('$log:')[1],context,{as: 'string'});
+    var result = bool_expression(exp.split('$log:')[1], context);
+    jb.comps.log.impl(context, calculated + ':' + result);
+    return result;
+  }
+  if (exp.indexOf('!') == 0)
+    return !bool_expression(exp.substring(1), context);
+  var parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
+  if (!parts) {
+    var val = jb.val(expression(exp, context));
+    if (typeof val == 'boolean') return val;
+    var asString = tostring(val);
+    return !!asString && asString != 'false';
+  }
+  if (parts.length != 4)
+    return logError('invalid boolean expression: ' + exp);
+  var op = parts[2].trim();
+
+  if (op == '==' || op == '!=' || op == '$=' || op == '^=') {
+    var p1 = tostring(expression(trim(parts[1]), context, {as: 'string'}))
+    var p2 = tostring(expression(trim(parts[3]), context, {as: 'string'}))
+    // var p1 = expression(trim(parts[1]), context, {as: 'string'});
+    // var p2 = expression(trim(parts[3]), context, {as: 'string'});
+    p2 = (p2.match(/^["'](.*)["']/) || [,p2])[1]; // remove quotes
+    if (op == '==') return p1 == p2;
+    if (op == '!=') return p1 != p2;
+    if (op == '^=') return p1.lastIndexOf(p2,0) == 0; // more effecient
+    if (op == '$=') return p1.indexOf(p2, p1.length - p2.length) !== -1;
+  }
+
+  var p1 = tonumber(expression(parts[1].trim(), context));
+  var p2 = tonumber(expression(parts[3].trim(), context));
+
+  if (op == '>') return p1 > p2;
+  if (op == '<') return p1 < p2;
+  if (op == '>=') return p1 >= p2;
+  if (op == '<=') return p1 <= p2;
+
+  function trim(str) {  // trims also " and '
+    return str.trim().replace(/^"(.*)"$/,'$1').replace(/^'(.*)'$/,'$1');
+  }
+}
+
+function castToParam(value,param) {
+  var res = tojstype(value,param ? param.as : null);
+  if (param && param.as == 'ref' && param.whenNotReffable && !jb.isRef(res))
+    res = tojstype(value,param.whenNotReffable);
+  return res;
+}
+
+function tojstype(value,jstype) {
+  if (!jstype) return value;
+  if (typeof jstypes[jstype] != 'function') debugger;
+  return jstypes[jstype](value);
+}
+
+var tostring = value => tojstype(value,'string');
+var toarray = value => tojstype(value,'array');
+var toboolean = value => tojstype(value,'boolean');
+var tosingle = value => tojstype(value,'single');
+var tonumber = value => tojstype(value,'number');
+
+var jstypes = {
+    'asIs': x => x,
+    'object': x => x,
+    'string': function(value) {
+      if (Array.isArray(value)) value = value[0];
+      if (value == null) return '';
+      value = val(value);
+      if (typeof(value) == 'undefined') return '';
+      return '' + value;
+    },
+    'number': function(value) {
+      if (Array.isArray(value)) value = value[0];
+      if (value == null || value == undefined) return null;	// 0 is not null
+      value = val(value);
+      var num = Number(value,true);
+      return isNaN(num) ? null : num;
+    },
+    'array': function(value) {
+      if (typeof value == 'function' && value.profile)
+        value = value();
+      value = val(value);
+      if (Array.isArray(value)) return value;
+      if (value == null) return [];
+      return [value];
+    },
+    'boolean': function(value) {
+      if (Array.isArray(value)) value = value[0];
+      return val(value) ? true : false;
+    },
+    'single': function(value) {
+      if (Array.isArray(value))
+        value = value[0];
+      return val(value);
+    },
+    'ref': function(value) {
+//      if (Array.isArray(value)) value = value[0];
+//      if (value == null) return value;
+      if (Array.isArray(value) && value.length == 1)
+        value = value[0];
+      return jb.valueByRefHandler.asRef(value);
+    }
+}
+
+function profileType(profile) {
+  if (!profile) return '';
+  if (typeof profile == 'string') return 'data';
+  var comp_name = compName(profile);
+  return (jb.comps[comp_name] && jb.comps[comp_name].type) || '';
+}
+
+function sugarProp(profile) {
+  return entries(profile)
+    .filter(p=>p[0].indexOf('$') == 0 && p[0].length > 1)
+    .filter(p=>p[0].indexOf('$jb_') != 0)
+    .filter(p=>['$vars','$debugger','$log'].indexOf(p[0]) == -1)[0]
+}
+
+function singleInType(profile,parentParam) {
+  var _type = parentParam && parentParam.type && parentParam.type.split('[')[0];
+  return _type && jb.comps[_type] && jb.comps[_type].singleInType && _type;
+}
+
+function compName(profile,parentParam) {
+  if (!profile || Array.isArray(profile)) return;
+  if (profile.$) return profile.$;
+  var f = sugarProp(profile);
+  return (f && f[0].slice(1)) || singleInType(profile,parentParam);
+}
+
+// give a name to the impl function. Used for tgp debugging
+function assignNameToFunc(name, fn) {
+  Object.defineProperty(fn, "name", { value: name });
+  return fn;
+}
+
+var ctxCounter = 0;
+
+class jbCtx {
+  constructor(context,ctx2) {
+    this.id = ctxCounter++;
+    this._parent = context;
+    if (typeof context == 'undefined') {
+      this.vars = {};
+      this.params = {};
+    }
+    else {
+      if (ctx2.profile && ctx2.path == null) {
+        debugger;
+      ctx2.path = '?';
+    }
+      this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : context.profile;
+
+      this.path = (context.path || '') + (ctx2.path ? '~' + ctx2.path : '');
+      if (ctx2.forcePath)
+        this.path = this.forcePath = ctx2.forcePath;
+      if (ctx2.comp)
+        this.path = ctx2.comp + '~impl';
+      this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : context.data;     // allow setting of data:null
+      this.vars= ctx2.vars ? Object.assign({},context.vars,ctx2.vars) : context.vars;
+      this.params= ctx2.params || context.params;
+      this.componentContext= (typeof ctx2.componentContext != 'undefined') ? ctx2.componentContext : context.componentContext;
+      this.probe= context.probe;
+    }
+  }
+  run(profile,parentParam) {
+    return jb_run(new jbCtx(this,{ profile: profile, comp: profile.$ , path: ''}), parentParam)
+  }
+  exp(exp,jstype) { return expression(exp, this, {as: jstype}) }
+  setVars(vars) { return new jbCtx(this,{vars: vars}) }
+  setData(data) { return new jbCtx(this,{data: data}) }
+  runInner(profile,parentParam, path) { return jb_run(new jbCtx(this,{profile: profile,path: path}), parentParam) }
+  bool(profile) { return this.run(profile, { as: 'boolean'}) }
+  // keeps the context vm and not the caller vm - needed in studio probe
+  ctx(ctx2) { return new jbCtx(this,ctx2) }
+  win() { // used for multi windows apps. e.g., studio
+    return window
+  }
+  extendVars(ctx2,data2) {
+    if (ctx2 == null && data2 == null)
+      return this;
+    return new jbCtx(this,{
+      vars: ctx2 ? ctx2.vars : null,
+      data: (data2 == null) ? ctx2.data : data2,
+      forcePath: (ctx2 && ctx2.forcePath) ? ctx2.forcePath : null
+    })
+  }
+  runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
+  parents() {
+    return this._parent ? [this._parent].concat(_this.parent.parents()) : []
+  }
+  isParentOf(childCtx) {
+    return childCtx.parents().filter(x == this).length > 0
+  }
+
+}
+
+var logs = {};
+function logError(errorStr,p1,p2,p3) {
+  logs.error = logs.error || [];
+  logs.error.push(errorStr);
+  console.error(errorStr,p1,p2,p3);
+}
+
+function logPerformance(type,p1,p2,p3) {
+//  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
+  if ((jb.issuesTolog || []).indexOf(type) == -1) return; // filter. TBD take from somewhere else
+  console.log(type, p1 || '', p2 || '', p3 ||'');
+}
+
+function logException(e,errorStr,p1,p2,p3) {
+  logError('exception: ' + errorStr + "\n" + (e.stack||''),p1,p2,p3);
+}
+
+function val(v) {
+  if (v == null) return v;
+  return jb.valueByRefHandler.val(v)
+}
+// Object.getOwnPropertyNames does not keep the order !!!
+function entries(obj) {
+  if (!obj || typeof obj != 'object') return [];
+  var ret = [];
+  for(var i in obj) // please do not change. its keeps definition order !!!!
+      if (obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
+        ret.push([i,obj[i]])
+  return ret;
+}
+function extend(obj,obj1,obj2,obj3) {
+  if (!obj) return;
+  obj1 && Object.assign(obj,obj1);
+  obj2 && Object.assign(obj,obj2);
+  obj3 && Object.assign(obj,obj3);
+  return obj;
+}
+
+
+// var valueByRefHandlerWithjbParent = {
+//   val: function(v) {
+//     if (v.$jb_val) return v.$jb_val();
+//     return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
+//   },
+//   writeValue: function(to,value,srcCtx) {
+//     jb.logPerformance('writeValue',value,to,srcCtx);
+//     if (!to) return;
+//     if (to.$jb_val)
+//       to.$jb_val(this.val(value))
+//     else if (to.$jb_parent)
+//       to.$jb_parent[to.$jb_property] = this.val(value);
+//     return to;
+//   },
+//   asRef: function(value) {
+//     if (value && (value.$jb_parent || value.$jb_val))
+//         return value;
+//     return { $jb_val: () => value }
+//   },
+//   isRef: function(value) {
+//     return value && (value.$jb_parent || value.$jb_val);
+//   },
+//   objectProperty: function(obj,prop) {
+//       if (this.isRef(obj[prop]))
+//         return obj[prop];
+//       else
+//         return { $jb_parent: obj, $jb_property: prop };
+//   }
+// }
+//
+var valueByRefHandler = null; // valueByRefHandlerWithjbParent;
+
+var types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
+
+return {
+  jbCtx: jbCtx,
+
+  run: jb_run,
+  expression: expression,
+  bool_expression: bool_expression,
+  profileType: profileType,
+  compName: compName,
+  logError: logError,
+  logPerformance: logPerformance,
+  logException: logException,
+
+  tojstype: tojstype, jstypes: jstypes,
+  tostring: tostring, toarray:toarray, toboolean: toboolean,tosingle:tosingle,tonumber:tonumber,
+
+  valueByRefHandler: valueByRefHandler,
+  types: types,
+  ui: ui,
+  rx: rx,
+  ctxDictionary: ctxDictionary,
+  testers: testers,
+  compParams: compParams,
+  singleInType: singleInType,
+  val: val,
+  entries: entries,
+  extend: extend,
+  ctxCounter: _ => ctxCounter
+}
+
+})();
+
+Object.assign(jb,{
+  comps: {}, functions: {}, resources: {},
+  studio: { previewjb: jb },
+  component: (id,val) => jb.comps[id] = val,
+  type: (id,val) => jb.types[id] = val || {},
+  resource: (id,val) => typeof val == 'undefined' ? jb.resources[id] : (jb.resources[id] = val || {}),
+  functionDef: (id,val) => jb.functions[id] = val,
+
+// force path - create objects in the path if not exist
+  path: (object,path,value) => {
+    var cur = object;
+
+    if (typeof value == 'undefined') {  // get
+      for(var i=0;i<path.length;i++) {
+        cur = cur[path[i]];
+        if (cur == null || typeof cur == 'undefined') return null;
+      }
+      return cur;
+    } else { // set
+      for(var i=0;i<path.length;i++)
+        if (i == path.length-1)
+          cur[path[i]] = value;
+        else
+          cur = cur[path[i]] = cur[path[i]] || {};
+      return value;
+    }
+  },
+  ownPropertyNames: obj => {
+    var res = [];
+    for (var i in (obj || {}))
+      if (obj.hasOwnProperty(i))
+        res.push(i);
+    return res;
+  },
+  obj: (k,v,base) => {
+    var ret = base || {};
+    ret[k] = v;
+    return ret;
+  },
+  compareArrays: (arr1, arr2) => {
+    if (arr1 == arr2)
+      return true;
+    if (!Array.isArray(arr1) && !Array.isArray(arr2)) return arr1 == arr2;
+    if (!arr1 || !arr2 || arr1.length != arr2.length) return false;
+    for (var i = 0; i < arr1.length; i++) {
+      var key1 = (arr1[i]||{}).key, key2 = (arr2[i]||{}).key;
+      if (key1 && key2 && key1 == key2 && arr1[i].val == arr2[i].val)
+        continue;
+      if (arr1[i] !== arr2[i]) return false;
+    }
+    return true;
+  },
+  range: (start, count) =>
+    Array.apply(0, Array(count)).map((element, index) => index + start),
+
+  flattenArray: items => {
+    var out = [];
+    items.filter(i=>i).forEach(function(item) {
+      if (Array.isArray(item))
+        out = out.concat(item);
+      else
+        out.push(item);
+    })
+    return out;
+  },
+  synchArray: ar => {
+    var isSynch = ar.filter(v=> v &&  (typeof v.then == 'function' || typeof v.subscribe == 'function')).length == 0;
+    if (isSynch) return ar;
+
+    var _ar = ar.filter(x=>x).map(v=>
+      (typeof v.then == 'function' || typeof v.subscribe == 'function') ? v : [v]);
+
+    return jb.rx.Observable.from(_ar)
+          .concatMap(x=>x)
+          .flatMap(v =>
+            Array.isArray(v) ? v : [v])
+          .toArray()
+          .toPromise()
+  },
+  unique: (ar,f) => {
+    f = f || (x=>x);
+    var keys = {}, res = [];
+    ar.forEach(e=>{
+      if (!keys[f(e)]) {
+        keys[f(e)] = true;
+        res.push(e)
+      }
+    })
+    return res;
+  },
+
+  equals: (x,y) =>
+    x == y || jb.val(x) == jb.val(y),
+
+  delay: mSec =>
+    new Promise(r=>{setTimeout(r,mSec)}),
+
+  // valueByRef API
+  refHandler: ref =>
+    (ref && ref.handler) || jb.valueByRefHandler,
+  writeValue: (ref,value,srcCtx) =>
+    jb.refHandler(ref).writeValue(ref,value,srcCtx),
+  splice: (ref,args,srcCtx) =>
+    jb.refHandler(ref).splice(ref,args,srcCtx),
+  move: (fromRef,toRef,srcCtx) =>
+    jb.refHandler(fromRef).move(fromRef,toRef,srcCtx),
+  isRef: (ref) =>
+    jb.refHandler(ref).isRef(ref),
+  refreshRef: (ref) =>
+    jb.refHandler(ref).refresh(ref),
+  asRef: (obj) =>
+    jb.valueByRefHandler.asRef(obj),
+  resourceChange: _ =>
+    jb.valueByRefHandler.resourceChange,
 })
 ;
 
@@ -5613,6 +5613,1016 @@ componentHandler.register({
 });
 }());
 ;
+
+/******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId])
+/******/ 			return installedModules[moduleId].exports;
+/******/
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Flag the module as loaded
+/******/ 		module.l = true;
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+/******/
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+/******/
+/******/ 	// identity function for calling harmony imports with the correct context
+/******/ 	__webpack_require__.i = function(value) { return value; };
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, {
+/******/ 				configurable: false,
+/******/ 				enumerable: true,
+/******/ 				get: getter
+/******/ 			});
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "";
+/******/
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(__webpack_require__.s = 1);
+/******/ })
+/************************************************************************/
+/******/ ([
+/* 0 */
+/***/ (function(module, exports, __webpack_require__) {
+
+!function() {
+    'use strict';
+    function VNode() {}
+    function h(nodeName, attributes) {
+        var lastSimple, child, simple, i, children = EMPTY_CHILDREN;
+        for (i = arguments.length; i-- > 2; ) stack.push(arguments[i]);
+        if (attributes && null != attributes.children) {
+            if (!stack.length) stack.push(attributes.children);
+            delete attributes.children;
+        }
+        while (stack.length) if ((child = stack.pop()) && void 0 !== child.pop) for (i = child.length; i--; ) stack.push(child[i]); else {
+            if (child === !0 || child === !1) child = null;
+            if (simple = 'function' != typeof nodeName) if (null == child) child = ''; else if ('number' == typeof child) child = String(child); else if ('string' != typeof child) simple = !1;
+            if (simple && lastSimple) children[children.length - 1] += child; else if (children === EMPTY_CHILDREN) children = [ child ]; else children.push(child);
+            lastSimple = simple;
+        }
+        var p = new VNode();
+        p.nodeName = nodeName;
+        p.children = children;
+        p.attributes = null == attributes ? void 0 : attributes;
+        p.key = null == attributes ? void 0 : attributes.key;
+        if (void 0 !== options.vnode) options.vnode(p);
+        return p;
+    }
+    function extend(obj, props) {
+        for (var i in props) obj[i] = props[i];
+        return obj;
+    }
+    function cloneElement(vnode, props) {
+        return h(vnode.nodeName, extend(extend({}, vnode.attributes), props), arguments.length > 2 ? [].slice.call(arguments, 2) : vnode.children);
+    }
+    function enqueueRender(component) {
+        if (!component.__d && (component.__d = !0) && 1 == items.push(component)) (options.debounceRendering || setTimeout)(rerender);
+    }
+    function rerender() {
+        var p, list = items;
+        items = [];
+        while (p = list.pop()) if (p.__d) renderComponent(p);
+    }
+    function isSameNodeType(node, vnode, hydrating) {
+        if ('string' == typeof vnode || 'number' == typeof vnode) return void 0 !== node.splitText;
+        if ('string' == typeof vnode.nodeName) return !node._componentConstructor && isNamedNode(node, vnode.nodeName); else return hydrating || node._componentConstructor === vnode.nodeName;
+    }
+    function isNamedNode(node, nodeName) {
+        return node.__n === nodeName || node.nodeName.toLowerCase() === nodeName.toLowerCase();
+    }
+    function getNodeProps(vnode) {
+        var props = extend({}, vnode.attributes);
+        props.children = vnode.children;
+        var defaultProps = vnode.nodeName.defaultProps;
+        if (void 0 !== defaultProps) for (var i in defaultProps) if (void 0 === props[i]) props[i] = defaultProps[i];
+        return props;
+    }
+    function createNode(nodeName, isSvg) {
+        var node = isSvg ? document.createElementNS('http://www.w3.org/2000/svg', nodeName) : document.createElement(nodeName);
+        node.__n = nodeName;
+        return node;
+    }
+    function removeNode(node) {
+        if (node.parentNode) node.parentNode.removeChild(node);
+    }
+    function setAccessor(node, name, old, value, isSvg) {
+        if ('className' === name) name = 'class';
+        if ('key' === name) ; else if ('ref' === name) {
+            if (old) old(null);
+            if (value) value(node);
+        } else if ('class' === name && !isSvg) node.className = value || ''; else if ('style' === name) {
+            if (!value || 'string' == typeof value || 'string' == typeof old) node.style.cssText = value || '';
+            if (value && 'object' == typeof value) {
+                if ('string' != typeof old) for (var i in old) if (!(i in value)) node.style[i] = '';
+                for (var i in value) node.style[i] = 'number' == typeof value[i] && IS_NON_DIMENSIONAL.test(i) === !1 ? value[i] + 'px' : value[i];
+            }
+        } else if ('dangerouslySetInnerHTML' === name) {
+            if (value) node.innerHTML = value.__html || '';
+        } else if ('o' == name[0] && 'n' == name[1]) {
+            var useCapture = name !== (name = name.replace(/Capture$/, ''));
+            name = name.toLowerCase().substring(2);
+            if (value) {
+                if (!old) node.addEventListener(name, eventProxy, useCapture);
+            } else node.removeEventListener(name, eventProxy, useCapture);
+            (node.__l || (node.__l = {}))[name] = value;
+        } else if ('list' !== name && 'type' !== name && !isSvg && name in node) {
+            setProperty(node, name, null == value ? '' : value);
+            if (null == value || value === !1) node.removeAttribute(name);
+        } else {
+            var ns = isSvg && name !== (name = name.replace(/^xlink\:?/, ''));
+            if (null == value || value === !1) if (ns) node.removeAttributeNS('http://www.w3.org/1999/xlink', name.toLowerCase()); else node.removeAttribute(name); else if ('function' != typeof value) if (ns) node.setAttributeNS('http://www.w3.org/1999/xlink', name.toLowerCase(), value); else node.setAttribute(name, value);
+        }
+    }
+    function setProperty(node, name, value) {
+        try {
+            node[name] = value;
+        } catch (e) {}
+    }
+    function eventProxy(e) {
+        return this.__l[e.type](options.event && options.event(e) || e);
+    }
+    function flushMounts() {
+        var c;
+        while (c = mounts.pop()) {
+            if (options.afterMount) options.afterMount(c);
+            if (c.componentDidMount) c.componentDidMount();
+        }
+    }
+    function diff(dom, vnode, context, mountAll, parent, componentRoot) {
+        if (!diffLevel++) {
+            isSvgMode = null != parent && void 0 !== parent.ownerSVGElement;
+            hydrating = null != dom && !('__preactattr_' in dom);
+        }
+        var ret = idiff(dom, vnode, context, mountAll, componentRoot);
+        if (parent && ret.parentNode !== parent) parent.appendChild(ret);
+        if (!--diffLevel) {
+            hydrating = !1;
+            if (!componentRoot) flushMounts();
+        }
+        return ret;
+    }
+    function idiff(dom, vnode, context, mountAll, componentRoot) {
+        var out = dom, prevSvgMode = isSvgMode;
+        if (null == vnode) vnode = '';
+        if ('string' == typeof vnode) {
+            if (dom && void 0 !== dom.splitText && dom.parentNode && (!dom._component || componentRoot)) {
+                if (dom.nodeValue != vnode) dom.nodeValue = vnode;
+            } else {
+                out = document.createTextNode(vnode);
+                if (dom) {
+                    if (dom.parentNode) dom.parentNode.replaceChild(out, dom);
+                    recollectNodeTree(dom, !0);
+                }
+            }
+            out.__preactattr_ = !0;
+            return out;
+        }
+        if ('function' == typeof vnode.nodeName) return buildComponentFromVNode(dom, vnode, context, mountAll);
+        isSvgMode = 'svg' === vnode.nodeName ? !0 : 'foreignObject' === vnode.nodeName ? !1 : isSvgMode;
+        if (!dom || !isNamedNode(dom, String(vnode.nodeName))) {
+            out = createNode(String(vnode.nodeName), isSvgMode);
+            if (dom) {
+                while (dom.firstChild) out.appendChild(dom.firstChild);
+                if (dom.parentNode) dom.parentNode.replaceChild(out, dom);
+                recollectNodeTree(dom, !0);
+            }
+        }
+        var fc = out.firstChild, props = out.__preactattr_ || (out.__preactattr_ = {}), vchildren = vnode.children;
+        if (!hydrating && vchildren && 1 === vchildren.length && 'string' == typeof vchildren[0] && null != fc && void 0 !== fc.splitText && null == fc.nextSibling) {
+            if (fc.nodeValue != vchildren[0]) fc.nodeValue = vchildren[0];
+        } else if (vchildren && vchildren.length || null != fc) innerDiffNode(out, vchildren, context, mountAll, hydrating || null != props.dangerouslySetInnerHTML);
+        diffAttributes(out, vnode.attributes, props);
+        isSvgMode = prevSvgMode;
+        return out;
+    }
+    function innerDiffNode(dom, vchildren, context, mountAll, isHydrating) {
+        var j, c, vchild, child, originalChildren = dom.childNodes, children = [], keyed = {}, keyedLen = 0, min = 0, len = originalChildren.length, childrenLen = 0, vlen = vchildren ? vchildren.length : 0;
+        if (0 !== len) for (var i = 0; i < len; i++) {
+            var _child = originalChildren[i], props = _child.__preactattr_, key = vlen && props ? _child._component ? _child._component.__k : props.key : null;
+            if (null != key) {
+                keyedLen++;
+                keyed[key] = _child;
+            } else if (props || (void 0 !== _child.splitText ? isHydrating ? _child.nodeValue.trim() : !0 : isHydrating)) children[childrenLen++] = _child;
+        }
+        if (0 !== vlen) for (var i = 0; i < vlen; i++) {
+            vchild = vchildren[i];
+            child = null;
+            var key = vchild.key;
+            if (null != key) {
+                if (keyedLen && void 0 !== keyed[key]) {
+                    child = keyed[key];
+                    keyed[key] = void 0;
+                    keyedLen--;
+                }
+            } else if (!child && min < childrenLen) for (j = min; j < childrenLen; j++) if (void 0 !== children[j] && isSameNodeType(c = children[j], vchild, isHydrating)) {
+                child = c;
+                children[j] = void 0;
+                if (j === childrenLen - 1) childrenLen--;
+                if (j === min) min++;
+                break;
+            }
+            child = idiff(child, vchild, context, mountAll);
+            if (child && child !== dom) if (i >= len) dom.appendChild(child); else if (child !== originalChildren[i]) if (child === originalChildren[i + 1]) removeNode(originalChildren[i]); else dom.insertBefore(child, originalChildren[i] || null);
+        }
+        if (keyedLen) for (var i in keyed) if (void 0 !== keyed[i]) recollectNodeTree(keyed[i], !1);
+        while (min <= childrenLen) if (void 0 !== (child = children[childrenLen--])) recollectNodeTree(child, !1);
+    }
+    function recollectNodeTree(node, unmountOnly) {
+        var component = node._component;
+        if (component) unmountComponent(component); else {
+            if (null != node.__preactattr_ && node.__preactattr_.ref) node.__preactattr_.ref(null);
+            if (unmountOnly === !1 || null == node.__preactattr_) removeNode(node);
+            removeChildren(node);
+        }
+    }
+    function removeChildren(node) {
+        node = node.lastChild;
+        while (node) {
+            var next = node.previousSibling;
+            recollectNodeTree(node, !0);
+            node = next;
+        }
+    }
+    function diffAttributes(dom, attrs, old) {
+        var name;
+        for (name in old) if ((!attrs || null == attrs[name]) && null != old[name]) setAccessor(dom, name, old[name], old[name] = void 0, isSvgMode);
+        for (name in attrs) if (!('children' === name || 'innerHTML' === name || name in old && attrs[name] === ('value' === name || 'checked' === name ? dom[name] : old[name]))) setAccessor(dom, name, old[name], old[name] = attrs[name], isSvgMode);
+    }
+    function collectComponent(component) {
+        var name = component.constructor.name;
+        (components[name] || (components[name] = [])).push(component);
+    }
+    function createComponent(Ctor, props, context) {
+        var inst, list = components[Ctor.name];
+        if (Ctor.prototype && Ctor.prototype.render) {
+            inst = new Ctor(props, context);
+            Component.call(inst, props, context);
+        } else {
+            inst = new Component(props, context);
+            inst.constructor = Ctor;
+            inst.render = doRender;
+        }
+        if (list) for (var i = list.length; i--; ) if (list[i].constructor === Ctor) {
+            inst.__b = list[i].__b;
+            list.splice(i, 1);
+            break;
+        }
+        return inst;
+    }
+    function doRender(props, state, context) {
+        return this.constructor(props, context);
+    }
+    function setComponentProps(component, props, opts, context, mountAll) {
+        if (!component.__x) {
+            component.__x = !0;
+            if (component.__r = props.ref) delete props.ref;
+            if (component.__k = props.key) delete props.key;
+            if (!component.base || mountAll) {
+                if (component.componentWillMount) component.componentWillMount();
+            } else if (component.componentWillReceiveProps) component.componentWillReceiveProps(props, context);
+            if (context && context !== component.context) {
+                if (!component.__c) component.__c = component.context;
+                component.context = context;
+            }
+            if (!component.__p) component.__p = component.props;
+            component.props = props;
+            component.__x = !1;
+            if (0 !== opts) if (1 === opts || options.syncComponentUpdates !== !1 || !component.base) renderComponent(component, 1, mountAll); else enqueueRender(component);
+            if (component.__r) component.__r(component);
+        }
+    }
+    function renderComponent(component, opts, mountAll, isChild) {
+        if (!component.__x) {
+            var rendered, inst, cbase, props = component.props, state = component.state, context = component.context, previousProps = component.__p || props, previousState = component.__s || state, previousContext = component.__c || context, isUpdate = component.base, nextBase = component.__b, initialBase = isUpdate || nextBase, initialChildComponent = component._component, skip = !1;
+            if (isUpdate) {
+                component.props = previousProps;
+                component.state = previousState;
+                component.context = previousContext;
+                if (2 !== opts && component.shouldComponentUpdate && component.shouldComponentUpdate(props, state, context) === !1) skip = !0; else if (component.componentWillUpdate) component.componentWillUpdate(props, state, context);
+                component.props = props;
+                component.state = state;
+                component.context = context;
+            }
+            component.__p = component.__s = component.__c = component.__b = null;
+            component.__d = !1;
+            if (!skip) {
+                rendered = component.render(props, state, context);
+                if (component.getChildContext) context = extend(extend({}, context), component.getChildContext());
+                var toUnmount, base, childComponent = rendered && rendered.nodeName;
+                if ('function' == typeof childComponent) {
+                    var childProps = getNodeProps(rendered);
+                    inst = initialChildComponent;
+                    if (inst && inst.constructor === childComponent && childProps.key == inst.__k) setComponentProps(inst, childProps, 1, context, !1); else {
+                        toUnmount = inst;
+                        component._component = inst = createComponent(childComponent, childProps, context);
+                        inst.__b = inst.__b || nextBase;
+                        inst.__u = component;
+                        setComponentProps(inst, childProps, 0, context, !1);
+                        renderComponent(inst, 1, mountAll, !0);
+                    }
+                    base = inst.base;
+                } else {
+                    cbase = initialBase;
+                    toUnmount = initialChildComponent;
+                    if (toUnmount) cbase = component._component = null;
+                    if (initialBase || 1 === opts) {
+                        if (cbase) cbase._component = null;
+                        base = diff(cbase, rendered, context, mountAll || !isUpdate, initialBase && initialBase.parentNode, !0);
+                    }
+                }
+                if (initialBase && base !== initialBase && inst !== initialChildComponent) {
+                    var baseParent = initialBase.parentNode;
+                    if (baseParent && base !== baseParent) {
+                        baseParent.replaceChild(base, initialBase);
+                        if (!toUnmount) {
+                            initialBase._component = null;
+                            recollectNodeTree(initialBase, !1);
+                        }
+                    }
+                }
+                if (toUnmount) unmountComponent(toUnmount);
+                component.base = base;
+                if (base && !isChild) {
+                    var componentRef = component, t = component;
+                    while (t = t.__u) (componentRef = t).base = base;
+                    base._component = componentRef;
+                    base._componentConstructor = componentRef.constructor;
+                }
+            }
+            if (!isUpdate || mountAll) mounts.unshift(component); else if (!skip) {
+                flushMounts();
+                if (component.componentDidUpdate) component.componentDidUpdate(previousProps, previousState, previousContext);
+                if (options.afterUpdate) options.afterUpdate(component);
+            }
+            if (null != component.__h) while (component.__h.length) component.__h.pop().call(component);
+            if (!diffLevel && !isChild) flushMounts();
+        }
+    }
+    function buildComponentFromVNode(dom, vnode, context, mountAll) {
+        var c = dom && dom._component, originalComponent = c, oldDom = dom, isDirectOwner = c && dom._componentConstructor === vnode.nodeName, isOwner = isDirectOwner, props = getNodeProps(vnode);
+        while (c && !isOwner && (c = c.__u)) isOwner = c.constructor === vnode.nodeName;
+        if (c && isOwner && (!mountAll || c._component)) {
+            setComponentProps(c, props, 3, context, mountAll);
+            dom = c.base;
+        } else {
+            if (originalComponent && !isDirectOwner) {
+                unmountComponent(originalComponent);
+                dom = oldDom = null;
+            }
+            c = createComponent(vnode.nodeName, props, context);
+            if (dom && !c.__b) {
+                c.__b = dom;
+                oldDom = null;
+            }
+            setComponentProps(c, props, 1, context, mountAll);
+            dom = c.base;
+            if (oldDom && dom !== oldDom) {
+                oldDom._component = null;
+                recollectNodeTree(oldDom, !1);
+            }
+        }
+        return dom;
+    }
+    function unmountComponent(component) {
+        if (options.beforeUnmount) options.beforeUnmount(component);
+        var base = component.base;
+        component.__x = !0;
+        if (component.componentWillUnmount) component.componentWillUnmount();
+        component.base = null;
+        var inner = component._component;
+        if (inner) unmountComponent(inner); else if (base) {
+            if (base.__preactattr_ && base.__preactattr_.ref) base.__preactattr_.ref(null);
+            component.__b = base;
+            removeNode(base);
+            collectComponent(component);
+            removeChildren(base);
+        }
+        if (component.__r) component.__r(null);
+    }
+    function Component(props, context) {
+        this.__d = !0;
+        this.context = context;
+        this.props = props;
+        this.state = this.state || {};
+    }
+    function render(vnode, parent, merge) {
+        return diff(merge, vnode, {}, !1, parent, !1);
+    }
+    var options = {};
+    var stack = [];
+    var EMPTY_CHILDREN = [];
+    var IS_NON_DIMENSIONAL = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i;
+    var items = [];
+    var mounts = [];
+    var diffLevel = 0;
+    var isSvgMode = !1;
+    var hydrating = !1;
+    var components = {};
+    extend(Component.prototype, {
+        setState: function(state, callback) {
+            var s = this.state;
+            if (!this.__s) this.__s = extend({}, s);
+            extend(s, 'function' == typeof state ? state(s, this.props) : state);
+            if (callback) (this.__h = this.__h || []).push(callback);
+            enqueueRender(this);
+        },
+        forceUpdate: function(callback) {
+            if (callback) (this.__h = this.__h || []).push(callback);
+            renderComponent(this, 2);
+        },
+        render: function() {}
+    });
+    var preact = {
+        h: h,
+        createElement: h,
+        cloneElement: cloneElement,
+        Component: Component,
+        render: render,
+        rerender: rerender,
+        options: options
+    };
+    if (true) module.exports = preact; else self.preact = preact;
+}();
+//# sourceMappingURL=preact.js.map
+
+/***/ }),
+/* 1 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_preact__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_preact___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_preact__);
+
+
+jb.ui.render = __WEBPACK_IMPORTED_MODULE_0_preact__["render"];
+jb.ui.h = __WEBPACK_IMPORTED_MODULE_0_preact__["h"];
+jb.ui.Component = __WEBPACK_IMPORTED_MODULE_0_preact__["Component"];
+
+
+/***/ })
+/******/ ]);;
+
+/******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId])
+/******/ 			return installedModules[moduleId].exports;
+/******/
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Flag the module as loaded
+/******/ 		module.l = true;
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+/******/
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+/******/
+/******/ 	// identity function for calling harmony imports with the correct context
+/******/ 	__webpack_require__.i = function(value) { return value; };
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, {
+/******/ 				configurable: false,
+/******/ 				enumerable: true,
+/******/ 				get: getter
+/******/ 			});
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "";
+/******/
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(__webpack_require__.s = 3);
+/******/ })
+/************************************************************************/
+/******/ ([
+/* 0 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var invariant = __webpack_require__(1);
+
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+var splice = Array.prototype.splice;
+
+var assign = Object.assign || function assign(target, source) {
+  var keys = getAllKeys(source);
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    if (hasOwnProperty.call(source, key)) {
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+
+var getAllKeys = typeof Object.getOwnPropertySymbols === 'function' ?
+  function(obj) { return Object.keys(obj).concat(Object.getOwnPropertySymbols(obj)) } :
+  function(obj) { return Object.keys(obj) }
+;
+
+function copy(object) {
+  if (object instanceof Array) {
+    return object.slice();
+  } else if (object && typeof object === 'object') {
+    return assign(new object.constructor(), object);
+  } else {
+    return object;
+  }
+}
+
+
+function newContext() {
+  var commands = assign({}, defaultCommands);
+  update.extend = function(directive, fn) {
+    commands[directive] = fn;
+  }
+
+  return update;
+
+  function update(object, spec) {
+    invariant(
+      !Array.isArray(spec),
+      'update(): You provided an invalid spec to update(). The spec may ' +
+      'not contain an array except as the value of $set, $push, $unshift, ' +
+      '$splice or any custom command allowing an array value.'
+    );
+
+    invariant(
+      typeof spec === 'object' && spec !== null,
+      'update(): You provided an invalid spec to update(). The spec and ' +
+      'every included key path must be plain objects containing one of the ' +
+      'following commands: %s.',
+      Object.keys(commands).join(', ')
+    );
+
+    var nextObject = object;
+    var specKeys = getAllKeys(spec)
+    var index, key;
+    for (index = 0; index < specKeys.length; index++) {
+      var key = specKeys[index];
+      if (hasOwnProperty.call(commands, key)) {
+        nextObject = commands[key](spec[key], nextObject, spec, object);
+      } else {
+        var nextValueForKey = update(object[key], spec[key]);
+        if (nextValueForKey !== nextObject[key]) {
+          if (nextObject === object) {
+            nextObject = copy(object);
+          }
+          nextObject[key] = nextValueForKey;
+        }
+      }
+    }
+    return nextObject;
+  }
+
+}
+
+var defaultCommands = {
+  $push: function(value, original, spec) {
+    invariantPushAndUnshift(original, spec, '$push');
+    return original.concat(value);
+  },
+  $unshift: function(value, original, spec) {
+    invariantPushAndUnshift(original, spec, '$unshift');
+    return value.concat(original);
+  },
+  $splice: function(value, nextObject, spec, object) {
+    var originalValue = nextObject === object ? copy(object) : nextObject;
+    invariantSplices(originalValue, spec);
+    value.forEach(function(args) {
+      invariantSplice(args);
+      splice.apply(originalValue, args);
+    });
+    return originalValue;
+  },
+  $set: function(value, original, spec) {
+    invariantSet(spec);
+    return value;
+  },
+  $merge: function(value, nextObject, spec, object) {
+    var originalValue = nextObject === object ? copy(object) : nextObject;
+    invariantMerge(originalValue, value);
+    getAllKeys(value).forEach(function(key) {
+      originalValue[key] = value[key];
+    });
+    return originalValue;
+  },
+  $apply: function(value, original) {
+    invariantApply(value);
+    return value(original);
+  }
+};
+
+
+
+module.exports = newContext();
+module.exports.newContext = newContext;
+
+
+// invariants
+
+function invariantPushAndUnshift(value, spec, command) {
+  invariant(
+    Array.isArray(value),
+    'update(): expected target of %s to be an array; got %s.',
+    command,
+    value
+  );
+  var specValue = spec[command];
+  invariant(
+    Array.isArray(specValue),
+    'update(): expected spec of %s to be an array; got %s. ' +
+    'Did you forget to wrap your parameter in an array?',
+    command,
+    specValue
+  );
+}
+
+function invariantSplices(value, spec) {
+  invariant(
+    Array.isArray(value),
+    'Expected $splice target to be an array; got %s',
+    value
+  );
+  invariantSplice(spec['$splice']);
+}
+
+function invariantSplice(value) {
+  invariant(
+    Array.isArray(value),
+    'update(): expected spec of $splice to be an array of arrays; got %s. ' +
+    'Did you forget to wrap your parameters in an array?',
+    value
+  );
+}
+
+function invariantApply(fn) {
+  invariant(
+    typeof fn === 'function',
+    'update(): expected spec of $apply to be a function; got %s.',
+    fn
+  );
+}
+
+function invariantSet(spec) {
+  invariant(
+    Object.keys(spec).length === 1,
+    'Cannot have more than one key in an object with $set'
+  );
+}
+
+function invariantMerge(target, specValue) {
+  invariant(
+    specValue && typeof specValue === 'object',
+    'update(): $merge expects a spec of type \'object\'; got %s',
+    specValue
+  );
+  invariant(
+    target && typeof target === 'object',
+    'update(): $merge expects a target of type \'object\'; got %s',
+    target
+  );
+}
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {/**
+ * Copyright 2013-2015, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+
+
+/**
+ * Use invariant() to assert state which your program assumes to be true.
+ *
+ * Provide sprintf-style format (only %s is supported) and arguments
+ * to provide information about what broke and what you were
+ * expecting.
+ *
+ * The invariant message will be stripped in production, but the invariant
+ * will remain to ensure logic does not differ in production.
+ */
+
+var invariant = function(condition, format, a, b, c, d, e, f) {
+  if (process.env.NODE_ENV !== 'production') {
+    if (format === undefined) {
+      throw new Error('invariant requires an error message argument');
+    }
+  }
+
+  if (!condition) {
+    var error;
+    if (format === undefined) {
+      error = new Error(
+        'Minified exception occurred; use the non-minified dev environment ' +
+        'for the full error message and additional helpful warnings.'
+      );
+    } else {
+      var args = [a, b, c, d, e, f];
+      var argIndex = 0;
+      error = new Error(
+        format.replace(/%s/g, function() { return args[argIndex++]; })
+      );
+      error.name = 'Invariant Violation';
+    }
+
+    error.framesToPop = 1; // we don't care about invariant's own frame
+    throw error;
+  }
+};
+
+module.exports = invariant;
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports) {
+
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout () {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+
+/***/ }),
+/* 3 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_immutability_helper__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_immutability_helper___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_immutability_helper__);
+
+
+jb.ui.update = __WEBPACK_IMPORTED_MODULE_0_immutability_helper___default.a;
+
+
+/***/ })
+/******/ ]);;
 
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -11460,1015 +12470,319 @@ jb.rx.Subject = __WEBPACK_IMPORTED_MODULE_0_rxjs_Subject__["Subject"];
 /***/ })
 /******/ ]);;
 
-/******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId])
-/******/ 			return installedModules[moduleId].exports;
-/******/
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// identity function for calling harmony imports with the correct context
-/******/ 	__webpack_require__.i = function(value) { return value; };
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, {
-/******/ 				configurable: false,
-/******/ 				enumerable: true,
-/******/ 				get: getter
-/******/ 			});
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 1);
-/******/ })
-/************************************************************************/
-/******/ ([
-/* 0 */
-/***/ (function(module, exports, __webpack_require__) {
+(function() {
 
-!function() {
-    'use strict';
-    function VNode() {}
-    function h(nodeName, attributes) {
-        var lastSimple, child, simple, i, children = EMPTY_CHILDREN;
-        for (i = arguments.length; i-- > 2; ) stack.push(arguments[i]);
-        if (attributes && null != attributes.children) {
-            if (!stack.length) stack.push(attributes.children);
-            delete attributes.children;
-        }
-        while (stack.length) if ((child = stack.pop()) && void 0 !== child.pop) for (i = child.length; i--; ) stack.push(child[i]); else {
-            if (child === !0 || child === !1) child = null;
-            if (simple = 'function' != typeof nodeName) if (null == child) child = ''; else if ('number' == typeof child) child = String(child); else if ('string' != typeof child) simple = !1;
-            if (simple && lastSimple) children[children.length - 1] += child; else if (children === EMPTY_CHILDREN) children = [ child ]; else children.push(child);
-            lastSimple = simple;
-        }
-        var p = new VNode();
-        p.nodeName = nodeName;
-        p.children = children;
-        p.attributes = null == attributes ? void 0 : attributes;
-        p.key = null == attributes ? void 0 : attributes.key;
-        if (void 0 !== options.vnode) options.vnode(p);
-        return p;
-    }
-    function extend(obj, props) {
-        for (var i in props) obj[i] = props[i];
-        return obj;
-    }
-    function cloneElement(vnode, props) {
-        return h(vnode.nodeName, extend(extend({}, vnode.attributes), props), arguments.length > 2 ? [].slice.call(arguments, 2) : vnode.children);
-    }
-    function enqueueRender(component) {
-        if (!component.__d && (component.__d = !0) && 1 == items.push(component)) (options.debounceRendering || setTimeout)(rerender);
-    }
-    function rerender() {
-        var p, list = items;
-        items = [];
-        while (p = list.pop()) if (p.__d) renderComponent(p);
-    }
-    function isSameNodeType(node, vnode, hydrating) {
-        if ('string' == typeof vnode || 'number' == typeof vnode) return void 0 !== node.splitText;
-        if ('string' == typeof vnode.nodeName) return !node._componentConstructor && isNamedNode(node, vnode.nodeName); else return hydrating || node._componentConstructor === vnode.nodeName;
-    }
-    function isNamedNode(node, nodeName) {
-        return node.__n === nodeName || node.nodeName.toLowerCase() === nodeName.toLowerCase();
-    }
-    function getNodeProps(vnode) {
-        var props = extend({}, vnode.attributes);
-        props.children = vnode.children;
-        var defaultProps = vnode.nodeName.defaultProps;
-        if (void 0 !== defaultProps) for (var i in defaultProps) if (void 0 === props[i]) props[i] = defaultProps[i];
-        return props;
-    }
-    function createNode(nodeName, isSvg) {
-        var node = isSvg ? document.createElementNS('http://www.w3.org/2000/svg', nodeName) : document.createElement(nodeName);
-        node.__n = nodeName;
-        return node;
-    }
-    function removeNode(node) {
-        if (node.parentNode) node.parentNode.removeChild(node);
-    }
-    function setAccessor(node, name, old, value, isSvg) {
-        if ('className' === name) name = 'class';
-        if ('key' === name) ; else if ('ref' === name) {
-            if (old) old(null);
-            if (value) value(node);
-        } else if ('class' === name && !isSvg) node.className = value || ''; else if ('style' === name) {
-            if (!value || 'string' == typeof value || 'string' == typeof old) node.style.cssText = value || '';
-            if (value && 'object' == typeof value) {
-                if ('string' != typeof old) for (var i in old) if (!(i in value)) node.style[i] = '';
-                for (var i in value) node.style[i] = 'number' == typeof value[i] && IS_NON_DIMENSIONAL.test(i) === !1 ? value[i] + 'px' : value[i];
-            }
-        } else if ('dangerouslySetInnerHTML' === name) {
-            if (value) node.innerHTML = value.__html || '';
-        } else if ('o' == name[0] && 'n' == name[1]) {
-            var useCapture = name !== (name = name.replace(/Capture$/, ''));
-            name = name.toLowerCase().substring(2);
-            if (value) {
-                if (!old) node.addEventListener(name, eventProxy, useCapture);
-            } else node.removeEventListener(name, eventProxy, useCapture);
-            (node.__l || (node.__l = {}))[name] = value;
-        } else if ('list' !== name && 'type' !== name && !isSvg && name in node) {
-            setProperty(node, name, null == value ? '' : value);
-            if (null == value || value === !1) node.removeAttribute(name);
-        } else {
-            var ns = isSvg && name !== (name = name.replace(/^xlink\:?/, ''));
-            if (null == value || value === !1) if (ns) node.removeAttributeNS('http://www.w3.org/1999/xlink', name.toLowerCase()); else node.removeAttribute(name); else if ('function' != typeof value) if (ns) node.setAttributeNS('http://www.w3.org/1999/xlink', name.toLowerCase(), value); else node.setAttribute(name, value);
-        }
-    }
-    function setProperty(node, name, value) {
-        try {
-            node[name] = value;
-        } catch (e) {}
-    }
-    function eventProxy(e) {
-        return this.__l[e.type](options.event && options.event(e) || e);
-    }
-    function flushMounts() {
-        var c;
-        while (c = mounts.pop()) {
-            if (options.afterMount) options.afterMount(c);
-            if (c.componentDidMount) c.componentDidMount();
-        }
-    }
-    function diff(dom, vnode, context, mountAll, parent, componentRoot) {
-        if (!diffLevel++) {
-            isSvgMode = null != parent && void 0 !== parent.ownerSVGElement;
-            hydrating = null != dom && !('__preactattr_' in dom);
-        }
-        var ret = idiff(dom, vnode, context, mountAll, componentRoot);
-        if (parent && ret.parentNode !== parent) parent.appendChild(ret);
-        if (!--diffLevel) {
-            hydrating = !1;
-            if (!componentRoot) flushMounts();
-        }
-        return ret;
-    }
-    function idiff(dom, vnode, context, mountAll, componentRoot) {
-        var out = dom, prevSvgMode = isSvgMode;
-        if (null == vnode) vnode = '';
-        if ('string' == typeof vnode) {
-            if (dom && void 0 !== dom.splitText && dom.parentNode && (!dom._component || componentRoot)) {
-                if (dom.nodeValue != vnode) dom.nodeValue = vnode;
-            } else {
-                out = document.createTextNode(vnode);
-                if (dom) {
-                    if (dom.parentNode) dom.parentNode.replaceChild(out, dom);
-                    recollectNodeTree(dom, !0);
-                }
-            }
-            out.__preactattr_ = !0;
-            return out;
-        }
-        if ('function' == typeof vnode.nodeName) return buildComponentFromVNode(dom, vnode, context, mountAll);
-        isSvgMode = 'svg' === vnode.nodeName ? !0 : 'foreignObject' === vnode.nodeName ? !1 : isSvgMode;
-        if (!dom || !isNamedNode(dom, String(vnode.nodeName))) {
-            out = createNode(String(vnode.nodeName), isSvgMode);
-            if (dom) {
-                while (dom.firstChild) out.appendChild(dom.firstChild);
-                if (dom.parentNode) dom.parentNode.replaceChild(out, dom);
-                recollectNodeTree(dom, !0);
-            }
-        }
-        var fc = out.firstChild, props = out.__preactattr_ || (out.__preactattr_ = {}), vchildren = vnode.children;
-        if (!hydrating && vchildren && 1 === vchildren.length && 'string' == typeof vchildren[0] && null != fc && void 0 !== fc.splitText && null == fc.nextSibling) {
-            if (fc.nodeValue != vchildren[0]) fc.nodeValue = vchildren[0];
-        } else if (vchildren && vchildren.length || null != fc) innerDiffNode(out, vchildren, context, mountAll, hydrating || null != props.dangerouslySetInnerHTML);
-        diffAttributes(out, vnode.attributes, props);
-        isSvgMode = prevSvgMode;
-        return out;
-    }
-    function innerDiffNode(dom, vchildren, context, mountAll, isHydrating) {
-        var j, c, vchild, child, originalChildren = dom.childNodes, children = [], keyed = {}, keyedLen = 0, min = 0, len = originalChildren.length, childrenLen = 0, vlen = vchildren ? vchildren.length : 0;
-        if (0 !== len) for (var i = 0; i < len; i++) {
-            var _child = originalChildren[i], props = _child.__preactattr_, key = vlen && props ? _child._component ? _child._component.__k : props.key : null;
-            if (null != key) {
-                keyedLen++;
-                keyed[key] = _child;
-            } else if (props || (void 0 !== _child.splitText ? isHydrating ? _child.nodeValue.trim() : !0 : isHydrating)) children[childrenLen++] = _child;
-        }
-        if (0 !== vlen) for (var i = 0; i < vlen; i++) {
-            vchild = vchildren[i];
-            child = null;
-            var key = vchild.key;
-            if (null != key) {
-                if (keyedLen && void 0 !== keyed[key]) {
-                    child = keyed[key];
-                    keyed[key] = void 0;
-                    keyedLen--;
-                }
-            } else if (!child && min < childrenLen) for (j = min; j < childrenLen; j++) if (void 0 !== children[j] && isSameNodeType(c = children[j], vchild, isHydrating)) {
-                child = c;
-                children[j] = void 0;
-                if (j === childrenLen - 1) childrenLen--;
-                if (j === min) min++;
-                break;
-            }
-            child = idiff(child, vchild, context, mountAll);
-            if (child && child !== dom) if (i >= len) dom.appendChild(child); else if (child !== originalChildren[i]) if (child === originalChildren[i + 1]) removeNode(originalChildren[i]); else dom.insertBefore(child, originalChildren[i] || null);
-        }
-        if (keyedLen) for (var i in keyed) if (void 0 !== keyed[i]) recollectNodeTree(keyed[i], !1);
-        while (min <= childrenLen) if (void 0 !== (child = children[childrenLen--])) recollectNodeTree(child, !1);
-    }
-    function recollectNodeTree(node, unmountOnly) {
-        var component = node._component;
-        if (component) unmountComponent(component); else {
-            if (null != node.__preactattr_ && node.__preactattr_.ref) node.__preactattr_.ref(null);
-            if (unmountOnly === !1 || null == node.__preactattr_) removeNode(node);
-            removeChildren(node);
-        }
-    }
-    function removeChildren(node) {
-        node = node.lastChild;
-        while (node) {
-            var next = node.previousSibling;
-            recollectNodeTree(node, !0);
-            node = next;
-        }
-    }
-    function diffAttributes(dom, attrs, old) {
-        var name;
-        for (name in old) if ((!attrs || null == attrs[name]) && null != old[name]) setAccessor(dom, name, old[name], old[name] = void 0, isSvgMode);
-        for (name in attrs) if (!('children' === name || 'innerHTML' === name || name in old && attrs[name] === ('value' === name || 'checked' === name ? dom[name] : old[name]))) setAccessor(dom, name, old[name], old[name] = attrs[name], isSvgMode);
-    }
-    function collectComponent(component) {
-        var name = component.constructor.name;
-        (components[name] || (components[name] = [])).push(component);
-    }
-    function createComponent(Ctor, props, context) {
-        var inst, list = components[Ctor.name];
-        if (Ctor.prototype && Ctor.prototype.render) {
-            inst = new Ctor(props, context);
-            Component.call(inst, props, context);
-        } else {
-            inst = new Component(props, context);
-            inst.constructor = Ctor;
-            inst.render = doRender;
-        }
-        if (list) for (var i = list.length; i--; ) if (list[i].constructor === Ctor) {
-            inst.__b = list[i].__b;
-            list.splice(i, 1);
-            break;
-        }
-        return inst;
-    }
-    function doRender(props, state, context) {
-        return this.constructor(props, context);
-    }
-    function setComponentProps(component, props, opts, context, mountAll) {
-        if (!component.__x) {
-            component.__x = !0;
-            if (component.__r = props.ref) delete props.ref;
-            if (component.__k = props.key) delete props.key;
-            if (!component.base || mountAll) {
-                if (component.componentWillMount) component.componentWillMount();
-            } else if (component.componentWillReceiveProps) component.componentWillReceiveProps(props, context);
-            if (context && context !== component.context) {
-                if (!component.__c) component.__c = component.context;
-                component.context = context;
-            }
-            if (!component.__p) component.__p = component.props;
-            component.props = props;
-            component.__x = !1;
-            if (0 !== opts) if (1 === opts || options.syncComponentUpdates !== !1 || !component.base) renderComponent(component, 1, mountAll); else enqueueRender(component);
-            if (component.__r) component.__r(component);
-        }
-    }
-    function renderComponent(component, opts, mountAll, isChild) {
-        if (!component.__x) {
-            var rendered, inst, cbase, props = component.props, state = component.state, context = component.context, previousProps = component.__p || props, previousState = component.__s || state, previousContext = component.__c || context, isUpdate = component.base, nextBase = component.__b, initialBase = isUpdate || nextBase, initialChildComponent = component._component, skip = !1;
-            if (isUpdate) {
-                component.props = previousProps;
-                component.state = previousState;
-                component.context = previousContext;
-                if (2 !== opts && component.shouldComponentUpdate && component.shouldComponentUpdate(props, state, context) === !1) skip = !0; else if (component.componentWillUpdate) component.componentWillUpdate(props, state, context);
-                component.props = props;
-                component.state = state;
-                component.context = context;
-            }
-            component.__p = component.__s = component.__c = component.__b = null;
-            component.__d = !1;
-            if (!skip) {
-                rendered = component.render(props, state, context);
-                if (component.getChildContext) context = extend(extend({}, context), component.getChildContext());
-                var toUnmount, base, childComponent = rendered && rendered.nodeName;
-                if ('function' == typeof childComponent) {
-                    var childProps = getNodeProps(rendered);
-                    inst = initialChildComponent;
-                    if (inst && inst.constructor === childComponent && childProps.key == inst.__k) setComponentProps(inst, childProps, 1, context, !1); else {
-                        toUnmount = inst;
-                        component._component = inst = createComponent(childComponent, childProps, context);
-                        inst.__b = inst.__b || nextBase;
-                        inst.__u = component;
-                        setComponentProps(inst, childProps, 0, context, !1);
-                        renderComponent(inst, 1, mountAll, !0);
-                    }
-                    base = inst.base;
-                } else {
-                    cbase = initialBase;
-                    toUnmount = initialChildComponent;
-                    if (toUnmount) cbase = component._component = null;
-                    if (initialBase || 1 === opts) {
-                        if (cbase) cbase._component = null;
-                        base = diff(cbase, rendered, context, mountAll || !isUpdate, initialBase && initialBase.parentNode, !0);
-                    }
-                }
-                if (initialBase && base !== initialBase && inst !== initialChildComponent) {
-                    var baseParent = initialBase.parentNode;
-                    if (baseParent && base !== baseParent) {
-                        baseParent.replaceChild(base, initialBase);
-                        if (!toUnmount) {
-                            initialBase._component = null;
-                            recollectNodeTree(initialBase, !1);
-                        }
-                    }
-                }
-                if (toUnmount) unmountComponent(toUnmount);
-                component.base = base;
-                if (base && !isChild) {
-                    var componentRef = component, t = component;
-                    while (t = t.__u) (componentRef = t).base = base;
-                    base._component = componentRef;
-                    base._componentConstructor = componentRef.constructor;
-                }
-            }
-            if (!isUpdate || mountAll) mounts.unshift(component); else if (!skip) {
-                flushMounts();
-                if (component.componentDidUpdate) component.componentDidUpdate(previousProps, previousState, previousContext);
-                if (options.afterUpdate) options.afterUpdate(component);
-            }
-            if (null != component.__h) while (component.__h.length) component.__h.pop().call(component);
-            if (!diffLevel && !isChild) flushMounts();
-        }
-    }
-    function buildComponentFromVNode(dom, vnode, context, mountAll) {
-        var c = dom && dom._component, originalComponent = c, oldDom = dom, isDirectOwner = c && dom._componentConstructor === vnode.nodeName, isOwner = isDirectOwner, props = getNodeProps(vnode);
-        while (c && !isOwner && (c = c.__u)) isOwner = c.constructor === vnode.nodeName;
-        if (c && isOwner && (!mountAll || c._component)) {
-            setComponentProps(c, props, 3, context, mountAll);
-            dom = c.base;
-        } else {
-            if (originalComponent && !isDirectOwner) {
-                unmountComponent(originalComponent);
-                dom = oldDom = null;
-            }
-            c = createComponent(vnode.nodeName, props, context);
-            if (dom && !c.__b) {
-                c.__b = dom;
-                oldDom = null;
-            }
-            setComponentProps(c, props, 1, context, mountAll);
-            dom = c.base;
-            if (oldDom && dom !== oldDom) {
-                oldDom._component = null;
-                recollectNodeTree(oldDom, !1);
-            }
-        }
-        return dom;
-    }
-    function unmountComponent(component) {
-        if (options.beforeUnmount) options.beforeUnmount(component);
-        var base = component.base;
-        component.__x = !0;
-        if (component.componentWillUnmount) component.componentWillUnmount();
-        component.base = null;
-        var inner = component._component;
-        if (inner) unmountComponent(inner); else if (base) {
-            if (base.__preactattr_ && base.__preactattr_.ref) base.__preactattr_.ref(null);
-            component.__b = base;
-            removeNode(base);
-            collectComponent(component);
-            removeChildren(base);
-        }
-        if (component.__r) component.__r(null);
-    }
-    function Component(props, context) {
-        this.__d = !0;
-        this.context = context;
-        this.props = props;
-        this.state = this.state || {};
-    }
-    function render(vnode, parent, merge) {
-        return diff(merge, vnode, {}, !1, parent, !1);
-    }
-    var options = {};
-    var stack = [];
-    var EMPTY_CHILDREN = [];
-    var IS_NON_DIMENSIONAL = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i;
-    var items = [];
-    var mounts = [];
-    var diffLevel = 0;
-    var isSvgMode = !1;
-    var hydrating = !1;
-    var components = {};
-    extend(Component.prototype, {
-        setState: function(state, callback) {
-            var s = this.state;
-            if (!this.__s) this.__s = extend({}, s);
-            extend(s, 'function' == typeof state ? state(s, this.props) : state);
-            if (callback) (this.__h = this.__h || []).push(callback);
-            enqueueRender(this);
-        },
-        forceUpdate: function(callback) {
-            if (callback) (this.__h = this.__h || []).push(callback);
-            renderComponent(this, 2);
-        },
-        render: function() {}
-    });
-    var preact = {
-        h: h,
-        createElement: h,
-        cloneElement: cloneElement,
-        Component: Component,
-        render: render,
-        rerender: rerender,
-        options: options
-    };
-    if (true) module.exports = preact; else self.preact = preact;
-}();
-//# sourceMappingURL=preact.js.map
-
-/***/ }),
-/* 1 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_preact__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_preact___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_preact__);
-
-
-jb.ui.render = __WEBPACK_IMPORTED_MODULE_0_preact__["render"];
-jb.ui.h = __WEBPACK_IMPORTED_MODULE_0_preact__["h"];
-jb.ui.Component = __WEBPACK_IMPORTED_MODULE_0_preact__["Component"];
-
-
-/***/ })
-/******/ ]);;
-
-/******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId])
-/******/ 			return installedModules[moduleId].exports;
-/******/
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// identity function for calling harmony imports with the correct context
-/******/ 	__webpack_require__.i = function(value) { return value; };
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, {
-/******/ 				configurable: false,
-/******/ 				enumerable: true,
-/******/ 				get: getter
-/******/ 			});
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 3);
-/******/ })
-/************************************************************************/
-/******/ ([
-/* 0 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var invariant = __webpack_require__(1);
-
-var hasOwnProperty = Object.prototype.hasOwnProperty;
-var splice = Array.prototype.splice;
-
-var assign = Object.assign || function assign(target, source) {
-  var keys = getAllKeys(source);
-  for (var i = 0; i < keys.length; i++) {
-    var key = keys[i];
-    if (hasOwnProperty.call(source, key)) {
-      target[key] = source[key];
-    }
+class ImmutableWithPath {
+  constructor(resources) {
+    this.resources = resources;
+    this.resourceVersions = {};
+    this.pathId = 0;
+    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
+    this.resourceChange = new jb.rx.Subject();
+    jb.delay(1).then(_=>jb.ui.originalResources = jb.resources)
   }
-  return target;
-}
+  val(ref) {
+    if (ref == null) return ref;
+    if (ref.$jb_val) return ref.$jb_val();
+    if (!ref.$jb_path) return ref;
+    if (ref.handler != this)
+      return ref.handler.val(ref)
 
-var getAllKeys = typeof Object.getOwnPropertySymbols === 'function' ?
-  function(obj) { return Object.keys(obj).concat(Object.getOwnPropertySymbols(obj)) } :
-  function(obj) { return Object.keys(obj) }
-;
-
-function copy(object) {
-  if (object instanceof Array) {
-    return object.slice();
-  } else if (object && typeof object === 'object') {
-    return assign(new object.constructor(), object);
-  } else {
-    return object;
+    var resource = ref.$jb_path[0];
+    if (ref.$jb_resourceV == this.resourceVersions[resource])
+      return ref.$jb_cache;
+    this.refresh(ref);
+    if (ref.$jb_invalid)
+      return null;
+    return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
   }
-}
-
-
-function newContext() {
-  var commands = assign({}, defaultCommands);
-  update.extend = function(directive, fn) {
-    commands[directive] = fn;
+  writeValue(ref,value,srcCtx) {
+    if (!ref)
+      return jb.logError('writeValue: null ref');
+    if (this.val(ref) === value) return;
+    jb.logPerformance('writeValue',value,ref,srcCtx);
+    if (ref.$jb_val)
+      return ref.$jb_val(value);
+    return this.doOp(ref,{$set: value},srcCtx)
   }
+  splice(ref,args,srcCtx) {
+    return this.doOp(ref,{$splice: args },srcCtx)
+  }
+  move(fromRef,toRef,srcCtx) {
+    var sameArray = fromRef.$jb_path.slice(0,-1).join('~') == toRef.$jb_path.slice(0,-1).join('~');
+    var fromIndex = Number(fromRef.$jb_path.slice(-1));
+    var toIndex = Number(toRef.$jb_path.slice(-1));
+    var fromArray = this.refOfPath(fromRef.$jb_path.slice(0,-1)),toArray = this.refOfPath(toRef.$jb_path.slice(0,-1));
+    if (isNaN(fromIndex) || isNaN(toIndex))
+        return jb.logError('move: not array element',fromRef,toRef);
 
-  return update;
+    var valToMove = jb.val(fromRef);
+    if (sameArray) {
+        if (fromIndex < toIndex) toIndex--; // the deletion changes the index
+        return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
+    }
+    var events = [
+        this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx,true),
+        this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx,true),
+    ]
+    events.forEach(opEvent=>{
+        this.refresh(opEvent.ref,opEvent);
+        opEvent.newVal = this.val(opEvent.ref);
+        this.resourceChange.next(opEvent)
+    })
+  }
+  push(ref,value,srcCtx) {
+    return this.doOp(ref,{$push: value},srcCtx)
+  }
+  merge(ref,value,srcCtx) {
+    return this.doOp(ref,{$merge: value},srcCtx)
+  }
+  doOp(ref,opOnRef,srcCtx,doNotNotify) {
+    if (!this.isRef(ref))
+      ref = this.asRef(ref);
+    if (!ref) return;
+    var oldRef = Object.assign({},ref);
 
-  function update(object, spec) {
-    invariant(
-      !Array.isArray(spec),
-      'update(): You provided an invalid spec to update(). The spec may ' +
-      'not contain an array except as the value of $set, $push, $unshift, ' +
-      '$splice or any custom command allowing an array value.'
-    );
+    if (!this.refresh(ref)) return;
+    if (ref.$jb_path.length == 0)
+      return jb.logError('doOp: ref not found');
 
-    invariant(
-      typeof spec === 'object' && spec !== null,
-      'update(): You provided an invalid spec to update(). The spec and ' +
-      'every included key path must be plain objects containing one of the ' +
-      'following commands: %s.',
-      Object.keys(commands).join(', ')
-    );
-
-    var nextObject = object;
-    var specKeys = getAllKeys(spec)
-    var index, key;
-    for (index = 0; index < specKeys.length; index++) {
-      var key = specKeys[index];
-      if (hasOwnProperty.call(commands, key)) {
-        nextObject = commands[key](spec[key], nextObject, spec, object);
-      } else {
-        var nextValueForKey = update(object[key], spec[key]);
-        if (nextValueForKey !== nextObject[key]) {
-          if (nextObject === object) {
-            nextObject = copy(object);
-          }
-          nextObject[key] = nextValueForKey;
-        }
+    var op = {}, resource = ref.$jb_path[0], oldResources = this.resources();
+    var deleteOp = typeof opOnRef.$set == 'object' && opOnRef.$set == null;
+    jb.path(op,ref.$jb_path,opOnRef); // create op as nested object
+    this.markPath(ref.$jb_path);
+    var opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
+        oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
+    this.resources(jb.ui.update(this.resources(),op),opEvent);
+    this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
+    this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
+    opEvent.resourceVersionsAfter = this.resourceVersions;
+    if (opOnRef.$push)
+      opEvent.insertedPath = opEvent.path.concat([opEvent.oldVal.length]);
+    if (deleteOp) {
+      if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
+        return delete this.resourceVersions[resource];
+      try {
+        var parent = ref.$jb_path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
+        if (parent)
+          delete parent[ref.$jb_path.slice(-1)[0]]
+      } catch(e) {
+        jb.logException('delete',e);
       }
     }
-    return nextObject;
-  }
-
-}
-
-var defaultCommands = {
-  $push: function(value, original, spec) {
-    invariantPushAndUnshift(original, spec, '$push');
-    return original.concat(value);
-  },
-  $unshift: function(value, original, spec) {
-    invariantPushAndUnshift(original, spec, '$unshift');
-    return value.concat(original);
-  },
-  $splice: function(value, nextObject, spec, object) {
-    var originalValue = nextObject === object ? copy(object) : nextObject;
-    invariantSplices(originalValue, spec);
-    value.forEach(function(args) {
-      invariantSplice(args);
-      splice.apply(originalValue, args);
-    });
-    return originalValue;
-  },
-  $set: function(value, original, spec) {
-    invariantSet(spec);
-    return value;
-  },
-  $merge: function(value, nextObject, spec, object) {
-    var originalValue = nextObject === object ? copy(object) : nextObject;
-    invariantMerge(originalValue, value);
-    getAllKeys(value).forEach(function(key) {
-      originalValue[key] = value[key];
-    });
-    return originalValue;
-  },
-  $apply: function(value, original) {
-    invariantApply(value);
-    return value(original);
-  }
-};
-
-
-
-module.exports = newContext();
-module.exports.newContext = newContext;
-
-
-// invariants
-
-function invariantPushAndUnshift(value, spec, command) {
-  invariant(
-    Array.isArray(value),
-    'update(): expected target of %s to be an array; got %s.',
-    command,
-    value
-  );
-  var specValue = spec[command];
-  invariant(
-    Array.isArray(specValue),
-    'update(): expected spec of %s to be an array; got %s. ' +
-    'Did you forget to wrap your parameter in an array?',
-    command,
-    specValue
-  );
-}
-
-function invariantSplices(value, spec) {
-  invariant(
-    Array.isArray(value),
-    'Expected $splice target to be an array; got %s',
-    value
-  );
-  invariantSplice(spec['$splice']);
-}
-
-function invariantSplice(value) {
-  invariant(
-    Array.isArray(value),
-    'update(): expected spec of $splice to be an array of arrays; got %s. ' +
-    'Did you forget to wrap your parameters in an array?',
-    value
-  );
-}
-
-function invariantApply(fn) {
-  invariant(
-    typeof fn === 'function',
-    'update(): expected spec of $apply to be a function; got %s.',
-    fn
-  );
-}
-
-function invariantSet(spec) {
-  invariant(
-    Object.keys(spec).length === 1,
-    'Cannot have more than one key in an object with $set'
-  );
-}
-
-function invariantMerge(target, specValue) {
-  invariant(
-    specValue && typeof specValue === 'object',
-    'update(): $merge expects a spec of type \'object\'; got %s',
-    specValue
-  );
-  invariant(
-    target && typeof target === 'object',
-    'update(): $merge expects a target of type \'object\'; got %s',
-    target
-  );
-}
-
-
-/***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(process) {/**
- * Copyright 2013-2015, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- */
-
-
-
-/**
- * Use invariant() to assert state which your program assumes to be true.
- *
- * Provide sprintf-style format (only %s is supported) and arguments
- * to provide information about what broke and what you were
- * expecting.
- *
- * The invariant message will be stripped in production, but the invariant
- * will remain to ensure logic does not differ in production.
- */
-
-var invariant = function(condition, format, a, b, c, d, e, f) {
-  if (process.env.NODE_ENV !== 'production') {
-    if (format === undefined) {
-      throw new Error('invariant requires an error message argument');
+    if (!doNotNotify) {
+        this.refresh(ref,opEvent);
+        opEvent.newVal = this.val(ref);
+        this.resourceChange.next(opEvent);
     }
+    return opEvent;
   }
+  restoreArrayIds(from,to,path) {
+    if (from && to && from.$jb_id && Array.isArray(from) && Array.isArray(to) && !to.$jb_id && typeof to == 'object')
+      to.$jb_id = from.$jb_id;
+    if (path.length > 0)
+      this.restoreArrayIds(from[path[0]], to[path[0]], path.slice(1))
+  }
+  asRef(obj,hint) {
+    if (!obj) return obj;
+    if (obj && (obj.$jb_path || obj.$jb_val))
+        return obj;
 
-  if (!condition) {
-    var error;
-    if (format === undefined) {
-      error = new Error(
-        'Minified exception occurred; use the non-minified dev environment ' +
-        'for the full error message and additional helpful warnings.'
-      );
+    var path;
+    if (hint && hint.resource) {
+      var res = this.pathOfObject(obj,this.resources()[hint.resource]);
+      path = res && [hint.resource].concat(res);
+    }
+    path = path || this.pathOfObject(obj,this.resources()); // try without the hint
+
+    if (path)
+      return {
+        $jb_path: path,
+        $jb_resourceV: this.resourceVersions[path[0]],
+        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
+        handler: this,
+      }
+    return obj;
+  }
+  isRef(ref) {
+    return ref && (ref.$jb_path || ref.$jb_val);
+  }
+  objectProperty(obj,prop) {
+    if (!obj)
+      return jb.logError('objectProperty: null obj');
+    var objRef = this.asRef(obj);
+    if (objRef && objRef.$jb_path) {
+      return {
+        $jb_path: objRef.$jb_path.concat([prop]),
+        $jb_resourceV: objRef.$jb_resourceV,
+        $jb_cache: objRef.$jb_cache[prop],
+        $jb_parentOfPrim: objRef.$jb_cache,
+        handler: this,
+      }
     } else {
-      var args = [a, b, c, d, e, f];
-      var argIndex = 0;
-      error = new Error(
-        format.replace(/%s/g, function() { return args[argIndex++]; })
-      );
-      error.name = 'Invariant Violation';
+      return obj[prop]; // not reffable
     }
-
-    error.framesToPop = 1; // we don't care about invariant's own frame
-    throw error;
   }
-};
-
-module.exports = invariant;
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports) {
-
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
+  refresh(ref,lastOpEvent,silent) {
+    if (!ref) debugger;
     try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
+      var path = ref.$jb_path, new_ref = {};
+      if (!path)
+        return !silent && jb.logError('refresh: empty path');
+      var currentVersion = this.resourceVersions[path[0]] || 0;
+      if (path.length == 1) return true;
+      if (currentVersion == ref.$jb_resourceV) return true;
+      if (currentVersion == ref.$jb_resourceV + 1 && lastOpEvent && typeof lastOpEvent.op.$set != 'undefined') {
+        var res = this.refOfPath(ref.$jb_path,silent); // recalc ref by path
+        if (res)
+          return Object.assign(ref,res)
+        ref.$jb_invalid = true;
+        return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
+      }
+
+      if (ref.$jb_parentOfPrim) {
+        var parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
+        if (!parent || !this.isRef(parent)) {
+          this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
+          ref.$jb_invalid = true;
+          return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
         }
+        var prop = path.slice(-1)[0];
+        new_ref = {
+          $jb_path: parent.$jb_path.concat([prop]),
+          $jb_resourceV: this.resourceVersions[path[0]],
+          $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
+          $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
+      } else {
+        var object_path_found = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+        if (!object_path_found) {
+          this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+          ref.$jb_invalid = true;
+          return !silent && jb.logError('refresh: object not found: ' + path.join('~'));
+        }
+        var new_path = [path[0]].concat(object_path_found);
+        if (new_path) new_ref = {
+          $jb_path: new_path,
+          $jb_resourceV: this.resourceVersions[new_path[0]],
+          $jb_cache: new_path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
+      }
+      Object.assign(ref,new_ref);
     } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
+       ref.$jb_invalid = true;
+       return !silent && jb.logException(e,'ref refresh ',ref);
     }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
+    return true;
+  }
+  refOfPath(path,silent) {
+      try {
+        var val = path.reduce((o,p)=>o[p],this.resources());
+        if (val == null || typeof val != 'object' || Array.isArray(val))
+          var parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
+        else
+          var parent = null
 
+        return {
+            $jb_path: path,
+            $jb_resourceV: this.resourceVersions[path[0]],
+            $jb_cache: val,
+            $jb_parentOfPrim: parent,
+            handler: this,
+          }
+      } catch (e) {
+        if (!silent)
+          jb.logException(e,'ref from path ' + path);
+      }
+  }
+  markPath(path) {
+    var leaf = path.reduce((o,p)=>{
+      o.$jb_id = o.$jb_id || (++this.pathId);
+      return o[p]
+    }, this.resources());
+    if (leaf && typeof leaf == 'object')
+      leaf.$jb_id = leaf.$jb_id || (++this.pathId);
+  }
+  pathOfObject(obj,lookIn,depth) {
+    if (!obj || !lookIn || typeof lookIn != 'object' || typeof obj != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50)
+      return;
+    if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1)
+      return;
 
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
+    if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id))
+      return [];
+    for(var p in lookIn) {
+      var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
+      if (res)
+        return [p].concat(res);
     }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
+  }
+  // valid(ref) {
+  //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
+  // }
+  refObservable(ref,cmp,settings) {
+    if (ref && ref.$jb_observable)
+      return ref.$jb_observable(cmp);
+    if (!ref || !this.isRef(ref))
+      return jb.rx.Observable.of();
+    if (ref.$jb_path) {
+      return this.resourceChange
+        .takeUntil(cmp.destroyed)
+        .filter(e=>
+            e.ref.$jb_path[0] == ref.$jb_path[0])
+        .filter(e=> {
+          this.refresh(ref,e,true);
+          if (settings && settings.throw && ref.$jb_invalid)
+            throw 'invalid ref';
+          var path = e.ref.$jb_path;
+          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
+          if (settings && settings.includeChildren)
+            return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
+          return changeInParent;
+        })
+        .distinctUntilChanged((e1,e2)=>
+          e1.newVal == e2.newVal)
     }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
+    return jb.rx.Observable.of(jb.val(ref));
+  }
 }
 
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
+function resourcesRef(val) {
+  if (typeof val == 'undefined')
+    return jb.resources;
+  else
+    jb.resources = val;
 }
 
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
+jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
 
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
+jb.ui.refObservable = (ref,cmp,settings) =>
+  jb.refHandler(ref).refObservable(ref,cmp,settings);
+
+jb.ui.ImmutableWithPath = ImmutableWithPath;
+jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
+
+jb.ui.pathObservable = (path,handler,cmp) => {
+  var ref = handler.refOfPath(path.split('~'));
+  return handler.resourceChange
+    .takeUntil(cmp.destroyed)
+    .filter(e=>
+        path.indexOf(e.oldRef.$jb_path.join('~')) == 0)
+    .map(e=> {
+    handler.refresh(ref,e,true);
+    if (!ref.$jb_invalid)
+        return ref.$jb_path.join('~')
+    })
+    .filter(newPath=>newPath != path)
+    .take(1)
+    .map(newPath=>({newPath: newPath, oldPath: path}))
 }
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
 
 
-/***/ }),
-/* 3 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_immutability_helper__ = __webpack_require__(0);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_immutability_helper___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_immutability_helper__);
-
-
-jb.ui.update = __WEBPACK_IMPORTED_MODULE_0_immutability_helper___default.a;
-
-
-/***/ })
-/******/ ]);;
+})()
+;
 
 (function(){
 
@@ -12949,6 +13263,118 @@ jb.component('style-by-control', {
 })()
 ;
 
+jb.component('image', {
+	type: 'control,image', category: 'control:50',
+	params: [
+		{ id: 'url', as: 'string', essential: true },
+		{ id: 'imageWidth', as: 'number' },
+		{ id: 'imageHeight', as: 'number' },
+		{ id: 'width', as: 'number' },
+		{ id: 'height', as: 'number' },
+		{ id: 'units', as: 'string', defaultValue : 'px'},
+		{ id: 'style', type: 'image.style', dynamic: true, defaultValue: { $: 'image.default' } },
+		{ id: 'features', type: 'feature[]', dynamic: true }
+	],
+	impl: ctx => {
+			['imageWidth','imageHeight','width','height'].forEach(prop=>
+					ctx.params[prop] = ctx.params[prop] || null);
+			return jb.ui.ctrl(ctx, {
+				init: cmp =>
+					cmp.state.url = ctx.params.url
+			})
+		}
+})
+
+jb.component('image.default', {
+	type: 'image.style',
+	impl :{$: 'custom-style',
+		template: (cmp,state,h) =>
+			h('div',{}, h('img', {src: state.url})),
+
+		css: `{ {? width: %$$model/width%%$$model/units%; ?} {? height: %$$model/height%%$$model/units%; ?} }
+			>img{ {? width: %$$model/imageWidth%%$$model/units%; ?} {? height: %$$model/imageHeight%%$$model/units%; ?} }`
+	}
+})
+;
+
+jb.component('group', {
+  type: 'control', category: 'group:100,common:90',
+  params: [
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, essential: true , dynamic: true },
+    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx)
+})
+
+jb.component('group.init-group', {
+  type: 'feature', category: 'group:0',
+  impl: ctx => ({
+    init: cmp => {
+      cmp.calcCtrls = cmp.calcCtrls || (_ =>
+        ctx.vars.$model.controls(cmp.ctx).map(c=>jb.ui.renderable(c)).filter(x=>x))
+      if (!cmp.state.ctrls)
+        cmp.state.ctrls = cmp.calcCtrls()
+      cmp.refresh = cmp.refresh || (_ =>
+          cmp.setState({ctrls: cmp.calcCtrls() }))
+
+      if (cmp.ctrlEmitter)
+        cmp.ctrlEmitter.subscribe(ctrls=>
+              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c)).filter(x=>x)},null,ctx))
+    }
+  })
+})
+
+jb.component('dynamic-controls', {
+  type: 'control',
+  params: [
+    { id: 'controlItems', type: 'data', as: 'array', essential: true, dynamic: true },
+    { id: 'genericControl', type: 'control', essential: true, dynamic: true },
+    { id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
+  ],
+  impl: (context,controlItems,genericControl,itemVariable) =>
+    controlItems()
+      .map(controlItem => jb.tosingle(genericControl(
+        new jb.jbCtx(context,{data: controlItem, vars: jb.obj(itemVariable,controlItem)})))
+      )
+})
+
+jb.component('group.dynamic-titles', {
+  type: 'feature', category: 'group:30',
+  description: 'dynamic titles for sub controls',
+  impl: ctx => ({
+    doCheck: cmp =>
+      (cmp.state.ctrls || []).forEach(ctrl=>
+        ctrl.title = ctrl.jbComp.jb_title ? ctrl.jbComp.jb_title() : '')
+  })
+})
+
+jb.component('control.first-succeeding', {
+  type: 'control', category: 'common:30',
+  params: [
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, essential: true , dynamic: true },
+    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx)
+})
+
+jb.component('control-with-condition', {
+  type: 'control',
+  params: [
+    { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
+    { id: 'control', type: 'control', essential: true, dynamic: true },
+    { id: 'title', as: 'string' },
+  ],
+  impl: (ctx,condition,ctrl) =>
+    condition && ctrl(ctx)
+})
+;
+
 jb.component('label', {
     type: 'control', category: 'control:100,common:80',
     params: [
@@ -13050,398 +13476,6 @@ jb.component('highlight', {
         jb.ui.h('span',{class: cssClass},highlight),
         b.split(highlight).slice(1).join(highlight)]
   }
-})
-;
-
-(function() {
-
-class ImmutableWithPath {
-  constructor(resources) {
-    this.resources = resources;
-    this.resourceVersions = {};
-    this.pathId = 0;
-    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
-    this.resourceChange = new jb.rx.Subject();
-    jb.delay(1).then(_=>jb.ui.originalResources = jb.resources)
-  }
-  val(ref) {
-    if (ref == null) return ref;
-    if (ref.$jb_val) return ref.$jb_val();
-    if (!ref.$jb_path) return ref;
-    if (ref.handler != this)
-      return ref.handler.val(ref)
-
-    var resource = ref.$jb_path[0];
-    if (ref.$jb_resourceV == this.resourceVersions[resource])
-      return ref.$jb_cache;
-    this.refresh(ref);
-    if (ref.$jb_invalid)
-      return null;
-    return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
-  }
-  writeValue(ref,value,srcCtx) {
-    if (!ref)
-      return jb.logError('writeValue: null ref');
-    if (this.val(ref) === value) return;
-    jb.logPerformance('writeValue',value,ref,srcCtx);
-    if (ref.$jb_val)
-      return ref.$jb_val(value);
-    return this.doOp(ref,{$set: value},srcCtx)
-  }
-  splice(ref,args,srcCtx) {
-    return this.doOp(ref,{$splice: args },srcCtx)
-  }
-  move(fromRef,toRef,srcCtx) {
-    var sameArray = fromRef.$jb_path.slice(0,-1).join('~') == toRef.$jb_path.slice(0,-1).join('~');
-    var fromIndex = Number(fromRef.$jb_path.slice(-1));
-    var toIndex = Number(toRef.$jb_path.slice(-1));
-    var fromArray = this.refOfPath(fromRef.$jb_path.slice(0,-1)),toArray = this.refOfPath(toRef.$jb_path.slice(0,-1));
-    if (isNaN(fromIndex) || isNaN(toIndex))
-        return jb.logError('move: not array element',fromRef,toRef);
-
-    var valToMove = jb.val(fromRef);
-    if (sameArray) {
-        if (fromIndex < toIndex) toIndex--; // the deletion changes the index
-        return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
-    }
-    var events = [
-        this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx,true),
-        this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx,true),
-    ]
-    events.forEach(opEvent=>{
-        this.refresh(opEvent.ref,opEvent);
-        opEvent.newVal = this.val(opEvent.ref);
-        this.resourceChange.next(opEvent)
-    })
-  }
-  push(ref,value,srcCtx) {
-    return this.doOp(ref,{$push: value},srcCtx)
-  }
-  merge(ref,value,srcCtx) {
-    return this.doOp(ref,{$merge: value},srcCtx)
-  }
-  doOp(ref,opOnRef,srcCtx,doNotNotify) {
-    if (!this.isRef(ref))
-      ref = this.asRef(ref);
-    if (!ref) return;
-    var oldRef = Object.assign({},ref);
-
-    if (!this.refresh(ref)) return;
-    if (ref.$jb_path.length == 0)
-      return jb.logError('doOp: ref not found');
-
-    var op = {}, resource = ref.$jb_path[0], oldResources = this.resources();
-    var deleteOp = typeof opOnRef.$set == 'object' && opOnRef.$set == null;
-    jb.path(op,ref.$jb_path,opOnRef); // create op as nested object
-    this.markPath(ref.$jb_path);
-    var opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
-        oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
-    this.resources(jb.ui.update(this.resources(),op),opEvent);
-    this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
-    this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
-    opEvent.resourceVersionsAfter = this.resourceVersions;
-    if (opOnRef.$push)
-      opEvent.insertedPath = opEvent.path.concat([opEvent.oldVal.length]);
-    if (deleteOp) {
-      if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
-        return delete this.resourceVersions[resource];
-      try {
-        var parent = ref.$jb_path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
-        if (parent)
-          delete parent[ref.$jb_path.slice(-1)[0]]
-      } catch(e) {
-        jb.logException('delete',e);
-      }
-    }
-    if (!doNotNotify) {
-        this.refresh(ref,opEvent);
-        opEvent.newVal = this.val(ref);
-        this.resourceChange.next(opEvent);
-    }
-    return opEvent;
-  }
-  restoreArrayIds(from,to,path) {
-    if (from && to && from.$jb_id && Array.isArray(from) && Array.isArray(to) && !to.$jb_id && typeof to == 'object')
-      to.$jb_id = from.$jb_id;
-    if (path.length > 0)
-      this.restoreArrayIds(from[path[0]], to[path[0]], path.slice(1))
-  }
-  asRef(obj,hint) {
-    if (!obj) return obj;
-    if (obj && (obj.$jb_path || obj.$jb_val))
-        return obj;
-
-    var path;
-    if (hint && hint.resource) {
-      var res = this.pathOfObject(obj,this.resources()[hint.resource]);
-      path = res && [hint.resource].concat(res);
-    }
-    path = path || this.pathOfObject(obj,this.resources()); // try without the hint
-
-    if (path)
-      return {
-        $jb_path: path,
-        $jb_resourceV: this.resourceVersions[path[0]],
-        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
-        handler: this,
-      }
-    return obj;
-  }
-  isRef(ref) {
-    return ref && (ref.$jb_path || ref.$jb_val);
-  }
-  objectProperty(obj,prop) {
-    if (!obj)
-      return jb.logError('objectProperty: null obj');
-    var objRef = this.asRef(obj);
-    if (objRef && objRef.$jb_path) {
-      return {
-        $jb_path: objRef.$jb_path.concat([prop]),
-        $jb_resourceV: objRef.$jb_resourceV,
-        $jb_cache: objRef.$jb_cache[prop],
-        $jb_parentOfPrim: objRef.$jb_cache,
-        handler: this,
-      }
-    } else {
-      return obj[prop]; // not reffable
-    }
-  }
-  refresh(ref,lastOpEvent,silent) {
-    if (!ref) debugger;
-    try {
-      var path = ref.$jb_path, new_ref = {};
-      if (!path)
-        return !silent && jb.logError('refresh: empty path');
-      var currentVersion = this.resourceVersions[path[0]] || 0;
-      if (path.length == 1) return true;
-      if (currentVersion == ref.$jb_resourceV) return true;
-      if (currentVersion == ref.$jb_resourceV + 1 && lastOpEvent && typeof lastOpEvent.op.$set != 'undefined') {
-        var res = this.refOfPath(ref.$jb_path,silent); // recalc ref by path
-        if (res)
-          return Object.assign(ref,res)
-        ref.$jb_invalid = true;
-        return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
-      }
-
-      if (ref.$jb_parentOfPrim) {
-        var parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
-        if (!parent || !this.isRef(parent)) {
-          this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
-          ref.$jb_invalid = true;
-          return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
-        }
-        var prop = path.slice(-1)[0];
-        new_ref = {
-          $jb_path: parent.$jb_path.concat([prop]),
-          $jb_resourceV: this.resourceVersions[path[0]],
-          $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
-          $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
-          handler: this,
-        }
-      } else {
-        var object_path_found = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
-        if (!object_path_found) {
-          this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
-          ref.$jb_invalid = true;
-          return !silent && jb.logError('refresh: object not found: ' + path.join('~'));
-        }
-        var new_path = [path[0]].concat(object_path_found);
-        if (new_path) new_ref = {
-          $jb_path: new_path,
-          $jb_resourceV: this.resourceVersions[new_path[0]],
-          $jb_cache: new_path.reduce((o,p)=>o[p],this.resources()),
-          handler: this,
-        }
-      }
-      Object.assign(ref,new_ref);
-    } catch (e) {
-       ref.$jb_invalid = true;
-       return !silent && jb.logException(e,'ref refresh ',ref);
-    }
-    return true;
-  }
-  refOfPath(path,silent) {
-      try {
-        var val = path.reduce((o,p)=>o[p],this.resources());
-        if (val == null || typeof val != 'object' || Array.isArray(val))
-          var parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
-        else
-          var parent = null
-
-        return {
-            $jb_path: path,
-            $jb_resourceV: this.resourceVersions[path[0]],
-            $jb_cache: val,
-            $jb_parentOfPrim: parent,
-            handler: this,
-          }
-      } catch (e) {
-        if (!silent)
-          jb.logException(e,'ref from path ' + path);
-      }
-  }
-  markPath(path) {
-    var leaf = path.reduce((o,p)=>{
-      o.$jb_id = o.$jb_id || (++this.pathId);
-      return o[p]
-    }, this.resources());
-    if (leaf && typeof leaf == 'object')
-      leaf.$jb_id = leaf.$jb_id || (++this.pathId);
-  }
-  pathOfObject(obj,lookIn,depth) {
-    if (!obj || !lookIn || typeof lookIn != 'object' || typeof obj != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50)
-      return;
-    if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1)
-      return;
-
-    if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id))
-      return [];
-    for(var p in lookIn) {
-      var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
-      if (res)
-        return [p].concat(res);
-    }
-  }
-  // valid(ref) {
-  //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
-  // }
-  refObservable(ref,cmp,settings) {
-    if (ref && ref.$jb_observable)
-      return ref.$jb_observable(cmp);
-    if (!ref || !this.isRef(ref))
-      return jb.rx.Observable.of();
-    if (ref.$jb_path) {
-      return this.resourceChange
-        .takeUntil(cmp.destroyed)
-        .filter(e=>
-            e.ref.$jb_path[0] == ref.$jb_path[0])
-        .filter(e=> {
-          this.refresh(ref,e,true);
-          if (settings && settings.throw && ref.$jb_invalid)
-            throw 'invalid ref';
-          var path = e.ref.$jb_path;
-          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
-          if (settings && settings.includeChildren)
-            return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
-          return changeInParent;
-        })
-        .distinctUntilChanged((e1,e2)=>
-          e1.newVal == e2.newVal)
-    }
-    return jb.rx.Observable.of(jb.val(ref));
-  }
-}
-
-function resourcesRef(val) {
-  if (typeof val == 'undefined')
-    return jb.resources;
-  else
-    jb.resources = val;
-}
-
-jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
-
-jb.ui.refObservable = (ref,cmp,settings) =>
-  jb.refHandler(ref).refObservable(ref,cmp,settings);
-
-jb.ui.ImmutableWithPath = ImmutableWithPath;
-jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
-
-jb.ui.pathObservable = (path,handler,cmp) => {
-  var ref = handler.refOfPath(path.split('~'));
-  return handler.resourceChange
-    .takeUntil(cmp.destroyed)
-    .filter(e=>
-        path.indexOf(e.oldRef.$jb_path.join('~')) == 0)
-    .map(e=> {
-    handler.refresh(ref,e,true);
-    if (!ref.$jb_invalid)
-        return ref.$jb_path.join('~')
-    })
-    .filter(newPath=>newPath != path)
-    .take(1)
-    .map(newPath=>({newPath: newPath, oldPath: path}))
-}
-
-
-})()
-;
-
-jb.component('group', {
-  type: 'control', category: 'group:100,common:90',
-  params: [
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, essential: true , dynamic: true },
-    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
-})
-
-jb.component('group.init-group', {
-  type: 'feature', category: 'group:0',
-  impl: ctx => ({
-    init: cmp => {
-      cmp.calcCtrls = cmp.calcCtrls || (_ =>
-        ctx.vars.$model.controls(cmp.ctx).map(c=>jb.ui.renderable(c)).filter(x=>x))
-      if (!cmp.state.ctrls)
-        cmp.state.ctrls = cmp.calcCtrls()
-      cmp.refresh = cmp.refresh || (_ =>
-          cmp.setState({ctrls: cmp.calcCtrls() }))
-
-      if (cmp.ctrlEmitter)
-        cmp.ctrlEmitter.subscribe(ctrls=>
-              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c)).filter(x=>x)},null,ctx))
-    }
-  })
-})
-
-jb.component('dynamic-controls', {
-  type: 'control',
-  params: [
-    { id: 'controlItems', type: 'data', as: 'array', essential: true, dynamic: true },
-    { id: 'genericControl', type: 'control', essential: true, dynamic: true },
-    { id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
-  ],
-  impl: (context,controlItems,genericControl,itemVariable) =>
-    controlItems()
-      .map(controlItem => jb.tosingle(genericControl(
-        new jb.jbCtx(context,{data: controlItem, vars: jb.obj(itemVariable,controlItem)})))
-      )
-})
-
-jb.component('group.dynamic-titles', {
-  type: 'feature', category: 'group:30',
-  description: 'dynamic titles for sub controls',
-  impl: ctx => ({
-    doCheck: cmp =>
-      (cmp.state.ctrls || []).forEach(ctrl=>
-        ctrl.title = ctrl.jbComp.jb_title ? ctrl.jbComp.jb_title() : '')
-  })
-})
-
-jb.component('control.first-succeeding', {
-  type: 'control', category: 'common:30',
-  params: [
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, essential: true , dynamic: true },
-    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
-})
-
-jb.component('control-with-condition', {
-  type: 'control',
-  params: [
-    { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
-    { id: 'control', type: 'control', essential: true, dynamic: true },
-    { id: 'title', as: 'string' },
-  ],
-  impl: (ctx,condition,ctrl) =>
-    condition && ctrl(ctx)
 })
 ;
 
@@ -13746,40 +13780,6 @@ jb.component('field.toolbar', {
 })
 ;
 
-jb.component('image', {
-	type: 'control,image', category: 'control:50',
-	params: [
-		{ id: 'url', as: 'string', essential: true },
-		{ id: 'imageWidth', as: 'number' },
-		{ id: 'imageHeight', as: 'number' },
-		{ id: 'width', as: 'number' },
-		{ id: 'height', as: 'number' },
-		{ id: 'units', as: 'string', defaultValue : 'px'},
-		{ id: 'style', type: 'image.style', dynamic: true, defaultValue: { $: 'image.default' } },
-		{ id: 'features', type: 'feature[]', dynamic: true }
-	],
-	impl: ctx => {
-			['imageWidth','imageHeight','width','height'].forEach(prop=>
-					ctx.params[prop] = ctx.params[prop] || null);
-			return jb.ui.ctrl(ctx, {
-				init: cmp =>
-					cmp.state.url = ctx.params.url
-			})
-		}
-})
-
-jb.component('image.default', {
-	type: 'image.style',
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) =>
-			h('div',{}, h('img', {src: state.url})),
-
-		css: `{ {? width: %$$model/width%%$$model/units%; ?} {? height: %$$model/height%%$$model/units%; ?} }
-			>img{ {? width: %$$model/imageWidth%%$$model/units%; ?} {? height: %$$model/imageHeight%%$$model/units%; ?} }`
-	}
-})
-;
-
 jb.type('editable-text.style');
 
 jb.component('editable-text', {
@@ -13878,6 +13878,111 @@ jb.component('editable-text.helper-popup', {
 })
 ;
 
+jb.type('editable-boolean.style');
+
+jb.component('editable-boolean',{
+  type: 'control', category: 'input:20',
+  params: [
+    { id: 'databind', as: 'ref'},
+    { id: 'style', type: 'editable-boolean.style', defaultValue: { $: 'editable-boolean.checkbox' }, dynamic: true },
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true },
+    { id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true  },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx => jb.ui.ctrl(ctx,{
+  		init: cmp => {
+        cmp.toggle = () =>
+          cmp.jbModel(!cmp.jbModel());
+
+  			cmp.text = () => {
+          if (!cmp.jbModel) return '';
+          return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
+        }
+        cmp.extendRefresh = _ =>
+          cmp.setState({text: cmp.text()})
+          
+        cmp.refresh();
+  		},
+  	})
+})
+
+jb.component('editable-boolean.keyboard-support', {
+  type: 'feature',
+  impl: ctx => ({
+      onkeydown: true,
+      afterViewInit: cmp => {
+        cmp.onkeydown.filter(e=> 
+            e.keyCode == 37 || e.keyCode == 39)
+          .subscribe(x=> {
+            cmp.toggle();
+            cmp.refreshMdl && cmp.refreshMdl();
+          })
+      },
+    })
+})
+;
+
+jb.component('editable-number', {
+  type: 'control', category: 'input:30',
+  params: [
+    { id: 'databind', as: 'ref'},
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'style', type: 'editable-number.style', defaultValue: { $: 'editable-number.input' }, dynamic: true },
+    { id: 'symbol', as: 'string', description: 'leave empty to parse symbol from value' },
+    { id: 'min', as: 'number', defaultValue: 0 },
+    { id: 'max', as: 'number', defaultValue: 100 },
+    { id: 'displayString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%' },
+    { id: 'dataString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%' },
+    { id: 'autoScale', as: 'boolean', defaultValue: true, description: 'adjust its scale if at edges' },
+
+    { id: 'step', as: 'number', defaultValue: 1, description: 'used by slider' },
+    { id: 'initialPixelsPerUnit', as: 'number', description: 'used by slider' },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx => {
+      class editableNumber {
+        constructor(params) {
+          Object.assign(this,params);
+          if (this.min == null) this.min = NaN;
+          if (this.max == null) this.max = NaN;
+        }
+        numericPart(dataString) {
+          if (!dataString) return NaN;
+          var parts = (''+dataString).match(/([^0-9\.\-]*)([0-9\.\-]+)([^0-9\.\-]*)/); // prefix-number-suffix
+          if ((!this.symbol) && parts)
+            this.symbol = parts[1] || parts[3] || this.symbol;
+          return (parts && parts[2]) || '';
+        }
+
+        calcDisplayString(number,ctx) {
+          if (isNaN(number)) return this.placeholder || '';
+          return this.displayString(ctx.setVars({ Value: ''+number, Symbol: this.symbol }));
+        }
+
+        calcDataString(number,ctx) {
+          if (isNaN(number)) return '';
+          return this.dataString(ctx.setVars({ Value: ''+number, Symbol: this.symbol }));
+        }
+      }
+      return jb.ui.ctrl(ctx.setVars({ editableNumber: new editableNumber(ctx.params) })) 
+  }
+})
+
+jb.component('editable-number.input',{
+  type: 'editable-number.style',
+  impl :{$: 'custom-style', 
+      features :{$: 'field.databind-text' },
+      template: (cmp,state,h) => h('input', { 
+        value: state.model, 
+        onchange: e => cmp.jbModel(e.target.value), 
+        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
+  }
+})
+
+
+;
+
 jb.component('group.wait', {
   type: 'feature', category: 'group:70',
 	description: 'wait for asynch data before showing the control',
@@ -13944,23 +14049,6 @@ jb.component('watch-observable', {
   })
 })
 
-jb.component('bind-refs', {
-  type: 'feature', category: 'watch',
-  description: 'automatically updates a mutual variable when other value is changing',
-  params: [
-    { id: 'watchRef', essential: true, as: 'ref' },
-    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
-    { id: 'updateRef', essential: true, as: 'ref' },
-    { id: 'value', essential: true, as: 'single', dynamic: true },
-  ],
-  impl: (ctx,ref,includeChildren,updateRef,value) => ({
-      init: cmp =>
-        jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren}).subscribe(e=>
-          jb.writeValue(updateRef,value(cmp.ctx),ctx))
-  })
-})
-
-
 jb.component('group.data', {
   type: 'feature', category: 'general:100,watch:80',
   params: [
@@ -14021,6 +14109,47 @@ jb.component('var', {
           jb.writeValue(refToResource,value(ctx),context);
           return ctx.setVars(jb.obj(name, refToResource));
         }
+      }
+  })
+})
+
+jb.component('bind-refs', {
+  type: 'feature', category: 'watch',
+  description: 'automatically updates a mutual variable when other value is changing',
+  params: [
+    { id: 'watchRef', essential: true, as: 'ref' },
+    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+    { id: 'updateRef', essential: true, as: 'ref' },
+    { id: 'value', essential: true, as: 'single', dynamic: true },
+  ],
+  impl: (ctx,ref,includeChildren,updateRef,value) => ({
+      init: cmp =>
+        jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren}).subscribe(e=>
+          jb.writeValue(updateRef,value(cmp.ctx),ctx))
+  })
+})
+
+jb.component('calculated-var', {
+  type: 'feature', category: 'general:60',
+	description: 'defines a local variable that watches other variables with auto recalc',
+  params: [
+    { id: 'name', as: 'string', essential: true },
+    { id: 'value', dynamic: true, defaultValue: '', essential: true },
+    { id: 'watchRefs', as: 'array', dynamic: true, essential: true, defaultValue: [], description: 'variable to watch. needs to be in array' },
+  ],
+  impl: (context, name, value,watchRefs) => ({
+      destroy: cmp => {
+        jb.writeValue(jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]),null,context)
+      },
+      extendCtxOnce: (ctx,cmp) => {
+          cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
+          var refToResource = jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]);
+          jb.writeValue(refToResource,value(cmp.ctx),context);
+          (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
+            jb.ui.refObservable(ref,cmp,{includeChildren:true}).subscribe(e=>
+              jb.writeValue(refToResource,value(cmp.ctx),context))
+          )
+          return ctx.setVars(jb.obj(name, refToResource));
       }
   })
 })
@@ -14202,66 +14331,6 @@ jb.component('group.auto-focus-on-first-input', {
         }
   })
 })
-;
-
-jb.component('editable-number', {
-  type: 'control', category: 'input:30',
-  params: [
-    { id: 'databind', as: 'ref'},
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'editable-number.style', defaultValue: { $: 'editable-number.input' }, dynamic: true },
-    { id: 'symbol', as: 'string', description: 'leave empty to parse symbol from value' },
-    { id: 'min', as: 'number', defaultValue: 0 },
-    { id: 'max', as: 'number', defaultValue: 100 },
-    { id: 'displayString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%' },
-    { id: 'dataString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%' },
-    { id: 'autoScale', as: 'boolean', defaultValue: true, description: 'adjust its scale if at edges' },
-
-    { id: 'step', as: 'number', defaultValue: 1, description: 'used by slider' },
-    { id: 'initialPixelsPerUnit', as: 'number', description: 'used by slider' },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx => {
-      class editableNumber {
-        constructor(params) {
-          Object.assign(this,params);
-          if (this.min == null) this.min = NaN;
-          if (this.max == null) this.max = NaN;
-        }
-        numericPart(dataString) {
-          if (!dataString) return NaN;
-          var parts = (''+dataString).match(/([^0-9\.\-]*)([0-9\.\-]+)([^0-9\.\-]*)/); // prefix-number-suffix
-          if ((!this.symbol) && parts)
-            this.symbol = parts[1] || parts[3] || this.symbol;
-          return (parts && parts[2]) || '';
-        }
-
-        calcDisplayString(number,ctx) {
-          if (isNaN(number)) return this.placeholder || '';
-          return this.displayString(ctx.setVars({ Value: ''+number, Symbol: this.symbol }));
-        }
-
-        calcDataString(number,ctx) {
-          if (isNaN(number)) return '';
-          return this.dataString(ctx.setVars({ Value: ''+number, Symbol: this.symbol }));
-        }
-      }
-      return jb.ui.ctrl(ctx.setVars({ editableNumber: new editableNumber(ctx.params) })) 
-  }
-})
-
-jb.component('editable-number.input',{
-  type: 'editable-number.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind-text' },
-      template: (cmp,state,h) => h('input', { 
-        value: state.model, 
-        onchange: e => cmp.jbModel(e.target.value), 
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-  }
-})
-
-
 ;
 
 jb.component('css', {
@@ -14921,317 +14990,6 @@ jb.ui.dialogs = {
 }
 ;
 
-jb.type('editable-boolean.style');
-
-jb.component('editable-boolean',{
-  type: 'control', category: 'input:20',
-  params: [
-    { id: 'databind', as: 'ref'},
-    { id: 'style', type: 'editable-boolean.style', defaultValue: { $: 'editable-boolean.checkbox' }, dynamic: true },
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true },
-    { id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true  },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx => jb.ui.ctrl(ctx,{
-  		init: cmp => {
-        cmp.toggle = () =>
-          cmp.jbModel(!cmp.jbModel());
-
-  			cmp.text = () => {
-          if (!cmp.jbModel) return '';
-          return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
-        }
-        cmp.extendRefresh = _ =>
-          cmp.setState({text: cmp.text()})
-          
-        cmp.refresh();
-  		},
-  	})
-})
-
-jb.component('editable-boolean.keyboard-support', {
-  type: 'feature',
-  impl: ctx => ({
-      onkeydown: true,
-      afterViewInit: cmp => {
-        cmp.onkeydown.filter(e=> 
-            e.keyCode == 37 || e.keyCode == 39)
-          .subscribe(x=> {
-            cmp.toggle();
-            cmp.refreshMdl && cmp.refreshMdl();
-          })
-      },
-    })
-})
-;
-
-jb.component('itemlist', {
-  type: 'control', category: 'group:80,common:80',
-  params: [
-    { id: 'title', as: 'string' },
-    { id: 'items', as: 'ref', whenNotReffable: 'array' , dynamic: true, essential: true },
-    { id: 'controls', type: 'control[]', essential: true, dynamic: true },
-    { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
-    { id: 'watchItems', as: 'boolean' },
-    { id: 'itemVariable', as: 'string', defaultValue: 'item' },
-    { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
-})
-
-jb.component('itemlist.no-container', {
-  type: 'feature', category: 'group:20',
-  impl: ctx => ({
-    extendCtxOnce: (ctx,cmp) =>
-      ctx.setVars({itemlistCntr: null})
-    })
-})
-
-jb.component('itemlist.init', {
-  type: 'feature',
-  impl: ctx => ({
-      beforeInit: cmp => {
-        cmp.refresh = _ =>
-            cmp.setState({ctrls: cmp.calcCtrls()})
-
-        if (ctx.vars.$model.watchItems && ctx.vars.$model.items)
-          jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
-
-        cmp.calcCtrls = _ => {
-            var _items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
-            if (jb.compareArrays(_items,cmp.items))
-              return cmp.state.ctrls;
-            if (cmp.ctx.vars.itemlistCntr)
-              cmp.ctx.vars.itemlistCntr.items = _items;
-            cmp.items = _items;
-            return _items.slice(0,100).map(item=>
-              Object.assign(controlsOfItem(item),{item:item})).filter(x=>x.length > 0);
-        }
-
-        function controlsOfItem(item) {
-          return ctx.vars.$model.controls(cmp.ctx.setData(item).setVars(jb.obj(ctx.vars.$model.itemVariable,item)))
-            .filter(x=>x).map(c=>jb.ui.renderable(c)).filter(x=>x);
-        }
-      },
-      init: cmp => {
-        cmp.state.ctrls = cmp.calcCtrls();
-      },
-  })
-})
-
-jb.component('itemlist.ul-li', {
-  type: 'itemlist.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li',
-          {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
-          ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
-    css: `{ list-style: none; padding: 0; margin: 0;}
-    >li { list-style: none; padding: 0; margin: 0;}`,
-    features:{$: 'itemlist.init'},
-  },
-})
-
-jb.component('itemlist.horizontal', {
-  type: 'itemlist.style',
-  params: [,
-    { id: 'spacing', as: 'number', defaultValue: 0 }
-  ],
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('div',{ class: 'jb-drag-parent'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('div', {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
-          ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
-
-    css: `{display: flex}
-        >* { margin-right: %$spacing%px }
-        >*:last-child { margin-right:0 }`,
-    features:{$: 'itemlist.init'},
-  }
-})
-
-// ****************** Selection ******************
-
-jb.component('itemlist.selection', {
-  type: 'feature',
-  params: [
-    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%' },
-    { id: 'selectedToDatabind', dynamic: true ,defaultValue: '%%' },
-    { id: 'databindToSelected', dynamic: true ,defaultValue: '%%' },
-    { id: 'onSelection', type: 'action', dynamic: true },
-    { id: 'onDoubleClick', type: 'action', dynamic: true },
-    { id: 'autoSelectFirst', type: 'boolean'},
-    { id: 'cssForSelected', as: 'string', defaultValue: 'background: #bbb !important; color: #fff !important' },
-  ],
-  impl: ctx => ({
-    onclick: true,
-    afterViewInit: cmp => {
-        cmp.selectionEmitter = new jb.rx.Subject();
-        cmp.clickEmitter = new jb.rx.Subject();
-
-        cmp.selectionEmitter
-          .merge(cmp.clickEmitter)
-          .distinctUntilChanged()
-          .filter(x=>x)
-          .subscribe( selected => {
-              writeSelectedToDatabind(selected);
-              cmp.setState({selected: selected});
-              ctx.params.onSelection(cmp.ctx.setData(selected));
-          });
-
-        jb.ui.refObservable(ctx.params.databind,cmp,{throw: true})
-          .catch(e=>jb.ui.setState(cmp,{selected: null }) || [])
-          .subscribe(e=>
-            jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
-
-        // double click
-        var clickEm = cmp.clickEmitter.takeUntil( cmp.destroyed );
-        clickEm.buffer(clickEm.debounceTime(250))
-          .filter(buff => buff.length === 2)
-          .subscribe(buff=>
-            ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
-
-        cmp.jbEmitter.filter(x=> x =='after-update').startWith(jb.delay(1)).subscribe(x=>{
-          if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
-            cmp.state.selected = null;
-					if (jb.val(ctx.params.databind))
-						cmp.setState({selected: selectedOfDatabind()});
-          if (!cmp.state.selected)
-            autoSelectFirst()
-        })
-
-        function autoSelectFirst() {
-          if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
-              return cmp.selectionEmitter.next(cmp.items[0])
-        }
-        function writeSelectedToDatabind(selected) {
-          return ctx.params.databind && jb.writeValue(ctx.params.databind,ctx.params.selectedToDatabind(ctx.setData(selected)))
-        }
-        function selectedOfDatabind() {
-          return ctx.params.databind && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(ctx.params.databind))))
-        }
-        //autoSelectFirst();
-    },
-    extendItem: (cmp,vdom,data) => {
-      jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == data);
-      vdom.attributes.onclick = _ =>
-        cmp.clickEmitter.next(data)
-    },
-    css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
-    createjbEmitter: true,
-  })
-})
-
-jb.component('itemlist.keyboard-selection', {
-  type: 'feature',
-  params: [
-    { id: 'onEnter', type: 'action', dynamic: true },
-    { id: 'autoFocus', type: 'boolean' }
-  ],
-  impl: ctx => ({
-      afterViewInit: function(cmp) {
-        var onkeydown = (cmp.ctx.vars.itemlistCntr && cmp.ctx.vars.itemlistCntr.keydown) || (cmp.ctx.vars.selectionKeySource && cmp.ctx.vars.selectionKeySource.keydown);
-        if (!onkeydown) {
-          cmp.base.setAttribute('tabIndex','0');
-          onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
-
-          if (ctx.params.autoFocus)
-            jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus',ctx)
-        }
-        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );
-
-        cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
-          .subscribe(x=>
-            ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
-
-        cmp.onkeydown.filter(e=> !e.ctrlKey &&
-              (e.keyCode == 38 || e.keyCode == 40))
-            .map(event => {
-              event.stopPropagation();
-              var diff = event.keyCode == 40 ? 1 : -1;
-              var items = cmp.items;
-              return items[(items.indexOf(cmp.state.selected) + diff + items.length) % items.length] || cmp.state.selected;
-        }).subscribe(x=>
-          cmp.selectionEmitter && cmp.selectionEmitter.next(x)
-        )
-      },
-    })
-})
-
-jb.component('itemlist.drag-and-drop', {
-  type: 'feature',
-  params: [
-  ],
-  impl: ctx => ({
-      afterViewInit: function(cmp) {
-        var drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
-          moves: (el,source,handle) =>
-            jb.ui.hasClass(handle,'drag-handle')
-        });
-
-        drake.on('drag', function(el, source) {
-          var item = el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data;
-          if (!item) {
-            var item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
-            item = item_comp && item_comp.ctx.data;
-          }
-          el.dragged = {
-            item: item,
-            remove: item => cmp.items.splice(cmp.items.indexOf(item), 1)
-          }
-          cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.item);
-        });
-        drake.on('drop', (dropElm, target, source,sibling) => {
-            var draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
-            var targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
-            jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
-
-            dropElm.dragged = null;
-        });
-
-        // ctrl + Up/Down
-//        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
-          if (!cmp.onkeydown) return;
-          cmp.onkeydown.filter(e=>
-            e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
-            .subscribe(e=> {
-              var diff = e.keyCode == 40 ? 1 : -1;
-              var selectedIndex = cmp.items.indexOf(cmp.state.selected);
-              if (selectedIndex == -1) return;
-              var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-              jb.splice(cmp.items,[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
-          })
-//        })
-      }
-    })
-})
-
-jb.component('itemlist.drag-handle', {
-  description: 'put on the control inside the item which is used to drag the whole line',
-  type: 'feature',
-  impl: {$list: [ {$: 'css.class', class: 'drag-handle' }, {$: 'css', css:'{cursor: pointer}'} ] }
-})
-
-jb.component('itemlist.shown-only-on-item-hover', {
-  type: 'feature', category: 'itemlist:75',
-  description: 'put on the control inside the item which is shown when the mouse enters the line',
-  impl: (ctx,cssClass,cond) => ({
-    class: 'jb-shown-on-item-hover',
-    css: '{ display: none }'
-  })
-})
-
-jb.component('itemlist.divider', {
-  type: 'feature',
-  params: [
-    { id: 'space', as: 'number', defaultValue: 5}
-  ],
-  impl : (ctx,space) =>
-    ({css: `>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: ${space}px }`})
-})
-;
-
 
 jb.component('menu.menu', {
 	type: 'menu.option',
@@ -15685,151 +15443,270 @@ jb.component('menu-separator.line', {
 })
 ;
 
-jb.component('picklist', {
-  type: 'control', category: 'input:80',
+jb.component('itemlist', {
+  type: 'control', category: 'group:80,common:80',
   params: [
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'databind', as: 'ref'},
-    { id: 'options', type: 'picklist.options', dynamic: true, essential: true, defaultValue: {$ : 'picklist.optionsByComma'} },
-    { id: 'promote', type: 'picklist.promote', dynamic: true },
-    { id: 'style', type: 'picklist.style', defaultValue: { $: 'picklist.native' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
+    { id: 'title', as: 'string' },
+    { id: 'items', as: 'ref', whenNotReffable: 'array' , dynamic: true, essential: true },
+    { id: 'controls', type: 'control[]', essential: true, dynamic: true },
+    { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
+    { id: 'watchItems', as: 'boolean' },
+    { id: 'itemVariable', as: 'string', defaultValue: 'item' },
+    { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
   ],
   impl: ctx =>
-    jb.ui.ctrl(ctx,{
-      beforeInit: function(cmp) {
-        cmp.recalcOptions = function() {
-          var options = ctx.params.options(ctx);
-          var groupsHash = {};
-          var promotedGroups = (ctx.params.promote() || {}).groups || [];
-          var groups = [];
-          options.filter(x=>x.text).forEach(o=>{
-            var groupId = groupOfOpt(o);
-            var group = groupsHash[groupId] || { options: [], text: groupId};
-            if (!groupsHash[groupId]) {
-              groups.push(group);
-              groupsHash[groupId] = group;
-            }
-            group.options.push({text: o.text.split('.').pop(), code: o.code });
-          })
-          groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
-          jb.ui.setState(cmp,{
-            groups: groups,
-            options: options,
-            hasEmptyOption: options.filter(x=>!x.text)[0]
-          })
+    jb.ui.ctrl(ctx)
+})
+
+jb.component('itemlist.no-container', {
+  type: 'feature', category: 'group:20',
+  impl: ctx => ({
+    extendCtxOnce: (ctx,cmp) =>
+      ctx.setVars({itemlistCntr: null})
+    })
+})
+
+jb.component('itemlist.init', {
+  type: 'feature',
+  impl: ctx => ({
+      beforeInit: cmp => {
+        cmp.refresh = _ =>
+            cmp.setState({ctrls: cmp.calcCtrls()})
+
+        if (ctx.vars.$model.watchItems && ctx.vars.$model.items)
+          jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
+
+        cmp.calcCtrls = _ => {
+            var _items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
+            if (jb.compareArrays(_items,cmp.items))
+              return cmp.state.ctrls;
+            if (cmp.ctx.vars.itemlistCntr)
+              cmp.ctx.vars.itemlistCntr.items = _items;
+            cmp.items = _items;
+            return _items.slice(0,100).map(item=>
+              Object.assign(controlsOfItem(item),{item:item})).filter(x=>x.length > 0);
         }
-        cmp.recalcOptions();
-        jb.ui.refObservable(ctx.params.databind,cmp).subscribe(e=>
-          cmp.onChange && cmp.onChange(jb.val(e.ref)))
+
+        function controlsOfItem(item) {
+          return ctx.vars.$model.controls(cmp.ctx.setData(item).setVars(jb.obj(ctx.vars.$model.itemVariable,item)))
+            .filter(x=>x).map(c=>jb.ui.renderable(c)).filter(x=>x);
+        }
+      },
+      init: cmp => {
+        cmp.state.ctrls = cmp.calcCtrls();
+      },
+  })
+})
+
+jb.component('itemlist.ul-li', {
+  type: 'itemlist.style',
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li',
+          {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+          ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
+    css: `{ list-style: none; padding: 0; margin: 0;}
+    >li { list-style: none; padding: 0; margin: 0;}`,
+    features:{$: 'itemlist.init'},
+  },
+})
+
+jb.component('itemlist.horizontal', {
+  type: 'itemlist.style',
+  params: [,
+    { id: 'spacing', as: 'number', defaultValue: 0 }
+  ],
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('div',{ class: 'jb-drag-parent'},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('div', {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+          ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
+
+    css: `{display: flex}
+        >* { margin-right: %$spacing%px }
+        >*:last-child { margin-right:0 }`,
+    features:{$: 'itemlist.init'},
+  }
+})
+
+// ****************** Selection ******************
+
+jb.component('itemlist.selection', {
+  type: 'feature',
+  params: [
+    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%' },
+    { id: 'selectedToDatabind', dynamic: true ,defaultValue: '%%' },
+    { id: 'databindToSelected', dynamic: true ,defaultValue: '%%' },
+    { id: 'onSelection', type: 'action', dynamic: true },
+    { id: 'onDoubleClick', type: 'action', dynamic: true },
+    { id: 'autoSelectFirst', type: 'boolean'},
+    { id: 'cssForSelected', as: 'string', defaultValue: 'background: #bbb !important; color: #fff !important' },
+  ],
+  impl: ctx => ({
+    onclick: true,
+    afterViewInit: cmp => {
+        cmp.selectionEmitter = new jb.rx.Subject();
+        cmp.clickEmitter = new jb.rx.Subject();
+
+        cmp.selectionEmitter
+          .merge(cmp.clickEmitter)
+          .distinctUntilChanged()
+          .filter(x=>x)
+          .subscribe( selected => {
+              writeSelectedToDatabind(selected);
+              cmp.setState({selected: selected});
+              ctx.params.onSelection(cmp.ctx.setData(selected));
+          });
+
+        jb.ui.refObservable(ctx.params.databind,cmp,{throw: true})
+          .catch(e=>jb.ui.setState(cmp,{selected: null }) || [])
+          .subscribe(e=>
+            jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
+
+        // double click
+        var clickEm = cmp.clickEmitter.takeUntil( cmp.destroyed );
+        clickEm.buffer(clickEm.debounceTime(250))
+          .filter(buff => buff.length === 2)
+          .subscribe(buff=>
+            ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
+
+        cmp.jbEmitter.filter(x=> x =='after-update').startWith(jb.delay(1)).subscribe(x=>{
+          if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
+            cmp.state.selected = null;
+					if (jb.val(ctx.params.databind))
+						cmp.setState({selected: selectedOfDatabind()});
+          if (!cmp.state.selected)
+            autoSelectFirst()
+        })
+
+        function autoSelectFirst() {
+          if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
+              return cmp.selectionEmitter.next(cmp.items[0])
+        }
+        function writeSelectedToDatabind(selected) {
+          return ctx.params.databind && jb.writeValue(ctx.params.databind,ctx.params.selectedToDatabind(ctx.setData(selected)))
+        }
+        function selectedOfDatabind() {
+          return ctx.params.databind && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(ctx.params.databind))))
+        }
+        //autoSelectFirst();
+    },
+    extendItem: (cmp,vdom,data) => {
+      jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == data);
+      vdom.attributes.onclick = _ =>
+        cmp.clickEmitter.next(data)
+    },
+    css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
+    createjbEmitter: true,
+  })
+})
+
+jb.component('itemlist.keyboard-selection', {
+  type: 'feature',
+  params: [
+    { id: 'onEnter', type: 'action', dynamic: true },
+    { id: 'autoFocus', type: 'boolean' }
+  ],
+  impl: ctx => ({
+      afterViewInit: function(cmp) {
+        var onkeydown = (cmp.ctx.vars.itemlistCntr && cmp.ctx.vars.itemlistCntr.keydown) || (cmp.ctx.vars.selectionKeySource && cmp.ctx.vars.selectionKeySource.keydown);
+        if (!onkeydown) {
+          cmp.base.setAttribute('tabIndex','0');
+          onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
+
+          if (ctx.params.autoFocus)
+            jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus',ctx)
+        }
+        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );
+
+        cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
+          .subscribe(x=>
+            ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
+
+        cmp.onkeydown.filter(e=> !e.ctrlKey &&
+              (e.keyCode == 38 || e.keyCode == 40))
+            .map(event => {
+              event.stopPropagation();
+              var diff = event.keyCode == 40 ? 1 : -1;
+              var items = cmp.items;
+              return items[(items.indexOf(cmp.state.selected) + diff + items.length) % items.length] || cmp.state.selected;
+        }).subscribe(x=>
+          cmp.selectionEmitter && cmp.selectionEmitter.next(x)
+        )
       },
     })
 })
 
-function groupOfOpt(opt) {
-  if (!opt.group && opt.text.indexOf('.') == -1)
-    return '---';
-  return opt.group || opt.text.split('.').shift();
-}
-
-jb.component('picklist.dynamic-options', {
+jb.component('itemlist.drag-and-drop', {
   type: 'feature',
   params: [
-    { id: 'recalcEm', as: 'single'}
   ],
-  impl: (ctx,recalcEm) => ({
-    init: cmp =>
-      recalcEm && recalcEm.subscribe &&
-        recalcEm.takeUntil( cmp.destroyed )
-        .subscribe(e=>
-            cmp.recalcOptions())
-  })
-})
+  impl: ctx => ({
+      afterViewInit: function(cmp) {
+        var drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
+          moves: (el,source,handle) =>
+            jb.ui.hasClass(handle,'drag-handle')
+        });
 
-jb.component('picklist.onChange', {
-  type: 'feature',
-  description: 'action on picklist selection',
-  params: [
-    { id: 'action', type: 'action', dynamic: true}
-  ],
-  impl: (ctx,action) => ({
-    init: cmp =>
-      cmp.onChange = val => action(ctx.setData(val))
-  })
-})
+        drake.on('drag', function(el, source) {
+          var item = el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data;
+          if (!item) {
+            var item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
+            item = item_comp && item_comp.ctx.data;
+          }
+          el.dragged = {
+            item: item,
+            remove: item => cmp.items.splice(cmp.items.indexOf(item), 1)
+          }
+          cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.item);
+        });
+        drake.on('drop', (dropElm, target, source,sibling) => {
+            var draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
+            var targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
+            jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
 
-// ********* options
+            dropElm.dragged = null;
+        });
 
-jb.component('picklist.optionsByComma',{
-  type: 'picklist.options',
-  params: [
-    { id: 'options', as: 'string', essential: true},
-    { id: 'allowEmptyValue', type: 'boolean' },
-  ],
-  impl: function(context,options,allowEmptyValue) {
-    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
-    return emptyValue.concat((options||'').split(',').map(code=> ({ code: code, text: code })));
-  }
-});
-
-jb.component('picklist.options',{
-  type: 'picklist.options',
-  params: [
-    { id: 'options', type: 'data', as: 'array', essential: true},
-    { id: 'allowEmptyValue', type: 'boolean' },
-  ],
-  impl: function(context,options,allowEmptyValue) {
-    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
-    return emptyValue.concat(options.map(code=> ({ code: code, text: code })));
-  }
-})
-
-jb.component('picklist.coded-options',{
-  type: 'picklist.options',
-  params: [
-    { id: 'options', as: 'array',essential: true },
-    { id: 'code', as: 'string', dynamic:true , essential: true },
-    { id: 'text', as: 'string', dynamic:true, essential: true } ,
-    { id: 'allowEmptyValue', type: 'boolean' },
-  ],
-  impl: function(context,options,code,text,allowEmptyValue) {
-    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
-    return emptyValue.concat(options.map(function(option) {
-      return {
-        code: code(null,option), text: text(null,option)
+        // ctrl + Up/Down
+//        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
+          if (!cmp.onkeydown) return;
+          cmp.onkeydown.filter(e=>
+            e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
+            .subscribe(e=> {
+              var diff = e.keyCode == 40 ? 1 : -1;
+              var selectedIndex = cmp.items.indexOf(cmp.state.selected);
+              if (selectedIndex == -1) return;
+              var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
+              jb.splice(cmp.items,[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
+          })
+//        })
       }
-    }))
-  }
+    })
 })
 
-jb.component('picklist.sorted-options', {
-  type: 'picklist.options',
-  params: [
-    { id: 'options', type: 'picklist.options', dynamic: true, essential: true, composite: true },
-    { id: 'marks', as: 'array', description: 'e.g input:80,group:90. 0 mark means hidden. no mark means 50' },
-  ],
-  impl: (ctx,optionsFunc,marks) => {
-    var options = optionsFunc() || [];
-    marks.forEach(mark=> {
-        var option = options.filter(opt=>opt.code == mark.code)[0];
-        if (option)
-          option.mark = Number(mark.mark || 50);
-    });
-    options = options.filter(op=>op.mark != 0);
-    options.sort((o1,o2)=>(o2.mark || 50) - (o1.mark || 50));
-    return options;
-  }
+jb.component('itemlist.drag-handle', {
+  description: 'put on the control inside the item which is used to drag the whole line',
+  type: 'feature',
+  impl: {$list: [ {$: 'css.class', class: 'drag-handle' }, {$: 'css', css:'{cursor: pointer}'} ] }
 })
 
-jb.component('picklist.promote',{
-  type: 'picklist.promote',
+jb.component('itemlist.shown-only-on-item-hover', {
+  type: 'feature', category: 'itemlist:75',
+  description: 'put on the control inside the item which is shown when the mouse enters the line',
+  impl: (ctx,cssClass,cond) => ({
+    class: 'jb-shown-on-item-hover',
+    css: '{ display: none }'
+  })
+})
+
+jb.component('itemlist.divider', {
+  type: 'feature',
   params: [
-    { id: 'groups', as: 'array'},
-    { id: 'options', as: 'array'},
+    { id: 'space', as: 'number', defaultValue: 5}
   ],
-  impl: (context,groups,options) =>
-    ({ groups: groups, options: options})
-});
+  impl : (ctx,space) =>
+    ({css: `>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: ${space}px }`})
+})
 ;
 
 (function() {
@@ -16086,6 +15963,174 @@ jb.component('itemlist-container.search-in-all-properties', {
 })()
 ;
 
+jb.component('picklist', {
+  type: 'control', category: 'input:80',
+  params: [
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'databind', as: 'ref'},
+    { id: 'options', type: 'picklist.options', dynamic: true, essential: true, defaultValue: {$ : 'picklist.optionsByComma'} },
+    { id: 'promote', type: 'picklist.promote', dynamic: true },
+    { id: 'style', type: 'picklist.style', defaultValue: { $: 'picklist.native' }, dynamic: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx,{
+      beforeInit: function(cmp) {
+        cmp.recalcOptions = function() {
+          var options = ctx.params.options(ctx);
+          var groupsHash = {};
+          var promotedGroups = (ctx.params.promote() || {}).groups || [];
+          var groups = [];
+          options.filter(x=>x.text).forEach(o=>{
+            var groupId = groupOfOpt(o);
+            var group = groupsHash[groupId] || { options: [], text: groupId};
+            if (!groupsHash[groupId]) {
+              groups.push(group);
+              groupsHash[groupId] = group;
+            }
+            group.options.push({text: o.text.split('.').pop(), code: o.code });
+          })
+          groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
+          jb.ui.setState(cmp,{
+            groups: groups,
+            options: options,
+            hasEmptyOption: options.filter(x=>!x.text)[0]
+          })
+        }
+        cmp.recalcOptions();
+        jb.ui.refObservable(ctx.params.databind,cmp).subscribe(e=>
+          cmp.onChange && cmp.onChange(jb.val(e.ref)))
+      },
+    })
+})
+
+function groupOfOpt(opt) {
+  if (!opt.group && opt.text.indexOf('.') == -1)
+    return '---';
+  return opt.group || opt.text.split('.').shift();
+}
+
+jb.component('picklist.dynamic-options', {
+  type: 'feature',
+  params: [
+    { id: 'recalcEm', as: 'single'}
+  ],
+  impl: (ctx,recalcEm) => ({
+    init: cmp =>
+      recalcEm && recalcEm.subscribe &&
+        recalcEm.takeUntil( cmp.destroyed )
+        .subscribe(e=>
+            cmp.recalcOptions())
+  })
+})
+
+jb.component('picklist.onChange', {
+  type: 'feature',
+  description: 'action on picklist selection',
+  params: [
+    { id: 'action', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,action) => ({
+    init: cmp =>
+      cmp.onChange = val => action(ctx.setData(val))
+  })
+})
+
+// ********* options
+
+jb.component('picklist.optionsByComma',{
+  type: 'picklist.options',
+  params: [
+    { id: 'options', as: 'string', essential: true},
+    { id: 'allowEmptyValue', type: 'boolean' },
+  ],
+  impl: function(context,options,allowEmptyValue) {
+    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+    return emptyValue.concat((options||'').split(',').map(code=> ({ code: code, text: code })));
+  }
+});
+
+jb.component('picklist.options',{
+  type: 'picklist.options',
+  params: [
+    { id: 'options', type: 'data', as: 'array', essential: true},
+    { id: 'allowEmptyValue', type: 'boolean' },
+  ],
+  impl: function(context,options,allowEmptyValue) {
+    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+    return emptyValue.concat(options.map(code=> ({ code: code, text: code })));
+  }
+})
+
+jb.component('picklist.coded-options',{
+  type: 'picklist.options',
+  params: [
+    { id: 'options', as: 'array',essential: true },
+    { id: 'code', as: 'string', dynamic:true , essential: true },
+    { id: 'text', as: 'string', dynamic:true, essential: true } ,
+    { id: 'allowEmptyValue', type: 'boolean' },
+  ],
+  impl: function(context,options,code,text,allowEmptyValue) {
+    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+    return emptyValue.concat(options.map(function(option) {
+      return {
+        code: code(null,option), text: text(null,option)
+      }
+    }))
+  }
+})
+
+jb.component('picklist.sorted-options', {
+  type: 'picklist.options',
+  params: [
+    { id: 'options', type: 'picklist.options', dynamic: true, essential: true, composite: true },
+    { id: 'marks', as: 'array', description: 'e.g input:80,group:90. 0 mark means hidden. no mark means 50' },
+  ],
+  impl: (ctx,optionsFunc,marks) => {
+    var options = optionsFunc() || [];
+    marks.forEach(mark=> {
+        var option = options.filter(opt=>opt.code == mark.code)[0];
+        if (option)
+          option.mark = Number(mark.mark || 50);
+    });
+    options = options.filter(op=>op.mark != 0);
+    options.sort((o1,o2)=>(o2.mark || 50) - (o1.mark || 50));
+    return options;
+  }
+})
+
+jb.component('picklist.promote',{
+  type: 'picklist.promote',
+  params: [
+    { id: 'groups', as: 'array'},
+    { id: 'options', as: 'array'},
+  ],
+  impl: (context,groups,options) =>
+    ({ groups: groups, options: options})
+});
+;
+
+jb.type('theme');
+
+jb.component('group.theme', {
+  type: 'feature',
+  params: [
+    { id: 'theme', type: 'theme' },
+  ],
+  impl: (context,theme) => ({
+    extendCtxOnce: (ctx,cmp) => 
+      ctx.setVars(theme)
+  })
+})
+
+jb.component('theme.material-design', {
+  type: 'theme',
+  impl: () => ({
+  	'$theme.editable-text': 'editable-text.mdl-input'
+  })
+})
+;
+
 
 jb.component('material-icon', {
 	type: 'control', category: 'control:50',
@@ -16273,27 +16318,6 @@ jb.component('editable-number.mdl-slider', {
 })
 ;
 
-jb.type('theme');
-
-jb.component('group.theme', {
-  type: 'feature',
-  params: [
-    { id: 'theme', type: 'theme' },
-  ],
-  impl: (context,theme) => ({
-    extendCtx: (ctx,cmp) => 
-      ctx.setVars(theme)
-  })
-})
-
-jb.component('theme.material-design', {
-  type: 'theme',
-  impl: () => ({
-  	'$theme.editable-text': 'editable-text.mdl-input'
-  })
-})
-;
-
 jb.component('table', {
   type: 'control', category: 'group:80,common:70',
   params: [
@@ -16361,6 +16385,54 @@ jb.component('table.init', {
         }
       },
   })
+})
+;
+
+jb.component('tabs', {
+	type: 'control', category: 'group:80',
+	params: [
+		{ id: 'tabs', type: 'control[]', essential: true, flattenArray: true, dynamic: true },
+		{ id: 'style', type: 'tabs.style', dynamic: true, defaultValue: { $: 'tabs.simple' } },
+		{ id: 'features', type: 'feature[]', dynamic: true },
+	],
+  impl: ctx =>
+    jb.ui.ctrl(ctx)
+})
+
+jb.component('group.init-tabs', {
+  type: 'feature', category: 'group:0',
+  params: [
+    { id: 'keyboardSupport', as: 'boolean' },
+    { id: 'autoFocus', as: 'boolean' }
+  ],
+  impl: ctx => ({
+    init: cmp => {
+			cmp.tabs = ctx.vars.$model.tabs();
+      cmp.titles = cmp.tabs.map(tab=>tab.jb_title(ctx));
+			cmp.state.shown = 0;
+
+      cmp.show = index =>
+        jb.ui.setState(cmp,{shown: index},null,ctx);
+
+      cmp.next = diff =>
+        cmp.setState({shown: (cmp.state.index + diff + cmp.ctrls.length) % cmp.ctrls.length});
+    },
+  })
+})
+
+jb.component('tabs.simple', {
+  type: 'group.style',
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('div',{}, [
+			  h('div',{class: 'tabs-header'}, cmp.titles.map((title,index)=>
+					h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect' + (index == state.shown ? ' selected-tab': ''),
+						onclick: ev=>cmp.show(index)},title))),
+				h('div',{class: 'tabs-content'}, h(jb.ui.renderable(cmp.tabs[state.shown]) )) ,
+				]),
+		css : `>.tabs-header>.selected-tab { border-bottom: 2px solid #66afe9 }
+		`,
+    features :[{$: 'group.init-tabs'}, {$: 'mdl-style.init-dynamic', query: '.mdl-js-button'}]
+  }
 })
 ;
 
@@ -16443,51 +16515,18 @@ jb.component('label.mdl-button', {
 });
 ;
 
-jb.component('tabs', {
-	type: 'control', category: 'group:80',
+jb.component('goto-url', {
+	type: 'action',
+	description: 'navigate/open a new web page, change href location',
 	params: [
-		{ id: 'tabs', type: 'control[]', essential: true, flattenArray: true, dynamic: true },
-		{ id: 'style', type: 'tabs.style', dynamic: true, defaultValue: { $: 'tabs.simple' } },
-		{ id: 'features', type: 'feature[]', dynamic: true },
+		{ id: 'url', as:'string', essential: true },
+		{ id: 'target', type:'enum', values: ['new tab','self'], defaultValue:'new tab', as:'string'}
 	],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
-})
-
-jb.component('group.init-tabs', {
-  type: 'feature', category: 'group:0',
-  params: [
-    { id: 'keyboardSupport', as: 'boolean' },
-    { id: 'autoFocus', as: 'boolean' }
-  ],
-  impl: ctx => ({
-    init: cmp => {
-			cmp.tabs = ctx.vars.$model.tabs();
-      cmp.titles = cmp.tabs.map(tab=>tab.jb_title(ctx));
-			cmp.state.shown = 0;
-
-      cmp.show = index =>
-        jb.ui.setState(cmp,{shown: index},null,ctx);
-
-      cmp.next = diff =>
-        cmp.setState({shown: (cmp.state.index + diff + cmp.ctrls.length) % cmp.ctrls.length});
-    },
-  })
-})
-
-jb.component('tabs.simple', {
-  type: 'group.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('div',{}, [
-			  h('div',{class: 'tabs-header'}, cmp.titles.map((title,index)=>
-					h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect' + (index == state.shown ? ' selected-tab': ''),
-						onclick: ev=>cmp.show(index)},title))),
-				h('div',{class: 'tabs-content'}, h(jb.ui.renderable(cmp.tabs[state.shown]) )) ,
-				]),
-		css : `>.tabs-header>.selected-tab { border-bottom: 2px solid #66afe9 }
-		`,
-    features :[{$: 'group.init-tabs'}, {$: 'mdl-style.init-dynamic', query: '.mdl-js-button'}]
-  }
+	impl: (ctx,url,target) => {
+		var _target = (target == 'new tab') ? '_blank' : '_self';
+		if (!ctx.probe)
+			window.open(url,_target);
+	}
 })
 ;
 
@@ -16607,6 +16646,93 @@ jb.component('button.mdl-card-flat', {
   impl :{$: 'custom-style',
       template: (cmp,state,h) => h('a',{class:'mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
       features :{$: 'mdl-style.init-dynamic'},
+  }
+})
+;
+
+jb.component('editable-text.input', {
+  type: 'editable-text.style',
+  impl :{$: 'custom-style',
+      features :{$: 'field.databind-text' },
+      template: (cmp,state,h) => h('input', {
+        value: state.model,
+        onchange: e => cmp.jbModel(e.target.value),
+        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
+    css: '{height: 16px}'
+  }
+})
+
+jb.component('editable-text.textarea', {
+	type: 'editable-text.style',
+  params: [
+    { id: 'rows', as: 'number', defaultValue: 4 },
+    { id: 'cols', as: 'number', defaultValue: 120 },
+  ],
+  impl :{$: 'custom-style',
+      features :{$: 'field.databind-text' },
+      template: (cmp,state,h) => h('textarea', {
+        rows: cmp.rows, cols: cmp.cols,
+        value: state.model, onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
+	}
+})
+
+jb.component('editable-text.mdl-input', {
+  type: 'editable-text.style',
+  params: [
+    { id: 'width', as: 'number' },
+  ],
+  impl :{$: 'custom-style',
+   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label' },[
+        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
+            value: state.model,
+            onchange: e => cmp.jbModel(e.target.value),
+            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+        }),
+        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title)
+      ]),
+      css: '{ {?width: %$width%px?} }',
+      features :[
+          {$: 'field.databind-text' },
+          {$: 'mdl-style.init-dynamic'}
+      ],
+  }
+})
+
+jb.component('editable-text.mdl-input-no-floating-label', {
+  type: 'editable-text.style',
+  params: [
+    { id: 'width', as: 'number' },
+  ],
+  impl :{$: 'custom-style',
+   template: (cmp,state,h) =>
+        h('input', { class: 'mdl-textfield__input', type: 'text',
+            value: state.model,
+            onchange: e => cmp.jbModel(e.target.value),
+            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+        }),
+      css: '{ {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
+      features :[
+          {$: 'field.databind-text' },
+          {$: 'mdl-style.init-dynamic'}
+      ],
+  }
+})
+
+jb.component('editable-text.mdl-search', {
+  type: 'editable-text.style',
+  impl :{$: 'custom-style',
+      template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[
+        h('input', { class: 'mdl-textfield__input', id: 'search_' + state.fieldId, type: 'text',
+            value: state.model,
+            onchange: e => cmp.jbModel(e.target.value),
+            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+        }),
+        h('label',{class: 'mdl-textfield__label', for: 'search_' + state.fieldId},state.title)
+      ]),
+      features: [
+          {$: 'field.databind-text' },
+          {$: 'mdl-style.init-dynamic'}
+      ],
   }
 })
 ;
@@ -16946,104 +17072,44 @@ jb.component('toolbar.simple', {
 })
 ;
 
-jb.component('goto-url', {
-	type: 'action',
-	description: 'navigate/open a new web page, change href location',
-	params: [
-		{ id: 'url', as:'string', essential: true },
-		{ id: 'target', type:'enum', values: ['new tab','self'], defaultValue:'new tab', as:'string'}
-	],
-	impl: (ctx,url,target) => {
-		var _target = (target == 'new tab') ? '_blank' : '_self';
-		if (!ctx.probe)
-			window.open(url,_target);
-	}
-})
-;
-
-jb.component('editable-text.input', {
-  type: 'editable-text.style',
+jb.component('table.with-headers', {
+  type: 'table.style',
   impl :{$: 'custom-style',
-      features :{$: 'field.databind-text' },
-      template: (cmp,state,h) => h('input', {
-        value: state.model,
-        onchange: e => cmp.jbModel(e.target.value),
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-    css: '{height: 16px}'
+    template: (cmp,state,h) => h('table',{},[
+        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
+        h('tbody',{class: 'jb-drag-parent'},
+            state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
+              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item)) : f.fieldData(item))))
+              ,item))
+        ),
+        state.items.length == 0 ? 'no items' : ''
+        ]),
+    features:{$: 'table.init'},
+    css: `{border-spacing: 0; text-align: left}
+    >tbody>tr>td { padding-right: 2px }
+    `
   }
 })
 
-jb.component('editable-text.textarea', {
-	type: 'editable-text.style',
+
+
+jb.component('table.mdl', {
+  type: 'table.style',
   params: [
-    { id: 'rows', as: 'number', defaultValue: 4 },
-    { id: 'cols', as: 'number', defaultValue: 120 },
+    { id: 'classForTable', as: 'string', defaultValue: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp'},
+    { id: 'classForTd', as: 'string', defaultValue: 'mdl-data-table__cell--non-numeric'},
   ],
   impl :{$: 'custom-style',
-      features :{$: 'field.databind-text' },
-      template: (cmp,state,h) => h('textarea', {
-        rows: cmp.rows, cols: cmp.cols,
-        value: state.model, onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-	}
-})
-
-jb.component('editable-text.mdl-input', {
-  type: 'editable-text.style',
-  params: [
-    { id: 'width', as: 'number' },
-  ],
-  impl :{$: 'custom-style',
-   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label' },[
-        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
-            value: state.model,
-            onchange: e => cmp.jbModel(e.target.value),
-            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
-        }),
-        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title)
-      ]),
-      css: '{ {?width: %$width%px?} }',
-      features :[
-          {$: 'field.databind-text' },
-          {$: 'mdl-style.init-dynamic'}
-      ],
-  }
-})
-
-jb.component('editable-text.mdl-input-no-floating-label', {
-  type: 'editable-text.style',
-  params: [
-    { id: 'width', as: 'number' },
-  ],
-  impl :{$: 'custom-style',
-   template: (cmp,state,h) =>
-        h('input', { class: 'mdl-textfield__input', type: 'text',
-            value: state.model,
-            onchange: e => cmp.jbModel(e.target.value),
-            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
-        }),
-      css: '{ {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
-      features :[
-          {$: 'field.databind-text' },
-          {$: 'mdl-style.init-dynamic'}
-      ],
-  }
-})
-
-jb.component('editable-text.mdl-search', {
-  type: 'editable-text.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[
-        h('input', { class: 'mdl-textfield__input', id: 'search_' + state.fieldId, type: 'text',
-            value: state.model,
-            onchange: e => cmp.jbModel(e.target.value),
-            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
-        }),
-        h('label',{class: 'mdl-textfield__label', for: 'search_' + state.fieldId},state.title)
-      ]),
-      features: [
-          {$: 'field.databind-text' },
-          {$: 'mdl-style.init-dynamic'}
-      ],
+    template: (cmp,state,h) => h('table',{ class: cmp.classForTable },[
+        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, class: cmp.classForTd, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
+        h('tbody',{class: 'jb-drag-parent'},
+            state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
+              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item)) : f.fieldData(item))))
+              ,item))
+        ),
+        state.items.length == 0 ? 'no items' : ''
+        ]),
+    features:{$: 'table.init'},
   }
 })
 ;
@@ -17171,6 +17237,92 @@ jb.component('picklist.groups', {
  { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; color: #555555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; }
 select:focus { border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
 select::-webkit-input-placeholder { color: #999; }`
+  }
+})
+;
+
+jb.component('property-sheet.titles-above', {
+  type: 'group.style',
+  params: [
+    { id: 'spacing', as: 'number', defaultValue: 20 }
+  ],
+  impl :{$: 'custom-style', 
+    features :{$: 'group.init-group'},
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property'},[
+            h('label',{ class: 'property-title'},ctrl.title),
+            h(ctrl)
+    ]))),
+    css: `>.property { margin-bottom: %$spacing%px }
+      >.property:last-child { margin-bottom:0 }
+      >.property>.property-title {
+        width:100px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        vertical-align:top;
+        margin-top:2px;
+        font-size:14px;
+      }
+      >.property>div { display:inline-block }`
+  }
+})
+
+jb.component('property-sheet.titles-above-float-left', {
+  type: 'group.style',
+  params: [
+    { id: 'spacing', as: 'number', defaultValue: 20 },
+    { id: 'fieldWidth', as: 'number', defaultValue: 200 },
+  ],
+  impl :{$: 'custom-style', 
+    features :{$: 'group.init-group'},
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property'},[
+          h('label',{ class: 'property-title'},ctrl.title),
+          h(ctrl)
+    ]))),
+    css: `>.property { 
+          float: left;
+          width: %$fieldWidth%px;
+          margin-right: %$spacing%px;
+        }
+      .clearfix { clear: both }
+      >.property:last-child { margin-right:0 }
+      >.property>.property-title {
+        margin-bottom: 3px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        vertical-align:top;
+        font-size:14px;
+      }`,
+  }
+})
+
+jb.component('property-sheet.titles-left', {
+  type: 'group.style',
+  params: [
+    { id: 'vSpacing', as: 'number', defaultValue: 20 },
+    { id: 'hSpacing', as: 'number', defaultValue: 20 },
+    { id: 'titleWidth', as: 'number', defaultValue: 100 },
+  ],
+  impl :{$: 'custom-style', 
+    features :{$: 'group.init-group'},
+    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property'},[
+          h('label',{ class: 'property-title'}, ctrl.title),
+          h(ctrl)
+    ]))),
+    css: `>.property { margin-bottom: %$vSpacing%px; display: flex }
+      >.property:last-child { margin-bottom:0px }
+      >.property>.property-title {
+        width: %$titleWidth%px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        vertical-align:top;
+        margin-top:2px;
+        font-size:14px;
+        margin-right: %$hSpacing%px;
+      }
+      >.property>*:last-child { margin-right:0 }`
   }
 })
 ;
@@ -17740,133 +17892,5 @@ class Json {
 		}
 	}
 }
-;
-
-jb.component('table.with-headers', {
-  type: 'table.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('table',{},[
-        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
-        h('tbody',{class: 'jb-drag-parent'},
-            state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item)) : f.fieldData(item))))
-              ,item))
-        ),
-        state.items.length == 0 ? 'no items' : ''
-        ]),
-    features:{$: 'table.init'},
-    css: `{border-spacing: 0; text-align: left}
-    >tbody>tr>td { padding-right: 2px }
-    `
-  }
-})
-
-
-
-jb.component('table.mdl', {
-  type: 'table.style',
-  params: [
-    { id: 'classForTable', as: 'string', defaultValue: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp'},
-    { id: 'classForTd', as: 'string', defaultValue: 'mdl-data-table__cell--non-numeric'},
-  ],
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('table',{ class: cmp.classForTable },[
-        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, class: cmp.classForTd, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
-        h('tbody',{class: 'jb-drag-parent'},
-            state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item)) : f.fieldData(item))))
-              ,item))
-        ),
-        state.items.length == 0 ? 'no items' : ''
-        ]),
-    features:{$: 'table.init'},
-  }
-})
-;
-
-jb.component('property-sheet.titles-above', {
-  type: 'group.style',
-  params: [
-    { id: 'spacing', as: 'number', defaultValue: 20 }
-  ],
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group'},
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property'},[
-            h('label',{ class: 'property-title'},ctrl.title),
-            h(ctrl)
-    ]))),
-    css: `>.property { margin-bottom: %$spacing%px }
-      >.property:last-child { margin-bottom:0 }
-      >.property>.property-title {
-        width:100px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        margin-top:2px;
-        font-size:14px;
-      }
-      >.property>div { display:inline-block }`
-  }
-})
-
-jb.component('property-sheet.titles-above-float-left', {
-  type: 'group.style',
-  params: [
-    { id: 'spacing', as: 'number', defaultValue: 20 },
-    { id: 'fieldWidth', as: 'number', defaultValue: 200 },
-  ],
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group'},
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property'},[
-          h('label',{ class: 'property-title'},ctrl.title),
-          h(ctrl)
-    ]))),
-    css: `>.property { 
-          float: left;
-          width: %$fieldWidth%px;
-          margin-right: %$spacing%px;
-        }
-      .clearfix { clear: both }
-      >.property:last-child { margin-right:0 }
-      >.property>.property-title {
-        margin-bottom: 3px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        font-size:14px;
-      }`,
-  }
-})
-
-jb.component('property-sheet.titles-left', {
-  type: 'group.style',
-  params: [
-    { id: 'vSpacing', as: 'number', defaultValue: 20 },
-    { id: 'hSpacing', as: 'number', defaultValue: 20 },
-    { id: 'titleWidth', as: 'number', defaultValue: 100 },
-  ],
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group'},
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property'},[
-          h('label',{ class: 'property-title'}, ctrl.title),
-          h(ctrl)
-    ]))),
-    css: `>.property { margin-bottom: %$vSpacing%px; display: flex }
-      >.property:last-child { margin-bottom:0px }
-      >.property>.property-title {
-        width: %$titleWidth%px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        margin-top:2px;
-        font-size:14px;
-        margin-right: %$hSpacing%px;
-      }
-      >.property>*:last-child { margin-right:0 }`
-  }
-})
 ;
 

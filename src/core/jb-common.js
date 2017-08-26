@@ -499,7 +499,7 @@ jb.component('object',{
 
 jb.component('json.stringify', {
 	params: [
-		{ id: 'value', defaultValue: '%%', as:'single'},
+		{ id: 'value', defaultValue: '%%' },
 		{ id: 'space', as: 'string', description: 'use space or tab to make pretty output' }
 	],
 	impl: (context,value,space) =>
