@@ -12,12 +12,10 @@ jb.component('table.with-headers', {
         ]),
     features:{$: 'table.init'},
     css: `{border-spacing: 0; text-align: left}
-    >tbody>tr>td { padding-right: 2px }
+    >tbody>tr>td { padding-right: 5px }
     `
   }
 })
-
-
 
 jb.component('table.mdl', {
   type: 'table.style',
@@ -27,7 +25,17 @@ jb.component('table.mdl', {
   ],
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('table',{ class: cmp.classForTable },[
-        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, class: cmp.classForTd, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
+        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{
+          'jb-ctx': f.ctxId, 
+          class: [cmp.classForTd]
+            .concat([ 
+              (state.sortOptions && state.sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'asc' ? 'mdl-data-table__header--sorted-ascending': '',
+              (state.sortOptions && state.sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'des' ? 'mdl-data-table__header--sorted-descending': '',
+            ]).filter(x=>x).join(' '), 
+          style: { width: f.width ? f.width + 'px' : ''},
+          onclick: ev => cmp.toggleSort(f),
+          }
+          ,f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
               h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item)) : f.fieldData(item))))
@@ -35,6 +43,9 @@ jb.component('table.mdl', {
         ),
         state.items.length == 0 ? 'no items' : ''
         ]),
-    features:{$: 'table.init'},
+    features: [
+      {$: 'table.init'},
+      {$: 'table.init-sort'}
+    ],
   }
 })

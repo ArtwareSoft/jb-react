@@ -48,6 +48,7 @@ jb.component('studio.open-property-menu', {
         {$: 'menu.action',
           title: 'Inteliscript editor',
           action :{$: 'studio.open-jb-editor', path: '%$path%' },
+          shortcut: 'Ctrl+I',
           icon: 'code'
         },
         {$: 'menu.action',

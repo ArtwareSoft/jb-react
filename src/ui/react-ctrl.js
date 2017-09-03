@@ -103,10 +103,6 @@ class JbComponent {
 		return ReactComp;
 	}
 
-	compileJsx() {
-		// todo: compile template if string - cache result
-	}
-
 	injectCss(cmp) {
 		var elem = cmp.base;
 		if (!elem || !elem.setAttribute)
@@ -298,8 +294,10 @@ ui.renderWidget = function(profile,elem) {
 					jb.resources = jb.ui.originalResources || jb.resources;
 					previewElem = ui.render(ui.h(R),elem,previewElem);
 				}
-				st.pageChange.debounceTime(500).subscribe(page=>
-					this.setState({profile: {$: page}}));
+				st.pageChange.debounceTime(500)
+					.filter(page=>page != this.state.profile.$)
+					.subscribe(page=>
+						this.setState({profile: {$: page}}));
 				st.scriptChange.debounceTime(500).subscribe(_=>
 						this.setState(null));
 			}

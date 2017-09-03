@@ -32,8 +32,8 @@ jb.component('property-sheet.titles-above-float-left', {
   ],
   impl :{$: 'custom-style', 
     features :{$: 'group.init-group'},
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property'},[
+    template: (cmp,state,h) => h('div',{ class: 'clearfix'}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property clearfix'},[
           h('label',{ class: 'property-title'},ctrl.title),
           h(ctrl)
     ]))),
@@ -42,7 +42,10 @@ jb.component('property-sheet.titles-above-float-left', {
           width: %$fieldWidth%px;
           margin-right: %$spacing%px;
         }
-      .clearfix { clear: both }
+      .clearfix:after {
+        content: "";
+        clear: both;
+      }
       >.property:last-child { margin-right:0 }
       >.property>.property-title {
         margin-bottom: 3px;

@@ -1,854 +1,3 @@
-jb.component('call', {
- 	type: '*',
- 	params: [
- 		{ id: 'param', as: 'string' }
- 	],
- 	impl: function(context,param) {
- 	  var paramObj = context.componentContext && context.componentContext.params[param];
-      if (typeof(paramObj) == 'function')
- 		return paramObj(new jb.jbCtx(context, {
- 			data: context.data,
- 			vars: context.vars,
- 			componentContext: context.componentContext.componentContext,
- 			forcePath: paramObj.srcPath // overrides path - use the former path
- 		}));
-      else
-        return paramObj;
- 	}
-});
-
-jb.pipe = function(context,items,ptName) {
-	var start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
-	if (typeof context.profile.items == 'string')
-		return context.runInner(context.profile.items,null,'items');
-	var profiles = jb.toarray(context.profile.items || context.profile[ptName]);
-	if (context.profile.items && context.profile.items.sugar)
-		var innerPath =  '' ;
-	else
-		var innerPath = context.profile[ptName] ? (ptName + '~') : 'items~';
-
-	if (ptName == '$pipe') // promise pipe
-		return profiles.reduce((deferred,prof,index) => {
-			return deferred.then(data=>
-				jb.synchArray(data))
-			.then(data=>
-				step(prof,index,data))
-		}, Promise.resolve(start))
-
-	return profiles.reduce((data,prof,index) =>
-		step(prof,index,data), start)
-
-
-	function step(profile,i,data) {
-    if (profile && profile.$disabled) return data;
-		var parentParam = (i == profiles.length - 1 && context.parentParam) ? context.parentParam : { as: 'array'};
-		if (jb.profileType(profile) == 'aggregator')
-			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
-		return [].concat.apply([],data.map(item =>
-				jb.run(new jb.jbCtx(context,{data: item, profile: profile, path: innerPath+i}), parentParam))
-			.filter(x=>x!=null)
-			.map(x=> Array.isArray(jb.val(x)) ? jb.val(x) : x ));
-	}
-}
-
-jb.component('pipeline',{
-	type: 'data',
-	description: 'map data arrays one after the other',
-	params: [
-		{ id: 'items', type: "data,aggregator[]", ignore: true, essential: true, composite: true },
-	],
-	impl: (ctx,items) => jb.pipe(ctx,items,'$pipeline')
-})
-
-jb.component('pipe', { // synched pipeline
-	type: 'data',
-	description: 'map asynch data arrays',
-	params: [
-		{ id: 'items', type: "data,aggregator[]", ignore: true, essential: true, composite: true },
-	],
-	impl: (ctx,items) => jb.pipe(ctx,items,'$pipe')
-})
-
-jb.component('data.if', {
- 	type: 'data',
- 	params: [
- 		{ id: 'condition', type: 'boolean', as: 'boolean', essential: true},
- 		{ id: 'then', essential: true, dynamic: true },
- 		{ id: 'else', dynamic: true },
- 	],
- 	impl: (ctx,cond,_then,_else) =>
- 		cond ? _then() : _else()
-});
-
-jb.component('action.if', {
- 	type: 'action',
- 	description: 'if then else',
- 	params: [
- 		{ id: 'condition', type: 'boolean', as: 'boolean', essential: true},
- 		{ id: 'then', type: 'action', essential: true, dynamic: true },
- 		{ id: 'else', type: 'action', dynamic: true },
- 	],
- 	impl: (ctx,cond,_then,_else) =>
- 		cond ? _then() : _else()
-});
-
-// jb.component('apply', {
-// 	description: 'run a function',
-//  	type: '*',
-//  	params: [
-//  		{ id: 'func', as: 'single'},
-//  	],
-//  	impl: (ctx,func) => {
-//  		if (typeof func == 'function')
-//  	  		return func(ctx);
-//  	}
-// });
-
-jb.component('jb-run', {
- 	type: 'action',
- 	params: [
- 		{ id: 'profile', as: 'string', essential: true, description: 'profile name'},
- 		{ id: 'params', as: 'single' },
- 	],
- 	impl: (ctx,profile,params) =>
- 		ctx.run(Object.assign({$:profile},params || {}))
-});
-
-
-jb.component('list', {
-	type: 'data',
-	description: 'also flatten arrays',
-	params: [
-		{ id: 'items', type: "data[]", as: 'array', composite: true }
-	],
-	impl: function(context,items) {
-		var out = [];
-		items.forEach(item => {
-			if (Array.isArray(item))
-				out = out.concat(item);
-			else
-				out.push(item);
-		});
-		return out;
-	}
-});
-
-jb.component('firstSucceeding', {
-	type: 'data',
-	params: [
-		{ id: 'items', type: "data[]", as: 'array', composite: true }
-	],
-	impl: function(context,items) {
-		for(var i=0;i<items.length;i++)
-			if (jb.val(items[i]))
-				return items[i];
-		// return last one if zero or empty string
-		var last = items.slice(-1)[0];
-		return (last != null) && jb.val(last);
-	}
-});
-
-jb.component('first', {
-	type: 'data',
-	params: [
-		{ id: 'items', type: "data", as: 'array', composite: true }
-	],
-	impl: (ctx,items) => items[0]
-});
-
-jb.component('property-names', {
-	type: 'data',
-  description: 'Object.getOwnPropertyNames',
-	params: [
-		{ id: 'obj', defaultValue: '%%', as: 'single' }
-	],
-	impl: (ctx,obj) =>
-		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0)
-})
-
-jb.component('properties',{
-	type: 'data',
-	params: [
-		{ id: 'obj', defaultValue: '%%', as: 'single' }
-	],
-	impl: (context,obj) =>
-		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
-			({id: id, val: obj[id], index: index}))
-});
-
-jb.component('prefix', {
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', essential: true },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-	],
-	impl: (context,separator,text) =>
-		(text||'').substring(0,text.indexOf(separator))
-});
-
-jb.component('suffix', {
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', essential: true },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-	],
-	impl: (context,separator,text) =>
-		(text||'').substring(text.lastIndexOf(separator)+separator.length)
-});
-
-jb.component('remove-prefix', {
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', essential: true },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-	],
-	impl: (context,separator,text) =>
-		text.indexOf(separator) == -1 ? text : text.substring(text.indexOf(separator)+separator.length)
-});
-
-jb.component('remove-suffix',{
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', essential: true },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-	],
-	impl: (context,separator,text) =>
-		text.lastIndexOf(separator) == -1 ? text : text.substring(0,text.lastIndexOf(separator))
-});
-
-jb.component('remove-suffix-regex',{
-	type: 'data',
-	params: [
-		{ id: 'suffix', as: 'string', essential: true, description: 'regular expression. e.g [0-9]*' },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-	],
-	impl: function(context,suffix,text) {
-		context.profile.prefixRegexp = context.profile.prefixRegexp || new RegExp(suffix+'$');
-		var m = (text||'').match(context.profile.prefixRegexp);
-		return (m && (text||'').substring(m.index+1)) || text;
-	}
-});
-
-jb.component('write-value',{
-	type: 'action',
-	params: [
-		{ id: 'to', as: 'ref', essential: true },
-		{ id: 'value', essential: true}
-	],
-	impl: (ctx,to,value) =>
-		jb.writeValue(to,jb.val(value),ctx)
-});
-
-jb.component('remove-from-array', {
-	type: 'action',
-	params: [
-		{ id: 'array', as: 'ref', essential: true },
-		{ id: 'itemToRemove', as: 'single', description: 'choose item or index' },
-		{ id: 'index', as: 'number', description: 'choose item or index' },
-	],
-	impl: (ctx,array,itemToRemove,index) => {
-		var ar = jb.toarray(array);
-		var index = itemToRemove ? ar.indexOf(item) : index;
-		if (index != -1 && ar.length > index)
-			jb.splice(array,[[index,1]],ctx)
-	}
-});
-
-jb.component('toggle-boolean-value',{
-	type: 'action',
-	params: [
-		{ id: 'of', as: 'ref' },
-	],
-	impl: (ctx,_of) =>
-		jb.writeValue(_of,jb.val(_of) ? false : true)
-});
-
-
-jb.component('slice', {
-	type: 'aggregator',
-	params: [
-		{ id: 'start', as: 'number', defaultValue: 0, description: '0-based index', essential: true },
-		{ id: 'end', as: 'number', essential: true, description: '0-based index of where to end the selection (not including itself)' }
-	],
-	impl: function(context,begin,end) {
-		if (!context.data || !context.data.slice) return null;
-		return end ? context.data.slice(begin,end) : context.data.slice(begin);
-	}
-});
-
-jb.component('numeric-sort', { // with side effects!!! decision made for performance reasons
-	type: 'aggregator',
-	params: [
-		{ id: 'propertyName', as: 'string', essential: true }
-	],
-	impl: (ctx,prop) => {
-		if (!ctx.data || ! Array.isArray(ctx.data)) return null;
-		return ctx.data.sort((x,y)=>y[prop] - x[prop]);
-	}
-});
-
-jb.component('wrap-as-object', {
-	type: 'aggregator',
-	params: [
-    {id: 'arrayProperty', as: 'string', defaultValue: 'items'}
-	],
-	impl: (ctx,prop) =>
-    jb.obj(prop,ctx.data)
-});
-
-
-jb.component('not', {
-	type: 'boolean',
-	params: [
-		{ id: 'of', type: 'boolean', as: 'boolean', essential: true, composite: true}
-	],
-	impl: (context, of) => !of
-});
-
-jb.component('and', {
-	type: 'boolean',
-	params: [
-		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true }
-	],
-	impl: function(context) {
-		var items = context.profile.$and || context.profile.items || [];
-		var innerPath =  context.profile.$and ? '$and~' : 'items~';
-		for(var i=0;i<items.length;i++) {
-			if (!context.runInner(items[i], { type: 'boolean' }, innerPath + i))
-				return false;
-		}
-		return true;
-	}
-});
-
-jb.component('or', {
-	type: 'boolean',
-	params: [
-		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true }
-	],
-	impl: function(context) {
-		var items = context.profile.$or || context.profile.items || [];
-		var innerPath =  context.profile.$or ? '$or~' : 'items~';
-		for(var i=0;i<items.length;i++) {
-			if (context.runInner(items[i],{ type: 'boolean' },innerPath+i))
-				return true;
-		}
-		return false;
-	}
-});
-
-jb.component('contains',{
-	type: 'boolean',
-	params: [
-		{ id: 'text', type: 'data[]', as: 'array', essential: true },
-		{ id: 'allText', defaultValue: '%%', as:'string'},
-		{ id: 'inOrder', defaultValue: true, as:'boolean'},
-	],
-	impl: function(context,text,allText,inOrder) {
-      var prevIndex = -1;
-      for(var i=0;i<text.length;i++) {
-      	var newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1);
-      	if (newIndex == -1) return false;
-      	prevIndex = inOrder ? newIndex : -1;
-      }
-      return true;
-	}
-})
-
-jb.component('not-contains', {
-	type: 'boolean',
-	params: [
-		{ id: 'text', type: 'data[]', as: 'array', essential: true },
-		{ id: 'allText', defaultValue: '%%', as:'array'}
-	],
-	impl :{$not: {$: 'contains', text: '%$text%', allText :'%$allText%'}}
-})
-
-jb.component('starts-with', {
-	type: 'boolean',
-	params: [
-		{ id: 'startsWith', as: 'string', essential: true },
-		{ id: 'text', defaultValue: '%%', as:'string'}
-	],
-	impl: (context,startsWith,text) =>
-		text.lastIndexOf(startsWith,0) == 0
-})
-
-jb.component('ends-with',{
-	type: 'boolean',
-	params: [
-		{ id: 'endsWith', as: 'string', essential: true },
-		{ id: 'text', defaultValue: '%%', as:'string'}
-	],
-	impl: (context,endsWith,text) =>
-		text.indexOf(endsWith,text.length-endsWith.length) !== -1
-})
-
-
-jb.component('filter',{
-	type: 'aggregator',
-	params: [
-		{ id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, essential: true }
-	],
-	impl: (context,filter) =>
-		jb.toarray(context.data).filter(item =>
-			filter(context,item))
-});
-
-jb.component('count', {
-	type: 'aggregator',
-	description: 'length, size of array',
-	params: [{ id: 'items', as:'array', defaultValue: '%%'}],
-	impl: (ctx,items) =>
-		items.length
-});
-
-jb.component('to-string', {
-	params: [
-		{ id: 'text', as: 'string', defaultValue: '%%', composite: true}
-	],
-	impl: (ctx,text) =>	text
-});
-
-jb.component('to-uppercase', {
-	params: [
-		{ id: 'text', as: 'string', defaultValue: '%%'}
-	],
-	impl: (ctx,text) =>
-		text.toUpperCase()
-});
-
-jb.component('to-lowercase', {
-	params: [
-		{ id: 'text', as: 'string', defaultValue: '%%'}
-	],
-	impl: (ctx,text) =>
-		text.toLowerCase()
-});
-
-jb.component('capitalize', {
-	params: [
-		{ id: 'text', as: 'string', defaultValue: '%%'}
-	],
-	impl: (ctx,text) =>
-		text.charAt(0).toUpperCase() + text.slice(1)
-});
-
-jb.component('join', {
-	params: [
-		{ id: 'separator', as: 'string', defaultValue:',', essential: true },
-		{ id: 'prefix', as: 'string' },
-		{ id: 'suffix', as: 'string' },
-		{ id: 'items', as: 'array', defaultValue: '%%'},
-		{ id: 'itemName', as: 'string', defaultValue: 'item'},
-		{ id: 'itemText', as: 'string', dynamic:true, defaultValue: '%%'}
-	],
-	type: 'aggregator',
-	impl: function(context,separator,prefix,suffix,items,itemName,itemText) {
-		var itemToText = (context.profile.itemText) ?
-			item => itemText(new jb.jbCtx(context, {data: item, vars: jb.obj(itemName,item) })) :
-			item => jb.tostring(item);	// performance
-
-		return prefix + items.map(itemToText).join(separator) + suffix;
-	}
-});
-
-jb.component('unique', {
-	params: [
-		{ id: 'id', as: 'string', dynamic: true, defaultValue: '%%' },
-		{ id: 'items', as: 'array', defaultValue: '%%'}
-	],
-	type: 'aggregator',
-	impl: (ctx,idFunc,items) => {
-		var _idFunc = idFunc.profile == '%%' ? x=>x : x => idFunc(ctx.setData(x));
-		return jb.unique(items,_idFunc);
-	}
-});
-
-jb.component('log', {
-	params: [
-		{ id: 'obj', as: 'single', defaultValue: '%%'}
-	],
-	impl: function(context,obj) {
-		var out = obj;
-		if (typeof GLOBAL != 'undefined' && typeof(obj) == 'object')
-			out = JSON.stringify(obj,null," ");
-		if (typeof window != 'undefined')
-			(window.parent || window).console.log(out);
-		else
-			console.log(out);
-		return out;
-	}
-});
-
-jb.component('asIs',{ params: [{id: '$asIs'}], impl: ctx => context.profile.$asIs });
-
-jb.component('object',{
-	impl: function(context) {
-		var result = {};
-		var obj = context.profile.$object || context.profile;
-		if (Array.isArray(obj)) return obj;
-		for(var prop in obj) {
-			if ((prop == '$' && obj[prop] == 'object') || obj[prop] == null)
-				continue;
-			result[prop] = context.runInner(obj[prop],null,prop);
-		}
-		return result;
-	}
-});
-
-jb.component('json.stringify', {
-	params: [
-		{ id: 'value', defaultValue: '%%', as:'single'},
-		{ id: 'space', as: 'string', description: 'use space or tab to make pretty output' }
-	],
-	impl: (context,value,space) =>
-			JSON.stringify(value,null,space)
-});
-
-jb.component('json.parse', {
-	params: [
-		{ id: 'text', as: 'string' }
-	],
-	impl: (ctx,text) =>	{
-		try {
-			return JSON.parse(text)
-		} catch (e) {
-			jb.logException(e,'json parse');
-		}
-	}
-});
-
-jb.component('split', {
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', defaultValue: ',' },
-		{ id: 'text', as: 'string', defaultValue: '%%'},
-		{ id: 'part', options: ',first,second,last,but first,but last' }
-	],
-	impl: function(context,separator,text,part) {
-		var out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
-		switch (part) {
-			case 'first': return out[0];
-			case 'second': return out[1];
-			case 'last': return out.pop();
-			case 'but first': return out.slice(1);
-			case 'but last': return out.slice(0,-1);
-			default: return out;
-		}
-	}
-});
-
-jb.component('replace', {
-	type: 'data',
-	params: [
-		{ id: 'find', as: 'string', essential: true },
-		{ id: 'replace', as: 'string', essential: true  },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-		{ id: 'useRegex', type: 'boolean', as: 'boolean', defaultValue: true},
-		{ id: 'regexFlags', as: 'string', defaultValue: 'g', description: 'g,i,m' }
-	],
-	impl: function(context,find,replace,text,useRegex,regexFlags) {
-		if (useRegex) {
-			return text.replace(new RegExp(find,regexFlags) ,replace);
-		} else
-			return text.replace(find,replace);
-	}
-});
-
-jb.component('touch', {
-	type: 'action',
-	params: [
-		{ id: 'data', as: 'ref'},
-	],
-	impl: function(context,data_ref) {
-		var val = Number(jb.val(data_ref));
-		jb.writeValue(data_ref,val ? val + 1 : 1);
-	}
-});
-
-jb.component('isNull', {
-	type: 'boolean',
-	params: [
-		{ id: 'obj', defaultValue: '%%'}
-	],
-	impl: (ctx, obj) => jb.val(obj) == null
-});
-
-jb.component('isEmpty', {
-	type: 'boolean',
-	params: [
-		{ id: 'item', as: 'single', defaultValue: '%%'}
-	],
-	impl: (ctx, item) =>
-		!item || (Array.isArray(item) && item.length == 0)
-});
-
-jb.component('notEmpty', {
-	type: 'boolean',
-	params: [
-		{ id: 'item', as: 'single', defaultValue: '%%'}
-	],
-	impl: (ctx, item) =>
-		item && !(Array.isArray(item) && item.length == 0)
-});
-
-jb.component('equals', {
-	type: 'boolean',
-	params: [
-		{ id: 'item1', as: 'single', essential: true },
-		{ id: 'item2', defaultValue: '%%', as: 'single' }
-	],
-	impl: (ctx, item1, item2) => item1 == item2
-});
-
-jb.component('not-equals', {
-	type: 'boolean',
-	params: [
-		{ id: 'item1', as: 'single', essential: true },
-		{ id: 'item2', defaultValue: '%%', as: 'single' }
-	],
-	impl: (ctx, item1, item2) => item1 != item2
-});
-
-jb.component('parent', {
-	type: 'data',
-	params: [
-		{ id: 'item', as: 'ref', defaultValue: '%%'}
-	],
-	impl: (ctx,item) =>
-		item && item.$jb_parent
-});
-
-jb.component('runActions', {
-	type: 'action',
-	params: [
-		{ id: 'actions', type:'action[]', ignore: true, composite: true, essential: true }
-	],
-	impl: function(context) {
-		if (!context.profile) debugger;
-		var actions = jb.toarray(context.profile.actions || context.profile['$runActions']);
-		if (context.profile.actions && context.profile.actions.sugar)
-			var innerPath =  '' ;
-		else
-			var innerPath = context.profile['$runActions'] ? '$runActions~' : 'items~';
-		return actions.reduce((def,action,index) => {
-			if (def && def.then)
-				return def.then(_ =>	context.runInner(action, { as: 'single'}, innerPath + index ))
-			else
-				return context.runInner(action, { as: 'single'}, innerPath + index );
-			},null)
-	}
-});
-
-// jb.component('delay', {
-// 	params: [
-// 		{ id: 'mSec', type: 'number', defaultValue: 1}
-// 	],
-// 	impl: ctx => jb.delay(ctx.params.mSec)
-// })
-
-jb.component('on-next-timer', {
-	description: 'run action after delay',
-	type: 'action',
-	params: [
-		{ id: 'action', type: 'action', dynamic: true, essential: true },
-		{ id: 'delay', type: 'number', defaultValue: 1}
-	],
-	impl: (ctx,action,delay) =>
-		jb.delay(delay,ctx).then(()=>
-			action())
-})
-
-jb.component('extract-prefix',{
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
-		{ id: 'text', as: 'string', defaultValue: '%%'},
-		{ id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex' },
-		{ id: 'keepSeparator', type: 'boolean', as: 'boolean' }
-	],
-	impl: function(context,separator,text,regex,keepSeparator) {
-		if (!regex) {
-			return text.substring(0,text.indexOf(separator)) + (keepSeparator ? separator : '');
-		} else { // regex
-			var match = text.match(separator);
-			if (match)
-				return text.substring(0,match.index) + (keepSeparator ? match[0] : '');
-		}
-	}
-});
-
-jb.component('extract-suffix',{
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
-		{ id: 'text', as: 'string', defaultValue: '%%'},
-		{ id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex' },
-		{ id: 'keepSeparator', type: 'boolean', as: 'boolean' }
-	],
-	impl: function(context,separator,text,regex,keepSeparator) {
-		if (!regex) {
-			return text.substring(text.lastIndexOf(separator) + (keepSeparator ? 0 : separator.length));
-		} else { // regex
-			var match = text.match(separator+'(?![\\s\\S]*' + separator +')'); // (?!) means not after, [\\s\\S]* means any char including new lines
-			if (match)
-				return text.substring(match.index + (keepSeparator ? 0 : match[0].length));
-		}
-	}
-});
-
-jb.component('range', {
-	type: 'data',
-	params: [
-		{ id: 'from', as: 'number', defaultValue: 1 },
-		{ id: 'to', as: 'number', defaultValue: 10 },
-	],
-	impl: (ctx,from,to) =>
-    Array.from(Array(to-from+1).keys()).map(x=>x+from)
-})
-
-jb.component('type-of', {
-	type: 'data',
-	params: [
-		{ id: 'obj', defaultValue: '%%' },
-	],
-	impl: (ctx,_obj) => {
-	  	var obj = jb.val(_obj);
-		return Array.isArray(obj) ? 'array' : typeof obj
-	}
-})
-
-jb.component('class-name', {
-	type: 'data',
-	params: [
-		{ id: 'obj', defaultValue: '%%' },
-	],
-	impl: (ctx,_obj) => {
-	  	var obj = jb.val(_obj);
-		return obj && obj.constructor && obj.constructor.name
-	}
-})
-
-jb.component('is-of-type', {
-  type: 'boolean',
-  params: [
-  	{ id: 'type', as: 'string', essential: true, description: 'string,boolean' },
-  	{ id: 'obj', defaultValue: '%%' },
-  ],
-  impl: (ctx,_type,_obj) => {
-  	var obj = jb.val(_obj);
-  	var objType = Array.isArray(obj) ? 'array' : typeof obj;
-  	return _type.split(',').indexOf(objType) != -1;
-  }
-})
-
-jb.component('in-group', {
-  type: 'boolean',
-  params: [
-  	{ id: 'group', as: 'array', essential: true },
-  	{ id: 'item', as: 'single', defaultValue: '%%' },
-  ],
-  impl: (ctx,group,item) =>
-  	group.indexOf(item) != -1
-})
-
-jb.component('http.get', {
-	params: [
-		{ id: 'url', as: 'string' },
-		{ id: 'json', as: 'boolean', description: 'convert result to json' }
-	],
-	impl: (ctx,url,_json) => {
-		if (ctx.probe)
-			return jb.http_get_cache[url];
-		var json = _json || url.match(/json$/);
-		return fetch(url)
-			  .then(r =>
-			  		json ? r.json() : r.text())
-				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
-			  .catch(e => jb.logException(e) || [])
-	}
-});
-
-jb.component('http.post', {
-  type: 'action',
-	params: [
-		{ id: 'url', as: 'string' },
-    { id: 'postData', as: 'single' },
-		{ id: 'jsonResult', as: 'boolean', description: 'convert result to json' }
-	],
-	impl: (ctx,url,postData,json) => {
-    var headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-		return fetch(url,{method: 'POST', headers: headers, body: JSON.stringify(postData) })
-			  .then(r =>
-			  		json ? r.json() : r.text())
-			  .catch(e => jb.logException(e) || [])
-	}
-});
-
-jb.component('isRef', {
-	params: [
-		{ id: 'obj', essential: true }
-	],
-	impl: (ctx,obj) => jb.isRef(obj)
-})
-
-jb.component('asRef', {
-	params: [
-		{ id: 'obj', essential: true }
-	],
-	impl: (ctx,obj) => jb.asRef(obj)
-})
-
-jb.component('data.switch', {
-  params: [
-  	{ id: 'cases', type: 'data.switch-case[]', as: 'array', essential: true, defaultValue: [] },
-  	{ id: 'default', dynamic: true },
-  ],
-  impl: (ctx,cases,defaultValue) => {
-  	for(var i=0;i<cases.length;i++)
-  		if (cases[i].condition(ctx))
-  			return cases[i].value(ctx)
-  	return defaultValue(ctx);
-  }
-})
-
-jb.component('data.switch-case', {
-  type: 'data.switch-case',
-  singleInType: true,
-  params: [
-  	{ id: 'condition', type: 'boolean', essential: true, dynamic: true },
-  	{ id: 'value', essential: true, dynamic: true },
-  ],
-  impl: ctx => ctx.params
-})
-
-jb.component('action.switch', {
-  type: 'action',
-  params: [
-  	{ id: 'cases', type: 'action.switch-case[]', as: 'array', essential: true, defaultValue: [] },
-  	{ id: 'defaultAction', type: 'action', dynamic: true },
-  ],
-  impl: (ctx,cases,defaultAction) => {
-  	for(var i=0;i<cases.length;i++)
-  		if (cases[i].condition(ctx))
-  			return cases[i].action(ctx)
-  	return defaultAction(ctx);
-  }
-})
-
-jb.component('action.switch-case', {
-  type: 'action.switch-case',
-  singleInType: true,
-  params: [
-  	{ id: 'condition', type: 'boolean', as: 'boolean', essential: true, dynamic: true },
-  	{ id: 'action', type: 'action' ,essential: true, dynamic: true },
-  ],
-  impl: ctx => ctx.params
-})
-;
-
 var jb = (function() {
 function jb_run(context,parentParam,settings) {
   try {
@@ -1613,6 +762,862 @@ Object.assign(jb,{
     jb.valueByRefHandler.asRef(obj),
   resourceChange: _ =>
     jb.valueByRefHandler.resourceChange,
+})
+;
+
+jb.component('call', {
+ 	type: '*',
+ 	params: [
+ 		{ id: 'param', as: 'string' }
+ 	],
+ 	impl: function(context,param) {
+ 	  var paramObj = context.componentContext && context.componentContext.params[param];
+      if (typeof(paramObj) == 'function')
+ 		return paramObj(new jb.jbCtx(context, {
+ 			data: context.data,
+ 			vars: context.vars,
+ 			componentContext: context.componentContext.componentContext,
+ 			forcePath: paramObj.srcPath // overrides path - use the former path
+ 		}));
+      else
+        return paramObj;
+ 	}
+});
+
+jb.pipe = function(context,items,ptName) {
+	var start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
+	if (typeof context.profile.items == 'string')
+		return context.runInner(context.profile.items,null,'items');
+	var profiles = jb.toarray(context.profile.items || context.profile[ptName]);
+	if (context.profile.items && context.profile.items.sugar)
+		var innerPath =  '' ;
+	else
+		var innerPath = context.profile[ptName] ? (ptName + '~') : 'items~';
+
+	if (ptName == '$pipe') // promise pipe
+		return profiles.reduce((deferred,prof,index) => {
+			return deferred.then(data=>
+				jb.synchArray(data))
+			.then(data=>
+				step(prof,index,data))
+		}, Promise.resolve(start))
+
+	return profiles.reduce((data,prof,index) =>
+		step(prof,index,data), start)
+
+
+	function step(profile,i,data) {
+    if (profile && profile.$disabled) return data;
+		var parentParam = (i == profiles.length - 1 && context.parentParam) ? context.parentParam : { as: 'array'};
+		if (jb.profileType(profile) == 'aggregator')
+			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
+		return [].concat.apply([],data.map(item =>
+				jb.run(new jb.jbCtx(context,{data: item, profile: profile, path: innerPath+i}), parentParam))
+			.filter(x=>x!=null)
+			.map(x=> Array.isArray(jb.val(x)) ? jb.val(x) : x ));
+	}
+}
+
+jb.component('pipeline',{
+	type: 'data',
+	description: 'map data arrays one after the other',
+	params: [
+		{ id: 'items', type: "data,aggregator[]", ignore: true, essential: true, composite: true },
+	],
+	impl: (ctx,items) => jb.pipe(ctx,items,'$pipeline')
+})
+
+jb.component('pipe', { // synched pipeline
+	type: 'data',
+	description: 'map asynch data arrays',
+	params: [
+		{ id: 'items', type: "data,aggregator[]", ignore: true, essential: true, composite: true },
+	],
+	impl: (ctx,items) => jb.pipe(ctx,items,'$pipe')
+})
+
+jb.component('data.if', {
+ 	type: 'data',
+ 	params: [
+ 		{ id: 'condition', type: 'boolean', as: 'boolean', essential: true},
+ 		{ id: 'then', essential: true, dynamic: true },
+ 		{ id: 'else', dynamic: true },
+ 	],
+ 	impl: (ctx,cond,_then,_else) =>
+ 		cond ? _then() : _else()
+});
+
+jb.component('action.if', {
+ 	type: 'action',
+ 	description: 'if then else',
+ 	params: [
+ 		{ id: 'condition', type: 'boolean', as: 'boolean', essential: true},
+ 		{ id: 'then', type: 'action', essential: true, dynamic: true },
+ 		{ id: 'else', type: 'action', dynamic: true },
+ 	],
+ 	impl: (ctx,cond,_then,_else) =>
+ 		cond ? _then() : _else()
+});
+
+// jb.component('apply', {
+// 	description: 'run a function',
+//  	type: '*',
+//  	params: [
+//  		{ id: 'func', as: 'single'},
+//  	],
+//  	impl: (ctx,func) => {
+//  		if (typeof func == 'function')
+//  	  		return func(ctx);
+//  	}
+// });
+
+jb.component('jb-run', {
+ 	type: 'action',
+ 	params: [
+ 		{ id: 'profile', as: 'string', essential: true, description: 'profile name'},
+ 		{ id: 'params', as: 'single' },
+ 	],
+ 	impl: (ctx,profile,params) =>
+ 		ctx.run(Object.assign({$:profile},params || {}))
+});
+
+
+jb.component('list', {
+	type: 'data',
+	description: 'also flatten arrays',
+	params: [
+		{ id: 'items', type: "data[]", as: 'array', composite: true }
+	],
+	impl: function(context,items) {
+		var out = [];
+		items.forEach(item => {
+			if (Array.isArray(item))
+				out = out.concat(item);
+			else
+				out.push(item);
+		});
+		return out;
+	}
+});
+
+jb.component('firstSucceeding', {
+	type: 'data',
+	params: [
+		{ id: 'items', type: "data[]", as: 'array', composite: true }
+	],
+	impl: function(context,items) {
+		for(var i=0;i<items.length;i++)
+			if (jb.val(items[i]))
+				return items[i];
+		// return last one if zero or empty string
+		var last = items.slice(-1)[0];
+		return (last != null) && jb.val(last);
+	}
+});
+
+jb.component('first', {
+	type: 'data',
+	params: [
+		{ id: 'items', type: "data", as: 'array', composite: true }
+	],
+	impl: (ctx,items) => items[0]
+});
+
+jb.component('property-names', {
+	type: 'data',
+  description: 'Object.getOwnPropertyNames',
+	params: [
+		{ id: 'obj', defaultValue: '%%', as: 'single' }
+	],
+	impl: (ctx,obj) =>
+		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0)
+})
+
+jb.component('properties',{
+	type: 'data',
+	params: [
+		{ id: 'obj', defaultValue: '%%', as: 'single' }
+	],
+	impl: (context,obj) =>
+		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
+			({id: id, val: obj[id], index: index}))
+});
+
+jb.component('prefix', {
+	type: 'data',
+	params: [
+		{ id: 'separator', as: 'string', essential: true },
+		{ id: 'text', as: 'string', defaultValue: '%%' },
+	],
+	impl: (context,separator,text) =>
+		(text||'').substring(0,text.indexOf(separator))
+});
+
+jb.component('suffix', {
+	type: 'data',
+	params: [
+		{ id: 'separator', as: 'string', essential: true },
+		{ id: 'text', as: 'string', defaultValue: '%%' },
+	],
+	impl: (context,separator,text) =>
+		(text||'').substring(text.lastIndexOf(separator)+separator.length)
+});
+
+jb.component('remove-prefix', {
+	type: 'data',
+	params: [
+		{ id: 'separator', as: 'string', essential: true },
+		{ id: 'text', as: 'string', defaultValue: '%%' },
+	],
+	impl: (context,separator,text) =>
+		text.indexOf(separator) == -1 ? text : text.substring(text.indexOf(separator)+separator.length)
+});
+
+jb.component('remove-suffix',{
+	type: 'data',
+	params: [
+		{ id: 'separator', as: 'string', essential: true },
+		{ id: 'text', as: 'string', defaultValue: '%%' },
+	],
+	impl: (context,separator,text) =>
+		text.lastIndexOf(separator) == -1 ? text : text.substring(0,text.lastIndexOf(separator))
+});
+
+jb.component('remove-suffix-regex',{
+	type: 'data',
+	params: [
+		{ id: 'suffix', as: 'string', essential: true, description: 'regular expression. e.g [0-9]*' },
+		{ id: 'text', as: 'string', defaultValue: '%%' },
+	],
+	impl: function(context,suffix,text) {
+		context.profile.prefixRegexp = context.profile.prefixRegexp || new RegExp(suffix+'$');
+		var m = (text||'').match(context.profile.prefixRegexp);
+		return (m && (text||'').substring(m.index+1)) || text;
+	}
+});
+
+jb.component('write-value',{
+	type: 'action',
+	params: [
+		{ id: 'to', as: 'ref', essential: true },
+		{ id: 'value', essential: true}
+	],
+	impl: (ctx,to,value) =>
+		jb.writeValue(to,jb.val(value),ctx)
+});
+
+jb.component('remove-from-array', {
+	type: 'action',
+	params: [
+		{ id: 'array', as: 'ref', essential: true },
+		{ id: 'itemToRemove', as: 'single', description: 'choose item or index' },
+		{ id: 'index', as: 'number', description: 'choose item or index' },
+	],
+	impl: (ctx,array,itemToRemove,index) => {
+		var ar = jb.toarray(array);
+		var index = itemToRemove ? ar.indexOf(item) : index;
+		if (index != -1 && ar.length > index)
+			jb.splice(array,[[index,1]],ctx)
+	}
+});
+
+jb.component('toggle-boolean-value',{
+	type: 'action',
+	params: [
+		{ id: 'of', as: 'ref' },
+	],
+	impl: (ctx,_of) =>
+		jb.writeValue(_of,jb.val(_of) ? false : true)
+});
+
+
+jb.component('slice', {
+	type: 'aggregator',
+	params: [
+		{ id: 'start', as: 'number', defaultValue: 0, description: '0-based index', essential: true },
+		{ id: 'end', as: 'number', essential: true, description: '0-based index of where to end the selection (not including itself)' }
+	],
+	impl: function(context,begin,end) {
+		if (!context.data || !context.data.slice) return null;
+		return end ? context.data.slice(begin,end) : context.data.slice(begin);
+	}
+});
+
+jb.component('sort', { 
+	type: 'aggregator',
+	params: [
+		{ id: 'propertyName', as: 'string', description: 'sort by property inside object' },
+		{ id: 'lexical', as: 'boolean', type: 'boolean' },
+		{ id: 'ascending', as: 'boolean', type: 'boolean' }, 
+	],
+	impl: (ctx,prop,lexical,ascending) => {
+		if (!ctx.data || ! Array.isArray(ctx.data)) return null;
+		if (lexical)
+			var sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
+		else 
+			var sortFunc = prop ? (x,y) => (x-y) : (x,y) => (x[prop]-y[prop]);
+		if (ascending)
+			return ctx.data.slice(0).sort((x,y)=>sortFunc(y,x));
+		return ctx.data.slice(0).sort((x,y)=>sortFunc(x,y));
+	}
+});
+
+jb.component('wrap-as-object', {
+	type: 'aggregator',
+	params: [
+    {id: 'arrayProperty', as: 'string', defaultValue: 'items'}
+	],
+	impl: (ctx,prop) =>
+    jb.obj(prop,ctx.data)
+});
+
+
+jb.component('not', {
+	type: 'boolean',
+	params: [
+		{ id: 'of', type: 'boolean', as: 'boolean', essential: true, composite: true}
+	],
+	impl: (context, of) => !of
+});
+
+jb.component('and', {
+	type: 'boolean',
+	params: [
+		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true }
+	],
+	impl: function(context) {
+		var items = context.profile.$and || context.profile.items || [];
+		var innerPath =  context.profile.$and ? '$and~' : 'items~';
+		for(var i=0;i<items.length;i++) {
+			if (!context.runInner(items[i], { type: 'boolean' }, innerPath + i))
+				return false;
+		}
+		return true;
+	}
+});
+
+jb.component('or', {
+	type: 'boolean',
+	params: [
+		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true }
+	],
+	impl: function(context) {
+		var items = context.profile.$or || context.profile.items || [];
+		var innerPath =  context.profile.$or ? '$or~' : 'items~';
+		for(var i=0;i<items.length;i++) {
+			if (context.runInner(items[i],{ type: 'boolean' },innerPath+i))
+				return true;
+		}
+		return false;
+	}
+});
+
+jb.component('contains',{
+	type: 'boolean',
+	params: [
+		{ id: 'text', type: 'data[]', as: 'array', essential: true },
+		{ id: 'allText', defaultValue: '%%', as:'string'},
+		{ id: 'inOrder', defaultValue: true, as:'boolean'},
+	],
+	impl: function(context,text,allText,inOrder) {
+      var prevIndex = -1;
+      for(var i=0;i<text.length;i++) {
+      	var newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1);
+      	if (newIndex == -1) return false;
+      	prevIndex = inOrder ? newIndex : -1;
+      }
+      return true;
+	}
+})
+
+jb.component('not-contains', {
+	type: 'boolean',
+	params: [
+		{ id: 'text', type: 'data[]', as: 'array', essential: true },
+		{ id: 'allText', defaultValue: '%%', as:'array'}
+	],
+	impl :{$not: {$: 'contains', text: '%$text%', allText :'%$allText%'}}
+})
+
+jb.component('starts-with', {
+	type: 'boolean',
+	params: [
+		{ id: 'startsWith', as: 'string', essential: true },
+		{ id: 'text', defaultValue: '%%', as:'string'}
+	],
+	impl: (context,startsWith,text) =>
+		text.lastIndexOf(startsWith,0) == 0
+})
+
+jb.component('ends-with',{
+	type: 'boolean',
+	params: [
+		{ id: 'endsWith', as: 'string', essential: true },
+		{ id: 'text', defaultValue: '%%', as:'string'}
+	],
+	impl: (context,endsWith,text) =>
+		text.indexOf(endsWith,text.length-endsWith.length) !== -1
+})
+
+
+jb.component('filter',{
+	type: 'aggregator',
+	params: [
+		{ id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, essential: true }
+	],
+	impl: (context,filter) =>
+		jb.toarray(context.data).filter(item =>
+			filter(context,item))
+});
+
+jb.component('count', {
+	type: 'aggregator',
+	description: 'length, size of array',
+	params: [{ id: 'items', as:'array', defaultValue: '%%'}],
+	impl: (ctx,items) =>
+		items.length
+});
+
+jb.component('to-string', {
+	params: [
+		{ id: 'text', as: 'string', defaultValue: '%%', composite: true}
+	],
+	impl: (ctx,text) =>	text
+});
+
+jb.component('to-uppercase', {
+	params: [
+		{ id: 'text', as: 'string', defaultValue: '%%'}
+	],
+	impl: (ctx,text) =>
+		text.toUpperCase()
+});
+
+jb.component('to-lowercase', {
+	params: [
+		{ id: 'text', as: 'string', defaultValue: '%%'}
+	],
+	impl: (ctx,text) =>
+		text.toLowerCase()
+});
+
+jb.component('capitalize', {
+	params: [
+		{ id: 'text', as: 'string', defaultValue: '%%'}
+	],
+	impl: (ctx,text) =>
+		text.charAt(0).toUpperCase() + text.slice(1)
+});
+
+jb.component('join', {
+	params: [
+		{ id: 'separator', as: 'string', defaultValue:',', essential: true },
+		{ id: 'prefix', as: 'string' },
+		{ id: 'suffix', as: 'string' },
+		{ id: 'items', as: 'array', defaultValue: '%%'},
+		{ id: 'itemName', as: 'string', defaultValue: 'item'},
+		{ id: 'itemText', as: 'string', dynamic:true, defaultValue: '%%'}
+	],
+	type: 'aggregator',
+	impl: function(context,separator,prefix,suffix,items,itemName,itemText) {
+		var itemToText = (context.profile.itemText) ?
+			item => itemText(new jb.jbCtx(context, {data: item, vars: jb.obj(itemName,item) })) :
+			item => jb.tostring(item);	// performance
+
+		return prefix + items.map(itemToText).join(separator) + suffix;
+	}
+});
+
+jb.component('unique', {
+	params: [
+		{ id: 'id', as: 'string', dynamic: true, defaultValue: '%%' },
+		{ id: 'items', as: 'array', defaultValue: '%%'}
+	],
+	type: 'aggregator',
+	impl: (ctx,idFunc,items) => {
+		var _idFunc = idFunc.profile == '%%' ? x=>x : x => idFunc(ctx.setData(x));
+		return jb.unique(items,_idFunc);
+	}
+});
+
+jb.component('log', {
+	params: [
+		{ id: 'obj', as: 'single', defaultValue: '%%'}
+	],
+	impl: function(context,obj) {
+		var out = obj;
+		if (typeof GLOBAL != 'undefined' && typeof(obj) == 'object')
+			out = JSON.stringify(obj,null," ");
+		if (typeof window != 'undefined')
+			(window.parent || window).console.log(out);
+		else
+			console.log(out);
+		return out;
+	}
+});
+
+jb.component('asIs',{ params: [{id: '$asIs'}], impl: ctx => context.profile.$asIs });
+
+jb.component('object',{
+	impl: function(context) {
+		var result = {};
+		var obj = context.profile.$object || context.profile;
+		if (Array.isArray(obj)) return obj;
+		for(var prop in obj) {
+			if ((prop == '$' && obj[prop] == 'object') || obj[prop] == null)
+				continue;
+			result[prop] = context.runInner(obj[prop],null,prop);
+		}
+		return result;
+	}
+});
+
+jb.component('json.stringify', {
+	params: [
+		{ id: 'value', defaultValue: '%%' },
+		{ id: 'space', as: 'string', description: 'use space or tab to make pretty output' }
+	],
+	impl: (context,value,space) =>
+			JSON.stringify(value,null,space)
+});
+
+jb.component('json.parse', {
+	params: [
+		{ id: 'text', as: 'string' }
+	],
+	impl: (ctx,text) =>	{
+		try {
+			return JSON.parse(text)
+		} catch (e) {
+			jb.logException(e,'json parse');
+		}
+	}
+});
+
+jb.component('split', {
+	type: 'data',
+	params: [
+		{ id: 'separator', as: 'string', defaultValue: ',' },
+		{ id: 'text', as: 'string', defaultValue: '%%'},
+		{ id: 'part', options: ',first,second,last,but first,but last' }
+	],
+	impl: function(context,separator,text,part) {
+		var out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
+		switch (part) {
+			case 'first': return out[0];
+			case 'second': return out[1];
+			case 'last': return out.pop();
+			case 'but first': return out.slice(1);
+			case 'but last': return out.slice(0,-1);
+			default: return out;
+		}
+	}
+});
+
+jb.component('replace', {
+	type: 'data',
+	params: [
+		{ id: 'find', as: 'string', essential: true },
+		{ id: 'replace', as: 'string', essential: true  },
+		{ id: 'text', as: 'string', defaultValue: '%%' },
+		{ id: 'useRegex', type: 'boolean', as: 'boolean', defaultValue: true},
+		{ id: 'regexFlags', as: 'string', defaultValue: 'g', description: 'g,i,m' }
+	],
+	impl: function(context,find,replace,text,useRegex,regexFlags) {
+		if (useRegex) {
+			return text.replace(new RegExp(find,regexFlags) ,replace);
+		} else
+			return text.replace(find,replace);
+	}
+});
+
+jb.component('touch', {
+	type: 'action',
+	params: [
+		{ id: 'data', as: 'ref'},
+	],
+	impl: function(context,data_ref) {
+		var val = Number(jb.val(data_ref));
+		jb.writeValue(data_ref,val ? val + 1 : 1);
+	}
+});
+
+jb.component('isNull', {
+	type: 'boolean',
+	params: [
+		{ id: 'obj', defaultValue: '%%'}
+	],
+	impl: (ctx, obj) => jb.val(obj) == null
+});
+
+jb.component('isEmpty', {
+	type: 'boolean',
+	params: [
+		{ id: 'item', as: 'single', defaultValue: '%%'}
+	],
+	impl: (ctx, item) =>
+		!item || (Array.isArray(item) && item.length == 0)
+});
+
+jb.component('notEmpty', {
+	type: 'boolean',
+	params: [
+		{ id: 'item', as: 'single', defaultValue: '%%'}
+	],
+	impl: (ctx, item) =>
+		item && !(Array.isArray(item) && item.length == 0)
+});
+
+jb.component('equals', {
+	type: 'boolean',
+	params: [
+		{ id: 'item1', as: 'single', essential: true },
+		{ id: 'item2', defaultValue: '%%', as: 'single' }
+	],
+	impl: (ctx, item1, item2) => item1 == item2
+});
+
+jb.component('not-equals', {
+	type: 'boolean',
+	params: [
+		{ id: 'item1', as: 'single', essential: true },
+		{ id: 'item2', defaultValue: '%%', as: 'single' }
+	],
+	impl: (ctx, item1, item2) => item1 != item2
+});
+
+jb.component('parent', {
+	type: 'data',
+	params: [
+		{ id: 'item', as: 'ref', defaultValue: '%%'}
+	],
+	impl: (ctx,item) =>
+		item && item.$jb_parent
+});
+
+jb.component('runActions', {
+	type: 'action',
+	params: [
+		{ id: 'actions', type:'action[]', ignore: true, composite: true, essential: true }
+	],
+	impl: function(context) {
+		if (!context.profile) debugger;
+		var actions = jb.toarray(context.profile.actions || context.profile['$runActions']);
+		if (context.profile.actions && context.profile.actions.sugar)
+			var innerPath =  '' ;
+		else
+			var innerPath = context.profile['$runActions'] ? '$runActions~' : 'items~';
+		return actions.reduce((def,action,index) =>
+				def.then(_ => context.runInner(action, { as: 'single'}, innerPath + index ))
+			,Promise.resolve())
+	}
+});
+
+// jb.component('delay', {
+// 	params: [
+// 		{ id: 'mSec', type: 'number', defaultValue: 1}
+// 	],
+// 	impl: ctx => jb.delay(ctx.params.mSec)
+// })
+
+jb.component('on-next-timer', {
+	description: 'run action after delay',
+	type: 'action',
+	params: [
+		{ id: 'action', type: 'action', dynamic: true, essential: true },
+		{ id: 'delay', type: 'number', defaultValue: 1}
+	],
+	impl: (ctx,action,delay) =>
+		jb.delay(delay,ctx).then(()=>
+			action())
+})
+
+jb.component('extract-prefix',{
+	type: 'data',
+	params: [
+		{ id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
+		{ id: 'text', as: 'string', defaultValue: '%%'},
+		{ id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex' },
+		{ id: 'keepSeparator', type: 'boolean', as: 'boolean' }
+	],
+	impl: function(context,separator,text,regex,keepSeparator) {
+		if (!regex) {
+			return text.substring(0,text.indexOf(separator)) + (keepSeparator ? separator : '');
+		} else { // regex
+			var match = text.match(separator);
+			if (match)
+				return text.substring(0,match.index) + (keepSeparator ? match[0] : '');
+		}
+	}
+});
+
+jb.component('extract-suffix',{
+	type: 'data',
+	params: [
+		{ id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
+		{ id: 'text', as: 'string', defaultValue: '%%'},
+		{ id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex' },
+		{ id: 'keepSeparator', type: 'boolean', as: 'boolean' }
+	],
+	impl: function(context,separator,text,regex,keepSeparator) {
+		if (!regex) {
+			return text.substring(text.lastIndexOf(separator) + (keepSeparator ? 0 : separator.length));
+		} else { // regex
+			var match = text.match(separator+'(?![\\s\\S]*' + separator +')'); // (?!) means not after, [\\s\\S]* means any char including new lines
+			if (match)
+				return text.substring(match.index + (keepSeparator ? 0 : match[0].length));
+		}
+	}
+});
+
+jb.component('range', {
+	type: 'data',
+	params: [
+		{ id: 'from', as: 'number', defaultValue: 1 },
+		{ id: 'to', as: 'number', defaultValue: 10 },
+	],
+	impl: (ctx,from,to) =>
+    Array.from(Array(to-from+1).keys()).map(x=>x+from)
+})
+
+jb.component('type-of', {
+	type: 'data',
+	params: [
+		{ id: 'obj', defaultValue: '%%' },
+	],
+	impl: (ctx,_obj) => {
+	  	var obj = jb.val(_obj);
+		return Array.isArray(obj) ? 'array' : typeof obj
+	}
+})
+
+jb.component('class-name', {
+	type: 'data',
+	params: [
+		{ id: 'obj', defaultValue: '%%' },
+	],
+	impl: (ctx,_obj) => {
+	  	var obj = jb.val(_obj);
+		return obj && obj.constructor && obj.constructor.name
+	}
+})
+
+jb.component('is-of-type', {
+  type: 'boolean',
+  params: [
+  	{ id: 'type', as: 'string', essential: true, description: 'string,boolean' },
+  	{ id: 'obj', defaultValue: '%%' },
+  ],
+  impl: (ctx,_type,_obj) => {
+  	var obj = jb.val(_obj);
+  	var objType = Array.isArray(obj) ? 'array' : typeof obj;
+  	return _type.split(',').indexOf(objType) != -1;
+  }
+})
+
+jb.component('in-group', {
+  type: 'boolean',
+  params: [
+  	{ id: 'group', as: 'array', essential: true },
+  	{ id: 'item', as: 'single', defaultValue: '%%' },
+  ],
+  impl: (ctx,group,item) =>
+  	group.indexOf(item) != -1
+})
+
+jb.component('http.get', {
+	params: [
+		{ id: 'url', as: 'string' },
+		{ id: 'json', as: 'boolean', description: 'convert result to json' }
+	],
+	impl: (ctx,url,_json) => {
+		if (ctx.probe)
+			return jb.http_get_cache[url];
+		var json = _json || url.match(/json$/);
+		return fetch(url)
+			  .then(r =>
+			  		json ? r.json() : r.text())
+				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
+			  .catch(e => jb.logException(e) || [])
+	}
+});
+
+jb.component('http.post', {
+  type: 'action',
+	params: [
+		{ id: 'url', as: 'string' },
+    { id: 'postData', as: 'single' },
+		{ id: 'jsonResult', as: 'boolean', description: 'convert result to json' }
+	],
+	impl: (ctx,url,postData,json) => {
+    var headers = new Headers();
+    headers.append("Content-Type", "application/json; charset=UTF-8");
+		return fetch(url,{method: 'POST', headers: headers, body: JSON.stringify(postData) })
+			  .then(r =>
+			  		json ? r.json() : r.text())
+			  .catch(e => jb.logException(e) || [])
+	}
+});
+
+jb.component('isRef', {
+	params: [
+		{ id: 'obj', essential: true }
+	],
+	impl: (ctx,obj) => jb.isRef(obj)
+})
+
+jb.component('asRef', {
+	params: [
+		{ id: 'obj', essential: true }
+	],
+	impl: (ctx,obj) => jb.asRef(obj)
+})
+
+jb.component('data.switch', {
+  params: [
+  	{ id: 'cases', type: 'data.switch-case[]', as: 'array', essential: true, defaultValue: [] },
+  	{ id: 'default', dynamic: true },
+  ],
+  impl: (ctx,cases,defaultValue) => {
+  	for(var i=0;i<cases.length;i++)
+  		if (cases[i].condition(ctx))
+  			return cases[i].value(ctx)
+  	return defaultValue(ctx);
+  }
+})
+
+jb.component('data.switch-case', {
+  type: 'data.switch-case',
+  singleInType: true,
+  params: [
+  	{ id: 'condition', type: 'boolean', essential: true, dynamic: true },
+  	{ id: 'value', essential: true, dynamic: true },
+  ],
+  impl: ctx => ctx.params
+})
+
+jb.component('action.switch', {
+  type: 'action',
+  params: [
+  	{ id: 'cases', type: 'action.switch-case[]', as: 'array', essential: true, defaultValue: [] },
+  	{ id: 'defaultAction', type: 'action', dynamic: true },
+  ],
+  impl: (ctx,cases,defaultAction) => {
+  	for(var i=0;i<cases.length;i++)
+  		if (cases[i].condition(ctx))
+  			return cases[i].action(ctx)
+  	return defaultAction(ctx);
+  }
+})
+
+jb.component('action.switch-case', {
+  type: 'action.switch-case',
+  singleInType: true,
+  params: [
+  	{ id: 'condition', type: 'boolean', as: 'boolean', essential: true, dynamic: true },
+  	{ id: 'action', type: 'action' ,essential: true, dynamic: true },
+  ],
+  impl: ctx => ctx.params
 })
 ;
 
@@ -12470,6 +12475,84 @@ jb.rx.Subject = __WEBPACK_IMPORTED_MODULE_0_rxjs_Subject__["Subject"];
 /***/ })
 /******/ ]);;
 
+jb.component('group', {
+  type: 'control', category: 'group:100,common:90',
+  params: [
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, essential: true , dynamic: true },
+    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx)
+})
+
+jb.component('group.init-group', {
+  type: 'feature', category: 'group:0',
+  impl: ctx => ({
+    init: cmp => {
+      cmp.calcCtrls = cmp.calcCtrls || (_ =>
+        ctx.vars.$model.controls(cmp.ctx).map(c=>jb.ui.renderable(c)).filter(x=>x))
+      if (!cmp.state.ctrls)
+        cmp.state.ctrls = cmp.calcCtrls()
+      cmp.refresh = cmp.refresh || (_ =>
+          cmp.setState({ctrls: cmp.calcCtrls() }))
+
+      if (cmp.ctrlEmitter)
+        cmp.ctrlEmitter.subscribe(ctrls=>
+              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c)).filter(x=>x)},null,ctx))
+    }
+  })
+})
+
+jb.component('dynamic-controls', {
+  type: 'control',
+  params: [
+    { id: 'controlItems', type: 'data', as: 'array', essential: true, dynamic: true },
+    { id: 'genericControl', type: 'control', essential: true, dynamic: true },
+    { id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
+  ],
+  impl: (context,controlItems,genericControl,itemVariable) =>
+    controlItems()
+      .map(controlItem => jb.tosingle(genericControl(
+        new jb.jbCtx(context,{data: controlItem, vars: jb.obj(itemVariable,controlItem)})))
+      )
+})
+
+jb.component('group.dynamic-titles', {
+  type: 'feature', category: 'group:30',
+  description: 'dynamic titles for sub controls',
+  impl: ctx => ({
+    doCheck: cmp =>
+      (cmp.state.ctrls || []).forEach(ctrl=>
+        ctrl.title = ctrl.jbComp.jb_title ? ctrl.jbComp.jb_title() : '')
+  })
+})
+
+jb.component('control.first-succeeding', {
+  type: 'control', category: 'common:30',
+  params: [
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, essential: true , dynamic: true },
+    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx)
+})
+
+jb.component('control-with-condition', {
+  type: 'control',
+  params: [
+    { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
+    { id: 'control', type: 'control', essential: true, dynamic: true },
+    { id: 'title', as: 'string' },
+  ],
+  impl: (ctx,condition,ctrl) =>
+    condition && ctrl(ctx)
+})
+;
+
 (function() {
 
 class ImmutableWithPath {
@@ -12889,10 +12972,6 @@ class JbComponent {
 		return ReactComp;
 	}
 
-	compileJsx() {
-		// todo: compile template if string - cache result
-	}
-
 	injectCss(cmp) {
 		var elem = cmp.base;
 		if (!elem || !elem.setAttribute)
@@ -13084,8 +13163,10 @@ ui.renderWidget = function(profile,elem) {
 					jb.resources = jb.ui.originalResources || jb.resources;
 					previewElem = ui.render(ui.h(R),elem,previewElem);
 				}
-				st.pageChange.debounceTime(500).subscribe(page=>
-					this.setState({profile: {$: page}}));
+				st.pageChange.debounceTime(500)
+					.filter(page=>page != this.state.profile.$)
+					.subscribe(page=>
+						this.setState({profile: {$: page}}));
 				st.scriptChange.debounceTime(500).subscribe(_=>
 						this.setState(null));
 			}
@@ -13261,118 +13342,6 @@ jb.component('style-by-control', {
 })
 
 })()
-;
-
-jb.component('image', {
-	type: 'control,image', category: 'control:50',
-	params: [
-		{ id: 'url', as: 'string', essential: true },
-		{ id: 'imageWidth', as: 'number' },
-		{ id: 'imageHeight', as: 'number' },
-		{ id: 'width', as: 'number' },
-		{ id: 'height', as: 'number' },
-		{ id: 'units', as: 'string', defaultValue : 'px'},
-		{ id: 'style', type: 'image.style', dynamic: true, defaultValue: { $: 'image.default' } },
-		{ id: 'features', type: 'feature[]', dynamic: true }
-	],
-	impl: ctx => {
-			['imageWidth','imageHeight','width','height'].forEach(prop=>
-					ctx.params[prop] = ctx.params[prop] || null);
-			return jb.ui.ctrl(ctx, {
-				init: cmp =>
-					cmp.state.url = ctx.params.url
-			})
-		}
-})
-
-jb.component('image.default', {
-	type: 'image.style',
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) =>
-			h('div',{}, h('img', {src: state.url})),
-
-		css: `{ {? width: %$$model/width%%$$model/units%; ?} {? height: %$$model/height%%$$model/units%; ?} }
-			>img{ {? width: %$$model/imageWidth%%$$model/units%; ?} {? height: %$$model/imageHeight%%$$model/units%; ?} }`
-	}
-})
-;
-
-jb.component('group', {
-  type: 'control', category: 'group:100,common:90',
-  params: [
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, essential: true , dynamic: true },
-    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
-})
-
-jb.component('group.init-group', {
-  type: 'feature', category: 'group:0',
-  impl: ctx => ({
-    init: cmp => {
-      cmp.calcCtrls = cmp.calcCtrls || (_ =>
-        ctx.vars.$model.controls(cmp.ctx).map(c=>jb.ui.renderable(c)).filter(x=>x))
-      if (!cmp.state.ctrls)
-        cmp.state.ctrls = cmp.calcCtrls()
-      cmp.refresh = cmp.refresh || (_ =>
-          cmp.setState({ctrls: cmp.calcCtrls() }))
-
-      if (cmp.ctrlEmitter)
-        cmp.ctrlEmitter.subscribe(ctrls=>
-              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c)).filter(x=>x)},null,ctx))
-    }
-  })
-})
-
-jb.component('dynamic-controls', {
-  type: 'control',
-  params: [
-    { id: 'controlItems', type: 'data', as: 'array', essential: true, dynamic: true },
-    { id: 'genericControl', type: 'control', essential: true, dynamic: true },
-    { id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
-  ],
-  impl: (context,controlItems,genericControl,itemVariable) =>
-    controlItems()
-      .map(controlItem => jb.tosingle(genericControl(
-        new jb.jbCtx(context,{data: controlItem, vars: jb.obj(itemVariable,controlItem)})))
-      )
-})
-
-jb.component('group.dynamic-titles', {
-  type: 'feature', category: 'group:30',
-  description: 'dynamic titles for sub controls',
-  impl: ctx => ({
-    doCheck: cmp =>
-      (cmp.state.ctrls || []).forEach(ctrl=>
-        ctrl.title = ctrl.jbComp.jb_title ? ctrl.jbComp.jb_title() : '')
-  })
-})
-
-jb.component('control.first-succeeding', {
-  type: 'control', category: 'common:30',
-  params: [
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, essential: true , dynamic: true },
-    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
-})
-
-jb.component('control-with-condition', {
-  type: 'control',
-  params: [
-    { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
-    { id: 'control', type: 'control', essential: true, dynamic: true },
-    { id: 'title', as: 'string' },
-  ],
-  impl: (ctx,condition,ctrl) =>
-    condition && ctrl(ctx)
-})
 ;
 
 jb.component('label', {
@@ -13780,6 +13749,40 @@ jb.component('field.toolbar', {
 })
 ;
 
+jb.component('image', {
+	type: 'control,image', category: 'control:50',
+	params: [
+		{ id: 'url', as: 'string', essential: true },
+		{ id: 'imageWidth', as: 'number' },
+		{ id: 'imageHeight', as: 'number' },
+		{ id: 'width', as: 'number' },
+		{ id: 'height', as: 'number' },
+		{ id: 'units', as: 'string', defaultValue : 'px'},
+		{ id: 'style', type: 'image.style', dynamic: true, defaultValue: { $: 'image.default' } },
+		{ id: 'features', type: 'feature[]', dynamic: true }
+	],
+	impl: ctx => {
+			['imageWidth','imageHeight','width','height'].forEach(prop=>
+					ctx.params[prop] = ctx.params[prop] || null);
+			return jb.ui.ctrl(ctx, {
+				init: cmp =>
+					cmp.state.url = ctx.params.url
+			})
+		}
+})
+
+jb.component('image.default', {
+	type: 'image.style',
+	impl :{$: 'custom-style',
+		template: (cmp,state,h) =>
+			h('div',{}, h('img', {src: state.url})),
+
+		css: `{ {? width: %$$model/width%%$$model/units%; ?} {? height: %$$model/height%%$$model/units%; ?} }
+			>img{ {? width: %$$model/imageWidth%%$$model/units%; ?} {? height: %$$model/imageHeight%%$$model/units%; ?} }`
+	}
+})
+;
+
 jb.type('editable-text.style');
 
 jb.component('editable-text', {
@@ -13878,51 +13881,6 @@ jb.component('editable-text.helper-popup', {
 })
 ;
 
-jb.type('editable-boolean.style');
-
-jb.component('editable-boolean',{
-  type: 'control', category: 'input:20',
-  params: [
-    { id: 'databind', as: 'ref'},
-    { id: 'style', type: 'editable-boolean.style', defaultValue: { $: 'editable-boolean.checkbox' }, dynamic: true },
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true },
-    { id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true  },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx => jb.ui.ctrl(ctx,{
-  		init: cmp => {
-        cmp.toggle = () =>
-          cmp.jbModel(!cmp.jbModel());
-
-  			cmp.text = () => {
-          if (!cmp.jbModel) return '';
-          return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
-        }
-        cmp.extendRefresh = _ =>
-          cmp.setState({text: cmp.text()})
-          
-        cmp.refresh();
-  		},
-  	})
-})
-
-jb.component('editable-boolean.keyboard-support', {
-  type: 'feature',
-  impl: ctx => ({
-      onkeydown: true,
-      afterViewInit: cmp => {
-        cmp.onkeydown.filter(e=> 
-            e.keyCode == 37 || e.keyCode == 39)
-          .subscribe(x=> {
-            cmp.toggle();
-            cmp.refreshMdl && cmp.refreshMdl();
-          })
-      },
-    })
-})
-;
-
 jb.component('editable-number', {
   type: 'control', category: 'input:30',
   params: [
@@ -13981,6 +13939,51 @@ jb.component('editable-number.input',{
 })
 
 
+;
+
+jb.type('editable-boolean.style');
+
+jb.component('editable-boolean',{
+  type: 'control', category: 'input:20',
+  params: [
+    { id: 'databind', as: 'ref'},
+    { id: 'style', type: 'editable-boolean.style', defaultValue: { $: 'editable-boolean.checkbox' }, dynamic: true },
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true },
+    { id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true  },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx => jb.ui.ctrl(ctx,{
+  		init: cmp => {
+        cmp.toggle = () =>
+          cmp.jbModel(!cmp.jbModel());
+
+  			cmp.text = () => {
+          if (!cmp.jbModel) return '';
+          return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
+        }
+        cmp.extendRefresh = _ =>
+          cmp.setState({text: cmp.text()})
+          
+        cmp.refresh();
+  		},
+  	})
+})
+
+jb.component('editable-boolean.keyboard-support', {
+  type: 'feature',
+  impl: ctx => ({
+      onkeydown: true,
+      afterViewInit: cmp => {
+        cmp.onkeydown.filter(e=> 
+            e.keyCode == 37 || e.keyCode == 39)
+          .subscribe(x=> {
+            cmp.toggle();
+            cmp.refreshMdl && cmp.refreshMdl();
+          })
+      },
+    })
+})
 ;
 
 jb.component('group.wait', {
@@ -15963,6 +15966,27 @@ jb.component('itemlist-container.search-in-all-properties', {
 })()
 ;
 
+jb.type('theme');
+
+jb.component('group.theme', {
+  type: 'feature',
+  params: [
+    { id: 'theme', type: 'theme' },
+  ],
+  impl: (context,theme) => ({
+    extendCtxOnce: (ctx,cmp) => 
+      ctx.setVars(theme)
+  })
+})
+
+jb.component('theme.material-design', {
+  type: 'theme',
+  impl: () => ({
+  	'$theme.editable-text': 'editable-text.mdl-input'
+  })
+})
+;
+
 jb.component('picklist', {
   type: 'control', category: 'input:80',
   params: [
@@ -16108,27 +16132,6 @@ jb.component('picklist.promote',{
   impl: (context,groups,options) =>
     ({ groups: groups, options: options})
 });
-;
-
-jb.type('theme');
-
-jb.component('group.theme', {
-  type: 'feature',
-  params: [
-    { id: 'theme', type: 'theme' },
-  ],
-  impl: (context,theme) => ({
-    extendCtxOnce: (ctx,cmp) => 
-      ctx.setVars(theme)
-  })
-})
-
-jb.component('theme.material-design', {
-  type: 'theme',
-  impl: () => ({
-  	'$theme.editable-text': 'editable-text.mdl-input'
-  })
-})
 ;
 
 
@@ -16436,6 +16439,21 @@ jb.component('tabs.simple', {
 })
 ;
 
+jb.component('goto-url', {
+	type: 'action',
+	description: 'navigate/open a new web page, change href location',
+	params: [
+		{ id: 'url', as:'string', essential: true },
+		{ id: 'target', type:'enum', values: ['new tab','self'], defaultValue:'new tab', as:'string'}
+	],
+	impl: (ctx,url,target) => {
+		var _target = (target == 'new tab') ? '_blank' : '_self';
+		if (!ctx.probe)
+			window.open(url,_target);
+	}
+})
+;
+
 jb.component('mdl-style.init-dynamic', {
   type: 'feature',
   params: [
@@ -16513,21 +16531,6 @@ jb.component('label.mdl-button', {
         css: '{? {width:%$width%px} ?}'
     }
 });
-;
-
-jb.component('goto-url', {
-	type: 'action',
-	description: 'navigate/open a new web page, change href location',
-	params: [
-		{ id: 'url', as:'string', essential: true },
-		{ id: 'target', type:'enum', values: ['new tab','self'], defaultValue:'new tab', as:'string'}
-	],
-	impl: (ctx,url,target) => {
-		var _target = (target == 'new tab') ? '_blank' : '_self';
-		if (!ctx.probe)
-			window.open(url,_target);
-	}
-})
 ;
 
 jb.component('button.href', {
@@ -17275,8 +17278,8 @@ jb.component('property-sheet.titles-above-float-left', {
   ],
   impl :{$: 'custom-style', 
     features :{$: 'group.init-group'},
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property'},[
+    template: (cmp,state,h) => h('div',{ class: 'clearfix'}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property clearfix'},[
           h('label',{ class: 'property-title'},ctrl.title),
           h(ctrl)
     ]))),
@@ -17285,7 +17288,10 @@ jb.component('property-sheet.titles-above-float-left', {
           width: %$fieldWidth%px;
           margin-right: %$spacing%px;
         }
-      .clearfix { clear: both }
+      .clearfix:after {
+        content: "";
+        clear: both;
+      }
       >.property:last-child { margin-right:0 }
       >.property>.property-title {
         margin-bottom: 3px;

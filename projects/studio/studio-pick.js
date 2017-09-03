@@ -169,20 +169,26 @@ jb.studio.getOrCreateHighlightBox = function() {
   return _window.document.querySelector('#preview-box');
 }
 
+jb.studio.highlightCtx = function(ctx) {
+	var _window = st.previewWindow || window;
+	jb.studio.highlight(Array.from(_window.document.querySelectorAll('[jb-ctx]'))
+		.filter(e=>e.getAttribute('jb-ctx') == ctx.id))
+}
+
 jb.studio.highlight = function(elems) {
 	//var boxes = [];
 	var html = elems.map(el => {
 			var offset = jb.ui.offset(el);
 			var width = jb.ui.outerWidth(el);
-      if (width == jb.ui.outerWidth(document.body)) width -= 10;
-      return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; zIndex: 5000;
-      width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
+	  if (width == jb.ui.outerWidth(document.body)) width -= 10;
+	  return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; zIndex: 5000;
+	  width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
 	}).join('');
-  var box = jb.studio.getOrCreateHighlightBox();
-  jb.ui.removeClass(box,'jb-fade-3s-transition');
-  box.innerHTML = html;
-  jb.delay(1).then(_=> jb.ui.addClass(box,'jb-fade-3s-transition'));
-  jb.delay(1000).then(_=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
+	var box = jb.studio.getOrCreateHighlightBox();
+	jb.ui.removeClass(box,'jb-fade-3s-transition');
+	box.innerHTML = html;
+	jb.delay(1).then(_=> jb.ui.addClass(box,'jb-fade-3s-transition'));
+	jb.delay(1000).then(_=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
 }
 
 jb.component('studio.highlight-in-preview',{

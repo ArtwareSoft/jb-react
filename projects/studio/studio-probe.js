@@ -141,6 +141,8 @@ jb.component('studio.probe', {
 	impl: (ctx,path) => {
     var _jb = st.previewjb;
 		var circuitCtx = ctx.vars.pickSelection && ctx.vars.pickSelection.ctx;
+    if (circuitCtx)
+      jb.studio.highlightCtx(circuitCtx);
 		if (!circuitCtx) {
 			var circuitInPreview = st.closestCtxInPreview(path());
 			if (circuitInPreview.ctx) {
@@ -152,15 +154,17 @@ jb.component('studio.probe', {
 			var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%');
 			circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} );
 		}
-    var req = {path: path(), circuitCtx: circuitCtx };
-    jb.delay(1).then(_=>probeEmitter.next(req));
-    var probeQueue = probeEmitter.buffer(probeEmitter.debounceTime(500))
-        .map(x=>x && x[0]).filter(x=>x)
-        .flatMap(req=>
-          new (_jb.studio.Probe || st.Probe)(req.circuitCtx).runCircuit(req.path)
-        );
+    return new (_jb.studio.Probe || st.Probe)(circuitCtx).runCircuit(path());
 
-    return probeQueue.filter(x=>x.id == probeCounter).take(1).toPromise();
+    // var req = {path: path(), circuitCtx: circuitCtx };
+    // jb.delay(1).then(_=>probeEmitter.next(req));
+    // var probeQueue = probeEmitter.buffer(probeEmitter.debounceTime(500))
+    //     .map(x=>x && x[0]).filter(x=>x)
+    //     .flatMap(req=>
+    //       new (_jb.studio.Probe || st.Probe)(req.circuitCtx).runCircuit(req.path)
+    //     );
+
+    // return probeQueue.filter(x=>x.id == probeCounter).take(1).toPromise();
 //      .race(jb.rx.Observable.fromPromise(jb.delay(1000).then(_=>({ result: [] }))))
   }
 })

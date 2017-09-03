@@ -187,16 +187,6 @@ jb.component('studio-helper.jb-editor2', {
   }
 })
 
-
-jb.component('studio-helper.studio-properties', {
-  type: 'control',
-  impl :{$: 'group',
-    $vars: { circuit: 'studio-helper-dummy.simple-label' },
-    title: '',
-    controls :{$: 'studio.properties', path: 'studio-helper-dummy.simple-label~impl' }
-  }
-})
-
 jb.component('studio-helper-dummy.simple-label', {
   type: 'control',
   impl :{$: 'label',
@@ -377,12 +367,19 @@ jb.component('studio-helper-sample.picklist', {
 })
 
 
-jb.component('studio-helper.studio-properties', {
+jb.component('studio-helper.studio-properties-rich', {
   type: 'control',
-  remark: 1,
   impl :{$: 'group',
     $vars: { circuit: 'studio-helper-sample.properties-params-prof' },
     controls :{$: 'studio.properties', path: 'studio-helper-sample.properties-params-prof~impl' }
+  }
+})
+
+jb.component('studio-helper.studio-properties', {
+  type: 'control',
+  impl :{$: 'group',
+    $vars: { circuit: 'studio-helper-sample.properties-tgp' },
+    controls :{$: 'studio.properties', path: 'studio-helper-sample.properties-tgp~impl' }
   }
 })
 
@@ -446,6 +443,23 @@ jb.component('studio-helper-sample.properties-params-prof', {
     style :{$: 'button.href' }
   }, 
   $vars: {  }
+})
+
+jb.component('studio-helper-sample.properties-PT-for-tgp', {
+  type: 'control',
+  params: [
+    { id: 'style1', type: 'button.style'},
+    { id: 'style2', type: 'button.style'},
+  ],
+  impl :{$: 'group' }
+})
+
+jb.component('studio-helper-sample.properties-tgp', {
+  type: 'xx', 
+  impl :{$: 'studio-helper-sample.properties-PT-for-tgp', 
+    style1 :{$: 'button.x' },
+    style2 :{$: 'button.x' },
+  }, 
 })
 
 jb.component('studio-helper-sample.custom-style-comp', {

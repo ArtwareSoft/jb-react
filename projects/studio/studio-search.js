@@ -40,7 +40,7 @@ jb.component('studio.search-list', {
           $pipeline: [
             {$: 'studio.components-cross-ref' },
             {$: 'itemlist-container.filter' },
-            {$: 'numeric-sort', propertyName: 'refCount' },
+            {$: 'sort', propertyName: 'refCount' },
             {$: 'slice', start: '0', end: '50' }
           ]
         },

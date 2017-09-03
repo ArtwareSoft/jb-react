@@ -1,10 +1,12 @@
-cards for letmesee
+properties bugs
+  tgp selection - open close - studio-helper.studio-properties-rich
+  new featrure opens inteli and change..
+  sometimes width problems - menu at the right is not shown
+
 
 remarks
   use var - do not refresh
   show with different class
-
-ctrl-J - javascript
 
 one letter shortcuts on context menu.
 

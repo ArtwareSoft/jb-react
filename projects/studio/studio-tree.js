@@ -56,6 +56,7 @@ jb.component('studio.tree-menu', {
       {$: 'menu.separator' },
       {$: 'menu.action',
         title: 'inteliscript editor',
+        shortcut: 'Ctrl+I',
         action :{$: 'studio.open-jb-editor', path: '%$path%' }
       },
       {$: 'menu.action',

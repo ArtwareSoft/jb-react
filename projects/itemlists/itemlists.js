@@ -29,6 +29,32 @@ jb.component('itemlists.table', {
   }
 })
 
+jb.component('itemlists.large-table', {
+  type: 'control', 
+  impl :{$: 'group', 
+    title: 'large-table', 
+    controls: [
+      {$: 'table', 
+        items :{
+          $pipeline: [
+            {$: 'range', from: 1, to: '1000' }, 
+            {$: 'object', id: '%%', name: '%%-%%' }
+          ]
+        }, 
+        fields: [
+          {$: 'field', title: 'id', data: '%id%', numeric: true }, 
+          {$: 'field', title: 'group', data: ctx => Math.floor(Number(ctx.data.id) /10) }
+        ], 
+        style :{$: 'table.mdl', 
+          classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp', 
+          classForTd: 'mdl-data-table__cell--non-numeric'
+        }, 
+        visualSizeLimit: '1000'
+      }
+    ]
+  }
+})
+
 jb.component('itemlists.editable-table', {
   type: 'control', 
   impl :{$: 'group', 

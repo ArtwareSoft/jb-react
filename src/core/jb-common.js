@@ -40,7 +40,7 @@ jb.pipe = function(context,items,ptName) {
 
 
 	function step(profile,i,data) {
-    if (profile && profile.$disabled) return data;
+    	if (!profile || profile.$disabled) return data;
 		var parentParam = (i == profiles.length - 1 && context.parentParam) ? context.parentParam : { as: 'array'};
 		if (jb.profileType(profile) == 'aggregator')
 			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
@@ -276,14 +276,22 @@ jb.component('slice', {
 	}
 });
 
-jb.component('numeric-sort', { // with side effects!!! decision made for performance reasons
+jb.component('sort', { 
 	type: 'aggregator',
 	params: [
-		{ id: 'propertyName', as: 'string', essential: true }
+		{ id: 'propertyName', as: 'string', description: 'sort by property inside object' },
+		{ id: 'lexical', as: 'boolean', type: 'boolean' },
+		{ id: 'ascending', as: 'boolean', type: 'boolean' }, 
 	],
-	impl: (ctx,prop) => {
+	impl: (ctx,prop,lexical,ascending) => {
 		if (!ctx.data || ! Array.isArray(ctx.data)) return null;
-		return ctx.data.sort((x,y)=>y[prop] - x[prop]);
+		if (lexical)
+			var sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
+		else 
+			var sortFunc = prop ? (x,y) => (x-y) : (x,y) => (x[prop]-y[prop]);
+		if (ascending)
+			return ctx.data.slice(0).sort((x,y)=>sortFunc(y,x));
+		return ctx.data.slice(0).sort((x,y)=>sortFunc(x,y));
 	}
 });
 
@@ -632,12 +640,9 @@ jb.component('runActions', {
 			var innerPath =  '' ;
 		else
 			var innerPath = context.profile['$runActions'] ? '$runActions~' : 'items~';
-		return actions.reduce((def,action,index) => {
-			if (def && def.then)
-				return def.then(_ =>	context.runInner(action, { as: 'single'}, innerPath + index ))
-			else
-				return context.runInner(action, { as: 'single'}, innerPath + index );
-			},null)
+		return actions.reduce((def,action,index) =>
+				def.then(_ => context.runInner(action, { as: 'single'}, innerPath + index ))
+			,Promise.resolve())
 	}
 });
 

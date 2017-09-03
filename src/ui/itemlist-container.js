@@ -191,7 +191,7 @@ jb.component('itemlist-container.filter-field', {
             var filterValue = cmp.jbModel();
             if (!filterValue) return items;
             var res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
-            if (filterType.sort)
+            if (filterType.sort && (!cmp.state.sortOptions || cmp.state.sortOptions.length == 0) )
               filterType.sort(res,cmp.itemToFilterData,filterValue);
             return res;
         })

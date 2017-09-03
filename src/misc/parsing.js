@@ -64,7 +64,7 @@ jb.component('extract-text', {
         if (pos != start_match) out.unmatch.push(text.substring(pos,start_match));
         out.match.push(text.substring(start_match,end_match));
         if (end_match != end.end) out.unmatch.push(text.substring(end_match,end.end));
-        pos = end.end;
+        pos = endMarker ? end.end : end.pos;
     }
     out.unmatch.push(text.substring(pos));
     if (!noTrim) {
@@ -181,7 +181,7 @@ jb.component('match-regex', {
 
 jb.component('merge', {
 	type: 'data',
-  description: 'merge object properties',
+  description: 'assign, merge object properties',
 	params: [
     { id: 'objects', as: 'array', essential: true },
 	],
@@ -199,6 +199,18 @@ jb.component('dynamic-object', {
 	],
 	impl: (ctx,items,name,value) =>
     items.reduce((obj,item)=>Object.assign(obj,jb.obj(name(ctx.setData(item)),value(ctx.setData(item)))),{})
+})
+
+jb.component('filter-empty-properties', {
+	type: 'data',
+  description: 'remove null or empty string properties',
+	params: [
+    { id: 'obj', as: 'single', defaultValue: '%%' },
+	],
+  impl: (ctx,obj) => {
+    var props = Object.getOwnPropertyNames(obj).filter(p=>obj[p] != null && obj[p] != '');
+    return props.reduce((res,p)=>Object.assign(res,jb.obj(p,obj[p])),{});
+  }
 })
 
 jb.component('trim', {
