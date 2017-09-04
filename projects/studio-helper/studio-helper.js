@@ -457,9 +457,13 @@ jb.component('studio-helper-sample.properties-PT-for-tgp', {
 jb.component('studio-helper-sample.properties-tgp', {
   type: 'xx', 
   impl :{$: 'studio-helper-sample.properties-PT-for-tgp', 
-    style1 :{$: 'button.x' },
-    style2 :{$: 'button.x' },
-  }, 
+    style1 :{$: 'button.x' }, 
+    style2 :{$: 'button.x' }, 
+    features: [
+      {$: 'css.margin' }, 
+      {$: 'css.padding' }
+    ]
+  }
 })
 
 jb.component('studio-helper-sample.custom-style-comp', {

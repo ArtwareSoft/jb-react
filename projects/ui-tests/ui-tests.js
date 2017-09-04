@@ -622,6 +622,18 @@ jb.component('ui-test.table-DD', {
 },
 })
 
+jb.component('ui-test.table.button-field', {
+  impl :{$: 'ui-test',
+  control :{$: 'table', items: '%$people%',
+        fields : [
+          {$: 'field', data: '%name%', title: 'name' },
+          {$: 'field.button', buttonText: '%age%', title: 'age', action: ctx => alert(ctx.data) },
+        ],
+  },
+  expectedResult: { $: 'contains', text: ['age','Homer Simpson','12'] },
+},
+})
+
 // jb.component('ui-test.ngShow-label', {
 // //   impl :{$: 'ui-test',
 //   control :{$: 'label',

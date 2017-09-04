@@ -137,12 +137,14 @@ jb.component('studio_button.toolbarButton', {
 	params: [
 		{ id: 'spritePosition', as: 'string', defaultValue: '0,0' }
 	],
-	impl: (ctx, spritePosition) => ({
+	impl: {$: 'custom-style',
 			template: (cmp,state,h) => h('button',{class: 'studio-btn-toolbar', click: _=> cmp.clicked() },
           h('span', {title: state.title, style: { 'background-position': state.pos} })),
-			init: cmp =>
-				cmp.state.pos = spritePosition.split(',').map(item => (-parseInt(item) * 16) + 'px').join(' '),
-	})
+      features: ctx => ({
+          init: cmp =>
+              cmp.state.pos = cmp.spritePosition.split(',').map(item => (-parseInt(item) * 16) + 'px').join(' '),
+      })
+	}
 })
 
 jb.component('studio-toolbar', {

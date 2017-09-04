@@ -1,7 +1,7 @@
 jb.resource('people',[
-  { "name": "Homer Simpson" ,age: 42 , male: true},
-  { "name": "Marge Simpson" ,age: 38 , male: false},
-  { "name": "Bart Simpson"  ,age: 12 , male: true}
+  { "name": "Homer Simpson" ,age: 42 , male: true, children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ]},
+  { "name": "Marge Simpson" ,age: 38 , male: false, children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ]},
+  { "name": "Bart Simpson"  ,age: 12 , male: true, children: []}
 ]);
 
 jb.component('itemlists.main', {
@@ -25,6 +25,48 @@ jb.component('itemlists.table', {
     fields: [
       {$: 'field', title: 'name', data: '%name%', width: '200' }, 
       {$: 'field', title: 'age', data: '%age%' }
+    ]
+  }
+})
+
+jb.component('itemlists.button-field', {
+  type: 'control', 
+  impl :{$: 'group', 
+    title: 'button-field', 
+    controls: [
+      {$: 'table', 
+        items: '%$people%', 
+        fields: [
+          {$: 'field', title: 'name', data: '%name%' }, 
+          {$: 'field.button', 
+            title: 'children', 
+            buttonText: '%children/length%', 
+            action :{$: 'open-dialog', 
+              content :{$: 'group', 
+                controls :{$: 'label', 
+                  title :{
+                    $pipeline: [
+                      '%children/name%', 
+                      {$: 'join', 
+                        separator :{$: 'newline' }, 
+                        items: '%%', 
+                        itemName: 'item', 
+                        itemText: '%%'
+                      }
+                    ]
+                  }, 
+                  style :{$: 'label.card-title' }
+                }
+              }, 
+              title: 'children of %name%', 
+              onOK: {  }
+            }
+          }
+        ], 
+        style :{$: 'table.with-headers' }, 
+        visualSizeLimit: 100, 
+        features: [{$: 'css.width', width: '300' }]
+      }
     ]
   }
 })
@@ -163,8 +205,10 @@ jb.component('itemlists.table-with-filters', {
   impl :{$: 'group', 
     controls: [
       {$: 'group', 
+        title: 'container', 
         controls: [
           {$: 'group', 
+            title: 'filters', 
             style :{$: 'layout.horizontal', spacing: 45 }, 
             controls: [
               {$: 'editable-text', 
@@ -199,11 +243,7 @@ jb.component('itemlists.table-with-filters', {
               {$: 'field', title: 'age', data: '%age%' }
             ], 
             watchItems: 'true', 
-            features :{$: 'watch-ref', 
-              ref: '%$itemlistCntrData%', 
-               
-              includeChildren: 'true'
-            }
+            features :{$: 'watch-ref', ref: '%$itemlistCntrData%', includeChildren: 'true' }
           }
         ], 
         features :{$: 'group.itemlist-container' }

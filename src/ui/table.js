@@ -20,14 +20,34 @@ jb.component('field', {
     { id: 'data', as: 'string', essential: true, dynamic: true },
     { id: 'width', as: 'number' },
     { id: 'numeric', as: 'boolean', type: 'boolean' },
+    { id: 'extendItems', as: 'boolean', type: 'boolean', description: 'extend the items with the calculated field using the title as field name' },
     { id: 'class', as: 'string' },
   ],
-  impl: (ctx,title,data,width,numeric,_class) => ({
+  impl: (ctx,title,data,width,numeric,extendItems,_class) => ({
     title: title,
-    fieldData: row => data(ctx.setData(row)),
+    fieldData: row => extendItems ? row[title] : data(ctx.setData(row)),
+    calcFieldData: row => data(ctx.setData(row)),
     class: _class,
     width: width,
     numeric: numeric, 
+    extendItems: extendItems,
+    ctxId: jb.ui.preserveCtx(ctx)
+  })
+})
+
+jb.component('field.index', {
+  type: 'table-field',
+  params: [
+    { id: 'title', as: 'string', defaultValue: 'index' },
+    { id: 'width', as: 'number', defaultValue: 10 },
+    { id: 'class', as: 'string' },
+  ],
+  impl: (ctx,title,propName,width_class) => ({
+    title: title,
+    fieldData: (row,index) => index,
+    class: _class,
+    width: width,
+    numeric: true, 
     ctxId: jb.ui.preserveCtx(ctx)
   })
 })
@@ -45,18 +65,62 @@ jb.component('field.control', {
     title: title,
     control: row => control(ctx.setData(row)).reactComp(),
     width: width,
-    fieldData: row => data(ctx.setData(row)),
+    fieldData: row => dataForSort(ctx.setData(row)),
     numeric: numeric, 
     ctxId: jb.ui.preserveCtx(ctx)
   })
+})
+
+jb.component('field.button', {
+  type: 'table-field',
+  params: [
+    { id: 'title', as: 'string', essential: true },
+    { id: 'buttonText', as: 'string', essential: true, dynamic: true },
+    { id: 'action', type: 'action', essential: true, dynamic: true },
+
+    { id: 'width', as: 'number' },
+    { id: 'dataForSort', dynamic: true },
+    { id: 'numeric', as: 'boolean', type: 'boolean' },
+
+    { id: 'style', type: 'table-button.style', defaultValue: { $: 'table-button.href' }, dynamic: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx => {
+    var ctrl = jb.ui.ctrl(ctx,{
+      beforeInit: (cmp,props) => {
+        cmp.state.title = ctx.params.buttonText(ctx.setData(props.row));
+      },
+      afterViewInit : cmp=>
+        cmp.clicked = jb.ui.wrapWithLauchingElement(_ => ctx.params.action(ctx.setData(cmp.props.row)), ctx, cmp.base)
+    }).reactComp();
+
+    return {
+      title: ctx.params.title,
+      control: _ => ctrl,
+      width: ctx.params.width,
+      fieldData: row => dataForSort(ctx.setData(row)),
+      numeric: ctx.params.numeric, 
+      ctxId: jb.ui.preserveCtx(ctx)
+    }
+  }
+})
+
+// todo - move to styles
+
+jb.component('table-button.href', {
+  type: 'button.style',
+    impl :{$: 'custom-style',
+        template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
+        css: `{color: grey}`
+    }
 })
 
 jb.component('table.init', {
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
-        cmp.state.items = calcItems();
         cmp.fields = ctx.vars.$model.fields();
+        cmp.state.items = calcItems();
 
         cmp.refresh = _ =>
             cmp.setState({items: calcItems()})
@@ -68,8 +132,14 @@ jb.component('table.init', {
           cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
           if (cmp.ctx.vars.itemlistCntr)
               cmp.ctx.vars.itemlistCntr.items = cmp.items;
+          extendItemsWithCalculatedFields();
           cmp.sortItems && cmp.sortItems();
           return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit || 100);
+        }
+
+        function extendItemsWithCalculatedFields() {
+          cmp.fields.filter(f=>f.extendItems).forEach(f=>
+            cmp.items.forEach(item=>item[f.title] = f.calcFieldData(item)))
         }
       },
   })
@@ -95,8 +165,8 @@ jb.component('table.init-sort', {
         }
         cmp.sortItems = function() {
           if (!cmp.items || !cmp.state.sortOptions || cmp.state.sortOptions.length == 0) return;
-          cmp.items.forEach(i=>cmp.state.sortOptions.forEach(o=> 
-              i['$jb_$sort_'+o.field.title] = o.field.fieldData(i)));
+          cmp.items.forEach((item,index)=>cmp.state.sortOptions.forEach(o=> 
+              item['$jb_$sort_'+o.field.title] = o.field.fieldData(item,index)));
           var major = cmp.state.sortOptions[0], minor = cmp.state.sortOptions[1];
           if (!minor)
             cmp.items.sort(sortFunc(major))

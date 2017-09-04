@@ -227,6 +227,8 @@ function calcVar(context,varname) {
     res = context.vars.scope[varname];
   else if (jb.resources && jb.resources[varname] != null)
     res = jb.resources[varname];
+  else if (jb.consts && jb.consts[varname] != null)
+    res = jb.consts[varname];
   return resolveFinishedPromise(res);
 }
 
@@ -649,11 +651,12 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, functions: {}, resources: {},
+  comps: {}, functions: {}, resources: {}, consts: {},
   studio: { previewjb: jb },
   component: (id,val) => jb.comps[id] = val,
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => typeof val == 'undefined' ? jb.resources[id] : (jb.resources[id] = val || {}),
+  const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
   functionDef: (id,val) => jb.functions[id] = val,
 
 // force path - create objects in the path if not exist

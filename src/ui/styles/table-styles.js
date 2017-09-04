@@ -4,8 +4,8 @@ jb.component('table.with-headers', {
     template: (cmp,state,h) => h('table',{},[
         h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
-            state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item)) : f.fieldData(item))))
+            state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
+              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item),{row:item, index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
@@ -13,6 +13,7 @@ jb.component('table.with-headers', {
     features:{$: 'table.init'},
     css: `{border-spacing: 0; text-align: left}
     >tbody>tr>td { padding-right: 5px }
+    {width: 100%}
     `
   }
 })
@@ -37,8 +38,8 @@ jb.component('table.mdl', {
           }
           ,f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
-            state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item)) : f.fieldData(item))))
+            state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
+              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item),{row:item, index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
@@ -47,5 +48,6 @@ jb.component('table.mdl', {
       {$: 'table.init'},
       {$: 'table.init-sort'}
     ],
+    css: `{width: 100%}`
   }
 })

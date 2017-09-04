@@ -1,56 +1,43 @@
 jb.component('studio.open-new-profile-dialog', {
-  type: 'action',
+  type: 'action', 
   params: [
     {
-      id: 'path',
-      as: 'string',
+      id: 'path', 
+      as: 'string', 
       defaultValue :{$: 'studio.currentProfilePath' }
-    },
-    { id: 'type', as: 'string' },
-    {
-      id: 'mode',
-      option: 'insert,insert-control,update',
-      defaultValue: 'insert'
-    },
+    }, 
+    { id: 'type', as: 'string' }, 
+    { id: 'mode', option: 'insert,insert-control,update', defaultValue: 'insert' }, 
     { id: 'onClose', type: 'action', dynamic: true }
-  ],
-  impl :{$: 'open-dialog',
-    style :{$: 'dialog.studio-floating' },
-    content :{$: 'studio.select-profile',
-      onSelect :{$: 'action.if',
-        condition: '%$mode% == "insert-control"',
-        then: {$: 'studio.insert-control', path: '%$path%', comp: '%%' },
+  ], 
+  impl :{$: 'open-dialog', 
+    style :{$: 'dialog.studio-floating' }, 
+    content :{$: 'studio.select-profile', 
+      onSelect :{$: 'action.if', 
+        condition: '%$mode% == \"insert-control\"', 
+        then :{$: 'studio.insert-control', path: '%$path%', comp: '%%' }, 
         else :{
-          $if: '%$mode% == "insert"',
-          then :{$: 'studio.add-array-item',
-            path: '%$path%',
+          $if: '%$mode% == \"insert\"', 
+          then :{$: 'studio.add-array-item', 
+            path: '%$path%', 
             toAdd :{
               $object :{$: '%%' }
             }
-          },
+          }, 
           else :{$: 'studio.set-comp', path: '%$path%', comp: '%%' }
         }
-      },
-      type: '%$type%',
+      }, 
+      type: '%$type%', 
       path: '%$path%'
-    },
-    title: 'new %$type%',
+    }, 
+    title: 'new %$type%', 
     features: [
-      {$: 'css.height', height: '430', overflow: 'hidden' },
-      {$: 'css.width', width: '450', overflow: 'hidden' },
-      {$: 'dialog-feature.drag-title', id: 'new %$type%' },
-      {$: 'dialog-feature.near-launcher-position', offsetLeft: 0, offsetTop: 0 },
-      {$: 'dialog-feature.auto-focus-on-first-input' },
-//			{$: 'var', name: 'initial-comps-index', value: {$: 'studio.comps-undo-index'}},
-      {$: 'dialog-feature.onClose',
-        action : [
-					{ $if: {$not:'%%'},
-	//					then: {$: 'studio.revert', toIndex: '%$initial-comps-index%' },
-						else: [ {$:'studio.goto-last-edit'}, {$: 'studio.focus-on-first-property'}]
-					},
-					{ $call: 'onClose' }
-				]
-      }
+      {$: 'css.height', height: '430', overflow: 'hidden' }, 
+      {$: 'css.width', width: '450', overflow: 'hidden' }, 
+      {$: 'dialog-feature.drag-title', id: 'new %$type%' }, 
+      {$: 'dialog-feature.near-launcher-position', offsetLeft: 0, offsetTop: 0 }, 
+      {$: 'dialog-feature.auto-focus-on-first-input' }, 
+      {$: 'dialog-feature.onClose', action: [{ $call: 'onClose' }] }
     ]
   }
 })

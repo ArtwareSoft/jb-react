@@ -59,72 +59,67 @@ jb.component('studio.open-source-dialog', {
 })
 
 jb.component('studio.properties', {
-  type: 'control',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'group',
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'group', 
     controls: [
-      {$: 'group',
-        title: 'accordion',
-        style :{$: 'group.studio-properties-accordion' },
+      {$: 'group', 
+        title: 'accordion', 
+        style :{$: 'group.studio-properties-accordion' }, 
         controls: [
-          {$: 'group',
-            remark: 'properties',
+          {$: 'group', 
+            remark: 'properties', 
             title :{
               $pipeline: [
-                {$: 'count',
+                {$: 'count', 
                   items :{$: 'studio.non-control-children', path: '%$path%' }
-                },
+                }, 
                 'Properties (%%)'
               ]
-            },
-            style :{$: 'property-sheet.studio-properties' },
+            }, 
+            style :{$: 'property-sheet.studio-properties' }, 
             controls: [
-              {$: 'dynamic-controls',
-                controlItems :{$: 'studio.non-control-children', path: '%$path%' },
+              {$: 'dynamic-controls', 
+                controlItems :{$: 'studio.non-control-children', path: '%$path%' }, 
                 genericControl :{$: 'studio.property-field', path: '%$controlItem%' }
               }
             ]
-          },
-          {$: 'group',
-            remark: 'features',
+          }, 
+          {$: 'group', 
+            remark: 'features', 
             title :{
               $pipeline: [
-                {$: 'count',
+                {$: 'count', 
                   items :{$: 'studio.val', path: '%$path%~features' }
-                },
+                }, 
                 'Features (%%)'
               ]
-            },
+            }, 
             controls :{$: 'studio.property-array', path: '%$path%~features' }
           }
-        ],
+        ], 
         features: [
-          {$: 'group.dynamic-titles' },
-          {$: 'studio.watch-path', path: '%$path%~features' },
-          {$: 'hidden',
-            showCondition :{$: 'studio.has-param',
-              remark: 'not a control',
-              path: '%$path%',
-              param: 'features'
-            }
+          {$: 'group.dynamic-titles' }, 
+          {$: 'studio.watch-path', path: '%$path%~features' }, 
+          {$: 'hidden', 
+            showCondition :{$: 'studio.has-param', remark: 'not a control', path: '%$path%', param: 'features' }
           }
         ]
-      },
-      {$: 'button',
-        title: 'new feature',
-        action :{$: 'studio.open-new-profile-dialog',
-          path: '%$path%~features',
-          type: 'feature',
-          onClose: ctx =>
-            ctx.vars.PropertiesDialog.openFeatureSection()
-        },
-        style :{$: 'button.href' },
+      }, 
+      {$: 'button', 
+        title: 'new feature', 
+        action :{$: 'studio.open-new-profile-dialog', 
+          path: '%$path%~features', 
+          type: 'feature', 
+          onClose :{$: 'studio.focus-on-first-property', delay: 100 }
+        }, 
+        style :{$: 'button.href' }, 
         features :{$: 'css.margin', top: '20', left: '5' }
       }
-    ],
-    features :{$: 'var',
-      name: 'PropertiesDialog',
-      value :{$: 'object' },
+    ], 
+    features :{$: 'var', 
+      name: 'PropertiesDialog', 
+      value :{$: 'object' }, 
       mutable: false
     }
   }

@@ -1,6 +1,3 @@
-jb.component('newline', {
-  impl: ctx => '\n'
-})
 
 jb.component('extract-text', {
   description: 'text breaking according to begin/end markers',

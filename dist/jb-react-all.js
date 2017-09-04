@@ -227,6 +227,8 @@ function calcVar(context,varname) {
     res = context.vars.scope[varname];
   else if (jb.resources && jb.resources[varname] != null)
     res = jb.resources[varname];
+  else if (jb.consts && jb.consts[varname] != null)
+    res = jb.consts[varname];
   return resolveFinishedPromise(res);
 }
 
@@ -649,11 +651,12 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, functions: {}, resources: {},
+  comps: {}, functions: {}, resources: {}, consts: {},
   studio: { previewjb: jb },
   component: (id,val) => jb.comps[id] = val,
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => typeof val == 'undefined' ? jb.resources[id] : (jb.resources[id] = val || {}),
+  const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
   functionDef: (id,val) => jb.functions[id] = val,
 
 // force path - create objects in the path if not exist
@@ -807,7 +810,7 @@ jb.pipe = function(context,items,ptName) {
 
 
 	function step(profile,i,data) {
-    if (profile && profile.$disabled) return data;
+    	if (!profile || profile.$disabled) return data;
 		var parentParam = (i == profiles.length - 1 && context.parentParam) ? context.parentParam : { as: 'array'};
 		if (jb.profileType(profile) == 'aggregator')
 			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
@@ -12475,398 +12478,6 @@ jb.rx.Subject = __WEBPACK_IMPORTED_MODULE_0_rxjs_Subject__["Subject"];
 /***/ })
 /******/ ]);;
 
-jb.component('group', {
-  type: 'control', category: 'group:100,common:90',
-  params: [
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, essential: true , dynamic: true },
-    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
-})
-
-jb.component('group.init-group', {
-  type: 'feature', category: 'group:0',
-  impl: ctx => ({
-    init: cmp => {
-      cmp.calcCtrls = cmp.calcCtrls || (_ =>
-        ctx.vars.$model.controls(cmp.ctx).map(c=>jb.ui.renderable(c)).filter(x=>x))
-      if (!cmp.state.ctrls)
-        cmp.state.ctrls = cmp.calcCtrls()
-      cmp.refresh = cmp.refresh || (_ =>
-          cmp.setState({ctrls: cmp.calcCtrls() }))
-
-      if (cmp.ctrlEmitter)
-        cmp.ctrlEmitter.subscribe(ctrls=>
-              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c)).filter(x=>x)},null,ctx))
-    }
-  })
-})
-
-jb.component('dynamic-controls', {
-  type: 'control',
-  params: [
-    { id: 'controlItems', type: 'data', as: 'array', essential: true, dynamic: true },
-    { id: 'genericControl', type: 'control', essential: true, dynamic: true },
-    { id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
-  ],
-  impl: (context,controlItems,genericControl,itemVariable) =>
-    controlItems()
-      .map(controlItem => jb.tosingle(genericControl(
-        new jb.jbCtx(context,{data: controlItem, vars: jb.obj(itemVariable,controlItem)})))
-      )
-})
-
-jb.component('group.dynamic-titles', {
-  type: 'feature', category: 'group:30',
-  description: 'dynamic titles for sub controls',
-  impl: ctx => ({
-    doCheck: cmp =>
-      (cmp.state.ctrls || []).forEach(ctrl=>
-        ctrl.title = ctrl.jbComp.jb_title ? ctrl.jbComp.jb_title() : '')
-  })
-})
-
-jb.component('control.first-succeeding', {
-  type: 'control', category: 'common:30',
-  params: [
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, essential: true , dynamic: true },
-    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
-})
-
-jb.component('control-with-condition', {
-  type: 'control',
-  params: [
-    { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
-    { id: 'control', type: 'control', essential: true, dynamic: true },
-    { id: 'title', as: 'string' },
-  ],
-  impl: (ctx,condition,ctrl) =>
-    condition && ctrl(ctx)
-})
-;
-
-(function() {
-
-class ImmutableWithPath {
-  constructor(resources) {
-    this.resources = resources;
-    this.resourceVersions = {};
-    this.pathId = 0;
-    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
-    this.resourceChange = new jb.rx.Subject();
-    jb.delay(1).then(_=>jb.ui.originalResources = jb.resources)
-  }
-  val(ref) {
-    if (ref == null) return ref;
-    if (ref.$jb_val) return ref.$jb_val();
-    if (!ref.$jb_path) return ref;
-    if (ref.handler != this)
-      return ref.handler.val(ref)
-
-    var resource = ref.$jb_path[0];
-    if (ref.$jb_resourceV == this.resourceVersions[resource])
-      return ref.$jb_cache;
-    this.refresh(ref);
-    if (ref.$jb_invalid)
-      return null;
-    return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
-  }
-  writeValue(ref,value,srcCtx) {
-    if (!ref)
-      return jb.logError('writeValue: null ref');
-    if (this.val(ref) === value) return;
-    jb.logPerformance('writeValue',value,ref,srcCtx);
-    if (ref.$jb_val)
-      return ref.$jb_val(value);
-    return this.doOp(ref,{$set: value},srcCtx)
-  }
-  splice(ref,args,srcCtx) {
-    return this.doOp(ref,{$splice: args },srcCtx)
-  }
-  move(fromRef,toRef,srcCtx) {
-    var sameArray = fromRef.$jb_path.slice(0,-1).join('~') == toRef.$jb_path.slice(0,-1).join('~');
-    var fromIndex = Number(fromRef.$jb_path.slice(-1));
-    var toIndex = Number(toRef.$jb_path.slice(-1));
-    var fromArray = this.refOfPath(fromRef.$jb_path.slice(0,-1)),toArray = this.refOfPath(toRef.$jb_path.slice(0,-1));
-    if (isNaN(fromIndex) || isNaN(toIndex))
-        return jb.logError('move: not array element',fromRef,toRef);
-
-    var valToMove = jb.val(fromRef);
-    if (sameArray) {
-        if (fromIndex < toIndex) toIndex--; // the deletion changes the index
-        return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
-    }
-    var events = [
-        this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx,true),
-        this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx,true),
-    ]
-    events.forEach(opEvent=>{
-        this.refresh(opEvent.ref,opEvent);
-        opEvent.newVal = this.val(opEvent.ref);
-        this.resourceChange.next(opEvent)
-    })
-  }
-  push(ref,value,srcCtx) {
-    return this.doOp(ref,{$push: value},srcCtx)
-  }
-  merge(ref,value,srcCtx) {
-    return this.doOp(ref,{$merge: value},srcCtx)
-  }
-  doOp(ref,opOnRef,srcCtx,doNotNotify) {
-    if (!this.isRef(ref))
-      ref = this.asRef(ref);
-    if (!ref) return;
-    var oldRef = Object.assign({},ref);
-
-    if (!this.refresh(ref)) return;
-    if (ref.$jb_path.length == 0)
-      return jb.logError('doOp: ref not found');
-
-    var op = {}, resource = ref.$jb_path[0], oldResources = this.resources();
-    var deleteOp = typeof opOnRef.$set == 'object' && opOnRef.$set == null;
-    jb.path(op,ref.$jb_path,opOnRef); // create op as nested object
-    this.markPath(ref.$jb_path);
-    var opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
-        oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
-    this.resources(jb.ui.update(this.resources(),op),opEvent);
-    this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
-    this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
-    opEvent.resourceVersionsAfter = this.resourceVersions;
-    if (opOnRef.$push)
-      opEvent.insertedPath = opEvent.path.concat([opEvent.oldVal.length]);
-    if (deleteOp) {
-      if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
-        return delete this.resourceVersions[resource];
-      try {
-        var parent = ref.$jb_path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
-        if (parent)
-          delete parent[ref.$jb_path.slice(-1)[0]]
-      } catch(e) {
-        jb.logException('delete',e);
-      }
-    }
-    if (!doNotNotify) {
-        this.refresh(ref,opEvent);
-        opEvent.newVal = this.val(ref);
-        this.resourceChange.next(opEvent);
-    }
-    return opEvent;
-  }
-  restoreArrayIds(from,to,path) {
-    if (from && to && from.$jb_id && Array.isArray(from) && Array.isArray(to) && !to.$jb_id && typeof to == 'object')
-      to.$jb_id = from.$jb_id;
-    if (path.length > 0)
-      this.restoreArrayIds(from[path[0]], to[path[0]], path.slice(1))
-  }
-  asRef(obj,hint) {
-    if (!obj) return obj;
-    if (obj && (obj.$jb_path || obj.$jb_val))
-        return obj;
-
-    var path;
-    if (hint && hint.resource) {
-      var res = this.pathOfObject(obj,this.resources()[hint.resource]);
-      path = res && [hint.resource].concat(res);
-    }
-    path = path || this.pathOfObject(obj,this.resources()); // try without the hint
-
-    if (path)
-      return {
-        $jb_path: path,
-        $jb_resourceV: this.resourceVersions[path[0]],
-        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
-        handler: this,
-      }
-    return obj;
-  }
-  isRef(ref) {
-    return ref && (ref.$jb_path || ref.$jb_val);
-  }
-  objectProperty(obj,prop) {
-    if (!obj)
-      return jb.logError('objectProperty: null obj');
-    var objRef = this.asRef(obj);
-    if (objRef && objRef.$jb_path) {
-      return {
-        $jb_path: objRef.$jb_path.concat([prop]),
-        $jb_resourceV: objRef.$jb_resourceV,
-        $jb_cache: objRef.$jb_cache[prop],
-        $jb_parentOfPrim: objRef.$jb_cache,
-        handler: this,
-      }
-    } else {
-      return obj[prop]; // not reffable
-    }
-  }
-  refresh(ref,lastOpEvent,silent) {
-    if (!ref) debugger;
-    try {
-      var path = ref.$jb_path, new_ref = {};
-      if (!path)
-        return !silent && jb.logError('refresh: empty path');
-      var currentVersion = this.resourceVersions[path[0]] || 0;
-      if (path.length == 1) return true;
-      if (currentVersion == ref.$jb_resourceV) return true;
-      if (currentVersion == ref.$jb_resourceV + 1 && lastOpEvent && typeof lastOpEvent.op.$set != 'undefined') {
-        var res = this.refOfPath(ref.$jb_path,silent); // recalc ref by path
-        if (res)
-          return Object.assign(ref,res)
-        ref.$jb_invalid = true;
-        return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
-      }
-
-      if (ref.$jb_parentOfPrim) {
-        var parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
-        if (!parent || !this.isRef(parent)) {
-          this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
-          ref.$jb_invalid = true;
-          return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
-        }
-        var prop = path.slice(-1)[0];
-        new_ref = {
-          $jb_path: parent.$jb_path.concat([prop]),
-          $jb_resourceV: this.resourceVersions[path[0]],
-          $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
-          $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
-          handler: this,
-        }
-      } else {
-        var object_path_found = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
-        if (!object_path_found) {
-          this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
-          ref.$jb_invalid = true;
-          return !silent && jb.logError('refresh: object not found: ' + path.join('~'));
-        }
-        var new_path = [path[0]].concat(object_path_found);
-        if (new_path) new_ref = {
-          $jb_path: new_path,
-          $jb_resourceV: this.resourceVersions[new_path[0]],
-          $jb_cache: new_path.reduce((o,p)=>o[p],this.resources()),
-          handler: this,
-        }
-      }
-      Object.assign(ref,new_ref);
-    } catch (e) {
-       ref.$jb_invalid = true;
-       return !silent && jb.logException(e,'ref refresh ',ref);
-    }
-    return true;
-  }
-  refOfPath(path,silent) {
-      try {
-        var val = path.reduce((o,p)=>o[p],this.resources());
-        if (val == null || typeof val != 'object' || Array.isArray(val))
-          var parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
-        else
-          var parent = null
-
-        return {
-            $jb_path: path,
-            $jb_resourceV: this.resourceVersions[path[0]],
-            $jb_cache: val,
-            $jb_parentOfPrim: parent,
-            handler: this,
-          }
-      } catch (e) {
-        if (!silent)
-          jb.logException(e,'ref from path ' + path);
-      }
-  }
-  markPath(path) {
-    var leaf = path.reduce((o,p)=>{
-      o.$jb_id = o.$jb_id || (++this.pathId);
-      return o[p]
-    }, this.resources());
-    if (leaf && typeof leaf == 'object')
-      leaf.$jb_id = leaf.$jb_id || (++this.pathId);
-  }
-  pathOfObject(obj,lookIn,depth) {
-    if (!obj || !lookIn || typeof lookIn != 'object' || typeof obj != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50)
-      return;
-    if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1)
-      return;
-
-    if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id))
-      return [];
-    for(var p in lookIn) {
-      var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
-      if (res)
-        return [p].concat(res);
-    }
-  }
-  // valid(ref) {
-  //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
-  // }
-  refObservable(ref,cmp,settings) {
-    if (ref && ref.$jb_observable)
-      return ref.$jb_observable(cmp);
-    if (!ref || !this.isRef(ref))
-      return jb.rx.Observable.of();
-    if (ref.$jb_path) {
-      return this.resourceChange
-        .takeUntil(cmp.destroyed)
-        .filter(e=>
-            e.ref.$jb_path[0] == ref.$jb_path[0])
-        .filter(e=> {
-          this.refresh(ref,e,true);
-          if (settings && settings.throw && ref.$jb_invalid)
-            throw 'invalid ref';
-          var path = e.ref.$jb_path;
-          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
-          if (settings && settings.includeChildren)
-            return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
-          return changeInParent;
-        })
-        .distinctUntilChanged((e1,e2)=>
-          e1.newVal == e2.newVal)
-    }
-    return jb.rx.Observable.of(jb.val(ref));
-  }
-}
-
-function resourcesRef(val) {
-  if (typeof val == 'undefined')
-    return jb.resources;
-  else
-    jb.resources = val;
-}
-
-jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
-
-jb.ui.refObservable = (ref,cmp,settings) =>
-  jb.refHandler(ref).refObservable(ref,cmp,settings);
-
-jb.ui.ImmutableWithPath = ImmutableWithPath;
-jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
-
-jb.ui.pathObservable = (path,handler,cmp) => {
-  var ref = handler.refOfPath(path.split('~'));
-  return handler.resourceChange
-    .takeUntil(cmp.destroyed)
-    .filter(e=>
-        path.indexOf(e.oldRef.$jb_path.join('~')) == 0)
-    .map(e=> {
-    handler.refresh(ref,e,true);
-    if (!ref.$jb_invalid)
-        return ref.$jb_path.join('~')
-    })
-    .filter(newPath=>newPath != path)
-    .take(1)
-    .map(newPath=>({newPath: newPath, oldPath: path}))
-}
-
-
-})()
-;
-
 (function(){
 
 var ui = jb.ui;
@@ -13344,6 +12955,398 @@ jb.component('style-by-control', {
 })()
 ;
 
+(function() {
+
+class ImmutableWithPath {
+  constructor(resources) {
+    this.resources = resources;
+    this.resourceVersions = {};
+    this.pathId = 0;
+    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
+    this.resourceChange = new jb.rx.Subject();
+    jb.delay(1).then(_=>jb.ui.originalResources = jb.resources)
+  }
+  val(ref) {
+    if (ref == null) return ref;
+    if (ref.$jb_val) return ref.$jb_val();
+    if (!ref.$jb_path) return ref;
+    if (ref.handler != this)
+      return ref.handler.val(ref)
+
+    var resource = ref.$jb_path[0];
+    if (ref.$jb_resourceV == this.resourceVersions[resource])
+      return ref.$jb_cache;
+    this.refresh(ref);
+    if (ref.$jb_invalid)
+      return null;
+    return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
+  }
+  writeValue(ref,value,srcCtx) {
+    if (!ref)
+      return jb.logError('writeValue: null ref');
+    if (this.val(ref) === value) return;
+    jb.logPerformance('writeValue',value,ref,srcCtx);
+    if (ref.$jb_val)
+      return ref.$jb_val(value);
+    return this.doOp(ref,{$set: value},srcCtx)
+  }
+  splice(ref,args,srcCtx) {
+    return this.doOp(ref,{$splice: args },srcCtx)
+  }
+  move(fromRef,toRef,srcCtx) {
+    var sameArray = fromRef.$jb_path.slice(0,-1).join('~') == toRef.$jb_path.slice(0,-1).join('~');
+    var fromIndex = Number(fromRef.$jb_path.slice(-1));
+    var toIndex = Number(toRef.$jb_path.slice(-1));
+    var fromArray = this.refOfPath(fromRef.$jb_path.slice(0,-1)),toArray = this.refOfPath(toRef.$jb_path.slice(0,-1));
+    if (isNaN(fromIndex) || isNaN(toIndex))
+        return jb.logError('move: not array element',fromRef,toRef);
+
+    var valToMove = jb.val(fromRef);
+    if (sameArray) {
+        if (fromIndex < toIndex) toIndex--; // the deletion changes the index
+        return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
+    }
+    var events = [
+        this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx,true),
+        this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx,true),
+    ]
+    events.forEach(opEvent=>{
+        this.refresh(opEvent.ref,opEvent);
+        opEvent.newVal = this.val(opEvent.ref);
+        this.resourceChange.next(opEvent)
+    })
+  }
+  push(ref,value,srcCtx) {
+    return this.doOp(ref,{$push: value},srcCtx)
+  }
+  merge(ref,value,srcCtx) {
+    return this.doOp(ref,{$merge: value},srcCtx)
+  }
+  doOp(ref,opOnRef,srcCtx,doNotNotify) {
+    if (!this.isRef(ref))
+      ref = this.asRef(ref);
+    if (!ref) return;
+    var oldRef = Object.assign({},ref);
+
+    if (!this.refresh(ref)) return;
+    if (ref.$jb_path.length == 0)
+      return jb.logError('doOp: ref not found');
+
+    var op = {}, resource = ref.$jb_path[0], oldResources = this.resources();
+    var deleteOp = typeof opOnRef.$set == 'object' && opOnRef.$set == null;
+    jb.path(op,ref.$jb_path,opOnRef); // create op as nested object
+    this.markPath(ref.$jb_path);
+    var opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
+        oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
+    this.resources(jb.ui.update(this.resources(),op),opEvent);
+    this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
+    this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
+    opEvent.resourceVersionsAfter = this.resourceVersions;
+    if (opOnRef.$push)
+      opEvent.insertedPath = opEvent.path.concat([opEvent.oldVal.length]);
+    if (deleteOp) {
+      if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
+        return delete this.resourceVersions[resource];
+      try {
+        var parent = ref.$jb_path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
+        if (parent)
+          delete parent[ref.$jb_path.slice(-1)[0]]
+      } catch(e) {
+        jb.logException('delete',e);
+      }
+    }
+    if (!doNotNotify) {
+        this.refresh(ref,opEvent);
+        opEvent.newVal = this.val(ref);
+        this.resourceChange.next(opEvent);
+    }
+    return opEvent;
+  }
+  restoreArrayIds(from,to,path) {
+    if (from && to && from.$jb_id && Array.isArray(from) && Array.isArray(to) && !to.$jb_id && typeof to == 'object')
+      to.$jb_id = from.$jb_id;
+    if (path.length > 0)
+      this.restoreArrayIds(from[path[0]], to[path[0]], path.slice(1))
+  }
+  asRef(obj,hint) {
+    if (!obj) return obj;
+    if (obj && (obj.$jb_path || obj.$jb_val))
+        return obj;
+
+    var path;
+    if (hint && hint.resource) {
+      var res = this.pathOfObject(obj,this.resources()[hint.resource]);
+      path = res && [hint.resource].concat(res);
+    }
+    path = path || this.pathOfObject(obj,this.resources()); // try without the hint
+
+    if (path)
+      return {
+        $jb_path: path,
+        $jb_resourceV: this.resourceVersions[path[0]],
+        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
+        handler: this,
+      }
+    return obj;
+  }
+  isRef(ref) {
+    return ref && (ref.$jb_path || ref.$jb_val);
+  }
+  objectProperty(obj,prop) {
+    if (!obj)
+      return jb.logError('objectProperty: null obj');
+    var objRef = this.asRef(obj);
+    if (objRef && objRef.$jb_path) {
+      return {
+        $jb_path: objRef.$jb_path.concat([prop]),
+        $jb_resourceV: objRef.$jb_resourceV,
+        $jb_cache: objRef.$jb_cache[prop],
+        $jb_parentOfPrim: objRef.$jb_cache,
+        handler: this,
+      }
+    } else {
+      return obj[prop]; // not reffable
+    }
+  }
+  refresh(ref,lastOpEvent,silent) {
+    if (!ref) debugger;
+    try {
+      var path = ref.$jb_path, new_ref = {};
+      if (!path)
+        return !silent && jb.logError('refresh: empty path');
+      var currentVersion = this.resourceVersions[path[0]] || 0;
+      if (path.length == 1) return true;
+      if (currentVersion == ref.$jb_resourceV) return true;
+      if (currentVersion == ref.$jb_resourceV + 1 && lastOpEvent && typeof lastOpEvent.op.$set != 'undefined') {
+        var res = this.refOfPath(ref.$jb_path,silent); // recalc ref by path
+        if (res)
+          return Object.assign(ref,res)
+        ref.$jb_invalid = true;
+        return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
+      }
+
+      if (ref.$jb_parentOfPrim) {
+        var parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
+        if (!parent || !this.isRef(parent)) {
+          this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
+          ref.$jb_invalid = true;
+          return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
+        }
+        var prop = path.slice(-1)[0];
+        new_ref = {
+          $jb_path: parent.$jb_path.concat([prop]),
+          $jb_resourceV: this.resourceVersions[path[0]],
+          $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
+          $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
+      } else {
+        var object_path_found = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+        if (!object_path_found) {
+          this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+          ref.$jb_invalid = true;
+          return !silent && jb.logError('refresh: object not found: ' + path.join('~'));
+        }
+        var new_path = [path[0]].concat(object_path_found);
+        if (new_path) new_ref = {
+          $jb_path: new_path,
+          $jb_resourceV: this.resourceVersions[new_path[0]],
+          $jb_cache: new_path.reduce((o,p)=>o[p],this.resources()),
+          handler: this,
+        }
+      }
+      Object.assign(ref,new_ref);
+    } catch (e) {
+       ref.$jb_invalid = true;
+       return !silent && jb.logException(e,'ref refresh ',ref);
+    }
+    return true;
+  }
+  refOfPath(path,silent) {
+      try {
+        var val = path.reduce((o,p)=>o[p],this.resources());
+        if (val == null || typeof val != 'object' || Array.isArray(val))
+          var parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
+        else
+          var parent = null
+
+        return {
+            $jb_path: path,
+            $jb_resourceV: this.resourceVersions[path[0]],
+            $jb_cache: val,
+            $jb_parentOfPrim: parent,
+            handler: this,
+          }
+      } catch (e) {
+        if (!silent)
+          jb.logException(e,'ref from path ' + path);
+      }
+  }
+  markPath(path) {
+    var leaf = path.reduce((o,p)=>{
+      o.$jb_id = o.$jb_id || (++this.pathId);
+      return o[p]
+    }, this.resources());
+    if (leaf && typeof leaf == 'object')
+      leaf.$jb_id = leaf.$jb_id || (++this.pathId);
+  }
+  pathOfObject(obj,lookIn,depth) {
+    if (!obj || !lookIn || typeof lookIn != 'object' || typeof obj != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50)
+      return;
+    if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1)
+      return;
+
+    if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id))
+      return [];
+    for(var p in lookIn) {
+      var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
+      if (res)
+        return [p].concat(res);
+    }
+  }
+  // valid(ref) {
+  //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
+  // }
+  refObservable(ref,cmp,settings) {
+    if (ref && ref.$jb_observable)
+      return ref.$jb_observable(cmp);
+    if (!ref || !this.isRef(ref))
+      return jb.rx.Observable.of();
+    if (ref.$jb_path) {
+      return this.resourceChange
+        .takeUntil(cmp.destroyed)
+        .filter(e=>
+            e.ref.$jb_path[0] == ref.$jb_path[0])
+        .filter(e=> {
+          this.refresh(ref,e,true);
+          if (settings && settings.throw && ref.$jb_invalid)
+            throw 'invalid ref';
+          var path = e.ref.$jb_path;
+          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
+          if (settings && settings.includeChildren)
+            return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
+          return changeInParent;
+        })
+        .distinctUntilChanged((e1,e2)=>
+          e1.newVal == e2.newVal)
+    }
+    return jb.rx.Observable.of(jb.val(ref));
+  }
+}
+
+function resourcesRef(val) {
+  if (typeof val == 'undefined')
+    return jb.resources;
+  else
+    jb.resources = val;
+}
+
+jb.valueByRefHandler = new ImmutableWithPath(resourcesRef);
+
+jb.ui.refObservable = (ref,cmp,settings) =>
+  jb.refHandler(ref).refObservable(ref,cmp,settings);
+
+jb.ui.ImmutableWithPath = ImmutableWithPath;
+jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
+
+jb.ui.pathObservable = (path,handler,cmp) => {
+  var ref = handler.refOfPath(path.split('~'));
+  return handler.resourceChange
+    .takeUntil(cmp.destroyed)
+    .filter(e=>
+        path.indexOf(e.oldRef.$jb_path.join('~')) == 0)
+    .map(e=> {
+    handler.refresh(ref,e,true);
+    if (!ref.$jb_invalid)
+        return ref.$jb_path.join('~')
+    })
+    .filter(newPath=>newPath != path)
+    .take(1)
+    .map(newPath=>({newPath: newPath, oldPath: path}))
+}
+
+
+})()
+;
+
+jb.component('group', {
+  type: 'control', category: 'group:100,common:90',
+  params: [
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, essential: true , dynamic: true },
+    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx)
+})
+
+jb.component('group.init-group', {
+  type: 'feature', category: 'group:0',
+  impl: ctx => ({
+    init: cmp => {
+      cmp.calcCtrls = cmp.calcCtrls || (_ =>
+        ctx.vars.$model.controls(cmp.ctx).map(c=>jb.ui.renderable(c)).filter(x=>x))
+      if (!cmp.state.ctrls)
+        cmp.state.ctrls = cmp.calcCtrls()
+      cmp.refresh = cmp.refresh || (_ =>
+          cmp.setState({ctrls: cmp.calcCtrls() }))
+
+      if (cmp.ctrlEmitter)
+        cmp.ctrlEmitter.subscribe(ctrls=>
+              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c)).filter(x=>x)},null,ctx))
+    }
+  })
+})
+
+jb.component('dynamic-controls', {
+  type: 'control',
+  params: [
+    { id: 'controlItems', type: 'data', as: 'array', essential: true, dynamic: true },
+    { id: 'genericControl', type: 'control', essential: true, dynamic: true },
+    { id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
+  ],
+  impl: (context,controlItems,genericControl,itemVariable) =>
+    controlItems()
+      .map(controlItem => jb.tosingle(genericControl(
+        new jb.jbCtx(context,{data: controlItem, vars: jb.obj(itemVariable,controlItem)})))
+      )
+})
+
+jb.component('group.dynamic-titles', {
+  type: 'feature', category: 'group:30',
+  description: 'dynamic titles for sub controls',
+  impl: ctx => ({
+    doCheck: cmp =>
+      (cmp.state.ctrls || []).forEach(ctrl=>
+        ctrl.title = ctrl.jbComp.jb_title ? ctrl.jbComp.jb_title() : '')
+  })
+})
+
+jb.component('control.first-succeeding', {
+  type: 'control', category: 'common:30',
+  params: [
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, essential: true , dynamic: true },
+    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx)
+})
+
+jb.component('control-with-condition', {
+  type: 'control',
+  params: [
+    { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
+    { id: 'control', type: 'control', essential: true, dynamic: true },
+    { id: 'title', as: 'string' },
+  ],
+  impl: (ctx,condition,ctrl) =>
+    condition && ctrl(ctx)
+})
+;
+
 jb.component('label', {
     type: 'control', category: 'control:100,common:80',
     params: [
@@ -13445,6 +13448,40 @@ jb.component('highlight', {
         jb.ui.h('span',{class: cssClass},highlight),
         b.split(highlight).slice(1).join(highlight)]
   }
+})
+;
+
+jb.component('image', {
+	type: 'control,image', category: 'control:50',
+	params: [
+		{ id: 'url', as: 'string', essential: true },
+		{ id: 'imageWidth', as: 'number' },
+		{ id: 'imageHeight', as: 'number' },
+		{ id: 'width', as: 'number' },
+		{ id: 'height', as: 'number' },
+		{ id: 'units', as: 'string', defaultValue : 'px'},
+		{ id: 'style', type: 'image.style', dynamic: true, defaultValue: { $: 'image.default' } },
+		{ id: 'features', type: 'feature[]', dynamic: true }
+	],
+	impl: ctx => {
+			['imageWidth','imageHeight','width','height'].forEach(prop=>
+					ctx.params[prop] = ctx.params[prop] || null);
+			return jb.ui.ctrl(ctx, {
+				init: cmp =>
+					cmp.state.url = ctx.params.url
+			})
+		}
+})
+
+jb.component('image.default', {
+	type: 'image.style',
+	impl :{$: 'custom-style',
+		template: (cmp,state,h) =>
+			h('div',{}, h('img', {src: state.url})),
+
+		css: `{ {? width: %$$model/width%%$$model/units%; ?} {? height: %$$model/height%%$$model/units%; ?} }
+			>img{ {? width: %$$model/imageWidth%%$$model/units%; ?} {? height: %$$model/imageHeight%%$$model/units%; ?} }`
+	}
 })
 ;
 
@@ -13749,40 +13786,6 @@ jb.component('field.toolbar', {
 })
 ;
 
-jb.component('image', {
-	type: 'control,image', category: 'control:50',
-	params: [
-		{ id: 'url', as: 'string', essential: true },
-		{ id: 'imageWidth', as: 'number' },
-		{ id: 'imageHeight', as: 'number' },
-		{ id: 'width', as: 'number' },
-		{ id: 'height', as: 'number' },
-		{ id: 'units', as: 'string', defaultValue : 'px'},
-		{ id: 'style', type: 'image.style', dynamic: true, defaultValue: { $: 'image.default' } },
-		{ id: 'features', type: 'feature[]', dynamic: true }
-	],
-	impl: ctx => {
-			['imageWidth','imageHeight','width','height'].forEach(prop=>
-					ctx.params[prop] = ctx.params[prop] || null);
-			return jb.ui.ctrl(ctx, {
-				init: cmp =>
-					cmp.state.url = ctx.params.url
-			})
-		}
-})
-
-jb.component('image.default', {
-	type: 'image.style',
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) =>
-			h('div',{}, h('img', {src: state.url})),
-
-		css: `{ {? width: %$$model/width%%$$model/units%; ?} {? height: %$$model/height%%$$model/units%; ?} }
-			>img{ {? width: %$$model/imageWidth%%$$model/units%; ?} {? height: %$$model/imageHeight%%$$model/units%; ?} }`
-	}
-})
-;
-
 jb.type('editable-text.style');
 
 jb.component('editable-text', {
@@ -13881,6 +13884,51 @@ jb.component('editable-text.helper-popup', {
 })
 ;
 
+jb.type('editable-boolean.style');
+
+jb.component('editable-boolean',{
+  type: 'control', category: 'input:20',
+  params: [
+    { id: 'databind', as: 'ref'},
+    { id: 'style', type: 'editable-boolean.style', defaultValue: { $: 'editable-boolean.checkbox' }, dynamic: true },
+    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true },
+    { id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true  },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx => jb.ui.ctrl(ctx,{
+  		init: cmp => {
+        cmp.toggle = () =>
+          cmp.jbModel(!cmp.jbModel());
+
+  			cmp.text = () => {
+          if (!cmp.jbModel) return '';
+          return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
+        }
+        cmp.extendRefresh = _ =>
+          cmp.setState({text: cmp.text()})
+          
+        cmp.refresh();
+  		},
+  	})
+})
+
+jb.component('editable-boolean.keyboard-support', {
+  type: 'feature',
+  impl: ctx => ({
+      onkeydown: true,
+      afterViewInit: cmp => {
+        cmp.onkeydown.filter(e=> 
+            e.keyCode == 37 || e.keyCode == 39)
+          .subscribe(x=> {
+            cmp.toggle();
+            cmp.refreshMdl && cmp.refreshMdl();
+          })
+      },
+    })
+})
+;
+
 jb.component('editable-number', {
   type: 'control', category: 'input:30',
   params: [
@@ -13939,51 +13987,6 @@ jb.component('editable-number.input',{
 })
 
 
-;
-
-jb.type('editable-boolean.style');
-
-jb.component('editable-boolean',{
-  type: 'control', category: 'input:20',
-  params: [
-    { id: 'databind', as: 'ref'},
-    { id: 'style', type: 'editable-boolean.style', defaultValue: { $: 'editable-boolean.checkbox' }, dynamic: true },
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true },
-    { id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true  },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx => jb.ui.ctrl(ctx,{
-  		init: cmp => {
-        cmp.toggle = () =>
-          cmp.jbModel(!cmp.jbModel());
-
-  			cmp.text = () => {
-          if (!cmp.jbModel) return '';
-          return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
-        }
-        cmp.extendRefresh = _ =>
-          cmp.setState({text: cmp.text()})
-          
-        cmp.refresh();
-  		},
-  	})
-})
-
-jb.component('editable-boolean.keyboard-support', {
-  type: 'feature',
-  impl: ctx => ({
-      onkeydown: true,
-      afterViewInit: cmp => {
-        cmp.onkeydown.filter(e=> 
-            e.keyCode == 37 || e.keyCode == 39)
-          .subscribe(x=> {
-            cmp.toggle();
-            cmp.refreshMdl && cmp.refreshMdl();
-          })
-      },
-    })
-})
 ;
 
 jb.component('group.wait', {
@@ -15905,7 +15908,7 @@ jb.component('itemlist-container.filter-field', {
             var filterValue = cmp.jbModel();
             if (!filterValue) return items;
             var res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
-            if (filterType.sort)
+            if (filterType.sort && (!cmp.state.sortOptions || cmp.state.sortOptions.length == 0) )
               filterType.sort(res,cmp.itemToFilterData,filterValue);
             return res;
         })
@@ -15964,27 +15967,6 @@ jb.component('itemlist-container.search-in-all-properties', {
 
 
 })()
-;
-
-jb.type('theme');
-
-jb.component('group.theme', {
-  type: 'feature',
-  params: [
-    { id: 'theme', type: 'theme' },
-  ],
-  impl: (context,theme) => ({
-    extendCtxOnce: (ctx,cmp) => 
-      ctx.setVars(theme)
-  })
-})
-
-jb.component('theme.material-design', {
-  type: 'theme',
-  impl: () => ({
-  	'$theme.editable-text': 'editable-text.mdl-input'
-  })
-})
 ;
 
 jb.component('picklist', {
@@ -16132,6 +16114,27 @@ jb.component('picklist.promote',{
   impl: (context,groups,options) =>
     ({ groups: groups, options: options})
 });
+;
+
+jb.type('theme');
+
+jb.component('group.theme', {
+  type: 'feature',
+  params: [
+    { id: 'theme', type: 'theme' },
+  ],
+  impl: (context,theme) => ({
+    extendCtxOnce: (ctx,cmp) => 
+      ctx.setVars(theme)
+  })
+})
+
+jb.component('theme.material-design', {
+  type: 'theme',
+  impl: () => ({
+  	'$theme.editable-text': 'editable-text.mdl-input'
+  })
+})
 ;
 
 
@@ -16329,6 +16332,7 @@ jb.component('table', {
     { id: 'fields', type: 'table-field[]', essential: true, dynamic: true },
     { id: 'style', type: 'table.style', dynamic: true , defaultValue: { $: 'table.with-headers' } },
     { id: 'watchItems', as: 'boolean' },
+    { id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default table is limmited to 100 shown items' },
     { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
   ],
   impl: ctx =>
@@ -16341,13 +16345,35 @@ jb.component('field', {
     { id: 'title', as: 'string', essential: true },
     { id: 'data', as: 'string', essential: true, dynamic: true },
     { id: 'width', as: 'number' },
+    { id: 'numeric', as: 'boolean', type: 'boolean' },
+    { id: 'extendItems', as: 'boolean', type: 'boolean', description: 'extend the items with the calculated field using the title as field name' },
     { id: 'class', as: 'string' },
   ],
-  impl: (ctx,title,data,width,_class) => ({
+  impl: (ctx,title,data,width,numeric,extendItems,_class) => ({
     title: title,
-    fieldData: row => data(ctx.setData(row)),
+    fieldData: row => extendItems ? row[title] : data(ctx.setData(row)),
+    calcFieldData: row => data(ctx.setData(row)),
     class: _class,
     width: width,
+    numeric: numeric, 
+    extendItems: extendItems,
+    ctxId: jb.ui.preserveCtx(ctx)
+  })
+})
+
+jb.component('field.index', {
+  type: 'table-field',
+  params: [
+    { id: 'title', as: 'string', defaultValue: 'index' },
+    { id: 'width', as: 'number', defaultValue: 10 },
+    { id: 'class', as: 'string' },
+  ],
+  impl: (ctx,title,propName,width_class) => ({
+    title: title,
+    fieldData: (row,index) => index,
+    class: _class,
+    width: width,
+    numeric: true, 
     ctxId: jb.ui.preserveCtx(ctx)
   })
 })
@@ -16358,11 +16384,15 @@ jb.component('field.control', {
     { id: 'title', as: 'string', essential: true },
     { id: 'control', type: 'control' , dynamic: true, essential: true, defaultValue: {$: 'label', title: ''} },
     { id: 'width', as: 'number' },
+    { id: 'dataForSort', dynamic: true },
+    { id: 'numeric', as: 'boolean', type: 'boolean' },
   ],
-  impl: (ctx,title,control,width) => ({
+  impl: (ctx,title,control,width,dataForSort,numeric) => ({
     title: title,
     control: row => control(ctx.setData(row)).reactComp(),
     width: width,
+    fieldData: row => dataForSort(ctx.setData(row)),
+    numeric: numeric, 
     ctxId: jb.ui.preserveCtx(ctx)
   })
 })
@@ -16371,8 +16401,8 @@ jb.component('table.init', {
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
-        cmp.state.items = calcItems();
         cmp.fields = ctx.vars.$model.fields();
+        cmp.state.items = calcItems();
 
         cmp.refresh = _ =>
             cmp.setState({items: calcItems()})
@@ -16384,7 +16414,62 @@ jb.component('table.init', {
           cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
           if (cmp.ctx.vars.itemlistCntr)
               cmp.ctx.vars.itemlistCntr.items = cmp.items;
-          return cmp.items.slice(0,100);
+          extendItemsWithCalculatedFields();
+          cmp.sortItems && cmp.sortItems();
+          return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit || 100);
+        }
+
+        function extendItemsWithCalculatedFields() {
+          cmp.fields.filter(f=>f.extendItems).forEach(f=>
+            cmp.items.forEach(item=>item[f.title] = f.calcFieldData(item)))
+        }
+      },
+  })
+})
+
+jb.component('table.init-sort', {
+  type: 'feature',
+  impl: ctx => ({
+      beforeInit: cmp => {
+        cmp.toggleSort = function(field) {
+          var sortOptions = cmp.state.sortOptions || [];
+          var option = sortOptions.filter(o=>o.field == field)[0];
+          if (!option)
+            sortOptions = [{field: field,dir: 'none'}].concat(sortOptions).slice(0,2);
+          option = sortOptions.filter(o=>o.field == field)[0];
+
+          var directions = ['none','asc','des'];
+          option.dir = directions[(directions.indexOf(option.dir)+1)%directions.length];
+          if (option.dir == 'none')
+            sortOptions.splice(sortOptions.indexOf(option),1);
+          cmp.setState({sortOptions: sortOptions});
+          cmp.refresh();
+        }
+        cmp.sortItems = function() {
+          if (!cmp.items || !cmp.state.sortOptions || cmp.state.sortOptions.length == 0) return;
+          cmp.items.forEach((item,index)=>cmp.state.sortOptions.forEach(o=> 
+              item['$jb_$sort_'+o.field.title] = o.field.fieldData(item,index)));
+          var major = cmp.state.sortOptions[0], minor = cmp.state.sortOptions[1];
+          if (!minor)
+            cmp.items.sort(sortFunc(major))
+          else {
+            var compareMajor = sortFunc(major), compareMinor = sortFunc(minor);
+            var majorProp = '$jb_$sort_'+ major.field.title;
+            cmp.items.sort((x,y)=> x[majorProp] == y[majorProp] ? compareMinor(x,y) : compareMajor(x,y) );
+          }
+
+          function sortFunc(option) {
+            var prop = '$jb_$sort_'+ option.field.title;
+            if (option.field.numeric)
+              var SortFunc = (x,y) => x[prop] - y[prop]
+            else
+              var SortFunc = (x,y) => 
+                x[prop] == y[prop] ? 0 : (x[prop] < y[prop] ? -1 : 1);
+            if (option.dir == 'asc') 
+              return SortFunc;
+            return (x,y) => SortFunc(y,x);
+          }
+
         }
       },
   })
@@ -17081,20 +17166,19 @@ jb.component('table.with-headers', {
     template: (cmp,state,h) => h('table',{},[
         h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
-            state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item)) : f.fieldData(item))))
+            state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
+              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item,index)) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
         ]),
     features:{$: 'table.init'},
     css: `{border-spacing: 0; text-align: left}
-    >tbody>tr>td { padding-right: 2px }
+    >tbody>tr>td { padding-right: 5px }
+    {width: 100%}
     `
   }
 })
-
-
 
 jb.component('table.mdl', {
   type: 'table.style',
@@ -17104,15 +17188,29 @@ jb.component('table.mdl', {
   ],
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('table',{ class: cmp.classForTable },[
-        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, class: cmp.classForTd, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
+        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{
+          'jb-ctx': f.ctxId, 
+          class: [cmp.classForTd]
+            .concat([ 
+              (state.sortOptions && state.sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'asc' ? 'mdl-data-table__header--sorted-ascending': '',
+              (state.sortOptions && state.sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'des' ? 'mdl-data-table__header--sorted-descending': '',
+            ]).filter(x=>x).join(' '), 
+          style: { width: f.width ? f.width + 'px' : ''},
+          onclick: ev => cmp.toggleSort(f),
+          }
+          ,f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
-            state.items.map(item=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item)) : f.fieldData(item))))
+            state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
+              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item,index)) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
         ]),
-    features:{$: 'table.init'},
+    features: [
+      {$: 'table.init'},
+      {$: 'table.init-sort'}
+    ],
+    css: `{width: 100%}`
   }
 })
 ;

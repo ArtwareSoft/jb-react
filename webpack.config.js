@@ -9,21 +9,23 @@ const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 function concatFiles(files,target) {
   try {
-  fs.unlink(JBART_DIR +target);
+  fs.unlinkSync(JBART_DIR +target);
   } catch (e) {}
   files.map(x=>JBART_DIR +x).forEach(f=>
-    fs.appendFile(JBART_DIR +target,fs.readFileSync(f) + ';\n\n'));
+    fs.appendFileSync(JBART_DIR +target,fs.readFileSync(f) + ';\n\n'));
 }
 
 var jbReactFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree']]).filter(x=>!x.match(/.css$/));
-var studioFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree']]).filter(x=>!x.match(/.css$/))
+var studioFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree'],resources['codemirror']]).filter(x=>!x.match(/.css$/))
     .concat(resources.studio.map(x=>'projects/studio/studio-' + x + '.js'));
+var otherMiscFiles = [].concat.apply([],[resources['xml'],resources['jison'],resources['parsing']]).filter(x=>!x.match(/.css$/));
+
 
 console.log(jbReactFiles);
 
 concatFiles(studioFiles,'dist/studio-all.js');
 concatFiles(jbReactFiles,'dist/jb-react-all.js');
-
+concatFiles(otherMiscFiles,'dist/other-misc.js');
 
 var jbRx = {
   entry: JBART_DIR + 'src/ui/jb-rx.js',

@@ -852,3 +852,7 @@ jb.component('action.switch-case', {
   ],
   impl: ctx => ctx.params
 })
+
+jb.component('newline', {
+  impl: ctx => '\n'
+})
