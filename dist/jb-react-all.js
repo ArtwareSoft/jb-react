@@ -71,7 +71,7 @@ function jb_run(context,parentParam,settings) {
         }
 
         if (profile.$log)
-          console.log(contextWithVars.run(profile.$log));
+          console.log(profile.$log === true ? out : contextWithVars.run(profile.$log));
 
         if (profile.$trace) console.log('trace: ' + context.path,context,out,run);
 
@@ -584,37 +584,6 @@ function extend(obj,obj1,obj2,obj3) {
   return obj;
 }
 
-
-// var valueByRefHandlerWithjbParent = {
-//   val: function(v) {
-//     if (v.$jb_val) return v.$jb_val();
-//     return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
-//   },
-//   writeValue: function(to,value,srcCtx) {
-//     jb.logPerformance('writeValue',value,to,srcCtx);
-//     if (!to) return;
-//     if (to.$jb_val)
-//       to.$jb_val(this.val(value))
-//     else if (to.$jb_parent)
-//       to.$jb_parent[to.$jb_property] = this.val(value);
-//     return to;
-//   },
-//   asRef: function(value) {
-//     if (value && (value.$jb_parent || value.$jb_val))
-//         return value;
-//     return { $jb_val: () => value }
-//   },
-//   isRef: function(value) {
-//     return value && (value.$jb_parent || value.$jb_val);
-//   },
-//   objectProperty: function(obj,prop) {
-//       if (this.isRef(obj[prop]))
-//         return obj[prop];
-//       else
-//         return { $jb_parent: obj, $jb_property: prop };
-//   }
-// }
-//
 var valueByRefHandler = null; // valueByRefHandlerWithjbParent;
 
 var types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
@@ -1621,6 +1590,10 @@ jb.component('action.switch-case', {
   	{ id: 'action', type: 'action' ,essential: true, dynamic: true },
   ],
   impl: ctx => ctx.params
+})
+
+jb.component('newline', {
+  impl: ctx => '\n'
 })
 ;
 
@@ -13265,6 +13238,19 @@ jb.ui.pathObservable = (path,handler,cmp) => {
     .map(newPath=>({newPath: newPath, oldPath: path}))
 }
 
+jb.cleanRefHandlerProps = function(obj) {
+  if (typeof obj != 'object') return obj;
+  var out = Array.isArray(obj) ? [] : {};
+  jb.entries(obj).forEach(e=>{
+    if (e[0].indexOf('$jb_') == 0) return;
+    if (e[1] && typeof e[1] == 'object')
+      out[e[0]] = jb.cleanRefHandlerProps(e[1]);
+    else
+      out[e[0]] = e[1]
+  })
+  return out;
+}
+
 
 })()
 ;
@@ -16397,10 +16383,55 @@ jb.component('field.control', {
   })
 })
 
+jb.component('field.button', {
+  type: 'table-field',
+  params: [
+    { id: 'title', as: 'string', essential: true },
+    { id: 'buttonText', as: 'string', essential: true, dynamic: true },
+    { id: 'action', type: 'action', essential: true, dynamic: true },
+
+    { id: 'width', as: 'number' },
+    { id: 'dataForSort', dynamic: true },
+    { id: 'numeric', as: 'boolean', type: 'boolean' },
+
+    { id: 'style', type: 'table-button.style', defaultValue: { $: 'table-button.href' }, dynamic: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx => {
+    var ctrl = jb.ui.ctrl(ctx,{
+      beforeInit: (cmp,props) => {
+        cmp.state.title = ctx.params.buttonText(ctx.setData(props.row));
+      },
+      afterViewInit : cmp=>
+        cmp.clicked = jb.ui.wrapWithLauchingElement(_ => ctx.params.action(ctx.setData(cmp.props.row)), ctx, cmp.base)
+    }).reactComp();
+
+    return {
+      title: ctx.params.title,
+      control: _ => ctrl,
+      width: ctx.params.width,
+      fieldData: row => dataForSort(ctx.setData(row)),
+      numeric: ctx.params.numeric, 
+      ctxId: jb.ui.preserveCtx(ctx)
+    }
+  }
+})
+
+// todo - move to styles
+
+jb.component('table-button.href', {
+  type: 'button.style',
+    impl :{$: 'custom-style',
+        template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
+        css: `{color: grey}`
+    }
+})
+
 jb.component('table.init', {
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
+
         cmp.fields = ctx.vars.$model.fields();
         cmp.state.items = calcItems();
 
@@ -17167,7 +17198,7 @@ jb.component('table.with-headers', {
         h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item,index)) : f.fieldData(item,index))))
+              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item),{row:item, index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
@@ -17201,7 +17232,7 @@ jb.component('table.mdl', {
           ,f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item,index)) : f.fieldData(item,index))))
+              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item),{row:item, index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''

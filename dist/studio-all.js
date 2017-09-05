@@ -71,7 +71,7 @@ function jb_run(context,parentParam,settings) {
         }
 
         if (profile.$log)
-          console.log(contextWithVars.run(profile.$log));
+          console.log(profile.$log === true ? out : contextWithVars.run(profile.$log));
 
         if (profile.$trace) console.log('trace: ' + context.path,context,out,run);
 
@@ -584,37 +584,6 @@ function extend(obj,obj1,obj2,obj3) {
   return obj;
 }
 
-
-// var valueByRefHandlerWithjbParent = {
-//   val: function(v) {
-//     if (v.$jb_val) return v.$jb_val();
-//     return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
-//   },
-//   writeValue: function(to,value,srcCtx) {
-//     jb.logPerformance('writeValue',value,to,srcCtx);
-//     if (!to) return;
-//     if (to.$jb_val)
-//       to.$jb_val(this.val(value))
-//     else if (to.$jb_parent)
-//       to.$jb_parent[to.$jb_property] = this.val(value);
-//     return to;
-//   },
-//   asRef: function(value) {
-//     if (value && (value.$jb_parent || value.$jb_val))
-//         return value;
-//     return { $jb_val: () => value }
-//   },
-//   isRef: function(value) {
-//     return value && (value.$jb_parent || value.$jb_val);
-//   },
-//   objectProperty: function(obj,prop) {
-//       if (this.isRef(obj[prop]))
-//         return obj[prop];
-//       else
-//         return { $jb_parent: obj, $jb_property: prop };
-//   }
-// }
-//
 var valueByRefHandler = null; // valueByRefHandlerWithjbParent;
 
 var types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
@@ -1621,6 +1590,10 @@ jb.component('action.switch-case', {
   	{ id: 'action', type: 'action' ,essential: true, dynamic: true },
   ],
   impl: ctx => ctx.params
+})
+
+jb.component('newline', {
+  impl: ctx => '\n'
 })
 ;
 
@@ -13265,6 +13238,19 @@ jb.ui.pathObservable = (path,handler,cmp) => {
     .map(newPath=>({newPath: newPath, oldPath: path}))
 }
 
+jb.cleanRefHandlerProps = function(obj) {
+  if (typeof obj != 'object') return obj;
+  var out = Array.isArray(obj) ? [] : {};
+  jb.entries(obj).forEach(e=>{
+    if (e[0].indexOf('$jb_') == 0) return;
+    if (e[1] && typeof e[1] == 'object')
+      out[e[0]] = jb.cleanRefHandlerProps(e[1]);
+    else
+      out[e[0]] = e[1]
+  })
+  return out;
+}
+
 
 })()
 ;
@@ -16397,10 +16383,55 @@ jb.component('field.control', {
   })
 })
 
+jb.component('field.button', {
+  type: 'table-field',
+  params: [
+    { id: 'title', as: 'string', essential: true },
+    { id: 'buttonText', as: 'string', essential: true, dynamic: true },
+    { id: 'action', type: 'action', essential: true, dynamic: true },
+
+    { id: 'width', as: 'number' },
+    { id: 'dataForSort', dynamic: true },
+    { id: 'numeric', as: 'boolean', type: 'boolean' },
+
+    { id: 'style', type: 'table-button.style', defaultValue: { $: 'table-button.href' }, dynamic: true },
+    { id: 'features', type: 'feature[]', dynamic: true },
+  ],
+  impl: ctx => {
+    var ctrl = jb.ui.ctrl(ctx,{
+      beforeInit: (cmp,props) => {
+        cmp.state.title = ctx.params.buttonText(ctx.setData(props.row));
+      },
+      afterViewInit : cmp=>
+        cmp.clicked = jb.ui.wrapWithLauchingElement(_ => ctx.params.action(ctx.setData(cmp.props.row)), ctx, cmp.base)
+    }).reactComp();
+
+    return {
+      title: ctx.params.title,
+      control: _ => ctrl,
+      width: ctx.params.width,
+      fieldData: row => dataForSort(ctx.setData(row)),
+      numeric: ctx.params.numeric, 
+      ctxId: jb.ui.preserveCtx(ctx)
+    }
+  }
+})
+
+// todo - move to styles
+
+jb.component('table-button.href', {
+  type: 'button.style',
+    impl :{$: 'custom-style',
+        template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
+        css: `{color: grey}`
+    }
+})
+
 jb.component('table.init', {
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
+
         cmp.fields = ctx.vars.$model.fields();
         cmp.state.items = calcItems();
 
@@ -17167,7 +17198,7 @@ jb.component('table.with-headers', {
         h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item,index)) : f.fieldData(item,index))))
+              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item),{row:item, index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
@@ -17201,7 +17232,7 @@ jb.component('table.mdl', {
           ,f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item,index)) : f.fieldData(item,index))))
+              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item),{row:item, index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
@@ -31956,15 +31987,10 @@ jb.component('studio.toolbar', {
       }, 
       {$: 'button', 
         title: 'jbEditor', 
-        action :{$: 'studio.open-component-in-jb-editor', 
-          path: '%$studio/project%.%$studio/page%'
-        }, 
+        action :{$: 'studio.open-component-in-jb-editor', path: '%$studio/project%.%$studio/page%' }, 
         style :{$: 'button.mdl-icon', icon: 'build' }, 
         features :{$: 'ctrl-action', 
-          action :{$: 'studio.open-jb-editor', 
-            path: '%$studio/profile_path%', 
-            newWindow: true
-          }
+          action :{$: 'studio.open-jb-editor', path: '%$studio/profile_path%', newWindow: true }
         }
       }, 
       {$: 'button', 
@@ -31989,7 +32015,8 @@ jb.component('studio.toolbar', {
         title: 'Insert Control', 
         action :{$: 'studio.open-new-profile-dialog', 
           type: 'control', 
-          mode: 'insert-control'
+          mode: 'insert-control', 
+          onClose :{$: 'studio.goto-last-edit' }
         }, 
         style :{$: 'button.mdl-icon', icon: 'add' }
       }, 
@@ -32006,10 +32033,7 @@ jb.component('studio.toolbar', {
       }, 
       {$: 'feature.keyboard-shortcut', 
         key: 'Alt++', 
-        action :{$: 'studio.open-new-profile-dialog', 
-          type: 'control', 
-          mode: 'insert-control'
-        }
+        action :{$: 'studio.open-new-profile-dialog', type: 'control', mode: 'insert-control' }
       }, 
       {$: 'feature.keyboard-shortcut', 
         key: 'Alt+N', 
@@ -32018,9 +32042,7 @@ jb.component('studio.toolbar', {
       {$: 'feature.keyboard-shortcut', 
         key: 'Alt+X', 
         action :{$: 'studio.open-jb-editor', 
-          path :{
-            $firstSucceeding: ['%$studio/profile_path%', '%$studio/project%.%$studio/page%']
-          }
+          path :{ $firstSucceeding: ['%$studio/profile_path%', '%$studio/project%.%$studio/page%'] }
         }
       }
     ]
@@ -32032,12 +32054,14 @@ jb.component('studio_button.toolbarButton', {
 	params: [
 		{ id: 'spritePosition', as: 'string', defaultValue: '0,0' }
 	],
-	impl: (ctx, spritePosition) => ({
+	impl: {$: 'custom-style',
 			template: (cmp,state,h) => h('button',{class: 'studio-btn-toolbar', click: _=> cmp.clicked() },
           h('span', {title: state.title, style: { 'background-position': state.pos} })),
-			init: cmp =>
-				cmp.state.pos = spritePosition.split(',').map(item => (-parseInt(item) * 16) + 'px').join(' '),
-	})
+      features: ctx => ({
+          init: cmp =>
+              cmp.state.pos = cmp.spritePosition.split(',').map(item => (-parseInt(item) * 16) + 'px').join(' '),
+      })
+	}
 })
 
 jb.component('studio-toolbar', {
@@ -33897,106 +33921,109 @@ jb.component('studio.open-tree-menu', {
 })
 
 jb.component('studio.tree-menu', {
-  type: 'menu.option',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'menu.menu',
+  type: 'menu.option', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'menu.menu', 
     options: [
-      {$: 'menu.action',
-        title: 'Insert',
-        action :{$: 'studio.open-new-profile-dialog',
-          type: 'control',
-          mode: 'insert-control'
+      {$: 'menu.action', 
+        title: 'Insert', 
+        action :{$: 'studio.open-new-profile-dialog', 
+          path: '%$path%', 
+          type: 'control', 
+          mode: 'insert-control', 
+          onClose :{$: 'studio.goto-last-edit' }
         }
-      },
-      {$: 'menu.action',
-        title: 'Wrap with group',
+      }, 
+      {$: 'menu.action', 
+        title: 'Wrap with group', 
         action: [
-          {$: 'studio.wrap-with-group', path: '%$path%' },
-          {$: 'on-next-timer',
+          {$: 'studio.wrap-with-group', path: '%$path%' }, 
+          {$: 'on-next-timer', 
             action: [
-              {$: 'write-value',
-                to: '%$studio/profile_path%',
-                value: '%$path%~controls~0'
-              },
+              {$: 'write-value', to: '%$studio/profile_path%', value: '%$path%~controls~0' }, 
               {$: 'tree.regain-focus' }
             ]
           }
         ]
-      },
-      {$: 'menu.action',
-        title: 'Duplicate',
-        action :{$: 'studio.duplicate-control', path: '%$path%' },
-        shortcut: 'Ctrl+D',
-      },
-      {$: 'menu.separator' },
-      {$: 'menu.action',
-        title: 'inteliscript editor',
-        shortcut: 'Ctrl+I',
-        action :{$: 'studio.open-jb-editor', path: '%$path%' }
-      },
-      {$: 'menu.action',
-        title: 'context viewer',
+      }, 
+      {$: 'menu.action', 
+        title: 'Duplicate', 
+        action :{$: 'studio.duplicate-control', path: '%$path%' }, 
+        shortcut: 'Ctrl+D'
+      }, 
+      {$: 'menu.separator' }, 
+      {$: 'menu.action', 
+        title: 'inteliscript editor', 
+        action :{$: 'studio.open-jb-editor', path: '%$path%' }, 
+        shortcut: 'Ctrl+I'
+      }, 
+      {$: 'menu.action', 
+        title: 'context viewer', 
         action :{$: 'studio.open-context-viewer', path: '%$path%' }
-      },
-      {$: 'menu.action',
-        title: 'javascript editor',
-        action :{$: 'studio.edit-source', path: '%$path%' },
-        icon: 'code',
-        shortcut: 'Ctrl+J',
-      },
-      {$: 'menu.action',
+      }, 
+      {$: 'menu.action', 
+        title: 'javascript editor', 
+        action :{$: 'studio.edit-source', path: '%$path%' }, 
+        icon: 'code', 
+        shortcut: 'Ctrl+J'
+      }, 
+      {$: 'menu.action', 
         $vars: {
           compName :{$: 'studio.comp-name', path: '%$path%' }
-        },
-        title: 'Goto %$compName%',
-        action :{$: 'studio.goto-path', path: '%$compName%' },
+        }, 
+        title: 'Goto %$compName%', 
+        action :{$: 'studio.goto-path', path: '%$compName%' }, 
         showCondition: '%$compName%'
-      },
-      {$: 'studio.goto-editor-options', path: '%$path%' },
-      {$: 'menu.separator' },
-      {$: 'menu.end-with-separator',
-        options :{$: 'studio.goto-references-options',
-          path: '%$path%',
+      }, 
+      {$: 'studio.goto-editor-options', path: '%$path%' }, 
+      {$: 'menu.separator' }, 
+      {$: 'menu.end-with-separator', 
+        options :{$: 'studio.goto-references-options', 
           action: [
-            {$: 'write-value', to: '%$studio/profile_path%', value: '%%' },
+            {$: 'write-value', to: '%$studio/profile_path%', value: '%%' }, 
             {$: 'studio.open-control-tree', selection: '%$path%' }
-          ]
+          ], 
+          path: '%$path%'
         }
-      },
-      {$: 'menu.action',
-        title: 'Delete',
-        action :{$: 'studio.delete', path: '%$path%' },
-        icon: 'delete',
+      }, 
+      {$: 'menu.action', 
+        title: 'Delete', 
+        action :{$: 'studio.delete', path: '%$path%' }, 
+        icon: 'delete', 
         shortcut: 'Delete'
-      },
-      {$: 'menu.action',
-        title: {$if: {$: 'studio.disabled', path: '%$path%'} , then: 'Enable', else: 'Disable' },
-        icon: 'do_not_disturb',
-        shortcut: 'Ctrl+X',
-        action: {$: 'studio.toggle-disabled', path: '%$path%' }
-      },
-      {$: 'menu.action',
-        title: 'Copy',
-        action :{$: 'studio.copy', path: '%$path%' },
-        icon: 'copy',
+      }, 
+      {$: 'menu.action', 
+        title :{
+          $if :{$: 'studio.disabled', path: '%$path%' }, 
+          then: 'Enable', 
+          else: 'Disable'
+        }, 
+        action :{$: 'studio.toggle-disabled', path: '%$path%' }, 
+        icon: 'do_not_disturb', 
+        shortcut: 'Ctrl+X'
+      }, 
+      {$: 'menu.action', 
+        title: 'Copy', 
+        action :{$: 'studio.copy', path: '%$path%' }, 
+        icon: 'copy', 
         shortcut: 'Ctrl+C'
-      },
-      {$: 'menu.action',
-        title: 'Paste',
-        action :{$: 'studio.paste', path: '%$path%' },
-        icon: 'paste',
+      }, 
+      {$: 'menu.action', 
+        title: 'Paste', 
+        action :{$: 'studio.paste', path: '%$path%' }, 
+        icon: 'paste', 
         shortcut: 'Ctrl+V'
-      },
-      {$: 'menu.action',
-        title: 'Undo',
-        action :{$: 'studio.undo' },
-        icon: 'undo',
+      }, 
+      {$: 'menu.action', 
+        title: 'Undo', 
+        action :{$: 'studio.undo' }, 
+        icon: 'undo', 
         shortcut: 'Ctrl+Z'
-      },
-      {$: 'menu.action',
-        title: 'Redo',
-        action :{$: 'studio.redo' },
-        icon: 'redo',
+      }, 
+      {$: 'menu.action', 
+        title: 'Redo', 
+        action :{$: 'studio.redo' }, 
+        icon: 'redo', 
         shortcut: 'Ctrl+Y'
       }
     ]
@@ -34382,7 +34409,7 @@ jb.component('studio.properties', {
         action :{$: 'studio.open-new-profile-dialog', 
           path: '%$path%~features', 
           type: 'feature', 
-          onClose :{$: 'studio.focus-on-first-property', delay: 100 }
+          onClose :{ $runActions: [ctx => ctx.vars.PropertiesDialog.openFeatureSection()] }
         }, 
         style :{$: 'button.href' }, 
         features :{$: 'css.margin', top: '20', left: '5' }

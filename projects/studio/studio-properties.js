@@ -111,7 +111,7 @@ jb.component('studio.properties', {
         action :{$: 'studio.open-new-profile-dialog', 
           path: '%$path%~features', 
           type: 'feature', 
-          onClose :{$: 'studio.focus-on-first-property', delay: 100 }
+          onClose :{ $runActions: [ctx => ctx.vars.PropertiesDialog.openFeatureSection()] }
         }, 
         style :{$: 'button.href' }, 
         features :{$: 'css.margin', top: '20', left: '5' }

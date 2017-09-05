@@ -308,5 +308,18 @@ jb.ui.pathObservable = (path,handler,cmp) => {
     .map(newPath=>({newPath: newPath, oldPath: path}))
 }
 
+jb.cleanRefHandlerProps = function(obj) {
+  if (typeof obj != 'object') return obj;
+  var out = Array.isArray(obj) ? [] : {};
+  jb.entries(obj).forEach(e=>{
+    if (e[0].indexOf('$jb_') == 0) return;
+    if (e[1] && typeof e[1] == 'object')
+      out[e[0]] = jb.cleanRefHandlerProps(e[1]);
+    else
+      out[e[0]] = e[1]
+  })
+  return out;
+}
+
 
 })()

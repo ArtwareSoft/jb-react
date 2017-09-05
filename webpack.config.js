@@ -18,14 +18,14 @@ function concatFiles(files,target) {
 var jbReactFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree']]).filter(x=>!x.match(/.css$/));
 var studioFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree'],resources['codemirror']]).filter(x=>!x.match(/.css$/))
     .concat(resources.studio.map(x=>'projects/studio/studio-' + x + '.js'));
-var otherMiscFiles = [].concat.apply([],[resources['xml'],resources['jison'],resources['parsing']]).filter(x=>!x.match(/.css$/));
+var nodeFiles = [].concat.apply([],[resources['common'],resources['node'],resources['pretty-print'],resources['xml'],resources['jison'],resources['parsing']]).filter(x=>!x.match(/.css$/));
 
 
 console.log(jbReactFiles);
 
 concatFiles(studioFiles,'dist/studio-all.js');
 concatFiles(jbReactFiles,'dist/jb-react-all.js');
-concatFiles(otherMiscFiles,'dist/other-misc.js');
+concatFiles(nodeFiles,'dist/jb4node.js');
 
 var jbRx = {
   entry: JBART_DIR + 'src/ui/jb-rx.js',

@@ -113,7 +113,8 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       'pretty-print' : [ 'src/misc/pretty-print.js' ],
       'xml': [ 'src/misc/xml.js' ],
       'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
-      'parsing': [ 'src/misc/parsing.js' ]
+      'parsing': [ 'src/misc/parsing.js' ],
+      'node': [ 'src/core/jb-node.js' ],
 });
 
 function jb_dynamicLoad(modules,prefix) {

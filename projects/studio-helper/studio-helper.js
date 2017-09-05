@@ -459,10 +459,7 @@ jb.component('studio-helper-sample.properties-tgp', {
   impl :{$: 'studio-helper-sample.properties-PT-for-tgp', 
     style1 :{$: 'button.x' }, 
     style2 :{$: 'button.x' }, 
-    features: [
-      {$: 'css.margin' }, 
-      {$: 'css.padding' }
-    ]
+    features: [{$: 'css.margin' }]
   }
 })
 

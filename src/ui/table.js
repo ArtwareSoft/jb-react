@@ -119,6 +119,7 @@ jb.component('table.init', {
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
+
         cmp.fields = ctx.vars.$model.fields();
         cmp.state.items = calcItems();
 

@@ -22,106 +22,109 @@ jb.component('studio.open-tree-menu', {
 })
 
 jb.component('studio.tree-menu', {
-  type: 'menu.option',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'menu.menu',
+  type: 'menu.option', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'menu.menu', 
     options: [
-      {$: 'menu.action',
-        title: 'Insert',
-        action :{$: 'studio.open-new-profile-dialog',
-          type: 'control',
-          mode: 'insert-control'
+      {$: 'menu.action', 
+        title: 'Insert', 
+        action :{$: 'studio.open-new-profile-dialog', 
+          path: '%$path%', 
+          type: 'control', 
+          mode: 'insert-control', 
+          onClose :{$: 'studio.goto-last-edit' }
         }
-      },
-      {$: 'menu.action',
-        title: 'Wrap with group',
+      }, 
+      {$: 'menu.action', 
+        title: 'Wrap with group', 
         action: [
-          {$: 'studio.wrap-with-group', path: '%$path%' },
-          {$: 'on-next-timer',
+          {$: 'studio.wrap-with-group', path: '%$path%' }, 
+          {$: 'on-next-timer', 
             action: [
-              {$: 'write-value',
-                to: '%$studio/profile_path%',
-                value: '%$path%~controls~0'
-              },
+              {$: 'write-value', to: '%$studio/profile_path%', value: '%$path%~controls~0' }, 
               {$: 'tree.regain-focus' }
             ]
           }
         ]
-      },
-      {$: 'menu.action',
-        title: 'Duplicate',
-        action :{$: 'studio.duplicate-control', path: '%$path%' },
-        shortcut: 'Ctrl+D',
-      },
-      {$: 'menu.separator' },
-      {$: 'menu.action',
-        title: 'inteliscript editor',
-        shortcut: 'Ctrl+I',
-        action :{$: 'studio.open-jb-editor', path: '%$path%' }
-      },
-      {$: 'menu.action',
-        title: 'context viewer',
+      }, 
+      {$: 'menu.action', 
+        title: 'Duplicate', 
+        action :{$: 'studio.duplicate-control', path: '%$path%' }, 
+        shortcut: 'Ctrl+D'
+      }, 
+      {$: 'menu.separator' }, 
+      {$: 'menu.action', 
+        title: 'inteliscript editor', 
+        action :{$: 'studio.open-jb-editor', path: '%$path%' }, 
+        shortcut: 'Ctrl+I'
+      }, 
+      {$: 'menu.action', 
+        title: 'context viewer', 
         action :{$: 'studio.open-context-viewer', path: '%$path%' }
-      },
-      {$: 'menu.action',
-        title: 'javascript editor',
-        action :{$: 'studio.edit-source', path: '%$path%' },
-        icon: 'code',
-        shortcut: 'Ctrl+J',
-      },
-      {$: 'menu.action',
+      }, 
+      {$: 'menu.action', 
+        title: 'javascript editor', 
+        action :{$: 'studio.edit-source', path: '%$path%' }, 
+        icon: 'code', 
+        shortcut: 'Ctrl+J'
+      }, 
+      {$: 'menu.action', 
         $vars: {
           compName :{$: 'studio.comp-name', path: '%$path%' }
-        },
-        title: 'Goto %$compName%',
-        action :{$: 'studio.goto-path', path: '%$compName%' },
+        }, 
+        title: 'Goto %$compName%', 
+        action :{$: 'studio.goto-path', path: '%$compName%' }, 
         showCondition: '%$compName%'
-      },
-      {$: 'studio.goto-editor-options', path: '%$path%' },
-      {$: 'menu.separator' },
-      {$: 'menu.end-with-separator',
-        options :{$: 'studio.goto-references-options',
-          path: '%$path%',
+      }, 
+      {$: 'studio.goto-editor-options', path: '%$path%' }, 
+      {$: 'menu.separator' }, 
+      {$: 'menu.end-with-separator', 
+        options :{$: 'studio.goto-references-options', 
           action: [
-            {$: 'write-value', to: '%$studio/profile_path%', value: '%%' },
+            {$: 'write-value', to: '%$studio/profile_path%', value: '%%' }, 
             {$: 'studio.open-control-tree', selection: '%$path%' }
-          ]
+          ], 
+          path: '%$path%'
         }
-      },
-      {$: 'menu.action',
-        title: 'Delete',
-        action :{$: 'studio.delete', path: '%$path%' },
-        icon: 'delete',
+      }, 
+      {$: 'menu.action', 
+        title: 'Delete', 
+        action :{$: 'studio.delete', path: '%$path%' }, 
+        icon: 'delete', 
         shortcut: 'Delete'
-      },
-      {$: 'menu.action',
-        title: {$if: {$: 'studio.disabled', path: '%$path%'} , then: 'Enable', else: 'Disable' },
-        icon: 'do_not_disturb',
-        shortcut: 'Ctrl+X',
-        action: {$: 'studio.toggle-disabled', path: '%$path%' }
-      },
-      {$: 'menu.action',
-        title: 'Copy',
-        action :{$: 'studio.copy', path: '%$path%' },
-        icon: 'copy',
+      }, 
+      {$: 'menu.action', 
+        title :{
+          $if :{$: 'studio.disabled', path: '%$path%' }, 
+          then: 'Enable', 
+          else: 'Disable'
+        }, 
+        action :{$: 'studio.toggle-disabled', path: '%$path%' }, 
+        icon: 'do_not_disturb', 
+        shortcut: 'Ctrl+X'
+      }, 
+      {$: 'menu.action', 
+        title: 'Copy', 
+        action :{$: 'studio.copy', path: '%$path%' }, 
+        icon: 'copy', 
         shortcut: 'Ctrl+C'
-      },
-      {$: 'menu.action',
-        title: 'Paste',
-        action :{$: 'studio.paste', path: '%$path%' },
-        icon: 'paste',
+      }, 
+      {$: 'menu.action', 
+        title: 'Paste', 
+        action :{$: 'studio.paste', path: '%$path%' }, 
+        icon: 'paste', 
         shortcut: 'Ctrl+V'
-      },
-      {$: 'menu.action',
-        title: 'Undo',
-        action :{$: 'studio.undo' },
-        icon: 'undo',
+      }, 
+      {$: 'menu.action', 
+        title: 'Undo', 
+        action :{$: 'studio.undo' }, 
+        icon: 'undo', 
         shortcut: 'Ctrl+Z'
-      },
-      {$: 'menu.action',
-        title: 'Redo',
-        action :{$: 'studio.redo' },
-        icon: 'redo',
+      }, 
+      {$: 'menu.action', 
+        title: 'Redo', 
+        action :{$: 'studio.redo' }, 
+        icon: 'redo', 
         shortcut: 'Ctrl+Y'
       }
     ]

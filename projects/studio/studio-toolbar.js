@@ -61,15 +61,10 @@ jb.component('studio.toolbar', {
       }, 
       {$: 'button', 
         title: 'jbEditor', 
-        action :{$: 'studio.open-component-in-jb-editor', 
-          path: '%$studio/project%.%$studio/page%'
-        }, 
+        action :{$: 'studio.open-component-in-jb-editor', path: '%$studio/project%.%$studio/page%' }, 
         style :{$: 'button.mdl-icon', icon: 'build' }, 
         features :{$: 'ctrl-action', 
-          action :{$: 'studio.open-jb-editor', 
-            path: '%$studio/profile_path%', 
-            newWindow: true
-          }
+          action :{$: 'studio.open-jb-editor', path: '%$studio/profile_path%', newWindow: true }
         }
       }, 
       {$: 'button', 
@@ -94,7 +89,8 @@ jb.component('studio.toolbar', {
         title: 'Insert Control', 
         action :{$: 'studio.open-new-profile-dialog', 
           type: 'control', 
-          mode: 'insert-control'
+          mode: 'insert-control', 
+          onClose :{$: 'studio.goto-last-edit' }
         }, 
         style :{$: 'button.mdl-icon', icon: 'add' }
       }, 
@@ -111,10 +107,7 @@ jb.component('studio.toolbar', {
       }, 
       {$: 'feature.keyboard-shortcut', 
         key: 'Alt++', 
-        action :{$: 'studio.open-new-profile-dialog', 
-          type: 'control', 
-          mode: 'insert-control'
-        }
+        action :{$: 'studio.open-new-profile-dialog', type: 'control', mode: 'insert-control' }
       }, 
       {$: 'feature.keyboard-shortcut', 
         key: 'Alt+N', 
@@ -123,9 +116,7 @@ jb.component('studio.toolbar', {
       {$: 'feature.keyboard-shortcut', 
         key: 'Alt+X', 
         action :{$: 'studio.open-jb-editor', 
-          path :{
-            $firstSucceeding: ['%$studio/profile_path%', '%$studio/project%.%$studio/page%']
-          }
+          path :{ $firstSucceeding: ['%$studio/profile_path%', '%$studio/project%.%$studio/page%'] }
         }
       }
     ]
