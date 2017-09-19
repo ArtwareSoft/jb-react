@@ -780,7 +780,7 @@ jb.pipe = function(context,items,ptName) {
 
 	function step(profile,i,data) {
     	if (!profile || profile.$disabled) return data;
-		var parentParam = (i == profiles.length - 1 && context.parentParam) ? context.parentParam : { as: 'array'};
+		var parentParam = (i < profiles.length - 1) ? { as: 'array'} : (context.parentParam || {}) ;
 		if (jb.profileType(profile) == 'aggregator')
 			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
 		return [].concat.apply([],data.map(item =>
@@ -885,14 +885,6 @@ jb.component('firstSucceeding', {
 		var last = items.slice(-1)[0];
 		return (last != null) && jb.val(last);
 	}
-});
-
-jb.component('first', {
-	type: 'data',
-	params: [
-		{ id: 'items', type: "data", as: 'array', composite: true }
-	],
-	impl: (ctx,items) => items[0]
 });
 
 jb.component('property-names', {
@@ -1034,15 +1026,15 @@ jb.component('sort', {
 	}
 });
 
-jb.component('wrap-as-object', {
+jb.component('first', {
 	type: 'aggregator',
-	params: [
-    {id: 'arrayProperty', as: 'string', defaultValue: 'items'}
-	],
-	impl: (ctx,prop) =>
-    jb.obj(prop,ctx.data)
+	impl: ctx => ctx.data[0]
 });
 
+jb.component('last', {
+	type: 'aggregator',
+	impl: ctx => ctx.datas.slice(-1)[0]
+});
 
 jb.component('not', {
 	type: 'boolean',
@@ -17958,8 +17950,11 @@ jb.component('jison.parse', {
       jb.jison.buffer = '';
       if (goal)
         parser.bnf = Object.assign({goal: [[`${goal} EOF`, 'return $1']]},parser.bnf);
+
+      // cache parser
+      jb['jison-parser-'+ctx.path] = jb['jison-parser-'+ctx.path] || jb.jisonParser.Parser(parser,{debug: debug});
           
-      return  { result: jb.jisonParser.Parser(parser,{debug: debug}).parse(text) }
+      return  { result: jb['jison-parser-'+ctx.path].parse(text) }
     } catch (e) {
       return { error: e, message: e.message, console: jb.jison.buffer }
 //      jb.logException('jison',e,ctx)
@@ -18250,11 +18245,15 @@ jb.component('filter-empty-properties', {
 	type: 'data',
   description: 'remove null or empty string properties',
 	params: [
-    { id: 'obj', as: 'single', defaultValue: '%%' },
+    { id: 'obj', defaultValue: '%%' },
 	],
   impl: (ctx,obj) => {
-    var props = Object.getOwnPropertyNames(obj).filter(p=>obj[p] != null && obj[p] != '');
-    return props.reduce((res,p)=>Object.assign(res,jb.obj(p,obj[p])),{});
+    if (typeof obj != 'object') return obj;
+    var propsToKeep = Object.getOwnPropertyNames(obj)
+      .filter(p=>obj[p] != null && obj[p] != '' && (!Array.isArray(obj[p]) || obj[p].length > 0));
+    var res = {};
+    propsToKeep.forEach(p=>res[p]=obj[p]);
+    return res;
   }
 })
 
@@ -18282,5 +18281,29 @@ jb.component('remove-suffix-regex', {
   impl: (ctx,suffix,text) =>
     text.replace(new RegExp(suffix+'$') ,'')
 })
-;
+
+jb.component('wrap-as-object-with-array', {
+  type: 'aggregator',
+  description: 'put all items in an array, wrapped by an object',
+  params: [
+      {id: 'arrayProperty', as: 'string', defaultValue: 'items'},
+      {id: 'items', as: 'array', defaultValue: '%%' },
+  ],
+  impl: (ctx,prop,items) =>
+      jb.obj(prop,items)
+});
+
+jb.component('wrap-as-object', {
+  description: 'put each item in a property',
+  type: 'aggregator',
+  params: [
+    {id: 'itemToPropName', as: 'string', dynamic: true, essential: true },
+    {id: 'items', as: 'array', defaultValue: '%%' },
+  ],
+  impl: (ctx,key,items) => {
+    var out = {}
+    items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = item)
+    return out;
+  }
+});
 

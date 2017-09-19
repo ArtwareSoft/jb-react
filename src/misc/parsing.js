@@ -151,7 +151,7 @@ jb.component('remove-sections', {
     do {
       range = findRange(out);
       if (range)
-        out = out.substring(0,range.from) + out.substring(range.to)
+        out = out.substring(0,range.from) + out.substring(range.to || out.length)
     } while (range && out);
     return out;
 
@@ -202,11 +202,15 @@ jb.component('filter-empty-properties', {
 	type: 'data',
   description: 'remove null or empty string properties',
 	params: [
-    { id: 'obj', as: 'single', defaultValue: '%%' },
+    { id: 'obj', defaultValue: '%%' },
 	],
   impl: (ctx,obj) => {
-    var props = Object.getOwnPropertyNames(obj).filter(p=>obj[p] != null && obj[p] != '');
-    return props.reduce((res,p)=>Object.assign(res,jb.obj(p,obj[p])),{});
+    if (typeof obj != 'object') return obj;
+    var propsToKeep = Object.getOwnPropertyNames(obj)
+      .filter(p=>obj[p] != null && obj[p] != '' && (!Array.isArray(obj[p]) || obj[p].length > 0));
+    var res = {};
+    propsToKeep.forEach(p=>res[p]=obj[p]);
+    return res;
   }
 })
 
@@ -233,4 +237,29 @@ jb.component('remove-suffix-regex', {
   ],
   impl: (ctx,suffix,text) =>
     text.replace(new RegExp(suffix+'$') ,'')
+})
+
+jb.component('wrap-as-object-with-array', {
+  type: 'aggregator',
+  description: 'put all items in an array, wrapped by an object',
+  params: [
+      {id: 'arrayProperty', as: 'string', defaultValue: 'items'},
+      {id: 'items', as: 'array', defaultValue: '%%' },
+  ],
+  impl: (ctx,prop,items) =>
+      jb.obj(prop,items)
+});
+
+jb.component('wrap-as-object', {
+  description: 'put each item in a property',
+  type: 'aggregator',
+  params: [
+    {id: 'itemToPropName', as: 'string', dynamic: true, essential: true },
+    {id: 'items', as: 'array', defaultValue: '%%' },
+  ],
+  impl: (ctx,key,items) => {
+    var out = {}
+    items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = item)
+    return out;
+  }
 })

@@ -272,7 +272,7 @@ jb.jstypes.renderable = value => {
 }
 
 ui.renderable = ctrl =>
-	ctrl && ctrl.reactComp();
+	ctrl && ctrl.reactComp && ctrl.reactComp();
 
 // prevent garbadge collection and preserve the ctx as long as it is in the dom
 ui.preserveCtx = ctx => {

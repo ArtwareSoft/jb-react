@@ -780,7 +780,7 @@ jb.pipe = function(context,items,ptName) {
 
 	function step(profile,i,data) {
     	if (!profile || profile.$disabled) return data;
-		var parentParam = (i == profiles.length - 1 && context.parentParam) ? context.parentParam : { as: 'array'};
+		var parentParam = (i < profiles.length - 1) ? { as: 'array'} : (context.parentParam || {}) ;
 		if (jb.profileType(profile) == 'aggregator')
 			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
 		return [].concat.apply([],data.map(item =>
@@ -885,14 +885,6 @@ jb.component('firstSucceeding', {
 		var last = items.slice(-1)[0];
 		return (last != null) && jb.val(last);
 	}
-});
-
-jb.component('first', {
-	type: 'data',
-	params: [
-		{ id: 'items', type: "data", as: 'array', composite: true }
-	],
-	impl: (ctx,items) => items[0]
 });
 
 jb.component('property-names', {
@@ -1034,15 +1026,15 @@ jb.component('sort', {
 	}
 });
 
-jb.component('wrap-as-object', {
+jb.component('first', {
 	type: 'aggregator',
-	params: [
-    {id: 'arrayProperty', as: 'string', defaultValue: 'items'}
-	],
-	impl: (ctx,prop) =>
-    jb.obj(prop,ctx.data)
+	impl: ctx => ctx.data[0]
 });
 
+jb.component('last', {
+	type: 'aggregator',
+	impl: ctx => ctx.datas.slice(-1)[0]
+});
 
 jb.component('not', {
 	type: 'boolean',
@@ -12725,7 +12717,7 @@ jb.jstypes.renderable = value => {
 }
 
 ui.renderable = ctrl =>
-	ctrl && ctrl.reactComp();
+	ctrl && ctrl.reactComp && ctrl.reactComp();
 
 // prevent garbadge collection and preserve the ctx as long as it is in the dom
 ui.preserveCtx = ctx => {
@@ -13012,7 +13004,7 @@ class ImmutableWithPath {
     var opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
         oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
     this.resources(jb.ui.update(this.resources(),op),opEvent);
-    this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
+    this.resourceVersions = Object.assign({},this.resourceVersions,jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
     this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
     opEvent.resourceVersionsAfter = this.resourceVersions;
     if (opOnRef.$push)
@@ -35986,7 +35978,7 @@ st.suggestions = class {
   extendWithOptions(probeCtx,path) {
     var options = [];
     probeCtx = probeCtx || new st.previewjb.jbCtx();
-    var vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources))
+    var vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources,st.previewjb.consts))
         .map(x=>new ValueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
         .filter(x=> x.toPaste.indexOf(':') == -1)

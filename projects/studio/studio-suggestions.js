@@ -241,7 +241,7 @@ st.suggestions = class {
   extendWithOptions(probeCtx,path) {
     var options = [];
     probeCtx = probeCtx || new st.previewjb.jbCtx();
-    var vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources))
+    var vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources,st.previewjb.consts))
         .map(x=>new ValueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
         .filter(x=> x.toPaste.indexOf(':') == -1)

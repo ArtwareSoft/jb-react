@@ -41,7 +41,7 @@ jb.pipe = function(context,items,ptName) {
 
 	function step(profile,i,data) {
     	if (!profile || profile.$disabled) return data;
-		var parentParam = (i == profiles.length - 1 && context.parentParam) ? context.parentParam : { as: 'array'};
+		var parentParam = (i < profiles.length - 1) ? { as: 'array'} : (context.parentParam || {}) ;
 		if (jb.profileType(profile) == 'aggregator')
 			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
 		return [].concat.apply([],data.map(item =>
@@ -146,14 +146,6 @@ jb.component('firstSucceeding', {
 		var last = items.slice(-1)[0];
 		return (last != null) && jb.val(last);
 	}
-});
-
-jb.component('first', {
-	type: 'data',
-	params: [
-		{ id: 'items', type: "data", as: 'array', composite: true }
-	],
-	impl: (ctx,items) => items[0]
 });
 
 jb.component('property-names', {
@@ -295,15 +287,15 @@ jb.component('sort', {
 	}
 });
 
-jb.component('wrap-as-object', {
+jb.component('first', {
 	type: 'aggregator',
-	params: [
-    {id: 'arrayProperty', as: 'string', defaultValue: 'items'}
-	],
-	impl: (ctx,prop) =>
-    jb.obj(prop,ctx.data)
+	impl: ctx => ctx.data[0]
 });
 
+jb.component('last', {
+	type: 'aggregator',
+	impl: ctx => ctx.datas.slice(-1)[0]
+});
 
 jb.component('not', {
 	type: 'boolean',

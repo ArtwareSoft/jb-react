@@ -82,7 +82,7 @@ class ImmutableWithPath {
     var opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
         oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
     this.resources(jb.ui.update(this.resources(),op),opEvent);
-    this.resourceVersions = Object.assign({},jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
+    this.resourceVersions = Object.assign({},this.resourceVersions,jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
     this.restoreArrayIds(oldResources,this.resources(),ref.$jb_path); // 'update' removes $jb_id from the arrays at the path.
     opEvent.resourceVersionsAfter = this.resourceVersions;
     if (opOnRef.$push)

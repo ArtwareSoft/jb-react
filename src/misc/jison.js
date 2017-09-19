@@ -16,8 +16,11 @@ jb.component('jison.parse', {
       jb.jison.buffer = '';
       if (goal)
         parser.bnf = Object.assign({goal: [[`${goal} EOF`, 'return $1']]},parser.bnf);
+
+      // cache parser
+      jb['jison-parser-'+ctx.path] = jb['jison-parser-'+ctx.path] || jb.jisonParser.Parser(parser,{debug: debug});
           
-      return  { result: jb.jisonParser.Parser(parser,{debug: debug}).parse(text) }
+      return  { result: jb['jison-parser-'+ctx.path].parse(text) }
     } catch (e) {
       return { error: e, message: e.message, console: jb.jison.buffer }
 //      jb.logException('jison',e,ctx)
