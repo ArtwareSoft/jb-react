@@ -116,20 +116,26 @@ jb.component('itemlist-container.search', {
   impl: (ctx,title,searchIn,databind) =>
     jb.ui.ctrl(ctx,{
       afterViewInit: cmp => {
-        if (ctx.vars.itemlistCntr) {
-          ctx.vars.itemlistCntr.filters.push( items => {
-            var toSearch = jb.val(databind) || '';
-            if (typeof searchIn.profile == 'function') { // improved performance
-              return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-            }
+        if (!ctx.vars.itemlistCntr) return;
 
-            return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-          });
-        // allow itemlist selection use up/down arrows
-        ctx.vars.itemlistCntr.keydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
-            .takeUntil( cmp.destroyed )
-            .filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1);
-        }
+        ctx.vars.itemlistCntr.filters.push( items => {
+          var toSearch = jb.val(databind) || '';
+          if (typeof searchIn.profile == 'function') { // improved performance
+            return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+          }
+
+          return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+        });
+        ctx.vars.itemlistCntr.keydown = jb.rx.Observable.create(obs=> {
+          cmp.base.onkeydown = e => {
+            if ([38,40].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
+              obs.next(e);
+              return false;  
+            }
+            return true;
+          }
+        }).takeUntil(cmp.destroyed)
+
       }
     })
 });

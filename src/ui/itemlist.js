@@ -124,14 +124,14 @@ jb.component('itemlist.selection', {
           .subscribe(buff=>
             ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
 
-        cmp.jbEmitter.filter(x=> x =='after-update').startWith(jb.delay(1)).subscribe(x=>{
-          if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
-            cmp.state.selected = null;
-					if (jb.val(ctx.params.databind))
-						cmp.setState({selected: selectedOfDatabind()});
-          if (!cmp.state.selected)
-            autoSelectFirst()
-        })
+     //    cmp.jbEmitter.filter(x=> x =='after-update').startWith(jb.delay(1)).subscribe(x=>{
+     //      if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
+     //        cmp.state.selected = null;
+		 // if (jb.val(ctx.params.databind))
+		 // 	cmp.setState({selected: selectedOfDatabind()});
+     //      if (!cmp.state.selected)
+     //        autoSelectFirst()
+     //    })
 
         function autoSelectFirst() {
           if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
@@ -143,7 +143,14 @@ jb.component('itemlist.selection', {
         function selectedOfDatabind() {
           return ctx.params.databind && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(ctx.params.databind))))
         }
-        //autoSelectFirst();
+        jb.delay(1).then(_=>{
+           if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
+              cmp.state.selected = null;
+           if (jb.val(ctx.params.databind))
+             cmp.setState({selected: selectedOfDatabind()});
+           if (!cmp.state.selected)
+                  autoSelectFirst()
+        })
     },
     extendItem: (cmp,vdom,data) => {
       jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == data);
@@ -151,7 +158,6 @@ jb.component('itemlist.selection', {
         cmp.clickEmitter.next(data)
     },
     css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
-    createjbEmitter: true,
   })
 })
 

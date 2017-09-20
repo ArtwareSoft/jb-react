@@ -63,7 +63,8 @@ jb.component('field.databind-text', {
           if (val === undefined)
             return jb.val(ctx.vars.$model.databind);
           else { // write
-              cmp.setState({model: val});
+              if (!oneWay)
+                cmp.setState({model: val});
               jb.writeValue(ctx.vars.$model.databind,val,ctx);
           }
         }

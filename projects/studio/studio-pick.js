@@ -65,9 +65,7 @@ jb.component('dialog-feature.studio-pick', {
 	params: [
 		{ id: 'from', as: 'string' },
 	],
-	impl: ctx =>
-	({
-	  disableChangeDetection: true,
+	impl: ctx => ({
       init: cmp=> {
 		  var _window = ctx.params.from == 'preview' ? st.previewWindow : window;
 		  var previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
@@ -80,33 +78,30 @@ jb.component('dialog-feature.studio-pick', {
 		  	userPick = userPick.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'mousedown'));
 		  	keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'keyup'));
 		  };
-
 		  mouseMoveEm
 		  	.debounceTime(50)
 		  	.takeUntil(
 		  		keyUpEm.filter(e=>
 		  			e.keyCode == 27)
 		  			  .merge(userPick))
-		  	.do(e=>{
-		  		if (e.keyCode == 27)
-		  			ctx.vars.$dialog.close({OK:false});
-		  	})
+		  	// .do(e=>{
+		  	// 	if (e.keyCode == 27)
+		  	// 		ctx.vars.$dialog.close({OK:false});
+		  	// })
 		  	.map(e=>
 		  		eventToElem(e,_window))
-		  	.filter(x=> x)
-		  	.do(profElem=> {
-          if (profElem.getAttribute) {
-		  		    ctx.vars.pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];
-              showBox(cmp,profElem,_window,previewOffset);
-          }
-		  	})
-        .last()
-		  	.subscribe(x=> {
-		  		ctx.vars.$dialog.close({OK:true});
-		  		jb.delay(200).then(_=> {
-            if (st.previewWindow && st.previewWindow.getSelection())
-              st.previewWindow.getSelection().innerHTML = ''
-            })
+		  	.filter(x=>x && x.getAttribute)
+		  	.do(profElem=>
+            	showBox(cmp,profElem,_window,previewOffset))
+        	.last() // esc or user pick
+		  	.subscribe(profElem=> {
+	  		    ctx.vars.pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];
+	  		    ctx.vars.pickSelection.elem = profElem;
+		  		ctx.vars.$dialog.close({OK: true});
+		  		// jb.delay(200).then(_=> {
+		    //         if (st.previewWindow && st.previewWindow.getSelection())
+		    //           st.previewWindow.getSelection().innerHTML = ''
+		    //         })
 		  	})
 		}
 	})
@@ -171,8 +166,8 @@ jb.studio.getOrCreateHighlightBox = function() {
 
 jb.studio.highlightCtx = function(ctx) {
 	var _window = st.previewWindow || window;
-	jb.studio.highlight(Array.from(_window.document.querySelectorAll('[jb-ctx]'))
-		.filter(e=>e.getAttribute('jb-ctx') == ctx.id))
+	jb.studio.highlight(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
+//		.filter(e=>e.getAttribute('jb-ctx') == ctx.id))
 }
 
 jb.studio.highlight = function(elems) {
@@ -217,7 +212,8 @@ jb.component('studio.highlight-in-preview',{
   }
 })
 
-st.closestCtxInPreview = path => {
+st.closestCtxInPreview = _path => {
+	var path = _path.split('~fields~')[0]; // field is passive..
 	var _window = st.previewWindow || window;
 	if (!_window) return;
 	var closest,closestElem;

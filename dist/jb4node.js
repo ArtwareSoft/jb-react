@@ -18194,7 +18194,7 @@ jb.component('remove-sections', {
     do {
       range = findRange(out);
       if (range)
-        out = out.substring(0,range.from) + out.substring(range.to)
+        out = out.substring(0,range.from) + out.substring(range.to || out.length)
     } while (range && out);
     return out;
 

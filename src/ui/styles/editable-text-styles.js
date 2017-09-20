@@ -67,6 +67,7 @@ jb.component('editable-text.mdl-input-no-floating-label', {
 })
 
 jb.component('editable-text.mdl-search', {
+  description: 'debounced and one way binding',
   type: 'editable-text.style',
   impl :{$: 'custom-style',
       template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[
@@ -78,8 +79,8 @@ jb.component('editable-text.mdl-search', {
         h('label',{class: 'mdl-textfield__label', for: 'search_' + state.fieldId},state.title)
       ]),
       features: [
-          {$: 'field.databind-text' },
-          {$: 'mdl-style.init-dynamic'}
+          {$: 'field.databind-text', debounceTime: 300, oneWay: true },
+          {$: 'mdl-style.init-dynamic'},
       ],
   }
 })

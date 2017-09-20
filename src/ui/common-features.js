@@ -24,11 +24,6 @@ jb.component('group.wait', {
               jb.delay(1).then(
                 _=>cmp.refresh())
             })
-
-
-        // cmp.delayed = cmp.ctrlEmitter.toPromise().then(_=>
-        //   cmp.jbEmitter.filter(x=>
-        //     x=='after-update').take(1).toPromise());
       },
   })
 })

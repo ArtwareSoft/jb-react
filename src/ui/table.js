@@ -91,7 +91,7 @@ jb.component('field.button', {
         cmp.state.title = ctx.params.buttonText(ctx.setData(props.row));
       },
       afterViewInit : cmp=>
-        cmp.clicked = jb.ui.wrapWithLauchingElement(_ => ctx.params.action(ctx.setData(cmp.props.row)), ctx, cmp.base)
+        cmp.clicked = _ => ctx.params.action(cmp.ctx.setData(cmp.props.row).setVars({ $launchingElement: { el : cmp.base }}))
     }).reactComp();
 
     return {

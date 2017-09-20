@@ -16,10 +16,11 @@
 	</style>
 </head>
 <body>
+<div id="mem"> </div>
 <div id="test"> </div>
 <script>
 	var test = (location.href.match(/test=([^&]*)/) || [])[1]; //.split('?test=').pop().split('&')[0];
-	jb.testers.runTests('',test,location.href.indexOf('&show') != -1, (location.href.match('&rerun=([0-9]*)') || [])[1] );
+	jb.testers.runTests('',test,location.href.indexOf('&show') != -1, (location.href.match('&rerun=([0-9]*)') || [])[1] )
 </script>
 </body>
 </html>

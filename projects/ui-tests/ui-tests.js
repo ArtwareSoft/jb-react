@@ -452,7 +452,7 @@ jb.component('ui-test.itemlist-DD', {
       },
     ],
   },
-  action :{$: 'ui-action.keyboard-event', selector: '#itemlist', type: 'keydown', ctrl: 'ctrl', keyCode: 40 }, // ctrl keyDown
+  action :[ ctx =>jb.delay(10), {$: 'ui-action.keyboard-event', selector: '#itemlist', type: 'keydown', ctrl: 'ctrl', keyCode: 40 }], // ctrl keyDown
   expectedResult: { $: 'contains', text: ['Marge', 'Homer','Marge', 'Homer'] },
 },
 })
@@ -534,7 +534,7 @@ control :{$: 'group',
       }
     ]
   } ,
-  action: ctx=> jb.delay(1),
+  action: ctx=> jb.delay(10),
   expectedResult: { $: 'contains', text: ['Homer Simpson', 'Homer Simpson selected'] },
 },
 })

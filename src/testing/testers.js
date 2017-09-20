@@ -155,7 +155,7 @@ jb.testers.runTests = function(testType,specificTest,show,rerun) {
 		.filter(e=>!specificTest || e[0] == specificTest);
 
 
-	document.write(`<div style="font-size: 20px"><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span></div>`);
+	document.write(`<div style="font-size: 20px"><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="mem"></span></div>`);
 
 	return jb.rx.Observable.from(Array.from(Array(rerun ? Number(rerun) : 1).keys()))
 		.concatMap(i=> (i % 20 == 0) ? jb.delay(300): [1])
@@ -163,6 +163,8 @@ jb.testers.runTests = function(testType,specificTest,show,rerun) {
 		jb.rx.Observable.from(tests).concatMap(e=>
 				Promise.resolve(new jb.jbCtx().setVars({testID: e[0]}).run({$:e[0]}))))
 			.subscribe(res=> {
+				document.querySelector('#mem').innerHTML = 
+					(100 * performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit) + '% memory';
 				if (res.success)
 					jb_success_counter++;
 				else

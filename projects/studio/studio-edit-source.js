@@ -11,15 +11,24 @@ jb.component('studio.edit-source', {
     }
   ], 
   impl :{$: 'open-dialog', 
-    style :{$: 'dialog.studio-floating', id: 'edit-source', width: 600 }, 
+    style :{$: 'dialog.dialog-ok-cancel', id: 'edit-source', width: 600, okLabel: 'OK', cancelLabel: 'Cancel' }, 
     content :{$: 'editable-text', 
-      databind :{$: 'studio.profile-as-text', path: '%$path%' }, 
+      databind: '%$Script%', 
       style :{$: 'editable-text.codemirror', mode: 'javascript' }
     }, 
     title :{$: 'studio.short-title', path: '%$path%' }, 
+    onOK :{$: 'write-value', 
+      to :{$: 'studio.profile-as-text', path: '%$path%' }, 
+      value: '%$Script%'
+    }, 
     features: [
       {$: 'css', css: '.jb-dialog-content-parent {overflow-y: hidden}' }, 
-      {$: 'dialog-feature.resizer', "resize-inner-codemirror": 'true', resizeInnerCodemirror: true }
+      {$: 'dialog-feature.resizer', "resize-inner-codemirror": 'true', resizeInnerCodemirror: true }, 
+      {$: 'var', 
+        name: 'Script', 
+        value : {$pipeline: [{$: 'studio.profile-as-text', path: '%$path%' }, '%% ']}, 
+        mutable: 'true'
+      }
     ]
   }
 })

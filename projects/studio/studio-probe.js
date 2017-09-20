@@ -11,7 +11,7 @@ st.Probe = class {
     this.context = ctx.ctx({});
     this.probe = {};
     this.context.probe = this;
-    this.context.profile = st.valOfPath(this.context.path); // recalc last version of profile
+    this.context.profile = st.valOfPath(this.context.path); // recalc latest version of profile
     this.circuit = this.context.profile;
     this.id = ++probeCounter;
   }
@@ -59,6 +59,11 @@ st.Probe = class {
           st.probeResEl = jb.ui.render(ctrl, st.probeEl, st.probeResEl);
           return ({element: st.probeResEl});
 				}
+        if (st.isCompNameOfType(jb.compName(this.circuit),'table-field')) {
+          var item = this.context.vars.$probe_item;
+          var index = this.context.vars.$probe_index;
+          return res.control ? res.control(item) : res.fieldData(item,index);
+        }
 				return res;
 			})
 	}
@@ -140,8 +145,24 @@ jb.component('studio.probe', {
 	params: [ { id: 'path', as: 'string', dynamic: true } ],
 	impl: (ctx,path) => {
     var _jb = st.previewjb;
+    /* Finding the best circuit
+      1. direct selection
+      2. closest in preview
+      3. the page shown in studio
+    */
 		var circuitCtx = ctx.vars.pickSelection && ctx.vars.pickSelection.ctx;
-    if (circuitCtx)
+    if (circuitCtx && circuitCtx.path.indexOf('~fields~') != -1) {// fields are not good circuit. go up to the table
+      var rowElem = ctx.vars.pickSelection.elem && ctx.vars.pickSelection.elem.closest('.jb-item');
+      var rowCtx = rowElem && _jb.ctxDictionary[rowElem.getAttribute('jb-ctx')];
+      var item = rowCtx && rowCtx.data;
+      if (item) {
+        circuitCtx = circuitCtx.setVars({ $probe_item: item, $probe_index: Array.from(rowElem.parentElement.children).indexOf(rowElem) });
+        st.highlight([rowElem]);
+      } else {
+        circuitCtx = null;
+      }
+    }
+    else if (circuitCtx)
       jb.studio.highlightCtx(circuitCtx);
 		if (!circuitCtx) {
 			var circuitInPreview = st.closestCtxInPreview(path());

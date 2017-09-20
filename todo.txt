@@ -3,10 +3,20 @@ properties bugs
   new featrure opens inteli and change..
   sometimes width problems - menu at the right is not shown
 
+search component
+  add selection with keyboard + enter
+
+add refresh button to Ctrl-J
+  use studio-floating like style
+
+right click for tree menu
 
 remarks
   use var - do not refresh
   show with different class
+
+no preview for table fiels
+fix table fields insertion in studio
 
 one letter shortcuts on context menu.
 
@@ -25,8 +35,6 @@ property description in jb-editor popup (slice/start)
 add studio-settings.js
   synonyms (use for search)
     separator - delimiter
-  auto description by param obj
-    as: ref
 
 
 fix padding of tgp-in-array

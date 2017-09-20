@@ -185,12 +185,10 @@ jb.component('itemlists.table-with-search', {
             ], 
             watchItems: 'true', 
             features: [
-              {$: 'watch-ref', 
-                ref: '%$itemlistCntrData/search_pattern%', 
-                includeChildren: ''
-              }, 
+              {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', includeChildren: '' }, 
               {$: 'itemlist.selection', autoSelectFirst: 'true' }, 
-              {$: 'itemlist.keyboard-selection' }
+              {$: 'itemlist.keyboard-selection' }, 
+              {$: 'css.width', width: '300' }
             ]
           }
         ], 

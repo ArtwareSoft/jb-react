@@ -46,8 +46,6 @@ class JbComponent {
 				this.ctxForPick = jbComp.ctxForPick || jbComp.ctx;
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				try {
-					if (jbComp.createjbEmitter)
-						this.jbEmitter = this.jbEmitter || new jb.rx.Subject();
 		    		this.refreshCtx = _ => {
 						jbComp.extendCtxFuncs.forEach(extendCtx => {
 			    			this.ctx = extendCtx(this.ctx,this) || this.ctx;
@@ -83,16 +81,10 @@ class JbComponent {
 				jbComp.injectCss(this);
 				jbComp.jbRegisterEventsFuncs.forEach(init=> init(this));
 				jbComp.jbAfterViewInitFuncs.forEach(init=> init(this));
-				if (this.jbEmitter)
-					this.jbEmitter.next('after-init');
 			}
 	  		componentWillUnmount() {
 				jbComp.jbDestroyFuncs.forEach(f=>
 					f(this));
-				if (this.jbEmitter) {
-					 this.jbEmitter.next('destroy');
-					 this.jbEmitter.complete();
-				}
 				this.resolveDestroyed();
 			}
 		};
@@ -207,7 +199,7 @@ function injectLifeCycleMethods(Comp,jbComp) {
 	}
 	if (jbComp.createjbEmitter)
 	  Comp.prototype.componentDidUpdate = function() {
-		this.jbEmitter.next('after-update');
+//		this.jbEmitter.next('after-update');
 	}
 	if (jbComp.noUpdates)
 		Comp.prototype.shouldComponentUpdate = _ => false;
