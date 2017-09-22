@@ -43,7 +43,7 @@ jb.component('editable-text.helper-popup', {
   impl : ctx =>({
     onkeyup: true,
     onkeydown: true, // used for arrows
-    extendCtx: (ctx,cmp) =>
+    extendCtxOnce: (ctx,cmp) =>
       ctx.setVars({selectionKeySource: {}}),
 
     afterViewInit: cmp => {

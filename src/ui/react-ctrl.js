@@ -46,15 +46,15 @@ class JbComponent {
 				this.ctxForPick = jbComp.ctxForPick || jbComp.ctx;
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				try {
-		    		this.refreshCtx = _ => {
-						jbComp.extendCtxFuncs.forEach(extendCtx => {
-			    			this.ctx = extendCtx(this.ctx,this) || this.ctx;
-			    		})
-			    		return this.ctx;
-			    	}
+		    // 		this.refreshCtx = _ => {
+						// jbComp.extendCtxFuncs.forEach(extendCtx => {
+			   //  			this.ctx = extendCtx(this.ctx,this) || this.ctx;
+			   //  		})
+			   //  		return this.ctx;
+			   //  	}
 					jbComp.extendCtxOnceFuncs.forEach(extendCtx =>
 		    			this.ctx = extendCtx(this.ctx,this) || this.ctx);
-			    	this.refreshCtx();
+//			    	this.refreshCtx();
 					Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
 					jbComp.jbBeforeInitFuncs.forEach(init=> init(this,props));
 					jbComp.jbInitFuncs.forEach(init=> init(this,props));
@@ -79,12 +79,14 @@ class JbComponent {
 			}
     		componentDidMount() {
 				jbComp.injectCss(this);
-				jbComp.jbRegisterEventsFuncs.forEach(init=> init(this));
-				jbComp.jbAfterViewInitFuncs.forEach(init=> init(this));
+				jbComp.jbRegisterEventsFuncs.forEach(init=> {
+					try { init(this) } catch(e) { jb.logException('init',e) }});
+				jbComp.jbAfterViewInitFuncs.forEach(init=> {
+					try { init(this) } catch(e) { jb.logException('AfterViewInit',e); }});
 			}
 	  		componentWillUnmount() {
-				jbComp.jbDestroyFuncs.forEach(f=>
-					f(this));
+				jbComp.jbDestroyFuncs.forEach(f=> {
+					try { f(this) } catch(e) { jb.logException('destroy',e); }});
 				this.resolveDestroyed();
 			}
 		};
@@ -164,7 +166,6 @@ class JbComponent {
 		       	  cmp[op] = cmp[op] || jb.rx.Observable.fromEvent(cmp.base, op.slice(2))
 		       	  	.takeUntil( cmp.destroyed )));
 
-		if (options.jbEmitter || events.length > 0) this.createjbEmitter = true;
 		if (options.ctxForPick) this.ctxForPick=options.ctxForPick;
 		if (options.extendCtx) this.extendCtxFuncs.push(options.extendCtx);
 		if (options.extendCtxOnce) this.extendCtxOnceFuncs.push(options.extendCtxOnce);
@@ -194,12 +195,6 @@ function injectLifeCycleMethods(Comp,jbComp) {
 	  Comp.prototype.componentWillUpdate = function() {
 		jbComp.jbCheckFuncs.forEach(f=>
 			f(this));
-//		this.refreshModel && this.refreshModel();
-//		this.jbEmitter && this.jbEmitter.next('check');
-	}
-	if (jbComp.createjbEmitter)
-	  Comp.prototype.componentDidUpdate = function() {
-//		this.jbEmitter.next('after-update');
 	}
 	if (jbComp.noUpdates)
 		Comp.prototype.shouldComponentUpdate = _ => false;

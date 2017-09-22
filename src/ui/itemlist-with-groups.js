@@ -49,7 +49,7 @@ jb.component('itemlist.watch-items-with-heading', {
             var items = groupBy(cmp.ctx.setData(_items)) || _items;
             cmp.items = items; //.filter(item=>!item.heading);
 
-            var ctx2 = (cmp.refreshCtx ? cmp.refreshCtx() : cmp.ctx).setData(items);
+            var ctx2 = cmp.ctx.setData(items);
             var ctx3 = itemVariableName ? ctx2.setVars(jb.obj(itemVariableName,items)) : ctx2;
             var ctrls = context.vars.$model.controls(ctx3);
             return ctrls;
