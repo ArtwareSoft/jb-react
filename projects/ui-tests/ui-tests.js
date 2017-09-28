@@ -207,6 +207,25 @@ jb.component('ui-test.tree', {
 },
 })
 
+jb.component('ui-test.tree-rightClick', {
+  impl :{$: 'ui-test',
+  control: {$: 'tree',
+    nodeModel :{$: 'tree.json-read-only',
+      object: '%$personWithAddress%', rootPath: 'personWithAddress'
+    },
+    features: [
+        { $: 'tree.selection', 
+          onRightClick :{$: 'open-dialog', title: 'hello',  
+            features: {$: 'dialog-feature.near-launcher-position' },
+          },
+        },
+        { $: 'tree.keyboard-selection' },
+    ]
+  },
+  expectedResult :{$: 'contains', text: ['address'] } ,
+},
+})
+
 jb.component('ui-test.tree-DD', {
   impl :{$: 'ui-test',
   control :{$: 'tree',

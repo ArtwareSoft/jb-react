@@ -126,16 +126,15 @@ jb.component('itemlist-container.search', {
 
           return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
         });
-        ctx.vars.itemlistCntr.keydown = jb.rx.Observable.create(obs=> {
-          cmp.base.onkeydown = e => {
-            if ([38,40].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
-              obs.next(e);
-              return false;  
-            }
-            return true;
+        var keydown_src = new jb.rx.Subject();
+        cmp.base.onkeydown = e => {
+          if ([38,40,13,27].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
+            keydown_src.next(e);
+            return false;  
           }
-        }).takeUntil(cmp.destroyed)
-
+          return true;
+        }
+        ctx.vars.itemlistCntr.keydown = keydown_src.takeUntil(cmp.destroyed);
       }
     })
 });

@@ -27,7 +27,7 @@ class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
 		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],
-			jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], extendItemFuncs: [] });
+			jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], extendItemFuncs: [] });
 		this.cssSelectors = [];
 
 		this.jb_profile = ctx.profile;
@@ -167,7 +167,7 @@ class JbComponent {
 		       	  	.takeUntil( cmp.destroyed )));
 
 		if (options.ctxForPick) this.ctxForPick=options.ctxForPick;
-		if (options.extendCtx) this.extendCtxFuncs.push(options.extendCtx);
+//		if (options.extendCtx) this.extendCtxFuncs.push(options.extendCtx);
 		if (options.extendCtxOnce) this.extendCtxOnceFuncs.push(options.extendCtxOnce);
 		if (options.extendItem)
 			this.extendItemFuncs.push(options.extendItem);

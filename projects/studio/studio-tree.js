@@ -147,6 +147,7 @@ jb.component('studio.control-tree', {
                 path :{$: 'studio.currentProfilePath' }
               }
             ],
+            onRightClick :{$: 'studio.open-tree-menu', path: '%%' },
             autoSelectFirst: true,
           },
           {$: 'tree.keyboard-selection',

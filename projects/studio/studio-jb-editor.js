@@ -88,7 +88,8 @@ jb.component('studio.jb-editor', {
           {$: 'tree.selection',
             onDoubleClick :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' },
             databind: '%$jbEditor_selection%',
-            autoSelectFirst: true
+            autoSelectFirst: true,
+            onRightClick:{$: 'studio.open-jb-editor-menu', path: '%%', root: '%$path%' },
           },
           {$: 'tree.keyboard-selection',
             onEnter :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' },

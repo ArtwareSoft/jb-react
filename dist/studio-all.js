@@ -12472,7 +12472,7 @@ class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
 		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],
-			jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], extendItemFuncs: [] });
+			jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], extendItemFuncs: [] });
 		this.cssSelectors = [];
 
 		this.jb_profile = ctx.profile;
@@ -12491,17 +12491,15 @@ class JbComponent {
 				this.ctxForPick = jbComp.ctxForPick || jbComp.ctx;
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				try {
-					if (jbComp.createjbEmitter)
-						this.jbEmitter = this.jbEmitter || new jb.rx.Subject();
-		    		this.refreshCtx = _ => {
-						jbComp.extendCtxFuncs.forEach(extendCtx => {
-			    			this.ctx = extendCtx(this.ctx,this) || this.ctx;
-			    		})
-			    		return this.ctx;
-			    	}
+		    // 		this.refreshCtx = _ => {
+						// jbComp.extendCtxFuncs.forEach(extendCtx => {
+			   //  			this.ctx = extendCtx(this.ctx,this) || this.ctx;
+			   //  		})
+			   //  		return this.ctx;
+			   //  	}
 					jbComp.extendCtxOnceFuncs.forEach(extendCtx =>
 		    			this.ctx = extendCtx(this.ctx,this) || this.ctx);
-			    	this.refreshCtx();
+//			    	this.refreshCtx();
 					Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
 					jbComp.jbBeforeInitFuncs.forEach(init=> init(this,props));
 					jbComp.jbInitFuncs.forEach(init=> init(this,props));
@@ -12526,18 +12524,14 @@ class JbComponent {
 			}
     		componentDidMount() {
 				jbComp.injectCss(this);
-				jbComp.jbRegisterEventsFuncs.forEach(init=> init(this));
-				jbComp.jbAfterViewInitFuncs.forEach(init=> init(this));
-				if (this.jbEmitter)
-					this.jbEmitter.next('after-init');
+				jbComp.jbRegisterEventsFuncs.forEach(init=> {
+					try { init(this) } catch(e) { jb.logException('init',e) }});
+				jbComp.jbAfterViewInitFuncs.forEach(init=> {
+					try { init(this) } catch(e) { jb.logException('AfterViewInit',e); }});
 			}
 	  		componentWillUnmount() {
-				jbComp.jbDestroyFuncs.forEach(f=>
-					f(this));
-				if (this.jbEmitter) {
-					 this.jbEmitter.next('destroy');
-					 this.jbEmitter.complete();
-				}
+				jbComp.jbDestroyFuncs.forEach(f=> {
+					try { f(this) } catch(e) { jb.logException('destroy',e); }});
 				this.resolveDestroyed();
 			}
 		};
@@ -12617,9 +12611,8 @@ class JbComponent {
 		       	  cmp[op] = cmp[op] || jb.rx.Observable.fromEvent(cmp.base, op.slice(2))
 		       	  	.takeUntil( cmp.destroyed )));
 
-		if (options.jbEmitter || events.length > 0) this.createjbEmitter = true;
 		if (options.ctxForPick) this.ctxForPick=options.ctxForPick;
-		if (options.extendCtx) this.extendCtxFuncs.push(options.extendCtx);
+//		if (options.extendCtx) this.extendCtxFuncs.push(options.extendCtx);
 		if (options.extendCtxOnce) this.extendCtxOnceFuncs.push(options.extendCtxOnce);
 		if (options.extendItem)
 			this.extendItemFuncs.push(options.extendItem);
@@ -12647,12 +12640,6 @@ function injectLifeCycleMethods(Comp,jbComp) {
 	  Comp.prototype.componentWillUpdate = function() {
 		jbComp.jbCheckFuncs.forEach(f=>
 			f(this));
-//		this.refreshModel && this.refreshModel();
-//		this.jbEmitter && this.jbEmitter.next('check');
-	}
-	if (jbComp.createjbEmitter)
-	  Comp.prototype.componentDidUpdate = function() {
-		this.jbEmitter.next('after-update');
 	}
 	if (jbComp.noUpdates)
 		Comp.prototype.shouldComponentUpdate = _ => false;
@@ -13616,7 +13603,8 @@ jb.component('field.databind-text', {
           if (val === undefined)
             return jb.val(ctx.vars.$model.databind);
           else { // write
-              cmp.setState({model: val});
+              if (!oneWay)
+                cmp.setState({model: val});
               jb.writeValue(ctx.vars.$model.databind,val,ctx);
           }
         }
@@ -13809,7 +13797,7 @@ jb.component('editable-text.helper-popup', {
   impl : ctx =>({
     onkeyup: true,
     onkeydown: true, // used for arrows
-    extendCtx: (ctx,cmp) =>
+    extendCtxOnce: (ctx,cmp) =>
       ctx.setVars({selectionKeySource: {}}),
 
     afterViewInit: cmp => {
@@ -13993,11 +13981,6 @@ jb.component('group.wait', {
               jb.delay(1).then(
                 _=>cmp.refresh())
             })
-
-
-        // cmp.delayed = cmp.ctrlEmitter.toPromise().then(_=>
-        //   cmp.jbEmitter.filter(x=>
-        //     x=='after-update').take(1).toPromise());
       },
   })
 })
@@ -15553,14 +15536,14 @@ jb.component('itemlist.selection', {
           .subscribe(buff=>
             ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
 
-        cmp.jbEmitter.filter(x=> x =='after-update').startWith(jb.delay(1)).subscribe(x=>{
-          if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
-            cmp.state.selected = null;
-					if (jb.val(ctx.params.databind))
-						cmp.setState({selected: selectedOfDatabind()});
-          if (!cmp.state.selected)
-            autoSelectFirst()
-        })
+     //    cmp.jbEmitter.filter(x=> x =='after-update').startWith(jb.delay(1)).subscribe(x=>{
+     //      if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
+     //        cmp.state.selected = null;
+		 // if (jb.val(ctx.params.databind))
+		 // 	cmp.setState({selected: selectedOfDatabind()});
+     //      if (!cmp.state.selected)
+     //        autoSelectFirst()
+     //    })
 
         function autoSelectFirst() {
           if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
@@ -15572,7 +15555,14 @@ jb.component('itemlist.selection', {
         function selectedOfDatabind() {
           return ctx.params.databind && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(ctx.params.databind))))
         }
-        //autoSelectFirst();
+        jb.delay(1).then(_=>{
+           if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
+              cmp.state.selected = null;
+           if (jb.val(ctx.params.databind))
+             cmp.setState({selected: selectedOfDatabind()});
+           if (!cmp.state.selected)
+                  autoSelectFirst()
+        })
     },
     extendItem: (cmp,vdom,data) => {
       jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == data);
@@ -15580,7 +15570,6 @@ jb.component('itemlist.selection', {
         cmp.clickEmitter.next(data)
     },
     css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
-    createjbEmitter: true,
   })
 })
 
@@ -15811,20 +15800,26 @@ jb.component('itemlist-container.search', {
   impl: (ctx,title,searchIn,databind) =>
     jb.ui.ctrl(ctx,{
       afterViewInit: cmp => {
-        if (ctx.vars.itemlistCntr) {
-          ctx.vars.itemlistCntr.filters.push( items => {
-            var toSearch = jb.val(databind) || '';
-            if (typeof searchIn.profile == 'function') { // improved performance
-              return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-            }
+        if (!ctx.vars.itemlistCntr) return;
 
-            return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-          });
-        // allow itemlist selection use up/down arrows
-        ctx.vars.itemlistCntr.keydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
-            .takeUntil( cmp.destroyed )
-            .filter(e=>  [13,27,37,38,39,40].indexOf(e.keyCode) != -1);
-        }
+        ctx.vars.itemlistCntr.filters.push( items => {
+          var toSearch = jb.val(databind) || '';
+          if (typeof searchIn.profile == 'function') { // improved performance
+            return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+          }
+
+          return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+        });
+        ctx.vars.itemlistCntr.keydown = jb.rx.Observable.create(obs=> {
+          cmp.base.onkeydown = e => {
+            if ([38,40].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
+              obs.next(e);
+              return false;  
+            }
+            return true;
+          }
+        }).takeUntil(cmp.destroyed)
+
       }
     })
 });
@@ -16395,7 +16390,7 @@ jb.component('field.button', {
         cmp.state.title = ctx.params.buttonText(ctx.setData(props.row));
       },
       afterViewInit : cmp=>
-        cmp.clicked = jb.ui.wrapWithLauchingElement(_ => ctx.params.action(ctx.setData(cmp.props.row)), ctx, cmp.base)
+        cmp.clicked = _ => ctx.params.action(cmp.ctx.setData(cmp.props.row).setVars({ $launchingElement: { el : cmp.base }}))
     }).reactComp();
 
     return {
@@ -16830,6 +16825,7 @@ jb.component('editable-text.mdl-input-no-floating-label', {
 })
 
 jb.component('editable-text.mdl-search', {
+  description: 'debounced and one way binding',
   type: 'editable-text.style',
   impl :{$: 'custom-style',
       template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[
@@ -16841,8 +16837,8 @@ jb.component('editable-text.mdl-search', {
         h('label',{class: 'mdl-textfield__label', for: 'search_' + state.fieldId},state.title)
       ]),
       features: [
-          {$: 'field.databind-text' },
-          {$: 'mdl-style.init-dynamic'}
+          {$: 'field.databind-text', debounceTime: 300, oneWay: true },
+          {$: 'mdl-style.init-dynamic'},
       ],
   }
 })
@@ -32414,31 +32410,31 @@ jb.component('label.studio-message', {
 
 
 jb.component('studio.search-component', {
-  type: 'control',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'group',
-    title: 'itemlist-with-find',
-    style :{$: 'layout.horizontal', spacing: '' },
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'group', 
+    title: 'itemlist-with-find', 
+    style :{$: 'layout.horizontal', spacing: '' }, 
     controls: [
-      {$: 'itemlist-container.search',
-        control :{$: 'studio.search-list', path: '%$path%' },
-        title: 'Search',
+      {$: 'itemlist-container.search', 
+        control :{$: 'studio.search-list', path: '%$path%' }, 
+        title: 'Search', 
         searchIn: item =>
-          item.id,
-        databind: '%$itemlistCntrData/search_pattern%',
-        style :{$: 'editable-text.mdl-input', width: '200' },
+          item.id, 
+        databind: '%$itemlistCntrData/search_pattern%', 
+        style :{$: 'editable-text.mdl-search', width: '200' }, 
         features: [
-          {$: 'editable-text.helper-popup',
-            features :{$: 'dialog-feature.near-launcher-position' },
-            control :{$: 'studio.search-list' },
-            popupId: 'search-component',
+          {$: 'editable-text.helper-popup', 
+            features :{$: 'dialog-feature.near-launcher-position' }, 
+            control :{$: 'studio.search-list' }, 
+            popupId: 'search-component', 
             popupStyle :{$: 'dialog.popup' }
           }
         ]
       }
-    ],
+    ], 
     features: [
-      {$: 'group.itemlist-container' },
+      {$: 'group.itemlist-container' }, 
       {$: 'css.margin', top: '-13' }
     ]
   }
@@ -34891,9 +34887,7 @@ jb.component('dialog-feature.studio-pick', {
 	params: [
 		{ id: 'from', as: 'string' },
 	],
-	impl: ctx =>
-	({
-	  disableChangeDetection: true,
+	impl: ctx => ({
       init: cmp=> {
 		  var _window = ctx.params.from == 'preview' ? st.previewWindow : window;
 		  var previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
@@ -34906,33 +34900,30 @@ jb.component('dialog-feature.studio-pick', {
 		  	userPick = userPick.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'mousedown'));
 		  	keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'keyup'));
 		  };
-
 		  mouseMoveEm
 		  	.debounceTime(50)
 		  	.takeUntil(
 		  		keyUpEm.filter(e=>
 		  			e.keyCode == 27)
 		  			  .merge(userPick))
-		  	.do(e=>{
-		  		if (e.keyCode == 27)
-		  			ctx.vars.$dialog.close({OK:false});
-		  	})
+		  	// .do(e=>{
+		  	// 	if (e.keyCode == 27)
+		  	// 		ctx.vars.$dialog.close({OK:false});
+		  	// })
 		  	.map(e=>
 		  		eventToElem(e,_window))
-		  	.filter(x=> x)
-		  	.do(profElem=> {
-          if (profElem.getAttribute) {
-		  		    ctx.vars.pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];
-              showBox(cmp,profElem,_window,previewOffset);
-          }
-		  	})
-        .last()
-		  	.subscribe(x=> {
-		  		ctx.vars.$dialog.close({OK:true});
-		  		jb.delay(200).then(_=> {
-            if (st.previewWindow && st.previewWindow.getSelection())
-              st.previewWindow.getSelection().innerHTML = ''
-            })
+		  	.filter(x=>x && x.getAttribute)
+		  	.do(profElem=>
+            	showBox(cmp,profElem,_window,previewOffset))
+        	.last() // esc or user pick
+		  	.subscribe(profElem=> {
+	  		    ctx.vars.pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];
+	  		    ctx.vars.pickSelection.elem = profElem;
+		  		ctx.vars.$dialog.close({OK: true});
+		  		// jb.delay(200).then(_=> {
+		    //         if (st.previewWindow && st.previewWindow.getSelection())
+		    //           st.previewWindow.getSelection().innerHTML = ''
+		    //         })
 		  	})
 		}
 	})
@@ -34997,8 +34988,8 @@ jb.studio.getOrCreateHighlightBox = function() {
 
 jb.studio.highlightCtx = function(ctx) {
 	var _window = st.previewWindow || window;
-	jb.studio.highlight(Array.from(_window.document.querySelectorAll('[jb-ctx]'))
-		.filter(e=>e.getAttribute('jb-ctx') == ctx.id))
+	jb.studio.highlight(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
+//		.filter(e=>e.getAttribute('jb-ctx') == ctx.id))
 }
 
 jb.studio.highlight = function(elems) {
@@ -35043,7 +35034,8 @@ jb.component('studio.highlight-in-preview',{
   }
 })
 
-st.closestCtxInPreview = path => {
+st.closestCtxInPreview = _path => {
+	var path = _path.split('~fields~')[0]; // field is passive..
 	var _window = st.previewWindow || window;
 	if (!_window) return;
 	var closest,closestElem;
@@ -37453,7 +37445,7 @@ st.Probe = class {
     this.context = ctx.ctx({});
     this.probe = {};
     this.context.probe = this;
-    this.context.profile = st.valOfPath(this.context.path); // recalc last version of profile
+    this.context.profile = st.valOfPath(this.context.path); // recalc latest version of profile
     this.circuit = this.context.profile;
     this.id = ++probeCounter;
   }
@@ -37501,6 +37493,11 @@ st.Probe = class {
           st.probeResEl = jb.ui.render(ctrl, st.probeEl, st.probeResEl);
           return ({element: st.probeResEl});
 				}
+        if (st.isCompNameOfType(jb.compName(this.circuit),'table-field')) {
+          var item = this.context.vars.$probe_item;
+          var index = this.context.vars.$probe_index;
+          return res.control ? res.control(item) : res.fieldData(item,index);
+        }
 				return res;
 			})
 	}
@@ -37582,8 +37579,24 @@ jb.component('studio.probe', {
 	params: [ { id: 'path', as: 'string', dynamic: true } ],
 	impl: (ctx,path) => {
     var _jb = st.previewjb;
+    /* Finding the best circuit
+      1. direct selection
+      2. closest in preview
+      3. the page shown in studio
+    */
 		var circuitCtx = ctx.vars.pickSelection && ctx.vars.pickSelection.ctx;
-    if (circuitCtx)
+    if (circuitCtx && circuitCtx.path.indexOf('~fields~') != -1) {// fields are not good circuit. go up to the table
+      var rowElem = ctx.vars.pickSelection.elem && ctx.vars.pickSelection.elem.closest('.jb-item');
+      var rowCtx = rowElem && _jb.ctxDictionary[rowElem.getAttribute('jb-ctx')];
+      var item = rowCtx && rowCtx.data;
+      if (item) {
+        circuitCtx = circuitCtx.setVars({ $probe_item: item, $probe_index: Array.from(rowElem.parentElement.children).indexOf(rowElem) });
+        st.highlight([rowElem]);
+      } else {
+        circuitCtx = null;
+      }
+    }
+    else if (circuitCtx)
       jb.studio.highlightCtx(circuitCtx);
 		if (!circuitCtx) {
 			var circuitInPreview = st.closestCtxInPreview(path());

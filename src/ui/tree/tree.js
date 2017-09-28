@@ -127,8 +127,9 @@ jb.component('tree.selection', {
   type: 'feature',
   params: [
 	  { id: 'databind', as: 'ref' },
+	  { id: 'autoSelectFirst', type: 'boolean' },
 	  { id: 'onSelection', type: 'action', dynamic: true },
-	  { id: 'autoSelectFirst', type: 'boolean' }
+	  { id: 'onRightClick', type: 'action', dynamic: true },
   ],
   impl: context=> ({
 	    onclick: true,
@@ -161,6 +162,13 @@ jb.component('tree.selection', {
 		  cmp.onclick.subscribe(_=>
 		  	tree.regainFocus && tree.regainFocus()
 		  );
+
+		if (context.params.onRightClick.profile)
+			cmp.base.oncontextmenu = (e=> {
+				jb.ui.wrapWithLauchingElement(context.params.onRightClick,
+					context.setData(tree.elemToPath(e.target)), e.target)();
+				return false;
+			});
 
 		  // first auto selection selection
 		  var first_selected = jb.val(context.params.databind);
