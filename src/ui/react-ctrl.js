@@ -27,7 +27,7 @@ class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
 		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],
-			jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], extendItemFuncs: [] });
+			jbComponentDidUpdateFuncs: [], jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], extendItemFuncs: [] });
 		this.cssSelectors = [];
 
 		this.jb_profile = ctx.profile;
@@ -83,6 +83,10 @@ class JbComponent {
 					try { init(this) } catch(e) { jb.logException('init',e) }});
 				jbComp.jbAfterViewInitFuncs.forEach(init=> {
 					try { init(this) } catch(e) { jb.logException('AfterViewInit',e); }});
+			}
+			componentDidUpdate() {
+				jbComp.jbComponentDidUpdateFuncs.forEach(f=> {
+					try { f(this) } catch(e) { jb.logException('componentDidUpdate',e); }});
 			}
 	  		componentWillUnmount() {
 				jbComp.jbDestroyFuncs.forEach(f=> {
@@ -154,6 +158,7 @@ class JbComponent {
 		if (options.afterViewInit) this.jbAfterViewInitFuncs.push(options.afterViewInit);
 		if (options.doCheck) this.jbCheckFuncs.push(options.doCheck);
 		if (options.destroy) this.jbDestroyFuncs.push(options.destroy);
+		if (options.componentDidUpdate) this.jbComponentDidUpdateFuncs.push(options.componentDidUpdate);
 		if (options.templateModifier) this.modifierFuncs.push(options.templateModifier);
 		if (typeof options.class == 'string')
 			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class));

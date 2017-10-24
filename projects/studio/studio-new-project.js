@@ -54,29 +54,33 @@ jb.component('${name}.main', {
 });
 
 jb.component('studio.open-new-project', {
-  type: 'action',
-  impl :{$: 'open-dialog',
-    title: 'New Project',
-    modal: true,
-    style :{$: 'dialog.dialog-ok-cancel' },
-    content :{$: 'group',
-      style :{$: 'group.div' },
+  type: 'action', 
+  impl :{$: 'open-dialog', 
+    style :{$: 'dialog.dialog-ok-cancel' }, 
+    content :{$: 'group', 
+      style :{$: 'group.div' }, 
       controls: [
-        {$: 'editable-text',
-          title: 'project name',
-          databind: '%$name%',
-          style :{$: 'editable-text.mdl-input' },
-          features :{$: 'feature.onEnter',
+        {$: 'editable-text', 
+          title: 'project name', 
+          databind: '%$name%', 
+          style :{$: 'editable-text.mdl-input' }, 
+          features :{$: 'feature.onEnter', 
             action :{$: 'dialog.close-containing-popup' }
           }
         }
-      ],
+      ], 
       features :{$: 'css.padding', top: '14', left: '11' }
-    },
-    onOK:{$: 'studio.new-project', name: '%$name%', onSuccess: {$:'goto-url', url: '/project/studio/%$name%/'}},
-    features : [
-      {$: 'var', name: 'name', mutable: true },
-      {$: 'dialog-feature.auto-focus-on-first-input' }
+    }, 
+    title: 'New Project', 
+    onOK :{$: 'studio.new-project', 
+      name: '%$name%', 
+      onSuccess :{$: 'goto-url', url: '/project/studio/%$name%/' }
+    }, 
+    modal: true, 
+    features: [
+      {$: 'var', name: 'name', mutable: true }, 
+      {$: 'dialog-feature.auto-focus-on-first-input' }, 
+      {$: 'dialog-feature.near-launcher-position', offsetLeft: '300', offsetTop: '100' }
     ]
   }
 })

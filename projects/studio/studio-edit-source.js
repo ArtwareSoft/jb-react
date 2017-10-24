@@ -11,7 +11,13 @@ jb.component('studio.edit-source', {
     }
   ], 
   impl :{$: 'open-dialog', 
-    style :{$: 'dialog.dialog-ok-cancel', id: 'edit-source', width: 600, okLabel: 'OK', cancelLabel: 'Cancel' }, 
+    style :{$: 'dialog.edit-source-style', 
+      id: 'edit-source', width: 600, 
+      onUpdate :{$: 'write-value', 
+        to :{$: 'studio.profile-as-text', path: '%$path%' }, 
+        value: '%$Script%'
+      }, 
+    }, 
     content :{$: 'editable-text', 
       databind: '%$Script%', 
       style :{$: 'editable-text.codemirror', mode: 'javascript' }
@@ -22,6 +28,7 @@ jb.component('studio.edit-source', {
       value: '%$Script%'
     }, 
     features: [
+//      {$:'dialog-feature.drag-title'},
       {$: 'css', css: '.jb-dialog-content-parent {overflow-y: hidden}' }, 
       {$: 'dialog-feature.resizer', "resize-inner-codemirror": 'true', resizeInnerCodemirror: true }, 
       {$: 'var', 

@@ -132,7 +132,7 @@ jb.component('studio.pages', {
 jb.component('studio.ctx-counters', {
   type: 'control',
   impl :{$: 'label',
-    title: ctx => Math.floor(100 * performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit) + '% memory',
+    title: ctx => (performance.memory.usedJSHeapSize / 1000000)  + 'M',
     //jb.ctxCounter() + '/' + jb.studio.previewjb.ctxCounter(),
     features: [
       {$: 'css',

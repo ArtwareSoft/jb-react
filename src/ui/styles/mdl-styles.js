@@ -19,6 +19,11 @@ jb.component('mdl-style.init-dynamic', {
       	 elems.forEach(el=>
       	 	jb.ui.inDocument(el) && componentHandler.upgradeElement(el))).catch(e=>{})
       },
+      componentDidUpdate: cmp => {
+       var input = cmp.base.querySelector('input');
+       input && input.setCustomValidity && input.setCustomValidity(cmp.state.error||'');
+       input && input.dispatchEvent(new Event('input'));
+      },
       destroy: cmp => {
         try {
       	 $.contains(document.documentElement, cmp.base) &&

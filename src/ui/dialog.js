@@ -20,7 +20,8 @@ jb.component('open-dialog', {
 		};
 
 		var ctx = context.setVars({
-			$dialog: dialog
+			$dialog: dialog,
+			formContainer: { err: ''}
 		});
 		dialog.comp = jb.ui.ctrl(ctx,{
 			beforeInit: cmp => {
@@ -437,7 +438,6 @@ jb.component('dialog-feature.resizer', {
 	     })
 })
 
-
 jb.ui.dialogs = {
  	dialogs: [],
 	addDialog: function(dialog,context) {
@@ -450,6 +450,8 @@ jb.ui.dialogs = {
 			jb.ui.addHTML(document.body,'<div class="modal-overlay"></div>');
 
 		dialog.close = function(args) {
+			if (dialog.context.vars.formContainer.err && args.OK) // not closing dialog with errors
+				return;
 			return Promise.resolve().then(_=>{
 				if (dialog.closing) return;
 				dialog.closing = true;

@@ -1,15 +1,20 @@
+jbeditor bugs
+  menu - does not focus on first choice
+  suggestion - Enter does not work well
+  
+refactor
+  component
+
+open component in tree in place
+
+
 properties bugs
   tgp selection - open close - studio-helper.studio-properties-rich
   new featrure opens inteli and change..
   sometimes width problems - menu at the right is not shown
 
-search component
-  add selection with keyboard + enter
-
 add refresh button to Ctrl-J
   use studio-floating like style
-
-right click for tree menu
 
 remarks
   use var - do not refresh
@@ -18,26 +23,13 @@ remarks
 no preview for table fiels
 fix table fields insertion in studio
 
-one letter shortcuts on context menu.
-
-ctrl-o - open context menu
-ctrl-t - open navigation menu
-ctrl-w - open wrap menu
-ctrl-p - component search menu
-
 suggestions css width
   =sl -> jb-core.js:551 refresh: object not found: suggestionData:36859~selected
-
-property description in jb-editor popup (slice/start)
-  fix css
-
 
 add studio-settings.js
   synonyms (use for search)
     separator - delimiter
 
-
-fix padding of tgp-in-array
 
 check install
   fix babel to dev dependencies

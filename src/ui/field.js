@@ -20,6 +20,8 @@ jb.component('field.databind', {
           if (val === undefined)
             return jb.val(ctx.vars.$model.databind);
           else { // write
+              var err = jb.ui.validationError(cmp);
+              cmp.setState({error:err});
               jb.writeValue(ctx.vars.$model.databind,val,ctx);
           }
         }
@@ -65,6 +67,8 @@ jb.component('field.databind-text', {
           else { // write
               if (!oneWay)
                 cmp.setState({model: val});
+              var err = jb.ui.validationError(cmp);
+              cmp.setState({valid: !err, error:err});
               jb.writeValue(ctx.vars.$model.databind,val,ctx);
           }
         }
@@ -92,6 +96,8 @@ jb.component('field.databind-range', {
           if (val === undefined)
             return jb.val(ctx.vars.$model.databind);
           else { // write
+              var err = jb.ui.validationError(cmp);
+              cmp.setState({valid: !err, error:err});
               jb.writeValue(ctx.vars.$model.databind,val,ctx);
           }
         }
@@ -103,63 +109,6 @@ jb.component('field.databind-range', {
       }
   })
 })
-
-// jb.component('field.databind', {
-//   type: 'feature',
-//   params: [
-//     { id: 'noUpdates', as: 'boolean' },
-//   ],
-//   impl: (ctx,noUpdates) => {
-//     if (!ctx.vars.$model || !ctx.vars.$model.databind)
-//       jb.logError('bind-field: No databind in model', ctx.vars.$model, ctx);
-//     return {
-//       noUpdates: noUpdates,
-//       beforeInit: function(cmp) {
-//         cmp.state.title = ctx.vars.$model.title();
-//         cmp.state.fieldId = jb.ui.field_id_counter++;
-//         cmp.state.model = jb.val(ctx.vars.$model.databind);
-
-//         var srcCtx = cmp.ctxForPick || cmp.ctx;
-//         cmp.jbModel = (val,source) => {
-//           if (val === undefined)
-//             return jb.val(ctx.vars.$model.databind);
-//           else { // write
-//             if (cmp.inputEvents && source == 'keyup')
-//               cmp.inputEvents.next(val); // used for debounce
-//             else if (!ctx.vars.$model.updateOnBlur || source != 'keyup') {
-//               jb.writeValue(ctx.vars.$model.databind,val,srcCtx);
-//               cmp.setState({model,val});
-//             }
-//           }
-//         }
-//         if (!noUpdates) {
-//           jb.ui.refObservable(ctx.vars.$model.databind,cmp)
-//             .filter(e=>!e || cmp.allowSelfRefresh || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
-//             .subscribe(e=>jb.ui.setState(cmp,{model:jb.val(ctx.vars.$model.databind)},e,ctx))
-//         }
-//       }
-//   }}
-// })
-
-// jb.component('field.debounce-databind', {
-//   type: 'feature',
-//   description: 'debounce input content writing to databind via keyup',
-//   params: [
-//     { id: 'debounceTime', as: 'number', defaultValue: 500 },
-//   ],
-//   impl: (ctx,debounceTime) =>
-//     ({
-//       init: cmp => {
-//           cmp.inputEvents = cmp.inputEvents || new jb.rx.Subject();
-//           cmp.inputEvents.takeUntil( cmp.destroyed )
-//             .distinctUntilChanged()
-//             .debounceTime(debounceTime)
-//             .subscribe(val=>
-//               jb.writeValue(ctx.vars.$model.databind,val)
-//           )
-//       },
-//     })
-// })
 
 jb.component('field.data', {
   type: 'data',
@@ -205,8 +154,36 @@ jb.component('field.toolbar', {
   params: [
     { id: 'toolbar', type: 'control', essential: true, dynamic: true },
   ],
-  impl: (context,toolbar) =>
-  ({
+  impl: (context,toolbar) => ({
     toolbar: toolbar().reactComp()
   })
 })
+
+// ***** validation 
+
+jb.component('validation', {
+  type: 'feature', category: 'validation:100',
+  params: [
+    { id: 'validCondition', essential: true, type: 'boolean', as: 'boolean', dynamic: true },
+    { id: 'errorMessage', essential: true, as: 'string', dynamic: true },
+  ],
+  impl: (ctx,validCondition,errorMessage) => ({
+      init: cmp =>
+        cmp.validations = (cmp.validations || []).concat([ctx.params]),
+      afterViewInit: cmp =>  { // for preview
+          var _ctx = ctx.setData(cmp.state.model);
+          validCondition(_ctx); errorMessage(_ctx);
+      }
+  })
+})
+
+jb.ui.validationError = function(cmp) {
+  if (!cmp.validations) return;
+  var ctx = cmp.ctx.setData(cmp.state.model);
+  var err = (cmp.validations || [])
+    .filter(validator=>!validator.validCondition(ctx))
+    .map(validator=>validator.errorMessage(ctx))[0];
+  if (ctx.vars.formContainer)
+    ctx.vars.formContainer.err = err;
+  return err;
+}

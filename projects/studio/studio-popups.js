@@ -78,6 +78,76 @@ jb.component('dialog.studio-floating', {
 	}
 })
 
+jb.component('dialog.edit-source-style', {
+	type: 'dialog.style',
+	params: [
+		{ id: 'id', as: 'string' },
+		{ id: 'width', as: 'number', defaultValue: 300},
+		{ id: 'height', as: 'number', defaultValue: 100},
+		{ id: 'onUpdate', type: 'action', dynamic: true },
+	],
+	impl : ctx => ctx.run({$: 'custom-style',
+			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
+				h('div',{class: 'dialog-title noselect'},state.title),
+				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
+				h('button',{class: 'dialog-close', onclick:
+					_=> cmp.dialogClose() },'×'),
+				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
+				h('div',{class: 'dialog-buttons'},[
+					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => ctx.params.onUpdate(cmp.ctx) },'update'),
+					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: false}) },'cancel'),
+					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },'ok'),
+				]),
+			]),
+			features: [
+					{$: 'dialog-feature.drag-title', id: '%$id%'},
+					{$: 'dialog-feature.unique-dialog', id: '%$id%', remeberLastLocation: true },
+					{$: 'dialog-feature.max-zIndex-on-click', minZIndex: 5000 },
+					{$: 'studio-dialog-feature.refresh-title' },
+					{$: 'studio-dialog-feature.studio-popup-location' },
+			],
+			css: `{ position: fixed;
+						background: #F9F9F9;
+						width: %$width%px;
+						max-width: 1200px;
+						min-height: %$height%px;
+						overflow: auto;
+						border-radius: 4px;
+						padding: 0 12px 12px 12px;
+						box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
+				}
+				>.dialog-title { background: none; padding: 10px 5px; }
+				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }
+				>.dialog-close {
+						position: absolute;
+						cursor: pointer;
+						right: 4px; top: 4px;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
+						opacity: .2;
+				}
+				>.dialog-menu {
+						position: absolute;
+						cursor: pointer;
+						right: 24px; top: 0;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
+						opacity: .2;
+				}
+				>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }
+				>.dialog-close:hover { opacity: .5 }`
+
+	})
+})
+
 jb.component('studio-dialog-feature.studio-popup-location',{
 	type: 'dialog-feature',
 	impl: ctx => ({

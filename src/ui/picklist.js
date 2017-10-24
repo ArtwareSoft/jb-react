@@ -23,7 +23,7 @@ jb.component('picklist', {
               groups.push(group);
               groupsHash[groupId] = group;
             }
-            group.options.push({text: o.text.split('.').pop(), code: o.code });
+            group.options.push({text: (o.text||'').split('.').pop(), code: o.code });
           })
           groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
           jb.ui.setState(cmp,{

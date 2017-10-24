@@ -13,17 +13,6 @@ jb.component('play-ground.main', {
         title :{$: 'is-of-type', type: 'string', obj: '123' }, 
         style :{$: 'label.p' }
       }, 
-      {$: 'button', 
-        title :{
-          $pipeline: [
-            ctx=>window.jb, 
-            '%comps%', 
-            {$: 'property-names', obj: '%%' }
-          ]
-        }, 
-        action: [{$: 'action.switch', cases: [] }], 
-        style :{$: 'button.mdl-raised' }
-      }, 
       {$: 'picklist', 
         title: 'name', 
         databind: '%$name%', 
@@ -234,5 +223,25 @@ jb.component('play-ground.cards', {
       }
     ], 
     features :{$: 'css.width', width: '512' }
+  }
+})
+
+jb.component('play-ground.form', {
+  type: 'control', 
+  impl :{$: 'group', 
+    title: 'form', 
+    controls: [
+      {$: 'editable-text', 
+        title: 'Name', 
+        databind: '%$name%', 
+        style :{$: 'editable-text.mdl-input' }, 
+        features :{$: 'validation', 
+          successCondition: "%% != 'aa'", 
+          validCondition :{$: 'match-regex', text: '%%', regex: '[a-zA-Z]*', fillText: 'true' }, 
+          errorMessage: 'letters only'
+        }
+      }
+    ], 
+    features :{$: 'var', name: 'name', value: 'Dan', mutable: true }
   }
 })

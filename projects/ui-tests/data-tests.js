@@ -186,6 +186,18 @@ jb.component('data-test.restoreArrayIds-bug', {
   }
 })
 
+jb.component('data-test.as-array-bug', {
+   impl :{$: 'data-test',
+    $vars: {
+        items: [{id: 1},{id:2}]
+    },
+    calculate: ctx => ctx.exp('%$items/id%','array'),
+    expectedResult : ctx => !Array.isArray(ctx.data[0])
+  },
+})
+
+
+
 // jb.component('data-test.http-get', {
 //    impl :{$: 'data-test',
 //     calculate: {$pipe : [ {$: 'http.get', url: '/projects/ui-tests/people.json'}, '%people/name%', {$join:','}  ]},

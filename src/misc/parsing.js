@@ -165,17 +165,6 @@ jb.component('remove-sections', {
   }
 })
 
-jb.component('match-regex', {
-  type: 'boolean',
-  params: [
-    {id: 'text', as: 'string', defaultValue: '%%'},
-    {id: 'regex', as: 'string', essential: true },
-    {id: 'fillText', as: 'boolean', essential: true, description: 'regex must match all text' },
-  ],
-  impl: (ctx,text,regex,fillText) =>
-    text.match(new RegExp(fillText ? `^${regex}$` : regex))
-})
-
 jb.component('merge', {
 	type: 'data',
   description: 'assign, merge object properties',

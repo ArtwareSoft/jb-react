@@ -25,36 +25,39 @@ jb.component('studio.choose-project', {
   impl :{$: 'group', 
     title: 'itemlist-with-find', 
     controls: [
-      {$: 'itemlist-container.search', features: {$: 'css.width', width: '250'} },
+      {$: 'itemlist-container.search', 
+        features :{$: 'css.width', width: '250' }
+      }, 
       {$: 'itemlist', 
         items :{
           $pipeline: [
             '%projects%', 
-            {$: 'itemlist-container.filter' }, 
+            {$: 'itemlist-container.filter' }
           ]
         }, 
-        features: [
-            { $: 'itemlist.selection' }, 
-            { $: 'itemlist.keyboard-selection', autoFocus: true, onEnter :{$: 'studio.goto-project' } },
-            { $: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', }
-        ],
         controls :{$: 'button', 
-          title :{$: 'highlight', 
-            base: '%%', 
-            highlight: '%$itemlistCntrData/search_pattern%', 
-          }, 
+          title :{$: 'highlight', base: '%%', highlight: '%$itemlistCntrData/search_pattern%' }, 
           action :{$: 'studio.goto-project' }, 
           style :{$: 'button.mdl-flat-ripple' }, 
           features :{$: 'css', css: '{ text-align: left; width: 250px }' }
         }, 
-//        style :{$: 'itemlist.ul-li' }, 
-//        itemVariable: 'project'
+        features: [
+          {$: 'itemlist.selection' }, 
+          {$: 'itemlist.keyboard-selection', 
+            onEnter :{$: 'studio.goto-project' }, 
+            autoFocus: true
+          }, 
+          {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' }, 
+          {$: 'css.height', height: '400', overflow: 'scroll' }
+        ]
       }
     ], 
     features: [
-      {$: 'group.wait', for :{$: 'http.get', url: '/?op=projects', json: 'true' }},
-      {$: 'css.padding', top: '15', left: '15' },
-      {$: 'group.itemlist-container' }, 
+      {$: 'group.wait', 
+        for :{$: 'http.get', url: '/?op=projects', json: 'true' }
+      }, 
+      {$: 'css.padding', top: '15', left: '15' }, 
+      {$: 'group.itemlist-container' }
     ]
   }
 })

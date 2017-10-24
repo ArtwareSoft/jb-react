@@ -403,6 +403,24 @@ jb.component('count', {
 		items.length
 });
 
+jb.component('reverse', {
+	type: 'aggregator',
+	params: [{ id: 'items', as:'array', defaultValue: '%%'}],
+	impl: (ctx,items) =>
+		items.reverse()
+});
+
+jb.component('match-regex', {
+  type: 'boolean',
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'regex', as: 'string', essential: true, description: 'e.g: [a-zA-Z]*' },
+    {id: 'fillText', as: 'boolean', essential: true, description: 'regex must match all text' },
+  ],
+  impl: (ctx,text,regex,fillText) =>
+    text.match(new RegExp(fillText ? `^${regex}$` : regex))
+})
+
 jb.component('to-string', {
 	params: [
 		{ id: 'text', as: 'string', defaultValue: '%%', composite: true}
