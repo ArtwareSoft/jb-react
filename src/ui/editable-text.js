@@ -63,10 +63,21 @@ jb.component('editable-text.helper-popup', {
         jb.ui.dialogs.dialogs.filter(d=>d.id == ctx.params.popupId)[0];
       cmp.closePopup = _ =>
         cmp.popup() && cmp.popup().close();
+      cmp.refreshSuggestionPopupOpenClose = _ => {
+          jb.logPerformance('helper-popup', ''+ctx.params.showHelper(cmp.ctx.setData(input)), ''+input.value );
+          if (!ctx.params.showHelper(cmp.ctx.setData(input))) {
+            jb.logPerformance('helper-popup', 'close popup' );
+            cmp.closePopup();
+          } else if (!cmp.popup()) {
+            jb.logPerformance('helper-popup', 'open popup' );
+            cmp.openPopup(cmp.ctx)
+          }
+      }
 
       cmp.ctx.vars.selectionKeySource.input = input;
       var keyup = cmp.ctx.vars.selectionKeySource.keyup = cmp.onkeyup.delay(1); // delay to have input updated
       cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown;
+      cmp.ctx.vars.selectionKeySource.cmp = cmp;
 
       jb.delay(500).then(_=>{
         cmp.onkeydown.filter(e=> e.keyCode == 13 && !ctx.params.showHelper(cmp.ctx.setData(input)) ).subscribe(_=>
@@ -76,16 +87,7 @@ jb.component('editable-text.helper-popup', {
       })
 
       keyup.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)
-        .subscribe(_=>{
-          jb.logPerformance('helper-popup', ''+ctx.params.showHelper(cmp.ctx.setData(input)), ''+input.value );
-          if (!ctx.params.showHelper(cmp.ctx.setData(input))) {
-            jb.logPerformance('helper-popup', 'close popup' );
-            cmp.closePopup();
-          } else if (!cmp.popup()) {
-            jb.logPerformance('helper-popup', 'open popup' );
-            cmp.openPopup(cmp.ctx)
-          }
-      })
+        .subscribe(_=>cmp.refreshSuggestionPopupOpenClose())
 
       keyup.filter(e=>e.keyCode == 27) // ESC
           .subscribe(_=>cmp.closePopup())

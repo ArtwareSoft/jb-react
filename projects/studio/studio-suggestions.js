@@ -200,13 +200,18 @@ jb.component('studio.jb-floating-input', {
 })
 
 jb.component('studio.paste-suggestion', {
-  type: 'control',
+  type: 'action',
   params: [
     { id: 'option', as: 'single', defaultValue: '%%' },
     { id: 'close', as: 'boolean', description: 'ends with % or /' }
   ],
-  impl: (ctx,option,close) =>
-    option.paste(ctx,close)
+  impl: (ctx,option,close) => {
+    Promise.resolve(option.paste(ctx,close)).then(_=> {
+      var cmp = ctx.vars.selectionKeySource.cmp;
+      cmp.refreshSuggestionPopupOpenClose();
+      jb.ui.setState(cmp,{model: cmp.jbModel()},null,ctx);
+    })
+  }
 })
 
 
@@ -267,7 +272,7 @@ st.suggestions = class {
 
     options = jb.unique(options,x=>x.toPaste)
         .filter(x=> x.toPaste.indexOf('$jb_') != 0)
-        .filter(x=> x.toPaste != this.tail)
+//        .filter(x=> x.toPaste != this.tail)
         .filter(x=>
           this.tail == '' || typeof x.toPaste != 'string' || (x.description + x.toPaste).toLowerCase().indexOf(this.tail.toLowerCase()) != -1)
     if (this.tail)
