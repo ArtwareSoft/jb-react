@@ -310,7 +310,7 @@ function evalExpressionPart(expressionPart,context,jstype) {
            return refHandler.objectProperty(arr,index);
         if (typeof arr[index] == 'undefined')
            arr[index] = last ? null : [];
-			  if (last && jstype)
+        if (last && jstype)
            return jstypes[jstype](arr[index]);
         return arr[index];
      }
@@ -422,7 +422,7 @@ var jstypes = {
     },
     'number': function(value) {
       if (Array.isArray(value)) value = value[0];
-      if (value == null || value == undefined) return null;	// 0 is not null
+      if (value == null || value == undefined) return null; // 0 is not null
       value = val(value);
       var num = Number(value,true);
       return isNaN(num) ? null : num;
@@ -584,7 +584,37 @@ function extend(obj,obj1,obj2,obj3) {
   return obj;
 }
 
-var valueByRefHandler = null; // valueByRefHandlerWithjbParent;
+var valueByRefHandlerWithjbParent = {
+  val: function(v) {
+    if (v.$jb_val) return v.$jb_val();
+    return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
+  },
+  writeValue: function(to,value,srcCtx) {
+    jb.logPerformance('writeValue',value,to,srcCtx);
+    if (!to) return;
+    if (to.$jb_val)
+      to.$jb_val(this.val(value))
+    else if (to.$jb_parent)
+      to.$jb_parent[to.$jb_property] = this.val(value);
+    return to;
+  },
+  asRef: function(value) {
+    if (value && (value.$jb_parent || value.$jb_val))
+        return value;
+    return { $jb_val: () => value }
+  },
+  isRef: function(value) {
+    return value && (value.$jb_parent || value.$jb_val);
+  },
+  objectProperty: function(obj,prop) {
+      if (this.isRef(obj[prop]))
+        return obj[prop];
+      else
+        return { $jb_parent: obj, $jb_property: prop };
+  }
+}
+
+var valueByRefHandler = valueByRefHandlerWithjbParent;
 
 var types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 

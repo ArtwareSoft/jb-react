@@ -81,6 +81,10 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'node_modules/codemirror/lib/codemirror.css',
         'node_modules/codemirror/theme/solarized.css'
       ],
+      'd3': [
+        'node_modules/d3/build/d3.js',
+        'src/ui/d3-chart/d3-chart.js',
+      ],
       'history': [
         'node_modules/history/umd/history.js',
         'src/ui/url.js'

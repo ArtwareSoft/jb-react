@@ -101,7 +101,7 @@ jb.component('var', {
 	description: 'defines a local variable',
   params: [
     { id: 'name', as: 'string', essential: true },
-    { id: 'value', dynamic: true, defaultValue: '' },
+    { id: 'value', dynamic: true, defaultValue: '', essential: true },
     { id: 'mutable', as: 'boolean', description: 'E.g., selected item variable' },
   ],
   impl: (context, name, value,mutable) => ({
@@ -121,6 +121,17 @@ jb.component('var', {
         }
       }
   })
+})
+
+jb.component('global-var', {
+  type: 'feature', category: 'general:20',
+  description: 'defines a global variable which is calculated only once',
+  params: [
+    { id: 'name', as: 'string', essential: true },
+    { id: 'value', dynamic: true, essential: true },
+  ],
+  impl: (context, name, value) =>
+    jb.consts && !jb.consts[name] && (jb.consts[name] = value())
 })
 
 jb.component('bind-refs', {

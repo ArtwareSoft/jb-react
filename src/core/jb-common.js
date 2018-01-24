@@ -294,8 +294,56 @@ jb.component('first', {
 
 jb.component('last', {
 	type: 'aggregator',
-	impl: ctx => ctx.datas.slice(-1)[0]
+	impl: ctx => ctx.data.slice(-1)[0]
 });
+
+jb.component('count', {
+	type: 'aggregator',
+	description: 'length, size of array',
+	params: [{ id: 'items', as:'array', defaultValue: '%%'}],
+	impl: (ctx,items) =>
+		items.length
+});
+
+jb.component('reverse', {
+	type: 'aggregator',
+	params: [{ id: 'items', as:'array', defaultValue: '%%'}],
+	impl: (ctx,items) =>
+		items.reverse()
+});
+
+jb.component('sample', {
+	type: 'aggregator',
+	params: [
+		{ id: 'size', as:'number', defaultValue: 300},
+		{ id: 'items', as:'array', defaultValue: '%%'}
+	],
+	impl: (ctx,size,items) =>
+		items.filter((x,i)=>i % (Math.floor(items.length/300) ||1) == 0)
+});
+
+jb.component('calculate-properties', { 
+	type: 'aggregator',
+	description: 'extend with calculated properties',
+	params: [
+		{ id: 'property', type: 'calculated-property[]', essential: true, defaultValue: [] },
+		{ id: 'items', as:'array', defaultValue: '%%'},
+	],
+	impl: (ctx,properties,items) =>
+		items.slice(0).map((item,i)=>
+			properties.forEach(p=>item[p.title] = jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type) ) || item)
+});
+
+jb.component('calculated-property', { 
+	type: 'calculated-property',
+	params: [
+		{ id: 'title', as: 'string', essential: true },
+		{ id: 'val', dynamic: 'true', type: 'data', essential: true },
+		{ id: 'type', as: 'string', options: 'string,number,boolean', defaultValue: 'string' },
+	],
+	impl: ctx => ctx.params
+})
+
 
 jb.component('not', {
 	type: 'boolean',
@@ -335,6 +383,17 @@ jb.component('or', {
 		}
 		return false;
 	}
+});
+
+jb.component('between', {
+	type: 'boolean',
+	params: [
+		{ id: 'from', as: 'number', essential: true },
+		{ id: 'to', as: 'number', essential: true },
+		{ id: 'val', as: 'number', defaultValue: '%%' },
+	],
+	impl: (ctx,from,to,val) => 
+		val >= from && val <= to
 });
 
 jb.component('contains',{
@@ -393,21 +452,6 @@ jb.component('filter',{
 	impl: (context,filter) =>
 		jb.toarray(context.data).filter(item =>
 			filter(context,item))
-});
-
-jb.component('count', {
-	type: 'aggregator',
-	description: 'length, size of array',
-	params: [{ id: 'items', as:'array', defaultValue: '%%'}],
-	impl: (ctx,items) =>
-		items.length
-});
-
-jb.component('reverse', {
-	type: 'aggregator',
-	params: [{ id: 'items', as:'array', defaultValue: '%%'}],
-	impl: (ctx,items) =>
-		items.reverse()
 });
 
 jb.component('match-regex', {
@@ -866,3 +910,5 @@ jb.component('action.switch-case', {
 jb.component('newline', {
   impl: ctx => '\n'
 })
+
+jb.const('global', typeof window != 'undefined' ? window : typeof global != 'undefined' ? global : null)

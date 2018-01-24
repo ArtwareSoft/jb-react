@@ -196,6 +196,21 @@ jb.component('data-test.as-array-bug', {
   },
 })
 
+jb.component('data-test.calculate-properties', {
+   impl :{$: 'data-test',
+   calculate: {$pipeline: [
+    '%$personWithChildren/children%',
+      {$:'calculate-properties',
+        property: [
+          {$: 'calculated-property', title: 'nameTwice', val: '%name%-%name%'},
+          {$: 'calculated-property', title: 'index', val: '%$index%'},
+        ]
+      },
+      { $: 'join' , itemText: '%index%.%nameTwice%' }
+    ] },
+   expectedResult :{$: 'contains', text: '0.Bart-Bart,1.Lisa-Lisa,2.Maggie-Maggie' }
+ }
+})
 
 
 // jb.component('data-test.http-get', {

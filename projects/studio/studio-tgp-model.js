@@ -184,7 +184,7 @@ Object.assign(st,{
 			return [path]
 	},
 	isControlType: type =>
-		(type||'').match(/^(control|options|menu|table-field)/),
+		(type||'').match(/^(control|options|menu|table-field|d3.pivot)/),
 	controlParams: path =>
 		st.paramsOfPath(path).filter(p=>st.isControlType(p.type)).map(p=>p.id),
 
