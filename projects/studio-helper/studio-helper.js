@@ -252,7 +252,8 @@ jb.component('studio-helper.group-with-label', {
     controls: [
       {$: 'label', 
         title :{ $pipeline: ['%$people-array/people%', { $filter: '%age% == 42' }, '%name%'] }
-      }
+      }, 
+      {$: 'editable-text' }
     ]
   }
 })

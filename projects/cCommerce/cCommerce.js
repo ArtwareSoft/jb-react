@@ -124,3 +124,98 @@ jb.component('cCommerce.scatter', {
           }
         }, 
 })
+
+jb.component('cCommerce.histogram', {
+  type: 'control', 
+  impl :{$: 'group', 
+    title: 'histogram', 
+    controls: [
+      {$: 'label', 
+        title: '%$item/title%', 
+        style :{$: 'label.heading', level: 'h3' }
+      }, 
+      {$: 'd3.histogram', 
+        frame :{$: 'd3.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
+        items: '%$global.phones%', 
+        pivot :{$: 'd3.pivot', title: 'hits', value: '%size%' }, 
+        $disabled: true
+      }, 
+      {$: 'group', 
+        title: 'chart-props', 
+        style :{$: 'custom-style', 
+          template: (cmp,state,h) => h('div',{ class: 'clearfix'}, state.ctrls.map(ctrl=>
+      h('div',{ class: 'property clearfix'},[
+          h('div',{},[
+             h(ctrl), 
+                        h('label',{ class: 'property-title'},ctrl.title),
+    
+          ])
+      ]))), 
+          css: `>.property { 
+          float: left;
+          width: %$fieldWidth%px;
+          margin-right: %$spacing%px;
+        }
+      .clearfix:after {
+        content: "";
+        clear: both;
+      }
+>.property>div { display: grid }
+
+      >.property:last-child { margin-right:0 }
+      >.property>div>label {
+        margin-bottom: 3px;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        vertical-align:top;
+        font-size:14px;
+        padding-left: 100px;
+      }`, 
+          features :{$: 'group.init-group' }
+        }, 
+        controls: [
+          {$: 'd3.histogram', 
+            frame :{$: 'd3.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
+            items: '%$global.phones%', 
+            pivot :{$: 'd3.pivot', title: 'perf', value: '%performance%' }, 
+            title: 'performance %$item/performance%', 
+            features :{$: 'd3.item-indicator', item: '%$item%' }
+          }, 
+          {$: 'd3.histogram', 
+            frame :{$: 'd3.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
+            items: '%$global.phones%', 
+            pivot :{$: 'd3.pivot', title: 'hits', value: '%hits%' }, 
+            features :{$: 'd3.item-indicator', item: '%$item%' }, 
+            title: 'hits: %$item/hits%'
+          }, 
+          {$: 'd3.histogram', 
+            frame :{$: 'd3.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
+            items: '%$global.phones%', 
+            pivot :{$: 'd3.pivot', title: 'size', value: '%size%' }, 
+            features :{$: 'd3.item-indicator', item: '%$item%' }, 
+            title: 'size: %$item/size%'
+          }, 
+          {$: 'image', 
+            url: '%$item/image%', 
+            units: 'px', 
+            style :{$: 'image.default' }
+          }
+        ]
+      }, 
+      {$: 'table', 
+        title: '', 
+        items :{$: 'property-names', $list: ['performance', 'hits', 'size', 'price'], obj: '%$item%' }, 
+        fields: [
+          {$: 'field', title: 'title', data: '%%' }, 
+          {$: 'field', title: 'value', data: ctx => ctx.vars.item[ctx.data] }
+        ], 
+        style :{$: 'table.with-headers' }, 
+        visualSizeLimit: 100
+      }
+    ], 
+    features: [
+      {$: 'css.padding', left: '7' }, 
+      {$: 'var', name: 'item', value: '%$global/phones[66]%' }
+    ]
+  }
+})

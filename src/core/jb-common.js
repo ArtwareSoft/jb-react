@@ -280,7 +280,7 @@ jb.component('sort', {
 		if (lexical)
 			var sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
 		else 
-			var sortFunc = prop ? (x,y) => (x-y) : (x,y) => (x[prop]-y[prop]);
+			var sortFunc = prop ? (x,y) => (x[prop]-y[prop]) : (x,y) => (x-y);
 		if (ascending)
 			return ctx.data.slice(0).sort((x,y)=>sortFunc(y,x));
 		return ctx.data.slice(0).sort((x,y)=>sortFunc(x,y));

@@ -83,7 +83,9 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       ],
       'd3': [
         'node_modules/d3/build/d3.js',
+        'src/ui/d3-chart/d3-math.js',
         'src/ui/d3-chart/d3-chart.js',
+        'src/ui/d3-chart/d3-histogram.js',
       ],
       'history': [
         'node_modules/history/umd/history.js',

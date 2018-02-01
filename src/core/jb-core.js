@@ -249,22 +249,22 @@ function expression(exp, context, parentParam) {
   // if (context && !context.ngMode)
   //   exp = exp.replace(/{{/g,'{%').replace(/}}/g,'%}')
   if (exp == '{%%}' || exp == '%%')
-      return expPart('',context,jstype);
+      return expPart('');
 
   if (exp.lastIndexOf('{%') == 0 && exp.indexOf('%}') == exp.length-2) // just one exp filling all string
-    return expPart(exp.substring(2,exp.length-2),context,jstype);
+    return expPart(exp.substring(2,exp.length-2));
 
   exp = exp.replace(/{%(.*?)%}/g, function(match,contents) {
-      return tostring(expPart(contents,context,'string'));
+      return tostring(expPart(contents,{ as: 'string'}));
   })
   exp = exp.replace(/{\?(.*?)\?}/g, function(match,contents) {
       return tostring(conditionalExp(contents));
   })
   if (exp.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
-    return expPart(exp.substring(1,exp.length-1),context,jstype);
+    return expPart(exp.substring(1,exp.length-1));
 
   exp = exp.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
-      return tostring(expPart(contents,context,'string'));
+      return tostring(expPart(contents,{as: 'string'}));
   })
   return exp;
 
@@ -277,13 +277,14 @@ function expression(exp, context, parentParam) {
       return '';
   }
 
-  function expPart(expressionPart,context,jstype) {
-    return resolveFinishedPromise(evalExpressionPart(expressionPart,context,jstype))
+  function expPart(expressionPart,_parentParam) {
+    return resolveFinishedPromise(evalExpressionPart(expressionPart,context,_parentParam || parentParam))
   }
 }
 
 
-function evalExpressionPart(expressionPart,context,jstype) {
+function evalExpressionPart(expressionPart,context,parentParam) {
+  var jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   // example: %$person.name%.
 
   var primitiveJsType = ['string','boolean','number'].indexOf(jstype) != -1;
@@ -329,7 +330,7 @@ function evalExpressionPart(expressionPart,context,jstype) {
 
       if (input != null && typeof input == 'object') {
         if (obj == null) return;
-        if (typeof obj[subExp] === 'function' && obj[subExp].profile)
+        if (typeof obj[subExp] === 'function' && (parentParam.dynamic || obj[subExp].profile))
             return obj[subExp](context);
         if (last && jstype == 'ref')
            return refHandler.objectProperty(obj,subExp);

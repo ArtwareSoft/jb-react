@@ -4,9 +4,10 @@ jb.component('menu.menu', {
 	params: [
 		{ id: 'title', as: 'string', dynamic: true, essential: true },
 		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true, defaultValue: [] },
+		{ id: 'optionsFilter', type: 'data', dynamic: true, defaultValue: '%%' },
 	],
 	impl: ctx => ({
-		options: ctx.params.options,
+		options: ctx2 => ctx.params.optionsFilter(ctx.setData(ctx.params.options(ctx2))),
 		title: ctx.params.title(),
 		applyShortcut: function(e) {
 			return this.options().reduce((res,o)=> res || (o.applyShortcut && o.applyShortcut(e)),false)

@@ -69,7 +69,7 @@ class JbComponent {
 					var vdom = jbComp.template(this,state,ui.h);
 					jbComp.modifierFuncs.forEach(modifier=> {
 						if (typeof vdom == 'object')
-							vdom = modifier(vdom,this,state) || vdom
+							vdom = modifier(vdom,this,state,ui.h) || vdom
 					});
 					return vdom;
 				} catch (e) {
