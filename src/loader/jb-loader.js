@@ -135,14 +135,14 @@ function jb_dynamicLoad(modules,prefix) {
       //   return document.write('<script src="../node_modules/jquery/dist/jquery.min.js" onload="global.$ = window.$ = window.jQuery = module.exports;"></script>');
 
       if (prefix) { // avoid muliple source files with the same name in the debugger
-        var file_path = file.split('/');
+        const file_path = file.split('/');
         file_path.push(prefix+file_path.pop());
         file = file_path.join('/');
       }
       // if (win.electron)
       //   return win.loadURL(`file://${win.jbartBase}/../${file}`)
 
-      var url = (window.jbLoaderRelativePath ? '' : '/') + file;
+      const url = (window.jbLoaderRelativePath ? '' : '/') + file;
       if (file.match(/\.js$/))
         document.write('<script src="' + url + '" charset="UTF-8"></script>')
       else

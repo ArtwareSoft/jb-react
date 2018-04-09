@@ -37,92 +37,144 @@ jb.component('cCommerce.main', {
 jb.component('cCommerce.scatter', {
   type: 'control', 
   impl :{$: 'group', 
-          controls: [
-            {$: 'd3.chart-scatter', 
-              style :{$: 'd3-scatter.plain' }, 
-              pivots: [
-                {$: 'd3.pivot', title: 'performance', value: '%performance%' }, 
-                {$: 'd3.pivot', title: 'size', value: '%size%' }, 
-                {$: 'd3.pivot', 
-                  title: 'hits', 
-                  value: '%hits%', 
-                  scale :{$: 'd3.sqrt-scale' }
-                }, 
-                {$: 'd3.pivot', title: 'make', value: '%make%' }, 
-                {$: 'd3.pivot', title: '$', value: '%price%' }
-              ], 
-              title: 'phones', 
-              frame :{$: 'd3.frame', width: '1200', height: '480', top: 20, right: 20, bottom: 40, left: 80 }, 
-              visualSizeLimit: '3000', 
-              itemTitle: '%title% (%Announced%)', 
-              items: '%$devices%'
-            }
-          ], 
-          features :{$: 'global-var', 
-            name: 'devices', 
-            value :{
-              $pipeline: [
-                '%$global/phones%', 
-                {$: 'slice', $disabled: true, end: '1000' }, 
-                {$: 'sample', 
-                  filter :{$: 'starts-with', startsWith: 'Sam', text: '%title%' }, 
-                  $disabled: true, 
-                  size: 300, 
-                  items: '%%'
-                }, 
-                {$: 'calculate-properties', 
-                  property: [
-                    {$: 'calculated-property', 
-                      title: 'make', 
-                      val :{$: 'split', separator: ' ', text: '%title%', part: 'first' }, 
-                      type: 'string'
-                    }, 
-                    {$: 'calculated-property', 
-                      title: 'year', 
-                      val :{$: 'match-regex', text: '%Announced%', regex: '20[0-9][0-9]' }, 
-                      type: 'number'
-                    }, 
-                    {$: 'calculated-property', 
-                      title: 'price', 
-                      val :{
+    controls: [
+      {$: 'd3.chart-scatter', 
+        style :{$: 'd3-scatter.plain' }, 
+        pivots: [
+          {$: 'd3.pivot', title: 'size', value: '%size%' }, 
+          {$: 'd3.pivot', title: '$', value: '%price%' }, 
+          {$: 'd3.pivot', title: 'performance', value: '%performance%' }, 
+          {$: 'd3.pivot', title: 'make', value: '%make%' }, 
+          {$: 'd3.pivot', 
+            title: 'hits', 
+            value: '%hits%', 
+            scale :{$: 'd3.sqrt-scale' }
+          }
+        ], 
+        title: 'phones', 
+        frame :{$: 'd3.frame', width: '1200', height: '480', top: 20, right: 20, bottom: 40, left: 80 }, 
+        visualSizeLimit: '3000', 
+        itemTitle: '%title% (%Announced%)', 
+        items :{
+          $pipeline: [
+            '%$devices%', 
+            {$: 'calculate-properties', 
+              filter: "%make% == 'Apple'", 
+              property: [
+                {$: 'calculated-property', 
+                  title: 'CPUSpeed', 
+                  val :{
+                    $pipeline: ['%$clock%'], 
+                    $vars: {
+                      clock :{
                         $pipeline: [
-                          {$: 'match-regex', text: '%Price%', regex: '([0-9.]+) EUR' }, 
+                          '%CPU%', 
+                          {$: 'match-regex', text: '%%', regex: '([0-9.]+) GHz' }, 
+                          {$: 'last' }
+                        ], 
+                        $vars: { clock: '' }
+                      }, 
+                      mul :{
+                        $pipeline: [
+                          '%CPU%', 
+                          {$: 'match-regex', text: '%%', regex: '([A-Za-z]+)-core' }, 
                           {$: 'last' }, 
-                          ctx => ctx.data * 1.2
-                        ]
+                          {$: 'unique', id: '%%', items: '%%' }, 
+                          {$: 'data.switch', 
+                            cases: [
+                              { condition: "%% == 'Dual'", value: '1.6' }, 
+                              { condition: "%% == 'Quad'", value: '2' }, 
+                              { condition: "%% == 'Hexa'", value: '3' }, 
+                              { condition: "%% == 'Octa'", value: '4' }, 
+                              { condition: "%% == 'Deca'", value: '5' }
+                            ]
+                          }
+                        ], 
+                        $vars: { clock: '' }
                       }, 
-                      type: 'number'
-                    }, 
-                    {$: 'calculated-property', 
-                      title: 'size', 
-                      val :{
+                      cpuFactor :{
                         $pipeline: [
-                          {$: 'match-regex', text: '%Size%', regex: '([0-9.]+) inch' }, 
+                          '%CPU%', 
+                          {$: 'match-regex', text: '%%', regex: 'GHz\\s+([a-zA-Z0-9-]+)' }, 
                           {$: 'last' }
-                        ]
-                      }, 
-                      type: 'number'
-                    }, 
-                    {$: 'calculated-property', 
-                      title: 'performance', 
-                      val :{
-                        $pipeline: [
-                          {$: 'match-regex', text: '%Performance%', regex: 'Basemark OS II 2.0:\\s*([0-9.]+)' }, 
-                          {$: 'last' }
-                        ]
-                      }, 
-                      type: 'number'
+                        ], 
+                        $vars: { clock: '' }
+                      }
                     }
-                  ], 
-                  items: '%%'
-                }, 
-                {$: 'filter', 
-                  filter :{ $and: [{$: 'between', from: '4', to: '7', val: '%size%' }, ctx => (ctx.data.year || 0) >= 2016] }
+                  }, 
+                  type: 'string'
                 }
               ]
             }
+          ]
+        }
+      }
+    ], 
+    features :{$: 'global-var', 
+      name: 'devices', 
+      value :{
+        $pipeline: [
+          '%$global/phones%', 
+          {$: 'slice', $disabled: true, end: '1000' }, 
+          {$: 'sample', 
+            filter :{$: 'starts-with', startsWith: 'Sam', text: '%title%' }, 
+            $disabled: true, 
+            size: 300, 
+            items: '%%'
+          }, 
+          {$: 'calculate-properties', 
+            property: [
+              {$: 'calculated-property', 
+                title: 'make', 
+                val :{$: 'split', separator: ' ', text: '%title%', part: 'first' }, 
+                type: 'string'
+              }, 
+              {$: 'calculated-property', 
+                title: 'year', 
+                val :{$: 'match-regex', text: '%Announced%', regex: '20[0-9][0-9]' }, 
+                type: 'number'
+              }, 
+              {$: 'calculated-property', 
+                title: 'price', 
+                val :{
+                  $pipeline: [
+                    {$: 'match-regex', text: '%Price%', regex: '([0-9.]+) EUR' }, 
+                    {$: 'last' }, 
+                    ctx => ctx.data * 1.2
+                  ]
+                }, 
+                type: 'number'
+              }, 
+              {$: 'calculated-property', 
+                title: 'size', 
+                val :{
+                  $pipeline: [
+                    {$: 'match-regex', text: '%Size%', regex: '([0-9.]+) inch' }, 
+                    {$: 'last' }
+                  ]
+                }, 
+                type: 'number'
+              }, 
+              {$: 'calculated-property', 
+                title: 'performance', 
+                val :{
+                  $pipeline: [
+                    {$: 'match-regex', text: '%Performance%', regex: 'Basemark OS II 2.0:\\s*([0-9.]+)' }, 
+                    {$: 'last' }
+                  ]
+                }, 
+                type: 'number'
+              }
+            ], 
+            items: '%%'
+          }, 
+          {$: 'filter', 
+            filter :{ $and: [{$: 'between', from: '4', to: '7', val: '%size%' }, ctx => (ctx.data.year || 0) >= 2016] }
           }
-        }, 
+        ]
+      }
+    }
+  }
 })
 
 jb.component('cCommerce.histogram', {
@@ -215,7 +267,7 @@ jb.component('cCommerce.histogram', {
     ], 
     features: [
       {$: 'css.padding', left: '7' }, 
-      {$: 'var', name: 'item', value: '%$global/phones[66]%' }
+      {$: 'var', name: 'item', value: '%$global/phones[400]%' }
     ]
   }
 })

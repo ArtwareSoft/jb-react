@@ -43,6 +43,13 @@ jb.component('data-test.extract-text-exclude', {
 	},
 })
 
+jb.component('data-test.extract-text-regex', {
+	 impl :{$: 'data-test',
+		calculate: {$: 'extract-text', useRegex: true, text: '%$textToParse%', startMarkers: '#s.*', endMarker: '#e.*'},
+    expectedResult : '%% == first'
+	},
+})
+
 jb.component('data-test.break-text', {
 	impl :{$: 'data-test',
 	   calculate: {$: 'json.stringify', value: {$: 'break-text', text: '%$textToBreak%', separators: [';','-'] } },

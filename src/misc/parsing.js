@@ -13,21 +13,21 @@ jb.component('extract-text', {
     {id: 'exclude', as: 'boolean', type: 'boolean', description: 'return the inverse result. E.g. exclude remarks' },
   ],
   impl: (ctx,text,startMarkers,endMarker,includingStartMarker,includingEndMarker,repeating,noTrim,regex,exclude) => {
-	  var findMarker = (marker, startpos) => {
-      var pos = text.indexOf(marker,startpos);
+	  let findMarker = (marker, startpos) => {
+      const pos = text.indexOf(marker,startpos);
       if (pos != -1)
         return { pos: pos, end: pos + marker.length}
     }
 	  if (regex)
 		  findMarker = (marker, startpos) => {
-	  		var len = 0, pos = -1;
+	  		let len = 0, pos = -1;
 	  		try {
 		  		startpos = startpos || 0;
-		  		var str = text.substring(startpos);
-		  		var marker_regex = new RegExp(marker,'m');
+		  		const str = text.substring(startpos);
+		  		const marker_regex = new RegExp(marker,'m');
           pos = str.search(marker_regex);
 		    	if (pos > -1) {
-		    		var match = str.match(marker_regex)[0];
+		    		const match = str.match(marker_regex)[0];
             len = match ? match.length : 0;
             if (len)
               return { pos: pos+startpos, end: pos+ startpos+len };
@@ -36,10 +36,10 @@ jb.component('extract-text', {
 	  }
 
     function findStartMarkers(startpos) {
-      var firstMarkerPos;
-      for(var i=0; i<startMarkers.length; i++) {
-        var marker = startMarkers[i];
-        var markerPos = findMarker(marker,markerPos ? markerPos.end : startpos);
+      let firstMarkerPos,markerPos;
+      for(let i=0; i<startMarkers.length; i++) {
+        const marker = startMarkers[i];
+        markerPos = findMarker(marker,markerPos ? markerPos.end : startpos);
         if (!markerPos) return;
         if (i==0)
           firstMarkerPos = markerPos;

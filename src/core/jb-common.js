@@ -4,7 +4,7 @@ jb.component('call', {
  		{ id: 'param', as: 'string' }
  	],
  	impl: function(context,param) {
- 	  var paramObj = context.componentContext && context.componentContext.params[param];
+ 	  const paramObj = context.componentContext && context.componentContext.params[param];
       if (typeof(paramObj) == 'function')
  		return paramObj(new jb.jbCtx(context, {
  			data: context.data,
@@ -18,14 +18,12 @@ jb.component('call', {
 });
 
 jb.pipe = function(context,items,ptName) {
-	var start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
+	const start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
 	if (typeof context.profile.items == 'string')
 		return context.runInner(context.profile.items,null,'items');
-	var profiles = jb.toarray(context.profile.items || context.profile[ptName]);
-	if (context.profile.items && context.profile.items.sugar)
-		var innerPath =  '' ;
-	else
-		var innerPath = context.profile[ptName] ? (ptName + '~') : 'items~';
+	const profiles = jb.toarray(context.profile.items || context.profile[ptName]);
+	const innerPath = (context.profile.items && context.profile.items.sugar) ? '' 
+		: (context.profile[ptName] ? (ptName + '~') : 'items~');
 
 	if (ptName == '$pipe') // promise pipe
 		return profiles.reduce((deferred,prof,index) => {
@@ -41,7 +39,7 @@ jb.pipe = function(context,items,ptName) {
 
 	function step(profile,i,data) {
     	if (!profile || profile.$disabled) return data;
-		var parentParam = (i < profiles.length - 1) ? { as: 'array'} : (context.parentParam || {}) ;
+		const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (context.parentParam || {}) ;
 		if (jb.profileType(profile) == 'aggregator')
 			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
 		return [].concat.apply([],data.map(item =>
@@ -122,7 +120,7 @@ jb.component('list', {
 		{ id: 'items', type: "data[]", as: 'array', composite: true }
 	],
 	impl: function(context,items) {
-		var out = [];
+		let out = [];
 		items.forEach(item => {
 			if (Array.isArray(item))
 				out = out.concat(item);
@@ -139,11 +137,11 @@ jb.component('firstSucceeding', {
 		{ id: 'items', type: "data[]", as: 'array', composite: true }
 	],
 	impl: function(context,items) {
-		for(var i=0;i<items.length;i++)
+		for(let i=0;i<items.length;i++)
 			if (jb.val(items[i]))
 				return items[i];
 		// return last one if zero or empty string
-		var last = items.slice(-1)[0];
+		const last = items.slice(-1)[0];
 		return (last != null) && jb.val(last);
 	}
 });
@@ -216,7 +214,7 @@ jb.component('remove-suffix-regex',{
 	],
 	impl: function(context,suffix,text) {
 		context.profile.prefixRegexp = context.profile.prefixRegexp || new RegExp(suffix+'$');
-		var m = (text||'').match(context.profile.prefixRegexp);
+		const m = (text||'').match(context.profile.prefixRegexp);
 		return (m && (text||'').substring(m.index+1)) || text;
 	}
 });
@@ -239,8 +237,8 @@ jb.component('remove-from-array', {
 		{ id: 'index', as: 'number', description: 'choose item or index' },
 	],
 	impl: (ctx,array,itemToRemove,index) => {
-		var ar = jb.toarray(array);
-		var index = itemToRemove ? ar.indexOf(item) : index;
+		const ar = jb.toarray(array);
+		const index = itemToRemove ? ar.indexOf(item) : index;
 		if (index != -1 && ar.length > index)
 			jb.splice(array,[[index,1]],ctx)
 	}
@@ -277,10 +275,11 @@ jb.component('sort', {
 	],
 	impl: (ctx,prop,lexical,ascending) => {
 		if (!ctx.data || ! Array.isArray(ctx.data)) return null;
+		let sortFunc;
 		if (lexical)
-			var sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
+			sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
 		else 
-			var sortFunc = prop ? (x,y) => (x[prop]-y[prop]) : (x,y) => (x-y);
+			sortFunc = prop ? (x,y) => (x[prop]-y[prop]) : (x,y) => (x-y);
 		if (ascending)
 			return ctx.data.slice(0).sort((x,y)=>sortFunc(y,x));
 		return ctx.data.slice(0).sort((x,y)=>sortFunc(x,y));
@@ -359,9 +358,9 @@ jb.component('and', {
 		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true }
 	],
 	impl: function(context) {
-		var items = context.profile.$and || context.profile.items || [];
-		var innerPath =  context.profile.$and ? '$and~' : 'items~';
-		for(var i=0;i<items.length;i++) {
+		const items = context.profile.$and || context.profile.items || [];
+		const innerPath =  context.profile.$and ? '$and~' : 'items~';
+		for(let i=0;i<items.length;i++) {
 			if (!context.runInner(items[i], { type: 'boolean' }, innerPath + i))
 				return false;
 		}
@@ -375,9 +374,9 @@ jb.component('or', {
 		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true }
 	],
 	impl: function(context) {
-		var items = context.profile.$or || context.profile.items || [];
-		var innerPath =  context.profile.$or ? '$or~' : 'items~';
-		for(var i=0;i<items.length;i++) {
+		const items = context.profile.$or || context.profile.items || [];
+		const innerPath =  context.profile.$or ? '$or~' : 'items~';
+		for(let i=0;i<items.length;i++) {
 			if (context.runInner(items[i],{ type: 'boolean' },innerPath+i))
 				return true;
 		}
@@ -404,9 +403,9 @@ jb.component('contains',{
 		{ id: 'inOrder', defaultValue: true, as:'boolean'},
 	],
 	impl: function(context,text,allText,inOrder) {
-      var prevIndex = -1;
-      for(var i=0;i<text.length;i++) {
-      	var newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1);
+      let prevIndex = -1;
+      for(let i=0;i<text.length;i++) {
+      	const newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1);
       	if (newIndex == -1) return false;
       	prevIndex = inOrder ? newIndex : -1;
       }
@@ -507,7 +506,7 @@ jb.component('join', {
 	],
 	type: 'aggregator',
 	impl: function(context,separator,prefix,suffix,items,itemName,itemText) {
-		var itemToText = (context.profile.itemText) ?
+		const itemToText = (context.profile.itemText) ?
 			item => itemText(new jb.jbCtx(context, {data: item, vars: jb.obj(itemName,item) })) :
 			item => jb.tostring(item);	// performance
 
@@ -522,7 +521,7 @@ jb.component('unique', {
 	],
 	type: 'aggregator',
 	impl: (ctx,idFunc,items) => {
-		var _idFunc = idFunc.profile == '%%' ? x=>x : x => idFunc(ctx.setData(x));
+		const _idFunc = idFunc.profile == '%%' ? x=>x : x => idFunc(ctx.setData(x));
 		return jb.unique(items,_idFunc);
 	}
 });
@@ -532,7 +531,7 @@ jb.component('log', {
 		{ id: 'obj', as: 'single', defaultValue: '%%'}
 	],
 	impl: function(context,obj) {
-		var out = obj;
+		let out = obj;
 		if (typeof GLOBAL != 'undefined' && typeof(obj) == 'object')
 			out = JSON.stringify(obj,null," ");
 		if (typeof window != 'undefined')
@@ -547,10 +546,10 @@ jb.component('asIs',{ params: [{id: '$asIs'}], impl: ctx => context.profile.$asI
 
 jb.component('object',{
 	impl: function(context) {
-		var result = {};
-		var obj = context.profile.$object || context.profile;
+		let result = {};
+		const obj = context.profile.$object || context.profile;
 		if (Array.isArray(obj)) return obj;
-		for(var prop in obj) {
+		for(let prop in obj) {
 			if ((prop == '$' && obj[prop] == 'object') || obj[prop] == null)
 				continue;
 			result[prop] = context.runInner(obj[prop],null,prop);
@@ -589,7 +588,7 @@ jb.component('split', {
 		{ id: 'part', options: ',first,second,last,but first,but last' }
 	],
 	impl: function(context,separator,text,part) {
-		var out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
+		const out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
 		switch (part) {
 			case 'first': return out[0];
 			case 'second': return out[1];
@@ -624,7 +623,7 @@ jb.component('touch', {
 		{ id: 'data', as: 'ref'},
 	],
 	impl: function(context,data_ref) {
-		var val = Number(jb.val(data_ref));
+		const val = Number(jb.val(data_ref));
 		jb.writeValue(data_ref,val ? val + 1 : 1);
 	}
 });
@@ -689,11 +688,9 @@ jb.component('runActions', {
 	],
 	impl: function(context) {
 		if (!context.profile) debugger;
-		var actions = jb.toarray(context.profile.actions || context.profile['$runActions']);
-		if (context.profile.actions && context.profile.actions.sugar)
-			var innerPath =  '' ;
-		else
-			var innerPath = context.profile['$runActions'] ? '$runActions~' : 'items~';
+		const actions = jb.toarray(context.profile.actions || context.profile['$runActions']);
+		const innerPath =  (context.profile.actions && context.profile.actions.sugar) ? ''
+			: (context.profile['$runActions'] ? '$runActions~' : 'items~');
 		return actions.reduce((def,action,index) =>
 				def.then(_ => context.runInner(action, { as: 'single'}, innerPath + index ))
 			,Promise.resolve())
@@ -731,7 +728,7 @@ jb.component('extract-prefix',{
 		if (!regex) {
 			return text.substring(0,text.indexOf(separator)) + (keepSeparator ? separator : '');
 		} else { // regex
-			var match = text.match(separator);
+			const match = text.match(separator);
 			if (match)
 				return text.substring(0,match.index) + (keepSeparator ? match[0] : '');
 		}
@@ -750,7 +747,7 @@ jb.component('extract-suffix',{
 		if (!regex) {
 			return text.substring(text.lastIndexOf(separator) + (keepSeparator ? 0 : separator.length));
 		} else { // regex
-			var match = text.match(separator+'(?![\\s\\S]*' + separator +')'); // (?!) means not after, [\\s\\S]* means any char including new lines
+			const match = text.match(separator+'(?![\\s\\S]*' + separator +')'); // (?!) means not after, [\\s\\S]* means any char including new lines
 			if (match)
 				return text.substring(match.index + (keepSeparator ? 0 : match[0].length));
 		}
@@ -773,7 +770,7 @@ jb.component('type-of', {
 		{ id: 'obj', defaultValue: '%%' },
 	],
 	impl: (ctx,_obj) => {
-	  	var obj = jb.val(_obj);
+	  	const obj = jb.val(_obj);
 		return Array.isArray(obj) ? 'array' : typeof obj
 	}
 })
@@ -784,7 +781,7 @@ jb.component('class-name', {
 		{ id: 'obj', defaultValue: '%%' },
 	],
 	impl: (ctx,_obj) => {
-	  	var obj = jb.val(_obj);
+	  	const obj = jb.val(_obj);
 		return obj && obj.constructor && obj.constructor.name
 	}
 })
@@ -796,8 +793,8 @@ jb.component('is-of-type', {
   	{ id: 'obj', defaultValue: '%%' },
   ],
   impl: (ctx,_type,_obj) => {
-  	var obj = jb.val(_obj);
-  	var objType = Array.isArray(obj) ? 'array' : typeof obj;
+  	const obj = jb.val(_obj);
+  	const objType = Array.isArray(obj) ? 'array' : typeof obj;
   	return _type.split(',').indexOf(objType) != -1;
   }
 })
@@ -820,7 +817,7 @@ jb.component('http.get', {
 	impl: (ctx,url,_json) => {
 		if (ctx.probe)
 			return jb.http_get_cache[url];
-		var json = _json || url.match(/json$/);
+		const json = _json || url.match(/json$/);
 		return fetch(url)
 			  .then(r =>
 			  		json ? r.json() : r.text())
@@ -837,7 +834,7 @@ jb.component('http.post', {
 		{ id: 'jsonResult', as: 'boolean', description: 'convert result to json' }
 	],
 	impl: (ctx,url,postData,json) => {
-    var headers = new Headers();
+    const headers = new Headers();
     headers.append("Content-Type", "application/json; charset=UTF-8");
 		return fetch(url,{method: 'POST', headers: headers, body: JSON.stringify(postData) })
 			  .then(r =>
@@ -866,7 +863,7 @@ jb.component('data.switch', {
   	{ id: 'default', dynamic: true },
   ],
   impl: (ctx,cases,defaultValue) => {
-  	for(var i=0;i<cases.length;i++)
+  	for(let i=0;i<cases.length;i++)
   		if (cases[i].condition(ctx))
   			return cases[i].value(ctx)
   	return defaultValue(ctx);
@@ -890,7 +887,7 @@ jb.component('action.switch', {
   	{ id: 'defaultAction', type: 'action', dynamic: true },
   ],
   impl: (ctx,cases,defaultAction) => {
-  	for(var i=0;i<cases.length;i++)
+  	for(let i=0;i<cases.length;i++)
   		if (cases[i].condition(ctx))
   			return cases[i].action(ctx)
   	return defaultAction(ctx);

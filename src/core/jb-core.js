@@ -1,7 +1,7 @@
-var jb = (function() {
+const jb = (function() {
 function jb_run(context,parentParam,settings) {
   try {
-    var profile = context.profile;
+    const profile = context.profile;
     if (context.probe && (!settings || !settings.noprobe)) {
       if (context.probe.pathToTrace.indexOf(context.path) == 0)
         return context.probe.record(context,parentParam)
@@ -16,9 +16,9 @@ function jb_run(context,parentParam,settings) {
 
     if (typeof profile === 'object' && Object.getOwnPropertyNames(profile).length == 0)
       return;
-    var contextWithVars = extendWithVars(context,profile.$vars);
-    var run = prepare(contextWithVars,parentParam);
-    var jstype = parentParam && parentParam.as;
+    const contextWithVars = extendWithVars(context,profile.$vars);
+    const run = prepare(contextWithVars,parentParam);
+    const jstype = parentParam && parentParam.as;
     context.parentParam = parentParam;
     switch (run.type) {
       case 'booleanExp': return bool_expression(profile, context);
@@ -32,7 +32,7 @@ function jb_run(context,parentParam,settings) {
             contextWithVars.runInner(inner,null,i));
       case 'runActions': return jb.comps.runActions.impl(new jbCtx(contextWithVars,{profile: { actions : profile },path:''}));
       case 'if': {
-          var cond = jb_run(run.ifContext, run.IfParentParam);
+          const cond = jb_run(run.ifContext, run.IfParentParam);
           if (cond && cond.then)
             return cond.then(res=>
               res ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam))
@@ -56,9 +56,9 @@ function jb_run(context,parentParam,settings) {
             //jb_run(paramObj.context, paramObj.param);
           }
         });
-        var out;
+        let out;
         if (run.impl) {
-          var args = prepareGCArgs(run.ctx,run.preparedParams);
+          const args = prepareGCArgs(run.ctx,run.preparedParams);
           if (profile.$debugger) debugger;
           if (! args.then)
             out = run.impl.apply(null,args);
@@ -83,8 +83,8 @@ function jb_run(context,parentParam,settings) {
   }
 
   function prepareGCArgs(ctx,preparedParams) {
-    var delayed = preparedParams.filter(param => {
-      var v = ctx.params[param.name] || {};
+    const delayed = preparedParams.filter(param => {
+      const v = ctx.params[param.name] || {};
       return (v.then || v.subscribe ) && param.param.as != 'observable'
     });
     if (delayed.length == 0 || typeof Observable == 'undefined')
@@ -102,8 +102,8 @@ function jb_run(context,parentParam,settings) {
 
 function extendWithVars(context,vars) {
   if (!vars) return context;
-  var res = context;
-  for(var varname in vars || {})
+  let res = context;
+  for(let varname in vars || {})
     res = new jbCtx(res,{ vars: jb.obj(varname,res.runInner(vars[varname], null,'$vars~'+varname)) });
   return res;
 }
@@ -119,24 +119,25 @@ function prepareParams(comp,profile,ctx) {
     .filter(comp=>
       !comp.ignore)
     .map((param,index) => {
-      var p = param.id;
-      var val = profile[p], path =p, sugar = sugarProp(profile);
+      const p = param.id, sugar = sugarProp(profile);
+      let val = profile[p], path =p;
       if (!val && index == 0 && sugar) {
         path = sugar[0];
         val = sugar[1];
       }
-      var valOrDefault = (typeof val != "undefined" && val != null) ? val : (typeof param.defaultValue != 'undefined' ? param.defaultValue : null);
-      var valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
-      var arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
+      const valOrDefault = (typeof val != "undefined" && val != null) ? val : (typeof param.defaultValue != 'undefined' ? param.defaultValue : null);
+      const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
+      const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
 
       if (param.dynamic) {
-        var outerFunc = runCtx => {
+        const outerFunc = runCtx => {
+          let func;
           if (arrayParam)
-            var func = (ctx2,data2) =>
+            func = (ctx2,data2) =>
               jb.flattenArray(valOrDefaultArray.map((prof,i)=>
                 runCtx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
           else
-            var func = (ctx2,data2) =>
+            func = (ctx2,data2) =>
                   valOrDefault != null ? runCtx.extendVars(ctx2,data2).runInner(valOrDefault,param,path) : valOrDefault;
 
           Object.defineProperty(func, "name", { value: p }); // for debug
@@ -155,11 +156,11 @@ function prepareParams(comp,profile,ctx) {
 }
 
 function prepare(context,parentParam) {
-  var profile = context.profile;
-  var profile_jstype = typeof profile;
-  var parentParam_type = parentParam && parentParam.type;
-  var jstype = parentParam && parentParam.as;
-  var isArray = Array.isArray(profile);
+  const profile = context.profile;
+  const profile_jstype = typeof profile;
+  const parentParam_type = parentParam && parentParam.type;
+  const jstype = parentParam && parentParam.as;
+  const isArray = Array.isArray(profile);
 
   if (profile_jstype === 'string' && parentParam_type === 'boolean') return { type: 'booleanExp' };
   if (profile_jstype === 'boolean' || profile_jstype === 'number' || parentParam_type == 'asIs') return { type: 'asIs' };// native primitives
@@ -188,19 +189,19 @@ function prepare(context,parentParam) {
       elseContext: new jbCtx(context,{profile: profile['else'] || 0 , path: '~else'}),
       elseParentParam: { type: parentParam_type, as:jstype }
     }
-  var comp_name = compName(profile,parentParam);
+  const comp_name = compName(profile,parentParam);
   if (!comp_name)
     return { type: 'asIs' }
   // if (!comp_name)
   //   return { type: 'ignore' }
-  var comp = jb.comps[comp_name];
+  const comp = jb.comps[comp_name];
   if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined'); return { type:'null' } }
   if (!comp.impl) { logError('component ' + comp_name + ' has no implementation'); return { type:'null' } }
 
-  var ctx = new jbCtx(context,{});
+  const ctx = new jbCtx(context,{});
   ctx.parentParam = parentParam;
   ctx.params = {}; // TODO: try to delete this line
-  var preparedParams = prepareParams(comp,profile,ctx);
+  const preparedParams = prepareParams(comp,profile,ctx);
   if (typeof comp.impl === 'function') {
     Object.defineProperty(comp.impl, "name", { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
     return { type: 'profile', impl: comp.impl, ctx: ctx, preparedParams: preparedParams }
@@ -218,7 +219,7 @@ function resolveFinishedPromise(val) {
 }
 
 function calcVar(context,varname) {
-  var res;
+  let res;
   if (context.componentContext && typeof context.componentContext.params[varname] != 'undefined')
     res = context.componentContext.params[varname];
   else if (context.vars[varname] != null)
@@ -233,7 +234,7 @@ function calcVar(context,varname) {
 }
 
 function expression(exp, context, parentParam) {
-  var jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
+  const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   exp = '' + exp;
   if (jstype == 'boolean') return bool_expression(exp, context);
   if (exp.indexOf('$debugger:') == 0) {
@@ -241,7 +242,7 @@ function expression(exp, context, parentParam) {
     exp = exp.split('$debugger:')[1];
   }
   if (exp.indexOf('$log:') == 0) {
-    var out = expression(exp.split('$log:')[1],context,parentParam);
+    const out = expression(exp.split('$log:')[1],context,parentParam);
     jb.comps.log.impl(context, out);
     return out;
   }
@@ -270,7 +271,7 @@ function expression(exp, context, parentParam) {
 
   function conditionalExp(exp) {
     // check variable value - if not empty return all exp, otherwise empty
-    var match = exp.match(/%([^%;{}\s><"']*)%/);
+    const match = exp.match(/%([^%;{}\s><"']*)%/);
     if (match && tostring(expPart(match[1],context,'string')))
       return expression(exp, context, { as: 'string' });
     else
@@ -284,26 +285,26 @@ function expression(exp, context, parentParam) {
 
 
 function evalExpressionPart(expressionPart,context,parentParam) {
-  var jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
+  const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   // example: %$person.name%.
 
-  var primitiveJsType = ['string','boolean','number'].indexOf(jstype) != -1;
+  const primitiveJsType = ['string','boolean','number'].indexOf(jstype) != -1;
   // empty primitive expression - perfomance
   // if (expressionPart == "")
   //   return context.data;
 
-  var parts = expressionPart.split(/[.\/]/);
+  const parts = expressionPart.split(/[.\/]/);
   return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),context.data)
 
-  function pipe(input,subExp,last,first,refHandler) {
+  function pipe(input,subExp,last,first,refHandlerArg) {
       if (subExp == '')
           return input;
 
-      var arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      var refHandler = refHandler || (input && input.handler) || jb.valueByRefHandler;
+      const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
+      const refHandler = refHandlerArg || (input && input.handler) || jb.valueByRefHandler;
       if (arrayIndexMatch) {
-        var arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1],false,first,refHandler);
-        var index = arrayIndexMatch[2];
+        const arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1],false,first,refHandler);
+        const index = arrayIndexMatch[2];
         if (!Array.isArray(arr))
             return null; //jb.logError('expecting array instead of ' + typeof arr, context);
 
@@ -316,13 +317,13 @@ function evalExpressionPart(expressionPart,context,parentParam) {
         return arr[index];
      }
 
-      var functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
+      const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
       if (functionCallMatch && jb.functions[functionCallMatch[1]])
         return tojstype(jb.functions[functionCallMatch[1]](context,functionCallMatch[2]),jstype,context);
 
       if (first && subExp.charAt(0) == '$' && subExp.length > 1)
         return calcVar(context,subExp.substr(1))
-      var obj = val(input);
+      const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
       if (Array.isArray(obj))
@@ -349,29 +350,29 @@ function bool_expression(exp, context) {
     exp = exp.split('$debugger:')[1];
   }
   if (exp.indexOf('$log:') == 0) {
-    var calculated = expression(exp.split('$log:')[1],context,{as: 'string'});
-    var result = bool_expression(exp.split('$log:')[1], context);
+    const calculated = expression(exp.split('$log:')[1],context,{as: 'string'});
+    const result = bool_expression(exp.split('$log:')[1], context);
     jb.comps.log.impl(context, calculated + ':' + result);
     return result;
   }
   if (exp.indexOf('!') == 0)
     return !bool_expression(exp.substring(1), context);
-  var parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
+  const parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
   if (!parts) {
-    var val = jb.val(expression(exp, context));
+    const val = jb.val(expression(exp, context));
     if (typeof val == 'boolean') return val;
-    var asString = tostring(val);
+    const asString = tostring(val);
     return !!asString && asString != 'false';
   }
   if (parts.length != 4)
     return logError('invalid boolean expression: ' + exp);
-  var op = parts[2].trim();
+  const op = parts[2].trim();
 
   if (op == '==' || op == '!=' || op == '$=' || op == '^=') {
-    var p1 = tostring(expression(trim(parts[1]), context, {as: 'string'}))
-    var p2 = tostring(expression(trim(parts[3]), context, {as: 'string'}))
-    // var p1 = expression(trim(parts[1]), context, {as: 'string'});
-    // var p2 = expression(trim(parts[3]), context, {as: 'string'});
+    const p1 = tostring(expression(trim(parts[1]), context, {as: 'string'}))
+    let p2 = tostring(expression(trim(parts[3]), context, {as: 'string'}))
+    // const p1 = expression(trim(parts[1]), context, {as: 'string'});
+    // const p2 = expression(trim(parts[3]), context, {as: 'string'});
     p2 = (p2.match(/^["'](.*)["']/) || [,p2])[1]; // remove quotes
     if (op == '==') return p1 == p2;
     if (op == '!=') return p1 != p2;
@@ -379,8 +380,8 @@ function bool_expression(exp, context) {
     if (op == '$=') return p1.indexOf(p2, p1.length - p2.length) !== -1;
   }
 
-  var p1 = tonumber(expression(parts[1].trim(), context));
-  var p2 = tonumber(expression(parts[3].trim(), context));
+  const p1 = tonumber(expression(parts[1].trim(), context));
+  const p2 = tonumber(expression(parts[3].trim(), context));
 
   if (op == '>') return p1 > p2;
   if (op == '<') return p1 < p2;
@@ -393,7 +394,7 @@ function bool_expression(exp, context) {
 }
 
 function castToParam(value,param) {
-  var res = tojstype(value,param ? param.as : null);
+  let res = tojstype(value,param ? param.as : null);
   if (param && param.as == 'ref' && param.whenNotReffable && !jb.isRef(res))
     res = tojstype(value,param.whenNotReffable);
   return res;
@@ -405,13 +406,13 @@ function tojstype(value,jstype) {
   return jstypes[jstype](value);
 }
 
-var tostring = value => tojstype(value,'string');
-var toarray = value => tojstype(value,'array');
-var toboolean = value => tojstype(value,'boolean');
-var tosingle = value => tojstype(value,'single');
-var tonumber = value => tojstype(value,'number');
+const tostring = value => tojstype(value,'string');
+const toarray = value => tojstype(value,'array');
+const toboolean = value => tojstype(value,'boolean');
+const tosingle = value => tojstype(value,'single');
+const tonumber = value => tojstype(value,'number');
 
-var jstypes = {
+const jstypes = {
     'asIs': x => x,
     'object': x => x,
     'string': function(value) {
@@ -425,7 +426,7 @@ var jstypes = {
       if (Array.isArray(value)) value = value[0];
       if (value == null || value == undefined) return null; // 0 is not null
       value = val(value);
-      var num = Number(value,true);
+      const num = Number(value,true);
       return isNaN(num) ? null : num;
     },
     'array': function(value) {
@@ -457,7 +458,7 @@ var jstypes = {
 function profileType(profile) {
   if (!profile) return '';
   if (typeof profile == 'string') return 'data';
-  var comp_name = compName(profile);
+  const comp_name = compName(profile);
   return (jb.comps[comp_name] && jb.comps[comp_name].type) || '';
 }
 
@@ -469,14 +470,14 @@ function sugarProp(profile) {
 }
 
 function singleInType(profile,parentParam) {
-  var _type = parentParam && parentParam.type && parentParam.type.split('[')[0];
+  const _type = parentParam && parentParam.type && parentParam.type.split('[')[0];
   return _type && jb.comps[_type] && jb.comps[_type].singleInType && _type;
 }
 
 function compName(profile,parentParam) {
   if (!profile || Array.isArray(profile)) return;
   if (profile.$) return profile.$;
-  var f = sugarProp(profile);
+  const f = sugarProp(profile);
   return (f && f[0].slice(1)) || singleInType(profile,parentParam);
 }
 
@@ -486,7 +487,7 @@ function assignNameToFunc(name, fn) {
   return fn;
 }
 
-var ctxCounter = 0;
+let ctxCounter = 0;
 
 class jbCtx {
   constructor(context,ctx2) {
@@ -547,7 +548,7 @@ class jbCtx {
 
 }
 
-var logs = {};
+let logs = {};
 function logError(errorStr,p1,p2,p3) {
   logs.error = logs.error || [];
   logs.error.push(errorStr);
@@ -555,7 +556,7 @@ function logError(errorStr,p1,p2,p3) {
 }
 
 function logPerformance(type,p1,p2,p3) {
-//  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
+//  const types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
   if ((jb.issuesTolog || []).indexOf(type) == -1) return; // filter. TBD take from somewhere else
   console.log(type, p1 || '', p2 || '', p3 ||'');
 }
@@ -571,8 +572,8 @@ function val(v) {
 // Object.getOwnPropertyNames does not keep the order !!!
 function entries(obj) {
   if (!obj || typeof obj != 'object') return [];
-  var ret = [];
-  for(var i in obj) // please do not change. its keeps definition order !!!!
+  let ret = [];
+  for(let i in obj) // please do not change. its keeps definition order !!!!
       if (obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
         ret.push([i,obj[i]])
   return ret;
@@ -585,7 +586,7 @@ function extend(obj,obj1,obj2,obj3) {
   return obj;
 }
 
-var valueByRefHandlerWithjbParent = {
+const valueByRefHandlerWithjbParent = {
   val: function(v) {
     if (v.$jb_val) return v.$jb_val();
     return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
@@ -615,9 +616,9 @@ var valueByRefHandlerWithjbParent = {
   }
 }
 
-var valueByRefHandler = valueByRefHandlerWithjbParent;
+const valueByRefHandler = valueByRefHandlerWithjbParent;
 
-var types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
+let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 
 return {
   jbCtx: jbCtx,
@@ -661,16 +662,16 @@ Object.assign(jb,{
 
 // force path - create objects in the path if not exist
   path: (object,path,value) => {
-    var cur = object;
+    let cur = object;
 
     if (typeof value == 'undefined') {  // get
-      for(var i=0;i<path.length;i++) {
+      for(let i=0;i<path.length;i++) {
         cur = cur[path[i]];
         if (cur == null || typeof cur == 'undefined') return null;
       }
       return cur;
     } else { // set
-      for(var i=0;i<path.length;i++)
+      for(let i=0;i<path.length;i++)
         if (i == path.length-1)
           cur[path[i]] = value;
         else
@@ -679,14 +680,14 @@ Object.assign(jb,{
     }
   },
   ownPropertyNames: obj => {
-    var res = [];
-    for (var i in (obj || {}))
+    let res = [];
+    for (let i in (obj || {}))
       if (obj.hasOwnProperty(i))
         res.push(i);
     return res;
   },
   obj: (k,v,base) => {
-    var ret = base || {};
+    let ret = base || {};
     ret[k] = v;
     return ret;
   },
@@ -695,8 +696,8 @@ Object.assign(jb,{
       return true;
     if (!Array.isArray(arr1) && !Array.isArray(arr2)) return arr1 == arr2;
     if (!arr1 || !arr2 || arr1.length != arr2.length) return false;
-    for (var i = 0; i < arr1.length; i++) {
-      var key1 = (arr1[i]||{}).key, key2 = (arr2[i]||{}).key;
+    for (let i = 0; i < arr1.length; i++) {
+      const key1 = (arr1[i]||{}).key, key2 = (arr2[i]||{}).key;
       if (key1 && key2 && key1 == key2 && arr1[i].val == arr2[i].val)
         continue;
       if (arr1[i] !== arr2[i]) return false;
@@ -707,7 +708,7 @@ Object.assign(jb,{
     Array.apply(0, Array(count)).map((element, index) => index + start),
 
   flattenArray: items => {
-    var out = [];
+    let out = [];
     items.filter(i=>i).forEach(function(item) {
       if (Array.isArray(item))
         out = out.concat(item);
@@ -717,10 +718,10 @@ Object.assign(jb,{
     return out;
   },
   synchArray: ar => {
-    var isSynch = ar.filter(v=> v &&  (typeof v.then == 'function' || typeof v.subscribe == 'function')).length == 0;
+    const isSynch = ar.filter(v=> v &&  (typeof v.then == 'function' || typeof v.subscribe == 'function')).length == 0;
     if (isSynch) return ar;
 
-    var _ar = ar.filter(x=>x).map(v=>
+    const _ar = ar.filter(x=>x).map(v=>
       (typeof v.then == 'function' || typeof v.subscribe == 'function') ? v : [v]);
 
     return jb.rx.Observable.from(_ar)
@@ -732,7 +733,7 @@ Object.assign(jb,{
   },
   unique: (ar,f) => {
     f = f || (x=>x);
-    var keys = {}, res = [];
+    let keys = {}, res = [];
     ar.forEach(e=>{
       if (!keys[f(e)]) {
         keys[f(e)] = true;
