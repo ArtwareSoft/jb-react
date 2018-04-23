@@ -21,24 +21,24 @@ jb.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
   colWidth = colWidth || 140;
   tabSize = tabSize || 2;
 
-  var remainedInLine = colWidth;
-  var result = '';
-  var depth = 0;
-  var lineNum = 0;
-  var positions = {};
+  let remainedInLine = colWidth;
+  let result = '';
+  let depth = 0;
+  let lineNum = 0;
+  let positions = {};
 
   printValue(profile,initialPath || '');
   return { result : result, positions : positions }
 
   function sortedPropertyNames(obj) {
-    var props = jb.entries(obj)
+    let props = jb.entries(obj)
       .filter(p=>p[1] != null)
       .map(x=>x[0]) // try to keep the order
       .filter(p=>p.indexOf('$jb') != 0)
 
-    var comp_name = jb.compName(obj);
+    const comp_name = jb.compName(obj);
     if (comp_name) { // tgp obj - sort by params def
-      var params = jb.compParams(jb.comps[comp_name]).map(p=>p.id);
+      const params = jb.compParams(jb.comps[comp_name]).map(p=>p.id);
       props.sort((p1,p2)=>params.indexOf(p1) - params.indexOf(p2));
     }
     if (props.indexOf('$') > 0) { // make the $ first

@@ -1,4 +1,4 @@
-jb.resource('textToParse',`
+jb.const('textToParse',`
 before
 #start
 first
@@ -11,8 +11,15 @@ outside2
 `
 )
 
-jb.resource('textToBreak','l1-a1-b1-c1;l2-a2-b2-c2;l3-a3-b3-c3');
-jb.resource('textToBreak2','l1-a1-b1-c1;l2|a2|b2|c2;l3-a3-b3-c3')
+jb.const('textToBreak','l1-a1-b1-c1;l2-a2-b2-c2;l3-a3-b3-c3');
+jb.const('textToBreak2','l1-a1-b1-c1;l2|a2|b2|c2;l3-a3-b3-c3')
+
+jb.component('data-test.stringWithSourceRef', {
+	 impl :{$: 'data-test',
+		calculate: ctx => new jb.stringWithSourceRef(ctx,'textToBreak',6,8) ,
+		expectedResult : '%% == b1'
+	},
+})
 
 jb.component('data-test.extract-text-repeating', {
 	 impl :{$: 'data-test',

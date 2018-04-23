@@ -1,8 +1,32 @@
 
+//used mostley for deubgging
+jb.stringWithSourceRef = function(ctx,pathToConstStr,offset,to) {
+  this.ctx = ctx;this.pathToConstStr = pathToConstStr; 
+  this.offset = offset;this.to = to;
+  this.val = ctx.exp(`%$${pathToConstStr}%`,'string').substring(offset,to);
+}
+jb.stringWithSourceRef.prototype.$jb_val = function() { 
+  return this.val;
+}
+jb.stringWithSourceRef.prototype.substring = function(from,new_to) { 
+  const to = typeof new_to == 'undefined' ? this.to : this.offset + new_to;
+  return new jb.stringWithSourceRef(this.ctx,this.pathToConstStr,this.offset+from,to) 
+}
+jb.stringWithSourceRef.prototype.trim = function() { 
+  if (this.val == this.val.trim()) return this;
+  const left = (this.val.match(/^\s+/)||[''])[0].length;
+  const right = (this.val.match(/\s+$/)||[''])[0].length;
+
+  return new jb.stringWithSourceRef(this.ctx,this.pathToConstStr,this.offset+left,this.to-right) 
+}
+
+jb.jstypes['string-with-source-ref'] = v => v;
+
+
 jb.component('extract-text', {
   description: 'text breaking according to begin/end markers',
   params: [
-    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
     {id: 'startMarkers', as: 'array', essential: true},
     {id: 'endMarker', as: 'string'},
     {id: 'includingStartMarker', as: 'boolean', type: 'boolean', description: 'include the marker at part of the result' },
@@ -12,7 +36,8 @@ jb.component('extract-text', {
     {id: 'useRegex', as: 'boolean', type: 'boolean', description: 'use regular expression in markers' },
     {id: 'exclude', as: 'boolean', type: 'boolean', description: 'return the inverse result. E.g. exclude remarks' },
   ],
-  impl: (ctx,text,startMarkers,endMarker,includingStartMarker,includingEndMarker,repeating,noTrim,regex,exclude) => {
+  impl: (ctx,textRef,startMarkers,endMarker,includingStartMarker,includingEndMarker,repeating,noTrim,regex,exclude) => {
+    const text = jb.tostring(textRef);
 	  let findMarker = (marker, startpos) => {
       const pos = text.indexOf(marker,startpos);
       if (pos != -1)
@@ -47,28 +72,24 @@ jb.component('extract-text', {
       return firstMarkerPos && { pos: firstMarkerPos.pos, end: markerPos.end }
     }
 
-    var out = { match: [], unmatch: []},pos =0,start=null; 
+    let out = { match: [], unmatch: []},pos =0,start=null; 
     while(start = findStartMarkers(pos)) {
-        if (endMarker)
-          var end = findMarker(endMarker,start.end)
-        else
-          var end = findStartMarkers(start.end);
-
+        const end = endMarker ? findMarker(endMarker,start.end) : findStartMarkers(start.end)
         if (!end) // if end not found use end of text
           end = { pos : text.length, end: text.length }
-        var start_match = includingStartMarker ? start.pos : start.end;
-        var end_match = includingEndMarker ? end.end : end.pos;
-        if (pos != start_match) out.unmatch.push(text.substring(pos,start_match));
-        out.match.push(text.substring(start_match,end_match));
-        if (end_match != end.end) out.unmatch.push(text.substring(end_match,end.end));
+        const start_match = includingStartMarker ? start.pos : start.end;
+        const end_match = includingEndMarker ? end.end : end.pos;
+        if (pos != start_match) out.unmatch.push(textRef.substring(pos,start_match));
+        out.match.push(textRef.substring(start_match,end_match));
+        if (end_match != end.end) out.unmatch.push(textRef.substring(end_match,end.end));
         pos = endMarker ? end.end : end.pos;
     }
-    out.unmatch.push(text.substring(pos));
+    out.unmatch.push(textRef.substring(pos));
     if (!noTrim) {
       out.match = out.match.map(x=>x.trim());
       out.unmatch = out.unmatch.map(x=>x.trim());
     }
-    var res = exclude ? out.unmatch : out.match;
+    const res = exclude ? out.unmatch : out.match;
     return repeating ? res : res[0];
   }
 })
@@ -81,21 +102,21 @@ jb.component('break-text', {
     {id: 'useRegex', as: 'boolean', type: 'boolean', description: 'use regular expression in separators' },
   ],
   impl: (ctx,text,separators,regex) => {
-	  var findMarker = (text,marker, startpos) => {
-      var pos = text.indexOf(marker,startpos);
+	  let findMarker = (text,marker, startpos) => {
+      const pos = text.indexOf(marker,startpos);
       if (pos != -1)
         return { pos: pos, end: pos + marker.length}
     }
 	  if (regex)
 		  findMarker = (text,marker, startpos) => {
-	  		var len = 0, pos = -1;
+	  		let len = 0, pos = -1;
 	  		try {
 		  		startpos = startpos || 0;
-		  		var str = text.substring(startpos);
-		  		var marker_regex = new RegExp(marker,'m');
+		  		const str = text.substring(startpos);
+		  		const marker_regex = new RegExp(marker,'m');
           pos = str.search(marker_regex);
 		    	if (pos > -1) {
-		    		var match = str.match(marker_regex)[0];
+		    		const match = str.match(marker_regex)[0];
             len = match ? match.length : 0;
             if (len)
               return { pos: pos+startpos, end: pos+ startpos+len };
@@ -115,7 +136,7 @@ jb.component('break-text', {
     }
 
     function doSplit(text,separator) {
-      var out = [],pos =0,found=null; 
+      let out = [],pos =0,found=null; 
       while(found = findMarker(text,separator,pos)) {
         out.push(text.substring(pos,found.pos));
         pos = found.end;
@@ -146,7 +167,7 @@ jb.component('remove-sections', {
     {id: 'keepEndMarker', as: 'boolean', type: 'boolean'},
   ],
   impl: (ctx,text,startMarker,endMarker,keepEndMarker) => {
-    var out = text,range = null;
+    let out = text,range = null;
     if (!startMarker || !endMarker) return out;
     do {
       range = findRange(out);
@@ -156,9 +177,9 @@ jb.component('remove-sections', {
     return out;
 
     function findRange(txt) {
-      var start = txt.indexOf(startMarker);
+      const start = txt.indexOf(startMarker);
       if (start == -1) return;
-      var end = txt.indexOf(endMarker,start) + (keepEndMarker ? 0 : endMarker.length);
+      const end = txt.indexOf(endMarker,start) + (keepEndMarker ? 0 : endMarker.length);
       if (end == -1) return;
       return { from: start, to: end}
     }
@@ -195,9 +216,9 @@ jb.component('filter-empty-properties', {
 	],
   impl: (ctx,obj) => {
     if (typeof obj != 'object') return obj;
-    var propsToKeep = Object.getOwnPropertyNames(obj)
+    const propsToKeep = Object.getOwnPropertyNames(obj)
       .filter(p=>obj[p] != null && obj[p] != '' && (!Array.isArray(obj[p]) || obj[p].length > 0));
-    var res = {};
+    let res = {};
     propsToKeep.forEach(p=>res[p]=obj[p]);
     return res;
   }
@@ -247,7 +268,7 @@ jb.component('wrap-as-object', {
     {id: 'items', as: 'array', defaultValue: '%%' },
   ],
   impl: (ctx,key,items) => {
-    var out = {}
+    let out = {}
     items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = item)
     return out;
   }

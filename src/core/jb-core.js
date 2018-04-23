@@ -1,4 +1,4 @@
-const jb = (function() {
+var jb = (function() {
 function jb_run(context,parentParam,settings) {
   try {
     const profile = context.profile;
@@ -218,7 +218,7 @@ function resolveFinishedPromise(val) {
   return val;
 }
 
-function calcVar(context,varname) {
+function calcVar(context,varname,jstype) {
   let res;
   if (context.componentContext && typeof context.componentContext.params[varname] != 'undefined')
     res = context.componentContext.params[varname];
@@ -230,6 +230,8 @@ function calcVar(context,varname) {
     res = jb.resources[varname];
   else if (jb.consts && jb.consts[varname] != null)
     res = jb.consts[varname];
+  if (res && typeof res == 'string' && jstype == 'string-with-source-ref' && jb.stringWithSourceRef)
+    return new jb.stringWithSourceRef(context,varname,0,res.length)
   return resolveFinishedPromise(res);
 }
 
@@ -322,7 +324,7 @@ function evalExpressionPart(expressionPart,context,parentParam) {
         return tojstype(jb.functions[functionCallMatch[1]](context,functionCallMatch[2]),jstype,context);
 
       if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(context,subExp.substr(1))
+        return calcVar(context,subExp.substr(1),jstype)
       const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
