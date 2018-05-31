@@ -19,9 +19,9 @@ jb.resource('people',[
   { "name": "Bart Simpson"  ,age: 12 , male: true}
 ]);
 
+jb.const('sample-text1','#start hello world #end');
 
 jb.resource('globals', { });
-
 
 jb.resource('group-with-custom-style',
   {$: 'group',
@@ -46,6 +46,13 @@ jb.resource('group-with-custom-style',
 )
 
 // fake current path
+jb.component('studio-helper.parser1', {
+  type: 'data',
+  sampleInput: '%$sample-text1%',
+  impl :{$: 'extract-text', 
+    text: '%%',
+    startMarkers: '#start', endMarker: '#end'}
+})
 
 jb.component('studio-helper.event-tracker', {
   type: 'control',

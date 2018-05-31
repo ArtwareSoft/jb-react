@@ -7,29 +7,13 @@ jb.resource('people',[
 
 jb.component('hello-world.main', {
   type: 'control', 
-  impl :{$: 'group', 
-    title: '%$people%', 
-    controls: [
-      {$: 'label', title: 'a' }, 
-      {$: 'label', title: 'b' }, 
-      {$: 'group', 
-        controls: [
-          {$: 'control.first-succeeding', 
-            controls: [
-              {$: 'control-with-condition', 
-                condition: '%$gender% == "male"', 
-                control :{$: 'label', title: 'male' }
-              }, 
-              {$: 'control-with-condition', 
-                condition: '%$gender% != "male"', 
-                control :{$: 'label', title: 'female' }
-              }
-            ], 
-          }
-        ], 
-        features: [{$: 'var', name: 'gender', value: 'male' }]
-      }
-    ]
+  impl :{$: 'label', 
+    title :{
+      $pipeline: [
+        'hello world', 
+        {$: 'to-uppercase', text: '%%' }
+      ]
+    }
   }
 })
 

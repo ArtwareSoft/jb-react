@@ -29,7 +29,7 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
         st.previewjb.studio.initEventTracker();
-      ['jb-component','jb-param'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
+      ['jb-component','jb-param','studio.data-comp-inspector'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
 
 			fixInvalidUrl()
 
@@ -89,4 +89,25 @@ jb.component('studio.wait-for-preview-iframe', {
 
 jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studio/page')
       .startWith(1)
-      .map(e=>jb.resources.studio.project + '.' + jb.resources.studio.page);
+      .map(e=> {
+        const page = jb.resources.studio.project + '.' + jb.resources.studio.page;
+        const ctrl = jb.studio.previewjb.comps[page] && jb.studio.previewjb.comps[page].type == 'data' ? 'studio.data-comp-inspector' : null;
+        return {page, ctrl}
+      });
+
+jb.component('studio.data-comp-inspector', {
+  type: 'control', 
+  impl :{$: 'group', 
+    controls: [{$: 'label', title: ctx => {debugger; return 'hello'} }], 
+    features :
+    {$: 'var',  name: 'activateDataToDebug', 
+      value: ctx => { 
+        var _jb = jb.studio.previewjb;
+        var dataCompToDebug = ctx.vars.DataToDebug;
+        var debugCtx = ctx.setVars({debugSourceRef: true});
+        var inputData = _jb.comps[dataCompToDebug] && debugCtx.exp(_jb.comps[dataCompToDebug].sampleInput || ''); 
+        debugCtx.setData(inputData)
+          .run({$: dataCompToDebug })
+    }}
+  }
+})

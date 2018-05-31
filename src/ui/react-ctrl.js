@@ -287,16 +287,17 @@ ui.renderWidget = function(profile,elem) {
 					previewElem = ui.render(ui.h(R),elem,previewElem);
 				}
 				st.pageChange.debounceTime(500)
-					.filter(page=>page != this.state.profile.$)
-					.subscribe(page=>
-						this.setState({profile: {$: page}}));
+					.filter(({page})=>page != this.state.profile.$)
+					.subscribe(({page,ctrl})=>
+						this.setState({profile: {$: ctrl || page, $vars: {DataToDebug: page }} }));
 				st.scriptChange.debounceTime(500).subscribe(_=>
 						this.setState(null));
 			}
 		}
 		render(pros,state) {
-			if (!jb.comps[state.profile.$]) return '';
-			return ui.h(new jb.jbCtx().run(state.profile).reactComp())
+			var profToRun = state.profile;
+			if (!jb.comps[profToRun.$]) return '';
+			return ui.h(new jb.jbCtx().run(profToRun).reactComp())
 		}
 	}
 	previewElem = ui.render(ui.h(R),elem);

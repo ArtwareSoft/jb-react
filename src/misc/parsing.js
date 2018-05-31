@@ -4,6 +4,8 @@ jb.stringWithSourceRef = function(ctx,pathToConstStr,offset,to) {
   this.ctx = ctx;this.pathToConstStr = pathToConstStr; 
   this.offset = offset;this.to = to;
   this.val = ctx.exp(`%$${pathToConstStr}%`,'string').substring(offset,to);
+  jb.debugInfo = jb.debugInfo || { in: [], out: []};
+  jb.debugInfo.in.push(this);
 }
 jb.stringWithSourceRef.prototype.$jb_val = function() { 
   return this.val;
@@ -21,7 +23,6 @@ jb.stringWithSourceRef.prototype.trim = function() {
 }
 
 jb.jstypes['string-with-source-ref'] = v => v;
-
 
 jb.component('extract-text', {
   description: 'text breaking according to begin/end markers',

@@ -218,20 +218,20 @@ function resolveFinishedPromise(val) {
   return val;
 }
 
-function calcVar(context,varname,jstype) {
+function calcVar(ctx,varname,jstype) {
   let res;
-  if (context.componentContext && typeof context.componentContext.params[varname] != 'undefined')
-    res = context.componentContext.params[varname];
-  else if (context.vars[varname] != null)
-    res = context.vars[varname];
-  else if (context.vars.scope && context.vars.scope[varname] != null)
-    res = context.vars.scope[varname];
+  if (ctx.componentContext && typeof ctx.componentContext.params[varname] != 'undefined')
+    res = ctx.componentContext.params[varname];
+  else if (ctx.vars[varname] != null)
+    res = ctx.vars[varname];
+  else if (ctx.vars.scope && ctx.vars.scope[varname] != null)
+    res = ctx.vars.scope[varname];
   else if (jb.resources && jb.resources[varname] != null)
     res = jb.resources[varname];
   else if (jb.consts && jb.consts[varname] != null)
     res = jb.consts[varname];
-  if (res && typeof res == 'string' && jstype == 'string-with-source-ref' && jb.stringWithSourceRef)
-    return new jb.stringWithSourceRef(context,varname,0,res.length)
+  if (ctx.vars.debugSourceRef && typeof res == 'string' && jstype == 'string-with-source-ref' && jb.stringWithSourceRef)
+    return new jb.stringWithSourceRef(ctx,varname,0,res.length)
   return resolveFinishedPromise(res);
 }
 
