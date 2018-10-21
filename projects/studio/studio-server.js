@@ -13,6 +13,7 @@ var sites = externalSites() || {};
 function externalSites() {
   try { return JSON.parse(fs.readFileSync('sites.json')) } catch (e) {}
 }
+console.log(sites);
 
 function projectFolder(project) {
     var site = Object.getOwnPropertyNames(sites).filter(site=>project.indexOf(site+'-') != -1)[0];

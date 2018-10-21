@@ -77,7 +77,7 @@ class JbComponent {
 					return ui.h('span',{display: 'none'});
 				}
 			}
-    		componentDidMount() {
+    	componentDidMount() {
 				jbComp.injectCss(this);
 				jbComp.jbRegisterEventsFuncs.forEach(init=> {
 					try { init(this) } catch(e) { jb.logException('init',e) }});
@@ -88,7 +88,7 @@ class JbComponent {
 				jbComp.jbComponentDidUpdateFuncs.forEach(f=> {
 					try { f(this) } catch(e) { jb.logException('componentDidUpdate',e); }});
 			}
-	  		componentWillUnmount() {
+	  	componentWillUnmount() {
 				jbComp.jbDestroyFuncs.forEach(f=> {
 					try { f(this) } catch(e) { jb.logException('destroy',e); }});
 				this.resolveDestroyed();
@@ -384,7 +384,7 @@ ui.toVdomOrStr = val => {
 	if (typeof res == 'boolean')
 		res = '' + res;
   if (res && res.slice)
-    res = res.slice(0,100);
+    res = res.slice(0,1000);
 	return res;
 }
 

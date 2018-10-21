@@ -1,5 +1,5 @@
 {
-  "open_source_cmd": "\"c:\\Program Files\\sublime Text 3\\\"subl ",
+  "open_source_cmd": "/Users/shaiby/Downloads/Visual\\ Studio\\ Code.app/Contents//Resources/app/bin/code -r -g /Users/shaiby/projects/jb-react/",
   "open_source_cmd_code": "code-insiders -r -g ",
   "open_source_cmd_atom": "atom ",
   "open_source_cmd_sublime": "\"c:\\Program Files\\sublime Text 3\\\"subl ",
