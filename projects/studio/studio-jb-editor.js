@@ -4,9 +4,10 @@ jb.component('studio.prob-result-customization', {
     { id: 'probeResult', essential: true },
   ],
   impl: (ctx, probeResult) => {
-    const pt = jb.path(probeResult,['context','profile','$'])
-    if (pt && jb.comps[pt] && jb.comps[pt].probeResultCustomization)
-      return probeResultCustomization(ctx, probeResult)
+    probeResult.result.forEach(res=>{
+      if (res.out && res.out.probeResultCustomization)
+        res.out.probeResultCustomization(ctx, res)
+    })
     return probeResult;
   }
 })

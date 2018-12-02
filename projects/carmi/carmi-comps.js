@@ -8,24 +8,28 @@ jb.component('carmi.map', {
 		{id: 'mapTo', type: 'carmi.exp', dynamic: true },
 		{id: 'itemVar', as: 'string', defaultValue: 'val' },
 	],
-	impl: (ctx, array, mapTo, itemVar) => ({
-			calc: ctx2 => { 
-				const input = array(ctx).map(x=> x.calc(ctx2));
-				const output = input.map(x=> mapTo(ctx2).calc(ctx2.setData(x)))
-				return { input, output}
-			},
-			ast: new Expression(
-					new Token('map'),
-					new Expression(
-						new Token('func'),
-						wrap(mapTo(ctx.setVars({itemVar})).ast)), 
-					array().ast
-			)
-	}),
-	probeResultCustomization: (ctx, probeResult) => {
-			$inputCustomizer: probeResult => array(probeResult.in)
-			$outputCustomizer: probeResult => probeResult.out.calc(probeResult.in)
-	}
+	impl: (ctx, array, mapTo, itemVar) => {
+        const input = jb.toarray(array(ctx).output);
+        const output = input.map(x=> {
+            const ctx2 = ctx.setData(x).setVars({itemVar}).setVars(jb.obj(itemVar,x))
+            const res = mapTo(ctx2)
+            return res && res.output
+        })
+        return {
+            input, output,
+            ast: new Expression(
+                    new Token('map'),
+                    new Expression(
+                        new Token('func'),
+                        wrap(mapTo(ctx.setVars({itemVar})).ast)), 
+                    array().ast
+            ),
+            probeResultCustomization: function(ctx2, res) {
+                res.in.data = this.input
+                res.out = this.output
+            }
+        }
+    },
 })
 
 jb.component('carmi.root', {
@@ -33,9 +37,9 @@ jb.component('carmi.root', {
 	params: [
 	],
 	impl: ctx => ({
-		calc: ctx2 => ctx.vars.root,
+		output: ctx.vars.root,
 		ast: new Token('root')
-	})
+    })
 })
 
 jb.component('carmi.not', {
@@ -43,14 +47,18 @@ jb.component('carmi.not', {
 	params: [
 		{id: 'of', type: 'carmi.exp', dynamic: true },
 	],
-	impl: (ctx, _of) => ({
-		calc: ctx2 => !_of(ctx2.data),
-		ast: new Expression(
+	impl: (ctx, _of) => {
+        const of_exp = _of(ctx)
+        const input = (of_exp ? of_exp.output : ctx.vars[ctx.vars.itemVar])
+        const output = !input
+        return {
+            input, output,
+            ast: new Expression(
 				new Token('not'), 
-				(_of() || {ast: new Token(ctx.vars.itemVar)}).ast
-		),
-		$outputCustomizer: probeResult => probeResult.out.calc(probeResult.in)
-	})
+                (_of() || {ast: new Token(ctx.vars.itemVar)}).ast
+            )
+        }
+    }
 })
 
 jb.component('carmi.var', {
@@ -66,13 +74,13 @@ jb.component('carmi.model', {
 	type: 'carmi.model',
 	params: [
 		{id: 'id', type: 'string', essential: true },
-		{id: 'vars', type: 'carmi.var[]', essential: true, defaultValue: [] },
+		{id: 'vars', type: 'carmi.var[]', essential: true, defaultValue: [], dynamic: true },
         {id: 'setters', type: 'carmi.setter[]', defaultValue: [] },
         {id: 'schemaByExample' },
 	],
-	impl: (ctx, id, vars, setters, sample) => {
+	impl: (ctx, id, varsF, setters, sample) => {
 		let innerCtx = ctx.setVars({ root: sample});
-        vars.forEach(v => innerCtx = v.exp.calc(innerCtx) );
+        const vars = varsF(innerCtx);
 
         // build carmi model
         const model = {
@@ -109,3 +117,5 @@ jb.component('carmi.doubleNegated', {
         ]
     }
 })
+
+new jb.jbCtx().run({$:'carmi.doubleNegated'}).then(mdl=> console.log(mdl))

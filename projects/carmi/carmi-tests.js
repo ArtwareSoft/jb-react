@@ -9,5 +9,3 @@
 //         ]
 //     }
 // })
-
-const mdl = new jb.jbCtx().run({$:'carmi.doubleNegated'}).then(mdl=> console.log(mdl))
