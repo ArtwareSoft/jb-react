@@ -274,7 +274,7 @@ function expression(exp, context, parentParam) {
   function conditionalExp(exp) {
     // check variable value - if not empty return all exp, otherwise empty
     const match = exp.match(/%([^%;{}\s><"']*)%/);
-    if (match && tostring(expPart(match[1],context,'string')))
+    if (match && tostring(expPart(match[1])))
       return expression(exp, context, { as: 'string' });
     else
       return '';

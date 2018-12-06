@@ -176,7 +176,7 @@
                 }
             }
             if (!circuitCtx) {
-                var circuit = ctx.exp('%$circuit%') || ctx.exp('%$studio/project%.%$studio/page%')
+                var circuit = jb.tostring(ctx.exp('%$circuit%','string') || ctx.exp('%$studio/project%.%$studio/page%'))
                 circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
             }
             return new (_jb.studio.Probe || st.Probe)(circuitCtx).runCircuit(path())

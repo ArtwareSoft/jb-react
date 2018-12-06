@@ -27,6 +27,7 @@ class ImmutableWithPath {
   writeValue(ref,value,srcCtx) {
     if (!ref)
       return jb.logError('writeValue: null ref');
+
     if (this.val(ref) === value) return;
     jb.logPerformance('writeValue',value,ref,srcCtx);
     if (ref.$jb_val)
