@@ -21,7 +21,7 @@ jb.component('carmi.map', {
                     new Token('map'),
                     new Expression(
                         new Token('func'),
-                        wrap(mapTo(ctx.setVars({itemVar})).ast)), 
+                        wrap(mapTo(ctx.setVars({itemVar})).ast)),
                     array().ast
             ),
             probeResultCustomization: function(ctx2, res) {
@@ -112,6 +112,20 @@ jb.component('carmi.doubleNegated', {
             	exp :{$: 'carmi.map', 
             		array :{$: 'carmi.root'}, 
             		mapTo :{$: 'carmi.not', of :{$: 'carmi.not'}}
+            	}
+            }
+        ]
+    }
+})
+
+jb.component('carmi.negated', {
+    impl :{$: 'carmi.model',
+        schemaByExample: [false, 1, 0],
+        vars: [
+            {$: 'carmi.var', id: 'negated',
+            	exp :{$: 'carmi.map', 
+            		array :{$: 'carmi.root'}, 
+            		mapTo :{$: 'carmi.not' }
             	}
             }
         ]

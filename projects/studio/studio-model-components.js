@@ -38,6 +38,14 @@ jb.component('studio.PTs-of-type', {
       st.PTsOfType(_type)
 })
 
+jb.component('studio.profiles-of-PT', {
+  params: [
+  	{ id: 'PT', as: 'string', essential: true },
+  ],
+  impl: (ctx, pt) =>
+      st.profilesOfPT(pt)
+})
+
 jb.component('studio.categories-of-type', {
   params: [
   	{ id: 'type', as: 'string', essential: true },
