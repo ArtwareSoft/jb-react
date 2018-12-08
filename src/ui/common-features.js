@@ -104,7 +104,7 @@ jb.component('var', {
     { id: 'value', dynamic: true, defaultValue: '', essential: true },
     { id: 'mutable', as: 'boolean', description: 'E.g., selected item variable' },
   ],
-  impl: (context, name, value,mutable) => ({
+  impl: (context, name, value, mutable) => ({
       destroy: cmp => {
         if (mutable)
           jb.writeValue(jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]),null,context)
@@ -116,7 +116,7 @@ jb.component('var', {
           cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
           var refToResource = jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]);
           //jb.writeValue(refToResource,value(ctx.setData(cmp)),context);
-          jb.writeValue(refToResource,value(ctx),context);
+          jb.writeValue(refToResource, jb.val(value(ctx)), context);
           return ctx.setVars(jb.obj(name, refToResource));
         }
       }

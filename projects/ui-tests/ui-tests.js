@@ -547,13 +547,12 @@ control :{$: 'group',
             { $: 'itemlist.keyboard-selection', autoFocus: true },
         ],
       },
-      { $: 'group',
-        features :{$: 'group.data', data: '%$globals/selectedPerson%', watch: true,  } ,
-         controls :{$: 'label' , title: '%name% selected' },
+      {$: 'label' , title: '%$globals/selectedPerson/name% selected',
+        features :{$: 'watch-ref', ref: '%$globals/selectedPerson/name%' }
       }
     ]
   } ,
-  action: ctx=> jb.delay(10),
+  action: ctx=> jb.delay(50),
   expectedResult: { $: 'contains', text: ['Homer Simpson', 'Homer Simpson selected'] },
 },
 })

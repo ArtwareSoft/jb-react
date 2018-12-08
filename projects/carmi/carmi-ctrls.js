@@ -37,7 +37,7 @@ jb.component('carmi.model-editor', {
                   ]
                 }
               ], 
-              features: []
+              features: [{$: 'watch-ref', ref: '%$jbEditor_selection%' }]
             }
           ], 
           features: [{$: 'var', name: 'jbEditor_selection', value: '%$circuit%', mutable: true }]
