@@ -61,6 +61,59 @@ jb.component('carmi.not', {
     }
 })
 
+function chain(context,items,ptName) {
+	const start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
+	if (typeof context.profile.items == 'string')
+		return context.runInner(context.profile.items,null,'items');
+	const profiles = jb.toarray(context.profile.items || context.profile[ptName]);
+	const innerPath = (context.profile.items && context.profile.items.sugar) ? '' 
+		: (context.profile[ptName] ? (ptName + '~') : 'items~');
+
+	if (ptName == '$pipe') // promise pipe
+		return profiles.reduce((deferred,prof,index) => {
+			return deferred.then(data=>
+				jb.synchArray(data))
+			.then(data=>
+				step(prof,index,data))
+		}, Promise.resolve(start))
+
+	return profiles.reduce((data,prof,index) =>
+		step(prof,index,data), start)
+
+
+	function step(profile,i,data) {
+    	if (!profile || profile.$disabled) return data;
+		const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (context.parentParam || {}) ;
+		if (jb.profileType(profile) == 'aggregator')
+			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
+		return [].concat.apply([],data.map(item =>
+				jb.run(new jb.jbCtx(context,{data: item, profile: profile, path: innerPath+i}), parentParam))
+			.filter(x=>x!=null)
+			.map(x=> Array.isArray(jb.val(x)) ? jb.val(x) : x ));
+	}
+}
+
+jb.component('carmi.chain', {
+	type: 'carmi.exp',
+	params: [
+		{ id: 'items', type: "carmi.exp[]", ignore: true, essential: true, composite: true },
+	],
+	impl: (ctx,items) => {
+        const of_exp = _of(ctx)
+        const input = (of_exp ? of_exp.output : ctx.vars[ctx.vars.itemVar])
+        const output = !input
+        return {
+            input, output,
+            ast: new Expression(
+				new Token('not'), 
+                (_of() || {ast: new Token(ctx.vars.itemVar)}).ast
+            )
+        }
+	}
+
+	jb.pipe(ctx,items,'$pipeline')
+})
+
 jb.component('carmi.var', {
 	type: 'carmi.var',
 	params: [
