@@ -694,13 +694,13 @@ Object.assign(jb,{
     return ret;
   },
   compareArrays: (arr1, arr2) => {
-    if (arr1 == arr2)
+    if (arr1 === arr2)
       return true;
-    if (!Array.isArray(arr1) && !Array.isArray(arr2)) return arr1 == arr2;
+    if (!Array.isArray(arr1) && !Array.isArray(arr2)) return arr1 === arr2;
     if (!arr1 || !arr2 || arr1.length != arr2.length) return false;
     for (let i = 0; i < arr1.length; i++) {
       const key1 = (arr1[i]||{}).key, key2 = (arr2[i]||{}).key;
-      if (key1 && key2 && key1 == key2 && arr1[i].val == arr2[i].val)
+      if (key1 && key2 && key1 === key2 && arr1[i].val === arr2[i].val)
         continue;
       if (arr1[i] !== arr2[i]) return false;
     }

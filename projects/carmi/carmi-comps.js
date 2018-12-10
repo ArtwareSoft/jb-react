@@ -3,16 +3,18 @@ const { wrap, compile, chain, root, and, ternary, or, arg0, arg1, setter, splice
 
 function runPipe(ctx, profiles, data) {
     const start = Array.isArray(data) ? data : typeof data == 'object' ? data : [data];
-    const output = profiles.reduce((data,prof,index) => step(prof,index,data).output, data);
+    const output = profiles.reduce((inner_data,prof,index) => step(prof,index,inner_data), data);
+    return output
 
     function step(profile,i,data) {
         const innerPath = 'pipe~';
         if (!profile || profile.$disabled) return data;
-        const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) ;
         if (jb.profileType(profile) == 'aggregator')
-            return jb.run( new jb.jbCtx(ctx, { data, profile, path: innerPath+i }), parentParam);
-        return [].concat.apply([],data.map(item =>
-                jb.run(new jb.jbCtx(ctx,{data: item, profile, path: innerPath+i}), parentParam)))
+            return jb.run(new jb.jbCtx(ctx, { data, profile, path: innerPath+i }));
+        const res = data.map(item =>
+                jb.run(new jb.jbCtx(ctx,{data: item, profile, path: innerPath+i})))
+                .map(x=>x.output)
+        return res;
     }
 }
 
@@ -120,19 +122,21 @@ jb.component('carmi.model', {
 })
 
 jb.component('carmi.doubleNegated', {
-    impl :{$: 'carmi.model',
-        schemaByExample: [false, 1, 0],
-        vars: [
-            {$: 'carmi.var', id: 'doubleNegated',
-            	exp :{$: 'carmi.chain', 
-            		input :{$: 'carmi.root'}, 
-            		pipe : [
-                        {$: 'carmi.not' }, {$: 'carmi.not'} 
-                    ]
-            	}
-            }
-        ]
-    }
+  impl :{$: 'carmi.model', 
+    schemaByExample: [false, 1, 0], 
+    vars: [
+      {$: 'carmi.var', 
+        id: 'doubleNegated', 
+        exp :{$: 'carmi.chain', 
+          input :{$: 'carmi.root' }, 
+          pipe: [
+            {$: 'carmi.not' }, 
+            {$: 'carmi.not' }
+          ]
+        }
+      }
+    ]
+  }
 })
 
 jb.component('carmi.negated', {
