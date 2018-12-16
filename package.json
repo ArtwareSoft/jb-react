@@ -40,6 +40,8 @@
     "babel-standalone": "^6.24.0",
     "concurrently": "^2.2.0",
     "electron": "^1.6.11",
+    "eslint": "^5.9.0",
+    "eslint-config-google": "^0.11.0",
     "jison": "^0.4.17",
     "pretty": "^2.0.0",
     "uglifyjs-webpack-plugin": "^0.4.3"
