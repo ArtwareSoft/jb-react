@@ -27,6 +27,7 @@ class ImmutableWithPath {
   writeValue(ref,value,srcCtx) {
     if (!ref)
       return jb.logError('writeValue: null ref');
+
     if (this.val(ref) === value) return;
     jb.logPerformance('writeValue',value,ref,srcCtx);
     if (ref.$jb_val)
@@ -160,7 +161,7 @@ class ImmutableWithPath {
       var currentVersion = this.resourceVersions[path[0]] || 0;
       if (path.length == 1) return true;
       if (currentVersion == ref.$jb_resourceV) return true;
-      if (currentVersion == ref.$jb_resourceV + 1 && lastOpEvent && typeof lastOpEvent.op.$set != 'undefined') {
+      if (currentVersion == (ref.$jb_resourceV || 0) + 1 && lastOpEvent && typeof lastOpEvent.op.$set != 'undefined') {
         var res = this.refOfPath(ref.$jb_path,silent); // recalc ref by path
         if (res)
           return Object.assign(ref,res)
@@ -251,6 +252,7 @@ class ImmutableWithPath {
   //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
   // }
   refObservable(ref,cmp,settings) {
+    settings = settings || {};
     if (ref && ref.$jb_observable)
       return ref.$jb_observable(cmp);
     if (!ref || !this.isRef(ref))
@@ -260,15 +262,15 @@ class ImmutableWithPath {
         .takeUntil(cmp.destroyed)
         .filter(e=>
             e.ref.$jb_path[0] == ref.$jb_path[0])
-        .filter(e=> {
+        .flatMap(e=> {
           this.refresh(ref,e,true);
-          if (settings && settings.throw && ref.$jb_invalid)
-            throw 'invalid ref';
-          var path = e.ref.$jb_path;
-          var changeInParent = (ref.$jb_path||[]).join('~').indexOf(path.join('~')) == 0;
-          if (settings && settings.includeChildren)
-            return changeInParent || path.join('~').indexOf((ref.$jb_path||[]).join('~')) == 0;
-          return changeInParent;
+          if (ref.$jb_invalid) {
+            settings && settings.onError && settings.onError();
+            return [];
+          }
+          const path = e.ref.$jb_path.join('~'), ref_path = (ref.$jb_path||[]).join('~');
+          const _continue = ref_path.indexOf(path) == 0 || settings.includeChildren && path.indexOf(ref_path) == 0;
+          return _continue ? [e] : [];
         })
         .distinctUntilChanged((e1,e2)=>
           e1.newVal == e2.newVal)

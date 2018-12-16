@@ -1,3 +1,17 @@
+jb.component('studio.prob-result-customization', {
+  type: 'data',
+  params: [
+    { id: 'probeResult', essential: true },
+  ],
+  impl: (ctx, probeResult) => {
+    probeResult.result.forEach(res=>{
+      if (res.out && res.out.probeResultCustomization)
+        res.out.probeResultCustomization(ctx, res)
+    })
+    return probeResult;
+  }
+})
+
 
 jb.component('studio.open-jb-editor', {
   type: 'action',
@@ -121,6 +135,7 @@ jb.component('studio.jb-editor', {
                     {$: 'table',
                       items :{
                         $pipeline: [
+                          {$: 'studio.prob-result-customization', probeResult: '%$probeResult%' },
                           '%$probeResult/result%',
                           {$: 'slice', end: '%$maxInputs%' }
                         ]
@@ -133,7 +148,8 @@ jb.component('studio.jb-editor', {
                         },
                         {$: 'field.control',
                           title: 'out',
-                          control :{$: 'studio.data-browse', obj: '%out%' },
+                          control :{$: 'studio.data-browse', obj: '%out%'
+                          },
                           width: '100'
                         }
                       ],

@@ -143,6 +143,8 @@ jb.component('tree.selection', {
 		  	.merge(cmp.onclick.map(event =>
 		  		tree.elemToPath(event.target)))
 		  	.filter(x=>x)
+		  	.map(x=>
+		  		jb.val(x))
 //	  		.distinctUntilChanged()
 		  	.subscribe(selected=> {
 		  	  if (tree.selected == selected)

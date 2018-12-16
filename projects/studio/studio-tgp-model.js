@@ -302,6 +302,10 @@ Object.assign(st,{
 		return comp_arr.reduce((all,ar)=>all.concat(ar),[]);
 	},
 
+	profilesOfPT: pt => // in project
+		jb.entries(jb.comps).filter(c=> c[1].impl.$ == pt).map(c=>c[0])
+	,
+
 	propName: path =>{
 		if (!isNaN(Number(path.split('~').pop()))) // array elements
 			return st.parentPath(path).split('~').pop().replace(/s$/,'');
