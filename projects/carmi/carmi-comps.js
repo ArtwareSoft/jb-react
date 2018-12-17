@@ -26,7 +26,7 @@ function chainAst(ctx, start, pipe_profiles) {
 jb.component('carmi.map', {
 	type: 'carmi.chain-exp',
 	params: [
-		{id: 'pipe', type: 'carmi.chain-exp[]', ignore: true },
+		{id: 'pipe', type: 'carmi.chain-exp[]', ignore: true, composite: true },
 		{id: 'itemVar', as: 'string', defaultValue: 'val' },
 	],
 	impl: (ctx, pipe, itemVar) => {
@@ -35,7 +35,7 @@ jb.component('carmi.map', {
         const output = runPipe(ctx, ctx.setVars(jb.obj(itemVar,input)), pipe_profiles, input)
         return {
             input, output,
-            chainAst: ast => chainAst(ctx, ast,pipe_profiles)
+            chainAst: ast => ast.map(x => chainAst(ctx, x, pipe_profiles))
         }
     },
 })
@@ -60,7 +60,38 @@ jb.component('carmi.not', {
     }
 })
 
-jb.component('carmi.chain', {
+jb.component('carmi.get', {
+    type: 'carmi.chain-exp',
+    params: [
+        {id: 'prop', as: 'string'}
+    ],
+	impl: (ctx, prop) => {
+        const data = ctx.data;
+        return {
+            input: data, 
+            output: data[prop],
+            chainAst: ast => ast.get(prop)
+        }
+    }
+})
+
+jb.component('carmi.plus', {
+    type: 'carmi.chain-exp',
+    params: [
+        {id: 'toAdd', as: 'string'}
+    ],
+	impl: (ctx, prop) => {
+        const data = ctx.data;
+        return {
+            input: data, 
+            output: data + typeof data == 'number' &&  prop,
+            chainAst: ast => ast.plus(toAdd)
+        }
+    }
+})
+
+
+jb.component('carmi.pipe', {
 	type: 'carmi.exp',
 	params: [
 		{ id: 'input', type: "carmi.exp", essential: true, defaultValue :{$: 'carmi.root' } },
@@ -73,7 +104,7 @@ jb.component('carmi.chain', {
         return {
             input: ctx.data && ctx.data.input, 
             output,
-            ast: chainAst(ctx, input.ast, pipe_profiles)
+            ast: input.ast.map(x => chainAst(ctx, x, pipe_profiles))
         }
 	}
 })
@@ -106,7 +137,7 @@ jb.component('carmi.model', {
         vars.forEach(v => model[v.id] = v.exp.ast);
         setters.forEach(v => model[v.id] = v.exp.ast);
 
-		const originalModel = { doubleNegated: root.map(val => val.not()), set: setter(arg0) };
+		const originalModel = { doubleNegated: chain(root).not().not(), set: setter(arg0) };
 
 		const negated = root.map(val => val.not());
 		const model2 = { doubleNegated: root.map(val => val.not()).map(val => val.not()), set: setter(arg0) };
@@ -127,7 +158,7 @@ jb.component('carmi.doubleNegated', {
     vars: [
       {$: 'carmi.var', 
         id: 'doubleNegated', 
-        exp :{$: 'carmi.chain', 
+        exp :{$: 'carmi.pipe', 
           input :{$: 'carmi.root' }, 
           pipe: [
             {$: 'carmi.not' }, 

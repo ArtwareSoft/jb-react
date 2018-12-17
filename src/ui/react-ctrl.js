@@ -248,7 +248,16 @@ ui.wrapWithLauchingElement = (f,context,elem) =>
 
 if (typeof $ != 'undefined' && $.fn)
     $.fn.findIncludeSelf = function(selector) {
-    	return this.find(selector).addBack(selector); }
+			return this.find(selector).addBack(selector); }
+
+function initWindowParent() {
+	if (jb.ui.parentWindow) return;
+	jb.ui.parentWindow = window
+	try {
+		const xx = window.parent.jb; // may throw on CORS error
+		jb.ui.parentWindow = window.parent;
+	} catch (e) {}
+}
 
 jb.jstypes.renderable = value => {
   if (value == null) return '';
@@ -274,8 +283,9 @@ ui.preserveCtx = ctx => {
 
 ui.renderWidget = function(profile,elem) {
 	var previewElem;
-	if (window.parent != window && window.parent.jb)
-		window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
+	initWindowParent();
+	if (jb.ui.parentWindow != window && jb.ui.parentWindow.jb)
+		jb.ui.parentWindow.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
 	class R extends jb.ui.Component {
 		constructor(props) {
 			super();
