@@ -16,11 +16,7 @@ class ROjson {
 	}
 	children(path) {
 		var val = this.val(path);
-		var out = [];
-		if (typeof val == 'object')
-			out = Object.getOwnPropertyNames(val || {});
-		if (Array.isArray(val))
-			out = out.slice(0,-1);
+		const out = (typeof val == 'object') ? Object.keys(val || {}) : [];
 		return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p);
 	}
 	val(path) {
@@ -48,7 +44,7 @@ class ROjson {
 			return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,20))]);
 
 		return h('div',{},[h('span',{},prop + ': ')].concat(
-			Object.getOwnPropertyNames(val).filter(p=>p.indexOf('$jb_') != 0).filter(p=> ['string','boolean','number'].indexOf(typeof val[p]) != -1)
+			Object.keys(val).filter(p=>p.indexOf('$jb_') != 0).filter(p=> ['string','boolean','number'].indexOf(typeof val[p]) != -1)
 			.map(p=> [h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)) ])))
 	}
 }
@@ -71,11 +67,7 @@ class Json {
 	}
 	children(path) {
 		var val = this.val(path);
-		var out = [];
-		if (typeof val == 'object')
-			out = Object.getOwnPropertyNames(val || {});
-		if (Array.isArray(val))
-			out = out.slice(0,-1);
+		const out = (typeof val == 'object') ? Object.keys(val || {}) : [];
 		return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p);
 	}
 	val(path) {
@@ -103,7 +95,7 @@ class Json {
 			return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: val},jb.ui.limitStringLength(val,20))]);
 
 		return h('div',{},[h('span',{},prop + ': ')].concat(
-			Object.getOwnPropertyNames(val).filter(p=> typeof val[p] == 'string' || typeof val[p] == 'number' || typeof val[p] == 'boolean')
+			Object.keys(val).filter(p=> typeof val[p] == 'string' || typeof val[p] == 'number' || typeof val[p] == 'boolean')
 			.map(p=> [h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)) ])))
 	}
 	modify(op,path,args,ctx) {

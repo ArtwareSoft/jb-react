@@ -1,12 +1,13 @@
+jb.studio.probeResultCustomizers = []
 jb.component('studio.prob-result-customization', {
   type: 'data',
   params: [
     { id: 'probeResult', essential: true },
   ],
   impl: (ctx, probeResult) => {
-    probeResult.result.forEach(res=>{
-      if (res.out && res.out.probeResultCustomization)
-        res.out.probeResultCustomization(ctx, res)
+    probeResult.result.forEach(res=> {
+      //res.out = res.out && res.out.probeResultCustomization ? res.out.probeResultCustomization(ctx, res.out) : res.out
+      (jb.studio.probeResultCustomizers||[]).forEach(customize => customize(ctx, res))
     })
     return probeResult;
   }

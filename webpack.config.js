@@ -3,7 +3,7 @@ var path = require('path');
 var fs = require('fs');
 require('./src/loader/jb-loader.js');
 
-var JBART_DIR = 'c:\\jb-react\\';
+var JBART_DIR = '/Users/shaiby/projects/jb-react/';
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 
@@ -28,6 +28,7 @@ concatFiles(jbReactFiles,'dist/jb-react-all.js');
 concatFiles(nodeFiles,'dist/jb4node.js');
 
 var jbRx = {
+  mode: 'development',
   entry: JBART_DIR + 'src/ui/jb-rx.js',
   output: {
     path: JBART_DIR + 'dist',
@@ -37,6 +38,7 @@ var jbRx = {
 };
 
 var jbPreact = {
+  mode: 'development',
   entry: JBART_DIR + 'src/ui/jb-preact.js',
   output: {
     path: JBART_DIR + 'dist',
@@ -46,6 +48,7 @@ var jbPreact = {
 };
 
 var jbImmutable = {
+  mode: 'development',
   entry: JBART_DIR + 'src/ui/jb-immutable.js',
   output: {
     path: JBART_DIR + 'dist',
@@ -56,6 +59,7 @@ var jbImmutable = {
 };
 
 var babel_ext = {
+  mode: 'development',
   entry: JBART_DIR + 'projects/studio/studio-babel-ext.js',
   output: {
     path: JBART_DIR + 'dist',
@@ -69,6 +73,7 @@ var babel_ext = {
 };
 
 var jbRxMin = {
+  mode: 'development',
   entry: JBART_DIR + 'src/ui/jb-rx.js',
 //  entry: JBART_DIR + 'projects/ui-tests/common-styles.jsx',
   output: {
@@ -80,6 +85,7 @@ var jbRxMin = {
 };
 
 var jbJison = {
+  mode: 'development',
   entry: JBART_DIR + 'src/misc/jb-jison.js',
   output: {
     path: JBART_DIR + 'dist',
