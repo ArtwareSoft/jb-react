@@ -1,7 +1,7 @@
 
 jb.component('carmi.model-editor', {
   type: 'control', 
-  params: [{ id: 'path', defaultValue: 'team_leaders' }], 
+  params: [{ id: 'path', defaultValue: 'carmi.doubleNegated' }], 
   impl :{$: 'group', 
     title: 'main', 
     style :{$: 'group.div', align: 'flex-start' }, 
@@ -25,27 +25,50 @@ jb.component('carmi.model-editor', {
                 controls: [
                   {$: 'group', 
                     title: 'input/output', 
-                    style :{$: 'property-sheet.titles-above-float-left', spacing: 20, fieldWidth: 200 }, 
+                    style :{$: 'property-sheet.titles-above', fieldWidth: 200, spacing: '20' }, 
                     controls: [
-                      {$: 'studio.data-browse', 
-                        obj :{
-                          $pipeline: [
-                            '%inst%', 
-                            {$: 'properties', obj: '%%' }, 
-                            {$: 'filter', 
-                              filter :{$: 'not-contains', text: '$', allText: '%id%' }
-                            }, 
-                            {$: 'filter', filter: "%id% != 'set'" }, 
-                            '%val%'
-                          ]
-                        }, 
+                      {$: 'group', 
                         title: 'output', 
-                        width: 200
+                        controls: [
+                          {$: 'tree', 
+                            nodeModel :{$: 'tree.json-read-only', 
+                              object :{
+                                $pipeline: [
+                                  '%inst%', 
+                                  {$: 'properties', obj: '%%' }, 
+                                  {$: 'filter', 
+                                    filter :{$: 'not-contains', text: '$', allText: '%id%' }
+                                  }, 
+                                  {$: 'filter', filter: "%id% != 'set'" }, 
+                                  '%val%'
+                                ]
+                              }, 
+                              rootPath: '%$title%'
+                            }, 
+                            style :{$: 'tree.no-head' }, 
+                            features: [
+                              {$: 'css.class', class: 'jb-control-tree' }, 
+                              {$: 'tree.selection' }, 
+                              {$: 'tree.keyboard-selection' }, 
+                              {$: 'css.width', width: '%$width%', minMax: 'max' }
+                            ]
+                          }
+                        ]
                       }, 
-                      {$: 'studio.data-browse', 
-                        obj :{ $pipeline: ['%inst/$model%'] }, 
+                      {$: 'group', 
                         title: 'input', 
-                        width: 200
+                        controls: [
+                          {$: 'tree', 
+                            nodeModel :{$: 'tree.json-read-only', object: '%inst/$model%', rootPath: '%$title%' }, 
+                            style :{$: 'tree.no-head' }, 
+                            features: [
+                              {$: 'css.class', class: 'jb-control-tree' }, 
+                              {$: 'tree.selection' }, 
+                              {$: 'tree.keyboard-selection' }, 
+                              {$: 'css.width', width: '%$width%', minMax: 'max' }
+                            ]
+                          }
+                        ]
                       }
                     ], 
                     features :{$: 'group.wait', for: ctx => ctx.run({$: jb.val(ctx.vars.circuit)}) }
