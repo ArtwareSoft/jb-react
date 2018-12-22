@@ -229,7 +229,7 @@ jb.component('carmi.var', {
 		{id: 'carmi_exp', ignore: true },
 	],
 	impl: (ctx, id, exp, carmi_exp) => {
-        return ({ id, exp })
+        return ({ id, exp: exp, expStr: exp.exp() })
     }
 })
 
@@ -249,7 +249,7 @@ jb.component('carmi.model', {
         const model = {
         	set: setter(arg0)
         }
-        vars.forEach(v => model[v.id] = v.exp.ast);
+        vars.forEach(v => model[v.id] = eval(`(${v.expStr})`));
         setters.forEach(v => model[v.id] = v.exp.ast);
 
 		const originalModel = { doubleNegated: root.keys(), set: setter(arg0) };

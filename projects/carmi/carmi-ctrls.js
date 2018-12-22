@@ -25,8 +25,18 @@ jb.component('carmi.model-editor', {
                 controls: [
                   {$: 'group', 
                     title: 'input/output', 
-                    style :{$: 'property-sheet.titles-above', fieldWidth: 200, spacing: '20' }, 
+                    style :{$: 'property-sheet.titles-left', fieldWidth: 200, spacing: '20', vSpacing: 20, hSpacing: 20, titleWidth: 100 }, 
                     controls: [
+                      {$: 'group', 
+                        title: '%vars[0]/id%', 
+                        controls: [
+                          {$: 'label', 
+                            title: '%vars[0]/expStr%', 
+                            style :{$: 'label.p' }
+                          }
+                        ], 
+                        features :{$: 'group.dynamic-titles' }
+                      }, 
                       {$: 'group', 
                         title: 'output', 
                         controls: [
