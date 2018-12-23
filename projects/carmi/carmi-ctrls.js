@@ -31,7 +31,7 @@ jb.component('carmi.model-editor', {
                         title: '%vars[0]/id%', 
                         controls: [
                           {$: 'label', 
-                            title: '%vars[0]/expStr%', 
+                            title: '%vars[0]/exp%', 
                             style :{$: 'label.p' }
                           }
                         ], 
