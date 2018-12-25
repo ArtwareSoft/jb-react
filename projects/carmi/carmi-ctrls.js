@@ -30,6 +30,7 @@ jb.component('carmi.model-editor', {
                       {$: 'group', 
                         title: '%vars[0]/id%', 
                         controls: [
+                          ctx => ctx.data.vars[0].ctrl,
                           {$: 'label', 
                             title: '%vars[0]/exp%', 
                             style :{$: 'label.p' }
