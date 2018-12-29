@@ -580,6 +580,11 @@ function entries(obj) {
         ret.push([i,obj[i]])
   return ret;
 }
+function objFromEntries(entries) {
+  const res = {}
+  entries.forEach(e => res[e[0]] = e[1]);
+  return res;
+}
 function extend(obj,obj1,obj2,obj3) {
   if (!obj) return;
   obj1 && Object.assign(obj,obj1);
@@ -623,31 +628,9 @@ const valueByRefHandler = valueByRefHandlerWithjbParent;
 let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 
 return {
-  jbCtx: jbCtx,
-
   run: jb_run,
-  expression: expression,
-  bool_expression: bool_expression,
-  profileType: profileType,
-  compName: compName,
-  logError: logError,
-  logPerformance: logPerformance,
-  logException: logException,
-
-  tojstype: tojstype, jstypes: jstypes,
-  tostring: tostring, toarray:toarray, toboolean: toboolean,tosingle:tosingle,tonumber:tonumber,
-
-  valueByRefHandler: valueByRefHandler,
-  types: types,
-  ui: ui,
-  rx: rx,
-  ctxDictionary: ctxDictionary,
-  testers: testers,
-  compParams: compParams,
-  singleInType: singleInType,
-  val: val,
-  entries: entries,
-  extend: extend,
+  jbCtx, expression, bool_expression, profileType, compName, logError, logPerformance, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
+  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, 
   ctxCounter: _ => ctxCounter
 }
 

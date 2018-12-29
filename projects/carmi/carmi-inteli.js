@@ -1,95 +1,6 @@
-jb.studio.probeResultCustomizers = []
-jb.component('studio.prob-result-customization', {
-  type: 'data',
-  params: [
-    { id: 'probeResult', essential: true },
-  ],
-  impl: (ctx, probeResult) => {
-    probeResult.result.forEach(res=> {
-      //res.out = res.out && res.out.probeResultCustomization ? res.out.probeResultCustomization(ctx, res.out) : res.out
-      (jb.studio.probeResultCustomizers||[]).forEach(customize => customize(ctx, res))
-    })
-    return probeResult;
-  }
-})
 
 
-jb.component('studio.open-jb-editor', {
-  type: 'action',
-  params: [
-    { id: 'path', as: 'string' },
-    { id: 'fromPath', as: 'string' },
-    { id: 'newWindow', type: 'boolean', as: 'boolean' }
-  ],
-  impl :{$: 'open-dialog',
-    $vars: {
-      dialogId :{ $if: '%$newWindow%', then: '', else: 'jb-editor' },
-      fromPath: '%$fromPath%',
-      pickSelection :{$: 'object' }
-    },
-    style :{$: 'dialog.studio-floating',
-      id: '%$dialogId%',
-      width: '860',
-      height: '400'
-    },
-    content :{$: 'studio.jb-editor', path: '%$path%' },
-    menu :{$: 'button',
-      action :{$: 'studio.open-jb-editor-menu',
-        path: '%$jbEditor_selection%',
-        root: '%$path%'
-      },
-      style :{$: 'button.mdl-icon', icon: 'menu' }
-    },
-    title :{$: 'studio.path-hyperlink', path: '%$path%', prefix: 'Inteliscript' },
-    features: [
-      {$: 'var', name: 'jbEditor_selection', value: '%$path%', mutable: true },
-      {$: 'dialog-feature.resizer' }
-    ]
-  }
-})
-
-jb.component('studio.open-component-in-jb-editor', {
-  type: 'action',
-  params: [{ id: 'path', as: 'string' }, { id: 'fromPath', as: 'string' }],
-  impl :{
-    $vars: {
-      compPath :{$: 'split', separator: '~', text: '%$path%', part: 'first' },
-      fromPath: '%$fromPath%',
-      pickSelection :{$: 'object' }
-    },
-    $runActions: [
-      {$: 'open-dialog',
-        style :{$: 'dialog.studio-floating',
-          id: 'jb-editor',
-          width: '860',
-          height: '400'
-        },
-        content :{$: 'studio.jb-editor', path: '%$compPath%' },
-        menu :{$: 'button',
-          action :{$: 'studio.open-jb-editor-menu',
-            path: '%$jbEditor_selection%',
-            root: '%$path%'
-          },
-          style :{$: 'button.mdl-icon', icon: 'menu' }
-        },
-        title :{$: 'studio.path-hyperlink',
-          path: '%$compPath%',
-          prefix: 'Inteliscript'
-        },
-        features: [
-          {$: 'var',
-            name: 'jbEditor_selection',
-            value: '%$path%',
-            mutable: true
-          },
-          {$: 'dialog-feature.resizer' }
-        ]
-      }
-    ]
-  }
-})
-
-jb.component('studio.jb-editor', {
+jb.component('carmi.jb-editor', {
   type: 'control',
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'group',
@@ -136,7 +47,6 @@ jb.component('studio.jb-editor', {
                     {$: 'table',
                       items :{
                         $pipeline: [
-                          {$: 'studio.prob-result-customization', probeResult: '%$probeResult%' },
                           '%$probeResult/result%',
                           {$: 'slice', end: '%$maxInputs%' }
                         ]
@@ -149,8 +59,7 @@ jb.component('studio.jb-editor', {
                         },
                         {$: 'field.control',
                           title: 'out',
-                          control :{$: 'studio.data-browse', obj: '%out%'
-                          },
+                          control :{$: 'studio.data-browse', obj: '%out%' },
                           width: '100'
                         }
                       ],

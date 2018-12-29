@@ -1,0 +1,23 @@
+{
+  "name": "hello jBart1",
+  "version": "0.6",
+  "manifest_version": 2,
+  "description": "hello world example for jBart project as chrome extension",
+  "homepage_url": "http://www.artwaresoft.com",
+  "web_accessible_resources" : [],
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": true
+  },
+  "page_action": {
+      "default_popup": "hello-world/hello-world.html"
+  },  
+  "permissions": [
+    "declarativeContent",
+    "https://*/*",
+    "http://*/*",
+    "tabs"
+  ]
+}

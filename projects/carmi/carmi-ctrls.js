@@ -1,5 +1,4 @@
 
-
 jb.component('carmi.model-editor', {
   type: 'control', 
   params: [{ id: 'path', defaultValue: 'carmi.doubleNegated' }], 
@@ -16,38 +15,94 @@ jb.component('carmi.model-editor', {
       }, 
       {$: 'group', 
         title: 'watch circuit', 
-        controls :{$: 'group', 
-          title: 'with jbEditor selection', 
-          style :{$: 'layout.flex' }, 
-          controls: [
-            {$: 'studio.jb-editor', path: '%$circuit%~impl' }, 
-            {$: 'group', 
-              controls: [
-                {$: 'label', 
-                  title: '%$jbEditor_selection%', 
-                  style :{$: 'label.span' }
-                }, 
-                {$: 'editable-text', 
-                  databind :{$: 'studio.profile-as-text', path: '%$jbEditor_selection%' }, 
-                  style :{$: 'editable-text.textarea' }, 
-                  features: [
-                    {$: 'css.width', width: '300' }, 
-                    {$: 'css.height', height: '200' }, 
-                    {$: 'css.margin', left: '10' }
-                  ]
-                }
-              ], 
-              features: [{$: 'watch-ref', ref: '%$jbEditor_selection%' }]
-            }
-          ], 
-          features: [{$: 'var', name: 'jbEditor_selection', value: '%$circuit%', mutable: true }]
-        }, 
+        style :{$: 'layout.horizontal', spacing: 3 }, 
+        controls: [
+          {$: 'group', 
+            style :{$: 'layout.vertical' }, 
+            controls: [
+              {$: 'group', 
+                title: 'model', 
+                controls: [
+                  {$: 'group', 
+                    title: 'input/output', 
+                    style :{$: 'property-sheet.titles-left', fieldWidth: 200, spacing: '20', vSpacing: 20, hSpacing: 20, titleWidth: 100 }, 
+                    controls: [
+                      {$: 'group', 
+                        title: '%vars[0]/id%', 
+                        controls: [
+                          ctx => ctx.data.vars[0].ctrl,
+                          {$: 'label', 
+                            title: '%vars[0]/exp%', 
+                            style :{$: 'label.p' }
+                          }
+                        ], 
+                        features :{$: 'group.dynamic-titles' }
+                      }, 
+                      {$: 'group', 
+                        title: 'output', 
+                        controls: [
+                          {$: 'tree', 
+                            nodeModel :{$: 'tree.json-read-only', 
+                              object :{
+                                $pipeline: [
+                                  '%inst%', 
+                                  {$: 'properties', obj: '%%' }, 
+                                  {$: 'filter', 
+                                    filter :{$: 'not-contains', text: '$', allText: '%id%' }
+                                  }, 
+                                  {$: 'filter', filter: "%id% != 'set'" }, 
+                                  '%val%'
+                                ]
+                              }, 
+                              rootPath: '%$title%'
+                            }, 
+                            style :{$: 'tree.no-head' }, 
+                            features: [
+                              {$: 'css.class', class: 'jb-control-tree' }, 
+                              {$: 'tree.selection' }, 
+                              {$: 'tree.keyboard-selection' }, 
+                              {$: 'css.width', width: '%$width%', minMax: 'max' }
+                            ]
+                          }
+                        ]
+                      }, 
+                      {$: 'group', 
+                        title: 'input', 
+                        controls: [
+                          {$: 'tree', 
+                            nodeModel :{$: 'tree.json-read-only', object: '%inst/$model%', rootPath: '%$title%' }, 
+                            style :{$: 'tree.no-head' }, 
+                            features: [
+                              {$: 'css.class', class: 'jb-control-tree' }, 
+                              {$: 'tree.selection' }, 
+                              {$: 'tree.keyboard-selection' }, 
+                              {$: 'css.width', width: '%$width%', minMax: 'max' }
+                            ]
+                          }
+                        ]
+                      }
+                    ], 
+                    features :{$: 'group.wait', for: ctx => ctx.run({$: jb.val(ctx.vars.circuit)}) }
+                  }
+                ], 
+                features: [{$: 'watch-ref', ref: '%$jbEditor_selection%' }]
+              }
+            ], 
+            features :{$: 'studio.watch-path', path: '%$circuit%', includeChildren: true }
+          }, 
+          {$: 'group', 
+            title: 'with jbEditor selection', 
+            style :{$: 'layout.flex' }, 
+            controls: [{$: 'studio.jb-editor', path: '%$circuit%~impl' }], 
+            features: [{$: 'var', name: 'jbEditor_selection', value: '%$circuit%', mutable: true }]
+          }
+        ], 
         features: [{$: 'watch-ref', ref: '%$circuit%' }]
       }
     ], 
     features: [
       {$: 'css', css: '{ height: 200px; padding: 50px }' }, 
-      {$: 'var', name: 'circuit', value: 'carmi.doubleNegated', mutable: true }
+      {$: 'var', name: 'circuit', value: '%$path%', mutable: true }
     ]
   }
 })

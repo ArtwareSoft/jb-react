@@ -1,6 +1,10 @@
 const { Expr, Token, Setter, Expression, SetterExpression, SpliceSetterExpression, TokenTypeData, SourceTag } = carmi.lang;
 const { wrap, compile, chain, root, and, ternary, or, arg0, arg1, setter, splice, withName } = carmi;
 
+function ctrlOfElem(elem) {
+    return (elem.ctrl && elem.ctrl()) || { $: 'button', title: elem.exp, style :{$: 'button.href'} }
+}
+
 function runPipe(ctx, profiles, data) {
     const start = Array.isArray(data) ? data : typeof data == 'object' ? data : [data];
     const output = profiles.reduce((inner_data,prof,index) => step(prof,index,inner_data), data);
@@ -9,8 +13,10 @@ function runPipe(ctx, profiles, data) {
     function step(profile,i,data) {
         const innerPath = 'pipe~';
         if (!profile || profile.$disabled) return data;
-        if (jb.profileType(profile) == 'aggregator')
-            return jb.run(new jb.jbCtx(ctx, { data, profile, path: innerPath+i }));
+        if (jb.profileType(profile).indexOf('aggregator') != -1)
+            return jb.run(new jb.jbCtx(ctx, { data, profile, path: innerPath+i })).output;
+        if (!Array.isArray(data))
+            return [];
         const res = data.map(item =>
                 jb.run(new jb.jbCtx(ctx,{data: item, profile, path: innerPath+i})))
                 .map(x=>x.output)
@@ -18,64 +24,173 @@ function runPipe(ctx, profiles, data) {
     }
 }
 
-function chainAst(ctx, start, pipe_profiles) {
-    return pipe_profiles.reduce((ast,prof) => 
-        ctx.run(prof).chainAst(ast), start)
+if (jb.studio && jb.studio.probeResultCustomizers) {
+     jb.studio.probeResultCustomizers.push( (ctx, res) => {
+         if (res.out && typeof res.out.output !== 'undefined') 
+            res.out = res.out.exp + ': ' + res.out.output 
+    })
+}
+
+function chainExp(ctx, pipe_profiles) {
+    return pipe_profiles.map(prof => ctx.run(prof).exp)
+        .join('.')
 }
 
 jb.component('carmi.map', {
 	type: 'carmi.chain-exp',
 	params: [
-		{id: 'pipe', type: 'carmi.chain-exp[]', ignore: true },
+		{id: 'pipe', type: 'carmi.chain-exp[]', ignore: true, composite: true },
 		{id: 'itemVar', as: 'string', defaultValue: 'val' },
 	],
 	impl: (ctx, pipe, itemVar) => {
         const pipe_profiles = jb.toarray(ctx.profile.pipe);
         const input = ctx.data;
-        const output = runPipe(ctx, ctx.setVars(jb.obj(itemVar,input)), pipe_profiles, input)
-        return {
-            input, output,
-            chainAst: ast => chainAst(ctx, ast,pipe_profiles)
-        }
+        const output = runPipe(ctx, ctx.setVars(jb.obj(itemVar,input)), pipe_profiles, input);
+        const exp_prefix = `map(${itemVar} => ${itemVar}.`;
+        const exp = exp_prefix + chainExp(ctx.setVars({itemVar}),pipe_profiles) + ')';
+        const ctrl = (sub_controls) => (
+            {$: 'group', 
+                $vars: { exp_path: ctx.path },
+                controls: [
+                    {$: 'label', title: exp_prefix }, 
+                    ...sub_controls,
+                    {$: 'label', title: `)` }
+                ]
+            })
+        return {input, output, exp, ctrl}
     },
 })
 
+jb.component('carmi.filter', {
+	type: 'carmi.chain-exp,aggregator',
+	params: [
+		{id: 'condition', type: 'carmi.exp', dynamic: true, essential: true },
+		{id: 'itemVar', as: 'string', defaultValue: 'val' },
+	],
+	impl: (ctx, condition, itemVar) => {
+        const input = ctx.data;
+        let output = [];
+        if (Array.isArray(input))
+            output = input.filter(item => 
+                condition(ctx.setVars(jb.obj(itemVar,item)).setData(item)))
+        else if (typeof input === 'object') {
+            output = objFromEntries(jb.entries(input).filter(item => 
+                condition(ctx.setVars(jb.obj(itemVar,item[1])).setData(item[1]))))
+        }
+        const exp = `filter(${itemVar} => ${itemVar}.${condition.exp(ctx.setVars({itemVar}))})`;
+        return {input, output, exp}
+    },
+})
+
+
 jb.component('carmi.root', {
-	type: 'carmi.exp',
-	impl: ctx => ({
-		output: ctx.vars.root,
-		ast: root
+    type: 'carmi.exp',
+    impl: ctx => ({
+        output: ctx.vars.root,
+        exp: 'root',
     })
 })
 
-jb.component('carmi.not', {
-	type: 'carmi.chain-exp',
-	impl: (ctx) => {
-        const data = ctx.data;
+jb.component('carmi.negate', {
+    type: 'carmi.chain-exp',
+    impl: (ctx) => {
+        const input = ctx.data.output;
+        const output = !input;
         return {
-            input: data, 
-            output: !data,
-            chainAst: ast => ast.not()
+            input, output, exp: `not()`
         }
     }
 })
 
-jb.component('carmi.chain', {
-	type: 'carmi.exp',
-	params: [
-		{ id: 'input', type: "carmi.exp", essential: true, defaultValue :{$: 'carmi.root' } },
-		{ id: 'pipe', type: "carmi.chain-exp[]", ignore: true },
-	],
-	impl: (ctx, input, pipe) => {
-        const pipe_profiles = jb.toarray(ctx.profile.pipe);
-        const output = runPipe(ctx, pipe_profiles, input && input.output)
-    
+jb.component('carmi.not', {
+    type: 'carmi.exp',
+    params: [
+        { id: 'of', type: 'carmi.exp', essential: true },
+    ],
+    impl: (ctx, _of) => {
+        const input = _of.output;
+        const output = !input;
         return {
-            input: ctx.data && ctx.data.input, 
-            output,
-            ast: chainAst(ctx, input.ast, pipe_profiles)
+            input, output, exp: `not(${_of.exp})`
         }
-	}
+    }
+})
+
+jb.component('carmi.equalsTo', {
+    type: 'carmi.chain-exp',
+    params: [
+        { id: 'to', as: 'string', essential: true }
+    ],
+    impl: (ctx, to) => {
+        const input = ctx.data.output;
+        const output = input === to.output;
+        return {
+            input, output, exp: `equal(${to})`
+        }
+    }
+})
+
+jb.component('carmi.keys', {
+    type: 'carmi.chain-exp,aggregator',
+    impl: (ctx) => {
+        const input = ctx.data.output;
+        const output = Object.keys(input || {});
+        return { input, output, exp: `keys()` }
+    }
+})
+
+
+jb.component('carmi.get', {
+    type: 'carmi.chain-exp',
+    params: [
+        {id: 'prop', as: 'string'}
+    ],
+    impl: (ctx, prop) => {
+        const input = ctx.data.output;
+        const output = input[prop];
+        return { input, output, exp: `get('${prop}')` }
+    }
+})
+
+jb.component('carmi.plus', {
+    type: 'carmi.chain-exp',
+    params: [
+        {id: 'toAdd', as: 'string', essential: true}
+    ],
+    impl: (ctx, toAdd) => {
+        const input = ctx.data && ctx.data.output;
+        const _input = isNaN(Number(input)) ? input : Number(input)
+        const _toAdd = isNaN(Number(toAdd)) ? toAdd : Number(toAdd)
+        const output = _input + _toAdd;
+        const exp = `plus(${typeof _toAdd === 'number' ? _toAdd : "'" + _toAdd + "'"})`
+        return { input, output, exp }
+    }
+})
+
+jb.component('carmi.pipe', {
+    type: 'carmi.exp',
+    params: [
+        { id: 'input', type: 'carmi.exp', defaultValue :{$: 'root'} },
+        { id: 'pipe', type: 'carmi.chain-exp[]', dynamic: true },
+        { id: 'itemVar', as: 'string', defaultValue: 'val' },
+    ],
+    impl: (ctx, input, pipe, itemVar) => {
+        const pipe_profiles = jb.toarray(ctx.profile.pipe);
+        const {output, controls} = runPipe(ctx, pipe_profiles, input)
+        const exp_prefix = `map(${itemVar} => ${itemVar}.`
+        const exp = `${input.exp}.${exp_prefix}${chainExp(ctx.setVars({itemVar}), pipe_profiles)})`
+        const ctrl = () => (
+            {$: 'group', 
+                $vars: { exp_path: ctx.path },
+                controls: [ctrlOfElem(input)].concat([
+                    {$: 'label', title: exp_prefix }, 
+                    ...pipe().map(elem => ctrlOfElem(elem)),
+                    {$: 'label', title: ')' }
+                ])
+            })
+    
+        return {input: ctx.data, output, exp, ctrl }
+    }
 })
 
 jb.component('carmi.var', {
@@ -84,7 +199,8 @@ jb.component('carmi.var', {
 		{id: 'id', type: 'string', essential: true },
 		{id: 'exp', type: 'carmi.exp', essential: true },
 	],
-	impl: (ctx, id, exp) => ({ id, exp })
+    impl: (ctx, id, exp, carmi_exp) =>
+        ({ id, exp: exp.exp, ctrl: ctx.run(ctrlOfElem(exp)) })
 })
 
 jb.component('carmi.model', {
@@ -103,13 +219,13 @@ jb.component('carmi.model', {
         const model = {
         	set: setter(arg0)
         }
-        vars.forEach(v => model[v.id] = v.exp.ast);
+        vars.forEach(v => model[v.id] = eval(`(${v.exp})`));
         setters.forEach(v => model[v.id] = v.exp.ast);
 
-		const originalModel = { doubleNegated: root.map(val => val.not()), set: setter(arg0) };
-
-		const negated = root.map(val => val.not());
-		const model2 = { doubleNegated: root.map(val => val.not()).map(val => val.not()), set: setter(arg0) };
+		// const originalModel = { doubleNegated: root.keys(), set: setter(arg0) };
+		// const negated = root.map(val => val.not());
+		// const model2 = { doubleNegated: root.map(val => val.not()).map(val => val.not()), set: setter(arg0) };
+		// const model3 = { doubleNegated: root.map(val => val.not()).map(val => val.not()), set: setter(arg0) };
 
         const compiler = 'naive';
         return carmi.compile(model, { compiler, debug: true }).then(sourceCode=> {
@@ -120,37 +236,3 @@ jb.component('carmi.model', {
         })
     }
 })
-
-jb.component('carmi.doubleNegated', {
-  impl :{$: 'carmi.model', 
-    schemaByExample: [false, 1, 0], 
-    vars: [
-      {$: 'carmi.var', 
-        id: 'doubleNegated', 
-        exp :{$: 'carmi.chain', 
-          input :{$: 'carmi.root' }, 
-          pipe: [
-            {$: 'carmi.not' }, 
-            {$: 'carmi.not' }
-          ]
-        }
-      }
-    ]
-  }
-})
-
-jb.component('carmi.negated', {
-    impl :{$: 'carmi.model',
-        schemaByExample: [false, 1, 0],
-        vars: [
-            {$: 'carmi.var', id: 'negated',
-            	exp :{$: 'carmi.map', 
-            		array :{$: 'carmi.root'}, 
-            		mapTo :{$: 'carmi.not' }
-            	}
-            }
-        ]
-    }
-})
-
-new jb.jbCtx().run({$:'carmi.doubleNegated'}).then(mdl=> console.log(mdl))
