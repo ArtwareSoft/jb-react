@@ -3,7 +3,7 @@ var path = require('path');
 var fs = require('fs');
 require('./src/loader/jb-loader.js');
 
-var JBART_DIR = '/Users/shaiby/projects/jb-react/';
+var JBART_DIR = __dirname + '/';
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
 

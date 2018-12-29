@@ -13,7 +13,8 @@
   },
   "page_action": {
       "default_popup": "hello-world/hello-world.html"
-  },  
+  }, 
+  "content_security_policy": "script-src 'self' 'unsafe-eval' http://localhost:8082; object-src 'self'",
   "permissions": [
     "declarativeContent",
     "https://*/*",

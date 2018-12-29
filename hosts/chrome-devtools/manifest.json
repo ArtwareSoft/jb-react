@@ -4,12 +4,12 @@
   "manifest_version": 2,
   "description": "hello world example in panel dev tools",
   "homepage_url": "http://www.artwaresoft.com",
-
   "devtools_page": "devtools.html",
-
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
-  "web_accessible_resources": [ "hello-world/hello-world.html" ],
-
+  "content_security_policy": "script-src 'self' 'unsafe-eval' http://localhost:8082; object-src 'self'",
+  "web_accessible_resources": [
+    "hello-world/hello-world.html",
+    "http://localhost:8082/dist/jb-react-all.js"
+  ],
   "permissions": [
     "file:///*",
     "http://*/*",
