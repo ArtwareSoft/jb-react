@@ -1,7 +1,7 @@
 
 jb.component('carmi.model-editor', {
   type: 'control', 
-  params: [{ id: 'path', defaultValue: 'carmi.doubleNegated' }], 
+  params: [{ id: 'path', defaultValue: 'carmi.plus_plus' }], 
   impl :{$: 'group', 
     title: 'main', 
     style :{$: 'group.div', align: 'flex-start' }, 
@@ -29,13 +29,7 @@ jb.component('carmi.model-editor', {
                     controls: [
                       {$: 'group', 
                         title: '%vars[0]/id%', 
-                        controls: [
-                          ctx => ctx.data.vars[0].ctrl,
-                          {$: 'label', 
-                            title: '%vars[0]/exp%', 
-                            style :{$: 'label.p' }
-                          }
-                        ], 
+                        controls: [ctx => ctx.data.vars[0].ctrl], 
                         features :{$: 'group.dynamic-titles' }
                       }, 
                       {$: 'group', 
@@ -84,8 +78,7 @@ jb.component('carmi.model-editor', {
                     ], 
                     features :{$: 'group.wait', for: ctx => ctx.run({$: jb.val(ctx.vars.circuit)}) }
                   }
-                ], 
-                features: [{$: 'watch-ref', ref: '%$jbEditor_selection%' }]
+                ]
               }
             ], 
             features :{$: 'studio.watch-path', path: '%$circuit%', includeChildren: true }
@@ -93,11 +86,13 @@ jb.component('carmi.model-editor', {
           {$: 'group', 
             title: 'with jbEditor selection', 
             style :{$: 'layout.flex' }, 
-            controls: [{$: 'studio.jb-editor', path: '%$circuit%~impl' }], 
-            features: [{$: 'var', name: 'jbEditor_selection', value: '%$circuit%', mutable: true }]
+            controls: [{$: 'studio.jb-editor', path: '%$circuit%~impl' }]
           }
         ], 
-        features: [{$: 'watch-ref', ref: '%$circuit%' }]
+        features: [
+          {$: 'watch-ref', ref: '%$circuit%' }, 
+          {$: 'var', name: 'jbEditor_selection', value: '%$circuit%', mutable: true }
+        ]
       }
     ], 
     features: [

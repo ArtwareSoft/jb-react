@@ -2,8 +2,16 @@ const { Expr, Token, Setter, Expression, SetterExpression, SpliceSetterExpressio
 const { wrap, compile, chain, root, and, ternary, or, arg0, arg1, setter, splice, withName } = carmi;
 
 function ctrlOfElem(elem) {
-    return (elem.ctrl && elem.ctrl()) || { $: 'button', title: elem.exp, style :{$: 'button.href'} }
+    return (elem.ctrl && elem.ctrl()) || primitiveCtrl(elem.ctx.path, elem.exp)
 }
+
+const primitiveCtrl = (path, title) => ({$: 'button', 
+        title, 
+        style :{$: 'button.href'},
+        action :{$: 'write-value', value: path, to: '%$jbEditor_selection%'}
+})    
+
+
 
 function runPipe(ctx, profiles, data) {
     const start = Array.isArray(data) ? data : typeof data == 'object' ? data : [data];
@@ -45,11 +53,11 @@ jb.component('carmi.map', {
 	impl: (ctx, pipe, itemVar) => {
         const pipe_profiles = jb.toarray(ctx.profile.pipe);
         const input = ctx.data;
-        const output = runPipe(ctx, ctx.setVars(jb.obj(itemVar,input)), pipe_profiles, input);
+        const output = runPipe(ctx, ctx.setVars(jb.obj(itemVar,input)), pipe_profiles, input.output);
         const exp_prefix = `map(${itemVar} => ${itemVar}.`;
         const exp = exp_prefix + chainExp(ctx.setVars({itemVar}),pipe_profiles) + ')';
-        const ctrl = (sub_controls) => (
-            {$: 'group', 
+        const ctrl = () => (
+            {$: 'group', style: {$: 'layout.flex'},
                 $vars: { exp_path: ctx.path },
                 controls: [
                     {$: 'label', title: exp_prefix }, 
@@ -57,7 +65,7 @@ jb.component('carmi.map', {
                     {$: 'label', title: `)` }
                 ]
             })
-        return {input, output, exp, ctrl}
+        return {input, output, exp, ctrl, ctx}
     },
 })
 
@@ -77,8 +85,19 @@ jb.component('carmi.filter', {
             output = objFromEntries(jb.entries(input).filter(item => 
                 condition(ctx.setVars(jb.obj(itemVar,item[1])).setData(item[1]))))
         }
-        const exp = `filter(${itemVar} => ${itemVar}.${condition.exp(ctx.setVars({itemVar}))})`;
-        return {input, output, exp}
+
+        const cond = condition(ctx.setVars({itemVar}))
+        const exp_prefix = `filter(${itemVar} => ${itemVar}`
+        const exp = `${exp_prefix}.${cond.exp})`
+        const ctrl = () => (
+            {$: 'group', style: {$: 'layout.flex'},
+                controls: [
+                    primitiveCtrl(ctx.path, exp_prefix),
+                    ctrlOfElem(cond),
+                    {$: 'label', title: ')' }
+                ]
+            })
+        return {input, output, exp, ctrl, ctx}
     },
 })
 
@@ -88,16 +107,17 @@ jb.component('carmi.root', {
     impl: ctx => ({
         output: ctx.vars.root,
         exp: 'root',
+        ctx
     })
 })
 
 jb.component('carmi.negate', {
     type: 'carmi.chain-exp',
     impl: (ctx) => {
-        const input = ctx.data.output;
+        const input = ctx.data;
         const output = !input;
         return {
-            input, output, exp: `not()`
+            input, output, exp: `not()`, ctx
         }
     }
 })
@@ -111,7 +131,7 @@ jb.component('carmi.not', {
         const input = _of.output;
         const output = !input;
         return {
-            input, output, exp: `not(${_of.exp})`
+            input, output, exp: `not(${_of.exp})`, ctx
         }
     }
 })
@@ -122,10 +142,10 @@ jb.component('carmi.equalsTo', {
         { id: 'to', as: 'string', essential: true }
     ],
     impl: (ctx, to) => {
-        const input = ctx.data.output;
+        const input = ctx.data;
         const output = input === to.output;
         return {
-            input, output, exp: `equal(${to})`
+            input, output, exp: `equal(${to})`, ctx
         }
     }
 })
@@ -133,9 +153,9 @@ jb.component('carmi.equalsTo', {
 jb.component('carmi.keys', {
     type: 'carmi.chain-exp,aggregator',
     impl: (ctx) => {
-        const input = ctx.data.output;
+        const input = ctx.data;
         const output = Object.keys(input || {});
-        return { input, output, exp: `keys()` }
+        return { input, output, exp: `keys()`, ctx }
     }
 })
 
@@ -146,9 +166,9 @@ jb.component('carmi.get', {
         {id: 'prop', as: 'string'}
     ],
     impl: (ctx, prop) => {
-        const input = ctx.data.output;
+        const input = ctx.data;
         const output = input[prop];
-        return { input, output, exp: `get('${prop}')` }
+        return { input, output, exp: `get('${prop}')`, ctx }
     }
 })
 
@@ -158,12 +178,12 @@ jb.component('carmi.plus', {
         {id: 'toAdd', as: 'string', essential: true}
     ],
     impl: (ctx, toAdd) => {
-        const input = ctx.data && ctx.data.output;
+        const input = ctx.data;
         const _input = isNaN(Number(input)) ? input : Number(input)
         const _toAdd = isNaN(Number(toAdd)) ? toAdd : Number(toAdd)
         const output = _input + _toAdd;
         const exp = `plus(${typeof _toAdd === 'number' ? _toAdd : "'" + _toAdd + "'"})`
-        return { input, output, exp }
+        return { input, output, exp, ctx }
     }
 })
 
@@ -176,27 +196,26 @@ jb.component('carmi.pipe', {
     ],
     impl: (ctx, input, pipe, itemVar) => {
         const pipe_profiles = jb.toarray(ctx.profile.pipe);
-        const {output, controls} = runPipe(ctx, pipe_profiles, input)
-        const exp_prefix = `map(${itemVar} => ${itemVar}.`
-        const exp = `${input.exp}.${exp_prefix}${chainExp(ctx.setVars({itemVar}), pipe_profiles)})`
+        const {output, controls} = runPipe(ctx, pipe_profiles, input.output)
+        const exp_prefix = `.map(${itemVar} => ${itemVar}`
+        const exp = `${input.exp}${exp_prefix}.${chainExp(ctx.setVars({itemVar}), pipe_profiles)})`
         const ctrl = () => (
-            {$: 'group', 
-                $vars: { exp_path: ctx.path },
+            {$: 'group', style: {$: 'layout.flex'},
                 controls: [ctrlOfElem(input)].concat([
-                    {$: 'label', title: exp_prefix }, 
-                    ...pipe().map(elem => ctrlOfElem(elem)),
+                    primitiveCtrl(ctx.path, exp_prefix),
+                    ...[].concat.apply([],pipe().map(elem => [{$: 'label', title: '.'}, ctrlOfElem(elem)])),
                     {$: 'label', title: ')' }
                 ])
             })
     
-        return {input: ctx.data, output, exp, ctrl }
+        return {input: ctx.data, output, exp, ctrl, ctx }
     }
 })
 
 jb.component('carmi.var', {
 	type: 'carmi.var',
 	params: [
-		{id: 'id', type: 'string', essential: true },
+		{id: 'id', as: 'string', essential: true },
 		{id: 'exp', type: 'carmi.exp', essential: true },
 	],
     impl: (ctx, id, exp, carmi_exp) =>
@@ -206,7 +225,7 @@ jb.component('carmi.var', {
 jb.component('carmi.model', {
 	type: 'carmi.model',
 	params: [
-		{id: 'id', type: 'string', essential: true },
+		{id: 'id', as: 'string', essential: true },
 		{id: 'vars', type: 'carmi.var[]', essential: true, defaultValue: [], dynamic: true },
         {id: 'setters', type: 'carmi.setter[]', defaultValue: [] },
         {id: 'schemaByExample' },

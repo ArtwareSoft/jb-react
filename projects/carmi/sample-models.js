@@ -30,19 +30,20 @@ jb.component('team_leaders', {
     }
 })
 
-jb.component('carmi.doubleNegated', {
+jb.component('carmi.plus_plus', {
     impl :{$: 'carmi.model', 
     vars: [
       {$: 'carmi.var', 
-        id: 'doubleNegated', 
+        id: 'plus_plus', 
         exp :{$: 'carmi.pipe', 
           input :{$: 'carmi.root' }, 
           pipe: [
             {$: 'carmi.plus', toAdd: '5' }, 
+            {$: 'carmi.plus', toAdd: '7' }, 
           ]
         }
       }
-    ], 
+    ],
     schemaByExample: [10,20,30]
   }
   })
@@ -61,4 +62,3 @@ jb.component('carmi.doubleNegated', {
       }
   })
   
-//  new jb.jbCtx().run({$:'carmi.doubleNegated'}).then(mdl=> console.log(mdl))
