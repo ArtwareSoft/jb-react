@@ -15,7 +15,7 @@ function concatFiles(files,target) {
     fs.appendFileSync(JBART_DIR +target,fs.readFileSync(f) + ';\n\n'));
 }
 
-var jbReactFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree'],resources['codemirror']]).filter(x=>!x.match(/.css$/));
+var jbReactFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree'],'dist/export_jb.js']).filter(x=>!x.match(/.css$/));
 var studioFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree'],resources['codemirror']]).filter(x=>!x.match(/.css$/))
     .concat(resources.studio.map(x=>'projects/studio/studio-' + x + '.js'));
 var nodeFiles = [].concat.apply([],[resources['common'],resources['node'],resources['pretty-print'],resources['xml'],resources['jison'],resources['parsing']]).filter(x=>!x.match(/.css$/));

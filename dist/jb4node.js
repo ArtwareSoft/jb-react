@@ -992,9 +992,9 @@ jb.component('remove-from-array', {
 		{ id: 'itemToRemove', as: 'single', description: 'choose item or index' },
 		{ id: 'index', as: 'number', description: 'choose item or index' },
 	],
-	impl: (ctx,array,itemToRemove,index) => {
+	impl: (ctx,array,itemToRemove,_index) => {
 		const ar = jb.toarray(array);
-		const index = itemToRemove ? ar.indexOf(item) : index;
+		const index = itemToRemove ? ar.indexOf(item) : _index;
 		if (index != -1 && ar.length > index)
 			jb.splice(array,[[index,1]],ctx)
 	}

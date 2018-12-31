@@ -1,4 +1,4 @@
-type tgpType = 'data' | 'control' | 'action'
+type tgpType = 'data' | 'control' | 'action' | string
 type profile = ctrlPT | actionPT
 
 type param = {
@@ -11,8 +11,8 @@ type param = {
 }
 
 type cmp_def = {
-    type: tgpType,
-    params: [param],
+    type?: tgpType,
+    params?: [param],
     impl: profile,
 }
 
@@ -26,15 +26,15 @@ type ctx = {
     run(profile: profile),
     exp(exp: string),
     params: {any},
-    entries(object): []
+    entries(object): [any]
 }
 
 declare var jb: jbObj
 
-type buttonPT = {$: 'button', action: actionPT}
+type buttonPT = {$: 'button', action: actionType}
 type labelPT = {$: 'label', label: string}
 type ctrlPT = buttonPT | labelPT | ((ctx: ctx) => any)
 
 type writeValuePT = {$: 'write-value', value: string, to?: string  }
 type gotoUrlPT = {$: 'goto-url', url: string}
-type actionPT = writeValuePT | gotoUrlPT | ((ctx: ctx) => any)
+type actionType = writeValuePT | gotoUrlPT | ((ctx: ctx) => any)
