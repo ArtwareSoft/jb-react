@@ -1,6 +1,3 @@
-type tgpType = 'data' | 'control' | 'action' | string
-type profile = ctrlPT | actionPT
-
 type param = {
     id: string,
     type?: tgpType,
@@ -10,15 +7,9 @@ type param = {
     as?: 'string' | 'boolean' | 'number'
 }
 
-type cmp_def = {
-    type?: tgpType,
-    params?: [param],
-    impl: profile,
-}
-
 type jbObj = {
-    component(id: string, componentDef: cmp_def),
-    comps: [cmp_def]
+    component(id: string, componentDef: cmpDef),
+    comps: [cmpDef]
 }
 type ctx = {
     setVars({any}),
@@ -28,13 +19,17 @@ type ctx = {
     params: {any},
     entries(object): [any]
 }
+//declare var jb: jbObj
 
-declare var jb: jbObj
+//import __ from './jb-react-all.d.ts'
 
-type buttonPT = {$: 'button', action: actionType}
-type labelPT = {$: 'label', label: string}
-type ctrlPT = buttonPT | labelPT | ((ctx: ctx) => any)
+interface T<Name> {$: Name}
+interface buttonPT1 extends T<'button'>{action: actionType}
+interface labelPT1 extends T<'label'>{label: string}
 
-type writeValuePT = {$: 'write-value', value: string, to?: string  }
-type gotoUrlPT = {$: 'goto-url', url: string}
-type actionType = writeValuePT | gotoUrlPT | ((ctx: ctx) => any)
+type ctrlType1 = buttonPT1 | labelPT1 | ((ctx: ctx) => any)
+
+var x: ctrlType1 = {$: 'button'}
+// type writeValuePT = {$: 'write-value', value: string, to?: string  }
+// type gotoUrlPT = {$: 'goto-url', url: string}
+// type actionType = writeValuePT | gotoUrlPT | ((ctx: ctx) => any)

@@ -1465,7 +1465,7 @@ jb.component('on-next-timer', {
 	type: 'action',
 	params: [
 		{ id: 'action', type: 'action', dynamic: true, essential: true },
-		{ id: 'delay', type: 'number', defaultValue: 1}
+		{ id: 'delay', as: 'number', defaultValue: 1}
 	],
 	impl: (ctx,action,delay) =>
 		jb.delay(delay,ctx).then(()=>
@@ -11640,23 +11640,21 @@ jb.component('tabs.simple', {
 		`,
     features :[{$: 'group.init-tabs'}, {$: 'mdl-style.init-dynamic', query: '.mdl-js-button'}]
   }
-})
-;
+});
 
 jb.component('goto-url', {
 	type: 'action',
 	description: 'navigate/open a new web page, change href location',
 	params: [
 		{ id: 'url', as:'string', essential: true },
-		{ id: 'target', type:'enum', values: ['new tab','self'], defaultValue:'new tab', as:'string'}
+		{ id: 'target', as:'string', options: ['new tab','self'], defaultValue:'new tab'}
 	],
 	impl: (ctx,url,target) => {
 		var _target = (target == 'new tab') ? '_blank' : '_self';
 		if (!ctx.probe)
 			window.open(url,_target);
 	}
-})
-;
+});
 
 jb.component('mdl-style.init-dynamic', {
   type: 'feature',

@@ -42,8 +42,11 @@ function buildTS() {
 	}
 
 	function calcTypes() {
-		jb.entries(jb.comps).forEach(c=>
-			parseType(c[1].type).forEach(t=>jb.ts.types[t] = {}))
+		jb.entries(jb.comps)
+			.forEach(c=>
+				parseType(c[1].type)
+					.filter(t => t && t !== '*')
+					.forEach(t => jb.ts.types[t] = {}))
 	}
 
 	function TSforSingleType(type) {
@@ -58,6 +61,7 @@ function buildTS() {
 			'',
 			'// type ' + type,
 			typeLine,
+			TSforCompDef(fixId(type)),
 			...TSForPts
 		].join('\n')
 	}
@@ -65,6 +69,13 @@ function buildTS() {
 	function TSforPT(id, pt) {
 		// buttonPT = {$: 'button', action: actionType}
 		return `type ${fixId(id)}PT = {$: '${id}', ` + (pt.params || []).map(param=>TSforParam(param)) + '}'
+	}
+	function TSforCompDef(type) {
+		return `type cmp_def_${type}Type = {
+	type: '${type}',
+	params?: [param],
+	impl: ${type}Type,
+}`
 	}
 
 	function TSforParam(param) {
@@ -82,7 +93,10 @@ function buildTS() {
 	}
 
 	calcTypes();
-	const content = Object.keys(jb.ts.types).map(type=>TSforSingleType(type)).join('\n')
+	const content = [
+		...Object.keys(jb.ts.types).map(type=>TSforSingleType(type)),
+		'type cmpDef = ' + Object.keys(jb.ts.types).map(type=>`cmp_def_${fixId(type)}Type`).join(' | ')
+		].join('\n')
 	fs.writeFileSync('./dist/jb-ts-all.d.ts', content)
 }
 

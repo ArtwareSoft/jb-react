@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+        "noImplicitAny": true,
+        "plugins": [{
+            "name": "./tgp-typescript-plugin",
+        }]
+    }
+}
