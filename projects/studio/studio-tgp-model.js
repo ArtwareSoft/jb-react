@@ -286,7 +286,7 @@ Object.assign(st,{
 		st.PTsOfType(st.paramTypeOfPath(path)),
 
 	PTsOfType: type => {
-		var single = /([^\[]*)([])?/;
+		var single = /([^\[]*)(\[\])?/;
 		var types = [].concat.apply([],(type||'').split(',')
 			.map(x=>
 				x.match(single)[1])
