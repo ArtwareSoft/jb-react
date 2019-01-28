@@ -1,0 +1,18 @@
+{
+  "name": "jBart studio with chrome debugger",
+  "version": "0.3",
+  "manifest_version": 2,
+  "description": "jBart studio in dev tools",
+  "homepage_url": "http://www.artwaresoft.com",
+  "devtools_page": "devtools.html",
+  "content_security_policy": "script-src 'self' 'unsafe-eval' http://localhost:8082; unsafe-inline; object-src 'self'",
+  "web_accessible_resources": [
+    "studio/studio.html",
+    "http://localhost:8082/dist/studio-all.js"
+  ],
+  "permissions": [
+    "file:///*",
+    "http://*/*",
+    "https://*/*"
+  ]
+}

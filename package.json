@@ -22,7 +22,7 @@
     "openStudio": "start http://localhost:8082/projects/ui-tests/tests.html"
   },
   "dependencies": {
-    "arson": "^0.2.6",
+    "arson": "git+https://github.com/shaibenyehuda/arson.git",
     "codemirror": "^5.25.2",
     "d3": "^4.12.2",
     "dragula": "^3.7.2",
