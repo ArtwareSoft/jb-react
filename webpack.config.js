@@ -20,7 +20,6 @@ var studioFiles = [].concat.apply([],[resources['common'],resources['ui-common']
     .concat(resources.studio.map(x=>'projects/studio/studio-' + x + '.js'));
 var nodeFiles = [].concat.apply([],[resources['common'],resources['node'],resources['pretty-print'],resources['xml'],resources['jison'],resources['parsing']]).filter(x=>!x.match(/.css$/));
 
-
 console.log(jbReactFiles);
 
 concatFiles(studioFiles,'dist/studio-all.js');

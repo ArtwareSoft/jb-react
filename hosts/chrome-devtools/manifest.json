@@ -1,6 +1,6 @@
 {
   "name": "jBart in chrome tools",
-  "version": "0.1",
+  "version": "0.2",
   "manifest_version": 2,
   "description": "hello world example in panel dev tools",
   "homepage_url": "http://www.artwaresoft.com",

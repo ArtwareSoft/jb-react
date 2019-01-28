@@ -7791,15 +7791,6 @@ if (typeof $ != 'undefined' && $.fn)
     $.fn.findIncludeSelf = function(selector) {
 			return this.find(selector).addBack(selector); }
 
-function initWindowParent() {
-	if (jb.ui.parentWindow)
-	jb.ui.parentWindow = window
-	try {
-		const xx = window.parent.jb; // may throw on CORS error
-		jb.ui.parentWindow = window.parent;
-	} catch (e) {}
-}
-
 jb.jstypes.renderable = value => {
   if (value == null) return '';
   if (Array.isArray(value))
@@ -7824,8 +7815,10 @@ ui.preserveCtx = ctx => {
 
 ui.renderWidget = function(profile,elem) {
 	var previewElem;
-	if (window.parent != window && window.parent.jb)
-		window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
+	try {
+		if (window.parent != window && window.parent.jb)
+			window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
+	} catch(e) {}
 	class R extends jb.ui.Component {
 		constructor(props) {
 			super();
@@ -27230,26 +27223,8 @@ jb.component('studio.all', {
   impl :{$: 'group',
     controls: [
       {$: 'studio.top-bar' },
-      {$: 'studio.preview-widget',
-        features :{$: 'watch-ref', ref: '%$studio/page%' },
-        width: 1280,
-        height: 520
-      },
-      {$: 'studio.pages' },
       {$: 'studio.ctx-counters' },
     ],
-    features: [
-      {$: 'group.data', data: '%$studio/project%', watch: true },
-      {$: 'feature.init',
-        action: [
-          {$: 'url-history.map-url-to-resource',
-            params: ['project', 'page', 'profile_path'],
-            resource: 'studio',
-            base: 'studio'
-          }
-        ]
-      }
-    ]
   }
 })
 
@@ -29034,7 +29009,7 @@ Object.assign(st,{
 		st.PTsOfType(st.paramTypeOfPath(path)),
 
 	PTsOfType: type => {
-		var single = /([^\[]*)([])?/;
+		var single = /([^\[]*)(\[\])?/;
 		var types = [].concat.apply([],(type||'').split(',')
 			.map(x=>
 				x.match(single)[1])
@@ -30832,10 +30807,11 @@ jb.component('studio.open-property-menu', {
 
 (function() {
 var st = jb.studio;
-var _window = window.parent || window;
-var elec_remote = _window.require && _window.require('electron').remote;
-var fs = elec_remote && elec_remote.require('fs');
-var jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
+// var _window = window.parent || window;
+// var elec_remote = _window.require && _window.require('electron').remote;
+// var fs = elec_remote && elec_remote.require('fs');
+// var jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
+var jb_projectFolder = null;
 
 jb.component('studio.save-components', {
 	type: 'action,has-side-effects',

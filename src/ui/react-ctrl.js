@@ -250,15 +250,6 @@ if (typeof $ != 'undefined' && $.fn)
     $.fn.findIncludeSelf = function(selector) {
 			return this.find(selector).addBack(selector); }
 
-function initWindowParent() {
-	if (jb.ui.parentWindow)
-	jb.ui.parentWindow = window
-	try {
-		const xx = window.parent.jb; // may throw on CORS error
-		jb.ui.parentWindow = window.parent;
-	} catch (e) {}
-}
-
 jb.jstypes.renderable = value => {
   if (value == null) return '';
   if (Array.isArray(value))
@@ -283,8 +274,10 @@ ui.preserveCtx = ctx => {
 
 ui.renderWidget = function(profile,elem) {
 	var previewElem;
-	if (window.parent != window && window.parent.jb)
-		window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
+	try {
+		if (window.parent != window && window.parent.jb)
+			window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
+	} catch(e) {}
 	class R extends jb.ui.Component {
 		constructor(props) {
 			super();

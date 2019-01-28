@@ -125,7 +125,7 @@ type remove_from_arrayPT = {$: 'remove-from-array', array: dataType,itemToRemove
 type toggle_boolean_valuePT = {$: 'toggle-boolean-value', of: dataType}
 type touchPT = {$: 'touch', data: dataType}
 type runActionsPT = {$: 'runActions', actions: [actionType]}
-type on_next_timerPT = {$: 'on-next-timer', action: actionType,delay: dataType}
+type on_next_timerPT = {$: 'on-next-timer', action: actionType,delay: numberType}
 type http_postPT = {$: 'http.post', url: dataType,postData: dataType,jsonResult: dataType}
 type action_switchPT = {$: 'action.switch', cases: [action_switch_caseType],defaultAction: actionType}
 type open_dialogPT = {$: 'open-dialog', id: dataType,style: dialog_styleType,content: controlType,menu: controlType,title: dataType,onOK: actionType,modal: booleanType,features: [dialog_featureType]}
@@ -136,7 +136,7 @@ type dialog_close_allPT = {$: 'dialog.close-all', }
 type menu_open_context_menuPT = {$: 'menu.open-context-menu', menu: menu_optionType,popupStyle: dialog_styleType,features: [dialog_featureType]}
 type itemlist_container_addPT = {$: 'itemlist-container.add', }
 type itemlist_container_deletePT = {$: 'itemlist-container.delete', item: dataType}
-type goto_urlPT = {$: 'goto-url', url: dataType,target: dataType}
+type goto_urlPT = {$: 'goto-url', url: dataType,target: enumType}
 type tree_regain_focusPT = {$: 'tree.regain-focus', }
 type tree_redrawPT = {$: 'tree.redraw', strong: booleanType}
 
