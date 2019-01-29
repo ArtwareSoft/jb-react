@@ -115,8 +115,9 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'node_modules/babel-standalone/babel.js',
         'dist/babel-ext.js'
       ],
-      'node-adapter' : [ 'src/node-adapter/node-adapter.js' ],
-      'pretty-print' : [ 'src/misc/pretty-print.js' ],
+      'node-adapter': [ 'src/node-adapter/node-adapter.js' ],
+      'pretty-print': [ 'src/misc/pretty-print.js' ],
+      'object-encoder': [ 'src/misc/object-encoder.js' ],
       'xml': [ 'src/misc/xml.js' ],
       'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
       'parsing': [ 'src/misc/parsing.js' ],
