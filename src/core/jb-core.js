@@ -752,3 +752,5 @@ Object.assign(jb,{
   resourceChange: _ =>
     jb.valueByRefHandler.resourceChange,
 })
+if (typeof module != 'undefined')
+  module.exports = jb
