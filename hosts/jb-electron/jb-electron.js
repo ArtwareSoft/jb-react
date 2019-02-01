@@ -25,9 +25,9 @@ app.on('ready', _ => {
   // Create the browser window.
   win = new BrowserWindow({width: 1400, height: 800, webPreferences: { nodeIntegration: true }});
   win.electron = true;
-  win.jbartBase = __dirname.replace(/\\jb-electron$/,'');
-  var sites = externalSites(`${win.jbartBase}/sites.json`) || {};
-  console.log(`sites from: ${win.jbartBase}/sites.json`,sites);
+  win.jbartBase = __dirname; //.replace(/\\jb-electron$/,'');
+  var sites = externalSites(`${win.jbartBase}/../../sites.json`) || {};
+  console.log(`sites from: ${win.jbartBase}/../../sites.json`,sites);
 
   protocol.interceptFileProtocol('file',(req,callback) => {
     var path = req.url;

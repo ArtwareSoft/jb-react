@@ -13,16 +13,15 @@
   ],
   "scripts": {
     "start": "npm run studio",
-    "jb": "node_modules\\electron\\dist\\electron jb-electron",
-    "eStduio": "node_modules\\electron\\dist\\electron jb-electron -path:projects/studio/cards",
-    "eTests": "node_modules\\electron\\dist\\electron jb-electron -path:projects/ui-tests/tests.html",
+    "electron": "node_modules/.bin/electron hosts/jb-electron",
+    "eStudio": "node_modules/.bin/electron hosts/jb-electron -path:projects/studio/cards",
+    "eTests": "node_modules/.bin/electron hosts/jb-electron -path:projects/ui-tests/tests.html",
     "dev": "concurrently \"npm run webpack\" \"npm run studio\" ",
-    "webpack": "node_modules/webpack/bin/webpack.js --watch",
+    "build": "node_modules/.bin/webpack",
     "studio": "npm run openStudio & node jb-studio-server.js",
     "openStudio": "start http://localhost:8082/projects/ui-tests/tests.html"
   },
   "dependencies": {
-    "arson": "git+https://github.com/shaibenyehuda/arson.git",
     "codemirror": "^5.25.2",
     "d3": "^4.12.2",
     "dragula": "^3.7.2",
