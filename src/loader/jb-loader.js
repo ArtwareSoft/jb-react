@@ -1,5 +1,6 @@
 var resources = Object.assign((typeof resources != 'undefined' ? resources : {}), {
       'common': [
+        'src/misc/wSpy.js',
         'src/core/jb-core.js',
         'src/core/jb-common.js',
       ],
@@ -121,6 +122,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       'xml': [ 'src/misc/xml.js' ],
       'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
       'parsing': [ 'src/misc/parsing.js' ],
+      'spy': [ 'src/misc/spy.js' ],
       'node': [ 'src/core/jb-node.js' ],
 });
 

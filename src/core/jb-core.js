@@ -1,5 +1,20 @@
 var jb = (function() {
+function jb_spy() {
+  if (typeof window === 'object' && window.wSpy)
+    window.wSpy.log(...arguments)
+}
+
+const funcTitle = (profile,parentParam,context) =>
+  (compName(profile,parentParam) || profile || '') + '@' + context.path
+
 function jb_run(context,parentParam,settings) {
+  jb_spy('req', ['',context,parentParam,settings], {funcTitle: () => funcTitle(context.profile, parentParam, context)})
+  const res = do_jb_run(...arguments);
+  jb_spy('res', ['', res, context,parentParam,settings], {funcTitle: () => funcTitle(context.profile, parentParam, context)})
+  return res;
+}
+
+function do_jb_run(context,parentParam,settings) {
   try {
     const profile = context.profile;
     if (context.probe && (!settings || !settings.noprobe)) {
