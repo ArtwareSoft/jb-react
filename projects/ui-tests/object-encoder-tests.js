@@ -34,7 +34,7 @@ jb.component('data-test.object-encoder.encode-jb time', {
             return Date.now() - time
        },
        expectedResult : ctx => { 
-           return ctx.data < 200 // less than 200 msec
+           return ctx.data < 500 // less than 200 msec
        }
    },
 })

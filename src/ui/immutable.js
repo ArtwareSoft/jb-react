@@ -29,7 +29,7 @@ class ImmutableWithPath {
       return jb.logError('writeValue: null ref');
 
     if (this.val(ref) === value) return;
-    jb.logPerformance('writeValue',value,ref,srcCtx);
+    jb.log('writeValue',['immutable',value,ref,srcCtx]);
     if (ref.$jb_val)
       return ref.$jb_val(value);
     return this.doOp(ref,{$set: value},srcCtx)
@@ -67,6 +67,7 @@ class ImmutableWithPath {
     return this.doOp(ref,{$merge: value},srcCtx)
   }
   doOp(ref,opOnRef,srcCtx,doNotNotify) {
+    jb.log('immutable',['doOp',...arguments]);
     if (!this.isRef(ref))
       ref = this.asRef(ref);
     if (!ref) return;
@@ -137,6 +138,7 @@ class ImmutableWithPath {
     return ref && (ref.$jb_path || ref.$jb_val);
   }
   objectProperty(obj,prop) {
+    jb.log('immutable',['objectProperty',...arguments]);
     if (!obj)
       return jb.logError('objectProperty: null obj');
     var objRef = this.asRef(obj);
@@ -153,6 +155,7 @@ class ImmutableWithPath {
     }
   }
   refresh(ref,lastOpEvent,silent) {
+    jb.log('immutable',['refresh',...arguments]);
     if (!ref) debugger;
     try {
       var path = ref.$jb_path, new_ref = {};
@@ -235,6 +238,7 @@ class ImmutableWithPath {
       leaf.$jb_id = leaf.$jb_id || (++this.pathId);
   }
   pathOfObject(obj,lookIn,depth) {
+    jb.log('path-of-object',['pathOfObject',...arguments]);
     if (!obj || !lookIn || typeof lookIn != 'object' || typeof obj != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50)
       return;
     if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1)
@@ -263,17 +267,22 @@ class ImmutableWithPath {
         .filter(e=>
             e.ref.$jb_path[0] == ref.$jb_path[0])
         .flatMap(e=> {
+          const path = e.ref.$jb_path.join('~'), ref_path = (ref.$jb_path||[]).join('~');
+          jb.log('immutable',['ref changed check',path,ref_path,e, ...arguments]);
           this.refresh(ref,e,true);
           if (ref.$jb_invalid) {
             settings && settings.onError && settings.onError();
             return [];
           }
-          const path = e.ref.$jb_path.join('~'), ref_path = (ref.$jb_path||[]).join('~');
           const _continue = ref_path.indexOf(path) == 0 || settings.includeChildren && path.indexOf(ref_path) == 0;
+          jb.log('immutable',['ref changed after check',path,ref_path,_continue,e, ...arguments]);
           return _continue ? [e] : [];
         })
         .distinctUntilChanged((e1,e2)=>
           e1.newVal == e2.newVal)
+        .do(e=>{
+          jb.log('writeValue',['ref changed triggered',(ref.$jb_path||[]).join('~'),e, ...arguments]);
+        })
     }
     return jb.rx.Observable.of(jb.val(ref));
   }

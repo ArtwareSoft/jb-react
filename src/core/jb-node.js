@@ -4,7 +4,7 @@ var valueByRefHandlerWithjbParent = {
     return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
   },
   writeValue: function(to,value,srcCtx) {
-    jb.logPerformance('writeValue',value,to,srcCtx);
+    jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
     if (!to) return;
     if (to.$jb_val)
       to.$jb_val(this.val(value))

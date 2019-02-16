@@ -20,7 +20,7 @@
             var st = jb.studio
             this.maxTime = maxTime || 50
             this.startTime = new Date().getTime()
-            jb.logPerformance('probe','start',this)
+            jb.log('probe',['runCircuit',pathToTrace, this])
             this.result = []
             this.result.visits = 0
             this.probe[pathToTrace] = this.result
@@ -46,7 +46,7 @@
               .then(() =>{
                     this.completed = true
                     this.totalTime = new Date().getTime()-this.startTime
-                    jb.logPerformance('probe','finished',this)
+                    jb.log('probe',['completed',pathToTrace, this.result, this.totalTime, this])
                     // make values out of ref
                     this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)})
                     st.previewjb.valueByRefHandler.resources(initial_resources)
@@ -115,7 +115,7 @@
             }
             var now = new Date().getTime()
             if (!this.outOfTime && now - this.startTime > this.maxTime && !context.vars.testID) {
-                jb.logPerformance('probe','out of time',this,now)
+                jb.log('probe',['out of time',context.path, context,this,now])
                 this.outOfTime = true
                 //throw 'out of time';
             }

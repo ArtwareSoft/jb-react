@@ -64,12 +64,13 @@ jb.component('editable-text.helper-popup', {
       cmp.closePopup = _ =>
         cmp.popup() && cmp.popup().close();
       cmp.refreshSuggestionPopupOpenClose = _ => {
-          jb.logPerformance('helper-popup', ''+ctx.params.showHelper(cmp.ctx.setData(input)), ''+input.value );
-          if (!ctx.params.showHelper(cmp.ctx.setData(input))) {
-            jb.logPerformance('helper-popup', 'close popup' );
+          const showHelper = ctx.params.showHelper(cmp.ctx.setData(input))
+          jb.log('helper-popup', ['refreshSuggestionPopupOpenClose', showHelper,input.value,cmp.ctx,cmp,ctx] );
+          if (!showHelper) {
+            jb.log('helper-popup', ['close popup', showHelper,input.value,cmp.ctx,cmp,ctx])
             cmp.closePopup();
           } else if (!cmp.popup()) {
-            jb.logPerformance('helper-popup', 'open popup' );
+            jb.log('helper-popup', ['open popup', showHelper,input.value,cmp.ctx,cmp,ctx])
             cmp.openPopup(cmp.ctx)
           }
       }
@@ -80,8 +81,12 @@ jb.component('editable-text.helper-popup', {
       cmp.ctx.vars.selectionKeySource.cmp = cmp;
 
       jb.delay(500).then(_=>{
-        cmp.onkeydown.filter(e=> e.keyCode == 13 && !ctx.params.showHelper(cmp.ctx.setData(input)) ).subscribe(_=>
-          ctx.params.onEnter(cmp.ctx));
+        cmp.onkeydown.filter(e=> e.keyCode == 13).subscribe(_=>{
+          const showHelper = ctx.params.showHelper(cmp.ctx.setData(input))
+          jb.log('helper-popup', ['onEnter', showHelper, input.value,cmp.ctx,cmp,ctx])
+          if (!showHelper)
+            ctx.params.onEnter(cmp.ctx)
+        });
         cmp.onkeydown.filter(e=> e.keyCode == 27 ).subscribe(_=>
           ctx.params.onEsc(cmp.ctx));
       })

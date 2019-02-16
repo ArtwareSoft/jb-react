@@ -1,9 +1,9 @@
 (function() {
 'use strict'
 const spySettings = { 
-    moreLogs: '', 
-	includeLogs: 'jb_run',
-	stackFilter: /wSpy/i,
+    moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,probe,setState,render-result,immutable,path-of-object', 
+	includeLogs: 'exception,focus',
+	stackFilter: /wSpy|jb_spy|Object.log/i,
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
 }
 
@@ -15,11 +15,11 @@ function initSpy({Error, frame, settings, wSpyParam, memoryUsage}) {
     
     return {
 		ver: 7,
-		logs: {},
+		logs: { $index: 1, $counters: {}},
 		wSpyParam,
 		otherSpies: [],
 		enabled: () => true,
-		log(logName, record, {takeFrom, funcTitle}) {
+		log(logName, record, {takeFrom, funcTitle} = {}) {
 			const init = () => {
 				if (!this.includeLogs) {
 					const includeLogsFromParam = (wSpyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
@@ -31,15 +31,16 @@ function initSpy({Error, frame, settings, wSpyParam, memoryUsage}) {
 				}
 			}
 			const shouldLog = (logName, record) =>
-				Array.isArray(record) && this.includeLogs[logName] && !settings.extraIgnoredEvents.includes(record[0])
+				wSpyParam === 'all' || Array.isArray(record) && this.includeLogs[logName] && !settings.extraIgnoredEvents.includes(record[0])
 
 			init()
+			this.logs[logName] = this.logs[logName] || []
+			this.logs.$counters[logName] = this.logs.$counters[logName] || 0
+			this.logs.$counters[logName]++
 			if (!shouldLog(logName, record)) {
 				return
 			}
-			this.logs.index = this.logs.index || 1
-			this.logs[logName] = this.logs[logName] || []
-			record.index = this.logs.index++
+			record.index = this.logs.$index++
 			record.source = this.source(takeFrom)
 			const now = new Date()
 			record._time = `${now.getSeconds()}:${now.getMilliseconds()}`

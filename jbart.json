@@ -1,8 +1,8 @@
 {
-  "open_source_cmd_vsCode_mac": "code -r -g",
+  "open_source_cmd_vsCode": "code -r -g",
   "open_source_cmd_atom": "atom ",
   "open_source_cmd_sublime": "\"c:\\Program Files\\sublime Text 3\\\"subl ",
-  "open_source_cmd": "\"c:\\Program Files\\sublime Text 3\\\"subl ",
+  "open_source_cmd": "code -r -g ",
   "port": 8082,
   "http_dir": "./",
   "allowCmd": false

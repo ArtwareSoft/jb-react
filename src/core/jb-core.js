@@ -93,6 +93,8 @@ function do_jb_run(context,parentParam,settings) {
         return castToParam(out,parentParam);
     }
   } catch (e) {
+    jb_spy('exception', [e && e.message, e, context,parentParam,settings])
+
     if (context.vars.$throw) throw e;
     logException(e,'exception while running run');
   }
@@ -569,13 +571,12 @@ let logs = {};
 function logError(errorStr,p1,p2,p3) {
   logs.error = logs.error || [];
   logs.error.push(errorStr);
+  jb_spy('error',[...arguments])
   console.error(errorStr,p1,p2,p3);
 }
 
-function logPerformance(type,p1,p2,p3) {
-//  const types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
-  if ((jb.issuesTolog || []).indexOf(type) == -1) return; // filter. TBD take from somewhere else
-  console.log(type, p1 || '', p2 || '', p3 ||'');
+function log() {
+  jb_spy(...arguments)
 }
 
 function logException(e,errorStr,p1,p2,p3) {
@@ -614,7 +615,7 @@ const valueByRefHandlerWithjbParent = {
     return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
   },
   writeValue: function(to,value,srcCtx) {
-    jb.logPerformance('writeValue',value,to,srcCtx);
+    jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
     if (!to) return;
     if (to.$jb_val)
       to.$jb_val(this.val(value))
@@ -644,7 +645,7 @@ let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 
 return {
   run: jb_run,
-  jbCtx, expression, bool_expression, profileType, compName, logError, logPerformance, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
+  jbCtx, expression, bool_expression, profileType, compName, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
   valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, 
   ctxCounter: _ => ctxCounter
 }

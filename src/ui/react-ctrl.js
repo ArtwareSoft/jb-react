@@ -61,7 +61,7 @@ class JbComponent {
 			    } catch(e) { jb.logException(e,'') }
 			}
 			render(props,state) {
-				jb.logPerformance('render',state,props,this);
+				jb.log('render',[this.ctx.path, state,props,this]);
 				if (!jbComp.template || typeof jbComp.template != 'function')
 					return ui.h('span',{display: 'none'});
 				//console.log('render',jb.studio.shortTitle(this.ctx.path));
@@ -71,6 +71,7 @@ class JbComponent {
 						if (typeof vdom == 'object')
 							vdom = modifier(vdom,this,state,ui.h) || vdom
 					});
+					jb.log('render-result',[this.ctx.path, vdom, state,props,this]);
 					return vdom;
 				} catch (e) {
 					jb.logException('render',e);
@@ -227,14 +228,15 @@ ui.garbageCollectCtxDictionary = function(force) {
 ui.focus = function(elem,logTxt,srcCtx) {
 	if (!elem) debugger;
 	// block the preview from stealing the studio focus
+	jb.log('focus',['request',logTxt,elem,srcCtx]);
 	var now = new Date().getTime();
 	var lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity']);
     if (jb.studio.previewjb == jb && lastStudioActivity && now - lastStudioActivity < 1000)
     	return;
-    jb.delay(1).then(_=> {
-   	    jb.logPerformance('focus',logTxt,elem,srcCtx);
-    	elem.focus()
-    })
+  jb.delay(1).then(_=> {
+   	jb.log('focus',['apply',logTxt,elem,srcCtx]);
+    elem.focus()
+  })
 }
 
 ui.wrapWithLauchingElement = (f,context,elem) =>
@@ -342,7 +344,7 @@ ui.limitStringLength = function(str,maxLength) {
 ui.stateChangeEm = new jb.rx.Subject();
 
 ui.setState = function(cmp,state,opEvent,watchedAt) {
-	jb.logPerformance('setState',cmp.ctx,state);
+	jb.log('setState',[cmp.ctx.path,state, ...arguments]);
 	if (state == null && cmp.refresh)
 		cmp.refresh();
 	else
