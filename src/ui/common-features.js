@@ -114,9 +114,11 @@ jb.component('var', {
           return ctx.setVars(jb.obj(name, value(ctx)))
         } else {
           cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
-          var refToResource = jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]);
+          const fullName = name + ':' + cmp.resourceId
+          jb.resource(fullName, jb.val(value(ctx)));
+          var refToResource = jb.valueByRefHandler.refOfPath([fullName]);
           //jb.writeValue(refToResource,value(ctx.setData(cmp)),context);
-          jb.writeValue(refToResource, jb.val(value(ctx)), context);
+          //jb.writeValue(refToResource, jb.val(value(ctx)), context);
           return ctx.setVars(jb.obj(name, refToResource));
         }
       }

@@ -21,7 +21,10 @@ function compsRef(val,opEvent) {
 }
 
 st.compsRefHandler = new jb.ui.ImmutableWithPath(compsRef);
-st.compsRefHandler.resourceChange.subscribe(_=>st.lastStudioActivity= new Date().getTime())
+st.compsRefHandler.resourceChange.subscribe(e=>{
+	jb.log('script-change',[e.path.join('.'),e]);
+	st.lastStudioActivity= new Date().getTime()
+})
 // adaptors
 
 Object.assign(st,{

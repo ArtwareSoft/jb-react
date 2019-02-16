@@ -2,7 +2,7 @@
 'use strict'
 const spySettings = { 
     moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,probe,setState,render-result,immutable,path-of-object', 
-	includeLogs: 'exception,focus',
+	includeLogs: 'exception,focus,script-change',
 	stackFilter: /wSpy|jb_spy|Object.log/i,
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
 }
