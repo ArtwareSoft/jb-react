@@ -43,7 +43,7 @@ jb.component('url-history.map-url-to-resource', {
 	    	.startWith(jb.ui.location.path())
 	    	.distinctUntilChanged()
 	    	.subscribe(url => {
-		    	jb.ui.location.push(url);
+		    	jb.ui.location.push(Object.assign({},jb.ui.location.location, {pathname: url}));
 		    	var obj = urlToObj(url);
 		    	params.forEach(p=>
 		    		jb.writeValue(context.exp(`%$${resource}/${p}%`,'ref'),jb.tostring(obj[p])));

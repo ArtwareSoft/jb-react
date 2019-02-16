@@ -6,10 +6,6 @@ class NodeLine extends jb.ui.Component {
 		this.state.expanded = props.tree.expanded[props.path];
 		var tree = props.tree, path = props.path;
 		var model = tree.nodeModel;
-		this.setState({
-			title: model.title(path,!tree.expanded[path]),
-			icon: model.icon ? model.icon(path) : 'radio_button_unchecked'
-		})
 
 		this.state.flip = _ => {
 			tree.expanded[path] = !(tree.expanded[path]);
@@ -17,19 +13,15 @@ class NodeLine extends jb.ui.Component {
 			tree.redraw();
 		};
 	}
-	componentWillUpdate() {
-		var tree = this.props.tree, path = this.props.path;
-		var model = tree.nodeModel;
-		this.setState({
-			title: model.title(path,!tree.expanded[path]),
-			icon: model.icon ? model.icon(path) : 'radio_button_unchecked'
-		})
-	}
+
 	render(props,state) {
 		var h = jb.ui.h, tree= props.tree, model = props.tree.nodeModel;
 
-		var collapsed = tree.expanded[props.path] ? '' : ' collapsed';
-		var nochildren = model.isArray(props.path) ? '' : ' nochildren';
+		const path = props.path;
+		const collapsed = tree.expanded[path] ? '' : ' collapsed';
+		const nochildren = model.isArray(path) ? '' : ' nochildren';
+		const title = model.title(path,!tree.expanded[path]);
+		const icon = model.icon ? model.icon(path) : 'radio_button_unchecked';
 
 		return h('div',{ class: `treenode-line${collapsed}`},[
 			h('button',{class: `treenode-expandbox${nochildren}`, onclick: _=> state.flip() },[
@@ -37,8 +29,8 @@ class NodeLine extends jb.ui.Component {
 				h('div',{ class: 'line-lr'}),
 				h('div',{ class: 'line-tb'}),
 			]),
-			h('i',{class: 'material-icons', style: 'font-size: 16px; margin-left: -4px; padding-right:2px'},state.icon),
-			h('span',{class: 'treenode-label'}, state.title),
+			h('i',{class: 'material-icons', style: 'font-size: 16px; margin-left: -4px; padding-right:2px'}, icon),
+			h('span',{class: 'treenode-label'}, title),
 		])
 	}
 }
@@ -51,6 +43,7 @@ class TreeNode extends jb.ui.Component {
 		var h = jb.ui.h, tree = props.tree, path = props.path, model = props.tree.nodeModel;
 		var disabled = model.disabled && model.disabled(props.path) ? 'jb-disabled' : '';
 		var clz = [props.class, model.isArray(path) ? 'jb-array-node': '',disabled].filter(x=>x).join(' ');
+		jb.log('render-tree',['Node',props.path,...arguments])
 
 		return h('div',{class: clz, path: props.path},
 			[h(NodeLine,{ tree: tree, path: path })].concat(!tree.expanded[path] ? [] : h('div',{ class: 'treenode-children'} ,
@@ -268,8 +261,10 @@ jb.component('tree.redraw', {
   params: [
     { id: 'strong', type: 'boolean', as: 'boolean' }
   ],
-	impl : (ctx,strong) =>
-		ctx.vars.$tree && ctx.vars.$tree.regainFocus && ctx.vars.$tree.redraw(strong)
+	impl : (ctx,strong) => {
+		jb.log('tree',['redraw',ctx.path, ...arguments]);
+		return ctx.vars.$tree && ctx.vars.$tree.redraw && ctx.vars.$tree.redraw(strong)
+	}
 })
 
 jb.component('tree.drag-and-drop', {

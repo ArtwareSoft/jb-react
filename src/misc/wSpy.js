@@ -106,7 +106,10 @@ function initSpy({Error, frame, settings, wSpyParam, memoryUsage}) {
 			const countFromEnd = -1 * (count || settings.DEFAULT_LOGS_COUNT)
 			Object.keys(this.logs).forEach(log => this.logs[log] = this.logs[log].slice(countFromEnd))
 		},
-		clear() {
+		setLogs(logs) {
+			this.includeLogs = (logs||'').split(',').reduce((acc,log) => {acc[log] = true; return acc },{})
+		},
+		clear(logs) {
 			Object.keys(this.logs).forEach(log => this.logs[log] = [])
 		},
         search(pattern) {

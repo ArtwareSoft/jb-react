@@ -89,7 +89,7 @@ jb.component('studio.open-component-in-jb-editor', {
   }
 })
 
-jb.component('studio.jb-editor', {
+jb.component('studio.jb-editor-inteli-tree', {
   type: 'control',
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'group',
@@ -116,86 +116,102 @@ jb.component('studio.jb-editor', {
           {$: 'css.width', width: '500', selector: 'jb-editor' },
           {$: 'studio.watch-script-changes' }
         ]
+    }],
+  }
+})
+
+jb.component('studio.probe-data-view', {
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl:{$: 'group',
+  controls: [
+    {$: 'label',
+      title: '{? closest Path: %$probeResult/closestPath% ?}',
+      features :{$: 'css', css: '{ color: red}' }
+    },
+    {$: 'label', title: 'circuit %$probeResult/circuit.$%, time: %$probeResult/totalTime% mSec' },
+    {$: 'table',
+      items :{
+        $pipeline: [
+          {$: 'studio.prob-result-customization', probeResult: '%$probeResult%' },
+          '%$probeResult/result%',
+          {$: 'slice', end: '%$maxInputs%' }
+        ]
       },
+      fields: [
+        {$: 'field.control',
+          title: 'in (%$probeResult/result/length%)',
+          control :{$: 'studio.data-browse', obj: '%in/data%' },
+          width: '100'
+        },
+        {$: 'field.control',
+          title: 'out',
+          control :{$: 'studio.data-browse', obj: '%out%'
+          },
+          width: '100'
+        }
+      ],
+      style :{$: 'table.mdl', classForTable: 'mdl-data-table', classForTd: 'mdl-data-table__cell--non-numeric' },
+      features: [
+        {$: 'css', css: '{white-space: normal}' },
+        {$: 'watch-ref', ref: '%$maxInputs%' }
+      ]
+    },
+    {$: 'button',
+      title: 'show (%$probeResult/result/length%)',
+      action :{$: 'write-value',
+        style :{$: 'dialog.popup' },
+        content :{$: 'table',
+          items: '%$obj%',
+          fields :{$: 'field.control',
+            title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] },
+            control :{$: 'studio.data-browse', a: 'label', obj: '%%', width: 200 }
+          },
+          style :{$: 'table.mdl',
+            classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
+            classForTd: 'mdl-data-table__cell--non-numeric'
+          }
+        },
+        to: '%$maxInputs%',
+        value: '100'
+      },
+      style :{$: 'button.href' },
+      features: [
+        {$: 'watch-ref', ref: '%$maxInputs%' },
+        {$: 'hidden',
+          showCondition :{ $and: ['%$maxInputs% == 5', '%$probeResult/result/length% > 5'] }
+        }
+      ]
+    }
+  ],
+  features: [
+    {$: 'group.wait',
+      for :{$: 'studio.probe', path: '%$path%' },
+      loadingControl :{$: 'label', title1: 'calculating...', title: '...' },
+      varName: 'probeResult'
+    },
+    {$: 'var', name: 'maxInputs', value: '5', mutable: true }
+  ]
+} 
+})
+
+jb.component('studio.jb-editor', {
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'group',
+    title: 'main',
+    style :{$: 'layout.horizontal-fixed-split', align: 'space-between', direction: '', leftWidth: '350', rightWidth: '500', spacing: 3 },
+    controls: [ 
+      {$: 'studio.jb-editor-inteli-tree', path: '%$path%'},
       {$: 'group',
-        title: 'watch selection',
+        title: 'inteli preview',
         controls: [
           {$: 'group',
             title: 'hide if selection empty',
             controls: [
               {$: 'group',
                 title: 'watch selection content',
-                controls :{$: 'group',
-                  title: 'wait for probe',
-                  controls: [
-                    {$: 'label',
-                      title: '{? closest Path: %$probeResult/closestPath% ?}',
-                      features :{$: 'css', css: '{ color: red}' }
-                    },
-                    {$: 'label', title: 'circuit %$probeResult/circuit.$%, time: %$probeResult/totalTime% mSec' },
-                    {$: 'table',
-                      items :{
-                        $pipeline: [
-                          {$: 'studio.prob-result-customization', probeResult: '%$probeResult%' },
-                          '%$probeResult/result%',
-                          {$: 'slice', end: '%$maxInputs%' }
-                        ]
-                      },
-                      fields: [
-                        {$: 'field.control',
-                          title: 'in (%$probeResult/result/length%)',
-                          control :{$: 'studio.data-browse', obj: '%in/data%' },
-                          width: '100'
-                        },
-                        {$: 'field.control',
-                          title: 'out',
-                          control :{$: 'studio.data-browse', obj: '%out%'
-                          },
-                          width: '100'
-                        }
-                      ],
-                      style :{$: 'table.mdl', classForTable: 'mdl-data-table', classForTd: 'mdl-data-table__cell--non-numeric' },
-                      features: [
-                        {$: 'css', css: '{white-space: normal}' },
-                        {$: 'watch-ref', ref: '%$maxInputs%' }
-                      ]
-                    },
-                    {$: 'button',
-                      title: 'show (%$probeResult/result/length%)',
-                      action :{$: 'write-value',
-                        style :{$: 'dialog.popup' },
-                        content :{$: 'table',
-                          items: '%$obj%',
-                          fields :{$: 'field.control',
-                            title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] },
-                            control :{$: 'studio.data-browse', a: 'label', obj: '%%', width: 200 }
-                          },
-                          style :{$: 'table.mdl',
-                            classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
-                            classForTd: 'mdl-data-table__cell--non-numeric'
-                          }
-                        },
-                        to: '%$maxInputs%',
-                        value: '100'
-                      },
-                      style :{$: 'button.href' },
-                      features: [
-                        {$: 'watch-ref', ref: '%$maxInputs%' },
-                        {$: 'hidden',
-                          showCondition :{ $and: ['%$maxInputs% == 5', '%$probeResult/result/length% > 5'] }
-                        }
-                      ]
-                    }
-                  ],
-                  features: [
-                    {$: 'group.wait',
-                      for :{$: 'studio.probe', path: '%$jbEditor_selection%' },
-                      loadingControl :{$: 'label', title1: 'calculating...', title: '...' },
-                      varName: 'probeResult'
-                    },
-                    {$: 'var', name: 'maxInputs', value: '5', mutable: true }
-                  ]
-                },
+                controls :{$: 'studio.probe-data-view', path: '%$jbEditor_selection%' },
                 features :{$: 'watch-ref',
                   ref :{$: 'studio.ref', path: '%$jbEditor_selection%' }
                 }
