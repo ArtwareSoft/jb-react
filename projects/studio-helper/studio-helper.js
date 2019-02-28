@@ -232,12 +232,26 @@ jb.component('studio-helper-dummy.label', {
 jb.component('studio-helper.group-with-label', {
   type: 'control', 
   impl :{$: 'group', 
-    remark: 'adsas', 
     controls: [
-      {$: 'label', 
-        title :{ $pipeline: ['%$people-array/people%', { $filter: '%age% == 42' }, '%name%'] }
-      }, 
-      {$: 'editable-text' }
+      {$: 'group', 
+        remark: 'adsas', 
+        controls: [
+          {$: 'label', 
+            title :{ $pipeline: ['%$people-array/people%', { $filter: '%age% == 42' }, '%name%'] }
+          }, 
+          {$: 'editable-text' }, 
+          {$: 'table', 
+            fields: [
+              {$: 'field.control', 
+                control :{$: 'field' }
+              }
+            ], 
+            style :{$: 'table.with-headers' }, 
+            visualSizeLimit: 100
+          }, 
+          {$: 'table', visualSizeLimit: 100 }
+        ]
+      }
     ]
   }
 })

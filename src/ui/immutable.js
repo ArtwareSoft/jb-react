@@ -13,8 +13,10 @@ class ImmutableWithPath {
     if (ref == null) return ref;
     if (ref.$jb_val) return ref.$jb_val();
     if (!ref.$jb_path) return ref;
-    if (ref.handler != this)
+    if (ref.handler != this) {
+      if (typeof ref.handler.val != 'function') debugger
       return ref.handler.val(ref)
+    }
 
     var resource = ref.$jb_path[0];
     if (ref.$jb_resourceV == this.resourceVersions[resource])
@@ -211,7 +213,7 @@ class ImmutableWithPath {
   }
   refOfPath(path,silent) {
       try {
-        var val = path.reduce((o,p)=>o[p],this.resources());
+        var val = path.reduce((o,p)=>o && o[p],this.resources());
         if (val == null || typeof val != 'object' || Array.isArray(val))
           var parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
         else

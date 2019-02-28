@@ -52,7 +52,7 @@ jb.component('studio.preview-widget-impl', {
           class: 'preview-iframe',
           width: cmp.ctx.vars.$model.width,
           height: cmp.ctx.vars.$model.height,
-          src: '/project/'+ state.project + '?' + state.cacheKiller
+          src: `/project/${state.project}?${state.cacheKiller}&wspy=preview`
       }),
       css: `{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px;  }`
   }

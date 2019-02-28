@@ -168,6 +168,8 @@ jb.objectEncoder = (function() {
     
     exports.decode = exports.parse =
     function decode(encoding) {
+      if (Array.isArray(encoding))
+        return fromTable(encoding);  
       return fromTable(JSON.parse(encoding));
     }
     

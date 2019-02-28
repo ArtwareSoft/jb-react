@@ -2,7 +2,7 @@
 'use strict'
 const spySettings = { 
     moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,probe,setState,render-result,immutable,path-of-object', 
-	includeLogs: 'exception,focus,script-change',
+	includeLogs: 'exception,focus,script-change,res-log',
 	stackFilter: /wSpy|jb_spy|Object.log/i,
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
 }
@@ -19,7 +19,7 @@ function initSpy({Error, frame, settings, wSpyParam, memoryUsage}) {
 		wSpyParam,
 		otherSpies: [],
 		enabled: () => true,
-		log(logName, record, {takeFrom, funcTitle} = {}) {
+		log(logName, record, {takeFrom, funcTitle, path} = {}) {
 			const init = () => {
 				if (!this.includeLogs) {
 					const includeLogsFromParam = (wSpyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
@@ -175,12 +175,13 @@ const noopSpy = {
 }
 
 function initBrowserSpy(settings) {
-	const getUrl = () => { try { return window.parent.location.href } catch(e) {} }
+	const getParentUrl = () => { try { return window.parent.location.href } catch(e) {} }
+	const getUrl = () => { try { return window.location.href } catch(e) {} }
 	const getSpyParam = url => (url.match('[?&]w[sS]py=([^&]+)') || ['', ''])[1]
 	const getFirstLoadedSpy = () => { try { return window.parent.wSpy } catch(e) {} }
 
 	try {
-		const wSpyParam = getSpyParam(getUrl() || '')
+		const wSpyParam = getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
 		if (!wSpyParam) {
 			return noopSpy
 		}

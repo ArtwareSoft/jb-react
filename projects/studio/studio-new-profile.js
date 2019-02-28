@@ -115,7 +115,7 @@ jb.component('studio.select-profile', {
   type: 'control', 
   params: [
     { id: 'onSelect', type: 'action', dynamic: true }, 
-    { id: 'type', as: 'string' }, 
+    { id: 'type', as: 'string' },
     { id: 'path', as: 'string' }
   ], 
   impl :{$: 'group', 
@@ -191,7 +191,7 @@ jb.component('studio.select-profile', {
                       $if :{$: 'contains', 
                         text: ['control', 'style'], 
                         allText: '%$type%'
-                      }, 
+                      },
                       then :{
                         $call: 'onSelect', 
                         $vars: { selectionPreview: true }

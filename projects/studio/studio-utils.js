@@ -50,7 +50,7 @@ jb.component('studio.goto-path', {
 	impl :{$runActions: [
 		{$: 'dialog.close-containing-popup' },
 		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' },
-		{$if :{$: 'studio.is-of-type', type: 'control', path: '%$path%'},
+		{$if :{$: 'studio.is-of-type', type: 'control,table-field', path: '%$path%'},
 			then: {$runActions: [
 				{$: 'studio.open-control-tree'},
 //				{$: 'studio.open-properties', focus: true}

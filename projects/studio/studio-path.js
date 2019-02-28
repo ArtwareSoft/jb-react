@@ -143,6 +143,16 @@ Object.assign(st, {
 		if (prof && typeof prof == 'object' && !Array.isArray(prof))
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
+	hasTrace: path => {
+		return st.previewjb.pathsToLog.has(path)
+	},
+	toggleTrace: (path,srcCtx) => {
+		const pathsToLog = st.previewjb.pathsToLog;
+		if (pathsToLog.has(path))
+			pathsToLog.delete(path)
+		else
+			pathsToLog.add(path)
+	},
 	setComp: (path,compName,srcCtx) => {
 		var comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
@@ -190,7 +200,7 @@ Object.assign(st, {
 			if (p.defaultValue || p.defaultTValue)
 				newCtrl[p.id] = JSON.parse(JSON.stringify(p.defaultValue || p.defaultTValue))
 		})
-		if (st.controlParams(path)[0] == 'fields')
+		if (st.controlParams(path)[0] == 'fields' && newCtrl.$ != 'field')
 			newCtrl = { $: 'field.control', control : newCtrl};
 		// find group parent that can insert the control
 		var group_path = path;

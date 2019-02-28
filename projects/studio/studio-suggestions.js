@@ -55,19 +55,23 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
         keyup
           .debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
-          .do(e=>jb.logPerformance('suggestions','input: ' + input.value))
+          .do(e=>jb.log('suggestions',['after debounce', input.value, e, cmp, cmp.ctx.path]))
           .map(e=>
               input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
+          .do(e=>jb.log('suggestions',['after distinct', input.value, e, cmp, cmp.ctx.path]))
           .flatMap(_=>
             getProbe())
+          .do(e=>jb.log('suggestions',['after get prob', input.value, e, cmp, cmp.ctx.path]))
           .map(res=>
               res && res.result && res.result[0] && res.result[0].in)
+          .do(e=>jb.log('suggestions',['probe result', input.value, e, cmp, cmp.ctx.path]))
           .map(probeCtx=>
             new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,ctx.params.path))
+          .do(e=>jb.log('suggestions',['create suggestions obj', input.value, e, cmp, cmp.ctx.path]))
           .catch(e=> jb.logException(e,'suggestions') || [])
           .distinctUntilChanged((e1,e2)=>
             e1.key == e2.key) // compare options - if options are the same - leave it.
-          .do(e=>jb.logPerformance('suggestions','event',e))
+          .do(e=>jb.log('suggestions',['generate event', input.value, e, cmp, cmp.ctx.path]))
           .takeUntil( cmp.destroyed )
           .subscribe(e=> {
             //   if (input.value.indexOf('=') == 0) {
@@ -77,9 +81,11 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
             //       type: {$:'studio.param-type', path: ctx.params.path}
             //    });
             //  }
+              jb.log('suggestions',['before write values', input.value, cmp, cmp.ctx.path]);
               cmp.ctx.run({$:'write-value', to: '%$suggestionData/tail%', value: ctx => e.tail })
               cmp.ctx.run({$:'write-value', to: '%$suggestionData/options%', value: ctx => e.options });
               cmp.ctx.run({$:'write-value', to: '%$suggestionData/selected%', value: ctx => e.options[0] });
+              jb.log('suggestions',['after write values', input.value, cmp, cmp.ctx.path]);
           });
 
         function getProbe() {
@@ -206,7 +212,7 @@ jb.component('studio.paste-suggestion', {
     { id: 'close', as: 'boolean', description: 'ends with % or /' }
   ],
   impl: (ctx,option,close) => {
-    Promise.resolve(option.paste(ctx,close)).then(_=> {
+    option && Promise.resolve(option.paste(ctx,close)).then(_=> {
       var cmp = ctx.vars.selectionKeySource.cmp;
       cmp.refreshSuggestionPopupOpenClose();
       jb.ui.setState(cmp,{model: cmp.jbModel()},null,ctx);

@@ -211,7 +211,6 @@ jb.component('tree.keyboard-selection', {
 
 				keyDownNoAlts.filter(e=> e.keyCode == 38 || e.keyCode == 40)
 					.map(event => {
-//						event.stopPropagation();
 						var diff = event.keyCode == 40 ? 1 : -1;
 						var nodes = jb.ui.findIncludeSelf(tree.el,'.treenode');
 						var selected = jb.ui.findIncludeSelf(tree.el,'.treenode.selected')[0];
@@ -222,7 +221,6 @@ jb.component('tree.keyboard-selection', {
 				keyDownNoAlts
 					.filter(e=> e.keyCode == 37 || e.keyCode == 39)
 					.subscribe(event => {
-//						event.stopPropagation();
 						var isArray = tree.nodeModel.isArray(tree.selected);
 						if (!isArray || (tree.expanded[tree.selected] && event.keyCode == 39))
 							runActionInTreeContext(context.params.onRightClickOfExpanded);
@@ -244,7 +242,7 @@ jb.component('tree.keyboard-selection', {
 						if (menu && menu.applyShortcut && menu.applyShortcut(e))
 							return false;  // stop propagation
 					}
-					return true;
+					return false;  // stop propagation always
 				}))
 			}
 		})

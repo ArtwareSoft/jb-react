@@ -196,38 +196,39 @@ jb.component('studio.probe-data-view', {
 })
 
 jb.component('studio.jb-editor', {
-  type: 'control',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'group',
-    title: 'main',
-    style :{$: 'layout.horizontal-fixed-split', align: 'space-between', direction: '', leftWidth: '350', rightWidth: '500', spacing: 3 },
-    controls: [ 
-      {$: 'studio.jb-editor-inteli-tree', path: '%$path%'},
-      {$: 'group',
-        title: 'inteli preview',
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'group', 
+    title: 'main', 
+    style :{$: 'layout.horizontal-fixed-split', align: 'space-between', direction: '', leftWidth: '350', rightWidth: '500', spacing: 3 }, 
+    controls: [
+      {$: 'studio.jb-editor-inteli-tree', path: '%$path%' }, 
+      {$: 'group', 
+        $disabled: true, 
+        title: 'inteli preview', 
         controls: [
-          {$: 'group',
-            title: 'hide if selection empty',
+          {$: 'group', 
+            title: 'hide if selection empty', 
             controls: [
-              {$: 'group',
-                title: 'watch selection content',
-                controls :{$: 'studio.probe-data-view', path: '%$jbEditor_selection%' },
-                features :{$: 'watch-ref',
+              {$: 'group', 
+                title: 'watch selection content', 
+                controls :{$: 'studio.probe-data-view', path: '%$jbEditor_selection%' }, 
+                features :{$: 'watch-ref', 
                   ref :{$: 'studio.ref', path: '%$jbEditor_selection%' }
                 }
               }
-            ],
+            ], 
             features :{$: 'feature.if', showCondition: '%$jbEditor_selection%' }
           }
-        ],
+        ], 
         features: [
-          {$: 'watch-ref', ref: '%$jbEditor_selection%' },
+          {$: 'watch-ref', ref: '%$jbEditor_selection%' }, 
           {$: 'studio.watch-script-changes' }
         ]
       }
-    ],
+    ], 
     features: [
-      {$: 'css.padding', top: '10' },
+      {$: 'css.padding', top: '10' }, 
       {$: 'css.height', height: '800', minMax: 'max' }
     ]
   }
@@ -704,8 +705,18 @@ jb.component('studio.jb-editor-menu', {
               else: 'Disable'
             }, 
             action :{$: 'studio.toggle-disabled', path: '%$path%' }, 
-            icon: 'do_not_disturb', 
+            icon: 'do_not_disturb',
             shortcut: 'Ctrl+X'
+          }, 
+          {$: 'menu.action', 
+            title :{
+              $if :{$: 'studio.has-trace', path: '%$path%' }, 
+              then: 'UnTrace',
+              else: 'Trace'
+            }, 
+            action :{$: 'studio.toggle-trace', path: '%$path%' }, 
+            icon: 'do_not_disturb',
+            shortcut: 'Ctrl+Enter'
           }, 
           {$: 'menu.action', 
             title: 'Copy', 

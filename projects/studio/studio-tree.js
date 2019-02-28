@@ -27,6 +27,21 @@ jb.component('studio.tree-menu', {
   impl :{$: 'menu.menu', 
     options: [
       {$: 'menu.action', 
+        title: 'Insert Field', 
+        action :{$: 'studio.open-new-profile-dialog', 
+          path: '%$path%', 
+          type: 'table-field', 
+          mode: 'insert-control', 
+          onClose :{$: 'studio.goto-last-edit' }
+        }, 
+        showCondition :{$: 'equals', 
+          path: '%$path%', 
+          type: 'table', 
+          item1 :{ $pipeline: [{$: 'studio.val', path: '%$path%' }, '%$%'] }, 
+          item2: 'table'
+        }
+      }, 
+      {$: 'menu.action', 
         title: 'Insert', 
         action :{$: 'studio.open-new-profile-dialog', 
           path: '%$path%', 
@@ -54,16 +69,16 @@ jb.component('studio.tree-menu', {
       }, 
       {$: 'menu.separator' }, 
       {$: 'menu.action', 
-        title: 'inteliscript editor', 
+        title: 'Inteliscript editor', 
         action :{$: 'studio.open-jb-editor', path: '%$path%' }, 
         shortcut: 'Ctrl+I'
       }, 
       {$: 'menu.action', 
-        title: 'context viewer', 
+        title: 'Context viewer', 
         action :{$: 'studio.open-context-viewer', path: '%$path%' }
       }, 
       {$: 'menu.action', 
-        title: 'javascript editor', 
+        title: 'Javascript editor', 
         action :{$: 'studio.edit-source', path: '%$path%' }, 
         icon: 'code', 
         shortcut: 'Ctrl+J'

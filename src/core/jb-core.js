@@ -1,16 +1,21 @@
 var jb = (function() {
+const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
+const pathsToLog = new Set()
+
 function jb_spy() {
-  if (typeof window === 'object' && window.wSpy)
-    window.wSpy.log(...arguments)
+  if (frame.wSpy)
+    frame.wSpy.log(...arguments)
 }
 
 const funcTitle = (profile,parentParam,context) =>
   (compName(profile,parentParam) || profile || '') + '@' + context.path
 
+
 function jb_run(context,parentParam,settings) {
   jb_spy('req', ['',context,parentParam,settings], {funcTitle: () => funcTitle(context.profile, parentParam, context)})
   const res = do_jb_run(...arguments);
-  jb_spy('res', ['', res, context,parentParam,settings], {funcTitle: () => funcTitle(context.profile, parentParam, context)})
+  
+  jb_spy(pathsToLog.has(context.path) ? 'res-log' : 'res', ['', res, context,parentParam,settings], {funcTitle: () => funcTitle(context.profile, parentParam, context)})
   return res;
 }
 
@@ -546,7 +551,7 @@ class jbCtx {
   // keeps the context vm and not the caller vm - needed in studio probe
   ctx(ctx2) { return new jbCtx(this,ctx2) }
   win() { // used for multi windows apps. e.g., studio
-    return window
+    return frame
   }
   extendVars(ctx2,data2) {
     if (ctx2 == null && data2 == null)
@@ -646,7 +651,8 @@ let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 return {
   run: jb_run,
   jbCtx, expression, bool_expression, profileType, compName, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, 
+  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend,
+  pathsToLog,
   ctxCounter: _ => ctxCounter
 }
 
@@ -766,7 +772,7 @@ Object.assign(jb,{
   asRef: (obj) =>
     jb.valueByRefHandler.asRef(obj),
   resourceChange: _ =>
-    jb.valueByRefHandler.resourceChange,
+    jb.valueByRefHandler.resourceChange
 })
 if (typeof module != 'undefined')
   module.exports = jb

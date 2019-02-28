@@ -268,6 +268,10 @@ Object.assign(st,{
 	},
 
 	isOfType: (path,type) => {
+		const types = type.split(',');
+		if (types.length > 1)
+			return types.some(t=>st.isOfType(path,t));
+		
     if (path.indexOf('~') == -1)
 		  return st.isCompNameOfType(path,type);
 		var paramDef = st.paramDef(path);

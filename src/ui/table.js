@@ -1,5 +1,5 @@
 jb.component('table', {
-  type: 'control', category: 'group:80,common:70',
+  type: 'control,table', category: 'group:80,common:70',
   params: [
     { id: 'title', as: 'string' },
     { id: 'items', as: 'ref', whenNotReffable: 'array' , dynamic: true, essential: true },
@@ -139,6 +139,7 @@ jb.component('table.init', {
         }
 
         function extendItemsWithCalculatedFields() {
+          if (!cmp.fields || !cmp.items) return;
           cmp.fields.filter(f=>f.extendItems).forEach(f=>
             cmp.items.forEach(item=>item[f.title] = f.calcFieldData(item)))
         }
