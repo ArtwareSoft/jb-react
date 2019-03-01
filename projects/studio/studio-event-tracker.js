@@ -67,7 +67,10 @@ jb.component('studio.open-event-tracker', {
         width: '700', 
         height: '400'
       }, 
-      title: {$if: '%$studio%', then: 'Studio Event Tracking', else: 'Event Tracking'}
+      title: {$if: '%$studio%', then: 'Studio Event Tracking', else: 'Event Tracking'},
+      features: [
+        {$: 'dialog-feature.resizer' }, 
+      ]      
   }
 }) 
 
@@ -142,14 +145,15 @@ jb.component('studio.event-tracker', {
         style :{$: 'table.with-headers' }
       }
     ], 
-    features :{$if: '%$studio%',
+    features : [
+      {$if: '%$studio%',
 	    then: {$: 'watch-observable', 
 	      toWatch: ctx => jb.ui.stateChangeEm.debounceTime(500), 
 	    },
 	    else: {$: 'watch-observable', 
 	      toWatch: ctx => st.previewjb.ui.stateChangeEm.debounceTime(500), 
 	    }
-	}
+	}]
   }
 })
 

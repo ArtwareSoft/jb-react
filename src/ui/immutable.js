@@ -34,7 +34,18 @@ class ImmutableWithPath {
     jb.log('writeValue',['immutable',value,ref,srcCtx]);
     if (ref.$jb_val)
       return ref.$jb_val(value);
-    return this.doOp(ref,{$set: value},srcCtx)
+    return this.doOp(ref,{$set: this.createSecondaryLink(value) },srcCtx)
+  }
+  createSecondaryLink(val) {
+    if (typeof val === 'object') {
+      const ref = this.asRef(val);
+      if (ref.$jb_path)
+        return new Proxy(val, {
+          get: (o,p) => p === '$jb_secondaryLink' ? true : o[p],
+          set: (o,p,v) => o[p] = v
+        })
+    }
+    return val;
   }
   splice(ref,args,srcCtx) {
     return this.doOp(ref,{$splice: args },srcCtx)
@@ -63,7 +74,7 @@ class ImmutableWithPath {
     })
   }
   push(ref,value,srcCtx) {
-    return this.doOp(ref,{$push: value},srcCtx)
+    return this.doOp(ref,{$push: this.createSecondaryLink(value)},srcCtx)
   }
   merge(ref,value,srcCtx) {
     return this.doOp(ref,{$merge: value},srcCtx)
@@ -240,19 +251,37 @@ class ImmutableWithPath {
       leaf.$jb_id = leaf.$jb_id || (++this.pathId);
   }
   pathOfObject(obj,lookIn,depth) {
-    jb.log('path-of-object',['pathOfObject',...arguments]);
-    if (!obj || !lookIn || typeof lookIn != 'object' || typeof obj != 'object' || lookIn.$jb_path || lookIn.$jb_val || depth > 50)
+    if (!depth)
+      jb.log('pathOfObject',[...arguments]);
+    if (!obj || !lookIn || typeof lookIn != 'object' || typeof obj != 'object' || lookIn.$jb_path || lookIn.$jb_val || lookIn.$jb_secondaryLink || depth > 50) {
+      if (lookIn.$jb_secondaryLink)
+        jb.log('secondaryLink ignored',[...arguments]);
       return;
+    }
     if (this.allowedTypes.indexOf(Object.getPrototypeOf(lookIn)) == -1)
       return;
 
     if (lookIn === obj || (lookIn.$jb_id && lookIn.$jb_id == obj.$jb_id))
       return [];
-    for(var p in lookIn) {
-      var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
-      if (res)
-        return [p].concat(res);
+    const results = jb.entries(lookIn)
+      .filter(e=>e[1] && typeof e[1] == 'object')
+      .map(e=> {
+        const res = this.pathOfObject(obj,e[1],(depth||0)+1);
+        if (res)
+          return [e[0]].concat(res);
+      }).filter(x=>x);
+    // let results = []
+    // for(var p in lookIn) {
+    //   var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
+    //   if (res)
+    //     results.push([[p].concat(res)]);
+    // }
+    if (results.length > 1) {
+      jb.logError(`pathOfObject found ${results.length} results`,results, ...arguments);
     }
+    if (!depth)
+      jb.log('pathOfObject',[results[0] ? 'found' : 'not found',results[0], ...arguments]);
+    return results[0]
   }
   // valid(ref) {
   //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;

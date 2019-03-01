@@ -2,20 +2,13 @@ var jb = (function() {
 const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 const pathsToLog = new Set()
 
-function jb_spy() {
-  if (frame.wSpy)
-    frame.wSpy.log(...arguments)
-}
+const jb_spy = (...args) => frame.wSpy && frame.wSpy.log(...args)
 
-const funcTitle = (profile,parentParam,context) =>
-  (compName(profile,parentParam) || profile || '') + '@' + context.path
-
-
-function jb_run(context,parentParam,settings) {
-  jb_spy('req', ['',context,parentParam,settings], {funcTitle: () => funcTitle(context.profile, parentParam, context)})
+function jb_run(ctx,parentParam,settings) {
+  jb_spy('req', ['',ctx.path,ctx,parentParam,settings], {funcTitle: () => compName(ctx.profile)})
   const res = do_jb_run(...arguments);
   
-  jb_spy(pathsToLog.has(context.path) ? 'res-log' : 'res', ['', res, context,parentParam,settings], {funcTitle: () => funcTitle(context.profile, parentParam, context)})
+  jb_spy(pathsToLog.has(ctx.path) ? 'resLog' : 'res', ['',ctx.path,res,ctx,parentParam,settings], {funcTitle: () => compName(ctx.profile)})
   return res;
 }
 
@@ -572,7 +565,7 @@ class jbCtx {
 
 }
 
-let logs = {};
+const logs = {};
 function logError(errorStr,p1,p2,p3) {
   logs.error = logs.error || [];
   logs.error.push(errorStr);
@@ -650,9 +643,8 @@ let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 
 return {
   run: jb_run,
-  jbCtx, expression, bool_expression, profileType, compName, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend,
-  pathsToLog,
+  jbCtx, expression, bool_expression, profileType, compName, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
+  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, pathsToLog,
   ctxCounter: _ => ctxCounter
 }
 

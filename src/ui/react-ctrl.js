@@ -37,6 +37,7 @@ class JbComponent {
 	}
 
 	reactComp() {
+		jb.log('createReactClass',[this.ctx.path, this]);
 		var jbComp = this;
 		class ReactComp extends ui.Component {
 			constructor(props) {
@@ -46,15 +47,8 @@ class JbComponent {
 				this.ctxForPick = jbComp.ctxForPick || jbComp.ctx;
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				try {
-		    // 		this.refreshCtx = _ => {
-						// jbComp.extendCtxFuncs.forEach(extendCtx => {
-			   //  			this.ctx = extendCtx(this.ctx,this) || this.ctx;
-			   //  		})
-			   //  		return this.ctx;
-			   //  	}
 					jbComp.extendCtxOnceFuncs.forEach(extendCtx =>
 		    			this.ctx = extendCtx(this.ctx,this) || this.ctx);
-//			    	this.refreshCtx();
 					Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
 					jbComp.jbBeforeInitFuncs.forEach(init=> init(this,props));
 					jbComp.jbInitFuncs.forEach(init=> init(this,props));
@@ -71,14 +65,14 @@ class JbComponent {
 						if (typeof vdom == 'object')
 							vdom = modifier(vdom,this,state,ui.h) || vdom
 					});
-					jb.log('render-result',[this.ctx.path, vdom, state,props,this]);
+					jb.log('renRes',[this.ctx.path, vdom, state,props,this]);
 					return vdom;
 				} catch (e) {
 					jb.logException('render',e);
 					return ui.h('span',{display: 'none'});
 				}
 			}
-    		componentDidMount() {
+    	componentDidMount() {
 				jbComp.injectCss(this);
 				jbComp.jbRegisterEventsFuncs.forEach(init=> {
 					try { init(this) } catch(e) { jb.logException('init',e) }});
@@ -89,7 +83,7 @@ class JbComponent {
 				jbComp.jbComponentDidUpdateFuncs.forEach(f=> {
 					try { f(this) } catch(e) { jb.logException('componentDidUpdate',e); }});
 			}
-	  		componentWillUnmount() {
+	  	componentWillUnmount() {
 				jbComp.jbDestroyFuncs.forEach(f=> {
 					try { f(this) } catch(e) { jb.logException('destroy',e); }});
 				this.resolveDestroyed();

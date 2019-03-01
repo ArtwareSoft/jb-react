@@ -8,7 +8,7 @@ jb.component('editable-text.studio-primitive-text', {
           onchange: e => cmp.jbModel(e.target.value),
           onkeyup: e => cmp.jbModel(e.target.value,'keyup')
       }),
-    css: `{ width: 367px} :focus { border-color: #3F51B5; border-width: 2px}`,
+    css: `{ width1: 367px} :focus { border-color: #3F51B5; border-width: 2px}`,
 	}
 })
 
@@ -21,7 +21,7 @@ jb.component('button.select-profile-style', {
             onmouseup:ev => cmp.clicked(ev),
             onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
         }),
-        css: `{ cursor: pointer;width: 367px } :focus { border-color: #3F51B5; border-width: 2px}`
+        css: `{ cursor: pointer;width1: 367px } :focus { border-color: #3F51B5; border-width: 2px}`
   }
 })
 
@@ -64,7 +64,7 @@ jb.component('button.studio-script', {
             onmouseup:ev => cmp.clicked(ev),
             onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
         }),
-        css: `{ cursor: pointer;width: 367px; opacity: 0.8; font-style: italic; }`
+        css: `{ cursor: pointer;width1: 367px; opacity: 0.8; font-style: italic; }`
   }
 })
 
@@ -158,7 +158,7 @@ jb.component('property-sheet.studio-properties-in-tgp', {
     )),
     css: `
       { width: 100% }
-      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px }
+      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px; font-weight: bold; }
       >.property>.property-ctrl { }
       >.property>td { vertical-align: top; }
     `,

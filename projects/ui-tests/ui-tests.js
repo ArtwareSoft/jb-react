@@ -457,7 +457,7 @@ jb.component('ui-test.itemlist-with-select', {
 jb.component('ui-test.itemlist-DD', {
   impl :{$: 'ui-test', control :{$: 'group',
   controls: [
-      { $: 'itemlist', items: '%$people%', watchItems: true,
+      { $: 'itemlist', items: '%$people%',
           controls :{$: 'label', title: '%name%', features:{$: 'css.class', class: 'drag-handle'} },
           features: [
               { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true },
@@ -472,7 +472,7 @@ jb.component('ui-test.itemlist-DD', {
     ],
   },
   action :[ ctx =>jb.delay(10), {$: 'ui-action.keyboard-event', selector: '#itemlist', type: 'keydown', ctrl: 'ctrl', keyCode: 40 }], // ctrl keyDown
-  expectedResult: { $: 'contains', text: ['Marge', 'Homer','Marge', 'Homer'] },
+  expectedResult: { $: 'contains', text: ['Bart', 'Marge', 'Homer'] },
 },
 })
 

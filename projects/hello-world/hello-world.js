@@ -7,13 +7,18 @@ jb.resource('people',[
 
 jb.component('hello-world.main', {
   type: 'control', 
-  impl :{$: 'label', 
-    title :{
-      $pipeline: [
-        'hello world', 
-        {$: 'to-uppercase', text: '%%' }
-      ]
-    }
+  impl :{$: 'group', 
+    style :{$: 'layout.horizontal', spacing: 3 }, 
+    controls: [
+      {$: 'label', 
+        title :{
+          $pipeline: [
+            'hello world', 
+            {$: 'to-uppercase', text: '%%' }
+          ]
+        }
+      }
+    ]
   }
 })
 

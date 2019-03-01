@@ -28,7 +28,8 @@ jb.component('studio.open-properties', {
       {$: 'dialog-feature.keyboard-shortcut',
         shortcut: 'Ctrl+Left',
         action :{$: 'studio.open-control-tree' }
-      }
+      },
+      {$: 'dialog-feature.resizer' }, 
     ]
   }
 })
@@ -77,7 +78,21 @@ jb.component('studio.properties', {
                 'Properties (%%)'
               ]
             }, 
-            style :{$: 'property-sheet.studio-properties' }, 
+            style :{$: 'custom-style', 
+              template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
+      h('tr',{ class: 'property' },[
+          h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
+          h('td',{ class: 'property-ctrl'},h(ctrl)),
+          h('td',{ class: 'property-toolbar'}, h(ctrl.jbComp.toolbar) ),
+      ])
+    )), 
+              css: `
+      { width: 100% }
+      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px;  font-weight: bold;}
+      >.property>td { vertical-align: top; }
+    `, 
+              features :{$: 'group.init-group' }
+            }, 
             controls: [
               {$: 'dynamic-controls', 
                 controlItems :{$: 'studio.non-control-children', path: '%$path%' }, 
@@ -315,7 +330,7 @@ jb.component('studio.property-boolean', {
     features: [
 //      {$: 'studio.undo-support', path: '%$path%' },
 //      {$: 'studio.property-toolbar-feature', path: '%$path%' },
-      {$: 'css.width', width: '150' }
+      //{$: 'css.width', width: '150' }
     ]
   }
 })
@@ -327,7 +342,7 @@ jb.component('studio.property-enum', {
     databind :{$: 'studio.ref', path: '%$path%' },
     options :{$: 'studio.enum-options', path: '%$path%' },
     style :{$: 'picklist.native-md-look' },
-    features: {$: 'css.width', width: '370' }
+    //features: {$: 'css.width', width: '370' }
   }
 })
 
@@ -424,67 +439,65 @@ jb.component('studio.properties-show-expanded', {
 })
 
 jb.component('studio.property-tgp-in-array', {
-  type: 'control',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'group',
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'group', 
     controls: [
-      {$: 'group',
-        style :{$: 'layout.flex', align: 'space-between' },
+      {$: 'group', 
+        style :{$: 'layout.flex', align: 'space-between' }, 
         controls: [
-          {$: 'editable-boolean',
-            databind: '%$expanded%',
-            style :{$: 'editable-boolean.expand-collapse' },
+          {$: 'editable-boolean', 
+            databind: '%$expanded%', 
+            style :{$: 'editable-boolean.expand-collapse' }, 
             features: [{$: 'css.padding', top: '4' }]
-          },
-          {$: 'label',
-            title :{$: 'pipeline',
+          }, 
+          {$: 'label', 
+            title :{$: 'pipeline', 
               items: [
-                {$: 'studio.comp-name', path: '%$path%' },
+                {$: 'studio.comp-name', path: '%$path%' }, 
                 {$: 'suffix', separator: '.', text: '%%' }
               ]
-            },
-            style :{$: 'label.p' },
+            }, 
+            style :{$: 'label.p' }, 
             features: [
-              {$: 'css.width', width: '100' },
-              {$: 'css.class', class: 'drag-handle' }
+              {$: 'css.width', width: '100' }, 
+              {$: 'css.class', class: 'drag-handle' }, 
+              {$: 'css', css: '{font-weight: bold}' }
             ]
-          },
-          {$: 'label',
-            title :{$: 'studio.summary', path: '%$path%' },
-            style :{$: 'label.p' },
+          }, 
+          {$: 'label', 
+            title :{$: 'studio.summary', path: '%$path%' }, 
+            style :{$: 'label.p' }, 
             features: [
-              {$: 'css.width', width: '335' },
+              {$: 'css.width', width: '335' }, 
               {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
             ]
-          },
-          {$: 'studio.property-toolbar',
-            features :{$: 'css', css: '{ position: absolute; left: 20px }' },
+          }, 
+          {$: 'studio.property-toolbar', 
+            features :{$: 'css', css: '{ position: absolute; left: 20px }' }, 
             path: '%$path%'
           }
-        ],
+        ], 
         features: [{$: 'studio.disabled-support', path: '%$path%' }]
-      },
-      {$: 'group',
-        controls :{$: 'studio.properties-in-tgp', path: '%$path%' },
+      }, 
+      {$: 'group', 
+        controls :{$: 'studio.properties-in-tgp', path: '%$path%' }, 
         features: [
-          {$: 'feature.if', showCondition: '%$expanded%'},
-          {$: 'watch-ref', ref: '%$expanded%',  },
-          {$: 'css', css: '{ margin-left: 10px; margin-bottom: 4px;}' },
+          {$: 'feature.if', showCondition: '%$expanded%' }, 
+          {$: 'watch-ref', ref: '%$expanded%' }, 
+          {$: 'css', css: '{ margin-left: 10px; margin-bottom: 4px;}' }, 
           {$: 'studio.disabled-support', path: '%$path%' }
         ]
       }
-    ],
+    ], 
     features: [
-      {$: 'css.margin', left: '-100' },
-      {$: 'var',
-        name: 'expanded',
-        value :{$: 'studio.is-new', path: '%$path%' },
+      {$: 'css.margin', left: '-100' }, 
+      {$: 'var', 
+        name: 'expanded', 
+        value :{$: 'studio.is-new', path: '%$path%' }, 
         mutable: true
-      },
-      {$: 'studio.watch-path',
-        path: '%$path%',
-//        includeChildren: 'true'
-      }
+      }, 
+      {$: 'studio.watch-path', path: '%$path%' }
     ]
   }
 })

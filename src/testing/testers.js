@@ -60,14 +60,16 @@ jb.component('ui-test', {
           if (e.parentNode)
             jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`)
         })
-				var success = !! expectedResult(new jb.jbCtx(context,{ data: elem.outerHTML }));
+				const success = !! expectedResult(new jb.jbCtx(context,{ data: elem.outerHTML }));
 				if (!success)
 					t = 5; // just a breakpoint for debugger
-				return { id: context.vars.testID, success: success,	elem: elem }
+				return { id: context.vars.testID, success, elem}
 			}).then(result=> { // default cleanup
-				jb.ui.dialogs.dialogs.forEach(d=>d.close())
-				jb.valueByRefHandler.resources(initial_resources);
-				jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
+				if (new URL(location.href).searchParams.get('show') === null) {
+					jb.ui.dialogs.dialogs.forEach(d=>d.close())
+					jb.valueByRefHandler.resources(initial_resources);
+					jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
+				}
 				return result;
 			}).then(result =>
 				Promise.resolve(cleanUp()).then(_=>result) )
@@ -160,9 +162,17 @@ jb.testers.runTests = function(testType,specificTest,show,rerun) {
 	return jb.rx.Observable.from(Array.from(Array(rerun ? Number(rerun) : 1).keys()))
 		.concatMap(i=> (i % 20 == 0) ? jb.delay(300): [1])
 		.concatMap(_=>
-		jb.rx.Observable.from(tests).concatMap(e=>
-				Promise.resolve(new jb.jbCtx().setVars({testID: e[0]}).run({$:e[0]}))))
-			.subscribe(res=> {
+		jb.rx.Observable.from(tests).concatMap(e=>{
+			jb.logs.error = [];
+			return Promise.resolve(new jb.jbCtx().setVars({testID: e[0]}).run({$:e[0]}))
+				.then(res => {
+					if (res.success && jb.logs.error.length > 0) {
+						res.success = false;
+						res.reason = 'log errors: ' + JSON.stringify(jb.logs.error) 
+					}
+					return res
+				})
+			})).subscribe(res=> {
 				if (res.success)
 					jb_success_counter++;
 				else

@@ -241,15 +241,11 @@ jb.component('studio-helper.group-with-label', {
           }, 
           {$: 'editable-text' }, 
           {$: 'table', 
-            fields: [
-              {$: 'field.control', 
-                control :{$: 'field' }
-              }
-            ], 
+            items: '%$people%', 
+            fields: [{$: 'field', title: 'name', data: '%name%' }], 
             style :{$: 'table.with-headers' }, 
             visualSizeLimit: 100
-          }, 
-          {$: 'table', visualSizeLimit: 100 }
+          }
         ]
       }
     ]
@@ -446,7 +442,8 @@ jb.component('studio-helper-sample.properties-params-prof', {
     enumStr: 'c', 
     enumNum: '1', 
     bool :{ $or: [false] }, 
-    style :{$: 'button.href' }
+    style :{$: 'button.href' }, 
+    features :{$: 'css.class' }
   }, 
   $vars: {  }
 })

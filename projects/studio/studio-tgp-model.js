@@ -1,5 +1,5 @@
 (function() {
-var st = jb.studio;
+const st = jb.studio;
 
 st.ControlTree = class {
 	constructor(rootPath) {
@@ -7,7 +7,7 @@ st.ControlTree = class {
 		this.refHandler = st.compsRefHandler;
 	}
 	title(path,collapsed) {
-		var val = st.valOfPath(path);
+		const val = st.valOfPath(path);
 		if (path &&  (val == null || Array.isArray(val) && val.length == 0) && path.match(/~controls$/))
 			return jb.ui.h('a',{style: {cursor: 'pointer', 'text-decoration': 'underline'}, onclick: e => st.newControl(path) },'add new');
 		return this.fixTitles(st.shortTitle(path),path,collapsed)
@@ -19,7 +19,7 @@ st.ControlTree = class {
 	children(path,nonRecursive) {
 		return [].concat.apply([],st.controlParams(path).map(prop=>path + '~' + prop)
 				.map(innerPath=> {
-					var val = st.valOfPath(innerPath);
+					const val = st.valOfPath(innerPath);
 					if (Array.isArray(val) && val.length > 0)
 					 return st.arrayChildren(innerPath,true);
 					return [innerPath]
@@ -38,7 +38,7 @@ st.ControlTree = class {
 
 	// private
 	innerControlPaths(path) {
-		// var nonControlChildren = [].concat.apply([],
+		// const nonControlChildren = [].concat.apply([],
 		//  	st.nonControlChildren(path,true).map(innerPath=>Array.isArray(st.valOfPath(innerPath)) ? st.arrayChildren(innerPath,true) : [innerPath] ))
 		// return [].concat.apply([],nonControlChildren.map(innerPath=>this.children(innerPath,true)))
 		return ['action~content'] // add more inner paths here
@@ -60,18 +60,18 @@ st.jbEditorTree = class {
     this.includeCompHeader= includeCompHeader;
 	}
 	title(path, collapsed) {
-		var val = st.valOfPath(path);
-		var compName = st.compNameOfPath(path);
+		let val = st.valOfPath(path);
+		let compName = st.compNameOfPath(path);
     if (path.indexOf('~') == -1)
       compName = 'jb-component';
     if (compName && compName.match(/case$/))
       compName = 'case';
-		var prop = path.split('~').pop();
+		let prop = path.split('~').pop();
 		if (!isNaN(Number(prop))) // array value - title as a[i]
 			prop = path.split('~').slice(-2)
 				.map(x=>x.replace(/\$pipeline/,''))
 				.join('[') + ']';
-		var summary = '';
+		let summary = '';
 		if (collapsed && typeof val == 'object')
 			summary = ': ' + st.summary(path).substr(0,20);
     if (typeof val == 'function')
@@ -88,7 +88,7 @@ st.jbEditorTree = class {
 		return this.children(path).length > 0;
 	}
 	children(path) {
-		var val = st.valOfPath(path);
+		const val = st.valOfPath(path);
 		if (!val) return [];
 		return (st.arrayChildren(path) || [])
 //        .concat((this.includeCompHeader && this.compHeader(path,val)) || [])
@@ -109,9 +109,9 @@ st.jbEditorTree = class {
 
 	// private
 	sugarChildren(path,val) {
-		var compName = jb.compName(val);
-		var sugarPath = path + '~$' +compName;
-		var sugarVal = st.valOfPath(sugarPath);
+		const compName = jb.compName(val);
+		const sugarPath = path + '~$' +compName;
+		const sugarVal = st.valOfPath(sugarPath);
 		if (Array.isArray(sugarVal)) // sugar array. e.g. $pipeline: [ .. ]
 			return st.arrayChildren(sugarPath);
 		else if (sugarVal)
@@ -167,7 +167,7 @@ Object.assign(st,{
 			.map(p=>path + '~' + p.id),
 
 	arrayChildren: (path,noExtraElem) => {
-		var val = st.valOfPath(path);
+		const val = st.valOfPath(path);
 		if (Array.isArray(val))
 			return Object.getOwnPropertyNames(val)
 				.filter(x=> x.indexOf('$jb_') != 0)
@@ -177,7 +177,7 @@ Object.assign(st,{
 		return [];
 	},
 	asArrayChildren: path => { // support the case of single element - used by properties features
-		var val = st.valOfPath(path);
+		const val = st.valOfPath(path);
 		if (Array.isArray(val))
 			return st.arrayChildren(path,true)
 		else if (val)
@@ -189,7 +189,7 @@ Object.assign(st,{
 		st.paramsOfPath(path).filter(p=>st.isControlType(p.type)).map(p=>p.id),
 
 	summary: path => {
-		var val = st.valOfPath(path);
+		const val = st.valOfPath(path);
     if (path.match(/~cases~[0-9]*$/))
       return st.summary(path+'~condition');
 		if (val == null || typeof val != 'object') return '';
@@ -208,12 +208,12 @@ Object.assign(st,{
 		if (path.match(/~impl$/))
 			return path.split('~')[0];
 
-		var val = st.valOfPath(path);
+		const val = st.valOfPath(path);
 		return (val && typeof val.title == 'string' && val.title) || (val && val.Name) || (val && val.remark) || (val && st.compNameOfPath(path)) || path.split('~').pop();
 	},
 	icon: path => {
 		if (st.parentPath(path)) {
-			var parentVal = st.valOfPath(st.parentPath(path));
+			const parentVal = st.valOfPath(st.parentPath(path));
 			if (Array.isArray(parentVal) && path.split('~').pop() == parentVal.length)
 				return 'add';
 		}
@@ -222,7 +222,7 @@ Object.assign(st,{
 				return 'view_column'
 			return 'folder_open'; //'view_headline' , 'folder_open'
 		}
-		var comp2icon = {
+		const comp2icon = {
 			label: 'font_download',
 			button: 'crop_landscape',
 			tab: 'tab',
@@ -232,7 +232,7 @@ Object.assign(st,{
 			'editable-boolean': 'radio_button',
 			'editable-number': 'donut_large',
 		}
-		var compName = st.compNameOfPath(path);
+		const compName = st.compNameOfPath(path);
 		if (comp2icon[compName])
 			return comp2icon[compName];
 
@@ -244,8 +244,8 @@ Object.assign(st,{
 
 	// queries
 	isCompNameOfType: (name,type) => {
-		var _jb = st.previewjb;
-		var comp = name && _jb.comps[name];
+		const _jb = st.previewjb;
+		const comp = name && _jb.comps[name];
 		if (comp) {
 			while (_jb.comps[name] && !_jb.comps[name].type && _jb.compName(_jb.comps[name].impl))
 				name = _jb.compName(_jb.comps[name].impl);
@@ -257,11 +257,11 @@ Object.assign(st,{
 			return;
 		if (!isNaN(Number(path.split('~').pop()))) // array elements
 			path = st.parentPath(path);
-		// var parent_prof = st.valOfPath(st.parentPath(path),true);
-		// var comp = parent_prof && st.getComp(jb.compName(parent_prof));
-		var comp = st.compOfPath(st.parentPath(path),true);
-		var params = jb.compParams(comp);
-		var paramName = path.split('~').pop();
+		// const parent_prof = st.valOfPath(st.parentPath(path),true);
+		// const comp = parent_prof && st.getComp(jb.compName(parent_prof));
+		const comp = st.compOfPath(st.parentPath(path),true);
+		const params = jb.compParams(comp);
+		const paramName = path.split('~').pop();
 		if (paramName.indexOf('$') == 0) // sugar
 			return params[0];
 		return params.filter(p=>p.id==paramName)[0] || {};
@@ -274,14 +274,14 @@ Object.assign(st,{
 		
     if (path.indexOf('~') == -1)
 		  return st.isCompNameOfType(path,type);
-		var paramDef = st.paramDef(path);
+		const paramDef = st.paramDef(path);
 		if (paramDef)
 			return (paramDef.type || 'data').split(',')
 				.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length;
 	},
 	// single first param type
 	paramTypeOfPath: path => {
-		var res = ((st.paramDef(path) || {}).type || 'data').split(',')[0].split('[')[0];
+		const res = ((st.paramDef(path) || {}).type || 'data').split(',')[0].split('[')[0];
 		if (res == '*')
 			return st.paramTypeOfPath(st.parentPath(path));
 		return res;
@@ -290,13 +290,13 @@ Object.assign(st,{
 		st.PTsOfType(st.paramTypeOfPath(path)),
 
 	PTsOfType: type => {
-		var single = /([^\[]*)(\[\])?/;
-		var types = [].concat.apply([],(type||'').split(',')
+		const single = /([^\[]*)(\[\])?/;
+		const types = [].concat.apply([],(type||'').split(',')
 			.map(x=>
 				x.match(single)[1])
 			.map(x=>
 				x=='data' ? ['data','aggregator','boolean'] : [x]));
-		var comp_arr = types.map(t=>
+		const comp_arr = types.map(t=>
 			jb.entries(st.previewjb.comps)
 				.filter(c=>
 					(c[1].type||'data').split(',').indexOf(t) != -1
@@ -314,11 +314,11 @@ Object.assign(st,{
 		if (!isNaN(Number(path.split('~').pop()))) // array elements
 			return st.parentPath(path).split('~').pop().replace(/s$/,'');
 
-		var paramDef = st.paramDef(path);
+		const paramDef = st.paramDef(path);
 		if (!paramDef) return '';
-		var val = st.valOfPath(path);
+		const val = st.valOfPath(path);
 		if ((paramDef.type ||'').indexOf('[]') != -1) {
-			var length = st.arrayChildren(path).length;
+			const length = st.arrayChildren(path).length;
 			if (length)
 				return path.split('~').pop() + ' (' + length + ')';
 		}

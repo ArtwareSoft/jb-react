@@ -1,9 +1,9 @@
 (function() {
 'use strict'
 const spySettings = { 
-    moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,probe,setState,render-result,immutable,path-of-object', 
-	includeLogs: 'exception,focus,script-change,res-log',
-	stackFilter: /wSpy|jb_spy|Object.log/i,
+    moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject', 
+	includeLogs: 'exception,focus,scriptChange,resLog,immutableErr',
+	stackFilter: /wSpy|jb_spy|Object.log|node_modules/i,
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
 }
 
@@ -19,11 +19,11 @@ function initSpy({Error, frame, settings, wSpyParam, memoryUsage}) {
 		wSpyParam,
 		otherSpies: [],
 		enabled: () => true,
-		log(logName, record, {takeFrom, funcTitle, path} = {}) {
+		log(logName, record, {takeFrom, funcTitle} = {}) {
 			const init = () => {
 				if (!this.includeLogs) {
-					const includeLogsFromParam = (wSpyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
-					const excludeLogsFromParam = (wSpyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
+					const includeLogsFromParam = (this.wSpyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
+					const excludeLogsFromParam = (this.wSpyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
 					this.includeLogs = settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
 						acc[log] = true
 						return acc
@@ -31,7 +31,7 @@ function initSpy({Error, frame, settings, wSpyParam, memoryUsage}) {
 				}
 			}
 			const shouldLog = (logName, record) =>
-				wSpyParam === 'all' || Array.isArray(record) && this.includeLogs[logName] && !settings.extraIgnoredEvents.includes(record[0])
+				this.wSpyParam === 'all' || Array.isArray(record) && this.includeLogs[logName] && !settings.extraIgnoredEvents.includes(record[0])
 
 			init()
 			this.logs[logName] = this.logs[logName] || []
@@ -56,7 +56,6 @@ function initSpy({Error, frame, settings, wSpyParam, memoryUsage}) {
 				record[0] = record.source[0]
 			}
 			this.logs[logName].push(record)
-
 		},
 		getCallbackName(cb, takeFrom) {
 			if (!cb) {
@@ -102,6 +101,10 @@ function initSpy({Error, frame, settings, wSpyParam, memoryUsage}) {
 		},
         
         // browsing methods
+		resetParam: wSpyParam => {
+			this.wSpyParam = wSpyParam;
+			this.includeLogs = null;
+		},
 		purge(count) {
 			const countFromEnd = -1 * (count || settings.DEFAULT_LOGS_COUNT)
 			Object.keys(this.logs).forEach(log => this.logs[log] = this.logs[log].slice(countFromEnd))
