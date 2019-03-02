@@ -35,13 +35,19 @@ jb.component('ui-test', {
 		{ id: 'action', type: 'action', dynamic: true },
 		{ id: 'expectedResult', type: 'boolean', dynamic: true },
 		{ id: 'cleanUp', type: 'action', dynamic: true },
+		{ id: 'expectedCounters', as: 'single' }
 	],
-	impl: function(context,control,runBefore,action,expectedResult,cleanUp) {
+	impl: function(context,control,runBefore,action,expectedResult,cleanUp,expectedCounters) {
 		var initial_resources = jb.valueByRefHandler.resources();
 		var initial_comps = jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 		return Promise.resolve(runBefore())
 			.then(_ => {
 				try {
+					if (expectedCounters) {
+						if (!jb.frame.wSpy.enabled())
+							jb.frame.initwSpy({wSpyParam: 'ui-test'})
+						jb.frame.wSpy.clear()
+					}
 					var elem = document.createElement('div');
 					var vdom = jb.ui.h(jb.ui.renderable(control()));
 					var cmp = jb.ui.render(vdom, elem)._component;
@@ -60,15 +66,22 @@ jb.component('ui-test', {
           if (e.parentNode)
             jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`)
         })
-				const success = !! expectedResult(new jb.jbCtx(context,{ data: elem.outerHTML }));
+				const countersErr = Object.keys(expectedCounters || {}).map(
+						counter => expectedCounters[counter] != jb.frame.wSpy.logs.$counters[counter] 
+							? `${counter}: ${jb.frame.wSpy.logs.$counters[counter]} instead of ${expectedCounters[counter]}` : '')
+						.filter(x=>x)
+						.join(', ')
+				const success = !! (expectedResult(new jb.jbCtx(context,{ data: elem.outerHTML })) && !countersErr);
 				if (!success)
 					t = 5; // just a breakpoint for debugger
-				return { id: context.vars.testID, success, elem}
+				return { id: context.vars.testID, success, elem, reason: countersErr}
 			}).then(result=> { // default cleanup
 				if (new URL(location.href).searchParams.get('show') === null) {
 					jb.ui.dialogs.dialogs.forEach(d=>d.close())
 					jb.valueByRefHandler.resources(initial_resources);
 					jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
+					if (expectedCounters)
+						jb.frame.initwSpy({resetwSpyToNoop: true})
 				}
 				return result;
 			}).then(result =>

@@ -11,3 +11,18 @@ jb.component('goto-url', {
 			window.open(url,_target);
 	}
 })
+
+jb.component('reset-wspy', {
+	type: 'action',
+	description: 'initalize logger',
+	params: [
+		{ id: 'param', as: 'string' },
+	],
+	impl: (ctx,param) => {
+		const wspy = jb.frame.initwSpy && frame.initwSpy()
+		if (wspy && wspy.enabled()) {
+			wspy.resetParam(param)
+			wspy.clear()
+		}
+	}
+})

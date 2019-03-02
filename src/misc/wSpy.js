@@ -6,8 +6,9 @@ const spySettings = {
 	stackFilter: /wSpy|jb_spy|Object.log|node_modules/i,
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
 }
+const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 
-function initSpy({Error, frame, settings, wSpyParam, memoryUsage}) {
+function initSpy({Error, settings, wSpyParam, memoryUsage}) {
     const systemProps = ['index', 'time', '_time', 'mem', 'source']
 
     const isRegex = x => Object.prototype.toString.call(x) === '[object RegExp]'
@@ -15,7 +16,7 @@ function initSpy({Error, frame, settings, wSpyParam, memoryUsage}) {
     
     return {
 		ver: 7,
-		logs: { $index: 1, $counters: {}},
+		logs: {},
 		wSpyParam,
 		otherSpies: [],
 		enabled: () => true,
@@ -35,11 +36,13 @@ function initSpy({Error, frame, settings, wSpyParam, memoryUsage}) {
 
 			init()
 			this.logs[logName] = this.logs[logName] || []
+			this.logs.$counters = this.logs.$counters || {}
 			this.logs.$counters[logName] = this.logs.$counters[logName] || 0
 			this.logs.$counters[logName]++
 			if (!shouldLog(logName, record)) {
 				return
 			}
+			this.logs.$index = this.logs.$index || 0
 			record.index = this.logs.$index++
 			record.source = this.source(takeFrom)
 			const now = new Date()
@@ -113,7 +116,7 @@ function initSpy({Error, frame, settings, wSpyParam, memoryUsage}) {
 			this.includeLogs = (logs||'').split(',').reduce((acc,log) => {acc[log] = true; return acc },{})
 		},
 		clear(logs) {
-			Object.keys(this.logs).forEach(log => this.logs[log] = [])
+			Object.keys(this.logs).forEach(log => delete this.logs[log])
 		},
         search(pattern) {
 			if (isRegex(pattern)) {
@@ -177,46 +180,44 @@ const noopSpy = {
     log: noop, getCallbackName: noop, logCallBackRegistration: noop, logCallBackExecution: noop, enabled: noop
 }
 
-function initBrowserSpy(settings) {
-	const getParentUrl = () => { try { return window.parent.location.href } catch(e) {} }
-	const getUrl = () => { try { return window.location.href } catch(e) {} }
+frame.initwSpy = function(settings = {}) {
+	const getParentUrl = () => { try { return frame.parent.location.href } catch(e) {} }
+	const getUrl = () => { try { return frame.location.href } catch(e) {} }
 	const getSpyParam = url => (url.match('[?&]w[sS]py=([^&]+)') || ['', ''])[1]
-	const getFirstLoadedSpy = () => { try { return window.parent.wSpy } catch(e) {} }
+	const getFirstLoadedSpy = () => { try { return frame.parent && frame.parent.wSpy || frame.wSpy } catch(e) {} }
+	function saveOnFrame(wSpy) { 
+		try { 
+			frame.wSpy = wSpy;  
+			if (frame.parent)
+				frame.parent.wSpy = wSpy
+		} catch(e) {} 
+		return wSpy
+	}
 
-	try {
-		const wSpyParam = getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
-		if (!wSpyParam) {
-			return noopSpy
-		}
-		const wSpy = initSpy({
-			Error: window.Error,
-			memoryUsage: () => performance && performance.memory && performance.memory.usedJSHeapSize,
-			frame: window,
-			wSpyParam,
-			settings
-		})
-
-		const quickestSpy = getFirstLoadedSpy()
-		if (quickestSpy) {
-			wSpy.logs = quickestSpy.logs || wSpy.logs
-			if ((quickestSpy.ver || 0) < wSpy.ver || 0) {
-				// newer version hijacks quickest
-				quickestSpy.logs = wSpy.logs // to be moved after all spies have 'logs' property
-				wSpy.otherSpies = [quickestSpy, ...quickestSpy.otherSpies || []]
-				window.parent.wSpy = wSpy
-			} else {
-				quickestSpy.otherSpies.push(wSpy)
-			}
-			return wSpy
-		}
-		return window.parent.wSpy = wSpy
-	} catch (e) {
+	function doInit() {
+		try {
+			if (settings.forceNoop)
+				return noopSpy
+			const existingSpy = getFirstLoadedSpy();
+			if (existingSpy && existingSpy.enabled())
+				return existingSpy;
+	
+			const wSpyParam = settings.wSpyParam || getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
+			if (wSpyParam) return initSpy({
+				Error: frame.Error,
+				memoryUsage: () => frame.performance && performance.memory && performance.memory.usedJSHeapSize,
+				wSpyParam,
+				settings: Object.assign(settings, spySettings)
+			});
+		} catch (e) {}
 		return noopSpy
 	}
+
+	return saveOnFrame(doInit())
 }
 
 if (typeof window == 'object') {
-	window.wSpy = initBrowserSpy(spySettings)
+	frame.initwSpy()
 }
 
 })()

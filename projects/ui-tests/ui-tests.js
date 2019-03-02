@@ -595,6 +595,41 @@ jb.component('ui-test.itemlist-container-search', {
   }
 })
 
+jb.component('ui-test.search-doesnot-create-ReactClass', {
+  impl :{$: 'ui-test',
+      control :{$: 'group',
+        controls: [
+          {$: 'itemlist-container.search' },
+          {$: 'itemlist',
+            items :{
+              $pipeline: [
+                '%$people%',
+                {$: 'itemlist-container.filter' },
+              ]
+            },
+            controls :{$: 'label', title1: '%name%',
+                title :{$: 'highlight',
+                  base: '%name%',
+                  highlight: '%$itemlistCntrData/search_pattern%',
+                },
+            },
+            features: [
+                { $: 'itemlist.selection', autoSelectFirst: true },
+                { $: 'itemlist.keyboard-selection', autoFocus: true },
+                { $: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', }
+            ],
+          },
+        ],
+        features: [
+          {$: 'group.itemlist-container' },
+        ]
+      },
+      action :{$: 'ui-action.set-text', value: 'ho', selector: '.mdl-textfield'},
+      expectedResult : ctx=>true,
+      expectedCounters: ctx => ({ createReactClass: 6 })
+  }
+})
+
 jb.component('ui-test.table', {
   impl :{$: 'ui-test',
   control :{$: 'table', items: '%$people%',

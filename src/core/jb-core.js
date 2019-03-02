@@ -543,7 +543,7 @@ class jbCtx {
   bool(profile) { return this.run(profile, { as: 'boolean'}) }
   // keeps the context vm and not the caller vm - needed in studio probe
   ctx(ctx2) { return new jbCtx(this,ctx2) }
-  win() { // used for multi windows apps. e.g., studio
+  frame() { // used for multi windows apps. e.g., studio
     return frame
   }
   extendVars(ctx2,data2) {
@@ -644,7 +644,7 @@ let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 return {
   run: jb_run,
   jbCtx, expression, bool_expression, profileType, compName, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, pathsToLog,
+  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, pathsToLog, frame,
   ctxCounter: _ => ctxCounter
 }
 
