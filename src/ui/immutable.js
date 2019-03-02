@@ -24,28 +24,34 @@ class ImmutableWithPath {
     this.refresh(ref);
     if (ref.$jb_invalid)
       return null;
-    return ref.$jb_cache = ref.$jb_path.reduce((o,p)=>o[p],this.resources());
+    return ref.$jb_cache = this.valOfPath(ref.$jb_path);
   }
   writeValue(ref,value,srcCtx) {
     if (!ref)
       return jb.logError('writeValue: null ref');
 
     if (this.val(ref) === value) return;
-    jb.log('writeValue',['immutable',value,ref,srcCtx]);
+    jb.log('writeValue',['immutable',(ref.$jb_path||[]).join('~'),value,ref,srcCtx]);
     if (ref.$jb_val)
       return ref.$jb_val(value);
     return this.doOp(ref,{$set: this.createSecondaryLink(value) },srcCtx)
   }
   createSecondaryLink(val) {
-    if (typeof val === 'object') {
+    if (typeof val === 'object' && !val.$jb_secondaryLink) {
       const ref = this.asRef(val);
       if (ref.$jb_path)
         return new Proxy(val, {
-          get: (o,p) => p === '$jb_secondaryLink' ? true : o[p],
+          get: (o,p) => p === '$jb_secondaryLink' ? {val} : o[p],
           set: (o,p,v) => o[p] = v
         })
     }
     return val;
+  }
+  cleanVal(val) {
+    return val && val.$jb_secondaryLink && val.$jb_secondaryLink.val || val
+  }
+  valOfPath(path) {
+    return this.cleanVal(path.reduce((o,p)=>o && o[p],this.resources()))
   }
   splice(ref,args,srcCtx) {
     return this.doOp(ref,{$splice: args },srcCtx)
@@ -80,7 +86,7 @@ class ImmutableWithPath {
     return this.doOp(ref,{$merge: value},srcCtx)
   }
   doOp(ref,opOnRef,srcCtx,doNotNotify) {
-    jb.log('immutable',['doOp',...arguments]);
+    jb.log('immutable',['doOp',(ref.$jb_path||[]).join('~'),...arguments]);
     if (!this.isRef(ref))
       ref = this.asRef(ref);
     if (!ref) return;
@@ -142,7 +148,7 @@ class ImmutableWithPath {
       return {
         $jb_path: path,
         $jb_resourceV: this.resourceVersions[path[0]],
-        $jb_cache: path.reduce((o,p)=>o[p],this.resources()),
+        $jb_cache: this.valOfPath(path),
         handler: this,
       }
     return obj;
@@ -168,7 +174,7 @@ class ImmutableWithPath {
     }
   }
   refresh(ref,lastOpEvent,silent) {
-    jb.log('immutable',['refresh',...arguments]);
+    jb.log('immutable',['refresh',(ref.$jb_path||[]).join('~'),...arguments]);
     if (!ref) debugger;
     try {
       var path = ref.$jb_path, new_ref = {};
@@ -182,22 +188,25 @@ class ImmutableWithPath {
         if (res)
           return Object.assign(ref,res)
         ref.$jb_invalid = true;
-        return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
+        return !silent && jb.logError('refresh: parent not found',path.join('~'),...arguments);
       }
+      
+      if (!ref.$jb_parentOfPrim && ref.$jb_path && this.valOfPath(ref.$jb_path,silent) === ref.$jb_cache)
+        return Object.assign(ref,{$jb_resourceV: this.resourceVersions[path[0]]})
 
       if (ref.$jb_parentOfPrim) {
         var parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
         if (!parent || !this.isRef(parent)) {
           this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
           ref.$jb_invalid = true;
-          return !silent && jb.logError('refresh: parent not found: '+ path.join('~'));
+          return !silent && jb.logError('refresh: parent not found',path.join('~'),...arguments);
         }
         var prop = path.slice(-1)[0];
         new_ref = {
           $jb_path: parent.$jb_path.concat([prop]),
           $jb_resourceV: this.resourceVersions[path[0]],
-          $jb_cache: parent.$jb_cache && parent.$jb_cache[prop],
-          $jb_parentOfPrim: parent.$jb_path.reduce((o,p)=>o[p],this.resources()),
+          $jb_cache: this.cleanVal(parent.$jb_cache && parent.$jb_cache[prop]),
+          $jb_parentOfPrim: this.valOfPath(parent.$jb_path),
           handler: this,
         }
       } else {
@@ -205,13 +214,13 @@ class ImmutableWithPath {
         if (!object_path_found) {
           this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
           ref.$jb_invalid = true;
-          return !silent && jb.logError('refresh: object not found: ' + path.join('~'));
+          return !silent && jb.logError('refresh: object not found',path.join('~'),...arguments);
         }
         var new_path = [path[0]].concat(object_path_found);
         if (new_path) new_ref = {
           $jb_path: new_path,
           $jb_resourceV: this.resourceVersions[new_path[0]],
-          $jb_cache: new_path.reduce((o,p)=>o[p],this.resources()),
+          $jb_cache: this.valOfPath(new_path),
           handler: this,
         }
       }
@@ -224,9 +233,9 @@ class ImmutableWithPath {
   }
   refOfPath(path,silent) {
       try {
-        var val = path.reduce((o,p)=>o && o[p],this.resources());
+        var val = this.valOfPath(path);
         if (val == null || typeof val != 'object' || Array.isArray(val))
-          var parent = path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
+          var parent = this.valOfPath(path.slice(0,-1));
         else
           var parent = null
 

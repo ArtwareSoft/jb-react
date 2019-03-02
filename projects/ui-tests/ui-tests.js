@@ -595,6 +595,20 @@ jb.component('ui-test.itemlist-container-search', {
   }
 })
 
+jb.component('ui-test.secondaryLink-set-bug', {
+  impl :{$: 'ui-test',
+      control :{$: 'itemlist', items :'%$people%',
+            controls :{$: 'label', title: '%name%' },
+            features :{$: 'itemlist.selection', autoSelectFirst: true, databind: '%$globals/selected%' }
+      },
+      action : {$runActions: [
+        {$: 'write-value', value: '%$people[1]%', to: '%$globals/selected%'},
+        {$: 'write-value', value: '5', to: '%$globals/data1%'},
+      ] },
+      expectedResult : ctx=>true,
+  }
+})
+
 jb.component('ui-test.search-doesnot-create-ReactClass', {
   impl :{$: 'ui-test',
       control :{$: 'group',

@@ -91,14 +91,16 @@ jb.component('itemlist-container.filter', {
   requires: ctx => ctx.vars.itemlistCntr,
   impl: ctx => {
       if (!ctx.vars.itemlistCntr) return;
-      jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length);
-      var res = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
+      const resBeforeMaxFilter = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
                   filter(items), ctx.data || []);
-      jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),res.length);
-      res = ctx.vars.itemlistCntr.maxItemsFilter(res);
+      const res = ctx.vars.itemlistCntr.maxItemsFilter(resBeforeMaxFilter);
       if (ctx.exp('%$itemlistCntrData/countAfterFilter%','number') != res.length)
         jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
-      jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length);
+      jb.delay(1).then(_=>{
+        jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length);
+        jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length);
+        jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length);
+      })
       return res;
    }
 })
