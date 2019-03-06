@@ -37,9 +37,9 @@ jb.component('dynamic-controls', {
   ],
   impl: (context,controlItems,genericControl,itemVariable) =>
     controlItems()
-      .map(controlItem => jb.tosingle(genericControl(
+      .map(jb.ui.cachedMap(controlItem => jb.tosingle(genericControl(
         new jb.jbCtx(context,{data: controlItem, vars: jb.obj(itemVariable,controlItem)})))
-      )
+      ))
 })
 
 jb.component('group.dynamic-titles', {

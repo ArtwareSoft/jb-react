@@ -1,7 +1,7 @@
 (function() {
 'use strict'
 const spySettings = { 
-    moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject', 
+    moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable', 
 	includeLogs: 'exception,focus,scriptChange,resLog,immutableErr',
 	stackFilter: /wSpy|jb_spy|Object.log|node_modules/i,
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5

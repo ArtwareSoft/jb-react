@@ -1,10 +1,17 @@
 jb.resource('globals',{ });
 
-jb.resource('people',[
+jb.resource('mutable-people',[
+  { "name": "Homer Simpson - mutable" ,age: 42 , male: true},
+  { "name": "Marge Simpson - mutable" ,age: 38 , male: false},
+  { "name": "Bart Simpson - mutable"  ,age: 12 , male: true}
+]);
+
+jb.const('people',[
   { "name": "Homer Simpson" ,age: 42 , male: true},
   { "name": "Marge Simpson" ,age: 38 , male: false},
   { "name": "Bart Simpson"  ,age: 12 , male: true}
 ]);
+
 
 jb.resource('person',{
   name: "Homer Simpson",
@@ -457,7 +464,7 @@ jb.component('ui-test.itemlist-with-select', {
 jb.component('ui-test.itemlist-DD', {
   impl :{$: 'ui-test', control :{$: 'group',
   controls: [
-      { $: 'itemlist', items: '%$people%',
+      { $: 'itemlist', items: '%$mutable-people%',
           controls :{$: 'label', title: '%name%', features:{$: 'css.class', class: 'drag-handle'} },
           features: [
               { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true },
@@ -466,7 +473,7 @@ jb.component('ui-test.itemlist-DD', {
               { $: 'id', id: 'itemlist' },
           ],
       },
-      { $: 'itemlist', items: '%$people%', watchItems: true,
+      { $: 'itemlist', items: '%$mutable-people%', watchItems: true,
         controls :{$: 'label', title: '%name%' }
       },
     ],
@@ -574,6 +581,7 @@ jb.component('ui-test.itemlist-container-search', {
                   base: '%name%',
                   highlight: '%$itemlistCntrData/search_pattern%',
                 },
+                features :{$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' }
             },
             features: [
                 { $: 'itemlist.selection', autoSelectFirst: true },
@@ -662,7 +670,7 @@ jb.component('ui-test.table', {
 jb.component('ui-test.table-DD', {
   impl :{$: 'ui-test',  control :{$: 'group',
   controls: [
-    {$: 'table', items: '%$people%', watchItems: true,
+    {$: 'table', items: '%$mutable-people%', watchItems: true,
         fields : [
           {$: 'field', data: '%name%', title: 'name', class: 'drag-handle', width: 300},
           {$: 'field', data: '%age%', title: 'age', width: 50 },

@@ -86,7 +86,7 @@ class ImmutableWithPath {
     return this.doOp(ref,{$merge: value},srcCtx)
   }
   doOp(ref,opOnRef,srcCtx,doNotNotify) {
-    jb.log('immutable',['doOp',(ref.$jb_path||[]).join('~'),...arguments]);
+    jb.log('doOp',[(ref.$jb_path||[]).join('~'),...arguments]);
     if (!this.isRef(ref))
       ref = this.asRef(ref);
     if (!ref) return;
@@ -308,20 +308,20 @@ class ImmutableWithPath {
             e.ref.$jb_path[0] == ref.$jb_path[0])
         .flatMap(e=> {
           const path = e.ref.$jb_path.join('~'), ref_path = (ref.$jb_path||[]).join('~');
-          jb.log('immutable',['ref changed check',path,ref_path,e, ...arguments]);
+          jb.log('refObservable',['ref changed check',path,ref_path,e, ...arguments]);
           this.refresh(ref,e,true);
           if (ref.$jb_invalid) {
             settings && settings.onError && settings.onError();
             return [];
           }
           const _continue = ref_path.indexOf(path) == 0 || settings.includeChildren && path.indexOf(ref_path) == 0;
-          jb.log('immutable',['ref changed after check',path,ref_path,_continue,e, ...arguments]);
+          jb.log('refObservable',['ref changed after check',path,ref_path,_continue,e, ...arguments]);
           return _continue ? [e] : [];
         })
         .distinctUntilChanged((e1,e2)=>
           e1.newVal == e2.newVal)
         .do(e=>{
-          jb.log('writeValue',['ref changed triggered',(ref.$jb_path||[]).join('~'),e, ...arguments]);
+          jb.log('refObservable',['ref changed triggered',(ref.$jb_path||[]).join('~'),e, ...arguments]);
         })
     }
     return jb.rx.Observable.of(jb.val(ref));

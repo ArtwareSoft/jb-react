@@ -301,6 +301,17 @@ ui.renderWidget = function(profile,elem) {
 	previewElem = ui.render(ui.h(R),elem);
 }
 
+ui.cachedMap = mapFunc => {
+	const cache = new Map();
+	return item => {
+		if (cache.has(item))
+			return cache.get(item)
+		const val = mapFunc(item);
+		cache.set(item, val);
+		return val;
+	}
+}
+
 ui.applyAfter = function(promise,ctx) {
 	// should refresh all after promise
 }

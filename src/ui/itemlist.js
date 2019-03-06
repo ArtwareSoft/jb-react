@@ -42,10 +42,10 @@ jb.component('itemlist.init', {
               Object.assign(controlsOfItem(item),{item:item})).filter(x=>x.length > 0);
         }
 
-        function controlsOfItem(item) {
-          return ctx.vars.$model.controls(cmp.ctx.setData(item).setVars(jb.obj(ctx.vars.$model.itemVariable,item)))
-            .filter(x=>x).map(c=>jb.ui.renderable(c)).filter(x=>x);
-        }
+        const controlsOfItem = jb.ui.cachedMap(item =>
+          ctx.vars.$model.controls(cmp.ctx.setData(item).setVars(jb.obj(ctx.vars.$model.itemVariable,item)))
+            .filter(x=>x).map(c=>jb.ui.renderable(c)).filter(x=>x));
+        
       },
       init: cmp => {
         cmp.state.ctrls = cmp.calcCtrls();
