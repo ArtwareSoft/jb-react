@@ -295,8 +295,7 @@ class ImmutableWithPath {
   // valid(ref) {
   //   return ref.$jb_path && ref.$jb_path.filter(x=>!x).length == 0;
   // }
-  refObservable(ref,cmp,settings) {
-    settings = settings || {};
+  refObservable(ref,cmp,{includeChildren, delay, onError}={}) {
     if (ref && ref.$jb_observable)
       return ref.$jb_observable(cmp);
     if (!ref || !this.isRef(ref))
@@ -311,10 +310,10 @@ class ImmutableWithPath {
           jb.log('refObservable',['ref changed check',path,ref_path,e, ...arguments]);
           this.refresh(ref,e,true);
           if (ref.$jb_invalid) {
-            settings && settings.onError && settings.onError();
+            onError && onError();
             return [];
           }
-          const _continue = ref_path.indexOf(path) == 0 || settings.includeChildren && path.indexOf(ref_path) == 0;
+          const _continue = ref_path.indexOf(path) == 0 || includeChildren && path.indexOf(ref_path) == 0;
           jb.log('refObservable',['ref changed after check',path,ref_path,_continue,e, ...arguments]);
           return _continue ? [e] : [];
         })

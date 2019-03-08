@@ -581,7 +581,7 @@ jb.component('ui-test.itemlist-container-search', {
                   base: '%name%',
                   highlight: '%$itemlistCntrData/search_pattern%',
                 },
-                features :{$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' }
+                features :{$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', delay: 20 }
             },
             features: [
                 { $: 'itemlist.selection', autoSelectFirst: true },
@@ -594,7 +594,10 @@ jb.component('ui-test.itemlist-container-search', {
           {$: 'group.itemlist-container' },
         ]
       },
-      action :{$: 'ui-action.set-text', value: 'ho', selector: '.mdl-textfield'},
+      action :[ 
+        {$: 'ui-action.set-text', value: 'ho', selector: '.mdl-textfield'},
+        ctx=> jb.delay(30)
+      ],
       expectedResult :{$and: [
         {$: 'contains', text: ['Ho','mer'] },
         {$: 'not-contains', text: 'Marge' },

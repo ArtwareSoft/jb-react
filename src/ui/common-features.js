@@ -34,10 +34,11 @@ jb.component('watch-ref', {
   params: [
     { id: 'ref', essential: true, as: 'ref', description: 'reference to data' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+    { id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
   ],
-  impl: (ctx,ref,includeChildren) => ({
+  impl: (ctx,ref,includeChildren,delay) => ({
       init: cmp =>
-        jb.ui.watchRef(ctx,cmp,ref,includeChildren)
+        jb.ui.watchRef(ctx,cmp,ref,includeChildren,delay)
   })
 })
 

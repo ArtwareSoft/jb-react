@@ -378,8 +378,8 @@ ui.item = function(cmp,vdom,data) {
 	return vdom;
 }
 
-ui.watchRef = function(ctx,cmp,ref,includeChildren) {
-    ref && ui.refObservable(ref,cmp,{includeChildren: includeChildren})
+ui.watchRef = function(ctx,cmp,ref,includeChildren,delay) {
+    ref && ui.refObservable(ref,cmp,{includeChildren, delay})
 			.subscribe(e=>{
         if (ctx && ctx.profile && ctx.profile.$trace)
           console.log('ref change watched: ' + (ref && ref.$jb_path && ref.$jb_path.join('~')),e,cmp,ref,ctx);
