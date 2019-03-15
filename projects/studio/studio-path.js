@@ -20,9 +20,9 @@ function compsRef(val,opEvent) {
   }
 }
 
-st.compsRefHandler = new jb.ui.ImmutableWithPath(compsRef);
+st.compsRefHandler = new jb.ui.ImmutableWithJbId(compsRef);
 st.compsRefHandler.resourceChange.subscribe(e=>{
-	jb.log('scriptChange',[e.path.join('.'),e]);
+	jb.log('scriptChange',[e.ctx,e]);
 	st.lastStudioActivity= new Date().getTime()
 })
 // adaptors
@@ -49,8 +49,11 @@ Object.assign(st,{
   scriptChange: st.compsRefHandler.resourceChange,
   refObservable: (ref,cmp,settings) =>
   	st.compsRefHandler.refObservable(ref,cmp,settings),
-  refOfPath: (path,silent) =>
-  	st.compsRefHandler.refOfPath(path.split('~'),silent),
+  refOfPath: (path,silent) => {
+		const _path = path.split('~');
+		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0]);
+		return st.compsRefHandler.refOfPath(_path,silent)
+	},
   parentPath: path =>
 		path.split('~').slice(0,-1).join('~'),
   valOfPath: (path,silent) =>
@@ -289,9 +292,9 @@ Object.assign(st, {
 	},
 
   pathOfRef: ref =>
-  		ref && ref.$jb_path && ref.$jb_path.join('~'),
+  		ref && ref.path().join('~'),
 	nameOfRef: ref =>
-		(ref && ref.$jb_path) ? ref.$jb_path.slice(-1)[0].split(':')[0] : 'ref',
+		ref.path().slice(-1)[0].split(':')[0],
 	valSummaryOfRef: ref =>
 		st.valSummary(jb.val(ref)),
 	valSummary: val => {
@@ -330,7 +333,7 @@ jb.component('studio.is-new', {
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) => {
 		if (st.compsHistory.length == 0 || st.previewjb.comps.$jb_selectionPreview) return false;
-		var version_before = new jb.ui.ImmutableWithPath(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
+		var version_before = new jb.ui.ImmutableWithJbId(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
 		var res =  JSON.stringify(st.valOfPath(path)) != JSON.stringify(st.val(version_before));
 //		var res =  st.valOfPath(path) && !st.val(version_before);
 		return res;

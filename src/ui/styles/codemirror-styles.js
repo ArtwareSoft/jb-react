@@ -42,7 +42,7 @@ jb.component('editable-text.codemirror', {
 					// });
 					editor.setValue(jb.tostring(data_ref));
 				} catch(e) {
-					jb.logException(e,'editable-text.codemirror');
+					jb.logException(e,'editable-text.codemirror',context);
 					return;
 				}
 				//cmp.lastEdit = new Date().getTime();
@@ -169,7 +169,7 @@ jb.component('text.codemirror', {
         						editor.refresh(); // ????
         					});
                 } catch(e) {
-                    jb.logException(e,'editable-text.codemirror');
+                    jb.logException(e,'editable-text.codemirror',context);
                     return;
                 }
                 editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');

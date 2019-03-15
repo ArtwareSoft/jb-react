@@ -1,8 +1,8 @@
 (function() {
 'use strict'
 const spySettings = { 
-    moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable', 
-	includeLogs: 'exception,focus,scriptChange,resLog,immutableErr',
+    moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog', 
+	includeLogs: 'exception,error',
 	stackFilter: /wSpy|jb_spy|Object.log|node_modules/i,
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
 }
@@ -20,7 +20,7 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 		wSpyParam,
 		otherSpies: [],
 		enabled: () => true,
-		log(logName, record, {takeFrom, funcTitle} = {}) {
+		log(logName, record, {takeFrom, funcTitle, modifier} = {}) {
 			const init = () => {
 				if (!this.includeLogs) {
 					const includeLogsFromParam = (this.wSpyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
@@ -57,6 +57,9 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 			}
 			if (!record[0] && record.source) {
 				record[0] = record.source[0]
+			}
+			if (typeof modifier === 'function') {
+				modifier(record)
 			}
 			this.logs[logName].push(record)
 		},
@@ -127,7 +130,7 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 				return this.merged().slice(-1 * pattern)
 			}
 		},
-		merged(filter) {
+		all(filter) {
 			return [].concat.apply([], Object.keys(this.logs).filter(log => Array.isArray(this.logs[log])).map(module =>
 				this.logs[module].map(arr => {
 					const res = [arr.index, module, ...arr]

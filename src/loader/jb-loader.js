@@ -18,7 +18,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'dist/jb-rx.js',
 
         'src/ui/react-ctrl.js',
-        'src/ui/immutable.js',
+        'src/ui/immutable-ref.js',
 
         'src/ui/group.js',
         'src/ui/label.js',

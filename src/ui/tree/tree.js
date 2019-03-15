@@ -67,7 +67,7 @@ jb.component('tree', {
 	impl: ctx => {
 		var nodeModel = ctx.params.nodeModel();
 		if (!nodeModel)
-			return jb.logException('missing nodeModel in tree');
+			return jb.logError('missing nodeModel in tree',ctx);
 		var tree = { nodeModel: nodeModel };
 		var ctx = ctx.setVars({$tree: tree});
 		return jb.ui.ctrl(ctx, {
@@ -343,7 +343,7 @@ pathToVal = (model,path) =>
 
 valToPath = (model,val) => {
 	var ref = model.refHandler.asRef(val);
-	return ref ? ref.$jb_path.join('~') : ''
+	return ref ? ref.path().join('~') : ''
 }
 
 addOneToIndex = path => {

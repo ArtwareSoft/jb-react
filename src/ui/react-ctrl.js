@@ -37,7 +37,7 @@ class JbComponent {
 	}
 
 	reactComp() {
-		jb.log('createReactClass',[this.ctx.path, this]);
+		jb.log('createReactClass',[this.ctx, this]);
 		var jbComp = this;
 		class ReactComp extends ui.Component {
 			constructor(props) {
@@ -52,7 +52,7 @@ class JbComponent {
 					Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
 					jbComp.jbBeforeInitFuncs.forEach(init=> init(this,props));
 					jbComp.jbInitFuncs.forEach(init=> init(this,props));
-			    } catch(e) { jb.logException(e,'') }
+			    } catch(e) { jb.logException(e,'createReactClass',this.ctx) }
 			}
 			render(props,state) {
 				jb.log('render',[this.ctx.path, state,props,this]);
@@ -68,24 +68,24 @@ class JbComponent {
 					jb.log('renRes',[this.ctx.path, vdom, state,props,this]);
 					return vdom;
 				} catch (e) {
-					jb.logException('render',e);
+					jb.logException(e,'render',ctx,props,state);
 					return ui.h('span',{display: 'none'});
 				}
 			}
     	componentDidMount() {
 				jbComp.injectCss(this);
 				jbComp.jbRegisterEventsFuncs.forEach(init=> {
-					try { init(this) } catch(e) { jb.logException('init',e) }});
+					try { init(this) } catch(e) { jb.logException(e,'init',jbComp.ctx) }});
 				jbComp.jbAfterViewInitFuncs.forEach(init=> {
-					try { init(this) } catch(e) { jb.logException('AfterViewInit',e); }});
+					try { init(this) } catch(e) { jb.logException(e,'AfterViewInit',jbComp.ctx); }});
 			}
 			componentDidUpdate() {
 				jbComp.jbComponentDidUpdateFuncs.forEach(f=> {
-					try { f(this) } catch(e) { jb.logException('componentDidUpdate',e); }});
+					try { f(this) } catch(e) { jb.logException(e,'componentDidUpdate',jbComp.ctx); }});
 			}
 	  	componentWillUnmount() {
 				jbComp.jbDestroyFuncs.forEach(f=> {
-					try { f(this) } catch(e) { jb.logException('destroy',e); }});
+					try { f(this) } catch(e) { jb.logException(e,'destroy',jbComp.ctx); }});
 				this.resolveDestroyed();
 			}
 		};
@@ -349,7 +349,7 @@ ui.limitStringLength = function(str,maxLength) {
 ui.stateChangeEm = new jb.rx.Subject();
 
 ui.setState = function(cmp,state,opEvent,watchedAt) {
-	jb.log('setState',[cmp.ctx.path,state, ...arguments]);
+	jb.log('setState',[cmp.ctx,state, ...arguments]);
 	if (state == null && cmp.refresh)
 		cmp.refresh();
 	else
@@ -378,11 +378,13 @@ ui.item = function(cmp,vdom,data) {
 	return vdom;
 }
 
-ui.watchRef = function(ctx,cmp,ref,includeChildren,delay) {
-    ref && ui.refObservable(ref,cmp,{includeChildren, delay})
+ui.watchRef = function(ctx,cmp,ref,includeChildren) {
+		if (!ref)
+			jb.log('error',[ctx, 'null ref for watchRef', ...arguments]);
+    ref && ui.refObservable(ref,cmp,{includeChildren})
 			.subscribe(e=>{
         if (ctx && ctx.profile && ctx.profile.$trace)
-          console.log('ref change watched: ' + (ref && ref.$jb_path && ref.$jb_path.join('~')),e,cmp,ref,ctx);
+          console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
         return ui.setState(cmp,null,e,ctx);
       })
 }
@@ -446,6 +448,7 @@ ui.addHTML = (el,html) => {
   elem.innerHTML = html;
   el.appendChild(elem.firstChild)
 }
+
 // ****************** components ****************
 
 jb.component('custom-style', {

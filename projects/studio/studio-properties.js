@@ -230,43 +230,6 @@ jb.component('studio.property-field', {
   }
 })
 
-// jb.component('studio.property-field2', {
-// 	type: 'control',
-// 	params: [
-// 		{ id: 'path', as: 'string' },
-// 	],
-// 	impl: function(context,path) {
-// 		var fieldPT = 'studio.property-label';
-
-//     var st = jb.studio;
-// 		var val = st.valOfPath(path);
-// 		var valType = typeof val;
-// 		var paramDef = st.paramDef(path);
-// 		if (!paramDef)
-// 			jb.logError('property-field: no param def for path '+path);
-// 		if (valType == 'function')
-// 			fieldPT = 'studio.property-javascript';
-// 		else if (paramDef.as == 'number')
-// 			fieldPT = 'studio.property-slider';
-// 		else if (paramDef.options)
-// 			fieldPT = 'studio.property-enum';
-// 		else if ( ['data','boolean'].indexOf(paramDef.type || 'data') != -1) {
-// 			if ( st.compNameOfPath(path) || valType == 'object')
-// 				fieldPT = 'studio.property-script';
-// 			else if (paramDef.type == 'boolean' && (valType == 'boolean' || val == null))
-// 				fieldPT = 'studio.property-boolean';
-// 			else
-// 				fieldPT = 'studio.property-primitive';
-// 		}
-// 		else if ( (paramDef.type || '').indexOf('[]') != -1 && isNaN(Number(path.split('~').pop())))
-// 			fieldPT = 'studio.property-script';
-// 		else
-// 			fieldPT = 'studio.property-tgp';
-
-// 		return context.run({ $: fieldPT, path: path });
-// 	}
-// })
-
 jb.component('studio.property-label',{
 	type: 'control',
 	params: [ {id: 'path', as: 'string' } ],

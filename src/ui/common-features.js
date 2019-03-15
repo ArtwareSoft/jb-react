@@ -51,7 +51,7 @@ jb.component('watch-observable', {
   impl: (ctx,toWatch) => ({
       init: cmp => {
         if (!toWatch.subscribe)
-          return jb.logError('watch-observable: non obsevable parameter');
+          return jb.logError('watch-observable: non obsevable parameter', ctx);
         var virtualRef = { $jb_observable: cmp =>
           toWatch
         };
@@ -99,13 +99,14 @@ jb.component('id', {
 
 jb.component('var', {
   type: 'feature', category: 'general:90',
-	description: 'defines a local variable',
+	description: 'define a variable. mutable or const, local or global',
   params: [
     { id: 'name', as: 'string', essential: true },
     { id: 'value', dynamic: true, defaultValue: '', essential: true },
     { id: 'mutable', as: 'boolean', description: 'E.g., selected item variable' },
+    { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
   ],
-  impl: (context, name, value, mutable) => ({
+  impl: (context, name, value, mutable, globalId) => ({
       destroy: cmp => {
         if (mutable)
           jb.writeValue(jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]),null,context)
@@ -115,7 +116,8 @@ jb.component('var', {
           return ctx.setVars(jb.obj(name, value(ctx)))
         } else {
           cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
-          const fullName = name + ':' + cmp.resourceId
+          const fullName = globalId || (name + ':' + cmp.resourceId);
+          jb.log('var',['new-resource',ctx,fullName])
           jb.resource(fullName, jb.val(value(ctx)));
           var refToResource = jb.valueByRefHandler.refOfPath([fullName]);
           //jb.writeValue(refToResource,value(ctx.setData(cmp)),context);
@@ -124,17 +126,6 @@ jb.component('var', {
         }
       }
   })
-})
-
-jb.component('global-var', {
-  type: 'feature', category: 'general:20',
-  description: 'defines a global variable which is calculated only once',
-  params: [
-    { id: 'name', as: 'string', essential: true },
-    { id: 'value', dynamic: true, essential: true },
-  ],
-  impl: (context, name, value) =>
-    jb.consts && !jb.consts[name] && (jb.consts[name] = value())
 })
 
 jb.component('bind-refs', {
@@ -159,21 +150,24 @@ jb.component('calculated-var', {
   params: [
     { id: 'name', as: 'string', essential: true },
     { id: 'value', dynamic: true, defaultValue: '', essential: true },
+    { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
     { id: 'watchRefs', as: 'array', dynamic: true, essential: true, defaultValue: [], description: 'variable to watch. needs to be in array' },
   ],
-  impl: (context, name, value,watchRefs) => ({
+  impl: (context, name, value,globalId, watchRefs) => ({
       destroy: cmp => {
         jb.writeValue(jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]),null,context)
       },
       extendCtxOnce: (ctx,cmp) => {
-          cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
-          var refToResource = jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]);
-          jb.writeValue(refToResource,value(cmp.ctx),context);
-          (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
+        cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
+        const fullName = globalId || (name + ':' + cmp.resourceId);
+        jb.log('calculated var',['new-resource',ctx,fullName])
+        jb.resource(fullName, jb.val(value(ctx)));
+        var refToResource = jb.valueByRefHandler.refOfPath([fullName]);
+        (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
             jb.ui.refObservable(ref,cmp,{includeChildren:true}).subscribe(e=>
               jb.writeValue(refToResource,value(cmp.ctx),context))
           )
-          return ctx.setVars(jb.obj(name, refToResource));
+        return ctx.setVars(jb.obj(name, refToResource));
       }
   })
 })

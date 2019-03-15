@@ -46,13 +46,14 @@ jb.component('group.itemlist-container', {
   description: 'itemlist writable container to support addition, deletion and selection',
   type: 'feature', category: 'itemlist:80,group:70',
   params: [
-    { id: 'id', as: 'string' },
+    { id: 'id', as: 'string', essential: true },
     { id: 'defaultItem', as: 'single' },
     { id: 'maxItems', as: 'number' , defaultValue: 100 },
 		{ id: 'initialSelection', as: 'single' },
   ],
   impl :{$list : [
-    {$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , mutable: true},
+    {$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , 
+        mutable: true, globalId: 'itemlistCntrData:%$id%'},
     {$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
     ctx => ({
       init: cmp => {

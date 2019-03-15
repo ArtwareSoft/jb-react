@@ -74,7 +74,7 @@ jb.component('studio-probe-test', {
             if (!res.result[0])
                 return failure('no probe results at path ' + probePath);
           } catch(e) {
-            jb.logException(e,'jb-path-test');
+            jb.logException(e,'jb-path-test',ctx);
             return failure('exception');
           }
           return success();
@@ -97,9 +97,10 @@ jb.component('path-change-test', {
 
     var pathRef = jb.studio.refOfPath(path);
     action();
-    pathRef.handler.refresh(pathRef);
-    if (pathRef.$jb_path.join('~') != expectedPathAfter)
-      var res = { id: testId, title: testId, success: false , reason: pathRef.$jb_path.join('~') + ' instead of ' + expectedPathAfter }
+    
+    const res_path = pathRef.path().join('~');
+    if (res_path != expectedPathAfter)
+      var res = { id: testId, title: testId, success: false , reason: res_path + ' instead of ' + expectedPathAfter }
     else
       var res = { id: testId, title: testId, success: true };
     cleanUp();

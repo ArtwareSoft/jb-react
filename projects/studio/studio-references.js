@@ -44,17 +44,16 @@ jb.component('studio.references', {
 	  if (path.indexOf('~') != -1) return [];
 
     //debugger;refs(jb.studio.previewjb.comps['test.referer1']);
-
     var res = jb.entries(jb.studio.previewjb.comps)
-    	.map(e=>({id: e[0], refs: refs(e[1].impl).map(obj=> e[0]+'~impl~'+ jb.studio.compsRefHandler.pathOfObject(obj,e[1].impl).join('~') ) }))
+    	.map(e=>({id: e[0], refs: refs(e[1].impl,`${e[0]}~impl`)}))
       .filter(e=>e.refs.length > 0)
     return res;
 
-    function refs(profile) {
+    function refs(profile, parentPath) {
     	if (profile && typeof profile == 'object') {
-        var subResult = Object.getOwnPropertyNames(profile).reduce((res,prop)=>
-      		res.concat(refs(profile[prop])) ,[]);
-      	return (profile.$ == path ? [profile] : []).concat(subResult);
+        var subResult = Object.keys(profile).reduce((res,prop)=>
+      		res.concat(refs(profile[prop],`${parentPath}~${prop}`)) ,[]);
+      	return (profile.$ == path ? [parentPath] : []).concat(subResult);
       }
       return [];
     }

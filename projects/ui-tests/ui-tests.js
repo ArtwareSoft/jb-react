@@ -555,7 +555,7 @@ control :{$: 'group',
         ],
       },
       {$: 'label' , title: '%$globals/selectedPerson/name% selected',
-        features :{$: 'watch-ref', ref: '%$globals/selectedPerson/name%' }
+        features :{$: 'watch-ref', ref: '%$globals/selectedPerson%' }
       }
     ]
   } ,
@@ -1261,6 +1261,20 @@ jb.component('ui-test.mutable-var', {
   },
 })
 
+jb.component('ui-test.mutable-var-with-global-id', {
+  impl :{$: 'ui-test',
+    control: {$: 'label', title: '%$var1%',
+      features: [
+        {$:'var', name: 'var1', value: 'hello', mutable: true, globalId: 'globalVar1' },
+        {$: 'feature.after-load', action: {$: 'write-value', to: '%$var1%', value: 'foo'}}
+        ]
+    },
+    action: ctx=> jb.delay(1).then(_=>jb.delay(1)),
+    expectedResult :{$: 'contains', text: 'foo' },
+  },
+})
+
+
 jb.component('ui-test.mutable-var-as-object', {
   impl :{$: 'ui-test',
     control: {$: 'label', title: '%$obj1/txt%',
@@ -1323,7 +1337,7 @@ jb.component('ui-test.calculated-var-cyclic', {
     features: [
 //      {$:'var', name: 'var1', value: 'hello', mutable: true },
       {$: 'calculated-var', name: 'var1', value: 'xx%$var3%', watchRefs: '%$var3%' },
-      {$:'var', name: 'var2', value: 'world', mutable: true },
+      {$: 'var', name: 'var2', value: 'world', mutable: true },
       {$: 'calculated-var', name: 'var3', value: '%$var1% %$var2%', watchRefs: {$list: ['%$var1%','%$var2%']} },
       ]
     },

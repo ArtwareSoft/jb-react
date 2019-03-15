@@ -2,7 +2,7 @@ jb.component('itemlist', {
   type: 'control', category: 'group:80,common:80',
   params: [
     { id: 'title', as: 'string' },
-    { id: 'items', as: 'ref', whenNotReffable: 'array' , dynamic: true, essential: true },
+    { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, essential: true },
     { id: 'controls', type: 'control[]', essential: true, dynamic: true },
     { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
     { id: 'watchItems', as: 'boolean' },

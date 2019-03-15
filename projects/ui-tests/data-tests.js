@@ -38,9 +38,9 @@ jb.component('data-test.ref-api', {
 	 impl :{$: 'data-test',
 	 calculate: '',
 	 expectedResult : ctx =>
-        ctx.exp('%$personWithChildren/friends[0]%','ref').$jb_path.join('/') == 'personWithChildren/friends/0' &&
+        ctx.exp('%$personWithChildren/friends[0]%','ref').path().join('/') == 'personWithChildren/friends/0' &&
         ctx.exp('%$person/name%') == 'Homer Simpson' &&
-        ctx.exp('%$person/name%','ref').$jb_path.join('/') == 'person/name'
+        ctx.exp('%$person/name%','ref').path().join('/') == 'person/name'
 	}
 })
 
@@ -49,7 +49,7 @@ jb.component('data-test.ref-of-array-item', {
 	 impl :{$: 'data-test',
 	 calculate: '',
 	 expectedResult : ctx =>
-        ctx.exp('%$personWithChildren/children[1]%','ref').$jb_path.join('/') == 'personWithChildren/children/1'
+        ctx.exp('%$personWithChildren/children[1]%','ref').path().join('/') == 'personWithChildren/children/1'
 	}
 })
 

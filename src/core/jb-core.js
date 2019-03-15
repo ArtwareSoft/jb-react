@@ -1,14 +1,12 @@
-var jb = (function() {
+const jb = (function() {
 const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 const pathsToLog = new Set()
 
-const jb_spy = (...args) => frame.wSpy && frame.wSpy.log(...args)
-
 function jb_run(ctx,parentParam,settings) {
-  jb_spy('req', ['',ctx.path,ctx,parentParam,settings], {funcTitle: () => compName(ctx.profile)})
+  log('req', [ctx,parentParam,settings])
   const res = do_jb_run(...arguments);
   
-  jb_spy(pathsToLog.has(ctx.path) ? 'resLog' : 'res', ['',ctx.path,res,ctx,parentParam,settings], {funcTitle: () => compName(ctx.profile)})
+  log(pathsToLog.has(ctx.path) ? 'resLog' : 'res', [ctx,res,parentParam,settings])
   return res;
 }
 
@@ -91,10 +89,9 @@ function do_jb_run(context,parentParam,settings) {
         return castToParam(out,parentParam);
     }
   } catch (e) {
-    jb_spy('exception', [e && e.message, e, context,parentParam,settings])
-
-    if (context.vars.$throw) throw e;
-    logException(e,'exception while running run');
+//    log('exception', [e && e.message, e, context,parentParam,settings])
+    logException(e,'exception while running run',context,parentParam,settings);
+    //if (context.vars.$throw) throw e;
   }
 
   function prepareGCArgs(ctx,preparedParams) {
@@ -210,8 +207,8 @@ function prepare(context,parentParam) {
   // if (!comp_name)
   //   return { type: 'ignore' }
   const comp = jb.comps[comp_name];
-  if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined'); return { type:'null' } }
-  if (!comp.impl) { logError('component ' + comp_name + ' has no implementation'); return { type:'null' } }
+  if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined', context); return { type:'null' } }
+  if (!comp.impl) { logError('component ' + comp_name + ' has no implementation', context); return { type:'null' } }
 
   const ctx = new jbCtx(context,{});
   ctx.parentParam = parentParam;
@@ -242,7 +239,7 @@ function calcVar(ctx,varname,jstype) {
   else if (ctx.vars.scope && ctx.vars.scope[varname] != null)
     res = ctx.vars.scope[varname];
   else if (jb.resources && jb.resources[varname] != null)
-    res = jb.resources[varname];
+    res = jb.resource(varname);
   else if (jb.consts && jb.consts[varname] != null)
     res = jb.consts[varname];
   if (ctx.vars.debugSourceRef && typeof res == 'string' && jstype == 'string-with-source-ref' && jb.stringWithSourceRef)
@@ -323,12 +320,12 @@ function evalExpressionPart(expressionPart,context,parentParam) {
         const arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1],false,first,refHandler);
         const index = arrayIndexMatch[2];
         if (!Array.isArray(arr))
-            return null; //jb.logError('expecting array instead of ' + typeof arr, context);
+            return jb.logError('expecting array instead of ' + typeof arr, context, arr);
 
         if (last && (jstype == 'ref' || !primitiveJsType))
-           return refHandler.objectProperty(arr,index);
+           return refHandler.objectProperty(arr,index,context);
         if (typeof arr[index] == 'undefined')
-           arr[index] = last ? null : [];
+           arr[index] = last ? null : implicitlyCreateInnerObject(arr,index,refHandler);
         if (last && jstype)
            return jstypes[jstype](arr[index]);
         return arr[index];
@@ -350,14 +347,21 @@ function evalExpressionPart(expressionPart,context,parentParam) {
         if (obj == null) return;
         if (typeof obj[subExp] === 'function' && (parentParam.dynamic || obj[subExp].profile))
             return obj[subExp](context);
-        if (last && jstype == 'ref')
-           return refHandler.objectProperty(obj,subExp);
-        if (typeof obj[subExp] == 'undefined')
-           obj[subExp] = last ? null : {};
+        if (jstype == 'ref') {
+          if (last)
+            return refHandler.objectProperty(obj,subExp);
+          if (typeof obj[subExp] === 'undefined')
+            obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
+        }
         if (last && jstype)
             return jstypes[jstype](obj[subExp]);
         return obj[subExp];
       }
+  }
+  function implicitlyCreateInnerObject(parent,prop,refHandler) {
+    jb.log('implicitlyCreateInnerObject',[...arguments]);
+    parent[prop] = {};
+    refHandler.refreshMapDown && refHandler.refreshMapDown(parent)
   }
 }
 
@@ -382,7 +386,7 @@ function bool_expression(exp, context) {
     return !!asString && asString != 'false';
   }
   if (parts.length != 4)
-    return logError('invalid boolean expression: ' + exp);
+    return logError('invalid boolean expression: ' + exp, context);
   const op = parts[2].trim();
 
   if (op == '==' || op == '!=' || op == '$=' || op == '^=') {
@@ -412,8 +416,8 @@ function bool_expression(exp, context) {
 
 function castToParam(value,param) {
   let res = tojstype(value,param ? param.as : null);
-  if (param && param.as == 'ref' && param.whenNotReffable && !jb.isRef(res))
-    res = tojstype(value,param.whenNotReffable);
+  if (param && param.as == 'ref' && param.whenNotRefferable && !jb.isRef(res))
+    res = tojstype(value,param.whenNotRefferable);
   return res;
 }
 
@@ -566,19 +570,30 @@ class jbCtx {
 }
 
 const logs = {};
-function logError(errorStr,p1,p2,p3) {
-  logs.error = logs.error || [];
-  logs.error.push(errorStr);
-  jb_spy('error',[...arguments])
-  console.error(errorStr,p1,p2,p3);
+
+const profileOfPath = path => path.reduce((o,p)=>o && o[p], jb.comps) || {}
+
+const log = (logName, record) => frame.wSpy && frame.wSpy.log(logName, record, {
+  modifier: record => {
+    if (record[1] instanceof jbCtx)
+      record.splice(1,0,pathSummary(record[1].path))
+    if (record[0] instanceof jbCtx)
+      record.splice(0,0,pathSummary(record[0].path))
+}});
+
+function pathSummary(path) {
+  const _path = path.split('~');
+  while(!jb.compName(profileOfPath(_path)) && _path.length > 0)
+    _path.pop();
+	return jb.compName(profileOfPath(_path)) + ':' + path;
 }
 
-function log() {
-  jb_spy(...arguments)
+function logError() {
+  log('error',[...arguments])
 }
 
-function logException(e,errorStr,p1,p2,p3) {
-  logError('exception: ' + errorStr + "\n" + (e.stack||''),p1,p2,p3);
+function logException(e,errorStr,ctx, ...rest) {
+  log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx.path),e, ...rest])
 }
 
 function val(v) {
@@ -643,7 +658,7 @@ let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 
 return {
   run: jb_run,
-  jbCtx, expression, bool_expression, profileType, compName, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
+  jbCtx, expression, bool_expression, profileType, compName, pathSummary, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
   valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, pathsToLog, frame,
   ctxCounter: _ => ctxCounter
 }
@@ -655,7 +670,12 @@ Object.assign(jb,{
   studio: { previewjb: jb },
   component: (id,val) => jb.comps[id] = val,
   type: (id,val) => jb.types[id] = val || {},
-  resource: (id,val) => typeof val == 'undefined' ? jb.resources[id] : (jb.resources[id] = val || {}),
+  resource: (id,val) => { 
+    if (typeof val !== 'undefined')
+      jb.resources[id] = val || {}
+    jb.valueByRefHandler && jb.valueByRefHandler.resourceReferred && jb.valueByRefHandler.resourceReferred(id);
+    return jb.resources[id];
+  },
   const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
   functionDef: (id,val) => jb.functions[id] = val,
 

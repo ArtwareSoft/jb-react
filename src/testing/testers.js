@@ -54,7 +54,7 @@ jb.component('ui-test', {
 					return Promise.resolve(cmp && cmp.delayed).then(_=>
 						elem)
 				} catch (e) {
-					jb.logException(e,'error in test');
+					jb.logException(e,'error in test',context);
 					return document.createElement('div');
 				}
 			})

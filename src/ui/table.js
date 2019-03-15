@@ -2,7 +2,7 @@ jb.component('table', {
   type: 'control,table', category: 'group:80,common:70',
   params: [
     { id: 'title', as: 'string' },
-    { id: 'items', as: 'ref', whenNotReffable: 'array' , dynamic: true, essential: true },
+    { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, essential: true },
     { id: 'fields', type: 'table-field[]', essential: true, dynamic: true },
     { id: 'style', type: 'table.style', dynamic: true , defaultValue: { $: 'table.with-headers' } },
     { id: 'watchItems', as: 'boolean' },

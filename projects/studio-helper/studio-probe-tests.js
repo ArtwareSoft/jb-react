@@ -1,4 +1,11 @@
-jb.component('probe-test.single-control', {
+jb.resource('person',{ 
+	name: "Homer Simpson", 
+	male: true,
+	isMale: 'yes', 
+	age: 42 
+ });
+  
+ jb.component('probe-test.single-control', {
 	impl :{$: 'studio-probe-test',
 		circuit: {$: 'group',
 			controls :{$: 'label', title: 'hello' }

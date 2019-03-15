@@ -34,7 +34,7 @@ jb.component('studio.save-components', {
 			})
 			.catch(e=>{
 				st.message('error saving: ' + (typeof e == 'string' ? e : e.e), true);
-				return jb.logException(e,'error while saving ' + e.id) || []
+				return jb.logException(e,'error while saving ' + e.id,ctx) || []
 			})
 			.subscribe(entry=>{
 				var result = entry.res || entry;

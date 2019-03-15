@@ -68,7 +68,7 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
           .map(probeCtx=>
             new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,ctx.params.path))
           .do(e=>jb.log('suggestions',['create suggestions obj', input.value, e, cmp, cmp.ctx.path]))
-          .catch(e=> jb.logException(e,'suggestions') || [])
+          .catch(e=> jb.logException(e,'suggestions',cmp.ctx) || [])
           .distinctUntilChanged((e1,e2)=>
             e1.key == e2.key) // compare options - if options are the same - leave it.
           .do(e=>jb.log('suggestions',['generate event', input.value, e, cmp, cmp.ctx.path]))

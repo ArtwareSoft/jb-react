@@ -34,7 +34,7 @@ jb.component('open-dialog', {
 					if (cmp.hasMenu)
 						cmp.menuComp = ctx.params.menu(cmp.ctx).reactComp();
 				} catch (e) {
-					jb.logException(e,'dialog');
+					jb.logException(e,'dialog',ctx);
 				}
 				dialog.onOK = ctx2 =>
 					context.params.onOK(cmp.ctx.extendVars(ctx2));

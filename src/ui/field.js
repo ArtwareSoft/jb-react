@@ -5,7 +5,7 @@ jb.component('field.databind', {
   impl: ctx => ({
       beforeInit: cmp => {
         if (!ctx.vars.$model || !ctx.vars.$model.databind)
-          return jb.logError('bind-field: No databind in model', ctx.vars.$model, ctx);
+          return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
         cmp.state.title = ctx.vars.$model.title();
         cmp.state.fieldId = jb.ui.field_id_counter++;
         cmp.state.model = jb.val(ctx.vars.$model.databind);
@@ -49,7 +49,7 @@ jb.component('field.databind-text', {
         }
 
         if (!ctx.vars.$model || !ctx.vars.$model.databind)
-          return jb.logError('bind-field: No databind in model', ctx.vars.$model, ctx);
+          return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
         cmp.state.title = ctx.vars.$model.title();
         cmp.state.fieldId = jb.ui.field_id_counter++;
         cmp.state.model = jb.val(ctx.vars.$model.databind);
@@ -85,7 +85,7 @@ jb.component('field.databind-range', {
   impl: ctx => ({
       beforeInit: cmp => {
         if (!ctx.vars.$model || !ctx.vars.$model.databind)
-          return jb.logError('bind-field: No databind in model', ctx.vars.$model, ctx);
+          return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
         cmp.state.title = ctx.vars.$model.title();
         cmp.state.fieldId = jb.ui.field_id_counter++;
         cmp.state.model = jb.val(ctx.vars.$model.databind);

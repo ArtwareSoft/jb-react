@@ -575,7 +575,7 @@ jb.component('json.parse', {
 		try {
 			return JSON.parse(text)
 		} catch (e) {
-			jb.logException(e,'json parse');
+			jb.logException(e,'json parse',ctx);
 		}
 	}
 });
@@ -822,7 +822,7 @@ jb.component('http.get', {
 			  .then(r =>
 			  		json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
-			  .catch(e => jb.logException(e) || [])
+			  .catch(e => jb.logException(e,'',ctx) || [])
 	}
 });
 
@@ -839,7 +839,7 @@ jb.component('http.post', {
 		return fetch(url,{method: 'POST', headers: headers, body: JSON.stringify(postData) })
 			  .then(r =>
 			  		json ? r.json() : r.text())
-			  .catch(e => jb.logException(e) || [])
+			  .catch(e => jb.logException(e,'',ctx) || [])
 	}
 });
 

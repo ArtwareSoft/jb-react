@@ -26,7 +26,7 @@ jb.component('mdl-style.init-dynamic', {
       },
       destroy: cmp => {
         try {
-      	 $.contains(document.documentElement, cmp.base) &&
+      	 typeof $ !== 'undefined' && $.contains(document.documentElement, cmp.base) &&
           (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
       	 	   jb.ui.inDocument(el) && componentHandler.downgradeElements(el))
         } catch(e) {}
