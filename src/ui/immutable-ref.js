@@ -148,7 +148,7 @@ class ImmutableWithJbId {
     return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
   }
   createSecondaryLink(val) {
-    if (typeof val === 'object' && !val.$jb_secondaryLink) {
+    if (val && typeof val === 'object' && !val.$jb_secondaryLink) {
       const ref = this.asRef(val);
       if (ref.$jb_obj)
         return new Proxy(val, {

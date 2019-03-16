@@ -67,13 +67,13 @@ jb.component('dialog-feature.studio-pick', {
 	],
 	impl: ctx => ({
       init: cmp=> {
-		  var _window = ctx.params.from == 'preview' ? st.previewWindow : window;
-		  var previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
+		  const _window = ctx.params.from == 'preview' ? st.previewWindow : window;
+		  const previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
 		  cmp.titleBelow = false;
 
-		  var mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
-		  var userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
-		  var keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
+		  const mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
+		  let userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
+		  let keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
 		  if (st.previewWindow) {
 		  	userPick = userPick.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'mousedown'));
 		  	keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'keyup'));

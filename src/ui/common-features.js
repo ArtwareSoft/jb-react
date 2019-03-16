@@ -13,8 +13,10 @@ jb.component('group.wait', {
 
       afterViewInit: cmp => {
         jb.rx.Observable.from(waitFor()).takeUntil(cmp.destroyed).take(1)
-          .catch(e=>
-              cmp.setState( { ctrls: [error(context.setVars({error:e}))].map(c=>c.reactComp()) }) )
+          .catch(e=> {
+              cmp.setState( { ctrls: [error(context.setVars({error:e}))].map(c=>c.reactComp()) }) 
+              return []
+          })
           .subscribe(data => {
               cmp.ctx = cmp.ctx.setData(data);
               if (varName)

@@ -786,5 +786,9 @@ Object.assign(jb,{
   resourceChange: _ =>
     jb.valueByRefHandler.resourceChange
 })
+if (typeof window != 'undefined')
+  window.jb = jb
+if (typeof self != 'undefined')
+  self.jb = jb
 if (typeof module != 'undefined')
   module.exports = jb
