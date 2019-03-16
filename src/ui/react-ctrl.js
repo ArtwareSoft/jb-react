@@ -55,7 +55,7 @@ class JbComponent {
 			    } catch(e) { jb.logException(e,'createReactClass',this.ctx) }
 			}
 			render(props,state) {
-				jb.log('render',[this.ctx.path, state,props,this]);
+				jb.log('render',[this.ctx, state,props,this]);
 				if (!jbComp.template || typeof jbComp.template != 'function')
 					return ui.h('span',{display: 'none'});
 				//console.log('render',jb.studio.shortTitle(this.ctx.path));
@@ -65,7 +65,7 @@ class JbComponent {
 						if (typeof vdom == 'object')
 							vdom = modifier(vdom,this,state,ui.h) || vdom
 					});
-					jb.log('renRes',[this.ctx.path, vdom, state,props,this]);
+					jb.log('renRes',[this.ctx, vdom, state,props,this]);
 					return vdom;
 				} catch (e) {
 					jb.logException(e,'render',ctx,props,state);
@@ -224,11 +224,11 @@ ui.focus = function(elem,logTxt,srcCtx) {
 	// block the preview from stealing the studio focus
 	const now = new Date().getTime();
 	const lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity']);
-	jb.log('focus',['request',logTxt, now - lastStudioActivity, elem,srcCtx]);
+	jb.log('focus',['request',srcCtx, logTxt, now - lastStudioActivity, elem,srcCtx]);
   if (jb.studio.previewjb == jb && lastStudioActivity && now - lastStudioActivity < 1000)
     	return;
   jb.delay(1).then(_=> {
-   	jb.log('focus',['apply',logTxt,elem,srcCtx]);
+   	jb.log('focus',['apply',srcCtx,logTxt,elem,srcCtx]);
     elem.focus()
   })
 }
@@ -380,7 +380,7 @@ ui.item = function(cmp,vdom,data) {
 
 ui.watchRef = function(ctx,cmp,ref,includeChildren) {
 		if (!ref)
-			jb.log('error',[ctx, 'null ref for watchRef', ...arguments]);
+			jb.logError('null ref for watch ref',...arguments);
     ref && ui.refObservable(ref,cmp,{includeChildren})
 			.subscribe(e=>{
         if (ctx && ctx.profile && ctx.profile.$trace)

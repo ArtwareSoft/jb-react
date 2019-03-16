@@ -130,7 +130,7 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 				return this.merged().slice(-1 * pattern)
 			}
 		},
-		all(filter) {
+		merged(filter) {
 			return [].concat.apply([], Object.keys(this.logs).filter(log => Array.isArray(this.logs[log])).map(module =>
 				this.logs[module].map(arr => {
 					const res = [arr.index, module, ...arr]
@@ -141,6 +141,9 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 				}))).
 				filter((e, i, src) => !filter || filter(e, i, src)).
 				sort((x, y) => x.index - y.index)
+		},
+		all(filter) {
+			return this.merged(filter)
 		},
 		grouped(filter) {
 			const merged = this.merged(filter)

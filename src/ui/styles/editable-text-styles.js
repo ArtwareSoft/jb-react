@@ -71,16 +71,16 @@ jb.component('editable-text.mdl-search', {
   description: 'debounced and one way binding',
   type: 'editable-text.style',
   impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[
-        h('input', { class: 'mdl-textfield__input', id: 'search_' + state.fieldId, type: 'text',
-            value: state.model,
+      template: (cmp,{model, fieldId, title},h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[
+        h('input', { class: 'mdl-textfield__input', id: 'search_' + fieldId, type: 'text',
+            value: model,
             onchange: e => cmp.jbModel(e.target.value),
             onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
         }),
-        h('label',{class: 'mdl-textfield__label', for: 'search_' + state.fieldId},state.title)
+        h('label',{class: 'mdl-textfield__label', for: 'search_' + fieldId}, model ? '' : title)
       ]),
       features: [
-          {$: 'field.databind-text', debounceTime: 300, oneWay: true },
+          {$: 'field.databind-text' },
           {$: 'mdl-style.init-dynamic'},
       ],
   }

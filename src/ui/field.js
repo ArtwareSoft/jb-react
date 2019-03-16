@@ -20,8 +20,7 @@ jb.component('field.databind', {
           if (val === undefined)
             return jb.val(ctx.vars.$model.databind);
           else { // write
-              var err = jb.ui.validationError(cmp);
-              cmp.setState({error:err});
+              jb.ui.checkValidationError(cmp);
               jb.writeValue(ctx.vars.$model.databind,val,ctx);
           }
         }
@@ -66,8 +65,7 @@ jb.component('field.databind-text', {
           else { // write
               if (!oneWay)
                 cmp.setState({model: val});
-              var err = jb.ui.validationError(cmp);
-              cmp.setState({valid: !err, error:err});
+              jb.ui.checkValidationError(cmp);
               jb.writeValue(ctx.vars.$model.databind,val,ctx);
           }
         }
@@ -94,9 +92,8 @@ jb.component('field.databind-range', {
           if (val === undefined)
             return jb.val(ctx.vars.$model.databind);
           else { // write
-              var err = jb.ui.validationError(cmp);
-              cmp.setState({valid: !err, error:err});
-              jb.writeValue(ctx.vars.$model.databind,val,ctx);
+            jb.ui.checkValidationError(cmp);
+            jb.writeValue(ctx.vars.$model.databind,val,ctx);
           }
         }
 
@@ -175,13 +172,21 @@ jb.component('validation', {
   })
 })
 
-jb.ui.validationError = function(cmp) {
-  if (!cmp.validations) return;
-  var ctx = cmp.ctx.setData(cmp.state.model);
-  var err = (cmp.validations || [])
-    .filter(validator=>!validator.validCondition(ctx))
-    .map(validator=>validator.errorMessage(ctx))[0];
-  if (ctx.vars.formContainer)
-    ctx.vars.formContainer.err = err;
-  return err;
+jb.ui.checkValidationError = cmp => {
+  var err = validationError(cmp);
+  if (cmp.state.error != err) {
+    jb.log('field',['setErrState',ctx,err])
+    cmp.setState({valid: !err, error:err});
+  }
+
+  function validationError() {
+    if (!cmp.validations) return;
+    var ctx = cmp.ctx.setData(cmp.state.model);
+    var err = (cmp.validations || [])
+      .filter(validator=>!validator.validCondition(ctx))
+      .map(validator=>validator.errorMessage(ctx))[0];
+    if (ctx.vars.formContainer)
+      ctx.vars.formContainer.err = err;
+    return err;
+  }  
 }
