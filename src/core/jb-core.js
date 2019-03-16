@@ -639,7 +639,7 @@ const valueByRefHandlerWithjbParent = {
   asRef: function(value) {
     if (value && (value.$jb_parent || value.$jb_val))
         return value;
-    return { $jb_val: () => value }
+    return { $jb_val: () => value, $jb_path: () => [] }
   },
   isRef: function(value) {
     return value && (value.$jb_parent || value.$jb_val);

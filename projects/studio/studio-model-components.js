@@ -159,6 +159,7 @@ jb.component('studio.more-params',{
 jb.component('studio.comp-name-ref', {
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) => ({
+		  $jb_path: () => path.split('~'),
 			$jb_val: function(value) {
 				if (typeof value == 'undefined')
 					return st.compNameOfPath(path);
@@ -174,6 +175,7 @@ jb.component('studio.profile-as-text', {
 	type: 'data',
 	params: [{ id: 'path', as: 'string', dynamic: true } ],
 	impl: ctx => ({
+		$jb_path: () => ctx.params.path().split('~'),
 		$jb_val: function(value) {
 			var path = ctx.params.path();
 			if (!path) return '';
@@ -201,6 +203,7 @@ jb.component('studio.profile-as-string-byref', {
 	type: 'data',
 	params: [{ id: 'path', as: 'string', dynamic: true } ],
 	impl: ctx => ({
+		$jb_path: () => path.split('~'),
 		$jb_val: function(value) {
 			var path = ctx.params.path();
 			if (!path) return '';
@@ -219,6 +222,7 @@ jb.component('studio.profile-value-as-text', {
   type: 'data',
   params: [ { id: 'path', as: 'string' } ],
   impl: (ctx,path) => ({
+		$jb_path: () => path.split('~'),
       $jb_val: function(value) {
         if (typeof value == 'undefined') {
           var val = st.valOfPath(path);

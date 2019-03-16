@@ -13,6 +13,19 @@ jb.component('studio.prob-result-customization', {
   }
 })
 
+jb.component('studio.jb-editor-container', {
+  type: 'feature', 
+  params: [
+    { id: 'id', as: 'string', essential: true },
+		{ id: 'initialSelection', as: 'string', defaultValue: '%$path%' },
+		{ id: 'circuit', as: 'single', description: 'path or ctx of circuit to run the probe' },
+  ],
+  impl :{$list : [
+    {$: 'var', name: 'jbEditorCntrData', value: {$: 'object', selected: '%$initialSelection%', circuit: '%$circuit%' } , 
+        mutable: true, globalId: 'itemlistCntrData:%$id%'},
+  ]}
+})
+
 
 jb.component('studio.open-jb-editor', {
   type: 'action',
@@ -35,14 +48,14 @@ jb.component('studio.open-jb-editor', {
     content :{$: 'studio.jb-editor', path: '%$path%' },
     menu :{$: 'button',
       action :{$: 'studio.open-jb-editor-menu',
-        path: '%$jbEditor_selection%',
+        path: '%$path%',
         root: '%$path%'
       },
       style :{$: 'button.mdl-icon', icon: 'menu' }
     },
     title :{$: 'studio.path-hyperlink', path: '%$path%', prefix: 'Inteliscript' },
     features: [
-      {$: 'var', name: 'jbEditor_selection', value: '%$path%', mutable: true },
+      {$: 'studio.jb-editor-container', id: 'jb-editor'},
       {$: 'dialog-feature.resizer' }
     ]
   }
@@ -67,7 +80,7 @@ jb.component('studio.open-component-in-jb-editor', {
         content :{$: 'studio.jb-editor', path: '%$compPath%' },
         menu :{$: 'button',
           action :{$: 'studio.open-jb-editor-menu',
-            path: '%$jbEditor_selection%',
+            path: '%$jbEditorCntrData/selected%',
             root: '%$path%'
           },
           style :{$: 'button.mdl-icon', icon: 'menu' }
@@ -77,11 +90,7 @@ jb.component('studio.open-component-in-jb-editor', {
           prefix: 'Inteliscript'
         },
         features: [
-          {$: 'var',
-            name: 'jbEditor_selection',
-            value: '%$path%',
-            mutable: true
-          },
+          {$: 'studio.jb-editor-container', id: 'comp-in-jb-editor'},
           {$: 'dialog-feature.resizer' }
         ]
       }
@@ -101,13 +110,13 @@ jb.component('studio.jb-editor-inteli-tree', {
         features: [
           {$: 'css.class', class: 'jb-editor jb-control-tree' },
           {$: 'tree.selection',
-            onDoubleClick :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' },
-            databind: '%$jbEditor_selection%',
+            onDoubleClick :{$: 'studio.open-jb-edit-property', path: '%$jbEditorCntrData/selected%' },
+            databind: '%$jbEditorCntrData/selected%',
             autoSelectFirst: true,
             onRightClick:{$: 'studio.open-jb-editor-menu', path: '%%', root: '%$path%' },
           },
           {$: 'tree.keyboard-selection',
-            onEnter :{$: 'studio.open-jb-edit-property', path: '%$jbEditor_selection%' },
+            onEnter :{$: 'studio.open-jb-edit-property', path: '%$jbEditorCntrData/selected%' },
             onRightClickOfExpanded :{$: 'studio.open-jb-editor-menu', path: '%%', root: '%$path%' },
             autoFocus: true,
             applyMenuShortcuts :{$: 'studio.jb-editor-menu', path: '%%', root: '%$path%' }
@@ -186,7 +195,7 @@ jb.component('studio.probe-data-view', {
   ],
   features: [
     {$: 'group.wait',
-      for :{$: 'studio.probe', path: '%$path%' },
+      for :{$: 'studio.probe', path: '%$path%', circuit: '%$jbEditorCntrData/circuit%' },
       loadingControl :{$: 'label', title1: 'calculating...', title: '...' },
       varName: 'probeResult'
     },
@@ -212,17 +221,17 @@ jb.component('studio.jb-editor', {
             controls: [
               {$: 'group', 
                 title: 'watch selection content', 
-                controls :{$: 'studio.probe-data-view', path: '%$jbEditor_selection%' }, 
+                controls :{$: 'studio.probe-data-view', path: '%$jbEditorCntrData/selected%' }, 
                 features :{$: 'watch-ref', 
-                  ref :{$: 'studio.ref', path: '%$jbEditor_selection%' }
+                  ref :{$: 'studio.ref', path: '%$jbEditorCntrData/selected%' }
                 }
               }
             ], 
-            features :{$: 'feature.if', showCondition: '%$jbEditor_selection%' }
+            features :{$: 'feature.if', showCondition: '%$jbEditorCntrData/selected%' }
           }
         ], 
         features: [
-          {$: 'watch-ref', ref: '%$jbEditor_selection%' }, 
+          {$: 'watch-ref', ref: '%$jbEditorCntrData/selected%' }, 
           {$: 'studio.watch-script-changes' }
         ]
       }
@@ -334,18 +343,6 @@ jb.component('studio.data-browse', {
           control :{$: 'button',
             title: 'show (%$obj/length%)',
             action :{$: 'write-value',
-              style :{$: 'dialog.popup' },
-              content :{$: 'table',
-                items: '%$obj%',
-                fields :{$: 'field.control',
-                  title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] },
-                  control :{$: 'studio.data-browse', a: 'label', obj: '%%', width: 200 }
-                },
-                style :{$: 'table.mdl',
-                  classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
-                  classForTd: 'mdl-data-table__cell--non-numeric'
-                }
-              },
               to: '%$maxItems%',
               value: '100'
             },
@@ -543,7 +540,7 @@ jb.component('studio.jb-editor-menu', {
                 {$: 'studio.add-property', path: '%%' }, 
                 {$: 'tree.redraw' }, 
                 {$: 'dialog.close-containing-popup' }, 
-                {$: 'write-value', to: '%$jbEditor_selection%', value: '%%' }, 
+                {$: 'write-value', to: '%$jbEditorCntrData/selected%', value: '%%' }, 
                 {$: 'studio.open-jb-edit-property', path: '%%' }
               ]
             }
@@ -557,7 +554,7 @@ jb.component('studio.jb-editor-menu', {
             to :{$: 'studio.ref', path: '%$path%~$vars' }, 
             value :{$: 'object' }
           }, 
-          {$: 'write-value', to: '%$jbEditor_selection%', value: '%$path%~$vars' }, 
+          {$: 'write-value', to: '%$jbEditorCntrData/selected%', value: '%$path%~$vars' }, 
           {$: 'tree.redraw' }, 
           {$: 'studio.add-variable', path: '%$path%~$vars' }
         ], 
@@ -810,7 +807,7 @@ jb.component('studio.add-variable', {
                   value: ''
                 },
                 {$: 'dialog.close-containing-popup', OK: true },
-                {$: 'write-value', to: '%$jbEditor_selection%', value: '%$path%~%$name%' },
+                {$: 'write-value', to: '%$jbEditorCntrData/selected%', value: '%$path%~%$name%' },
                 {$: 'tree.redraw', strong: true },
                 {$: 'tree.regain-focus' }
               ]
@@ -826,7 +823,7 @@ jb.component('studio.add-variable', {
     //     to :{$: 'studio.ref', path: '%$path%~%$name%' },
     //     value: ''
     //   },
-    //   {$: 'write-value', to: '%$jbEditor_selection%', value: '%$path%~%$name%' },
+    //   {$: 'write-value', to: '%$jbEditorCntrData/selected%', value: '%$path%~%$name%' },
     //   {$:'tree.redraw' },
     //   {$: 'tree.regain-focus' },
     // ],

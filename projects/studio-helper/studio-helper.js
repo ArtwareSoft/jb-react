@@ -108,12 +108,8 @@ jb.component('studio-helper.jb-editor', {
       },
       {$: 'group',
         controls: [
-          {$: 'label',
-            title: 'aa -%$jbEditor_selection%',
-            style :{$: 'label.span' }
-          },
           {$: 'editable-text',
-            databind :{$: 'studio.profile-as-text', path: '%$jbEditor_selection%' },
+            databind :{$: 'studio.profile-as-text', path: '%$jbEditorCntrData/selected%'},
             style :{$: 'editable-text.textarea' },
             features: [
               {$: 'css.width', width: '300' },
@@ -123,24 +119,13 @@ jb.component('studio-helper.jb-editor', {
           }
         ],
         features: [
-          {$: 'watch-ref',
-            path: '%$jbEditor_selection%',
-            ref: '%$jbEditor_selection%'
-          }
+          {$: 'watch-ref', ref: '%$jbEditorCntrData/selected%' }
         ]
       }
     ],
     features: [
       {$: 'css', css: '{ height: 200px; padding: 50px }' },
-      {$: 'var',
-        name: 'jbEditor_selection',
-        value: 'studio-helper-sample.properties-params-prof',
-        mutable: true
-      },
-      {$: 'var',
-        name: 'circuit',
-        value: 'studio-helper-sample.properties-params-prof'
-      }
+      {$: 'studio.jb-editor-container', id: 'helper'},
     ]
   }
 })
@@ -158,15 +143,7 @@ jb.component('studio-helper.inteli-tree', {
     ],
     features: [
       {$: 'css', css: '{ height: 200px; padding: 50px }' },
-      {$: 'var',
-        name: 'jbEditor_selection',
-        value: '%$path%',
-        mutable: true
-      },
-      {$: 'var',
-        name: 'circuit',
-        value: '%$path%'
-      }
+      {$: 'studio.jb-editor-container', id: 'helper'},
     ]
   }
 })
