@@ -28,6 +28,14 @@ jb.component('group.init-group', {
   })
 })
 
+jb.component('inline-controls', {
+  type: 'control',
+  params: [
+    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+  ],
+  impl: '%$controls%'
+})
+
 jb.component('dynamic-controls', {
   type: 'control',
   params: [

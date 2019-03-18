@@ -1068,6 +1068,20 @@ jb.component('ui-test.dynamic-controls', {
 },
 })
 
+jb.component('ui-test.inline-controls', {
+  impl :{$: 'ui-test',
+  control :{$: 'group',
+      controls :[
+        { $: 'label', title: 'a1' },
+        { $: 'inline-controls',
+          controls: [{ $: 'label', title: 'a2' }, { $: 'label', title: 'a3' } ] 
+        }
+      ]
+  },
+  expectedResult :{$: 'contains', text: ['a1','a2','a3'] },
+},
+})
+
 jb.component('ui-test.tabs', {
   impl :{$: 'ui-test',
   control :{$: 'group',
