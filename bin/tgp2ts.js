@@ -1,4 +1,3 @@
-const glob = require('glob');
 const jb = require('../dist/jbart-core.js')
 const fs = require('fs')
 
