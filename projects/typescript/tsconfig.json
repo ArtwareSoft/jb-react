@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
         "noImplicitAny": true,
+        "include": ["../../dist/jb-react-all"],
         "plugins": [{
             "name": "./tgp-typescript-plugin",
         }]

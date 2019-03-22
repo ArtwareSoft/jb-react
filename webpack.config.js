@@ -19,12 +19,14 @@ var jbReactFiles = [].concat.apply([],[resources['common'],resources['ui-common'
 var studioFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree'],resources['codemirror']]).filter(x=>!x.match(/.css$/))
     .concat(resources.studio.map(x=>'projects/studio/studio-' + x + '.js'));
 var nodeFiles = [].concat.apply([],[resources['common'],resources['node'],resources['pretty-print'],resources['xml'],resources['jison'],resources['parsing']]).filter(x=>!x.match(/.css$/));
+var coreFiles = resources['core'];
 
 console.log(jbReactFiles);
 
 concatFiles(studioFiles,'dist/studio-all.js');
 concatFiles(jbReactFiles,'dist/jb-react-all.js');
 concatFiles(nodeFiles,'dist/jb4node.js');
+concatFiles(coreFiles,'dist/jbart-core.js');
 
 var jbRx = {
   mode: 'development',

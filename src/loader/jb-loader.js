@@ -1,4 +1,8 @@
 var resources = Object.assign((typeof resources != 'undefined' ? resources : {}), {
+      'core': [
+        'src/misc/wSpy.js',
+        'src/core/jb-core.js'
+      ],
       'common': [
         'src/misc/wSpy.js',
         'src/core/jb-core.js',

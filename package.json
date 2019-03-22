@@ -1,6 +1,6 @@
 {
   "name": "jbart5-react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "jBart - Visual Development with react",
   "homepage": "https://github.com/artwaresoft/jbart5-react",
   "bugs": {
@@ -19,7 +19,8 @@
     "dev": "concurrently \"npm run webpack\" \"npm run studio\" ",
     "build": "node_modules/.bin/webpack",
     "studio": "npm run openStudio & node jb-studio-server.js",
-    "openStudio": "start http://localhost:8082/projects/ui-tests/tests.html"
+    "openStudio": "start http://localhost:8082/projects/ui-tests/tests.html",
+    "tgp2ts": "node bin/tgp2ts"
   },
   "dependencies": {
     "codemirror": "^5.25.2",

@@ -1,27 +1,35 @@
-// stubs for js that uses global objects directly
-global.navigator = {
-	userAgent: '',
-	platform: ''
-}
-
-global.document = {
-	createRange: () => [],
-	createElement: () => ({ setAttribute() {}, })
-}
-global.window = {
-	addEventListener: () => {},
-	navigator: global.navigator
-}
-
-const jb = require('../../dist/jb-react-all.js')
+const jb = require('../dist/jbart-core.js')
 const fs = require('fs')
 
 jb.ts = {
 	types: {}
 }
 
+function run() {
+    if (getProcessArgument('help'))
+        return console.log('Usage: tgp2ts -src:myTgpPackage.js -out:myLib')
+
+    const src = getProcessArgument('src') || '/dev/stdin';
+    const tgpCode = '' + fs.readFileSync(src);
+    try {
+        eval(tgpCode)
+    } catch(e) {
+        console.log('error in tgpCode' + e);
+    }
+    console.log(jb.entries(jb.comps).map(e=>e[0]).join('\n'))
+    const content = buildTS();
+    if (getProcessArgument('out')) {
+        const fn = getProcessArgument('out') + '.d.ts';
+        fs.writeFileSync(fn, content)
+        process.stdout.write('result written to '+ fn)
+    } else {
+        process.stdout.write(content)
+    }
+}
+
 function buildTS() {
-	function parseType(type) {
+
+    function parseType(type) {
 		const single = /([^\[]*)(\[\])?/
 		return [].concat.apply([],(type||'').split(',')
 		.map(x=>
@@ -112,8 +120,36 @@ declare var jb: jbObj;
 		...Object.keys(jb.ts.types).map(type=>TSforSingleType(type)),
 		'type cmpDef = ' + Object.keys(jb.ts.types).map(type=>`cmp_def_${fixId(type)}Type`).join(' | ')
 		].join('\n')
-	const res = fs.writeFileSync('../../dist/jb-react-all.d.ts', content)
-	console.log(res)
+	return content
 }
 
-buildTS()
+run()
+
+
+
+// ****************** utils ***********************
+
+function getProcessArgument(argName) {
+    for (var i = 0; i < process.argv.length; i++) {
+      var arg = process.argv[i];
+      if (arg.indexOf('-' + argName + ':') == 0) 
+        return arg.substring(arg.indexOf(':') + 1).replace(/'/g,'');
+      if (arg == '-' + argName) return true;
+    }
+    return '';
+}
+
+/// ****** empty stubs for global objects that may exist in the source code
+global.navigator = {
+	userAgent: '',
+	platform: ''
+}
+
+global.document = {
+	createRange: () => [],
+	createElement: () => ({ setAttribute() {}, })
+}
+global.window = {
+	addEventListener: () => {},
+	navigator: global.navigator
+}
