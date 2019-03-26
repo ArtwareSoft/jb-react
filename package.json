@@ -1,12 +1,15 @@
 {
   "name": "jbart5-react",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "jBart - Visual Development with react",
   "homepage": "https://github.com/artwaresoft/jbart5-react",
   "bugs": {
     "url": "https://github.com/artwaresoft/jbart5-react/issues"
   },
   "main": "dist/jbart-core.js",
+  "files": [
+    "dist","bin"
+  ],  
   "contributors": [
     "Shai Ben-Yehuda <shaiby@artwaresoft.com>",
     "Yaniv Ben-Yehuda <yanivby@artwaresoft.com>",
@@ -23,7 +26,6 @@
     "openStudio": "start http://localhost:8082/projects/ui-tests/tests.html",
     "tgp2ts": "node bin/tgp2ts"
   },
-  "bin": { "tgp2ts" : "bin/tgp2ts" },
   "dependencies": {
     "codemirror": "^5.25.2",
     "dragula": "^3.7.2",
