@@ -7,9 +7,6 @@
     "url": "https://github.com/artwaresoft/jbart5-react/issues"
   },
   "main": "dist/jbart-core.js",
-  "files": [
-    "dist"
-  ],  
   "contributors": [
     "Shai Ben-Yehuda <shaiby@artwaresoft.com>",
     "Yaniv Ben-Yehuda <yanivby@artwaresoft.com>",
