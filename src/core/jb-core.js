@@ -1,5 +1,5 @@
 const jb = (function() {
-const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
+const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 const pathsToLog = new Set()
 
 function jb_run(ctx,parentParam,settings) {
@@ -786,8 +786,6 @@ Object.assign(jb,{
   resourceChange: _ =>
     jb.valueByRefHandler.resourceChange
 })
-if (typeof window != 'undefined')
-  window.jb = jb
 if (typeof self != 'undefined')
   self.jb = jb
 if (typeof module != 'undefined')

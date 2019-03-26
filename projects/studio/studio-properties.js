@@ -156,7 +156,7 @@ jb.component('studio.properties-in-tgp',{
 jb.component('studio.property-field', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'control.first-succeeding', 
+  impl :{$: 'inline-controls', 
     $vars: {
       paramType :{$: 'studio.param-type', path: '%$path%' }, 
       paramDef :{$: 'studio.param-def', path: '%$path%' }
@@ -221,7 +221,7 @@ jb.component('studio.property-field', {
         condition :{$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }, 
         control :{$: 'studio.property-primitive', path: '%$path%' }
       }, 
-      {$: 'studio.property-tgp', path: '%$path%' }
+      {$: 'studio.property-tgp-old', path: '%$path%' }
     ], 
     features: [
       {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
@@ -330,6 +330,18 @@ jb.component('studio.property-slider', {
 })
 
 jb.component('studio.property-tgp', {
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'inline-controls', 
+  controls: [
+    {$: 'studio.pick-profile', path: '%$path%' }, 
+    {$: 'label', title: 'aa'},
+    {$: 'studio.properties-in-tgp', path: '%$path%' }
+  ]
+ }
+})
+
+jb.component('studio.property-tgp-old', {
   type: 'control',
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'group',

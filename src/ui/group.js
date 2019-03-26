@@ -33,7 +33,7 @@ jb.component('inline-controls', {
   params: [
     { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
   ],
-  impl: '%$controls%'
+  impl: ctx => ctx.params.controls().filter(x=>x)
 })
 
 jb.component('dynamic-controls', {

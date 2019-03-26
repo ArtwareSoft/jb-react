@@ -48,7 +48,7 @@ jb.component('${name}.main', {
     })
     .catch(e => {
       jb.studio.message(`error creating project ${name}: ` + (e && e.desc));
-      jb.logException(e,ctx)
+      jb.logException(e,'',ctx)
     })
   }
 });

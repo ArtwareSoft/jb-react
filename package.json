@@ -6,6 +6,10 @@
   "bugs": {
     "url": "https://github.com/artwaresoft/jbart5-react/issues"
   },
+  "main": "dist/jbart-core.js",
+  "files": [
+    "dist"
+  ],  
   "contributors": [
     "Shai Ben-Yehuda <shaiby@artwaresoft.com>",
     "Yaniv Ben-Yehuda <yanivby@artwaresoft.com>",
@@ -17,7 +21,7 @@
     "eStudio": "node_modules/.bin/electron hosts/jb-electron -path:projects/studio/cards",
     "eTests": "node_modules/.bin/electron hosts/jb-electron -path:projects/ui-tests/tests.html",
     "dev": "concurrently \"npm run webpack\" \"npm run studio\" ",
-    "build": "node_modules/.bin/webpack",
+    "build": "node_modules/.bin/webpack & node bin/build.phase2",
     "studio": "npm run openStudio & node jb-studio-server.js",
     "openStudio": "start http://localhost:8082/projects/ui-tests/tests.html",
     "tgp2ts": "node bin/tgp2ts"
