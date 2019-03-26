@@ -1,6 +1,6 @@
 {
   "name": "jbart5-react",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "jBart - Visual Development with react",
   "homepage": "https://github.com/artwaresoft/jbart5-react",
   "bugs": {
@@ -8,7 +8,7 @@
   },
   "main": "dist/jbart-core.js",
   "files": [
-    "dist","bin"
+    "dist"
   ],  
   "contributors": [
     "Shai Ben-Yehuda <shaiby@artwaresoft.com>",
