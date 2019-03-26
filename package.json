@@ -29,7 +29,6 @@
   "bin": { "tgp2ts" : "bin/tgp2ts" },
   "dependencies": {
     "codemirror": "^5.25.2",
-    "d3": "^4.12.2",
     "dragula": "^3.7.2",
     "history": "^4.6.1",
     "immutability-helper": "^2.1.2",
