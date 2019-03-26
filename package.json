@@ -1,6 +1,6 @@
 {
   "name": "jbart5-react",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "jBart - Visual Development with react",
   "homepage": "https://github.com/artwaresoft/jbart5-react",
   "bugs": {
@@ -26,6 +26,7 @@
     "openStudio": "start http://localhost:8082/projects/ui-tests/tests.html",
     "tgp2ts": "node bin/tgp2ts"
   },
+  "bin": { "tgp2ts" : "bin/tgp2ts.js" },
   "dependencies": {
     "codemirror": "^5.25.2",
     "dragula": "^3.7.2",
