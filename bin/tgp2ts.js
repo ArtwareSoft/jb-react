@@ -91,7 +91,8 @@ function buildTS() {
 			.map(x=>
 				x=='data' ? ['data','aggregator','boolean'] : [x]));
 		
-		return `${param.id}: ${typesTS.join(' | ')}`
+		const description = param.description ? `\n/** ${param.description} */` : '';
+		return `${description}${param.id}: ${typesTS.join(' | ')}`
 	}
 
 	calcTypes();
