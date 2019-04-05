@@ -13,14 +13,20 @@ function concatFiles(files,target) {
     fs.appendFileSync(fn,fs.readFileSync(f) + ';\n\n'));
 }
 
-var jbReactFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree']]).filter(x=>!x.match(/.css$/));
-var studioFiles = [].concat.apply([],[resources['common'],resources['ui-common'],resources['ui-tree'],resources['codemirror']]).filter(x=>!x.match(/.css$/))
+function filesOfModules(modules) {
+    return modules.split(',').map(m=>resources[m]).flat()
+}
+
+var jbReactFiles = filesOfModules('common','ui-common','ui-tree').filter(x=>!x.match(/.css$/));
+var studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,pretty-print,history').filter(x=>!x.match(/.css$/))
     .concat(resources.studio.map(x=>'projects/studio/studio-' + x + '.js'));
-var nodeFiles = [].concat.apply([],[resources['common'],resources['node'],resources['pretty-print'],resources['xml'],resources['jison'],resources['parsing']]).filter(x=>!x.match(/.css$/));
+var studioCssFiles = filesOfModules('common,ui-common,ui-tree,codemirror').filter(x=>x.match(/.css$/));
+var nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').filter(x=>!x.match(/.css$/));
 var coreFiles = resources['core'];
 
-concatFiles(studioFiles,'studio-all.js');
 concatFiles(jbReactFiles,'jb-react-all.js');
 concatFiles(nodeFiles,'jb4node.js');
 concatFiles(coreFiles,'jbart-core.js');
 concatFiles(resources['pretty-print'],'pretty-print.js');
+concatFiles(studioCssFiles,'../bin/studio/studio-all.css');
+concatFiles(studioFiles,'../bin/studio/studio-all.js');

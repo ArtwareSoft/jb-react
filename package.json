@@ -23,6 +23,7 @@
     "dev": "concurrently \"npm run webpack\" \"npm run studio\" ",
     "build": "node_modules/.bin/webpack & node bin/build.phase2",
     "studio": "npm run openStudio & node jb-studio-server.js",
+    "studio-server": "node bin/studio/studio-server.js",
     "openStudio": "start http://localhost:8082/projects/ui-tests/tests.html",
     "tgp2ts": "node bin/tgp2ts"
   },

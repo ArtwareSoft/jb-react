@@ -34,7 +34,7 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
 			fixInvalidUrl()
 
 			function fixInvalidUrl() {
-				var profile_path = location.pathname.split('/project/studio/').pop().split('/')[2] || '';
+				var profile_path = location.pathname.split('/studio/').pop().split('/')[2] || '';
         if (!profile_path || jb.studio.valOfPath(profile_path,true) != null) return;
 				while (profile_path && jb.studio.valOfPath(profile_path,true) == null)
 					profile_path = jb.studio.parentPath(profile_path);
