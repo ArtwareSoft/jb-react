@@ -9,7 +9,7 @@ jb.component('hello-world.main', {
   type: 'control', 
   impl :{$: 'group', 
     style :{$: 'layout.horizontal', spacing: 3 }, 
-    controls: [{$: 'label', title: 'hello' }]
+    controls: [{$: 'label', title: 'hel' }]
   }
 })
 

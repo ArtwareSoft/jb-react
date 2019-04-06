@@ -94,14 +94,14 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       ],
       'history': [
         'node_modules/history/umd/history.js',
-        'src/ui/url.js'
+//        'src/ui/url.js'
       ],
       'dragula': [
           'node_modules/dragula/dist/dragula.js',
           'node_modules/dragula/dist/dragula.css',
       ],
       studio: [
-        'utils','path','main',
+        'utils','path','main','url',
         'toolbar','styles', 'search', 'new-profile', 'data-browse', 'preview', 'tgp-model', 'model-components',
         'tree','popups','properties','pick','properties-menu','save','open-project','new-project', 'references', 'component-header',
         'suggestions','undo','edit-source','jb-editor','jb-editor-styles','style-editor','probe','testers', 'event-tracker','h-to-jsx',

@@ -16,13 +16,7 @@ jb.component('studio.all', {
     features: [
       {$: 'group.data', data: '%$studio/project%', watch: true },
       {$: 'feature.init',
-        action: [
-          {$: 'url-history.map-url-to-resource',
-            params: ['project', 'page', 'profile_path'],
-            resource: 'studio',
-            base: 'studio'
-          }
-        ]
+        action :{$: 'url-history.map-studio-url-to-resource', resource: 'studio' }
       }
     ]
   }

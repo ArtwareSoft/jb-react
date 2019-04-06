@@ -8,7 +8,7 @@ jb.component('studio.preview-widget', {
   impl: ctx =>
     jb.ui.ctrl(ctx,{
       init: cmp => {
-        cmp.state.project = ctx.exp('%$studio/project%');
+        Object.assign(cmp.state,ctx.exp('%$studio%'));
         cmp.state.cacheKiller = 'cacheKiller='+(''+Math.random()).slice(10);
         document.title = cmp.state.project + ' with jBart';
       },
@@ -34,7 +34,8 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
 			fixInvalidUrl()
 
 			function fixInvalidUrl() {
-				var profile_path = location.pathname.split('/studio/').pop().split('/')[2] || '';
+        if (location.pathname.indexOf('/project/studio/') != 0) return;
+				var profile_path = location.pathname.split('/project/studio/').pop().split('/')[2] || '';
         if (!profile_path || jb.studio.valOfPath(profile_path,true) != null) return;
 				while (profile_path && jb.studio.valOfPath(profile_path,true) == null)
 					profile_path = jb.studio.parentPath(profile_path);
@@ -52,7 +53,7 @@ jb.component('studio.preview-widget-impl', {
           class: 'preview-iframe',
           width: cmp.ctx.vars.$model.width,
           height: cmp.ctx.vars.$model.height,
-          src: `/project/${state.project}?${state.cacheKiller}&wspy=preview`
+          src: (state.entry_file ? `/${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
       }),
       css: `{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px;  }`
   }
@@ -89,10 +90,10 @@ jb.component('studio.wait-for-preview-iframe', {
 
 jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studio/page')
       .startWith(1)
-      .map(e=> {
+      .flatMap(e=> {
         const page = jb.resources.studio.project + '.' + jb.resources.studio.page;
         const ctrl = jb.studio.previewjb.comps[page] && jb.studio.previewjb.comps[page].type == 'data' ? 'studio.data-comp-inspector' : null;
-        return {page, ctrl}
+        return jb.resources.studio.page ? [{page, ctrl}] : []
       });
 
 jb.component('studio.data-comp-inspector', {

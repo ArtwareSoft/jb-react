@@ -10,8 +10,8 @@ const settings = JSON.parse(fs.readFileSync(`${__dirname}/jbart.json`));
 // define projects not under /jbart/projects directory
 let sites = null;
 function projectDirectory(project) {
-    // if (project == 'studio')
-    //   return 'bin/studio'
+    // if (project == 'bin')
+    //    return 'node_modules/jbart5-react/bin'
     sites = sites || externalSites() || {};
     const site = Object.keys(sites).filter(site=>project.indexOf(site+'-') != -1)[0];
     const res = site ? `${sites[site]}/${project.substring(site.length+1)}` : `${settings.http_dir}projects/${project}`;
@@ -36,6 +36,8 @@ function serve(req, res) {
 
     if (op && op_get_handlers[op] && req.method == 'GET') {
       return op_get_handlers[op](req,res,path);
+    } else if (path.indexOf('studio') == 0 && base_get_handlers[base] && path.indexOf('.html') != -1) {
+      return base_get_handlers[base](req,res,path);
     } else if (base_get_handlers[base] && path.indexOf('.html') == -1) {
       return base_get_handlers[base](req,res,path);
     } else if (op && op_post_handlers[op] && req.method == 'POST') {
@@ -61,15 +63,19 @@ supported_ext =  ['js','gif','png','jpg','html','xml','css','xtml','txt','json',
 for(i=0;i<supported_ext.length;i++)
   file_type_handlers[supported_ext[i]] = function(req, res,path) { serveFile(req,res,path); };
 
-function serveFile(req,res,path) {
-  const project = path.match(/^projects\/([^/]*)(.*)/);
-  // if (project && external_projects[project[1]])
-  //   var full_path = settings.http_dir + external_projects[project[1]] + '/' + project[1] + project[2];
-  // else
-  let full_path = project ? projectDirectory(project[1]) + project[2] : settings.http_dir + path;
-//  console.log(path,full_path);
-  full_path = full_path.replace(/!st!/,'')
+function calcFullPath(path) {
+  const project_match = path.match(/^projects\/([^/]*)(.*)/);
+  if (project_match)
+    return projectDirectory(project_match[1]) + project_match[2]
+  const bin_match = path.match(/^bin\/(.*)/);
+  if (bin_match)
+      return `node_modules/jbart5-react/bin/${bin_match[1]}`
+  return settings.http_dir + path;
+}
 
+function serveFile(req,res,path) {
+//  console.log(path,full_path);
+  const full_path = calcFullPath(path).replace(/!st!/,'')
   const extension = path.split('.').pop();
 
   fs.readFile(_path(full_path), function (err, content) {
@@ -167,15 +173,16 @@ const op_post_handlers = {
 };
 
 const base_get_handlers = {
-  studio: function(req,res,path) {
-    return file_type_handlers.html(req,res,'bin/studio/studio-bin.html');
-  },
-  project: function(req,res,path) {
-      const project_with_params = req.url.split('/')[2];
-      const project = project_with_params.split('?')[0];
-      // if (external_projects[project])
-      //   return file_type_handlers.html(req,res, external_projects[project] + `/${project}/${project}.html`);
-      return file_type_handlers.html(req,res,`projects/${project}/${project}.html`);
+  'studio-bin': (req,res) =>
+    file_type_handlers.html(req,res,'node_modules/jbart5-react/bin/studio/studio-bin.html'),
+  studio: (req,res) => 
+    file_type_handlers.html(req,res,'projects/studio/studio.html'),
+  project(req,res,path) {
+    const project_with_params = req.url.split('/')[2];
+    const project = project_with_params.split('?')[0];
+    // if (external_projects[project])
+    //   return file_type_handlers.html(req,res, external_projects[project] + `/${project}/${project}.html`);
+    return file_type_handlers.html(req,res,`projects/${project}/${project}.html`);
   }
 };
 
