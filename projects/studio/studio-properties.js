@@ -156,7 +156,7 @@ jb.component('studio.properties-in-tgp',{
 jb.component('studio.property-field', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'inline-controls', 
+  impl :{$: 'group', 
     $vars: {
       paramType :{$: 'studio.param-type', path: '%$path%' }, 
       paramDef :{$: 'studio.param-def', path: '%$path%' }
