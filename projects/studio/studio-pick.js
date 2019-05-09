@@ -164,13 +164,22 @@ jb.studio.getOrCreateHighlightBox = function() {
   return _window.document.querySelector('#preview-box');
 }
 
-jb.studio.highlightCtx = function(ctx) {
-	var _window = st.previewWindow || window;
-	jb.studio.highlight(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
+st.highlightCtx = function(ctx) {
+	if (!ctx) return
+	const _window = st.previewWindow || window;
+	st.highlight(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
 //		.filter(e=>e.getAttribute('jb-ctx') == ctx.id))
 }
 
-jb.studio.highlight = function(elems) {
+st.highlightByScriptPath = function(path) {
+	const pathStr = Array.isArray(path) ? path.join('~') : path;
+	const result = st.closestCtxInPreview(pathStr)
+	if (result.elem)
+		st.highlight([result.elem])
+}
+
+
+st.highlight = function(elems) {
 	//var boxes = [];
 	var html = elems.map(el => {
 			var offset = jb.ui.offset(el);

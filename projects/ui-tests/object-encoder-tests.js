@@ -25,7 +25,7 @@ jb.component('data-test.object-encoder.encode-decode', {
 })
 
 jb.component('data-test.object-encoder.encode-jb time', {
-    impl :{$: 'data-test',
+    impl :{$: 'data-test-flacky',
        calculate: ctx =>  {
            const time = Date.now();
            const jb2 = jb.objectEncoder.decode(jb.objectEncoder.encode(jb));

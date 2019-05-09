@@ -106,7 +106,7 @@ class ImmutableWithJbId {
     if (!val || typeof val !== 'object' && path.length > 0) {
       const parent = this.asRef(this.valOfPath(path.slice(0,-1)));
       if (this.isRef(parent)) 
-        return Object.assign({},parent,{$jb_childProp: path.slice(-1)})
+        return Object.assign({},parent,{$jb_childProp: path.slice(-1)[0]})
       jb.logError('reOfPath can not find parent ref',path.join('~'))
     }
     return this.asRef(val)
