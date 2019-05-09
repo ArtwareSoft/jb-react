@@ -9,7 +9,7 @@ jb.component('hello-world.main', {
   type: 'control', 
   impl :{$: 'group', 
     style :{$: 'layout.horizontal', spacing: 3 }, 
-    controls: [{$: 'label', title: 'hel' }]
+    controls: [{$: 'label', title: 'yrty' }]
   }
 })
 
@@ -47,8 +47,25 @@ jb.component('hello-world.main2', {
                 '%huyt%'
               ]
             }
+          }, 
+          {$: 'field.control', 
+            control :{$: 'itemlist', 
+              style :{$: 'itemlist.ul-li' }, 
+              itemVariable: 'item'
+            }
           }
         ]
+      }, 
+      {$: 'itemlist', 
+        items: '%$people%', 
+        controls: [
+          {$: 'label', 
+            title: '%name%', 
+            style :{$: 'label.span' }
+          }
+        ], 
+        style :{$: 'itemlist.ul-li' }, 
+        itemVariable: 'item'
       }
     ], 
     features :{$: 'var', name: 'text', value: 'hello world', mutable: 'true' }

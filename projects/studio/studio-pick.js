@@ -117,31 +117,31 @@ function pathFromElem(_window,profElem) {
 }
 
 function eventToElem(e,_window) {
-	var mousePos = {
+	const mousePos = {
 		x: e.pageX - document.body.scrollLeft, y: e.pageY - - document.body.scrollTop
 	};
-	var el = _window.document.elementFromPoint(mousePos.x, mousePos.y);
+	const el = _window.document.elementFromPoint(mousePos.x, mousePos.y);
 	if (!el) return;
-	var results = [el].concat(jb.ui.parents(el))
+	const results = [el].concat(jb.ui.parents(el))
 		.filter(e =>
 			e && e.getAttribute && e.getAttribute('jb-ctx') );
 	if (results.length == 0) return [];
 
 	// promote parents if the mouse is near the edge
-	var first_result = results.shift(); // shift also removes first item from results!
-	var edgeY = Math.max(3,Math.floor(jb.ui.outerHeight(first_result) / 10));
-	var edgeX = Math.max(3,Math.floor(jb.ui.outerWidth(first_result) / 10));
+	const first_result = results.shift(); // shift also removes first item from results!
+	const edgeY = Math.max(3,Math.floor(jb.ui.outerHeight(first_result) / 10));
+	const edgeX = Math.max(3,Math.floor(jb.ui.outerWidth(first_result) / 10));
 
-	var orderedResults = results.filter(elem=>{
+	const orderedResults = results.filter(elem=>{
 		return Math.abs(mousePos.y - jb.ui.offset(elem).top) < edgeY || Math.abs(mousePos.x - jb.ui.offset(elem).left) < edgeX;
 	}).concat([first_result]);
 	return orderedResults[0];
 }
 
 function showBox(cmp,profElem,_window,previewOffset) {
-  var profElem_offset = jb.ui.offset(profElem);
-	if (profElem_offset == null || jb.ui.offset(document.querySelector('#jb-preview')) == null)
-		return;
+  const profElem_offset = jb.ui.offset(profElem);
+  if (profElem_offset == null || jb.ui.offset(document.querySelector('#jb-preview')) == null)
+	return;
 
 	cmp.setState({
 		top: previewOffset + profElem_offset.top,
@@ -155,9 +155,9 @@ function showBox(cmp,profElem,_window,previewOffset) {
 }
 
 jb.studio.getOrCreateHighlightBox = function() {
-  var _window = st.previewWindow || window;
+  const _window = st.previewWindow || window;
   if (!_window.document.querySelector('#preview-box')) {
-    var elem = _window.document.createElement('div');
+    const elem = _window.document.createElement('div');
     elem.setAttribute('id','preview-box');
     !_window.document.body.appendChild(elem);
   }
@@ -174,21 +174,21 @@ st.highlightCtx = function(ctx) {
 st.highlightByScriptPath = function(path) {
 	const pathStr = Array.isArray(path) ? path.join('~') : path;
 	const result = st.closestCtxInPreview(pathStr)
-	if (result.elem)
-		st.highlight([result.elem])
+	st.highlightCtx(result.ctx)
 }
 
 
 st.highlight = function(elems) {
-	//var boxes = [];
-	var html = elems.map(el => {
-			var offset = jb.ui.offset(el);
-			var width = jb.ui.outerWidth(el);
-	  if (width == jb.ui.outerWidth(document.body)) width -= 10;
-	  return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; zIndex: 5000;
-	  width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
+	const html = elems.map(el => {
+		const offset = jb.ui.offset(el);
+		let width = jb.ui.outerWidth(el);
+		if (width == jb.ui.outerWidth(document.body)) 
+			width -= 10;
+		return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; zIndex: 5000;
+			width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
 	}).join('');
-	var box = jb.studio.getOrCreateHighlightBox();
+
+	const box = jb.studio.getOrCreateHighlightBox();
 	jb.ui.removeClass(box,'jb-fade-3s-transition');
 	box.innerHTML = html;
 	jb.delay(1).then(_=> jb.ui.addClass(box,'jb-fade-3s-transition'));
@@ -201,19 +201,19 @@ jb.component('studio.highlight-in-preview',{
 		{ id: 'path', as: 'string' }
 	],
 	impl: (ctx,path) => {
-		var _window = st.previewWindow || window;
+		const _window = st.previewWindow || window;
 		if (!_window) return;
-		var elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
+		const elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
 			.filter(e=>{
-				var _ctx = _window.jb.ctxDictionary[e.getAttribute('jb-ctx')];
-				var callerPath = _ctx && _ctx.componentContext && _ctx.componentContext.callerPath;
+				const _ctx = _window.jb.ctxDictionary[e.getAttribute('jb-ctx')];
+				const callerPath = _ctx && _ctx.componentContext && _ctx.componentContext.callerPath;
 				return callerPath == path || (_ctx && _ctx.path == path);
 			})
 
 		if (elems.length == 0) // try to look in studio
 			elems = Array.from(document.querySelectorAll('[jb-ctx]'))
 			.filter(e=> {
-				var _ctx = jb.ctxDictionary[e.getAttribute('jb-ctx')];
+				const _ctx = jb.ctxDictionary[e.getAttribute('jb-ctx')];
 				return _ctx && _ctx.path == path
 			})
 
@@ -222,13 +222,13 @@ jb.component('studio.highlight-in-preview',{
 })
 
 st.closestCtxInPreview = _path => {
-	var path = _path.split('~fields~')[0]; // field is passive..
-	var _window = st.previewWindow || window;
+	const path = _path.split('~fields~')[0]; // field is passive..
+	const _window = st.previewWindow || window;
 	if (!_window) return;
-	var closest,closestElem;
-	var elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
+	let closest,closestElem;
+	const elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
 	for(var i=0;i<elems.length;i++) {
-		var _ctx = _window.jb.ctxDictionary[elems[i].getAttribute('jb-ctx')];
+		const _ctx = _window.jb.ctxDictionary[elems[i].getAttribute('jb-ctx')];
 		if (!_ctx) continue; //  || !st.isOfType(_ctx.path,'control'))
 		if (_ctx.path == path)
 			return {ctx: _ctx, elem: elems[i]} ;
