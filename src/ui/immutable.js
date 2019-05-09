@@ -18,7 +18,7 @@ class ImmutableWithPath {
       return ref.handler.val(ref)
     }
 
-    var resource = ref.$jb_path[0];
+    const resource = ref.$jb_path[0];
     if (ref.$jb_resourceV == this.resourceVersions[resource])
       return ref.$jb_cache;
     this.refresh(ref);
@@ -57,19 +57,19 @@ class ImmutableWithPath {
     return this.doOp(ref,{$splice: args },srcCtx)
   }
   move(fromRef,toRef,srcCtx) {
-    var sameArray = fromRef.$jb_path.slice(0,-1).join('~') == toRef.$jb_path.slice(0,-1).join('~');
-    var fromIndex = Number(fromRef.$jb_path.slice(-1));
-    var toIndex = Number(toRef.$jb_path.slice(-1));
-    var fromArray = this.refOfPath(fromRef.$jb_path.slice(0,-1)),toArray = this.refOfPath(toRef.$jb_path.slice(0,-1));
+    const sameArray = fromRef.$jb_path.slice(0,-1).join('~') == toRef.$jb_path.slice(0,-1).join('~');
+    const fromIndex = Number(fromRef.$jb_path.slice(-1));
+    let toIndex = Number(toRef.$jb_path.slice(-1));
+    const fromArray = this.refOfPath(fromRef.$jb_path.slice(0,-1)),toArray = this.refOfPath(toRef.$jb_path.slice(0,-1));
     if (isNaN(fromIndex) || isNaN(toIndex))
         return jb.logError('move: not array element',fromRef,toRef);
 
-    var valToMove = jb.val(fromRef);
+    const valToMove = jb.val(fromRef);
     if (sameArray) {
         if (fromIndex < toIndex) toIndex--; // the deletion changes the index
         return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
     }
-    var events = [
+    const events = [
         this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx,true),
         this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx,true),
     ]
@@ -90,17 +90,17 @@ class ImmutableWithPath {
     if (!this.isRef(ref))
       ref = this.asRef(ref);
     if (!ref) return;
-    var oldRef = Object.assign({},ref);
+    const oldRef = Object.assign({},ref);
 
     if (!this.refresh(ref)) return;
     if (ref.$jb_path.length == 0)
       return jb.logError('doOp: ref not found');
 
-    var op = {}, resource = ref.$jb_path[0], oldResources = this.resources();
-    var deleteOp = typeof opOnRef.$set == 'object' && opOnRef.$set == null;
+    const op = {}, resource = ref.$jb_path[0], oldResources = this.resources();
+    const deleteOp = typeof opOnRef.$set == 'object' && opOnRef.$set == null;
     jb.path(op,ref.$jb_path,opOnRef); // create op as nested object
     this.markPath(ref.$jb_path);
-    var opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
+    const opEvent = {op: opOnRef, path: ref.$jb_path, ref: ref, srcCtx: srcCtx, oldVal: jb.val(ref),
         oldRef: oldRef, resourceVersionsBefore: this.resourceVersions, timeStamp: new Date().getTime()};
     this.resources(jb.ui.update(this.resources(),op),opEvent);
     this.resourceVersions = Object.assign({},this.resourceVersions,jb.obj(resource,this.resourceVersions[resource] ? this.resourceVersions[resource]+1 : 1));
@@ -112,7 +112,7 @@ class ImmutableWithPath {
       if (ref.$jb_path.length == 1) // deleting a resource - remove from versions and return
         return delete this.resourceVersions[resource];
       try {
-        var parent = ref.$jb_path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
+        const parent = ref.$jb_path.slice(0,-1).reduce((o,p)=>o[p],this.resources());
         if (parent)
           delete parent[ref.$jb_path.slice(-1)[0]]
       } catch(e) {
@@ -137,9 +137,9 @@ class ImmutableWithPath {
     if (obj && (obj.$jb_path || obj.$jb_val))
         return obj;
 
-    var path;
+    let path;
     if (hint && hint.resource) {
-      var res = this.pathOfObject(obj,this.resources()[hint.resource]);
+      const res = this.pathOfObject(obj,this.resources()[hint.resource]);
       path = res && [hint.resource].concat(res);
     }
     path = path || this.pathOfObject(obj,this.resources()); // try without the hint
@@ -160,7 +160,7 @@ class ImmutableWithPath {
     jb.log('immutable',['objectProperty',...arguments]);
     if (!obj)
       return jb.logError('objectProperty: null obj');
-    var objRef = this.asRef(obj);
+    const objRef = this.asRef(obj);
     if (objRef && objRef.$jb_path) {
       return {
         $jb_path: objRef.$jb_path.concat([prop]),
@@ -177,14 +177,15 @@ class ImmutableWithPath {
     jb.log('immutable',['refresh',(ref.$jb_path||[]).join('~'),...arguments]);
     if (!ref) debugger;
     try {
-      var path = ref.$jb_path, new_ref = {};
+      const path = ref.$jb_path;
+      let new_ref = {};
       if (!path)
         return !silent && jb.logError('refresh: empty path');
-      var currentVersion = this.resourceVersions[path[0]] || 0;
+      const currentVersion = this.resourceVersions[path[0]] || 0;
       if (path.length == 1) return true;
       if (currentVersion == ref.$jb_resourceV) return true;
       if (currentVersion == (ref.$jb_resourceV || 0) + 1 && lastOpEvent && typeof lastOpEvent.op.$set != 'undefined') {
-        var res = this.refOfPath(ref.$jb_path,silent); // recalc ref by path
+        const res = this.refOfPath(ref.$jb_path,silent); // recalc ref by path
         if (res)
           return Object.assign(ref,res)
         ref.$jb_invalid = true;
@@ -195,13 +196,13 @@ class ImmutableWithPath {
         return Object.assign(ref,{$jb_resourceV: this.resourceVersions[path[0]]})
 
       if (ref.$jb_parentOfPrim) {
-        var parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
+        const parent = this.asRef(ref.$jb_parentOfPrim,{resource: path[0]});
         if (!parent || !this.isRef(parent)) {
           this.asRef(ref.$jb_parentOfPrim,{resource: path[0]}); // for debug
           ref.$jb_invalid = true;
           return !silent && jb.logError('refresh: parent not found',path.join('~'),...arguments);
         }
-        var prop = path.slice(-1)[0];
+        const prop = path.slice(-1)[0];
         new_ref = {
           $jb_path: parent.$jb_path.concat([prop]),
           $jb_resourceV: this.resourceVersions[path[0]],
@@ -210,13 +211,13 @@ class ImmutableWithPath {
           handler: this,
         }
       } else {
-        var object_path_found = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
+        const object_path_found = ref.$jb_cache && this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
         if (!object_path_found) {
           this.pathOfObject(ref.$jb_cache,this.resources()[path[0]]);
           ref.$jb_invalid = true;
           return !silent && jb.logError('refresh: object not found',path.join('~'),...arguments);
         }
-        var new_path = [path[0]].concat(object_path_found);
+        const new_path = [path[0]].concat(object_path_found);
         if (new_path) new_ref = {
           $jb_path: new_path,
           $jb_resourceV: this.resourceVersions[new_path[0]],
@@ -233,11 +234,9 @@ class ImmutableWithPath {
   }
   refOfPath(path,silent) {
       try {
-        var val = this.valOfPath(path);
-        if (val == null || typeof val != 'object' || Array.isArray(val))
-          var parent = this.valOfPath(path.slice(0,-1));
-        else
-          var parent = null
+        const val = this.valOfPath(path);
+        const parent = (val == null || typeof val != 'object' || Array.isArray(val)) ?
+          this.valOfPath(path.slice(0,-1)) : null
 
         return {
             $jb_path: path,
@@ -252,7 +251,7 @@ class ImmutableWithPath {
       }
   }
   markPath(path) {
-    var leaf = path.reduce((o,p)=>{
+    const leaf = path.reduce((o,p)=>{
       o.$jb_id = o.$jb_id || (++this.pathId);
       return o[p]
     }, this.resources());
@@ -280,8 +279,8 @@ class ImmutableWithPath {
           return [e[0]].concat(res);
       }).filter(x=>x);
     // let results = []
-    // for(var p in lookIn) {
-    //   var res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
+    // for(const p in lookIn) {
+    //   const res = this.pathOfObject(obj,lookIn[p],(depth||0)+1);
     //   if (res)
     //     results.push([[p].concat(res)]);
     // }
@@ -343,7 +342,7 @@ jb.ui.ImmutableWithPath = ImmutableWithPath;
 jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
 
 jb.ui.pathObservable = (path,handler,cmp) => {
-  var ref = handler.refOfPath(path.split('~'));
+  const ref = handler.refOfPath(path.split('~'));
   return handler.resourceChange
     .takeUntil(cmp.destroyed)
     .filter(e=>
@@ -360,7 +359,7 @@ jb.ui.pathObservable = (path,handler,cmp) => {
 
 jb.cleanRefHandlerProps = function(obj) {
   if (typeof obj != 'object') return obj;
-  var out = Array.isArray(obj) ? [] : {};
+  const out = Array.isArray(obj) ? [] : {};
   jb.entries(obj).forEach(e=>{
     if (e[0].indexOf('$jb_') == 0) return;
     if (e[1] && typeof e[1] == 'object')

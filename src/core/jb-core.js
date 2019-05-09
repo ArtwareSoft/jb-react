@@ -29,13 +29,11 @@ function do_jb_run(context,parentParam,settings) {
       return;
     const contextWithVars = extendWithVars(context,profile.$vars);
     const run = prepare(contextWithVars,parentParam);
-    const jstype = parentParam && parentParam.as;
     context.parentParam = parentParam;
     switch (run.type) {
       case 'booleanExp': return bool_expression(profile, context);
       case 'expression': return castToParam(expression(profile, context,parentParam), parentParam);
       case 'asIs': return profile;
-      case 'object': return entriesToObject(entries(profile).map(e=>[e[0],contextWithVars.runInner(e[1],null,e[0])]));
       case 'function': return castToParam(profile(context),parentParam);
       case 'null': return castToParam(null,parentParam);
       case 'ignore': return context.data;
@@ -307,7 +305,7 @@ function evalExpressionPart(expressionPart,context,parentParam) {
   // if (expressionPart == "")
   //   return context.data;
 
-  const parts = expressionPart.split(/[.\/]/);
+  const parts = expressionPart.split(/[./]/);
   return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),context.data)
 
   function pipe(input,subExp,last,first,refHandlerArg) {
@@ -394,7 +392,7 @@ function bool_expression(exp, context) {
     let p2 = tostring(expression(trim(parts[3]), context, {as: 'string'}))
     // const p1 = expression(trim(parts[1]), context, {as: 'string'});
     // const p2 = expression(trim(parts[3]), context, {as: 'string'});
-    p2 = (p2.match(/^["'](.*)["']/) || [,p2])[1]; // remove quotes
+    p2 = (p2.match(/^["'](.*)["']/) || ['',p2])[1]; // remove quotes
     if (op == '==') return p1 == p2;
     if (op == '!=') return p1 != p2;
     if (op == '^=') return p1.lastIndexOf(p2,0) == 0; // more effecient
@@ -560,13 +558,6 @@ class jbCtx {
     })
   }
   runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
-  parents() {
-    return this._parent ? [this._parent].concat(_this.parent.parents()) : []
-  }
-  isParentOf(childCtx) {
-    return childCtx.parents().filter(x == this).length > 0
-  }
-
 }
 
 const logs = {};
