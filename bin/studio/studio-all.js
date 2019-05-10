@@ -260,13 +260,11 @@ function do_jb_run(context,parentParam,settings) {
       return;
     const contextWithVars = extendWithVars(context,profile.$vars);
     const run = prepare(contextWithVars,parentParam);
-    const jstype = parentParam && parentParam.as;
     context.parentParam = parentParam;
     switch (run.type) {
       case 'booleanExp': return bool_expression(profile, context);
       case 'expression': return castToParam(expression(profile, context,parentParam), parentParam);
       case 'asIs': return profile;
-      case 'object': return entriesToObject(entries(profile).map(e=>[e[0],contextWithVars.runInner(e[1],null,e[0])]));
       case 'function': return castToParam(profile(context),parentParam);
       case 'null': return castToParam(null,parentParam);
       case 'ignore': return context.data;
@@ -538,7 +536,7 @@ function evalExpressionPart(expressionPart,context,parentParam) {
   // if (expressionPart == "")
   //   return context.data;
 
-  const parts = expressionPart.split(/[.\/]/);
+  const parts = expressionPart.split(/[./]/);
   return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),context.data)
 
   function pipe(input,subExp,last,first,refHandlerArg) {
@@ -625,7 +623,7 @@ function bool_expression(exp, context) {
     let p2 = tostring(expression(trim(parts[3]), context, {as: 'string'}))
     // const p1 = expression(trim(parts[1]), context, {as: 'string'});
     // const p2 = expression(trim(parts[3]), context, {as: 'string'});
-    p2 = (p2.match(/^["'](.*)["']/) || [,p2])[1]; // remove quotes
+    p2 = (p2.match(/^["'](.*)["']/) || ['',p2])[1]; // remove quotes
     if (op == '==') return p1 == p2;
     if (op == '!=') return p1 != p2;
     if (op == '^=') return p1.lastIndexOf(p2,0) == 0; // more effecient
@@ -791,13 +789,6 @@ class jbCtx {
     })
   }
   runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
-  parents() {
-    return this._parent ? [this._parent].concat(_this.parent.parents()) : []
-  }
-  isParentOf(childCtx) {
-    return childCtx.parents().filter(x == this).length > 0
-  }
-
 }
 
 const logs = {};
@@ -6141,8 +6132,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var prea
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
-eval("\nObject.defineProperty(exports, \"__esModule\", { value: true });\nvar invariant = __webpack_require__(/*! invariant */ \"./node_modules/invariant/browser.js\");\nvar hasOwnProperty = Object.prototype.hasOwnProperty;\nvar splice = Array.prototype.splice;\nvar toString = Object.prototype.toString;\nfunction type(obj) {\n    return toString.call(obj).slice(8, -1);\n}\nvar assign = Object.assign || /* istanbul ignore next */ (function (target, source) {\n    getAllKeys(source).forEach(function (key) {\n        if (hasOwnProperty.call(source, key)) {\n            target[key] = source[key];\n        }\n    });\n    return target;\n});\nvar getAllKeys = typeof Object.getOwnPropertySymbols === 'function'\n    ? function (obj) { return Object.keys(obj).concat(Object.getOwnPropertySymbols(obj)); }\n    /* istanbul ignore next */\n    : function (obj) { return Object.keys(obj); };\nfunction copy(object) {\n    return Array.isArray(object)\n        ? assign(object.constructor(object.length), object)\n        : (type(object) === 'Map')\n            ? new Map(object)\n            : (type(object) === 'Set')\n                ? new Set(object)\n                : (object && typeof object === 'object')\n                    ? assign(Object.create(Object.getPrototypeOf(object)), object)\n                    /* istanbul ignore next */\n                    : object;\n}\nvar Context = /** @class */ (function () {\n    function Context() {\n        this.commands = assign({}, defaultCommands);\n        this.update = this.update.bind(this);\n        // Deprecated: update.extend, update.isEquals and update.newContext\n        this.update.extend = this.extend = this.extend.bind(this);\n        this.update.isEquals = function (x, y) { return x === y; };\n        this.update.newContext = function () { return new Context().update; };\n    }\n    Object.defineProperty(Context.prototype, \"isEquals\", {\n        get: function () {\n            return this.update.isEquals;\n        },\n        set: function (value) {\n            this.update.isEquals = value;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Context.prototype.extend = function (directive, fn) {\n        this.commands[directive] = fn;\n    };\n    Context.prototype.update = function (object, $spec) {\n        var _this = this;\n        var spec = (typeof $spec === 'function') ? { $apply: $spec } : $spec;\n        if (!(Array.isArray(object) && Array.isArray(spec))) {\n            invariant(!Array.isArray(spec), 'update(): You provided an invalid spec to update(). The spec may ' +\n                'not contain an array except as the value of $set, $push, $unshift, ' +\n                '$splice or any custom command allowing an array value.');\n        }\n        invariant(typeof spec === 'object' && spec !== null, 'update(): You provided an invalid spec to update(). The spec and ' +\n            'every included key path must be plain objects containing one of the ' +\n            'following commands: %s.', Object.keys(this.commands).join(', '));\n        var nextObject = object;\n        getAllKeys(spec).forEach(function (key) {\n            if (hasOwnProperty.call(_this.commands, key)) {\n                var objectWasNextObject = object === nextObject;\n                nextObject = _this.commands[key](spec[key], nextObject, spec, object);\n                if (objectWasNextObject && _this.isEquals(nextObject, object)) {\n                    nextObject = object;\n                }\n            }\n            else {\n                var nextValueForKey = type(object) === 'Map'\n                    ? _this.update(object.get(key), spec[key])\n                    : _this.update(object[key], spec[key]);\n                var nextObjectValue = type(nextObject) === 'Map'\n                    ? nextObject.get(key)\n                    : nextObject[key];\n                if (!_this.isEquals(nextValueForKey, nextObjectValue)\n                    || typeof nextValueForKey === 'undefined'\n                        && !hasOwnProperty.call(object, key)) {\n                    if (nextObject === object) {\n                        nextObject = copy(object);\n                    }\n                    if (type(nextObject) === 'Map') {\n                        nextObject.set(key, nextValueForKey);\n                    }\n                    else {\n                        nextObject[key] = nextValueForKey;\n                    }\n                }\n            }\n        });\n        return nextObject;\n    };\n    return Context;\n}());\nexports.Context = Context;\nvar defaultCommands = {\n    $push: function (value, nextObject, spec) {\n        invariantPushAndUnshift(nextObject, spec, '$push');\n        return value.length ? nextObject.concat(value) : nextObject;\n    },\n    $unshift: function (value, nextObject, spec) {\n        invariantPushAndUnshift(nextObject, spec, '$unshift');\n        return value.length ? value.concat(nextObject) : nextObject;\n    },\n    $splice: function (value, nextObject, spec, originalObject) {\n        invariantSplices(nextObject, spec);\n        value.forEach(function (args) {\n            invariantSplice(args);\n            if (nextObject === originalObject && args.length) {\n                nextObject = copy(originalObject);\n            }\n            splice.apply(nextObject, args);\n        });\n        return nextObject;\n    },\n    $set: function (value, _nextObject, spec) {\n        invariantSet(spec);\n        return value;\n    },\n    $toggle: function (targets, nextObject) {\n        invariantSpecArray(targets, '$toggle');\n        var nextObjectCopy = targets.length ? copy(nextObject) : nextObject;\n        targets.forEach(function (target) {\n            nextObjectCopy[target] = !nextObject[target];\n        });\n        return nextObjectCopy;\n    },\n    $unset: function (value, nextObject, _spec, originalObject) {\n        invariantSpecArray(value, '$unset');\n        value.forEach(function (key) {\n            if (Object.hasOwnProperty.call(nextObject, key)) {\n                if (nextObject === originalObject) {\n                    nextObject = copy(originalObject);\n                }\n                delete nextObject[key];\n            }\n        });\n        return nextObject;\n    },\n    $add: function (values, nextObject, _spec, originalObject) {\n        invariantMapOrSet(nextObject, '$add');\n        invariantSpecArray(values, '$add');\n        if (type(nextObject) === 'Map') {\n            values.forEach(function (_a) {\n                var key = _a[0], value = _a[1];\n                if (nextObject === originalObject && nextObject.get(key) !== value) {\n                    nextObject = copy(originalObject);\n                }\n                nextObject.set(key, value);\n            });\n        }\n        else {\n            values.forEach(function (value) {\n                if (nextObject === originalObject && !nextObject.has(value)) {\n                    nextObject = copy(originalObject);\n                }\n                nextObject.add(value);\n            });\n        }\n        return nextObject;\n    },\n    $remove: function (value, nextObject, _spec, originalObject) {\n        invariantMapOrSet(nextObject, '$remove');\n        invariantSpecArray(value, '$remove');\n        value.forEach(function (key) {\n            if (nextObject === originalObject && nextObject.has(key)) {\n                nextObject = copy(originalObject);\n            }\n            nextObject.delete(key);\n        });\n        return nextObject;\n    },\n    $merge: function (value, nextObject, _spec, originalObject) {\n        invariantMerge(nextObject, value);\n        getAllKeys(value).forEach(function (key) {\n            if (value[key] !== nextObject[key]) {\n                if (nextObject === originalObject) {\n                    nextObject = copy(originalObject);\n                }\n                nextObject[key] = value[key];\n            }\n        });\n        return nextObject;\n    },\n    $apply: function (value, original) {\n        invariantApply(value);\n        return value(original);\n    },\n};\nvar defaultContext = new Context();\nexports.isEquals = defaultContext.update.isEquals;\nexports.extend = defaultContext.extend;\nexports.default = defaultContext.update;\n// @ts-ignore\nexports.default.default = module.exports = assign(exports.default, exports);\n// invariants\nfunction invariantPushAndUnshift(value, spec, command) {\n    invariant(Array.isArray(value), 'update(): expected target of %s to be an array; got %s.', command, value);\n    invariantSpecArray(spec[command], command);\n}\nfunction invariantSpecArray(spec, command) {\n    invariant(Array.isArray(spec), 'update(): expected spec of %s to be an array; got %s. ' +\n        'Did you forget to wrap your parameter in an array?', command, spec);\n}\nfunction invariantSplices(value, spec) {\n    invariant(Array.isArray(value), 'Expected $splice target to be an array; got %s', value);\n    invariantSplice(spec.$splice);\n}\nfunction invariantSplice(value) {\n    invariant(Array.isArray(value), 'update(): expected spec of $splice to be an array of arrays; got %s. ' +\n        'Did you forget to wrap your parameters in an array?', value);\n}\nfunction invariantApply(fn) {\n    invariant(typeof fn === 'function', 'update(): expected spec of $apply to be a function; got %s.', fn);\n}\nfunction invariantSet(spec) {\n    invariant(Object.keys(spec).length === 1, 'Cannot have more than one key in an object with $set');\n}\nfunction invariantMerge(target, specValue) {\n    invariant(specValue && typeof specValue === 'object', 'update(): $merge expects a spec of type \\'object\\'; got %s', specValue);\n    invariant(target && typeof target === 'object', 'update(): $merge expects a target of type \\'object\\'; got %s', target);\n}\nfunction invariantMapOrSet(target, command) {\n    var typeOfTarget = type(target);\n    invariant(typeOfTarget === 'Map' || typeOfTarget === 'Set', 'update(): %s expects a target of type Set or Map; got %s', command, typeOfTarget);\n}\n\n\n//# sourceURL=webpack:///./node_modules/immutability-helper/index.js?");
+eval("var invariant = __webpack_require__(/*! invariant */ \"./node_modules/invariant/browser.js\");\n\nvar hasOwnProperty = Object.prototype.hasOwnProperty;\nvar splice = Array.prototype.splice;\n\nvar toString = Object.prototype.toString\nvar type = function(obj) {\n  return toString.call(obj).slice(8, -1);\n}\n\nvar assign = Object.assign || /* istanbul ignore next */ function assign(target, source) {\n  getAllKeys(source).forEach(function(key) {\n    if (hasOwnProperty.call(source, key)) {\n      target[key] = source[key];\n    }\n  });\n  return target;\n};\n\nvar getAllKeys = typeof Object.getOwnPropertySymbols === 'function' ?\n  function(obj) { return Object.keys(obj).concat(Object.getOwnPropertySymbols(obj)) } :\n  /* istanbul ignore next */ function(obj) { return Object.keys(obj) };\n\n/* istanbul ignore next */\nfunction copy(object) {\n  if (Array.isArray(object)) {\n    return assign(object.constructor(object.length), object)\n  } else if (type(object) === 'Map') {\n    return new Map(object)\n  } else if (type(object) === 'Set') {\n    return new Set(object)\n  } else if (object && typeof object === 'object') {\n    var prototype = Object.getPrototypeOf(object);\n    return assign(Object.create(prototype), object);\n  } else {\n    return object;\n  }\n}\n\nfunction newContext() {\n  var commands = assign({}, defaultCommands);\n  update.extend = function(directive, fn) {\n    commands[directive] = fn;\n  };\n  update.isEquals = function(a, b) { return a === b; };\n\n  return update;\n\n  function update(object, spec) {\n    if (typeof spec === 'function') {\n      spec = { $apply: spec };\n    }\n\n    if (!(Array.isArray(object) && Array.isArray(spec))) {\n      invariant(\n        !Array.isArray(spec),\n        'update(): You provided an invalid spec to update(). The spec may ' +\n        'not contain an array except as the value of $set, $push, $unshift, ' +\n        '$splice or any custom command allowing an array value.'\n      );\n    }\n\n    invariant(\n      typeof spec === 'object' && spec !== null,\n      'update(): You provided an invalid spec to update(). The spec and ' +\n      'every included key path must be plain objects containing one of the ' +\n      'following commands: %s.',\n      Object.keys(commands).join(', ')\n    );\n\n    var nextObject = object;\n    var index, key;\n    getAllKeys(spec).forEach(function(key) {\n      if (hasOwnProperty.call(commands, key)) {\n        var objectWasNextObject = object === nextObject;\n        nextObject = commands[key](spec[key], nextObject, spec, object);\n        if (objectWasNextObject && update.isEquals(nextObject, object)) {\n          nextObject = object;\n        }\n      } else {\n        var nextValueForKey =\n          type(object) === 'Map'\n            ? update(object.get(key), spec[key])\n            : update(object[key], spec[key]);\n        var nextObjectValue =\n          type(nextObject) === 'Map'\n              ? nextObject.get(key)\n              : nextObject[key];\n        if (!update.isEquals(nextValueForKey, nextObjectValue) || typeof nextValueForKey === 'undefined' && !hasOwnProperty.call(object, key)) {\n          if (nextObject === object) {\n            nextObject = copy(object);\n          }\n          if (type(nextObject) === 'Map') {\n            nextObject.set(key, nextValueForKey);\n          } else {\n            nextObject[key] = nextValueForKey;\n          }\n        }\n      }\n    })\n    return nextObject;\n  }\n\n}\n\nvar defaultCommands = {\n  $push: function(value, nextObject, spec) {\n    invariantPushAndUnshift(nextObject, spec, '$push');\n    return value.length ? nextObject.concat(value) : nextObject;\n  },\n  $unshift: function(value, nextObject, spec) {\n    invariantPushAndUnshift(nextObject, spec, '$unshift');\n    return value.length ? value.concat(nextObject) : nextObject;\n  },\n  $splice: function(value, nextObject, spec, originalObject) {\n    invariantSplices(nextObject, spec);\n    value.forEach(function(args) {\n      invariantSplice(args);\n      if (nextObject === originalObject && args.length) nextObject = copy(originalObject);\n      splice.apply(nextObject, args);\n    });\n    return nextObject;\n  },\n  $set: function(value, nextObject, spec) {\n    invariantSet(spec);\n    return value;\n  },\n  $toggle: function(targets, nextObject) {\n    invariantSpecArray(targets, '$toggle');\n    var nextObjectCopy = targets.length ? copy(nextObject) : nextObject;\n\n    targets.forEach(function(target) {\n      nextObjectCopy[target] = !nextObject[target];\n    });\n\n    return nextObjectCopy;\n  },\n  $unset: function(value, nextObject, spec, originalObject) {\n    invariantSpecArray(value, '$unset');\n    value.forEach(function(key) {\n      if (Object.hasOwnProperty.call(nextObject, key)) {\n        if (nextObject === originalObject) nextObject = copy(originalObject);\n        delete nextObject[key];\n      }\n    });\n    return nextObject;\n  },\n  $add: function(value, nextObject, spec, originalObject) {\n    invariantMapOrSet(nextObject, '$add');\n    invariantSpecArray(value, '$add');\n    if (type(nextObject) === 'Map') {\n      value.forEach(function(pair) {\n        var key = pair[0];\n        var value = pair[1];\n        if (nextObject === originalObject && nextObject.get(key) !== value) nextObject = copy(originalObject);\n        nextObject.set(key, value);\n      });\n    } else {\n      value.forEach(function(value) {\n        if (nextObject === originalObject && !nextObject.has(value)) nextObject = copy(originalObject);\n        nextObject.add(value);\n      });\n    }\n    return nextObject;\n  },\n  $remove: function(value, nextObject, spec, originalObject) {\n    invariantMapOrSet(nextObject, '$remove');\n    invariantSpecArray(value, '$remove');\n    value.forEach(function(key) {\n      if (nextObject === originalObject && nextObject.has(key)) nextObject = copy(originalObject);\n      nextObject.delete(key);\n    });\n    return nextObject;\n  },\n  $merge: function(value, nextObject, spec, originalObject) {\n    invariantMerge(nextObject, value);\n    getAllKeys(value).forEach(function(key) {\n      if (value[key] !== nextObject[key]) {\n        if (nextObject === originalObject) nextObject = copy(originalObject);\n        nextObject[key] = value[key];\n      }\n    });\n    return nextObject;\n  },\n  $apply: function(value, original) {\n    invariantApply(value);\n    return value(original);\n  }\n};\n\nvar contextForExport = newContext();\n\nmodule.exports = contextForExport;\nmodule.exports.default = contextForExport;\nmodule.exports.newContext = newContext;\n\n// invariants\n\nfunction invariantPushAndUnshift(value, spec, command) {\n  invariant(\n    Array.isArray(value),\n    'update(): expected target of %s to be an array; got %s.',\n    command,\n    value\n  );\n  invariantSpecArray(spec[command], command)\n}\n\nfunction invariantSpecArray(spec, command) {\n  invariant(\n    Array.isArray(spec),\n    'update(): expected spec of %s to be an array; got %s. ' +\n    'Did you forget to wrap your parameter in an array?',\n    command,\n    spec\n  );\n}\n\nfunction invariantSplices(value, spec) {\n  invariant(\n    Array.isArray(value),\n    'Expected $splice target to be an array; got %s',\n    value\n  );\n  invariantSplice(spec['$splice']);\n}\n\nfunction invariantSplice(value) {\n  invariant(\n    Array.isArray(value),\n    'update(): expected spec of $splice to be an array of arrays; got %s. ' +\n    'Did you forget to wrap your parameters in an array?',\n    value\n  );\n}\n\nfunction invariantApply(fn) {\n  invariant(\n    typeof fn === 'function',\n    'update(): expected spec of $apply to be a function; got %s.',\n    fn\n  );\n}\n\nfunction invariantSet(spec) {\n  invariant(\n    Object.keys(spec).length === 1,\n    'Cannot have more than one key in an object with $set'\n  );\n}\n\nfunction invariantMerge(target, specValue) {\n  invariant(\n    specValue && typeof specValue === 'object',\n    'update(): $merge expects a spec of type \\'object\\'; got %s',\n    specValue\n  );\n  invariant(\n    target && typeof target === 'object',\n    'update(): $merge expects a target of type \\'object\\'; got %s',\n    target\n  );\n}\n\nfunction invariantMapOrSet(target, command) {\n  var typeOfTarget = type(target);\n  invariant(\n    typeOfTarget === 'Map' || typeOfTarget === 'Set',\n    'update(): %s expects a target of type Set or Map; got %s',\n    command,\n    typeOfTarget\n  );\n}\n\n\n//# sourceURL=webpack:///./node_modules/immutability-helper/index.js?");
 
 /***/ }),
 
@@ -8397,7 +8387,7 @@ class ImmutableWithJbId {
     if (!val || typeof val !== 'object' && path.length > 0) {
       const parent = this.asRef(this.valOfPath(path.slice(0,-1)));
       if (this.isRef(parent)) 
-        return Object.assign({},parent,{$jb_childProp: path.slice(-1)})
+        return Object.assign({},parent,{$jb_childProp: path.slice(-1)[0]})
       jb.logError('reOfPath can not find parent ref',path.join('~'))
     }
     return this.asRef(val)
@@ -9160,45 +9150,45 @@ jb.component('editable-text.helper-popup', {
 jb.type('editable-boolean.style');
 
 jb.component('editable-boolean',{
-  type: 'control', category: 'input:20',
-  params: [
-    { id: 'databind', as: 'ref'},
-    { id: 'style', type: 'editable-boolean.style', defaultValue: { $: 'editable-boolean.checkbox' }, dynamic: true },
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true },
-    { id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true  },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx => jb.ui.ctrl(ctx,{
-  		init: cmp => {
-        cmp.toggle = () =>
-          cmp.jbModel(!cmp.jbModel());
+	type: 'control', category: 'input:20',
+	params: [
+		{ id: 'databind', as: 'ref'},
+		{ id: 'style', type: 'editable-boolean.style', defaultValue :{$: 'editable-boolean.checkbox' }, dynamic: true },
+		{ id: 'title', as: 'string' , dynamic: true },
+		{ id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true },
+		{ id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true  },
+		{ id: 'features', type: 'feature[]', dynamic: true },
+	],
+	impl: ctx => jb.ui.ctrl(ctx,{
+			init: cmp => {
+				cmp.toggle = () =>
+					cmp.jbModel(!cmp.jbModel());
 
-  			cmp.text = () => {
-          if (!cmp.jbModel) return '';
-          return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
-        }
-        cmp.extendRefresh = _ =>
-          cmp.setState({text: cmp.text()})
-          
-        cmp.refresh();
-  		},
-  	})
+				cmp.text = () => {
+					if (!cmp.jbModel) return '';
+					return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
+				}
+				cmp.extendRefresh = _ =>
+					cmp.setState({text: cmp.text()})
+					
+				cmp.refresh();
+			},
+		})
 })
 
 jb.component('editable-boolean.keyboard-support', {
-  type: 'feature',
-  impl: ctx => ({
-      onkeydown: true,
-      afterViewInit: cmp => {
-        cmp.onkeydown.filter(e=> 
-            e.keyCode == 37 || e.keyCode == 39)
-          .subscribe(x=> {
-            cmp.toggle();
-            cmp.refreshMdl && cmp.refreshMdl();
-          })
-      },
-    })
+	type: 'feature',
+	impl: ctx => ({
+			onkeydown: true,
+			afterViewInit: cmp => {
+				cmp.onkeydown.filter(e=> 
+						e.keyCode == 37 || e.keyCode == 39)
+					.subscribe(e=> {
+						cmp.toggle();
+						cmp.refreshMdl && cmp.refreshMdl();
+					})
+			},
+		})
 })
 ;
 
@@ -10300,33 +10290,33 @@ jb.component('menu.options-group', {
 		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
 	],
 	impl: (ctx,options) =>
-    	options()
+			options()
 })
 
 jb.component('menu.dynamic-options', {
-  type: 'menu.option',
-  params: [
-    { id: 'items', type: 'data', as: 'array', essential: true, dynamic: true },
-    { id: 'genericOption', type: 'menu.option', essential: true, dynamic: true },
-  ],
-  impl: (ctx,items,generic) =>
-    items().map(item =>
-      	generic(ctx.setVars({menuData: item}).setData(item)))
+	type: 'menu.option',
+	params: [
+		{ id: 'items', type: 'data', as: 'array', essential: true, dynamic: true },
+		{ id: 'genericOption', type: 'menu.option', essential: true, dynamic: true },
+	],
+	impl: (ctx,items,generic) =>
+		items().map(item =>
+				generic(ctx.setVars({menuData: item}).setData(item)))
 })
 
 jb.component('menu.end-with-separator', {
-  type: 'menu.option',
-  params: [
-    { id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
-    { id: 'separator', type: 'menu.option', as: 'array', defaultValue :{$: 'menu.separator' } },
-    { id: 'title', as: 'string' }
-  ],
-  impl: (ctx) => {
-  	var options = ctx.params.options();
-  	if (options.length > 0)
-  		return options.concat(ctx.params.separator)
-  	return []
-  }
+	type: 'menu.option',
+	params: [
+		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
+		{ id: 'separator', type: 'menu.option', as: 'array', defaultValue :{$: 'menu.separator' } },
+		{ id: 'title', as: 'string' }
+	],
+	impl: (ctx) => {
+		const options = ctx.params.options();
+		if (options.length > 0)
+			return options.concat(ctx.params.separator)
+		return []
+	}
 })
 
 
@@ -10350,24 +10340,24 @@ jb.component('menu.action', {
 			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
 			title: ctx.params.title(ctx),
 			applyShortcut: e=> {
-				var key = ctx.params.shortcut;
+				let key = ctx.params.shortcut;
 				if (!key) return;
 				if (key.indexOf('-') > 0)
 					key = key.replace(/-/,'+');
-	            var keyCode = key.split('+').pop().charCodeAt(0);
-	            if (key == 'Delete') keyCode = 46;
-	            if (key.match(/\+[Uu]p$/)) keyCode = 38;
-	            if (key.match(/\+[Dd]own$/)) keyCode = 40;
-	            if (key.match(/\+Right$/)) keyCode = 39;
-	            if (key.match(/\+Left$/)) keyCode = 37;
+				let keyCode = key.split('+').pop().charCodeAt(0);
+				if (key == 'Delete') keyCode = 46;
+				if (key.match(/\+[Uu]p$/)) keyCode = 38;
+				if (key.match(/\+[Dd]own$/)) keyCode = 40;
+				if (key.match(/\+Right$/)) keyCode = 39;
+				if (key.match(/\+Left$/)) keyCode = 37;
 
-	            if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-	            if (key.match(/^[Aa]lt/) && !e.altKey) return;
-	            if (e.keyCode == keyCode) {
-	            		e.stopPropagation();
-	                ctx.params.action();
-									return true;
-	            }
+				if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
+				if (key.match(/^[Aa]lt/) && !e.altKey) return;
+				if (e.keyCode == keyCode) {
+						e.stopPropagation();
+						ctx.params.action();
+						return true;
+				}
 			},
 			ctx: ctx
 		}) : null
@@ -10376,33 +10366,33 @@ jb.component('menu.action', {
 // ********* actions / controls ************
 
 jb.component('menu.control', {
-  type: 'control,clickable,menu',
-  params: [
-  	{id: 'menu', type: 'menu.option', dynamic: true, essential: true },
-    {id: 'style', type: 'menu.style', defaultValue :{$: 'menu-style.context-menu' }, dynamic: true },
+	type: 'control,clickable,menu',
+	params: [
+		{id: 'menu', type: 'menu.option', dynamic: true, essential: true },
+		{id: 'style', type: 'menu.style', defaultValue :{$: 'menu-style.context-menu' }, dynamic: true },
 		{id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: ctx => {
-  	var menuModel = ctx.params.menu() || { options: [], ctx: ctx, title: ''};
-  	return jb.ui.ctrl(ctx.setVars({
-  		topMenu: ctx.vars.topMenu || { popups: []},
-  		menuModel: menuModel,
-  	}),{ctxForPick: menuModel.ctx })
-  }
+	],
+	impl: ctx => {
+		const menuModel = ctx.params.menu() || { options: [], ctx: ctx, title: ''};
+		return jb.ui.ctrl(ctx.setVars({
+			topMenu: ctx.vars.topMenu || { popups: []},
+			menuModel: menuModel,
+		}),{ctxForPick: menuModel.ctx })
+	}
 })
 
 jb.component('menu.open-context-menu', {
-  type: 'action',
-  params: [
-  	{id: 'menu', type: 'menu.option', dynamic: true, essential: true },
-  	{id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup'}  },
+	type: 'action',
+	params: [
+		{id: 'menu', type: 'menu.option', dynamic: true, essential: true },
+		{id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup'}  },
 	{ id: 'features', type: 'dialog-feature[]', dynamic: true }
-  ],
-  impl :{$: 'open-dialog',
-  	  style :{$call: 'popupStyle' },
-      content :{$: 'menu.control' , menu :{$call: 'menu'}, style :{$: 'menu-style.context-menu'} },
-  	  features :{$call: 'features' },
-  }
+	],
+	impl :{$: 'open-dialog',
+			style :{$call: 'popupStyle' },
+			content :{$: 'menu.control' , menu :{$call: 'menu'}, style :{$: 'menu-style.context-menu'} },
+			features :{$call: 'features' },
+	}
 })
 
 // ********* styles ************
@@ -10410,22 +10400,22 @@ jb.component('menu.open-context-menu', {
 jb.component('menu-style.pulldown', {
 	type: 'menu.style',
 	params: [
-	    { id: 'innerMenuStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-style.popup-as-option'}},
-	    { id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: {$: 'menu-style.option-line'}},
-	    { id: 'layout', type: 'group.style', dynamic: true, defaultValue :{$: 'itemlist.horizontal'}},
+			{ id: 'innerMenuStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-style.popup-as-option'}},
+			{ id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: {$: 'menu-style.option-line'}},
+			{ id: 'layout', type: 'group.style', dynamic: true, defaultValue :{$: 'itemlist.horizontal'}},
 	],
-  	impl :{$: 'style-by-control', __innerImplementation: true,
-    	control :{$: 'itemlist',
-	    	$vars: {
-	    		optionsParentId: ctx => ctx.id,
-	    		innerMenuStyle: ctx => ctx.componentContext.params.innerMenuStyle,
-	    		leafOptionStyle: ctx => ctx.componentContext.params.leafOptionStyle,
-	    	},
-	    	watchItems: false,
-	    	style :{$call: 'layout' },
-    		items: '%$menuModel/options%',
+		impl :{$: 'style-by-control', __innerImplementation: true,
+			control :{$: 'itemlist',
+				$vars: {
+					optionsParentId: ctx => ctx.id,
+					innerMenuStyle: ctx => ctx.componentContext.params.innerMenuStyle,
+					leafOptionStyle: ctx => ctx.componentContext.params.leafOptionStyle,
+				},
+				watchItems: false,
+				style :{$call: 'layout' },
+				items: '%$menuModel/options%',
 			controls :{$: 'menu.control', menu: '%$item%', style :{$: 'menu-style.popup-thumb'} },
-    		features :{$: 'menu.selection'},
+				features :{$: 'menu.selection'},
 		}
 	}
 })
@@ -10433,18 +10423,18 @@ jb.component('menu-style.pulldown', {
 jb.component('menu-style.context-menu', {
 	type: 'menu.style',
 	params: [
-	    { id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: {$: 'menu-style.option-line'}},
+			{ id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: {$: 'menu-style.option-line'}},
 	],
-  	impl :{$: 'style-by-control', __innerImplementation: true,
-    	control :{$: 'itemlist',
+		impl :{$: 'style-by-control', __innerImplementation: true,
+			control :{$: 'itemlist',
 			$vars: {
 				optionsParentId: ctx => ctx.id,
-        leafOptionStyle: ctx => ctx.componentContext.params.leafOptionStyle,
+				leafOptionStyle: ctx => ctx.componentContext.params.leafOptionStyle,
 			},
-	    	watchItems: false,
-    		items: '%$menuModel/options%',
-        controls :{$: 'menu.control', menu: '%$item%', style :{$: 'menu-style.apply-multi-level'} },
-    		features :{$: 'menu.selection', autoSelectFirst: true},
+				watchItems: false,
+				items: '%$menuModel/options%',
+				controls :{$: 'menu.control', menu: '%$item%', style :{$: 'menu-style.apply-multi-level'} },
+				features :{$: 'menu.selection', autoSelectFirst: true},
 		}
 	}
 })
@@ -10453,101 +10443,100 @@ jb.component('menu-style.context-menu', {
 jb.component('menu.init-popup-menu', {
 	type: 'feature',
 	params: [
-	    { id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup' } },
+			{ id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup' } },
 	],
-  	impl: ctx =>
-  	({
-  		destroy: cmp =>
-  			cmp.closePopup()
-  		,
- 		afterViewInit: cmp => {
- 			cmp.setState({title: ctx.vars.menuModel.title});
+		impl: ctx =>
+		({
+			destroy: cmp =>
+				cmp.closePopup(),
+			afterViewInit: cmp => {
+				cmp.setState({title: ctx.vars.menuModel.title});
 
-			cmp.mouseEnter = _ => {
-				if (jb.ui.find('.context-menu-popup')[0])
-					cmp.openPopup()
-			};
-			cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {
-	 			cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
-	        	ctx2.run( {$: 'menu.open-context-menu',
-	        		popupStyle: _ctx => ctx.params.popupStyle(_ctx),
-	        		menu: _ctx =>
-	        			ctx.vars.$model.menu()
-	        	})
-	        } , cmp.ctx, cmp.base );
+				cmp.mouseEnter = _ => {
+					if (jb.ui.find('.context-menu-popup')[0])
+						cmp.openPopup()
+				};
+				cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {
+					cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
+							ctx2.run( {$: 'menu.open-context-menu',
+								popupStyle: _ctx => ctx.params.popupStyle(_ctx),
+								menu: _ctx =>
+									ctx.vars.$model.menu()
+							})
+						} , cmp.ctx, cmp.base );
 
-			cmp.closePopup = _ => {
-	  			jb.ui.dialogs.dialogs
-	  				.filter(d=>d.id == ctx.vars.optionsParentId)
-	  				.forEach(d=>d.close());
-	  			cmp.ctx.vars.topMenu.popups.pop();
-			};
+				cmp.closePopup = _ => {
+						jb.ui.dialogs.dialogs
+							.filter(d=>d.id == ctx.vars.optionsParentId)
+							.forEach(d=>d.close());
+						cmp.ctx.vars.topMenu.popups.pop();
+				};
 
-      jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
-  			if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
-  				var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
+				jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
+					if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
+						const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
 
-  			    keydown.filter(e=>e.keyCode == 39) // right arrow
-  		    	    .subscribe(x=>{
-  		        		if (ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup)
-  		        			cmp.openPopup();
-  		        	})
-  			    keydown.filter(e=>e.keyCode == 37) // left arrow
-  		    	    .subscribe(x=>{
-  		        		if (cmp.ctx.vars.topMenu.popups.slice(-1)[0] == ctx.vars.menuModel) {
-  		        			ctx.vars.topMenu.selected = ctx.vars.menuModel;
-  		        			cmp.closePopup();
-  		        		}
-  		        	})
-          }
-      })
-		}
-  	})
+							keydown.filter(e=>e.keyCode == 39) // right arrow
+									.subscribe(_=>{
+										if (ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup)
+											cmp.openPopup();
+									})
+							keydown.filter(e=>e.keyCode == 37) // left arrow
+									.subscribe(_=>{
+										if (cmp.ctx.vars.topMenu.popups.slice(-1)[0] == ctx.vars.menuModel) {
+											ctx.vars.topMenu.selected = ctx.vars.menuModel;
+											cmp.closePopup();
+										}
+									})
+						}
+				})
+			}
+		})
 })
 
 jb.component('menu.init-menu-option', {
 	type: 'feature',
-  	impl: ctx =>
-  	({
- 		afterViewInit: cmp => {
-			var leafParams = ctx.vars.menuModel.leaf;
-	        cmp.setState({title:  leafParams.title() ,icon : leafParams.icon ,shortcut: leafParams.shortcut});
-	        cmp.action = jb.ui.wrapWithLauchingElement( _ => {
+		impl: ctx =>
+		({
+		afterViewInit: cmp => {
+			const leafParams = ctx.vars.menuModel.leaf;
+					cmp.setState({title:  leafParams.title() ,icon : leafParams.icon ,shortcut: leafParams.shortcut});
+					cmp.action = jb.ui.wrapWithLauchingElement( _ => {
 				jb.ui.dialogs.dialogs.filter(d=>d.isPopup)
-		  			.forEach(d=>d.close());
-		  		jb.delay(50).then(_=>
-	        		jb.ui.applyAfter(ctx.vars.menuModel.action(),ctx))
-	        }, ctx, cmp.base);
+						.forEach(d=>d.close());
+					jb.delay(50).then(_=>
+							jb.ui.applyAfter(ctx.vars.menuModel.action(),ctx))
+					}, ctx, cmp.base);
 
-	  		jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
+				jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
 				if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
-					var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
-				    keydown.filter(e=>e.keyCode == 13 && ctx.vars.topMenu.selected == ctx.vars.menuModel) // Enter
-			    	    .subscribe(_=>
-			    	    	cmp.action())
-			    }
+					const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
+						keydown.filter(e=>e.keyCode == 13 && ctx.vars.topMenu.selected == ctx.vars.menuModel) // Enter
+								.subscribe(_=>
+									cmp.action())
+					}
 			})
 		}
-  	})
+		})
 })
 
 jb.component('menu-style.apply-multi-level', {
 	type: 'menu.style',
 	params: [
-	    { id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-style.popup-as-option'}},
-	    { id: 'leafStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-style.option-line'}},
-	    { id: 'separatorStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-separator.line'}},
+			{ id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-style.popup-as-option'}},
+			{ id: 'leafStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-style.option-line'}},
+			{ id: 'separatorStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-separator.line'}},
 	],
-  	impl: ctx => {
-  		if (ctx.vars.menuModel.leaf)
-  			return ctx.vars.leafOptionStyle ? ctx.vars.leafOptionStyle(ctx) : ctx.params.leafStyle();
-  		else if (ctx.vars.menuModel.separator)
-  			return ctx.params.separatorStyle()
-  		else if (ctx.vars.innerMenuStyle)
-  			return ctx.vars.innerMenuStyle(ctx)
-  		else
-  			return ctx.params.menuStyle();
-  	}
+		impl: ctx => {
+			if (ctx.vars.menuModel.leaf)
+				return ctx.vars.leafOptionStyle ? ctx.vars.leafOptionStyle(ctx) : ctx.params.leafStyle();
+			else if (ctx.vars.menuModel.separator)
+				return ctx.params.separatorStyle()
+			else if (ctx.vars.innerMenuStyle)
+				return ctx.vars.innerMenuStyle(ctx)
+			else
+				return ctx.params.menuStyle();
+		}
 })
 
 // jb.component('menu.apply-context-menu-shortcuts', {
@@ -10560,73 +10549,72 @@ jb.component('menu-style.apply-multi-level', {
 //   	        ctx.vars.topMenu.keydown = cmp.onkeydown;
 //             jb.ui.focus(cmp.base,'menu.keyboard init autoFocus',ctx);
 //       	};
-//         var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
+//         const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
 //         keydown.subscribe(e=>cmp.ctx.vars.topMenu.applyShortcut(e))
 //       }
 //     })
 // })
 
 jb.component('menu.selection', {
-  type: 'feature',
-  params: [
-    { id: 'autoSelectFirst', type: 'boolean'},
-  ],
-  impl: ctx => ({
-  	 onkeydown: true,
-     afterViewInit: cmp => {
-        cmp.base.setAttribute('tabIndex','0');
-     	// putting the emitter at the top-menu only and listen at all sub menus
+	type: 'feature',
+	params: [
+		{ id: 'autoSelectFirst', type: 'boolean'},
+	],
+	impl: ctx => ({
+			onkeydown: true,
+			afterViewInit: cmp => {
+				cmp.base.setAttribute('tabIndex','0');
+				// putting the emitter at the top-menu only and listen at all sub menus
+				if (!ctx.vars.topMenu.keydown) {
+					ctx.vars.topMenu.keydown = cmp.onkeydown;
+						jb.ui.focus(cmp.base,'menu.keyboard init autoFocus',ctx);
+			}
 
-     	if (!ctx.vars.topMenu.keydown) {
-	        ctx.vars.topMenu.keydown = cmp.onkeydown;
-            jb.ui.focus(cmp.base,'menu.keyboard init autoFocus',ctx);
-      	};
+			const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
 
-        var keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
+			keydown.filter(e=>
+						e.keyCode == 38 || e.keyCode == 40 )
+					.map(event => {
+						event.stopPropagation();
+						const diff = event.keyCode == 40 ? 1 : -1;
+						const items = cmp.items.filter(item=>!item.separator);
+						const selectedIndex = items.indexOf(ctx.vars.topMenu.selected);
+						if (selectedIndex != -1)
+							return items[(selectedIndex + diff + items.length) % items.length];
+				}).subscribe(x=>{
+					if (x)
+						cmp.select(x);
+			})
+			keydown.filter(e=>e.keyCode == 27) // close all popups
+					.subscribe(_=>{
+						jb.ui.dialogs.dialogs
+							.filter(d=>d.isPopup)
+							.forEach(d=>d.close())
+						cmp.ctx.vars.topMenu.popups = [];
+						cmp.ctx.run({$:'tree.regain-focus'});
+				})
+			cmp.select = item => {
+				if (ctx.vars.topMenu.selected != item)
+					cmp.setState({selected: ctx.vars.topMenu.selected = item})
+			}
+			cmp.selected = _ =>
+				ctx.vars.topMenu.selected;
 
-        keydown.filter(e=>
-              e.keyCode == 38 || e.keyCode == 40 )
-            .map(event => {
-              event.stopPropagation();
-              var diff = event.keyCode == 40 ? 1 : -1;
-              var items = cmp.items.filter(item=>!item.separator);
-              var selectedIndex = items.indexOf(ctx.vars.topMenu.selected);
-              if (selectedIndex != -1)
-              	return items[(selectedIndex + diff + items.length) % items.length];
-	        }).subscribe(x=>{
-	        	if (x)
-	        		cmp.select(x);
-	        })
-	    keydown.filter(e=>e.keyCode == 27) // close all popups
-    	    .subscribe(_=>{
-		  			jb.ui.dialogs.dialogs
-		  				.filter(d=>d.isPopup)
-		  				.forEach(d=>d.close())
-		  			cmp.ctx.vars.topMenu.popups = [];
-		  			cmp.ctx.run({$:'tree.regain-focus'});
-	    	})
-	    cmp.select = item => {
-	    	if (ctx.vars.topMenu.selected != item)
-	    		cmp.setState({selected: ctx.vars.topMenu.selected = item})
-	    }
-	    cmp.selected = _ =>
-	    	ctx.vars.topMenu.selected;
-
-        if (ctx.params.autoSelectFirst && cmp.items[0])
-            cmp.select(cmp.items[0]);
-      },
-	  extendItem: (cmp,vdom,data) => {
-	      jb.ui.toggleClassInVdom(vdom,'selected', ctx.vars.topMenu.selected == data);
-	      vdom.attributes.onmouseenter = _ =>
-	      	cmp.select(data)
-	  },
-	  css: '>.selected { background: #bbb !important; color: #fff !important }',
-    })
+				if (ctx.params.autoSelectFirst && cmp.items[0])
+						cmp.select(cmp.items[0]);
+			},
+		extendItem: (cmp,vdom,data) => {
+				jb.ui.toggleClassInVdom(vdom,'selected', ctx.vars.topMenu.selected == data);
+				vdom.attributes.onmouseenter = _ =>
+					cmp.select(data)
+		},
+		css: '>.selected { background: #bbb !important; color: #fff !important }',
+		})
 })
 
 jb.component('menu-style.option-line', {
 	type: 'menu-option.style',
-  	impl :{$: 'custom-style',
+		impl :{$: 'custom-style',
 		template: (cmp,state,h) => h('div',{
 				class: 'line noselect', onmousedown: _ => cmp.action && cmp.action()
 			},[
@@ -10635,34 +10623,34 @@ jb.component('menu-style.option-line', {
 				h('span',{class:'shortcut'},state.shortcut),
 		]),
 		css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
-			  .selected { background: #d8d8d8 }
-			  >i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }
-			  >span { padding-top: 3px }
-	          >.title { display: block; text-align: left; white-space: nowrap; }
-			  >.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
-        features: [
-        	{$: 'mdl.ripple-effect'},
-    		{$: 'menu.init-menu-option'}
-        ]
+				.selected { background: #d8d8d8 }
+				>i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }
+				>span { padding-top: 3px }
+						>.title { display: block; text-align: left; white-space: nowrap; }
+				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
+				features: [
+					{$: 'mdl.ripple-effect'},
+				{$: 'menu.init-menu-option'}
+				]
 	}
 })
 
 jb.component('menu.option-as-icon24', {
 	type: 'menu-option.style',
-  	impl :{$: 'custom-style',
+		impl :{$: 'custom-style',
 		template: (cmp,state,h) => h('div',{
 				class: 'line noselect', onclick: _ => cmp.clicked(), title: state.title
 			},[
 				h('i',{class:'material-icons'},state.icon),
 		]),
 		css: `{ display: flex; cursor: pointer; height: 24px}
-			  >i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }`
+				>i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }`
 	}
 })
 
 jb.component('menu-style.popup-as-option', {
 	type: 'menu.style',
-  	impl :{$: 'custom-style',
+		impl :{$: 'custom-style',
 		template: (cmp,state,h) => h('div',{
 				class: 'line noselect', onmousedown: _ => cmp.action()
 			},[
@@ -10670,11 +10658,11 @@ jb.component('menu-style.popup-as-option', {
 				h('i',{class:'material-icons', onmouseenter: e => cmp.openPopup(e) },'play_arrow'),
 		]),
 		css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
-			  >i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
-	          >.title { display: block; text-align: left; padding-top: 3px; padding-left: 26px; white-space: nowrap; }
+				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
+						>.title { display: block; text-align: left; padding-top: 3px; padding-left: 26px; white-space: nowrap; }
 			`,
-        features :{$: 'menu.init-popup-menu', popupStyle :{$: 'dialog.context-menu-popup', rightSide: true, offsetTop: -24 } },
-    }
+				features :{$: 'menu.init-popup-menu', popupStyle :{$: 'dialog.context-menu-popup', rightSide: true, offsetTop: -24 } },
+		}
 })
 
 jb.component('menu-style.popup-thumb', {
@@ -10687,13 +10675,12 @@ jb.component('menu-style.popup-thumb', {
 					cmp.mouseEnter(),
 				onclick: _ => cmp.openPopup()
 		},state.title),
-        features :[
-          {$: 'menu.init-popup-menu' },
-          {$: 'mdl.ripple-effect'}
-        ],
+				features :[
+					{$: 'menu.init-popup-menu' },
+					{$: 'mdl.ripple-effect'}
+				],
 	}
 })
-
 
 jb.component('menu-style.toolbar', {
 	type: 'menu.style',
@@ -10723,10 +10710,10 @@ jb.component('dialog.context-menu-popup',{
 
 jb.component('menu-separator.line', {
 	type: 'menu-separator.style',
-  	impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('div'),
-      css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}'
-  }
+		impl :{$: 'custom-style',
+			template: (cmp,state,h) => h('div'),
+			css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}'
+	}
 })
 ;
 
@@ -11004,264 +10991,264 @@ jb.component('itemlist.divider', {
 
 (function() {
 
-createItemlistCntr = (ctx,params) => ({
-  id: params.id,
-  defaultItem: params.defaultItem,
-  filter_data: {},
-  filters: [],
-  selectedRef: ctx.exp('%$itemlistCntrData/selected%','ref'),
-  selected: function(selected) {
-    return (typeof selected != 'undefined') ?
-      jb.writeValue(this.selectedRef,selected,this.ctx) : jb.val(this.selectedRef)
-  },
-  add: function(item) {
-    var newItem = item || JSON.parse(JSON.stringify(this.defaultItem || {}));
-    if (this.items) {
-      jb.splice(this.items,[[this.items.length,0,newItem]]);
-      this.selected(newItem);
-    }
-  },
-  delete: function(item) {
-    if (this.items && this.items.indexOf(item) != -1) {
-      this.changeSelectionBeforeDelete();
-      jb.splice(this.items,[[this.items.indexOf(item),1]]);
-    }
-  },
-  reSelectAfterFilter: function(filteredItems) {
+const createItemlistCntr = (ctx,params) => ({
+	id: params.id,
+	defaultItem: params.defaultItem,
+	filter_data: {},
+	filters: [],
+	selectedRef: ctx.exp('%$itemlistCntrData/selected%','ref'),
+	selected: function(selected) {
+		return (typeof selected != 'undefined') ?
+			jb.writeValue(this.selectedRef,selected,this.ctx) : jb.val(this.selectedRef)
+	},
+	add: function(item) {
+		const newItem = item || JSON.parse(JSON.stringify(this.defaultItem || {}));
+		if (this.items) {
+			jb.splice(this.items,[[this.items.length,0,newItem]]);
+			this.selected(newItem);
+		}
+	},
+	delete: function(item) {
+		if (this.items && this.items.indexOf(item) != -1) {
+			this.changeSelectionBeforeDelete();
+			jb.splice(this.items,[[this.items.indexOf(item),1]]);
+		}
+	},
+	reSelectAfterFilter: function(filteredItems) {
 		if (filteredItems.indexOf(this.selected()) == -1)
-      this.selected(filteredItems[0])
-  },
-  changeSelectionBeforeDelete: function() {
-    if (this.items && this.selected) {
-      var curIndex = this.items.indexOf(this.selected);
-      if (curIndex == -1)
-        this.selected = null;
-      else if (curIndex == 0 && this.items.length > 0)
-        this.selected = this.items[1];
-      else if (this.items.length > 0)
-        this.selected = this.items[curIndex -1];
-      else
-        this.selected = null;
-    }
-  }
+			this.selected(filteredItems[0])
+	},
+	changeSelectionBeforeDelete: function() {
+		if (this.items && this.selected) {
+			const curIndex = this.items.indexOf(this.selected);
+			if (curIndex == -1)
+				this.selected = null;
+			else if (curIndex == 0 && this.items.length > 0)
+				this.selected = this.items[1];
+			else if (this.items.length > 0)
+				this.selected = this.items[curIndex -1];
+			else
+				this.selected = null;
+		}
+	}
 })
 
 jb.component('group.itemlist-container', {
-  description: 'itemlist writable container to support addition, deletion and selection',
-  type: 'feature', category: 'itemlist:80,group:70',
-  params: [
-    { id: 'id', as: 'string', essential: true },
-    { id: 'defaultItem', as: 'single' },
-    { id: 'maxItems', as: 'number' , defaultValue: 100 },
+	description: 'itemlist writable container to support addition, deletion and selection',
+	type: 'feature', category: 'itemlist:80,group:70',
+	params: [
+		{ id: 'id', as: 'string', essential: true },
+		{ id: 'defaultItem', as: 'single' },
+		{ id: 'maxItems', as: 'number' , defaultValue: 100 },
 		{ id: 'initialSelection', as: 'single' },
-  ],
-  impl :{$list : [
-    {$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , 
-        mutable: true, globalId: 'itemlistCntrData:%$id%'},
-    {$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
-    ctx => ({
-      init: cmp => {
-        var maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
+	],
+	impl :{$list : [
+		{$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , 
+				mutable: true, globalId: 'itemlistCntrData:%$id%'},
+		{$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
+		ctx => ({
+			init: cmp => {
+				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
 //        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
-        cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>
-          items.slice(0,jb.tonumber(maxItemsRef));
-      },
-    })
-  ]}
+				cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>
+					items.slice(0,jb.tonumber(maxItemsRef));
+			},
+		})
+	]}
 })
 
 jb.component('itemlist.itemlist-selected', {
-  type: 'feature',   category: 'itemlist:20,group:0',
-  impl :{ $list : [
-  			{$: 'group.data', data : '%$itemlistCntrData/selected%'},
-  			{$: 'hidden', showCondition: {$notEmpty: '%$itemlistCntrData/selected%' } }
-  		]}
+	type: 'feature',   category: 'itemlist:20,group:0',
+	impl :{ $list : [
+				{$: 'group.data', data : '%$itemlistCntrData/selected%'},
+				{$: 'hidden', showCondition: {$notEmpty: '%$itemlistCntrData/selected%' } }
+			]}
 })
 
 jb.component('itemlist-container.add', {
-  type: 'action',
-  impl: ctx =>
-  		ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.add()
+	type: 'action',
+	impl: ctx =>
+			ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.add()
 })
 
 jb.component('itemlist-container.delete', {
-  type: 'action',
-  params: [{ id: 'item', as: 'single', defaultValue: '%%'} ],
-  impl: (ctx,item) =>
-      ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.delete(item)
+	type: 'action',
+	params: [{ id: 'item', as: 'single', defaultValue: '%%'} ],
+	impl: (ctx,item) =>
+			ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.delete(item)
 })
 
 jb.component('itemlist-container.filter', {
-  type: 'aggregator', category: 'itemlist-filter:100',
-  requires: ctx => ctx.vars.itemlistCntr,
-  params: [{ id: 'updateCounters', as: 'boolean'} ],
-  impl: (ctx,updateCounters) => {
-      if (!ctx.vars.itemlistCntr) return;
-      const resBeforeMaxFilter = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
-                  filter(items), ctx.data || []);
-      const res = ctx.vars.itemlistCntr.maxItemsFilter(resBeforeMaxFilter);
-      if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
-        jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
-      if (updateCounters) {
-          jb.delay(1).then(_=>{
-          jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length);
-          jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length);
-          jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length);
-      }) } else {
-        ctx.vars.itemlistCntrData.countAfterFilter = res.length
-      }
-      return res;
-   }
+	type: 'aggregator', category: 'itemlist-filter:100',
+	requires: ctx => ctx.vars.itemlistCntr,
+	params: [{ id: 'updateCounters', as: 'boolean'} ],
+	impl: (ctx,updateCounters) => {
+			if (!ctx.vars.itemlistCntr) return;
+			const resBeforeMaxFilter = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
+									filter(items), ctx.data || []);
+			const res = ctx.vars.itemlistCntr.maxItemsFilter(resBeforeMaxFilter);
+			if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
+				jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
+			if (updateCounters) {
+					jb.delay(1).then(_=>{
+					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length);
+					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length);
+					jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length);
+			}) } else {
+				ctx.vars.itemlistCntrData.countAfterFilter = res.length
+			}
+			return res;
+	}
 })
 
 jb.component('itemlist-container.search', {
-  type: 'control', category: 'itemlist-filter:100',
-  requires: ctx => ctx.vars.itemlistCntr,
-  params: [
-    { id: 'title', as: 'string' , dynamic: true, defaultValue: 'Search' },
-    { id: 'searchIn', as: 'string' , dynamic: true, defaultValue: {$: 'itemlist-container.search-in-all-properties'} },
-    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/search_pattern%'},
-    { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-search' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: (ctx,title,searchIn,databind) =>
-    jb.ui.ctrl(ctx,{
-      afterViewInit: cmp => {
-        if (!ctx.vars.itemlistCntr) return;
+	type: 'control', category: 'itemlist-filter:100',
+	requires: ctx => ctx.vars.itemlistCntr,
+	params: [
+		{ id: 'title', as: 'string' , dynamic: true, defaultValue: 'Search' },
+		{ id: 'searchIn', as: 'string' , dynamic: true, defaultValue: {$: 'itemlist-container.search-in-all-properties'} },
+		{ id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/search_pattern%'},
+		{ id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-search' }, dynamic: true },
+		{ id: 'features', type: 'feature[]', dynamic: true },
+	],
+	impl: (ctx,title,searchIn,databind) =>
+		jb.ui.ctrl(ctx,{
+			afterViewInit: cmp => {
+				if (!ctx.vars.itemlistCntr) return;
 
-        ctx.vars.itemlistCntr.filters.push( items => {
-          var toSearch = jb.val(databind) || '';
-          if (typeof searchIn.profile == 'function') { // improved performance
-            return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-          }
+				ctx.vars.itemlistCntr.filters.push( items => {
+					const toSearch = jb.val(databind) || '';
+					if (typeof searchIn.profile == 'function') { // improved performance
+						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+					}
 
-          return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-        });
-        var keydown_src = new jb.rx.Subject();
-        cmp.base.onkeydown = e => {
-          if ([38,40,13,27].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
-            keydown_src.next(e);
-            return false;  
-          }
-          return true;
-        }
-        ctx.vars.itemlistCntr.keydown = keydown_src.takeUntil(cmp.destroyed);
-      }
-    })
+					return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+				});
+				const keydown_src = new jb.rx.Subject();
+				cmp.base.onkeydown = e => {
+					if ([38,40,13,27].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
+						keydown_src.next(e);
+						return false;  
+					}
+					return true;
+				}
+				ctx.vars.itemlistCntr.keydown = keydown_src.takeUntil(cmp.destroyed);
+			}
+		})
 });
 
 jb.component('itemlist-container.more-items-button', {
-  type: 'control', category: 'itemlist-filter:100',
-  requires: ctx => ctx.vars.itemlistCntr,
-  params: [
-    { id: 'title', as: 'string' , dynamic: true, defaultValue: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeMaxFilter%)' },
-    { id: 'delta', as: 'number' , defaultValue: 200 },
-    { id: 'style', type: 'button.style', defaultValue: { $: 'button.href' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
-  ],
-  impl: (ctx,title,delta) => {
-    return jb.ui.ctrl(ctx,{
-      beforeInit: cmp => {
-        if (!ctx.vars.itemlistCntr) return;
-        var maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
-        cmp.clicked = _ =>
-          jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta);
-        cmp.refresh = _ =>
-          cmp.setState({title: jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta})))});
-        jb.ui.watchRef(ctx,cmp,maxItemsRef);
-      },
-      init: cmp =>
-        cmp.state.title = jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta}))),
+	type: 'control', category: 'itemlist-filter:100',
+	requires: ctx => ctx.vars.itemlistCntr,
+	params: [
+		{ id: 'title', as: 'string' , dynamic: true, defaultValue: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeMaxFilter%)' },
+		{ id: 'delta', as: 'number' , defaultValue: 200 },
+		{ id: 'style', type: 'button.style', defaultValue: { $: 'button.href' }, dynamic: true },
+		{ id: 'features', type: 'feature[]', dynamic: true },
+	],
+	impl: (ctx,title,delta) => {
+		return jb.ui.ctrl(ctx,{
+			beforeInit: cmp => {
+				if (!ctx.vars.itemlistCntr) return;
+				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
+				cmp.clicked = _ =>
+					jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta);
+				cmp.refresh = _ =>
+					cmp.setState({title: jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta})))});
+				jb.ui.watchRef(ctx,cmp,maxItemsRef);
+			},
+			init: cmp =>
+				cmp.state.title = jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta}))),
 
-      templateModifier: (vdom,cmp,state) => { // hide the button when not needed
-        if (cmp.ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','number') == cmp.ctx.exp('%$itemlistCntrData/countAfterFilter%','number'))
-          return jb.ui.h('span');
-        return vdom;
-      }
-    })
-  }
+			templateModifier: (vdom,cmp,state) => { // hide the button when not needed
+				if (cmp.ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','number') == cmp.ctx.exp('%$itemlistCntrData/countAfterFilter%','number'))
+					return jb.ui.h('span');
+				return vdom;
+			}
+		})
+	}
 });
 
 jb.ui.extractPropFromExpression = exp => { // performance for simple cases such as %prop1%
-  if (exp.match(/^%.*%$/) && !exp.match(/[./[]/))
-    return exp.match(/^%(.*)%$/)[1]
+	if (exp.match(/^%.*%$/) && !exp.match(/[./[]/))
+		return exp.match(/^%(.*)%$/)[1]
 }
 
 // match fields in pattern itemlistCntrData/FLDNAME_filter to data
 jb.component('itemlist-container.filter-field', {
-  type: 'feature', category: 'itemlist-filter:80',
-  requires: ctx => ctx.vars.itemlistCntr,
-  params: [
-    { id: 'fieldData', dynamic: true, essential: true },
-    { id: 'filterType', type: 'filter-type' },
-  ],
-  impl: (ctx,fieldData,filterType) => ({
-      afterViewInit: cmp => {
-        var propToFilter = jb.ui.extractPropFromExpression(ctx.params.fieldData.profile);
-        if (propToFilter)
-          cmp.itemToFilterData = item => item[propToFilter];
-        else
-          cmp.itemToFilterData = item => fieldData(ctx.setData(item));
+	type: 'feature', category: 'itemlist-filter:80',
+	requires: ctx => ctx.vars.itemlistCntr,
+	params: [
+		{ id: 'fieldData', dynamic: true, essential: true },
+		{ id: 'filterType', type: 'filter-type' },
+	],
+	impl: (ctx,fieldData,filterType) => ({
+			afterViewInit: cmp => {
+				const propToFilter = jb.ui.extractPropFromExpression(ctx.params.fieldData.profile);
+				if (propToFilter)
+					cmp.itemToFilterData = item => item[propToFilter];
+				else
+					cmp.itemToFilterData = item => fieldData(ctx.setData(item));
 
-        ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.filters.push(items=>{
-            var filterValue = cmp.jbModel();
-            if (!filterValue) return items;
-            var res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
-            if (filterType.sort && (!cmp.state.sortOptions || cmp.state.sortOptions.length == 0) )
-              filterType.sort(res,cmp.itemToFilterData,filterValue);
-            return res;
-        })
-    }
-  })
+				ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.filters.push(items=>{
+						const filterValue = cmp.jbModel();
+						if (!filterValue) return items;
+						const res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
+						if (filterType.sort && (!cmp.state.sortOptions || cmp.state.sortOptions.length == 0) )
+							filterType.sort(res,cmp.itemToFilterData,filterValue);
+						return res;
+				})
+		}
+	})
 });
 
 jb.component('filter-type.text', {
-  type: 'filter-type',
-  params: [
-    { id: 'ignoreCase', as: 'boolean', defaultValue: true }
-  ],
-  impl: (ctx,ignoreCase) => ignoreCase ? ({
-    filter: (filter,data) => (data||'').toLowerCase().indexOf((filter||'').toLowerCase()) != -1,
-    sort: (items,itemToData,filter) =>  {
-      var asWord = new RegExp('\\b' + filter + '\\b','i');
-      var score = txt => (asWord.test(txt) ? 5 : 0) + (txt.toLowerCase().indexOf(filter.toLowerCase()) == 0 ? 3 : 0); // higher score for wholeWord or beginsWith
-      items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
-    }
-  }) : ({
-    filter: (filter,data) => (data||'').indexOf(filter||'') != -1,
-    sort: (items,itemToData,filter) =>  {
-      var asWord = new RegExp('\\b' + filter + '\\b');
-      var score = txt => (asWord.test(txt) ? 5 : 0) + (txt.indexOf(filter) == 0 ? 3 : 0);
-      items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
-    }
-  })
+	type: 'filter-type',
+	params: [
+		{ id: 'ignoreCase', as: 'boolean', defaultValue: true }
+	],
+	impl: (ctx,ignoreCase) => ignoreCase ? ({
+		filter: (filter,data) => (data||'').toLowerCase().indexOf((filter||'').toLowerCase()) != -1,
+		sort: (items,itemToData,filter) =>  {
+			const asWord = new RegExp('\\b' + filter + '\\b','i');
+			const score = txt => (asWord.test(txt) ? 5 : 0) + (txt.toLowerCase().indexOf(filter.toLowerCase()) == 0 ? 3 : 0); // higher score for wholeWord or beginsWith
+			items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
+		}
+	}) : ({
+		filter: (filter,data) => (data||'').indexOf(filter||'') != -1,
+		sort: (items,itemToData,filter) =>  {
+			const asWord = new RegExp('\\b' + filter + '\\b');
+			const score = txt => (asWord.test(txt) ? 5 : 0) + (txt.indexOf(filter) == 0 ? 3 : 0);
+			items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
+		}
+	})
 })
 
 jb.component('filter-type.exact-match', {
-  type: 'filter-type',
-  impl: ctx => ({
-    filter: (filter,data) =>  {
-      var _filter = (filter||'').trim(), _data = (data||'').trim();
-      return _data.indexOf(_filter) == 0 && _data.length == _filter.length;
-    }
-  })
+	type: 'filter-type',
+	impl: ctx => ({
+		filter: (filter,data) =>  {
+			const _filter = (filter||'').trim(), _data = (data||'').trim();
+			return _data.indexOf(_filter) == 0 && _data.length == _filter.length;
+		}
+	})
 })
 
 jb.component('filter-type.numeric', {
-  type: 'filter-type',
-  impl: ctx => ({
-    filter: (filter,data) => Number(data) >= Number(filter),
-    sort: (items,itemToData) => items.sort((item1,item2)=> Number(itemToData(item1)) - Number(itemToData(item2)))
-  })
+	type: 'filter-type',
+	impl: ctx => ({
+		filter: (filter,data) => Number(data) >= Number(filter),
+		sort: (items,itemToData) => items.sort((item1,item2)=> Number(itemToData(item1)) - Number(itemToData(item2)))
+	})
 })
 
 jb.component('itemlist-container.search-in-all-properties', {
-  type: 'data', category: 'itemlist-filter:40',
-  impl: ctx => {
-    if (typeof ctx.data == 'string') return ctx.data;
-    if (typeof ctx.data != 'object') return '';
-    return jb.entries(ctx.data).map(e=>e[1]).filter(v=>typeof v == 'string').join('#');
-   }
+	type: 'data', category: 'itemlist-filter:40',
+	impl: ctx => {
+		if (typeof ctx.data == 'string') return ctx.data;
+		if (typeof ctx.data != 'object') return '';
+		return jb.entries(ctx.data).map(e=>e[1]).filter(v=>typeof v == 'string').join('#');
+	}
 })
 
 
@@ -14751,622 +14738,6 @@ jb.component('text.codemirror', {
     }
   }
 
-  // The display handles the DOM integration, both for input reading
-  // and content drawing. It holds references to DOM nodes and
-  // display-related state.
-
-  function Display(place, doc, input) {
-    var d = this;
-    this.input = input;
-
-    // Covers bottom-right square when both scrollbars are present.
-    d.scrollbarFiller = elt("div", null, "CodeMirror-scrollbar-filler");
-    d.scrollbarFiller.setAttribute("cm-not-content", "true");
-    // Covers bottom of gutter when coverGutterNextToScrollbar is on
-    // and h scrollbar is present.
-    d.gutterFiller = elt("div", null, "CodeMirror-gutter-filler");
-    d.gutterFiller.setAttribute("cm-not-content", "true");
-    // Will contain the actual code, positioned to cover the viewport.
-    d.lineDiv = eltP("div", null, "CodeMirror-code");
-    // Elements are added to these to represent selection and cursors.
-    d.selectionDiv = elt("div", null, null, "position: relative; z-index: 1");
-    d.cursorDiv = elt("div", null, "CodeMirror-cursors");
-    // A visibility: hidden element used to find the size of things.
-    d.measure = elt("div", null, "CodeMirror-measure");
-    // When lines outside of the viewport are measured, they are drawn in this.
-    d.lineMeasure = elt("div", null, "CodeMirror-measure");
-    // Wraps everything that needs to exist inside the vertically-padded coordinate system
-    d.lineSpace = eltP("div", [d.measure, d.lineMeasure, d.selectionDiv, d.cursorDiv, d.lineDiv],
-                      null, "position: relative; outline: none");
-    var lines = eltP("div", [d.lineSpace], "CodeMirror-lines");
-    // Moved around its parent to cover visible view.
-    d.mover = elt("div", [lines], null, "position: relative");
-    // Set to the height of the document, allowing scrolling.
-    d.sizer = elt("div", [d.mover], "CodeMirror-sizer");
-    d.sizerWidth = null;
-    // Behavior of elts with overflow: auto and padding is
-    // inconsistent across browsers. This is used to ensure the
-    // scrollable area is big enough.
-    d.heightForcer = elt("div", null, null, "position: absolute; height: " + scrollerGap + "px; width: 1px;");
-    // Will contain the gutters, if any.
-    d.gutters = elt("div", null, "CodeMirror-gutters");
-    d.lineGutter = null;
-    // Actual scrollable element.
-    d.scroller = elt("div", [d.sizer, d.heightForcer, d.gutters], "CodeMirror-scroll");
-    d.scroller.setAttribute("tabIndex", "-1");
-    // The element in which the editor lives.
-    d.wrapper = elt("div", [d.scrollbarFiller, d.gutterFiller, d.scroller], "CodeMirror");
-
-    // Work around IE7 z-index bug (not perfect, hence IE7 not really being supported)
-    if (ie && ie_version < 8) { d.gutters.style.zIndex = -1; d.scroller.style.paddingRight = 0; }
-    if (!webkit && !(gecko && mobile)) { d.scroller.draggable = true; }
-
-    if (place) {
-      if (place.appendChild) { place.appendChild(d.wrapper); }
-      else { place(d.wrapper); }
-    }
-
-    // Current rendered range (may be bigger than the view window).
-    d.viewFrom = d.viewTo = doc.first;
-    d.reportedViewFrom = d.reportedViewTo = doc.first;
-    // Information about the rendered lines.
-    d.view = [];
-    d.renderedView = null;
-    // Holds info about a single rendered line when it was rendered
-    // for measurement, while not in view.
-    d.externalMeasured = null;
-    // Empty space (in pixels) above the view
-    d.viewOffset = 0;
-    d.lastWrapHeight = d.lastWrapWidth = 0;
-    d.updateLineNumbers = null;
-
-    d.nativeBarWidth = d.barHeight = d.barWidth = 0;
-    d.scrollbarsClipped = false;
-
-    // Used to only resize the line number gutter when necessary (when
-    // the amount of lines crosses a boundary that makes its width change)
-    d.lineNumWidth = d.lineNumInnerWidth = d.lineNumChars = null;
-    // Set to true when a non-horizontal-scrolling line widget is
-    // added. As an optimization, line widget aligning is skipped when
-    // this is false.
-    d.alignWidgets = false;
-
-    d.cachedCharWidth = d.cachedTextHeight = d.cachedPaddingH = null;
-
-    // Tracks the maximum line length so that the horizontal scrollbar
-    // can be kept static when scrolling.
-    d.maxLine = null;
-    d.maxLineLength = 0;
-    d.maxLineChanged = false;
-
-    // Used for measuring wheel scrolling granularity
-    d.wheelDX = d.wheelDY = d.wheelStartX = d.wheelStartY = null;
-
-    // True when shift is held down.
-    d.shift = false;
-
-    // Used to track whether anything happened since the context menu
-    // was opened.
-    d.selForContextMenu = null;
-
-    d.activeTouch = null;
-
-    input.init(d);
-  }
-
-  // Find the line object corresponding to the given line number.
-  function getLine(doc, n) {
-    n -= doc.first;
-    if (n < 0 || n >= doc.size) { throw new Error("There is no line " + (n + doc.first) + " in the document.") }
-    var chunk = doc;
-    while (!chunk.lines) {
-      for (var i = 0;; ++i) {
-        var child = chunk.children[i], sz = child.chunkSize();
-        if (n < sz) { chunk = child; break }
-        n -= sz;
-      }
-    }
-    return chunk.lines[n]
-  }
-
-  // Get the part of a document between two positions, as an array of
-  // strings.
-  function getBetween(doc, start, end) {
-    var out = [], n = start.line;
-    doc.iter(start.line, end.line + 1, function (line) {
-      var text = line.text;
-      if (n == end.line) { text = text.slice(0, end.ch); }
-      if (n == start.line) { text = text.slice(start.ch); }
-      out.push(text);
-      ++n;
-    });
-    return out
-  }
-  // Get the lines between from and to, as array of strings.
-  function getLines(doc, from, to) {
-    var out = [];
-    doc.iter(from, to, function (line) { out.push(line.text); }); // iter aborts when callback returns truthy value
-    return out
-  }
-
-  // Update the height of a line, propagating the height change
-  // upwards to parent nodes.
-  function updateLineHeight(line, height) {
-    var diff = height - line.height;
-    if (diff) { for (var n = line; n; n = n.parent) { n.height += diff; } }
-  }
-
-  // Given a line object, find its line number by walking up through
-  // its parent links.
-  function lineNo(line) {
-    if (line.parent == null) { return null }
-    var cur = line.parent, no = indexOf(cur.lines, line);
-    for (var chunk = cur.parent; chunk; cur = chunk, chunk = chunk.parent) {
-      for (var i = 0;; ++i) {
-        if (chunk.children[i] == cur) { break }
-        no += chunk.children[i].chunkSize();
-      }
-    }
-    return no + cur.first
-  }
-
-  // Find the line at the given vertical position, using the height
-  // information in the document tree.
-  function lineAtHeight(chunk, h) {
-    var n = chunk.first;
-    outer: do {
-      for (var i$1 = 0; i$1 < chunk.children.length; ++i$1) {
-        var child = chunk.children[i$1], ch = child.height;
-        if (h < ch) { chunk = child; continue outer }
-        h -= ch;
-        n += child.chunkSize();
-      }
-      return n
-    } while (!chunk.lines)
-    var i = 0;
-    for (; i < chunk.lines.length; ++i) {
-      var line = chunk.lines[i], lh = line.height;
-      if (h < lh) { break }
-      h -= lh;
-    }
-    return n + i
-  }
-
-  function isLine(doc, l) {return l >= doc.first && l < doc.first + doc.size}
-
-  function lineNumberFor(options, i) {
-    return String(options.lineNumberFormatter(i + options.firstLineNumber))
-  }
-
-  // A Pos instance represents a position within the text.
-  function Pos(line, ch, sticky) {
-    if ( sticky === void 0 ) sticky = null;
-
-    if (!(this instanceof Pos)) { return new Pos(line, ch, sticky) }
-    this.line = line;
-    this.ch = ch;
-    this.sticky = sticky;
-  }
-
-  // Compare two positions, return 0 if they are the same, a negative
-  // number when a is less, and a positive number otherwise.
-  function cmp(a, b) { return a.line - b.line || a.ch - b.ch }
-
-  function equalCursorPos(a, b) { return a.sticky == b.sticky && cmp(a, b) == 0 }
-
-  function copyPos(x) {return Pos(x.line, x.ch)}
-  function maxPos(a, b) { return cmp(a, b) < 0 ? b : a }
-  function minPos(a, b) { return cmp(a, b) < 0 ? a : b }
-
-  // Most of the external API clips given positions to make sure they
-  // actually exist within the document.
-  function clipLine(doc, n) {return Math.max(doc.first, Math.min(n, doc.first + doc.size - 1))}
-  function clipPos(doc, pos) {
-    if (pos.line < doc.first) { return Pos(doc.first, 0) }
-    var last = doc.first + doc.size - 1;
-    if (pos.line > last) { return Pos(last, getLine(doc, last).text.length) }
-    return clipToLen(pos, getLine(doc, pos.line).text.length)
-  }
-  function clipToLen(pos, linelen) {
-    var ch = pos.ch;
-    if (ch == null || ch > linelen) { return Pos(pos.line, linelen) }
-    else if (ch < 0) { return Pos(pos.line, 0) }
-    else { return pos }
-  }
-  function clipPosArray(doc, array) {
-    var out = [];
-    for (var i = 0; i < array.length; i++) { out[i] = clipPos(doc, array[i]); }
-    return out
-  }
-
-  // Optimize some code when these features are not used.
-  var sawReadOnlySpans = false, sawCollapsedSpans = false;
-
-  function seeReadOnlySpans() {
-    sawReadOnlySpans = true;
-  }
-
-  function seeCollapsedSpans() {
-    sawCollapsedSpans = true;
-  }
-
-  // TEXTMARKER SPANS
-
-  function MarkedSpan(marker, from, to) {
-    this.marker = marker;
-    this.from = from; this.to = to;
-  }
-
-  // Search an array of spans for a span matching the given marker.
-  function getMarkedSpanFor(spans, marker) {
-    if (spans) { for (var i = 0; i < spans.length; ++i) {
-      var span = spans[i];
-      if (span.marker == marker) { return span }
-    } }
-  }
-  // Remove a span from an array, returning undefined if no spans are
-  // left (we don't store arrays for lines without spans).
-  function removeMarkedSpan(spans, span) {
-    var r;
-    for (var i = 0; i < spans.length; ++i)
-      { if (spans[i] != span) { (r || (r = [])).push(spans[i]); } }
-    return r
-  }
-  // Add a span to a line.
-  function addMarkedSpan(line, span) {
-    line.markedSpans = line.markedSpans ? line.markedSpans.concat([span]) : [span];
-    span.marker.attachLine(line);
-  }
-
-  // Used for the algorithm that adjusts markers for a change in the
-  // document. These functions cut an array of spans at a given
-  // character position, returning an array of remaining chunks (or
-  // undefined if nothing remains).
-  function markedSpansBefore(old, startCh, isInsert) {
-    var nw;
-    if (old) { for (var i = 0; i < old.length; ++i) {
-      var span = old[i], marker = span.marker;
-      var startsBefore = span.from == null || (marker.inclusiveLeft ? span.from <= startCh : span.from < startCh);
-      if (startsBefore || span.from == startCh && marker.type == "bookmark" && (!isInsert || !span.marker.insertLeft)) {
-        var endsAfter = span.to == null || (marker.inclusiveRight ? span.to >= startCh : span.to > startCh)
-        ;(nw || (nw = [])).push(new MarkedSpan(marker, span.from, endsAfter ? null : span.to));
-      }
-    } }
-    return nw
-  }
-  function markedSpansAfter(old, endCh, isInsert) {
-    var nw;
-    if (old) { for (var i = 0; i < old.length; ++i) {
-      var span = old[i], marker = span.marker;
-      var endsAfter = span.to == null || (marker.inclusiveRight ? span.to >= endCh : span.to > endCh);
-      if (endsAfter || span.from == endCh && marker.type == "bookmark" && (!isInsert || span.marker.insertLeft)) {
-        var startsBefore = span.from == null || (marker.inclusiveLeft ? span.from <= endCh : span.from < endCh)
-        ;(nw || (nw = [])).push(new MarkedSpan(marker, startsBefore ? null : span.from - endCh,
-                                              span.to == null ? null : span.to - endCh));
-      }
-    } }
-    return nw
-  }
-
-  // Given a change object, compute the new set of marker spans that
-  // cover the line in which the change took place. Removes spans
-  // entirely within the change, reconnects spans belonging to the
-  // same marker that appear on both sides of the change, and cuts off
-  // spans partially within the change. Returns an array of span
-  // arrays with one element for each line in (after) the change.
-  function stretchSpansOverChange(doc, change) {
-    if (change.full) { return null }
-    var oldFirst = isLine(doc, change.from.line) && getLine(doc, change.from.line).markedSpans;
-    var oldLast = isLine(doc, change.to.line) && getLine(doc, change.to.line).markedSpans;
-    if (!oldFirst && !oldLast) { return null }
-
-    var startCh = change.from.ch, endCh = change.to.ch, isInsert = cmp(change.from, change.to) == 0;
-    // Get the spans that 'stick out' on both sides
-    var first = markedSpansBefore(oldFirst, startCh, isInsert);
-    var last = markedSpansAfter(oldLast, endCh, isInsert);
-
-    // Next, merge those two ends
-    var sameLine = change.text.length == 1, offset = lst(change.text).length + (sameLine ? startCh : 0);
-    if (first) {
-      // Fix up .to properties of first
-      for (var i = 0; i < first.length; ++i) {
-        var span = first[i];
-        if (span.to == null) {
-          var found = getMarkedSpanFor(last, span.marker);
-          if (!found) { span.to = startCh; }
-          else if (sameLine) { span.to = found.to == null ? null : found.to + offset; }
-        }
-      }
-    }
-    if (last) {
-      // Fix up .from in last (or move them into first in case of sameLine)
-      for (var i$1 = 0; i$1 < last.length; ++i$1) {
-        var span$1 = last[i$1];
-        if (span$1.to != null) { span$1.to += offset; }
-        if (span$1.from == null) {
-          var found$1 = getMarkedSpanFor(first, span$1.marker);
-          if (!found$1) {
-            span$1.from = offset;
-            if (sameLine) { (first || (first = [])).push(span$1); }
-          }
-        } else {
-          span$1.from += offset;
-          if (sameLine) { (first || (first = [])).push(span$1); }
-        }
-      }
-    }
-    // Make sure we didn't create any zero-length spans
-    if (first) { first = clearEmptySpans(first); }
-    if (last && last != first) { last = clearEmptySpans(last); }
-
-    var newMarkers = [first];
-    if (!sameLine) {
-      // Fill gap with whole-line-spans
-      var gap = change.text.length - 2, gapMarkers;
-      if (gap > 0 && first)
-        { for (var i$2 = 0; i$2 < first.length; ++i$2)
-          { if (first[i$2].to == null)
-            { (gapMarkers || (gapMarkers = [])).push(new MarkedSpan(first[i$2].marker, null, null)); } } }
-      for (var i$3 = 0; i$3 < gap; ++i$3)
-        { newMarkers.push(gapMarkers); }
-      newMarkers.push(last);
-    }
-    return newMarkers
-  }
-
-  // Remove spans that are empty and don't have a clearWhenEmpty
-  // option of false.
-  function clearEmptySpans(spans) {
-    for (var i = 0; i < spans.length; ++i) {
-      var span = spans[i];
-      if (span.from != null && span.from == span.to && span.marker.clearWhenEmpty !== false)
-        { spans.splice(i--, 1); }
-    }
-    if (!spans.length) { return null }
-    return spans
-  }
-
-  // Used to 'clip' out readOnly ranges when making a change.
-  function removeReadOnlyRanges(doc, from, to) {
-    var markers = null;
-    doc.iter(from.line, to.line + 1, function (line) {
-      if (line.markedSpans) { for (var i = 0; i < line.markedSpans.length; ++i) {
-        var mark = line.markedSpans[i].marker;
-        if (mark.readOnly && (!markers || indexOf(markers, mark) == -1))
-          { (markers || (markers = [])).push(mark); }
-      } }
-    });
-    if (!markers) { return null }
-    var parts = [{from: from, to: to}];
-    for (var i = 0; i < markers.length; ++i) {
-      var mk = markers[i], m = mk.find(0);
-      for (var j = 0; j < parts.length; ++j) {
-        var p = parts[j];
-        if (cmp(p.to, m.from) < 0 || cmp(p.from, m.to) > 0) { continue }
-        var newParts = [j, 1], dfrom = cmp(p.from, m.from), dto = cmp(p.to, m.to);
-        if (dfrom < 0 || !mk.inclusiveLeft && !dfrom)
-          { newParts.push({from: p.from, to: m.from}); }
-        if (dto > 0 || !mk.inclusiveRight && !dto)
-          { newParts.push({from: m.to, to: p.to}); }
-        parts.splice.apply(parts, newParts);
-        j += newParts.length - 3;
-      }
-    }
-    return parts
-  }
-
-  // Connect or disconnect spans from a line.
-  function detachMarkedSpans(line) {
-    var spans = line.markedSpans;
-    if (!spans) { return }
-    for (var i = 0; i < spans.length; ++i)
-      { spans[i].marker.detachLine(line); }
-    line.markedSpans = null;
-  }
-  function attachMarkedSpans(line, spans) {
-    if (!spans) { return }
-    for (var i = 0; i < spans.length; ++i)
-      { spans[i].marker.attachLine(line); }
-    line.markedSpans = spans;
-  }
-
-  // Helpers used when computing which overlapping collapsed span
-  // counts as the larger one.
-  function extraLeft(marker) { return marker.inclusiveLeft ? -1 : 0 }
-  function extraRight(marker) { return marker.inclusiveRight ? 1 : 0 }
-
-  // Returns a number indicating which of two overlapping collapsed
-  // spans is larger (and thus includes the other). Falls back to
-  // comparing ids when the spans cover exactly the same range.
-  function compareCollapsedMarkers(a, b) {
-    var lenDiff = a.lines.length - b.lines.length;
-    if (lenDiff != 0) { return lenDiff }
-    var aPos = a.find(), bPos = b.find();
-    var fromCmp = cmp(aPos.from, bPos.from) || extraLeft(a) - extraLeft(b);
-    if (fromCmp) { return -fromCmp }
-    var toCmp = cmp(aPos.to, bPos.to) || extraRight(a) - extraRight(b);
-    if (toCmp) { return toCmp }
-    return b.id - a.id
-  }
-
-  // Find out whether a line ends or starts in a collapsed span. If
-  // so, return the marker for that span.
-  function collapsedSpanAtSide(line, start) {
-    var sps = sawCollapsedSpans && line.markedSpans, found;
-    if (sps) { for (var sp = (void 0), i = 0; i < sps.length; ++i) {
-      sp = sps[i];
-      if (sp.marker.collapsed && (start ? sp.from : sp.to) == null &&
-          (!found || compareCollapsedMarkers(found, sp.marker) < 0))
-        { found = sp.marker; }
-    } }
-    return found
-  }
-  function collapsedSpanAtStart(line) { return collapsedSpanAtSide(line, true) }
-  function collapsedSpanAtEnd(line) { return collapsedSpanAtSide(line, false) }
-
-  function collapsedSpanAround(line, ch) {
-    var sps = sawCollapsedSpans && line.markedSpans, found;
-    if (sps) { for (var i = 0; i < sps.length; ++i) {
-      var sp = sps[i];
-      if (sp.marker.collapsed && (sp.from == null || sp.from < ch) && (sp.to == null || sp.to > ch) &&
-          (!found || compareCollapsedMarkers(found, sp.marker) < 0)) { found = sp.marker; }
-    } }
-    return found
-  }
-
-  // Test whether there exists a collapsed span that partially
-  // overlaps (covers the start or end, but not both) of a new span.
-  // Such overlap is not allowed.
-  function conflictingCollapsedRange(doc, lineNo$$1, from, to, marker) {
-    var line = getLine(doc, lineNo$$1);
-    var sps = sawCollapsedSpans && line.markedSpans;
-    if (sps) { for (var i = 0; i < sps.length; ++i) {
-      var sp = sps[i];
-      if (!sp.marker.collapsed) { continue }
-      var found = sp.marker.find(0);
-      var fromCmp = cmp(found.from, from) || extraLeft(sp.marker) - extraLeft(marker);
-      var toCmp = cmp(found.to, to) || extraRight(sp.marker) - extraRight(marker);
-      if (fromCmp >= 0 && toCmp <= 0 || fromCmp <= 0 && toCmp >= 0) { continue }
-      if (fromCmp <= 0 && (sp.marker.inclusiveRight && marker.inclusiveLeft ? cmp(found.to, from) >= 0 : cmp(found.to, from) > 0) ||
-          fromCmp >= 0 && (sp.marker.inclusiveRight && marker.inclusiveLeft ? cmp(found.from, to) <= 0 : cmp(found.from, to) < 0))
-        { return true }
-    } }
-  }
-
-  // A visual line is a line as drawn on the screen. Folding, for
-  // example, can cause multiple logical lines to appear on the same
-  // visual line. This finds the start of the visual line that the
-  // given line is part of (usually that is the line itself).
-  function visualLine(line) {
-    var merged;
-    while (merged = collapsedSpanAtStart(line))
-      { line = merged.find(-1, true).line; }
-    return line
-  }
-
-  function visualLineEnd(line) {
-    var merged;
-    while (merged = collapsedSpanAtEnd(line))
-      { line = merged.find(1, true).line; }
-    return line
-  }
-
-  // Returns an array of logical lines that continue the visual line
-  // started by the argument, or undefined if there are no such lines.
-  function visualLineContinued(line) {
-    var merged, lines;
-    while (merged = collapsedSpanAtEnd(line)) {
-      line = merged.find(1, true).line
-      ;(lines || (lines = [])).push(line);
-    }
-    return lines
-  }
-
-  // Get the line number of the start of the visual line that the
-  // given line number is part of.
-  function visualLineNo(doc, lineN) {
-    var line = getLine(doc, lineN), vis = visualLine(line);
-    if (line == vis) { return lineN }
-    return lineNo(vis)
-  }
-
-  // Get the line number of the start of the next visual line after
-  // the given line.
-  function visualLineEndNo(doc, lineN) {
-    if (lineN > doc.lastLine()) { return lineN }
-    var line = getLine(doc, lineN), merged;
-    if (!lineIsHidden(doc, line)) { return lineN }
-    while (merged = collapsedSpanAtEnd(line))
-      { line = merged.find(1, true).line; }
-    return lineNo(line) + 1
-  }
-
-  // Compute whether a line is hidden. Lines count as hidden when they
-  // are part of a visual line that starts with another line, or when
-  // they are entirely covered by collapsed, non-widget span.
-  function lineIsHidden(doc, line) {
-    var sps = sawCollapsedSpans && line.markedSpans;
-    if (sps) { for (var sp = (void 0), i = 0; i < sps.length; ++i) {
-      sp = sps[i];
-      if (!sp.marker.collapsed) { continue }
-      if (sp.from == null) { return true }
-      if (sp.marker.widgetNode) { continue }
-      if (sp.from == 0 && sp.marker.inclusiveLeft && lineIsHiddenInner(doc, line, sp))
-        { return true }
-    } }
-  }
-  function lineIsHiddenInner(doc, line, span) {
-    if (span.to == null) {
-      var end = span.marker.find(1, true);
-      return lineIsHiddenInner(doc, end.line, getMarkedSpanFor(end.line.markedSpans, span.marker))
-    }
-    if (span.marker.inclusiveRight && span.to == line.text.length)
-      { return true }
-    for (var sp = (void 0), i = 0; i < line.markedSpans.length; ++i) {
-      sp = line.markedSpans[i];
-      if (sp.marker.collapsed && !sp.marker.widgetNode && sp.from == span.to &&
-          (sp.to == null || sp.to != span.from) &&
-          (sp.marker.inclusiveLeft || span.marker.inclusiveRight) &&
-          lineIsHiddenInner(doc, line, sp)) { return true }
-    }
-  }
-
-  // Find the height above the given line.
-  function heightAtLine(lineObj) {
-    lineObj = visualLine(lineObj);
-
-    var h = 0, chunk = lineObj.parent;
-    for (var i = 0; i < chunk.lines.length; ++i) {
-      var line = chunk.lines[i];
-      if (line == lineObj) { break }
-      else { h += line.height; }
-    }
-    for (var p = chunk.parent; p; chunk = p, p = chunk.parent) {
-      for (var i$1 = 0; i$1 < p.children.length; ++i$1) {
-        var cur = p.children[i$1];
-        if (cur == chunk) { break }
-        else { h += cur.height; }
-      }
-    }
-    return h
-  }
-
-  // Compute the character length of a line, taking into account
-  // collapsed ranges (see markText) that might hide parts, and join
-  // other lines onto it.
-  function lineLength(line) {
-    if (line.height == 0) { return 0 }
-    var len = line.text.length, merged, cur = line;
-    while (merged = collapsedSpanAtStart(cur)) {
-      var found = merged.find(0, true);
-      cur = found.from.line;
-      len += found.from.ch - found.to.ch;
-    }
-    cur = line;
-    while (merged = collapsedSpanAtEnd(cur)) {
-      var found$1 = merged.find(0, true);
-      len -= cur.text.length - found$1.from.ch;
-      cur = found$1.to.line;
-      len += cur.text.length - found$1.to.ch;
-    }
-    return len
-  }
-
-  // Find the longest line in the document.
-  function findMaxLine(cm) {
-    var d = cm.display, doc = cm.doc;
-    d.maxLine = getLine(doc, doc.first);
-    d.maxLineLength = lineLength(d.maxLine);
-    d.maxLineChanged = true;
-    doc.iter(function (line) {
-      var len = lineLength(line);
-      if (len > d.maxLineLength) {
-        d.maxLineLength = len;
-        d.maxLine = line;
-      }
-    });
-  }
-
   // BIDI HELPERS
 
   function iterateBidiSections(order, from, to, f) {
@@ -15945,6 +15316,131 @@ jb.component('text.codemirror', {
     return oracle && oracle.baseToken(this.pos)
   };
 
+  // Find the line object corresponding to the given line number.
+  function getLine(doc, n) {
+    n -= doc.first;
+    if (n < 0 || n >= doc.size) { throw new Error("There is no line " + (n + doc.first) + " in the document.") }
+    var chunk = doc;
+    while (!chunk.lines) {
+      for (var i = 0;; ++i) {
+        var child = chunk.children[i], sz = child.chunkSize();
+        if (n < sz) { chunk = child; break }
+        n -= sz;
+      }
+    }
+    return chunk.lines[n]
+  }
+
+  // Get the part of a document between two positions, as an array of
+  // strings.
+  function getBetween(doc, start, end) {
+    var out = [], n = start.line;
+    doc.iter(start.line, end.line + 1, function (line) {
+      var text = line.text;
+      if (n == end.line) { text = text.slice(0, end.ch); }
+      if (n == start.line) { text = text.slice(start.ch); }
+      out.push(text);
+      ++n;
+    });
+    return out
+  }
+  // Get the lines between from and to, as array of strings.
+  function getLines(doc, from, to) {
+    var out = [];
+    doc.iter(from, to, function (line) { out.push(line.text); }); // iter aborts when callback returns truthy value
+    return out
+  }
+
+  // Update the height of a line, propagating the height change
+  // upwards to parent nodes.
+  function updateLineHeight(line, height) {
+    var diff = height - line.height;
+    if (diff) { for (var n = line; n; n = n.parent) { n.height += diff; } }
+  }
+
+  // Given a line object, find its line number by walking up through
+  // its parent links.
+  function lineNo(line) {
+    if (line.parent == null) { return null }
+    var cur = line.parent, no = indexOf(cur.lines, line);
+    for (var chunk = cur.parent; chunk; cur = chunk, chunk = chunk.parent) {
+      for (var i = 0;; ++i) {
+        if (chunk.children[i] == cur) { break }
+        no += chunk.children[i].chunkSize();
+      }
+    }
+    return no + cur.first
+  }
+
+  // Find the line at the given vertical position, using the height
+  // information in the document tree.
+  function lineAtHeight(chunk, h) {
+    var n = chunk.first;
+    outer: do {
+      for (var i$1 = 0; i$1 < chunk.children.length; ++i$1) {
+        var child = chunk.children[i$1], ch = child.height;
+        if (h < ch) { chunk = child; continue outer }
+        h -= ch;
+        n += child.chunkSize();
+      }
+      return n
+    } while (!chunk.lines)
+    var i = 0;
+    for (; i < chunk.lines.length; ++i) {
+      var line = chunk.lines[i], lh = line.height;
+      if (h < lh) { break }
+      h -= lh;
+    }
+    return n + i
+  }
+
+  function isLine(doc, l) {return l >= doc.first && l < doc.first + doc.size}
+
+  function lineNumberFor(options, i) {
+    return String(options.lineNumberFormatter(i + options.firstLineNumber))
+  }
+
+  // A Pos instance represents a position within the text.
+  function Pos(line, ch, sticky) {
+    if ( sticky === void 0 ) sticky = null;
+
+    if (!(this instanceof Pos)) { return new Pos(line, ch, sticky) }
+    this.line = line;
+    this.ch = ch;
+    this.sticky = sticky;
+  }
+
+  // Compare two positions, return 0 if they are the same, a negative
+  // number when a is less, and a positive number otherwise.
+  function cmp(a, b) { return a.line - b.line || a.ch - b.ch }
+
+  function equalCursorPos(a, b) { return a.sticky == b.sticky && cmp(a, b) == 0 }
+
+  function copyPos(x) {return Pos(x.line, x.ch)}
+  function maxPos(a, b) { return cmp(a, b) < 0 ? b : a }
+  function minPos(a, b) { return cmp(a, b) < 0 ? a : b }
+
+  // Most of the external API clips given positions to make sure they
+  // actually exist within the document.
+  function clipLine(doc, n) {return Math.max(doc.first, Math.min(n, doc.first + doc.size - 1))}
+  function clipPos(doc, pos) {
+    if (pos.line < doc.first) { return Pos(doc.first, 0) }
+    var last = doc.first + doc.size - 1;
+    if (pos.line > last) { return Pos(last, getLine(doc, last).text.length) }
+    return clipToLen(pos, getLine(doc, pos.line).text.length)
+  }
+  function clipToLen(pos, linelen) {
+    var ch = pos.ch;
+    if (ch == null || ch > linelen) { return Pos(pos.line, linelen) }
+    else if (ch < 0) { return Pos(pos.line, 0) }
+    else { return pos }
+  }
+  function clipPosArray(doc, array) {
+    var out = [];
+    for (var i = 0; i < array.length; i++) { out[i] = clipPos(doc, array[i]); }
+    return out
+  }
+
   var SavedContext = function(state, lookAhead) {
     this.state = state;
     this.lookAhead = lookAhead;
@@ -16219,6 +15715,394 @@ jb.component('text.codemirror', {
       }
     }
     doc.highlightFrontier = Math.min(doc.highlightFrontier, start);
+  }
+
+  // Optimize some code when these features are not used.
+  var sawReadOnlySpans = false, sawCollapsedSpans = false;
+
+  function seeReadOnlySpans() {
+    sawReadOnlySpans = true;
+  }
+
+  function seeCollapsedSpans() {
+    sawCollapsedSpans = true;
+  }
+
+  // TEXTMARKER SPANS
+
+  function MarkedSpan(marker, from, to) {
+    this.marker = marker;
+    this.from = from; this.to = to;
+  }
+
+  // Search an array of spans for a span matching the given marker.
+  function getMarkedSpanFor(spans, marker) {
+    if (spans) { for (var i = 0; i < spans.length; ++i) {
+      var span = spans[i];
+      if (span.marker == marker) { return span }
+    } }
+  }
+  // Remove a span from an array, returning undefined if no spans are
+  // left (we don't store arrays for lines without spans).
+  function removeMarkedSpan(spans, span) {
+    var r;
+    for (var i = 0; i < spans.length; ++i)
+      { if (spans[i] != span) { (r || (r = [])).push(spans[i]); } }
+    return r
+  }
+  // Add a span to a line.
+  function addMarkedSpan(line, span) {
+    line.markedSpans = line.markedSpans ? line.markedSpans.concat([span]) : [span];
+    span.marker.attachLine(line);
+  }
+
+  // Used for the algorithm that adjusts markers for a change in the
+  // document. These functions cut an array of spans at a given
+  // character position, returning an array of remaining chunks (or
+  // undefined if nothing remains).
+  function markedSpansBefore(old, startCh, isInsert) {
+    var nw;
+    if (old) { for (var i = 0; i < old.length; ++i) {
+      var span = old[i], marker = span.marker;
+      var startsBefore = span.from == null || (marker.inclusiveLeft ? span.from <= startCh : span.from < startCh);
+      if (startsBefore || span.from == startCh && marker.type == "bookmark" && (!isInsert || !span.marker.insertLeft)) {
+        var endsAfter = span.to == null || (marker.inclusiveRight ? span.to >= startCh : span.to > startCh)
+        ;(nw || (nw = [])).push(new MarkedSpan(marker, span.from, endsAfter ? null : span.to));
+      }
+    } }
+    return nw
+  }
+  function markedSpansAfter(old, endCh, isInsert) {
+    var nw;
+    if (old) { for (var i = 0; i < old.length; ++i) {
+      var span = old[i], marker = span.marker;
+      var endsAfter = span.to == null || (marker.inclusiveRight ? span.to >= endCh : span.to > endCh);
+      if (endsAfter || span.from == endCh && marker.type == "bookmark" && (!isInsert || span.marker.insertLeft)) {
+        var startsBefore = span.from == null || (marker.inclusiveLeft ? span.from <= endCh : span.from < endCh)
+        ;(nw || (nw = [])).push(new MarkedSpan(marker, startsBefore ? null : span.from - endCh,
+                                              span.to == null ? null : span.to - endCh));
+      }
+    } }
+    return nw
+  }
+
+  // Given a change object, compute the new set of marker spans that
+  // cover the line in which the change took place. Removes spans
+  // entirely within the change, reconnects spans belonging to the
+  // same marker that appear on both sides of the change, and cuts off
+  // spans partially within the change. Returns an array of span
+  // arrays with one element for each line in (after) the change.
+  function stretchSpansOverChange(doc, change) {
+    if (change.full) { return null }
+    var oldFirst = isLine(doc, change.from.line) && getLine(doc, change.from.line).markedSpans;
+    var oldLast = isLine(doc, change.to.line) && getLine(doc, change.to.line).markedSpans;
+    if (!oldFirst && !oldLast) { return null }
+
+    var startCh = change.from.ch, endCh = change.to.ch, isInsert = cmp(change.from, change.to) == 0;
+    // Get the spans that 'stick out' on both sides
+    var first = markedSpansBefore(oldFirst, startCh, isInsert);
+    var last = markedSpansAfter(oldLast, endCh, isInsert);
+
+    // Next, merge those two ends
+    var sameLine = change.text.length == 1, offset = lst(change.text).length + (sameLine ? startCh : 0);
+    if (first) {
+      // Fix up .to properties of first
+      for (var i = 0; i < first.length; ++i) {
+        var span = first[i];
+        if (span.to == null) {
+          var found = getMarkedSpanFor(last, span.marker);
+          if (!found) { span.to = startCh; }
+          else if (sameLine) { span.to = found.to == null ? null : found.to + offset; }
+        }
+      }
+    }
+    if (last) {
+      // Fix up .from in last (or move them into first in case of sameLine)
+      for (var i$1 = 0; i$1 < last.length; ++i$1) {
+        var span$1 = last[i$1];
+        if (span$1.to != null) { span$1.to += offset; }
+        if (span$1.from == null) {
+          var found$1 = getMarkedSpanFor(first, span$1.marker);
+          if (!found$1) {
+            span$1.from = offset;
+            if (sameLine) { (first || (first = [])).push(span$1); }
+          }
+        } else {
+          span$1.from += offset;
+          if (sameLine) { (first || (first = [])).push(span$1); }
+        }
+      }
+    }
+    // Make sure we didn't create any zero-length spans
+    if (first) { first = clearEmptySpans(first); }
+    if (last && last != first) { last = clearEmptySpans(last); }
+
+    var newMarkers = [first];
+    if (!sameLine) {
+      // Fill gap with whole-line-spans
+      var gap = change.text.length - 2, gapMarkers;
+      if (gap > 0 && first)
+        { for (var i$2 = 0; i$2 < first.length; ++i$2)
+          { if (first[i$2].to == null)
+            { (gapMarkers || (gapMarkers = [])).push(new MarkedSpan(first[i$2].marker, null, null)); } } }
+      for (var i$3 = 0; i$3 < gap; ++i$3)
+        { newMarkers.push(gapMarkers); }
+      newMarkers.push(last);
+    }
+    return newMarkers
+  }
+
+  // Remove spans that are empty and don't have a clearWhenEmpty
+  // option of false.
+  function clearEmptySpans(spans) {
+    for (var i = 0; i < spans.length; ++i) {
+      var span = spans[i];
+      if (span.from != null && span.from == span.to && span.marker.clearWhenEmpty !== false)
+        { spans.splice(i--, 1); }
+    }
+    if (!spans.length) { return null }
+    return spans
+  }
+
+  // Used to 'clip' out readOnly ranges when making a change.
+  function removeReadOnlyRanges(doc, from, to) {
+    var markers = null;
+    doc.iter(from.line, to.line + 1, function (line) {
+      if (line.markedSpans) { for (var i = 0; i < line.markedSpans.length; ++i) {
+        var mark = line.markedSpans[i].marker;
+        if (mark.readOnly && (!markers || indexOf(markers, mark) == -1))
+          { (markers || (markers = [])).push(mark); }
+      } }
+    });
+    if (!markers) { return null }
+    var parts = [{from: from, to: to}];
+    for (var i = 0; i < markers.length; ++i) {
+      var mk = markers[i], m = mk.find(0);
+      for (var j = 0; j < parts.length; ++j) {
+        var p = parts[j];
+        if (cmp(p.to, m.from) < 0 || cmp(p.from, m.to) > 0) { continue }
+        var newParts = [j, 1], dfrom = cmp(p.from, m.from), dto = cmp(p.to, m.to);
+        if (dfrom < 0 || !mk.inclusiveLeft && !dfrom)
+          { newParts.push({from: p.from, to: m.from}); }
+        if (dto > 0 || !mk.inclusiveRight && !dto)
+          { newParts.push({from: m.to, to: p.to}); }
+        parts.splice.apply(parts, newParts);
+        j += newParts.length - 3;
+      }
+    }
+    return parts
+  }
+
+  // Connect or disconnect spans from a line.
+  function detachMarkedSpans(line) {
+    var spans = line.markedSpans;
+    if (!spans) { return }
+    for (var i = 0; i < spans.length; ++i)
+      { spans[i].marker.detachLine(line); }
+    line.markedSpans = null;
+  }
+  function attachMarkedSpans(line, spans) {
+    if (!spans) { return }
+    for (var i = 0; i < spans.length; ++i)
+      { spans[i].marker.attachLine(line); }
+    line.markedSpans = spans;
+  }
+
+  // Helpers used when computing which overlapping collapsed span
+  // counts as the larger one.
+  function extraLeft(marker) { return marker.inclusiveLeft ? -1 : 0 }
+  function extraRight(marker) { return marker.inclusiveRight ? 1 : 0 }
+
+  // Returns a number indicating which of two overlapping collapsed
+  // spans is larger (and thus includes the other). Falls back to
+  // comparing ids when the spans cover exactly the same range.
+  function compareCollapsedMarkers(a, b) {
+    var lenDiff = a.lines.length - b.lines.length;
+    if (lenDiff != 0) { return lenDiff }
+    var aPos = a.find(), bPos = b.find();
+    var fromCmp = cmp(aPos.from, bPos.from) || extraLeft(a) - extraLeft(b);
+    if (fromCmp) { return -fromCmp }
+    var toCmp = cmp(aPos.to, bPos.to) || extraRight(a) - extraRight(b);
+    if (toCmp) { return toCmp }
+    return b.id - a.id
+  }
+
+  // Find out whether a line ends or starts in a collapsed span. If
+  // so, return the marker for that span.
+  function collapsedSpanAtSide(line, start) {
+    var sps = sawCollapsedSpans && line.markedSpans, found;
+    if (sps) { for (var sp = (void 0), i = 0; i < sps.length; ++i) {
+      sp = sps[i];
+      if (sp.marker.collapsed && (start ? sp.from : sp.to) == null &&
+          (!found || compareCollapsedMarkers(found, sp.marker) < 0))
+        { found = sp.marker; }
+    } }
+    return found
+  }
+  function collapsedSpanAtStart(line) { return collapsedSpanAtSide(line, true) }
+  function collapsedSpanAtEnd(line) { return collapsedSpanAtSide(line, false) }
+
+  function collapsedSpanAround(line, ch) {
+    var sps = sawCollapsedSpans && line.markedSpans, found;
+    if (sps) { for (var i = 0; i < sps.length; ++i) {
+      var sp = sps[i];
+      if (sp.marker.collapsed && (sp.from == null || sp.from < ch) && (sp.to == null || sp.to > ch) &&
+          (!found || compareCollapsedMarkers(found, sp.marker) < 0)) { found = sp.marker; }
+    } }
+    return found
+  }
+
+  // Test whether there exists a collapsed span that partially
+  // overlaps (covers the start or end, but not both) of a new span.
+  // Such overlap is not allowed.
+  function conflictingCollapsedRange(doc, lineNo$$1, from, to, marker) {
+    var line = getLine(doc, lineNo$$1);
+    var sps = sawCollapsedSpans && line.markedSpans;
+    if (sps) { for (var i = 0; i < sps.length; ++i) {
+      var sp = sps[i];
+      if (!sp.marker.collapsed) { continue }
+      var found = sp.marker.find(0);
+      var fromCmp = cmp(found.from, from) || extraLeft(sp.marker) - extraLeft(marker);
+      var toCmp = cmp(found.to, to) || extraRight(sp.marker) - extraRight(marker);
+      if (fromCmp >= 0 && toCmp <= 0 || fromCmp <= 0 && toCmp >= 0) { continue }
+      if (fromCmp <= 0 && (sp.marker.inclusiveRight && marker.inclusiveLeft ? cmp(found.to, from) >= 0 : cmp(found.to, from) > 0) ||
+          fromCmp >= 0 && (sp.marker.inclusiveRight && marker.inclusiveLeft ? cmp(found.from, to) <= 0 : cmp(found.from, to) < 0))
+        { return true }
+    } }
+  }
+
+  // A visual line is a line as drawn on the screen. Folding, for
+  // example, can cause multiple logical lines to appear on the same
+  // visual line. This finds the start of the visual line that the
+  // given line is part of (usually that is the line itself).
+  function visualLine(line) {
+    var merged;
+    while (merged = collapsedSpanAtStart(line))
+      { line = merged.find(-1, true).line; }
+    return line
+  }
+
+  function visualLineEnd(line) {
+    var merged;
+    while (merged = collapsedSpanAtEnd(line))
+      { line = merged.find(1, true).line; }
+    return line
+  }
+
+  // Returns an array of logical lines that continue the visual line
+  // started by the argument, or undefined if there are no such lines.
+  function visualLineContinued(line) {
+    var merged, lines;
+    while (merged = collapsedSpanAtEnd(line)) {
+      line = merged.find(1, true).line
+      ;(lines || (lines = [])).push(line);
+    }
+    return lines
+  }
+
+  // Get the line number of the start of the visual line that the
+  // given line number is part of.
+  function visualLineNo(doc, lineN) {
+    var line = getLine(doc, lineN), vis = visualLine(line);
+    if (line == vis) { return lineN }
+    return lineNo(vis)
+  }
+
+  // Get the line number of the start of the next visual line after
+  // the given line.
+  function visualLineEndNo(doc, lineN) {
+    if (lineN > doc.lastLine()) { return lineN }
+    var line = getLine(doc, lineN), merged;
+    if (!lineIsHidden(doc, line)) { return lineN }
+    while (merged = collapsedSpanAtEnd(line))
+      { line = merged.find(1, true).line; }
+    return lineNo(line) + 1
+  }
+
+  // Compute whether a line is hidden. Lines count as hidden when they
+  // are part of a visual line that starts with another line, or when
+  // they are entirely covered by collapsed, non-widget span.
+  function lineIsHidden(doc, line) {
+    var sps = sawCollapsedSpans && line.markedSpans;
+    if (sps) { for (var sp = (void 0), i = 0; i < sps.length; ++i) {
+      sp = sps[i];
+      if (!sp.marker.collapsed) { continue }
+      if (sp.from == null) { return true }
+      if (sp.marker.widgetNode) { continue }
+      if (sp.from == 0 && sp.marker.inclusiveLeft && lineIsHiddenInner(doc, line, sp))
+        { return true }
+    } }
+  }
+  function lineIsHiddenInner(doc, line, span) {
+    if (span.to == null) {
+      var end = span.marker.find(1, true);
+      return lineIsHiddenInner(doc, end.line, getMarkedSpanFor(end.line.markedSpans, span.marker))
+    }
+    if (span.marker.inclusiveRight && span.to == line.text.length)
+      { return true }
+    for (var sp = (void 0), i = 0; i < line.markedSpans.length; ++i) {
+      sp = line.markedSpans[i];
+      if (sp.marker.collapsed && !sp.marker.widgetNode && sp.from == span.to &&
+          (sp.to == null || sp.to != span.from) &&
+          (sp.marker.inclusiveLeft || span.marker.inclusiveRight) &&
+          lineIsHiddenInner(doc, line, sp)) { return true }
+    }
+  }
+
+  // Find the height above the given line.
+  function heightAtLine(lineObj) {
+    lineObj = visualLine(lineObj);
+
+    var h = 0, chunk = lineObj.parent;
+    for (var i = 0; i < chunk.lines.length; ++i) {
+      var line = chunk.lines[i];
+      if (line == lineObj) { break }
+      else { h += line.height; }
+    }
+    for (var p = chunk.parent; p; chunk = p, p = chunk.parent) {
+      for (var i$1 = 0; i$1 < p.children.length; ++i$1) {
+        var cur = p.children[i$1];
+        if (cur == chunk) { break }
+        else { h += cur.height; }
+      }
+    }
+    return h
+  }
+
+  // Compute the character length of a line, taking into account
+  // collapsed ranges (see markText) that might hide parts, and join
+  // other lines onto it.
+  function lineLength(line) {
+    if (line.height == 0) { return 0 }
+    var len = line.text.length, merged, cur = line;
+    while (merged = collapsedSpanAtStart(cur)) {
+      var found = merged.find(0, true);
+      cur = found.from.line;
+      len += found.from.ch - found.to.ch;
+    }
+    cur = line;
+    while (merged = collapsedSpanAtEnd(cur)) {
+      var found$1 = merged.find(0, true);
+      len -= cur.text.length - found$1.from.ch;
+      cur = found$1.to.line;
+      len += cur.text.length - found$1.to.ch;
+    }
+    return len
+  }
+
+  // Find the longest line in the document.
+  function findMaxLine(cm) {
+    var d = cm.display, doc = cm.doc;
+    d.maxLine = getLine(doc, doc.first);
+    d.maxLineLength = lineLength(d.maxLine);
+    d.maxLineChanged = true;
+    doc.iter(function (line) {
+      var len = lineLength(line);
+      if (len > d.maxLineLength) {
+        d.maxLineLength = len;
+        d.maxLine = line;
+      }
+    });
   }
 
   // LINE DATA STRUCTURE
@@ -16742,8 +16626,8 @@ jb.component('text.codemirror', {
           elt("div", lineNumberFor(cm.options, lineN),
               "CodeMirror-linenumber CodeMirror-gutter-elt",
               ("left: " + (dims.gutterLeft["CodeMirror-linenumbers"]) + "px; width: " + (cm.display.lineNumInnerWidth) + "px"))); }
-      if (markers) { for (var k = 0; k < cm.options.gutters.length; ++k) {
-        var id = cm.options.gutters[k], found = markers.hasOwnProperty(id) && markers[id];
+      if (markers) { for (var k = 0; k < cm.display.gutterSpecs.length; ++k) {
+        var id = cm.display.gutterSpecs[k].className, found = markers.hasOwnProperty(id) && markers[id];
         if (found)
           { gutterWrap.appendChild(elt("div", [found], "CodeMirror-gutter-elt",
                                      ("left: " + (dims.gutterLeft[id]) + "px; width: " + (dims.gutterWidth[id]) + "px"))); }
@@ -17448,8 +17332,9 @@ jb.component('text.codemirror', {
     var d = cm.display, left = {}, width = {};
     var gutterLeft = d.gutters.clientLeft;
     for (var n = d.gutters.firstChild, i = 0; n; n = n.nextSibling, ++i) {
-      left[cm.options.gutters[i]] = n.offsetLeft + n.clientLeft + gutterLeft;
-      width[cm.options.gutters[i]] = n.clientWidth;
+      var id = cm.display.gutterSpecs[i].className;
+      left[id] = n.offsetLeft + n.clientLeft + gutterLeft;
+      width[id] = n.clientWidth;
     }
     return {fixedPos: compensateForHScroll(d),
             gutterTotalWidth: d.gutters.offsetWidth,
@@ -17526,6 +17411,154 @@ jb.component('text.codemirror', {
       n -= view[i].size;
       if (n < 0) { return i }
     }
+  }
+
+  // Updates the display.view data structure for a given change to the
+  // document. From and to are in pre-change coordinates. Lendiff is
+  // the amount of lines added or subtracted by the change. This is
+  // used for changes that span multiple lines, or change the way
+  // lines are divided into visual lines. regLineChange (below)
+  // registers single-line changes.
+  function regChange(cm, from, to, lendiff) {
+    if (from == null) { from = cm.doc.first; }
+    if (to == null) { to = cm.doc.first + cm.doc.size; }
+    if (!lendiff) { lendiff = 0; }
+
+    var display = cm.display;
+    if (lendiff && to < display.viewTo &&
+        (display.updateLineNumbers == null || display.updateLineNumbers > from))
+      { display.updateLineNumbers = from; }
+
+    cm.curOp.viewChanged = true;
+
+    if (from >= display.viewTo) { // Change after
+      if (sawCollapsedSpans && visualLineNo(cm.doc, from) < display.viewTo)
+        { resetView(cm); }
+    } else if (to <= display.viewFrom) { // Change before
+      if (sawCollapsedSpans && visualLineEndNo(cm.doc, to + lendiff) > display.viewFrom) {
+        resetView(cm);
+      } else {
+        display.viewFrom += lendiff;
+        display.viewTo += lendiff;
+      }
+    } else if (from <= display.viewFrom && to >= display.viewTo) { // Full overlap
+      resetView(cm);
+    } else if (from <= display.viewFrom) { // Top overlap
+      var cut = viewCuttingPoint(cm, to, to + lendiff, 1);
+      if (cut) {
+        display.view = display.view.slice(cut.index);
+        display.viewFrom = cut.lineN;
+        display.viewTo += lendiff;
+      } else {
+        resetView(cm);
+      }
+    } else if (to >= display.viewTo) { // Bottom overlap
+      var cut$1 = viewCuttingPoint(cm, from, from, -1);
+      if (cut$1) {
+        display.view = display.view.slice(0, cut$1.index);
+        display.viewTo = cut$1.lineN;
+      } else {
+        resetView(cm);
+      }
+    } else { // Gap in the middle
+      var cutTop = viewCuttingPoint(cm, from, from, -1);
+      var cutBot = viewCuttingPoint(cm, to, to + lendiff, 1);
+      if (cutTop && cutBot) {
+        display.view = display.view.slice(0, cutTop.index)
+          .concat(buildViewArray(cm, cutTop.lineN, cutBot.lineN))
+          .concat(display.view.slice(cutBot.index));
+        display.viewTo += lendiff;
+      } else {
+        resetView(cm);
+      }
+    }
+
+    var ext = display.externalMeasured;
+    if (ext) {
+      if (to < ext.lineN)
+        { ext.lineN += lendiff; }
+      else if (from < ext.lineN + ext.size)
+        { display.externalMeasured = null; }
+    }
+  }
+
+  // Register a change to a single line. Type must be one of "text",
+  // "gutter", "class", "widget"
+  function regLineChange(cm, line, type) {
+    cm.curOp.viewChanged = true;
+    var display = cm.display, ext = cm.display.externalMeasured;
+    if (ext && line >= ext.lineN && line < ext.lineN + ext.size)
+      { display.externalMeasured = null; }
+
+    if (line < display.viewFrom || line >= display.viewTo) { return }
+    var lineView = display.view[findViewIndex(cm, line)];
+    if (lineView.node == null) { return }
+    var arr = lineView.changes || (lineView.changes = []);
+    if (indexOf(arr, type) == -1) { arr.push(type); }
+  }
+
+  // Clear the view.
+  function resetView(cm) {
+    cm.display.viewFrom = cm.display.viewTo = cm.doc.first;
+    cm.display.view = [];
+    cm.display.viewOffset = 0;
+  }
+
+  function viewCuttingPoint(cm, oldN, newN, dir) {
+    var index = findViewIndex(cm, oldN), diff, view = cm.display.view;
+    if (!sawCollapsedSpans || newN == cm.doc.first + cm.doc.size)
+      { return {index: index, lineN: newN} }
+    var n = cm.display.viewFrom;
+    for (var i = 0; i < index; i++)
+      { n += view[i].size; }
+    if (n != oldN) {
+      if (dir > 0) {
+        if (index == view.length - 1) { return null }
+        diff = (n + view[index].size) - oldN;
+        index++;
+      } else {
+        diff = n - oldN;
+      }
+      oldN += diff; newN += diff;
+    }
+    while (visualLineNo(cm.doc, newN) != newN) {
+      if (index == (dir < 0 ? 0 : view.length - 1)) { return null }
+      newN += dir * view[index - (dir < 0 ? 1 : 0)].size;
+      index += dir;
+    }
+    return {index: index, lineN: newN}
+  }
+
+  // Force the view to cover a given range, adding empty view element
+  // or clipping off existing ones as needed.
+  function adjustView(cm, from, to) {
+    var display = cm.display, view = display.view;
+    if (view.length == 0 || from >= display.viewTo || to <= display.viewFrom) {
+      display.view = buildViewArray(cm, from, to);
+      display.viewFrom = from;
+    } else {
+      if (display.viewFrom > from)
+        { display.view = buildViewArray(cm, from, display.viewFrom).concat(display.view); }
+      else if (display.viewFrom < from)
+        { display.view = display.view.slice(findViewIndex(cm, from)); }
+      display.viewFrom = from;
+      if (display.viewTo < to)
+        { display.view = display.view.concat(buildViewArray(cm, display.viewTo, to)); }
+      else if (display.viewTo > to)
+        { display.view = display.view.slice(0, findViewIndex(cm, to)); }
+    }
+    display.viewTo = to;
+  }
+
+  // Count the number of lines in the view whose DOM representation is
+  // out of date (or nonexistent).
+  function countDirtyView(cm) {
+    var view = cm.display.view, dirty = 0;
+    for (var i = 0; i < view.length; i++) {
+      var lineView = view[i];
+      if (!lineView.hidden && (!lineView.node || lineView.changes)) { ++dirty; }
+    }
+    return dirty
   }
 
   function updateSelection(cm) {
@@ -17745,7 +17778,6 @@ jb.component('text.codemirror', {
           { width = cur.text.firstChild.getBoundingClientRect().right - box.left - 1; }
       }
       var diff = cur.line.height - height;
-      if (height < 2) { height = textHeight(display); }
       if (diff > .005 || diff < -.005) {
         updateLineHeight(cur.line, height);
         updateWidgetHeight(cur.line);
@@ -17794,49 +17826,6 @@ jb.component('text.codemirror', {
       }
     }
     return {from: from, to: Math.max(to, from + 1)}
-  }
-
-  // Re-align line numbers and gutter marks to compensate for
-  // horizontal scrolling.
-  function alignHorizontally(cm) {
-    var display = cm.display, view = display.view;
-    if (!display.alignWidgets && (!display.gutters.firstChild || !cm.options.fixedGutter)) { return }
-    var comp = compensateForHScroll(display) - display.scroller.scrollLeft + cm.doc.scrollLeft;
-    var gutterW = display.gutters.offsetWidth, left = comp + "px";
-    for (var i = 0; i < view.length; i++) { if (!view[i].hidden) {
-      if (cm.options.fixedGutter) {
-        if (view[i].gutter)
-          { view[i].gutter.style.left = left; }
-        if (view[i].gutterBackground)
-          { view[i].gutterBackground.style.left = left; }
-      }
-      var align = view[i].alignable;
-      if (align) { for (var j = 0; j < align.length; j++)
-        { align[j].style.left = left; } }
-    } }
-    if (cm.options.fixedGutter)
-      { display.gutters.style.left = (comp + gutterW) + "px"; }
-  }
-
-  // Used to ensure that the line number gutter is still the right
-  // size for the current document size. Returns true when an update
-  // is needed.
-  function maybeUpdateLineNumberWidth(cm) {
-    if (!cm.options.lineNumbers) { return false }
-    var doc = cm.doc, last = lineNumberFor(cm.options, doc.first + doc.size - 1), display = cm.display;
-    if (last.length != display.lineNumChars) {
-      var test = display.measure.appendChild(elt("div", [elt("div", last)],
-                                                 "CodeMirror-linenumber CodeMirror-gutter-elt"));
-      var innerW = test.firstChild.offsetWidth, padding = test.offsetWidth - innerW;
-      display.lineGutter.style.width = "";
-      display.lineNumInnerWidth = Math.max(innerW, display.lineGutter.offsetWidth - padding) + 1;
-      display.lineNumWidth = display.lineNumInnerWidth + padding;
-      display.lineNumChars = display.lineNumInnerWidth ? last.length : -1;
-      display.lineGutter.style.width = display.lineNumWidth + "px";
-      updateGutterSpace(cm);
-      return true
-    }
-    return false
   }
 
   // SCROLLING THINGS INTO VIEW
@@ -18386,154 +18375,6 @@ jb.component('text.codemirror', {
     }
   }
 
-  // Updates the display.view data structure for a given change to the
-  // document. From and to are in pre-change coordinates. Lendiff is
-  // the amount of lines added or subtracted by the change. This is
-  // used for changes that span multiple lines, or change the way
-  // lines are divided into visual lines. regLineChange (below)
-  // registers single-line changes.
-  function regChange(cm, from, to, lendiff) {
-    if (from == null) { from = cm.doc.first; }
-    if (to == null) { to = cm.doc.first + cm.doc.size; }
-    if (!lendiff) { lendiff = 0; }
-
-    var display = cm.display;
-    if (lendiff && to < display.viewTo &&
-        (display.updateLineNumbers == null || display.updateLineNumbers > from))
-      { display.updateLineNumbers = from; }
-
-    cm.curOp.viewChanged = true;
-
-    if (from >= display.viewTo) { // Change after
-      if (sawCollapsedSpans && visualLineNo(cm.doc, from) < display.viewTo)
-        { resetView(cm); }
-    } else if (to <= display.viewFrom) { // Change before
-      if (sawCollapsedSpans && visualLineEndNo(cm.doc, to + lendiff) > display.viewFrom) {
-        resetView(cm);
-      } else {
-        display.viewFrom += lendiff;
-        display.viewTo += lendiff;
-      }
-    } else if (from <= display.viewFrom && to >= display.viewTo) { // Full overlap
-      resetView(cm);
-    } else if (from <= display.viewFrom) { // Top overlap
-      var cut = viewCuttingPoint(cm, to, to + lendiff, 1);
-      if (cut) {
-        display.view = display.view.slice(cut.index);
-        display.viewFrom = cut.lineN;
-        display.viewTo += lendiff;
-      } else {
-        resetView(cm);
-      }
-    } else if (to >= display.viewTo) { // Bottom overlap
-      var cut$1 = viewCuttingPoint(cm, from, from, -1);
-      if (cut$1) {
-        display.view = display.view.slice(0, cut$1.index);
-        display.viewTo = cut$1.lineN;
-      } else {
-        resetView(cm);
-      }
-    } else { // Gap in the middle
-      var cutTop = viewCuttingPoint(cm, from, from, -1);
-      var cutBot = viewCuttingPoint(cm, to, to + lendiff, 1);
-      if (cutTop && cutBot) {
-        display.view = display.view.slice(0, cutTop.index)
-          .concat(buildViewArray(cm, cutTop.lineN, cutBot.lineN))
-          .concat(display.view.slice(cutBot.index));
-        display.viewTo += lendiff;
-      } else {
-        resetView(cm);
-      }
-    }
-
-    var ext = display.externalMeasured;
-    if (ext) {
-      if (to < ext.lineN)
-        { ext.lineN += lendiff; }
-      else if (from < ext.lineN + ext.size)
-        { display.externalMeasured = null; }
-    }
-  }
-
-  // Register a change to a single line. Type must be one of "text",
-  // "gutter", "class", "widget"
-  function regLineChange(cm, line, type) {
-    cm.curOp.viewChanged = true;
-    var display = cm.display, ext = cm.display.externalMeasured;
-    if (ext && line >= ext.lineN && line < ext.lineN + ext.size)
-      { display.externalMeasured = null; }
-
-    if (line < display.viewFrom || line >= display.viewTo) { return }
-    var lineView = display.view[findViewIndex(cm, line)];
-    if (lineView.node == null) { return }
-    var arr = lineView.changes || (lineView.changes = []);
-    if (indexOf(arr, type) == -1) { arr.push(type); }
-  }
-
-  // Clear the view.
-  function resetView(cm) {
-    cm.display.viewFrom = cm.display.viewTo = cm.doc.first;
-    cm.display.view = [];
-    cm.display.viewOffset = 0;
-  }
-
-  function viewCuttingPoint(cm, oldN, newN, dir) {
-    var index = findViewIndex(cm, oldN), diff, view = cm.display.view;
-    if (!sawCollapsedSpans || newN == cm.doc.first + cm.doc.size)
-      { return {index: index, lineN: newN} }
-    var n = cm.display.viewFrom;
-    for (var i = 0; i < index; i++)
-      { n += view[i].size; }
-    if (n != oldN) {
-      if (dir > 0) {
-        if (index == view.length - 1) { return null }
-        diff = (n + view[index].size) - oldN;
-        index++;
-      } else {
-        diff = n - oldN;
-      }
-      oldN += diff; newN += diff;
-    }
-    while (visualLineNo(cm.doc, newN) != newN) {
-      if (index == (dir < 0 ? 0 : view.length - 1)) { return null }
-      newN += dir * view[index - (dir < 0 ? 1 : 0)].size;
-      index += dir;
-    }
-    return {index: index, lineN: newN}
-  }
-
-  // Force the view to cover a given range, adding empty view element
-  // or clipping off existing ones as needed.
-  function adjustView(cm, from, to) {
-    var display = cm.display, view = display.view;
-    if (view.length == 0 || from >= display.viewTo || to <= display.viewFrom) {
-      display.view = buildViewArray(cm, from, to);
-      display.viewFrom = from;
-    } else {
-      if (display.viewFrom > from)
-        { display.view = buildViewArray(cm, from, display.viewFrom).concat(display.view); }
-      else if (display.viewFrom < from)
-        { display.view = display.view.slice(findViewIndex(cm, from)); }
-      display.viewFrom = from;
-      if (display.viewTo < to)
-        { display.view = display.view.concat(buildViewArray(cm, display.viewTo, to)); }
-      else if (display.viewTo > to)
-        { display.view = display.view.slice(0, findViewIndex(cm, to)); }
-    }
-    display.viewTo = to;
-  }
-
-  // Count the number of lines in the view whose DOM representation is
-  // out of date (or nonexistent).
-  function countDirtyView(cm) {
-    var view = cm.display.view, dirty = 0;
-    for (var i = 0; i < view.length; i++) {
-      var lineView = view[i];
-      if (!lineView.hidden && (!lineView.node || lineView.changes)) { ++dirty; }
-    }
-    return dirty
-  }
-
   // HIGHLIGHT WORKER
 
   function startWorker(cm, time) {
@@ -18815,9 +18656,9 @@ jb.component('text.codemirror', {
     while (cur) { cur = rm(cur); }
   }
 
-  function updateGutterSpace(cm) {
-    var width = cm.display.gutters.offsetWidth;
-    cm.display.sizer.style.marginLeft = width + "px";
+  function updateGutterSpace(display) {
+    var width = display.gutters.offsetWidth;
+    display.sizer.style.marginLeft = width + "px";
   }
 
   function setDocumentHeight(cm, measure) {
@@ -18826,34 +18667,195 @@ jb.component('text.codemirror', {
     cm.display.gutters.style.height = (measure.docHeight + cm.display.barHeight + scrollGap(cm)) + "px";
   }
 
-  // Rebuild the gutter elements, ensure the margin to the left of the
-  // code matches their width.
-  function updateGutters(cm) {
-    var gutters = cm.display.gutters, specs = cm.options.gutters;
-    removeChildren(gutters);
-    var i = 0;
-    for (; i < specs.length; ++i) {
-      var gutterClass = specs[i];
-      var gElt = gutters.appendChild(elt("div", null, "CodeMirror-gutter " + gutterClass));
-      if (gutterClass == "CodeMirror-linenumbers") {
-        cm.display.lineGutter = gElt;
-        gElt.style.width = (cm.display.lineNumWidth || 1) + "px";
+  // Re-align line numbers and gutter marks to compensate for
+  // horizontal scrolling.
+  function alignHorizontally(cm) {
+    var display = cm.display, view = display.view;
+    if (!display.alignWidgets && (!display.gutters.firstChild || !cm.options.fixedGutter)) { return }
+    var comp = compensateForHScroll(display) - display.scroller.scrollLeft + cm.doc.scrollLeft;
+    var gutterW = display.gutters.offsetWidth, left = comp + "px";
+    for (var i = 0; i < view.length; i++) { if (!view[i].hidden) {
+      if (cm.options.fixedGutter) {
+        if (view[i].gutter)
+          { view[i].gutter.style.left = left; }
+        if (view[i].gutterBackground)
+          { view[i].gutterBackground.style.left = left; }
       }
-    }
-    gutters.style.display = i ? "" : "none";
-    updateGutterSpace(cm);
+      var align = view[i].alignable;
+      if (align) { for (var j = 0; j < align.length; j++)
+        { align[j].style.left = left; } }
+    } }
+    if (cm.options.fixedGutter)
+      { display.gutters.style.left = (comp + gutterW) + "px"; }
   }
 
-  // Make sure the gutters options contains the element
-  // "CodeMirror-linenumbers" when the lineNumbers option is true.
-  function setGuttersForLineNumbers(options) {
-    var found = indexOf(options.gutters, "CodeMirror-linenumbers");
-    if (found == -1 && options.lineNumbers) {
-      options.gutters = options.gutters.concat(["CodeMirror-linenumbers"]);
-    } else if (found > -1 && !options.lineNumbers) {
-      options.gutters = options.gutters.slice(0);
-      options.gutters.splice(found, 1);
+  // Used to ensure that the line number gutter is still the right
+  // size for the current document size. Returns true when an update
+  // is needed.
+  function maybeUpdateLineNumberWidth(cm) {
+    if (!cm.options.lineNumbers) { return false }
+    var doc = cm.doc, last = lineNumberFor(cm.options, doc.first + doc.size - 1), display = cm.display;
+    if (last.length != display.lineNumChars) {
+      var test = display.measure.appendChild(elt("div", [elt("div", last)],
+                                                 "CodeMirror-linenumber CodeMirror-gutter-elt"));
+      var innerW = test.firstChild.offsetWidth, padding = test.offsetWidth - innerW;
+      display.lineGutter.style.width = "";
+      display.lineNumInnerWidth = Math.max(innerW, display.lineGutter.offsetWidth - padding) + 1;
+      display.lineNumWidth = display.lineNumInnerWidth + padding;
+      display.lineNumChars = display.lineNumInnerWidth ? last.length : -1;
+      display.lineGutter.style.width = display.lineNumWidth + "px";
+      updateGutterSpace(cm.display);
+      return true
     }
+    return false
+  }
+
+  function getGutters(gutters, lineNumbers) {
+    var result = [], sawLineNumbers = false;
+    for (var i = 0; i < gutters.length; i++) {
+      var name = gutters[i], style = null;
+      if (typeof name != "string") { style = name.style; name = name.className; }
+      if (name == "CodeMirror-linenumbers") {
+        if (!lineNumbers) { continue }
+        else { sawLineNumbers = true; }
+      }
+      result.push({className: name, style: style});
+    }
+    if (lineNumbers && !sawLineNumbers) { result.push({className: "CodeMirror-linenumbers", style: null}); }
+    return result
+  }
+
+  // Rebuild the gutter elements, ensure the margin to the left of the
+  // code matches their width.
+  function renderGutters(display) {
+    var gutters = display.gutters, specs = display.gutterSpecs;
+    removeChildren(gutters);
+    display.lineGutter = null;
+    for (var i = 0; i < specs.length; ++i) {
+      var ref = specs[i];
+      var className = ref.className;
+      var style = ref.style;
+      var gElt = gutters.appendChild(elt("div", null, "CodeMirror-gutter " + className));
+      if (style) { gElt.style.cssText = style; }
+      if (className == "CodeMirror-linenumbers") {
+        display.lineGutter = gElt;
+        gElt.style.width = (display.lineNumWidth || 1) + "px";
+      }
+    }
+    gutters.style.display = specs.length ? "" : "none";
+    updateGutterSpace(display);
+  }
+
+  function updateGutters(cm) {
+    renderGutters(cm.display);
+    regChange(cm);
+    alignHorizontally(cm);
+  }
+
+  // The display handles the DOM integration, both for input reading
+  // and content drawing. It holds references to DOM nodes and
+  // display-related state.
+
+  function Display(place, doc, input, options) {
+    var d = this;
+    this.input = input;
+
+    // Covers bottom-right square when both scrollbars are present.
+    d.scrollbarFiller = elt("div", null, "CodeMirror-scrollbar-filler");
+    d.scrollbarFiller.setAttribute("cm-not-content", "true");
+    // Covers bottom of gutter when coverGutterNextToScrollbar is on
+    // and h scrollbar is present.
+    d.gutterFiller = elt("div", null, "CodeMirror-gutter-filler");
+    d.gutterFiller.setAttribute("cm-not-content", "true");
+    // Will contain the actual code, positioned to cover the viewport.
+    d.lineDiv = eltP("div", null, "CodeMirror-code");
+    // Elements are added to these to represent selection and cursors.
+    d.selectionDiv = elt("div", null, null, "position: relative; z-index: 1");
+    d.cursorDiv = elt("div", null, "CodeMirror-cursors");
+    // A visibility: hidden element used to find the size of things.
+    d.measure = elt("div", null, "CodeMirror-measure");
+    // When lines outside of the viewport are measured, they are drawn in this.
+    d.lineMeasure = elt("div", null, "CodeMirror-measure");
+    // Wraps everything that needs to exist inside the vertically-padded coordinate system
+    d.lineSpace = eltP("div", [d.measure, d.lineMeasure, d.selectionDiv, d.cursorDiv, d.lineDiv],
+                      null, "position: relative; outline: none");
+    var lines = eltP("div", [d.lineSpace], "CodeMirror-lines");
+    // Moved around its parent to cover visible view.
+    d.mover = elt("div", [lines], null, "position: relative");
+    // Set to the height of the document, allowing scrolling.
+    d.sizer = elt("div", [d.mover], "CodeMirror-sizer");
+    d.sizerWidth = null;
+    // Behavior of elts with overflow: auto and padding is
+    // inconsistent across browsers. This is used to ensure the
+    // scrollable area is big enough.
+    d.heightForcer = elt("div", null, null, "position: absolute; height: " + scrollerGap + "px; width: 1px;");
+    // Will contain the gutters, if any.
+    d.gutters = elt("div", null, "CodeMirror-gutters");
+    d.lineGutter = null;
+    // Actual scrollable element.
+    d.scroller = elt("div", [d.sizer, d.heightForcer, d.gutters], "CodeMirror-scroll");
+    d.scroller.setAttribute("tabIndex", "-1");
+    // The element in which the editor lives.
+    d.wrapper = elt("div", [d.scrollbarFiller, d.gutterFiller, d.scroller], "CodeMirror");
+
+    // Work around IE7 z-index bug (not perfect, hence IE7 not really being supported)
+    if (ie && ie_version < 8) { d.gutters.style.zIndex = -1; d.scroller.style.paddingRight = 0; }
+    if (!webkit && !(gecko && mobile)) { d.scroller.draggable = true; }
+
+    if (place) {
+      if (place.appendChild) { place.appendChild(d.wrapper); }
+      else { place(d.wrapper); }
+    }
+
+    // Current rendered range (may be bigger than the view window).
+    d.viewFrom = d.viewTo = doc.first;
+    d.reportedViewFrom = d.reportedViewTo = doc.first;
+    // Information about the rendered lines.
+    d.view = [];
+    d.renderedView = null;
+    // Holds info about a single rendered line when it was rendered
+    // for measurement, while not in view.
+    d.externalMeasured = null;
+    // Empty space (in pixels) above the view
+    d.viewOffset = 0;
+    d.lastWrapHeight = d.lastWrapWidth = 0;
+    d.updateLineNumbers = null;
+
+    d.nativeBarWidth = d.barHeight = d.barWidth = 0;
+    d.scrollbarsClipped = false;
+
+    // Used to only resize the line number gutter when necessary (when
+    // the amount of lines crosses a boundary that makes its width change)
+    d.lineNumWidth = d.lineNumInnerWidth = d.lineNumChars = null;
+    // Set to true when a non-horizontal-scrolling line widget is
+    // added. As an optimization, line widget aligning is skipped when
+    // this is false.
+    d.alignWidgets = false;
+
+    d.cachedCharWidth = d.cachedTextHeight = d.cachedPaddingH = null;
+
+    // Tracks the maximum line length so that the horizontal scrollbar
+    // can be kept static when scrolling.
+    d.maxLine = null;
+    d.maxLineLength = 0;
+    d.maxLineChanged = false;
+
+    // Used for measuring wheel scrolling granularity
+    d.wheelDX = d.wheelDY = d.wheelStartX = d.wheelStartY = null;
+
+    // True when shift is held down.
+    d.shift = false;
+
+    // Used to track whether anything happened since the context menu
+    // was opened.
+    d.selForContextMenu = null;
+
+    d.activeTouch = null;
+
+    d.gutterSpecs = getGutters(options.gutters, options.lineNumbers);
+    renderGutters(d);
+
+    input.init(d);
   }
 
   // Since the delta values reported on mouse wheel events are
@@ -21091,7 +21093,7 @@ jb.component('text.codemirror', {
     19: "Pause", 20: "CapsLock", 27: "Esc", 32: "Space", 33: "PageUp", 34: "PageDown", 35: "End",
     36: "Home", 37: "Left", 38: "Up", 39: "Right", 40: "Down", 44: "PrintScrn", 45: "Insert",
     46: "Delete", 59: ";", 61: "=", 91: "Mod", 92: "Mod", 93: "Mod",
-    106: "*", 107: "=", 109: "-", 110: ".", 111: "/", 127: "Delete", 145: "ScrollLock",
+    106: "*", 107: "=", 109: "-", 110: ".", 111: "/", 145: "ScrollLock",
     173: "-", 186: ";", 187: "=", 188: ",", 189: "-", 190: ".", 191: "/", 192: "`", 219: "[", 220: "\\",
     221: "]", 222: "'", 63232: "Up", 63233: "Down", 63234: "Left", 63235: "Right", 63272: "Delete",
     63273: "Home", 63275: "End", 63276: "PageUp", 63277: "PageDown", 63302: "Insert"
@@ -21978,8 +21980,13 @@ jb.component('text.codemirror', {
     function done(e) {
       cm.state.selectingText = false;
       counter = Infinity;
-      e_preventDefault(e);
-      display.input.focus();
+      // If e is null or undefined we interpret this as someone trying
+      // to explicitly cancel the selection rather than the user
+      // letting go of the mouse button.
+      if (e) {
+        e_preventDefault(e);
+        display.input.focus();
+      }
       off(display.wrapper.ownerDocument, "mousemove", move);
       off(display.wrapper.ownerDocument, "mouseup", up);
       doc.history.lastSelOrigin = null;
@@ -22050,12 +22057,12 @@ jb.component('text.codemirror', {
     if (mY > lineBox.bottom || !hasHandler(cm, type)) { return e_defaultPrevented(e) }
     mY -= lineBox.top - display.viewOffset;
 
-    for (var i = 0; i < cm.options.gutters.length; ++i) {
+    for (var i = 0; i < cm.display.gutterSpecs.length; ++i) {
       var g = display.gutters.childNodes[i];
       if (g && g.getBoundingClientRect().right >= mX) {
         var line = lineAtHeight(cm.doc, mY);
-        var gutter = cm.options.gutters[i];
-        signal(cm, type, cm, line, gutter, e);
+        var gutter = cm.display.gutterSpecs[i];
+        signal(cm, type, cm, line, gutter.className, e);
         return e_defaultPrevented(e)
       }
     }
@@ -22149,12 +22156,14 @@ jb.component('text.codemirror', {
       throw new Error("inputStyle can not (yet) be changed in a running editor") // FIXME
     }, true);
     option("spellcheck", false, function (cm, val) { return cm.getInputField().spellcheck = val; }, true);
+    option("autocorrect", false, function (cm, val) { return cm.getInputField().autocorrect = val; }, true);
+    option("autocapitalize", false, function (cm, val) { return cm.getInputField().autocapitalize = val; }, true);
     option("rtlMoveVisually", !windows);
     option("wholeLineUpdateBefore", true);
 
     option("theme", "default", function (cm) {
       themeChanged(cm);
-      guttersChanged(cm);
+      updateGutters(cm);
     }, true);
     option("keyMap", "default", function (cm, val, old) {
       var next = getKeyMap(val);
@@ -22166,9 +22175,9 @@ jb.component('text.codemirror', {
     option("configureMouse", null);
 
     option("lineWrapping", false, wrappingChanged, true);
-    option("gutters", [], function (cm) {
-      setGuttersForLineNumbers(cm.options);
-      guttersChanged(cm);
+    option("gutters", [], function (cm, val) {
+      cm.display.gutterSpecs = getGutters(val, cm.options.lineNumbers);
+      updateGutters(cm);
     }, true);
     option("fixedGutter", true, function (cm, val) {
       cm.display.gutters.style.left = val ? compensateForHScroll(cm.display) + "px" : "0";
@@ -22181,12 +22190,12 @@ jb.component('text.codemirror', {
       cm.display.scrollbars.setScrollTop(cm.doc.scrollTop);
       cm.display.scrollbars.setScrollLeft(cm.doc.scrollLeft);
     }, true);
-    option("lineNumbers", false, function (cm) {
-      setGuttersForLineNumbers(cm.options);
-      guttersChanged(cm);
+    option("lineNumbers", false, function (cm, val) {
+      cm.display.gutterSpecs = getGutters(cm.options.gutters, val);
+      updateGutters(cm);
     }, true);
-    option("firstLineNumber", 1, guttersChanged, true);
-    option("lineNumberFormatter", function (integer) { return integer; }, guttersChanged, true);
+    option("firstLineNumber", 1, updateGutters, true);
+    option("lineNumberFormatter", function (integer) { return integer; }, updateGutters, true);
     option("showCursorWhenSelecting", false, updateSelection, true);
 
     option("resetSelectionOnContextMenu", true);
@@ -22228,12 +22237,6 @@ jb.component('text.codemirror', {
     option("phrases", null);
   }
 
-  function guttersChanged(cm) {
-    updateGutters(cm);
-    regChange(cm);
-    alignHorizontally(cm);
-  }
-
   function dragDropChanged(cm, value, old) {
     var wasOn = old && old != Init;
     if (!value != !wasOn) {
@@ -22273,7 +22276,6 @@ jb.component('text.codemirror', {
     this.options = options = options ? copyObj(options) : {};
     // Determine effective options based on given values and defaults.
     copyObj(defaults, options, false);
-    setGuttersForLineNumbers(options);
 
     var doc = options.value;
     if (typeof doc == "string") { doc = new Doc(doc, options.mode, null, options.lineSeparator, options.direction); }
@@ -22281,9 +22283,8 @@ jb.component('text.codemirror', {
     this.doc = doc;
 
     var input = new CodeMirror.inputStyles[options.inputStyle](this);
-    var display = this.display = new Display(place, doc, input);
+    var display = this.display = new Display(place, doc, input, options);
     display.wrapper.CodeMirror = this;
-    updateGutters(this);
     themeChanged(this);
     if (options.lineWrapping)
       { this.display.wrapper.className += " CodeMirror-wrap"; }
@@ -22297,7 +22298,7 @@ jb.component('text.codemirror', {
       delayingBlurEvent: false,
       focused: false,
       suppressEdits: false, // used to disable editing during key handlers when in readOnly mode
-      pasteIncoming: false, cutIncoming: false, // help recognize paste/cut edits in input.poll
+      pasteIncoming: -1, cutIncoming: -1, // help recognize paste/cut edits in input.poll
       selectingText: false,
       draggingText: false,
       highlight: new Delayed(), // stores highlight worker timeout
@@ -22530,7 +22531,8 @@ jb.component('text.codemirror', {
     cm.display.shift = false;
     if (!sel) { sel = doc.sel; }
 
-    var paste = cm.state.pasteIncoming || origin == "paste";
+    var recent = +new Date - 200;
+    var paste = origin == "paste" || cm.state.pasteIncoming > recent;
     var textLines = splitLinesAuto(inserted), multiPaste = null;
     // When pasting N lines into N selections, insert one line per selection
     if (paste && sel.ranges.length > 1) {
@@ -22559,7 +22561,7 @@ jb.component('text.codemirror', {
           { from = to = Pos(from.line, 0); }
       }
       var changeEvent = {from: from, to: to, text: multiPaste ? multiPaste[i$1 % multiPaste.length] : textLines,
-                         origin: origin || (paste ? "paste" : cm.state.cutIncoming ? "cut" : "+input")};
+                         origin: origin || (paste ? "paste" : cm.state.cutIncoming > recent ? "cut" : "+input")};
       makeChange(cm.doc, changeEvent);
       signalLater(cm, "inputRead", cm, changeEvent);
     }
@@ -22569,7 +22571,7 @@ jb.component('text.codemirror', {
     ensureCursorVisible(cm);
     if (cm.curOp.updateInput < 2) { cm.curOp.updateInput = updateInput; }
     cm.curOp.typing = true;
-    cm.state.pasteIncoming = cm.state.cutIncoming = false;
+    cm.state.pasteIncoming = cm.state.cutIncoming = -1;
   }
 
   function handlePaste(e, cm) {
@@ -22617,9 +22619,9 @@ jb.component('text.codemirror', {
     return {text: text, ranges: ranges}
   }
 
-  function disableBrowserMagic(field, spellcheck) {
-    field.setAttribute("autocorrect", "off");
-    field.setAttribute("autocapitalize", "off");
+  function disableBrowserMagic(field, spellcheck, autocorrect, autocapitalize) {
+    field.setAttribute("autocorrect", autocorrect ? "" : "off");
+    field.setAttribute("autocapitalize", autocapitalize ? "" : "off");
     field.setAttribute("spellcheck", !!spellcheck);
   }
 
@@ -23045,7 +23047,7 @@ jb.component('text.codemirror', {
         this.curOp.forceUpdate = true;
         clearCaches(this);
         scrollToCoords(this, this.doc.scrollLeft, this.doc.scrollTop);
-        updateGutterSpace(this);
+        updateGutterSpace(this.display);
         if (oldHeight == null || Math.abs(oldHeight - textHeight(this.display)) > .5)
           { estimateLineHeights(this); }
         signal(this, "refresh", this);
@@ -23054,6 +23056,8 @@ jb.component('text.codemirror', {
       swapDoc: methodOp(function(doc) {
         var old = this.doc;
         old.cm = null;
+        // Cancel the current text selection if any (#5821)
+        if (this.state.selectingText) { this.state.selectingText(); }
         attachDoc(this, doc);
         clearCaches(this);
         this.display.input.reset();
@@ -23190,7 +23194,7 @@ jb.component('text.codemirror', {
 
     var input = this, cm = input.cm;
     var div = input.div = display.lineDiv;
-    disableBrowserMagic(div, cm.options.spellcheck);
+    disableBrowserMagic(div, cm.options.spellcheck, cm.options.autocorrect, cm.options.autocapitalize);
 
     on(div, "paste", function (e) {
       if (signalDOMEvent(cm, e) || handlePaste(e, cm)) { return }
@@ -23399,7 +23403,7 @@ jb.component('text.codemirror', {
     // Because Android doesn't allow us to actually detect backspace
     // presses in a sane way, this code checks for when that happens
     // and simulates a backspace press in this case.
-    if (android && chrome && this.cm.options.gutters.length && isInGutter(sel.anchorNode)) {
+    if (android && chrome && this.cm.display.gutterSpecs.length && isInGutter(sel.anchorNode)) {
       this.cm.triggerOnKeyDown({type: "keydown", keyCode: 8, preventDefault: Math.abs});
       this.blur();
       this.focus();
@@ -23730,7 +23734,7 @@ jb.component('text.codemirror', {
     on(te, "paste", function (e) {
       if (signalDOMEvent(cm, e) || handlePaste(e, cm)) { return }
 
-      cm.state.pasteIncoming = true;
+      cm.state.pasteIncoming = +new Date;
       input.fastPoll();
     });
 
@@ -23751,15 +23755,23 @@ jb.component('text.codemirror', {
           selectInput(te);
         }
       }
-      if (e.type == "cut") { cm.state.cutIncoming = true; }
+      if (e.type == "cut") { cm.state.cutIncoming = +new Date; }
     }
     on(te, "cut", prepareCopyCut);
     on(te, "copy", prepareCopyCut);
 
     on(display.scroller, "paste", function (e) {
       if (eventInWidget(display, e) || signalDOMEvent(cm, e)) { return }
-      cm.state.pasteIncoming = true;
-      input.focus();
+      if (!te.dispatchEvent) {
+        cm.state.pasteIncoming = +new Date;
+        input.focus();
+        return
+      }
+
+      // Pass the `paste` event to the textarea so it's handled by its event listener.
+      var event = new Event("paste");
+      event.clipboardData = e.clipboardData;
+      te.dispatchEvent(event);
     });
 
     // Prevent normal selection in the editor (we handle our own)
@@ -24182,7 +24194,7 @@ jb.component('text.codemirror', {
 
   addLegacyProps(CodeMirror);
 
-  CodeMirror.version = "5.42.2";
+  CodeMirror.version = "5.46.0";
 
   return CodeMirror;
 
@@ -24960,7 +24972,10 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     }
     if (type == "function") return cont(functiondef);
     if (type == "for") return cont(pushlex("form"), forspec, statement, poplex);
-    if (type == "class" || (isTS && value == "interface")) { cx.marked = "keyword"; return cont(pushlex("form"), className, poplex); }
+    if (type == "class" || (isTS && value == "interface")) {
+      cx.marked = "keyword"
+      return cont(pushlex("form", type == "class" ? type : value), className, poplex)
+    }
     if (type == "variable") {
       if (isTS && value == "declare") {
         cx.marked = "keyword"
@@ -24968,11 +24983,11 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       } else if (isTS && (value == "module" || value == "enum" || value == "type") && cx.stream.match(/^\s*\w/, false)) {
         cx.marked = "keyword"
         if (value == "enum") return cont(enumdef);
-        else if (value == "type") return cont(typeexpr, expect("operator"), typeexpr, expect(";"));
+        else if (value == "type") return cont(typename, expect("operator"), typeexpr, expect(";"));
         else return cont(pushlex("form"), pattern, expect("{"), pushlex("}"), block, poplex, poplex)
       } else if (isTS && value == "namespace") {
         cx.marked = "keyword"
-        return cont(pushlex("form"), expression, block, poplex)
+        return cont(pushlex("form"), expression, statement, poplex)
       } else if (isTS && value == "abstract") {
         cx.marked = "keyword"
         return cont(statement)
@@ -25147,6 +25162,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
         }, proceed);
       }
       if (type == end || value == end) return cont();
+      if (sep && sep.indexOf(";") > -1) return pass(what)
       return cont(expect(end));
     }
     return function(type, value) {
@@ -25165,7 +25181,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
   }
   function maybetype(type, value) {
     if (isTS) {
-      if (type == ":") return cont(typeexpr);
+      if (type == ":" || value == "in") return cont(typeexpr);
       if (value == "?") return cont(maybetype);
     }
   }
@@ -25182,18 +25198,19 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     }
   }
   function typeexpr(type, value) {
-    if (value == "keyof" || value == "typeof") {
+    if (value == "keyof" || value == "typeof" || value == "infer") {
       cx.marked = "keyword"
-      return cont(value == "keyof" ? typeexpr : expressionNoComma)
+      return cont(value == "typeof" ? expressionNoComma : typeexpr)
     }
     if (type == "variable" || value == "void") {
       cx.marked = "type"
       return cont(afterType)
     }
+    if (value == "|" || value == "&") return cont(typeexpr)
     if (type == "string" || type == "number" || type == "atom") return cont(afterType);
     if (type == "[") return cont(pushlex("]"), commasep(typeexpr, "]", ","), poplex, afterType)
     if (type == "{") return cont(pushlex("}"), commasep(typeprop, "}", ",;"), poplex, afterType)
-    if (type == "(") return cont(commasep(typearg, ")"), maybeReturnType)
+    if (type == "(") return cont(commasep(typearg, ")"), maybeReturnType, afterType)
     if (type == "<") return cont(commasep(typeexpr, ">"), typeexpr)
   }
   function maybeReturnType(type) {
@@ -25203,24 +25220,28 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     if (type == "variable" || cx.style == "keyword") {
       cx.marked = "property"
       return cont(typeprop)
-    } else if (value == "?") {
+    } else if (value == "?" || type == "number" || type == "string") {
       return cont(typeprop)
     } else if (type == ":") {
       return cont(typeexpr)
     } else if (type == "[") {
-      return cont(expression, maybetype, expect("]"), typeprop)
+      return cont(expect("variable"), maybetype, expect("]"), typeprop)
+    } else if (type == "(") {
+      return pass(functiondecl, typeprop)
     }
   }
   function typearg(type, value) {
     if (type == "variable" && cx.stream.match(/^\s*[?:]/, false) || value == "?") return cont(typearg)
     if (type == ":") return cont(typeexpr)
+    if (type == "spread") return cont(typearg)
     return pass(typeexpr)
   }
   function afterType(type, value) {
     if (value == "<") return cont(pushlex(">"), commasep(typeexpr, ">"), poplex, afterType)
     if (value == "|" || type == "." || value == "&") return cont(typeexpr)
-    if (type == "[") return cont(expect("]"), afterType)
+    if (type == "[") return cont(typeexpr, expect("]"), afterType)
     if (value == "extends" || value == "implements") { cx.marked = "keyword"; return cont(typeexpr) }
+    if (value == "?") return cont(typeexpr, expect(":"), typeexpr)
   }
   function maybeTypeArgs(_, value) {
     if (value == "<") return cont(pushlex(">"), commasep(typeexpr, ">"), poplex, afterType)
@@ -25267,25 +25288,18 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
   }
   function forspec(type, value) {
     if (value == "await") return cont(forspec);
-    if (type == "(") return cont(pushlex(")"), forspec1, expect(")"), poplex);
+    if (type == "(") return cont(pushlex(")"), forspec1, poplex);
   }
   function forspec1(type) {
-    if (type == "var") return cont(vardef, expect(";"), forspec2);
-    if (type == ";") return cont(forspec2);
-    if (type == "variable") return cont(formaybeinof);
-    return pass(expression, expect(";"), forspec2);
-  }
-  function formaybeinof(_type, value) {
-    if (value == "in" || value == "of") { cx.marked = "keyword"; return cont(expression); }
-    return cont(maybeoperatorComma, forspec2);
+    if (type == "var") return cont(vardef, forspec2);
+    if (type == "variable") return cont(forspec2);
+    return pass(forspec2)
   }
   function forspec2(type, value) {
-    if (type == ";") return cont(forspec3);
-    if (value == "in" || value == "of") { cx.marked = "keyword"; return cont(expression); }
-    return pass(expression, expect(";"), forspec3);
-  }
-  function forspec3(type) {
-    if (type != ")") cont(expression);
+    if (type == ")") return cont()
+    if (type == ";") return cont(forspec2)
+    if (value == "in" || value == "of") { cx.marked = "keyword"; return cont(expression, forspec2) }
+    return pass(expression, forspec2)
   }
   function functiondef(type, value) {
     if (value == "*") {cx.marked = "keyword"; return cont(functiondef);}
@@ -25293,10 +25307,25 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     if (type == "(") return cont(pushcontext, pushlex(")"), commasep(funarg, ")"), poplex, mayberettype, statement, popcontext);
     if (isTS && value == "<") return cont(pushlex(">"), commasep(typeparam, ">"), poplex, functiondef)
   }
+  function functiondecl(type, value) {
+    if (value == "*") {cx.marked = "keyword"; return cont(functiondecl);}
+    if (type == "variable") {register(value); return cont(functiondecl);}
+    if (type == "(") return cont(pushcontext, pushlex(")"), commasep(funarg, ")"), poplex, mayberettype, popcontext);
+    if (isTS && value == "<") return cont(pushlex(">"), commasep(typeparam, ">"), poplex, functiondecl)
+  }
+  function typename(type, value) {
+    if (type == "keyword" || type == "variable") {
+      cx.marked = "type"
+      return cont(typename)
+    } else if (value == "<") {
+      return cont(pushlex(">"), commasep(typeparam, ">"), poplex)
+    }
+  }
   function funarg(type, value) {
     if (value == "@") cont(expression, funarg)
     if (type == "spread") return cont(funarg);
     if (isTS && isModifier(value)) { cx.marked = "keyword"; return cont(funarg); }
+    if (isTS && type == "this") return cont(maybetype, maybeAssign)
     return pass(pattern, maybetype, maybeAssign);
   }
   function classExpression(type, value) {
@@ -25327,13 +25356,15 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       cx.marked = "property";
       return cont(isTS ? classfield : functiondef, classBody);
     }
+    if (type == "number" || type == "string") return cont(isTS ? classfield : functiondef, classBody);
     if (type == "[")
       return cont(expression, maybetype, expect("]"), isTS ? classfield : functiondef, classBody)
     if (value == "*") {
       cx.marked = "keyword";
       return cont(classBody);
     }
-    if (type == ";") return cont(classBody);
+    if (isTS && type == "(") return pass(functiondecl, classBody)
+    if (type == ";" || type == ",") return cont(classBody);
     if (type == "}") return cont();
     if (value == "@") return cont(expression, classBody)
   }
@@ -25341,7 +25372,8 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     if (value == "?") return cont(classfield)
     if (type == ":") return cont(typeexpr, maybeAssign)
     if (value == "=") return cont(expressionNoComma)
-    return pass(functiondef)
+    var context = cx.state.lexical.prev, isInterface = context && context.info == "interface"
+    return pass(isInterface ? functiondecl : functiondef)
   }
   function afterExport(type, value) {
     if (value == "*") { cx.marked = "keyword"; return cont(maybeFrom, expect(";")); }
@@ -25574,12 +25606,11 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
       return ret("qualifier", "qualifier");
     } else if (/[:;{}\[\]\(\)]/.test(ch)) {
       return ret(null, ch);
-    } else if (((ch == "u" || ch == "U") && stream.match(/rl(-prefix)?\(/i)) ||
-               ((ch == "d" || ch == "D") && stream.match("omain(", true, true)) ||
-               ((ch == "r" || ch == "R") && stream.match("egexp(", true, true))) {
-      stream.backUp(1);
-      state.tokenize = tokenParenthesized;
-      return ret("property", "word");
+    } else if (stream.match(/[\w-.]+(?=\()/)) {
+      if (/^(url(-prefix)?|domain|regexp)$/.test(stream.current().toLowerCase())) {
+        state.tokenize = tokenParenthesized;
+      }
+      return ret("variable callee", "variable");
     } else if (/[\w\\\-]/.test(ch)) {
       stream.eatWhile(/[\w\\\-]/);
       return ret("property", "word");
@@ -26363,7 +26394,7 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
     function flatXMLIndent(state) {
       var tagName = state.tagName
       state.tagName = null
-      var result = xmlMode.indent(state, "")
+      var result = xmlMode.indent(state, "", "")
       state.tagName = tagName
       return result
     }
@@ -26436,7 +26467,7 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
     function jsToken(stream, state, cx) {
       if (stream.peek() == "<" && jsMode.expressionAllowed(stream, cx.state)) {
         jsMode.skipExpression(cx.state)
-        state.context = new Context(CodeMirror.startState(xmlMode, jsMode.indent(cx.state, "")),
+        state.context = new Context(CodeMirror.startState(xmlMode, jsMode.indent(cx.state, "", "")),
                                     xmlMode, 0, state.context)
         return null
       }
@@ -26586,7 +26617,7 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
           return maybeBackup(stream, endTag, state.localMode.token(stream, state.localState));
         };
         state.localMode = mode;
-        state.localState = CodeMirror.startState(mode, htmlMode.indent(state.htmlState, ""));
+        state.localState = CodeMirror.startState(mode, htmlMode.indent(state.htmlState, "", ""));
       } else if (state.inTag) {
         state.inTag += stream.current()
         if (stream.eol()) state.inTag += " "
@@ -26616,7 +26647,7 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 
       indent: function (state, textAfter, line) {
         if (!state.localMode || /^\s*<\//.test(textAfter))
-          return htmlMode.indent(state.htmlState, textAfter);
+          return htmlMode.indent(state.htmlState, textAfter, line);
         else if (state.localMode.indent)
           return state.localMode.indent(state.localState, textAfter, line);
         else
@@ -26802,6 +26833,14 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
       Tab: handle.pick,
       Esc: handle.close
     };
+
+    var mac = /Mac/.test(navigator.platform);
+
+    if (mac) {
+      baseMap["Ctrl-P"] = function() {handle.moveFocus(-1);};
+      baseMap["Ctrl-N"] = function() {handle.moveFocus(1);};
+    }
+
     var custom = completion.options.customKeys;
     var ourMap = custom ? {} : baseMap;
     function addBinding(key, val) {
@@ -27249,9 +27288,15 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 
   var Pos = CodeMirror.Pos;
 
+  function matches(hint, typed, matchInMiddle) {
+    if (matchInMiddle) return hint.indexOf(typed) >= 0;
+    else return hint.lastIndexOf(typed, 0) == 0;
+  }
+
   function getHints(cm, options) {
     var tags = options && options.schemaInfo;
     var quote = (options && options.quoteChar) || '"';
+    var matchInMiddle = options && options.matchInMiddle;
     if (!tags) return;
     var cur = cm.getCursor(), token = cm.getTokenAt(cur);
     if (token.end > cur.ch) {
@@ -27281,14 +27326,14 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
       var cx = inner.state.context, curTag = cx && tags[cx.tagName];
       var childList = cx ? curTag && curTag.children : tags["!top"];
       if (childList && tagType != "close") {
-        for (var i = 0; i < childList.length; ++i) if (!prefix || childList[i].lastIndexOf(prefix, 0) == 0)
+        for (var i = 0; i < childList.length; ++i) if (!prefix || matches(childList[i], prefix, matchInMiddle))
           result.push("<" + childList[i]);
       } else if (tagType != "close") {
         for (var name in tags)
-          if (tags.hasOwnProperty(name) && name != "!top" && name != "!attrs" && (!prefix || name.lastIndexOf(prefix, 0) == 0))
+          if (tags.hasOwnProperty(name) && name != "!top" && name != "!attrs" && (!prefix || matches(name, prefix, matchInMiddle)))
             result.push("<" + name);
       }
-      if (cx && (!prefix || tagType == "close" && cx.tagName.lastIndexOf(prefix, 0) == 0))
+      if (cx && (!prefix || tagType == "close" && matches(cx.tagName, prefix, matchInMiddle)))
         result.push("</" + cx.tagName + ">");
     } else {
       // Attribute completion
@@ -27322,16 +27367,20 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
             quote = token.string.charAt(len - 1);
             prefix = token.string.substr(n, len - 2);
           }
+          if (n) { // an opening quote
+            var line = cm.getLine(cur.line);
+            if (line.length > token.end && line.charAt(token.end) == quote) token.end++; // include a closing quote
+          }
           replaceToken = true;
         }
-        for (var i = 0; i < atValues.length; ++i) if (!prefix || atValues[i].lastIndexOf(prefix, 0) == 0)
+        for (var i = 0; i < atValues.length; ++i) if (!prefix || matches(atValues[i], prefix, matchInMiddle))
           result.push(quote + atValues[i] + quote);
       } else { // An attribute name
         if (token.type == "attribute") {
           prefix = token.string;
           replaceToken = true;
         }
-        for (var attr in attrs) if (attrs.hasOwnProperty(attr) && (!prefix || attr.lastIndexOf(prefix, 0) == 0))
+        for (var attr in attrs) if (attrs.hasOwnProperty(attr) && (!prefix || matches(attr, prefix, matchInMiddle)))
           result.push(attr);
       }
     }
@@ -27670,6 +27719,8 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
     itemtype: null,
     lang: ["en", "es"],
     spellcheck: ["true", "false"],
+    autocorrect: ["true", "false"],
+    autocapitalize: ["true", "false"],
     style: null,
     tabindex: ["1", "2", "3", "4", "5", "6", "7", "8", "9"],
     title: null,
@@ -28096,1539 +28147,1179 @@ jb.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
 }
 ;
 
-(function webpackUniversalModuleDefinition(root, factory) {
-	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory();
-	else if(typeof define === 'function' && define.amd)
-		define([], factory);
-	else if(typeof exports === 'object')
-		exports["History"] = factory();
-	else
-		root["History"] = factory();
-})(this, function() {
-return /******/ (function(modules) { // webpackBootstrap
+(function (global, factory) {
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+  typeof define === 'function' && define.amd ? define(['exports'], factory) :
+  (factory((global.History = {})));
+}(this, (function (exports) { 'use strict';
+
+  function _extends() {
+    _extends = Object.assign || function (target) {
+      for (var i = 1; i < arguments.length; i++) {
+        var source = arguments[i];
+
+        for (var key in source) {
+          if (Object.prototype.hasOwnProperty.call(source, key)) {
+            target[key] = source[key];
+          }
+        }
+      }
+
+      return target;
+    };
+
+    return _extends.apply(this, arguments);
+  }
+
+  function warning(condition, message) {
+    {
+      if (condition) {
+        return;
+      }
+
+      console.warn(message);
+    }
+  }
+
+  var prefix = 'Invariant failed';
+  function invariant(condition, message) {
+    if (condition) {
+      return;
+    }
+
+    {
+      throw new Error(prefix + ": " + (message || ''));
+    }
+  }
+
+  function isAbsolute(pathname) {
+    return pathname.charAt(0) === '/';
+  }
+
+  // About 1.5x faster than the two-arg version of Array#splice()
+  function spliceOne(list, index) {
+    for (var i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1) {
+      list[i] = list[k];
+    }
+
+    list.pop();
+  }
+
+  // This implementation is based heavily on node's url.parse
+  function resolvePathname(to) {
+    var from = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+
+    var toParts = to && to.split('/') || [];
+    var fromParts = from && from.split('/') || [];
+
+    var isToAbs = to && isAbsolute(to);
+    var isFromAbs = from && isAbsolute(from);
+    var mustEndAbs = isToAbs || isFromAbs;
+
+    if (to && isAbsolute(to)) {
+      // to is absolute
+      fromParts = toParts;
+    } else if (toParts.length) {
+      // to is relative, drop the filename
+      fromParts.pop();
+      fromParts = fromParts.concat(toParts);
+    }
+
+    if (!fromParts.length) return '/';
+
+    var hasTrailingSlash = void 0;
+    if (fromParts.length) {
+      var last = fromParts[fromParts.length - 1];
+      hasTrailingSlash = last === '.' || last === '..' || last === '';
+    } else {
+      hasTrailingSlash = false;
+    }
+
+    var up = 0;
+    for (var i = fromParts.length; i >= 0; i--) {
+      var part = fromParts[i];
+
+      if (part === '.') {
+        spliceOne(fromParts, i);
+      } else if (part === '..') {
+        spliceOne(fromParts, i);
+        up++;
+      } else if (up) {
+        spliceOne(fromParts, i);
+        up--;
+      }
+    }
+
+    if (!mustEndAbs) for (; up--; up) {
+      fromParts.unshift('..');
+    }if (mustEndAbs && fromParts[0] !== '' && (!fromParts[0] || !isAbsolute(fromParts[0]))) fromParts.unshift('');
+
+    var result = fromParts.join('/');
+
+    if (hasTrailingSlash && result.substr(-1) !== '/') result += '/';
+
+    return result;
+  }
+
+  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+  function valueEqual(a, b) {
+    if (a === b) return true;
+
+    if (a == null || b == null) return false;
+
+    if (Array.isArray(a)) {
+      return Array.isArray(b) && a.length === b.length && a.every(function (item, index) {
+        return valueEqual(item, b[index]);
+      });
+    }
+
+    var aType = typeof a === 'undefined' ? 'undefined' : _typeof(a);
+    var bType = typeof b === 'undefined' ? 'undefined' : _typeof(b);
+
+    if (aType !== bType) return false;
+
+    if (aType === 'object') {
+      var aValue = a.valueOf();
+      var bValue = b.valueOf();
+
+      if (aValue !== a || bValue !== b) return valueEqual(aValue, bValue);
+
+      var aKeys = Object.keys(a);
+      var bKeys = Object.keys(b);
+
+      if (aKeys.length !== bKeys.length) return false;
+
+      return aKeys.every(function (key) {
+        return valueEqual(a[key], b[key]);
+      });
+    }
+
+    return false;
+  }
+
+  function addLeadingSlash(path) {
+    return path.charAt(0) === '/' ? path : '/' + path;
+  }
+  function stripLeadingSlash(path) {
+    return path.charAt(0) === '/' ? path.substr(1) : path;
+  }
+  function hasBasename(path, prefix) {
+    return new RegExp('^' + prefix + '(\\/|\\?|#|$)', 'i').test(path);
+  }
+  function stripBasename(path, prefix) {
+    return hasBasename(path, prefix) ? path.substr(prefix.length) : path;
+  }
+  function stripTrailingSlash(path) {
+    return path.charAt(path.length - 1) === '/' ? path.slice(0, -1) : path;
+  }
+  function parsePath(path) {
+    var pathname = path || '/';
+    var search = '';
+    var hash = '';
+    var hashIndex = pathname.indexOf('#');
+
+    if (hashIndex !== -1) {
+      hash = pathname.substr(hashIndex);
+      pathname = pathname.substr(0, hashIndex);
+    }
+
+    var searchIndex = pathname.indexOf('?');
+
+    if (searchIndex !== -1) {
+      search = pathname.substr(searchIndex);
+      pathname = pathname.substr(0, searchIndex);
+    }
+
+    return {
+      pathname: pathname,
+      search: search === '?' ? '' : search,
+      hash: hash === '#' ? '' : hash
+    };
+  }
+  function createPath(location) {
+    var pathname = location.pathname,
+        search = location.search,
+        hash = location.hash;
+    var path = pathname || '/';
+    if (search && search !== '?') path += search.charAt(0) === '?' ? search : "?" + search;
+    if (hash && hash !== '#') path += hash.charAt(0) === '#' ? hash : "#" + hash;
+    return path;
+  }
+
+  function createLocation(path, state, key, currentLocation) {
+    var location;
+
+    if (typeof path === 'string') {
+      // Two-arg form: push(path, state)
+      location = parsePath(path);
+      location.state = state;
+    } else {
+      // One-arg form: push(location)
+      location = _extends({}, path);
+      if (location.pathname === undefined) location.pathname = '';
+
+      if (location.search) {
+        if (location.search.charAt(0) !== '?') location.search = '?' + location.search;
+      } else {
+        location.search = '';
+      }
+
+      if (location.hash) {
+        if (location.hash.charAt(0) !== '#') location.hash = '#' + location.hash;
+      } else {
+        location.hash = '';
+      }
+
+      if (state !== undefined && location.state === undefined) location.state = state;
+    }
+
+    try {
+      location.pathname = decodeURI(location.pathname);
+    } catch (e) {
+      if (e instanceof URIError) {
+        throw new URIError('Pathname "' + location.pathname + '" could not be decoded. ' + 'This is likely caused by an invalid percent-encoding.');
+      } else {
+        throw e;
+      }
+    }
+
+    if (key) location.key = key;
+
+    if (currentLocation) {
+      // Resolve incomplete/relative pathname relative to current location.
+      if (!location.pathname) {
+        location.pathname = currentLocation.pathname;
+      } else if (location.pathname.charAt(0) !== '/') {
+        location.pathname = resolvePathname(location.pathname, currentLocation.pathname);
+      }
+    } else {
+      // When there is no prior location and pathname is empty, set it to /
+      if (!location.pathname) {
+        location.pathname = '/';
+      }
+    }
+
+    return location;
+  }
+  function locationsAreEqual(a, b) {
+    return a.pathname === b.pathname && a.search === b.search && a.hash === b.hash && a.key === b.key && valueEqual(a.state, b.state);
+  }
+
+  function createTransitionManager() {
+    var prompt = null;
+
+    function setPrompt(nextPrompt) {
+      warning(prompt == null, 'A history supports only one prompt at a time');
+      prompt = nextPrompt;
+      return function () {
+        if (prompt === nextPrompt) prompt = null;
+      };
+    }
+
+    function confirmTransitionTo(location, action, getUserConfirmation, callback) {
+      // TODO: If another transition starts while we're still confirming
+      // the previous one, we may end up in a weird state. Figure out the
+      // best way to handle this.
+      if (prompt != null) {
+        var result = typeof prompt === 'function' ? prompt(location, action) : prompt;
+
+        if (typeof result === 'string') {
+          if (typeof getUserConfirmation === 'function') {
+            getUserConfirmation(result, callback);
+          } else {
+            warning(false, 'A history needs a getUserConfirmation function in order to use a prompt message');
+            callback(true);
+          }
+        } else {
+          // Return false from a transition hook to cancel the transition.
+          callback(result !== false);
+        }
+      } else {
+        callback(true);
+      }
+    }
+
+    var listeners = [];
+
+    function appendListener(fn) {
+      var isActive = true;
+
+      function listener() {
+        if (isActive) fn.apply(void 0, arguments);
+      }
+
+      listeners.push(listener);
+      return function () {
+        isActive = false;
+        listeners = listeners.filter(function (item) {
+          return item !== listener;
+        });
+      };
+    }
+
+    function notifyListeners() {
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      listeners.forEach(function (listener) {
+        return listener.apply(void 0, args);
+      });
+    }
+
+    return {
+      setPrompt: setPrompt,
+      confirmTransitionTo: confirmTransitionTo,
+      appendListener: appendListener,
+      notifyListeners: notifyListeners
+    };
+  }
+
+  var canUseDOM = !!(typeof window !== 'undefined' && window.document && window.document.createElement);
+  function getConfirmation(message, callback) {
+    callback(window.confirm(message)); // eslint-disable-line no-alert
+  }
+  /**
+   * Returns true if the HTML5 history API is supported. Taken from Modernizr.
+   *
+   * https://github.com/Modernizr/Modernizr/blob/master/LICENSE
+   * https://github.com/Modernizr/Modernizr/blob/master/feature-detects/history.js
+   * changed to avoid false negatives for Windows Phones: https://github.com/reactjs/react-router/issues/586
+   */
+
+  function supportsHistory() {
+    var ua = window.navigator.userAgent;
+    if ((ua.indexOf('Android 2.') !== -1 || ua.indexOf('Android 4.0') !== -1) && ua.indexOf('Mobile Safari') !== -1 && ua.indexOf('Chrome') === -1 && ua.indexOf('Windows Phone') === -1) return false;
+    return window.history && 'pushState' in window.history;
+  }
+  /**
+   * Returns true if browser fires popstate on hash change.
+   * IE10 and IE11 do not.
+   */
+
+  function supportsPopStateOnHashChange() {
+    return window.navigator.userAgent.indexOf('Trident') === -1;
+  }
+  /**
+   * Returns false if using go(n) with hash history causes a full page reload.
+   */
+
+  function supportsGoWithoutReloadUsingHash() {
+    return window.navigator.userAgent.indexOf('Firefox') === -1;
+  }
+  /**
+   * Returns true if a given popstate event is an extraneous WebKit event.
+   * Accounts for the fact that Chrome on iOS fires real popstate events
+   * containing undefined state when pressing the back button.
+   */
+
+  function isExtraneousPopstateEvent(event) {
+    event.state === undefined && navigator.userAgent.indexOf('CriOS') === -1;
+  }
+
+  var PopStateEvent = 'popstate';
+  var HashChangeEvent = 'hashchange';
+
+  function getHistoryState() {
+    try {
+      return window.history.state || {};
+    } catch (e) {
+      // IE 11 sometimes throws when accessing window.history.state
+      // See https://github.com/ReactTraining/history/pull/289
+      return {};
+    }
+  }
+  /**
+   * Creates a history object that uses the HTML5 history API including
+   * pushState, replaceState, and the popstate event.
+   */
+
+
+  function createBrowserHistory(props) {
+    if (props === void 0) {
+      props = {};
+    }
+
+    !canUseDOM ? invariant(false, 'Browser history needs a DOM') : void 0;
+    var globalHistory = window.history;
+    var canUseHistory = supportsHistory();
+    var needsHashChangeListener = !supportsPopStateOnHashChange();
+    var _props = props,
+        _props$forceRefresh = _props.forceRefresh,
+        forceRefresh = _props$forceRefresh === void 0 ? false : _props$forceRefresh,
+        _props$getUserConfirm = _props.getUserConfirmation,
+        getUserConfirmation = _props$getUserConfirm === void 0 ? getConfirmation : _props$getUserConfirm,
+        _props$keyLength = _props.keyLength,
+        keyLength = _props$keyLength === void 0 ? 6 : _props$keyLength;
+    var basename = props.basename ? stripTrailingSlash(addLeadingSlash(props.basename)) : '';
+
+    function getDOMLocation(historyState) {
+      var _ref = historyState || {},
+          key = _ref.key,
+          state = _ref.state;
+
+      var _window$location = window.location,
+          pathname = _window$location.pathname,
+          search = _window$location.search,
+          hash = _window$location.hash;
+      var path = pathname + search + hash;
+      warning(!basename || hasBasename(path, basename), 'You are attempting to use a basename on a page whose URL path does not begin ' + 'with the basename. Expected path "' + path + '" to begin with "' + basename + '".');
+      if (basename) path = stripBasename(path, basename);
+      return createLocation(path, state, key);
+    }
+
+    function createKey() {
+      return Math.random().toString(36).substr(2, keyLength);
+    }
+
+    var transitionManager = createTransitionManager();
+
+    function setState(nextState) {
+      _extends(history, nextState);
+
+      history.length = globalHistory.length;
+      transitionManager.notifyListeners(history.location, history.action);
+    }
+
+    function handlePopState(event) {
+      // Ignore extraneous popstate events in WebKit.
+      if (isExtraneousPopstateEvent(event)) return;
+      handlePop(getDOMLocation(event.state));
+    }
+
+    function handleHashChange() {
+      handlePop(getDOMLocation(getHistoryState()));
+    }
+
+    var forceNextPop = false;
+
+    function handlePop(location) {
+      if (forceNextPop) {
+        forceNextPop = false;
+        setState();
+      } else {
+        var action = 'POP';
+        transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
+          if (ok) {
+            setState({
+              action: action,
+              location: location
+            });
+          } else {
+            revertPop(location);
+          }
+        });
+      }
+    }
+
+    function revertPop(fromLocation) {
+      var toLocation = history.location; // TODO: We could probably make this more reliable by
+      // keeping a list of keys we've seen in sessionStorage.
+      // Instead, we just default to 0 for keys we don't know.
+
+      var toIndex = allKeys.indexOf(toLocation.key);
+      if (toIndex === -1) toIndex = 0;
+      var fromIndex = allKeys.indexOf(fromLocation.key);
+      if (fromIndex === -1) fromIndex = 0;
+      var delta = toIndex - fromIndex;
+
+      if (delta) {
+        forceNextPop = true;
+        go(delta);
+      }
+    }
+
+    var initialLocation = getDOMLocation(getHistoryState());
+    var allKeys = [initialLocation.key]; // Public interface
+
+    function createHref(location) {
+      return basename + createPath(location);
+    }
+
+    function push(path, state) {
+      warning(!(typeof path === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to push when the 1st ' + 'argument is a location-like object that already has state; it is ignored');
+      var action = 'PUSH';
+      var location = createLocation(path, state, createKey(), history.location);
+      transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
+        if (!ok) return;
+        var href = createHref(location);
+        var key = location.key,
+            state = location.state;
+
+        if (canUseHistory) {
+          globalHistory.pushState({
+            key: key,
+            state: state
+          }, null, href);
+
+          if (forceRefresh) {
+            window.location.href = href;
+          } else {
+            var prevIndex = allKeys.indexOf(history.location.key);
+            var nextKeys = allKeys.slice(0, prevIndex === -1 ? 0 : prevIndex + 1);
+            nextKeys.push(location.key);
+            allKeys = nextKeys;
+            setState({
+              action: action,
+              location: location
+            });
+          }
+        } else {
+          warning(state === undefined, 'Browser history cannot push state in browsers that do not support HTML5 history');
+          window.location.href = href;
+        }
+      });
+    }
+
+    function replace(path, state) {
+      warning(!(typeof path === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to replace when the 1st ' + 'argument is a location-like object that already has state; it is ignored');
+      var action = 'REPLACE';
+      var location = createLocation(path, state, createKey(), history.location);
+      transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
+        if (!ok) return;
+        var href = createHref(location);
+        var key = location.key,
+            state = location.state;
+
+        if (canUseHistory) {
+          globalHistory.replaceState({
+            key: key,
+            state: state
+          }, null, href);
+
+          if (forceRefresh) {
+            window.location.replace(href);
+          } else {
+            var prevIndex = allKeys.indexOf(history.location.key);
+            if (prevIndex !== -1) allKeys[prevIndex] = location.key;
+            setState({
+              action: action,
+              location: location
+            });
+          }
+        } else {
+          warning(state === undefined, 'Browser history cannot replace state in browsers that do not support HTML5 history');
+          window.location.replace(href);
+        }
+      });
+    }
+
+    function go(n) {
+      globalHistory.go(n);
+    }
+
+    function goBack() {
+      go(-1);
+    }
+
+    function goForward() {
+      go(1);
+    }
+
+    var listenerCount = 0;
+
+    function checkDOMListeners(delta) {
+      listenerCount += delta;
+
+      if (listenerCount === 1 && delta === 1) {
+        window.addEventListener(PopStateEvent, handlePopState);
+        if (needsHashChangeListener) window.addEventListener(HashChangeEvent, handleHashChange);
+      } else if (listenerCount === 0) {
+        window.removeEventListener(PopStateEvent, handlePopState);
+        if (needsHashChangeListener) window.removeEventListener(HashChangeEvent, handleHashChange);
+      }
+    }
+
+    var isBlocked = false;
+
+    function block(prompt) {
+      if (prompt === void 0) {
+        prompt = false;
+      }
+
+      var unblock = transitionManager.setPrompt(prompt);
+
+      if (!isBlocked) {
+        checkDOMListeners(1);
+        isBlocked = true;
+      }
+
+      return function () {
+        if (isBlocked) {
+          isBlocked = false;
+          checkDOMListeners(-1);
+        }
+
+        return unblock();
+      };
+    }
+
+    function listen(listener) {
+      var unlisten = transitionManager.appendListener(listener);
+      checkDOMListeners(1);
+      return function () {
+        checkDOMListeners(-1);
+        unlisten();
+      };
+    }
+
+    var history = {
+      length: globalHistory.length,
+      action: 'POP',
+      location: initialLocation,
+      createHref: createHref,
+      push: push,
+      replace: replace,
+      go: go,
+      goBack: goBack,
+      goForward: goForward,
+      block: block,
+      listen: listen
+    };
+    return history;
+  }
+
+  var HashChangeEvent$1 = 'hashchange';
+  var HashPathCoders = {
+    hashbang: {
+      encodePath: function encodePath(path) {
+        return path.charAt(0) === '!' ? path : '!/' + stripLeadingSlash(path);
+      },
+      decodePath: function decodePath(path) {
+        return path.charAt(0) === '!' ? path.substr(1) : path;
+      }
+    },
+    noslash: {
+      encodePath: stripLeadingSlash,
+      decodePath: addLeadingSlash
+    },
+    slash: {
+      encodePath: addLeadingSlash,
+      decodePath: addLeadingSlash
+    }
+  };
+
+  function getHashPath() {
+    // We can't use window.location.hash here because it's not
+    // consistent across browsers - Firefox will pre-decode it!
+    var href = window.location.href;
+    var hashIndex = href.indexOf('#');
+    return hashIndex === -1 ? '' : href.substring(hashIndex + 1);
+  }
+
+  function pushHashPath(path) {
+    window.location.hash = path;
+  }
+
+  function replaceHashPath(path) {
+    var hashIndex = window.location.href.indexOf('#');
+    window.location.replace(window.location.href.slice(0, hashIndex >= 0 ? hashIndex : 0) + '#' + path);
+  }
+
+  function createHashHistory(props) {
+    if (props === void 0) {
+      props = {};
+    }
+
+    !canUseDOM ? invariant(false, 'Hash history needs a DOM') : void 0;
+    var globalHistory = window.history;
+    var canGoWithoutReload = supportsGoWithoutReloadUsingHash();
+    var _props = props,
+        _props$getUserConfirm = _props.getUserConfirmation,
+        getUserConfirmation = _props$getUserConfirm === void 0 ? getConfirmation : _props$getUserConfirm,
+        _props$hashType = _props.hashType,
+        hashType = _props$hashType === void 0 ? 'slash' : _props$hashType;
+    var basename = props.basename ? stripTrailingSlash(addLeadingSlash(props.basename)) : '';
+    var _HashPathCoders$hashT = HashPathCoders[hashType],
+        encodePath = _HashPathCoders$hashT.encodePath,
+        decodePath = _HashPathCoders$hashT.decodePath;
+
+    function getDOMLocation() {
+      var path = decodePath(getHashPath());
+      warning(!basename || hasBasename(path, basename), 'You are attempting to use a basename on a page whose URL path does not begin ' + 'with the basename. Expected path "' + path + '" to begin with "' + basename + '".');
+      if (basename) path = stripBasename(path, basename);
+      return createLocation(path);
+    }
+
+    var transitionManager = createTransitionManager();
+
+    function setState(nextState) {
+      _extends(history, nextState);
+
+      history.length = globalHistory.length;
+      transitionManager.notifyListeners(history.location, history.action);
+    }
+
+    var forceNextPop = false;
+    var ignorePath = null;
+
+    function handleHashChange() {
+      var path = getHashPath();
+      var encodedPath = encodePath(path);
+
+      if (path !== encodedPath) {
+        // Ensure we always have a properly-encoded hash.
+        replaceHashPath(encodedPath);
+      } else {
+        var location = getDOMLocation();
+        var prevLocation = history.location;
+        if (!forceNextPop && locationsAreEqual(prevLocation, location)) return; // A hashchange doesn't always == location change.
+
+        if (ignorePath === createPath(location)) return; // Ignore this change; we already setState in push/replace.
+
+        ignorePath = null;
+        handlePop(location);
+      }
+    }
+
+    function handlePop(location) {
+      if (forceNextPop) {
+        forceNextPop = false;
+        setState();
+      } else {
+        var action = 'POP';
+        transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
+          if (ok) {
+            setState({
+              action: action,
+              location: location
+            });
+          } else {
+            revertPop(location);
+          }
+        });
+      }
+    }
+
+    function revertPop(fromLocation) {
+      var toLocation = history.location; // TODO: We could probably make this more reliable by
+      // keeping a list of paths we've seen in sessionStorage.
+      // Instead, we just default to 0 for paths we don't know.
+
+      var toIndex = allPaths.lastIndexOf(createPath(toLocation));
+      if (toIndex === -1) toIndex = 0;
+      var fromIndex = allPaths.lastIndexOf(createPath(fromLocation));
+      if (fromIndex === -1) fromIndex = 0;
+      var delta = toIndex - fromIndex;
+
+      if (delta) {
+        forceNextPop = true;
+        go(delta);
+      }
+    } // Ensure the hash is encoded properly before doing anything else.
+
+
+    var path = getHashPath();
+    var encodedPath = encodePath(path);
+    if (path !== encodedPath) replaceHashPath(encodedPath);
+    var initialLocation = getDOMLocation();
+    var allPaths = [createPath(initialLocation)]; // Public interface
+
+    function createHref(location) {
+      return '#' + encodePath(basename + createPath(location));
+    }
+
+    function push(path, state) {
+      warning(state === undefined, 'Hash history cannot push state; it is ignored');
+      var action = 'PUSH';
+      var location = createLocation(path, undefined, undefined, history.location);
+      transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
+        if (!ok) return;
+        var path = createPath(location);
+        var encodedPath = encodePath(basename + path);
+        var hashChanged = getHashPath() !== encodedPath;
+
+        if (hashChanged) {
+          // We cannot tell if a hashchange was caused by a PUSH, so we'd
+          // rather setState here and ignore the hashchange. The caveat here
+          // is that other hash histories in the page will consider it a POP.
+          ignorePath = path;
+          pushHashPath(encodedPath);
+          var prevIndex = allPaths.lastIndexOf(createPath(history.location));
+          var nextPaths = allPaths.slice(0, prevIndex === -1 ? 0 : prevIndex + 1);
+          nextPaths.push(path);
+          allPaths = nextPaths;
+          setState({
+            action: action,
+            location: location
+          });
+        } else {
+          warning(false, 'Hash history cannot PUSH the same path; a new entry will not be added to the history stack');
+          setState();
+        }
+      });
+    }
+
+    function replace(path, state) {
+      warning(state === undefined, 'Hash history cannot replace state; it is ignored');
+      var action = 'REPLACE';
+      var location = createLocation(path, undefined, undefined, history.location);
+      transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
+        if (!ok) return;
+        var path = createPath(location);
+        var encodedPath = encodePath(basename + path);
+        var hashChanged = getHashPath() !== encodedPath;
+
+        if (hashChanged) {
+          // We cannot tell if a hashchange was caused by a REPLACE, so we'd
+          // rather setState here and ignore the hashchange. The caveat here
+          // is that other hash histories in the page will consider it a POP.
+          ignorePath = path;
+          replaceHashPath(encodedPath);
+        }
+
+        var prevIndex = allPaths.indexOf(createPath(history.location));
+        if (prevIndex !== -1) allPaths[prevIndex] = path;
+        setState({
+          action: action,
+          location: location
+        });
+      });
+    }
+
+    function go(n) {
+      warning(canGoWithoutReload, 'Hash history go(n) causes a full page reload in this browser');
+      globalHistory.go(n);
+    }
+
+    function goBack() {
+      go(-1);
+    }
+
+    function goForward() {
+      go(1);
+    }
+
+    var listenerCount = 0;
+
+    function checkDOMListeners(delta) {
+      listenerCount += delta;
+
+      if (listenerCount === 1 && delta === 1) {
+        window.addEventListener(HashChangeEvent$1, handleHashChange);
+      } else if (listenerCount === 0) {
+        window.removeEventListener(HashChangeEvent$1, handleHashChange);
+      }
+    }
+
+    var isBlocked = false;
+
+    function block(prompt) {
+      if (prompt === void 0) {
+        prompt = false;
+      }
+
+      var unblock = transitionManager.setPrompt(prompt);
+
+      if (!isBlocked) {
+        checkDOMListeners(1);
+        isBlocked = true;
+      }
+
+      return function () {
+        if (isBlocked) {
+          isBlocked = false;
+          checkDOMListeners(-1);
+        }
+
+        return unblock();
+      };
+    }
+
+    function listen(listener) {
+      var unlisten = transitionManager.appendListener(listener);
+      checkDOMListeners(1);
+      return function () {
+        checkDOMListeners(-1);
+        unlisten();
+      };
+    }
+
+    var history = {
+      length: globalHistory.length,
+      action: 'POP',
+      location: initialLocation,
+      createHref: createHref,
+      push: push,
+      replace: replace,
+      go: go,
+      goBack: goBack,
+      goForward: goForward,
+      block: block,
+      listen: listen
+    };
+    return history;
+  }
+
+  function clamp(n, lowerBound, upperBound) {
+    return Math.min(Math.max(n, lowerBound), upperBound);
+  }
+  /**
+   * Creates a history object that stores locations in memory.
+   */
+
+
+  function createMemoryHistory(props) {
+    if (props === void 0) {
+      props = {};
+    }
+
+    var _props = props,
+        getUserConfirmation = _props.getUserConfirmation,
+        _props$initialEntries = _props.initialEntries,
+        initialEntries = _props$initialEntries === void 0 ? ['/'] : _props$initialEntries,
+        _props$initialIndex = _props.initialIndex,
+        initialIndex = _props$initialIndex === void 0 ? 0 : _props$initialIndex,
+        _props$keyLength = _props.keyLength,
+        keyLength = _props$keyLength === void 0 ? 6 : _props$keyLength;
+    var transitionManager = createTransitionManager();
+
+    function setState(nextState) {
+      _extends(history, nextState);
+
+      history.length = history.entries.length;
+      transitionManager.notifyListeners(history.location, history.action);
+    }
+
+    function createKey() {
+      return Math.random().toString(36).substr(2, keyLength);
+    }
+
+    var index = clamp(initialIndex, 0, initialEntries.length - 1);
+    var entries = initialEntries.map(function (entry) {
+      return typeof entry === 'string' ? createLocation(entry, undefined, createKey()) : createLocation(entry, undefined, entry.key || createKey());
+    }); // Public interface
+
+    var createHref = createPath;
+
+    function push(path, state) {
+      warning(!(typeof path === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to push when the 1st ' + 'argument is a location-like object that already has state; it is ignored');
+      var action = 'PUSH';
+      var location = createLocation(path, state, createKey(), history.location);
+      transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
+        if (!ok) return;
+        var prevIndex = history.index;
+        var nextIndex = prevIndex + 1;
+        var nextEntries = history.entries.slice(0);
+
+        if (nextEntries.length > nextIndex) {
+          nextEntries.splice(nextIndex, nextEntries.length - nextIndex, location);
+        } else {
+          nextEntries.push(location);
+        }
+
+        setState({
+          action: action,
+          location: location,
+          index: nextIndex,
+          entries: nextEntries
+        });
+      });
+    }
+
+    function replace(path, state) {
+      warning(!(typeof path === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to replace when the 1st ' + 'argument is a location-like object that already has state; it is ignored');
+      var action = 'REPLACE';
+      var location = createLocation(path, state, createKey(), history.location);
+      transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
+        if (!ok) return;
+        history.entries[history.index] = location;
+        setState({
+          action: action,
+          location: location
+        });
+      });
+    }
+
+    function go(n) {
+      var nextIndex = clamp(history.index + n, 0, history.entries.length - 1);
+      var action = 'POP';
+      var location = history.entries[nextIndex];
+      transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
+        if (ok) {
+          setState({
+            action: action,
+            location: location,
+            index: nextIndex
+          });
+        } else {
+          // Mimic the behavior of DOM histories by
+          // causing a render after a cancelled POP.
+          setState();
+        }
+      });
+    }
+
+    function goBack() {
+      go(-1);
+    }
+
+    function goForward() {
+      go(1);
+    }
+
+    function canGo(n) {
+      var nextIndex = history.index + n;
+      return nextIndex >= 0 && nextIndex < history.entries.length;
+    }
+
+    function block(prompt) {
+      if (prompt === void 0) {
+        prompt = false;
+      }
+
+      return transitionManager.setPrompt(prompt);
+    }
+
+    function listen(listener) {
+      return transitionManager.appendListener(listener);
+    }
+
+    var history = {
+      length: entries.length,
+      action: 'POP',
+      location: entries[index],
+      index: index,
+      entries: entries,
+      createHref: createHref,
+      push: push,
+      replace: replace,
+      go: go,
+      goBack: goBack,
+      goForward: goForward,
+      canGo: canGo,
+      block: block,
+      listen: listen
+    };
+    return history;
+  }
+
+  exports.createBrowserHistory = createBrowserHistory;
+  exports.createHashHistory = createHashHistory;
+  exports.createMemoryHistory = createMemoryHistory;
+  exports.createLocation = createLocation;
+  exports.locationsAreEqual = locationsAreEqual;
+  exports.parsePath = parsePath;
+  exports.createPath = createPath;
+
+  Object.defineProperty(exports, '__esModule', { value: true });
+
+})));
+;
+
+/******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
-
+/******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
-
+/******/
 /******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId])
+/******/ 		if(installedModules[moduleId]) {
 /******/ 			return installedModules[moduleId].exports;
-
+/******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = installedModules[moduleId] = {
-/******/ 			exports: {},
-/******/ 			id: moduleId,
-/******/ 			loaded: false
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
 /******/ 		};
-
+/******/
 /******/ 		// Execute the module function
 /******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-
+/******/
 /******/ 		// Flag the module as loaded
-/******/ 		module.loaded = true;
-
+/******/ 		module.l = true;
+/******/
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-
-
+/******/
+/******/
 /******/ 	// expose the modules object (__webpack_modules__)
 /******/ 	__webpack_require__.m = modules;
-
+/******/
 /******/ 	// expose the module cache
 /******/ 	__webpack_require__.c = installedModules;
-
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// define __esModule on exports
+/******/ 	__webpack_require__.r = function(exports) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
+/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/
+/******/ 	// create a fake namespace object
+/******/ 	// mode & 1: value is a module id, require it
+/******/ 	// mode & 2: merge all properties of value into the ns
+/******/ 	// mode & 4: return value when already ns object
+/******/ 	// mode & 8|1: behave like require
+/******/ 	__webpack_require__.t = function(value, mode) {
+/******/ 		if(mode & 1) value = __webpack_require__(value);
+/******/ 		if(mode & 8) return value;
+/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
+/******/ 		var ns = Object.create(null);
+/******/ 		__webpack_require__.r(ns);
+/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
+/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
+/******/ 		return ns;
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "";
-
+/******/
+/******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(0);
+/******/ 	return __webpack_require__(__webpack_require__.s = "./projects/studio/studio-deep-diff-ext.js");
 /******/ })
 /************************************************************************/
-/******/ ([
-/* 0 */
-/***/ function(module, exports, __webpack_require__) {
+/******/ ({
 
-	'use strict';
+/***/ "./node_modules/deep-diff/index.js":
+/*!*****************************************!*\
+  !*** ./node_modules/deep-diff/index.js ***!
+  \*****************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-	exports.__esModule = true;
-	exports.createPath = exports.parsePath = exports.locationsAreEqual = exports.createLocation = exports.createMemoryHistory = exports.createHashHistory = exports.createBrowserHistory = undefined;
+eval("var __WEBPACK_AMD_DEFINE_RESULT__;;(function(root, factory) { // eslint-disable-line no-extra-semi\n  var deepDiff = factory(root);\n  // eslint-disable-next-line no-undef\n  if (true) {\n      // AMD\n      !(__WEBPACK_AMD_DEFINE_RESULT__ = (function() { // eslint-disable-line no-undef\n          return deepDiff;\n      }).call(exports, __webpack_require__, exports, module),\n\t\t\t\t__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));\n  } else { var _deepdiff; }\n}(this, function(root) {\n  var validKinds = ['N', 'E', 'A', 'D'];\n\n  // nodejs compatible on server side and in the browser.\n  function inherits(ctor, superCtor) {\n    ctor.super_ = superCtor;\n    ctor.prototype = Object.create(superCtor.prototype, {\n      constructor: {\n        value: ctor,\n        enumerable: false,\n        writable: true,\n        configurable: true\n      }\n    });\n  }\n\n  function Diff(kind, path) {\n    Object.defineProperty(this, 'kind', {\n      value: kind,\n      enumerable: true\n    });\n    if (path && path.length) {\n      Object.defineProperty(this, 'path', {\n        value: path,\n        enumerable: true\n      });\n    }\n  }\n\n  function DiffEdit(path, origin, value) {\n    DiffEdit.super_.call(this, 'E', path);\n    Object.defineProperty(this, 'lhs', {\n      value: origin,\n      enumerable: true\n    });\n    Object.defineProperty(this, 'rhs', {\n      value: value,\n      enumerable: true\n    });\n  }\n  inherits(DiffEdit, Diff);\n\n  function DiffNew(path, value) {\n    DiffNew.super_.call(this, 'N', path);\n    Object.defineProperty(this, 'rhs', {\n      value: value,\n      enumerable: true\n    });\n  }\n  inherits(DiffNew, Diff);\n\n  function DiffDeleted(path, value) {\n    DiffDeleted.super_.call(this, 'D', path);\n    Object.defineProperty(this, 'lhs', {\n      value: value,\n      enumerable: true\n    });\n  }\n  inherits(DiffDeleted, Diff);\n\n  function DiffArray(path, index, item) {\n    DiffArray.super_.call(this, 'A', path);\n    Object.defineProperty(this, 'index', {\n      value: index,\n      enumerable: true\n    });\n    Object.defineProperty(this, 'item', {\n      value: item,\n      enumerable: true\n    });\n  }\n  inherits(DiffArray, Diff);\n\n  function arrayRemove(arr, from, to) {\n    var rest = arr.slice((to || from) + 1 || arr.length);\n    arr.length = from < 0 ? arr.length + from : from;\n    arr.push.apply(arr, rest);\n    return arr;\n  }\n\n  function realTypeOf(subject) {\n    var type = typeof subject;\n    if (type !== 'object') {\n      return type;\n    }\n\n    if (subject === Math) {\n      return 'math';\n    } else if (subject === null) {\n      return 'null';\n    } else if (Array.isArray(subject)) {\n      return 'array';\n    } else if (Object.prototype.toString.call(subject) === '[object Date]') {\n      return 'date';\n    } else if (typeof subject.toString === 'function' && /^\\/.*\\//.test(subject.toString())) {\n      return 'regexp';\n    }\n    return 'object';\n  }\n\n  // http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/\n  function hashThisString(string) {\n    var hash = 0;\n    if (string.length === 0) { return hash; }\n    for (var i = 0; i < string.length; i++) {\n      var char = string.charCodeAt(i);\n      hash = ((hash << 5) - hash) + char;\n      hash = hash & hash; // Convert to 32bit integer\n    }\n    return hash;\n  }\n\n  // Gets a hash of the given object in an array order-independent fashion\n  // also object key order independent (easier since they can be alphabetized)\n  function getOrderIndependentHash(object) {\n    var accum = 0;\n    var type = realTypeOf(object);\n\n    if (type === 'array') {\n      object.forEach(function (item) {\n        // Addition is commutative so this is order indep\n        accum += getOrderIndependentHash(item);\n      });\n\n      var arrayString = '[type: array, hash: ' + accum + ']';\n      return accum + hashThisString(arrayString);\n    }\n\n    if (type === 'object') {\n      for (var key in object) {\n        if (object.hasOwnProperty(key)) {\n          var keyValueString = '[ type: object, key: ' + key + ', value hash: ' + getOrderIndependentHash(object[key]) + ']';\n          accum += hashThisString(keyValueString);\n        }\n      }\n\n      return accum;\n    }\n\n    // Non object, non array...should be good?\n    var stringToHash = '[ type: ' + type + ' ; value: ' + object + ']';\n    return accum + hashThisString(stringToHash);\n  }\n\n  function deepDiff(lhs, rhs, changes, prefilter, path, key, stack, orderIndependent) {\n    changes = changes || [];\n    path = path || [];\n    stack = stack || [];\n    var currentPath = path.slice(0);\n    if (typeof key !== 'undefined' && key !== null) {\n      if (prefilter) {\n        if (typeof (prefilter) === 'function' && prefilter(currentPath, key)) {\n          return;\n        } else if (typeof (prefilter) === 'object') {\n          if (prefilter.prefilter && prefilter.prefilter(currentPath, key)) {\n            return;\n          }\n          if (prefilter.normalize) {\n            var alt = prefilter.normalize(currentPath, key, lhs, rhs);\n            if (alt) {\n              lhs = alt[0];\n              rhs = alt[1];\n            }\n          }\n        }\n      }\n      currentPath.push(key);\n    }\n\n    // Use string comparison for regexes\n    if (realTypeOf(lhs) === 'regexp' && realTypeOf(rhs) === 'regexp') {\n      lhs = lhs.toString();\n      rhs = rhs.toString();\n    }\n\n    var ltype = typeof lhs;\n    var rtype = typeof rhs;\n    var i, j, k, other;\n\n    var ldefined = ltype !== 'undefined' ||\n      (stack && (stack.length > 0) && stack[stack.length - 1].lhs &&\n        Object.getOwnPropertyDescriptor(stack[stack.length - 1].lhs, key));\n    var rdefined = rtype !== 'undefined' ||\n      (stack && (stack.length > 0) && stack[stack.length - 1].rhs &&\n        Object.getOwnPropertyDescriptor(stack[stack.length - 1].rhs, key));\n\n    if (!ldefined && rdefined) {\n      changes.push(new DiffNew(currentPath, rhs));\n    } else if (!rdefined && ldefined) {\n      changes.push(new DiffDeleted(currentPath, lhs));\n    } else if (realTypeOf(lhs) !== realTypeOf(rhs)) {\n      changes.push(new DiffEdit(currentPath, lhs, rhs));\n    } else if (realTypeOf(lhs) === 'date' && (lhs - rhs) !== 0) {\n      changes.push(new DiffEdit(currentPath, lhs, rhs));\n    } else if (ltype === 'object' && lhs !== null && rhs !== null) {\n      for (i = stack.length - 1; i > -1; --i) {\n        if (stack[i].lhs === lhs) {\n          other = true;\n          break;\n        }\n      }\n      if (!other) {\n        stack.push({ lhs: lhs, rhs: rhs });\n        if (Array.isArray(lhs)) {\n          // If order doesn't matter, we need to sort our arrays\n          if (orderIndependent) {\n            lhs.sort(function (a, b) {\n              return getOrderIndependentHash(a) - getOrderIndependentHash(b);\n            });\n\n            rhs.sort(function (a, b) {\n              return getOrderIndependentHash(a) - getOrderIndependentHash(b);\n            });\n          }\n          i = rhs.length - 1;\n          j = lhs.length - 1;\n          while (i > j) {\n            changes.push(new DiffArray(currentPath, i, new DiffNew(undefined, rhs[i--])));\n          }\n          while (j > i) {\n            changes.push(new DiffArray(currentPath, j, new DiffDeleted(undefined, lhs[j--])));\n          }\n          for (; i >= 0; --i) {\n            deepDiff(lhs[i], rhs[i], changes, prefilter, currentPath, i, stack, orderIndependent);\n          }\n        } else {\n          var akeys = Object.keys(lhs);\n          var pkeys = Object.keys(rhs);\n          for (i = 0; i < akeys.length; ++i) {\n            k = akeys[i];\n            other = pkeys.indexOf(k);\n            if (other >= 0) {\n              deepDiff(lhs[k], rhs[k], changes, prefilter, currentPath, k, stack, orderIndependent);\n              pkeys[other] = null;\n            } else {\n              deepDiff(lhs[k], undefined, changes, prefilter, currentPath, k, stack, orderIndependent);\n            }\n          }\n          for (i = 0; i < pkeys.length; ++i) {\n            k = pkeys[i];\n            if (k) {\n              deepDiff(undefined, rhs[k], changes, prefilter, currentPath, k, stack, orderIndependent);\n            }\n          }\n        }\n        stack.length = stack.length - 1;\n      } else if (lhs !== rhs) {\n        // lhs is contains a cycle at this element and it differs from rhs\n        changes.push(new DiffEdit(currentPath, lhs, rhs));\n      }\n    } else if (lhs !== rhs) {\n      if (!(ltype === 'number' && isNaN(lhs) && isNaN(rhs))) {\n        changes.push(new DiffEdit(currentPath, lhs, rhs));\n      }\n    }\n  }\n\n  function observableDiff(lhs, rhs, observer, prefilter, orderIndependent) {\n    var changes = [];\n    deepDiff(lhs, rhs, changes, prefilter, null, null, null, orderIndependent);\n    if (observer) {\n      for (var i = 0; i < changes.length; ++i) {\n        observer(changes[i]);\n      }\n    }\n    return changes;\n  }\n\n  function orderIndependentDeepDiff(lhs, rhs, changes, prefilter, path, key, stack) {\n    return deepDiff(lhs, rhs, changes, prefilter, path, key, stack, true);\n  }\n\n  function accumulateDiff(lhs, rhs, prefilter, accum) {\n    var observer = (accum) ?\n      function (difference) {\n        if (difference) {\n          accum.push(difference);\n        }\n      } : undefined;\n    var changes = observableDiff(lhs, rhs, observer, prefilter);\n    return (accum) ? accum : (changes.length) ? changes : undefined;\n  }\n\n  function accumulateOrderIndependentDiff(lhs, rhs, prefilter, accum) {\n    var observer = (accum) ?\n      function (difference) {\n        if (difference) {\n          accum.push(difference);\n        }\n      } : undefined;\n    var changes = observableDiff(lhs, rhs, observer, prefilter, true);\n    return (accum) ? accum : (changes.length) ? changes : undefined;\n  }\n\n  function applyArrayChange(arr, index, change) {\n    if (change.path && change.path.length) {\n      var it = arr[index],\n        i, u = change.path.length - 1;\n      for (i = 0; i < u; i++) {\n        it = it[change.path[i]];\n      }\n      switch (change.kind) {\n        case 'A':\n          applyArrayChange(it[change.path[i]], change.index, change.item);\n          break;\n        case 'D':\n          delete it[change.path[i]];\n          break;\n        case 'E':\n        case 'N':\n          it[change.path[i]] = change.rhs;\n          break;\n      }\n    } else {\n      switch (change.kind) {\n        case 'A':\n          applyArrayChange(arr[index], change.index, change.item);\n          break;\n        case 'D':\n          arr = arrayRemove(arr, index);\n          break;\n        case 'E':\n        case 'N':\n          arr[index] = change.rhs;\n          break;\n      }\n    }\n    return arr;\n  }\n\n  function applyChange(target, source, change) {\n    if (typeof change === 'undefined' && source && ~validKinds.indexOf(source.kind)) {\n      change = source;\n    }\n    if (target && change && change.kind) {\n      var it = target,\n        i = -1,\n        last = change.path ? change.path.length - 1 : 0;\n      while (++i < last) {\n        if (typeof it[change.path[i]] === 'undefined') {\n          it[change.path[i]] = (typeof change.path[i + 1] !== 'undefined' && typeof change.path[i + 1] === 'number') ? [] : {};\n        }\n        it = it[change.path[i]];\n      }\n      switch (change.kind) {\n        case 'A':\n          if (change.path && typeof it[change.path[i]] === 'undefined') {\n            it[change.path[i]] = [];\n          }\n          applyArrayChange(change.path ? it[change.path[i]] : it, change.index, change.item);\n          break;\n        case 'D':\n          delete it[change.path[i]];\n          break;\n        case 'E':\n        case 'N':\n          it[change.path[i]] = change.rhs;\n          break;\n      }\n    }\n  }\n\n  function revertArrayChange(arr, index, change) {\n    if (change.path && change.path.length) {\n      // the structure of the object at the index has changed...\n      var it = arr[index],\n        i, u = change.path.length - 1;\n      for (i = 0; i < u; i++) {\n        it = it[change.path[i]];\n      }\n      switch (change.kind) {\n        case 'A':\n          revertArrayChange(it[change.path[i]], change.index, change.item);\n          break;\n        case 'D':\n          it[change.path[i]] = change.lhs;\n          break;\n        case 'E':\n          it[change.path[i]] = change.lhs;\n          break;\n        case 'N':\n          delete it[change.path[i]];\n          break;\n      }\n    } else {\n      // the array item is different...\n      switch (change.kind) {\n        case 'A':\n          revertArrayChange(arr[index], change.index, change.item);\n          break;\n        case 'D':\n          arr[index] = change.lhs;\n          break;\n        case 'E':\n          arr[index] = change.lhs;\n          break;\n        case 'N':\n          arr = arrayRemove(arr, index);\n          break;\n      }\n    }\n    return arr;\n  }\n\n  function revertChange(target, source, change) {\n    if (target && source && change && change.kind) {\n      var it = target,\n        i, u;\n      u = change.path.length - 1;\n      for (i = 0; i < u; i++) {\n        if (typeof it[change.path[i]] === 'undefined') {\n          it[change.path[i]] = {};\n        }\n        it = it[change.path[i]];\n      }\n      switch (change.kind) {\n        case 'A':\n          // Array was modified...\n          // it will be an array...\n          revertArrayChange(it[change.path[i]], change.index, change.item);\n          break;\n        case 'D':\n          // Item was deleted...\n          it[change.path[i]] = change.lhs;\n          break;\n        case 'E':\n          // Item was edited...\n          it[change.path[i]] = change.lhs;\n          break;\n        case 'N':\n          // Item is new...\n          delete it[change.path[i]];\n          break;\n      }\n    }\n  }\n\n  function applyDiff(target, source, filter) {\n    if (target && source) {\n      var onChange = function (change) {\n        if (!filter || filter(target, source, change)) {\n          applyChange(target, source, change);\n        }\n      };\n      observableDiff(target, source, onChange);\n    }\n  }\n\n  Object.defineProperties(accumulateDiff, {\n\n    diff: {\n      value: accumulateDiff,\n      enumerable: true\n    },\n    orderIndependentDiff: {\n      value: accumulateOrderIndependentDiff,\n      enumerable: true\n    },\n    observableDiff: {\n      value: observableDiff,\n      enumerable: true\n    },\n    orderIndependentObservableDiff: {\n      value: orderIndependentDeepDiff,\n      enumerable: true\n    },\n    orderIndepHash: {\n      value: getOrderIndependentHash,\n      enumerable: true\n    },\n    applyDiff: {\n      value: applyDiff,\n      enumerable: true\n    },\n    applyChange: {\n      value: applyChange,\n      enumerable: true\n    },\n    revertChange: {\n      value: revertChange,\n      enumerable: true\n    },\n    isConflict: {\n      value: function () {\n        return typeof $conflict !== 'undefined';\n      },\n      enumerable: true\n    }\n  });\n\n  // hackish...\n  accumulateDiff.DeepDiff = accumulateDiff;\n  // ...but works with:\n  // import DeepDiff from 'deep-diff'\n  // import { DeepDiff } from 'deep-diff'\n  // const DeepDiff = require('deep-diff');\n  // const { DeepDiff } = require('deep-diff');\n\n  if (root) {\n    root.DeepDiff = accumulateDiff;\n  }\n\n  return accumulateDiff;\n}));\n\n\n//# sourceURL=webpack:///./node_modules/deep-diff/index.js?");
 
-	var _LocationUtils = __webpack_require__(1);
+/***/ }),
 
-	Object.defineProperty(exports, 'createLocation', {
-	  enumerable: true,
-	  get: function get() {
-	    return _LocationUtils.createLocation;
-	  }
-	});
-	Object.defineProperty(exports, 'locationsAreEqual', {
-	  enumerable: true,
-	  get: function get() {
-	    return _LocationUtils.locationsAreEqual;
-	  }
-	});
+/***/ "./projects/studio/studio-deep-diff-ext.js":
+/*!*************************************************!*\
+  !*** ./projects/studio/studio-deep-diff-ext.js ***!
+  \*************************************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-	var _PathUtils = __webpack_require__(4);
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var deep_diff__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! deep-diff */ \"./node_modules/deep-diff/index.js\");\n/* harmony import */ var deep_diff__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(deep_diff__WEBPACK_IMPORTED_MODULE_0__);\n\r\njb.studio.diff = deep_diff__WEBPACK_IMPORTED_MODULE_0___default.a;\r\n\n\n//# sourceURL=webpack:///./projects/studio/studio-deep-diff-ext.js?");
 
-	Object.defineProperty(exports, 'parsePath', {
-	  enumerable: true,
-	  get: function get() {
-	    return _PathUtils.parsePath;
-	  }
-	});
-	Object.defineProperty(exports, 'createPath', {
-	  enumerable: true,
-	  get: function get() {
-	    return _PathUtils.createPath;
-	  }
-	});
+/***/ })
 
-	var _createBrowserHistory2 = __webpack_require__(5);
-
-	var _createBrowserHistory3 = _interopRequireDefault(_createBrowserHistory2);
-
-	var _createHashHistory2 = __webpack_require__(10);
-
-	var _createHashHistory3 = _interopRequireDefault(_createHashHistory2);
-
-	var _createMemoryHistory2 = __webpack_require__(11);
-
-	var _createMemoryHistory3 = _interopRequireDefault(_createMemoryHistory2);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	exports.createBrowserHistory = _createBrowserHistory3.default;
-	exports.createHashHistory = _createHashHistory3.default;
-	exports.createMemoryHistory = _createMemoryHistory3.default;
-
-/***/ },
-/* 1 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	exports.__esModule = true;
-	exports.locationsAreEqual = exports.createLocation = undefined;
-
-	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-	var _resolvePathname = __webpack_require__(2);
-
-	var _resolvePathname2 = _interopRequireDefault(_resolvePathname);
-
-	var _valueEqual = __webpack_require__(3);
-
-	var _valueEqual2 = _interopRequireDefault(_valueEqual);
-
-	var _PathUtils = __webpack_require__(4);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	var createLocation = exports.createLocation = function createLocation(path, state, key, currentLocation) {
-	  var location = void 0;
-	  if (typeof path === 'string') {
-	    // Two-arg form: push(path, state)
-	    location = (0, _PathUtils.parsePath)(path);
-	    location.state = state;
-	  } else {
-	    // One-arg form: push(location)
-	    location = _extends({}, path);
-
-	    if (location.pathname === undefined) location.pathname = '';
-
-	    if (location.search) {
-	      if (location.search.charAt(0) !== '?') location.search = '?' + location.search;
-	    } else {
-	      location.search = '';
-	    }
-
-	    if (location.hash) {
-	      if (location.hash.charAt(0) !== '#') location.hash = '#' + location.hash;
-	    } else {
-	      location.hash = '';
-	    }
-
-	    if (state !== undefined && location.state === undefined) location.state = state;
-	  }
-
-	  try {
-	    location.pathname = decodeURI(location.pathname);
-	  } catch (e) {
-	    if (e instanceof URIError) {
-	      throw new URIError('Pathname "' + location.pathname + '" could not be decoded. ' + 'This is likely caused by an invalid percent-encoding.');
-	    } else {
-	      throw e;
-	    }
-	  }
-
-	  if (key) location.key = key;
-
-	  if (currentLocation) {
-	    // Resolve incomplete/relative pathname relative to current location.
-	    if (!location.pathname) {
-	      location.pathname = currentLocation.pathname;
-	    } else if (location.pathname.charAt(0) !== '/') {
-	      location.pathname = (0, _resolvePathname2.default)(location.pathname, currentLocation.pathname);
-	    }
-	  } else {
-	    // When there is no prior location and pathname is empty, set it to /
-	    if (!location.pathname) {
-	      location.pathname = '/';
-	    }
-	  }
-
-	  return location;
-	};
-
-	var locationsAreEqual = exports.locationsAreEqual = function locationsAreEqual(a, b) {
-	  return a.pathname === b.pathname && a.search === b.search && a.hash === b.hash && a.key === b.key && (0, _valueEqual2.default)(a.state, b.state);
-	};
-
-/***/ },
-/* 2 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	exports.__esModule = true;
-	function isAbsolute(pathname) {
-	  return pathname.charAt(0) === '/';
-	}
-
-	// About 1.5x faster than the two-arg version of Array#splice()
-	function spliceOne(list, index) {
-	  for (var i = index, k = i + 1, n = list.length; k < n; i += 1, k += 1) {
-	    list[i] = list[k];
-	  }
-
-	  list.pop();
-	}
-
-	// This implementation is based heavily on node's url.parse
-	function resolvePathname(to) {
-	  var from = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
-
-	  var toParts = to && to.split('/') || [];
-	  var fromParts = from && from.split('/') || [];
-
-	  var isToAbs = to && isAbsolute(to);
-	  var isFromAbs = from && isAbsolute(from);
-	  var mustEndAbs = isToAbs || isFromAbs;
-
-	  if (to && isAbsolute(to)) {
-	    // to is absolute
-	    fromParts = toParts;
-	  } else if (toParts.length) {
-	    // to is relative, drop the filename
-	    fromParts.pop();
-	    fromParts = fromParts.concat(toParts);
-	  }
-
-	  if (!fromParts.length) return '/';
-
-	  var hasTrailingSlash = void 0;
-	  if (fromParts.length) {
-	    var last = fromParts[fromParts.length - 1];
-	    hasTrailingSlash = last === '.' || last === '..' || last === '';
-	  } else {
-	    hasTrailingSlash = false;
-	  }
-
-	  var up = 0;
-	  for (var i = fromParts.length; i >= 0; i--) {
-	    var part = fromParts[i];
-
-	    if (part === '.') {
-	      spliceOne(fromParts, i);
-	    } else if (part === '..') {
-	      spliceOne(fromParts, i);
-	      up++;
-	    } else if (up) {
-	      spliceOne(fromParts, i);
-	      up--;
-	    }
-	  }
-
-	  if (!mustEndAbs) for (; up--; up) {
-	    fromParts.unshift('..');
-	  }if (mustEndAbs && fromParts[0] !== '' && (!fromParts[0] || !isAbsolute(fromParts[0]))) fromParts.unshift('');
-
-	  var result = fromParts.join('/');
-
-	  if (hasTrailingSlash && result.substr(-1) !== '/') result += '/';
-
-	  return result;
-	}
-
-	exports.default = resolvePathname;
-	module.exports = exports['default'];
-
-/***/ },
-/* 3 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	exports.__esModule = true;
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	function valueEqual(a, b) {
-	  if (a === b) return true;
-
-	  if (a == null || b == null) return false;
-
-	  if (Array.isArray(a)) {
-	    return Array.isArray(b) && a.length === b.length && a.every(function (item, index) {
-	      return valueEqual(item, b[index]);
-	    });
-	  }
-
-	  var aType = typeof a === 'undefined' ? 'undefined' : _typeof(a);
-	  var bType = typeof b === 'undefined' ? 'undefined' : _typeof(b);
-
-	  if (aType !== bType) return false;
-
-	  if (aType === 'object') {
-	    var aValue = a.valueOf();
-	    var bValue = b.valueOf();
-
-	    if (aValue !== a || bValue !== b) return valueEqual(aValue, bValue);
-
-	    var aKeys = Object.keys(a);
-	    var bKeys = Object.keys(b);
-
-	    if (aKeys.length !== bKeys.length) return false;
-
-	    return aKeys.every(function (key) {
-	      return valueEqual(a[key], b[key]);
-	    });
-	  }
-
-	  return false;
-	}
-
-	exports.default = valueEqual;
-	module.exports = exports['default'];
-
-/***/ },
-/* 4 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	exports.__esModule = true;
-	var addLeadingSlash = exports.addLeadingSlash = function addLeadingSlash(path) {
-	  return path.charAt(0) === '/' ? path : '/' + path;
-	};
-
-	var stripLeadingSlash = exports.stripLeadingSlash = function stripLeadingSlash(path) {
-	  return path.charAt(0) === '/' ? path.substr(1) : path;
-	};
-
-	var hasBasename = exports.hasBasename = function hasBasename(path, prefix) {
-	  return new RegExp('^' + prefix + '(\\/|\\?|#|$)', 'i').test(path);
-	};
-
-	var stripBasename = exports.stripBasename = function stripBasename(path, prefix) {
-	  return hasBasename(path, prefix) ? path.substr(prefix.length) : path;
-	};
-
-	var stripTrailingSlash = exports.stripTrailingSlash = function stripTrailingSlash(path) {
-	  return path.charAt(path.length - 1) === '/' ? path.slice(0, -1) : path;
-	};
-
-	var parsePath = exports.parsePath = function parsePath(path) {
-	  var pathname = path || '/';
-	  var search = '';
-	  var hash = '';
-
-	  var hashIndex = pathname.indexOf('#');
-	  if (hashIndex !== -1) {
-	    hash = pathname.substr(hashIndex);
-	    pathname = pathname.substr(0, hashIndex);
-	  }
-
-	  var searchIndex = pathname.indexOf('?');
-	  if (searchIndex !== -1) {
-	    search = pathname.substr(searchIndex);
-	    pathname = pathname.substr(0, searchIndex);
-	  }
-
-	  return {
-	    pathname: pathname,
-	    search: search === '?' ? '' : search,
-	    hash: hash === '#' ? '' : hash
-	  };
-	};
-
-	var createPath = exports.createPath = function createPath(location) {
-	  var pathname = location.pathname,
-	      search = location.search,
-	      hash = location.hash;
-
-
-	  var path = pathname || '/';
-
-	  if (search && search !== '?') path += search.charAt(0) === '?' ? search : '?' + search;
-
-	  if (hash && hash !== '#') path += hash.charAt(0) === '#' ? hash : '#' + hash;
-
-	  return path;
-	};
-
-/***/ },
-/* 5 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	exports.__esModule = true;
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-	var _warning = __webpack_require__(6);
-
-	var _warning2 = _interopRequireDefault(_warning);
-
-	var _invariant = __webpack_require__(7);
-
-	var _invariant2 = _interopRequireDefault(_invariant);
-
-	var _LocationUtils = __webpack_require__(1);
-
-	var _PathUtils = __webpack_require__(4);
-
-	var _createTransitionManager = __webpack_require__(8);
-
-	var _createTransitionManager2 = _interopRequireDefault(_createTransitionManager);
-
-	var _DOMUtils = __webpack_require__(9);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	var PopStateEvent = 'popstate';
-	var HashChangeEvent = 'hashchange';
-
-	var getHistoryState = function getHistoryState() {
-	  try {
-	    return window.history.state || {};
-	  } catch (e) {
-	    // IE 11 sometimes throws when accessing window.history.state
-	    // See https://github.com/ReactTraining/history/pull/289
-	    return {};
-	  }
-	};
-
-	/**
-	 * Creates a history object that uses the HTML5 history API including
-	 * pushState, replaceState, and the popstate event.
-	 */
-	var createBrowserHistory = function createBrowserHistory() {
-	  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-	  !_DOMUtils.canUseDOM ?  false ? (0, _invariant2.default)(false, 'Browser history needs a DOM') : (0, _invariant2.default)(false) : void 0;
-
-	  var globalHistory = window.history;
-	  var canUseHistory = (0, _DOMUtils.supportsHistory)();
-	  var needsHashChangeListener = !(0, _DOMUtils.supportsPopStateOnHashChange)();
-
-	  var _props$forceRefresh = props.forceRefresh,
-	      forceRefresh = _props$forceRefresh === undefined ? false : _props$forceRefresh,
-	      _props$getUserConfirm = props.getUserConfirmation,
-	      getUserConfirmation = _props$getUserConfirm === undefined ? _DOMUtils.getConfirmation : _props$getUserConfirm,
-	      _props$keyLength = props.keyLength,
-	      keyLength = _props$keyLength === undefined ? 6 : _props$keyLength;
-
-	  var basename = props.basename ? (0, _PathUtils.stripTrailingSlash)((0, _PathUtils.addLeadingSlash)(props.basename)) : '';
-
-	  var getDOMLocation = function getDOMLocation(historyState) {
-	    var _ref = historyState || {},
-	        key = _ref.key,
-	        state = _ref.state;
-
-	    var _window$location = window.location,
-	        pathname = _window$location.pathname,
-	        search = _window$location.search,
-	        hash = _window$location.hash;
-
-
-	    var path = pathname + search + hash;
-
-	     false ? (0, _warning2.default)(!basename || (0, _PathUtils.hasBasename)(path, basename), 'You are attempting to use a basename on a page whose URL path does not begin ' + 'with the basename. Expected path "' + path + '" to begin with "' + basename + '".') : void 0;
-
-	    if (basename) path = (0, _PathUtils.stripBasename)(path, basename);
-
-	    return (0, _LocationUtils.createLocation)(path, state, key);
-	  };
-
-	  var createKey = function createKey() {
-	    return Math.random().toString(36).substr(2, keyLength);
-	  };
-
-	  var transitionManager = (0, _createTransitionManager2.default)();
-
-	  var setState = function setState(nextState) {
-	    _extends(history, nextState);
-
-	    history.length = globalHistory.length;
-
-	    transitionManager.notifyListeners(history.location, history.action);
-	  };
-
-	  var handlePopState = function handlePopState(event) {
-	    // Ignore extraneous popstate events in WebKit.
-	    if ((0, _DOMUtils.isExtraneousPopstateEvent)(event)) return;
-
-	    handlePop(getDOMLocation(event.state));
-	  };
-
-	  var handleHashChange = function handleHashChange() {
-	    handlePop(getDOMLocation(getHistoryState()));
-	  };
-
-	  var forceNextPop = false;
-
-	  var handlePop = function handlePop(location) {
-	    if (forceNextPop) {
-	      forceNextPop = false;
-	      setState();
-	    } else {
-	      var action = 'POP';
-
-	      transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
-	        if (ok) {
-	          setState({ action: action, location: location });
-	        } else {
-	          revertPop(location);
-	        }
-	      });
-	    }
-	  };
-
-	  var revertPop = function revertPop(fromLocation) {
-	    var toLocation = history.location;
-
-	    // TODO: We could probably make this more reliable by
-	    // keeping a list of keys we've seen in sessionStorage.
-	    // Instead, we just default to 0 for keys we don't know.
-
-	    var toIndex = allKeys.indexOf(toLocation.key);
-
-	    if (toIndex === -1) toIndex = 0;
-
-	    var fromIndex = allKeys.indexOf(fromLocation.key);
-
-	    if (fromIndex === -1) fromIndex = 0;
-
-	    var delta = toIndex - fromIndex;
-
-	    if (delta) {
-	      forceNextPop = true;
-	      go(delta);
-	    }
-	  };
-
-	  var initialLocation = getDOMLocation(getHistoryState());
-	  var allKeys = [initialLocation.key];
-
-	  // Public interface
-
-	  var createHref = function createHref(location) {
-	    return basename + (0, _PathUtils.createPath)(location);
-	  };
-
-	  var push = function push(path, state) {
-	     false ? (0, _warning2.default)(!((typeof path === 'undefined' ? 'undefined' : _typeof(path)) === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to push when the 1st ' + 'argument is a location-like object that already has state; it is ignored') : void 0;
-
-	    var action = 'PUSH';
-	    var location = (0, _LocationUtils.createLocation)(path, state, createKey(), history.location);
-
-	    transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
-	      if (!ok) return;
-
-	      var href = createHref(location);
-	      var key = location.key,
-	          state = location.state;
-
-
-	      if (canUseHistory) {
-	        globalHistory.pushState({ key: key, state: state }, null, href);
-
-	        if (forceRefresh) {
-	          window.location.href = href;
-	        } else {
-	          var prevIndex = allKeys.indexOf(history.location.key);
-	          var nextKeys = allKeys.slice(0, prevIndex === -1 ? 0 : prevIndex + 1);
-
-	          nextKeys.push(location.key);
-	          allKeys = nextKeys;
-
-	          setState({ action: action, location: location });
-	        }
-	      } else {
-	         false ? (0, _warning2.default)(state === undefined, 'Browser history cannot push state in browsers that do not support HTML5 history') : void 0;
-
-	        window.location.href = href;
-	      }
-	    });
-	  };
-
-	  var replace = function replace(path, state) {
-	     false ? (0, _warning2.default)(!((typeof path === 'undefined' ? 'undefined' : _typeof(path)) === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to replace when the 1st ' + 'argument is a location-like object that already has state; it is ignored') : void 0;
-
-	    var action = 'REPLACE';
-	    var location = (0, _LocationUtils.createLocation)(path, state, createKey(), history.location);
-
-	    transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
-	      if (!ok) return;
-
-	      var href = createHref(location);
-	      var key = location.key,
-	          state = location.state;
-
-
-	      if (canUseHistory) {
-	        globalHistory.replaceState({ key: key, state: state }, null, href);
-
-	        if (forceRefresh) {
-	          window.location.replace(href);
-	        } else {
-	          var prevIndex = allKeys.indexOf(history.location.key);
-
-	          if (prevIndex !== -1) allKeys[prevIndex] = location.key;
-
-	          setState({ action: action, location: location });
-	        }
-	      } else {
-	         false ? (0, _warning2.default)(state === undefined, 'Browser history cannot replace state in browsers that do not support HTML5 history') : void 0;
-
-	        window.location.replace(href);
-	      }
-	    });
-	  };
-
-	  var go = function go(n) {
-	    globalHistory.go(n);
-	  };
-
-	  var goBack = function goBack() {
-	    return go(-1);
-	  };
-
-	  var goForward = function goForward() {
-	    return go(1);
-	  };
-
-	  var listenerCount = 0;
-
-	  var checkDOMListeners = function checkDOMListeners(delta) {
-	    listenerCount += delta;
-
-	    if (listenerCount === 1) {
-	      (0, _DOMUtils.addEventListener)(window, PopStateEvent, handlePopState);
-
-	      if (needsHashChangeListener) (0, _DOMUtils.addEventListener)(window, HashChangeEvent, handleHashChange);
-	    } else if (listenerCount === 0) {
-	      (0, _DOMUtils.removeEventListener)(window, PopStateEvent, handlePopState);
-
-	      if (needsHashChangeListener) (0, _DOMUtils.removeEventListener)(window, HashChangeEvent, handleHashChange);
-	    }
-	  };
-
-	  var isBlocked = false;
-
-	  var block = function block() {
-	    var prompt = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-
-	    var unblock = transitionManager.setPrompt(prompt);
-
-	    if (!isBlocked) {
-	      checkDOMListeners(1);
-	      isBlocked = true;
-	    }
-
-	    return function () {
-	      if (isBlocked) {
-	        isBlocked = false;
-	        checkDOMListeners(-1);
-	      }
-
-	      return unblock();
-	    };
-	  };
-
-	  var listen = function listen(listener) {
-	    var unlisten = transitionManager.appendListener(listener);
-	    checkDOMListeners(1);
-
-	    return function () {
-	      checkDOMListeners(-1);
-	      unlisten();
-	    };
-	  };
-
-	  var history = {
-	    length: globalHistory.length,
-	    action: 'POP',
-	    location: initialLocation,
-	    createHref: createHref,
-	    push: push,
-	    replace: replace,
-	    go: go,
-	    goBack: goBack,
-	    goForward: goForward,
-	    block: block,
-	    listen: listen
-	  };
-
-	  return history;
-	};
-
-	exports.default = createBrowserHistory;
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * Copyright 2014-2015, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 */
-
-	'use strict';
-
-	/**
-	 * Similar to invariant but only logs a warning if the condition is not met.
-	 * This can be used to log issues in development environments in critical
-	 * paths. Removing the logging code for production environments will keep the
-	 * same logic and follow the same code paths.
-	 */
-
-	var warning = function() {};
-
-	if (false) {
-	  warning = function(condition, format, args) {
-	    var len = arguments.length;
-	    args = new Array(len > 2 ? len - 2 : 0);
-	    for (var key = 2; key < len; key++) {
-	      args[key - 2] = arguments[key];
-	    }
-	    if (format === undefined) {
-	      throw new Error(
-	        '`warning(condition, format, ...args)` requires a warning ' +
-	        'message argument'
-	      );
-	    }
-
-	    if (format.length < 10 || (/^[s\W]*$/).test(format)) {
-	      throw new Error(
-	        'The warning format should be able to uniquely identify this ' +
-	        'warning. Please, use a more descriptive format than: ' + format
-	      );
-	    }
-
-	    if (!condition) {
-	      var argIndex = 0;
-	      var message = 'Warning: ' +
-	        format.replace(/%s/g, function() {
-	          return args[argIndex++];
-	        });
-	      if (typeof console !== 'undefined') {
-	        console.error(message);
-	      }
-	      try {
-	        // This error was thrown as a convenience so that you can use this stack
-	        // to find the callsite that caused this warning to fire.
-	        throw new Error(message);
-	      } catch(x) {}
-	    }
-	  };
-	}
-
-	module.exports = warning;
-
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * Copyright 2013-2015, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * LICENSE file in the root directory of this source tree. An additional grant
-	 * of patent rights can be found in the PATENTS file in the same directory.
-	 */
-
-	'use strict';
-
-	/**
-	 * Use invariant() to assert state which your program assumes to be true.
-	 *
-	 * Provide sprintf-style format (only %s is supported) and arguments
-	 * to provide information about what broke and what you were
-	 * expecting.
-	 *
-	 * The invariant message will be stripped in production, but the invariant
-	 * will remain to ensure logic does not differ in production.
-	 */
-
-	var invariant = function(condition, format, a, b, c, d, e, f) {
-	  if (false) {
-	    if (format === undefined) {
-	      throw new Error('invariant requires an error message argument');
-	    }
-	  }
-
-	  if (!condition) {
-	    var error;
-	    if (format === undefined) {
-	      error = new Error(
-	        'Minified exception occurred; use the non-minified dev environment ' +
-	        'for the full error message and additional helpful warnings.'
-	      );
-	    } else {
-	      var args = [a, b, c, d, e, f];
-	      var argIndex = 0;
-	      error = new Error(
-	        format.replace(/%s/g, function() { return args[argIndex++]; })
-	      );
-	      error.name = 'Invariant Violation';
-	    }
-
-	    error.framesToPop = 1; // we don't care about invariant's own frame
-	    throw error;
-	  }
-	};
-
-	module.exports = invariant;
-
-
-/***/ },
-/* 8 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	exports.__esModule = true;
-
-	var _warning = __webpack_require__(6);
-
-	var _warning2 = _interopRequireDefault(_warning);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	var createTransitionManager = function createTransitionManager() {
-	  var prompt = null;
-
-	  var setPrompt = function setPrompt(nextPrompt) {
-	     false ? (0, _warning2.default)(prompt == null, 'A history supports only one prompt at a time') : void 0;
-
-	    prompt = nextPrompt;
-
-	    return function () {
-	      if (prompt === nextPrompt) prompt = null;
-	    };
-	  };
-
-	  var confirmTransitionTo = function confirmTransitionTo(location, action, getUserConfirmation, callback) {
-	    // TODO: If another transition starts while we're still confirming
-	    // the previous one, we may end up in a weird state. Figure out the
-	    // best way to handle this.
-	    if (prompt != null) {
-	      var result = typeof prompt === 'function' ? prompt(location, action) : prompt;
-
-	      if (typeof result === 'string') {
-	        if (typeof getUserConfirmation === 'function') {
-	          getUserConfirmation(result, callback);
-	        } else {
-	           false ? (0, _warning2.default)(false, 'A history needs a getUserConfirmation function in order to use a prompt message') : void 0;
-
-	          callback(true);
-	        }
-	      } else {
-	        // Return false from a transition hook to cancel the transition.
-	        callback(result !== false);
-	      }
-	    } else {
-	      callback(true);
-	    }
-	  };
-
-	  var listeners = [];
-
-	  var appendListener = function appendListener(fn) {
-	    var isActive = true;
-
-	    var listener = function listener() {
-	      if (isActive) fn.apply(undefined, arguments);
-	    };
-
-	    listeners.push(listener);
-
-	    return function () {
-	      isActive = false;
-	      listeners = listeners.filter(function (item) {
-	        return item !== listener;
-	      });
-	    };
-	  };
-
-	  var notifyListeners = function notifyListeners() {
-	    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-	      args[_key] = arguments[_key];
-	    }
-
-	    listeners.forEach(function (listener) {
-	      return listener.apply(undefined, args);
-	    });
-	  };
-
-	  return {
-	    setPrompt: setPrompt,
-	    confirmTransitionTo: confirmTransitionTo,
-	    appendListener: appendListener,
-	    notifyListeners: notifyListeners
-	  };
-	};
-
-	exports.default = createTransitionManager;
-
-/***/ },
-/* 9 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	exports.__esModule = true;
-	var canUseDOM = exports.canUseDOM = !!(typeof window !== 'undefined' && window.document && window.document.createElement);
-
-	var addEventListener = exports.addEventListener = function addEventListener(node, event, listener) {
-	  return node.addEventListener ? node.addEventListener(event, listener, false) : node.attachEvent('on' + event, listener);
-	};
-
-	var removeEventListener = exports.removeEventListener = function removeEventListener(node, event, listener) {
-	  return node.removeEventListener ? node.removeEventListener(event, listener, false) : node.detachEvent('on' + event, listener);
-	};
-
-	var getConfirmation = exports.getConfirmation = function getConfirmation(message, callback) {
-	  return callback(window.confirm(message));
-	}; // eslint-disable-line no-alert
-
-	/**
-	 * Returns true if the HTML5 history API is supported. Taken from Modernizr.
-	 *
-	 * https://github.com/Modernizr/Modernizr/blob/master/LICENSE
-	 * https://github.com/Modernizr/Modernizr/blob/master/feature-detects/history.js
-	 * changed to avoid false negatives for Windows Phones: https://github.com/reactjs/react-router/issues/586
-	 */
-	var supportsHistory = exports.supportsHistory = function supportsHistory() {
-	  var ua = window.navigator.userAgent;
-
-	  if ((ua.indexOf('Android 2.') !== -1 || ua.indexOf('Android 4.0') !== -1) && ua.indexOf('Mobile Safari') !== -1 && ua.indexOf('Chrome') === -1 && ua.indexOf('Windows Phone') === -1) return false;
-
-	  return window.history && 'pushState' in window.history;
-	};
-
-	/**
-	 * Returns true if browser fires popstate on hash change.
-	 * IE10 and IE11 do not.
-	 */
-	var supportsPopStateOnHashChange = exports.supportsPopStateOnHashChange = function supportsPopStateOnHashChange() {
-	  return window.navigator.userAgent.indexOf('Trident') === -1;
-	};
-
-	/**
-	 * Returns false if using go(n) with hash history causes a full page reload.
-	 */
-	var supportsGoWithoutReloadUsingHash = exports.supportsGoWithoutReloadUsingHash = function supportsGoWithoutReloadUsingHash() {
-	  return window.navigator.userAgent.indexOf('Firefox') === -1;
-	};
-
-	/**
-	 * Returns true if a given popstate event is an extraneous WebKit event.
-	 * Accounts for the fact that Chrome on iOS fires real popstate events
-	 * containing undefined state when pressing the back button.
-	 */
-	var isExtraneousPopstateEvent = exports.isExtraneousPopstateEvent = function isExtraneousPopstateEvent(event) {
-	  return event.state === undefined && navigator.userAgent.indexOf('CriOS') === -1;
-	};
-
-/***/ },
-/* 10 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	exports.__esModule = true;
-
-	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-	var _warning = __webpack_require__(6);
-
-	var _warning2 = _interopRequireDefault(_warning);
-
-	var _invariant = __webpack_require__(7);
-
-	var _invariant2 = _interopRequireDefault(_invariant);
-
-	var _LocationUtils = __webpack_require__(1);
-
-	var _PathUtils = __webpack_require__(4);
-
-	var _createTransitionManager = __webpack_require__(8);
-
-	var _createTransitionManager2 = _interopRequireDefault(_createTransitionManager);
-
-	var _DOMUtils = __webpack_require__(9);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	var HashChangeEvent = 'hashchange';
-
-	var HashPathCoders = {
-	  hashbang: {
-	    encodePath: function encodePath(path) {
-	      return path.charAt(0) === '!' ? path : '!/' + (0, _PathUtils.stripLeadingSlash)(path);
-	    },
-	    decodePath: function decodePath(path) {
-	      return path.charAt(0) === '!' ? path.substr(1) : path;
-	    }
-	  },
-	  noslash: {
-	    encodePath: _PathUtils.stripLeadingSlash,
-	    decodePath: _PathUtils.addLeadingSlash
-	  },
-	  slash: {
-	    encodePath: _PathUtils.addLeadingSlash,
-	    decodePath: _PathUtils.addLeadingSlash
-	  }
-	};
-
-	var getHashPath = function getHashPath() {
-	  // We can't use window.location.hash here because it's not
-	  // consistent across browsers - Firefox will pre-decode it!
-	  var href = window.location.href;
-	  var hashIndex = href.indexOf('#');
-	  return hashIndex === -1 ? '' : href.substring(hashIndex + 1);
-	};
-
-	var pushHashPath = function pushHashPath(path) {
-	  return window.location.hash = path;
-	};
-
-	var replaceHashPath = function replaceHashPath(path) {
-	  var hashIndex = window.location.href.indexOf('#');
-
-	  window.location.replace(window.location.href.slice(0, hashIndex >= 0 ? hashIndex : 0) + '#' + path);
-	};
-
-	var createHashHistory = function createHashHistory() {
-	  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-	  !_DOMUtils.canUseDOM ?  false ? (0, _invariant2.default)(false, 'Hash history needs a DOM') : (0, _invariant2.default)(false) : void 0;
-
-	  var globalHistory = window.history;
-	  var canGoWithoutReload = (0, _DOMUtils.supportsGoWithoutReloadUsingHash)();
-
-	  var _props$getUserConfirm = props.getUserConfirmation,
-	      getUserConfirmation = _props$getUserConfirm === undefined ? _DOMUtils.getConfirmation : _props$getUserConfirm,
-	      _props$hashType = props.hashType,
-	      hashType = _props$hashType === undefined ? 'slash' : _props$hashType;
-
-	  var basename = props.basename ? (0, _PathUtils.stripTrailingSlash)((0, _PathUtils.addLeadingSlash)(props.basename)) : '';
-
-	  var _HashPathCoders$hashT = HashPathCoders[hashType],
-	      encodePath = _HashPathCoders$hashT.encodePath,
-	      decodePath = _HashPathCoders$hashT.decodePath;
-
-
-	  var getDOMLocation = function getDOMLocation() {
-	    var path = decodePath(getHashPath());
-
-	     false ? (0, _warning2.default)(!basename || (0, _PathUtils.hasBasename)(path, basename), 'You are attempting to use a basename on a page whose URL path does not begin ' + 'with the basename. Expected path "' + path + '" to begin with "' + basename + '".') : void 0;
-
-	    if (basename) path = (0, _PathUtils.stripBasename)(path, basename);
-
-	    return (0, _LocationUtils.createLocation)(path);
-	  };
-
-	  var transitionManager = (0, _createTransitionManager2.default)();
-
-	  var setState = function setState(nextState) {
-	    _extends(history, nextState);
-
-	    history.length = globalHistory.length;
-
-	    transitionManager.notifyListeners(history.location, history.action);
-	  };
-
-	  var forceNextPop = false;
-	  var ignorePath = null;
-
-	  var handleHashChange = function handleHashChange() {
-	    var path = getHashPath();
-	    var encodedPath = encodePath(path);
-
-	    if (path !== encodedPath) {
-	      // Ensure we always have a properly-encoded hash.
-	      replaceHashPath(encodedPath);
-	    } else {
-	      var location = getDOMLocation();
-	      var prevLocation = history.location;
-
-	      if (!forceNextPop && (0, _LocationUtils.locationsAreEqual)(prevLocation, location)) return; // A hashchange doesn't always == location change.
-
-	      if (ignorePath === (0, _PathUtils.createPath)(location)) return; // Ignore this change; we already setState in push/replace.
-
-	      ignorePath = null;
-
-	      handlePop(location);
-	    }
-	  };
-
-	  var handlePop = function handlePop(location) {
-	    if (forceNextPop) {
-	      forceNextPop = false;
-	      setState();
-	    } else {
-	      var action = 'POP';
-
-	      transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
-	        if (ok) {
-	          setState({ action: action, location: location });
-	        } else {
-	          revertPop(location);
-	        }
-	      });
-	    }
-	  };
-
-	  var revertPop = function revertPop(fromLocation) {
-	    var toLocation = history.location;
-
-	    // TODO: We could probably make this more reliable by
-	    // keeping a list of paths we've seen in sessionStorage.
-	    // Instead, we just default to 0 for paths we don't know.
-
-	    var toIndex = allPaths.lastIndexOf((0, _PathUtils.createPath)(toLocation));
-
-	    if (toIndex === -1) toIndex = 0;
-
-	    var fromIndex = allPaths.lastIndexOf((0, _PathUtils.createPath)(fromLocation));
-
-	    if (fromIndex === -1) fromIndex = 0;
-
-	    var delta = toIndex - fromIndex;
-
-	    if (delta) {
-	      forceNextPop = true;
-	      go(delta);
-	    }
-	  };
-
-	  // Ensure the hash is encoded properly before doing anything else.
-	  var path = getHashPath();
-	  var encodedPath = encodePath(path);
-
-	  if (path !== encodedPath) replaceHashPath(encodedPath);
-
-	  var initialLocation = getDOMLocation();
-	  var allPaths = [(0, _PathUtils.createPath)(initialLocation)];
-
-	  // Public interface
-
-	  var createHref = function createHref(location) {
-	    return '#' + encodePath(basename + (0, _PathUtils.createPath)(location));
-	  };
-
-	  var push = function push(path, state) {
-	     false ? (0, _warning2.default)(state === undefined, 'Hash history cannot push state; it is ignored') : void 0;
-
-	    var action = 'PUSH';
-	    var location = (0, _LocationUtils.createLocation)(path, undefined, undefined, history.location);
-
-	    transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
-	      if (!ok) return;
-
-	      var path = (0, _PathUtils.createPath)(location);
-	      var encodedPath = encodePath(basename + path);
-	      var hashChanged = getHashPath() !== encodedPath;
-
-	      if (hashChanged) {
-	        // We cannot tell if a hashchange was caused by a PUSH, so we'd
-	        // rather setState here and ignore the hashchange. The caveat here
-	        // is that other hash histories in the page will consider it a POP.
-	        ignorePath = path;
-	        pushHashPath(encodedPath);
-
-	        var prevIndex = allPaths.lastIndexOf((0, _PathUtils.createPath)(history.location));
-	        var nextPaths = allPaths.slice(0, prevIndex === -1 ? 0 : prevIndex + 1);
-
-	        nextPaths.push(path);
-	        allPaths = nextPaths;
-
-	        setState({ action: action, location: location });
-	      } else {
-	         false ? (0, _warning2.default)(false, 'Hash history cannot PUSH the same path; a new entry will not be added to the history stack') : void 0;
-
-	        setState();
-	      }
-	    });
-	  };
-
-	  var replace = function replace(path, state) {
-	     false ? (0, _warning2.default)(state === undefined, 'Hash history cannot replace state; it is ignored') : void 0;
-
-	    var action = 'REPLACE';
-	    var location = (0, _LocationUtils.createLocation)(path, undefined, undefined, history.location);
-
-	    transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
-	      if (!ok) return;
-
-	      var path = (0, _PathUtils.createPath)(location);
-	      var encodedPath = encodePath(basename + path);
-	      var hashChanged = getHashPath() !== encodedPath;
-
-	      if (hashChanged) {
-	        // We cannot tell if a hashchange was caused by a REPLACE, so we'd
-	        // rather setState here and ignore the hashchange. The caveat here
-	        // is that other hash histories in the page will consider it a POP.
-	        ignorePath = path;
-	        replaceHashPath(encodedPath);
-	      }
-
-	      var prevIndex = allPaths.indexOf((0, _PathUtils.createPath)(history.location));
-
-	      if (prevIndex !== -1) allPaths[prevIndex] = path;
-
-	      setState({ action: action, location: location });
-	    });
-	  };
-
-	  var go = function go(n) {
-	     false ? (0, _warning2.default)(canGoWithoutReload, 'Hash history go(n) causes a full page reload in this browser') : void 0;
-
-	    globalHistory.go(n);
-	  };
-
-	  var goBack = function goBack() {
-	    return go(-1);
-	  };
-
-	  var goForward = function goForward() {
-	    return go(1);
-	  };
-
-	  var listenerCount = 0;
-
-	  var checkDOMListeners = function checkDOMListeners(delta) {
-	    listenerCount += delta;
-
-	    if (listenerCount === 1) {
-	      (0, _DOMUtils.addEventListener)(window, HashChangeEvent, handleHashChange);
-	    } else if (listenerCount === 0) {
-	      (0, _DOMUtils.removeEventListener)(window, HashChangeEvent, handleHashChange);
-	    }
-	  };
-
-	  var isBlocked = false;
-
-	  var block = function block() {
-	    var prompt = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-
-	    var unblock = transitionManager.setPrompt(prompt);
-
-	    if (!isBlocked) {
-	      checkDOMListeners(1);
-	      isBlocked = true;
-	    }
-
-	    return function () {
-	      if (isBlocked) {
-	        isBlocked = false;
-	        checkDOMListeners(-1);
-	      }
-
-	      return unblock();
-	    };
-	  };
-
-	  var listen = function listen(listener) {
-	    var unlisten = transitionManager.appendListener(listener);
-	    checkDOMListeners(1);
-
-	    return function () {
-	      checkDOMListeners(-1);
-	      unlisten();
-	    };
-	  };
-
-	  var history = {
-	    length: globalHistory.length,
-	    action: 'POP',
-	    location: initialLocation,
-	    createHref: createHref,
-	    push: push,
-	    replace: replace,
-	    go: go,
-	    goBack: goBack,
-	    goForward: goForward,
-	    block: block,
-	    listen: listen
-	  };
-
-	  return history;
-	};
-
-	exports.default = createHashHistory;
-
-/***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	exports.__esModule = true;
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
-
-	var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-	var _warning = __webpack_require__(6);
-
-	var _warning2 = _interopRequireDefault(_warning);
-
-	var _PathUtils = __webpack_require__(4);
-
-	var _LocationUtils = __webpack_require__(1);
-
-	var _createTransitionManager = __webpack_require__(8);
-
-	var _createTransitionManager2 = _interopRequireDefault(_createTransitionManager);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	var clamp = function clamp(n, lowerBound, upperBound) {
-	  return Math.min(Math.max(n, lowerBound), upperBound);
-	};
-
-	/**
-	 * Creates a history object that stores locations in memory.
-	 */
-	var createMemoryHistory = function createMemoryHistory() {
-	  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-	  var getUserConfirmation = props.getUserConfirmation,
-	      _props$initialEntries = props.initialEntries,
-	      initialEntries = _props$initialEntries === undefined ? ['/'] : _props$initialEntries,
-	      _props$initialIndex = props.initialIndex,
-	      initialIndex = _props$initialIndex === undefined ? 0 : _props$initialIndex,
-	      _props$keyLength = props.keyLength,
-	      keyLength = _props$keyLength === undefined ? 6 : _props$keyLength;
-
-
-	  var transitionManager = (0, _createTransitionManager2.default)();
-
-	  var setState = function setState(nextState) {
-	    _extends(history, nextState);
-
-	    history.length = history.entries.length;
-
-	    transitionManager.notifyListeners(history.location, history.action);
-	  };
-
-	  var createKey = function createKey() {
-	    return Math.random().toString(36).substr(2, keyLength);
-	  };
-
-	  var index = clamp(initialIndex, 0, initialEntries.length - 1);
-	  var entries = initialEntries.map(function (entry) {
-	    return typeof entry === 'string' ? (0, _LocationUtils.createLocation)(entry, undefined, createKey()) : (0, _LocationUtils.createLocation)(entry, undefined, entry.key || createKey());
-	  });
-
-	  // Public interface
-
-	  var createHref = _PathUtils.createPath;
-
-	  var push = function push(path, state) {
-	     false ? (0, _warning2.default)(!((typeof path === 'undefined' ? 'undefined' : _typeof(path)) === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to push when the 1st ' + 'argument is a location-like object that already has state; it is ignored') : void 0;
-
-	    var action = 'PUSH';
-	    var location = (0, _LocationUtils.createLocation)(path, state, createKey(), history.location);
-
-	    transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
-	      if (!ok) return;
-
-	      var prevIndex = history.index;
-	      var nextIndex = prevIndex + 1;
-
-	      var nextEntries = history.entries.slice(0);
-	      if (nextEntries.length > nextIndex) {
-	        nextEntries.splice(nextIndex, nextEntries.length - nextIndex, location);
-	      } else {
-	        nextEntries.push(location);
-	      }
-
-	      setState({
-	        action: action,
-	        location: location,
-	        index: nextIndex,
-	        entries: nextEntries
-	      });
-	    });
-	  };
-
-	  var replace = function replace(path, state) {
-	     false ? (0, _warning2.default)(!((typeof path === 'undefined' ? 'undefined' : _typeof(path)) === 'object' && path.state !== undefined && state !== undefined), 'You should avoid providing a 2nd state argument to replace when the 1st ' + 'argument is a location-like object that already has state; it is ignored') : void 0;
-
-	    var action = 'REPLACE';
-	    var location = (0, _LocationUtils.createLocation)(path, state, createKey(), history.location);
-
-	    transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
-	      if (!ok) return;
-
-	      history.entries[history.index] = location;
-
-	      setState({ action: action, location: location });
-	    });
-	  };
-
-	  var go = function go(n) {
-	    var nextIndex = clamp(history.index + n, 0, history.entries.length - 1);
-
-	    var action = 'POP';
-	    var location = history.entries[nextIndex];
-
-	    transitionManager.confirmTransitionTo(location, action, getUserConfirmation, function (ok) {
-	      if (ok) {
-	        setState({
-	          action: action,
-	          location: location,
-	          index: nextIndex
-	        });
-	      } else {
-	        // Mimic the behavior of DOM histories by
-	        // causing a render after a cancelled POP.
-	        setState();
-	      }
-	    });
-	  };
-
-	  var goBack = function goBack() {
-	    return go(-1);
-	  };
-
-	  var goForward = function goForward() {
-	    return go(1);
-	  };
-
-	  var canGo = function canGo(n) {
-	    var nextIndex = history.index + n;
-	    return nextIndex >= 0 && nextIndex < history.entries.length;
-	  };
-
-	  var block = function block() {
-	    var prompt = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-	    return transitionManager.setPrompt(prompt);
-	  };
-
-	  var listen = function listen(listener) {
-	    return transitionManager.appendListener(listener);
-	  };
-
-	  var history = {
-	    length: entries.length,
-	    action: 'POP',
-	    location: entries[index],
-	    index: index,
-	    entries: entries,
-	    createHref: createHref,
-	    push: push,
-	    replace: replace,
-	    go: go,
-	    goBack: goBack,
-	    goForward: goForward,
-	    canGo: canGo,
-	    block: block,
-	    listen: listen
-	  };
-
-	  return history;
-	};
-
-	exports.default = createMemoryHistory;
-
-/***/ }
-/******/ ])
-});
-;;
-
-jb.component('url-history.map-url-to-resource', {
-	type: 'action',
-	params: [
-		{ id: 'params', type: 'data[]', as: 'array'},
-		{ id: 'resource', as: 'string' , essential: true },
-		{ id: 'base', as: 'string', description: 'base string to add/ingnore in url'},
-		{ id: 'onUrlChange', type: 'action', dynamic: true }
-	],
-	impl: function(context,params,resource,base) {
-		if (jb.ui.location) return;
-
-		jb.ui.location = History.createBrowserHistory();
-		jb.ui.location.path = _ => location.pathname;
-	    var browserUrlEm = jb.rx.Observable.create(obs=>
-			jb.ui.location.listen(x=>
-				obs.next(x.pathname)));
-
-	    function urlToObj(path) {
-	    	var vals = path.substring(path.indexOf(base) + base.length).split('/')
-	    			.map(x=>decodeURIComponent(x))
-	    	var res = {};
-	    	params.forEach((p,i) =>
-    			res[p] = (vals[i+1] || ''));
-	    	return res;
-	    }
-	    function objToUrl(obj) {
-	    	var split_base = jb.ui.location.path().split(`/${base}`);
-	    	var url = split_base[0] + `/${base}/` +
-	    		params.map(p=>jb.tostring(obj[p])||'')
-	    		.join('/');
-	    	return url.replace(/\/*$/,'');
-		}
-
-		var databindEm = jb.ui.resourceChange
-			.filter(e=> e.path[0] == resource)
-  			.map(_=> jb.resource(resource))
-	    	.filter(obj=>
-	    		obj[params[0]])
-	    	.map(obj=>
-	    		objToUrl(obj));
-
-	  browserUrlEm.merge(databindEm)
-	    	.startWith(jb.ui.location.path())
-	    	.distinctUntilChanged()
-	    	.subscribe(url => {
-		    	jb.ui.location.push(Object.assign({},jb.ui.location.location, {pathname: url}));
-		    	var obj = urlToObj(url);
-		    	params.forEach(p=>
-		    		jb.writeValue(context.exp(`%$${resource}/${p}%`,'ref'),jb.tostring(obj[p])));
-		    	context.params.onUrlChange(context.setData(url));
-	    	})
-	}
-})
-;
+/******/ });;
 
 (function() { var st = jb.studio;
 
@@ -29747,7 +29438,8 @@ function compsRef(val,opEvent) {
 
 st.compsRefHandler = new jb.ui.ImmutableWithJbId(compsRef);
 st.compsRefHandler.resourceChange.subscribe(e=>{
-	jb.log('scriptChange',[e.ctx,e]);
+	jb.log('scriptChange',[e.srcCtx,e]);
+	st.highlightByScriptPath(e.path);
 	st.lastStudioActivity= new Date().getTime()
 })
 // adaptors
@@ -30158,13 +29850,7 @@ jb.component('studio.all', {
     features: [
       {$: 'group.data', data: '%$studio/project%', watch: true },
       {$: 'feature.init',
-        action: [
-          {$: 'url-history.map-url-to-resource',
-            params: ['project', 'page', 'profile_path'],
-            resource: 'studio',
-            base: 'studio'
-          }
-        ]
+        action :{$: 'url-history.map-studio-url-to-resource', resource: 'studio' }
       }
     ]
   }
@@ -30394,6 +30080,69 @@ jb.component('studio.main-menu', {
       {$: 'studio.data-resource-menu' }
     ]
   }
+})
+;
+
+jb.component('url-history.map-studio-url-to-resource', {
+    type: 'action',
+    // /project/studio/${project}/${page}/${profile_path}
+    // /studio/${entry_file}/${shown_comp}/${profile_path}
+    // http://localhost:8082/studio/projects%2Fhello-world%2Fhello-world.html/hello-world.main/hello-world.main~impl
+    params: [
+        { id: 'resource', as: 'string' , essential: true },
+        { id: 'onUrlChange', type: 'action', dynamic: true }
+    ],
+    impl: function(context,resource) {
+        if (jb.ui.location || typeof window == 'undefined') return;
+        const base = 'studio'
+        const isProject = location.pathname.indexOf('/project') == 0;
+        const params = isProject ? ['project','page','profile_path'] : ['entry_file','shown_comp','profile_path']
+
+        jb.ui.location = History.createBrowserHistory();
+        jb.ui.location.path = _ => location.pathname;
+        const browserUrlEm = jb.rx.Observable.create(obs=>
+            jb.ui.location.listen(x=>
+                obs.next(x.pathname)));
+
+        function urlToObj(path) {
+            const vals = path.substring(path.indexOf(base) + base.length).split('/')
+                    .map(x=>decodeURIComponent(x))
+            let res = {};
+            params.forEach((p,i) =>
+                res[p] = (vals[i+1] || ''));
+            if (!isProject) {
+                res.project = res.shown_comp.split('.')[0]
+                res.page = res.shown_comp.split('.').pop()
+            }
+            return res;
+        }
+        function objToUrl(obj) {
+            const split_base = jb.ui.location.path().split(`/${base}`);
+            const url = split_base[0] + `/${base}/` +
+                params.map(p=>encodeURIComponent(jb.tostring(obj[p])||''))
+                .join('/');
+            return url.replace(/\/*$/,'');
+        }
+
+        const databindEm = jb.ui.resourceChange
+            .filter(e=> e.path[0] == resource)
+              .map(_=> jb.resource(resource))
+            .filter(obj=>
+                obj[params[0]])
+            .map(obj=>
+                objToUrl(obj));
+
+      browserUrlEm.merge(databindEm)
+            .startWith(jb.ui.location.path())
+            .distinctUntilChanged()
+            .subscribe(url => {
+                jb.ui.location.push(Object.assign({},jb.ui.location.location, {pathname: url}));
+                var obj = urlToObj(url);
+                params.forEach(p=>
+                    jb.writeValue(context.exp(`%$${resource}/${p}%`,'ref'),jb.tostring(obj[p])));
+                context.params.onUrlChange(context.setData(url));
+            })
+    }
 })
 ;
 
@@ -31558,7 +31307,7 @@ jb.component('studio.preview-widget', {
   impl: ctx =>
     jb.ui.ctrl(ctx,{
       init: cmp => {
-        cmp.state.project = ctx.exp('%$studio/project%');
+        Object.assign(cmp.state,ctx.exp('%$studio%'));
         cmp.state.cacheKiller = 'cacheKiller='+(''+Math.random()).slice(10);
         document.title = cmp.state.project + ' with jBart';
       },
@@ -31584,7 +31333,8 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
 			fixInvalidUrl()
 
 			function fixInvalidUrl() {
-				var profile_path = location.pathname.split('/studio/').pop().split('/')[2] || '';
+        if (location.pathname.indexOf('/project/studio/') != 0) return;
+				var profile_path = location.pathname.split('/project/studio/').pop().split('/')[2] || '';
         if (!profile_path || jb.studio.valOfPath(profile_path,true) != null) return;
 				while (profile_path && jb.studio.valOfPath(profile_path,true) == null)
 					profile_path = jb.studio.parentPath(profile_path);
@@ -31602,7 +31352,7 @@ jb.component('studio.preview-widget-impl', {
           class: 'preview-iframe',
           width: cmp.ctx.vars.$model.width,
           height: cmp.ctx.vars.$model.height,
-          src: `/project/${state.project}?${state.cacheKiller}&wspy=preview`
+          src: (state.entry_file ? `/${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
       }),
       css: `{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px;  }`
   }
@@ -31639,10 +31389,10 @@ jb.component('studio.wait-for-preview-iframe', {
 
 jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studio/page')
       .startWith(1)
-      .map(e=> {
+      .flatMap(e=> {
         const page = jb.resources.studio.project + '.' + jb.resources.studio.page;
         const ctrl = jb.studio.previewjb.comps[page] && jb.studio.previewjb.comps[page].type == 'data' ? 'studio.data-comp-inspector' : null;
-        return {page, ctrl}
+        return jb.resources.studio.page ? [{page, ctrl}] : []
       });
 
 jb.component('studio.data-comp-inspector', {
@@ -33069,7 +32819,7 @@ jb.component('studio.properties-in-tgp',{
 jb.component('studio.property-field', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'inline-controls', 
+  impl :{$: 'group', 
     $vars: {
       paramType :{$: 'studio.param-type', path: '%$path%' }, 
       paramDef :{$: 'studio.param-def', path: '%$path%' }
@@ -33440,232 +33190,241 @@ jb.component('studio.tgp-path-options',{
 var st = jb.studio;
 
 jb.component('studio.pick', {
-	type: 'action',
-	params: [
-		{ id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},
-		{ id: 'onSelect', type:'action', dynamic:true }
-	],
-	impl :{$: 'open-dialog',
-		$vars: { pickSelection: ctx =>
-      ctx.vars.pickSelection || {} },
-		style: {$: 'dialog.studio-pick-dialog', from: '%$from%'},
-		content: {$: 'label', title: ''}, // dummy
-		onOK: ctx =>
-			ctx.componentContext.params.onSelect(ctx.setData(ctx.vars.pickSelection.ctx))
-	 }
+    type: 'action',
+    params: [
+        { id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},
+        { id: 'onSelect', type:'action', dynamic:true }
+    ],
+    impl :{$: 'open-dialog',
+        $vars: { pickSelection: ctx =>
+            ctx.vars.pickSelection || {} },
+        style: {$: 'dialog.studio-pick-dialog', from: '%$from%'},
+        content: {$: 'label', title: ''}, // dummy
+        onOK: ctx =>
+            ctx.componentContext.params.onSelect(ctx.setData(ctx.vars.pickSelection.ctx))
+     }
 })
 
 jb.component('dialog.studio-pick-dialog', {
-	hidden: true,
-	type: 'dialog.style',
-	params: [
-		{ id: 'from', as: 'string' },
-	],
-	impl: {$: 'custom-style',
-	      template: (cmp,state,h) => h('div',{ class: 'jb-dialog' },[
+    hidden: true,
+    type: 'dialog.style',
+    params: [
+        { id: 'from', as: 'string' },
+    ],
+    impl: {$: 'custom-style',
+          template: (cmp,state,h) => h('div',{ class: 'jb-dialog' },[
 h('div',{ class: 'edge top', style: { width: state.width + 'px', top: state.top + 'px', left: state.left + 'px' }}) ,
 h('div',{ class: 'edge left', style: { height: state.height +'px', top: state.top + 'px', left: state.left + 'px' }}),
 h('div',{ class: 'edge right', style: { height: state.height +'px', top: state.top + 'px', left: (state.left + state.width) + 'px' }}) ,
 h('div',{ class: 'edge bottom', style: { width: state.width + 'px', top: (state.top + state.height) +'px', left: state.left + 'px' }}) ,
 h('div',{ class: 'title' + (state.titleBelow ? ' bottom' : ''), style: { top: state.titleTop + 'px', left: state.titleLeft + 'px'} },[
-			h('div',{ class: 'text'},state.title),
-			h('div',{ class: 'triangle'}),
-	])]),
-		css: `
+            h('div',{ class: 'text'},state.title),
+            h('div',{ class: 'triangle'}),
+    ])]),
+        css: `
 >.edge {
-	z-index: 6001;
-	position: absolute;
-	background: red;
-	box-shadow: 0 0 1px 1px gray;
-	width: 1px; height: 1px;
-	cursor: pointer;
+    z-index: 6001;
+    position: absolute;
+    background: red;
+    box-shadow: 0 0 1px 1px gray;
+    width: 1px; height: 1px;
+    cursor: pointer;
 }
 >.title {
-	z-index: 6001;
-	position: absolute;
-	font: 14px arial; padding: 0; cursor: pointer;
-	transition:top 100ms, left 100ms;
+    z-index: 6001;
+    position: absolute;
+    font: 14px arial; padding: 0; cursor: pointer;
+    transition:top 100ms, left 100ms;
 }
 >.title .triangle {	width:0;height:0; border-style: solid; 	border-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}
 >.title .text {	background: #e0e0e0; font: 14px arial; padding: 3px; }
 >.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}
 >.title.bottom .text { transform: translateY(6px);}
-				`,
-			features: [
-				{ $: 'dialog-feature.studio-pick', from: '%$from%' },
-			]
-	}
+                `,
+            features: [
+                { $: 'dialog-feature.studio-pick', from: '%$from%' },
+            ]
+    }
 })
 
 
 jb.component('dialog-feature.studio-pick', {
-	type: 'dialog-feature',
-	params: [
-		{ id: 'from', as: 'string' },
-	],
-	impl: ctx => ({
+    type: 'dialog-feature',
+    params: [
+        { id: 'from', as: 'string' },
+    ],
+    impl: ctx => ({
       init: cmp=> {
-		  const _window = ctx.params.from == 'preview' ? st.previewWindow : window;
-		  const previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
-		  cmp.titleBelow = false;
+          const _window = ctx.params.from == 'preview' ? st.previewWindow : window;
+          const previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
+          cmp.titleBelow = false;
 
-		  const mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
-		  let userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
-		  let keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
-		  if (st.previewWindow) {
-		  	userPick = userPick.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'mousedown'));
-		  	keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'keyup'));
-		  };
-		  mouseMoveEm
-		  	.debounceTime(50)
-		  	.takeUntil(
-		  		keyUpEm.filter(e=>
-		  			e.keyCode == 27)
-		  			  .merge(userPick))
-		  	// .do(e=>{
-		  	// 	if (e.keyCode == 27)
-		  	// 		ctx.vars.$dialog.close({OK:false});
-		  	// })
-		  	.map(e=>
-		  		eventToElem(e,_window))
-		  	.filter(x=>x && x.getAttribute)
-		  	.do(profElem=>
-            	showBox(cmp,profElem,_window,previewOffset))
-        	.last() // esc or user pick
-		  	.subscribe(profElem=> {
-	  		    ctx.vars.pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];
-	  		    ctx.vars.pickSelection.elem = profElem;
-		  		ctx.vars.$dialog.close({OK: true});
-		  		// jb.delay(200).then(_=> {
-		    //         if (st.previewWindow && st.previewWindow.getSelection())
-		    //           st.previewWindow.getSelection().innerHTML = ''
-		    //         })
-		  	})
-		}
-	})
+          const mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
+          let userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
+          let keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
+          if (st.previewWindow) {
+              userPick = userPick.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'mousedown'));
+              keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'keyup'));
+          }
+          mouseMoveEm
+              .debounceTime(50)
+              .takeUntil(
+                  keyUpEm.filter(e=>
+                      e.keyCode == 27)
+                        .merge(userPick))
+              // .do(e=>{
+              // 	if (e.keyCode == 27)
+              // 		ctx.vars.$dialog.close({OK:false});
+              // })
+              .map(e=>
+                  eventToElem(e,_window))
+              .filter(x=>x && x.getAttribute)
+              .do(profElem=>
+                showBox(cmp,profElem,_window,previewOffset))
+            .last() // esc or user pick
+              .subscribe(profElem=> {
+                  ctx.vars.pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];
+                  ctx.vars.pickSelection.elem = profElem;
+                  ctx.vars.$dialog.close({OK: true});
+                  // jb.delay(200).then(_=> {
+            //         if (st.previewWindow && st.previewWindow.getSelection())
+            //           st.previewWindow.getSelection().innerHTML = ''
+            //         })
+              })
+        }
+    })
 })
 
 function pathFromElem(_window,profElem) {
-	try {
-		return _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx') || profElem.parentElement.getAttribute('jb-ctx')].path;
-	} catch (e) {
-		return '';
-	}
-	//profElem.attr('jb-path');
+    try {
+        return _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx') || profElem.parentElement.getAttribute('jb-ctx')].path;
+    } catch (e) {
+        return '';
+    }
+    //profElem.attr('jb-path');
 }
 
 function eventToElem(e,_window) {
-	var mousePos = {
-		x: e.pageX - document.body.scrollLeft, y: e.pageY - - document.body.scrollTop
-	};
-	var el = _window.document.elementFromPoint(mousePos.x, mousePos.y);
-	if (!el) return;
-	var results = [el].concat(jb.ui.parents(el))
-		.filter(e =>
-			e && e.getAttribute && e.getAttribute('jb-ctx') );
-	if (results.length == 0) return [];
+    const mousePos = {
+        x: e.pageX - document.body.scrollLeft, y: e.pageY - - document.body.scrollTop
+    };
+    const el = _window.document.elementFromPoint(mousePos.x, mousePos.y);
+    if (!el) return;
+    const results = [el].concat(jb.ui.parents(el))
+        .filter(e =>
+            e && e.getAttribute && e.getAttribute('jb-ctx') );
+    if (results.length == 0) return [];
 
-	// promote parents if the mouse is near the edge
-	var first_result = results.shift(); // shift also removes first item from results!
-	var edgeY = Math.max(3,Math.floor(jb.ui.outerHeight(first_result) / 10));
-	var edgeX = Math.max(3,Math.floor(jb.ui.outerWidth(first_result) / 10));
+    // promote parents if the mouse is near the edge
+    const first_result = results.shift(); // shift also removes first item from results!
+    const edgeY = Math.max(3,Math.floor(jb.ui.outerHeight(first_result) / 10));
+    const edgeX = Math.max(3,Math.floor(jb.ui.outerWidth(first_result) / 10));
 
-	var orderedResults = results.filter(elem=>{
-		return Math.abs(mousePos.y - jb.ui.offset(elem).top) < edgeY || Math.abs(mousePos.x - jb.ui.offset(elem).left) < edgeX;
-	}).concat([first_result]);
-	return orderedResults[0];
+    const orderedResults = results.filter(elem=>{
+        return Math.abs(mousePos.y - jb.ui.offset(elem).top) < edgeY || Math.abs(mousePos.x - jb.ui.offset(elem).left) < edgeX;
+    }).concat([first_result]);
+    return orderedResults[0];
 }
 
 function showBox(cmp,profElem,_window,previewOffset) {
-  var profElem_offset = jb.ui.offset(profElem);
-	if (profElem_offset == null || jb.ui.offset(document.querySelector('#jb-preview')) == null)
-		return;
+  const profElem_offset = jb.ui.offset(profElem);
+  if (profElem_offset == null || jb.ui.offset(document.querySelector('#jb-preview')) == null)
+    return;
 
-	cmp.setState({
-		top: previewOffset + profElem_offset.top,
-		left: profElem_offset.left,
-		width: jb.ui.outerWidth(profElem) == jb.ui.outerWidth(_window.document.body) ? jb.ui.outerWidth(profElem) -10 : cmp.width = jb.ui.outerWidth(profElem),
-		height: jb.ui.outerHeight(profElem),
-		title: st.shortTitle(pathFromElem(_window,profElem)),
-		titleTop: previewOffset + profElem_offset.top - 20,
-		titleLeft: profElem_offset.left
-	});
+    cmp.setState({
+        top: previewOffset + profElem_offset.top,
+        left: profElem_offset.left,
+        width: jb.ui.outerWidth(profElem) == jb.ui.outerWidth(_window.document.body) ? jb.ui.outerWidth(profElem) -10 : cmp.width = jb.ui.outerWidth(profElem),
+        height: jb.ui.outerHeight(profElem),
+        title: st.shortTitle(pathFromElem(_window,profElem)),
+        titleTop: previewOffset + profElem_offset.top - 20,
+        titleLeft: profElem_offset.left
+    });
 }
 
 jb.studio.getOrCreateHighlightBox = function() {
-  var _window = st.previewWindow || window;
+  const _window = st.previewWindow || window;
   if (!_window.document.querySelector('#preview-box')) {
-    var elem = _window.document.createElement('div');
+    const elem = _window.document.createElement('div');
     elem.setAttribute('id','preview-box');
     !_window.document.body.appendChild(elem);
   }
   return _window.document.querySelector('#preview-box');
 }
 
-jb.studio.highlightCtx = function(ctx) {
-	var _window = st.previewWindow || window;
-	jb.studio.highlight(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
+st.highlightCtx = function(ctx) {
+    if (!ctx) return
+    const _window = st.previewWindow || window;
+    st.highlight(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
 //		.filter(e=>e.getAttribute('jb-ctx') == ctx.id))
 }
 
-jb.studio.highlight = function(elems) {
-	//var boxes = [];
-	var html = elems.map(el => {
-			var offset = jb.ui.offset(el);
-			var width = jb.ui.outerWidth(el);
-	  if (width == jb.ui.outerWidth(document.body)) width -= 10;
-	  return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; zIndex: 5000;
-	  width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
-	}).join('');
-	var box = jb.studio.getOrCreateHighlightBox();
-	jb.ui.removeClass(box,'jb-fade-3s-transition');
-	box.innerHTML = html;
-	jb.delay(1).then(_=> jb.ui.addClass(box,'jb-fade-3s-transition'));
-	jb.delay(1000).then(_=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
+st.highlightByScriptPath = function(path) {
+    const pathStr = Array.isArray(path) ? path.join('~') : path;
+    const result = st.closestCtxInPreview(pathStr)
+    st.highlightCtx(result.ctx)
+}
+
+
+st.highlight = function(elems) {
+    const html = elems.map(el => {
+        const offset = jb.ui.offset(el);
+        let width = jb.ui.outerWidth(el);
+        if (width == jb.ui.outerWidth(document.body)) 
+            width -= 10;
+        return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; zIndex: 5000;
+            width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
+    }).join('');
+
+    const box = jb.studio.getOrCreateHighlightBox();
+    jb.ui.removeClass(box,'jb-fade-3s-transition');
+    box.innerHTML = html;
+    jb.delay(1).then(()=> jb.ui.addClass(box,'jb-fade-3s-transition'));
+    jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
 }
 
 jb.component('studio.highlight-in-preview',{
-	type: 'action',
-	params: [
-		{ id: 'path', as: 'string' }
-	],
-	impl: (ctx,path) => {
-		var _window = st.previewWindow || window;
-		if (!_window) return;
-		var elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
-			.filter(e=>{
-				var _ctx = _window.jb.ctxDictionary[e.getAttribute('jb-ctx')];
-				var callerPath = _ctx && _ctx.componentContext && _ctx.componentContext.callerPath;
-				return callerPath == path || (_ctx && _ctx.path == path);
-			})
+    type: 'action',
+    params: [
+        { id: 'path', as: 'string' }
+    ],
+    impl: (ctx,path) => {
+        const _window = st.previewWindow || window;
+        if (!_window) return;
+        let elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
+            .filter(e=>{
+                const _ctx = _window.jb.ctxDictionary[e.getAttribute('jb-ctx')];
+                const callerPath = _ctx && _ctx.componentContext && _ctx.componentContext.callerPath;
+                return callerPath == path || (_ctx && _ctx.path == path);
+            })
 
-		if (elems.length == 0) // try to look in studio
-			elems = Array.from(document.querySelectorAll('[jb-ctx]'))
-			.filter(e=> {
-				var _ctx = jb.ctxDictionary[e.getAttribute('jb-ctx')];
-				return _ctx && _ctx.path == path
-			})
+        if (elems.length == 0) // try to look in studio
+            elems = Array.from(document.querySelectorAll('[jb-ctx]'))
+            .filter(e=> {
+                const _ctx = jb.ctxDictionary[e.getAttribute('jb-ctx')];
+                return _ctx && _ctx.path == path
+            })
 
-		jb.studio.highlight(elems);
+        jb.studio.highlight(elems);
   }
 })
 
 st.closestCtxInPreview = _path => {
-	var path = _path.split('~fields~')[0]; // field is passive..
-	var _window = st.previewWindow || window;
-	if (!_window) return;
-	var closest,closestElem;
-	var elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
-	for(var i=0;i<elems.length;i++) {
-		var _ctx = _window.jb.ctxDictionary[elems[i].getAttribute('jb-ctx')];
-		if (!_ctx) continue; //  || !st.isOfType(_ctx.path,'control'))
-		if (_ctx.path == path)
-			return {ctx: _ctx, elem: elems[i]} ;
-		if (path.indexOf(_ctx.path) == 0 && (!closest || closest.path.length < _ctx.path.length)) {
-			closest = _ctx; closestElem = elems[i]
-		}
-	}
-	return {ctx: closest, elem: closestElem};
+    const path = _path.split('~fields~')[0]; // field is passive..
+    const _window = st.previewWindow || window;
+    if (!_window) return;
+    let closest,closestElem;
+    const elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
+    for(var i=0;i<elems.length;i++) {
+        const _ctx = _window.jb.ctxDictionary[elems[i].getAttribute('jb-ctx')];
+        if (!_ctx) continue; //  || !st.isOfType(_ctx.path,'control'))
+        if (_ctx.path == path)
+            return {ctx: _ctx, elem: elems[i]} ;
+        if (path.indexOf(_ctx.path) == 0 && (!closest || closest.path.length < _ctx.path.length)) {
+            closest = _ctx; closestElem = elems[i]
+        }
+    }
+    return {ctx: closest, elem: closestElem};
 }
 
 // st.refreshPreviewOfPath = path => {
@@ -34709,156 +34468,169 @@ class CompOption {
 })()
 ;
 
-(function() {
-var st = jb.studio;
+(function () {
+  var st = jb.studio;
 
-st.compsHistory = [];
-st.undoIndex = 0;
+  st.compsHistory = [];
+  st.undoIndex = 0;
 
-function setToVersion(versionIndex,ctx,after) {
-		var version = st.compsHistory[versionIndex];
-		if (!version || !version.opEvent) debugger;
+  function setToVersion(versionIndex, ctx, after) {
+    var version = st.compsHistory[versionIndex];
+    if (!version || !version.opEvent) debugger;
 
-    opEvent = Object.assign({},version.opEvent);
+    let opEvent = Object.assign({}, version.opEvent);
     opEvent.oldVal = version.opEvent.newVal;
     opEvent.newVal = version.opEvent.oldVal;
     opEvent.srcCtx = ctx;
 
     if (after) {
       st.previewjb.comps = version.after;
-	    st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsAfter;
+      st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsAfter;
     } else {
       st.previewjb.comps = version.before;
-	    st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsBefore;
+      st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsBefore;
     }
 
     st.compsRefHandler.resourceChange.next(opEvent);
-}
+  }
 
-jb.component('studio.undo', {
-	type: 'action',
-	impl: ctx => {
-		if (st.undoIndex > 0)
-			setToVersion(--st.undoIndex,ctx)
-	}
-})
+  jb.component('studio.undo', {
+    type: 'action',
+    impl: ctx => {
+      if (st.undoIndex > 0)
+        setToVersion(--st.undoIndex, ctx)
+    }
+  })
 
-jb.component('studio.clean-selection-preview', {
-	type: 'action',
-	impl: (ctx) => {
-		if (st.compsHistory.length > 0)
-			st.previewjb.comps = st.compsHistory.slice(-1)[0].after;
-	}
-})
+  jb.component('studio.clean-selection-preview', {
+    type: 'action',
+    impl: () => {
+      if (st.compsHistory.length > 0)
+        st.previewjb.comps = st.compsHistory.slice(-1)[0].after;
+    }
+  })
 
-jb.component('studio.revert', {
-	type: 'action',
-	params: [
-		{ id: 'toIndex', as: 'number' }
-	],
-	impl: (ctx,toIndex) => {
-		if (st.compsHistory.length == 0 || toIndex < 0) return;
-		st.undoIndex = toIndex;
-		st.compsHistory = st.compsHistory.slice(0,toIndex+1);
-		setToVersion(st.undoIndex,ctx)
-	}
-})
+  jb.component('studio.revert', {
+    type: 'action',
+    params: [
+      { id: 'toIndex', as: 'number' }
+    ],
+    impl: (ctx, toIndex) => {
+      if (st.compsHistory.length == 0 || toIndex < 0) return;
+      st.undoIndex = toIndex;
+      st.compsHistory = st.compsHistory.slice(0, toIndex + 1);
+      setToVersion(st.undoIndex, ctx)
+    }
+  })
 
-jb.component('studio.redo', {
-	type: 'action',
-	impl: ctx => {
-		if (st.undoIndex < st.compsHistory.length)
-			setToVersion(st.undoIndex++,ctx,true)
-	}
-})
+  jb.component('studio.redo', {
+    type: 'action',
+    impl: ctx => {
+      if (st.undoIndex < st.compsHistory.length)
+        setToVersion(st.undoIndex++, ctx, true)
+    }
+  })
 
-jb.component('studio.copy', {
-	type: 'action',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
-		st.clipboard = st.valOfPath(path)
-})
+  jb.component('studio.copy', {
+    type: 'action',
+    params: [{ id: 'path', as: 'string' }],
+    impl: (ctx, path) =>
+      st.clipboard = st.valOfPath(path)
+  })
 
-jb.component('studio.paste', {
-	type: 'action',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
-		(st.clipboard != null) && jb.writeValue(st.refOfPath(path),st.clipboard,ctx)
-})
+  jb.component('studio.paste', {
+    type: 'action',
+    params: [{ id: 'path', as: 'string' }],
+    impl: (ctx, path) =>
+      (st.clipboard != null) && jb.writeValue(st.refOfPath(path), st.clipboard, ctx)
+  })
 
-jb.component('studio.script-history-items', {
-	impl: ctx => st.compsHistory
-})
+  jb.component('studio.script-history-items', {
+    impl: ctx => st.compsHistory
+  })
 
-jb.component('studio.comps-undo-index', {
-	impl: ctx => st.undoIndex-1
-})
+  jb.component('studio.comps-undo-index', {
+    impl: ctx => st.undoIndex - 1
+  })
 
-jb.component('studio.open-script-history', {
-  type: 'action',
-  impl :{$: 'open-dialog',
-      content :{$: 'studio.script-history' },
-      style :{$: 'dialog.studio-floating',
+  jb.component('studio.open-script-history', {
+    type: 'action',
+    impl: {
+      $: 'open-dialog',
+      content: { $: 'studio.script-history' },
+      style: {
+        $: 'dialog.studio-floating',
         id: 'script-history',
         width: '700',
         height: '400'
       },
       title: 'Script History'
-  }
-})
+    }
+  })
 
-jb.component('studio.script-history', {
-  type: 'control',
-  impl :{$: 'group',
-    controls: [
-      {$: 'table',
-        items :{$: 'studio.script-history-items' },
-        fields: [
-          {$: 'field.control',
-            title: 'changed',
-            control :{$: 'button',
-              title :{$: 'studio.name-of-ref', ref: '%opEvent/ref%' },
-              action :{$: 'studio.goto-path',
-                path :{$: 'studio.path-of-ref', ref: '%opEvent/ref%' }
+  jb.component('studio.script-history', {
+    type: 'control',
+    impl: {
+      $: 'group',
+      controls: [
+        {
+          $: 'table',
+          items: { $: 'studio.script-history-items' },
+          fields: [
+            {
+              $: 'field.control',
+              title: 'changed',
+              control: {
+                $: 'button',
+                title: { $: 'studio.name-of-ref', ref: '%opEvent/ref%' },
+                action: {
+                  $: 'studio.goto-path',
+                  path: { $: 'studio.path-of-ref', ref: '%opEvent/ref%' }
+                },
+                style: { $: 'button.href' },
+                features: {
+                  $: 'feature.hover-title',
+                  title: { $: 'studio.path-of-ref', ref: '%opEvent/ref%' }
+                }
               },
-              style :{$: 'button.href' },
-              features :{$: 'feature.hover-title',
-                title :{$: 'studio.path-of-ref', ref: '%opEvent/ref%' }
-              }
+              width: '100'
             },
-            width: '100'
-          },
-          {$: 'field',
-            title: 'from',
-            data :{$: 'pretty-print', profile: '%opEvent/oldVal%' },
-            width: '200'
-          },
-          {$: 'field',
-            title: 'to',
-            data :{$: 'pretty-print', profile: '%opEvent/newVal%' },
-            width: '200'
-          },
-          {$: 'field.control',
-            title: 'undo/redo',
-            control :{$: 'button',
-              title: 'revert to here',
-              action :{$: 'studio.revert', toIndex: '%undoIndex%' },
-              style :{$: 'button.href' }
+            {
+              $: 'field',
+              title: 'from',
+              data: { $: 'pretty-print', profile: '%opEvent/oldVal%' },
+              width: '200'
             },
-            width: '100'
-          }
-        ],
-        style :{$: 'table.with-headers' }
-      }
-    ],
-    features: [
-      {$: 'watch-observable',
-        toWatch: ctx => st.compsRefHandler.resourceChange.debounceTime(500),
-      },
-      {$: 'css.height', height: '400', overflow: 'auto', minMax: 'max' }
-    ]
-  }
-})
+            {
+              $: 'field',
+              title: 'to',
+              data: { $: 'pretty-print', profile: '%opEvent/newVal%' },
+              width: '200'
+            },
+            {
+              $: 'field.control',
+              title: 'undo/redo',
+              control: {
+                $: 'button',
+                title: 'revert to here',
+                action: { $: 'studio.revert', toIndex: '%undoIndex%' },
+                style: { $: 'button.href' }
+              },
+              width: '100'
+            }
+          ],
+          style: { $: 'table.with-headers' }
+        }
+      ],
+      features: [
+        {
+          $: 'watch-observable',
+          toWatch: ctx => st.compsRefHandler.resourceChange.debounceTime(500),
+        },
+        { $: 'css.height', height: '400', overflow: 'auto', minMax: 'max' }
+      ]
+    }
+  })
 
 
 })()

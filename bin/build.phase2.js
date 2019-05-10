@@ -18,7 +18,7 @@ function filesOfModules(modules) {
 }
 
 var jbReactFiles = filesOfModules('common','ui-common','ui-tree').filter(x=>!x.match(/.css$/));
-var studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,pretty-print,history').filter(x=>!x.match(/.css$/))
+var studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,pretty-print,history,deep-diff').filter(x=>!x.match(/.css$/))
     .concat(resources.studio.map(x=>'projects/studio/studio-' + x + '.js'));
 var studioCssFiles = filesOfModules('common,ui-common,ui-tree,codemirror').filter(x=>x.match(/.css$/));
 var nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').filter(x=>!x.match(/.css$/));

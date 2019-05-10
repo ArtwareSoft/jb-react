@@ -110,8 +110,9 @@ jb.component('var', {
   ],
   impl: (context, name, value, mutable, globalId) => ({
       destroy: cmp => {
+        const fullName = globalId || (name + ':' + cmp.resourceId);
         if (mutable)
-          jb.writeValue(jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]),null,context)
+          jb.writeValue(jb.valueByRefHandler.refOfPath([fullName]),null,context)
       },
       extendCtxOnce: (ctx,cmp) => {
         if (!mutable) {
@@ -121,7 +122,8 @@ jb.component('var', {
           const fullName = globalId || (name + ':' + cmp.resourceId);
           jb.log('var',['new-resource',ctx,fullName])
           jb.resource(fullName, jb.val(value(ctx)));
-          var refToResource = jb.valueByRefHandler.refOfPath([fullName]);
+          //jb.valueByRefHandler.resourceReferred && jb.valueByRefHandler.resourceReferred(fullName);
+          const refToResource = jb.valueByRefHandler.refOfPath([fullName]);
           //jb.writeValue(refToResource,value(ctx.setData(cmp)),context);
           //jb.writeValue(refToResource, jb.val(value(ctx)), context);
           return ctx.setVars(jb.obj(name, refToResource));

@@ -123,7 +123,9 @@ class ImmutableWithJbId {
       if (typeof ref.handler.val != 'function') debugger
       return ref.handler.val(ref)
     }
-    return this.valOfPath(this.pathOfRef(ref))
+    const path = this.pathOfRef(ref);
+    if (!path) debugger
+    return this.valOfPath(path)
   }
   isRef(ref) {
     return ref && (ref.$jb_obj || ref.$jb_val);
@@ -143,10 +145,10 @@ class ImmutableWithJbId {
     if (!ref || !this.isRef(ref))
       return jb.logError('writeValue: err in ref', srcCtx);
 
-    if (this.val(ref) === value) return;
     jb.log('writeValue',['immutable',this.asStr(ref),value,ref,srcCtx]);
     if (ref.$jb_val)
       return ref.$jb_val(value);
+    if (this.val(ref) === value) return;
     return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
   }
   createSecondaryLink(val) {
@@ -194,7 +196,7 @@ class ImmutableWithJbId {
   }
   getOrCreateObservable(req) {
       const subject = new jb.rx.Subject()
-      const entry = {...req, subject}
+      const entry = { ...req, subject}
       this.observables.push(entry);
       this.observables.sort((e1,e2) => comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
       req.cmp.destroyed.then(_=> {

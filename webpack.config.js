@@ -1,10 +1,10 @@
-var webpack = require('webpack');
-var path = require('path');
+const webpack = require('webpack');
+const path = require('path');
 
-var JBART_DIR = __dirname + '/';
+const JBART_DIR = __dirname + '/';
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
-var jbRx = {
+const jbRx = {
   mode: 'development',
   entry: JBART_DIR + 'src/ui/jb-rx.js',
   output: {
@@ -14,7 +14,7 @@ var jbRx = {
   resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
 };
 
-var jbPreact = {
+const jbPreact = {
   mode: 'development',
   entry: JBART_DIR + 'src/ui/jb-preact.js',
   output: {
@@ -24,7 +24,7 @@ var jbPreact = {
   resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
 };
 
-var jbImmutable = {
+const jbImmutable = {
   mode: 'development',
   entry: JBART_DIR + 'src/ui/jb-immutable.js',
   output: {
@@ -35,7 +35,7 @@ var jbImmutable = {
 //  resolve1: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
 };
 
-var babel_ext = {
+const babel_ext = {
   mode: 'development',
   entry: JBART_DIR + 'projects/studio/studio-babel-ext.js',
   output: {
@@ -49,7 +49,17 @@ var babel_ext = {
   resolve: { modules: [ 'node_modules' ] },
 };
 
-var jbRxMin = {
+const deepDiff = {
+  mode: 'development',
+  entry: JBART_DIR + 'projects/studio/studio-deep-diff-ext.js',
+  output: {
+    path: JBART_DIR + 'dist',
+    filename: 'deep-diff.js',
+  },
+  resolve: { modules: [ 'node_modules' ] },
+};
+
+const jbRxMin = {
   mode: 'development',
   entry: JBART_DIR + 'src/ui/jb-rx.js',
 //  entry: JBART_DIR + 'projects/ui-tests/common-styles.jsx',
@@ -61,7 +71,7 @@ var jbRxMin = {
   plugins: [ new UglifyJSPlugin() ],
 };
 
-var jbJison = {
+const jbJison = {
   mode: 'development',
   entry: JBART_DIR + 'src/misc/jb-jison.js',
   output: {
@@ -75,4 +85,4 @@ var jbJison = {
   resolve: { modules: [ 'node_modules'] },
 };
 
-module.exports = [jbPreact,jbImmutable,jbRx,babel_ext,jbJison];
+module.exports = [jbPreact,jbImmutable,jbRx,babel_ext,jbJison,deepDiff];

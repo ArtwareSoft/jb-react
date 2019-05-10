@@ -116,6 +116,9 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'css/font.css',
         'css/styles.css',
       ],
+      'deep-diff': [
+        'dist/deep-diff.js',
+      ],
       babel: [
         'node_modules/babel-standalone/babel.js',
         'dist/babel-ext.js'

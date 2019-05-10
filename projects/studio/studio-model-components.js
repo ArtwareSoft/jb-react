@@ -8,85 +8,85 @@ jb.component('studio.val', {
 })
 
 jb.component('studio.is-primitive-value', {
-  params: [ {id: 'path', as: 'string', essential: true } ],
-  impl: (ctx,path) =>
-      st.isPrimitiveValue(st.valOfPath(path))
+	params: [ {id: 'path', as: 'string', essential: true } ],
+	impl: (ctx,path) =>
+			st.isPrimitiveValue(st.valOfPath(path))
 })
 
 jb.component('studio.is-of-type', {
-  params: [
-  	{ id: 'path', as: 'string', essential: true },
-  	{ id: 'type', as: 'string', essential: true },
-  ],
-  impl: (ctx,path,_type) =>
-      st.isOfType(path,_type)
+	params: [
+		{ id: 'path', as: 'string', essential: true },
+		{ id: 'type', as: 'string', essential: true },
+	],
+	impl: (ctx,path,_type) =>
+			st.isOfType(path,_type)
 })
 
 jb.component('studio.param-type', {
-  params: [
-  	{ id: 'path', as: 'string', essential: true },
-  ],
-  impl: (ctx,path) =>
-      st.paramTypeOfPath(path)
+	params: [
+		{ id: 'path', as: 'string', essential: true },
+	],
+	impl: (ctx,path) =>
+			st.paramTypeOfPath(path)
 })
 
 jb.component('studio.PTs-of-type', {
-  params: [
-  	{ id: 'type', as: 'string', essential: true },
-  ],
-  impl: (ctx,_type) =>
-      st.PTsOfType(_type)
+	params: [
+		{ id: 'type', as: 'string', essential: true },
+	],
+	impl: (ctx,_type) =>
+			st.PTsOfType(_type)
 })
 
 jb.component('studio.profiles-of-PT', {
-  params: [
-  	{ id: 'PT', as: 'string', essential: true },
-  ],
-  impl: (ctx, pt) =>
-      st.profilesOfPT(pt)
+	params: [
+		{ id: 'PT', as: 'string', essential: true },
+	],
+	impl: (ctx, pt) =>
+			st.profilesOfPT(pt)
 })
 
 jb.component('studio.categories-of-type', {
-  params: [
-  	{ id: 'type', as: 'string', essential: true },
+	params: [
+		{ id: 'type', as: 'string', essential: true },
 		{ id: 'path', as: 'string' },
-  ],
-  impl: (ctx,_type,path) => {
+	],
+	impl: (ctx,_type,path) => {
 		var val = st.valOfPath(path);
-  	var comps = st.previewjb.comps;
-  	var pts = st.PTsOfType(_type);
-  	var categories = jb.unique([].concat.apply([],pts.map(pt=>
-  		(comps[pt].category||'').split(',').map(c=>c.split(':')[0])
-  			.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
-  			.filter(x=>x).filter(c=>c!='all')
+		var comps = st.previewjb.comps;
+		var pts = st.PTsOfType(_type);
+		var categories = jb.unique([].concat.apply([],pts.map(pt=>
+			(comps[pt].category||'').split(',').map(c=>c.split(':')[0])
+				.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
+				.filter(x=>x).filter(c=>c!='all')
 			))).map(c=>({
-  				code: c,
-  				pts: ptsOfCategory(c)
-  			}));
-  	var res = categories.concat({code: 'all', pts: ptsOfCategory('all') });
+					code: c,
+					pts: ptsOfCategory(c)
+				}));
+		var res = categories.concat({code: 'all', pts: ptsOfCategory('all') });
 		return res;
 
-  	function ptsOfCategory(category) {
-      var pts_with_marks = pts.filter(pt=>
-      		category == 'all' || pt.split('.')[0] == category ||
-      		(comps[pt].category||'').split(',').map(x=>x.split(':')[0]).indexOf(category) != -1)
-      	.map(pt=>({
-	      	pt: pt,
-	      	mark: (comps[pt].category||'').split(',')
-	      		.filter(c=>c.indexOf(category) == 0)
-	      		.map(c=>Number(c.split(':')[1] || 50))[0]
-	      }))
-      	.map(x=> {
-      		if (x.mark == null)
-      			x.mark = 50;
-      		return x;
-      	})
-      	.filter(x=>x.mark != 0);
-	  	pts_with_marks.sort((c1,c2)=>c2.mark-c1.mark);
-	  	var out = pts_with_marks.map(pt=>pt.pt);
+		function ptsOfCategory(category) {
+			var pts_with_marks = pts.filter(pt=>
+					category == 'all' || pt.split('.')[0] == category ||
+					(comps[pt].category||'').split(',').map(x=>x.split(':')[0]).indexOf(category) != -1)
+				.map(pt=>({
+					pt: pt,
+					mark: (comps[pt].category||'').split(',')
+						.filter(c=>c.indexOf(category) == 0)
+						.map(c=>Number(c.split(':')[1] || 50))[0]
+				}))
+				.map(x=> {
+					if (x.mark == null)
+						x.mark = 50;
+					return x;
+				})
+				.filter(x=>x.mark != 0);
+			pts_with_marks.sort((c1,c2)=>c2.mark-c1.mark);
+			var out = pts_with_marks.map(pt=>pt.pt);
 			return out;
-  	}
-  }
+		}
+	}
 })
 
 jb.component('studio.short-title', {
@@ -152,14 +152,14 @@ jb.component('studio.prop-name',{
 jb.component('studio.more-params',{
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-        st.jbEditorMoreParams(path)
+				st.jbEditorMoreParams(path)
 })
 
 
 jb.component('studio.comp-name-ref', {
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) => ({
-		  $jb_path: () => path.split('~'),
+			$jb_path: () => path.split('~'),
 			$jb_val: function(value) {
 				if (typeof value == 'undefined')
 					return st.compNameOfPath(path);
@@ -177,22 +177,38 @@ jb.component('studio.profile-as-text', {
 	impl: ctx => ({
 		$jb_path: () => ctx.params.path().split('~'),
 		$jb_val: function(value) {
-			var path = ctx.params.path();
-			if (!path) return '';
-			if (typeof value == 'undefined') {
-      	var val = st.valOfPath(path);
-      	if (typeof val == 'function')
-            return val.toString();
+			try {
+				const path = ctx.params.path();
+				if (!path) return '';
+				if (typeof value == 'undefined') {
+					const val = st.valOfPath(path);
+					if (typeof val == 'function')
+							return val.toString();
 
-      	if (st.isPrimitiveValue(val))
-      		return ''+val;
-      	return jb.prettyPrint(val || '');
-      } else {
-      	var notPrimitive = value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-      	var newVal = notPrimitive ? st.evalProfile(value) : value;
-      	if (newVal != null)
-      		st.writeValueOfPath(path, newVal,ctx);
-      }
+					if (st.isPrimitiveValue(val))
+						return ''+val;
+					return jb.prettyPrint(val || '');
+				} else {
+					const notPrimitive = value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
+					const newVal = notPrimitive ? st.evalProfile(value) : value;
+					if (newVal && typeof newVal == 'object') {
+						const currentVal = st.valOfPath(path);
+						const diff = st.diff(currentVal, newVal).filter(x=>(''+x.path.slice(-1)[0]).indexOf('$jb_') != 0);
+						jb.log('profileAsText',[diff, currentVal, newVal])
+						if (diff && diff.length == 1 && diff[0].kind == 'E') {
+							const innerValue = diff[0].rhs;
+							const fullPath = [path,...diff[0].path].join('~');
+							st.writeValueOfPath(fullPath, innerValue,ctx);
+							return;
+						}
+					}
+					if (newVal != null) {
+						st.writeValueOfPath(path, newVal,ctx);
+					}
+				}
+			} catch(e) {
+				jb.logException(e,'studio.profile-as-text',ctx)
+			}
 		},
 		$jb_observable: cmp =>
 			st.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
@@ -219,24 +235,24 @@ jb.component('studio.profile-as-string-byref', {
 })
 
 jb.component('studio.profile-value-as-text', {
-  type: 'data',
-  params: [ { id: 'path', as: 'string' } ],
-  impl: (ctx,path) => ({
+	type: 'data',
+	params: [ { id: 'path', as: 'string' } ],
+	impl: (ctx,path) => ({
 		$jb_path: () => path.split('~'),
-      $jb_val: function(value) {
-        if (typeof value == 'undefined') {
-          var val = st.valOfPath(path);
-          if (val == null)
-            return '';
-          if (st.isPrimitiveValue(val))
-            return ''+val;
-          if (st.compNameOfPath(path))
-            return '=' + st.compNameOfPath(path);
-        }
-        else if (value.indexOf('=') != 0)
-          st.writeValueOfPath(path, value,ctx);
-      }
-    })
+			$jb_val: function(value) {
+				if (typeof value == 'undefined') {
+					var val = st.valOfPath(path);
+					if (val == null)
+						return '';
+					if (st.isPrimitiveValue(val))
+						return ''+val;
+					if (st.compNameOfPath(path))
+						return '=' + st.compNameOfPath(path);
+				}
+				else if (value.indexOf('=') != 0)
+					st.writeValueOfPath(path, value,ctx);
+			}
+		})
 })
 
 jb.component('studio.insert-control',{
@@ -324,17 +340,17 @@ jb.component('studio.wrap-with-array',{
 })
 
 jb.component('studio.can-wrap-with-array', {
-  type: 'boolean',
-  params: [ {id: 'path', as: 'string' } ],
-  impl: (ctx,path) =>
-      st.paramDef(path) && (st.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(st.valOfPath(path))
+	type: 'boolean',
+	params: [ {id: 'path', as: 'string' } ],
+	impl: (ctx,path) =>
+			st.paramDef(path) && (st.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(st.valOfPath(path))
 })
 
 jb.component('studio.is-array-item', {
-  type: 'boolean',
-  params: [ {id: 'path', as: 'string' } ],
-  impl: (ctx,path) =>
-      Array.isArray(st.valOfPath(st.parentPath(path)))
+	type: 'boolean',
+	params: [ {id: 'path', as: 'string' } ],
+	impl: (ctx,path) =>
+			Array.isArray(st.valOfPath(st.parentPath(path)))
 })
 
 
@@ -388,7 +404,7 @@ jb.component('studio.jb-editor.nodes', {
 	type: 'tree.nodeModel',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		  new st.jbEditorTree(path,true)
+			new st.jbEditorTree(path,true)
 })
 
 jb.component('studio.icon-of-type', {
@@ -413,15 +429,15 @@ jb.component('studio.is-disabled', {
 	type: 'boolean',
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) =>
-		  st.disabled(path)
+			st.disabled(path)
 })
 
 jb.component('studio.disabled-support', {
-  params: [
-    { id: 'path', as: 'string', essential: true },
-  ],
-  type: 'feature',
-  impl: {$: 'conditional-class', cssClass: 'jb-disabled', condition: {$: 'studio.is-disabled', path: '%$path%'} }
+	params: [
+		{ id: 'path', as: 'string', essential: true },
+	],
+	type: 'feature',
+	impl: {$: 'conditional-class', cssClass: 'jb-disabled', condition: {$: 'studio.is-disabled', path: '%$path%'} }
 })
 
 

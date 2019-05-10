@@ -13,28 +13,28 @@ jb.component('studio.edit-source', {
   impl :{$: 'open-dialog', 
     style :{$: 'dialog.edit-source-style', 
       id: 'edit-source', width: 600, 
-      onUpdate :{$: 'write-value', 
+      onUpdate1 :{$: 'write-value', 
         to :{$: 'studio.profile-as-text', path: '%$path%' }, 
-        value: '%$Script%'
+        value: '%$studio/ScriptInPopup%'
       }, 
     }, 
     content :{$: 'editable-text', 
-      databind: '%$Script%', 
+      databind:{$: 'studio.profile-as-text', path: '%$path%' },
+      // '%$studio/ScriptInPopup%', 
       style :{$: 'editable-text.codemirror', mode: 'javascript' }
     }, 
     title :{$: 'studio.short-title', path: '%$path%' }, 
-    onOK :{$: 'write-value', 
+    onOK1 :{$: 'write-value', 
       to :{$: 'studio.profile-as-text', path: '%$path%' }, 
-      value: '%$Script%'
+      value: '%$studio/ScriptInPopup%'
     }, 
     features: [
 //      {$:'dialog-feature.drag-title'},
       {$: 'css', css: '.jb-dialog-content-parent {overflow-y: hidden}' }, 
       {$: 'dialog-feature.resizer', "resize-inner-codemirror": 'true', resizeInnerCodemirror: true }, 
-      {$: 'var', 
-        name: 'Script', 
-        value : {$pipeline: [{$: 'studio.profile-as-text', path: '%$path%' }, '%% ']}, 
-        mutable: 'true'
+      {$: 'write-value1', 
+        value :{$: 'studio.profile-as-text', path: '%$path%' }, 
+        to: '%$studio/ScriptInPopup%'
       }
     ]
   }
