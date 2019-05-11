@@ -11,6 +11,7 @@ jb.component('editable-text.codemirror', {
     { id: 'lineNumbers', as: 'boolean' },
     { id: 'readOnly', options: ',true,nocursor' },
 		{ id: 'onCtrlEnter', type: 'action', dynamic: true },
+		{ id: 'hint', as: 'boolean' }
 	],
 	impl: function(context, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
@@ -32,6 +33,8 @@ jb.component('editable-text.codemirror', {
 				});
 				try {
 					var editor = CodeMirror.fromTextArea(cmp.base.firstChild, _cm_settings);
+					if (context.params.hint)
+						tgpHint(CodeMirror)
 					var wrapper = editor.getWrapperElement();
 					if (height)
 						wrapper.style.height = height + 'px';
@@ -136,7 +139,6 @@ function enableFullScreen(editor,width,height) {
 	})
 }
 
-
 jb.component('text.codemirror', {
     type: 'text.style',
     params: [
@@ -183,3 +185,7 @@ jb.component('text.codemirror', {
         }
     }
 })
+
+function tgpHint(CodeMirror) {
+	
+}

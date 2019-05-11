@@ -84,7 +84,8 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'node_modules/codemirror/addon/selection/active-line.js',
 
         'node_modules/codemirror/lib/codemirror.css',
-        'node_modules/codemirror/theme/solarized.css'
+        'node_modules/codemirror/theme/solarized.css',
+        'node_modules/codemirror/addon/hint/show-hint.css',
       ],
       'd3': [
         'node_modules/d3/build/d3.js',
@@ -101,7 +102,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
           'node_modules/dragula/dist/dragula.css',
       ],
       studio: [
-        'utils','path','main','url',
+        'utils','path','main','url', 'completion',
         'toolbar','styles', 'search', 'new-profile', 'data-browse', 'preview', 'tgp-model', 'model-components',
         'tree','popups','properties','pick','properties-menu','save','open-project','new-project', 'references', 'component-header',
         'suggestions','undo','edit-source','jb-editor','jb-editor-styles','style-editor','probe','testers', 'event-tracker','h-to-jsx',

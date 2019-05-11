@@ -189,3 +189,19 @@ jb.component('studio-ui-test.goto-references-button', {
 		expectedResult :{$: 'contains', text: '3 references'}
 	},
 })
+
+jb.component('studio.completion-prop-of-pt', {
+	impl :{$: 'data-test',
+	calculate : ctx=> jb.studio.completion("{$: 'group', controls :{$: 'itemlist', '{$$}' "),
+	expectedResult : ctx =>
+		JSON.stringify(ctx.data || '').indexOf('items') != -1
+	},
+})
+
+jb.component('studio.completion-pt-of-type', {
+	impl :{$: 'data-test',
+	calculate : ctx=> jb.studio.completion("{$: 'group', controls:{ "),
+	expectedResult : ctx =>
+		JSON.stringify(ctx.data || '').indexOf('itemlist') != -1
+	},
+})
