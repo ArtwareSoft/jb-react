@@ -286,7 +286,7 @@ Object.assign(st, {
 	},
 	evalProfile: prof_str => {
 		try {
-			return st.previewWindow.eval('('+prof_str+')')
+			return (st.previewWindow || window).eval('('+prof_str+')')
 		} catch (e) {
 			jb.logException(e,'eval profile:'+prof_str);
 		}

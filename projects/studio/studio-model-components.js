@@ -198,6 +198,7 @@ jb.component('studio.profile-as-text', {
 						if (diff && diff.length == 1 && diff[0].kind == 'E') {
 							const innerValue = diff[0].rhs;
 							const fullPath = [path,...diff[0].path].join('~');
+							jb.log('profileAsTextDiffActivated',diff)
 							st.writeValueOfPath(fullPath, innerValue,ctx);
 							return;
 						}

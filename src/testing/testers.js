@@ -5,25 +5,34 @@ jb.component('data-test', {
 		{ id: 'runBefore', type: 'action', dynamic: true },
 		{ id: 'expectedResult', type: 'boolean', dynamic: true },
 		{ id: 'cleanUp', type: 'action', dynamic: true },
+		{ id: 'expectedCounters', as: 'single' }
 	],
-	impl: function(context,calculate,runBefore,expectedResult,cleanUp) {
+	impl: function(context,calculate,runBefore,expectedResult,cleanUp,expectedCounters) {
 		var initial_resources = jb.valueByRefHandler.resources();
 		var initial_comps = jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
+		if (expectedCounters) {
+			if (!jb.frame.wSpy.enabled())
+				jb.frame.initwSpy({wSpyParam: 'data-test'})
+			jb.frame.wSpy.clear()
+		}
 		return Promise.resolve(runBefore())
 			.then(_ =>
 				calculate())
 			.then(v=>
 				Array.isArray(v) ? jb.synchArray(v) : v)
-			.then(value=>
-				!! expectedResult(new jb.jbCtx(context,{ data: value })))
+			.then(value=> {
+				const countersErr = countersErrors(expectedCounters);
+				const success = !! (expectedResult(new jb.jbCtx(context,{ data: value })) && !countersErr);
+				return { id: context.vars.testID, success, reason: countersErr}
+			})
 			.then(result => { // default cleanup
+				if (expectedCounters)
+					jb.frame.initwSpy({resetwSpyToNoop: true})
 				jb.valueByRefHandler.resources(initial_resources);
 				jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 				return result;
 			}).then(result =>
 					Promise.resolve(cleanUp()).then(_=>result) )
-			.then(result =>
-					({ id: context.vars.testID, success: result }))
 	}
 })
 
@@ -65,15 +74,9 @@ jb.component('ui-test', {
 				Array.from(elem.querySelectorAll('input')).forEach(e=>{
           if (e.parentNode)
             jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`)
-        })
-				const countersErr = Object.keys(expectedCounters || {}).map(
-						counter => expectedCounters[counter] != jb.frame.wSpy.logs.$counters[counter] 
-							? `${counter}: ${jb.frame.wSpy.logs.$counters[counter]} instead of ${expectedCounters[counter]}` : '')
-						.filter(x=>x)
-						.join(', ')
+				})
+				const countersErr = countersErrors(expectedCounters);
 				const success = !! (expectedResult(new jb.jbCtx(context,{ data: elem.outerHTML })) && !countersErr);
-				if (!success)
-					t = 5; // just a breakpoint for debugger
 				return { id: context.vars.testID, success, elem, reason: countersErr}
 			}).then(result=> { // default cleanup
 				if (new URL(location.href).searchParams.get('show') === null) {
@@ -88,6 +91,14 @@ jb.component('ui-test', {
 				Promise.resolve(cleanUp()).then(_=>result) )
 	}
 })
+
+function countersErrors(expectedCounters) {
+	return Object.keys(expectedCounters || {}).map(
+		counter => expectedCounters[counter] != jb.frame.wSpy.logs.$counters[counter] 
+			? `${counter}: ${jb.frame.wSpy.logs.$counters[counter]} instead of ${expectedCounters[counter]}` : '')
+		.filter(x=>x)
+		.join(', ')
+}
 
 jb.component('ui-action.click', {
 	type: 'ui-action',
