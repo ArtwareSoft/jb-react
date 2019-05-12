@@ -978,7 +978,7 @@ jb.component('ui-test.code-mirror-hint', {
   impl :{$: 'ui-test',
     control :{$: 'editable-text',
       $vars: {
-        js: { $: 'object', text: "x = { $: 'label', text: 'aa' }"},
+        js: { $: 'object', text: "x = {$: 'group', \n\tcontrols: {$: 'label', text: 'aa' }}"},
       },  
       databind: '%$js/text%',
       style :{$: 'editable-text.codemirror', mode: 'javascript', hint: true }

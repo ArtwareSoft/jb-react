@@ -106,7 +106,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! preact */ \"./node_modules/preact/dist/preact.mjs\");\n\r\n\r\njb.ui.render = preact__WEBPACK_IMPORTED_MODULE_0__[\"render\"];\r\njb.ui.h = preact__WEBPACK_IMPORTED_MODULE_0__[\"h\"];\r\njb.ui.Component = preact__WEBPACK_IMPORTED_MODULE_0__[\"Component\"];\r\n\n\n//# sourceURL=webpack:///./src/ui/jb-preact.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! preact */ \"./node_modules/preact/dist/preact.mjs\");\n\n\njb.ui.render = preact__WEBPACK_IMPORTED_MODULE_0__[\"render\"];\njb.ui.h = preact__WEBPACK_IMPORTED_MODULE_0__[\"h\"];\njb.ui.Component = preact__WEBPACK_IMPORTED_MODULE_0__[\"Component\"];\n\n\n//# sourceURL=webpack:///./src/ui/jb-preact.js?");
 
 /***/ })
 

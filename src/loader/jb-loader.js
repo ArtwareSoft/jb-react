@@ -77,7 +77,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'node_modules/codemirror/mode/jsx/jsx.js',
         'node_modules/codemirror/mode/htmlmixed/htmlmixed.js',
         'node_modules/codemirror/addon/hint/show-hint.js',
-        'node_modules/codemirror/addon/hint/javascript-hint.js',
+//        'node_modules/codemirror/addon/hint/javascript-hint.js',
         'node_modules/codemirror/addon/hint/xml-hint.js',
         'node_modules/codemirror/addon/hint/html-hint.js',
         'node_modules/codemirror/addon/fold/foldgutter.js',
