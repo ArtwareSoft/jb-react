@@ -50,7 +50,7 @@ if (typeof CodeMirror != 'undefined') {
         const options = st.completion(textToToken)
         const codeMirrorOptions = options.map(e=>asCodeMirrorOption(e))
             .filter(e=>!optionsFilter || e.displayText.indexOf(optionsFilter) != -1)
-        const result = { list: codeMirrorOptions, from: Pos(cur.line, token.start), to: Pos(cur.line, token.end) }
+        const result = { list: codeMirrorOptions }
         jb.log('hint',['helper', { cur, token, textToToken, options, codeMirrorOptions}])
         return result;
 
@@ -67,11 +67,9 @@ if (typeof CodeMirror != 'undefined') {
                 res.text = `${separator}${space}${res.text}${spaceBeforeColon}:${spaceBeforeValue}${value}`
                 }
             if (option.type == 'pt') {
-                res.text = `'${res.text}'`
+                res.text = /\$:\s*/.test(textToToken) ? `'${res.text}'` : `{ $: '${res.text}'`
             }
             option.backOffset = res.text.split('').reverse().join('').indexOf("''") + 1;
-            // if (option.backOffset == -1)
-            //     option.backOffset = 0
             return res
 
             function applyHint(editor) {
