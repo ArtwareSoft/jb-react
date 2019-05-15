@@ -978,12 +978,21 @@ jb.component('ui-test.code-mirror-hint', {
   impl :{$: 'ui-test',
     control :{$: 'editable-text',
       $vars: {
-        js: { $: 'object', text: "x = {$: 'group', text :{$: 'split' , part: '"},
-        js1: { $: 'object', text: "x = {$: 'group', \n\tcontrols: {$: 'label', text: 'aa' }}"},
-        js2: { $: 'object', text: "x = {$: 'group'"},
+        js: { $: 'object', text: "{$: 'group', text :{$: 'split' , part: '"},
+        js1: { $: 'object', text: "{$: 'group', \n\tcontrols: {$: 'label', text: 'aa' }}"},
+        js2: { $: 'object', text: "{$: 'group'"},
       },  
       databind: '%$js/text%',
-      style :{$: 'editable-text.codemirror', mode: 'javascript', hint: true }
+      style :{$: 'editable-text.codemirror', mode: 'javascript', hint: true, 
+        cm_settings :{$: 'object', 
+          extraKeys: {
+            'Alt-F': (editor,x,y) => {
+              debugger
+              editor.setValue(jb.prettyPrint(editor.getValue()))
+            }
+          }
+        } 
+      }
     },
     expectedResult: ctx => true,
   }

@@ -1,7 +1,7 @@
 hints
-  pathOfCursor
+  bug: {$: 'group', controls :[{$: 'label' }, {$:'
   format string
-  break points
+  breakpoints
   preview  
 jbeditor bugs
   menu - does not focus on first choice

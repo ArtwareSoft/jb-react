@@ -192,7 +192,7 @@ jb.component('studio-ui-test.goto-references-button', {
 
 jb.component('studio.completion-prop-of-pt', {
 	impl :{$: 'data-test',
-	calculate : ctx=> jb.studio.completion("{$: 'group', controls :{$: 'itemlist', '{$$}' "),
+	calculate : ctx=> jb.studio.completion.hint("{$: 'group', controls :{$: 'itemlist', '{$$}' "),
 	expectedResult : ctx =>
 		JSON.stringify(ctx.data || '').indexOf('items') != -1
 	},
@@ -200,22 +200,31 @@ jb.component('studio.completion-prop-of-pt', {
 
 jb.component('studio.completion-pt-of-type', {
 	impl :{$: 'data-test',
-	calculate : ctx=> jb.studio.completion("{$: 'group', controls:{ "),
+	calculate : ctx=> jb.studio.completion.hint("{$: 'group', controls:{ "),
 	expectedResult : ctx =>
-		JSON.stringify(ctx.data || '').indexOf('itemlist') != -1
+		JSON.stringify(ctx.data || '').indexOf('"displayText":"itemlist"') != -1
 	},
 })
 
+jb.component('studio.completion-pt-of-type-in-array', {
+	impl :{$: 'data-test',
+	calculate : ctx=> jb.studio.completion.hint("{$: 'group', controls :[{$: 'label' }, {$:'"),
+	expectedResult : ctx =>
+		JSON.stringify(ctx.data || '').indexOf('"displayText":"itemlist"') != -1
+	},
+})
+
+
 jb.component('studio-data-test.pathOfText-inArray', {
 	impl :{$: 'data-test',
-		calculate : ctx=> jb.studio.completion.pathOfText("{$: 'group', \n\tcontrols: [ {$: 'label', text: 'aa' }, {$: 'label', text: '"),
+		calculate : ctx => jb.studio.completion.pathOfText("{$: 'group', \n\tcontrols: [ {$: 'label', text: 'aa' }, {$: 'label', text: '"),
 		expectedResult : ctx => ctx.data.join('~') == "controls~1~text"
  },
 })
 
 jb.component('studio-data-test.pathOfText-prop', {
 	impl :{$: 'data-test',
-		calculate : ctx=> jb.studio.completion.pathOfText("{$: 'group', text :{$: 'split' , part: '"),
+		calculate : ctx => jb.studio.completion.pathOfText("{$: 'group', text :{$: 'split' , part: '"),
 		expectedResult : ctx => ctx.data.join('~') == "text~part"
  },
 })

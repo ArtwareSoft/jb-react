@@ -19,20 +19,21 @@ jb.component('editable-text.codemirror', {
 			css: '{width: 100%}',
 			afterViewInit: cmp => {
 				var data_ref = cmp.ctx.vars.$model.databind;
-				var _cm_settings = Object.assign(cm_settings||{}, {
+				cm_settings = cm_settings||{};
+				var effective_settings = Object.assign({},cm_settings, {
 					mode: mode || 'javascript',
 					lineWrapping: lineWrapping,
           lineNumbers: context.params.lineNumbers,
 					theme: 'solarized light',
           autofocus: false,
-					extraKeys: {
+					extraKeys: Object.assign({
 						'Ctrl-Space': 'autocomplete',
 						'Ctrl-Enter': () => context.params.onCtrlEnter()
-					},
+					}, cm_settings.extraKeys || {}),
           readOnly: context.params.readOnly,
 				});
 				try {
-					var editor = CodeMirror.fromTextArea(cmp.base.firstChild, _cm_settings);
+					var editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
 					if (context.params.hint)
 						tgpHint(CodeMirror)
 					var wrapper = editor.getWrapperElement();
@@ -161,7 +162,7 @@ jb.component('text.codemirror', {
                     theme: 'solarized light',
                 };
                 try {
-                  var editor = CodeMirror.fromTextArea(cmp.base.firstChild, _cm_settings);
+                  var editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
         					var wrapper = editor.getWrapperElement();
         					if (height)
         						wrapper.style.height = height + 'px';
