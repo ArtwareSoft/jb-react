@@ -1,40 +1,79 @@
+(function() {
 const st = jb.studio;
-st.completion = 
-function(text, ctx) {
-    const defaultType = 'control'
-
-    const cleanStringContent = txt=>txt.replace(/,|{|}|\$/g,'')
-    const cleaned = text.replace(/'[^']*'/g, cleanStringContent).replace(/"[^"]*"/g, cleanStringContent).replace(/`[^`]*`/gm, cleanStringContent);
-    const profile_str = extractProfileStr(cleaned)
-    const pt = ptOfProfile(profile_str)
-    if (pt)
-        return jb.compParams(st.previewjb.comps[pt]).map(prop =>({ type: 'prop', prop, displayText: prop.id }) )
-    const beforeProfile = cleaned.slice(0, findMatchingBlockBackwards(cleaned))
-    const parentProfile = extractProfileStr(beforeProfile)
-    const parentPt = ptOfProfile(parentProfile)
-    const currentProp = (parentProfile.match(/([\$0-9A-Za-z_]*)\s*:[\s|\[]*$/) || ['',''])[1]
-    const type = st.previewjb.comps[parentPt] ? 
-        (jb.compParams(st.previewjb.comps[parentPt]).filter(p=>p.id == currentProp)[0] || {}).type || 'data' 
-        : defaultType
-    return st.PTsOfType(type).map(pt=>({ type: 'pt', displayText: pt}));
-
-    function findMatchingBlockBackwards(str) {
-        let depth = 0;
-        for(let i=str.length-1; i>=0;i--) {
-            if (str[i] == '{' && depth == 0)
-                return i;
-            if (str[i] == '{') depth--;
-            if (str[i] == '}') depth++;
+st.completion = {
+    goUp(text) {
+        let depth = 0, formerSiblings = 0;
+        for(let i=text.length-1; i>=0;i--) {
+            if (['{','['].indexOf(text[i]) != -1 && depth == 0)
+                return {upIndex: i, formerSiblings};
+            if (text[i] == '{' && depth == 1)
+                formerSiblings++;
+            if (text[i] == '{') depth--;
+            if (text[i] == '}') depth++;
         }
-        return 0;
-    }
+        return {upIndex: 0, formerSiblings};
+    },
+    getProp(text) {
+        return (text.match(/([\$0-9A-Za-z_]*)\s*:[\s|\[|']*$/) || ['',''])[1]
+    },
+    pathOfText(text) {
+        const {goUp, pathOfText, getProp} = st.completion
 
-    function ptOfProfile(profile_str) {
-        return (profile_str.match(/\$\s*:\s*'([^']*)'/) || ['',''])[1]
-    }
+        const {upIndex, formerSiblings} = goUp(text)
+        if (upIndex == 0 || upIndex == text.length-1)
+            return [getProp(text)]
+        const parentPath = pathOfText(text.slice(0, upIndex))
+        const isArrayElement = text[upIndex] == '['
+        if (isArrayElement)
+            return [...parentPath, formerSiblings]
+        return [...parentPath, getProp(text)]
+    },
+    hint(text, token, ctx) {
+        const defaultType = 'control'
 
-    function extractProfileStr(str) {
-        return str.slice(findMatchingBlockBackwards(str))
+        const cleanStringContent = txt=>txt.replace(/,|{|}|\$/g,'')
+        const cleaned = text.replace(/'[^']*'/g, cleanStringContent).replace(/"[^"]*"/g, cleanStringContent).replace(/`[^`]*`/gm, cleanStringContent);
+        const profile_str = extractProfileStr(cleaned)
+        const pt = ptOfProfile(profile_str)
+        if (pt) {
+            if (/^\s*,/.test(token) || /,\s*$/.test(profile_str))
+                return jb.compParams(st.previewjb.comps[pt]).map(prop =>({ type: 'prop', prop, displayText: prop.id }) )
+            if ((/^'/.test(token) || /\s*'$/.test(profile_str))) {
+                const profile_str = extractProfileStr(cleaned)
+                const currentProp = (profile_str.match(/([\$0-9A-Za-z_]*)\s*:[\s|\[]*$/) || ['',''])[1]
+                const options = st.previewjb.comps[pt] ? 
+                    (jb.compParams(st.previewjb.comps[pt]).filter(p=>p.id == currentProp)[0] || {}).options || '' : ''
+                return options.split(',').map(opt => ({ type: 'enum', displayText: opt}))
+            }
+        }
+        // pts of type
+        const beforeProfile = cleaned.slice(0, findMatchingBlockBackwards(cleaned))
+        const parentProfile = extractProfileStr(beforeProfile)
+        const parentPt = ptOfProfile(parentProfile)
+        const currentProp = (parentProfile.match(/([\$0-9A-Za-z_]*)\s*:[\s|\[]*$/) || ['',''])[1]
+        const type = st.previewjb.comps[parentPt] ? 
+            (jb.compParams(st.previewjb.comps[parentPt]).filter(p=>p.id == currentProp)[0] || {}).type || 'data' 
+            : defaultType
+        return st.PTsOfType(type).map(pt=>({ type: 'pt', displayText: pt}));
+
+        function findMatchingBlockBackwards(str) {
+            let depth = 0;
+            for(let i=str.length-1; i>=0;i--) {
+                if (str[i] == '{' && depth == 0)
+                    return i;
+                if (str[i] == '{') depth--;
+                if (str[i] == '}') depth++;
+            }
+            return 0;
+        }
+
+        function ptOfProfile(profile_str) {
+            return (profile_str.match(/\$\s*:\s*'([^']*)'/) || ['',''])[1]
+        }
+
+        function extractProfileStr(str) {
+            return str.slice(findMatchingBlockBackwards(str))
+        }
     }
 }
 
@@ -47,7 +86,7 @@ if (typeof CodeMirror != 'undefined') {
             .slice(0,cur.ch)]
             .join('\n')
             .slice(0,-1*token.string.length);
-        const options = st.completion(textToToken)
+        const options = st.completion.hint(textToToken, token.string)
         const codeMirrorOptions = options.map(e=>asCodeMirrorOption(e))
             .filter(e=>!optionsFilter || e.displayText.indexOf(optionsFilter) != -1)
         const result = { list: codeMirrorOptions }
@@ -66,8 +105,11 @@ if (typeof CodeMirror != 'undefined') {
                 const spaceBeforeColon = value.indexOf('$') == -1 ? '' : ' '
                 res.text = `${separator}${space}${res.text}${spaceBeforeColon}:${spaceBeforeValue}${value}`
                 }
-            if (option.type == 'pt') {
+            else if (option.type == 'pt') {
                 res.text = /\$:\s*/.test(textToToken) ? `'${res.text}'` : `{ $: '${res.text}'`
+            }
+            else if (option.type == 'enum') {
+                res.text = `'${res.text}'`
             }
             option.backOffset = res.text.split('').reverse().join('').indexOf("''") + 1;
             return res
@@ -80,3 +122,4 @@ if (typeof CodeMirror != 'undefined') {
         
     });
 }
+})()

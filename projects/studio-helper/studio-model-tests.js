@@ -205,3 +205,17 @@ jb.component('studio.completion-pt-of-type', {
 		JSON.stringify(ctx.data || '').indexOf('itemlist') != -1
 	},
 })
+
+jb.component('studio-data-test.pathOfText-inArray', {
+	impl :{$: 'data-test',
+		calculate : ctx=> jb.studio.completion.pathOfText("{$: 'group', \n\tcontrols: [ {$: 'label', text: 'aa' }, {$: 'label', text: '"),
+		expectedResult : ctx => ctx.data.join('~') == "controls~1~text"
+ },
+})
+
+jb.component('studio-data-test.pathOfText-prop', {
+	impl :{$: 'data-test',
+		calculate : ctx=> jb.studio.completion.pathOfText("{$: 'group', text :{$: 'split' , part: '"),
+		expectedResult : ctx => ctx.data.join('~') == "text~part"
+ },
+})

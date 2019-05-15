@@ -1,8 +1,8 @@
 hints
-  filter existing properties
-  inject profile in case of type of not data
-  inject empty string if as: 'string'
-  
+  pathOfCursor
+  format string
+  break points
+  preview  
 jbeditor bugs
   menu - does not focus on first choice
   suggestion - Enter does not work well
