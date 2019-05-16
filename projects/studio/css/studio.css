@@ -19,3 +19,7 @@
   top: 290px;
   left: 410px;
 }
+
+.CodeMirror-hints {
+  z-index: 10000;
+}

@@ -1,5 +1,6 @@
 hints
   bug: {$: 'group', controls :[{$: 'label' }, {$:'
+  change numbers with ctrl-+
   format string
   breakpoints
   preview  

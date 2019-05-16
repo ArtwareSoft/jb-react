@@ -21,9 +21,9 @@ jb.component('hello-world.main2', {
       {$: 'group', 
         style :{$: 'layout.horizontal', spacing: '66' }, 
         controls: [
-          {$: 'label', title: '%$text%' }, 
+          {$: 'label', title: 'test' }, 
           {$: 'editable-text', 
-            title: "text'''", 
+            title: 'text', 
             databind: '%$text%', 
             style :{$: 'editable-text.mdl-input' }
           }
