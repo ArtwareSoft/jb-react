@@ -974,39 +974,15 @@ jb.component('ui-test.code-mirror', {
 },
 })
 
-jb.component('ui-test.code-mirror-hint', {
-  impl :{$: 'ui-test',
-    control :{$: 'editable-text',
-      $vars: {
-        js: { $: 'object', text: "{$: 'group', text :{$: 'split' , part: '"},
-        js1: { $: 'object', text: "{$: 'group', \n\tcontrols: {$: 'label', text: 'aa' }}"},
-        js2: { $: 'object', text: "{$: 'group'"},
-      },  
-      databind: '%$js/text%',
-      style :{$: 'editable-text.codemirror', mode: 'javascript', hint: true, 
-        cm_settings :{$: 'object', 
-          extraKeys: {
-            'Alt-F': (editor,x,y) => {
-              debugger
-              editor.setValue(jb.prettyPrint(editor.getValue()))
-            }
-          }
-        } 
-      }
-    },
-    expectedResult: ctx => true,
-  }
-})
-
 jb.component('ui-test.prettyPrintComp', {
   impl :{$: 'ui-test2',  waitForPromise: {$delay: 50},
   control :{$: 'group', controls: [
       {$: 'text',
-          text: ctx => jb_prettyPrintComp('inner-label1-tst',jbart.comps['inner-label1-tst']),
+          text: ctx => jb_prettyPrintComp('inner-label1-tst', jb.comps['inner-label1-tst']),
           style :{$: 'text.multi-line'}
       },
       {$: 'text',
-          text: ctx => jb_prettyPrintComp('editable-text.codemirror',jbart.comps['editable-text.codemirror']),
+          text: ctx => jb_prettyPrintComp('editable-text.codemirror', jb.comps['editable-text.codemirror']),
           style :{$: 'text.codemirror'}
       },
     ]

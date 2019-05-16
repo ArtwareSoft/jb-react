@@ -21,7 +21,7 @@ jb.component('studio.edit-source', {
     content :{$: 'editable-text', 
       databind:{$: 'studio.profile-as-text', path: '%$path%' },
       // '%$studio/ScriptInPopup%', 
-      style :{$: 'editable-text.codemirror', mode: 'javascript' }
+      style :{$: 'editable-text.studio-codemirror-tgp' }
     }, 
     title :{$: 'studio.short-title', path: '%$path%' }, 
     onOK1 :{$: 'write-value', 

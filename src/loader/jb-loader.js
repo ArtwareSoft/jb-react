@@ -108,7 +108,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'suggestions','undo','edit-source','jb-editor','jb-editor-styles','style-editor','probe','testers', 'event-tracker','h-to-jsx',
       ],
       'studio-tests': [
-        'probe','model','tree','suggestion'
+        'probe','model','tree','suggestion','ui'
       ],
       'css-files': [
         'node_modules/material-design-lite/material.min.css',

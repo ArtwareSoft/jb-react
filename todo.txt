@@ -1,9 +1,9 @@
 hints
   bug: {$: 'group', controls :[{$: 'label' }, {$:'
   change numbers with ctrl-+
-  format string
+  format all text - alt-f
   breakpoints
-  preview  
+  data preview
 jbeditor bugs
   menu - does not focus on first choice
   suggestion - Enter does not work well

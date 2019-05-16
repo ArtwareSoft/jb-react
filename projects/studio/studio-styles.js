@@ -12,6 +12,30 @@ jb.component('editable-text.studio-primitive-text', {
 	}
 })
 
+jb.component('editable-text.studio-codemirror-tgp', {
+  type: 'editable-text.style',
+  impl :{$: 'editable-text.codemirror', mode: 'javascript',
+    cm_settings :{$: 'object', 
+      extraKeys: {
+        'Ctrl-Left': editor => {
+          const cur = editor.getCursor(), token = editor.getTokenAt(cur);
+          if (!isNaN(+token.string)) {
+            editor.replaceRange(''+((+token.string)-1), CodeMirror.Pos(cur.line, token.start), CodeMirror.Pos(cur.line, token.end))                
+          }
+        },
+        'Ctrl-Right': editor => {},
+        'Alt-F': editor => {
+          try {
+            const prof = eval('('+editor.getValue()+')')
+            editor.setValue(jb.prettyPrint(prof))
+          } catch (e) {}
+        }
+      }
+    }
+  }
+})
+
+
 jb.component('button.select-profile-style', {
   type: 'button.style',
   impl :{$: 'custom-style',
