@@ -12,18 +12,31 @@ jb.component('editable-text.studio-primitive-text', {
 	}
 })
 
+jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
+  incNumberAtCursor(editor, {inc}) {
+    const cur = editor.getCursor(), token = editor.getTokenAt(cur);
+    if (!isNaN(+token.string)) {
+      const prefix = editor.getTokenAt(CodeMirror.Pos(cur.line, cur.ch - token.string.length)).string;
+      const val = prefix == '-' ? (prefix + token.string) : token.string;
+      const newVal = `${(+val)+inc}`;
+      if (prefix == '-')
+        token.start--;
+      editor.replaceRange(newVal, CodeMirror.Pos(cur.line, token.start), CodeMirror.Pos(cur.line, token.end))                
+    }
+  }
+})
+
 jb.component('editable-text.studio-codemirror-tgp', {
   type: 'editable-text.style',
   impl :{$: 'editable-text.codemirror', mode: 'javascript',
     cm_settings :{$: 'object', 
       extraKeys: {
-        'Ctrl-Left': editor => {
-          const cur = editor.getCursor(), token = editor.getTokenAt(cur);
-          if (!isNaN(+token.string)) {
-            editor.replaceRange(''+((+token.string)-1), CodeMirror.Pos(cur.line, token.start), CodeMirror.Pos(cur.line, token.end))                
-          }
+        'Alt-Left': editor => {
+          jb.studio.codeMirrorUtils.incNumberAtCursor(editor, {inc:-1})
         },
-        'Ctrl-Right': editor => {},
+        'Alt-Right': editor => {
+          jb.studio.codeMirrorUtils.incNumberAtCursor(editor, {inc:1})
+        },
         'Alt-F': editor => {
           try {
             const prof = eval('('+editor.getValue()+')')
