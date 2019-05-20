@@ -1,32 +1,37 @@
 (function() {
 const st = jb.studio;
+const OPEN = ['{','['], CLOSE = ['}',']'];
 st.completion = {
     goUp(text) {
         let depth = 0, formerSiblings = 0;
         for(let i=text.length-1; i>=0;i--) {
-            if (['{','['].indexOf(text[i]) != -1 && depth == 0)
+            if (isOpen(text[i]) && depth == 0)
                 return {upIndex: i, formerSiblings};
-            if (text[i] == '{' && depth == 1)
+            if (isOpen(text[i]) && depth == 1)
                 formerSiblings++;
-            if (text[i] == '{') depth--;
-            if (text[i] == '}') depth++;
+            if (isOpen(text[i])) depth--;
+            if (isClose(text[i])) depth++;
         }
         return {upIndex: 0, formerSiblings};
+
+        function isClose(ch) { return CLOSE.indexOf(ch) != -1 }
+        function isOpen(ch) { return OPEN.indexOf(ch) != -1 }
     },
     getProp(text) {
-        return (text.match(/([\$0-9A-Za-z_]*)\s*:[\s|\[|']*$/) || ['',''])[1]
+        const prop = (text.match(/([\$0-9A-Za-z_]*)\s*:[\s|\[|']*$/) || ['',''])[1]
+        return prop ? [prop] : []
     },
     pathOfText(text) {
         const {goUp, pathOfText, getProp} = st.completion
 
         const {upIndex, formerSiblings} = goUp(text)
         if (upIndex == 0 || upIndex == text.length-1)
-            return [getProp(text)]
+            return getProp(text)
         const parentPath = pathOfText(text.slice(0, upIndex))
         const isArrayElement = text[upIndex] == '['
         if (isArrayElement)
             return [...parentPath, formerSiblings]
-        return [...parentPath, getProp(text)]
+        return [...parentPath, ...getProp(text)]
     },
     hint(text, token, ctx) {
         const defaultType = 'control'
@@ -50,7 +55,9 @@ st.completion = {
         const beforeProfile = cleaned.slice(0, findMatchingBlockBackwards(cleaned))
         const parentProfile = extractProfileStr(beforeProfile)
         const parentPt = ptOfProfile(parentProfile)
-        const currentProp = (parentProfile.match(/([\$0-9A-Za-z_]*)\s*:[\s|\[]*$/) || ['',''])[1]
+        const path = this.pathOfText(cleaned)
+        const currentProp = typeof path.slice(-2)[0] == 'number' ? path.slice(-3)[0] : path.slice(-2)[0];
+        //(parentProfile.match(/([\$0-9A-Za-z_]*)\s*:\s*$/) || ['',''])[1]
         const type = st.previewjb.comps[parentPt] ? 
             (jb.compParams(st.previewjb.comps[parentPt]).filter(p=>p.id == currentProp)[0] || {}).type || 'data' 
             : defaultType

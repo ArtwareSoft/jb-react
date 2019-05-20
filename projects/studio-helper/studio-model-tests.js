@@ -228,3 +228,19 @@ jb.component('studio-data-test.pathOfText-prop', {
 		expectedResult : ctx => ctx.data.join('~') == "text~part"
  },
 })
+
+jb.component('studio-data-test.pathOfText-prop-top', {
+	impl :{$: 'data-test',
+		calculate : ctx => jb.studio.completion.pathOfText("{ $:'group', style :{$: 'layo"),
+		expectedResult : ctx => ctx.data.join('~') == "style"
+ },
+})
+
+
+jb.component('studio-data-test.pathOfText-prop-after-array', {
+	impl :{$: 'data-test',
+		calculate : ctx => jb.studio.completion.pathOfText("{ $:'group', controls :[{$: '' }, {$:'label'}], style :{$: 'layo"),
+		expectedResult : ctx => ctx.data.join('~') == "style"
+ },
+})
+
