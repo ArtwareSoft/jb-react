@@ -1,7 +1,7 @@
 #Visual Development with React
 
 Visual development was broken in the world of web development, mostly because pre-defined visual components could not be re-used anymore.
-The industry accepts the fact that complex web apps can be developed only textually.
+The industry de-facto accepts the fact that complex web apps can **not** be developed visually.
 
 jBart suggests a revolutionary approach for visual development of complex apps that actually works.
 
@@ -29,6 +29,11 @@ jBart suggests a revolutionary approach for visual development of complex apps t
 ##Who Uses jBart?
 - large teams
 - hybrid teams: architects build the components, implementers build the applications
+
+##code completion - convert jBart components to typescript interfaces
+add the following line to your package json "scripts" section to generate typescript definition file that will allow you autocomplete.
+
+"prepare-ts": "node node_modules/jbart5-react/bin/tgp2ts -src:myEntryPath.js -out:all-comps-tgp"
 
 ##Learn jbart
 If you want to learn more about jBart visual development concepts, please start with [jbart4](https://github.com/ArtwareSoft/jbart4)

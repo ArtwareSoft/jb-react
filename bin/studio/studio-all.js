@@ -1275,9 +1275,9 @@ jb.component('slice', {
 		{ id: 'start', as: 'number', defaultValue: 0, description: '0-based index', essential: true },
 		{ id: 'end', as: 'number', essential: true, description: '0-based index of where to end the selection (not including itself)' }
 	],
-	impl: function(context,begin,end) {
-		if (!context.data || !context.data.slice) return null;
-		return end ? context.data.slice(begin,end) : context.data.slice(begin);
+	impl: function({data},start,end) {
+		if (!data || !data.slice) return null;
+		return end ? data.slice(start,end) : data.slice(start);
 	}
 });
 
@@ -1288,22 +1288,22 @@ jb.component('sort', {
 		{ id: 'lexical', as: 'boolean', type: 'boolean' },
 		{ id: 'ascending', as: 'boolean', type: 'boolean' }, 
 	],
-	impl: (ctx,prop,lexical,ascending) => {
-		if (!ctx.data || ! Array.isArray(ctx.data)) return null;
+	impl: ({data},prop,lexical,ascending) => {
+		if (!data || ! Array.isArray(data)) return null;
 		let sortFunc;
 		if (lexical)
 			sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
 		else 
 			sortFunc = prop ? (x,y) => (x[prop]-y[prop]) : (x,y) => (x-y);
 		if (ascending)
-			return ctx.data.slice(0).sort((x,y)=>sortFunc(y,x));
-		return ctx.data.slice(0).sort((x,y)=>sortFunc(x,y));
+			return data.slice(0).sort((x,y)=>sortFunc(y,x));
+		return data.slice(0).sort((x,y)=>sortFunc(x,y));
 	}
 });
 
 jb.component('first', {
 	type: 'aggregator',
-	impl: ctx => ctx.data[0]
+	impl: ({data}) => data[0]
 });
 
 jb.component('last', {
@@ -6031,7 +6031,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! preact */ \"./node_modules/preact/dist/preact.mjs\");\n\n\njb.ui.render = preact__WEBPACK_IMPORTED_MODULE_0__[\"render\"];\njb.ui.h = preact__WEBPACK_IMPORTED_MODULE_0__[\"h\"];\njb.ui.Component = preact__WEBPACK_IMPORTED_MODULE_0__[\"Component\"];\n\n\n//# sourceURL=webpack:///./src/ui/jb-preact.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! preact */ \"./node_modules/preact/dist/preact.mjs\");\n\r\n\r\njb.ui.render = preact__WEBPACK_IMPORTED_MODULE_0__[\"render\"];\r\njb.ui.h = preact__WEBPACK_IMPORTED_MODULE_0__[\"h\"];\r\njb.ui.Component = preact__WEBPACK_IMPORTED_MODULE_0__[\"Component\"];\r\n\n\n//# sourceURL=webpack:///./src/ui/jb-preact.js?");
 
 /***/ })
 
@@ -6156,7 +6156,7 @@ eval("/**\n * Copyright (c) 2013-present, Facebook, Inc.\n *\n * This source cod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! immutability-helper */ \"./node_modules/immutability-helper/index.js\");\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(immutability_helper__WEBPACK_IMPORTED_MODULE_0__);\n\n\njb.ui.update = immutability_helper__WEBPACK_IMPORTED_MODULE_0___default.a;\n\n\n//# sourceURL=webpack:///./src/ui/jb-immutable.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! immutability-helper */ \"./node_modules/immutability-helper/index.js\");\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(immutability_helper__WEBPACK_IMPORTED_MODULE_0__);\n\r\n\r\njb.ui.update = immutability_helper__WEBPACK_IMPORTED_MODULE_0___default.a;\r\n\n\n//# sourceURL=webpack:///./src/ui/jb-immutable.js?");
 
 /***/ })
 
@@ -7792,7 +7792,7 @@ eval("var g;\n\n// This works in non-strict mode\ng = (function() {\n\treturn th
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var rxjs_Subject__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! rxjs/Subject */ \"./node_modules/rxjs/Subject.js\");\n/* harmony import */ var rxjs_Subject__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(rxjs_Subject__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var rxjs_Observable__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rxjs/Observable */ \"./node_modules/rxjs/Observable.js\");\n/* harmony import */ var rxjs_Observable__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(rxjs_Observable__WEBPACK_IMPORTED_MODULE_1__);\n/* harmony import */ var rxjs_observable_FromObservable__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/observable/FromObservable */ \"./node_modules/rxjs/observable/FromObservable.js\");\n/* harmony import */ var rxjs_observable_FromObservable__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(rxjs_observable_FromObservable__WEBPACK_IMPORTED_MODULE_2__);\n/* harmony import */ var rxjs_add_operator_map__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs/add/operator/map */ \"./node_modules/rxjs/add/operator/map.js\");\n/* harmony import */ var rxjs_add_operator_map__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_map__WEBPACK_IMPORTED_MODULE_3__);\n/* harmony import */ var rxjs_add_operator_filter__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! rxjs/add/operator/filter */ \"./node_modules/rxjs/add/operator/filter.js\");\n/* harmony import */ var rxjs_add_operator_filter__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_filter__WEBPACK_IMPORTED_MODULE_4__);\n/* harmony import */ var rxjs_add_operator_catch__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! rxjs/add/operator/catch */ \"./node_modules/rxjs/add/operator/catch.js\");\n/* harmony import */ var rxjs_add_operator_catch__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_catch__WEBPACK_IMPORTED_MODULE_5__);\n/* harmony import */ var rxjs_add_operator_do__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! rxjs/add/operator/do */ \"./node_modules/rxjs/add/operator/do.js\");\n/* harmony import */ var rxjs_add_operator_do__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_do__WEBPACK_IMPORTED_MODULE_6__);\n/* harmony import */ var rxjs_add_operator_merge__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! rxjs/add/operator/merge */ \"./node_modules/rxjs/add/operator/merge.js\");\n/* harmony import */ var rxjs_add_operator_merge__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_merge__WEBPACK_IMPORTED_MODULE_7__);\n/* harmony import */ var rxjs_add_operator_concat__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! rxjs/add/operator/concat */ \"./node_modules/rxjs/add/operator/concat.js\");\n/* harmony import */ var rxjs_add_operator_concat__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_concat__WEBPACK_IMPORTED_MODULE_8__);\n/* harmony import */ var rxjs_add_operator_mergeMap__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! rxjs/add/operator/mergeMap */ \"./node_modules/rxjs/add/operator/mergeMap.js\");\n/* harmony import */ var rxjs_add_operator_mergeMap__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_mergeMap__WEBPACK_IMPORTED_MODULE_9__);\n/* harmony import */ var rxjs_add_operator_concatMap__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! rxjs/add/operator/concatMap */ \"./node_modules/rxjs/add/operator/concatMap.js\");\n/* harmony import */ var rxjs_add_operator_concatMap__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_concatMap__WEBPACK_IMPORTED_MODULE_10__);\n/* harmony import */ var rxjs_add_operator_startWith__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! rxjs/add/operator/startWith */ \"./node_modules/rxjs/add/operator/startWith.js\");\n/* harmony import */ var rxjs_add_operator_startWith__WEBPACK_IMPORTED_MODULE_11___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_startWith__WEBPACK_IMPORTED_MODULE_11__);\n/* harmony import */ var rxjs_add_operator_takeUntil__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! rxjs/add/operator/takeUntil */ \"./node_modules/rxjs/add/operator/takeUntil.js\");\n/* harmony import */ var rxjs_add_operator_takeUntil__WEBPACK_IMPORTED_MODULE_12___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_takeUntil__WEBPACK_IMPORTED_MODULE_12__);\n/* harmony import */ var rxjs_add_observable_fromPromise__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! rxjs/add/observable/fromPromise */ \"./node_modules/rxjs/add/observable/fromPromise.js\");\n/* harmony import */ var rxjs_add_observable_fromPromise__WEBPACK_IMPORTED_MODULE_13___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_fromPromise__WEBPACK_IMPORTED_MODULE_13__);\n/* harmony import */ var rxjs_add_observable_fromEvent__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! rxjs/add/observable/fromEvent */ \"./node_modules/rxjs/add/observable/fromEvent.js\");\n/* harmony import */ var rxjs_add_observable_fromEvent__WEBPACK_IMPORTED_MODULE_14___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_fromEvent__WEBPACK_IMPORTED_MODULE_14__);\n/* harmony import */ var rxjs_add_observable_from__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! rxjs/add/observable/from */ \"./node_modules/rxjs/add/observable/from.js\");\n/* harmony import */ var rxjs_add_observable_from__WEBPACK_IMPORTED_MODULE_15___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_from__WEBPACK_IMPORTED_MODULE_15__);\n/* harmony import */ var rxjs_add_observable_of__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! rxjs/add/observable/of */ \"./node_modules/rxjs/add/observable/of.js\");\n/* harmony import */ var rxjs_add_observable_of__WEBPACK_IMPORTED_MODULE_16___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_of__WEBPACK_IMPORTED_MODULE_16__);\n/* harmony import */ var rxjs_add_observable_interval__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! rxjs/add/observable/interval */ \"./node_modules/rxjs/add/observable/interval.js\");\n/* harmony import */ var rxjs_add_observable_interval__WEBPACK_IMPORTED_MODULE_17___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_interval__WEBPACK_IMPORTED_MODULE_17__);\n/* harmony import */ var rxjs_add_operator_distinctUntilChanged__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! rxjs/add/operator/distinctUntilChanged */ \"./node_modules/rxjs/add/operator/distinctUntilChanged.js\");\n/* harmony import */ var rxjs_add_operator_distinctUntilChanged__WEBPACK_IMPORTED_MODULE_18___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_distinctUntilChanged__WEBPACK_IMPORTED_MODULE_18__);\n/* harmony import */ var rxjs_add_operator_debounceTime__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! rxjs/add/operator/debounceTime */ \"./node_modules/rxjs/add/operator/debounceTime.js\");\n/* harmony import */ var rxjs_add_operator_debounceTime__WEBPACK_IMPORTED_MODULE_19___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_debounceTime__WEBPACK_IMPORTED_MODULE_19__);\n/* harmony import */ var rxjs_add_operator_buffer__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! rxjs/add/operator/buffer */ \"./node_modules/rxjs/add/operator/buffer.js\");\n/* harmony import */ var rxjs_add_operator_buffer__WEBPACK_IMPORTED_MODULE_20___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_buffer__WEBPACK_IMPORTED_MODULE_20__);\n/* harmony import */ var rxjs_add_operator_skip__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! rxjs/add/operator/skip */ \"./node_modules/rxjs/add/operator/skip.js\");\n/* harmony import */ var rxjs_add_operator_skip__WEBPACK_IMPORTED_MODULE_21___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_skip__WEBPACK_IMPORTED_MODULE_21__);\n/* harmony import */ var rxjs_add_operator_last__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! rxjs/add/operator/last */ \"./node_modules/rxjs/add/operator/last.js\");\n/* harmony import */ var rxjs_add_operator_last__WEBPACK_IMPORTED_MODULE_22___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_last__WEBPACK_IMPORTED_MODULE_22__);\n/* harmony import */ var rxjs_add_operator_delay__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! rxjs/add/operator/delay */ \"./node_modules/rxjs/add/operator/delay.js\");\n/* harmony import */ var rxjs_add_operator_delay__WEBPACK_IMPORTED_MODULE_23___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_delay__WEBPACK_IMPORTED_MODULE_23__);\n/* harmony import */ var rxjs_add_operator_take__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! rxjs/add/operator/take */ \"./node_modules/rxjs/add/operator/take.js\");\n/* harmony import */ var rxjs_add_operator_take__WEBPACK_IMPORTED_MODULE_24___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_take__WEBPACK_IMPORTED_MODULE_24__);\n/* harmony import */ var rxjs_add_operator_toArray__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! rxjs/add/operator/toArray */ \"./node_modules/rxjs/add/operator/toArray.js\");\n/* harmony import */ var rxjs_add_operator_toArray__WEBPACK_IMPORTED_MODULE_25___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_toArray__WEBPACK_IMPORTED_MODULE_25__);\n/* harmony import */ var rxjs_add_operator_toPromise__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! rxjs/add/operator/toPromise */ \"./node_modules/rxjs/add/operator/toPromise.js\");\n/* harmony import */ var rxjs_add_operator_toPromise__WEBPACK_IMPORTED_MODULE_26___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_toPromise__WEBPACK_IMPORTED_MODULE_26__);\n/* harmony import */ var rxjs_add_operator_race__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! rxjs/add/operator/race */ \"./node_modules/rxjs/add/operator/race.js\");\n/* harmony import */ var rxjs_add_operator_race__WEBPACK_IMPORTED_MODULE_27___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_race__WEBPACK_IMPORTED_MODULE_27__);\n/* harmony import */ var rxjs_add_operator_finally__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! rxjs/add/operator/finally */ \"./node_modules/rxjs/add/operator/finally.js\");\n/* harmony import */ var rxjs_add_operator_finally__WEBPACK_IMPORTED_MODULE_28___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_finally__WEBPACK_IMPORTED_MODULE_28__);\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\njb.rx.Observable = rxjs_Observable__WEBPACK_IMPORTED_MODULE_1__[\"Observable\"];\njb.rx.Subject = rxjs_Subject__WEBPACK_IMPORTED_MODULE_0__[\"Subject\"];\n\n\n//# sourceURL=webpack:///./src/ui/jb-rx.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var rxjs_Subject__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! rxjs/Subject */ \"./node_modules/rxjs/Subject.js\");\n/* harmony import */ var rxjs_Subject__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(rxjs_Subject__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var rxjs_Observable__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rxjs/Observable */ \"./node_modules/rxjs/Observable.js\");\n/* harmony import */ var rxjs_Observable__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(rxjs_Observable__WEBPACK_IMPORTED_MODULE_1__);\n/* harmony import */ var rxjs_observable_FromObservable__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/observable/FromObservable */ \"./node_modules/rxjs/observable/FromObservable.js\");\n/* harmony import */ var rxjs_observable_FromObservable__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(rxjs_observable_FromObservable__WEBPACK_IMPORTED_MODULE_2__);\n/* harmony import */ var rxjs_add_operator_map__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs/add/operator/map */ \"./node_modules/rxjs/add/operator/map.js\");\n/* harmony import */ var rxjs_add_operator_map__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_map__WEBPACK_IMPORTED_MODULE_3__);\n/* harmony import */ var rxjs_add_operator_filter__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! rxjs/add/operator/filter */ \"./node_modules/rxjs/add/operator/filter.js\");\n/* harmony import */ var rxjs_add_operator_filter__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_filter__WEBPACK_IMPORTED_MODULE_4__);\n/* harmony import */ var rxjs_add_operator_catch__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! rxjs/add/operator/catch */ \"./node_modules/rxjs/add/operator/catch.js\");\n/* harmony import */ var rxjs_add_operator_catch__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_catch__WEBPACK_IMPORTED_MODULE_5__);\n/* harmony import */ var rxjs_add_operator_do__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! rxjs/add/operator/do */ \"./node_modules/rxjs/add/operator/do.js\");\n/* harmony import */ var rxjs_add_operator_do__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_do__WEBPACK_IMPORTED_MODULE_6__);\n/* harmony import */ var rxjs_add_operator_merge__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! rxjs/add/operator/merge */ \"./node_modules/rxjs/add/operator/merge.js\");\n/* harmony import */ var rxjs_add_operator_merge__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_merge__WEBPACK_IMPORTED_MODULE_7__);\n/* harmony import */ var rxjs_add_operator_concat__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! rxjs/add/operator/concat */ \"./node_modules/rxjs/add/operator/concat.js\");\n/* harmony import */ var rxjs_add_operator_concat__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_concat__WEBPACK_IMPORTED_MODULE_8__);\n/* harmony import */ var rxjs_add_operator_mergeMap__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! rxjs/add/operator/mergeMap */ \"./node_modules/rxjs/add/operator/mergeMap.js\");\n/* harmony import */ var rxjs_add_operator_mergeMap__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_mergeMap__WEBPACK_IMPORTED_MODULE_9__);\n/* harmony import */ var rxjs_add_operator_concatMap__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! rxjs/add/operator/concatMap */ \"./node_modules/rxjs/add/operator/concatMap.js\");\n/* harmony import */ var rxjs_add_operator_concatMap__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_concatMap__WEBPACK_IMPORTED_MODULE_10__);\n/* harmony import */ var rxjs_add_operator_startWith__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! rxjs/add/operator/startWith */ \"./node_modules/rxjs/add/operator/startWith.js\");\n/* harmony import */ var rxjs_add_operator_startWith__WEBPACK_IMPORTED_MODULE_11___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_startWith__WEBPACK_IMPORTED_MODULE_11__);\n/* harmony import */ var rxjs_add_operator_takeUntil__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! rxjs/add/operator/takeUntil */ \"./node_modules/rxjs/add/operator/takeUntil.js\");\n/* harmony import */ var rxjs_add_operator_takeUntil__WEBPACK_IMPORTED_MODULE_12___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_takeUntil__WEBPACK_IMPORTED_MODULE_12__);\n/* harmony import */ var rxjs_add_observable_fromPromise__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! rxjs/add/observable/fromPromise */ \"./node_modules/rxjs/add/observable/fromPromise.js\");\n/* harmony import */ var rxjs_add_observable_fromPromise__WEBPACK_IMPORTED_MODULE_13___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_fromPromise__WEBPACK_IMPORTED_MODULE_13__);\n/* harmony import */ var rxjs_add_observable_fromEvent__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! rxjs/add/observable/fromEvent */ \"./node_modules/rxjs/add/observable/fromEvent.js\");\n/* harmony import */ var rxjs_add_observable_fromEvent__WEBPACK_IMPORTED_MODULE_14___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_fromEvent__WEBPACK_IMPORTED_MODULE_14__);\n/* harmony import */ var rxjs_add_observable_from__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! rxjs/add/observable/from */ \"./node_modules/rxjs/add/observable/from.js\");\n/* harmony import */ var rxjs_add_observable_from__WEBPACK_IMPORTED_MODULE_15___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_from__WEBPACK_IMPORTED_MODULE_15__);\n/* harmony import */ var rxjs_add_observable_of__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! rxjs/add/observable/of */ \"./node_modules/rxjs/add/observable/of.js\");\n/* harmony import */ var rxjs_add_observable_of__WEBPACK_IMPORTED_MODULE_16___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_of__WEBPACK_IMPORTED_MODULE_16__);\n/* harmony import */ var rxjs_add_observable_interval__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! rxjs/add/observable/interval */ \"./node_modules/rxjs/add/observable/interval.js\");\n/* harmony import */ var rxjs_add_observable_interval__WEBPACK_IMPORTED_MODULE_17___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_interval__WEBPACK_IMPORTED_MODULE_17__);\n/* harmony import */ var rxjs_add_operator_distinctUntilChanged__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! rxjs/add/operator/distinctUntilChanged */ \"./node_modules/rxjs/add/operator/distinctUntilChanged.js\");\n/* harmony import */ var rxjs_add_operator_distinctUntilChanged__WEBPACK_IMPORTED_MODULE_18___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_distinctUntilChanged__WEBPACK_IMPORTED_MODULE_18__);\n/* harmony import */ var rxjs_add_operator_debounceTime__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! rxjs/add/operator/debounceTime */ \"./node_modules/rxjs/add/operator/debounceTime.js\");\n/* harmony import */ var rxjs_add_operator_debounceTime__WEBPACK_IMPORTED_MODULE_19___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_debounceTime__WEBPACK_IMPORTED_MODULE_19__);\n/* harmony import */ var rxjs_add_operator_buffer__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! rxjs/add/operator/buffer */ \"./node_modules/rxjs/add/operator/buffer.js\");\n/* harmony import */ var rxjs_add_operator_buffer__WEBPACK_IMPORTED_MODULE_20___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_buffer__WEBPACK_IMPORTED_MODULE_20__);\n/* harmony import */ var rxjs_add_operator_skip__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! rxjs/add/operator/skip */ \"./node_modules/rxjs/add/operator/skip.js\");\n/* harmony import */ var rxjs_add_operator_skip__WEBPACK_IMPORTED_MODULE_21___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_skip__WEBPACK_IMPORTED_MODULE_21__);\n/* harmony import */ var rxjs_add_operator_last__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! rxjs/add/operator/last */ \"./node_modules/rxjs/add/operator/last.js\");\n/* harmony import */ var rxjs_add_operator_last__WEBPACK_IMPORTED_MODULE_22___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_last__WEBPACK_IMPORTED_MODULE_22__);\n/* harmony import */ var rxjs_add_operator_delay__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! rxjs/add/operator/delay */ \"./node_modules/rxjs/add/operator/delay.js\");\n/* harmony import */ var rxjs_add_operator_delay__WEBPACK_IMPORTED_MODULE_23___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_delay__WEBPACK_IMPORTED_MODULE_23__);\n/* harmony import */ var rxjs_add_operator_take__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! rxjs/add/operator/take */ \"./node_modules/rxjs/add/operator/take.js\");\n/* harmony import */ var rxjs_add_operator_take__WEBPACK_IMPORTED_MODULE_24___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_take__WEBPACK_IMPORTED_MODULE_24__);\n/* harmony import */ var rxjs_add_operator_toArray__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! rxjs/add/operator/toArray */ \"./node_modules/rxjs/add/operator/toArray.js\");\n/* harmony import */ var rxjs_add_operator_toArray__WEBPACK_IMPORTED_MODULE_25___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_toArray__WEBPACK_IMPORTED_MODULE_25__);\n/* harmony import */ var rxjs_add_operator_toPromise__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! rxjs/add/operator/toPromise */ \"./node_modules/rxjs/add/operator/toPromise.js\");\n/* harmony import */ var rxjs_add_operator_toPromise__WEBPACK_IMPORTED_MODULE_26___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_toPromise__WEBPACK_IMPORTED_MODULE_26__);\n/* harmony import */ var rxjs_add_operator_race__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! rxjs/add/operator/race */ \"./node_modules/rxjs/add/operator/race.js\");\n/* harmony import */ var rxjs_add_operator_race__WEBPACK_IMPORTED_MODULE_27___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_race__WEBPACK_IMPORTED_MODULE_27__);\n/* harmony import */ var rxjs_add_operator_finally__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! rxjs/add/operator/finally */ \"./node_modules/rxjs/add/operator/finally.js\");\n/* harmony import */ var rxjs_add_operator_finally__WEBPACK_IMPORTED_MODULE_28___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_finally__WEBPACK_IMPORTED_MODULE_28__);\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\njb.rx.Observable = rxjs_Observable__WEBPACK_IMPORTED_MODULE_1__[\"Observable\"];\r\njb.rx.Subject = rxjs_Subject__WEBPACK_IMPORTED_MODULE_0__[\"Subject\"];\r\n\n\n//# sourceURL=webpack:///./src/ui/jb-rx.js?");
 
 /***/ })
 
@@ -14282,20 +14282,21 @@ jb.component('editable-text.codemirror', {
 			css: '{width: 100%}',
 			afterViewInit: cmp => {
 				var data_ref = cmp.ctx.vars.$model.databind;
-				var _cm_settings = Object.assign(cm_settings||{}, {
+				cm_settings = cm_settings||{};
+				var effective_settings = Object.assign({},cm_settings, {
 					mode: mode || 'javascript',
 					lineWrapping: lineWrapping,
           lineNumbers: context.params.lineNumbers,
 					theme: 'solarized light',
           autofocus: false,
-					extraKeys: {
+					extraKeys: Object.assign({
 						'Ctrl-Space': 'autocomplete',
 						'Ctrl-Enter': () => context.params.onCtrlEnter()
-					},
+					}, cm_settings.extraKeys || {}),
           readOnly: context.params.readOnly,
 				});
 				try {
-					var editor = CodeMirror.fromTextArea(cmp.base.firstChild, _cm_settings);
+					var editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
 					if (context.params.hint)
 						tgpHint(CodeMirror)
 					var wrapper = editor.getWrapperElement();
@@ -14424,7 +14425,7 @@ jb.component('text.codemirror', {
                     theme: 'solarized light',
                 };
                 try {
-                  var editor = CodeMirror.fromTextArea(cmp.base.firstChild, _cm_settings);
+                  var editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
         					var wrapper = editor.getWrapperElement();
         					if (height)
         						wrapper.style.height = height + 'px';
@@ -27134,165 +27135,6 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
   else // Plain browser env
     mod(CodeMirror);
 })(function(CodeMirror) {
-  var Pos = CodeMirror.Pos;
-
-  function forEach(arr, f) {
-    for (var i = 0, e = arr.length; i < e; ++i) f(arr[i]);
-  }
-
-  function arrayContains(arr, item) {
-    if (!Array.prototype.indexOf) {
-      var i = arr.length;
-      while (i--) {
-        if (arr[i] === item) {
-          return true;
-        }
-      }
-      return false;
-    }
-    return arr.indexOf(item) != -1;
-  }
-
-  function scriptHint(editor, keywords, getToken, options) {
-    // Find the token at the cursor
-    var cur = editor.getCursor(), token = getToken(editor, cur);
-    if (/\b(?:string|comment)\b/.test(token.type)) return;
-    var innerMode = CodeMirror.innerMode(editor.getMode(), token.state);
-    if (innerMode.mode.helperType === "json") return;
-    token.state = innerMode.state;
-
-    // If it's not a 'word-style' token, ignore the token.
-    if (!/^[\w$_]*$/.test(token.string)) {
-      token = {start: cur.ch, end: cur.ch, string: "", state: token.state,
-               type: token.string == "." ? "property" : null};
-    } else if (token.end > cur.ch) {
-      token.end = cur.ch;
-      token.string = token.string.slice(0, cur.ch - token.start);
-    }
-
-    var tprop = token;
-    // If it is a property, find out what it is a property of.
-    while (tprop.type == "property") {
-      tprop = getToken(editor, Pos(cur.line, tprop.start));
-      if (tprop.string != ".") return;
-      tprop = getToken(editor, Pos(cur.line, tprop.start));
-      if (!context) var context = [];
-      context.push(tprop);
-    }
-    return {list: getCompletions(token, context, keywords, options),
-            from: Pos(cur.line, token.start),
-            to: Pos(cur.line, token.end)};
-  }
-
-  function javascriptHint(editor, options) {
-    return scriptHint(editor, javascriptKeywords,
-                      function (e, cur) {return e.getTokenAt(cur);},
-                      options);
-  };
-  CodeMirror.registerHelper("hint", "javascript", javascriptHint);
-
-  function getCoffeeScriptToken(editor, cur) {
-  // This getToken, it is for coffeescript, imitates the behavior of
-  // getTokenAt method in javascript.js, that is, returning "property"
-  // type and treat "." as indepenent token.
-    var token = editor.getTokenAt(cur);
-    if (cur.ch == token.start + 1 && token.string.charAt(0) == '.') {
-      token.end = token.start;
-      token.string = '.';
-      token.type = "property";
-    }
-    else if (/^\.[\w$_]*$/.test(token.string)) {
-      token.type = "property";
-      token.start++;
-      token.string = token.string.replace(/\./, '');
-    }
-    return token;
-  }
-
-  function coffeescriptHint(editor, options) {
-    return scriptHint(editor, coffeescriptKeywords, getCoffeeScriptToken, options);
-  }
-  CodeMirror.registerHelper("hint", "coffeescript", coffeescriptHint);
-
-  var stringProps = ("charAt charCodeAt indexOf lastIndexOf substring substr slice trim trimLeft trimRight " +
-                     "toUpperCase toLowerCase split concat match replace search").split(" ");
-  var arrayProps = ("length concat join splice push pop shift unshift slice reverse sort indexOf " +
-                    "lastIndexOf every some filter forEach map reduce reduceRight ").split(" ");
-  var funcProps = "prototype apply call bind".split(" ");
-  var javascriptKeywords = ("break case catch class const continue debugger default delete do else export extends false finally for function " +
-                  "if in import instanceof new null return super switch this throw true try typeof var void while with yield").split(" ");
-  var coffeescriptKeywords = ("and break catch class continue delete do else extends false finally for " +
-                  "if in instanceof isnt new no not null of off on or return switch then throw true try typeof until void while with yes").split(" ");
-
-  function forAllProps(obj, callback) {
-    if (!Object.getOwnPropertyNames || !Object.getPrototypeOf) {
-      for (var name in obj) callback(name)
-    } else {
-      for (var o = obj; o; o = Object.getPrototypeOf(o))
-        Object.getOwnPropertyNames(o).forEach(callback)
-    }
-  }
-
-  function getCompletions(token, context, keywords, options) {
-    var found = [], start = token.string, global = options && options.globalScope || window;
-    function maybeAdd(str) {
-      if (str.lastIndexOf(start, 0) == 0 && !arrayContains(found, str)) found.push(str);
-    }
-    function gatherCompletions(obj) {
-      if (typeof obj == "string") forEach(stringProps, maybeAdd);
-      else if (obj instanceof Array) forEach(arrayProps, maybeAdd);
-      else if (obj instanceof Function) forEach(funcProps, maybeAdd);
-      forAllProps(obj, maybeAdd)
-    }
-
-    if (context && context.length) {
-      // If this is a property, see if it belongs to some object we can
-      // find in the current environment.
-      var obj = context.pop(), base;
-      if (obj.type && obj.type.indexOf("variable") === 0) {
-        if (options && options.additionalContext)
-          base = options.additionalContext[obj.string];
-        if (!options || options.useGlobalScope !== false)
-          base = base || global[obj.string];
-      } else if (obj.type == "string") {
-        base = "";
-      } else if (obj.type == "atom") {
-        base = 1;
-      } else if (obj.type == "function") {
-        if (global.jQuery != null && (obj.string == '$' || obj.string == 'jQuery') &&
-            (typeof global.jQuery == 'function'))
-          base = global.jQuery();
-        else if (global._ != null && (obj.string == '_') && (typeof global._ == 'function'))
-          base = global._();
-      }
-      while (base != null && context.length)
-        base = base[context.pop().string];
-      if (base != null) gatherCompletions(base);
-    } else {
-      // If not, just look in the global object and any local scope
-      // (reading into JS mode internals to get at the local and global variables)
-      for (var v = token.state.localVars; v; v = v.next) maybeAdd(v.name);
-      for (var v = token.state.globalVars; v; v = v.next) maybeAdd(v.name);
-      if (!options || options.useGlobalScope !== false)
-        gatherCompletions(global);
-      forEach(keywords, maybeAdd);
-    }
-    return found;
-  }
-});
-;
-
-// CodeMirror, copyright (c) by Marijn Haverbeke and others
-// Distributed under an MIT license: https://codemirror.net/LICENSE
-
-(function(mod) {
-  if (typeof exports == "object" && typeof module == "object") // CommonJS
-    mod(require("../../lib/codemirror"));
-  else if (typeof define == "function" && define.amd) // AMD
-    define(["../../lib/codemirror"], mod);
-  else // Plain browser env
-    mod(CodeMirror);
-})(function(CodeMirror) {
   "use strict";
 
   var Pos = CodeMirror.Pos;
@@ -29324,7 +29166,7 @@ eval("var __WEBPACK_AMD_DEFINE_RESULT__;;(function(root, factory) { // eslint-di
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var deep_diff__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! deep-diff */ \"./node_modules/deep-diff/index.js\");\n/* harmony import */ var deep_diff__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(deep_diff__WEBPACK_IMPORTED_MODULE_0__);\n\njb.studio.diff = deep_diff__WEBPACK_IMPORTED_MODULE_0___default.a;\n\n\n//# sourceURL=webpack:///./projects/studio/studio-deep-diff-ext.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var deep_diff__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! deep-diff */ \"./node_modules/deep-diff/index.js\");\n/* harmony import */ var deep_diff__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(deep_diff__WEBPACK_IMPORTED_MODULE_0__);\n\r\njb.studio.diff = deep_diff__WEBPACK_IMPORTED_MODULE_0___default.a;\r\n\n\n//# sourceURL=webpack:///./projects/studio/studio-deep-diff-ext.js?");
 
 /***/ })
 
@@ -30155,41 +29997,138 @@ jb.component('url-history.map-studio-url-to-resource', {
 })
 ;
 
+(function() {
 const st = jb.studio;
-st.completion = 
-function(text, ctx) {
-    const cleanStringContent = txt=>txt.replace(/,|{|}|\$/g,'')
-    const cleaned = text.replace(/'[^']*'/g, cleanStringContent).replace(/"[^"]*"/g, cleanStringContent).replace(/`[^`]*`/gm, cleanStringContent);
-    const profile_str = extractProfileStr(cleaned)
-    const pt = ptOfProfile(profile_str)
-    if (pt)
-        return st.previewjb.comps[pt].params.map(p=>p.id)
-    const beforeProfile = cleaned.slice(0, findMatchingBlockBackwards(cleaned))
-    const parentProfile = extractProfileStr(beforeProfile)
-    const parentPt = ptOfProfile(parentProfile)
-    const currentProp = (parentProfile.match(/([\$0-9A-Za-z_]*)\s*:\s*$/) || ['',''])[1]
-    const type = (st.previewjb.comps[parentPt].params.filter(p=>p.id == currentProp)[0] || {}).type || 'data'
-    return st.PTsOfType(type);
-
-    function findMatchingBlockBackwards(str) {
-        let depth = 0;
-        for(let i=str.length-1; i>=0;i--) {
-            if (str[i] == '{' && depth == 0)
-                return i;
-            if (str[i] == '{') depth--;
-            if (str[i] == '}') depth++;
+const OPEN = ['{','['], CLOSE = ['}',']'];
+st.completion = {
+    goUp(text) {
+        let depth = 0, formerSiblings = 0;
+        for(let i=text.length-1; i>=0;i--) {
+            if (isOpen(text[i]) && depth == 0)
+                return {upIndex: i, formerSiblings};
+            if (isOpen(text[i]) && depth == 1)
+                formerSiblings++;
+            if (isOpen(text[i])) depth--;
+            if (isClose(text[i])) depth++;
         }
-        return 0;
-    }
+        return {upIndex: 0, formerSiblings};
 
-    function ptOfProfile(profile_str) {
-        return (profile_str.match(/\$\s*:\s*'([^']*)'/) || ['',''])[1]
-    }
+        function isClose(ch) { return CLOSE.indexOf(ch) != -1 }
+        function isOpen(ch) { return OPEN.indexOf(ch) != -1 }
+    },
+    getProp(text) {
+        const prop = (text.match(/([\$0-9A-Za-z_]*)\s*:[\s|\[|']*$/) || ['',''])[1]
+        return prop ? [prop] : []
+    },
+    pathOfText(text) {
+        const {goUp, pathOfText, getProp} = st.completion
 
-    function extractProfileStr(str) {
-        return str.slice(findMatchingBlockBackwards(str))
+        const {upIndex, formerSiblings} = goUp(text)
+        if (upIndex == 0 || upIndex == text.length-1)
+            return getProp(text)
+        const parentPath = pathOfText(text.slice(0, upIndex))
+        const isArrayElement = text[upIndex] == '['
+        if (isArrayElement)
+            return [...parentPath, formerSiblings]
+        return [...parentPath, ...getProp(text)]
+    },
+    hint(text, token, ctx) {
+        const defaultType = 'control'
+
+        const cleanStringContent = txt=>txt.replace(/,|{|}|\$/g,'')
+        const cleaned = text.replace(/'[^']*'/g, cleanStringContent).replace(/"[^"]*"/g, cleanStringContent).replace(/`[^`]*`/gm, cleanStringContent);
+        const profile_str = extractProfileStr(cleaned)
+        const pt = ptOfProfile(profile_str)
+        if (pt) {
+            if (/^\s*,/.test(token) || /,\s*$/.test(profile_str))
+                return jb.compParams(st.previewjb.comps[pt]).map(prop =>({ type: 'prop', prop, displayText: prop.id }) )
+            if ((/^'/.test(token) || /\s*'$/.test(profile_str))) {
+                const profile_str = extractProfileStr(cleaned)
+                const currentProp = (profile_str.match(/([\$0-9A-Za-z_]*)\s*:[\s|\[]*$/) || ['',''])[1]
+                const options = st.previewjb.comps[pt] ? 
+                    (jb.compParams(st.previewjb.comps[pt]).filter(p=>p.id == currentProp)[0] || {}).options || '' : ''
+                return options.split(',').map(opt => ({ type: 'enum', displayText: opt}))
+            }
+        }
+        // pts of type
+        const beforeProfile = cleaned.slice(0, findMatchingBlockBackwards(cleaned))
+        const parentProfile = extractProfileStr(beforeProfile)
+        const parentPt = ptOfProfile(parentProfile)
+        const path = this.pathOfText(cleaned)
+        const currentProp = typeof path.slice(-2)[0] == 'number' ? path.slice(-3)[0] : path.slice(-2)[0];
+        //(parentProfile.match(/([\$0-9A-Za-z_]*)\s*:\s*$/) || ['',''])[1]
+        const type = st.previewjb.comps[parentPt] ? 
+            (jb.compParams(st.previewjb.comps[parentPt]).filter(p=>p.id == currentProp)[0] || {}).type || 'data' 
+            : defaultType
+        return st.PTsOfType(type).map(pt=>({ type: 'pt', displayText: pt}));
+
+        function findMatchingBlockBackwards(str) {
+            let depth = 0;
+            for(let i=str.length-1; i>=0;i--) {
+                if (str[i] == '{' && depth == 0)
+                    return i;
+                if (str[i] == '{') depth--;
+                if (str[i] == '}') depth++;
+            }
+            return 0;
+        }
+
+        function ptOfProfile(profile_str) {
+            return (profile_str.match(/\$\s*:\s*'([^']*)'/) || ['',''])[1]
+        }
+
+        function extractProfileStr(str) {
+            return str.slice(findMatchingBlockBackwards(str))
+        }
     }
-};
+}
+
+if (typeof CodeMirror != 'undefined') {
+    const Pos = CodeMirror.Pos;
+    CodeMirror.registerHelper("hint", "javascript", (editor, settings) => {
+        const cur = editor.getCursor(), token = editor.getTokenAt(cur);
+        const optionsFilter = token.string.replace(/[^a-zA-Z]/g,'');
+        const textToToken = [...editor.getValue().split('\n').slice(0,cur.line), editor.getLine(cur.line)
+            .slice(0,cur.ch)]
+            .join('\n')
+            .slice(0,-1*token.string.length);
+        const options = st.completion.hint(textToToken, token.string)
+        const codeMirrorOptions = options.map(e=>asCodeMirrorOption(e))
+            .filter(e=>!optionsFilter || e.displayText.indexOf(optionsFilter) != -1)
+        const result = { list: codeMirrorOptions }
+        jb.log('hint',['helper', { cur, token, textToToken, options, codeMirrorOptions}])
+        return result;
+
+        function asCodeMirrorOption(option) {
+            const res = Object.assign(option,{text: option.displayText, hint: applyHint})
+            option.backOffset = 0
+            if (option.type == 'prop') {
+                const separator = /,\s*$/.test(textToToken) ? '' : ','
+                const space = /\s+$/.test(textToToken) ? '' : ' '
+                let value = option.prop.defaultValue && jb.prettyPrint(option.prop.defaultValue)
+                value = value || ((option.prop.type &&  option.prop.type != 'data') ? "{$: '' }" : "''")
+                const spaceBeforeValue = value.indexOf('$') == -1 ? ' ' : ''
+                const spaceBeforeColon = value.indexOf('$') == -1 ? '' : ' '
+                res.text = `${separator}${space}${res.text}${spaceBeforeColon}:${spaceBeforeValue}${value}`
+                }
+            else if (option.type == 'pt') {
+                res.text = /\$:\s*/.test(textToToken) ? `'${res.text}'` : `{ $: '${res.text}'`
+            }
+            else if (option.type == 'enum') {
+                res.text = `'${res.text}'`
+            }
+            option.backOffset = res.text.split('').reverse().join('').indexOf("''") + 1;
+            return res
+
+            function applyHint(editor) {
+                editor.replaceRange(option.text, Pos(cur.line, token.start), Pos(cur.line, token.end))
+                setTimeout(() => editor.setCursor(editor.getCursor().line, editor.getCursor().ch - option.backOffset), 20)
+            }
+        }
+        
+    });
+}
+})();
 
 jb.component('studio.pickAndOpen', {
 	type: 'action',
@@ -30361,6 +30300,43 @@ jb.component('editable-text.studio-primitive-text', {
     css: `{ width1: 367px} :focus { border-color: #3F51B5; border-width: 2px}`,
 	}
 })
+
+jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
+  incNumberAtCursor(editor, {inc}) {
+    const cur = editor.getCursor(), token = editor.getTokenAt(cur);
+    if (!isNaN(+token.string)) {
+      const prefix = editor.getTokenAt(CodeMirror.Pos(cur.line, cur.ch - token.string.length)).string;
+      const val = prefix == '-' ? (prefix + token.string) : token.string;
+      const newVal = `${(+val)+inc}`;
+      if (prefix == '-')
+        token.start--;
+      editor.replaceRange(newVal, CodeMirror.Pos(cur.line, token.start), CodeMirror.Pos(cur.line, token.end))                
+    }
+  }
+})
+
+jb.component('editable-text.studio-codemirror-tgp', {
+  type: 'editable-text.style',
+  impl :{$: 'editable-text.codemirror', mode: 'javascript',
+    cm_settings :{$: 'object', 
+      extraKeys: {
+        'Alt-Left': editor => {
+          jb.studio.codeMirrorUtils.incNumberAtCursor(editor, {inc:-1})
+        },
+        'Alt-Right': editor => {
+          jb.studio.codeMirrorUtils.incNumberAtCursor(editor, {inc:1})
+        },
+        'Alt-F': editor => {
+          try {
+            const prof = eval('('+editor.getValue()+')')
+            editor.setValue(jb.prettyPrint(prof))
+          } catch (e) {}
+        }
+      }
+    }
+  }
+})
+
 
 jb.component('button.select-profile-style', {
   type: 'button.style',
@@ -34721,7 +34697,7 @@ jb.component('studio.edit-source', {
     content :{$: 'editable-text', 
       databind:{$: 'studio.profile-as-text', path: '%$path%' },
       // '%$studio/ScriptInPopup%', 
-      style :{$: 'editable-text.codemirror', mode: 'javascript' }
+      style :{$: 'editable-text.studio-codemirror-tgp' }
     }, 
     title :{$: 'studio.short-title', path: '%$path%' }, 
     onOK1 :{$: 'write-value', 

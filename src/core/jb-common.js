@@ -260,9 +260,9 @@ jb.component('slice', {
 		{ id: 'start', as: 'number', defaultValue: 0, description: '0-based index', essential: true },
 		{ id: 'end', as: 'number', essential: true, description: '0-based index of where to end the selection (not including itself)' }
 	],
-	impl: function(context,begin,end) {
-		if (!context.data || !context.data.slice) return null;
-		return end ? context.data.slice(begin,end) : context.data.slice(begin);
+	impl: function({data},start,end) {
+		if (!data || !data.slice) return null;
+		return end ? data.slice(start,end) : data.slice(start);
 	}
 });
 
@@ -273,22 +273,22 @@ jb.component('sort', {
 		{ id: 'lexical', as: 'boolean', type: 'boolean' },
 		{ id: 'ascending', as: 'boolean', type: 'boolean' }, 
 	],
-	impl: (ctx,prop,lexical,ascending) => {
-		if (!ctx.data || ! Array.isArray(ctx.data)) return null;
+	impl: ({data},prop,lexical,ascending) => {
+		if (!data || ! Array.isArray(data)) return null;
 		let sortFunc;
 		if (lexical)
 			sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
 		else 
 			sortFunc = prop ? (x,y) => (x[prop]-y[prop]) : (x,y) => (x-y);
 		if (ascending)
-			return ctx.data.slice(0).sort((x,y)=>sortFunc(y,x));
-		return ctx.data.slice(0).sort((x,y)=>sortFunc(x,y));
+			return data.slice(0).sort((x,y)=>sortFunc(y,x));
+		return data.slice(0).sort((x,y)=>sortFunc(x,y));
 	}
 });
 
 jb.component('first', {
 	type: 'aggregator',
-	impl: ctx => ctx.data[0]
+	impl: ({data}) => data[0]
 });
 
 jb.component('last', {
