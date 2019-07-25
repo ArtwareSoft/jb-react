@@ -1,12 +1,12 @@
 var resources = Object.assign((typeof resources != 'undefined' ? resources : {}), {
       'core': [
-        'src/misc/wSpy.js',
-        'src/core/jb-core.js'
+        'src/core/jb-core.js',
+        'src/misc/wSpy.js'
       ],
       'common': [
-        'src/misc/wSpy.js',
         'src/core/jb-core.js',
         'src/core/jb-common.js',
+        'src/misc/wSpy.js',
       ],
       'ui-common': [
 //        'node_modules/jquery/dist/jquery.min.js',

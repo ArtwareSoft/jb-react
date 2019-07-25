@@ -580,10 +580,12 @@ function pathSummary(path) {
 }
 
 function logError() {
+  frame.console && frame.console.log(...arguments)
   log('error',[...arguments])
 }
 
 function logException(e,errorStr,ctx, ...rest) {
+  frame.console && frame.console.log(...arguments)
   log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx.path),e, ...rest])
 }
 
