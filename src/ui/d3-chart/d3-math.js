@@ -1,8 +1,8 @@
 jb.component('d3.pivot', {
 	type: 'd3.pivot',
 	params: [
-	    { id: 'title', as: 'string', essential: true },
-	    { id: 'value', as: 'string', essential: true, dynamic: true },
+	    { id: 'title', as: 'string', mandatory: true },
+	    { id: 'value', as: 'string', mandatory: true, dynamic: true },
 		{ id: 'scale', type: 'd3.scale', dynamic: true, defaultValue: {$: 'd3.linear-scale' } },
 		{ id: 'range', type: 'd3.range', dynamic: true, 
 			defaultValue: {$: 'd3.auto-range'} },

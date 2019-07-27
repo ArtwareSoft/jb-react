@@ -3,10 +3,10 @@ jb.component('d3.chart-scatter', {
   	type: 'control', category: 'group:80,common:70',
 	params: [
 	    { id: 'title', as: 'string' },
-		{ id: 'items', as: 'array', dynamic: true, essential: true },
+		{ id: 'items', as: 'array', dynamic: true, mandatory: true },
 		{ id: 'frame', type: 'd3.frame', defaultValue :{$: 'd3.frame', width: 1400, height: 500, 
 				top: 30, right: 50, bottom: 40, left: 60 } },
-	    { id: 'pivots', type: 'd3.pivot[]', essential: true, dynamic: true },
+	    { id: 'pivots', type: 'd3.pivot[]', mandatory: true, dynamic: true },
 	    { id: 'itemTitle', as: 'string', dynamic: true },
 	    { id: 'visualSizeLimit', as: 'number' },
 	    { id: 'style', type: 'd3.scatter-style', dynamic: true , defaultValue: {$: 'd3-scatter.plain' } },

@@ -30,8 +30,8 @@ jb.component('layout.horizontal', {
 jb.component('layout.horizontal-fixed-split', {
   type: 'group.style',
   params: [,
-    { id: 'leftWidth', as: 'number', defaultValue: 200, essential: true },
-    { id: 'rightWidth', as: 'number', defaultValue: 200, essential: true },
+    { id: 'leftWidth', as: 'number', defaultValue: 200, mandatory: true },
+    { id: 'rightWidth', as: 'number', defaultValue: 200, mandatory: true },
     { id: 'spacing', as: 'number', defaultValue: 3 },
   ],
   impl :{$: 'custom-style',

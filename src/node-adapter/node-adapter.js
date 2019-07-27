@@ -30,7 +30,7 @@ function lastModified(directory,fileName) {
 
 jb.component('fs.readFile', {
   params: [
-  	{ id: 'fileName', as: 'string', essential: true },
+  	{ id: 'fileName', as: 'string', mandatory: true },
   	{ id: 'directory', as: 'string' },
   ],
   impl: (ctx,fileName,directory) =>
@@ -43,7 +43,7 @@ jb.component('fs.readFile', {
 
 jb.component('fs.stat', {
   params: [
-  	{ id: 'fileName', as: 'string', essential: true },
+  	{ id: 'fileName', as: 'string', mandatory: true },
   	{ id: 'directory', as: 'string' },
   ],
   impl: (ctx,fileName,directory) =>
@@ -52,7 +52,7 @@ jb.component('fs.stat', {
 
 jb.component('fs.readdir', {
   params: [
-  	{ id: 'directory', as: 'string', essential: true },
+  	{ id: 'directory', as: 'string', mandatory: true },
   ],
   impl: (ctx,directory) =>
     getFromCache(directory,lastModified(directory,''), _=>
@@ -62,7 +62,7 @@ jb.component('fs.readdir', {
 jb.component('fs.directory-content', {
   description: 'returns all files content and properties',
   params: [
-  	{ id: 'directory', as: 'string', essential: true },
+  	{ id: 'directory', as: 'string', mandatory: true },
     { id: 'filter', as: 'boolean', defaultValue: true, dynamic: true },
   ],
   impl: (ctx,directory) => {

@@ -2,7 +2,7 @@
 jb.component('material-icon', {
 	type: 'control', category: 'control:50',
 	params: [
-		{ id: 'icon', as: 'string', essential: true },
+		{ id: 'icon', as: 'string', mandatory: true },
 		{ id: 'title', as: 'string' },
 		{ id: 'style', type: 'icon.style', dynamic: true, defaultValue :{$: 'icon.material' } },
 		{ id: 'features', type: 'feature[]', dynamic: true }

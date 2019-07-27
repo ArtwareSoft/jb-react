@@ -839,7 +839,7 @@ jb.component('pipeline',{
 	type: 'data',
 	description: 'map data arrays one after the other',
 	params: [
-		{ id: 'items', type: "data,aggregator[]", ignore: true, essential: true, composite: true },
+		{ id: 'items', type: "data,aggregator[]", ignore: true, mandatory: true, composite: true },
 	],
 	impl: (ctx,items) => jb.pipe(ctx,items,'$pipeline')
 })
@@ -848,7 +848,7 @@ jb.component('pipe', { // synched pipeline
 	type: 'data',
 	description: 'map asynch data arrays',
 	params: [
-		{ id: 'items', type: "data,aggregator[]", ignore: true, essential: true, composite: true },
+		{ id: 'items', type: "data,aggregator[]", ignore: true, mandatory: true, composite: true },
 	],
 	impl: (ctx,items) => jb.pipe(ctx,items,'$pipe')
 })
@@ -856,8 +856,8 @@ jb.component('pipe', { // synched pipeline
 jb.component('data.if', {
  	type: 'data',
  	params: [
- 		{ id: 'condition', type: 'boolean', as: 'boolean', essential: true},
- 		{ id: 'then', essential: true, dynamic: true },
+ 		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+ 		{ id: 'then', mandatory: true, dynamic: true },
  		{ id: 'else', dynamic: true },
  	],
  	impl: (ctx,cond,_then,_else) =>
@@ -868,8 +868,8 @@ jb.component('action.if', {
  	type: 'action',
  	description: 'if then else',
  	params: [
- 		{ id: 'condition', type: 'boolean', as: 'boolean', essential: true},
- 		{ id: 'then', type: 'action', essential: true, dynamic: true },
+ 		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+ 		{ id: 'then', type: 'action', mandatory: true, dynamic: true },
  		{ id: 'else', type: 'action', dynamic: true },
  	],
  	impl: (ctx,cond,_then,_else) =>
@@ -891,7 +891,7 @@ jb.component('action.if', {
 jb.component('jb-run', {
  	type: 'action',
  	params: [
- 		{ id: 'profile', as: 'string', essential: true, description: 'profile name'},
+ 		{ id: 'profile', as: 'string', mandatory: true, description: 'profile name'},
  		{ id: 'params', as: 'single' },
  	],
  	impl: (ctx,profile,params) =>
@@ -955,7 +955,7 @@ jb.component('properties',{
 jb.component('prefix', {
 	type: 'data',
 	params: [
-		{ id: 'separator', as: 'string', essential: true },
+		{ id: 'separator', as: 'string', mandatory: true },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: (context,separator,text) =>
@@ -965,7 +965,7 @@ jb.component('prefix', {
 jb.component('suffix', {
 	type: 'data',
 	params: [
-		{ id: 'separator', as: 'string', essential: true },
+		{ id: 'separator', as: 'string', mandatory: true },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: (context,separator,text) =>
@@ -975,7 +975,7 @@ jb.component('suffix', {
 jb.component('remove-prefix', {
 	type: 'data',
 	params: [
-		{ id: 'separator', as: 'string', essential: true },
+		{ id: 'separator', as: 'string', mandatory: true },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: (context,separator,text) =>
@@ -985,7 +985,7 @@ jb.component('remove-prefix', {
 jb.component('remove-suffix',{
 	type: 'data',
 	params: [
-		{ id: 'separator', as: 'string', essential: true },
+		{ id: 'separator', as: 'string', mandatory: true },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: (context,separator,text) =>
@@ -995,7 +995,7 @@ jb.component('remove-suffix',{
 jb.component('remove-suffix-regex',{
 	type: 'data',
 	params: [
-		{ id: 'suffix', as: 'string', essential: true, description: 'regular expression. e.g [0-9]*' },
+		{ id: 'suffix', as: 'string', mandatory: true, description: 'regular expression. e.g [0-9]*' },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: function(context,suffix,text) {
@@ -1008,8 +1008,8 @@ jb.component('remove-suffix-regex',{
 jb.component('write-value',{
 	type: 'action',
 	params: [
-		{ id: 'to', as: 'ref', essential: true },
-		{ id: 'value', essential: true}
+		{ id: 'to', as: 'ref', mandatory: true },
+		{ id: 'value', mandatory: true}
 	],
 	impl: (ctx,to,value) =>
 		jb.writeValue(to,jb.val(value),ctx)
@@ -1018,7 +1018,7 @@ jb.component('write-value',{
 jb.component('remove-from-array', {
 	type: 'action',
 	params: [
-		{ id: 'array', as: 'ref', essential: true },
+		{ id: 'array', as: 'ref', mandatory: true },
 		{ id: 'itemToRemove', as: 'single', description: 'choose item or index' },
 		{ id: 'index', as: 'number', description: 'choose item or index' },
 	],
@@ -1043,8 +1043,8 @@ jb.component('toggle-boolean-value',{
 jb.component('slice', {
 	type: 'aggregator',
 	params: [
-		{ id: 'start', as: 'number', defaultValue: 0, description: '0-based index', essential: true },
-		{ id: 'end', as: 'number', essential: true, description: '0-based index of where to end the selection (not including itself)' }
+		{ id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true },
+		{ id: 'end', as: 'number', mandatory: true, description: '0-based index of where to end the selection (not including itself)' }
 	],
 	impl: function({data},start,end) {
 		if (!data || !data.slice) return null;
@@ -1111,7 +1111,7 @@ jb.component('calculate-properties', {
 	type: 'aggregator',
 	description: 'extend with calculated properties',
 	params: [
-		{ id: 'property', type: 'calculated-property[]', essential: true, defaultValue: [] },
+		{ id: 'property', type: 'calculated-property[]', mandatory: true, defaultValue: [] },
 		{ id: 'items', as:'array', defaultValue: '%%'},
 	],
 	impl: (ctx,properties,items) =>
@@ -1122,8 +1122,8 @@ jb.component('calculate-properties', {
 jb.component('calculated-property', { 
 	type: 'calculated-property',
 	params: [
-		{ id: 'title', as: 'string', essential: true },
-		{ id: 'val', dynamic: 'true', type: 'data', essential: true },
+		{ id: 'title', as: 'string', mandatory: true },
+		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true },
 		{ id: 'type', as: 'string', options: 'string,number,boolean', defaultValue: 'string' },
 	],
 	impl: ctx => ctx.params
@@ -1133,7 +1133,7 @@ jb.component('calculated-property', {
 jb.component('not', {
 	type: 'boolean',
 	params: [
-		{ id: 'of', type: 'boolean', as: 'boolean', essential: true, composite: true}
+		{ id: 'of', type: 'boolean', as: 'boolean', mandatory: true, composite: true}
 	],
 	impl: (context, of) => !of
 });
@@ -1141,7 +1141,7 @@ jb.component('not', {
 jb.component('and', {
 	type: 'boolean',
 	params: [
-		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true }
+		{ id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true }
 	],
 	impl: function(context) {
 		const items = context.profile.$and || context.profile.items || [];
@@ -1157,7 +1157,7 @@ jb.component('and', {
 jb.component('or', {
 	type: 'boolean',
 	params: [
-		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true }
+		{ id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true }
 	],
 	impl: function(context) {
 		const items = context.profile.$or || context.profile.items || [];
@@ -1173,8 +1173,8 @@ jb.component('or', {
 jb.component('between', {
 	type: 'boolean',
 	params: [
-		{ id: 'from', as: 'number', essential: true },
-		{ id: 'to', as: 'number', essential: true },
+		{ id: 'from', as: 'number', mandatory: true },
+		{ id: 'to', as: 'number', mandatory: true },
 		{ id: 'val', as: 'number', defaultValue: '%%' },
 	],
 	impl: (ctx,from,to,val) => 
@@ -1184,7 +1184,7 @@ jb.component('between', {
 jb.component('contains',{
 	type: 'boolean',
 	params: [
-		{ id: 'text', type: 'data[]', as: 'array', essential: true },
+		{ id: 'text', type: 'data[]', as: 'array', mandatory: true },
 		{ id: 'allText', defaultValue: '%%', as:'string'},
 		{ id: 'inOrder', defaultValue: true, as:'boolean'},
 	],
@@ -1202,7 +1202,7 @@ jb.component('contains',{
 jb.component('not-contains', {
 	type: 'boolean',
 	params: [
-		{ id: 'text', type: 'data[]', as: 'array', essential: true },
+		{ id: 'text', type: 'data[]', as: 'array', mandatory: true },
 		{ id: 'allText', defaultValue: '%%', as:'array'}
 	],
 	impl :{$not: {$: 'contains', text: '%$text%', allText :'%$allText%'}}
@@ -1211,7 +1211,7 @@ jb.component('not-contains', {
 jb.component('starts-with', {
 	type: 'boolean',
 	params: [
-		{ id: 'startsWith', as: 'string', essential: true },
+		{ id: 'startsWith', as: 'string', mandatory: true },
 		{ id: 'text', defaultValue: '%%', as:'string'}
 	],
 	impl: (context,startsWith,text) =>
@@ -1221,7 +1221,7 @@ jb.component('starts-with', {
 jb.component('ends-with',{
 	type: 'boolean',
 	params: [
-		{ id: 'endsWith', as: 'string', essential: true },
+		{ id: 'endsWith', as: 'string', mandatory: true },
 		{ id: 'text', defaultValue: '%%', as:'string'}
 	],
 	impl: (context,endsWith,text) =>
@@ -1232,7 +1232,7 @@ jb.component('ends-with',{
 jb.component('filter',{
 	type: 'aggregator',
 	params: [
-		{ id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, essential: true }
+		{ id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, mandatory: true }
 	],
 	impl: (context,filter) =>
 		jb.toarray(context.data).filter(item =>
@@ -1243,8 +1243,8 @@ jb.component('match-regex', {
   type: 'boolean',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
-    {id: 'regex', as: 'string', essential: true, description: 'e.g: [a-zA-Z]*' },
-    {id: 'fillText', as: 'boolean', essential: true, description: 'regex must match all text' },
+    {id: 'regex', as: 'string', mandatory: true, description: 'e.g: [a-zA-Z]*' },
+    {id: 'fillText', as: 'boolean', mandatory: true, description: 'regex must match all text' },
   ],
   impl: (ctx,text,regex,fillText) =>
     text.match(new RegExp(fillText ? `^${regex}$` : regex))
@@ -1283,7 +1283,7 @@ jb.component('capitalize', {
 
 jb.component('join', {
 	params: [
-		{ id: 'separator', as: 'string', defaultValue:',', essential: true },
+		{ id: 'separator', as: 'string', defaultValue:',', mandatory: true },
 		{ id: 'prefix', as: 'string' },
 		{ id: 'suffix', as: 'string' },
 		{ id: 'items', as: 'array', defaultValue: '%%'},
@@ -1389,8 +1389,8 @@ jb.component('split', {
 jb.component('replace', {
 	type: 'data',
 	params: [
-		{ id: 'find', as: 'string', essential: true },
-		{ id: 'replace', as: 'string', essential: true  },
+		{ id: 'find', as: 'string', mandatory: true },
+		{ id: 'replace', as: 'string', mandatory: true  },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 		{ id: 'useRegex', type: 'boolean', as: 'boolean', defaultValue: true},
 		{ id: 'regexFlags', as: 'string', defaultValue: 'g', description: 'g,i,m' }
@@ -1443,7 +1443,7 @@ jb.component('notEmpty', {
 jb.component('equals', {
 	type: 'boolean',
 	params: [
-		{ id: 'item1', as: 'single', essential: true },
+		{ id: 'item1', as: 'single', mandatory: true },
 		{ id: 'item2', defaultValue: '%%', as: 'single' }
 	],
 	impl: (ctx, item1, item2) => item1 == item2
@@ -1452,7 +1452,7 @@ jb.component('equals', {
 jb.component('not-equals', {
 	type: 'boolean',
 	params: [
-		{ id: 'item1', as: 'single', essential: true },
+		{ id: 'item1', as: 'single', mandatory: true },
 		{ id: 'item2', defaultValue: '%%', as: 'single' }
 	],
 	impl: (ctx, item1, item2) => item1 != item2
@@ -1470,7 +1470,7 @@ jb.component('parent', {
 jb.component('runActions', {
 	type: 'action',
 	params: [
-		{ id: 'actions', type:'action[]', ignore: true, composite: true, essential: true }
+		{ id: 'actions', type:'action[]', ignore: true, composite: true, mandatory: true }
 	],
 	impl: function(context) {
 		if (!context.profile) debugger;
@@ -1494,7 +1494,7 @@ jb.component('on-next-timer', {
 	description: 'run action after delay',
 	type: 'action',
 	params: [
-		{ id: 'action', type: 'action', dynamic: true, essential: true },
+		{ id: 'action', type: 'action', dynamic: true, mandatory: true },
 		{ id: 'delay', type: 'number', defaultValue: 1}
 	],
 	impl: (ctx,action,delay) =>
@@ -1575,7 +1575,7 @@ jb.component('class-name', {
 jb.component('is-of-type', {
   type: 'boolean',
   params: [
-  	{ id: 'type', as: 'string', essential: true, description: 'string,boolean' },
+  	{ id: 'type', as: 'string', mandatory: true, description: 'string,boolean' },
   	{ id: 'obj', defaultValue: '%%' },
   ],
   impl: (ctx,_type,_obj) => {
@@ -1588,7 +1588,7 @@ jb.component('is-of-type', {
 jb.component('in-group', {
   type: 'boolean',
   params: [
-  	{ id: 'group', as: 'array', essential: true },
+  	{ id: 'group', as: 'array', mandatory: true },
   	{ id: 'item', as: 'single', defaultValue: '%%' },
   ],
   impl: (ctx,group,item) =>
@@ -1631,21 +1631,21 @@ jb.component('http.post', {
 
 jb.component('isRef', {
 	params: [
-		{ id: 'obj', essential: true }
+		{ id: 'obj', mandatory: true }
 	],
 	impl: (ctx,obj) => jb.isRef(obj)
 })
 
 jb.component('asRef', {
 	params: [
-		{ id: 'obj', essential: true }
+		{ id: 'obj', mandatory: true }
 	],
 	impl: (ctx,obj) => jb.asRef(obj)
 })
 
 jb.component('data.switch', {
   params: [
-  	{ id: 'cases', type: 'data.switch-case[]', as: 'array', essential: true, defaultValue: [] },
+  	{ id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
   	{ id: 'default', dynamic: true },
   ],
   impl: (ctx,cases,defaultValue) => {
@@ -1660,8 +1660,8 @@ jb.component('data.switch-case', {
   type: 'data.switch-case',
   singleInType: true,
   params: [
-  	{ id: 'condition', type: 'boolean', essential: true, dynamic: true },
-  	{ id: 'value', essential: true, dynamic: true },
+  	{ id: 'condition', type: 'boolean', mandatory: true, dynamic: true },
+  	{ id: 'value', mandatory: true, dynamic: true },
   ],
   impl: ctx => ctx.params
 })
@@ -1669,7 +1669,7 @@ jb.component('data.switch-case', {
 jb.component('action.switch', {
   type: 'action',
   params: [
-  	{ id: 'cases', type: 'action.switch-case[]', as: 'array', essential: true, defaultValue: [] },
+  	{ id: 'cases', type: 'action.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
   	{ id: 'defaultAction', type: 'action', dynamic: true },
   ],
   impl: (ctx,cases,defaultAction) => {
@@ -1684,8 +1684,8 @@ jb.component('action.switch-case', {
   type: 'action.switch-case',
   singleInType: true,
   params: [
-  	{ id: 'condition', type: 'boolean', as: 'boolean', essential: true, dynamic: true },
-  	{ id: 'action', type: 'action' ,essential: true, dynamic: true },
+  	{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true, dynamic: true },
+  	{ id: 'action', type: 'action' ,mandatory: true, dynamic: true },
   ],
   impl: ctx => ctx.params
 })
@@ -8256,7 +8256,7 @@ ui.addHTML = (el,html) => {
 jb.component('custom-style', {
 	typePattern: /.*-style/, category: 'advanced:10,all:10',
 	params: [
-		{ id: 'template', as: 'single', essential: true, dynamic: true, ignore: true },
+		{ id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true },
 		{ id: 'css', as: 'string' },
     	{ id: 'features', type: 'feature[]', dynamic: true },
 	],
@@ -8271,8 +8271,8 @@ jb.component('custom-style', {
 jb.component('style-by-control', {
 	typePattern: /.*-style/,category: 'advanced:10,all:20',
 	params: [
-		{ id: 'control', type: 'control', essential: true, dynamic: true },
-		{ id: 'modelVar', as: 'string', essential: true }
+		{ id: 'control', type: 'control', mandatory: true, dynamic: true },
+		{ id: 'modelVar', as: 'string', mandatory: true }
 	],
 	impl: (ctx,control,modelVar) =>
 		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
@@ -8545,8 +8545,8 @@ jb.component('group', {
   type: 'control', category: 'group:100,common:90',
   params: [
     { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, essential: true , dynamic: true },
-    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, mandatory: true , dynamic: true },
+    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx =>
@@ -8574,7 +8574,7 @@ jb.component('group.init-group', {
 jb.component('inline-controls', {
   type: 'control',
   params: [
-    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
   ],
   impl: ctx => ctx.params.controls().filter(x=>x)
 })
@@ -8582,8 +8582,8 @@ jb.component('inline-controls', {
 jb.component('dynamic-controls', {
   type: 'control',
   params: [
-    { id: 'controlItems', type: 'data', as: 'array', essential: true, dynamic: true },
-    { id: 'genericControl', type: 'control', essential: true, dynamic: true },
+    { id: 'controlItems', type: 'data', as: 'array', mandatory: true, dynamic: true },
+    { id: 'genericControl', type: 'control', mandatory: true, dynamic: true },
     { id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
   ],
   impl: (context,controlItems,genericControl,itemVariable) =>
@@ -8607,8 +8607,8 @@ jb.component('control.first-succeeding', {
   type: 'control', category: 'common:30',
   params: [
     { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, essential: true , dynamic: true },
-    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, mandatory: true , dynamic: true },
+    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx =>
@@ -8618,8 +8618,8 @@ jb.component('control.first-succeeding', {
 jb.component('control-with-condition', {
   type: 'control',
   params: [
-    { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
-    { id: 'control', type: 'control', essential: true, dynamic: true },
+    { id: 'condition', type: 'boolean', mandatory: true, as: 'boolean' },
+    { id: 'control', type: 'control', mandatory: true, dynamic: true },
     { id: 'title', as: 'string' },
   ],
   impl: (ctx,condition,ctrl) =>
@@ -8630,7 +8630,7 @@ jb.component('control-with-condition', {
 jb.component('label', {
     type: 'control', category: 'control:100,common:80',
     params: [
-        { id: 'title', as: 'ref', essential: true, defaultValue: 'my label', dynamic: true },
+        { id: 'title', as: 'ref', mandatory: true, defaultValue: 'my label', dynamic: true },
         { id: 'style', type: 'label.style', defaultValue: { $: 'label.span' }, dynamic: true },
         { id: 'features', type: 'feature[]', dynamic: true },
     ],
@@ -8733,7 +8733,7 @@ jb.component('highlight', {
 jb.component('image', {
 	type: 'control,image', category: 'control:50',
 	params: [
-		{ id: 'url', as: 'string', essential: true },
+		{ id: 'url', as: 'string', mandatory: true },
 		{ id: 'imageWidth', as: 'number' },
 		{ id: 'imageHeight', as: 'number' },
 		{ id: 'width', as: 'number' },
@@ -8769,8 +8769,8 @@ jb.type('button.style')
 jb.component('button', {
   type: 'control,clickable', category: 'control:100,common:100',
   params: [
-    { id: 'title', as: 'ref', essential: true, defaultTValue: 'click me', dynamic: true },
-    { id: 'action', type: 'action', essential: true, dynamic: true },
+    { id: 'title', as: 'ref', mandatory: true, defaultTValue: 'click me', dynamic: true },
+    { id: 'action', type: 'action', mandatory: true, dynamic: true },
     { id: 'style', type: 'button.style', defaultValue: { $: 'button.mdl-raised' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
@@ -8799,7 +8799,7 @@ jb.component('ctrl-action', {
   type: 'feature', category: 'button:70',
   description: 'action to perform on control+click',
   params: [
-    { id: 'action', type: 'action', essential: true, dynamic: true },
+    { id: 'action', type: 'action', mandatory: true, dynamic: true },
   ],
   impl: (ctx,action) => ({
       afterViewInit: cmp =>
@@ -8811,7 +8811,7 @@ jb.component('alt-action', {
   type: 'feature', category: 'button:70',
   description: 'action to perform on alt+click',
   params: [
-    { id: 'action', type: 'action', essential: true, dynamic: true },
+    { id: 'action', type: 'action', mandatory: true, dynamic: true },
   ],
   impl: (ctx,action) => ({
       afterViewInit: cmp =>
@@ -8823,7 +8823,7 @@ jb.component('button-disabled', {
   type: 'feature', category: 'button:70',
   description: 'define condition when button is enabled',
   params: [
-    { id: 'enabledCondition', type: 'boolean', essential: true, dynamic: true },
+    { id: 'enabledCondition', type: 'boolean', mandatory: true, dynamic: true },
   ],
   impl: (ctx,cond) => ({
       init: cmp =>
@@ -8834,9 +8834,9 @@ jb.component('button-disabled', {
 jb.component('icon-with-action', {
   type: 'control,clickable', category: 'control:30',
   params: [
-		{ id: 'icon', as: 'string', essential: true },
+		{ id: 'icon', as: 'string', mandatory: true },
 		{ id: 'title', as: 'string' },
-		{ id: 'action', type: 'action', essential: true, dynamic: true },
+		{ id: 'action', type: 'action', mandatory: true, dynamic: true },
 		{ id: 'style', type: 'icon-with-action.style', dynamic: true, defaultValue :{$: 'button.mdl-icon' } },
 		{ id: 'features', type: 'feature[]', dynamic: true }
   ],
@@ -8980,7 +8980,7 @@ jb.component('field.default', {
 jb.component('field.subscribe', {
   type: 'feature',
   params: [
-    { id: 'action', type: 'action', essential: true, dynamic: true },
+    { id: 'action', type: 'action', mandatory: true, dynamic: true },
     { id: 'includeFirst', type: 'boolean', as: 'boolean'},
   ],
   impl: (context,action,includeFirst) => ({
@@ -9001,7 +9001,7 @@ jb.component('field.subscribe', {
 jb.component('field.toolbar', {
   type: 'feature',
   params: [
-    { id: 'toolbar', type: 'control', essential: true, dynamic: true },
+    { id: 'toolbar', type: 'control', mandatory: true, dynamic: true },
   ],
   impl: (context,toolbar) => ({
     toolbar: toolbar().reactComp()
@@ -9013,8 +9013,8 @@ jb.component('field.toolbar', {
 jb.component('validation', {
   type: 'feature', category: 'validation:100',
   params: [
-    { id: 'validCondition', essential: true, type: 'boolean', as: 'boolean', dynamic: true },
-    { id: 'errorMessage', essential: true, as: 'string', dynamic: true },
+    { id: 'validCondition', mandatory: true, type: 'boolean', as: 'boolean', dynamic: true },
+    { id: 'errorMessage', mandatory: true, as: 'string', dynamic: true },
   ],
   impl: (ctx,validCondition,errorMessage) => ({
       init: cmp =>
@@ -9052,7 +9052,7 @@ jb.component('editable-text', {
   type: 'control', category: 'input:100,common:80',
   params: [
     { id: 'title', as: 'string' , dynamic: true },
-    { id: 'databind', as: 'ref', essential: true},
+    { id: 'databind', as: 'ref', mandatory: true},
     { id: 'updateOnBlur', as: 'boolean', type: 'boolean' },
     { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-input' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
@@ -9081,8 +9081,8 @@ jb.component('editable-text.x-button', {
 jb.component('editable-text.helper-popup', {
   type: 'feature',
   params: [
-    { id: 'control', type: 'control', dynamic: true, essential: true },
-    { id: 'popupId', as: 'string', essential: true },
+    { id: 'control', type: 'control', dynamic: true, mandatory: true },
+    { id: 'popupId', as: 'string', mandatory: true },
     { id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.popup' } },
     { id: 'showHelper', as: 'boolean', dynamic: true, defaultValue :{$notEmpty: '%value%' }, description: 'show/hide helper according to input content' },
     { id: 'onEnter', type: 'action', dynamic: true },
@@ -9260,7 +9260,7 @@ jb.component('group.wait', {
   type: 'feature', category: 'group:70',
 	description: 'wait for asynch data before showing the control',
   params: [
-    { id: 'for', essential: true, dynamic: true },
+    { id: 'for', mandatory: true, dynamic: true },
     { id: 'loadingControl', type: 'control', defaultValue: { $:'label', title: 'loading ...'} , dynamic: true },
     { id: 'error', type: 'control', defaultValue: { $:'label', title: 'error: %$error%', css: '{color: red; font-weight: bold}'} , dynamic: true },
     { id: 'varName', as: 'string' },
@@ -9292,7 +9292,7 @@ jb.component('watch-ref', {
   type: 'feature', category: 'watch:100',
 	description: 'subscribes to data changes to refresh component',
   params: [
-    { id: 'ref', essential: true, as: 'ref', description: 'reference to data' },
+    { id: 'ref', mandatory: true, as: 'ref', description: 'reference to data' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
     { id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
   ],
@@ -9306,7 +9306,7 @@ jb.component('watch-observable', {
   type: 'feature', category: 'watch',
 	description: 'subscribes to a custom rx.observable to refresh component',
   params: [
-    { id: 'toWatch', essential: true },
+    { id: 'toWatch', mandatory: true },
   ],
   impl: (ctx,toWatch) => ({
       init: cmp => {
@@ -9323,7 +9323,7 @@ jb.component('watch-observable', {
 jb.component('group.data', {
   type: 'feature', category: 'general:100,watch:80',
   params: [
-    { id: 'data', essential: true, dynamic: true, as: 'ref' },
+    { id: 'data', mandatory: true, dynamic: true, as: 'ref' },
     { id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable' },
     { id: 'watch', as: 'boolean' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
@@ -9347,7 +9347,7 @@ jb.component('id', {
   type: 'feature',
 	description: 'adds id to html element',
   params: [
-    { id: 'id', essential: true, as: 'string' },
+    { id: 'id', mandatory: true, as: 'string' },
   ],
   impl: (ctx,id) => ({
     templateModifier: (vdom,cmp,state) => {
@@ -9361,8 +9361,8 @@ jb.component('var', {
   type: 'feature', category: 'general:90',
 	description: 'define a variable. mutable or const, local or global',
   params: [
-    { id: 'name', as: 'string', essential: true },
-    { id: 'value', dynamic: true, defaultValue: '', essential: true },
+    { id: 'name', as: 'string', mandatory: true },
+    { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
     { id: 'mutable', as: 'boolean', description: 'E.g., selected item variable' },
     { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
   ],
@@ -9394,10 +9394,10 @@ jb.component('bind-refs', {
   type: 'feature', category: 'watch',
   description: 'automatically updates a mutual variable when other value is changing',
   params: [
-    { id: 'watchRef', essential: true, as: 'ref' },
+    { id: 'watchRef', mandatory: true, as: 'ref' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
-    { id: 'updateRef', essential: true, as: 'ref' },
-    { id: 'value', essential: true, as: 'single', dynamic: true },
+    { id: 'updateRef', mandatory: true, as: 'ref' },
+    { id: 'value', mandatory: true, as: 'single', dynamic: true },
   ],
   impl: (ctx,ref,includeChildren,updateRef,value) => ({
       init: cmp =>
@@ -9410,10 +9410,10 @@ jb.component('calculated-var', {
   type: 'feature', category: 'general:60',
 	description: 'defines a local variable that watches other variables with auto recalc',
   params: [
-    { id: 'name', as: 'string', essential: true },
-    { id: 'value', dynamic: true, defaultValue: '', essential: true },
+    { id: 'name', as: 'string', mandatory: true },
+    { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
     { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
-    { id: 'watchRefs', as: 'array', dynamic: true, essential: true, defaultValue: [], description: 'variable to watch. needs to be in array' },
+    { id: 'watchRefs', as: 'array', dynamic: true, mandatory: true, defaultValue: [], description: 'variable to watch. needs to be in array' },
   ],
   impl: (context, name, value,globalId, watchRefs) => ({
       destroy: cmp => {
@@ -9448,7 +9448,7 @@ jb.component('features', {
 jb.component('feature.init', {
   type: 'feature', category: 'lifecycle',
   params: [
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl: (ctx,action) => ({ init: cmp =>
       action(cmp.ctx)
@@ -9458,7 +9458,7 @@ jb.component('feature.init', {
 jb.component('feature.after-load', {
   type: 'feature', category: 'lifecycle',
   params: [
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl: ctx => ({ afterViewInit: cmp =>
       jb.delay(1).then(_ => ctx.params.action(cmp.ctx))
@@ -9469,7 +9469,7 @@ jb.component('feature.if', {
   type: 'feature', category: 'feature:85',
 	description: 'adds element to dom by condition. no watch',
   params: [
-    { id: 'showCondition', essential: true, dynamic: true },
+    { id: 'showCondition', mandatory: true, dynamic: true },
   ],
   impl: (ctx, condition,watch) => ({
     templateModifier: (vdom,cmp,state) =>
@@ -9481,7 +9481,7 @@ jb.component('hidden', {
   type: 'feature', category: 'feature:85',
 	description: 'adds display:none to element by condition. no watch',
   params: [
-    { id: 'showCondition', type: 'boolean', essential: true, dynamic: true },
+    { id: 'showCondition', type: 'boolean', mandatory: true, dynamic: true },
   ],
   impl: (ctx,showCondition) => ({
     templateModifier: (vdom,cmp,state) => {
@@ -9496,8 +9496,8 @@ jb.component('conditional-class', {
   type: 'feature',
 	description: 'toggle class by condition',
   params: [
-    { id: 'cssClass', as: 'string', essential: true, dynamic: true },
-    { id: 'condition', type: 'boolean', essential: true, dynamic: true },
+    { id: 'cssClass', as: 'string', mandatory: true, dynamic: true },
+    { id: 'condition', type: 'boolean', mandatory: true, dynamic: true },
   ],
   impl: (ctx,cssClass,cond) => ({
     templateModifier: (vdom,cmp,state) => {
@@ -9550,7 +9550,7 @@ jb.component('feature.keyboard-shortcut', {
 jb.component('feature.onHover', {
   type: 'feature', category: 'events',
   params: [
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl: (ctx,code) => ({
       onmouseenter: true,
@@ -9564,7 +9564,7 @@ jb.component('feature.onKey', {
   type: 'feature', category: 'events',
   params: [
     { id: 'code', as: 'number' },
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl: (ctx,code) => ({
       onkeydown: true,
@@ -9579,7 +9579,7 @@ jb.component('feature.onKey', {
 jb.component('feature.onEnter', {
   type: 'feature', category: 'events',
   params: [
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl :{$: 'feature.onKey', code: 13, action :{$call: 'action'}}
 })
@@ -9587,7 +9587,7 @@ jb.component('feature.onEnter', {
 jb.component('feature.onEsc', {
   type: 'feature', category: 'events',
   params: [
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl :{$: 'feature.onKey', code: 27, action :{$call: 'action'}}
 })
@@ -9595,7 +9595,7 @@ jb.component('feature.onEsc', {
 jb.component('feature.onDelete', {
   type: 'feature', category: 'events',
   params: [
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl :{$: 'feature.onKey', code: 46, action :{$call: 'action'}}
 })
@@ -9616,7 +9616,7 @@ jb.component('group.auto-focus-on-first-input', {
 jb.component('css', {
   type: 'feature,dialog-feature',
   params: [
-    { id: 'css', essential: true, as: 'string' },
+    { id: 'css', mandatory: true, as: 'string' },
   ],
   impl: (context,css) =>
     ({css:css})
@@ -9625,7 +9625,7 @@ jb.component('css', {
 jb.component('css.class', {
   type: 'feature,dialog-feature',
   params: [
-    { id: 'class', essential: true, as: 'string' },
+    { id: 'class', mandatory: true, as: 'string' },
   ],
   impl: (context,clz) =>
     ({class :clz})
@@ -9634,7 +9634,7 @@ jb.component('css.class', {
 jb.component('css.width', {
   type: 'feature,dialog-feature',
   params: [
-    { id: 'width', essential: true, as: 'number' },
+    { id: 'width', mandatory: true, as: 'number' },
     { id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
     { id: 'minMax', as: 'string', options: ',min,max'},
     { id: 'selector', as: 'string' },
@@ -9646,7 +9646,7 @@ jb.component('css.width', {
 jb.component('css.height', {
   type: 'feature,dialog-feature',
   params: [
-    { id: 'height', essential: true, as: 'number' },
+    { id: 'height', mandatory: true, as: 'number' },
     { id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
     { id: 'minMax', as: 'string', options: ',min,max'},
     { id: 'selector', as: 'string' },
@@ -9658,7 +9658,7 @@ jb.component('css.height', {
 jb.component('css.opacity', {
   type: 'feature',
   params: [
-    { id: 'opacity', essential: true, as: 'number', min:0, max:1, step: 0.1 },
+    { id: 'opacity', mandatory: true, as: 'number', min:0, max:1, step: 0.1 },
     { id: 'selector', as: 'string' },
   ],
   impl: (ctx,opacity) =>
@@ -10276,8 +10276,8 @@ jb.ui.dialogs = {
 jb.component('menu.menu', {
 	type: 'menu.option',
 	params: [
-		{ id: 'title', as: 'string', dynamic: true, essential: true },
-		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true, defaultValue: [] },
+		{ id: 'title', as: 'string', dynamic: true, mandatory: true },
+		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true, defaultValue: [] },
 		{ id: 'optionsFilter', type: 'data', dynamic: true, defaultValue: '%%' },
 	],
 	impl: ctx => ({
@@ -10293,7 +10293,7 @@ jb.component('menu.menu', {
 jb.component('menu.options-group', {
 	type: 'menu.option',
 	params: [
-		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
+		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true },
 	],
 	impl: (ctx,options) =>
 			options()
@@ -10302,8 +10302,8 @@ jb.component('menu.options-group', {
 jb.component('menu.dynamic-options', {
 	type: 'menu.option',
 	params: [
-		{ id: 'items', type: 'data', as: 'array', essential: true, dynamic: true },
-		{ id: 'genericOption', type: 'menu.option', essential: true, dynamic: true },
+		{ id: 'items', type: 'data', as: 'array', mandatory: true, dynamic: true },
+		{ id: 'genericOption', type: 'menu.option', mandatory: true, dynamic: true },
 	],
 	impl: (ctx,items,generic) =>
 		items().map(item =>
@@ -10313,7 +10313,7 @@ jb.component('menu.dynamic-options', {
 jb.component('menu.end-with-separator', {
 	type: 'menu.option',
 	params: [
-		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
+		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true },
 		{ id: 'separator', type: 'menu.option', as: 'array', defaultValue :{$: 'menu.separator' } },
 		{ id: 'title', as: 'string' }
 	],
@@ -10334,8 +10334,8 @@ jb.component('menu.separator', {
 jb.component('menu.action', {
 	type: 'menu.option',
 	params: [
-		{ id: 'title', as: 'string', dynamic: true, essential: true },
-		{ id: 'action', type: 'action', dynamic: true, essential: true },
+		{ id: 'title', as: 'string', dynamic: true, mandatory: true },
+		{ id: 'action', type: 'action', dynamic: true, mandatory: true },
 		{ id: 'icon', as: 'string' },
 		{ id: 'shortcut', as: 'string' },
 		{ id: 'showCondition', type:'boolean', as: 'boolean', defaultValue: true }
@@ -10374,7 +10374,7 @@ jb.component('menu.action', {
 jb.component('menu.control', {
 	type: 'control,clickable,menu',
 	params: [
-		{id: 'menu', type: 'menu.option', dynamic: true, essential: true },
+		{id: 'menu', type: 'menu.option', dynamic: true, mandatory: true },
 		{id: 'style', type: 'menu.style', defaultValue :{$: 'menu-style.context-menu' }, dynamic: true },
 		{id: 'features', type: 'feature[]', dynamic: true },
 	],
@@ -10390,7 +10390,7 @@ jb.component('menu.control', {
 jb.component('menu.open-context-menu', {
 	type: 'action',
 	params: [
-		{id: 'menu', type: 'menu.option', dynamic: true, essential: true },
+		{id: 'menu', type: 'menu.option', dynamic: true, mandatory: true },
 		{id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup'}  },
 	{ id: 'features', type: 'dialog-feature[]', dynamic: true }
 	],
@@ -10727,8 +10727,8 @@ jb.component('itemlist', {
   type: 'control', category: 'group:80,common:80',
   params: [
     { id: 'title', as: 'string' },
-    { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, essential: true },
-    { id: 'controls', type: 'control[]', essential: true, dynamic: true },
+    { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, mandatory: true },
+    { id: 'controls', type: 'control[]', mandatory: true, dynamic: true },
     { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
     { id: 'watchItems', as: 'boolean' },
     { id: 'itemVariable', as: 'string', defaultValue: 'item' },
@@ -11043,7 +11043,7 @@ jb.component('group.itemlist-container', {
 	description: 'itemlist writable container to support addition, deletion and selection',
 	type: 'feature', category: 'itemlist:80,group:70',
 	params: [
-		{ id: 'id', as: 'string', essential: true },
+		{ id: 'id', as: 'string', mandatory: true },
 		{ id: 'defaultItem', as: 'single' },
 		{ id: 'maxItems', as: 'number' , defaultValue: 100 },
 		{ id: 'initialSelection', as: 'single' },
@@ -11185,7 +11185,7 @@ jb.component('itemlist-container.filter-field', {
 	type: 'feature', category: 'itemlist-filter:80',
 	requires: ctx => ctx.vars.itemlistCntr,
 	params: [
-		{ id: 'fieldData', dynamic: true, essential: true },
+		{ id: 'fieldData', dynamic: true, mandatory: true },
 		{ id: 'filterType', type: 'filter-type' },
 	],
 	impl: (ctx,fieldData,filterType) => ({
@@ -11266,7 +11266,7 @@ jb.component('picklist', {
   params: [
     { id: 'title', as: 'string' , dynamic: true },
     { id: 'databind', as: 'ref'},
-    { id: 'options', type: 'picklist.options', dynamic: true, essential: true, defaultValue: {$ : 'picklist.optionsByComma'} },
+    { id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, defaultValue: {$ : 'picklist.optionsByComma'} },
     { id: 'promote', type: 'picklist.promote', dynamic: true },
     { id: 'style', type: 'picklist.style', defaultValue: { $: 'picklist.native' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
@@ -11339,7 +11339,7 @@ jb.component('picklist.onChange', {
 jb.component('picklist.optionsByComma',{
   type: 'picklist.options',
   params: [
-    { id: 'options', as: 'string', essential: true},
+    { id: 'options', as: 'string', mandatory: true},
     { id: 'allowEmptyValue', type: 'boolean' },
   ],
   impl: function(context,options,allowEmptyValue) {
@@ -11351,7 +11351,7 @@ jb.component('picklist.optionsByComma',{
 jb.component('picklist.options',{
   type: 'picklist.options',
   params: [
-    { id: 'options', type: 'data', as: 'array', essential: true},
+    { id: 'options', type: 'data', as: 'array', mandatory: true},
     { id: 'allowEmptyValue', type: 'boolean' },
   ],
   impl: function(context,options,allowEmptyValue) {
@@ -11363,9 +11363,9 @@ jb.component('picklist.options',{
 jb.component('picklist.coded-options',{
   type: 'picklist.options',
   params: [
-    { id: 'options', as: 'array',essential: true },
-    { id: 'code', as: 'string', dynamic:true , essential: true },
-    { id: 'text', as: 'string', dynamic:true, essential: true } ,
+    { id: 'options', as: 'array',mandatory: true },
+    { id: 'code', as: 'string', dynamic:true , mandatory: true },
+    { id: 'text', as: 'string', dynamic:true, mandatory: true } ,
     { id: 'allowEmptyValue', type: 'boolean' },
   ],
   impl: function(context,options,code,text,allowEmptyValue) {
@@ -11381,7 +11381,7 @@ jb.component('picklist.coded-options',{
 jb.component('picklist.sorted-options', {
   type: 'picklist.options',
   params: [
-    { id: 'options', type: 'picklist.options', dynamic: true, essential: true, composite: true },
+    { id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, composite: true },
     { id: 'marks', as: 'array', description: 'e.g input:80,group:90. 0 mark means hidden. no mark means 50' },
   ],
   impl: (ctx,optionsFunc,marks) => {
@@ -11433,7 +11433,7 @@ jb.component('theme.material-design', {
 jb.component('material-icon', {
 	type: 'control', category: 'control:50',
 	params: [
-		{ id: 'icon', as: 'string', essential: true },
+		{ id: 'icon', as: 'string', mandatory: true },
 		{ id: 'title', as: 'string' },
 		{ id: 'style', type: 'icon.style', dynamic: true, defaultValue :{$: 'icon.material' } },
 		{ id: 'features', type: 'feature[]', dynamic: true }
@@ -11620,8 +11620,8 @@ jb.component('table', {
   type: 'control,table', category: 'group:80,common:70',
   params: [
     { id: 'title', as: 'string' },
-    { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, essential: true },
-    { id: 'fields', type: 'table-field[]', essential: true, dynamic: true },
+    { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, mandatory: true },
+    { id: 'fields', type: 'table-field[]', mandatory: true, dynamic: true },
     { id: 'style', type: 'table.style', dynamic: true , defaultValue: { $: 'table.with-headers' } },
     { id: 'watchItems', as: 'boolean' },
     { id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default table is limmited to 100 shown items' },
@@ -11634,8 +11634,8 @@ jb.component('table', {
 jb.component('field', {
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', essential: true },
-    { id: 'data', as: 'string', essential: true, dynamic: true },
+    { id: 'title', as: 'string', mandatory: true },
+    { id: 'data', as: 'string', mandatory: true, dynamic: true },
     { id: 'width', as: 'number' },
     { id: 'numeric', as: 'boolean', type: 'boolean' },
     { id: 'extendItems', as: 'boolean', type: 'boolean', description: 'extend the items with the calculated field using the title as field name' },
@@ -11673,8 +11673,8 @@ jb.component('field.index', {
 jb.component('field.control', {
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', essential: true },
-    { id: 'control', type: 'control' , dynamic: true, essential: true, defaultValue: {$: 'label', title: ''} },
+    { id: 'title', as: 'string', mandatory: true },
+    { id: 'control', type: 'control' , dynamic: true, mandatory: true, defaultValue: {$: 'label', title: ''} },
     { id: 'width', as: 'number' },
     { id: 'dataForSort', dynamic: true },
     { id: 'numeric', as: 'boolean', type: 'boolean' },
@@ -11692,9 +11692,9 @@ jb.component('field.control', {
 jb.component('field.button', {
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', essential: true },
-    { id: 'buttonText', as: 'string', essential: true, dynamic: true },
-    { id: 'action', type: 'action', essential: true, dynamic: true },
+    { id: 'title', as: 'string', mandatory: true },
+    { id: 'buttonText', as: 'string', mandatory: true, dynamic: true },
+    { id: 'action', type: 'action', mandatory: true, dynamic: true },
 
     { id: 'width', as: 'number' },
     { id: 'dataForSort', dynamic: true },
@@ -11817,7 +11817,7 @@ jb.component('table.init-sort', {
 jb.component('tabs', {
 	type: 'control', category: 'group:80',
 	params: [
-		{ id: 'tabs', type: 'control[]', essential: true, flattenArray: true, dynamic: true },
+		{ id: 'tabs', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true },
 		{ id: 'style', type: 'tabs.style', dynamic: true, defaultValue: { $: 'tabs.simple' } },
 		{ id: 'features', type: 'feature[]', dynamic: true },
 	],
@@ -11866,7 +11866,7 @@ jb.component('goto-url', {
 	type: 'action',
 	description: 'navigate/open a new web page, change href location',
 	params: [
-		{ id: 'url', as:'string', essential: true },
+		{ id: 'url', as:'string', mandatory: true },
 		{ id: 'target', type:'enum', values: ['new tab','self'], defaultValue:'new tab', as:'string'}
 	],
 	impl: (ctx,url,target) => {
@@ -12217,8 +12217,8 @@ jb.component('layout.horizontal', {
 jb.component('layout.horizontal-fixed-split', {
   type: 'group.style',
   params: [,
-    { id: 'leftWidth', as: 'number', defaultValue: 200, essential: true },
-    { id: 'rightWidth', as: 'number', defaultValue: 200, essential: true },
+    { id: 'leftWidth', as: 'number', defaultValue: 200, mandatory: true },
+    { id: 'rightWidth', as: 'number', defaultValue: 200, mandatory: true },
     { id: 'spacing', as: 'number', defaultValue: 3 },
   ],
   impl :{$: 'custom-style',
@@ -12939,7 +12939,7 @@ class TreeNode extends jb.ui.Component {
 jb.component('tree', {
 	type: 'control',
 	params: [
-		{ id: 'nodeModel', type: 'tree.nodeModel', dynamic: true, essential: true },
+		{ id: 'nodeModel', type: 'tree.nodeModel', dynamic: true, mandatory: true },
 		{ id: 'style', type: "tree.style", defaultValue: { $: "tree.ul-li" }, dynamic: true },
 		{ id: 'features', type: "feature[]", dynamic: true }
 	],
@@ -13147,7 +13147,7 @@ jb.component('tree.redraw', {
 jb.component('tree.drag-and-drop', {
   type: 'feature',
   params: [
-//	  { id: 'afterDrop', type: 'action', dynamic: true, essential: true },
+//	  { id: 'afterDrop', type: 'action', dynamic: true, mandatory: true },
   ],
   impl: ctx => ({
   		onkeydown: true,
@@ -29580,19 +29580,19 @@ Object.assign(st, {
 // ******* components ***************
 
 jb.component('studio.ref', {
-	params: [ {id: 'path', as: 'string', essential: true } ],
+	params: [ {id: 'path', as: 'string', mandatory: true } ],
 	impl: (ctx,path) =>
 		st.refOfPath(path)
 });
 
 jb.component('studio.path-of-ref', {
-	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
+	params: [ {id: 'ref', defaultValue: '%%', mandatory: true } ],
 	impl: (ctx,ref) =>
 		st.pathOfRef(ref)
 });
 
 jb.component('studio.name-of-ref', {
-	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
+	params: [ {id: 'ref', defaultValue: '%%', mandatory: true } ],
 	impl: (ctx,ref) =>
 		st.nameOfRef(ref)
 });
@@ -29614,7 +29614,7 @@ jb.component('studio.watch-path', {
   type: 'feature',
   category: 'group:0',
   params: [
-    { id: 'path', as: 'string', essential: true },
+    { id: 'path', as: 'string', mandatory: true },
     { id: 'includeChildren', as: 'boolean' },
   ],
   impl: (ctx,path,includeChildren) => ({
@@ -29645,7 +29645,7 @@ jb.component('studio.watch-components', {
 
 jb.component('studio.watch-typeof-script', {
   params: [
-    { id: 'path', as: 'string', essential: true },
+    { id: 'path', as: 'string', mandatory: true },
   ],
   type: 'feature',
   impl: (ctx,path) => ({
@@ -29661,7 +29661,7 @@ jb.component('studio.watch-typeof-script', {
 jb.component('studio.path-hyperlink', {
   type: 'control',
   params: [
-    { id: 'path', as: 'string', essential: true },
+    { id: 'path', as: 'string', mandatory: true },
     { id: 'prefix', as: 'string' }
   ],
   impl :{$: 'group',
@@ -29942,7 +29942,7 @@ jb.component('url-history.map-studio-url-to-resource', {
     // /studio/${entry_file}/${shown_comp}/${profile_path}
     // http://localhost:8082/studio/projects%2Fhello-world%2Fhello-world.html/hello-world.main/hello-world.main~impl
     params: [
-        { id: 'resource', as: 'string' , essential: true },
+        { id: 'resource', as: 'string' , mandatory: true },
         { id: 'onUrlChange', type: 'action', dynamic: true }
     ],
     impl: function(context,resource) {
@@ -31560,7 +31560,7 @@ st.jbEditorTree = class {
     if (!this.includeCompHeader && path.indexOf('~') == -1)
       path = path + '~impl';
 		return st.paramsOfPath(path).map(p=> ({ path: path + '~' + p.id, param: p}))
-			.filter(e=>st.valOfPath(e.path) != null || e.param.essential)
+			.filter(e=>st.valOfPath(e.path) != null || e.param.mandatory)
 			.map(e=>e.path)
 	}
 	vars(path,val) {
@@ -31590,14 +31590,14 @@ st.jbEditorTree = class {
 Object.assign(st,{
 	jbEditorMoreParams: path =>
 		st.paramsOfPath(path)
-			.filter(p=>st.valOfPath(path+'~'+p.id) == null && !p.essential)
+			.filter(p=>st.valOfPath(path+'~'+p.id) == null && !p.mandatory)
 			.map(p=> path + '~' + p.id),
 
   // compHeaderParams: path => {
   //   if (path.indexOf('~') == -1)
   //     return [
   //   if (path.indexOf('~impl~') == -1 && path.match(/~params~[0-9]*$/))
-  //     return ['id','type','as','essential']
+  //     return ['id','type','as','mandatory']
   // }
 	nonControlChildren: (path,includeFeatures) =>
 		st.paramsOfPath(path).filter(p=>!st.isControlType(p.type))
@@ -31773,21 +31773,21 @@ Object.assign(st,{
 var st = jb.studio;
 
 jb.component('studio.val', {
-	params: [ {id: 'path', as: 'string', essential: true } ],
+	params: [ {id: 'path', as: 'string', mandatory: true } ],
 	impl: (ctx,path) =>
 		st.valOfPath(path)
 })
 
 jb.component('studio.is-primitive-value', {
-	params: [ {id: 'path', as: 'string', essential: true } ],
+	params: [ {id: 'path', as: 'string', mandatory: true } ],
 	impl: (ctx,path) =>
 			st.isPrimitiveValue(st.valOfPath(path))
 })
 
 jb.component('studio.is-of-type', {
 	params: [
-		{ id: 'path', as: 'string', essential: true },
-		{ id: 'type', as: 'string', essential: true },
+		{ id: 'path', as: 'string', mandatory: true },
+		{ id: 'type', as: 'string', mandatory: true },
 	],
 	impl: (ctx,path,_type) =>
 			st.isOfType(path,_type)
@@ -31795,7 +31795,7 @@ jb.component('studio.is-of-type', {
 
 jb.component('studio.param-type', {
 	params: [
-		{ id: 'path', as: 'string', essential: true },
+		{ id: 'path', as: 'string', mandatory: true },
 	],
 	impl: (ctx,path) =>
 			st.paramTypeOfPath(path)
@@ -31803,7 +31803,7 @@ jb.component('studio.param-type', {
 
 jb.component('studio.PTs-of-type', {
 	params: [
-		{ id: 'type', as: 'string', essential: true },
+		{ id: 'type', as: 'string', mandatory: true },
 	],
 	impl: (ctx,_type) =>
 			st.PTsOfType(_type)
@@ -31811,7 +31811,7 @@ jb.component('studio.PTs-of-type', {
 
 jb.component('studio.profiles-of-PT', {
 	params: [
-		{ id: 'PT', as: 'string', essential: true },
+		{ id: 'PT', as: 'string', mandatory: true },
 	],
 	impl: (ctx, pt) =>
 			st.profilesOfPT(pt)
@@ -31819,7 +31819,7 @@ jb.component('studio.profiles-of-PT', {
 
 jb.component('studio.categories-of-type', {
 	params: [
-		{ id: 'type', as: 'string', essential: true },
+		{ id: 'type', as: 'string', mandatory: true },
 		{ id: 'path', as: 'string' },
 	],
 	impl: (ctx,_type,path) => {
@@ -32206,7 +32206,7 @@ jb.component('studio.is-disabled', {
 
 jb.component('studio.disabled-support', {
 	params: [
-		{ id: 'path', as: 'string', essential: true },
+		{ id: 'path', as: 'string', mandatory: true },
 	],
 	type: 'feature',
 	impl: {$: 'conditional-class', cssClass: 'jb-disabled', condition: {$: 'studio.is-disabled', path: '%$path%'} }
@@ -33092,7 +33092,7 @@ jb.component('studio.property-tgp-old', {
 
 jb.component('studio.properties-expanded-relevant', {
 	type: 'boolean',
-	params: [{ id: 'path', as: 'string', essential: true }],
+	params: [{ id: 'path', as: 'string', mandatory: true }],
 	impl:{ $and: [
 		{
 			$notEmpty :{$: 'studio.non-control-children', path: '%$path%' }
@@ -33109,7 +33109,7 @@ jb.component('studio.properties-expanded-relevant', {
 
 jb.component('studio.properties-show-expanded', {
 	type: 'boolean',
-	params: [{ id: 'path', as: 'string', essential: true }],
+	params: [{ id: 'path', as: 'string', mandatory: true }],
 	impl:{ $and: [
 		{$: 'studio.properties-expanded-relevant', path: '%$path%'},
 		{ $or: [ {$: 'studio.is-new', path: '%$path%' },	'%$userExpanded%' ] },
@@ -33983,11 +33983,11 @@ jb.component('studio.goto-references-options', {
 jb.component('jb-component', {
   type: '*',
   params: [
-    { id: 'type', as: 'string', essential: true },
+    { id: 'type', as: 'string', mandatory: true },
     { id: 'category', as: 'string'},
     { id: 'description', as: 'string'},
     { id: 'params', type: 'jb-param[]'},
-    { id: 'impl', dynamicType: '%type%', essential: true  },
+    { id: 'impl', dynamicType: '%type%', mandatory: true  },
   ],
   impl: ctx => ctx.params
 })
@@ -33995,12 +33995,12 @@ jb.component('jb-component', {
 jb.component('jb-param', {
   type: 'jb-param', singleInType: true,
   params: [
-    { id: 'id', as: 'string', essential: true },
+    { id: 'id', as: 'string', mandatory: true },
     { id: 'type', as: 'string'},
     { id: 'description', as: 'string'},
     { id: 'as', as: 'string', options: 'string,number,boolean,ref,single,array'},
     { id: 'dynamic', type: 'boolean', as: 'boolean'},
-    { id: 'essential', type: 'boolean', as: 'boolean'},
+    { id: 'mandatory', type: 'boolean', as: 'boolean'},
     { id: 'composite', type: 'boolean', as: 'boolean'},
     { id: 'singleInType', type: 'boolean', as: 'boolean'},
     { id: 'defaultValue', dynamicType: '%type%' },
@@ -34779,7 +34779,7 @@ jb.studio.probeResultCustomizers = []
 jb.component('studio.prob-result-customization', {
   type: 'data',
   params: [
-    { id: 'probeResult', essential: true },
+    { id: 'probeResult', mandatory: true },
   ],
   impl: (ctx, probeResult) => {
     probeResult.result.forEach(res=> {
@@ -34793,7 +34793,7 @@ jb.component('studio.prob-result-customization', {
 jb.component('studio.jb-editor-container', {
   type: 'feature', 
   params: [
-    { id: 'id', as: 'string', essential: true },
+    { id: 'id', as: 'string', mandatory: true },
 		{ id: 'initialSelection', as: 'string', defaultValue: '%$path%' },
 		{ id: 'circuit', as: 'single', description: 'path or ctx of circuit to run the probe' },
   ],
@@ -35022,7 +35022,7 @@ jb.component('studio.jb-editor', {
 
 jb.component('studio.data-browse', {
   type: 'control',
-  params: [{ id: 'obj', essential: true, defaultValue: '%%' }, { id: 'title', as: 'string' }, { id: 'width', as: 'number', defaultValue: 200 }],
+  params: [{ id: 'obj', mandatory: true, defaultValue: '%%' }, { id: 'title', as: 'string' }, { id: 'width', as: 'number', defaultValue: 200 }],
   impl :{$: 'group',
     title: '%$title%',
     controls :{$: 'group',

@@ -1,7 +1,7 @@
 jb.component('tabs', {
 	type: 'control', category: 'group:80',
 	params: [
-		{ id: 'tabs', type: 'control[]', essential: true, flattenArray: true, dynamic: true },
+		{ id: 'tabs', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true },
 		{ id: 'style', type: 'tabs.style', dynamic: true, defaultValue: { $: 'tabs.simple' } },
 		{ id: 'features', type: 'feature[]', dynamic: true },
 	],

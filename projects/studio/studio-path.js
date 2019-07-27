@@ -311,19 +311,19 @@ Object.assign(st, {
 // ******* components ***************
 
 jb.component('studio.ref', {
-	params: [ {id: 'path', as: 'string', essential: true } ],
+	params: [ {id: 'path', as: 'string', mandatory: true } ],
 	impl: (ctx,path) =>
 		st.refOfPath(path)
 });
 
 jb.component('studio.path-of-ref', {
-	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
+	params: [ {id: 'ref', defaultValue: '%%', mandatory: true } ],
 	impl: (ctx,ref) =>
 		st.pathOfRef(ref)
 });
 
 jb.component('studio.name-of-ref', {
-	params: [ {id: 'ref', defaultValue: '%%', essential: true } ],
+	params: [ {id: 'ref', defaultValue: '%%', mandatory: true } ],
 	impl: (ctx,ref) =>
 		st.nameOfRef(ref)
 });
@@ -345,7 +345,7 @@ jb.component('studio.watch-path', {
   type: 'feature',
   category: 'group:0',
   params: [
-    { id: 'path', as: 'string', essential: true },
+    { id: 'path', as: 'string', mandatory: true },
     { id: 'includeChildren', as: 'boolean' },
   ],
   impl: (ctx,path,includeChildren) => ({
@@ -376,7 +376,7 @@ jb.component('studio.watch-components', {
 
 jb.component('studio.watch-typeof-script', {
   params: [
-    { id: 'path', as: 'string', essential: true },
+    { id: 'path', as: 'string', mandatory: true },
   ],
   type: 'feature',
   impl: (ctx,path) => ({
@@ -392,7 +392,7 @@ jb.component('studio.watch-typeof-script', {
 jb.component('studio.path-hyperlink', {
   type: 'control',
   params: [
-    { id: 'path', as: 'string', essential: true },
+    { id: 'path', as: 'string', mandatory: true },
     { id: 'prefix', as: 'string' }
   ],
   impl :{$: 'group',

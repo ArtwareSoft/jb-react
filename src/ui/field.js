@@ -126,7 +126,7 @@ jb.component('field.default', {
 jb.component('field.subscribe', {
   type: 'feature',
   params: [
-    { id: 'action', type: 'action', essential: true, dynamic: true },
+    { id: 'action', type: 'action', mandatory: true, dynamic: true },
     { id: 'includeFirst', type: 'boolean', as: 'boolean'},
   ],
   impl: (context,action,includeFirst) => ({
@@ -147,7 +147,7 @@ jb.component('field.subscribe', {
 jb.component('field.toolbar', {
   type: 'feature',
   params: [
-    { id: 'toolbar', type: 'control', essential: true, dynamic: true },
+    { id: 'toolbar', type: 'control', mandatory: true, dynamic: true },
   ],
   impl: (context,toolbar) => ({
     toolbar: toolbar().reactComp()
@@ -159,8 +159,8 @@ jb.component('field.toolbar', {
 jb.component('validation', {
   type: 'feature', category: 'validation:100',
   params: [
-    { id: 'validCondition', essential: true, type: 'boolean', as: 'boolean', dynamic: true },
-    { id: 'errorMessage', essential: true, as: 'string', dynamic: true },
+    { id: 'validCondition', mandatory: true, type: 'boolean', as: 'boolean', dynamic: true },
+    { id: 'errorMessage', mandatory: true, as: 'string', dynamic: true },
   ],
   impl: (ctx,validCondition,errorMessage) => ({
       init: cmp =>

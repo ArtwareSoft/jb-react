@@ -138,7 +138,7 @@ jb.component('ui-action.keyboard-event', {
 jb.component('ui-action.set-text', {
 	type: 'ui-action',
 	params: [
-		{ id: 'value', as: 'string', essential: true },
+		{ id: 'value', as: 'string', mandatory: true },
 		{ id: 'selector', as: 'string', defaultValue: 'input' },
 		{ id: 'delay', as: 'number', defaultValue: 1}
 	],

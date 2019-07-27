@@ -3,8 +3,8 @@ jb.component('studio.editable-profile', {
     params: [
       { id: 'path', as: 'string' },
       { id: 'fields', dynamic: true, defaultValue :{$: 'studio.non-control-children', path: '%$model/path%' }},
-      { id: 'menu', type: 'editable-profile.menu', defaultValue :{$: 'editable-profile.basic-menu' }, essential: true , dynamic: true },
-      { id: 'style', type: 'editable-profile.style', defaultValue :{$: 'editable-profile.two-level' }, essential: true , dynamic: true },
+      { id: 'menu', type: 'editable-profile.menu', defaultValue :{$: 'editable-profile.basic-menu' }, mandatory: true , dynamic: true },
+      { id: 'style', type: 'editable-profile.style', defaultValue :{$: 'editable-profile.two-level' }, mandatory: true , dynamic: true },
       { id: 'features', type: 'feature[]', dynamic: true },
     ],
     impl: ctx =>

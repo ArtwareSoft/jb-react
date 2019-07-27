@@ -1362,21 +1362,21 @@ jb.component('ui-test.calculated-var-cyclic', {
 
 jb.component('inner-label1-tst', {
   params: [
-     { id: 'title', essential: true, dynamic: true },
+     { id: 'title', mandatory: true, dynamic: true },
   ],
   impl :{$: 'label', title: {$call: 'title' }}
 })
 
 jb.component('inner-label2-tst', {
   params: [
-     { id: 'title', essential: true, dynamic: true },
+     { id: 'title', mandatory: true, dynamic: true },
   ],
   impl :{$: 'inner-label1-tst', title: {$call: 'title' }}
 })
 
 jb.component('inner-label3-tst', {
   params: [
-     { id: 'title', essential: true, dynamic: true },
+     { id: 'title', mandatory: true, dynamic: true },
   ],
   impl :{$: 'inner-label2-tst', title: {$call: 'title' }}
 })

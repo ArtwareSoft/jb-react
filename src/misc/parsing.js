@@ -28,7 +28,7 @@ jb.component('extract-text', {
   description: 'text breaking according to begin/end markers',
   params: [
     {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
-    {id: 'startMarkers', as: 'array', essential: true},
+    {id: 'startMarkers', as: 'array', mandatory: true},
     {id: 'endMarker', as: 'string'},
     {id: 'includingStartMarker', as: 'boolean', type: 'boolean', description: 'include the marker at part of the result' },
     {id: 'includingEndMarker', as: 'boolean', type: 'boolean', description: 'include the marker at part of the result'},
@@ -99,7 +99,7 @@ jb.component('break-text', {
   description: 'recursive text breaking according to multi level separators',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
-    {id: 'separators', as: 'array', essential: true, defaultValue: [], description: 'multi level separators'},
+    {id: 'separators', as: 'array', mandatory: true, defaultValue: [], description: 'multi level separators'},
     {id: 'useRegex', as: 'boolean', type: 'boolean', description: 'use regular expression in separators' },
   ],
   impl: (ctx,text,separators,regex) => {
@@ -152,7 +152,7 @@ jb.component('break-text', {
 jb.component('zip-arrays', {
   description: '[[1,2],[10,20],[100,200]] => [[1,10,100],[2,20,200]]',
   params: [
-    { id: 'value', description: 'array of arrays', as: 'array', essential: true },
+    { id: 'value', description: 'array of arrays', as: 'array', mandatory: true },
   ],
   impl: (ctx,value) =>
     value[0].map((x,i)=>
@@ -163,8 +163,8 @@ jb.component('remove-sections', {
   description: 'remove sections between markers',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
-    {id: 'startMarker', as: 'string', essential: true },
-    {id: 'endMarker', as: 'string', essential: true},
+    {id: 'startMarker', as: 'string', mandatory: true },
+    {id: 'endMarker', as: 'string', mandatory: true},
     {id: 'keepEndMarker', as: 'boolean', type: 'boolean'},
   ],
   impl: (ctx,text,startMarker,endMarker,keepEndMarker) => {
@@ -191,7 +191,7 @@ jb.component('merge', {
 	type: 'data',
   description: 'assign, merge object properties',
 	params: [
-    { id: 'objects', as: 'array', essential: true },
+    { id: 'objects', as: 'array', mandatory: true },
 	],
 	impl: (ctx,objects) =>
 		Object.assign.apply({},objects)
@@ -201,9 +201,9 @@ jb.component('dynamic-object', {
 	type: 'data',
   description: 'process items into object properties',
 	params: [
-    { id: 'items', essential: true, as: 'array' },
-		{ id: 'propertyName', essential: true, as: 'string', dynamic: true },
-		{ id: 'value', essential: true, dynamic: true },
+    { id: 'items', mandatory: true, as: 'array' },
+		{ id: 'propertyName', mandatory: true, as: 'string', dynamic: true },
+		{ id: 'value', mandatory: true, dynamic: true },
 	],
 	impl: (ctx,items,name,value) =>
     items.reduce((obj,item)=>Object.assign(obj,jb.obj(name(ctx.setData(item)),value(ctx.setData(item)))),{})
@@ -234,7 +234,7 @@ jb.component('trim', {
 
 jb.component('remove-prefix-regex', {
   params: [
-    {id: 'prefix', as: 'string', essential: true },
+    {id: 'prefix', as: 'string', mandatory: true },
     {id: 'text', as: 'string', defaultValue: '%%'},
   ],
   impl: (ctx,prefix,text) =>
@@ -243,7 +243,7 @@ jb.component('remove-prefix-regex', {
 
 jb.component('remove-suffix-regex', {
   params: [
-    {id: 'suffix', as: 'string', essential: true },
+    {id: 'suffix', as: 'string', mandatory: true },
     {id: 'text', as: 'string', defaultValue: '%%'},
   ],
   impl: (ctx,suffix,text) =>
@@ -265,7 +265,7 @@ jb.component('wrap-as-object', {
   description: 'put each item in a property',
   type: 'aggregator',
   params: [
-    {id: 'itemToPropName', as: 'string', dynamic: true, essential: true },
+    {id: 'itemToPropName', as: 'string', dynamic: true, mandatory: true },
     {id: 'items', as: 'array', defaultValue: '%%' },
   ],
   impl: (ctx,key,items) => {

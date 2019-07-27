@@ -60,7 +60,7 @@ class TreeNode extends jb.ui.Component {
 jb.component('tree', {
 	type: 'control',
 	params: [
-		{ id: 'nodeModel', type: 'tree.nodeModel', dynamic: true, essential: true },
+		{ id: 'nodeModel', type: 'tree.nodeModel', dynamic: true, mandatory: true },
 		{ id: 'style', type: "tree.style", defaultValue: { $: "tree.ul-li" }, dynamic: true },
 		{ id: 'features', type: "feature[]", dynamic: true }
 	],
@@ -268,7 +268,7 @@ jb.component('tree.redraw', {
 jb.component('tree.drag-and-drop', {
   type: 'feature',
   params: [
-//	  { id: 'afterDrop', type: 'action', dynamic: true, essential: true },
+//	  { id: 'afterDrop', type: 'action', dynamic: true, mandatory: true },
   ],
   impl: ctx => ({
   		onkeydown: true,

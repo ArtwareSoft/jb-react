@@ -2,8 +2,8 @@
 jb.component('menu.menu', {
 	type: 'menu.option',
 	params: [
-		{ id: 'title', as: 'string', dynamic: true, essential: true },
-		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true, defaultValue: [] },
+		{ id: 'title', as: 'string', dynamic: true, mandatory: true },
+		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true, defaultValue: [] },
 		{ id: 'optionsFilter', type: 'data', dynamic: true, defaultValue: '%%' },
 	],
 	impl: ctx => ({
@@ -19,7 +19,7 @@ jb.component('menu.menu', {
 jb.component('menu.options-group', {
 	type: 'menu.option',
 	params: [
-		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
+		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true },
 	],
 	impl: (ctx,options) =>
 			options()
@@ -28,8 +28,8 @@ jb.component('menu.options-group', {
 jb.component('menu.dynamic-options', {
 	type: 'menu.option',
 	params: [
-		{ id: 'items', type: 'data', as: 'array', essential: true, dynamic: true },
-		{ id: 'genericOption', type: 'menu.option', essential: true, dynamic: true },
+		{ id: 'items', type: 'data', as: 'array', mandatory: true, dynamic: true },
+		{ id: 'genericOption', type: 'menu.option', mandatory: true, dynamic: true },
 	],
 	impl: (ctx,items,generic) =>
 		items().map(item =>
@@ -39,7 +39,7 @@ jb.component('menu.dynamic-options', {
 jb.component('menu.end-with-separator', {
 	type: 'menu.option',
 	params: [
-		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, essential: true },
+		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true },
 		{ id: 'separator', type: 'menu.option', as: 'array', defaultValue :{$: 'menu.separator' } },
 		{ id: 'title', as: 'string' }
 	],
@@ -60,8 +60,8 @@ jb.component('menu.separator', {
 jb.component('menu.action', {
 	type: 'menu.option',
 	params: [
-		{ id: 'title', as: 'string', dynamic: true, essential: true },
-		{ id: 'action', type: 'action', dynamic: true, essential: true },
+		{ id: 'title', as: 'string', dynamic: true, mandatory: true },
+		{ id: 'action', type: 'action', dynamic: true, mandatory: true },
 		{ id: 'icon', as: 'string' },
 		{ id: 'shortcut', as: 'string' },
 		{ id: 'showCondition', type:'boolean', as: 'boolean', defaultValue: true }
@@ -100,7 +100,7 @@ jb.component('menu.action', {
 jb.component('menu.control', {
 	type: 'control,clickable,menu',
 	params: [
-		{id: 'menu', type: 'menu.option', dynamic: true, essential: true },
+		{id: 'menu', type: 'menu.option', dynamic: true, mandatory: true },
 		{id: 'style', type: 'menu.style', defaultValue :{$: 'menu-style.context-menu' }, dynamic: true },
 		{id: 'features', type: 'feature[]', dynamic: true },
 	],
@@ -116,7 +116,7 @@ jb.component('menu.control', {
 jb.component('menu.open-context-menu', {
 	type: 'action',
 	params: [
-		{id: 'menu', type: 'menu.option', dynamic: true, essential: true },
+		{id: 'menu', type: 'menu.option', dynamic: true, mandatory: true },
 		{id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup'}  },
 	{ id: 'features', type: 'dialog-feature[]', dynamic: true }
 	],

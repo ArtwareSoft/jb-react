@@ -2,7 +2,7 @@ jb.component('url-history.map-url-to-resource', {
 	type: 'action',
 	params: [
 		{ id: 'params', type: 'data[]', as: 'array'},
-		{ id: 'resource', as: 'string' , essential: true },
+		{ id: 'resource', as: 'string' , mandatory: true },
 		{ id: 'base', as: 'string', description: 'base string to add/ingnore in url'},
 		{ id: 'onUrlChange', type: 'action', dynamic: true }
 	],

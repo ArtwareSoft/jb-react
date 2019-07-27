@@ -4,8 +4,8 @@ jb.component('itemlog', {
 	type: 'control', category: 'group:50',
 	params: [
 		{ id: 'title', as: 'string' },
-		{ id: 'items', as: 'observable' , dynamic: true, essential: true },
-    { id: 'controls', type: 'control[]', essential: true, dynamic: true},
+		{ id: 'items', as: 'observable' , dynamic: true, mandatory: true },
+    { id: 'controls', type: 'control[]', mandatory: true, dynamic: true},
 		{ id: 'style', type: 'itemlog.style', dynamic: true , defaultValue: { $: 'itemlog.div' } },
     { id: 'itemVariable', as: 'string', defaultValue: 'item' },
     { id: 'counter',as : 'ref'},

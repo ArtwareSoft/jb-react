@@ -3,8 +3,8 @@ jb.component('d3.histogram', {
   	type: 'control', category: 'group:80,common:70',
 	params: [
 	    { id: 'title', as: 'string' },
-		  { id: 'items', as: 'array', dynamic: true, essential: true },
-      { id: 'pivot', type: 'd3.pivot', essential: true, dynamic: true },
+		  { id: 'items', as: 'array', dynamic: true, mandatory: true },
+      { id: 'pivot', type: 'd3.pivot', mandatory: true, dynamic: true },
 		  { id: 'frame', type: 'd3.frame', defaultValue :{$: 'd3.frame', width: 1400, height: 500, 
 				top: 30, right: 50, bottom: 40, left: 60 } },
 	    { id: 'itemTitle', as: 'string', dynamic: true },

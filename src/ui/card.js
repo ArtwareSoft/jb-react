@@ -1,12 +1,12 @@
 jb.component('card', {
   type: 'control', category: 'group:80,common:80',
   params: [
-    { id: 'title', as: 'string', essential: true },
+    { id: 'title', as: 'string', mandatory: true },
     { id: 'subTitle', as: 'string' },
     { id: 'text', as: 'string' },
-    { id: 'image', as: 'image', essential: true, defaultValue:{$: 'image'} },
+    { id: 'image', as: 'image', mandatory: true, defaultValue:{$: 'image'} },
     { id: 'topButton', type: 'clickable' },
-    { id: 'menu', type: 'menu', dynamic: true, flattenArray: true, essential: true, defaultValue: [] },
+    { id: 'menu', type: 'menu', dynamic: true, flattenArray: true, mandatory: true, defaultValue: [] },
 		{ id: 'style', type: 'card.style', dynamic: true, defaultValue :{$: 'card.simple' } },
     { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
   ],

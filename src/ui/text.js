@@ -3,7 +3,7 @@ jb.type('text.style');
 jb.component('text', {
     type: 'control', category: 'control:40',
     params: [
-        { id: 'text', essential: true, dynamic: true },
+        { id: 'text', mandatory: true, dynamic: true },
         { id: 'style', type: 'text.style', defaultValue: { $: 'text.multi-line' }, dynamic: true },
         { id: 'title', as: 'string', defaultValue: 'text' },
         { id: 'features', type: 'feature[]', dynamic: true },
@@ -45,7 +45,7 @@ jb.component('text.paragraph', {
 jb.component('rich-text', {
     type: 'control',
     params: [
-        { id: 'text', essential: true, as: 'string', dynamic: true },
+        { id: 'text', mandatory: true, as: 'string', dynamic: true },
         { id: 'title', as: 'string', defaultValue: 'rich-text', dynamic: true },
         { id: 'style', type: 'rich-text.style', defaultValue: { $: 'rich-text.html' }, dynamic: true },
         { id: 'features', type: 'feature[]', dynamic: true },

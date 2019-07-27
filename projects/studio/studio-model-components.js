@@ -2,21 +2,21 @@
 var st = jb.studio;
 
 jb.component('studio.val', {
-	params: [ {id: 'path', as: 'string', essential: true } ],
+	params: [ {id: 'path', as: 'string', mandatory: true } ],
 	impl: (ctx,path) =>
 		st.valOfPath(path)
 })
 
 jb.component('studio.is-primitive-value', {
-	params: [ {id: 'path', as: 'string', essential: true } ],
+	params: [ {id: 'path', as: 'string', mandatory: true } ],
 	impl: (ctx,path) =>
 			st.isPrimitiveValue(st.valOfPath(path))
 })
 
 jb.component('studio.is-of-type', {
 	params: [
-		{ id: 'path', as: 'string', essential: true },
-		{ id: 'type', as: 'string', essential: true },
+		{ id: 'path', as: 'string', mandatory: true },
+		{ id: 'type', as: 'string', mandatory: true },
 	],
 	impl: (ctx,path,_type) =>
 			st.isOfType(path,_type)
@@ -24,7 +24,7 @@ jb.component('studio.is-of-type', {
 
 jb.component('studio.param-type', {
 	params: [
-		{ id: 'path', as: 'string', essential: true },
+		{ id: 'path', as: 'string', mandatory: true },
 	],
 	impl: (ctx,path) =>
 			st.paramTypeOfPath(path)
@@ -32,7 +32,7 @@ jb.component('studio.param-type', {
 
 jb.component('studio.PTs-of-type', {
 	params: [
-		{ id: 'type', as: 'string', essential: true },
+		{ id: 'type', as: 'string', mandatory: true },
 	],
 	impl: (ctx,_type) =>
 			st.PTsOfType(_type)
@@ -40,7 +40,7 @@ jb.component('studio.PTs-of-type', {
 
 jb.component('studio.profiles-of-PT', {
 	params: [
-		{ id: 'PT', as: 'string', essential: true },
+		{ id: 'PT', as: 'string', mandatory: true },
 	],
 	impl: (ctx, pt) =>
 			st.profilesOfPT(pt)
@@ -48,7 +48,7 @@ jb.component('studio.profiles-of-PT', {
 
 jb.component('studio.categories-of-type', {
 	params: [
-		{ id: 'type', as: 'string', essential: true },
+		{ id: 'type', as: 'string', mandatory: true },
 		{ id: 'path', as: 'string' },
 	],
 	impl: (ctx,_type,path) => {
@@ -435,7 +435,7 @@ jb.component('studio.is-disabled', {
 
 jb.component('studio.disabled-support', {
 	params: [
-		{ id: 'path', as: 'string', essential: true },
+		{ id: 'path', as: 'string', mandatory: true },
 	],
 	type: 'feature',
 	impl: {$: 'conditional-class', cssClass: 'jb-disabled', condition: {$: 'studio.is-disabled', path: '%$path%'} }

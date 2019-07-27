@@ -389,7 +389,7 @@ jb.component('studio.property-tgp-old', {
 
 jb.component('studio.properties-expanded-relevant', {
 	type: 'boolean',
-	params: [{ id: 'path', as: 'string', essential: true }],
+	params: [{ id: 'path', as: 'string', mandatory: true }],
 	impl:{ $and: [
 		{
 			$notEmpty :{$: 'studio.non-control-children', path: '%$path%' }
@@ -406,7 +406,7 @@ jb.component('studio.properties-expanded-relevant', {
 
 jb.component('studio.properties-show-expanded', {
 	type: 'boolean',
-	params: [{ id: 'path', as: 'string', essential: true }],
+	params: [{ id: 'path', as: 'string', mandatory: true }],
 	impl:{ $and: [
 		{$: 'studio.properties-expanded-relevant', path: '%$path%'},
 		{ $or: [ {$: 'studio.is-new', path: '%$path%' },	'%$userExpanded%' ] },

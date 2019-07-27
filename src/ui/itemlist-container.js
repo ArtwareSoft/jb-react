@@ -46,7 +46,7 @@ jb.component('group.itemlist-container', {
 	description: 'itemlist writable container to support addition, deletion and selection',
 	type: 'feature', category: 'itemlist:80,group:70',
 	params: [
-		{ id: 'id', as: 'string', essential: true },
+		{ id: 'id', as: 'string', mandatory: true },
 		{ id: 'defaultItem', as: 'single' },
 		{ id: 'maxItems', as: 'number' , defaultValue: 100 },
 		{ id: 'initialSelection', as: 'single' },
@@ -188,7 +188,7 @@ jb.component('itemlist-container.filter-field', {
 	type: 'feature', category: 'itemlist-filter:80',
 	requires: ctx => ctx.vars.itemlistCntr,
 	params: [
-		{ id: 'fieldData', dynamic: true, essential: true },
+		{ id: 'fieldData', dynamic: true, mandatory: true },
 		{ id: 'filterType', type: 'filter-type' },
 	],
 	impl: (ctx,fieldData,filterType) => ({

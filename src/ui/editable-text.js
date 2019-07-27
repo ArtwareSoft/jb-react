@@ -4,7 +4,7 @@ jb.component('editable-text', {
   type: 'control', category: 'input:100,common:80',
   params: [
     { id: 'title', as: 'string' , dynamic: true },
-    { id: 'databind', as: 'ref', essential: true},
+    { id: 'databind', as: 'ref', mandatory: true},
     { id: 'updateOnBlur', as: 'boolean', type: 'boolean' },
     { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-input' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
@@ -33,8 +33,8 @@ jb.component('editable-text.x-button', {
 jb.component('editable-text.helper-popup', {
   type: 'feature',
   params: [
-    { id: 'control', type: 'control', dynamic: true, essential: true },
-    { id: 'popupId', as: 'string', essential: true },
+    { id: 'control', type: 'control', dynamic: true, mandatory: true },
+    { id: 'popupId', as: 'string', mandatory: true },
     { id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.popup' } },
     { id: 'showHelper', as: 'boolean', dynamic: true, defaultValue :{$notEmpty: '%value%' }, description: 'show/hide helper according to input content' },
     { id: 'onEnter', type: 'action', dynamic: true },

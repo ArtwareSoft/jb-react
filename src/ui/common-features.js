@@ -2,7 +2,7 @@ jb.component('group.wait', {
   type: 'feature', category: 'group:70',
 	description: 'wait for asynch data before showing the control',
   params: [
-    { id: 'for', essential: true, dynamic: true },
+    { id: 'for', mandatory: true, dynamic: true },
     { id: 'loadingControl', type: 'control', defaultValue: { $:'label', title: 'loading ...'} , dynamic: true },
     { id: 'error', type: 'control', defaultValue: { $:'label', title: 'error: %$error%', css: '{color: red; font-weight: bold}'} , dynamic: true },
     { id: 'varName', as: 'string' },
@@ -34,7 +34,7 @@ jb.component('watch-ref', {
   type: 'feature', category: 'watch:100',
 	description: 'subscribes to data changes to refresh component',
   params: [
-    { id: 'ref', essential: true, as: 'ref', description: 'reference to data' },
+    { id: 'ref', mandatory: true, as: 'ref', description: 'reference to data' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
     { id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
   ],
@@ -48,7 +48,7 @@ jb.component('watch-observable', {
   type: 'feature', category: 'watch',
 	description: 'subscribes to a custom rx.observable to refresh component',
   params: [
-    { id: 'toWatch', essential: true },
+    { id: 'toWatch', mandatory: true },
   ],
   impl: (ctx,toWatch) => ({
       init: cmp => {
@@ -65,7 +65,7 @@ jb.component('watch-observable', {
 jb.component('group.data', {
   type: 'feature', category: 'general:100,watch:80',
   params: [
-    { id: 'data', essential: true, dynamic: true, as: 'ref' },
+    { id: 'data', mandatory: true, dynamic: true, as: 'ref' },
     { id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable' },
     { id: 'watch', as: 'boolean' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
@@ -89,7 +89,7 @@ jb.component('id', {
   type: 'feature',
 	description: 'adds id to html element',
   params: [
-    { id: 'id', essential: true, as: 'string' },
+    { id: 'id', mandatory: true, as: 'string' },
   ],
   impl: (ctx,id) => ({
     templateModifier: (vdom,cmp,state) => {
@@ -103,8 +103,8 @@ jb.component('var', {
   type: 'feature', category: 'general:90',
 	description: 'define a variable. mutable or const, local or global',
   params: [
-    { id: 'name', as: 'string', essential: true },
-    { id: 'value', dynamic: true, defaultValue: '', essential: true },
+    { id: 'name', as: 'string', mandatory: true },
+    { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
     { id: 'mutable', as: 'boolean', description: 'E.g., selected item variable' },
     { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
   ],
@@ -136,10 +136,10 @@ jb.component('bind-refs', {
   type: 'feature', category: 'watch',
   description: 'automatically updates a mutual variable when other value is changing',
   params: [
-    { id: 'watchRef', essential: true, as: 'ref' },
+    { id: 'watchRef', mandatory: true, as: 'ref' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
-    { id: 'updateRef', essential: true, as: 'ref' },
-    { id: 'value', essential: true, as: 'single', dynamic: true },
+    { id: 'updateRef', mandatory: true, as: 'ref' },
+    { id: 'value', mandatory: true, as: 'single', dynamic: true },
   ],
   impl: (ctx,ref,includeChildren,updateRef,value) => ({
       init: cmp =>
@@ -152,10 +152,10 @@ jb.component('calculated-var', {
   type: 'feature', category: 'general:60',
 	description: 'defines a local variable that watches other variables with auto recalc',
   params: [
-    { id: 'name', as: 'string', essential: true },
-    { id: 'value', dynamic: true, defaultValue: '', essential: true },
+    { id: 'name', as: 'string', mandatory: true },
+    { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
     { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
-    { id: 'watchRefs', as: 'array', dynamic: true, essential: true, defaultValue: [], description: 'variable to watch. needs to be in array' },
+    { id: 'watchRefs', as: 'array', dynamic: true, mandatory: true, defaultValue: [], description: 'variable to watch. needs to be in array' },
   ],
   impl: (context, name, value,globalId, watchRefs) => ({
       destroy: cmp => {
@@ -190,7 +190,7 @@ jb.component('features', {
 jb.component('feature.init', {
   type: 'feature', category: 'lifecycle',
   params: [
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl: (ctx,action) => ({ init: cmp =>
       action(cmp.ctx)
@@ -200,7 +200,7 @@ jb.component('feature.init', {
 jb.component('feature.after-load', {
   type: 'feature', category: 'lifecycle',
   params: [
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl: ctx => ({ afterViewInit: cmp =>
       jb.delay(1).then(_ => ctx.params.action(cmp.ctx))
@@ -211,7 +211,7 @@ jb.component('feature.if', {
   type: 'feature', category: 'feature:85',
 	description: 'adds element to dom by condition. no watch',
   params: [
-    { id: 'showCondition', essential: true, dynamic: true },
+    { id: 'showCondition', mandatory: true, dynamic: true },
   ],
   impl: (ctx, condition,watch) => ({
     templateModifier: (vdom,cmp,state) =>
@@ -223,7 +223,7 @@ jb.component('hidden', {
   type: 'feature', category: 'feature:85',
 	description: 'adds display:none to element by condition. no watch',
   params: [
-    { id: 'showCondition', type: 'boolean', essential: true, dynamic: true },
+    { id: 'showCondition', type: 'boolean', mandatory: true, dynamic: true },
   ],
   impl: (ctx,showCondition) => ({
     templateModifier: (vdom,cmp,state) => {
@@ -238,8 +238,8 @@ jb.component('conditional-class', {
   type: 'feature',
 	description: 'toggle class by condition',
   params: [
-    { id: 'cssClass', as: 'string', essential: true, dynamic: true },
-    { id: 'condition', type: 'boolean', essential: true, dynamic: true },
+    { id: 'cssClass', as: 'string', mandatory: true, dynamic: true },
+    { id: 'condition', type: 'boolean', mandatory: true, dynamic: true },
   ],
   impl: (ctx,cssClass,cond) => ({
     templateModifier: (vdom,cmp,state) => {
@@ -292,7 +292,7 @@ jb.component('feature.keyboard-shortcut', {
 jb.component('feature.onHover', {
   type: 'feature', category: 'events',
   params: [
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl: (ctx,code) => ({
       onmouseenter: true,
@@ -306,7 +306,7 @@ jb.component('feature.onKey', {
   type: 'feature', category: 'events',
   params: [
     { id: 'code', as: 'number' },
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl: (ctx,code) => ({
       onkeydown: true,
@@ -321,7 +321,7 @@ jb.component('feature.onKey', {
 jb.component('feature.onEnter', {
   type: 'feature', category: 'events',
   params: [
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl :{$: 'feature.onKey', code: 13, action :{$call: 'action'}}
 })
@@ -329,7 +329,7 @@ jb.component('feature.onEnter', {
 jb.component('feature.onEsc', {
   type: 'feature', category: 'events',
   params: [
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl :{$: 'feature.onKey', code: 27, action :{$call: 'action'}}
 })
@@ -337,7 +337,7 @@ jb.component('feature.onEsc', {
 jb.component('feature.onDelete', {
   type: 'feature', category: 'events',
   params: [
-    { id: 'action', type: 'action[]', essential: true, dynamic: true }
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl :{$: 'feature.onKey', code: 46, action :{$call: 'action'}}
 })

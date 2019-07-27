@@ -454,7 +454,7 @@ ui.addHTML = (el,html) => {
 jb.component('custom-style', {
 	typePattern: /.*-style/, category: 'advanced:10,all:10',
 	params: [
-		{ id: 'template', as: 'single', essential: true, dynamic: true, ignore: true },
+		{ id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true },
 		{ id: 'css', as: 'string' },
     	{ id: 'features', type: 'feature[]', dynamic: true },
 	],
@@ -469,8 +469,8 @@ jb.component('custom-style', {
 jb.component('style-by-control', {
 	typePattern: /.*-style/,category: 'advanced:10,all:20',
 	params: [
-		{ id: 'control', type: 'control', essential: true, dynamic: true },
-		{ id: 'modelVar', as: 'string', essential: true }
+		{ id: 'control', type: 'control', mandatory: true, dynamic: true },
+		{ id: 'modelVar', as: 'string', mandatory: true }
 	],
 	impl: (ctx,control,modelVar) =>
 		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))

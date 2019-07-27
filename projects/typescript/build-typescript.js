@@ -93,7 +93,7 @@ function buildTS() {
 	type?: tgpTypeStr,
 	as?: 'string' | 'boolean' | 'number',
 	defaultValue?: any,
-	essential?: boolean,
+	mandatory?: boolean,
 	dynamic?: boolean,
 }
 type jbObj = {

@@ -122,7 +122,7 @@ st.jbEditorTree = class {
     if (!this.includeCompHeader && path.indexOf('~') == -1)
       path = path + '~impl';
 		return st.paramsOfPath(path).map(p=> ({ path: path + '~' + p.id, param: p}))
-			.filter(e=>st.valOfPath(e.path) != null || e.param.essential)
+			.filter(e=>st.valOfPath(e.path) != null || e.param.mandatory)
 			.map(e=>e.path)
 	}
 	vars(path,val) {
@@ -152,14 +152,14 @@ st.jbEditorTree = class {
 Object.assign(st,{
 	jbEditorMoreParams: path =>
 		st.paramsOfPath(path)
-			.filter(p=>st.valOfPath(path+'~'+p.id) == null && !p.essential)
+			.filter(p=>st.valOfPath(path+'~'+p.id) == null && !p.mandatory)
 			.map(p=> path + '~' + p.id),
 
   // compHeaderParams: path => {
   //   if (path.indexOf('~') == -1)
   //     return [
   //   if (path.indexOf('~impl~') == -1 && path.match(/~params~[0-9]*$/))
-  //     return ['id','type','as','essential']
+  //     return ['id','type','as','mandatory']
   // }
 	nonControlChildren: (path,includeFeatures) =>
 		st.paramsOfPath(path).filter(p=>!st.isControlType(p.type))

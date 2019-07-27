@@ -2,7 +2,7 @@ jb.studio.probeResultCustomizers = []
 jb.component('studio.prob-result-customization', {
   type: 'data',
   params: [
-    { id: 'probeResult', essential: true },
+    { id: 'probeResult', mandatory: true },
   ],
   impl: (ctx, probeResult) => {
     probeResult.result.forEach(res=> {
@@ -16,7 +16,7 @@ jb.component('studio.prob-result-customization', {
 jb.component('studio.jb-editor-container', {
   type: 'feature', 
   params: [
-    { id: 'id', as: 'string', essential: true },
+    { id: 'id', as: 'string', mandatory: true },
 		{ id: 'initialSelection', as: 'string', defaultValue: '%$path%' },
 		{ id: 'circuit', as: 'single', description: 'path or ctx of circuit to run the probe' },
   ],
@@ -245,7 +245,7 @@ jb.component('studio.jb-editor', {
 
 jb.component('studio.data-browse', {
   type: 'control',
-  params: [{ id: 'obj', essential: true, defaultValue: '%%' }, { id: 'title', as: 'string' }, { id: 'width', as: 'number', defaultValue: 200 }],
+  params: [{ id: 'obj', mandatory: true, defaultValue: '%%' }, { id: 'title', as: 'string' }, { id: 'width', as: 'number', defaultValue: 200 }],
   impl :{$: 'group',
     title: '%$title%',
     controls :{$: 'group',

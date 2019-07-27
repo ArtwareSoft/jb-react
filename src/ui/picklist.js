@@ -3,7 +3,7 @@ jb.component('picklist', {
   params: [
     { id: 'title', as: 'string' , dynamic: true },
     { id: 'databind', as: 'ref'},
-    { id: 'options', type: 'picklist.options', dynamic: true, essential: true, defaultValue: {$ : 'picklist.optionsByComma'} },
+    { id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, defaultValue: {$ : 'picklist.optionsByComma'} },
     { id: 'promote', type: 'picklist.promote', dynamic: true },
     { id: 'style', type: 'picklist.style', defaultValue: { $: 'picklist.native' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },
@@ -76,7 +76,7 @@ jb.component('picklist.onChange', {
 jb.component('picklist.optionsByComma',{
   type: 'picklist.options',
   params: [
-    { id: 'options', as: 'string', essential: true},
+    { id: 'options', as: 'string', mandatory: true},
     { id: 'allowEmptyValue', type: 'boolean' },
   ],
   impl: function(context,options,allowEmptyValue) {
@@ -88,7 +88,7 @@ jb.component('picklist.optionsByComma',{
 jb.component('picklist.options',{
   type: 'picklist.options',
   params: [
-    { id: 'options', type: 'data', as: 'array', essential: true},
+    { id: 'options', type: 'data', as: 'array', mandatory: true},
     { id: 'allowEmptyValue', type: 'boolean' },
   ],
   impl: function(context,options,allowEmptyValue) {
@@ -100,9 +100,9 @@ jb.component('picklist.options',{
 jb.component('picklist.coded-options',{
   type: 'picklist.options',
   params: [
-    { id: 'options', as: 'array',essential: true },
-    { id: 'code', as: 'string', dynamic:true , essential: true },
-    { id: 'text', as: 'string', dynamic:true, essential: true } ,
+    { id: 'options', as: 'array',mandatory: true },
+    { id: 'code', as: 'string', dynamic:true , mandatory: true },
+    { id: 'text', as: 'string', dynamic:true, mandatory: true } ,
     { id: 'allowEmptyValue', type: 'boolean' },
   ],
   impl: function(context,options,code,text,allowEmptyValue) {
@@ -118,7 +118,7 @@ jb.component('picklist.coded-options',{
 jb.component('picklist.sorted-options', {
   type: 'picklist.options',
   params: [
-    { id: 'options', type: 'picklist.options', dynamic: true, essential: true, composite: true },
+    { id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, composite: true },
     { id: 'marks', as: 'array', description: 'e.g input:80,group:90. 0 mark means hidden. no mark means 50' },
   ],
   impl: (ctx,optionsFunc,marks) => {

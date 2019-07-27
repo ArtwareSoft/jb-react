@@ -2,8 +2,8 @@ jb.component('table', {
   type: 'control,table', category: 'group:80,common:70',
   params: [
     { id: 'title', as: 'string' },
-    { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, essential: true },
-    { id: 'fields', type: 'table-field[]', essential: true, dynamic: true },
+    { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, mandatory: true },
+    { id: 'fields', type: 'table-field[]', mandatory: true, dynamic: true },
     { id: 'style', type: 'table.style', dynamic: true , defaultValue: { $: 'table.with-headers' } },
     { id: 'watchItems', as: 'boolean' },
     { id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default table is limmited to 100 shown items' },
@@ -16,8 +16,8 @@ jb.component('table', {
 jb.component('field', {
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', essential: true },
-    { id: 'data', as: 'string', essential: true, dynamic: true },
+    { id: 'title', as: 'string', mandatory: true },
+    { id: 'data', as: 'string', mandatory: true, dynamic: true },
     { id: 'width', as: 'number' },
     { id: 'numeric', as: 'boolean', type: 'boolean' },
     { id: 'extendItems', as: 'boolean', type: 'boolean', description: 'extend the items with the calculated field using the title as field name' },
@@ -55,8 +55,8 @@ jb.component('field.index', {
 jb.component('field.control', {
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', essential: true },
-    { id: 'control', type: 'control' , dynamic: true, essential: true, defaultValue: {$: 'label', title: ''} },
+    { id: 'title', as: 'string', mandatory: true },
+    { id: 'control', type: 'control' , dynamic: true, mandatory: true, defaultValue: {$: 'label', title: ''} },
     { id: 'width', as: 'number' },
     { id: 'dataForSort', dynamic: true },
     { id: 'numeric', as: 'boolean', type: 'boolean' },
@@ -74,9 +74,9 @@ jb.component('field.control', {
 jb.component('field.button', {
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', essential: true },
-    { id: 'buttonText', as: 'string', essential: true, dynamic: true },
-    { id: 'action', type: 'action', essential: true, dynamic: true },
+    { id: 'title', as: 'string', mandatory: true },
+    { id: 'buttonText', as: 'string', mandatory: true, dynamic: true },
+    { id: 'action', type: 'action', mandatory: true, dynamic: true },
 
     { id: 'width', as: 'number' },
     { id: 'dataForSort', dynamic: true },

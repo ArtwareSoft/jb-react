@@ -2,7 +2,7 @@
 jb.component('jison.parse', {
   type: 'data',
   params: [
-    { id: 'parser', type: 'jison.parser', essential: true, defaultValue: {$: 'jison.parser', lex: [], bnf: [] } },
+    { id: 'parser', type: 'jison.parser', mandatory: true, defaultValue: {$: 'jison.parser', lex: [], bnf: [] } },
     { id: 'goal', as : 'string' },
     { id: 'text', as : 'string', defaultValue: '%%' },
     { id: 'debug', as : 'boolean' },
@@ -49,7 +49,7 @@ jb.component('jison.parser', {
 jb.component('lexer.tokens', {
   type: 'lexer-rule',
   params: [
-    { id: 'tokens', as: 'string', essential: true, description: 'e.g. -,+,*,%,for,=='},
+    { id: 'tokens', as: 'string', mandatory: true, description: 'e.g. -,+,*,%,for,=='},
   ],
   impl: (ctx,tokens) => tokens.split(',')
     .map(x=>
@@ -82,8 +82,8 @@ jb.component('lexer.EOF', {
 jb.component('lexer-rule', {
   type: 'lexer-rule',
   params: [
-    { id: 'regex', as: 'string', essential: true, description: '[a-f0-9]+'},
-    { id: 'result', as: 'string', essential: true, description: "return 'Hex';"},
+    { id: 'regex', as: 'string', mandatory: true, description: '[a-f0-9]+'},
+    { id: 'result', as: 'string', mandatory: true, description: "return 'Hex';"},
   ],
   impl: (ctx,regex,result) => [regex,result]
 })
@@ -91,8 +91,8 @@ jb.component('lexer-rule', {
 jb.component('bnf-expression', {
   type: 'bnf-expression', //singleInType: true,
   params: [
-    { id: 'id', as: 'string', essential: true},
-    { id: 'options', type: 'expression-option[]', essential: true, as: 'array', defaultValue: [] },
+    { id: 'id', as: 'string', mandatory: true},
+    { id: 'options', type: 'expression-option[]', mandatory: true, as: 'array', defaultValue: [] },
   ],
   impl: ctx => ({ id: ctx.params.id, options: ctx.params.options.filter(x=>x) })
 })
@@ -100,8 +100,8 @@ jb.component('bnf-expression', {
 jb.component('expression-option', {
   type: 'expression-option', //singleInType: true,
   params: [
-    { id: 'syntax', as: 'string', essential: true, description: 'e + e'},
-    { id: 'calculate', as: 'string', essential: true, description: '$$ = $1 + $2;' },
+    { id: 'syntax', as: 'string', mandatory: true, description: 'e + e'},
+    { id: 'calculate', as: 'string', mandatory: true, description: '$$ = $1 + $2;' },
   ],
   impl: ctx => jb.entries(ctx.params).map(e=>e[1]).filter(x=>x)
 })

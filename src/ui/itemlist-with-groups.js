@@ -2,10 +2,10 @@ jb.component('itemlist-with-groups', {
   type: 'control',
   params: [
     { id: 'title', as: 'string' },
-    { id: 'items', as: 'array' , dynamic: true, essential: true },
-    { id: 'controls', type: 'control[]', essential: true, dynamic: true },
+    { id: 'items', as: 'array' , dynamic: true, mandatory: true },
+    { id: 'controls', type: 'control[]', mandatory: true, dynamic: true },
     { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
-    { id: 'groupBy', type: 'itemlist.group-by', essential: true, dynamic: true },
+    { id: 'groupBy', type: 'itemlist.group-by', mandatory: true, dynamic: true },
     { id: 'headingCtrl', type: 'control', dynamic: true , defaultValue: {$: 'label', title: '%title%' } },
     { id: 'watch', as: 'array', description: 'resources to watch' },
     { id: 'itemVariable', as: 'string', defaultValue: 'item' },
@@ -37,9 +37,9 @@ jb.component('itemlist-with-groups', {
 jb.component('itemlist.watch-items-with-heading', {
   type: 'feature',
   params: [
-    { id: 'items', essential: true, dynamic: true },
+    { id: 'items', mandatory: true, dynamic: true },
     { id: 'itemVariableName', as: 'string' },
-    { id: 'groupBy', type: 'itemlist.group-by', essential: true, dynamic: true },
+    { id: 'groupBy', type: 'itemlist.group-by', mandatory: true, dynamic: true },
   ],
   impl: (context, items, itemVariableName,groupBy) => ({
       beforeInit: function(cmp) {

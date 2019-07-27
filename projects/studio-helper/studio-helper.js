@@ -491,13 +491,13 @@ jb.component('studio-helper-sample.component-header', {
       id: 'style11',
       type: 'group.style',
       defaultValue :{$: 'layout.vertical' },
-      essential: true,
+      mandatory: true,
       dynamic: true
     },
     {
       id: 'controls',
       type: 'control[]',
-      essential: true,
+      mandatory: true,
       flattenArray: true,
       dynamic: true,
       composite: true

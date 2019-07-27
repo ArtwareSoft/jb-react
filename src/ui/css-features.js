@@ -1,7 +1,7 @@
 jb.component('css', {
   type: 'feature,dialog-feature',
   params: [
-    { id: 'css', essential: true, as: 'string' },
+    { id: 'css', mandatory: true, as: 'string' },
   ],
   impl: (context,css) =>
     ({css:css})
@@ -10,7 +10,7 @@ jb.component('css', {
 jb.component('css.class', {
   type: 'feature,dialog-feature',
   params: [
-    { id: 'class', essential: true, as: 'string' },
+    { id: 'class', mandatory: true, as: 'string' },
   ],
   impl: (context,clz) =>
     ({class :clz})
@@ -19,7 +19,7 @@ jb.component('css.class', {
 jb.component('css.width', {
   type: 'feature,dialog-feature',
   params: [
-    { id: 'width', essential: true, as: 'number' },
+    { id: 'width', mandatory: true, as: 'number' },
     { id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
     { id: 'minMax', as: 'string', options: ',min,max'},
     { id: 'selector', as: 'string' },
@@ -31,7 +31,7 @@ jb.component('css.width', {
 jb.component('css.height', {
   type: 'feature,dialog-feature',
   params: [
-    { id: 'height', essential: true, as: 'number' },
+    { id: 'height', mandatory: true, as: 'number' },
     { id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
     { id: 'minMax', as: 'string', options: ',min,max'},
     { id: 'selector', as: 'string' },
@@ -43,7 +43,7 @@ jb.component('css.height', {
 jb.component('css.opacity', {
   type: 'feature',
   params: [
-    { id: 'opacity', essential: true, as: 'number', min:0, max:1, step: 0.1 },
+    { id: 'opacity', mandatory: true, as: 'number', min:0, max:1, step: 0.1 },
     { id: 'selector', as: 'string' },
   ],
   impl: (ctx,opacity) =>

@@ -839,7 +839,7 @@ jb.component('pipeline',{
 	type: 'data',
 	description: 'map data arrays one after the other',
 	params: [
-		{ id: 'items', type: "data,aggregator[]", ignore: true, essential: true, composite: true },
+		{ id: 'items', type: "data,aggregator[]", ignore: true, mandatory: true, composite: true },
 	],
 	impl: (ctx,items) => jb.pipe(ctx,items,'$pipeline')
 })
@@ -848,7 +848,7 @@ jb.component('pipe', { // synched pipeline
 	type: 'data',
 	description: 'map asynch data arrays',
 	params: [
-		{ id: 'items', type: "data,aggregator[]", ignore: true, essential: true, composite: true },
+		{ id: 'items', type: "data,aggregator[]", ignore: true, mandatory: true, composite: true },
 	],
 	impl: (ctx,items) => jb.pipe(ctx,items,'$pipe')
 })
@@ -856,8 +856,8 @@ jb.component('pipe', { // synched pipeline
 jb.component('data.if', {
  	type: 'data',
  	params: [
- 		{ id: 'condition', type: 'boolean', as: 'boolean', essential: true},
- 		{ id: 'then', essential: true, dynamic: true },
+ 		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+ 		{ id: 'then', mandatory: true, dynamic: true },
  		{ id: 'else', dynamic: true },
  	],
  	impl: (ctx,cond,_then,_else) =>
@@ -868,8 +868,8 @@ jb.component('action.if', {
  	type: 'action',
  	description: 'if then else',
  	params: [
- 		{ id: 'condition', type: 'boolean', as: 'boolean', essential: true},
- 		{ id: 'then', type: 'action', essential: true, dynamic: true },
+ 		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+ 		{ id: 'then', type: 'action', mandatory: true, dynamic: true },
  		{ id: 'else', type: 'action', dynamic: true },
  	],
  	impl: (ctx,cond,_then,_else) =>
@@ -891,7 +891,7 @@ jb.component('action.if', {
 jb.component('jb-run', {
  	type: 'action',
  	params: [
- 		{ id: 'profile', as: 'string', essential: true, description: 'profile name'},
+ 		{ id: 'profile', as: 'string', mandatory: true, description: 'profile name'},
  		{ id: 'params', as: 'single' },
  	],
  	impl: (ctx,profile,params) =>
@@ -955,7 +955,7 @@ jb.component('properties',{
 jb.component('prefix', {
 	type: 'data',
 	params: [
-		{ id: 'separator', as: 'string', essential: true },
+		{ id: 'separator', as: 'string', mandatory: true },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: (context,separator,text) =>
@@ -965,7 +965,7 @@ jb.component('prefix', {
 jb.component('suffix', {
 	type: 'data',
 	params: [
-		{ id: 'separator', as: 'string', essential: true },
+		{ id: 'separator', as: 'string', mandatory: true },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: (context,separator,text) =>
@@ -975,7 +975,7 @@ jb.component('suffix', {
 jb.component('remove-prefix', {
 	type: 'data',
 	params: [
-		{ id: 'separator', as: 'string', essential: true },
+		{ id: 'separator', as: 'string', mandatory: true },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: (context,separator,text) =>
@@ -985,7 +985,7 @@ jb.component('remove-prefix', {
 jb.component('remove-suffix',{
 	type: 'data',
 	params: [
-		{ id: 'separator', as: 'string', essential: true },
+		{ id: 'separator', as: 'string', mandatory: true },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: (context,separator,text) =>
@@ -995,7 +995,7 @@ jb.component('remove-suffix',{
 jb.component('remove-suffix-regex',{
 	type: 'data',
 	params: [
-		{ id: 'suffix', as: 'string', essential: true, description: 'regular expression. e.g [0-9]*' },
+		{ id: 'suffix', as: 'string', mandatory: true, description: 'regular expression. e.g [0-9]*' },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 	],
 	impl: function(context,suffix,text) {
@@ -1008,8 +1008,8 @@ jb.component('remove-suffix-regex',{
 jb.component('write-value',{
 	type: 'action',
 	params: [
-		{ id: 'to', as: 'ref', essential: true },
-		{ id: 'value', essential: true}
+		{ id: 'to', as: 'ref', mandatory: true },
+		{ id: 'value', mandatory: true}
 	],
 	impl: (ctx,to,value) =>
 		jb.writeValue(to,jb.val(value),ctx)
@@ -1018,7 +1018,7 @@ jb.component('write-value',{
 jb.component('remove-from-array', {
 	type: 'action',
 	params: [
-		{ id: 'array', as: 'ref', essential: true },
+		{ id: 'array', as: 'ref', mandatory: true },
 		{ id: 'itemToRemove', as: 'single', description: 'choose item or index' },
 		{ id: 'index', as: 'number', description: 'choose item or index' },
 	],
@@ -1043,8 +1043,8 @@ jb.component('toggle-boolean-value',{
 jb.component('slice', {
 	type: 'aggregator',
 	params: [
-		{ id: 'start', as: 'number', defaultValue: 0, description: '0-based index', essential: true },
-		{ id: 'end', as: 'number', essential: true, description: '0-based index of where to end the selection (not including itself)' }
+		{ id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true },
+		{ id: 'end', as: 'number', mandatory: true, description: '0-based index of where to end the selection (not including itself)' }
 	],
 	impl: function({data},start,end) {
 		if (!data || !data.slice) return null;
@@ -1111,7 +1111,7 @@ jb.component('calculate-properties', {
 	type: 'aggregator',
 	description: 'extend with calculated properties',
 	params: [
-		{ id: 'property', type: 'calculated-property[]', essential: true, defaultValue: [] },
+		{ id: 'property', type: 'calculated-property[]', mandatory: true, defaultValue: [] },
 		{ id: 'items', as:'array', defaultValue: '%%'},
 	],
 	impl: (ctx,properties,items) =>
@@ -1122,8 +1122,8 @@ jb.component('calculate-properties', {
 jb.component('calculated-property', { 
 	type: 'calculated-property',
 	params: [
-		{ id: 'title', as: 'string', essential: true },
-		{ id: 'val', dynamic: 'true', type: 'data', essential: true },
+		{ id: 'title', as: 'string', mandatory: true },
+		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true },
 		{ id: 'type', as: 'string', options: 'string,number,boolean', defaultValue: 'string' },
 	],
 	impl: ctx => ctx.params
@@ -1133,7 +1133,7 @@ jb.component('calculated-property', {
 jb.component('not', {
 	type: 'boolean',
 	params: [
-		{ id: 'of', type: 'boolean', as: 'boolean', essential: true, composite: true}
+		{ id: 'of', type: 'boolean', as: 'boolean', mandatory: true, composite: true}
 	],
 	impl: (context, of) => !of
 });
@@ -1141,7 +1141,7 @@ jb.component('not', {
 jb.component('and', {
 	type: 'boolean',
 	params: [
-		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true }
+		{ id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true }
 	],
 	impl: function(context) {
 		const items = context.profile.$and || context.profile.items || [];
@@ -1157,7 +1157,7 @@ jb.component('and', {
 jb.component('or', {
 	type: 'boolean',
 	params: [
-		{ id: 'items', type: 'boolean[]', ignore: true, essential: true, composite: true }
+		{ id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true }
 	],
 	impl: function(context) {
 		const items = context.profile.$or || context.profile.items || [];
@@ -1173,8 +1173,8 @@ jb.component('or', {
 jb.component('between', {
 	type: 'boolean',
 	params: [
-		{ id: 'from', as: 'number', essential: true },
-		{ id: 'to', as: 'number', essential: true },
+		{ id: 'from', as: 'number', mandatory: true },
+		{ id: 'to', as: 'number', mandatory: true },
 		{ id: 'val', as: 'number', defaultValue: '%%' },
 	],
 	impl: (ctx,from,to,val) => 
@@ -1184,7 +1184,7 @@ jb.component('between', {
 jb.component('contains',{
 	type: 'boolean',
 	params: [
-		{ id: 'text', type: 'data[]', as: 'array', essential: true },
+		{ id: 'text', type: 'data[]', as: 'array', mandatory: true },
 		{ id: 'allText', defaultValue: '%%', as:'string'},
 		{ id: 'inOrder', defaultValue: true, as:'boolean'},
 	],
@@ -1202,7 +1202,7 @@ jb.component('contains',{
 jb.component('not-contains', {
 	type: 'boolean',
 	params: [
-		{ id: 'text', type: 'data[]', as: 'array', essential: true },
+		{ id: 'text', type: 'data[]', as: 'array', mandatory: true },
 		{ id: 'allText', defaultValue: '%%', as:'array'}
 	],
 	impl :{$not: {$: 'contains', text: '%$text%', allText :'%$allText%'}}
@@ -1211,7 +1211,7 @@ jb.component('not-contains', {
 jb.component('starts-with', {
 	type: 'boolean',
 	params: [
-		{ id: 'startsWith', as: 'string', essential: true },
+		{ id: 'startsWith', as: 'string', mandatory: true },
 		{ id: 'text', defaultValue: '%%', as:'string'}
 	],
 	impl: (context,startsWith,text) =>
@@ -1221,7 +1221,7 @@ jb.component('starts-with', {
 jb.component('ends-with',{
 	type: 'boolean',
 	params: [
-		{ id: 'endsWith', as: 'string', essential: true },
+		{ id: 'endsWith', as: 'string', mandatory: true },
 		{ id: 'text', defaultValue: '%%', as:'string'}
 	],
 	impl: (context,endsWith,text) =>
@@ -1232,7 +1232,7 @@ jb.component('ends-with',{
 jb.component('filter',{
 	type: 'aggregator',
 	params: [
-		{ id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, essential: true }
+		{ id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, mandatory: true }
 	],
 	impl: (context,filter) =>
 		jb.toarray(context.data).filter(item =>
@@ -1243,8 +1243,8 @@ jb.component('match-regex', {
   type: 'boolean',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
-    {id: 'regex', as: 'string', essential: true, description: 'e.g: [a-zA-Z]*' },
-    {id: 'fillText', as: 'boolean', essential: true, description: 'regex must match all text' },
+    {id: 'regex', as: 'string', mandatory: true, description: 'e.g: [a-zA-Z]*' },
+    {id: 'fillText', as: 'boolean', mandatory: true, description: 'regex must match all text' },
   ],
   impl: (ctx,text,regex,fillText) =>
     text.match(new RegExp(fillText ? `^${regex}$` : regex))
@@ -1283,7 +1283,7 @@ jb.component('capitalize', {
 
 jb.component('join', {
 	params: [
-		{ id: 'separator', as: 'string', defaultValue:',', essential: true },
+		{ id: 'separator', as: 'string', defaultValue:',', mandatory: true },
 		{ id: 'prefix', as: 'string' },
 		{ id: 'suffix', as: 'string' },
 		{ id: 'items', as: 'array', defaultValue: '%%'},
@@ -1389,8 +1389,8 @@ jb.component('split', {
 jb.component('replace', {
 	type: 'data',
 	params: [
-		{ id: 'find', as: 'string', essential: true },
-		{ id: 'replace', as: 'string', essential: true  },
+		{ id: 'find', as: 'string', mandatory: true },
+		{ id: 'replace', as: 'string', mandatory: true  },
 		{ id: 'text', as: 'string', defaultValue: '%%' },
 		{ id: 'useRegex', type: 'boolean', as: 'boolean', defaultValue: true},
 		{ id: 'regexFlags', as: 'string', defaultValue: 'g', description: 'g,i,m' }
@@ -1443,7 +1443,7 @@ jb.component('notEmpty', {
 jb.component('equals', {
 	type: 'boolean',
 	params: [
-		{ id: 'item1', as: 'single', essential: true },
+		{ id: 'item1', as: 'single', mandatory: true },
 		{ id: 'item2', defaultValue: '%%', as: 'single' }
 	],
 	impl: (ctx, item1, item2) => item1 == item2
@@ -1452,7 +1452,7 @@ jb.component('equals', {
 jb.component('not-equals', {
 	type: 'boolean',
 	params: [
-		{ id: 'item1', as: 'single', essential: true },
+		{ id: 'item1', as: 'single', mandatory: true },
 		{ id: 'item2', defaultValue: '%%', as: 'single' }
 	],
 	impl: (ctx, item1, item2) => item1 != item2
@@ -1470,7 +1470,7 @@ jb.component('parent', {
 jb.component('runActions', {
 	type: 'action',
 	params: [
-		{ id: 'actions', type:'action[]', ignore: true, composite: true, essential: true }
+		{ id: 'actions', type:'action[]', ignore: true, composite: true, mandatory: true }
 	],
 	impl: function(context) {
 		if (!context.profile) debugger;
@@ -1494,7 +1494,7 @@ jb.component('on-next-timer', {
 	description: 'run action after delay',
 	type: 'action',
 	params: [
-		{ id: 'action', type: 'action', dynamic: true, essential: true },
+		{ id: 'action', type: 'action', dynamic: true, mandatory: true },
 		{ id: 'delay', type: 'number', defaultValue: 1}
 	],
 	impl: (ctx,action,delay) =>
@@ -1575,7 +1575,7 @@ jb.component('class-name', {
 jb.component('is-of-type', {
   type: 'boolean',
   params: [
-  	{ id: 'type', as: 'string', essential: true, description: 'string,boolean' },
+  	{ id: 'type', as: 'string', mandatory: true, description: 'string,boolean' },
   	{ id: 'obj', defaultValue: '%%' },
   ],
   impl: (ctx,_type,_obj) => {
@@ -1588,7 +1588,7 @@ jb.component('is-of-type', {
 jb.component('in-group', {
   type: 'boolean',
   params: [
-  	{ id: 'group', as: 'array', essential: true },
+  	{ id: 'group', as: 'array', mandatory: true },
   	{ id: 'item', as: 'single', defaultValue: '%%' },
   ],
   impl: (ctx,group,item) =>
@@ -1631,21 +1631,21 @@ jb.component('http.post', {
 
 jb.component('isRef', {
 	params: [
-		{ id: 'obj', essential: true }
+		{ id: 'obj', mandatory: true }
 	],
 	impl: (ctx,obj) => jb.isRef(obj)
 })
 
 jb.component('asRef', {
 	params: [
-		{ id: 'obj', essential: true }
+		{ id: 'obj', mandatory: true }
 	],
 	impl: (ctx,obj) => jb.asRef(obj)
 })
 
 jb.component('data.switch', {
   params: [
-  	{ id: 'cases', type: 'data.switch-case[]', as: 'array', essential: true, defaultValue: [] },
+  	{ id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
   	{ id: 'default', dynamic: true },
   ],
   impl: (ctx,cases,defaultValue) => {
@@ -1660,8 +1660,8 @@ jb.component('data.switch-case', {
   type: 'data.switch-case',
   singleInType: true,
   params: [
-  	{ id: 'condition', type: 'boolean', essential: true, dynamic: true },
-  	{ id: 'value', essential: true, dynamic: true },
+  	{ id: 'condition', type: 'boolean', mandatory: true, dynamic: true },
+  	{ id: 'value', mandatory: true, dynamic: true },
   ],
   impl: ctx => ctx.params
 })
@@ -1669,7 +1669,7 @@ jb.component('data.switch-case', {
 jb.component('action.switch', {
   type: 'action',
   params: [
-  	{ id: 'cases', type: 'action.switch-case[]', as: 'array', essential: true, defaultValue: [] },
+  	{ id: 'cases', type: 'action.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
   	{ id: 'defaultAction', type: 'action', dynamic: true },
   ],
   impl: (ctx,cases,defaultAction) => {
@@ -1684,8 +1684,8 @@ jb.component('action.switch-case', {
   type: 'action.switch-case',
   singleInType: true,
   params: [
-  	{ id: 'condition', type: 'boolean', as: 'boolean', essential: true, dynamic: true },
-  	{ id: 'action', type: 'action' ,essential: true, dynamic: true },
+  	{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true, dynamic: true },
+  	{ id: 'action', type: 'action' ,mandatory: true, dynamic: true },
   ],
   impl: ctx => ctx.params
 })

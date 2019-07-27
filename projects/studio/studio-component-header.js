@@ -1,11 +1,11 @@
 jb.component('jb-component', {
   type: '*',
   params: [
-    { id: 'type', as: 'string', essential: true },
+    { id: 'type', as: 'string', mandatory: true },
     { id: 'category', as: 'string'},
     { id: 'description', as: 'string'},
     { id: 'params', type: 'jb-param[]'},
-    { id: 'impl', dynamicType: '%type%', essential: true  },
+    { id: 'impl', dynamicType: '%type%', mandatory: true  },
   ],
   impl: ctx => ctx.params
 })
@@ -13,12 +13,12 @@ jb.component('jb-component', {
 jb.component('jb-param', {
   type: 'jb-param', singleInType: true,
   params: [
-    { id: 'id', as: 'string', essential: true },
+    { id: 'id', as: 'string', mandatory: true },
     { id: 'type', as: 'string'},
     { id: 'description', as: 'string'},
     { id: 'as', as: 'string', options: 'string,number,boolean,ref,single,array'},
     { id: 'dynamic', type: 'boolean', as: 'boolean'},
-    { id: 'essential', type: 'boolean', as: 'boolean'},
+    { id: 'mandatory', type: 'boolean', as: 'boolean'},
     { id: 'composite', type: 'boolean', as: 'boolean'},
     { id: 'singleInType', type: 'boolean', as: 'boolean'},
     { id: 'defaultValue', dynamicType: '%type%' },

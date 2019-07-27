@@ -1,7 +1,7 @@
 jb.component('image', {
 	type: 'control,image', category: 'control:50',
 	params: [
-		{ id: 'url', as: 'string', essential: true },
+		{ id: 'url', as: 'string', mandatory: true },
 		{ id: 'imageWidth', as: 'number' },
 		{ id: 'imageHeight', as: 'number' },
 		{ id: 'width', as: 'number' },

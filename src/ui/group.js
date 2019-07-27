@@ -2,8 +2,8 @@ jb.component('group', {
   type: 'control', category: 'group:100,common:90',
   params: [
     { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, essential: true , dynamic: true },
-    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, mandatory: true , dynamic: true },
+    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx =>
@@ -31,7 +31,7 @@ jb.component('group.init-group', {
 jb.component('inline-controls', {
   type: 'control',
   params: [
-    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
   ],
   impl: ctx => ctx.params.controls().filter(x=>x)
 })
@@ -39,8 +39,8 @@ jb.component('inline-controls', {
 jb.component('dynamic-controls', {
   type: 'control',
   params: [
-    { id: 'controlItems', type: 'data', as: 'array', essential: true, dynamic: true },
-    { id: 'genericControl', type: 'control', essential: true, dynamic: true },
+    { id: 'controlItems', type: 'data', as: 'array', mandatory: true, dynamic: true },
+    { id: 'genericControl', type: 'control', mandatory: true, dynamic: true },
     { id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
   ],
   impl: (context,controlItems,genericControl,itemVariable) =>
@@ -64,8 +64,8 @@ jb.component('control.first-succeeding', {
   type: 'control', category: 'common:30',
   params: [
     { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, essential: true , dynamic: true },
-    { id: 'controls', type: 'control[]', essential: true, flattenArray: true, dynamic: true, composite: true },
+    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, mandatory: true , dynamic: true },
+    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx =>
@@ -75,8 +75,8 @@ jb.component('control.first-succeeding', {
 jb.component('control-with-condition', {
   type: 'control',
   params: [
-    { id: 'condition', type: 'boolean', essential: true, as: 'boolean' },
-    { id: 'control', type: 'control', essential: true, dynamic: true },
+    { id: 'condition', type: 'boolean', mandatory: true, as: 'boolean' },
+    { id: 'control', type: 'control', mandatory: true, dynamic: true },
     { id: 'title', as: 'string' },
   ],
   impl: (ctx,condition,ctrl) =>

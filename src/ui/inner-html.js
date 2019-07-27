@@ -2,7 +2,7 @@ jb.component('inner-html', {
     type: 'control', category: 'control:20',
     params: [
         { id: 'title', as: 'string', dynamic: true },
-        { id: 'html', as: 'string', essential: true, dynamic: true },
+        { id: 'html', as: 'string', mandatory: true, dynamic: true },
         { id: 'style', type: 'inner-html.style', defaultValue: { $: 'inner-html.unsafe' }, dynamic: true },
         { id: 'features', type: 'feature[]', dynamic: true },
     ],
