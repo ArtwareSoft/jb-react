@@ -8,8 +8,8 @@ jb.component('data-test', {
 		{ id: 'expectedCounters', as: 'single' }
 	],
 	impl: function(context,calculate,runBefore,expectedResult,cleanUp,expectedCounters) {
-		var initial_resources = jb.valueByRefHandler.resources();
-		var initial_comps = jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
+		var initial_resources = jb.valueByRefHandler.resources && jb.valueByRefHandler.resources();
+		var initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 		if (expectedCounters) {
 			if (!jb.frame.wSpy.enabled())
 				jb.frame.initwSpy({wSpyParam: 'data-test'})
@@ -28,8 +28,8 @@ jb.component('data-test', {
 			.then(result => { // default cleanup
 				if (expectedCounters)
 					jb.frame.initwSpy({resetwSpyToNoop: true})
-				jb.valueByRefHandler.resources(initial_resources);
-				jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
+				jb.valueByRefHandler.resources && jb.valueByRefHandler.resources(initial_resources);
+				jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 				return result;
 			}).then(result =>
 					Promise.resolve(cleanUp()).then(_=>result) )
@@ -48,7 +48,7 @@ jb.component('ui-test', {
 	],
 	impl: function(context,control,runBefore,action,expectedResult,cleanUp,expectedCounters) {
 		var initial_resources = jb.valueByRefHandler.resources();
-		var initial_comps = jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
+		var initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 		return Promise.resolve(runBefore())
 			.then(_ => {
 				try {
@@ -82,7 +82,7 @@ jb.component('ui-test', {
 				if (new URL(location.href).searchParams.get('show') === null) {
 					jb.ui.dialogs.dialogs.forEach(d=>d.close())
 					jb.valueByRefHandler.resources(initial_resources);
-					jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
+					jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 					if (expectedCounters)
 						jb.frame.initwSpy({resetwSpyToNoop: true})
 				}
@@ -171,12 +171,28 @@ function hide_success_lines() {
 	document.querySelectorAll('.success').forEach(e=>e.style.display = 'none')
 }
 
+function isCompNameOfType(name,type) {
+	const comp = name && jb.comps[name];
+	if (comp) {
+		while (jb.comps[name] && !jb.comps[name].type && jb.compName(jb.comps[name].impl))
+			name = jb.compName(jb.comps[name].impl);
+		return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0;
+	}
+}
+jb.ui = jb.ui || {}
+jb.ui.addHTML = jb.ui.addHTML || ((el,html) => {
+	var elem = document.createElement('div');
+	elem.innerHTML = html;
+	el.appendChild(elem.firstChild)
+})
+  
+
 startTime = startTime || new Date().getTime();
 jb.testers.runTests = function(testType,specificTest,show,rerun) {
 	var tests = jb.entries(jb.comps)
 		.filter(e=>typeof e[1].impl == 'object')
 		.filter(e=>e[1].type != 'test') // exclude the testers
-		.filter(e=>jb.studio.isCompNameOfType(e[0],'test'))
+		.filter(e=>isCompNameOfType(e[0],'test'))
 		.filter(e=>!testType || e[1].impl.$ == testType)
 		.filter(e=>!specificTest || e[0] == specificTest);
 
@@ -201,7 +217,8 @@ jb.testers.runTests = function(testType,specificTest,show,rerun) {
 					jb_success_counter++;
 				else
 					jb_fail_counter++;
-				var elem = `<div class="${res.success ? 'success' : 'failure'}""><a href="/projects/ui-tests/tests.html?test=${res.id}&show" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+				const baseUrl = window.location.href.split('/tests.html')[0]
+				var elem = `<div class="${res.success ? 'success' : 'failure'}""><a href="${baseUrl}/tests.html?test=${res.id}&show&wspy=res" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 				<button class="editor" onclick="goto_editor('${res.id}')">src</button><span>${res.reason||''}</span>
 				</div>`;
 
@@ -215,6 +232,6 @@ jb.testers.runTests = function(testType,specificTest,show,rerun) {
 				jb.ui.addHTML(document.body,elem);
 				if (show && res.elem)
 					document.body.appendChild(res.elem);
-				jb.ui.garbageCollectCtxDictionary(true)
+				jb.ui && jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(true)
 			})
 }

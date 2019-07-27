@@ -10,12 +10,12 @@ function jb_run(ctx,parentParam,settings) {
   return res;
 }
 
-function do_jb_run(context,parentParam,settings) {
+function do_jb_run(ctx,parentParam,settings) {
   try {
-    const profile = context.profile;
-    if (context.probe && (!settings || !settings.noprobe)) {
-      if (context.probe.pathToTrace.indexOf(context.path) == 0)
-        return context.probe.record(context,parentParam)
+    const profile = ctx.profile;
+    if (ctx.probe && (!settings || !settings.noprobe)) {
+      if (ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
+        return ctx.probe.record(ctx,parentParam)
     }
     if (profile == null || (typeof profile == 'object' && profile.$disabled))
       return castToParam(null,parentParam);
@@ -27,19 +27,19 @@ function do_jb_run(context,parentParam,settings) {
 
     if (typeof profile === 'object' && Object.getOwnPropertyNames(profile).length == 0)
       return;
-    const contextWithVars = extendWithVars(context,profile.$vars);
-    const run = prepare(contextWithVars,parentParam);
-    context.parentParam = parentParam;
+    const ctxWithVars = extendWithVars(ctx,profile.$vars);
+    const run = prepare(ctxWithVars,parentParam);
+    ctx.parentParam = parentParam;
     switch (run.type) {
-      case 'booleanExp': return bool_expression(profile, context);
-      case 'expression': return castToParam(expression(profile, context,parentParam), parentParam);
+      case 'booleanExp': return bool_expression(profile, ctx);
+      case 'expression': return castToParam(expression(profile, ctx,parentParam), parentParam);
       case 'asIs': return profile;
-      case 'function': return castToParam(profile(context),parentParam);
+      case 'function': return castToParam(profile(ctx,ctx.vars),parentParam);
       case 'null': return castToParam(null,parentParam);
-      case 'ignore': return context.data;
+      case 'ignore': return ctx.data;
       case 'list': return profile.map((inner,i) =>
-            contextWithVars.runInner(inner,null,i));
-      case 'runActions': return jb.comps.runActions.impl(new jbCtx(contextWithVars,{profile: { actions : profile },path:''}));
+            ctxWithVars.runInner(inner,null,i));
+      case 'runActions': return jb.comps.runActions.impl(new jbCtx(ctxWithVars,{profile: { actions : profile },path:''}));
       case 'if': {
           const cond = jb_run(run.ifContext, run.IfParentParam);
           if (cond && cond.then)
@@ -49,20 +49,20 @@ function do_jb_run(context,parentParam,settings) {
       }
       case 'profile':
         if (!run.impl)
-          run.ctx.callerPath = context.path;
+          run.ctx.callerPath = ctx.path;
 
         run.preparedParams.forEach(paramObj => {
           switch (paramObj.type) {
             case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
             case 'array': run.ctx.params[paramObj.name] =
                 paramObj.array.map((prof,i) =>
-                  jb_run(new jbCtx(run.ctx,{profile: prof, forcePath: context.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param))
+                  jb_run(new jbCtx(run.ctx,{profile: prof, forcePath: ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param))
                   //run.ctx.runInner(prof, paramObj.param, paramObj.path+'~'+i) )
               ; break;  // maybe we should [].concat and handle nulls
             default: run.ctx.params[paramObj.name] =
-              jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: context.path + '~' + paramObj.path, path: ''}), paramObj.param);
+              jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
             //run.ctx.runInner(paramObj.prof, paramObj.param, paramObj.path)
-            //jb_run(paramObj.context, paramObj.param);
+            //jb_run(paramObj.ctx, paramObj.param);
           }
         });
         let out;
@@ -80,16 +80,16 @@ function do_jb_run(context,parentParam,settings) {
         }
 
         if (profile.$log)
-          console.log(profile.$log === true ? out : contextWithVars.run(profile.$log));
+          console.log(profile.$log === true ? out : ctxWithVars.run(profile.$log));
 
-        if (profile.$trace) console.log('trace: ' + context.path,context,out,run);
+        if (profile.$trace) console.log('trace: ' + ctx.path,ctx,out,run);
 
         return castToParam(out,parentParam);
     }
   } catch (e) {
-//    log('exception', [e && e.message, e, context,parentParam,settings])
-    logException(e,'exception while running run',context,parentParam,settings);
-    //if (context.vars.$throw) throw e;
+//    log('exception', [e && e.message, e, ctx,parentParam,settings])
+    logException(e,'exception while running run',ctx,parentParam,settings);
+    //if (ctx.vars.$throw) throw e;
   }
 
   function prepareGCArgs(ctx,preparedParams) {
@@ -110,9 +110,9 @@ function do_jb_run(context,parentParam,settings) {
   }
 }
 
-function extendWithVars(context,vars) {
-  if (!vars) return context;
-  let res = context;
+function extendWithVars(ctx,vars) {
+  if (!vars) return ctx;
+  let res = ctx;
   for(let varname in vars || {})
     res = new jbCtx(res,{ vars: jb.obj(varname,res.runInner(vars[varname], null,'$vars~'+varname)) });
   return res;
@@ -161,12 +161,12 @@ function prepareParams(comp,profile,ctx) {
       if (arrayParam) // array of profiles
         return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), path: path };
       else
-        return { name: p, type: 'run', prof: valOrDefault, param: param, path: path }; // context: new jbCtx(ctx,{profile: valOrDefault, path: p}),
+        return { name: p, type: 'run', prof: valOrDefault, param: param, path: path }; // ctx: new jbCtx(ctx,{profile: valOrDefault, path: p}),
   })
 }
 
-function prepare(context,parentParam) {
-  const profile = context.profile;
+function prepare(ctx,parentParam) {
+  const profile = ctx.profile;
   const profile_jstype = typeof profile;
   const parentParam_type = parentParam && parentParam.type;
   const jstype = parentParam && parentParam.as;
@@ -192,11 +192,11 @@ function prepare(context,parentParam) {
   } else if (profile.$if)
   return {
       type: 'if',
-      ifContext: new jbCtx(context,{profile: profile.$if || profile.condition, path: '$if'}),
+      ifContext: new jbCtx(ctx,{profile: profile.$if || profile.condition, path: '$if'}),
       IfParentParam: { type: 'boolean', as:'boolean' },
-      thenContext: new jbCtx(context,{profile: profile.then || 0 , path: '~then'}),
+      thenContext: new jbCtx(ctx,{profile: profile.then || 0 , path: '~then'}),
       thenParentParam: { type: parentParam_type, as:jstype },
-      elseContext: new jbCtx(context,{profile: profile['else'] || 0 , path: '~else'}),
+      elseContext: new jbCtx(ctx,{profile: profile['else'] || 0 , path: '~else'}),
       elseParentParam: { type: parentParam_type, as:jstype }
     }
   const comp_name = compName(profile,parentParam);
@@ -205,18 +205,18 @@ function prepare(context,parentParam) {
   // if (!comp_name)
   //   return { type: 'ignore' }
   const comp = jb.comps[comp_name];
-  if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined', context); return { type:'null' } }
-  if (!comp.impl) { logError('component ' + comp_name + ' has no implementation', context); return { type:'null' } }
+  if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined', ctx); return { type:'null' } }
+  if (!comp.impl) { logError('component ' + comp_name + ' has no implementation', ctx); return { type:'null' } }
 
-  const ctx = new jbCtx(context,{});
-  ctx.parentParam = parentParam;
-  ctx.params = {}; // TODO: try to delete this line
-  const preparedParams = prepareParams(comp,profile,ctx);
+  const resCtx = new jbCtx(ctx,{});
+  resCtx.parentParam = parentParam;
+  resCtx.params = {}; // TODO: try to delete this line
+  const preparedParams = prepareParams(comp,profile,resCtx);
   if (typeof comp.impl === 'function') {
     Object.defineProperty(comp.impl, "name", { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
-    return { type: 'profile', impl: comp.impl, ctx: ctx, preparedParams: preparedParams }
+    return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams: preparedParams }
   } else
-    return { type:'profile', ctx: new jbCtx(ctx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
+    return { type:'profile', ctx: new jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
 }
 
 function resolveFinishedPromise(val) {
@@ -245,21 +245,21 @@ function calcVar(ctx,varname,jstype) {
   return resolveFinishedPromise(res);
 }
 
-function expression(exp, context, parentParam) {
+function expression(exp, ctx, parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   exp = '' + exp;
-  if (jstype == 'boolean') return bool_expression(exp, context);
+  if (jstype == 'boolean') return bool_expression(exp, ctx);
   if (exp.indexOf('$debugger:') == 0) {
     debugger;
     exp = exp.split('$debugger:')[1];
   }
   if (exp.indexOf('$log:') == 0) {
-    const out = expression(exp.split('$log:')[1],context,parentParam);
-    jb.comps.log.impl(context, out);
+    const out = expression(exp.split('$log:')[1],ctx,parentParam);
+    jb.comps.log.impl(ctx, out);
     return out;
   }
   if (exp.indexOf('%') == -1 && exp.indexOf('{') == -1) return exp;
-  // if (context && !context.ngMode)
+  // if (ctx && !ctx.ngMode)
   //   exp = exp.replace(/{{/g,'{%').replace(/}}/g,'%}')
   if (exp == '{%%}' || exp == '%%')
       return expPart('');
@@ -285,28 +285,28 @@ function expression(exp, context, parentParam) {
     // check variable value - if not empty return all exp, otherwise empty
     const match = exp.match(/%([^%;{}\s><"']*)%/);
     if (match && tostring(expPart(match[1])))
-      return expression(exp, context, { as: 'string' });
+      return expression(exp, ctx, { as: 'string' });
     else
       return '';
   }
 
   function expPart(expressionPart,_parentParam) {
-    return resolveFinishedPromise(evalExpressionPart(expressionPart,context,_parentParam || parentParam))
+    return resolveFinishedPromise(evalExpressionPart(expressionPart,ctx,_parentParam || parentParam))
   }
 }
 
 
-function evalExpressionPart(expressionPart,context,parentParam) {
+function evalExpressionPart(expressionPart,ctx,parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   // example: %$person.name%.
 
   const primitiveJsType = ['string','boolean','number'].indexOf(jstype) != -1;
   // empty primitive expression - perfomance
   // if (expressionPart == "")
-  //   return context.data;
+  //   return ctx.data;
 
   const parts = expressionPart.split(/[./]/);
-  return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),context.data)
+  return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),ctx.data)
 
   function pipe(input,subExp,last,first,refHandlerArg) {
       if (subExp == '')
@@ -318,10 +318,10 @@ function evalExpressionPart(expressionPart,context,parentParam) {
         const arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1],false,first,refHandler);
         const index = arrayIndexMatch[2];
         if (!Array.isArray(arr))
-            return jb.logError('expecting array instead of ' + typeof arr, context, arr);
+            return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);
 
         if (last && (jstype == 'ref' || !primitiveJsType))
-           return refHandler.objectProperty(arr,index,context);
+           return refHandler.objectProperty(arr,index,ctx);
         if (typeof arr[index] == 'undefined')
            arr[index] = last ? null : implicitlyCreateInnerObject(arr,index,refHandler);
         if (last && jstype)
@@ -331,10 +331,10 @@ function evalExpressionPart(expressionPart,context,parentParam) {
 
       const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
       if (functionCallMatch && jb.functions[functionCallMatch[1]])
-        return tojstype(jb.functions[functionCallMatch[1]](context,functionCallMatch[2]),jstype,context);
+        return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
       if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(context,subExp.substr(1),jstype)
+        return calcVar(ctx,subExp.substr(1),jstype)
       const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
@@ -344,7 +344,7 @@ function evalExpressionPart(expressionPart,context,parentParam) {
       if (input != null && typeof input == 'object') {
         if (obj == null) return;
         if (typeof obj[subExp] === 'function' && (parentParam.dynamic || obj[subExp].profile))
-            return obj[subExp](context);
+            return obj[subExp](ctx);
         if (jstype == 'ref') {
           if (last)
             return refHandler.objectProperty(obj,subExp);
@@ -363,35 +363,35 @@ function evalExpressionPart(expressionPart,context,parentParam) {
   }
 }
 
-function bool_expression(exp, context) {
+function bool_expression(exp, ctx) {
   if (exp.indexOf('$debugger:') == 0) {
     debugger;
     exp = exp.split('$debugger:')[1];
   }
   if (exp.indexOf('$log:') == 0) {
-    const calculated = expression(exp.split('$log:')[1],context,{as: 'string'});
-    const result = bool_expression(exp.split('$log:')[1], context);
-    jb.comps.log.impl(context, calculated + ':' + result);
+    const calculated = expression(exp.split('$log:')[1],ctx,{as: 'string'});
+    const result = bool_expression(exp.split('$log:')[1], ctx);
+    jb.comps.log.impl(ctx, calculated + ':' + result);
     return result;
   }
   if (exp.indexOf('!') == 0)
-    return !bool_expression(exp.substring(1), context);
+    return !bool_expression(exp.substring(1), ctx);
   const parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
   if (!parts) {
-    const val = jb.val(expression(exp, context));
+    const val = jb.val(expression(exp, ctx));
     if (typeof val == 'boolean') return val;
     const asString = tostring(val);
     return !!asString && asString != 'false';
   }
   if (parts.length != 4)
-    return logError('invalid boolean expression: ' + exp, context);
+    return logError('invalid boolean expression: ' + exp, ctx);
   const op = parts[2].trim();
 
   if (op == '==' || op == '!=' || op == '$=' || op == '^=') {
-    const p1 = tostring(expression(trim(parts[1]), context, {as: 'string'}))
-    let p2 = tostring(expression(trim(parts[3]), context, {as: 'string'}))
-    // const p1 = expression(trim(parts[1]), context, {as: 'string'});
-    // const p2 = expression(trim(parts[3]), context, {as: 'string'});
+    const p1 = tostring(expression(trim(parts[1]), ctx, {as: 'string'}))
+    let p2 = tostring(expression(trim(parts[3]), ctx, {as: 'string'}))
+    // const p1 = expression(trim(parts[1]), ctx, {as: 'string'});
+    // const p2 = expression(trim(parts[3]), ctx, {as: 'string'});
     p2 = (p2.match(/^["'](.*)["']/) || ['',p2])[1]; // remove quotes
     if (op == '==') return p1 == p2;
     if (op == '!=') return p1 != p2;
@@ -399,8 +399,8 @@ function bool_expression(exp, context) {
     if (op == '$=') return p1.indexOf(p2, p1.length - p2.length) !== -1;
   }
 
-  const p1 = tonumber(expression(parts[1].trim(), context));
-  const p2 = tonumber(expression(parts[3].trim(), context));
+  const p1 = tonumber(expression(parts[1].trim(), ctx));
+  const p2 = tonumber(expression(parts[3].trim(), ctx));
 
   if (op == '>') return p1 > p2;
   if (op == '<') return p1 < p2;
@@ -509,10 +509,10 @@ function assignNameToFunc(name, fn) {
 let ctxCounter = 0;
 
 class jbCtx {
-  constructor(context,ctx2) {
+  constructor(ctx,ctx2) {
     this.id = ctxCounter++;
-    this._parent = context;
-    if (typeof context == 'undefined') {
+    this._parent = ctx;
+    if (typeof ctx == 'undefined') {
       this.vars = {};
       this.params = {};
     }
@@ -521,18 +521,18 @@ class jbCtx {
         debugger;
       ctx2.path = '?';
     }
-      this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : context.profile;
+      this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : ctx.profile;
 
-      this.path = (context.path || '') + (ctx2.path ? '~' + ctx2.path : '');
+      this.path = (ctx.path || '') + (ctx2.path ? '~' + ctx2.path : '');
       if (ctx2.forcePath)
         this.path = this.forcePath = ctx2.forcePath;
       if (ctx2.comp)
         this.path = ctx2.comp + '~impl';
-      this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : context.data;     // allow setting of data:null
-      this.vars= ctx2.vars ? Object.assign({},context.vars,ctx2.vars) : context.vars;
-      this.params= ctx2.params || context.params;
-      this.componentContext= (typeof ctx2.componentContext != 'undefined') ? ctx2.componentContext : context.componentContext;
-      this.probe= context.probe;
+      this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : ctx.data;     // allow setting of data:null
+      this.vars= ctx2.vars ? Object.assign({},ctx.vars,ctx2.vars) : ctx.vars;
+      this.params= ctx2.params || ctx.params;
+      this.componentContext= (typeof ctx2.componentContext != 'undefined') ? ctx2.componentContext : ctx.componentContext;
+      this.probe= ctx.probe;
     }
   }
   run(profile,parentParam) {
@@ -543,7 +543,7 @@ class jbCtx {
   setData(data) { return new jbCtx(this,{data: data}) }
   runInner(profile,parentParam, path) { return jb_run(new jbCtx(this,{profile: profile,path: path}), parentParam) }
   bool(profile) { return this.run(profile, { as: 'boolean'}) }
-  // keeps the context vm and not the caller vm - needed in studio probe
+  // keeps the ctx vm and not the caller vm - needed in studio probe
   ctx(ctx2) { return new jbCtx(this,ctx2) }
   frame() { // used for multi windows apps. e.g., studio
     return frame
