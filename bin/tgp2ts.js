@@ -1,5 +1,6 @@
 const jb = require('../dist/jbart-core.js')
 const fs = require('fs')
+var p = require("path");
 
 jb.ts = {
 	types: {}
@@ -7,15 +8,23 @@ jb.ts = {
 
 function run() {
     if (getProcessArgument('help'))
-        return console.log('Usage: tgp2ts -src:myTgpPackage.js -out:myLib')
+        return console.err('Usage: tgp2ts -srcDir -out:myLib')
 
-    const src = getProcessArgument('src') || '/dev/stdin';
-    const tgpCode = '' + fs.readFileSync(src);
-    try {
-        eval(tgpCode)
-    } catch(e) {
-        console.log('error in tgpCode' + e);
-    }
+	const src = getProcessArgument('srcDir') || 'src';
+	const files = walk(src)
+	const cmpCodes = files.map(f=> '' + fs.readFileSync(f))
+		.map(code => (code.replace(/~/g,'')
+			.match(/jb\.component\(([^~]+?)\n}\)/g) || []))
+		.flat()
+
+	cmpCodes.forEach(cmpCode=>{
+		try {
+			eval(cmpCode)
+		} catch(e) {
+			console.log('error in tgpCode' + e);
+		}
+	})
+//    const tgpCode = '' + fs.readFileSync(src);
     console.log(jb.entries(jb.comps).map(e=>e[0]).join('\n'))
     const content = buildTS();
     if (getProcessArgument('out')) {
@@ -124,10 +133,6 @@ declare var jb: jbObj;
 	return content
 }
 
-run()
-
-
-
 // ****************** utils ***********************
 
 function getProcessArgument(argName) {
@@ -153,4 +158,15 @@ global.document = {
 global.window = {
 	addEventListener: () => {},
 	navigator: global.navigator
+}
+run()
+
+function walk(dir, depth) {
+	if (depth > 5) return [];
+    return fs.readdirSync(dir).reduce((result, entry) => {
+        const path = dir + '/' + entry;
+		const stat = fs.statSync(path);
+		const inner = (stat && stat.isDirectory()) ? walk(path,(depth || 1) + 1) : [path]
+		return [...result, ...inner ] 
+    }, []);
 }
