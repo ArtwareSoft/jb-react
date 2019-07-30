@@ -11,7 +11,8 @@ function run() {
         return console.err('Usage: tgp2ts -srcDir -out:myLib')
 
 	const src = getProcessArgument('srcDir') || 'src';
-	const files = walk(src)
+	const files = walk(src).filter(x=>x.match(/\.js$/))
+    console.log(src, files.join('\n'))
 	const cmpCodes = files.map(f=> '' + fs.readFileSync(f))
 		.map(code => (code.replace(/~/g,'')
 			.match(/jb\.component\(([^~]+?)\n}\)/g) || []))
@@ -162,6 +163,7 @@ global.window = {
 run()
 
 function walk(dir, depth) {
+	if (dir.match(/node_modules/)) return []
 	if (depth > 5) return [];
     return fs.readdirSync(dir).reduce((result, entry) => {
         const path = dir + '/' + entry;
