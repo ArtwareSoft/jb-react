@@ -34,7 +34,7 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'booleanExp': return bool_expression(profile, ctx);
       case 'expression': return castToParam(expression(profile, ctx,parentParam), parentParam);
       case 'asIs': return profile;
-      case 'function': return castToParam(profile(ctx,ctx.vars),parentParam);
+      case 'function': return castToParam(profile(ctx,ctx.vars,ctx.componentContext && ctx.componentContext.params),parentParam);
       case 'null': return castToParam(null,parentParam);
       case 'ignore': return ctx.data;
       case 'list': return profile.map((inner,i) =>
