@@ -13,11 +13,11 @@ jb.prettyPrintComp = function(compId,comp) {
       + jb.prettyPrintWithPositions(comp).result + ')'
 }
 
-jb.prettyPrint = function(profile,colWidth,tabSize,initialPath) {
-  return jb.prettyPrintWithPositions(profile,colWidth,tabSize,initialPath).result;
+jb.prettyPrint = function(profile,options) {
+  return jb.prettyPrintWithPositions(profile,options).result;
 }
 
-jb.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
+jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls}) {
   colWidth = colWidth || 140;
   tabSize = tabSize || 2;
 
@@ -32,7 +32,7 @@ jb.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
 
   function sortedPropertyNames(obj) {
     let props = jb.entries(obj)
-      .filter(p=>p[1] != null)
+      .filter(p=>showNulls || p[1] != null)
       .map(x=>x[0]) // try to keep the order
       .filter(p=>p.indexOf('$jb') != 0)
 
@@ -61,18 +61,9 @@ jb.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
       result += "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
     else if (typeof val === 'string' && val.indexOf('\n') != -1) {
       result += "`" + val.replace(/`/g,'\\`') + "`"
-      // depth++;
-      // result += "`";
-      // var lines = val.split('\n');
-      // lines.forEach((line,index)=>{
-      //     result += line.trim();
-      //     if(index<lines.length-1)
-      //       newLine();
-      // })
-      // depth--;
-      // result += "`";
-    }  else
+    } else {
       result += JSON.stringify(val);
+    }
   }
 
   function printObj(obj,path) {
@@ -84,7 +75,7 @@ jb.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
           sortedPropertyNames(obj).forEach(function(prop,index,array) {
               if (prop != '$')
                 newLine();
-              if (obj[prop] != null) {
+              if (showNulls || obj[prop] != null) {
                 printProp(obj,prop,path);
                 if (index < array.length -1)
                   result += ', ';//newLine();
@@ -145,7 +136,7 @@ jb.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
   }
   function flat_obj(obj) {
     var props = sortedPropertyNames(obj)
-      .filter(p=>obj[p] != null)
+      .filter(p=>showNulls || obj[p] != null)
       .filter(x=>x!='$')
       .map(prop =>
       quotePropName(prop) + ': ' + flat_val(obj[prop]));
@@ -174,3 +165,5 @@ jb.prettyPrintWithPositions = function(profile,colWidth,tabSize,initialPath) {
     return '[' + array.map(item=>flat_val(item)).join(', ') + ']';
   }
 }
+;
+
