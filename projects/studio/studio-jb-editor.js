@@ -213,7 +213,7 @@ jb.component('studio.jb-editor', {
     controls: [
       {$: 'studio.jb-editor-inteli-tree', path: '%$path%' }, 
       {$: 'group', 
-        $disabled: true, 
+        //$disabled: true, 
         title: 'inteli preview', 
         controls: [
           {$: 'group', 

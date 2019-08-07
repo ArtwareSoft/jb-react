@@ -659,9 +659,11 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, functions: {}, resources: {}, consts: {},
+  comps: {}, resources: {}, consts: {},
   studio: { previewjb: jb },
-  component: (id,val) => jb.comps[id] = val,
+  component: (id,val) => {
+    jb.comps[id] = val
+  },
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => { 
     if (typeof val !== 'undefined')

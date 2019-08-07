@@ -22,6 +22,45 @@ jb.component('studio.all', {
   }
 })
 
+jb.component('studio.dynamic', {
+  type: 'control',
+  impl :{$: 'group',
+    title: 'top bar',
+    style :{$: 'layout.horizontal', spacing: '3' },
+    controls: [
+      {$: 'image',
+        url: '/projects/studio/css/jbartlogo.png',
+        imageHeight: '60',
+        units: 'px',
+        style :{$: 'image.default' },
+        features :{$: 'css.margin', top: '15', left: '5' }
+      },
+      {$: 'group',
+        title: 'title and menu',
+        style :{$: 'layout.vertical', spacing: '17' },
+        controls: [
+          {$: 'label',
+            title: 'message',
+            style :{$: 'label.studio-message' }
+          },
+          {$: 'group',
+            style :{$: 'layout.flex', align: 'space-between' },
+            controls: [
+              {$: 'studio.toolbar' },
+              {$: 'studio.search-component',
+                features :{$: 'css.margin', top: '-10' }
+              }
+            ],
+            features: [{$: 'css.width', width: '1040' }]
+          }
+        ],
+        features :{$: 'css', css: '{ padding-left: 18px; width: 100%; }' }
+      }
+    ],
+    features :{$: 'css', css: '{ height: 90px; border-bottom: 1px #d9d9d9 solid}' }
+  }
+})
+
 jb.component('studio.top-bar', {
   type: 'control',
   impl :{$: 'group',

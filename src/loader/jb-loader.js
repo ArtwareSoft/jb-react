@@ -131,6 +131,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
       'parsing': [ 'src/misc/parsing.js' ],
       'spy': [ 'src/misc/spy.js' ],
+      'dynamic-studio': [ 'src/misc/dynamic-studio.js' ],
       'node': [ 'src/core/jb-node.js' ],
 });
 

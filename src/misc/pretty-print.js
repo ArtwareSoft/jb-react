@@ -17,7 +17,7 @@ jb.prettyPrint = function(profile,options) {
   return jb.prettyPrintWithPositions(profile,options).result;
 }
 
-jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls}) {
+jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls} = {}) {
   colWidth = colWidth || 140;
   tabSize = tabSize || 2;
 
