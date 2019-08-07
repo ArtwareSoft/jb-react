@@ -1,4 +1,4 @@
-const {dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, obj} = jb.profiles
+const {dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count} = jb.profiles
 const {$switch, $case} = jb.profiles.data
 
 jb.component('delayedObj', {
@@ -203,6 +203,27 @@ jb.component('data-test.assignWithIndex', {
     expectedResult: contains('0.Bart-Bart,1.Lisa-Lisa,2.Maggie-Maggie')
   })
 })
+
+jb.component('data-test.if', {
+  impl: dataTest({
+    calculate: pipeline('%$personWithChildren/children%',
+      $if(equals('%name%','Bart'), 'funny','mamy'),
+      join()
+    ),
+    expectedResult: contains('funny,mamy,mamy')
+  })
+})
+
+jb.component('data-test.if.filters', {
+  impl: dataTest({
+    calculate: pipeline('%$personWithChildren/children%',
+      $if(equals('%name%','Bart'), 'funny'),
+      count()
+    ),
+    expectedResult: equals(1)
+  })
+})
+
 
 jb.component('data-test.assign', {
   impl: dataTest({

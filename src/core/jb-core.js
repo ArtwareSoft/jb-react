@@ -664,7 +664,8 @@ Object.assign(jb,{
   component: (id,val) => {
     jb.comps[id] = val
     const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase())
-    const fixedId = val.reservedWord ? idAsCamel.replace(/\.([^\.]+$)/, (_,id) => `.$${id}`) : idAsCamel
+    const fixedId = val.reservedWord ? idAsCamel.replace(/([^\.]+$)/, (_,id) => `$${id}`) : idAsCamel
+
     jb.path(jb.profiles, fixedId.split('.'), (...args) => {
       if (args.length == 0)
         return {$: id }

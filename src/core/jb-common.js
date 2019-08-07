@@ -351,6 +351,17 @@ jb.component('prop', {
 	impl: ctx => ctx.params
 })
 
+jb.component('if', { 
+	usageByValue: true,
+	reservedWord: true,
+	params: [
+		{ id: 'condition', as: 'boolean', type: 'boolean', mandatory: true },
+		{ id: 'then' },
+		{ id: 'else' },
+	],
+	impl: (ctx,cond,_then,_else) =>
+		cond ? _then : _else
+});
 
 jb.component('not', {
 	type: 'boolean',
