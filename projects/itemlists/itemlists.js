@@ -287,19 +287,19 @@ jb.component('itemlists.phones-chart', {
             size: 300, 
             items: '%%'
           }, 
-          {$: 'calculate-properties', 
+          {$: 'assign', 
             property: [
-              {$: 'calculated-property', 
+              {$: 'prop', 
                 title: 'make', 
                 val :{$: 'split', separator: ' ', text: '%title%', part: 'first' }, 
                 type: 'string'
               }, 
-              {$: 'calculated-property', 
+              {$: 'prop', 
                 title: 'year', 
                 val :{$: 'match-regex', text: '%Announced%', regex: '20[0-9][0-9]' }, 
                 type: 'number'
               }, 
-              {$: 'calculated-property', 
+              {$: 'prop', 
                 title: 'price', 
                 val :{
                   $pipeline: [
@@ -310,7 +310,7 @@ jb.component('itemlists.phones-chart', {
                 }, 
                 type: 'number'
               }, 
-              {$: 'calculated-property', 
+              {$: 'prop', 
                 title: 'size', 
                 val :{
                   $pipeline: [
@@ -320,7 +320,7 @@ jb.component('itemlists.phones-chart', {
                 }, 
                 type: 'number'
               }, 
-              {$: 'calculated-property', 
+              {$: 'prop', 
                 title: 'performance', 
                 val :{
                   $pipeline: [
@@ -346,9 +346,9 @@ jb.component('itemlists.phones-chart', {
       $pipeline: [
         '%$global/phones/products%', 
         {$: 'slice', start: '2000', end: '2100' }, 
-        {$: 'calculate-properties', 
+        {$: 'assign', 
           property: [
-            {$: 'calculated-property', 
+            {$: 'prop', 
               title: 'price', 
               val :{
                 $pipeline: [
@@ -360,7 +360,7 @@ jb.component('itemlists.phones-chart', {
               }, 
               type: 'number'
             }, 
-            {$: 'calculated-property', 
+            {$: 'prop', 
               title: 'year', 
               val :{
                 $pipeline: [
@@ -371,7 +371,7 @@ jb.component('itemlists.phones-chart', {
               }, 
               type: 'number'
             }, 
-            {$: 'calculated-property', 
+            {$: 'prop', 
               title: 'size', 
               val :{
                 $pipeline: [
@@ -382,7 +382,7 @@ jb.component('itemlists.phones-chart', {
               }, 
               type: 'number'
             }, 
-            {$: 'calculated-property', 
+            {$: 'prop', 
               title: 'performance', 
               val :{
                 $pipeline: [
@@ -393,7 +393,7 @@ jb.component('itemlists.phones-chart', {
               }, 
               type: 'number'
             }, 
-            {$: 'calculated-property', 
+            {$: 'prop', 
               title: 'make', 
               val :{$: 'split', separator: ' ', text: '%title%', part: 'first' }, 
               type: 'string'

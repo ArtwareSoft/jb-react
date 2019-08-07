@@ -68,7 +68,8 @@ jb.component('pipe', { // synched pipeline
 })
 
 jb.component('data.if', {
- 	type: 'data',
+	type: 'data',
+	usageByValue: true,
  	params: [
  		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
  		{ id: 'then', mandatory: true, dynamic: true },
@@ -81,6 +82,7 @@ jb.component('data.if', {
 jb.component('action.if', {
  	type: 'action',
  	description: 'if then else',
+	usageByValue: true,
  	params: [
  		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
  		{ id: 'then', type: 'action', mandatory: true, dynamic: true },
@@ -89,18 +91,6 @@ jb.component('action.if', {
  	impl: (ctx,cond,_then,_else) =>
  		cond ? _then() : _else()
 });
-
-// jb.component('apply', {
-// 	description: 'run a function',
-//  	type: '*',
-//  	params: [
-//  		{ id: 'func', as: 'single'},
-//  	],
-//  	impl: (ctx,func) => {
-//  		if (typeof func == 'function')
-//  	  		return func(ctx);
-//  	}
-// });
 
 jb.component('jb-run', {
  	type: 'action',
@@ -321,20 +311,38 @@ jb.component('sample', {
 		items.filter((x,i)=>i % (Math.floor(items.length/300) ||1) == 0)
 });
 
-jb.component('calculate-properties', { 
-	type: 'aggregator',
+jb.component('assign', { 
 	description: 'extend with calculated properties',
 	params: [
-		{ id: 'property', type: 'calculated-property[]', mandatory: true, defaultValue: [] },
-		{ id: 'items', as:'array', defaultValue: '%%'},
+		{ id: 'property', type: 'prop[]', mandatory: true, defaultValue: [] },
 	],
 	impl: (ctx,properties,items) =>
-		items.slice(0).map((item,i)=>
+		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
+});
+
+jb.component('obj', { 
+	description: 'build object (dictionary) from props',
+	params: [
+		{ id: 'property', type: 'prop[]', mandatory: true, defaultValue: [] },
+	],
+	impl: (ctx,properties,items) =>
+		Object.assign({}, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
+});
+
+jb.component('assign-with-index', { 
+	type: 'aggregator',
+	description: 'extend with calculated properties. %$index% is available ',
+	params: [
+		{ id: 'property', type: 'prop[]', mandatory: true, defaultValue: [] },
+	],
+	impl: (ctx,properties,items) =>
+		jb.toarray(ctx.data).slice(0).map((item,i)=>
 			properties.forEach(p=>item[p.title] = jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type) ) || item)
 });
 
-jb.component('calculated-property', { 
-	type: 'calculated-property',
+jb.component('prop', { 
+	type: 'prop',
+	usageByValue: true,
 	params: [
 		{ id: 'title', as: 'string', mandatory: true },
 		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true },
@@ -858,21 +866,23 @@ jb.component('asRef', {
 })
 
 jb.component('data.switch', {
-  params: [
+	reservedWord: true,
+	params: [
   	{ id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
   	{ id: 'default', dynamic: true },
-  ],
-  impl: (ctx,cases,defaultValue) => {
-  	for(let i=0;i<cases.length;i++)
-  		if (cases[i].condition(ctx))
-  			return cases[i].value(ctx)
-  	return defaultValue(ctx);
-  }
+	],
+	impl: (ctx,cases,defaultValue) => {
+		for(let i=0;i<cases.length;i++)
+			if (cases[i].condition(ctx))
+				return cases[i].value(ctx)
+		return defaultValue(ctx);
+	}
 })
 
-jb.component('data.switch-case', {
+jb.component('data.case', {
   type: 'data.switch-case',
   singleInType: true,
+  reservedWord: true,
   params: [
   	{ id: 'condition', type: 'boolean', mandatory: true, dynamic: true },
   	{ id: 'value', mandatory: true, dynamic: true },

@@ -58,10 +58,10 @@ jb.component('cCommerce.scatter', {
         items :{
           $pipeline: [
             '%$devices%', 
-            {$: 'calculate-properties', 
+            {$: 'assign', 
               filter: "%make% == 'Apple'", 
               property: [
-                {$: 'calculated-property', 
+                {$: 'prop', 
                   title: 'CPUSpeed', 
                   val :{
                     $pipeline: ['%$clock%'], 
@@ -122,19 +122,19 @@ jb.component('cCommerce.scatter', {
             size: 300, 
             items: '%%'
           }, 
-          {$: 'calculate-properties', 
+          {$: 'assign', 
             property: [
-              {$: 'calculated-property', 
+              {$: 'prop', 
                 title: 'make', 
                 val :{$: 'split', separator: ' ', text: '%title%', part: 'first' }, 
                 type: 'string'
               }, 
-              {$: 'calculated-property', 
+              {$: 'prop', 
                 title: 'year', 
                 val :{$: 'match-regex', text: '%Announced%', regex: '20[0-9][0-9]' }, 
                 type: 'number'
               }, 
-              {$: 'calculated-property', 
+              {$: 'prop', 
                 title: 'price', 
                 val :{
                   $pipeline: [
@@ -145,7 +145,7 @@ jb.component('cCommerce.scatter', {
                 }, 
                 type: 'number'
               }, 
-              {$: 'calculated-property', 
+              {$: 'prop', 
                 title: 'size', 
                 val :{
                   $pipeline: [
@@ -155,7 +155,7 @@ jb.component('cCommerce.scatter', {
                 }, 
                 type: 'number'
               }, 
-              {$: 'calculated-property', 
+              {$: 'prop', 
                 title: 'performance', 
                 val :{
                   $pipeline: [

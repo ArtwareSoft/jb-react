@@ -664,11 +664,20 @@ Object.assign(jb,{
   component: (id,val) => {
     jb.comps[id] = val
     const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase())
-    jb.path(jb.profiles, idAsCamel.split('.'), (...args) => {
+    const fixedId = val.reservedWord ? idAsCamel.replace(/\.([^\.]+$)/, (_,id) => `.$${id}`) : idAsCamel
+    jb.path(jb.profiles, fixedId.split('.'), (...args) => {
+      if (args.length == 0)
+        return {$: id }
       const params = val.params || []
+      if (params.length == 1 && params[0].type.indexOf('[]') != -1) // pipeline, or, and, plus
+        return {$: id, [params[0].id]: args }
       if (params.length < 3 || val.usageByValue)
         return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
-      return {$: id, ...args[0]}
+      if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object')
+        return {$: id, ...args[0]}
+      if (args.length == 1 && params.length)
+        return {$: id, [params[0].id]: args[0]}
+      debugger;
     })
   },
   type: (id,val) => jb.types[id] = val || {},
