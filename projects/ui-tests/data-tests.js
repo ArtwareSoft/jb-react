@@ -1,3 +1,5 @@
+const {pipeline, join, list} = jb.profiles
+
 jb.resource('person',{
   name: "Homer Simpson",
   male: true,
@@ -21,7 +23,7 @@ jb.component('delayedObj', {
 
 jb.component('data-test.join', {
 	 impl :{$: 'data-test',
-		calculate: {$pipeline: [ {$list: [1,2]}, {$: 'join'} ]},
+		calculate: pipeline([list([1,2]), join()]),
 		expectedResult :{$: 'contains', text: '1,2' }
 	},
 })

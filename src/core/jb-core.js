@@ -659,10 +659,17 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, resources: {}, consts: {},
+  comps: {}, profiles: {}, resources: {}, consts: {},
   studio: { previewjb: jb },
   component: (id,val) => {
     jb.comps[id] = val
+    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase())
+    jb.path(jb.profiles, idAsCamel.split('.'), (...args) => {
+      const params = val.params || []
+      if (params.length < 3 || val.usageByValue)
+        return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
+      return {$: id, ...args[0]}
+    })
   },
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => { 
