@@ -670,7 +670,7 @@ Object.assign(jb,{
       if (args.length == 0)
         return {$: id }
       const params = val.params || []
-      if (params.length == 1 && params[0].type.indexOf('[]') != -1) // pipeline, or, and, plus
+      if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) // pipeline, or, and, plus
         return {$: id, [params[0].id]: args }
       if (params.length < 3 || val.usageByValue)
         return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }

@@ -21,7 +21,7 @@ declare var jb: jbObj;
 
 
 // type data
-type dataType = pipelinePT | pipePT | data_ifPT | listPT | firstSucceedingPT | property_namesPT | propertiesPT | prefixPT | suffixPT | remove_prefixPT | remove_suffixPT | remove_suffix_regexPT | to_stringPT | to_uppercasePT | to_lowercasePT | capitalizePT | logPT | asIsPT | objectPT | json_stringifyPT | json_parsePT | splitPT | replacePT | parentPT | extract_prefixPT | extract_suffixPT | rangePT | type_ofPT | class_namePT | http_getPT | isRefPT | asRefPT | data_switchPT | newlinePT | jison_parsePT | extract_textPT | break_textPT | zip_arraysPT | remove_sectionsPT | mergePT | dynamic_objectPT | filter_empty_propertiesPT | trimPT | remove_prefix_regexPT | pretty_printPT | fs_readFilePT | fs_statPT | fs_readdirPT | fs_directory_contentPT | test_dialog_contentPT | field_dataPT | itemlist_container_search_in_all_propertiesPT | highlightPT | custom_stylePT | style_by_controlPT | ((ctx: ctx) => any)
+type dataType = pipelinePT | pipePT | data_ifPT | listPT | firstSucceedingPT | property_namesPT | propertiesPT | prefixPT | suffixPT | remove_prefixPT | remove_suffixPT | remove_suffix_regexPT | assignPT | objPT | ifPT | to_stringPT | to_uppercasePT | to_lowercasePT | capitalizePT | logPT | asIsPT | objectPT | json_stringifyPT | json_parsePT | splitPT | replacePT | parentPT | extract_prefixPT | extract_suffixPT | rangePT | type_ofPT | class_namePT | http_getPT | isRefPT | asRefPT | data_switchPT | newlinePT | jison_parsePT | extract_textPT | break_textPT | zip_arraysPT | remove_sectionsPT | mergePT | dynamic_objectPT | filter_empty_propertiesPT | trimPT | remove_prefix_regexPT | pretty_printPT | fs_readFilePT | fs_statPT | fs_readdirPT | fs_directory_contentPT | test_dialog_contentPT | field_dataPT | itemlist_container_search_in_all_propertiesPT | highlightPT | custom_stylePT | style_by_controlPT | ((ctx: ctx) => any)
 type cmp_def_dataType = {
 	type: 'data',
 	params?: [param],
@@ -39,6 +39,9 @@ type suffixPT = {$: 'suffix', separator: dataType,text: dataType}
 type remove_prefixPT = {$: 'remove-prefix', separator: dataType,text: dataType}
 type remove_suffixPT = {$: 'remove-suffix', separator: dataType,text: dataType}
 type remove_suffix_regexPT = {$: 'remove-suffix-regex', suffix: dataType,text: dataType}
+type assignPT = {$: 'assign', property: [propType]}
+type objPT = {$: 'obj', property: [propType]}
+type ifPT = {$: 'if', condition: booleanType,then: dataType,else: dataType}
 type to_stringPT = {$: 'to-string', text: dataType}
 type to_uppercasePT = {$: 'to-uppercase', text: dataType}
 type to_lowercasePT = {$: 'to-lowercase', text: dataType}
@@ -99,7 +102,7 @@ type custom_stylePT = {$: 'custom-style', template: dataType,css: dataType,featu
 type style_by_controlPT = {$: 'style-by-control', control: controlType,modelVar: dataType}
 
 // type aggregator
-type aggregatorType = slicePT | sortPT | firstPT | lastPT | countPT | reversePT | samplePT | calculate_propertiesPT | filterPT | joinPT | uniquePT | wrap_as_object_with_arrayPT | wrap_as_objectPT | d3_histogramPT | itemlist_container_filterPT | ((ctx: ctx) => any)
+type aggregatorType = slicePT | sortPT | firstPT | lastPT | countPT | reversePT | samplePT | assign_with_indexPT | filterPT | joinPT | uniquePT | wrap_as_object_with_arrayPT | wrap_as_objectPT | d3_histogramPT | itemlist_container_filterPT | ((ctx: ctx) => any)
 type cmp_def_aggregatorType = {
 	type: 'aggregator',
 	params?: [param],
@@ -115,7 +118,7 @@ type lastPT = {$: 'last', }
 type countPT = {$: 'count', items: dataType}
 type reversePT = {$: 'reverse', items: dataType}
 type samplePT = {$: 'sample', size: dataType,items: dataType}
-type calculate_propertiesPT = {$: 'calculate-properties', property: [calculated_propertyType],items: dataType}
+type assign_with_indexPT = {$: 'assign-with-index', property: [propType]}
 type filterPT = {$: 'filter', filter: booleanType}
 type joinPT = {$: 'join', separator: dataType,prefix: dataType,suffix: dataType,items: dataType,itemName: dataType,itemText: dataType}
 type uniquePT = {$: 'unique', id: dataType,items: dataType}
@@ -152,13 +155,15 @@ type is_of_typePT = {$: 'is-of-type',
 type in_groupPT = {$: 'in-group', group: dataType,item: dataType}
 
 // type action
-type actionType = action_ifPT | write_valuePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | http_postPT | action_switchPT | open_dialogPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | itemlist_container_addPT | itemlist_container_deletePT | menu_open_context_menuPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
+type actionType = action_ifPT | jb_runPT | write_valuePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | http_postPT | action_switchPT | open_dialogPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | itemlist_container_addPT | itemlist_container_deletePT | menu_open_context_menuPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
 type cmp_def_actionType = {
 	type: 'action',
 	params?: [param],
 	impl: actionType,
 }
 type action_ifPT = {$: 'action.if', condition: booleanType,then: actionType,else: actionType}
+type jb_runPT = {$: 'jb-run', 
+/** profile name */profile: dataType,params: dataType}
 type write_valuePT = {$: 'write-value', to: dataType,value: dataType}
 type remove_from_arrayPT = {$: 'remove-from-array', array: dataType,
 /** choose item or index */itemToRemove: dataType,
@@ -184,23 +189,23 @@ type url_history_map_url_to_resourcePT = {$: 'url-history.map-url-to-resource', 
 type goto_urlPT = {$: 'goto-url', url: dataType,target: enumType}
 type reset_wspyPT = {$: 'reset-wspy', param: dataType}
 
-// type calculated-property
-type calculated_propertyType = calculated_propertyPT | ((ctx: ctx) => any)
-type cmp_def_calculated_propertyType = {
-	type: 'calculated_property',
+// type prop
+type propType = propPT | ((ctx: ctx) => any)
+type cmp_def_propType = {
+	type: 'prop',
 	params?: [param],
-	impl: calculated_propertyType,
+	impl: propType,
 }
-type calculated_propertyPT = {$: 'calculated-property', title: dataType,val: dataType,type: dataType}
+type propPT = {$: 'prop', title: dataType,val: dataType,type: dataType}
 
 // type data.switch-case
-type data_switch_caseType = data_switch_casePT | ((ctx: ctx) => any)
+type data_switch_caseType = data_casePT | ((ctx: ctx) => any)
 type cmp_def_data_switch_caseType = {
 	type: 'data_switch_case',
 	params?: [param],
 	impl: data_switch_caseType,
 }
-type data_switch_casePT = {$: 'data.switch-case', condition: booleanType,value: dataType}
+type data_casePT = {$: 'data.case', condition: booleanType,value: dataType}
 
 // type action.switch-case
 type action_switch_caseType = action_switch_casePT | ((ctx: ctx) => any)
@@ -949,4 +954,4 @@ type cmp_def_tree_styleType = {
 }
 type tree_ul_liPT = {$: 'tree.ul-li', }
 type tree_no_headPT = {$: 'tree.no-head', }
-type cmpDef = cmp_def_dataType | cmp_def_aggregatorType | cmp_def_booleanType | cmp_def_actionType | cmp_def_calculated_propertyType | cmp_def_data_switch_caseType | cmp_def_action_switch_caseType | cmp_def_jison_parserType | cmp_def_lexer_ruleType | cmp_def_bnf_expressionType | cmp_def_expression_optionType | cmp_def_testType | cmp_def_ui_actionType | cmp_def_controlType | cmp_def_clickableType | cmp_def_featureType | cmp_def_dialog_featureType | cmp_def_d3_scatter_styleType | cmp_def_d3_frameType | cmp_def_d3_histogram_styleType | cmp_def_d3_featureType | cmp_def_d3_axesType | cmp_def_d3_pivotType | cmp_def_d3_scaleType | cmp_def_d3_rangeType | cmp_def_d3_domainType | cmp_def_dialog_styleType | cmp_def_divider_styleType | cmp_def_editable_number_styleType | cmp_def_icon_with_action_styleType | cmp_def_imageType | cmp_def_image_styleType | cmp_def_inner_html_styleType | cmp_def_filter_typeType | cmp_def_itemlist_group_byType | cmp_def_itemlist_styleType | cmp_def_group_styleType | cmp_def_label_styleType | cmp_def_markdown_styleType | cmp_def_menu_optionType | cmp_def_menuType | cmp_def_menu_styleType | cmp_def_menu_option_styleType | cmp_def_menu_separator_styleType | cmp_def_picklist_optionsType | cmp_def_picklist_promoteType | cmp_def_button_styleType | cmp_def_editable_text_styleType | cmp_def_text_styleType | cmp_def_editable_boolean_styleType | cmp_def_first_succeeding_styleType | cmp_def_picklist_styleType | cmp_def_table_styleType | cmp_def_tableType | cmp_def_table_fieldType | cmp_def_rich_text_styleType | cmp_def_themeType | cmp_def_tree_nodeModelType | cmp_def_tree_styleType
+type cmpDef = cmp_def_dataType | cmp_def_aggregatorType | cmp_def_booleanType | cmp_def_actionType | cmp_def_propType | cmp_def_data_switch_caseType | cmp_def_action_switch_caseType | cmp_def_jison_parserType | cmp_def_lexer_ruleType | cmp_def_bnf_expressionType | cmp_def_expression_optionType | cmp_def_testType | cmp_def_ui_actionType | cmp_def_controlType | cmp_def_clickableType | cmp_def_featureType | cmp_def_dialog_featureType | cmp_def_d3_scatter_styleType | cmp_def_d3_frameType | cmp_def_d3_histogram_styleType | cmp_def_d3_featureType | cmp_def_d3_axesType | cmp_def_d3_pivotType | cmp_def_d3_scaleType | cmp_def_d3_rangeType | cmp_def_d3_domainType | cmp_def_dialog_styleType | cmp_def_divider_styleType | cmp_def_editable_number_styleType | cmp_def_icon_with_action_styleType | cmp_def_imageType | cmp_def_image_styleType | cmp_def_inner_html_styleType | cmp_def_filter_typeType | cmp_def_itemlist_group_byType | cmp_def_itemlist_styleType | cmp_def_group_styleType | cmp_def_label_styleType | cmp_def_markdown_styleType | cmp_def_menu_optionType | cmp_def_menuType | cmp_def_menu_styleType | cmp_def_menu_option_styleType | cmp_def_menu_separator_styleType | cmp_def_picklist_optionsType | cmp_def_picklist_promoteType | cmp_def_button_styleType | cmp_def_editable_text_styleType | cmp_def_text_styleType | cmp_def_editable_boolean_styleType | cmp_def_first_succeeding_styleType | cmp_def_picklist_styleType | cmp_def_table_styleType | cmp_def_tableType | cmp_def_table_fieldType | cmp_def_rich_text_styleType | cmp_def_themeType | cmp_def_tree_nodeModelType | cmp_def_tree_styleType

@@ -659,9 +659,28 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, functions: {}, resources: {}, consts: {},
+  comps: {}, profiles: {}, resources: {}, consts: {},
   studio: { previewjb: jb },
-  component: (id,val) => jb.comps[id] = val,
+  component: (id,val) => {
+    jb.comps[id] = val
+    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase())
+    const fixedId = val.reservedWord ? idAsCamel.replace(/([^\.]+$)/, (_,id) => `$${id}`) : idAsCamel
+
+    jb.path(jb.profiles, fixedId.split('.'), (...args) => {
+      if (args.length == 0)
+        return {$: id }
+      const params = val.params || []
+      if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) // pipeline, or, and, plus
+        return {$: id, [params[0].id]: args }
+      if (params.length < 3 || val.usageByValue)
+        return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
+      if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object')
+        return {$: id, ...args[0]}
+      if (args.length == 1 && params.length)
+        return {$: id, [params[0].id]: args[0]}
+      debugger;
+    })
+  },
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => { 
     if (typeof val !== 'undefined')
@@ -854,7 +873,8 @@ jb.component('pipe', { // synched pipeline
 })
 
 jb.component('data.if', {
- 	type: 'data',
+	type: 'data',
+	usageByValue: true,
  	params: [
  		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
  		{ id: 'then', mandatory: true, dynamic: true },
@@ -867,6 +887,7 @@ jb.component('data.if', {
 jb.component('action.if', {
  	type: 'action',
  	description: 'if then else',
+	usageByValue: true,
  	params: [
  		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
  		{ id: 'then', type: 'action', mandatory: true, dynamic: true },
@@ -875,18 +896,6 @@ jb.component('action.if', {
  	impl: (ctx,cond,_then,_else) =>
  		cond ? _then() : _else()
 });
-
-// jb.component('apply', {
-// 	description: 'run a function',
-//  	type: '*',
-//  	params: [
-//  		{ id: 'func', as: 'single'},
-//  	],
-//  	impl: (ctx,func) => {
-//  		if (typeof func == 'function')
-//  	  		return func(ctx);
-//  	}
-// });
 
 jb.component('jb-run', {
  	type: 'action',
@@ -1107,20 +1116,38 @@ jb.component('sample', {
 		items.filter((x,i)=>i % (Math.floor(items.length/300) ||1) == 0)
 });
 
-jb.component('calculate-properties', { 
-	type: 'aggregator',
+jb.component('assign', { 
 	description: 'extend with calculated properties',
 	params: [
-		{ id: 'property', type: 'calculated-property[]', mandatory: true, defaultValue: [] },
-		{ id: 'items', as:'array', defaultValue: '%%'},
+		{ id: 'property', type: 'prop[]', mandatory: true, defaultValue: [] },
 	],
 	impl: (ctx,properties,items) =>
-		items.slice(0).map((item,i)=>
+		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
+});
+
+jb.component('obj', { 
+	description: 'build object (dictionary) from props',
+	params: [
+		{ id: 'property', type: 'prop[]', mandatory: true, defaultValue: [] },
+	],
+	impl: (ctx,properties,items) =>
+		Object.assign({}, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
+});
+
+jb.component('assign-with-index', { 
+	type: 'aggregator',
+	description: 'extend with calculated properties. %$index% is available ',
+	params: [
+		{ id: 'property', type: 'prop[]', mandatory: true, defaultValue: [] },
+	],
+	impl: (ctx,properties,items) =>
+		jb.toarray(ctx.data).slice(0).map((item,i)=>
 			properties.forEach(p=>item[p.title] = jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type) ) || item)
 });
 
-jb.component('calculated-property', { 
-	type: 'calculated-property',
+jb.component('prop', { 
+	type: 'prop',
+	usageByValue: true,
 	params: [
 		{ id: 'title', as: 'string', mandatory: true },
 		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true },
@@ -1129,6 +1156,17 @@ jb.component('calculated-property', {
 	impl: ctx => ctx.params
 })
 
+jb.component('if', { 
+	usageByValue: true,
+	reservedWord: true,
+	params: [
+		{ id: 'condition', as: 'boolean', type: 'boolean', mandatory: true },
+		{ id: 'then' },
+		{ id: 'else' },
+	],
+	impl: (ctx,cond,_then,_else) =>
+		cond ? _then : _else
+});
 
 jb.component('not', {
 	type: 'boolean',
@@ -1644,21 +1682,23 @@ jb.component('asRef', {
 })
 
 jb.component('data.switch', {
-  params: [
+	reservedWord: true,
+	params: [
   	{ id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
   	{ id: 'default', dynamic: true },
-  ],
-  impl: (ctx,cases,defaultValue) => {
-  	for(let i=0;i<cases.length;i++)
-  		if (cases[i].condition(ctx))
-  			return cases[i].value(ctx)
-  	return defaultValue(ctx);
-  }
+	],
+	impl: (ctx,cases,defaultValue) => {
+		for(let i=0;i<cases.length;i++)
+			if (cases[i].condition(ctx))
+				return cases[i].value(ctx)
+		return defaultValue(ctx);
+	}
 })
 
-jb.component('data.switch-case', {
+jb.component('data.case', {
   type: 'data.switch-case',
   singleInType: true,
+  reservedWord: true,
   params: [
   	{ id: 'condition', type: 'boolean', mandatory: true, dynamic: true },
   	{ id: 'value', mandatory: true, dynamic: true },
@@ -27841,7 +27881,7 @@ jb.prettyPrint = function(profile,options) {
   return jb.prettyPrintWithPositions(profile,options).result;
 }
 
-jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls}) {
+jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls} = {}) {
   colWidth = colWidth || 140;
   tabSize = tabSize || 2;
 
@@ -29699,6 +29739,45 @@ jb.component('studio.all', {
         action :{$: 'url-history.map-studio-url-to-resource', resource: 'studio' }
       }
     ]
+  }
+})
+
+jb.component('studio.dynamic', {
+  type: 'control',
+  impl :{$: 'group',
+    title: 'top bar',
+    style :{$: 'layout.horizontal', spacing: '3' },
+    controls: [
+      {$: 'image',
+        url: '/projects/studio/css/jbartlogo.png',
+        imageHeight: '60',
+        units: 'px',
+        style :{$: 'image.default' },
+        features :{$: 'css.margin', top: '15', left: '5' }
+      },
+      {$: 'group',
+        title: 'title and menu',
+        style :{$: 'layout.vertical', spacing: '17' },
+        controls: [
+          {$: 'label',
+            title: 'message',
+            style :{$: 'label.studio-message' }
+          },
+          {$: 'group',
+            style :{$: 'layout.flex', align: 'space-between' },
+            controls: [
+              {$: 'studio.toolbar' },
+              {$: 'studio.search-component',
+                features :{$: 'css.margin', top: '-10' }
+              }
+            ],
+            features: [{$: 'css.width', width: '1040' }]
+          }
+        ],
+        features :{$: 'css', css: '{ padding-left: 18px; width: 100%; }' }
+      }
+    ],
+    features :{$: 'css', css: '{ height: 90px; border-bottom: 1px #d9d9d9 solid}' }
   }
 })
 
@@ -34983,7 +35062,7 @@ jb.component('studio.jb-editor', {
     controls: [
       {$: 'studio.jb-editor-inteli-tree', path: '%$path%' }, 
       {$: 'group', 
-        $disabled: true, 
+        //$disabled: true, 
         title: 'inteli preview', 
         controls: [
           {$: 'group', 
