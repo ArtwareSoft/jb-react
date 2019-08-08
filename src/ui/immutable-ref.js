@@ -9,15 +9,16 @@ class ImmutableWithJbId {
   constructor(resources) {
     this.resources = resources;
     this.objToPath = new Map();
-    this.idCounter = 0;
+    this.idCounter = 1;
     this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
     this.resourceChange = new jb.rx.Subject();
     this.observables = [];
     jb.delay(1).then(_=>{
-        jb.ui.originalResources = jb.resources;
-        this.objToPath.set(resources(),[])
-        resources().$jb_id = this.idCounter++
-        this.propagateResourceChangeToObservables();
+        jb.ui.originalResources = jb.resources
+        const resourcesObj = resources()
+        resourcesObj.$jb_id = this.idCounter++
+        this.objToPath.set(resourcesObj.$jb_id,[])
+        this.propagateResourceChangeToObservables()
     })
   }
   resourceReferred(resName) {
