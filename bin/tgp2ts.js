@@ -60,6 +60,29 @@ function buildTS() {
 					.forEach(t => jb.ts.types[t] = {}))
 	}
 
+	function calcMacros(path) {
+		jb.ts.macroNames = []
+		return jb.entries(jb.comps)
+			.filter(e=>path ? e[0].indexOf(path) == 0 : e[0].indexOf('.') == -1)
+			.map(e=>{
+				const id = e[0], pt = e[1]
+				const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase())
+				const fixedId = pt.reservedWord ? idAsCamel.replace(/([^\.]+$)/, (_,id) => `$${id}`) : idAsCamel
+				jb.ts.macroNames.push(fixedId)
+				return TSforMacro(fixedId, pt)
+			}).join('\n')
+
+		function TSforMacro(id, pt) {
+			// buttonMacro = button(action: actionType)
+			const params = (pt.params || [])
+			const types = TSforType(pt.type)
+			if (params.length > 2 && !pt.usageByValue)
+				return `\t${id}({ ${params.map(param=>TSforParam(param)).join(', ')} }) : ${types},`
+			else
+				return `\t${id}(${params.map(param=>TSforParam(param)).join(', ')}) : ${types},`
+		}
+	}
+
 	function TSforSingleType(type) {
 		const pts = jb.entries(jb.comps).filter(c=>
 				(c[1].type||'data').split(',').indexOf(type) != -1
@@ -79,8 +102,9 @@ function buildTS() {
 
 	function TSforPT(id, pt) {
 		// buttonPT = {$: 'button', action: actionType}
-		return `type ${fixId(id)}PT = {$: '${id}', ` + (pt.params || []).map(param=>TSforParam(param)) + '}'
+		return `type ${fixId(id)}PT = {$: '${id}', ` + (pt.params || []).map(param=>TSforParam(param)).join(', ') + '}'
 	}
+
 	function TSforCompDef(type) {
 		return `type cmp_def_${type}Type = {
 	type: '${type}',
@@ -89,10 +113,10 @@ function buildTS() {
 }`
 	}
 
-	function TSforParam(param) {
+	const splitArray = /([^\[]*)(\[\])?/
+	function TSforType(type) {
 		// action: actionType
-		const splitArray = /([^\[]*)(\[\])?/
-		const typesTS = [].concat.apply([],(param.type||'').split(',')
+		return [].concat.apply([],(type||'').split(',')
 			.map(x => {
 				const match = x.match(splitArray);
 				const single = fixId(match[1] || 'data') + 'Type'
@@ -100,7 +124,10 @@ function buildTS() {
 			})
 			.map(x=>
 				x=='data' ? ['data','aggregator','boolean'] : [x]));
-		
+	}
+
+	function TSforParam(param) {
+		const typesTS = TSforType(param.type)
 		const description = param.description ? `\n/** ${param.description} */` : '';
 		return `${description}${param.id}: ${typesTS.join(' | ')}`
 	}
@@ -117,7 +144,8 @@ function buildTS() {
 }
 type jbObj = {
 	component(id: string, componentDef: cmpDef) : void,
-	comps: [cmpDef]
+	comps: [cmpDef],
+	macros: macros
 }
 type ctx = {
 	setVars({any}) : ctx,
@@ -129,7 +157,9 @@ declare var jb: jbObj;
 
 `,
 		...Object.keys(jb.ts.types).map(type=>TSforSingleType(type)),
-		'type cmpDef = ' + Object.keys(jb.ts.types).map(type=>`cmp_def_${fixId(type)}Type`).join(' | ')
+		'type cmpDef = ' + Object.keys(jb.ts.types).map(type=>`cmp_def_${fixId(type)}Type`).join(' | '),
+		'type macros = {\n' + calcMacros('') + '\n}',
+		`// const {${jb.ts.macroNames.join(',')}} = jb.macros`
 		].join('\n')
 	return content
 }
