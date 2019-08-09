@@ -115,8 +115,15 @@ jb.component('group.init-accordion', {
       cmp.show = index =>
         cmp.setState({shown: index});
 
+      cmp.flip = index => {
+        if (cmp.state.shown == index)
+          cmp.setState({shown: (cmp.state.shown + 1) % cmp.state.ctrls.length})
+        else
+          cmp.setState({shown: index})
+      }
+
       cmp.next = diff =>
-        cmp.setState({shown: (cmp.state.index + diff + cmp.ctrls.length) % cmp.ctrls.length});
+        cmp.setState({shown: (cmp.state.shown + diff + cmp.state.ctrls.length) % cmp.state.ctrls.length});
     },
     afterViewInit: cmp => {
       if (ctx.params.keyboardSupport) {

@@ -335,16 +335,16 @@ jb.component('group.studio-properties-accordion', {
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
         state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
-          h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
-            h('div',{ class: 'title'}, ctrl.title),
-            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) },
+          h('div',{ class: 'header' },[
+            h('div',{ class: 'title', onclick: _=> cmp.show(index) }, ctrl.title),
+            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl), onclick: _=> cmp.flip(index) },
               h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
             )
           ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)
     )),
     css: `>.accordion-section>.header { cursor: pointer; display: flex; flex-direction: row; background: #eee; margin-bottom: 2px; justify-content: space-between}
 >.accordion-section>.header>button:hover { background: none }
->.accordion-section>.header>button { margin-left: auto }
+>.accordion-section>.header>button { margin-left: 0px }
 >.accordion-section>.header>button>i { color: #; cursor: pointer }
 >.accordion-section>.header>.title { margin: 5px }
 >.accordion-section:last-child() { padding-top: 2px }
