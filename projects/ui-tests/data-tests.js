@@ -1,5 +1,6 @@
-const {dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count} = jb.profiles
-const {$switch, $case} = jb.profiles.data
+(function() {
+const {dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count} = jb.macros
+const {$switch, $case} = jb.macros.data
 
 jb.component('delayedObj', {
   params: [
@@ -9,7 +10,7 @@ jb.component('delayedObj', {
     jb.delay(1).then(_=>obj)
 })
 
-const {delayedObj} = jb.profiles
+const {delayedObj} = jb.macros
 
 jb.resource('person',{
   name: "Homer Simpson",
@@ -255,3 +256,4 @@ jb.component('data-test.obj', {
 //     expectedResult :{$: 'contains', text: 'Homer' }
 //   },
 // })
+})()
