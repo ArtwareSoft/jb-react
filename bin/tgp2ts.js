@@ -75,7 +75,7 @@ function buildTS() {
 		function TSforMacro(id, pt) {
 			// buttonMacro = button(action: actionType)
 			const params = (pt.params || [])
-			const types = TSforType(pt.type)
+			const types = TSforType(pt.type).join(' | ')
 			if (params.length > 2 && !pt.usageByValue)
 				return `\t${id}({ ${params.map(param=>TSforParam(param)).join(', ')} }) : ${types},`
 			else

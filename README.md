@@ -26,14 +26,8 @@ jBart suggests a revolutionary approach for visual development of complex apps t
 - core is written in react
 - studio is written by itself (like the C compiler written in C)
 
-##Who Uses jBart?
-- large teams
-- hybrid teams: architects build the components, implementers build the applications
-
 ##code completion - convert jBart components to typescript interfaces
 add the following line to your package json "scripts" section to generate typescript definition file that will allow you autocomplete.
-
-"prepare-ts": "node node_modules/jbart5-react/bin/tgp2ts -src:myEntryPath.js -out:all-comps-tgp"
 
 ##Learn jbart
 If you want to learn more about jBart visual development concepts, please start with [jbart4](https://github.com/ArtwareSoft/jbart4)

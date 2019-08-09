@@ -42,7 +42,7 @@ type remove_suffixPT = {$: 'remove-suffix', separator: dataType, text: dataType}
 type remove_suffix_regexPT = {$: 'remove-suffix-regex', suffix: dataType, text: dataType}
 type assignPT = {$: 'assign', property: [propType]}
 type objPT = {$: 'obj', property: [propType]}
-type ifPT = {$: 'if', condition: booleanType, then: dataType, else: dataType}
+type ifPT = {$: 'if', condition: booleanType, then: dataType, $else: dataType}
 type to_stringPT = {$: 'to-string', text: dataType}
 type to_uppercasePT = {$: 'to-uppercase', text: dataType}
 type to_lowercasePT = {$: 'to-lowercase', text: dataType}
@@ -990,7 +990,7 @@ type macros = {
 	obj(property: [propType]) : dataType,
 	assignWithIndex(property: [propType]) : aggregatorType,
 	prop(title: dataType, val: dataType, type: dataType) : propType,
-	$if(condition: booleanType, then: dataType, else: dataType) : dataType,
+	$if(condition: booleanType, then: dataType, $else: dataType) : dataType,
 	not(of: booleanType) : booleanType,
 	and(items: [booleanType]) : booleanType,
 	or(items: [booleanType]) : booleanType,
@@ -1067,11 +1067,11 @@ type macros = {
 	prettyPrint(profile: dataType, colWidth: dataType) : dataType,
 	dataTest({ calculate: dataType, runBefore: actionType, expectedResult: booleanType, cleanUp: actionType, expectedCounters: dataType }) : testType,
 	uiTest({ control: controlType, runBefore: actionType, action: actionType, expectedResult: booleanType, cleanUp: actionType, expectedCounters: dataType }) : testType,
-	button({ title: dataType, action: actionType, style: button_styleType, features: [featureType] }) : controlType,clickableType,
+	button({ title: dataType, action: actionType, style: button_styleType, features: [featureType] }) : controlType | clickableType,
 	ctrlAction(action: actionType) : featureType,
 	altAction(action: actionType) : featureType,
 	buttonDisabled(enabledCondition: booleanType) : featureType,
-	iconWithAction({ icon: dataType, title: dataType, action: actionType, style: icon_with_action_styleType, features: [featureType] }) : controlType,clickableType,
+	iconWithAction({ icon: dataType, title: dataType, action: actionType, style: icon_with_action_styleType, features: [featureType] }) : controlType | clickableType,
 	card({ title: dataType, subTitle: dataType, text: dataType, image: dataType, topButton: clickableType, menu: menuType, style: card_styleType, features: [featureType] }) : controlType,
 	watchRef({ 
 /** reference to data */ref: dataType, 
@@ -1090,7 +1090,7 @@ type macros = {
 	features(features: [featureType]) : featureType,
 	hidden(showCondition: booleanType) : featureType,
 	conditionalClass(cssClass: dataType, condition: booleanType) : featureType,
-	css(css: dataType) : featureType,dialog_featureType,
+	css(css: dataType) : featureType | dialog_featureType,
 	openDialog({ id: dataType, style: dialog_styleType, content: controlType, menu: controlType, title: dataType, onOK: actionType, modal: booleanType, features: [dialog_featureType] }) : actionType,
 	divider({ style: divider_styleType, title: dataType, features: [featureType] }) : controlType,
 	editableBoolean({ databind: dataType, style: editable_boolean_styleType, title: dataType, textForTrue: dataType, textForFalse: dataType, features: [featureType] }) : controlType,
@@ -1106,7 +1106,7 @@ type macros = {
 	dynamicControls({ controlItems: dataType, genericControl: controlType, itemVariable: dataType }) : controlType,
 	controlWithCondition({ condition: booleanType, control: controlType, title: dataType }) : controlType,
 	materialIcon({ icon: dataType, title: dataType, style: icon_styleType, features: [featureType] }) : controlType,
-	image({ url: dataType, imageWidth: dataType, imageHeight: dataType, width: dataType, height: dataType, units: dataType, style: image_styleType, features: [featureType] }) : controlType,imageType,
+	image({ url: dataType, imageWidth: dataType, imageHeight: dataType, width: dataType, height: dataType, units: dataType, style: image_styleType, features: [featureType] }) : controlType | imageType,
 	innerHtml({ title: dataType, html: dataType, style: inner_html_styleType, features: [featureType] }) : controlType,
 	itemlistWithGroups({ title: dataType, items: dataType, controls: [controlType], style: itemlist_styleType, groupBy: itemlist_group_byType, headingCtrl: controlType, 
 /** resources to watch */watch: dataType, itemVariable: dataType, features: [featureType] }) : controlType,
@@ -1121,7 +1121,7 @@ type macros = {
 	styleByControl(control: controlType, modelVar: dataType) : dataType,
 	sidenav({ controls: [controlType], title: dataType, style: sidenav_styleType, features: [featureType] }) : controlType,
 	table({ title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: dataType, 
-/** by default table is limmited to 100 shown items */visualSizeLimit: dataType, features: [featureType] }) : controlType,tableType,
+/** by default table is limmited to 100 shown items */visualSizeLimit: dataType, features: [featureType] }) : controlType | tableType,
 	field({ title: dataType, data: dataType, width: dataType, numeric: booleanType, 
 /** extend the items with the calculated field using the title as field name */extendItems: booleanType, class: dataType }) : table_fieldType,
 	tabs({ tabs: [controlType], style: tabs_styleType, features: [featureType] }) : controlType,

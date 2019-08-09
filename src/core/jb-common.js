@@ -357,7 +357,7 @@ jb.component('if', {
 	params: [
 		{ id: 'condition', as: 'boolean', type: 'boolean', mandatory: true },
 		{ id: 'then' },
-		{ id: 'else' },
+		{ id: '$else' },
 	],
 	impl: (ctx,cond,_then,_else) =>
 		cond ? _then : _else
