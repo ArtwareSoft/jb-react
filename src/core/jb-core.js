@@ -684,7 +684,7 @@ Object.assign(jb,{
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => { 
     if (typeof val !== 'undefined')
-      jb.resources[id] = val || {}
+      jb.resources[id] = val
     jb.valueByRefHandler && jb.valueByRefHandler.resourceReferred && jb.valueByRefHandler.resourceReferred(id);
     return jb.resources[id];
   },
