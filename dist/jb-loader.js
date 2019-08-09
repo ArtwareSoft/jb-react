@@ -10,9 +10,9 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       ],
       'ui-common': [
 //        'node_modules/jquery/dist/jquery.min.js',
-        'node_modules/material-design-lite/material.js',
-        'node_modules/material-design-lite/material.css',
-        'node_modules/material-design-lite/dist/material.indigo-pink.min.css',
+        'dist/material.js',
+        'dist/material.css',
+        'dist/material.indigo-pink.min.css',
 
         'css/font.css',
         'css/styles.css',
@@ -69,6 +69,10 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'src/testing/testers.js',
       ],
       'codemirror': [
+          'dist/codemirror.js',
+          'dist/codemirror.css',
+      ],  
+      'codemirror-js-files': [
         'src/ui/styles/codemirror-styles.js',
         'node_modules/codemirror/lib/codemirror.js',
         'node_modules/codemirror/mode/xml/xml.js',
@@ -82,7 +86,8 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'node_modules/codemirror/addon/hint/html-hint.js',
         'node_modules/codemirror/addon/fold/foldgutter.js',
         'node_modules/codemirror/addon/selection/active-line.js',
-
+      ],
+      'codemirror-css-files': [
         'node_modules/codemirror/lib/codemirror.css',
         'node_modules/codemirror/theme/solarized.css',
         'node_modules/codemirror/addon/hint/show-hint.css',
@@ -94,12 +99,12 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'src/ui/d3-chart/d3-histogram.js',
       ],
       'history': [
-        'node_modules/history/umd/history.js',
+        'dist/history.js',
 //        'src/ui/url.js'
       ],
       'dragula': [
-          'node_modules/dragula/dist/dragula.js',
-          'node_modules/dragula/dist/dragula.css',
+          'dist/dragula.js',
+          'dist/dragula.css',
       ],
       studio: [
         'utils','path','main','url', 'completion',
@@ -111,8 +116,8 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'probe','model','tree','suggestion'
       ],
       'css-files': [
-        'node_modules/material-design-lite/material.min.css',
-        'node_modules/material-design-lite/dist/material.indigo-pink.min.css',
+        'dist/material.min.css',
+        'dist/material.indigo-pink.min.css',
 
         'css/font.css',
         'css/styles.css',
