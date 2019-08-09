@@ -215,7 +215,7 @@ jb.component('feature.if', {
   ],
   impl: (ctx, condition,watch) => ({
     templateModifier: (vdom,cmp,state) =>
-        jb.toboolean(condition()) ? vdom : jb.ui.h('span',{style: {display: 'none'}})
+        jb.toboolean(condition(cmp.ctx)) ? vdom : jb.ui.h('span',{style: {display: 'none'}})
   })
 })
 
