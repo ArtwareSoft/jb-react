@@ -77,7 +77,6 @@ jb.component('studio.properties', {
                 }, 
                 'Properties (%%)'
               ], 
-              items: ''
             }, 
             style :{$: 'custom-style', 
               template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
@@ -231,7 +230,15 @@ jb.component('studio.property-field', {
         ]
       }, 
       control :{$: 'studio.property-primitive', path: '%$path%' }
-    }
+    },
+    {$: 'control-with-condition', 
+    condition :{
+      $and: [
+        {$not: {$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }}
+      ]
+    }, 
+    control :{$: 'studio.property-tgp-old', path: '%$path%' }
+  },    
   ], 
   features: [
     {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
