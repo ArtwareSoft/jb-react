@@ -76,7 +76,8 @@ jb.component('studio.properties', {
                   items :{$: 'studio.non-control-children', path: '%$path%' }
                 }, 
                 'Properties (%%)'
-              ]
+              ], 
+              items: ''
             }, 
             style :{$: 'custom-style', 
               template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
@@ -157,77 +158,86 @@ jb.component('studio.property-field', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl :{$: 'group', 
-    $vars: {
-      paramType :{$: 'studio.param-type', path: '%$path%' }, 
-      paramDef :{$: 'studio.param-def', path: '%$path%' }
-    }, 
-    title :{$: 'studio.prop-name', path: '%$path%' }, 
-    controls: [
-      {$: 'control-with-condition', 
-        condition :{
-          $and: [
-            {
-              $not :{$: 'is-of-type', 
-                type: 'string,number,boolean,undefined', 
-                obj :{$: 'studio.val', path: '%$path%' }
-              }
-            }, 
-            {$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }
-          ]
-        }, 
-        control :{$: 'studio.property-script', path: '%$path%' }
-      }, 
-      {$: 'control-with-condition', 
-        condition :{
-          $and: [
-            {$: 'is-of-type', 
-              type: 'array', 
+  $vars: {
+    paramType :{$: 'studio.param-type', path: '%$path%' }, 
+    paramDef :{$: 'studio.param-def', path: '%$path%' }
+  }, 
+  title :{$: 'studio.prop-name', path: '%$path%' }, 
+  controls: [
+    {$: 'control-with-condition', 
+      condition :{
+        $and: [
+          {
+            $not :{$: 'is-of-type', 
+              type: 'string,number,boolean,undefined', 
               obj :{$: 'studio.val', path: '%$path%' }
-            }, 
-            {$: 'studio.is-of-type', path: '%$path%', type: 'action' }
-          ]
-        }, 
-        control :{$: 'studio.property-script', path: '%$path%' }
+            }
+          }, 
+          {$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }
+        ]
       }, 
-      {$: 'control-with-condition', 
-        condition: '%$paramDef/options%', 
-        control :{$: 'studio.property-enum', path: '%$path%' }
+      control :{$: 'studio.property-script', path: '%$path%' }
+    }, 
+    {$: 'control-with-condition', 
+      condition :{
+        $and: [
+          {$: 'is-of-type', 
+            type: 'array', 
+            obj :{$: 'studio.val', path: '%$path%' }
+          }, 
+          {$: 'studio.is-of-type', path: '%$path%', type: 'action' }
+        ]
       }, 
-      {$: 'control-with-condition', 
-        condition: '%$paramDef/as%==\"number\"', 
-        control :{$: 'studio.property-slider', path: '%$path%' }
+      control :{$: 'studio.property-script', path: '%$path%' }
+    }, 
+    {$: 'control-with-condition', 
+      condition: '%$paramDef/options%', 
+      control :{$: 'studio.property-enum', path: '%$path%' }
+    }, 
+    {$: 'control-with-condition', 
+      condition: {$and: ['%$paramDef/as%==\"number\"',{$not: '%$paramDef/options%' }]}, 
+      control :{$: 'studio.property-slider', path: '%$path%' }
+    }, 
+    {$: 'control-with-condition', 
+      condition :{
+        $and: [
+          '%$paramDef/as%==\"boolean\"', 
+          {
+            $or: [
+              {$: 'in-group', 
+                group :{ $list: ['true', 'false'] }, 
+                item :{$: 'studio.val', path: '%$path%' }
+              }, 
+              {$: 'isEmpty', 
+                item :{$: 'studio.val', path: '%$path%' }
+              }
+            ]
+          }, 
+          { $not: '', of: '%$paramDef/dynamic%' }
+        ]
       }, 
-      {$: 'control-with-condition', 
-        condition :{
-          $and: [
-            '%$paramDef/as%==\"boolean\"', 
-            {
-              $or: [
-                {$: 'in-group', 
-                  group :{ $list: ['true', 'false'] }, 
-                  item :{$: 'studio.val', path: '%$path%' }
-                }, 
-                {$: 'isEmpty', 
-                  item :{$: 'studio.val', path: '%$path%' }
-                }
-              ]
-            }, 
-            { $not: '', of: '%$paramDef/dynamic%' }
-          ]
-        }, 
-        control :{$: 'studio.property-boolean', path: '%$path%' }
+      control :{$: 'studio.property-boolean', path: '%$path%' }
+    }, 
+    {$: 'control-with-condition', 
+      condition :{
+        $and: [
+          {$: 'is-of-type', 
+            type: 'string,number,boolean,undefined', 
+            obj :{$: 'studio.val', path: '%$path%' }
+          },
+          {$not: '%$paramDef/options%' },
+          {$not: '%$paramDef/as%==\"number\"'},
+          {$: 'studio.is-of-type', path: '%$path%', type: 'data' }
+        ]
       }, 
-      {$: 'control-with-condition', 
-        condition :{$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }, 
-        control :{$: 'studio.property-primitive', path: '%$path%' }
-      }, 
-      {$: 'studio.property-tgp-old', path: '%$path%' }
-    ], 
-    features: [
-      {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
-      {$: 'studio.watch-typeof-script', path: '%$path%' }
-    ]
-  }
+      control :{$: 'studio.property-primitive', path: '%$path%' }
+    }
+  ], 
+  features: [
+    {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
+    {$: 'studio.watch-typeof-script', path: '%$path%' }
+  ]
+}
 })
 
 jb.component('studio.property-label',{
