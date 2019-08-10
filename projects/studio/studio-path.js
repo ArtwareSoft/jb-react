@@ -381,7 +381,7 @@ jb.component('studio.watch-typeof-script', {
   type: 'feature',
   impl: (ctx,path) => ({
       init: cmp =>
-    	jb.ui.refObservable(st.refOfPath(path),cmp,{ includeChildren: true})
+    	jb.ui.refObservable(st.refOfPath(path),cmp,{ includeChildren: true, watchScript: ctx})
     		.filter(e=>
     			(typeof e.oldVal == 'object') != (typeof e.newVal == 'object'))
     		.subscribe(e=>

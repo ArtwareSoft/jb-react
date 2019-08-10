@@ -404,6 +404,7 @@ jb.component('studio-helper-sample.properties-params', {
     { id: 'boolAsComp', type: 'boolean', as: 'boolean' },
     { id: 'boolAsJs', type: 'boolean', as: 'boolean' },
     { id: 'style', type: 'button.style', defaultValue:{$: 'button.mdl-icon'} },
+    { id: 'style2', type: 'button.style' },
     { id: 'action', type: 'action' },
   ],
   impl :{$: 'group' }
@@ -420,6 +421,7 @@ jb.component('studio-helper-sample.properties-params-prof', {
     enumNum: '1', 
     bool :{ $or: [false] }, 
     style :{$: 'button.href' }, 
+    style2 :{$: 'button.mdl-icon' }, 
     features :{$: 'css.class' }
   }, 
   $vars: {  }

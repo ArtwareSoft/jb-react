@@ -33,7 +33,7 @@ jb.component('picklist', {
           })
         }
         cmp.recalcOptions();
-        jb.ui.refObservable(ctx.params.databind,cmp).subscribe(e=>
+        jb.ui.refObservable(ctx.params.databind,cmp,{watchScript: ctx}).subscribe(e=>
           cmp.onChange && cmp.onChange(jb.val(e.ref)))
       },
     })

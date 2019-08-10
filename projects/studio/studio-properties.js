@@ -1,3 +1,9 @@
+(function() {
+  const {pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, object, obj, $if, count, notEmpty, notEquals} = jb.macros
+  const {css, group,editableBoolean,label,hidden,watchRef,feature_if,id,uiAction_click, editableBoolean_expandCollapse,
+    layout_horizontal,field_default, css_width} = jb.macros
+  const {studio_nonControlChildren, studio_val, studio_parentPath, studio_compName, studio_isNew, studio_watchPath,
+    studio_pickProfile } = jb.macros  
 
 jb.component('studio.open-properties', {
   type: 'action',
@@ -361,73 +367,56 @@ jb.component('studio.property-tgp', {
 jb.component('studio.property-tgp-old', {
   type: 'control',
   params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'group',
+  impl: group({
     controls: [
-      {$: 'group',
+      group({
         title: 'header',
-        style :{$: 'layout.horizontal', spacing: '0' },
+        style: layout_horizontal(0),
         controls: [
-          {$: 'editable-boolean',
+          editableBoolean({
             databind: '%$userExpanded%',
-            style :{$: 'editable-boolean.expand-collapse' },
+            style: editableBoolean_expandCollapse(),
             features: [
-              {$: 'studio.watch-path', path: '%$path%', includeChildren: true },
-              {$: 'css',
-                css: '{ position: absolute; margin-left: -20px; margin-top: 5px }'
-              },
-              {$: 'hidden',  showCondition :{$: 'studio.properties-expanded-relevant', path: '%$path%' } },
+              field_default(studio_isNew('%$path%')),
+              hidden({$: 'studio.properties-expanded-relevant' ,path: '%$path%'}),
+              css('{ position: absolute; margin-left: -20px; margin-top: 5px }'),
             ]
-          },
-          {$: 'group',
-            controls: [{$: 'studio.pick-profile', path: '%$path%' }],
-            features: [{$: 'css.width', width: '150' }]
-          }
+          }),
+          group({
+            controls: studio_pickProfile('%$path%'),
+            features: css_width(150)
+          })
         ],
-        features :{$: 'css', css: '{ position: relative }' }
-      },
-      {$: 'group',
-        title: 'inner',
-        controls :{$: 'studio.properties-in-tgp', path: '%$path%' },
         features: [
-          {$: 'studio.watch-path', path: '%$path%' },
-          {$: 'watch-ref', ref: '%$userExpanded%'  },
-          {$: 'feature.if', showCondition :{$: 'studio.properties-show-expanded', path: '%$path%' } },
-          {$: 'css',
-            css: '{ margin-top: 9px; margin-left: -83px; margin-bottom: 4px;}'
-          },
+          css('{ position: relative }'),
+          studio_watchPath(studio_parentPath('%$path%'), true),
         ]
-      }
+      }),
+      group({
+        title: 'inner',
+        controls: {$: 'studio.properties-in-tgp', path: '%$path%' },
+        features: [
+          studio_watchPath('%$path%'),
+          watchRef('%$userExpanded%'),
+          feature_if('%$userExpanded%'),
+          css('{ margin-top: 9px; margin-left: -83px; margin-bottom: 4px;}')
+        ]
+      })
     ],
     features: [
       {$: 'var', name: 'userExpanded', value : false, mutable: true },
     ]
-  }
+  })
 })
 
 jb.component('studio.properties-expanded-relevant', {
 	type: 'boolean',
 	params: [{ id: 'path', as: 'string', mandatory: true }],
-	impl:{ $and: [
-		{
-			$notEmpty :{$: 'studio.non-control-children', path: '%$path%' }
-		},
-		{
-			$notEmpty :{$: 'studio.val', path: '%$path%' }
-		},
-		{$: 'not-equals',
-			item1 :{$: 'studio.comp-name', path: '%$path%' },
-			item2: 'custom-style'
-		}
-	]}
-})
-
-jb.component('studio.properties-show-expanded', {
-	type: 'boolean',
-	params: [{ id: 'path', as: 'string', mandatory: true }],
-	impl:{ $and: [
-		{$: 'studio.properties-expanded-relevant', path: '%$path%'},
-		{ $or: [ {$: 'studio.is-new', path: '%$path%' },	'%$userExpanded%' ] },
-	]}
+	impl: and(
+      notEmpty(studio_nonControlChildren('%$path%')),
+      notEmpty(studio_val('%$path%')),
+      notEquals(studio_compName('%$path%'),'custom-style')
+  )
 })
 
 jb.component('studio.property-tgp-in-array', {
@@ -538,3 +527,5 @@ jb.component('studio.tgp-path-options',{
 		[{code:'',text:''}]
 			.concat(jb.studio.PTsOfPath(path).map(op=> ({ code: op, text: op})))
 })
+
+})()

@@ -1,6 +1,6 @@
 (function() {
-  const {dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, object, obj, $if, count} = jb.macros
-  const {uiTest,group,editableBoolean,label,hidden,watchRef,feature_if,id,uiAction_click, editableBoolean_expandCollapse} = jb.macros
+  const {dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, object, obj, $if, count, runActions} = jb.macros
+  const {uiTest,group,editableBoolean,label,field_initValue,hidden,watchRef,feature_if,id,uiAction_click, editableBoolean_expandCollapse} = jb.macros
   
 jb.resource('globals',{ });
 
@@ -950,29 +950,64 @@ jb.component('ui-test.editable-boolean.expand-collapse', {
   }),
 })
 
-jb.component('ui-test.editable-boolean.expand-collapse-starting-with-null', {
-  impl: uiTest({
-    control: group({
+jb.component('ui-test.expand-collapse-with-default-collapse', {
+  type: 'control',
+  impl: group({
       controls: [
         editableBoolean({
-          style: editableBoolean_expandCollapse(),
-          databind: '%$expanded%',
-          features: id('toggle')
+          title: 'default',
+          databind: '%$default%',
+          features: id('default')
         }),
-        label({
-          title: 'inner text', 
-          features: [ 
-            feature_if(({data}) => data === true), 
-            watchRef('%$expanded%') 
+        group({
+          controls: [
+            editableBoolean({
+              title: 'expColl',
+              style: editableBoolean_expandCollapse(),
+              databind: '%$expanded%',
+              features: [
+                id('expCollapse'),
+                field_initValue('%$default%'),
+              ]
+            }),
+            label({
+              title: 'inner text', 
+              features: [ feature_if('%$expanded%'), watchRef('%$expanded%') ]
+            })
+          ],
+          features: [
+            watchRef('%$default%') 
           ]
         })
       ],
-      features: {$: 'var', name: 'expanded', mutable: true, value: null}
-    }),
-    action: uiAction_click('#toggle','toggle'),
+      features: [
+        {$: 'var', name: 'expanded', mutable: true, value: null},
+        {$: 'var', name: 'default', mutable: true, value: false}
+      ]
+    })
+})
+
+jb.component('ui-test.editable-boolean.expand-collapse-with-default-val', {
+  impl: uiTest({
+    control: {$: 'ui-test.expand-collapse-with-default-collapse'},
+    action: runActions(
+      uiAction_click('#default','toggle'),
+    ),
+    expectedResult: contains('inner text'),
+  }),
+})
+
+jb.component('ui-test.editable-boolean.expand-collapse-with-default-collapse', {
+  impl: uiTest({
+    control: {$: 'ui-test.expand-collapse-with-default-collapse'},
+    action: runActions(
+      uiAction_click('#default','toggle'),
+      uiAction_click('#expCollapse','toggle'),
+    ),
     expectedResult: not(contains('inner text')),
   }),
 })
+
 
 jb.component('ui-test.code-mirror', {
   impl :{$: 'ui-test',

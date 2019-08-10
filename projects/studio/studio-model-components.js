@@ -10,7 +10,7 @@ jb.component('studio.val', {
 jb.component('studio.is-primitive-value', {
 	params: [ {id: 'path', as: 'string', mandatory: true } ],
 	impl: (ctx,path) =>
-			st.isPrimitiveValue(st.valOfPath(path))
+		st.isPrimitiveValue(st.valOfPath(path))
 })
 
 jb.component('studio.is-of-type', {
@@ -21,6 +21,13 @@ jb.component('studio.is-of-type', {
 	impl: (ctx,path,_type) =>
 			st.isOfType(path,_type)
 })
+
+jb.component('studio.parent-path', {
+	params: [ {id: 'path', as: 'string', mandatory: true } ],
+	impl: (ctx,path) =>
+		st.parentPath(path)
+})
+
 
 jb.component('studio.param-type', {
 	params: [

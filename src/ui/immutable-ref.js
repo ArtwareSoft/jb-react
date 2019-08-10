@@ -206,14 +206,14 @@ class ImmutableWithJbId {
       });
       return subject
   }
-  refObservable(ref,cmp,{includeChildren}={}) {
+  refObservable(ref,cmp,settings={}) {
     jb.log('registerCmpObservable',[cmp.ctx, ...arguments])
     if (ref && ref.$jb_observable)
       return ref.$jb_observable(cmp);
     if (!ref || !this.isRef(ref))
       return jb.rx.Observable.of().takeUntil(cmp.destroyed);
 
-    return this.getOrCreateObservable({ref,cmp,includeChildren})
+    return this.getOrCreateObservable({ref,cmp,...settings})
   }
 
   propagateResourceChangeToObservables() {

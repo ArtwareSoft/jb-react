@@ -25,7 +25,7 @@ jb.component('field.databind', {
           }
         }
 
-        jb.ui.refObservable(ctx.vars.$model.databind,cmp)
+        jb.ui.refObservable(ctx.vars.$model.databind,cmp,{watchScript: ctx})
             .subscribe(e=>jb.ui.setState(cmp,null,e,ctx))
       }
   })
@@ -71,7 +71,7 @@ jb.component('field.databind-text', {
         }
 
         var srcCtx = cmp.ctxForPick || cmp.ctx;
-        if (!oneWay) jb.ui.refObservable(ctx.vars.$model.databind,cmp,{ onError: _ => cmp.setState({model: null}) })
+        if (!oneWay) jb.ui.refObservable(ctx.vars.$model.databind,cmp,{ watchScript: ctx, onError: _ => cmp.setState({model: null}) })
             .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
             .subscribe(e=>jb.ui.setState(cmp,{model: cmp.jbModel()},e,ctx))
       }
@@ -98,7 +98,7 @@ jb.component('field.databind-range', {
         }
 
         var srcCtx = cmp.ctxForPick || cmp.ctx;
-        jb.ui.refObservable(ctx.vars.$model.databind,cmp)
+        jb.ui.refObservable(ctx.vars.$model.databind,cmp,{watchScript: ctx})
             .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
             .subscribe(e=>jb.ui.setState(cmp,{model: cmp.jbModel()},e,ctx))
       }
@@ -116,11 +116,20 @@ jb.component('field.default', {
   params: [
     { id: 'value', type: 'data'},
   ],
-  impl: function(context,defaultValue) {
-    var data_ref = context.vars.$model.databind;
+  impl: (ctx,defaultValue) => {
+    var data_ref = ctx.vars.$model.databind;
     if (data_ref && jb.val(data_ref) == null)
-      jb.writeValue(data_ref,defaultValue)
+      jb.writeValue(data_ref, jb.val(defaultValue))
   }
+})
+
+jb.component('field.init-value', {
+  type: 'feature',
+  params: [
+    { id: 'value', type: 'data'},
+  ],
+  impl: (ctx,value) =>
+    ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind, jb.val(value))
 })
 
 jb.component('field.subscribe', {
@@ -134,7 +143,7 @@ jb.component('field.subscribe', {
       var data_ref = context.vars.$model && context.vars.$model.databind;
       if (!data_ref) return;
       var includeFirstEm = includeFirst ? jb.rx.Observable.of(jb.val(data_ref)) : jb.rx.Observable.of();
-      jb.ui.refObservable(data_ref,cmp)
+      jb.ui.refObservable(data_ref,cmp,{watchScript: context})
             .map(e=>jb.val(e.ref))
             .merge(includeFirstEm)
             .filter(x=>x)

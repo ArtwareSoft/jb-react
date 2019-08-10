@@ -135,7 +135,8 @@ function prepareParams(comp,profile,ctx) {
         path = sugar[0];
         val = sugar[1];
       }
-      const valOrDefault = (typeof val != "undefined" && val != null) ? val : (typeof param.defaultValue != 'undefined' ? param.defaultValue : null);
+      const valOrDefault = (val !== undefined) ? val : (param.defaultValue !== undefined ? param.defaultValue : null);
+//      const valOrDefault = (typeof val != "undefined" && val != null) ? val : (typeof param.defaultValue != 'undefined' ? param.defaultValue : null);
       const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
       const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
 

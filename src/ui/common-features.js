@@ -143,7 +143,7 @@ jb.component('bind-refs', {
   ],
   impl: (ctx,ref,includeChildren,updateRef,value) => ({
       init: cmp =>
-        jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren}).subscribe(e=>
+        jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren, watchScript: ctx}).subscribe(e=>
           jb.writeValue(updateRef,value(cmp.ctx),ctx))
   })
 })
@@ -168,7 +168,7 @@ jb.component('calculated-var', {
         jb.resource(fullName, jb.val(value(ctx)));
         var refToResource = jb.valueByRefHandler.refOfPath([fullName]);
         (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
-            jb.ui.refObservable(ref,cmp,{includeChildren:true}).subscribe(e=>
+            jb.ui.refObservable(ref,cmp,{includeChildren:true, watchScript: context}).subscribe(e=>
               jb.writeValue(refToResource,value(cmp.ctx),context))
           )
         return ctx.setVars(jb.obj(name, refToResource));
