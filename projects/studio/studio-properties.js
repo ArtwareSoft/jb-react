@@ -1,9 +1,10 @@
 (function() {
-  const {pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, object, obj, $if, count, notEmpty, notEquals} = jb.macros
-  const {css, group,editableBoolean,label,hidden,watchRef,feature_if,id,uiAction_click, editableBoolean_expandCollapse,
+  const {pipeline, pipe, join, list, writeValue, contains, equals, and, not, or, assign, prop, assignWithIndex, object, obj, $if, count, notEmpty, isEmpty,
+    notEquals, isOfType, inGroup} = jb.macros
+  const {css, group,editableBoolean,label,hidden,watchRef,feature_if,id,uiAction_click, editableBoolean_expandCollapse, control_firstSucceeding, controlWithCondition,
     layout_horizontal,field_initValue, css_width} = jb.macros
-  const {studio_nonControlChildren, studio_val, studio_compName, studio_isNew, studio_watchPath,
-    studio_pickProfile } = jb.macros  
+  const {studio_nonControlChildren, studio_propName, studio_paramType, studio_paramDef, studio_val, studio_compName, studio_isNew, 
+    studio_watchPath, studio_pickProfile, studio_isOfType } = jb.macros  
 
 jb.component('studio.open-properties', {
   type: 'action',
@@ -162,95 +163,55 @@ jb.component('studio.properties-in-tgp',{
 jb.component('studio.property-field', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
+  impl: group({
   $vars: {
-    paramType :{$: 'studio.param-type', path: '%$path%' }, 
-    paramDef :{$: 'studio.param-def', path: '%$path%' }
+    paramType: studio_paramType('%$path%'), 
+    paramDef: studio_paramDef('%$path%')
   }, 
-  title :{$: 'studio.prop-name', path: '%$path%' }, 
-  controls: [
-    {$: 'control-with-condition', 
-      condition :{
-        $and: [
-          {
-            $not :{$: 'is-of-type', 
-              type: 'string,number,boolean,undefined', 
-              obj :{$: 'studio.val', path: '%$path%' }
-            }
-          }, 
-          {$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }
-        ]
-      }, 
-      control :{$: 'studio.property-script', path: '%$path%' }
-    }, 
-    {$: 'control-with-condition', 
-      condition :{
-        $and: [
-          {$: 'is-of-type', 
-            type: 'array', 
-            obj :{$: 'studio.val', path: '%$path%' }
-          }, 
-          {$: 'studio.is-of-type', path: '%$path%', type: 'action' }
-        ]
-      }, 
-      control :{$: 'studio.property-script', path: '%$path%' }
-    }, 
-    {$: 'control-with-condition', 
-      condition: '%$paramDef/options%', 
-      control :{$: 'studio.property-enum', path: '%$path%' }
-    }, 
-    {$: 'control-with-condition', 
-      condition: {$and: ['%$paramDef/as%==\"number\"',{$not: '%$paramDef/options%' }]}, 
-      control :{$: 'studio.property-slider', path: '%$path%' }
-    }, 
-    {$: 'control-with-condition', 
-      condition :{
-        $and: [
-          '%$paramDef/as%==\"boolean\"', 
-          {
-            $or: [
-              {$: 'in-group', 
-                group :{ $list: ['true', 'false'] }, 
-                item :{$: 'studio.val', path: '%$path%' }
-              }, 
-              {$: 'isEmpty', 
-                item :{$: 'studio.val', path: '%$path%' }
-              }
-            ]
-          }, 
-          { $not: '', of: '%$paramDef/dynamic%' }
-        ]
-      }, 
-      control :{$: 'studio.property-boolean', path: '%$path%' }
-    }, 
-    {$: 'control-with-condition', 
-      condition :{
-        $and: [
-          {$: 'is-of-type', 
-            type: 'string,number,boolean,undefined', 
-            obj :{$: 'studio.val', path: '%$path%' }
-          },
-          {$not: '%$paramDef/options%' },
-          {$not: '%$paramDef/as%==\"number\"'},
-          {$: 'studio.is-of-type', path: '%$path%', type: 'data' }
-        ]
-      }, 
-      control :{$: 'studio.property-primitive', path: '%$path%' }
-    },
-    {$: 'control-with-condition', 
-    condition :{
-      $and: [
-        {$not: {$: 'studio.is-of-type', path: '%$path%', type: 'data,boolean' }}
+  title: studio_propName('%$path%'), 
+  controls: control_firstSucceeding({controls: [
+        controlWithCondition(
+          and(
+            studio_isOfType('%$path%','data,boolean'),
+            not(isOfType('string,number,boolean,undefined',studio_val('%$path%')))
+          ),
+          {$: 'studio.property-script', path: '%$path%' }
+        ),
+        controlWithCondition(
+          and(
+            studio_isOfType('%$path%','action'),
+            isOfType('array',studio_val('%$path%'))
+          ),
+          {$: 'studio.property-script', path: '%$path%' }
+        ),
+        controlWithCondition('%$paramDef/options%',{$: 'studio.property-enum', path: '%$path%' }),
+        controlWithCondition('%$paramDef/as%==\"number\"', {$: 'studio.property-slider', path: '%$path%' }),
+        controlWithCondition(
+          and(
+            '%$paramDef/as%==\"boolean\"',
+            or(
+              inGroup(list('true,false'),studio_val('%$path%')),
+              isEmpty(studio_val('%$path%'))
+            ),
+            not('%$paramDef/dynamic%')
+          ),
+          {$: 'studio.property-boolean', path: '%$path%' }
+        ),
+        controlWithCondition(
+          and(
+            studio_isOfType('data'),
+            isOfType('string,number,boolean,undefined',studio_val('%$path%')),
+          ),
+          {$: 'studio.property-primitive', path: '%$path%' }
+        ),
+        {$: 'studio.property-tgp-old', path: '%$path%' }
+      ], 
+      features: [
+        {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
+        {$: 'studio.watch-typeof-script', path: '%$path%' }
       ]
-    }, 
-    control :{$: 'studio.property-tgp-old', path: '%$path%' }
-  },    
-  ], 
-  features: [
-    {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
-    {$: 'studio.watch-typeof-script', path: '%$path%' }
-  ]
-}
+    })
+  })
 })
 
 jb.component('studio.property-label',{

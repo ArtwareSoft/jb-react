@@ -63,17 +63,19 @@ jb.component('group.dynamic-titles', {
 jb.component('control.first-succeeding', {
   type: 'control', category: 'common:30',
   params: [
+    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
     { id: 'title', as: 'string' , dynamic: true },
     { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, mandatory: true , dynamic: true },
-    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
+  impl: ctx => jb.ui.ctrl(new jb.jbCtx(ctx,{params: Object.assign({},ctx.params,{
+      controls: ctx2 => ctx2.run(ctx.profile.controls).filter(x=>x).slice(0,1)
+    })}))
 })
 
 jb.component('control-with-condition', {
   type: 'control',
+  usageByValue: true,
   params: [
     { id: 'condition', type: 'boolean', mandatory: true, as: 'boolean' },
     { id: 'control', type: 'control', mandatory: true, dynamic: true },
