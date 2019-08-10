@@ -417,7 +417,9 @@ jb.component('studio-helper-sample.properties-params-prof', {
       $pipeline: [
         {$: 'split', separator: ',', text: '1,2,3,4,5,6,7,8' }, 
         '%%', 
-        {$: 'count', items: '%%' }
+        {$: 'count', items: '%%' }, 
+        {$: 'count', items: '%%' }, 
+        { $pipeline: [{ $pipeline: [{$: 'suffix', text: '%%' }] }] }
       ], 
       remark: 'asad'
     }, 

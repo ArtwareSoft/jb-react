@@ -122,19 +122,27 @@ jb.component('studio.select-profile', {
     title: 'itemlist-with-find', 
     style :{$: 'layout.vertical', spacing: 3 }, 
     controls: [
-      {$: 'itemlist-container.search', 
-        title :{$: 'studio.prop-name', path: '%$path%' }, 
-        searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
-        databind: '%$itemlistCntrData/search_pattern%', 
-        style :{$: 'editable-text.mdl-input', width: '200' }, 
-        features :{$: 'feature.onEsc', 
-          action :{$: 'dialog.close-containing-popup', 
-            id: 'studio-jb-editor-popup', 
-            OK: false
-          }
-        }
-      }, 
       {$: 'group', 
+      style :{$: 'layout.horizontal', spacing: 3 }, 
+      controls: [
+        {$: 'itemlist-container.search', 
+          title :{$: 'studio.prop-name', path: '%$path%' }, 
+          searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
+          databind: '%$itemlistCntrData/search_pattern%', 
+          style :{$: 'editable-text.mdl-input', width: '200' }, 
+          features :{$: 'feature.onEsc', 
+            action :{$: 'dialog.close-containing-popup', id: 'studio-jb-editor-popup', OK: false }
+          }
+        }, 
+        {$: 'material-icon', 
+          icon: 'search', 
+          title: 'search icon', 
+          style :{$: 'icon.material' }, 
+          features :{$: 'css.margin', top: '20', left: '-25' }
+        }
+      ]
+    },
+          {$: 'group', 
         title: 'categories and items', 
         style :{$: 'layout.horizontal', spacing: '33' }, 
         controls: [
