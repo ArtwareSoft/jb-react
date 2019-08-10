@@ -1,8 +1,8 @@
 (function() {
   const {pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, object, obj, $if, count, notEmpty, notEquals} = jb.macros
   const {css, group,editableBoolean,label,hidden,watchRef,feature_if,id,uiAction_click, editableBoolean_expandCollapse,
-    layout_horizontal,field_default, css_width} = jb.macros
-  const {studio_nonControlChildren, studio_val, studio_parentPath, studio_compName, studio_isNew, studio_watchPath,
+    layout_horizontal,field_initValue, css_width} = jb.macros
+  const {studio_nonControlChildren, studio_val, studio_compName, studio_isNew, studio_watchPath,
     studio_pickProfile } = jb.macros  
 
 jb.component('studio.open-properties', {
@@ -377,7 +377,7 @@ jb.component('studio.property-tgp-old', {
             databind: '%$userExpanded%',
             style: editableBoolean_expandCollapse(),
             features: [
-              field_default(studio_isNew('%$path%')),
+              field_initValue(studio_isNew('%$path%')),
               hidden({$: 'studio.properties-expanded-relevant' ,path: '%$path%'}),
               css('{ position: absolute; margin-left: -20px; margin-top: 5px }'),
             ]
@@ -389,14 +389,13 @@ jb.component('studio.property-tgp-old', {
         ],
         features: [
           css('{ position: relative }'),
-          studio_watchPath(studio_parentPath('%$path%'), true),
+          studio_watchPath('%$path%'),
         ]
       }),
       group({
         title: 'inner',
         controls: {$: 'studio.properties-in-tgp', path: '%$path%' },
         features: [
-          studio_watchPath('%$path%'),
           watchRef('%$userExpanded%'),
           feature_if('%$userExpanded%'),
           css('{ margin-top: 9px; margin-left: -83px; margin-bottom: 4px;}')
