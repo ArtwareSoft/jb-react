@@ -663,10 +663,10 @@ Object.assign(jb,{
   studio: { previewjb: jb },
   component: (id,val) => {
     jb.comps[id] = val
-    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase())
-    const fixedId = val.reservedWord ? idAsCamel.replace(/([^\.]+$)/, (_,id) => `$${id}`) : idAsCamel
+    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
+    const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
 
-    jb.path(jb.macros, fixedId.split('.'), (...args) => {
+    jb.macros[fixedId] = (...args) => {
       if (args.length == 0)
         return {$: id }
       const params = val.params || []
@@ -679,7 +679,7 @@ Object.assign(jb,{
       if (args.length == 1 && params.length)
         return {$: id, [params[0].id]: args[0]}
       debugger;
-    })
+    }
   },
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => { 

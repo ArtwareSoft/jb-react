@@ -1,3 +1,7 @@
+(function() {
+  const {dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, object, obj, $if, count} = jb.macros
+  const {uiTest,group,editableBoolean,label,hidden,watchRef,feature_if,id,uiAction_click, editableBoolean_expandCollapse} = jb.macros
+  
 jb.resource('globals',{ });
 
 jb.resource('mutable-people',[
@@ -926,24 +930,48 @@ jb.component('ui-test.editable-boolean-settings', {
 })
 
 jb.component('ui-test.editable-boolean.expand-collapse', {
-  impl :{$: 'ui-test',
-  control :{$: 'group',
-  $vars: {
-      MyWidget :{$:'object', expanded: true}
-  },
-  controls:
-    [
-      {$: 'editable-boolean',
-          style :{$: 'editable-boolean.expand-collapse'},
-          databind: '%$MyWidget/expanded%',
-      },
-      { $: 'label', title: 'inner text',
-        features :{ $: 'hidden', showCondition: '%$MyWidget.expanded%' }
-      }
-    ]
-  },
-  expectedResult: { $: 'contains', text: ['inner text'] },
-},
+  impl: uiTest({
+    control: group({
+      controls: [
+        editableBoolean({
+          style: editableBoolean_expandCollapse(),
+          databind: '%$expanded%',
+          features: id('toggle')
+        }),
+        label({
+          title: 'inner text', 
+          features: [  feature_if('%$expanded%'), watchRef('%$expanded%') ]
+        })
+      ],
+      features: {$: 'var', name: 'expanded', mutable: true, value: false}
+    }),
+    action: uiAction_click('#toggle','toggle'),
+    expectedResult: contains('inner text'),
+  }),
+})
+
+jb.component('ui-test.editable-boolean.expand-collapse-starting-with-null', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        editableBoolean({
+          style: editableBoolean_expandCollapse(),
+          databind: '%$expanded%',
+          features: id('toggle')
+        }),
+        label({
+          title: 'inner text', 
+          features: [ 
+            feature_if(({data}) => data === true), 
+            watchRef('%$expanded%') 
+          ]
+        })
+      ],
+      features: {$: 'var', name: 'expanded', mutable: true, value: null}
+    }),
+    action: uiAction_click('#toggle','toggle'),
+    expectedResult: not(contains('inner text')),
+  }),
 })
 
 jb.component('ui-test.code-mirror', {
@@ -1473,3 +1501,5 @@ jb.component('ui-test.boolean-not-reffable-false', {
     expectedResult :{$: 'contains', text: 'false' },
   }
 })
+
+})()

@@ -104,15 +104,16 @@ jb.component('ui-action.click', {
 	type: 'ui-action',
 	params: [
 		{ id: 'selector', as: 'string' },
+		{ id: 'methodToActivate', as: 'string', defaultValue: 'clicked'}
 	],
-	impl: (ctx,selector,value) => {
+	impl: (ctx,selector,methodToActivate) => {
 		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=>
-			e._component && e._component.clicked && e._component.clicked())
-//			e.click())
+			e._component && e._component[methodToActivate] && e._component[methodToActivate]())
 		return jb.delay(1);
 	}
 })
+
 
 jb.component('ui-action.keyboard-event', {
 	type: 'ui-action',

@@ -1,6 +1,5 @@
 (function() {
-const {dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count} = jb.macros
-const {$switch, $case} = jb.macros.data
+const {dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case} = jb.macros
 
 jb.component('delayedObj', {
   params: [
@@ -158,9 +157,9 @@ jb.component('data-test.pipe-with-observable', {
 jb.component('data-test.data-switch-singleInType', {
   impl: dataTest({
     calculate: pipeline(5,
-      $switch(
-          $case(equals(4), 'a'), 
-          $case(equals(5), 'b')
+      data_switch(
+          data_case(equals(4), 'a'), 
+          data_case(equals(5), 'b')
       )),
     expectedResult: contains('b')
   })

@@ -877,7 +877,6 @@ jb.component('asRef', {
 })
 
 jb.component('data.switch', {
-	reservedWord: true,
 	params: [
   	{ id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
   	{ id: 'default', dynamic: true },
@@ -893,7 +892,6 @@ jb.component('data.switch', {
 jb.component('data.case', {
   type: 'data.switch-case',
   singleInType: true,
-  reservedWord: true,
   params: [
   	{ id: 'condition', type: 'boolean', mandatory: true, dynamic: true },
   	{ id: 'value', mandatory: true, dynamic: true },
