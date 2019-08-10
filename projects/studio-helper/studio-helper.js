@@ -404,7 +404,7 @@ jb.component('studio-helper-sample.properties-params', {
     { id: 'boolAsComp', type: 'boolean', as: 'boolean' },
     { id: 'boolAsJs', type: 'boolean', as: 'boolean' },
     { id: 'style', type: 'button.style', defaultValue:{$: 'button.mdl-icon'} },
-    { id: 'style2', type: 'button.style' },
+    { id: 'groupStyle', type: 'group.style' },
     { id: 'action', type: 'action' },
   ],
   impl :{$: 'group' }
@@ -413,7 +413,14 @@ jb.component('studio-helper-sample.properties-params', {
 jb.component('studio-helper-sample.properties-params-prof', {
   type: 'contsdfdswqeqweqwewqe ', 
   impl :{$: 'studio-helper-sample.properties-params', 
-    strAsComp :{ $pipeline: [{$: 'split', separator: ',', text: '1,2,3,4,5,6,7,8' }, '%%'], remark: 'asad' }, 
+    strAsComp :{
+      $pipeline: [
+        {$: 'split', separator: ',', text: '1,2,3,4,5,6,7,8' }, 
+        '%%', 
+        {$: 'count', items: '%%' }
+      ], 
+      remark: 'asad'
+    }, 
     strAsJs: ctx => ctx.vars.aa, 
     boolAsComp :{ $pipeline: ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '%%==\"a\"'] }, 
     boolAsJs: ctx => ctx.vars.aa, 
@@ -422,7 +429,8 @@ jb.component('studio-helper-sample.properties-params-prof', {
     bool :{ $or: [false] }, 
     style :{$: 'button.href' }, 
     style2 :{$: 'button.mdl-icon' }, 
-    features :{$: 'css.class' }
+    features :{$: 'css.class' }, 
+    groupStyle :{$: 'layout.horizontal', spacing: '38' }
   }, 
   $vars: {  }
 })

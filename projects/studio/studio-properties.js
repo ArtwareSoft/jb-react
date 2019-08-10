@@ -396,6 +396,7 @@ jb.component('studio.property-tgp-old', {
         title: 'inner',
         controls: {$: 'studio.properties-in-tgp', path: '%$path%' },
         features: [
+          studio_watchPath('%$path%'),
           watchRef('%$userExpanded%'),
           feature_if('%$userExpanded%'),
           css('{ margin-top: 9px; margin-left: -83px; margin-bottom: 4px;}')

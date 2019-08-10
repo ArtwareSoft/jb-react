@@ -7,6 +7,7 @@ jb.component('studio.suggestions-itemlist', {
     items: '%$suggestionData/options%',
     controls :{$: 'label',
       title: '%text%',
+      features: {$: 'css.padding', right: '2', left: '3' },
 //      title: {$: 'highlight', base: '%text%', highlight: '%$suggestionData/tail%'},
     },
     watchItems: true,
@@ -159,7 +160,7 @@ jb.component('studio.jb-floating-input', {
         updateOnBlur: true, 
         style :{$: 'custom-style', 
           template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
-        h('input', { class: 'mdl-textfield__input', id: 'jb_input_' + state.fieldId, type: 'text',
+        h('input', { class: 'mdl-textfield__input', id1: 'jb_input_' + state.fieldId, type: 'text', autocomplete: 'nop',
             value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
         }),

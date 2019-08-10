@@ -233,6 +233,8 @@ class ImmutableWithJbId {
 
 // 0- equals, -1,1 means contains -2,2 lexical
 function comparePaths(path1,path2) {
+    path1 = path1 || ''
+    path2 = path2 || ''
     let i=0;
     while(path1[i] === path2[i] && i < path1.length) i++;
     if (i == path1.length && i == path2.length) return 0;
