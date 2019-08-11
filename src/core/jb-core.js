@@ -699,7 +699,7 @@ Object.assign(jb,{
     if (typeof value == 'undefined') {  // get
       for(let i=0;i<path.length;i++) {
         cur = cur[path[i]];
-        if (cur == null || typeof cur == 'undefined') return null;
+        if (cur === null || cur === undefined) return cur;
       }
       return cur;
     } else { // set

@@ -88,6 +88,7 @@
                 this.result = this.probe[_path] || []
                 return
             }
+            if (!breakingProp) return
 
             // check if parent ctx returns object with method name of breakprop as in dialog.onOK
             var parentCtx = this.probe[_path][0].ctx, breakingPath = _path+'~'+breakingProp

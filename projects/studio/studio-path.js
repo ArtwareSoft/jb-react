@@ -57,8 +57,8 @@ Object.assign(st,{
 	},
   parentPath: path =>
 		path.split('~').slice(0,-1).join('~'),
-  valOfPath: (path,silent) =>
-  	st.val(st.refOfPath(path,silent)),
+  valOfPath: path => 
+  	jb.path(st.previewjb.comps,path.split('~')),
   compNameOfPath: (path,silent) => {
     if (path.indexOf('~') == -1)
       return 'jb-component';
