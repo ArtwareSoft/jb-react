@@ -413,6 +413,7 @@ jb.component('studio-helper-sample.properties-params', {
 jb.component('studio-helper-sample.properties-params-prof', {
   type: 'contsdfdswqeqweqwewqe ', 
   impl :{$: 'studio-helper-sample.properties-params', 
+    str: 'hello',
     strAsComp :{
       $pipeline: [
         {$: 'split', separator: ',', text: '1,2,3,4,5,6,7,8' }, 

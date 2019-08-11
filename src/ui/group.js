@@ -69,7 +69,14 @@ jb.component('control.first-succeeding', {
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx => jb.ui.ctrl(new jb.jbCtx(ctx,{params: Object.assign({},ctx.params,{
-      controls: ctx2 => ctx2.run(ctx.profile.controls).filter(x=>x).slice(0,1)
+      controls: ctx2 => {
+        for(let i=0;i<ctx.profile.controls.length;i++) {
+          const res = ctx2.runInner(ctx.profile.controls[i],null,i)
+          if (res)
+            return [res]
+        }
+        return []
+      }
     })}))
 })
 

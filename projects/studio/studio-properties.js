@@ -164,54 +164,57 @@ jb.component('studio.property-field', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
   impl: group({
-  $vars: {
-    paramType: studio_paramType('%$path%'), 
-    paramDef: studio_paramDef('%$path%')
-  }, 
-  title: studio_propName('%$path%'), 
-  controls: control_firstSucceeding({controls: [
-        controlWithCondition(
-          and(
-            studio_isOfType('%$path%','data,boolean'),
-            not(isOfType('string,number,boolean,undefined',studio_val('%$path%')))
-          ),
-          {$: 'studio.property-script', path: '%$path%' }
-        ),
-        controlWithCondition(
-          and(
-            studio_isOfType('%$path%','action'),
-            isOfType('array',studio_val('%$path%'))
-          ),
-          {$: 'studio.property-script', path: '%$path%' }
-        ),
-        controlWithCondition('%$paramDef/options%',{$: 'studio.property-enum', path: '%$path%' }),
-        controlWithCondition('%$paramDef/as%==\"number\"', {$: 'studio.property-slider', path: '%$path%' }),
-        controlWithCondition(
-          and(
-            '%$paramDef/as%==\"boolean\"',
-            or(
-              inGroup(list('true,false'),studio_val('%$path%')),
-              isEmpty(studio_val('%$path%'))
+    title: studio_propName('%$path%'), 
+    controls: control_firstSucceeding({
+      $vars: {
+        paramType: studio_paramType('%$path%'), 
+        paramDef: studio_paramDef('%$path%'),
+        fieldValue: studio_val('%$path%'),
+        hasPrimitiveValue: isOfType('string,number,boolean,undefined',studio_val('%$path%')),
+      }, 
+      controls: [
+          controlWithCondition(
+            and(
+              studio_isOfType('%$path%','data,boolean'),
+              not('%$hasPrimitiveValue%')
             ),
-            not('%$paramDef/dynamic%')
+            {$: 'studio.property-script', path: '%$path%' }
           ),
-          {$: 'studio.property-boolean', path: '%$path%' }
-        ),
-        controlWithCondition(
-          and(
-            studio_isOfType('data'),
-            isOfType('string,number,boolean,undefined',studio_val('%$path%')),
+          controlWithCondition(
+            and(
+              studio_isOfType('%$path%','action'),
+              isOfType('array','%$fieldValue%')
+            ),
+            {$: 'studio.property-script', path: '%$path%' }
           ),
-          {$: 'studio.property-primitive', path: '%$path%' }
-        ),
-        {$: 'studio.property-tgp-old', path: '%$path%' }
-      ], 
+          controlWithCondition('%$paramDef/options%',{$: 'studio.property-enum', path: '%$path%' }),
+          controlWithCondition('%$paramDef/as%==\"number\"', {$: 'studio.property-slider', path: '%$path%' }),
+          controlWithCondition(
+            and(
+              '%$paramDef/as%==\"boolean\"',
+              or(
+                inGroup(list('true,false'),'%$fieldValue%'),
+                isEmpty('%$fieldValue%')
+              ),
+              not('%$paramDef/dynamic%')
+            ),
+            {$: 'studio.property-boolean', path: '%$path%' }
+          ),
+          controlWithCondition(
+            and(
+              studio_isOfType('%$path%','data'),
+              '%$hasPrimitiveValue%',
+            ),
+            {$: 'studio.property-primitive', path: '%$path%' }
+          ),
+          {$: 'studio.property-tgp-old', path: '%$path%' }
+        ], 
+      }),
       features: [
         {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
-        {$: 'studio.watch-typeof-script', path: '%$path%' }
+        {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
       ]
     })
-  })
 })
 
 jb.component('studio.property-label',{
