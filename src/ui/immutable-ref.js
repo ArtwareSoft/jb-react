@@ -125,7 +125,10 @@ class ImmutableWithJbId {
       return ref.handler.val(ref)
     }
     const path = this.pathOfRef(ref);
-    if (!path) debugger
+    if (!path) {
+      debugger
+      this.pathOfRef(ref)
+    }
     return this.valOfPath(path)
   }
   isRef(ref) {

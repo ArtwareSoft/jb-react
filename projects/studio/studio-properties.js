@@ -209,21 +209,13 @@ jb.component('studio.property-field', {
           ),
           {$: 'studio.property-tgp-old', path: '%$path%' }
         ], 
+//        features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
       }),
       features: [
         {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
-        {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
       ]
     })
 })
-
-jb.component('studio.property-label',{
-	type: 'control',
-	params: [ {id: 'path', as: 'string' } ],
-	impl :{$: 'label',
-		title :{$: 'studio.prop-name', path: '%$path%' },
-	}
-});
 
 jb.component('studio.property-script', {
   type: 'control',
@@ -235,40 +227,32 @@ jb.component('studio.property-script', {
         title :{$: 'studio.data-script-summary', path: '%$path%' },
         action :{$: 'studio.open-jb-editor',path: '%$path%' } ,
         style :{$: 'button.studio-script'}
-    }
+    },
+    features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
   }
 })
 
-jb.component('studio.property-js-script', {
-  type: 'control',
-  params: [
-    { id: 'path', as: 'string' }
-  ],
-  impl :{$: 'group',
-    controls :{$: 'button',
-        title :{$: 'studio.js-script-summary', path: '%$path%' },
-        action :{$: 'studio.open-js-editor',path: '%$path%' } ,
-        style :{$: 'button.studio-script'}
-    }
-  }
-})
+// jb.component('studio.property-js-script', {
+//   type: 'control',
+//   params: [
+//     { id: 'path', as: 'string' }
+//   ],
+//   impl :{$: 'group',
+//     controls :{$: 'button',
+//         title :{$: 'studio.js-script-summary', path: '%$path%' },
+//         action :{$: 'studio.open-js-editor',path: '%$path%' } ,
+//         style :{$: 'button.studio-script'}
+//     }
+//   }
+// })
 
 jb.component('studio.data-script-summary', {
   type: 'data',
   params: [
     { id: 'path', as: 'string' }
   ],
-  impl: (ctx,path) => {
-    var st = jb.studio;
-    return jb.prettyPrint(st.valOfPath(path));
-  	// var val = st.valOfPath(path);
-  	// if (st.compNameOfPath(path))
-  	// 	return st.compNameOfPath(path);
-  	// if (Array.isArray(val))
-  	// 	return st.prettyPrint(val);
-  	// if (typeof val == 'function')
-  	// 	return 'javascript';
-  }
+  impl: (ctx,path) => 
+    jb.prettyPrint(jb.studio.valOfPath(path))
 })
 
 jb.component('studio.property-boolean', {
@@ -277,11 +261,7 @@ jb.component('studio.property-boolean', {
   impl :{$: 'editable-boolean',
     databind :{$: 'studio.ref', path: '%$path%' },
     style :{$: 'editable-boolean.mdl-slide-toggle' },
-    features: [
-//      {$: 'studio.undo-support', path: '%$path%' },
-//      {$: 'studio.property-toolbar-feature', path: '%$path%' },
-      //{$: 'css.width', width: '150' }
-    ]
+    features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }  
   }
 })
 
@@ -292,7 +272,7 @@ jb.component('studio.property-enum', {
     databind :{$: 'studio.ref', path: '%$path%' },
     options :{$: 'studio.enum-options', path: '%$path%' },
     style :{$: 'picklist.native-md-look' },
-    //features: {$: 'css.width', width: '370' }
+    features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
   }
 })
 
@@ -308,11 +288,13 @@ jb.component('studio.property-slider', {
     min :{ $firstSucceeding: ['%$paramDef/min%', 0] },
     max :{ $firstSucceeding: ['%$paramDef/max%', 100] },
     step :{ $firstSucceeding: ['%$paramDef/step%', 1] },
-    features :{$: 'css',
+    features :[{$: 'css',
       width: '212',
       css: `>input-slider { width: 110px; }
 >.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }`
-    }
+    },
+    {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
+  ]
   }
 })
 
@@ -324,7 +306,8 @@ jb.component('studio.property-tgp', {
     {$: 'studio.pick-profile', path: '%$path%' }, 
     {$: 'label', title: 'aa'},
     {$: 'studio.properties-in-tgp', path: '%$path%' }
-  ]
+  ],
+  features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
  }
 })
 
@@ -442,7 +425,7 @@ jb.component('studio.property-tgp-in-array', {
         value :{$: 'studio.is-new', path: '%$path%' }, 
         mutable: true
       }, 
-      {$: 'studio.watch-path', path: '%$path%' }
+      {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
     ]
   }
 })
@@ -469,7 +452,8 @@ jb.component('studio.property-array', {
               {$: 'itemlist.drag-and-drop' }
             ]
           }
-        ]
+        ],
+        features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
       },
       // {$: 'button',
       //   title: 'new feature',

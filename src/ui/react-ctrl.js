@@ -381,13 +381,17 @@ ui.item = function(cmp,vdom,data) {
 ui.watchRef = function(ctx,cmp,ref,includeChildren) {
 		if (!ref)
 			jb.logError('null ref for watch ref',...arguments);
-    ref && ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
+    	ref && ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
 			.subscribe(e=>{
-        if (ctx && ctx.profile && ctx.profile.$trace)
-		  console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
-		
-        return ui.setState(cmp,null,e,ctx);
-      })
+				const callerPath = jb.path(e,['srcCtx','componentContext','callerPath'])
+				const ctxStylePath = ctx.path.replace(/~features~[0-9]*$/,'~style')
+				if (callerPath === ctxStylePath) // ignore - generated from a watchRef feature of the same path
+					return
+				if (ctx && ctx.profile && ctx.profile.$trace)
+				console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
+				
+				return ui.setState(cmp,null,e,ctx);
+	      })
 }
 
 ui.toVdomOrStr = val => {

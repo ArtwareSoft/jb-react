@@ -4,11 +4,11 @@
 jb.component('studio.suggestions-itemlist', {
   params: [{ id: 'path', as: 'string' }],
   impl :{$: 'itemlist',
-    items: '%$suggestionData/options%',
+    items: '%$studio/suggestionData/options%',
     controls :{$: 'label',
       title: '%text%',
       features: {$: 'css.padding', right: '2', left: '3' },
-//      title: {$: 'highlight', base: '%text%', highlight: '%$suggestionData/tail%'},
+//      title: {$: 'highlight', base: '%text%', highlight: '%$studio/suggestionData/tail%'},
     },
     watchItems: true,
     features: [
@@ -18,7 +18,7 @@ jb.component('studio.suggestions-itemlist', {
 //        expressionOnly: true
       },
       {$: 'itemlist.selection',
-        databind: '%$suggestionData/selected%',
+        databind: '%$studio/suggestionData/selected%',
         onDoubleClick :{$: 'studio.paste-suggestion' },
         autoSelectFirst: true
       },
@@ -28,7 +28,7 @@ jb.component('studio.suggestions-itemlist', {
         ],
         autoFocus: false
       },
-      {$: 'feature.onKey', code: 39, action :{$: 'studio.paste-suggestion', option: '%$suggestionData/selected%', close: false }}, // right arrow should drill down
+      {$: 'feature.onKey', code: 39, action :{$: 'studio.paste-suggestion', option: '%$studio/suggestionData/selected%', close: false }}, // right arrow should drill down
       {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' },
       {$: 'css.width', width: '300', overflow: 'auto', minMax: 'min' },
       {$: 'css',
@@ -36,7 +36,7 @@ jb.component('studio.suggestions-itemlist', {
       },
       {$: 'css.border', width: '1', color: '#cdcdcd' },
       {$: 'css.padding', top: '2', left: '3', selector: 'li' },
-      {$: 'feature.if', showCondition :{ $notEmpty: '%$suggestionData/options%' } },
+      {$: 'feature.if', showCondition :{ $notEmpty: '%$studio/suggestionData/options%' } },
     ]
   }
 })
@@ -83,9 +83,9 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
             //    });
             //  }
               jb.log('suggestions',['before write values', input.value, cmp, cmp.ctx.path]);
-              cmp.ctx.run({$:'write-value', to: '%$suggestionData/tail%', value: ctx => e.tail })
-              cmp.ctx.run({$:'write-value', to: '%$suggestionData/options%', value: ctx => e.options });
-              cmp.ctx.run({$:'write-value', to: '%$suggestionData/selected%', value: ctx => e.options[0] });
+              cmp.ctx.run({$:'write-value', to: '%$studio/suggestionData/tail%', value: ctx => e.tail })
+              cmp.ctx.run({$:'write-value', to: '%$studio/suggestionData/options%', value: ctx => e.options });
+              cmp.ctx.run({$:'write-value', to: '%$studio/suggestionData/selected%', value: ctx => e.options[0] });
               jb.log('suggestions',['after write values', input.value, cmp, cmp.ctx.path]);
           });
 
@@ -119,6 +119,7 @@ jb.component('studio.property-primitive', {
         features: [
 //          {$: 'studio.undo-support', path: '%$path%' },
 //          {$: 'studio.property-toolbar-feature', path: '%$path%' },
+          {$: 'studio.watch-path', path: '%$path%', includeChildren: true },
           {$: 'editable-text.helper-popup',
             features :{$: 'dialog-feature.near-launcher-position' },
             control :{$: 'studio.suggestions-itemlist', path: '%$path%' },
@@ -130,11 +131,9 @@ jb.component('studio.property-primitive', {
       }
     ],
     features: [
-      {$: 'var',
-        name: 'suggestionData',
-        value :{$: 'object', selected: '', options: [], path: '%$path%' },
-        mutable: true
-      },
+      {$:'feature.init', action :{$: 'write-value', 
+        to: '%$studio/suggestionData%', value :{$: 'object', selected: '', options: [], path: '%$path%' } 
+      }}, 
 //      {$: 'studio.property-toolbar-feature', path: '%$path%' }
     ]
   }
@@ -173,11 +172,9 @@ jb.component('studio.jb-floating-input', {
           ]
         }, 
         features: [
-          {$: 'var', 
-            name: 'suggestionData', 
-            value :{$: 'object', selected: '', options: [], path: '%$path%' }, 
-            mutable: true
-          }, 
+          {$:'feature.init', action :{$: 'write-value', 
+            to: '%$studio/suggestionData%', value :{$: 'object', selected: '', options: [], path: '%$path%' } 
+          }}, 
           {$: 'editable-text.helper-popup', 
             features :{$: 'dialog-feature.near-launcher-position' }, 
             control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
@@ -325,7 +322,7 @@ class ValueOption {
     }
     writeValue(ctx) {
       var input = ctx.vars.selectionKeySource.input;
-      var path = ctx.exp('%$suggestionData/path%','string');
+      var path = ctx.exp('%$studio/suggestionData/path%','string');
       st.writeValueOfPath(path,input.value);
     }
 }
@@ -349,7 +346,7 @@ class CompOption {
         // };
     }
     writeValue(ctx) {
-      st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste);
+      st.setComp(ctx.exp('%$studio/suggestionData/path%','string'),this.toPaste);
       ctx.run({$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' });
       ctx.run({$:'studio.expand-and-select-first-child-in-jb-editor' });
     }
