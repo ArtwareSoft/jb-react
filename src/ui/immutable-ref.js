@@ -146,8 +146,8 @@ class ImmutableWithJbId {
     }
   }
   writeValue(ref,value,srcCtx) {
-    if (!ref || !this.isRef(ref))
-      return jb.logError('writeValue: err in ref', srcCtx);
+    if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
+      return jb.logError('writeValue: err in ref', srcCtx, ref, value);
 
     jb.log('writeValue',['immutable',this.asStr(ref),value,ref,srcCtx]);
     if (ref.$jb_val)

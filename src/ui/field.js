@@ -132,6 +132,32 @@ jb.component('field.init-value', {
     ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind, jb.val(value))
 })
 
+jb.component('field.keyboard-shortcut', {
+  type: 'feature', category: 'events',
+	description: 'listen to events at the document level even when the component is not active',
+  params: [
+    { id: 'key', as: 'string', description: 'e.g. Alt+C' },
+    { id: 'action', type: 'action', dynamic: true },
+  ],
+  impl: (context,key,action) => ({
+      afterViewInit: cmp =>
+      jb.rx.Observable.fromEvent(cmp.base.querySelector('input'), 'keydown')
+            .takeUntil( cmp.destroyed )
+            .subscribe(event=>{
+              var keyStr = key.split('+').slice(1).join('+');
+              var keyCode = keyStr.charCodeAt(0);
+              if (key == 'Delete') keyCode = 46;
+
+              var helper = (key.match('([A-Za-z]*)+') || ['',''])[1];
+              if (helper == 'Ctrl' && !event.ctrlKey) return
+              if (helper == 'Alt' && !event.altKey) return
+              if (event.keyCode == keyCode || (event.key && event.key == keyStr))
+                action();
+            })
+      })
+})
+
+
 jb.component('field.subscribe', {
   type: 'feature',
   params: [

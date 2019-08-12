@@ -22,7 +22,7 @@ jb.component('studio.jb-editor-container', {
   ],
   impl :{$list : [
     {$: 'var', name: 'jbEditorCntrData', value: {$: 'object', selected: '%$initialSelection%', circuit: '%$circuit%' } , 
-        mutable: true, globalId: 'itemlistCntrData:%$id%'},
+        mutable: true, globalId: 'jbEditorCntrData:%$id%'},
   ]}
 })
 

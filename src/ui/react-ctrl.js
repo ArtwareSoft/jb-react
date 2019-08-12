@@ -388,7 +388,7 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren) {
 				if (callerPath === ctxStylePath) // ignore - generated from a watchRef feature of the same path
 					return
 				if (ctx && ctx.profile && ctx.profile.$trace)
-				console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
+					console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
 				
 				return ui.setState(cmp,null,e,ctx);
 	      })

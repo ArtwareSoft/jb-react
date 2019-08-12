@@ -1734,39 +1734,34 @@
     },
   })
 
-  jb.component('ui-test.dynamic-first-succeeding', {
+  jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change', {
     impl: {
       $: 'ui-test',
       control: {
         $: 'group',
         controls: [
-          { $: 'editable-boolean', databind: '%$male%' },
-          {
-            $: 'button', title: 'change',
-            action: { $: 'write-value', to: '%$male%', value: false }
+          { $: 'editable-text', databind: '%$gender%' },
+          { $: 'button', title: 'female', 
+            action: { $: 'write-value', to: '%$gender%', value: 'female' },
+            features: id('female')
           },
+          {$: 'button', title: 'zee', action: { $: 'write-value', to: '%$gender%', value: 'zee' }, features: id('zee') },
           {$: 'control.first-succeeding',
             controls: [
               {
                 $: 'control-with-condition',
-                condition: '%$male%',
+                condition: '%$gender% == "male"',
                 control: { $: 'label', title: 'male' }
               },
-              {
-                $: 'control-with-condition',
-                condition: { $not: '%$male%' },
-                control: { $: 'label', title: 'female' }
-              },
+              {$: 'label', title: 'not male' }
             ],
-            features: { $: 'watch-ref', ref: '%$male%' }
+            features: {$: 'first-succeeding.watch-refresh-on-ctrl-change', ref: '%$gender%' }
           },
         ],
-        features: [
-          { $: 'var', name: 'male', value: true, mutable: true }
-        ]
+        features: { $: 'var', name: 'gender', value: 'male', mutable: true }
       },
-      action: { $: 'ui-action.click', selector: 'button' },
-      expectedResult: { $: 'contains', text: ['female'] },
+      action: runActions(uiAction_click('#female'),uiAction_click('#zee')),
+      expectedResult: contains('not male'),
     },
   })
 

@@ -395,7 +395,7 @@ jb.component('studio-helper.editable-text-input', {
 jb.component('studio-helper-sample.properties-params', {
   type: 'control',
   params: [
-    { id: 'str', as: 'string' },
+    { id: 'simpleStr', as: 'string' },
     { id: 'strAsComp', as: 'string' },
     { id: 'strAsJs', as: 'string' },
     { id: 'enumStr', as: 'string', options: 'a,b,c' },
@@ -413,7 +413,7 @@ jb.component('studio-helper-sample.properties-params', {
 jb.component('studio-helper-sample.properties-params-prof', {
   type: 'contsdfdswqeqweqwewqe ', 
   impl :{$: 'studio-helper-sample.properties-params', 
-    str: 'hello',
+    simpleStr: 'hello',
     strAsComp :{
       $pipeline: [
         {$: 'split', separator: ',', text: '1,2,3,4,5,6,7,8' }, 

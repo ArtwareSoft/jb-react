@@ -167,23 +167,20 @@ jb.component('studio.property-field', {
     title: studio_propName('%$path%'), 
     controls: control_firstSucceeding({
       $vars: {
-        paramType: studio_paramType('%$path%'), 
         paramDef: studio_paramDef('%$path%'),
-        fieldValue: studio_val('%$path%'),
-        hasPrimitiveValue: isOfType('string,number,boolean,undefined',studio_val('%$path%')),
       }, 
       controls: [
           controlWithCondition(
             and(
               studio_isOfType('%$path%','data,boolean'),
-              not('%$hasPrimitiveValue%')
+              not(isOfType('string,number,boolean,undefined',studio_val('%$path%')))
             ),
             {$: 'studio.property-script', path: '%$path%' }
           ),
           controlWithCondition(
             and(
               studio_isOfType('%$path%','action'),
-              isOfType('array','%$fieldValue%')
+              isOfType('array',studio_val('%$path%'))
             ),
             {$: 'studio.property-script', path: '%$path%' }
           ),
@@ -193,26 +190,21 @@ jb.component('studio.property-field', {
             and(
               '%$paramDef/as%==\"boolean\"',
               or(
-                inGroup(list('true,false'),'%$fieldValue%'),
-                isEmpty('%$fieldValue%')
+                inGroup(list('true,false'),studio_val('%$path%')),
+                isEmpty(studio_val('%$path%'))
               ),
               not('%$paramDef/dynamic%')
             ),
             {$: 'studio.property-boolean', path: '%$path%' }
           ),
-          controlWithCondition(
-            and(
-              studio_isOfType('%$path%','data'),
-              '%$hasPrimitiveValue%',
-            ),
-            {$: 'studio.property-primitive', path: '%$path%' }
-          ),
+          controlWithCondition( studio_isOfType('%$path%','data'), {$: 'studio.property-primitive', path: '%$path%' } ),
           {$: 'studio.property-tgp-old', path: '%$path%' }
         ], 
-//        features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
+        features: {$: 'first-succeeding.watch-refresh-on-ctrl-change', ref: {$:'studio.ref', path: '%$path%'}, includeChildren: true }
       }),
       features: [
-        {$: 'studio.property-toolbar-feature', path: '%$path%' }, 
+        {$: 'studio.property-toolbar-feature', path: '%$path%' },
+        {$: 'field.keyboard-shortcut', key: 'Ctrl+I', action :{$: 'studio.open-jb-editor',  path : '%$path%' } },
       ]
     })
 })

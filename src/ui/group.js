@@ -69,9 +69,11 @@ jb.component('control.first-succeeding', {
     { id: 'features', type: 'feature[]', dynamic: true },
   ],
   impl: ctx => jb.ui.ctrl(new jb.jbCtx(ctx,{params: Object.assign({},ctx.params,{
+      originalControls: ctx.profile.controls,
       controls: ctx2 => {
         for(let i=0;i<ctx.profile.controls.length;i++) {
           const res = ctx2.runInner(ctx.profile.controls[i],null,i)
+          res.firstSucceedingIndex = i;
           if (res)
             return [res]
         }
@@ -79,6 +81,35 @@ jb.component('control.first-succeeding', {
       }
     })}))
 })
+
+jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
+  type: 'feature', category: 'watch:30', description: 'relevant only for first-succeeding',
+  params: [
+    { id: 'ref', mandatory: true, as: 'ref', description: 'reference to data' },
+    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+  ],
+  impl: (ctx,ref,includeChildren) => ({
+      init: cmp =>
+        ref && jb.ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
+        .subscribe(e=>{
+          if (ctx && ctx.profile && ctx.profile.$trace)
+            console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
+          
+          const originalControls = ctx.vars.$model.originalControls
+          for(let i=0;i<(originalControls ||[]).length;i++) {
+            const res = cmp.ctx.runInner(originalControls[i],null,i)
+            if (res) {
+              if (cmp.state.ctrls[0].jbComp.firstSucceedingIndex !== i) {
+                res.firstSucceedingIndex = i
+                jb.ui.setState(cmp,{ctrls: [jb.ui.renderable(res)]},e,ctx);
+              }
+              return
+            }
+          }
+      })
+  })
+})
+
 
 jb.component('control-with-condition', {
   type: 'control',
