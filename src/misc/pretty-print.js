@@ -134,6 +134,25 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
     for (var i = 0; i < depth; i++) result += '               '.substr(0,tabSize);
     remainedInLine = colWidth - tabSize * depth;
   }
+
+  function flatMacro(prof,id,comp) {
+    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
+    const macro = comp.reservedWord ? `$${idAsCamel}` : idAsCamel
+
+    const params = comp.params || []
+    if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus
+      const args = jb.toarray(prof['$'+id] || prof[params[0].id]).map(arg=>flat_val(arg)).join(',')
+      return `${macro}(${args})`
+    }
+    if (params.length < 3 || comp.usageByValue) {
+      const args = params.map(param=>flat_val(obj[param.id]))
+      if (args.length && args[args.length-1] === undefined) args.pop()
+      if (args.length && args[args.length-1] === undefined) args.pop()
+      return `${macro}(${args})`
+    }
+    return flat_obj(obj)
+  }
+
   function flat_obj(obj) {
     var props = sortedPropertyNames(obj)
       .filter(p=>showNulls || obj[p] != null)
@@ -165,5 +184,3 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
     return '[' + array.map(item=>flat_val(item)).join(', ') + ']';
   }
 }
-;
-

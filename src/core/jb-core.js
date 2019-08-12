@@ -343,13 +343,13 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
 
       if (input != null && typeof input == 'object') {
-        if (obj == null) return;
+        if (obj === null || obj === undefined) return;
         if (typeof obj[subExp] === 'function' && (parentParam.dynamic || obj[subExp].profile))
             return obj[subExp](ctx);
         if (jstype == 'ref') {
           if (last)
             return refHandler.objectProperty(obj,subExp);
-          if (typeof obj[subExp] === 'undefined')
+          if (obj[subExp] === undefined)
             obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
         }
         if (last && jstype)
@@ -361,6 +361,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
     jb.log('implicitlyCreateInnerObject',[...arguments]);
     parent[prop] = {};
     refHandler.refreshMapDown && refHandler.refreshMapDown(parent)
+    return parent[prop]
   }
 }
 

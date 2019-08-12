@@ -55,7 +55,7 @@ jb.component('studio.preview-widget-impl', {
           height: cmp.ctx.vars.$model.height,
           src: (state.entry_file ? `/${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
       }),
-      css: `{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px;  }`
+      css: `{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }`
   }
 })
 
@@ -75,10 +75,15 @@ jb.component('studio.set-preview-size', {
     { id: 'height', as: 'number'},
   ],
   impl: (ctx,width,height) => {
-    if (width)
+    document.querySelector('.preview-iframe').style.width = `${width}px`
+    if (width) {
+      document.querySelector('.preview-iframe').style.width = `${width}px`
       document.querySelector('.preview-iframe').setAttribute('width',width);
-    if (height)
+    } 
+    if (height) {
+      document.querySelector('.preview-iframe').style.height = `${height}px`
       document.querySelector('.preview-iframe').setAttribute('height',height);
+    }
   }
 })
 
