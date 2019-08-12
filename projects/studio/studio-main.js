@@ -242,7 +242,7 @@ jb.component('studio.main-menu', {
           }, 
           {$: 'menu.action', 
             title: 'Source ...', 
-            action :{$: 'studio.open-source-dialog' }
+            action :{$: 'studio.edit-source', path: {$: 'studio.currentProfilePath'} }
           }
         ]
       }, 
@@ -266,8 +266,8 @@ jb.component('studio.main-menu', {
             action :{$: 'studio.open-control-tree' }
           }, 
           {$: 'menu.action', 
-            title: 'jbEditor', 
-            action :{$: 'studio.openjbEditor' }
+            title: 'Inteliscript Editor', 
+            action :{$: 'studio.open-jb-editor', path: {$: 'studio.currentProfilePath'} }
           }, 
           {$: 'menu.action', 
             title: 'Disable probe', 

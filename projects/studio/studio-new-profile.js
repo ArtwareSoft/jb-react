@@ -126,7 +126,7 @@ jb.component('studio.select-profile', {
       style :{$: 'layout.horizontal', spacing: 3 }, 
       controls: [
         {$: 'itemlist-container.search', 
-          title :{$: 'studio.prop-name', path: '%$path%' }, 
+          title : 'search', //{$: 'studio.prop-name', path: '%$path%' }, 
           searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
           databind: '%$itemlistCntrData/search_pattern%', 
           style :{$: 'editable-text.mdl-input', width: '200' }, 
@@ -391,7 +391,7 @@ jb.component('studio.insert-comp-option', {
     { id: 'comp', as: 'string' },
   ],
   impl :{$: 'menu.action', title: '%$title%',
-    action :{$: 'studio.insert-comp', comp: '%$comp%', type: 'control' },
+    action :{$: 'studio.insert-control', comp: '%$comp%', path: {$: 'studio.currentProfilePath'} },
   }
 })
 
@@ -407,11 +407,6 @@ jb.component('studio.insert-control-menu', {
               {$: 'studio.insert-comp-option', title:'Editable Text', comp: 'editable-text'},
               {$: 'studio.insert-comp-option', title:'Editable Number', comp: 'editable-number'},
               {$: 'studio.insert-comp-option', title:'Editable Boolean', comp: 'editable-boolean'},
-            ]
-          },
-          {$: 'menu.menu', title: 'Group', options: [
-              {$: 'studio.insert-comp-option', title:'Group', comp: 'group'},
-              {$: 'studio.insert-comp-option', title:'Itemlist', comp: 'itemlist'},
             ]
           },
           {$: 'menu.action',

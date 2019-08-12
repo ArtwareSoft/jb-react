@@ -207,6 +207,8 @@ Object.assign(st, {
 		if (st.controlParams(path)[0] == 'fields' && newCtrl.$ != 'field')
 			newCtrl = { $: 'field.control', control : newCtrl};
 		// find group parent that can insert the control
+		if (path.indexOf('~') == -1)
+			path = path + '~impl';		
 		var group_path = path;
 		while (st.controlParams(group_path).length == 0 && group_path)
 			group_path = st.parentPath(group_path);
@@ -334,8 +336,9 @@ jb.component('studio.is-new', {
 	params: [ {id: 'path', as: 'string' } ],
 	impl: (ctx,path) => {
 		if (st.compsHistory.length == 0 || st.previewjb.comps.$jb_selectionPreview) return false;
-		var version_before = new jb.ui.ImmutableWithJbId(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
-		var res =  JSON.stringify(st.valOfPath(path)) != JSON.stringify(st.val(version_before));
+		//var version_before = new jb.ui.ImmutableWithJbId(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
+		var res =  JSON.stringify(jb.path(st.compsHistory.slice(-1)[0].before,path.split('~'))) != 
+					JSON.stringify(jb.path(st.previewjb.comps,path.split('~')));
 //		var res =  st.valOfPath(path) && !st.val(version_before);
 		return res;
 	}
