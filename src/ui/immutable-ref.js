@@ -5,6 +5,8 @@
 //     $jb_childProp: 'title', // used for primitive props
 // }
 
+let isProxy = Symbol("isProxy")
+
 class ImmutableWithJbId {
   constructor(resources) {
     this.resources = resources;
@@ -47,7 +49,7 @@ class ImmutableWithJbId {
     jb.path(op,path,opOnRef); // create op as nested object
     const opEvent = {op: opOnRef, path, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime()};
     this.resources(jb.ui.update(this.resources(),op),opEvent);
-    const newVal = this.valOfPath(path);
+    const newVal = (opVal != null && opVal[isProxy]) ? opVal : this.valOfPath(path);
     if (opOnRef.$push) {
         this.addObjToMap(opOnRef.$push,[...path,oldVal.length])
     } else {
@@ -61,7 +63,7 @@ class ImmutableWithJbId {
     return opEvent;
   }
   addObjToMap(top,path) {
-    if (!top || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
+    if (!top || top[isProxy] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
     if (top.$jb_id) {
         this.objToPath.set(top.$jb_id,path)
         this.objToPath.delete(top)
@@ -160,7 +162,7 @@ class ImmutableWithJbId {
       const ref = this.asRef(val);
       if (ref.$jb_obj)
         return new Proxy(val, {
-          get: (o,p) => p === '$jb_secondaryLink' ? {val} : o[p],
+          get: (o,p) => (p === isProxy) ? true : (p === '$jb_secondaryLink' ? {val} : (jb.val(this.asRef(val)))[p]),
           set: (o,p,v) => o[p] = v
         })
     }

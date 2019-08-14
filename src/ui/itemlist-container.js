@@ -69,15 +69,16 @@ jb.component('group.itemlist-container', {
 jb.component('itemlist.itemlist-selected', {
 	type: 'feature',   category: 'itemlist:20,group:0',
 	impl :{ $list : [
-				{$: 'group.data', data : '%$itemlistCntrData/selected%'},
-				{$: 'hidden', showCondition: {$notEmpty: '%$itemlistCntrData/selected%' } }
-			]}
+			{$: 'group.data', data : '%$itemlistCntrData/selected%'},
+			{$: 'hidden', showCondition: {$notEmpty: '%$itemlistCntrData/selected%' } }
+	]}
 })
 
 jb.component('itemlist-container.add', {
 	type: 'action',
-	impl: ctx =>
-			ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.add()
+	params: [{ id: 'toAdd', as: 'single' } ],
+	impl: (ctx,toAdd) =>
+		ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.add(toAdd)
 })
 
 jb.component('itemlist-container.delete', {

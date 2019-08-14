@@ -1,5 +1,5 @@
 (function() {
-const {dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case} = jb.macros
+const {dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case, runActions} = jb.macros
 
 jb.component('delayedObj', {
   params: [
@@ -36,6 +36,59 @@ jb.component('data-test.write-value', {
     runBefore: writeValue('%$person/age%', 20),
 	  calculate: '%$person/age%',
 	  expectedResult: contains('20')
+	})
+})
+
+jb.component('data-test.write-value-inner', {
+  impl: dataTest({
+    runBefore: writeValue('%$person/zz/age%', 20),
+	  calculate: '%$person/zz/age%',
+	  expectedResult: contains('20')
+	})
+})
+
+jb.component('data-test.write-value-with-link', {
+  impl: dataTest({
+    runBefore: runActions(
+        writeValue('%$person/linkToBart%', '%$personWithChildren/children[0]%'),
+        writeValue('%$personWithChildren/children[0]/name%', 'Barty1'),
+    ),
+	  calculate: '%$personWithChildren/children[0]/name%,%$person/linkToBart/name%',
+	  expectedResult: equals('Barty1,Barty1')
+	})
+})
+
+jb.component('data-test.write-value-via-link', {
+  impl: dataTest({
+    runBefore: runActions(
+        writeValue('%$person/linkToBart%', '%$personWithChildren/children[0]%'),
+        writeValue('%$person/linkToBart/name%', 'Barty1'),
+    ),
+	  calculate: '%$personWithChildren/children[0]/name%,%$person/linkToBart/name%',
+	  expectedResult: equals('Barty1,Barty1')
+	})
+})
+
+
+jb.component('data-test.write-value-with-array-link', {
+  impl: dataTest({
+    runBefore: runActions(
+        writeValue('%$person/childrenLink%', '%$personWithChildren/children%'),
+        writeValue('%$personWithChildren/children[0]/name%', 'Barty1'),
+    ),
+	  calculate: '%$personWithChildren/children[0]/name%,%$person/childrenLink[0]/name%',
+	  expectedResult: equals('Barty1,Barty1')
+	})
+})
+
+jb.component('data-test.write-value-via-array-link', {
+  impl: dataTest({
+    runBefore: runActions(
+        writeValue('%$person/childrenLink%', '%$personWithChildren/children%'),
+        writeValue('%$person/childrenLink[0]/name%', 'Barty1'),
+    ),
+	  calculate: '%$personWithChildren/children[0]/name%,%$person/childrenLink[0]/name%',
+	  expectedResult: equals('Barty1,Barty1')
 	})
 })
 
