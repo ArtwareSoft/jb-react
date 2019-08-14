@@ -343,7 +343,7 @@ jb.component('feature.onDelete', {
 })
 
 jb.component('refresh-control-by-id', {
-  type: 'feature', category: 'events',
+  type: 'action',
   params: [
     { id: 'id', as: 'string', mandatory: true }
   ],
