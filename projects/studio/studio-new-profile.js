@@ -366,21 +366,21 @@ jb.component('studio.open-new-page', {
     },
     title: 'New Page',
     onOK: [
-      {$: 'write-value',
-        to :{$: 'studio.ref', path: '%$studio/project%.%$name%' },
-        value :{$: 'json.parse',
-          text: '{ "type": "control", "impl": {"$": "group", "title": "%$name%", "controls": []}}'
-        }
-      },
+      ctx => jb.studio.previewjb.component(ctx.exp('%$studio/project%.%$name%'), {
+          type: 'control',
+          impl :{$: 'group', title1: ctx.exp('%$name%'), contorls: []}
+      }),
       //{$: 'studio.goto-path', path: '%$studio/project%.%$name%' },
       {$: 'write-value', to: '%$studio/profile_path%', value: '%$studio/project%.%$name%~impl' },
+      {$: 'write-value', to: '%$studio/page%', value: '%$name%' },
       {$: 'studio.open-control-tree'},
       {$: 'tree.regain-focus' },
-      {$: 'on-next-timer',
-        description: 'we need to wait for the itemlist to be updated with new page. However, the mutable name var is lost on next timer so we put it in context var as newName',
-        $vars: { newName: '%$name%'},
-        action: {$: 'write-value', to: '%$studio/page%', value: '%$newName%' },
-      }
+      {$: 'refresh-control-by-id', id: 'pages'}
+      // {$: 'on-next-timer',
+      //   description: 'we need to wait for the itemlist to be updated with new page. However, the mutable name var is lost on next timer so we put it in context var as newName',
+      //   $vars: { newName: '%$name%'},
+      //   action: {$: 'write-value', to: '%$studio/page%', value: '%$newName%' },
+      // }
     ],
   }
 })

@@ -131,6 +131,7 @@ jb.component('studio.pages', {
         },
         style :{$: 'itemlist.horizontal' },
         features: [
+          {$: 'id', id: 'pages'},
           {$: 'itemlist.selection',
             databind: '%$studio/page%',
             onSelection :{$: 'write-value',

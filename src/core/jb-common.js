@@ -219,6 +219,32 @@ jb.component('write-value',{
 		jb.writeValue(to,jb.val(value),ctx)
 });
 
+jb.component('add-to-array', {
+	type: 'action',
+	params: [
+		{ id: 'array', as: 'ref', mandatory: true },
+		{ id: 'itemsToAdd', as: 'array', mandatory: true },
+	],
+	impl: (ctx,array,itemsToAdd) => {
+		const ar = jb.toarray(array);
+		jb.splice(array,[[ar.length,0,...itemsToAdd]],ctx)
+	}
+});
+
+jb.component('splice-array', {
+	type: 'action',
+	params: [
+		{ id: 'array', as: 'ref', mandatory: true },
+		{ id: 'fromIndex', as: 'number', mandatory: true },
+		{ id: 'noOfItemsToRemove', as: 'number', defaultValue: 0 },
+		{ id: 'itemsToAdd', as: 'array', defaultValue: [] },
+	],
+	impl: (ctx,array,fromIndex,noOfItemsToRemove,itemsToAdd) => {
+		const ar = jb.toarray(array);
+		jb.splice(array,[fromIndex,noOfItemsToRemove,...itemsToAdd],ctx)
+	}
+});
+
 jb.component('remove-from-array', {
 	type: 'action',
 	params: [
@@ -716,12 +742,12 @@ jb.component('runActions', {
 	}
 });
 
-// jb.component('delay', {
-// 	params: [
-// 		{ id: 'mSec', type: 'number', defaultValue: 1}
-// 	],
-// 	impl: ctx => jb.delay(ctx.params.mSec)
-// })
+jb.component('delay', {
+	params: [
+		{ id: 'mSec', type: 'number', defaultValue: 1}
+	],
+	impl: (ctx,mSec) => jb.delay(mSec)
+})
 
 jb.component('on-next-timer', {
 	description: 'run action after delay',

@@ -316,7 +316,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
       const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
       const refHandler = refHandlerArg || (input && input.handler) || jb.valueByRefHandler;
       if (arrayIndexMatch) {
-        const arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1],false,first,refHandler);
+        const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
         const index = arrayIndexMatch[2];
         if (!Array.isArray(arr))
             return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);

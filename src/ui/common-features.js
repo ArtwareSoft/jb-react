@@ -269,7 +269,7 @@ jb.component('feature.keyboard-shortcut', {
 	description: 'listen to events at the document level even when the component is not active',
   params: [
     { id: 'key', as: 'string', description: 'e.g. Alt+C' },
-    { id: 'action', type: 'action', dynamic: true }
+    { id: 'action', type: 'action', dynamic: true },
   ],
   impl: (context,key,action) => ({
       afterViewInit: cmp =>
@@ -340,6 +340,20 @@ jb.component('feature.onDelete', {
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
   impl :{$: 'feature.onKey', code: 46, action :{$call: 'action'}}
+})
+
+jb.component('refresh-control-by-id', {
+  type: 'feature', category: 'events',
+  params: [
+    { id: 'id', as: 'string', mandatory: true }
+  ],
+  impl : (ctx,id) => {
+    const base = ctx.vars.elemToTest || typeof document !== 'undefined' && document
+    const elem = base && base.querySelector('#'+id)
+    const comp = elem && elem._component
+    if (comp && comp.refresh)
+      comp.refresh(ctx)
+  }
 })
 
 

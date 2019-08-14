@@ -1,6 +1,6 @@
 (function () {
-  const { dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, object, obj, $if, count, runActions } = jb.macros
-  const { uiTest, group, editableBoolean, label, field_initValue, hidden, watchRef, feature_if, id, uiAction_click, editableBoolean_expandCollapse } = jb.macros
+  const { dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, object, obj, $if, count, runActions, delay, addToArray } = jb.macros
+  const { uiTest, group, editableBoolean, label, field_initValue, hidden, watchRef, feature_if, id, uiAction_click, editableBoolean_expandCollapse, refreshControlById, itemlist } = jb.macros
 
   jb.resource('globals', {});
 
@@ -1510,19 +1510,38 @@
   })
 
   jb.component('ui-test.immutable-var', {
-    impl: {
-      $: 'ui-test',
-      control: {
-        $: 'label', title: '%$var1%',
-        features: [
-          { $: 'var', name: 'var1', value: 'hello' },
-          //        {$: 'feature.after-load', action: {$: 'write-value', to: '%$var1%', value: 'foo'}}
-        ]
-      },
+    impl: uiTest({
+      control: label({ 
+          title: '%$var1%',
+          features: [
+            { $: 'var', name: 'var1', value: 'hello', mutable: true },
+            { $: 'feature.after-load', action: writeValue('%$var1%','foo') }
+          ]
+      }),
       action: ctx => jb.delay(1),
-      expectedResult: { $: 'contains', text: 'hello' },
-    },
+      expectedResult: contains('foo'),
+    }),
   })
+
+  jb.component('ui-test.refresh-control-by-id', {
+    impl: uiTest({
+      control: itemlist({
+        items: '%$items%',
+        controls: label({ title: '%title%' }),
+        features: [
+            { $: 'var', name: 'items', globalId: 'items', value: {$asIs: [ { title: 'i1'}, { title: 'i2'} ]}, mutable: true},
+            id('itemlist')
+        ]
+      }),
+      action: runActions(
+        addToArray('%$items%', {$asIs: [ { title: 'i2'},{ title: 'i3'}]}),
+        refreshControlById('itemlist'),
+        delay(1),
+      ),
+      expectedResult: contains(['i1','i2','i3']),
+    }),
+  })
+
 
   // jb.component('ui-test.raw-vdom', {
   //   impl :{$: 'ui-test',
@@ -1587,6 +1606,29 @@
       expectedResult: { $: 'contains', text: 'foo' },
     },
   })
+
+  jb.component('ui-test.mutable-var-as-array', {
+    impl: uiTest({
+      control: group({
+        controls: label({ title: '%$items[1]/title%' }),
+        features:
+          { $: 'var', name: 'items', globalId: 'items', value: {$asIs: [{title: 'koo'},{title: 'foo'}]}, mutable: true },
+      }),
+      expectedResult: contains('foo'),
+    }),
+  })
+
+  jb.component('ui-test.mutable-var-as-array-one-item', {
+    impl: uiTest({
+      control: group({
+        controls: label({ title: '%$items[0]/title%' }),
+        features:
+          { $: 'var', name: 'items', globalId: 'items', value: {$asIs: [{title: 'foo'}]}, mutable: true },
+      }),
+      expectedResult: contains('foo'),
+    }),
+  })
+
 
   jb.component('ui-test.mutable-var-as-object-not-initialized', {
     impl: {
