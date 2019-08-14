@@ -383,10 +383,13 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren) {
 			jb.logError('null ref for watch ref',...arguments);
     	ref && ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
 			.subscribe(e=>{
-				const callerPath = jb.path(e,['srcCtx','componentContext','callerPath'])
-				const ctxStylePath = ctx.path.replace(/~features~[0-9]*$/,'~style')
-				if (callerPath === ctxStylePath) // ignore - generated from a watchRef feature of the same path
-					return
+				ctxStack=[];for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
+				const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x).
+					map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
+				const ctxStylePath = ctx.path.replace(/~features~?[0-9]*$/,'')
+				for(let i=0;i<callerPaths.length;i++)
+					if (callerPaths[i].indexOf(ctxStylePath) == 0) // ignore - generated from a watchRef feature in the call stack
+						return
 				if (ctx && ctx.profile && ctx.profile.$trace)
 					console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
 				
