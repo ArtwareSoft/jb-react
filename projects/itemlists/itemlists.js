@@ -219,7 +219,7 @@ jb.component('itemlists.table-with-filters', {
                 }
               }, 
               {$: 'editable-text', 
-                title: 'age', 
+                title: 'age above', 
                 databind: '%$itemlistCntrData/age_filter%', 
                 style :{$: 'editable-text.mdl-input', width: '100' }, 
                 features :{$: 'itemlist-container.filter-field', 
