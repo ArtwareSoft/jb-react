@@ -37,10 +37,11 @@ jb.component('watch-ref', {
     { id: 'ref', mandatory: true, as: 'ref', description: 'reference to data' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
     { id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
+    { id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children' },
   ],
-  impl: (ctx,ref,includeChildren,delay) => ({
+  impl: (ctx,ref,includeChildren,delay,allowSelfRefresh) => ({
       init: cmp =>
-        jb.ui.watchRef(ctx,cmp,ref,includeChildren,delay)
+        jb.ui.watchRef(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh)
   })
 })
 

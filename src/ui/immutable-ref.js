@@ -117,6 +117,9 @@ class ImmutableWithJbId {
   asStr(ref) { // for logs
     return this.pathOfRef(ref).join('~')
   }
+  isValid(ref) {
+    return this.isRef(ref) && this.pathOfRef(ref)
+  }
   val(ref) {
     if (ref == null) return ref;
     if (ref.$jb_val) return ref.$jb_val();

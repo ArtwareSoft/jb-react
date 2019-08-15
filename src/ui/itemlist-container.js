@@ -7,6 +7,7 @@ const createItemlistCntr = (ctx,params) => ({
 	filters: [],
 	selectedRef: ctx.exp('%$itemlistCntrData/selected%','ref'),
 	selected: function(selected) {
+		if (!jb.isValid(this.selectedRef)) return;
 		return (typeof selected != 'undefined') ?
 			jb.writeValue(this.selectedRef,selected,this.ctx) : jb.val(this.selectedRef)
 	},

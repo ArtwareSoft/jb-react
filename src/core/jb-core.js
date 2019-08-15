@@ -793,6 +793,8 @@ Object.assign(jb,{
     jb.refHandler(fromRef).move(fromRef,toRef,srcCtx),
   isRef: (ref) =>
     jb.refHandler(ref).isRef(ref),
+  isValid: (ref) =>
+    jb.refHandler(ref).isValid(ref),
   refreshRef: (ref) =>
     jb.refHandler(ref).refresh(ref),
   asRef: (obj) =>

@@ -157,7 +157,6 @@ jb.component('field.keyboard-shortcut', {
       })
 })
 
-
 jb.component('field.subscribe', {
   type: 'feature',
   params: [
@@ -178,6 +177,8 @@ jb.component('field.subscribe', {
     }
   })
 })
+
+jb.component('field.on-change', jb.comps['field.subscribe'])
 
 jb.component('field.toolbar', {
   type: 'feature',
