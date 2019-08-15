@@ -161,7 +161,7 @@ Object.assign(st, {
 		var comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
 		var params = jb.compParams(comp);
-		if (params.length == 1 && params[0].composite == true)
+		if (params.length == 1 && params[0].composite == true || params[0].sugar)
 			return st.setSugarComp(path,compName,params[0],srcCtx);
 
 		var result = comp.singleInType ? {} : { $: compName };

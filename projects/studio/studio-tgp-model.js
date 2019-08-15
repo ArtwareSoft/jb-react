@@ -69,13 +69,13 @@ st.jbEditorTree = class {
 		let prop = path.split('~').pop();
 		if (!isNaN(Number(prop))) // array value - title as a[i]
 			prop = path.split('~').slice(-2)
-				.map(x=>x.replace(/\$pipeline/,''))
+				.map(x=>x.replace(/\$pipeline/,'').replace(/\$obj/,''))
 				.join('[') + ']';
 		let summary = '';
 		if (collapsed && typeof val == 'object')
 			summary = ': ' + st.summary(path).substr(0,20);
-    if (typeof val == 'function')
-      val = val.toString();
+		if (typeof val == 'function')
+		val = val.toString();
 
 		if (compName)
 			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
@@ -194,7 +194,7 @@ Object.assign(st,{
     if (path.match(/~cases~[0-9]*$/))
       return st.summary(path+'~condition');
 		if (val == null || typeof val != 'object') return '';
-		return Object.getOwnPropertyNames(val)
+		return st.paramsOfPath(path).map(x=>x.id)
 			.filter(p=> p != '$')
 			.filter(p=> p.indexOf('$jb_') != 0)
 			.map(p=>val[p])

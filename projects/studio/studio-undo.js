@@ -64,8 +64,11 @@
   jb.component('studio.copy', {
     type: 'action',
     params: [{ id: 'path', as: 'string' }],
-    impl: (ctx, path) =>
-      st.clipboard = st.valOfPath(path)
+    impl: (ctx, path) => {
+      try {
+        st.clipboard = eval('(' + jb.prettyPrint(st.valOfPath(path)) + ')')
+      } catch(e) {}
+    }
   })
 
   jb.component('studio.paste', {

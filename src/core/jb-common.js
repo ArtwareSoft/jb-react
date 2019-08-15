@@ -337,33 +337,33 @@ jb.component('sample', {
 		items.filter((x,i)=>i % (Math.floor(items.length/300) ||1) == 0)
 });
 
-jb.component('assign', { 
-	description: 'extend with calculated properties',
-	params: [
-		{ id: 'property', type: 'prop[]', mandatory: true, defaultValue: [] },
-	],
-	impl: (ctx,properties,items) =>
-		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
-});
-
 jb.component('obj', { 
 	description: 'build object (dictionary) from props',
 	params: [
-		{ id: 'property', type: 'prop[]', mandatory: true, defaultValue: [] },
+		{ id: 'props', type: 'prop[]', mandatory: true, sugar: true },
 	],
-	impl: (ctx,properties,items) =>
+	impl: (ctx,properties) =>
 		Object.assign({}, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
+});
+
+jb.component('assign', { 
+	description: 'extend with calculated properties',
+	params: [
+		{ id: 'props', type: 'prop[]', mandatory: true, defaultValue: [] },
+	],
+	impl: (ctx,properties) =>
+		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
 });
 
 jb.component('assign-with-index', { 
 	type: 'aggregator',
 	description: 'extend with calculated properties. %$index% is available ',
 	params: [
-		{ id: 'property', type: 'prop[]', mandatory: true, defaultValue: [] },
+		{ id: 'props', type: 'prop[]', mandatory: true, defaultValue: [] },
 	],
-	impl: (ctx,properties,items) =>
-		jb.toarray(ctx.data).slice(0).map((item,i)=>
-			properties.forEach(p=>item[p.title] = jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type) ) || item)
+	impl: (ctx,properties) =>
+		jb.toarray(ctx.data).map((item,i)=>
+			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
 });
 
 jb.component('prop', { 
@@ -371,7 +371,7 @@ jb.component('prop', {
 	usageByValue: true,
 	params: [
 		{ id: 'title', as: 'string', mandatory: true },
-		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true },
+		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
 		{ id: 'type', as: 'string', options: 'string,number,boolean', defaultValue: 'string' },
 	],
 	impl: ctx => ctx.params
