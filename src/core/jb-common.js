@@ -219,6 +219,14 @@ jb.component('write-value',{
 		jb.writeValue(to,jb.val(value),ctx)
 });
 
+jb.component('index-of', {
+	params: [
+		{ id: 'array', as: 'array', mandatory: true },
+		{ id: 'item', as: 'signle', mandatory: true },
+	],
+	impl: (ctx,array,item) => array.indexOf(item)
+});
+
 jb.component('add-to-array', {
 	type: 'action',
 	params: [
