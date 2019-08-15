@@ -268,37 +268,56 @@ ui.preserveCtx = ctx => {
   return ctx.id;
 }
 
-ui.renderWidget = function(profile,elem) {
-	var previewElem;
+ui.renderWidget = function(profile,top) {
 	try {
-		if (window.parent != window && window.parent.jb)
-			window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
-	} catch(e) {}
-	class R extends jb.ui.Component {
-		constructor(props) {
-			super();
-			this.state.profile = profile;
-			if (jb.studio.studioWindow) {
-				var st = jb.studio.studioWindow.jb.studio;
-				st.refreshPreviewWidget = _ => {
-					jb.resources = jb.ui.originalResources || jb.resources;
-					previewElem = ui.render(ui.h(R),elem,previewElem);
-				}
-				st.pageChange.debounceTime(500)
-					.filter(({page})=>page != this.state.profile.$)
-					.subscribe(({page,ctrl})=>
-						this.setState({profile: {$: ctrl || page, $vars: {DataToDebug: page }} }));
-				st.scriptChange.debounceTime(500).subscribe(_=>
-						this.setState(null));
+		if (typeof window != 'undefined' && window.parent != window && window.parent.jb) {
+			const st = window.parent.jb.studio
+			st.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
+
+			const originalResources = jb.resources
+			st.refreshPreviewWidget = _ => {
+				jb.resources = originalResources;
+				doRender();
 			}
 		}
-		render(pros,state) {
-			var profToRun = state.profile;
-			if (!jb.comps[profToRun.$]) return '';
-			return ui.h(new jb.jbCtx().run(profToRun).reactComp())
+	} catch(e) {}
+
+	doRender()
+
+	function doRender() {
+		top.innerHTML = '';
+		const innerElem = document.createElement('div');
+		top.appendChild(innerElem);
+
+		class R extends jb.ui.Component {
+			constructor(props) {
+				super();
+				this.state.profile = profile;
+				if (jb.studio.studioWindow) {
+					const studioWin = jb.studio.studioWindow
+					const st = studioWin.jb.studio;
+					const project = studioWin.jb.resources.studio.project
+					const page = studioWin.jb.resources.studio.page
+					if (project && page)
+						this.state.profile = {$: `${project}.${page}`}
+
+					st.pageChange.debounceTime(500)
+						.filter(({page})=>page != this.state.profile.$)
+						.subscribe(({page,ctrl})=>
+							this.setState({profile: {$: ctrl || page, $vars: {DataToDebug: page }} }));
+					st.scriptChange.debounceTime(500).subscribe(_=>
+							this.setState(null));
+				}
+			}
+			render(pros,state) {
+				const profToRun = state.profile;
+				if (!jb.comps[profToRun.$]) return '';
+				return ui.h(new jb.jbCtx().run(profToRun).reactComp())
+			}
 		}
+
+		ui.render(ui.h(R),innerElem);
 	}
-	previewElem = ui.render(ui.h(R),elem);
 }
 
 ui.cachedMap = mapFunc => {
