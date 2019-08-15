@@ -225,7 +225,7 @@ jb.component('index-of', {
 		{ id: 'item', as: 'signle', mandatory: true },
 	],
 	impl: (ctx,array,item) => array.indexOf(item)
-});
+})
 
 jb.component('add-to-array', {
 	type: 'action',
@@ -749,6 +749,16 @@ jb.component('runActions', {
 			,Promise.resolve())
 	}
 });
+
+jb.component('run-action-on-items', {
+	type: 'action',
+	params: [
+		{ id: 'items', as: 'array', mandatory: true },
+		{ id: 'action', type:'action', dynamic: true, mandatory: true }
+	],
+	impl: (ctx,items,action) =>
+		items.reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
+})
 
 jb.component('delay', {
 	params: [

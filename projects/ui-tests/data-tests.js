@@ -1,5 +1,5 @@
 (function() {
-const {dataTest, pipeline, pipe, join, list, writeValue, splice, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case, runActions} = jb.macros
+const {dataTest, pipeline, pipe, join, list, writeValue, splice, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case, runActions, runActionOnItems} = jb.macros
 
 jb.component('delayedObj', {
   params: [
@@ -112,6 +112,14 @@ jb.component('data-test.write-value-via-array-link', {
     ),
 	  calculate: '%$personWithChildren/children[0]/name%,%$person/childrenLink[0]/name%',
 	  expectedResult: equals('Barty1,Barty1')
+	})
+})
+
+jb.component('data-test.runActionOnItems', {
+  impl: dataTest({
+    runBefore: runActionOnItems('%$personWithChildren/children%', writeValue('%name%', 'a%name%')),
+	  calculate: pipeline('%$personWithChildren/children/name%',join()),
+	  expectedResult: equals('aBart,aLisa,aMaggie')
 	})
 })
 
