@@ -111,8 +111,10 @@ jb.component('var', {
   impl: (context, name, value, mutable, globalId) => ({
       destroy: cmp => {
         const fullName = globalId || (name + ':' + cmp.resourceId);
-        if (mutable)
+        if (mutable) {
           jb.writeValue(jb.valueByRefHandler.refOfPath([fullName]),null,context)
+          delete jb.valueByRefHandler.resources()[fullName]
+        }
       },
       extendCtxOnce: (ctx,cmp) => {
         if (!mutable) {

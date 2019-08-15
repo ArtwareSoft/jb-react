@@ -53,7 +53,7 @@ jb.component('group.itemlist-container', {
 	],
 	impl :{$list : [
 		{$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , 
-				mutable: true, globalId: 'itemlistCntrData:%$id%'},
+				mutable: true},
 		{$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
 		ctx => ({
 			init: cmp => {
