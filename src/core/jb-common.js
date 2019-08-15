@@ -231,7 +231,7 @@ jb.component('add-to-array', {
 	}
 });
 
-jb.component('splice-array', {
+jb.component('splice', {
 	type: 'action',
 	params: [
 		{ id: 'array', as: 'ref', mandatory: true },
@@ -241,7 +241,7 @@ jb.component('splice-array', {
 	],
 	impl: (ctx,array,fromIndex,noOfItemsToRemove,itemsToAdd) => {
 		const ar = jb.toarray(array);
-		jb.splice(array,[fromIndex,noOfItemsToRemove,...itemsToAdd],ctx)
+		jb.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
 	}
 });
 

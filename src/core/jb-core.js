@@ -470,8 +470,8 @@ const jstypes = {
     'ref': function(value) {
 //      if (Array.isArray(value)) value = value[0];
 //      if (value == null) return value;
-      if (Array.isArray(value) && value.length == 1)
-        value = value[0];
+      // if (Array.isArray(value) && value.length == 1)
+      //   value = value[0];
       return jb.valueByRefHandler.asRef(value);
     }
 }

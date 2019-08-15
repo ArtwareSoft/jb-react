@@ -1,5 +1,5 @@
 (function() {
-const {dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case, runActions} = jb.macros
+const {dataTest, pipeline, pipe, join, list, writeValue, splice, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case, runActions} = jb.macros
 
 jb.component('delayedObj', {
   params: [
@@ -38,6 +38,29 @@ jb.component('data-test.write-value', {
 	  expectedResult: contains('20')
 	})
 })
+
+jb.component('data-test.splice-delete', {
+  impl: dataTest({
+    runBefore: splice({
+      array: '%$personWithChildren/children%',
+      fromIndex: 1, noOfItemsToRemove: 1
+    }),
+	  calculate: pipeline('%$personWithChildren/children/name%', join()),
+	  expectedResult: contains('Bart,Maggie')
+	})
+})
+
+jb.component('data-test.splice', {
+  impl: dataTest({
+    runBefore: splice({
+      array: '%$personWithChildren/children%',
+      fromIndex: 1, noOfItemsToRemove: 1, itemsToAdd: {$asIs: [ { name: 'Lisa2' }, { name: 'Maggie2' } ]}
+    }),
+	  calculate: pipeline('%$personWithChildren/children/name%', join()),
+	  expectedResult: contains('Bart,Lisa2,Maggie2,Maggie')
+	})
+})
+
 
 jb.component('data-test.write-value-inner', {
   impl: dataTest({

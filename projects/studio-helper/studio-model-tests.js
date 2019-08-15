@@ -1,3 +1,6 @@
+(function() {
+const { dataTest, pipeline, pipe, join, list, writeValue, splice, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case, runActions} = jb.macros
+const { studio_val } = jb.macros
 
 jb.component('studio-data-test.list-for-tests', {
 	 impl :{$: 'list' }
@@ -57,43 +60,40 @@ jb.component('studio-data-test.jb-editor-move', {
 })
 
 jb.component('studio-data-test.moveFixDestination-null-group', {
-	 impl :{$: 'data-test',
+	 impl: dataTest({
 	 	runBefore : ctx =>
 	 		jb.studio.moveFixDestination('test.move-in-tree~impl~controls~1', 'test.move-in-tree~impl~controls~3~controls'),
-		calculate :{$pipeline: [
-			{$list: [
-				{$: 'studio.val' , path: 'test.move-in-tree~impl~controls' },
-				{$: 'studio.val' , path: 'test.move-in-tree~impl~controls~2~controls' },
-			] },
-			, '%title%', {$: 'join'} ]},
-		expectedResult : ctx =>
-			ctx.data == 'a,c,b'
-	},
+		calculate: pipeline(list(
+				studio_val('test.move-in-tree~impl~controls'),
+				studio_val('test.move-in-tree~impl~controls~2~controls'),
+			),
+			'%title%', join()
+		),
+		expectedResult : equals('a,c,b')
+	})
 })
 
 jb.component('studio-data-test.moveFixDestination-empty-group', {
-	 impl :{$: 'data-test',
-	 	runBefore : ctx =>
+	impl: dataTest({
+		runBefore : ctx =>
 	 		jb.studio.moveFixDestination('test.move-in-tree~impl~controls~1', 'test.move-in-tree~impl~controls~4~controls'),
-		calculate :{$pipeline: [
-			{$list: [
-				{$: 'studio.val' , path: 'test.move-in-tree~impl~controls' },
-				{$: 'studio.val' , path: 'test.move-in-tree~impl~controls~3~controls' },
-			] },
-			, '%title%', {$: 'join'} ]},
-		expectedResult : ctx =>
-			ctx.data == 'a,c,b'
-	},
+		calculate: pipeline(list(
+				studio_val('test.move-in-tree~impl~controls'),
+				studio_val('test.move-in-tree~impl~controls~3~controls'),
+			),
+			'%title%', join()
+		),
+		expectedResult : equals('a,c,b')
+	})
 })
 
 jb.component('studio-data-test.jb-editor-move', {
-	 impl :{$: 'data-test',
-	 	runBefore : ctx =>
+	impl: dataTest({
+		runBefore : ctx =>
 	 		jb.move(jb.studio.refOfPath('test.move-in-tree~impl~controls~1'), jb.studio.refOfPath('test.move-in-tree~impl~controls~0')),
-		calculate :{$pipeline: [{$: 'studio.val' , path: 'test.move-in-tree~impl~controls' }, '%title%', {$: 'join'} ]},
-		expectedResult : ctx =>
-			ctx.data == 'b,a,c'
-	},
+		calculate: pipeline(studio_val('test.move-in-tree~impl~controls'), '%title%', join()),
+		expectedResult: equals('b,a,c')
+	})
 })
 
 jb.component('test.set-sugar-comp-simple', {
@@ -244,3 +244,4 @@ jb.component('studio-data-test.pathOfText-prop-after-array', {
  },
 })
 
+})()
