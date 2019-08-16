@@ -7,9 +7,10 @@ jb.component('data-test', {
 		{ id: 'cleanUp', type: 'action', dynamic: true },
 		{ id: 'expectedCounters', as: 'single' }
 	],
-	impl: function(context,calculate,runBefore,expectedResult,cleanUp,expectedCounters) {
-		var initial_resources = jb.valueByRefHandler.resources && jb.valueByRefHandler.resources();
+	impl: function(ctx,calculate,runBefore,expectedResult,cleanUp,expectedCounters) {
+		console.log('starting ' + ctx.path )
 		var initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
+		jb.resources = JSON.parse(ctx.vars.initial_resources); jb.rebuildRefHandler && jb.rebuildRefHandler();
 		if (expectedCounters) {
 			if (!jb.frame.wSpy.enabled())
 				jb.frame.initwSpy({wSpyParam: 'data-test'})
@@ -22,17 +23,22 @@ jb.component('data-test', {
 				Array.isArray(v) ? jb.synchArray(v) : v)
 			.then(value=> {
 				const countersErr = countersErrors(expectedCounters);
-				const success = !! (expectedResult(new jb.jbCtx(context,{ data: value })) && !countersErr);
-				return { id: context.vars.testID, success, reason: countersErr}
+				const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: value })) && !countersErr);
+				const result = { id: ctx.vars.testID, success, reason: countersErr}
+				return result
 			})
+			.catch(e=>jb.logException(e,ctx))
 			.then(result => { // default cleanup
 				if (expectedCounters)
 					jb.frame.initwSpy({resetwSpyToNoop: true})
-				jb.valueByRefHandler.resources && jb.valueByRefHandler.resources(initial_resources);
 				jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 				return result;
-			}).then(result =>
-					Promise.resolve(cleanUp()).then(_=>result) )
+			})
+			.catch(e=>jb.logException(e,ctx))
+			.then(result =>
+					Promise.resolve(cleanUp())
+					.then(_=> console.log('end ' + ctx.path ))
+					.then(_=>result) )
 	}
 })
 
@@ -46,9 +52,10 @@ jb.component('ui-test', {
 		{ id: 'cleanUp', type: 'action', dynamic: true },
 		{ id: 'expectedCounters', as: 'single' }
 	],
-	impl: function(context,control,runBefore,action,expectedResult,cleanUp,expectedCounters) {
-		var initial_resources = jb.valueByRefHandler.resources();
+	impl: function(ctx,control,runBefore,action,expectedResult,cleanUp,expectedCounters) {
+		console.log('starting ' + ctx.path )
 		var initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
+		jb.resources = JSON.parse(ctx.vars.initial_resources); jb.rebuildRefHandler && jb.rebuildRefHandler();
 		return Promise.resolve(runBefore())
 			.then(_ => {
 				try {
@@ -60,35 +67,37 @@ jb.component('ui-test', {
 					var elem = document.createElement('div');
 					var vdom = jb.ui.h(jb.ui.renderable(control()));
 					var cmp = jb.ui.render(vdom, elem)._component;
-					return Promise.resolve(cmp && cmp.delayed).then(_=>
-						elem)
+					return Promise.resolve(cmp && cmp.delayed)
+						.then(_ => jb.delay(1))
+						.then(_=> elem)
 				} catch (e) {
-					jb.logException(e,'error in test',context);
+					jb.logException(e,'error in test',ctx);
 					return document.createElement('div');
 				}
 			})
 			.then(elem =>
-				Promise.resolve(action(context.setVars({elemToTest : elem }))).then(_=>elem))
+				Promise.resolve(action(ctx.setVars({elemToTest : elem }))).then(_=>elem))
 			.then(elem=> {
 				// put input values as text
 				Array.from(elem.querySelectorAll('input')).forEach(e=>{
-          if (e.parentNode)
-            jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`)
+					if (e.parentNode)
+						jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`)
 				})
 				const countersErr = countersErrors(expectedCounters);
-				const success = !! (expectedResult(new jb.jbCtx(context,{ data: elem.outerHTML })) && !countersErr);
-				return { id: context.vars.testID, success, elem, reason: countersErr}
+				const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: elem.outerHTML })) && !countersErr);
+				return { id: ctx.vars.testID, success, elem, reason: countersErr}
 			}).then(result=> { // default cleanup
 				if (new URL(location.href).searchParams.get('show') === null) {
 					jb.ui.dialogs.dialogs.forEach(d=>d.close())
-					jb.valueByRefHandler.resources(initial_resources);
 					jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 					if (expectedCounters)
 						jb.frame.initwSpy({resetwSpyToNoop: true})
 				}
 				return result;
 			}).then(result =>
-				Promise.resolve(cleanUp()).then(_=>result) )
+				Promise.resolve(cleanUp())
+				.then(_=> console.log('end ' + ctx.path ))
+				.then(_=>result) )
 	}
 })
 
@@ -189,13 +198,15 @@ jb.ui.addHTML = jb.ui.addHTML || ((el,html) => {
   
 
 startTime = startTime || new Date().getTime();
-jb.testers.runTests = function(testType,specificTest,show,rerun) {
+jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
+	var initial_resources = JSON.stringify(jb.resources).replace(/\"\$jb_id":[0-9]*,/g,'')
 	var tests = jb.entries(jb.comps)
 		.filter(e=>typeof e[1].impl == 'object')
 		.filter(e=>e[1].type != 'test') // exclude the testers
 		.filter(e=>isCompNameOfType(e[0],'test'))
 		.filter(e=>!testType || e[1].impl.$ == testType)
-		.filter(e=>!specificTest || e[0] == specificTest);
+		.filter(e=>!specificTest || e[0] == specificTest)
+		.filter(e=>!pattern || e[0].match(pattern));
 
 
 	document.write(`<div style="font-size: 20px"><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`);
@@ -205,7 +216,7 @@ jb.testers.runTests = function(testType,specificTest,show,rerun) {
 		.concatMap(_=>
 		jb.rx.Observable.from(tests).concatMap(e=>{
 			jb.logs.error = [];
-			return Promise.resolve(new jb.jbCtx().setVars({testID: e[0]}).run({$:e[0]}))
+			return Promise.resolve(new jb.jbCtx().setVars({testID: e[0], initial_resources }).run({$:e[0]}))
 				.then(res => {
 					if (res.success && jb.logs.error.length > 0) {
 						res.success = false;

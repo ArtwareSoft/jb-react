@@ -215,7 +215,7 @@ jb.component('studio.open-responsive-phone-popup', {
             hSpacing: 20,
             titleWidth: 100
           },
-          controls: [
+        controls: [
             {$: 'editable-number',
               databind: '%$studio/responsive/{%$controlItem/id%}/width%',
               title: 'width',

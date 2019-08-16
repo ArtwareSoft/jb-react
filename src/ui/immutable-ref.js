@@ -5,7 +5,8 @@
 //     $jb_childProp: 'title', // used for primitive props
 // }
 
-let isProxy = Symbol("isProxy")
+const isProxy = Symbol("isProxy")
+const targetVal = Symbol("targetVal")
 
 class ImmutableWithJbId {
   constructor(resources) {
@@ -98,10 +99,11 @@ class ImmutableWithJbId {
   }
   asRef(obj) {
     if (!obj || typeof obj !== 'object') return obj;
-    const path = this.objToPath.get(obj) || this.objToPath.get(obj.$jb_id)
+    const actualObj = obj[isProxy] ? obj[targetVal] : obj
+    const path = this.objToPath.get(actualObj) || this.objToPath.get(actualObj.$jb_id)
     if (path)
         return { $jb_obj: this.valOfPath(path), handler: this, path: function() { return this.handler.pathOfRef(this)} }
-    return obj;
+    return actualObj;
   }
   valOfPath(path) {
     return this.cleanVal(path.reduce((o,p)=>o && o[p],this.resources()))
@@ -110,6 +112,8 @@ class ImmutableWithJbId {
     const val = this.valOfPath(path);
     if (!val || typeof val !== 'object' && path.length > 0) {
       const parent = this.asRef(this.valOfPath(path.slice(0,-1)));
+      if (path.length == 1)
+        return {$jb_obj: this.resources(), $jb_childProp: path[0], handler: this, $jb_path: () => path }
       if (this.isRef(parent)) 
         return Object.assign({},parent,{$jb_childProp: path.slice(-1)[0]})
       jb.logError('reOfPath can not find parent ref',path.join('~'))
@@ -167,7 +171,7 @@ class ImmutableWithJbId {
       const ref = this.asRef(val);
       if (ref.$jb_obj)
         return new Proxy(val, {
-          get: (o,p) => (p === isProxy) ? true : (p === '$jb_secondaryLink' ? {val} : (jb.val(this.asRef(val)))[p]),
+          get: (o,p) => (p === targetVal) ? o : (p === isProxy) ? true : (p === '$jb_secondaryLink' ? {val} : (jb.val(this.asRef(val)))[p]),
           set: (o,p,v) => o[p] = v
         })
     }
@@ -267,6 +271,7 @@ function resourcesRef(val) {
     jb.resources = val;
 }
 jb.valueByRefHandler = new ImmutableWithJbId(resourcesRef);
+jb.rebuildRefHandler = () => jb.valueByRefHandler = new ImmutableWithJbId(resourcesRef);
 
 jb.ui.refObservable = (ref,cmp,settings) =>
   jb.refHandler(ref).refObservable(ref,cmp,settings);

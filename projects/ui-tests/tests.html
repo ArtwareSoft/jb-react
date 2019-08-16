@@ -20,8 +20,17 @@
 <div id="mem"> </div>
 <div id="test"> </div>
 <script>
-	var test = (location.href.match(/test=([^&]*)/) || [])[1]; //.split('?test=').pop().split('&')[0];
-	jb.testers.runTests('',test,location.href.indexOf('&show') != -1, (location.href.match('&rerun=([0-9]*)') || [])[1] )
+	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
+	const params = { 
+		testType: '',
+		show: location.href.indexOf('&show') != -1,
+		specificTest: urlQuery('test'),
+		rerun: urlQuery('rerun'),
+		pattern: urlQuery('pattern')
+	}
+
+	console.log(params)
+	jb.testers.runTests(params)
 </script>
 </body>
 </html>
