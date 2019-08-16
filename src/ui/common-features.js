@@ -292,16 +292,32 @@ jb.component('feature.keyboard-shortcut', {
       })
 })
 
+jb.component('feature.onEvent', {
+  type: 'feature', category: 'events',
+  params: [
+    { id: 'event', as: 'string', mandatory: true, options: 'blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover' },
+    { id: 'action', type: 'action[]', mandatory: true, dynamic: true },
+    { id: 'debounceTime', as: 'number', defaultValue: 0, description: 'used for mouse events such as mousemove' },
+  ],
+  impl: (ctx,event,action,debounceTime) => ({
+      [`on${event}`]: true,
+      afterViewInit: cmp=>
+        (debounceTime ? cmp[`on${event}`].debounceTime(debounceTime) : cmp[`on${event}`])
+          .subscribe(ev=>
+                jb.ui.wrapWithLauchingElement(action, cmp.ctx.setData(ev), cmp.base)())
+  })
+})
+
 jb.component('feature.onHover', {
   type: 'feature', category: 'events',
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl: (ctx,code) => ({
+  impl: (ctx,action) => ({
       onmouseenter: true,
       afterViewInit: cmp=>
         cmp.onmouseenter.debounceTime(500).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
+              jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
   })
 })
 
