@@ -39,6 +39,8 @@ class JbComponent {
 	reactComp() {
 		jb.log('createReactClass',[this.ctx, this]);
 		var jbComp = this;
+		const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
+
 		class ReactComp extends ui.Component {
 			constructor(props) {
 				super();
@@ -46,13 +48,11 @@ class JbComponent {
 				this.ctx = this.originalCtx = jbComp.ctx; // this.ctx is re-calculated
 				this.ctxForPick = jbComp.ctxForPick || jbComp.ctx;
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
-				try {
-					jbComp.extendCtxOnceFuncs.forEach(extendCtx =>
-		    			this.ctx = extendCtx(this.ctx,this) || this.ctx);
-					Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
-					jbComp.jbBeforeInitFuncs.forEach(init=> init(this,props));
-					jbComp.jbInitFuncs.forEach(init=> init(this,props));
-			    } catch(e) { jb.logException(e,'createReactClass',this.ctx) }
+				jbComp.extendCtxOnceFuncs.forEach(extendCtx =>
+					tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx');
+				Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
+				jbComp.jbBeforeInitFuncs.forEach(init=> tryWrapper(() => init(this,props)), 'beforeinit');
+				jbComp.jbInitFuncs.forEach(init=> tryWrapper(() => init(this,props)), 'init');
 			}
 			render(props,state) {
 				jb.log('render',[this.ctx, state,props,this]);
@@ -60,11 +60,10 @@ class JbComponent {
 					return ui.h('span',{display: 'none'});
 				//console.log('render',jb.studio.shortTitle(this.ctx.path));
 				try {
-					var vdom = jbComp.template(this,state,ui.h);
-					jbComp.modifierFuncs.forEach(modifier=> {
-						if (typeof vdom == 'object')
-							vdom = modifier(vdom,this,state,ui.h) || vdom
-					});
+					let vdom = jbComp.template(this,state,ui.h);
+					jbComp.modifierFuncs.forEach(modifier=> 
+						vdom = (vdom && typeof vdom === 'object') ? tryWrapper(() => modifier(vdom,this,state,ui.h) || vdom) : vdom
+					);
 					jb.log('renRes',[this.ctx, vdom, state,props,this]);
 					return vdom;
 				} catch (e) {
@@ -72,20 +71,16 @@ class JbComponent {
 					return ui.h('span',{display: 'none'});
 				}
 			}
-    	componentDidMount() {
+    		componentDidMount() {
 				jbComp.injectCss(this);
-				jbComp.jbRegisterEventsFuncs.forEach(init=> {
-					try { init(this) } catch(e) { jb.logException(e,'init',jbComp.ctx) }});
-				jbComp.jbAfterViewInitFuncs.forEach(init=> {
-					try { init(this) } catch(e) { jb.logException(e,'AfterViewInit',jbComp.ctx); }});
+				jbComp.jbRegisterEventsFuncs.forEach(init=> tryWrapper(() => init(this), 'init'));
+				jbComp.jbAfterViewInitFuncs.forEach(init=> tryWrapper(() => init(this), 'after view init'));
 			}
 			componentDidUpdate() {
-				jbComp.jbComponentDidUpdateFuncs.forEach(f=> {
-					try { f(this) } catch(e) { jb.logException(e,'componentDidUpdate',jbComp.ctx); }});
+				jbComp.jbComponentDidUpdateFuncs.forEach(f=> tryWrapper(() => f(this), 'componentDidUpdate'));
 			}
-	  	componentWillUnmount() {
-				jbComp.jbDestroyFuncs.forEach(f=> {
-					try { f(this) } catch(e) { jb.logException(e,'destroy',jbComp.ctx); }});
+	  		componentWillUnmount() {
+				jbComp.jbDestroyFuncs.forEach(f=> tryWrapper(() => f(this), 'destroy'));
 				this.resolveDestroyed();
 			}
 		};
