@@ -1,6 +1,8 @@
 (function () {
   const { dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, object, obj, $if, count, runActions, delay, addToArray } = jb.macros
-  const { uiTest, group, editableBoolean, label, field_initValue, hidden, watchRef, feature_if, id, uiAction_click, editableBoolean_expandCollapse, refreshControlById, itemlist } = jb.macros
+  const { uiTest, group, editableBoolean, label, field_initValue, hidden, watchRef, feature_if, id, uiAction_click, uiAction_keyboardEvent,
+    editableBoolean_expandCollapse, refreshControlById, itemlist, 
+    itemlistContainer_search, itemlistContainer_filter, highlight, itemlist_selection, itemlist_keyboardSelection, group_itemlistContainer, uiAction_setText, css_class} = jb.macros
 
   jb.resource('globals', {});
 
@@ -661,53 +663,44 @@
     },
   })
 
-  jb.component('ui-test.itemlist-container-search', {
-    impl: {
-      $: 'ui-test',
-      control: {
-        $: 'group',
-        controls: [
-          { $: 'itemlist-container.search' },
-          {
-            $: 'itemlist',
-            items: {
-              $pipeline: [
-                '%$people%',
-                { $: 'itemlist-container.filter' },
-              ]
-            },
-            controls: {
-              $: 'label', title1: '%name%',
-              title: {
-                $: 'highlight',
-                base: '%name%',
-                highlight: '%$itemlistCntrData/search_pattern%',
-              },
-              features: { $: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', delay: 20 }
-            },
+  jb.component('ui-test.itemlist-container-search-ctrl', {
+    type: 'control',
+    impl: group({
+      controls: [
+        itemlistContainer_search(),
+        itemlist({
+          items: pipeline('%$people%',itemlistContainer_filter()),
+          controls: label({
+            title: highlight('%name%', '%$itemlistCntrData/search_pattern%' ),
             features: [
-              { $: 'itemlist.selection', autoSelectFirst: true },
-              { $: 'itemlist.keyboard-selection', autoFocus: true },
-              { $: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', }
-            ],
-          },
-        ],
-        features: [
-          { $: 'group.itemlist-container' },
-        ]
-      },
-      action: [
-        { $: 'ui-action.set-text', value: 'ho', selector: '.mdl-textfield' },
-        ctx => jb.delay(30)
+              css_class('label1'),
+              watchRef({ref: '%$itemlistCntrData/search_pattern%', delay: 20})
+            ]
+          }),
+          features: [
+            itemlist_selection({autoSelectFirst: true}),
+            itemlist_keyboardSelection({autoFocus: true, onEnter: writeValue('%$person/selected%','%name%')}),
+            watchRef({ref: '%$itemlistCntrData/search_pattern%', delay: 20})
+          ]})
       ],
-      expectedResult: {
-        $and: [
-          { $: 'contains', text: ['Ho', 'mer'] },
-          { $: 'not-contains', text: 'Marge' },
-          { $: 'not-contains', text: 'Homer' }, // highlight selection - 'Homer' should be separated to Ho-Mer
-        ]
-      },
-    }
+      features:  group_itemlistContainer(),
+    }),
+  })
+
+  jb.component('ui-test.itemlist-container-search', {
+    impl: uiTest({
+      control: {$: 'ui-test.itemlist-container-search-ctrl'},
+      action: uiAction_setText('ho','.mdl-textfield'),
+      expectedResult: and(contains(['Ho', 'mer']), not(contains('Marge')), not(contains('Homer')))
+    })
+  })
+
+  jb.component('ui-test.itemlist-container-search-enter-on-li', {
+    impl: uiTest({
+      control: {$: 'ui-test.itemlist-container-search-ctrl'},
+      action: runActions(uiAction_keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13})), // Enter
+      expectedResult: equals('%$person/selected%','Homer Simpson')
+    })
   })
 
   jb.component('ui-test.secondaryLink-set-bug', {

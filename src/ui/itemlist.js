@@ -163,19 +163,21 @@ jb.component('itemlist.selection', {
 
 jb.component('itemlist.keyboard-selection', {
   type: 'feature',
+  usageByValue: false,
   params: [
+    { id: 'autoFocus', type: 'boolean' },
     { id: 'onEnter', type: 'action', dynamic: true },
-    { id: 'autoFocus', type: 'boolean' }
   ],
   impl: ctx => ({
-      afterViewInit: function(cmp) {
-        var onkeydown = (cmp.ctx.vars.itemlistCntr && cmp.ctx.vars.itemlistCntr.keydown) || (cmp.ctx.vars.selectionKeySource && cmp.ctx.vars.selectionKeySource.keydown);
+      afterViewInit: cmp => {
+        let onkeydown = (cmp.ctx.vars.itemlistCntr && cmp.ctx.vars.itemlistCntr.keydown) || (cmp.ctx.vars.selectionKeySource && cmp.ctx.vars.selectionKeySource.keydown);
+        cmp.base.setAttribute('tabIndex','0');
         if (!onkeydown) {
-          cmp.base.setAttribute('tabIndex','0');
           onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
-
           if (ctx.params.autoFocus)
             jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus',ctx)
+        } else {
+          onkeydown = onkeydown.merge(jb.rx.Observable.fromEvent(cmp.base, 'keydown'))
         }
         cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );
 

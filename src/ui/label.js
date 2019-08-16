@@ -83,19 +83,20 @@ jb.component('label.card-supporting-text', {
 })
 
 jb.component('highlight', {
+  type: 'data',
+  usageByValue: true,
   params: [
     { id: 'base', as: 'string', dynamic: true },
     { id: 'highlight', as: 'string', dynamic: true },
     { id: 'cssClass', as: 'string', defaultValue: 'mdl-color-text--indigo-A700'},
   ],
-  impl: (ctx,base,highlight,cssClass) => {
-    var h = highlight(), b = base();
+  impl: (ctx,base,highlightF,cssClass) => {
+    const h = highlightF(), b = base();
     if (!h || !b) return b;
-    var highlight = (b.match(new RegExp(h,'i'))||[])[0]; // case sensitive highlight
+    const highlight = (b.match(new RegExp(h,'i'))||[])[0]; // case sensitive highlight
     if (!highlight) return b;
-    return [
-        b.split(highlight)[0],
-        jb.ui.h('span',{class: cssClass},highlight),
-        b.split(highlight).slice(1).join(highlight)]
+    return [  b.split(highlight)[0],
+              jb.ui.h('span',{class: cssClass},highlight),
+              b.split(highlight).slice(1).join(highlight)]
   }
 })

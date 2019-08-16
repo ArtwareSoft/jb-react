@@ -674,7 +674,7 @@ Object.assign(jb,{
       const params = val.params || []
       if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) // pipeline, or, and, plus
         return {$: id, [params[0].id]: args }
-      if (params.length < 3 || val.usageByValue)
+      if (!(val.usageByValue === false) && (params.length < 3 || val.usageByValue))
         return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
       if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object')
         return {$: id, ...args[0]}

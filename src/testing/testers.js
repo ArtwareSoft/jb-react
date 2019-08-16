@@ -50,7 +50,7 @@ jb.component('ui-test', {
 		{ id: 'action', type: 'action', dynamic: true },
 		{ id: 'expectedResult', type: 'boolean', dynamic: true },
 		{ id: 'cleanUp', type: 'action', dynamic: true },
-		{ id: 'expectedCounters', as: 'single' }
+		{ id: 'expectedCounters', as: 'single' },
 	],
 	impl: function(ctx,control,runBefore,action,expectedResult,cleanUp,expectedCounters) {
 		console.log('starting ' + ctx.path )
@@ -133,27 +133,25 @@ jb.component('ui-action.keyboard-event', {
 		{ id: 'ctrl', as: 'string', options: ['ctrl','alt'] },
 	],
 	impl: (ctx,selector,type,keyCode,ctrl) => {
-		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
-		elems.forEach(el=> {
-				var e = new KeyboardEvent(type,{
-					ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt'
-				});
-				Object.defineProperty(e, 'keyCode', { get : _ => keyCode });
-				el.dispatchEvent(e);
-			})
+		const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : ctx.vars.elemToTest;
+		if (!elem) return
+		const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt' });
+		Object.defineProperty(e, 'keyCode', { get : _ => keyCode });
+		elem.dispatchEvent(e);
 		return jb.delay(1);
 	}
 })
 
 jb.component('ui-action.set-text', {
 	type: 'ui-action',
+	usageByValue: true,
 	params: [
 		{ id: 'value', as: 'string', mandatory: true },
 		{ id: 'selector', as: 'string', defaultValue: 'input' },
 		{ id: 'delay', as: 'number', defaultValue: 1}
 	],
 	impl: (ctx,value,selector,delay) => {
-		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
+		const elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=> {
 			e._component.jbModel(value);
 			jb.ui.findIncludeSelf(e,'input').forEach(el=>el.value = value);
