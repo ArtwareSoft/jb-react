@@ -783,24 +783,17 @@ Object.assign(jb,{
     new Promise(r=>{setTimeout(r,mSec)}),
 
   // valueByRef API
-  refHandler: ref =>
-    (ref && ref.handler) || jb.valueByRefHandler,
-  writeValue: (ref,value,srcCtx) =>
-    jb.refHandler(ref).writeValue(ref,value,srcCtx),
-  splice: (ref,args,srcCtx) =>
-    jb.refHandler(ref).splice(ref,args,srcCtx),
-  move: (fromRef,toRef,srcCtx) =>
-    jb.refHandler(fromRef).move(fromRef,toRef,srcCtx),
-  isRef: (ref) =>
-    jb.refHandler(ref).isRef(ref),
-  isValid: (ref) =>
-    jb.refHandler(ref).isValid(ref),
-  refreshRef: (ref) =>
-    jb.refHandler(ref).refresh(ref),
-  asRef: (obj) =>
-    jb.valueByRefHandler.asRef(obj),
-  resourceChange: _ =>
-    jb.valueByRefHandler.resourceChange
+  refHandler: ref => (ref && ref.handler) || jb.valueByRefHandler,
+  writeValue: (ref,value,srcCtx) => jb.refHandler(ref).writeValue(ref,value,srcCtx),
+  splice: (ref,args,srcCtx) => jb.refHandler(ref).splice(ref,args,srcCtx),
+  move: (fromRef,toRef,srcCtx) => jb.refHandler(fromRef).move(fromRef,toRef,srcCtx),
+  isRef: ref => jb.refHandler(ref).isRef(ref),
+  isValid: ref => jb.refHandler(ref).isValid(ref),
+  refreshRef: ref => jb.refHandler(ref).refresh(ref),
+  asRef: obj => jb.valueByRefHandler.asRef(obj),
+  startTransaction: () => jb.refHandler().startTransaction(),
+  endTransaction: () => jb.refHandler().endTransaction(),
+  resourceChange: () => jb.valueByRefHandler.resourceChange
 })
 if (typeof self != 'undefined')
   self.jb = jb

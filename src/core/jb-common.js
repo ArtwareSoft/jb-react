@@ -737,27 +737,49 @@ jb.component('parent', {
 jb.component('runActions', {
 	type: 'action',
 	params: [
-		{ id: 'actions', type:'action[]', ignore: true, composite: true, mandatory: true }
+		{ id: 'actions', type:'action[]', ignore: true, composite: true, mandatory: true },
 	],
-	impl: function(context) {
-		if (!context.profile) debugger;
-		const actions = jb.toarray(context.profile.actions || context.profile['$runActions']);
-		const innerPath =  (context.profile.actions && context.profile.actions.sugar) ? ''
-			: (context.profile['$runActions'] ? '$runActions~' : 'items~');
+	impl: ctx => {
+		if (!ctx.profile) debugger;
+		const actions = jb.toarray(ctx.profile.actions || ctx.profile['$runActions']);
+		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
+			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
 		return actions.reduce((def,action,index) =>
-				def.then(_ => context.runInner(action, { as: 'single'}, innerPath + index ))
+				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
 			,Promise.resolve())
+	}
+});
+
+jb.component('run-transaction', {
+	type: 'action',
+	params: [
+		{ id: 'actions', type:'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: [] },
+		{ id: 'disableNotifications', as: 'boolean', type: 'boolean' }
+	],
+	impl: (ctx,actions,disableNotifications) => {
+		jb.startTransaction()
+		return actions.reduce((def,action,index) =>
+				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
+			,Promise.resolve())
+			.catch((e) => jb.logException(e,ctx))
+			.then(() => jb.endTransaction(disableNotifications))
 	}
 });
 
 jb.component('run-action-on-items', {
 	type: 'action',
+	usageByValue: true,
 	params: [
 		{ id: 'items', as: 'array', mandatory: true },
-		{ id: 'action', type:'action', dynamic: true, mandatory: true }
+		{ id: 'action', type:'action', dynamic: true, mandatory: true },
+		{ id: 'notifications', as: 'string', options: 'wait for all actions,no notifications', description: 'notification for watch-ref, defualt behavior is after each action' }
 	],
-	impl: (ctx,items,action) =>
-		items.reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
+	impl: (ctx,items,action,notifications) => {
+		if (notifications) jb.startTransaction()
+		return items.reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
+			.catch((e) => jb.logException(e,ctx))
+			.then(() => notifications && jb.endTransaction(notifications === 'no notifications'));
+	}
 })
 
 jb.component('delay', {

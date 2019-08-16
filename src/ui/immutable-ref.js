@@ -28,7 +28,7 @@ class ImmutableWithJbId {
     if (!this.objToPath.has(resource))
     this.addObjToMap(resource,[resName])
   }
-  doOp(ref,opOnRef,srcCtx,doNotNotify) {
+  doOp(ref,opOnRef,srcCtx) {
     const opVal = opOnRef.$set || opOnRef.$merge || opOnRef.$push || opOnRef.$splice;
     if (!this.isRef(ref))
       ref = this.asRef(ref);
@@ -58,8 +58,10 @@ class ImmutableWithJbId {
         this.addObjToMap(newVal,path)
     }
     opEvent.newVal = newVal;
-    if (!doNotNotify)
-        this.resourceChange.next(opEvent);
+    if (this.transactionEventsLog)
+      this.transactionEventsLog.push(opEvent)
+    else
+      this.resourceChange.next(opEvent);
     return opEvent;
   }
   addObjToMap(top,path) {
@@ -191,11 +193,18 @@ class ImmutableWithJbId {
         if (fromIndex < toIndex) toIndex--; // the deletion changes the index
         return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
     }
-    var events = [
-        this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx,true),
-        this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx,true),
-    ]
-    events.forEach(opEvent=>this.resourceChange.next(opEvent))
+    this.startTransaction()
+    this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx),
+    this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx),
+    this.endTransaction()
+  }
+  startTransaction() {
+    this.transactionEventsLog = []
+  }
+  endTransaction(doNotNotify) {
+    if (!doNotNotify)
+      (this.transactionEventsLog || []).forEach(opEvent=>this.resourceChange.next(opEvent))
+    delete this.transactionEventsLog
   }
   push(ref,value,srcCtx) {
     return this.doOp(ref,{$push: this.createSecondaryLink(value)},srcCtx)
