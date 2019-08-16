@@ -222,7 +222,7 @@ jb.component('write-value',{
 jb.component('index-of', {
 	params: [
 		{ id: 'array', as: 'array', mandatory: true },
-		{ id: 'item', as: 'signle', mandatory: true },
+		{ id: 'item', as: 'single', mandatory: true },
 	],
 	impl: (ctx,array,item) => array.indexOf(item)
 })
