@@ -1,23 +1,28 @@
+(function() {
+
 jb.component('pretty-print', {
   params: [
     { id: 'profile', defaultValue: '%%' },
     { id: 'colWidth', as: 'number', defaultValue: 140 },
+    { id: 'macro', as: 'boolean'},
   ],
-  impl: (ctx,profile,colWidth) =>
-    jb.prettyPrint(profile,colWidth)
+  impl: (ctx,profile) =>
+    jb.prettyPrint(profile,ctx.params)
 })
 
-jb.prettyPrintComp = function(compId,comp) {
+jb.prettyPrintComp = function(compId,comp,settings) {
   if (comp)
     return "jb.component('" + compId + "', "
-      + jb.prettyPrintWithPositions(comp).result + ')'
+      + jb.prettyPrintWithPositions(comp,settings).result + ')'
 }
 
 jb.prettyPrint = function(profile,options) {
   return jb.prettyPrintWithPositions(profile,options).result;
 }
 
-jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls} = {}) {
+jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls,macro} = {}) {
+  const spaces = Array.from(new Array(200)).map(_=>' ').join('')
+
   colWidth = colWidth || 140;
   tabSize = tabSize || 2;
 
@@ -26,9 +31,12 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   let depth = 0;
   let lineNum = 0;
   let positions = {};
+  
+  if (macro)
+    return [valueToMacro({path: initialPath || '', line:0, col: 0}, profile)].map(({text,pos}) => ({result: text, positions: pos}))[0]
 
   printValue(profile,initialPath || '');
-  return { result : result, positions : positions }
+  return { result, positions }
 
   function sortedPropertyNames(obj) {
     let props = jb.entries(obj)
@@ -135,24 +143,6 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
     remainedInLine = colWidth - tabSize * depth;
   }
 
-  function flatMacro(prof,id,comp) {
-    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
-    const macro = comp.reservedWord ? `$${idAsCamel}` : idAsCamel
-
-    const params = comp.params || []
-    if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus
-      const args = jb.toarray(prof['$'+id] || prof[params[0].id]).map(arg=>flat_val(arg)).join(',')
-      return `${macro}(${args})`
-    }
-    if (params.length < 3 || comp.usageByValue) {
-      const args = params.map(param=>flat_val(obj[param.id]))
-      if (args.length && args[args.length-1] === undefined) args.pop()
-      if (args.length && args[args.length-1] === undefined) args.pop()
-      return `${macro}(${args})`
-    }
-    return flat_obj(obj)
-  }
-
   function flat_obj(obj) {
     var props = sortedPropertyNames(obj)
       .filter(p=>showNulls || obj[p] != null)
@@ -183,4 +173,87 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   function flat_array(array) {
     return '[' + array.map(item=>flat_val(item)).join(', ') + ']';
   }
+
+  function joinVals({path, line, col}, innerVals, open, close, flat, isArray) {
+    const result = innerVals.reduce((acc,{innerPath, val}, index) => {
+      const fullInnerPath = [path,innerPath].join('~')
+      let result = valueToMacro({path: fullInnerPath, line: acc.line, col: acc.col}, val, flat)
+      if (typeof result === 'string')
+        result = { text: result, map: {}}
+      const newPos = advanceLineCol(acc, result.text)
+      const map = Object.assign({},acc.map, result.map,{[fullInnerPath]: [acc.line, acc.col,newPos.line, newPos.col]})
+      const separator = index === 0 ? '' : ',' + (flat ? ' ' : newLine())
+      const valPrefix = isArray ? '' : innerPath + ': ';
+      return Object.assign({ text: acc.text + separator + valPrefix + result.text, map }, newPos)
+    }, {text: '', map: {}, line, col} )
+
+    if (result.text.replace(/\n\s*/g,'').length < colWidth && !flat)
+      return joinVals({path, line, col}, innerVals, open, close, true, isArray)
+
+    const out = { 
+      text: open + newLine() + result.text + newLine(-1) + close,
+      map: result.map
+    }
+    return out
+
+    function newLine(offset = 0) {
+      return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset)*tabSize)
+    }
+    function advanceLineCol({line,col},text) {
+      const noOfLines = (text.match(/\n/g) || '').length
+      const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
+      return { line: line + noOfLines, col: newCol }
+    }
+  }
+
+  function profileToMacro(ctx, profile,flat) {
+    const id = jb.compName(profile)
+    if (!id) { // not tgp
+      const props = Object.keys(profile) 
+      if (props.indexOf('$') > 0) { // make the $ first
+        props.splice(props.indexOf('$'),1);
+        props.unshift('$');
+      }
+      return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
+    }
+    const comp = jb.comps[id]
+    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
+    const macro = comp.reservedWord ? `$${idAsCamel}` : idAsCamel
+  
+    const params = comp.params || []
+    if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus
+      const args = (profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val}))
+      return joinVals(ctx, args, `${macro}(`, ')', flat, true)
+    }
+    if (params.length < 3 || comp.usageByValue) {
+      const args = params.map(param=>({innerPath: param.id, val: profile[param.id]}))
+      if (args.length && args[args.length-1].val === undefined) args.pop()
+      if (args.length && args[args.length-1].val === undefined) args.pop()
+      return joinVals(ctx, args, `${macro}(`, ')', flat, true)
+    }
+    const args = params.filter(param=>profile[param.id] !== undefined)
+        .map(param=>({innerPath: param.id, val: profile[param.id]}))
+      return joinVals(ctx, args, `${macro}({`, '})', flat, false)
+  }
+    
+    function valueToMacro(ctx, val, flat) {
+    if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
+    if (val === null) return 'null';
+    if (val === undefined) return 'undefined';
+    if (typeof val === 'object') return profileToMacro(ctx, val, flat);
+    if (typeof val === 'function') return val.toString();
+    if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
+      return "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
+    else
+      return JSON.stringify(val); // primitives
+  }
+  
+  function arrayToMacro(ctx, array, flat) {
+    const vals = array.map((val,i) => ({innerPath: i, val}))
+    return joinVals(ctx, vals, '[', ']', flat, true)
+  }
+ 
 }
+
+
+})()

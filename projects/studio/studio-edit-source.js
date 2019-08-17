@@ -11,31 +11,17 @@ jb.component('studio.edit-source', {
     }
   ], 
   impl :{$: 'open-dialog', 
-    style :{$: 'dialog.edit-source-style', 
-      id: 'edit-source', width: 600, 
-      onUpdate1 :{$: 'write-value', 
-        to :{$: 'studio.profile-as-text', path: '%$path%' }, 
-        value: '%$studio/ScriptInPopup%'
-      }, 
-    }, 
+    style :{$: 'dialog.edit-source-style', id: 'edit-source', width: 600 }, 
     content :{$: 'editable-text', 
       databind:{$: 'studio.profile-as-text', path: '%$path%' },
       // '%$studio/ScriptInPopup%', 
       style :{$: 'editable-text.studio-codemirror-tgp' }
     }, 
     title :{$: 'studio.short-title', path: '%$path%' }, 
-    onOK1 :{$: 'write-value', 
-      to :{$: 'studio.profile-as-text', path: '%$path%' }, 
-      value: '%$studio/ScriptInPopup%'
-    }, 
     features: [
 //      {$:'dialog-feature.drag-title'},
       {$: 'css', css: '.jb-dialog-content-parent {overflow-y: hidden}' }, 
       {$: 'dialog-feature.resizer', "resize-inner-codemirror": 'true', resizeInnerCodemirror: true }, 
-      {$: 'write-value1', 
-        value :{$: 'studio.profile-as-text', path: '%$path%' }, 
-        to: '%$studio/ScriptInPopup%'
-      }
     ]
   }
 })

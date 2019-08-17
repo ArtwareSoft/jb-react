@@ -223,6 +223,34 @@ jb.component('studio.profile-as-text', {
 	})
 })
 
+jb.component('studio.profile-as-macro-text', {
+	type: 'data',
+	params: [{ id: 'path', as: 'string', dynamic: true } ],
+	impl: ctx => ({
+		$jb_path: () => ctx.params.path().split('~'),
+		$jb_val: function(value) {
+			try {
+				const path = ctx.params.path();
+				if (!path) return '';
+				if (typeof value == 'undefined') {
+					const val = st.valOfPath(path);
+					if (typeof val == 'function')
+						return val.toString();
+
+					if (st.isPrimitiveValue(val))
+						return ''+val;
+					return jb.prettyPrint(val || '',{macro:true});
+				} else {
+				}
+			} catch(e) {
+				jb.logException(e,'studio.profile-as-text',ctx)
+			}
+		},
+		$jb_observable: cmp =>
+			st.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+	})
+})
+
 jb.component('studio.profile-as-string-byref', {
 	type: 'data',
 	params: [{ id: 'path', as: 'string', dynamic: true } ],

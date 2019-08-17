@@ -1,5 +1,5 @@
 (function() {
-const {dataTest, pipeline, pipe, join, list, writeValue, splice, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case, runActions, runActionOnItems} = jb.macros
+const {dataTest, pipeline, pipe, join, list, writeValue, splice, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case, runActions, runActionOnItems, prettyPrint} = jb.macros
 
 jb.component('delayedObj', {
   params: [
@@ -330,6 +330,13 @@ jb.component('data-test.obj', {
       '%a%-%b%'
     ),
     expectedResult: contains('1-2')
+  })
+})
+
+jb.component('data-test.pretty-print-macro', {
+  impl: dataTest({
+    calculate: prettyPrint({profile: () => jb.comps['data-test.obj'].impl, macro: true}),
+    expectedResult: contains("prop('a', 1)")
   })
 })
 
