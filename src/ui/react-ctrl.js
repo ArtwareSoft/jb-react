@@ -67,7 +67,7 @@ class JbComponent {
 					jb.log('renRes',[this.ctx, vdom, state,props,this]);
 					return vdom;
 				} catch (e) {
-					jb.logException(e,'render',ctx,props,state);
+					jb.logException(e,'render',this.ctx,props,state);
 					return ui.h('span',{display: 'none'});
 				}
 			}
