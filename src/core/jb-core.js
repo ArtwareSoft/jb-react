@@ -1,18 +1,20 @@
 const jb = (function() {
 const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-const pathsToLog = new Set()
+// const pathsToLog = new Set()
+
+// function jb_run(ctx,parentParam,settings) {
+//   log('req', [ctx,parentParam,settings])
+//   const res = do_jb_run(...arguments);
+  
+//   log(pathsToLog.has(ctx.path) ? 'resLog' : 'res', [ctx,res,parentParam,settings])
+//   return res;
+// }
 
 function jb_run(ctx,parentParam,settings) {
-  log('req', [ctx,parentParam,settings])
-  const res = do_jb_run(...arguments);
-  
-  log(pathsToLog.has(ctx.path) ? 'resLog' : 'res', [ctx,res,parentParam,settings])
-  return res;
-}
-
-function do_jb_run(ctx,parentParam,settings) {
   try {
     const profile = ctx.profile;
+    if (jb.ctxByPath)
+      jb.ctxByPath[ctx.path] = ctx
     if (ctx.probe && (!settings || !settings.noprobe)) {
       if (ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
         return ctx.probe.record(ctx,parentParam)
@@ -654,7 +656,7 @@ let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 return {
   run: jb_run,
   jbCtx, expression, bool_expression, profileType, compName, pathSummary, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, pathsToLog, frame,
+  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame,
   ctxCounter: _ => ctxCounter
 }
 

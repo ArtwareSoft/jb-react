@@ -296,11 +296,11 @@ ui.renderWidget = function(profile,top) {
 					if (project && page)
 						this.state.profile = {$: `${project}.${page}`}
 
-					st.pageChange.debounceTime(500)
+					st.pageChange.debounceTime(200)
 						.filter(({page})=>page != this.state.profile.$)
 						.subscribe(({page,ctrl})=>
 							this.setState({profile: {$: ctrl || page, $vars: {DataToDebug: page }} }));
-					st.scriptChange.debounceTime(500).subscribe(_=>
+					st.scriptChange.debounceTime(200).subscribe(_=>
 							this.setState(null));
 				}
 			}
@@ -414,11 +414,12 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,allowSelfRefresh) {
 }
 
 ui.toVdomOrStr = val => {
-	var res = jb.val((Array.isArray(val) && val.length == 1) ? val[0] : val);
+	const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val;
+	let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1);
 	if (typeof res == 'boolean')
 		res = '' + res;
-  if (res && res.slice)
-    res = res.slice(0,1000);
+	if (res && res.slice)
+		res = res.slice(0,1000);
 	return res;
 }
 

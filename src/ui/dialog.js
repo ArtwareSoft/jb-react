@@ -11,15 +11,15 @@ jb.component('open-dialog', {
 		{ id: 'features', type: 'dialog-feature[]', dynamic: true }
 	],
 	impl: function(context,id) {
-		var modal = context.params.modal;
-		var dialog = {
+		const modal = context.params.modal;
+		const dialog = {
 			id: id,
-      instanceId: context.id,
+      		instanceId: context.id,
 			modal: modal,
 			em: new jb.rx.Subject(),
 		};
 
-		var ctx = context.setVars({
+		const ctx = context.setVars({
 			$dialog: dialog,
 			formContainer: { err: ''}
 		});

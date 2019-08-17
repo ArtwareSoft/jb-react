@@ -23,7 +23,7 @@ jb.component('label.bind-title', {
         cmp.setState({title: fixTitleVal(ctx.vars.$model.title(cmp.ctx))})
 
       function fixTitleVal(titleRef) {
-        if (titleRef  == null|| titleRef.$jb_invalid)
+        if (titleRef == null || titleRef.$jb_invalid)
             return 'ref error';
         return jb.ui.toVdomOrStr(titleRef);
       }

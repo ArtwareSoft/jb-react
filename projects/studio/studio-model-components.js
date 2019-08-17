@@ -390,18 +390,6 @@ jb.component('studio.toggle-disabled',{
 	impl: (ctx,path) => st.toggleDisabled(path,ctx)
 })
 
-jb.component('studio.has-trace',{
-	type: 'boolean',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.hasTrace(path,ctx)
-})
-
-jb.component('studio.toggle-trace',{
-	type: 'action',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.toggleTrace(path,ctx)
-})
-
 jb.component('studio.make-local',{
 	type: 'action',
 	params: [ {id: 'path', as: 'string' } ],

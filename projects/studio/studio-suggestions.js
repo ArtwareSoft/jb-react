@@ -1,20 +1,24 @@
 (function() {
-  var st = jb.studio;
+  const st = jb.studio;
+  const { runActions, writeValue, delay} = jb.macros
 
 jb.component('studio.suggestions-itemlist', {
-  params: [{ id: 'path', as: 'string' }],
+  params: [{ id: 'path', as: 'string' }, { id: 'source', as: 'string' }],
   impl :{$: 'itemlist',
     items: '%$studio/suggestionData/options%',
     controls :{$: 'label',
       title: '%text%',
-      features: {$: 'css.padding', right: '2', left: '3' },
+      features: [
+        {$: 'css.padding', right: '2', left: '3' },
+        //{$: 'watch-ref', ref: '%$studio/suggestionData/tail%'}
+      ]
 //      title: {$: 'highlight', base: '%text%', highlight: '%$studio/suggestionData/tail%'},
     },
     watchItems: true,
     features: [
       {$: 'itemlist.no-container'},
       {$: 'itemlist.studio-refresh-suggestions-options',
-        path: '%$path%',
+        path: '%$path%', source: '%$source%'
 //        expressionOnly: true
       },
       {$: 'itemlist.selection',
@@ -45,59 +49,81 @@ jb.component('itemlist.studio-refresh-suggestions-options', {
   type: 'feature',
   params: [
     {id: 'path', as: 'string'},
+    {id: 'source', as: 'string'},
     {id: 'expressionOnly', as: 'boolean'},
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
-        var selectionKeySource = cmp.ctx.vars.selectionKeySource;
-        var keyup = selectionKeySource.keyup.takeUntil( cmp.destroyed );
-        var input = selectionKeySource.input;
+        const selectionKeySource = cmp.ctx.vars.selectionKeySource
+        const pathToTrace = ctx.params.path
+        const keyup = selectionKeySource.keyup.takeUntil( cmp.destroyed )
+        const input = selectionKeySource.input
 
         keyup
           .debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
-          .do(e=>jb.log('suggestions',['after debounce', input.value, e, cmp, cmp.ctx.path]))
+          .do(e=>jb.log('suggestions',['after debounce', input.value, e, cmp, pathToTrace]))
           .map(e=>
               input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
-          .do(e=>jb.log('suggestions',['after distinct', input.value, e, cmp, cmp.ctx.path]))
-          .flatMap(_=>
-            getProbe())
-          .do(e=>jb.log('suggestions',['after get prob', input.value, e, cmp, cmp.ctx.path]))
-          .map(res=>
-              res && res.result && res.result[0] && res.result[0].in)
-          .do(e=>jb.log('suggestions',['probe result', input.value, e, cmp, cmp.ctx.path]))
+          .do(e=>jb.log('suggestions',['after distinct', input.value, e, cmp, pathToTrace]))
+          .map(closestCtx)
+          // .flatMap(_=> {
+          //   if (ctx.params.source != 'floating-input') {
+          //     const ctxFromPreview = st.closestCtxInPreview(pathToTrace)
+          //     if (ctxFromPreview && ctxFromPreview.ctx) 
+          //       return [ctxFromPreview.ctx]
+          //   }
+          //   return getProbe().then(res=> res && res.result && res.result[0] && res.result[0].in)
+          // })
+          .do(e=>jb.log('suggestions',['probe ctx', input.value, e, cmp, pathToTrace]))
           .map(probeCtx=>
-            new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,ctx.params.path))
-          .do(e=>jb.log('suggestions',['create suggestions obj', input.value, e, cmp, cmp.ctx.path]))
+            new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,pathToTrace))
+          .do(e=>jb.log('suggestions',['create suggestions obj', input.value, e, cmp, pathToTrace]))
           .catch(e=> jb.logException(e,'suggestions',cmp.ctx) || [])
           .distinctUntilChanged((e1,e2)=>
             e1.key == e2.key) // compare options - if options are the same - leave it.
-          .do(e=>jb.log('suggestions',['generate event', input.value, e, cmp, cmp.ctx.path]))
+          .do(e=>jb.log('suggestions',['generate event', input.value, e, cmp, pathToTrace]))
           .takeUntil( cmp.destroyed )
           .subscribe(e=> {
             //   if (input.value.indexOf('=') == 0) {
-            //     cmp.ctx.run({$:'write-value', to: {$: 'studio.ref', path: ctx.params.path}, value: '' });
+            //     cmp.ctx.run({$:'write-value', to: {$: 'studio.ref', path: pathToTrace}, value: '' });
             //     return cmp.ctx.run({$: 'studio.open-new-profile-dialog',
-            //       path: ctx.params.path, mode: 'update',
-            //       type: {$:'studio.param-type', path: ctx.params.path}
+            //       path: pathToTrace, mode: 'update',
+            //       type: {$:'studio.param-type', path: pathToTrace}
             //    });
             //  }
-              jb.log('suggestions',['before write values', input.value, cmp, cmp.ctx.path]);
-              cmp.ctx.run({$:'write-value', to: '%$studio/suggestionData/tail%', value: ctx => e.tail })
-              cmp.ctx.run({$:'write-value', to: '%$studio/suggestionData/options%', value: ctx => e.options });
-              cmp.ctx.run({$:'write-value', to: '%$studio/suggestionData/selected%', value: ctx => e.options[0] });
-              jb.log('suggestions',['after write values', input.value, cmp, cmp.ctx.path]);
+              jb.log('suggestions',['before write values', input.value, cmp, pathToTrace]);
+              cmp.ctx.setVars({e}).run(runActions(
+                writeValue('%$studio/suggestionData/options%','%$e.options%'), // let the suggestion options refresh
+                writeValue('%$studio/suggestionData/selected%','%$e.selected%'),
+                writeValue('%$studio/suggestionData/tail%','%$e.tail%') // used for highlighting
+              ))
+              // cmp.ctx.run({$:'write-value', to: '%$studio/suggestionData/options%', value: ctx => e.options });
+              // cmp.ctx.run({$:'write-value', to: '%$studio/suggestionData/tail%', value: ctx => e.tail })
+              // cmp.ctx.run({$:'write-value', to: '%$studio/suggestionData/selected%', value: ctx => e.options[0] });
+              jb.log('suggestions',['after write values', input.value, cmp, pathToTrace]);
           });
 
-        function getProbe() {
-          if (cmp.probeResult)
-            return [cmp.probeResult];
-          var probePath = ctx.params.path;
-          if (st.valOfPath(probePath) == null)
-            jb.writeValue(st.refOfPath(probePath),'',ctx);
-
-          return ctx.run({$: 'studio.probe', path: probePath }).then(res=>cmp.probeResult = res);
+        function closestCtx() {
+          if (pathToTrace.match(/pipeline~[1-9][0-9]*$/) && st.isExtraElem(pathToTrace)) {
+            const formerIndex = Number(pathToTrace.match(/pipeline~([1-9][0-9]*)$/)[1])-1
+            const formerPath = pathToTrace.replace(/[0-9]+$/,formerIndex)
+            const baseCtx = st.closestCtxByPath(formerPath)
+            if (baseCtx)
+              return baseCtx.setData(baseCtx.runItself())
+          }
+          return st.closestCtxByPath(pathToTrace)
         }
+
+        // function getProbe() {
+        //   if (cmp.probeResult)
+        //     return [cmp.probeResult];
+        //   var probePath = ctx.params.path;
+        //   if (st.valOfPath(probePath) == null)
+        //     jb.writeValue(st.refOfPath(probePath),'',ctx);
+          
+        //   return ctx.run({$: 'studio.probe', path: probePath }).then(res=>cmp.probeResult = res);
+        // }
       }
   })
 })
@@ -177,7 +203,7 @@ jb.component('studio.jb-floating-input', {
           }}, 
           {$: 'editable-text.helper-popup', 
             features :{$: 'dialog-feature.near-launcher-position' }, 
-            control :{$: 'studio.suggestions-itemlist', path: '%$path%' }, 
+            control :{$: 'studio.suggestions-itemlist', path: '%$path%', source: 'floating-input' }, 
             popupId: 'suggestions', 
             popupStyle :{$: 'dialog.popup' }, 
             showHelper :{$: 'studio.show-suggestions' }, 

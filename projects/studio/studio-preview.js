@@ -24,7 +24,8 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
 
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;
-			st.previewjb.http_get_cache = {}
+      st.previewjb.http_get_cache = {}
+      st.previewjb.ctxByPath = {}
 
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))

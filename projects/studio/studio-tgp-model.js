@@ -177,6 +177,11 @@ Object.assign(st,{
 				.map(k=> path +'~'+k);
 		return [];
 	},
+	isExtraElem: path => {
+		const parentVal = st.valOfPath(st.parentPath(path));
+		if (Array.isArray(parentVal))
+			return parentVal.length == (path.match(/~([0-9]+)$/) || ['',-1])[1]
+	},
 	asArrayChildren: path => { // support the case of single element - used by properties features
 		const val = st.valOfPath(path);
 		if (Array.isArray(val))
@@ -325,8 +330,13 @@ Object.assign(st,{
 		}
 
 		return path.split('~').pop();
-	}
+	},
 
+	closestCtxByPath: pathToTrace => {
+		let path = pathToTrace.split('~')
+		for (;path.length > 0 && !st.previewjb.ctxByPath[path.join('~')];path.pop());
+		return st.previewjb.ctxByPath[path.join('~')]
+	},
 })
 
 })()

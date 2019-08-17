@@ -1,3 +1,5 @@
+(function() {
+const st = jb.studio
 jb.studio.probeResultCustomizers = []
 jb.component('studio.prob-result-customization', {
   type: 'data',
@@ -132,76 +134,36 @@ jb.component('studio.jb-editor-inteli-tree', {
 jb.component('studio.probe-data-view', {
   type: 'control',
   params: [{ id: 'path', as: 'string' }],
-  impl:{$: 'group',
-  controls: [
-    {$: 'label',
-      title: '{? closest Path: %$probeResult/closestPath% ?}',
-      features :{$: 'css', css: '{ color: red}' }
-    },
-    {$: 'label', title: 'circuit %$probeResult/circuit.$%, time: %$probeResult/totalTime% mSec' },
-    {$: 'table',
-      items :{
-        $pipeline: [
-          {$: 'studio.prob-result-customization', probeResult: '%$probeResult%' },
-          '%$probeResult/result%',
-          {$: 'slice', end: '%$maxInputs%' }
-        ]
+  impl:{$: 'group', 
+          controls: [ {$: 'table',
+              items: '%$probeResult%',
+              fields: [
+                {$: 'field.control',  title: 'last in',  control :{$: 'studio.data-browse', obj: '%in%' }, width: '100' },
+                {$: 'field.control',  title: 'out', control :{$: 'studio.data-browse', obj: '%out%' }, width: '100' }
+              ],
+              style :{$: 'table.mdl', classForTable: 'mdl-data-table', classForTd: 'mdl-data-table__cell--non-numeric' },
+              features: [
+                {$: 'css', css: '{white-space: normal}' },
+              ]
+            },
+          ],
+          features: [
+            {$: 'group.wait',
+              for :{$: 'studio.probe-results', path: '%$path%'},
+              loadingControl :{$: 'label', title1: 'calculating...', title: '...' },
+              varName: 'probeResult'
+            },
+          ]
       },
-      fields: [
-        {$: 'field.control',
-          title: 'in (%$probeResult/result/length%)',
-          control :{$: 'studio.data-browse', obj: '%in/data%' },
-          width: '100'
-        },
-        {$: 'field.control',
-          title: 'out',
-          control :{$: 'studio.data-browse', obj: '%out%'
-          },
-          width: '100'
-        }
-      ],
-      style :{$: 'table.mdl', classForTable: 'mdl-data-table', classForTd: 'mdl-data-table__cell--non-numeric' },
-      features: [
-        {$: 'css', css: '{white-space: normal}' },
-        {$: 'watch-ref', ref: '%$maxInputs%' }
-      ]
-    },
-    {$: 'button',
-      title: 'show (%$probeResult/result/length%)',
-      action :{$: 'write-value',
-        style :{$: 'dialog.popup' },
-        content :{$: 'table',
-          items: '%$obj%',
-          fields :{$: 'field.control',
-            title :{ $pipeline: [{$: 'count', items: '%$obj%' }, '%% items'] },
-            control :{$: 'studio.data-browse', a: 'label', obj: '%%', width: 200 }
-          },
-          style :{$: 'table.mdl',
-            classForTable: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
-            classForTd: 'mdl-data-table__cell--non-numeric'
-          }
-        },
-        to: '%$maxInputs%',
-        value: '100'
-      },
-      style :{$: 'button.href' },
-      features: [
-        {$: 'watch-ref', ref: '%$maxInputs%' },
-        {$: 'hidden',
-          showCondition :{ $and: ['%$maxInputs% == 5', '%$probeResult/result/length% > 5'] }
-        }
-      ]
-    }
-  ],
-  features: [
-    {$: 'group.wait',
-      for :{$: 'studio.probe', path: '%$path%', circuit: '%$jbEditorCntrData/circuit%' },
-      loadingControl :{$: 'label', title1: 'calculating...', title: '...' },
-      varName: 'probeResult'
-    },
-    {$: 'var', name: 'maxInputs', value: '5', mutable: true }
-  ]
-} 
+})
+
+jb.component('studio.probe-results', {
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl: (ctx, path) => jb.delay(300).then(_ => {
+    const inCtx = st.closestCtxByPath(path) || new jb.jbCtx()
+    return [{in: inCtx.data, out: st.isOfType(path,'action') ? null : inCtx.runItself()}]
+  })
 })
 
 jb.component('studio.jb-editor', {
@@ -706,16 +668,6 @@ jb.component('studio.jb-editor-menu', {
             shortcut: 'Ctrl+X'
           }, 
           {$: 'menu.action', 
-            title :{
-              $if :{$: 'studio.has-trace', path: '%$path%' }, 
-              then: 'UnTrace',
-              else: 'Trace'
-            }, 
-            action :{$: 'studio.toggle-trace', path: '%$path%' }, 
-            icon: 'do_not_disturb',
-            shortcut: 'Ctrl+Enter'
-          }, 
-          {$: 'menu.action', 
             title: 'Copy', 
             action :{$: 'studio.copy', path: '%$path%' }, 
             icon: 'copy', 
@@ -855,3 +807,5 @@ jb.component('studio.expand-and-select-first-child-in-jb-editor', {
     })
   }
 })
+
+})()

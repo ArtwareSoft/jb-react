@@ -147,16 +147,6 @@ Object.assign(st, {
 		if (prof && typeof prof == 'object' && !Array.isArray(prof))
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
-	hasTrace: path => {
-		return st.previewjb.pathsToLog.has(path)
-	},
-	toggleTrace: (path,srcCtx) => {
-		const pathsToLog = st.previewjb.pathsToLog;
-		if (pathsToLog.has(path))
-			pathsToLog.delete(path)
-		else
-			pathsToLog.add(path)
-	},
 	setComp: (path,compName,srcCtx) => {
 		var comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
