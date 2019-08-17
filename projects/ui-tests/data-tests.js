@@ -327,7 +327,9 @@ jb.component('data-test.obj', {
         prop('a',1),
         prop('b',2)
       ), 
-      '%a%-%b%'
+      '%a%-%b%',
+      {$: 'object', res: '%%'},
+      '%res%'
     ),
     expectedResult: contains('1-2')
   })
@@ -336,7 +338,7 @@ jb.component('data-test.obj', {
 jb.component('data-test.pretty-print-macro', {
   impl: dataTest({
     calculate: prettyPrint({profile: () => jb.comps['data-test.obj'].impl, macro: true}),
-    expectedResult: contains("prop('a', 1)")
+    expectedResult: contains(["prop('a', 1)", () => "res: '%%'"])
   })
 })
 
