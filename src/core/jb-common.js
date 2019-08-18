@@ -73,7 +73,7 @@ jb.component('data.if', {
  	params: [
  		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
  		{ id: 'then', mandatory: true, dynamic: true },
- 		{ id: 'else', dynamic: true },
+ 		{ id: 'else', dynamic: true, defaultValue: '%%' },
  	],
  	impl: (ctx,cond,_then,_else) =>
  		cond ? _then() : _else()

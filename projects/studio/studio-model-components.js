@@ -239,7 +239,7 @@ jb.component('studio.profile-as-macro-text', {
 
 					if (st.isPrimitiveValue(val))
 						return ''+val;
-					return jb.prettyPrint(val || '',{macro:true});
+					return jb.prettyPrint(val || '',{macro:true, initialPath: path});
 				} else {
 				}
 			} catch(e) {

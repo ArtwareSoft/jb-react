@@ -187,7 +187,10 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       return Object.assign({ text: acc.text + separator + valPrefix + result.text, map }, newPos)
     }, {text: '', map: {}, line, col} )
 
-    if (result.text.replace(/\n\s*/g,'').length < colWidth && !flat)
+    const paramDef = jb.studio.paramDef(path) || {}
+    const arrayElem = path.match(/~[0-9]+$/)
+    const ctrls = jb.studio.isOfType(path,'control') && !arrayElem
+    if (!ctrls && result.text.replace(/\n\s*/g,'').length < colWidth && !flat)
       return joinVals({path, line, col}, innerVals, open, close, true, isArray)
 
     const out = { 
@@ -208,7 +211,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
 
   function profileToMacro(ctx, profile,flat) {
     const id = jb.compName(profile)
-    if (!id || !jb.comps[id] || id === 'object') { // not tgp
+    if (!id || !jb.comps[id] || ',object,var,'.indexOf(`,${id},`) != -1) { // not tgp
       const props = Object.keys(profile) 
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);
