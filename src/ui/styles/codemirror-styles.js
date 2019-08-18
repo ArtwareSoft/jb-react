@@ -15,10 +15,10 @@ jb.component('editable-text.codemirror', {
 	],
 	impl: function(context, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
-			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind) })),
+			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
 			afterViewInit: cmp => {
-				var data_ref = cmp.ctx.vars.$model.databind;
+				var data_ref = cmp.ctx.vars.$model.databind();
 				cm_settings = cm_settings||{};
 				var effective_settings = Object.assign({},cm_settings, {
 					mode: mode || 'javascript',

@@ -1,5 +1,5 @@
 (function () {
-  const { dataTest, pipeline, pipe, join, list, writeValue, contains, equals, and, not, assign, prop, assignWithIndex, object, obj, $if, count, runActions, delay, addToArray } = jb.macros
+  const { dataTest, pipeline, pipe, join, list, writeValue, splice, contains, equals, and, not, assign, prop, assignWithIndex, object, obj, $if, count, runActions, delay, addToArray } = jb.macros
   const { uiTest, group, editableBoolean, label, field_initValue, hidden, watchRef, feature_if, id, uiAction_click, uiAction_keyboardEvent,
     editableBoolean_expandCollapse, refreshControlById, itemlist, 
     itemlistContainer_search, itemlistContainer_filter, highlight, itemlist_selection, itemlist_keyboardSelection, group_itemlistContainer, uiAction_setText, css_class} = jb.macros
@@ -1781,6 +1781,7 @@
             features: id('female')
           },
           {$: 'button', title: 'zee', action: { $: 'write-value', to: '%$gender%', value: 'zee' }, features: id('zee') },
+          {$: 'button', title: 'male', action: { $: 'write-value', to: '%$gender%', value: 'male' }, features: id('male') },
           {$: 'control.first-succeeding',
             controls: [
               {
@@ -1795,7 +1796,8 @@
         ],
         features: { $: 'var', name: 'gender', value: 'male', mutable: true }
       },
-      action: runActions(uiAction_click('#female'),uiAction_click('#zee')),
+      action: runActions(uiAction_click('#female'), uiAction_click('#zee')),
+      expectedCounters: { createReactClass: 8 },
       expectedResult: contains('not male'),
     },
   })
@@ -1821,5 +1823,34 @@
       expectedResult: { $: 'contains', text: 'false' },
     }
   })
+
+  jb.component('ui-test.label-with-watch-ref', {
+    impl: uiTest({
+      control: label({
+        title: '%$personWithChildren/children[1]/name%',
+        features: watchRef({ref: '%$personWithChildren/children%' })
+      }),
+      action: splice({
+        array: '%$personWithChildren/children%',
+        fromIndex: 0, noOfItemsToRemove: 1
+      }),
+      expectedResult: contains('Maggie'),
+      expectedCounters: { setState: 1 },
+    }),
+  })
+
+  // jb.component('ui-test.check-box-with-calculated-and-watch-ref', {
+  //   impl: uiTest({
+  //     control: editableBoolean({
+  //       databind: '%$person/name% == "Homer Simpson"',
+  //       textForTrue: 'yes',
+  //       textForFalse: 'no',
+  //       features: watchRef({ref: '%$personWithChildren/children%' })
+  //     }),
+  //     action: writeValue('%$person/name%',"Mukki"),
+  //     expectedResult: contains(''),
+  //     expectedCounters: { setState: 1 },
+  //   }),
+  // })
 
 })()

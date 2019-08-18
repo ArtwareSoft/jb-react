@@ -40,8 +40,10 @@ jb.component('watch-ref', {
     { id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children' },
   ],
   impl: (ctx,ref,includeChildren,delay,allowSelfRefresh) => ({
-      init: cmp =>
+      init: cmp => {
+        cmp.watchRefOn = true
         jb.ui.watchRef(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh)
+      }
   })
 })
 

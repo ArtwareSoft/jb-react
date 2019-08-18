@@ -1,18 +1,20 @@
 const jb = (function() {
 const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-const pathsToLog = new Set()
+// const pathsToLog = new Set()
 
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
   const res = do_jb_run(...arguments);
   
-  log(pathsToLog.has(ctx.path) ? 'resLog' : 'res', [ctx,res,parentParam,settings])
+  log('res', [ctx,res,parentParam,settings])
   return res;
 }
 
 function do_jb_run(ctx,parentParam,settings) {
   try {
     const profile = ctx.profile;
+    if (jb.ctxByPath)
+      jb.ctxByPath[ctx.path] = ctx
     if (ctx.probe && (!settings || !settings.noprobe)) {
       if (ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
         return ctx.probe.record(ctx,parentParam)
@@ -135,7 +137,8 @@ function prepareParams(comp,profile,ctx) {
         path = sugar[0];
         val = sugar[1];
       }
-      const valOrDefault = (typeof val != "undefined" && val != null) ? val : (typeof param.defaultValue != 'undefined' ? param.defaultValue : null);
+      const valOrDefault = (val !== undefined) ? val : (param.defaultValue !== undefined ? param.defaultValue : null);
+//      const valOrDefault = (typeof val != "undefined" && val != null) ? val : (typeof param.defaultValue != 'undefined' ? param.defaultValue : null);
       const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
       const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
 
@@ -315,7 +318,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
       const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
       const refHandler = refHandlerArg || (input && input.handler) || jb.valueByRefHandler;
       if (arrayIndexMatch) {
-        const arr = arrayIndexMatch[1] == "" ? val(input) : pipe(val(input),arrayIndexMatch[1],false,first,refHandler);
+        const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
         const index = arrayIndexMatch[2];
         if (!Array.isArray(arr))
             return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);
@@ -342,13 +345,13 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
 
       if (input != null && typeof input == 'object') {
-        if (obj == null) return;
+        if (obj === null || obj === undefined) return;
         if (typeof obj[subExp] === 'function' && (parentParam.dynamic || obj[subExp].profile))
             return obj[subExp](ctx);
         if (jstype == 'ref') {
           if (last)
             return refHandler.objectProperty(obj,subExp);
-          if (typeof obj[subExp] === 'undefined')
+          if (obj[subExp] === undefined)
             obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
         }
         if (last && jstype)
@@ -360,6 +363,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
     jb.log('implicitlyCreateInnerObject',[...arguments]);
     parent[prop] = {};
     refHandler.refreshMapDown && refHandler.refreshMapDown(parent)
+    return parent[prop]
   }
 }
 
@@ -468,8 +472,8 @@ const jstypes = {
     'ref': function(value) {
 //      if (Array.isArray(value)) value = value[0];
 //      if (value == null) return value;
-      if (Array.isArray(value) && value.length == 1)
-        value = value[0];
+      // if (Array.isArray(value) && value.length == 1)
+      //   value = value[0];
       return jb.valueByRefHandler.asRef(value);
     }
 }
@@ -652,7 +656,7 @@ let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 return {
   run: jb_run,
   jbCtx, expression, bool_expression, profileType, compName, pathSummary, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, pathsToLog, frame,
+  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame,
   ctxCounter: _ => ctxCounter
 }
 
@@ -663,28 +667,28 @@ Object.assign(jb,{
   studio: { previewjb: jb },
   component: (id,val) => {
     jb.comps[id] = val
-    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase())
-    const fixedId = val.reservedWord ? idAsCamel.replace(/([^\.]+$)/, (_,id) => `$${id}`) : idAsCamel
+    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
+    const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
 
-    jb.path(jb.macros, fixedId.split('.'), (...args) => {
+    jb.macros[fixedId] = (...args) => {
       if (args.length == 0)
         return {$: id }
       const params = val.params || []
       if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) // pipeline, or, and, plus
         return {$: id, [params[0].id]: args }
-      if (params.length < 3 || val.usageByValue)
+      if (!(val.usageByValue === false) && (params.length < 3 || val.usageByValue))
         return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
       if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object')
         return {$: id, ...args[0]}
       if (args.length == 1 && params.length)
         return {$: id, [params[0].id]: args[0]}
       debugger;
-    })
+    }
   },
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => { 
     if (typeof val !== 'undefined')
-      jb.resources[id] = val || {}
+      jb.resources[id] = val
     jb.valueByRefHandler && jb.valueByRefHandler.resourceReferred && jb.valueByRefHandler.resourceReferred(id);
     return jb.resources[id];
   },
@@ -698,7 +702,7 @@ Object.assign(jb,{
     if (typeof value == 'undefined') {  // get
       for(let i=0;i<path.length;i++) {
         cur = cur[path[i]];
-        if (cur == null || typeof cur == 'undefined') return null;
+        if (cur === null || cur === undefined) return cur;
       }
       return cur;
     } else { // set
@@ -781,22 +785,17 @@ Object.assign(jb,{
     new Promise(r=>{setTimeout(r,mSec)}),
 
   // valueByRef API
-  refHandler: ref =>
-    (ref && ref.handler) || jb.valueByRefHandler,
-  writeValue: (ref,value,srcCtx) =>
-    jb.refHandler(ref).writeValue(ref,value,srcCtx),
-  splice: (ref,args,srcCtx) =>
-    jb.refHandler(ref).splice(ref,args,srcCtx),
-  move: (fromRef,toRef,srcCtx) =>
-    jb.refHandler(fromRef).move(fromRef,toRef,srcCtx),
-  isRef: (ref) =>
-    jb.refHandler(ref).isRef(ref),
-  refreshRef: (ref) =>
-    jb.refHandler(ref).refresh(ref),
-  asRef: (obj) =>
-    jb.valueByRefHandler.asRef(obj),
-  resourceChange: _ =>
-    jb.valueByRefHandler.resourceChange
+  refHandler: ref => (ref && ref.handler) || jb.valueByRefHandler,
+  writeValue: (ref,value,srcCtx) => jb.refHandler(ref).writeValue(ref,value,srcCtx),
+  splice: (ref,args,srcCtx) => jb.refHandler(ref).splice(ref,args,srcCtx),
+  move: (fromRef,toRef,srcCtx) => jb.refHandler(fromRef).move(fromRef,toRef,srcCtx),
+  isRef: ref => jb.refHandler(ref).isRef(ref),
+  isValid: ref => jb.refHandler(ref).isValid(ref),
+  refreshRef: ref => jb.refHandler(ref).refresh(ref),
+  asRef: obj => jb.valueByRefHandler.asRef(obj),
+  startTransaction: () => jb.refHandler().startTransaction(),
+  endTransaction: () => jb.refHandler().endTransaction(),
+  resourceChange: () => jb.valueByRefHandler.resourceChange
 })
 if (typeof self != 'undefined')
   self.jb = jb
@@ -1024,6 +1023,41 @@ jb.component('write-value',{
 		jb.writeValue(to,jb.val(value),ctx)
 });
 
+jb.component('index-of', {
+	params: [
+		{ id: 'array', as: 'array', mandatory: true },
+		{ id: 'item', as: 'single', mandatory: true },
+	],
+	impl: (ctx,array,item) => array.indexOf(item)
+})
+
+jb.component('add-to-array', {
+	type: 'action',
+	params: [
+		{ id: 'array', as: 'ref', mandatory: true },
+		{ id: 'itemsToAdd', as: 'array', mandatory: true },
+	],
+	impl: (ctx,array,itemsToAdd) => {
+		const ar = jb.toarray(array);
+		jb.splice(array,[[ar.length,0,...itemsToAdd]],ctx)
+	}
+});
+
+jb.component('splice', {
+	type: 'action',
+	usageByValue: true,
+	params: [
+		{ id: 'array', as: 'ref', mandatory: true },
+		{ id: 'fromIndex', as: 'number', mandatory: true },
+		{ id: 'noOfItemsToRemove', as: 'number', defaultValue: 0 },
+		{ id: 'itemsToAdd', as: 'array', defaultValue: [] },
+	],
+	impl: (ctx,array,fromIndex,noOfItemsToRemove,itemsToAdd) => {
+		const ar = jb.toarray(array);
+		jb.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
+	}
+});
+
 jb.component('remove-from-array', {
 	type: 'action',
 	params: [
@@ -1116,33 +1150,33 @@ jb.component('sample', {
 		items.filter((x,i)=>i % (Math.floor(items.length/300) ||1) == 0)
 });
 
-jb.component('assign', { 
-	description: 'extend with calculated properties',
-	params: [
-		{ id: 'property', type: 'prop[]', mandatory: true, defaultValue: [] },
-	],
-	impl: (ctx,properties,items) =>
-		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
-});
-
 jb.component('obj', { 
 	description: 'build object (dictionary) from props',
 	params: [
-		{ id: 'property', type: 'prop[]', mandatory: true, defaultValue: [] },
+		{ id: 'props', type: 'prop[]', mandatory: true, sugar: true },
 	],
-	impl: (ctx,properties,items) =>
+	impl: (ctx,properties) =>
 		Object.assign({}, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
+});
+
+jb.component('assign', { 
+	description: 'extend with calculated properties',
+	params: [
+		{ id: 'props', type: 'prop[]', mandatory: true, defaultValue: [] },
+	],
+	impl: (ctx,properties) =>
+		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
 });
 
 jb.component('assign-with-index', { 
 	type: 'aggregator',
 	description: 'extend with calculated properties. %$index% is available ',
 	params: [
-		{ id: 'property', type: 'prop[]', mandatory: true, defaultValue: [] },
+		{ id: 'props', type: 'prop[]', mandatory: true, defaultValue: [] },
 	],
-	impl: (ctx,properties,items) =>
-		jb.toarray(ctx.data).slice(0).map((item,i)=>
-			properties.forEach(p=>item[p.title] = jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type) ) || item)
+	impl: (ctx,properties) =>
+		jb.toarray(ctx.data).map((item,i)=>
+			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
 });
 
 jb.component('prop', { 
@@ -1150,7 +1184,7 @@ jb.component('prop', {
 	usageByValue: true,
 	params: [
 		{ id: 'title', as: 'string', mandatory: true },
-		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true },
+		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
 		{ id: 'type', as: 'string', options: 'string,number,boolean', defaultValue: 'string' },
 	],
 	impl: ctx => ctx.params
@@ -1508,25 +1542,57 @@ jb.component('parent', {
 jb.component('runActions', {
 	type: 'action',
 	params: [
-		{ id: 'actions', type:'action[]', ignore: true, composite: true, mandatory: true }
+		{ id: 'actions', type:'action[]', ignore: true, composite: true, mandatory: true },
 	],
-	impl: function(context) {
-		if (!context.profile) debugger;
-		const actions = jb.toarray(context.profile.actions || context.profile['$runActions']);
-		const innerPath =  (context.profile.actions && context.profile.actions.sugar) ? ''
-			: (context.profile['$runActions'] ? '$runActions~' : 'items~');
+	impl: ctx => {
+		if (!ctx.profile) debugger;
+		const actions = jb.toarray(ctx.profile.actions || ctx.profile['$runActions']);
+		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
+			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
 		return actions.reduce((def,action,index) =>
-				def.then(_ => context.runInner(action, { as: 'single'}, innerPath + index ))
+				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
 			,Promise.resolve())
 	}
 });
 
-// jb.component('delay', {
-// 	params: [
-// 		{ id: 'mSec', type: 'number', defaultValue: 1}
-// 	],
-// 	impl: ctx => jb.delay(ctx.params.mSec)
-// })
+jb.component('run-transaction', {
+	type: 'action',
+	params: [
+		{ id: 'actions', type:'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: [] },
+		{ id: 'disableNotifications', as: 'boolean', type: 'boolean' }
+	],
+	impl: (ctx,actions,disableNotifications) => {
+		jb.startTransaction()
+		return actions.reduce((def,action,index) =>
+				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
+			,Promise.resolve())
+			.catch((e) => jb.logException(e,ctx))
+			.then(() => jb.endTransaction(disableNotifications))
+	}
+});
+
+jb.component('run-action-on-items', {
+	type: 'action',
+	usageByValue: true,
+	params: [
+		{ id: 'items', as: 'array', mandatory: true },
+		{ id: 'action', type:'action', dynamic: true, mandatory: true },
+		{ id: 'notifications', as: 'string', options: 'wait for all actions,no notifications', description: 'notification for watch-ref, defualt behavior is after each action' }
+	],
+	impl: (ctx,items,action,notifications) => {
+		if (notifications) jb.startTransaction()
+		return items.reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
+			.catch((e) => jb.logException(e,ctx))
+			.then(() => notifications && jb.endTransaction(notifications === 'no notifications'));
+	}
+})
+
+jb.component('delay', {
+	params: [
+		{ id: 'mSec', type: 'number', defaultValue: 1}
+	],
+	impl: (ctx,mSec) => jb.delay(mSec)
+})
 
 jb.component('on-next-timer', {
 	description: 'run action after delay',
@@ -1682,7 +1748,6 @@ jb.component('asRef', {
 })
 
 jb.component('data.switch', {
-	reservedWord: true,
 	params: [
   	{ id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
   	{ id: 'default', dynamic: true },
@@ -1698,7 +1763,6 @@ jb.component('data.switch', {
 jb.component('data.case', {
   type: 'data.switch-case',
   singleInType: true,
-  reservedWord: true,
   params: [
   	{ id: 'condition', type: 'boolean', mandatory: true, dynamic: true },
   	{ id: 'value', mandatory: true, dynamic: true },

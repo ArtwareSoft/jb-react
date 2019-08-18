@@ -413,6 +413,11 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,allowSelfRefresh) {
 	      })
 }
 
+ui.databindObservable = (cmp,settings) =>
+	cmp.databindRefChanged.flatMap(ref =>
+			(!cmp.watchRefOn && jb.ui.refObservable(ref,cmp,settings).map(e=>Object.assign({ref},e)) ) || [])
+
+
 ui.toVdomOrStr = val => {
 	const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val;
 	let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1);

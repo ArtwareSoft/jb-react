@@ -5,7 +5,7 @@ jb.component('editable-number.slider-no-text', {
         min: state.min, max: state.max, step: state.step,
         value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: -1}),
       features :[
-          {$: 'field.databind-range' },
+          {$: 'field.databind' },
           {$: 'slider.init'},
       ],
   }
@@ -67,7 +67,7 @@ jb.component('slider.init', {
           cmp.handleArrowKey = e => {
               var val = Number(cmp.jbModel()) || 0;
               if (e.keyCode == 46) // delete
-                jb.writeValue(ctx.vars.$model.databind,null);
+                jb.writeValue(cmp.state.databindRef || ctx.vars.$model.databind(),null);
               if ([37,39].indexOf(e.keyCode) != -1) {
                 var inc = e.shiftKey ? 9 : 1;
                 if (val !=null && e.keyCode == 39)

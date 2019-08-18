@@ -4,16 +4,33 @@
 jb.component('studio.edit-source', {
   type: 'action', 
   params: [
-    {
-      id: 'path', 
-      as: 'string', 
-      defaultValue :{$: 'studio.currentProfilePath' }
-    }
+    { id: 'path', as: 'string', defaultValue :{$: 'studio.currentProfilePath' } }
   ], 
   impl :{$: 'open-dialog', 
     style :{$: 'dialog.edit-source-style', id: 'edit-source', width: 600 }, 
     content :{$: 'editable-text', 
       databind:{$: 'studio.profile-as-text', path: '%$path%' },
+      // '%$studio/ScriptInPopup%', 
+      style :{$: 'editable-text.studio-codemirror-tgp' }
+    }, 
+    title :{$: 'studio.short-title', path: '%$path%' }, 
+    features: [
+//      {$:'dialog-feature.drag-title'},
+      {$: 'css', css: '.jb-dialog-content-parent {overflow-y: hidden}' }, 
+      {$: 'dialog-feature.resizer', "resize-inner-codemirror": 'true', resizeInnerCodemirror: true }, 
+    ]
+  }
+})
+
+jb.component('studio.edit-as-macro', {
+  type: 'action', 
+  params: [
+    { id: 'path', as: 'string', defaultValue :{$: 'studio.currentProfilePath' } }
+  ], 
+  impl :{$: 'open-dialog', 
+    style :{$: 'dialog.edit-source-style', id: 'edit-source', width: 600 }, 
+    content :{$: 'editable-text', 
+      databind:{$: 'studio.profile-as-macro-text', path: '%$path%' },
       // '%$studio/ScriptInPopup%', 
       style :{$: 'editable-text.studio-codemirror-tgp' }
     }, 

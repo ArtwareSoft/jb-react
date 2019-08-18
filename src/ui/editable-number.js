@@ -1,8 +1,8 @@
 jb.component('editable-number', {
   type: 'control', category: 'input:30',
   params: [
-    { id: 'databind', as: 'ref'},
-    { id: 'title', as: 'string' , dynamic: true },
+    { id: 'databind', as: 'ref', mandaroy: true, dynamic: true },
+    { id: 'title', as: 'string', dynamic: true },
     { id: 'style', type: 'editable-number.style', defaultValue: { $: 'editable-number.input' }, dynamic: true },
     { id: 'symbol', as: 'string', description: 'leave empty to parse symbol from value' },
     { id: 'min', as: 'number', defaultValue: 0 },

@@ -118,7 +118,7 @@ jb.component('itemlist-container.search', {
 	params: [
 		{ id: 'title', as: 'string' , dynamic: true, defaultValue: 'Search' },
 		{ id: 'searchIn', as: 'string' , dynamic: true, defaultValue: {$: 'itemlist-container.search-in-all-properties'} },
-		{ id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/search_pattern%'},
+		{ id: 'databind', as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
 		{ id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-search' }, dynamic: true },
 		{ id: 'features', type: 'feature[]', dynamic: true },
 	],
@@ -126,9 +126,10 @@ jb.component('itemlist-container.search', {
 		jb.ui.ctrl(ctx,{
 			afterViewInit: cmp => {
 				if (!ctx.vars.itemlistCntr) return;
+				const databindRef = databind()
 
 				ctx.vars.itemlistCntr.filters.push( items => {
-					const toSearch = jb.val(databind) || '';
+					const toSearch = jb.val(databindRef) || '';
 					if (typeof searchIn.profile == 'function') { // improved performance
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 					}

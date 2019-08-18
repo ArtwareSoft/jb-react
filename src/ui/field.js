@@ -1,33 +1,67 @@
+(function() {
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
+
+function databindField(cmp,ctx,debounceTime,oneWay) {
+  if (debounceTime) {
+    cmp.debouncer = new jb.rx.Subject();
+    cmp.debouncer.takeUntil( cmp.destroyed )
+      .distinctUntilChanged()
+      .debounceTime(debounceTime)
+      .subscribe(val=>cmp.jbModel(val))
+  }
+
+  if (!ctx.vars.$model || !ctx.vars.$model.databind)
+    return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
+
+  cmp.jbModel = (val,source) => {
+    if (source == 'keyup') {
+      if (cmp.debouncer)
+        return cmp.debouncer.next(val);
+      return jb.delay(1).then(_=>cmp.jbModel(val)); // make sure the input is inside the value
+    }
+
+    if (val === undefined)
+      return jb.val(cmp.state.databindRef);
+    else { // write
+        if (!oneWay)
+          cmp.setState({model: val});
+        jb.ui.checkValidationError(cmp);
+        jb.writeValue(cmp.state.databindRef,val,ctx);
+    }
+  }
+
+  cmp.refresh = _ => {
+    const newRef = ctx.vars.$model.databind();
+    if (jb.val(newRef) != jb.val(cmp.state.databindRef))
+      cmp.databindRefChanged.next(newRef)
+    cmp.setState({model: cmp.jbModel()});
+    cmp.refreshMdl && cmp.refreshMdl();
+    cmp.extendRefresh && cmp.extendRefresh();
+  }
+
+  cmp.state.title = ctx.vars.$model.title();
+  cmp.state.fieldId = jb.ui.field_id_counter++;
+  cmp.databindRefChangedSub = new jb.rx.Subject();
+  cmp.databindRefChanged = cmp.databindRefChangedSub.do(ref=> {
+    cmp.state.databindRef = ref
+    cmp.state.model = cmp.jbModel()
+  })
+  cmp.databindRefChanged.subscribe(()=>{}) // first activation
+  cmp.databindRefChangedSub.next(ctx.vars.$model.databind());
+  
+
+  const srcCtx = cmp.ctxForPick || cmp.ctx;
+  if (!oneWay) 
+      jb.ui.databindObservable(cmp, {
+            watchScript: ctx, onError: _ => cmp.setState({model: null}) })
+      .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
+      .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,null,e,ctx))
+}
 
 jb.component('field.databind', {
   type: 'feature',
   impl: ctx => ({
-      beforeInit: cmp => {
-        if (!ctx.vars.$model || !ctx.vars.$model.databind)
-          return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
-        cmp.state.title = ctx.vars.$model.title();
-        cmp.state.fieldId = jb.ui.field_id_counter++;
-        cmp.state.model = jb.val(ctx.vars.$model.databind);
-
-        cmp.refresh = _ => {
-          cmp.setState({model: cmp.jbModel()});
-          cmp.refreshMdl && cmp.refreshMdl();
-          cmp.extendRefresh && cmp.extendRefresh();
-        }
-
-        cmp.jbModel = (val,source) => {
-          if (val === undefined)
-            return jb.val(ctx.vars.$model.databind);
-          else { // write
-              jb.ui.checkValidationError(cmp);
-              jb.writeValue(ctx.vars.$model.databind,val,ctx);
-          }
-        }
-
-        jb.ui.refObservable(ctx.vars.$model.databind,cmp,{watchScript: ctx})
-            .subscribe(e=>jb.ui.setState(cmp,null,e,ctx))
-      }
+      beforeInit: cmp => databindField(cmp,ctx)
   })
 })
 
@@ -38,77 +72,14 @@ jb.component('field.databind-text', {
     { id: 'oneWay', type: 'boolean', as: 'boolean'}
   ],
   impl: (ctx,debounceTime,oneWay) => ({
-      beforeInit: cmp => {
-        if (debounceTime) {
-          cmp.debouncer = new jb.rx.Subject();
-          cmp.debouncer.takeUntil( cmp.destroyed )
-          .distinctUntilChanged()
-          .debounceTime(debounceTime)
-          .subscribe(val=>cmp.jbModel(val))
-        }
-
-        if (!ctx.vars.$model || !ctx.vars.$model.databind)
-          return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
-        cmp.state.title = ctx.vars.$model.title();
-        cmp.state.fieldId = jb.ui.field_id_counter++;
-        cmp.state.model = jb.val(ctx.vars.$model.databind);
-
-        cmp.jbModel = (val,source) => {
-          if (source == 'keyup') {
-            if (cmp.debouncer)
-              return cmp.debouncer.next(val);
-            return jb.delay(1).then(_=>cmp.jbModel(val)); // make sure the input is inside the value
-          }
-
-          if (val === undefined)
-            return jb.val(ctx.vars.$model.databind);
-          else { // write
-              if (!oneWay)
-                cmp.setState({model: val});
-              jb.ui.checkValidationError(cmp);
-              jb.writeValue(ctx.vars.$model.databind,val,ctx);
-          }
-        }
-
-        var srcCtx = cmp.ctxForPick || cmp.ctx;
-        if (!oneWay) jb.ui.refObservable(ctx.vars.$model.databind,cmp,{ watchScript: ctx, onError: _ => cmp.setState({model: null}) })
-            .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
-            .subscribe(e=>jb.ui.setState(cmp,{model: cmp.jbModel()},e,ctx))
-      }
-  })
-})
-
-jb.component('field.databind-range', {
-  type: 'feature',
-  impl: ctx => ({
-      beforeInit: cmp => {
-        if (!ctx.vars.$model || !ctx.vars.$model.databind)
-          return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
-        cmp.state.title = ctx.vars.$model.title();
-        cmp.state.fieldId = jb.ui.field_id_counter++;
-        cmp.state.model = jb.val(ctx.vars.$model.databind);
-
-        cmp.jbModel = (val,source) => {
-          if (val === undefined)
-            return jb.val(ctx.vars.$model.databind);
-          else { // write
-            jb.ui.checkValidationError(cmp);
-            jb.writeValue(ctx.vars.$model.databind,val,ctx);
-          }
-        }
-
-        var srcCtx = cmp.ctxForPick || cmp.ctx;
-        jb.ui.refObservable(ctx.vars.$model.databind,cmp,{watchScript: ctx})
-            .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
-            .subscribe(e=>jb.ui.setState(cmp,{model: cmp.jbModel()},e,ctx))
-      }
+      beforeInit: cmp => databindField(cmp,ctx,debounceTime,oneWay)
   })
 })
 
 jb.component('field.data', {
   type: 'data',
   impl: ctx =>
-    ctx.vars.$model.databind
+    ctx.vars.$model.databind()
 })
 
 jb.component('field.default', {
@@ -117,7 +88,7 @@ jb.component('field.default', {
     { id: 'value', type: 'data'},
   ],
   impl: (ctx,defaultValue) => {
-    var data_ref = ctx.vars.$model.databind;
+    var data_ref = ctx.vars.$model.databind();
     if (data_ref && jb.val(data_ref) == null)
       jb.writeValue(data_ref, jb.val(defaultValue))
   }
@@ -129,7 +100,7 @@ jb.component('field.init-value', {
     { id: 'value', type: 'data'},
   ],
   impl: (ctx,value) =>
-    ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind, jb.val(value))
+    ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind(), jb.val(value))
 })
 
 jb.component('field.keyboard-shortcut', {
@@ -165,12 +136,10 @@ jb.component('field.subscribe', {
   ],
   impl: (context,action,includeFirst) => ({
     init: cmp => {
-      var data_ref = context.vars.$model && context.vars.$model.databind;
-      if (!data_ref) return;
-      var includeFirstEm = includeFirst ? jb.rx.Observable.of(jb.val(data_ref)) : jb.rx.Observable.of();
-      jb.ui.refObservable(data_ref,cmp,{watchScript: context})
-            .map(e=>jb.val(e.ref))
+      const includeFirstEm = includeFirst ? jb.rx.Observable.of({ref: cmp.state.databindRef}) : jb.rx.Observable.of();
+      jb.ui.databindObservable(cmp,{watchScript: context})
             .merge(includeFirstEm)
+            .map(e=>jb.val(e.ref))
             .filter(x=>x)
             .subscribe(x=>
               action(context.setData(x)));
@@ -226,3 +195,5 @@ jb.ui.checkValidationError = cmp => {
     return err;
   }  
 }
+
+})()

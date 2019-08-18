@@ -1,8 +1,8 @@
 jb.component('picklist', {
   type: 'control', category: 'input:80',
   params: [
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'databind', as: 'ref'},
+    { id: 'title', as: 'string', dynamic: true },
+    { id: 'databind', as: 'ref', mandaroy: true, dynamic: true },
     { id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, defaultValue: {$ : 'picklist.optionsByComma'} },
     { id: 'promote', type: 'picklist.promote', dynamic: true },
     { id: 'style', type: 'picklist.style', defaultValue: { $: 'picklist.native' }, dynamic: true },
@@ -10,7 +10,7 @@ jb.component('picklist', {
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx,{
-      beforeInit: function(cmp) {
+      beforeInit: cmp => {
         cmp.recalcOptions = function() {
           var options = ctx.params.options(ctx);
           var groupsHash = {};
@@ -33,7 +33,11 @@ jb.component('picklist', {
           })
         }
         cmp.recalcOptions();
-        jb.ui.refObservable(ctx.params.databind,cmp,{watchScript: ctx}).subscribe(e=>
+      },
+      afterViewInit: cmp => {
+        if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{watchScript: ctx})
+          .subscribe(e=>cmp.onChange && cmp.onChange(jb.val(e.ref)))
+        else jb.ui.refObservable(ctx.params.databind(),cmp,{watchScript: ctx}).subscribe(e=>
           cmp.onChange && cmp.onChange(jb.val(e.ref)))
       },
     })

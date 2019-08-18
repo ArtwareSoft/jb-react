@@ -46,7 +46,7 @@ jb.component('studio.toolbar', {
       }, 
       {$: 'button', 
         title: 'Javascript', 
-        action :{$: 'studio.edit-source' }, 
+        action :{$: 'studio.edit-as-macro' }, 
         style :{$: 'button.mdl-icon', icon: 'code' }
       }, 
       {$: 'button', 

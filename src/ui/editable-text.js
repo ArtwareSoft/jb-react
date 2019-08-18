@@ -4,7 +4,7 @@ jb.component('editable-text', {
   type: 'control', category: 'input:100,common:80',
   params: [
     { id: 'title', as: 'string' , dynamic: true },
-    { id: 'databind', as: 'ref', mandatory: true},
+    { id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
     { id: 'updateOnBlur', as: 'boolean', type: 'boolean' },
     { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-input' }, dynamic: true },
     { id: 'features', type: 'feature[]', dynamic: true },

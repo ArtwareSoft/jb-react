@@ -13,11 +13,11 @@ jb.component('label.bind-title', {
   type: 'feature',
   impl: ctx => ({
     init: cmp => {
-      var ref = ctx.vars.$model.title(cmp.ctx);
+      const ref = ctx.vars.$model.title(cmp.ctx);
       cmp.state.title = fixTitleVal(ref);
       if (jb.isRef(ref))
         jb.ui.refObservable(ref,cmp,{watchScript: ctx})
-            .subscribe(e=>jb.ui.setState(cmp,{title: fixTitleVal(ref)},e,ctx));
+            .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,{title: fixTitleVal(ref)},e,ctx));
 
       cmp.refresh = _ =>
         cmp.setState({title: fixTitleVal(ctx.vars.$model.title(cmp.ctx))})

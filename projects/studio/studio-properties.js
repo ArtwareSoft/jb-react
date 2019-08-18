@@ -75,6 +75,7 @@ jb.component('studio.properties', {
         title: 'accordion', 
         style :{$: 'group.studio-properties-accordion' }, 
         controls: [
+          
           {$: 'group', 
             remark: 'properties', 
             title :{
