@@ -435,23 +435,22 @@ const tosingle = value => tojstype(value,'single');
 const tonumber = value => tojstype(value,'number');
 
 const jstypes = {
-    'asIs': x => x,
-    'object': x => x,
-    'string': function(value) {
+    asIs: x => x,
+    object: x => x,
+    string(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null) return '';
       value = val(value);
       if (typeof(value) == 'undefined') return '';
       return '' + value;
     },
-    'number': function(value) {
+    number(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null || value == undefined) return null; // 0 is not null
-      value = val(value);
-      const num = Number(value,true);
+      const num = Number(val(value),true);
       return isNaN(num) ? null : num;
     },
-    'array': function(value) {
+    array(value) {
       if (typeof value == 'function' && value.profile)
         value = value();
       value = val(value);
@@ -459,20 +458,16 @@ const jstypes = {
       if (value == null) return [];
       return [value];
     },
-    'boolean': function(value) {
+    boolean(value) {
       if (Array.isArray(value)) value = value[0];
       return val(value) ? true : false;
     },
-    'single': function(value) {
+    single(value) {
       if (Array.isArray(value))
         value = value[0];
       return val(value);
     },
-    'ref': function(value) {
-//      if (Array.isArray(value)) value = value[0];
-//      if (value == null) return value;
-      // if (Array.isArray(value) && value.length == 1)
-      //   value = value[0];
+    ref(value) {
       return jb.valueByRefHandler.asRef(value);
     }
 }
@@ -669,8 +664,24 @@ Object.assign(jb,{
     jb.traceComponentFile && jb.traceComponentFile(val)
     const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
     const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
+    const ctx = new jb.jbCtx()
 
-    frame[fixedId] = jb.macros[fixedId] = (...args) => {
+    frame[fixedId] = jb.macros[fixedId] = (...allArgs) => {
+      const args=[], system={}, jid = id; // system props: constVar, remark
+      allArgs.forEach(arg=>{
+        if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
+          ctx.setData(system).run(arg)
+        else
+          args.push(arg)
+      })
+      if (args.length == 1 && typeof args[0] === 'object') {
+        jb.toarray(args[0].vars).forEach(arg => ctx.setData(system).run(arg))
+        args[0].remark && ctx.setData(system).run(args[0].remark)
+      }
+      return Object.assign(processMacro(args),system)
+    }
+
+    function processMacro(args) {
       if (args.length == 0)
         return {$: id }
       const params = val.params || []
@@ -940,17 +951,16 @@ jb.component('firstSucceeding', {
 	}
 });
 
-jb.component('property-names', {
+jb.component('keys', {
 	type: 'data',
-  description: 'Object.getOwnPropertyNames',
+  	description: 'Object.keys',
 	params: [
 		{ id: 'obj', defaultValue: '%%', as: 'single' }
 	],
-	impl: (ctx,obj) =>
-		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0)
+	impl: (ctx,obj) => Object.keys(obj)
 })
 
-jb.component('properties',{
+jb.component('properties', {
 	type: 'data',
 	params: [
 		{ id: 'obj', defaultValue: '%%', as: 'single' }
@@ -1013,7 +1023,7 @@ jb.component('remove-suffix-regex',{
 	}
 });
 
-jb.component('write-value',{
+jb.component('write-value', {
 	type: 'action',
 	params: [
 		{ id: 'to', as: 'ref', mandatory: true },
@@ -1184,14 +1194,32 @@ jb.component('prop', {
 	params: [
 		{ id: 'title', as: 'string', mandatory: true },
 		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
-		{ id: 'type', as: 'string', options: 'string,number,boolean', defaultValue: 'string' },
+		{ id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string' },
 	],
 	impl: ctx => ctx.params
 })
 
-jb.component('if', { 
+jb.component('constVar', { 
+	type: 'var,system',
+	isSystem: true,
+	params: [
+		{ id: 'name', as: 'string', mandatory: true },
+		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
+	],
+	impl: ({data}, name, val) =>  
+		Object.assign(data,{ $vars: Object.assign(data.$vars || {}, { [name]: val.profile }) })
+})
+
+jb.component('remark', { 
+	type: 'system',
+	isSystem: true,
+	params: [{ id: 'remark', as: 'string', mandatory: true }],
+	impl: ({data},remark) => 
+		Object.assign(data,{remark})
+})
+
+jb.component('If', { 
 	usageByValue: true,
-	reservedWord: true,
 	params: [
 		{ id: 'condition', as: 'boolean', type: 'boolean', mandatory: true },
 		{ id: 'then' },
@@ -1527,15 +1555,6 @@ jb.component('not-equals', {
 		{ id: 'item2', defaultValue: '%%', as: 'single' }
 	],
 	impl: (ctx, item1, item2) => item1 != item2
-});
-
-jb.component('parent', {
-	type: 'data',
-	params: [
-		{ id: 'item', as: 'ref', defaultValue: '%%'}
-	],
-	impl: (ctx,item) =>
-		item && item.$jb_parent
 });
 
 jb.component('runActions', {
@@ -2252,10 +2271,12 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       return Object.assign({ text: acc.text + separator + valPrefix + result.text, map }, newPos)
     }, {text: '', map: {}, line, col} )
 
-    const paramDef = jb.studio.paramDef(path) || {}
     const arrayElem = path.match(/~[0-9]+$/)
     const ctrls = jb.studio.isOfType(path,'control') && !arrayElem
-    if (!ctrls && result.text.replace(/\n\s*/g,'').length < colWidth && !flat)
+    const customStyle = jb.studio.compNameOfPath(path) === 'customStyle'
+    const top = (path.match(/~/g)||'').length < 2
+    const short = result.text.replace(/\n\s*/g,'').length < colWidth
+    if (!customStyle && !top && !ctrls && short && !flat)
       return joinVals({path, line, col}, innerVals, open, close, true, isArray)
 
     const out = { 
@@ -2265,7 +2286,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
     return out
 
     function newLine(offset = 0) {
-      return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset)*tabSize)
+      return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
     }
     function advanceLineCol({line,col},text) {
       const noOfLines = (text.match(/\n/g) || '').length
@@ -2290,13 +2311,13 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   
     const params = comp.params || []
     if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus
-      const args = (profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val}))
+      const args = jb.toarray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val}))
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
     if (params.length < 3 || comp.usageByValue) {
-      const args = params.map(param=>({innerPath: param.id, val: profile[param.id]}))
-      if (args.length && args[args.length-1].val === undefined) args.pop()
-      if (args.length && args[args.length-1].val === undefined) args.pop()
+      const args = params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]}))
+      if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
+      if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
     const args = params.filter(param=>profile[param.id] !== undefined)

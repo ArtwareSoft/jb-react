@@ -32,7 +32,7 @@ function do_jb_run(ctx,parentParam,settings) {
     const run = prepare(ctxWithVars,parentParam);
     ctx.parentParam = parentParam;
     switch (run.type) {
-      case 'booleanExp': return bool_expression(profile, ctx);
+      case 'booleanExp': return bool_expression(profile, ctx, parentParam);
       case 'expression': return castToParam(expression(profile, ctx,parentParam), parentParam);
       case 'asIs': return profile;
       case 'function': return castToParam(profile(ctx,ctx.vars,ctx.componentContext && ctx.componentContext.params),parentParam);
@@ -250,7 +250,7 @@ function calcVar(ctx,varname,jstype) {
 function expression(exp, ctx, parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   exp = '' + exp;
-  if (jstype == 'boolean') return bool_expression(exp, ctx);
+  if (jstype == 'boolean') return bool_expression(exp, ctx, parentParam);
   if (exp.indexOf('$debugger:') == 0) {
     debugger;
     exp = exp.split('$debugger:')[1];
@@ -366,14 +366,14 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
   }
 }
 
-function bool_expression(exp, ctx) {
+function bool_expression(exp, ctx, parentParam) {
   if (exp.indexOf('$debugger:') == 0) {
     debugger;
     exp = exp.split('$debugger:')[1];
   }
   if (exp.indexOf('$log:') == 0) {
-    const calculated = expression(exp.split('$log:')[1],ctx,{as: 'string'});
-    const result = bool_expression(exp.split('$log:')[1], ctx);
+    const calculated = expression(exp.split('$log:')[1],ctx,{as: 'boolean'});
+    const result = bool_expression(exp.split('$log:')[1], ctx, parentParam);
     jb.comps.log.impl(ctx, calculated + ':' + result);
     return result;
   }
@@ -381,7 +381,10 @@ function bool_expression(exp, ctx) {
     return !bool_expression(exp.substring(1), ctx);
   const parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
   if (!parts) {
-    const val = jb.val(expression(exp, ctx));
+    const ref = expression(exp, ctx, Object.assign(parentParam||{},{as: 'string'}));
+    if (isRef(ref))
+      return ref
+    const val = jb.val(ref);
     if (typeof val == 'boolean') return val;
     const asString = tostring(val);
     return !!asString && asString != 'false';

@@ -1833,16 +1833,46 @@ jb.component('ui-test.label-with-watch-ref', {
   }),
 })
 
-// jb.component('ui-test.check-box-with-calculated-and-watch-ref', {
-//   impl: uiTest({
-//     control: editableBoolean({
-//       databind: '%$person/name% == "Homer Simpson"',
-//       textForTrue: 'yes',
-//       textForFalse: 'no',
-//       features: watchRef({ref: '%$personWithChildren/children%' })
-//     }),
-//     action: writeValue('%$person/name%',"Mukki"),
-//     expectedResult: contains(''),
-//     expectedCounters: { setState: 1 },
-//   }),
-// })
+jb.component('ui-test.focus-on-first-element', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        editableBoolean({databind: '%$person/gender%' }),
+        editableText({databind: '%$person/name%', style: editableText_textarea() }),
+      ],
+    }),
+    action: focusOnFirstElement('textarea'),
+    expectedResult: true,
+  }),
+})
+
+jb.component('ui-test.check-box-with-text', {
+  impl: uiTest({
+    control: group({ controls: [ 
+      editableBoolean({
+        databind: '%$person/male%',
+        textForTrue: 'male',
+        textForFalse: 'female',
+        style: editableBoolean_checkboxWithTitle(),
+        features: id('male')
+      }),
+    ]
+    }),
+    expectedResult: true,
+  }),
+})
+
+jb.component('ui-test.check-box-with-calculated-and-watch-ref', {
+  impl: uiTest({
+    control: editableBoolean({
+        databind: '%$person/name% == "Homer Simpson"',
+        textForTrue: 'yes',
+        textForFalse: 'nonono',
+        style: editableBoolean_checkboxWithTitle(),
+        features: watchRef({ref: '%$person/name%' })
+    }),
+    action: runActions(writeValue('%$person/name%',"Mukki"),delay(200)),
+    expectedResult: contains('nonono'),
+    expectedCounters: { setState: 1 },
+  }),
+})

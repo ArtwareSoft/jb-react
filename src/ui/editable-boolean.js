@@ -3,7 +3,7 @@ jb.type('editable-boolean.style');
 jb.component('editable-boolean',{
 	type: 'control', category: 'input:20',
 	params: [
-		{ id: 'databind', as: 'ref', mandaroy: true, dynamic: true },
+		{ id: 'databind', as: 'ref', type: 'boolean', mandaroy: true, dynamic: true },
 		{ id: 'style', type: 'editable-boolean.style', defaultValue :{$: 'editable-boolean.checkbox' }, dynamic: true },
 		{ id: 'title', as: 'string', dynamic: true },
 		{ id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true },
