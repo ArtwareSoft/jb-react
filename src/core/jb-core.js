@@ -1,6 +1,5 @@
-const jb = (function() {
 const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-// const pathsToLog = new Set()
+const jb = (function() {
 
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
@@ -33,7 +32,7 @@ function do_jb_run(ctx,parentParam,settings) {
     const run = prepare(ctxWithVars,parentParam);
     ctx.parentParam = parentParam;
     switch (run.type) {
-      case 'booleanExp': return bool_expression(profile, ctx);
+      case 'booleanExp': return bool_expression(profile, ctx, parentParam);
       case 'expression': return castToParam(expression(profile, ctx,parentParam), parentParam);
       case 'asIs': return profile;
       case 'function': return castToParam(profile(ctx,ctx.vars,ctx.componentContext && ctx.componentContext.params),parentParam);
@@ -251,7 +250,7 @@ function calcVar(ctx,varname,jstype) {
 function expression(exp, ctx, parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   exp = '' + exp;
-  if (jstype == 'boolean') return bool_expression(exp, ctx);
+  if (jstype == 'boolean') return bool_expression(exp, ctx, parentParam);
   if (exp.indexOf('$debugger:') == 0) {
     debugger;
     exp = exp.split('$debugger:')[1];
@@ -367,14 +366,14 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
   }
 }
 
-function bool_expression(exp, ctx) {
+function bool_expression(exp, ctx, parentParam) {
   if (exp.indexOf('$debugger:') == 0) {
     debugger;
     exp = exp.split('$debugger:')[1];
   }
   if (exp.indexOf('$log:') == 0) {
-    const calculated = expression(exp.split('$log:')[1],ctx,{as: 'string'});
-    const result = bool_expression(exp.split('$log:')[1], ctx);
+    const calculated = expression(exp.split('$log:')[1],ctx,{as: 'boolean'});
+    const result = bool_expression(exp.split('$log:')[1], ctx, parentParam);
     jb.comps.log.impl(ctx, calculated + ':' + result);
     return result;
   }
@@ -382,7 +381,10 @@ function bool_expression(exp, ctx) {
     return !bool_expression(exp.substring(1), ctx);
   const parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
   if (!parts) {
-    const val = jb.val(expression(exp, ctx));
+    const ref = expression(exp, ctx, Object.assign(parentParam||{},{as: 'string'}));
+    if (isRef(ref))
+      return ref
+    const val = jb.val(ref);
     if (typeof val == 'boolean') return val;
     const asString = tostring(val);
     return !!asString && asString != 'false';
@@ -436,23 +438,22 @@ const tosingle = value => tojstype(value,'single');
 const tonumber = value => tojstype(value,'number');
 
 const jstypes = {
-    'asIs': x => x,
-    'object': x => x,
-    'string': function(value) {
+    asIs: x => x,
+    object: x => x,
+    string(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null) return '';
       value = val(value);
       if (typeof(value) == 'undefined') return '';
       return '' + value;
     },
-    'number': function(value) {
+    number(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null || value == undefined) return null; // 0 is not null
-      value = val(value);
-      const num = Number(value,true);
+      const num = Number(val(value),true);
       return isNaN(num) ? null : num;
     },
-    'array': function(value) {
+    array(value) {
       if (typeof value == 'function' && value.profile)
         value = value();
       value = val(value);
@@ -460,20 +461,16 @@ const jstypes = {
       if (value == null) return [];
       return [value];
     },
-    'boolean': function(value) {
+    boolean(value) {
       if (Array.isArray(value)) value = value[0];
       return val(value) ? true : false;
     },
-    'single': function(value) {
+    single(value) {
       if (Array.isArray(value))
         value = value[0];
       return val(value);
     },
-    'ref': function(value) {
-//      if (Array.isArray(value)) value = value[0];
-//      if (value == null) return value;
-      // if (Array.isArray(value) && value.length == 1)
-      //   value = value[0];
+    ref(value) {
       return jb.valueByRefHandler.asRef(value);
     }
 }
@@ -667,10 +664,27 @@ Object.assign(jb,{
   studio: { previewjb: jb },
   component: (id,val) => {
     jb.comps[id] = val
+    jb.traceComponentFile && jb.traceComponentFile(val)
     const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
     const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
+    const ctx = new jb.jbCtx()
 
-    jb.macros[fixedId] = (...args) => {
+    frame[fixedId] = jb.macros[fixedId] = (...allArgs) => {
+      const args=[], system={}, jid = id; // system props: constVar, remark
+      allArgs.forEach(arg=>{
+        if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
+          ctx.setData(system).run(arg)
+        else
+          args.push(arg)
+      })
+      if (args.length == 1 && typeof args[0] === 'object') {
+        jb.toarray(args[0].vars).forEach(arg => ctx.setData(system).run(arg))
+        args[0].remark && ctx.setData(system).run(args[0].remark)
+      }
+      return Object.assign(processMacro(args),system)
+    }
+
+    function processMacro(args) {
       if (args.length == 0)
         return {$: id }
       const params = val.params || []

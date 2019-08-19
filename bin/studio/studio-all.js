@@ -1,6 +1,5 @@
-const jb = (function() {
 const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-// const pathsToLog = new Set()
+const jb = (function() {
 
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
@@ -436,23 +435,22 @@ const tosingle = value => tojstype(value,'single');
 const tonumber = value => tojstype(value,'number');
 
 const jstypes = {
-    'asIs': x => x,
-    'object': x => x,
-    'string': function(value) {
+    asIs: x => x,
+    object: x => x,
+    string(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null) return '';
       value = val(value);
       if (typeof(value) == 'undefined') return '';
       return '' + value;
     },
-    'number': function(value) {
+    number(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null || value == undefined) return null; // 0 is not null
-      value = val(value);
-      const num = Number(value,true);
+      const num = Number(val(value),true);
       return isNaN(num) ? null : num;
     },
-    'array': function(value) {
+    array(value) {
       if (typeof value == 'function' && value.profile)
         value = value();
       value = val(value);
@@ -460,20 +458,16 @@ const jstypes = {
       if (value == null) return [];
       return [value];
     },
-    'boolean': function(value) {
+    boolean(value) {
       if (Array.isArray(value)) value = value[0];
       return val(value) ? true : false;
     },
-    'single': function(value) {
+    single(value) {
       if (Array.isArray(value))
         value = value[0];
       return val(value);
     },
-    'ref': function(value) {
-//      if (Array.isArray(value)) value = value[0];
-//      if (value == null) return value;
-      // if (Array.isArray(value) && value.length == 1)
-      //   value = value[0];
+    ref(value) {
       return jb.valueByRefHandler.asRef(value);
     }
 }
@@ -667,10 +661,27 @@ Object.assign(jb,{
   studio: { previewjb: jb },
   component: (id,val) => {
     jb.comps[id] = val
+    jb.traceComponentFile && jb.traceComponentFile(val)
     const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
     const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
+    const ctx = new jb.jbCtx()
 
-    jb.macros[fixedId] = (...args) => {
+    frame[fixedId] = jb.macros[fixedId] = (...allArgs) => {
+      const args=[], system={}, jid = id; // system props: constVar, remark
+      allArgs.forEach(arg=>{
+        if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
+          ctx.setData(system).run(arg)
+        else
+          args.push(arg)
+      })
+      if (args.length == 1 && typeof args[0] === 'object') {
+        jb.toarray(args[0].vars).forEach(arg => ctx.setData(system).run(arg))
+        args[0].remark && ctx.setData(system).run(args[0].remark)
+      }
+      return Object.assign(processMacro(args),system)
+    }
+
+    function processMacro(args) {
       if (args.length == 0)
         return {$: id }
       const params = val.params || []
@@ -877,7 +888,7 @@ jb.component('data.if', {
  	params: [
  		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
  		{ id: 'then', mandatory: true, dynamic: true },
- 		{ id: 'else', dynamic: true },
+ 		{ id: 'else', dynamic: true, defaultValue: '%%' },
  	],
  	impl: (ctx,cond,_then,_else) =>
  		cond ? _then() : _else()
@@ -940,17 +951,16 @@ jb.component('firstSucceeding', {
 	}
 });
 
-jb.component('property-names', {
+jb.component('keys', {
 	type: 'data',
-  description: 'Object.getOwnPropertyNames',
+  	description: 'Object.keys',
 	params: [
 		{ id: 'obj', defaultValue: '%%', as: 'single' }
 	],
-	impl: (ctx,obj) =>
-		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0)
+	impl: (ctx,obj) => Object.keys(obj)
 })
 
-jb.component('properties',{
+jb.component('properties', {
 	type: 'data',
 	params: [
 		{ id: 'obj', defaultValue: '%%', as: 'single' }
@@ -1013,7 +1023,7 @@ jb.component('remove-suffix-regex',{
 	}
 });
 
-jb.component('write-value',{
+jb.component('write-value', {
 	type: 'action',
 	params: [
 		{ id: 'to', as: 'ref', mandatory: true },
@@ -1045,7 +1055,6 @@ jb.component('add-to-array', {
 
 jb.component('splice', {
 	type: 'action',
-	usageByValue: true,
 	params: [
 		{ id: 'array', as: 'ref', mandatory: true },
 		{ id: 'fromIndex', as: 'number', mandatory: true },
@@ -1185,14 +1194,32 @@ jb.component('prop', {
 	params: [
 		{ id: 'title', as: 'string', mandatory: true },
 		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
-		{ id: 'type', as: 'string', options: 'string,number,boolean', defaultValue: 'string' },
+		{ id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string' },
 	],
 	impl: ctx => ctx.params
 })
 
-jb.component('if', { 
+jb.component('constVar', { 
+	type: 'var,system',
+	isSystem: true,
+	params: [
+		{ id: 'name', as: 'string', mandatory: true },
+		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
+	],
+	impl: ({data}, name, val) =>  
+		Object.assign(data,{ $vars: Object.assign(data.$vars || {}, { [name]: val.profile }) })
+})
+
+jb.component('remark', { 
+	type: 'system',
+	isSystem: true,
+	params: [{ id: 'remark', as: 'string', mandatory: true }],
+	impl: ({data},remark) => 
+		Object.assign(data,{remark})
+})
+
+jb.component('If', { 
 	usageByValue: true,
-	reservedWord: true,
 	params: [
 		{ id: 'condition', as: 'boolean', type: 'boolean', mandatory: true },
 		{ id: 'then' },
@@ -1528,15 +1555,6 @@ jb.component('not-equals', {
 		{ id: 'item2', defaultValue: '%%', as: 'single' }
 	],
 	impl: (ctx, item1, item2) => item1 != item2
-});
-
-jb.component('parent', {
-	type: 'data',
-	params: [
-		{ id: 'item', as: 'ref', defaultValue: '%%'}
-	],
-	impl: (ctx,item) =>
-		item && item.$jb_parent
 });
 
 jb.component('runActions', {
@@ -8426,6 +8444,7 @@ jb.component('style-by-control', {
 
 const isProxy = Symbol("isProxy")
 const targetVal = Symbol("targetVal")
+const jbId = Symbol("jbId")
 
 class ImmutableWithJbId {
   constructor(resources) {
@@ -8438,8 +8457,8 @@ class ImmutableWithJbId {
     jb.delay(1).then(_=>{
         jb.ui.originalResources = jb.resources
         const resourcesObj = resources()
-        resourcesObj.$jb_id = this.idCounter++
-        this.objToPath.set(resourcesObj.$jb_id,[])
+        resourcesObj[jbId] = this.idCounter++
+        this.objToPath.set(resourcesObj[jbId],[])
         this.propagateResourceChangeToObservables()
     })
   }
@@ -8460,10 +8479,10 @@ class ImmutableWithJbId {
     path.forEach((p,i)=> { // hash ancestors with $jb_id because the objects will be re-generated by redux
         const innerPath = path.slice(0,i+1)
         const val = this.valOfPath(innerPath)
-        if (val && typeof val === 'object' && !val.$jb_id) {
-            val.$jb_id = this.idCounter++
+        if (val && typeof val === 'object' && !val[jbId]) {
+            val[jbId] = this.idCounter++
             this.objToPath.delete(val)
-            this.objToPath.set(val.$jb_id,innerPath)
+            this.objToPath.set(val[jbId],innerPath)
         }
     })
     jb.path(op,path,opOnRef); // create op as nested object
@@ -8486,8 +8505,8 @@ class ImmutableWithJbId {
   }
   addObjToMap(top,path) {
     if (!top || top[isProxy] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
-    if (top.$jb_id) {
-        this.objToPath.set(top.$jb_id,path)
+    if (top[jbId]) {
+        this.objToPath.set(top[jbId],path)
         this.objToPath.delete(top)
     } else {
         this.objToPath.set(top,path)
@@ -8498,8 +8517,8 @@ class ImmutableWithJbId {
   removeObjFromMap(top) {
     if (!top || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
     this.objToPath.delete(top)
-    if (top.$jb_id)
-        this.objToPath.delete(top.$jb_id)
+    if (top[jbId])
+        this.objToPath.delete(top[jbId])
     Object.keys(top).filter(key=>key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key]))
   }
   refreshMapDown(top) {
@@ -8511,7 +8530,7 @@ class ImmutableWithJbId {
   pathOfRef(ref) {
     if (ref.$jb_path)
       return ref.$jb_path()
-    const path = this.isRef(ref) && (this.objToPath.get(ref.$jb_obj) || this.objToPath.get(ref.$jb_obj.$jb_id))
+    const path = this.isRef(ref) && (this.objToPath.get(ref.$jb_obj) || this.objToPath.get(ref.$jb_obj[jbId]))
     if (path && ref.$jb_childProp)
         return [...path, ref.$jb_childProp]
     return path
@@ -8519,7 +8538,7 @@ class ImmutableWithJbId {
   asRef(obj) {
     if (!obj || typeof obj !== 'object') return obj;
     const actualObj = obj[isProxy] ? obj[targetVal] : obj
-    const path = this.objToPath.get(actualObj) || this.objToPath.get(actualObj.$jb_id)
+    const path = this.objToPath.get(actualObj) || this.objToPath.get(actualObj[jbId])
     if (path)
         return { $jb_obj: this.valOfPath(path), handler: this, path: function() { return this.handler.pathOfRef(this)} }
     return actualObj;
@@ -9054,6 +9073,7 @@ jb.component('icon-with-action', {
 })
 ;
 
+(function() {
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 
 function databindField(cmp,ctx,debounceTime,oneWay) {
@@ -9101,6 +9121,7 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
     cmp.state.databindRef = ref
     cmp.state.model = cmp.jbModel()
   })
+  cmp.databindRefChanged.subscribe(()=>{}) // first activation
   cmp.databindRefChangedSub.next(ctx.vars.$model.databind());
   
 
@@ -9133,7 +9154,7 @@ jb.component('field.databind-text', {
 jb.component('field.data', {
   type: 'data',
   impl: ctx =>
-    ctx.vars.$model.databind
+    ctx.vars.$model.databind()
 })
 
 jb.component('field.default', {
@@ -9142,7 +9163,7 @@ jb.component('field.default', {
     { id: 'value', type: 'data'},
   ],
   impl: (ctx,defaultValue) => {
-    var data_ref = ctx.vars.$model.databind;
+    var data_ref = ctx.vars.$model.databind();
     if (data_ref && jb.val(data_ref) == null)
       jb.writeValue(data_ref, jb.val(defaultValue))
   }
@@ -9154,7 +9175,7 @@ jb.component('field.init-value', {
     { id: 'value', type: 'data'},
   ],
   impl: (ctx,value) =>
-    ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind, jb.val(value))
+    ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind(), jb.val(value))
 })
 
 jb.component('field.keyboard-shortcut', {
@@ -9249,7 +9270,8 @@ jb.ui.checkValidationError = cmp => {
     return err;
   }  
 }
-;
+
+})();
 
 jb.type('editable-text.style');
 
@@ -9850,6 +9872,18 @@ jb.component('group.auto-focus-on-first-input', {
           elem && jb.ui.focus(elem,'group.auto-focus-on-first-input',ctx);
         }
   })
+})
+
+jb.component('focus-on-first-element', {
+  type: 'action',
+  params: [
+    { id: 'selector', as: 'string', defaultValue: 'input' },
+  ],
+  impl: (ctx, selector) => 
+      jb.delay(50).then(() => {
+        const elem = document.querySelector(selector)
+        elem && jb.ui.focus(elem,'focus-on-first-element',ctx)
+    })
 })
 ;
 
@@ -11357,7 +11391,7 @@ jb.component('itemlist-container.search', {
 	params: [
 		{ id: 'title', as: 'string' , dynamic: true, defaultValue: 'Search' },
 		{ id: 'searchIn', as: 'string' , dynamic: true, defaultValue: {$: 'itemlist-container.search-in-all-properties'} },
-		{ id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/search_pattern%'},
+		{ id: 'databind', as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
 		{ id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-search' }, dynamic: true },
 		{ id: 'features', type: 'feature[]', dynamic: true },
 	],
@@ -11365,9 +11399,10 @@ jb.component('itemlist-container.search', {
 		jb.ui.ctrl(ctx,{
 			afterViewInit: cmp => {
 				if (!ctx.vars.itemlistCntr) return;
+				const databindRef = databind()
 
 				ctx.vars.itemlistCntr.filters.push( items => {
-					const toSearch = jb.val(databind) || '';
+					const toSearch = jb.val(databindRef) || '';
 					if (typeof searchIn.profile == 'function') { // improved performance
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 					}
@@ -11517,7 +11552,7 @@ jb.component('picklist', {
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx,{
-      beforeInit: function(cmp) {
+      beforeInit: cmp => {
         cmp.recalcOptions = function() {
           var options = ctx.params.options(ctx);
           var groupsHash = {};
@@ -11540,8 +11575,12 @@ jb.component('picklist', {
           })
         }
         cmp.recalcOptions();
-        jb.ui.databindObservable(cmp,{watchScript: ctx})
+      },
+      afterViewInit: cmp => {
+        if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{watchScript: ctx})
           .subscribe(e=>cmp.onChange && cmp.onChange(jb.val(e.ref)))
+        else jb.ui.refObservable(ctx.params.databind(),cmp,{watchScript: ctx}).subscribe(e=>
+          cmp.onChange && cmp.onChange(jb.val(e.ref)))
       },
     })
 })
@@ -11771,7 +11810,7 @@ jb.component('slider.init', {
           cmp.handleArrowKey = e => {
               var val = Number(cmp.jbModel()) || 0;
               if (e.keyCode == 46) // delete
-                jb.writeValue(ctx.vars.$model.databind,null);
+                jb.writeValue(cmp.state.databindRef || ctx.vars.$model.databind(),null);
               if ([37,39].indexOf(e.keyCode) != -1) {
                 var inc = e.shiftKey ? 9 : 1;
                 if (val !=null && e.keyCode == 39)
@@ -14534,10 +14573,10 @@ jb.component('editable-text.codemirror', {
 	],
 	impl: function(context, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
-			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind) })),
+			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
 			afterViewInit: cmp => {
-				var data_ref = cmp.ctx.vars.$model.databind;
+				var data_ref = cmp.ctx.vars.$model.databind();
 				cm_settings = cm_settings||{};
 				var effective_settings = Object.assign({},cm_settings, {
 					mode: mode || 'javascript',
@@ -14570,7 +14609,7 @@ jb.component('editable-text.codemirror', {
 				}
 				//cmp.lastEdit = new Date().getTime();
 				editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-				jb.ui.refObservable(data_ref,cmp)
+				jb.ui.refObservable(data_ref,cmp,{watchScript: context})
 					.map(e=>jb.tostring(data_ref))
 					.filter(x => x != editor.getValue())
 					.subscribe(x=>
@@ -28267,7 +28306,12 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       return Object.assign({ text: acc.text + separator + valPrefix + result.text, map }, newPos)
     }, {text: '', map: {}, line, col} )
 
-    if (result.text.replace(/\n\s*/g,'').length < colWidth && !flat)
+    const arrayElem = path.match(/~[0-9]+$/)
+    const ctrls = jb.studio.isOfType(path,'control') && !arrayElem
+    const customStyle = jb.studio.compNameOfPath(path) === 'customStyle'
+    const top = (path.match(/~/g)||'').length < 2
+    const short = result.text.replace(/\n\s*/g,'').length < colWidth
+    if (!customStyle && !top && !ctrls && short && !flat)
       return joinVals({path, line, col}, innerVals, open, close, true, isArray)
 
     const out = { 
@@ -28277,7 +28321,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
     return out
 
     function newLine(offset = 0) {
-      return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset)*tabSize)
+      return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
     }
     function advanceLineCol({line,col},text) {
       const noOfLines = (text.match(/\n/g) || '').length
@@ -28288,7 +28332,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
 
   function profileToMacro(ctx, profile,flat) {
     const id = jb.compName(profile)
-    if (!id || !jb.comps[id] || id === 'object') { // not tgp
+    if (!id || !jb.comps[id] || ',object,var,'.indexOf(`,${id},`) != -1) { // not tgp
       const props = Object.keys(profile) 
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);
@@ -28302,13 +28346,13 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   
     const params = comp.params || []
     if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus
-      const args = (profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val}))
+      const args = jb.toarray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val}))
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
     if (params.length < 3 || comp.usageByValue) {
-      const args = params.map(param=>({innerPath: param.id, val: profile[param.id]}))
-      if (args.length && args[args.length-1].val === undefined) args.pop()
-      if (args.length && args[args.length-1].val === undefined) args.pop()
+      const args = params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]}))
+      if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
+      if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
     const args = params.filter(param=>profile[param.id] !== undefined)
@@ -31674,7 +31718,7 @@ jb.component('studio.data-resource-menu', {
         controlItems :{
           $pipeline: [
             ctx => jb.studio.previewjb.resources, 
-            {$: 'property-names', obj: '%%' }, 
+            {$: 'keys', obj: '%%' }, 
             {$: 'filter', 
               filter :{$: 'not-contains', inOrder: true, text: ':', allText: '%%' }
             }
@@ -32403,7 +32447,7 @@ jb.component('studio.profile-as-macro-text', {
 
 					if (st.isPrimitiveValue(val))
 						return ''+val;
-					return jb.prettyPrint(val || '',{macro:true});
+					return jb.prettyPrint(val || '',{macro:true, initialPath: path});
 				} else {
 				}
 			} catch(e) {

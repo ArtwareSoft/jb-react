@@ -194,8 +194,10 @@ jb.ui.addHTML = jb.ui.addHTML || ((el,html) => {
 	el.appendChild(elem.firstChild)
 })
   
-
+if (typeof startTime === 'undefined')
+	startTime = new Date().getTime();
 startTime = startTime || new Date().getTime();
+
 jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 	var initial_resources = JSON.stringify(jb.resources).replace(/\"\$jb_id":[0-9]*,/g,'')
 	var tests = jb.entries(jb.comps)

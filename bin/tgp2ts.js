@@ -13,20 +13,30 @@ function run() {
 	const src = getProcessArgument('srcDir') || 'src';
 	const files = walk(src).filter(x=>x.match(/\.js$/))
     console.log(src, files.join('\n'))
-	const cmpCodes = files.map(f=> '' + fs.readFileSync(f))
-		.map(code => (code.replace(/~/g,'')
-			.match(/jb\.component\(([^~]+?)\n}\)/g) || []))
-		.flat()
+	const cmpCodes = files.map(file => {
+		const content = '' + fs.readFileSync(file)
+		return (content.replace(/~/g,'') // ~ char should not exist anyway.. used for lookahead in multiple lines
+			.match(/jb\.component\(([^~]+?)\n}\)/g) || [])
+			.map(cmpCode => ({cmpCode,file}))
+	}).flat()
 
-	cmpCodes.forEach(cmpCode=>{
+	cmpCodes.forEach(({cmpCode,file})=>{
 		try {
+			jb.currentFile = file
 			eval(cmpCode)
 		} catch(e) {
 			console.log('error in tgpCode' + e);
 		}
 	})
 //    const tgpCode = '' + fs.readFileSync(src);
-    console.log(jb.entries(jb.comps).map(e=>e[0]).join('\n'))
+	const compsByDir = {}
+	jb.entries(jb.comps).forEach(([id,cmp]) => {
+		const dir = cmp.fileName.split('/').slice(1,-1).join('/')
+		compsByDir[dir] = compsByDir[dir] || []
+		compsByDir[dir].push({id,cmp})
+	})
+	console.log(compsByDir)
+    //console.log(jb.entries(jb.comps).map(e=>e[0]+' : '+e[1].fileName).join('\n'))
     const content = buildTS();
     if (getProcessArgument('out')) {
         const fn = getProcessArgument('out') + '.d.ts';

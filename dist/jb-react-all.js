@@ -1,6 +1,5 @@
-const jb = (function() {
 const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-// const pathsToLog = new Set()
+const jb = (function() {
 
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
@@ -436,23 +435,22 @@ const tosingle = value => tojstype(value,'single');
 const tonumber = value => tojstype(value,'number');
 
 const jstypes = {
-    'asIs': x => x,
-    'object': x => x,
-    'string': function(value) {
+    asIs: x => x,
+    object: x => x,
+    string(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null) return '';
       value = val(value);
       if (typeof(value) == 'undefined') return '';
       return '' + value;
     },
-    'number': function(value) {
+    number(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null || value == undefined) return null; // 0 is not null
-      value = val(value);
-      const num = Number(value,true);
+      const num = Number(val(value),true);
       return isNaN(num) ? null : num;
     },
-    'array': function(value) {
+    array(value) {
       if (typeof value == 'function' && value.profile)
         value = value();
       value = val(value);
@@ -460,20 +458,16 @@ const jstypes = {
       if (value == null) return [];
       return [value];
     },
-    'boolean': function(value) {
+    boolean(value) {
       if (Array.isArray(value)) value = value[0];
       return val(value) ? true : false;
     },
-    'single': function(value) {
+    single(value) {
       if (Array.isArray(value))
         value = value[0];
       return val(value);
     },
-    'ref': function(value) {
-//      if (Array.isArray(value)) value = value[0];
-//      if (value == null) return value;
-      // if (Array.isArray(value) && value.length == 1)
-      //   value = value[0];
+    ref(value) {
       return jb.valueByRefHandler.asRef(value);
     }
 }
@@ -667,10 +661,27 @@ Object.assign(jb,{
   studio: { previewjb: jb },
   component: (id,val) => {
     jb.comps[id] = val
+    jb.traceComponentFile && jb.traceComponentFile(val)
     const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
     const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
+    const ctx = new jb.jbCtx()
 
-    jb.macros[fixedId] = (...args) => {
+    frame[fixedId] = jb.macros[fixedId] = (...allArgs) => {
+      const args=[], system={}, jid = id; // system props: constVar, remark
+      allArgs.forEach(arg=>{
+        if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
+          ctx.setData(system).run(arg)
+        else
+          args.push(arg)
+      })
+      if (args.length == 1 && typeof args[0] === 'object') {
+        jb.toarray(args[0].vars).forEach(arg => ctx.setData(system).run(arg))
+        args[0].remark && ctx.setData(system).run(args[0].remark)
+      }
+      return Object.assign(processMacro(args),system)
+    }
+
+    function processMacro(args) {
       if (args.length == 0)
         return {$: id }
       const params = val.params || []
@@ -877,7 +888,7 @@ jb.component('data.if', {
  	params: [
  		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
  		{ id: 'then', mandatory: true, dynamic: true },
- 		{ id: 'else', dynamic: true },
+ 		{ id: 'else', dynamic: true, defaultValue: '%%' },
  	],
  	impl: (ctx,cond,_then,_else) =>
  		cond ? _then() : _else()
@@ -940,17 +951,16 @@ jb.component('firstSucceeding', {
 	}
 });
 
-jb.component('property-names', {
+jb.component('keys', {
 	type: 'data',
-  description: 'Object.getOwnPropertyNames',
+  	description: 'Object.keys',
 	params: [
 		{ id: 'obj', defaultValue: '%%', as: 'single' }
 	],
-	impl: (ctx,obj) =>
-		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0)
+	impl: (ctx,obj) => Object.keys(obj)
 })
 
-jb.component('properties',{
+jb.component('properties', {
 	type: 'data',
 	params: [
 		{ id: 'obj', defaultValue: '%%', as: 'single' }
@@ -1013,7 +1023,7 @@ jb.component('remove-suffix-regex',{
 	}
 });
 
-jb.component('write-value',{
+jb.component('write-value', {
 	type: 'action',
 	params: [
 		{ id: 'to', as: 'ref', mandatory: true },
@@ -1045,7 +1055,6 @@ jb.component('add-to-array', {
 
 jb.component('splice', {
 	type: 'action',
-	usageByValue: true,
 	params: [
 		{ id: 'array', as: 'ref', mandatory: true },
 		{ id: 'fromIndex', as: 'number', mandatory: true },
@@ -1185,14 +1194,32 @@ jb.component('prop', {
 	params: [
 		{ id: 'title', as: 'string', mandatory: true },
 		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
-		{ id: 'type', as: 'string', options: 'string,number,boolean', defaultValue: 'string' },
+		{ id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string' },
 	],
 	impl: ctx => ctx.params
 })
 
-jb.component('if', { 
+jb.component('constVar', { 
+	type: 'var,system',
+	isSystem: true,
+	params: [
+		{ id: 'name', as: 'string', mandatory: true },
+		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
+	],
+	impl: ({data}, name, val) =>  
+		Object.assign(data,{ $vars: Object.assign(data.$vars || {}, { [name]: val.profile }) })
+})
+
+jb.component('remark', { 
+	type: 'system',
+	isSystem: true,
+	params: [{ id: 'remark', as: 'string', mandatory: true }],
+	impl: ({data},remark) => 
+		Object.assign(data,{remark})
+})
+
+jb.component('If', { 
 	usageByValue: true,
-	reservedWord: true,
 	params: [
 		{ id: 'condition', as: 'boolean', type: 'boolean', mandatory: true },
 		{ id: 'then' },
@@ -1528,15 +1555,6 @@ jb.component('not-equals', {
 		{ id: 'item2', defaultValue: '%%', as: 'single' }
 	],
 	impl: (ctx, item1, item2) => item1 != item2
-});
-
-jb.component('parent', {
-	type: 'data',
-	params: [
-		{ id: 'item', as: 'ref', defaultValue: '%%'}
-	],
-	impl: (ctx,item) =>
-		item && item.$jb_parent
 });
 
 jb.component('runActions', {

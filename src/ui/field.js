@@ -47,7 +47,6 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
     cmp.state.model = cmp.jbModel()
   })
   cmp.databindRefChanged.subscribe(()=>{}) // first activation
-  cmp.databindRefChangedSub.next(ctx.vars.$model.databind());
   
 
   const srcCtx = cmp.ctxForPick || cmp.ctx;
@@ -56,6 +55,8 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
             watchScript: ctx, onError: _ => cmp.setState({model: null}) })
       .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
       .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,null,e,ctx))
+
+   cmp.databindRefChangedSub.next(ctx.vars.$model.databind());
 }
 
 jb.component('field.databind', {

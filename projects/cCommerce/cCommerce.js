@@ -256,7 +256,7 @@ jb.component('cCommerce.histogram', {
       }, 
       {$: 'table', 
         title: '', 
-        items :{$: 'property-names', $list: ['performance', 'hits', 'size', 'price'], obj: '%$item%' }, 
+        items :{$: 'keys', obj: '%$item%' }, 
         fields: [
           {$: 'field', title: 'title', data: '%%' }, 
           {$: 'field', title: 'value', data: ctx => ctx.vars.item[ctx.data] }

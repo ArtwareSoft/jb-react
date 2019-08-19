@@ -187,7 +187,12 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       return Object.assign({ text: acc.text + separator + valPrefix + result.text, map }, newPos)
     }, {text: '', map: {}, line, col} )
 
-    if (result.text.replace(/\n\s*/g,'').length < colWidth && !flat)
+    const arrayElem = path.match(/~[0-9]+$/)
+    const ctrls = jb.studio.isOfType(path,'control') && !arrayElem
+    const customStyle = jb.studio.compNameOfPath(path) === 'customStyle'
+    const top = (path.match(/~/g)||'').length < 2
+    const short = result.text.replace(/\n\s*/g,'').length < colWidth
+    if (!customStyle && !top && !ctrls && short && !flat)
       return joinVals({path, line, col}, innerVals, open, close, true, isArray)
 
     const out = { 
@@ -197,7 +202,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
     return out
 
     function newLine(offset = 0) {
-      return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset)*tabSize)
+      return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
     }
     function advanceLineCol({line,col},text) {
       const noOfLines = (text.match(/\n/g) || '').length
@@ -208,7 +213,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
 
   function profileToMacro(ctx, profile,flat) {
     const id = jb.compName(profile)
-    if (!id || !jb.comps[id] || id === 'object') { // not tgp
+    if (!id || !jb.comps[id] || ',object,var,'.indexOf(`,${id},`) != -1) { // not tgp
       const props = Object.keys(profile) 
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);
@@ -222,13 +227,13 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   
     const params = comp.params || []
     if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus
-      const args = (profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val}))
+      const args = jb.toarray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val}))
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
     if (params.length < 3 || comp.usageByValue) {
-      const args = params.map(param=>({innerPath: param.id, val: profile[param.id]}))
-      if (args.length && args[args.length-1].val === undefined) args.pop()
-      if (args.length && args[args.length-1].val === undefined) args.pop()
+      const args = params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]}))
+      if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
+      if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
     const args = params.filter(param=>profile[param.id] !== undefined)

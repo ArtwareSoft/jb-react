@@ -1,6 +1,3 @@
-(function() {
-const {dataTest, pipeline, pipe, join, list, writeValue, splice, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case, runActions, runActionOnItems, prettyPrint} = jb.macros
-
 jb.component('delayedObj', {
   params: [
     { id: 'obj', type: 'data' }
@@ -36,6 +33,14 @@ jb.component('data-test.write-value', {
     runBefore: writeValue('%$person/age%', 20),
 	  calculate: '%$person/age%',
 	  expectedResult: contains('20')
+	})
+})
+
+jb.component('data-test.write-value-false-bug', {
+  impl: dataTest({
+    runBefore: writeValue('%$person/male%', false),
+	  calculate: '%$person/male%',
+	  expectedResult: equals(false)
 	})
 })
 
@@ -171,9 +176,24 @@ jb.component('data-test.exp-with-array-var', {
   })
 })
 
+jb.component('data-test.constVar', { // system props
+  impl: dataTest({
+	  calculate: pipeline(
+        constVar('children','%$personWithChildren/children%'), 
+        remark('hello'),
+        constVar('children2','%$personWithChildren/children%'), 
+        '%$children[0]/name% %$children2[1]/name%',
+    ),
+	  expectedResult: equals('Bart Lisa')
+  })
+})
+
 jb.component('data-test.conditional-text', {
   impl: dataTest({
-    $vars: {full: 'full', empty: '' },
+    vars: [
+      constVar('full','full'), 
+      constVar('empty','')
+    ],
     calculate: '{?%$full% is full?} {?%$empty% is empty?}',
     expectedResult: and(contains('full'), not(contains('is empty')))
   })
@@ -291,7 +311,7 @@ jb.component('data-test.assignWithIndex', {
 jb.component('data-test.if', {
   impl: dataTest({
     calculate: pipeline('%$personWithChildren/children%',
-      $if(equals('%name%','Bart'), 'funny','mamy'),
+      If(equals('%name%','Bart'), 'funny','mamy'),
       join()
     ),
     expectedResult: contains('funny,mamy,mamy')
@@ -301,7 +321,7 @@ jb.component('data-test.if', {
 jb.component('data-test.if.filters', {
   impl: dataTest({
     calculate: pipeline('%$personWithChildren/children%',
-      $if(equals('%name%','Bart'), 'funny'),
+      If(equals('%name%','Bart'), 'funny'),
       count()
     ),
     expectedResult: equals(1)
@@ -348,4 +368,3 @@ jb.component('data-test.pretty-print-macro', {
 //     expectedResult :{$: 'contains', text: 'Homer' }
 //   },
 // })
-})()

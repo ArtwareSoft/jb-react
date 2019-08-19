@@ -992,7 +992,7 @@ type macros = {
 	writeValue(to: dataType, value: dataType) : actionType,
 	indexOf(array: dataType, item: dataType) : dataType,
 	addToArray(array: dataType, itemsToAdd: dataType) : actionType,
-	splice(array: dataType, fromIndex: dataType, noOfItemsToRemove: dataType, itemsToAdd: dataType) : actionType,
+	splice({ array: dataType, fromIndex: dataType, noOfItemsToRemove: dataType, itemsToAdd: dataType }) : actionType,
 	removeFromArray({ array: dataType, 
 /** choose item or index */itemToRemove: dataType, 
 /** choose item or index */index: dataType }) : actionType,

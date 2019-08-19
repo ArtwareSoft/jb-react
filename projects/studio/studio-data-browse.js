@@ -73,7 +73,7 @@ jb.component('studio.data-resource-menu', {
         controlItems :{
           $pipeline: [
             ctx => jb.studio.previewjb.resources, 
-            {$: 'property-names', obj: '%%' }, 
+            {$: 'keys', obj: '%%' }, 
             {$: 'filter', 
               filter :{$: 'not-contains', inOrder: true, text: ':', allText: '%%' }
             }

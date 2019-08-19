@@ -388,3 +388,15 @@ jb.component('group.auto-focus-on-first-input', {
         }
   })
 })
+
+jb.component('focus-on-first-element', {
+  type: 'action',
+  params: [
+    { id: 'selector', as: 'string', defaultValue: 'input' },
+  ],
+  impl: (ctx, selector) => 
+      jb.delay(50).then(() => {
+        const elem = document.querySelector(selector)
+        elem && jb.ui.focus(elem,'focus-on-first-element',ctx)
+    })
+})
