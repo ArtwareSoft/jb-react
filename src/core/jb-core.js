@@ -664,8 +664,20 @@ Object.assign(jb,{
     jb.traceComponentFile && jb.traceComponentFile(val)
     const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
     const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
+    const ctx = new jb.jbCtx()
 
-    frame[fixedId] = jb.macros[fixedId] = (...args) => {
+    frame[fixedId] = jb.macros[fixedId] = (...allArgs) => {
+      const args=[], system={}, jid = id; // system props: constVar, remark
+      allArgs.forEach(arg=>{
+        if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
+          ctx.setData(system).run(arg)
+        else
+          args.push(arg)
+      })
+      return Object.assign(processMacro(args),system)
+    }
+
+    function processMacro(args) {
       if (args.length == 0)
         return {$: id }
       const params = val.params || []

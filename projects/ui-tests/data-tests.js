@@ -176,6 +176,18 @@ jb.component('data-test.exp-with-array-var', {
   })
 })
 
+jb.component('data-test.constVar-in-pipeline', {
+  impl: dataTest({
+	  calculate: pipeline(
+        constVar('children','%$personWithChildren/children%'), 
+        remark('hello'),
+        constVar('children2','%$personWithChildren/children%'), 
+        '%$children[0]/name% %$children2[1]/name%',
+    ),
+	  expectedResult: equals('Bart Lisa')
+  })
+})
+
 jb.component('data-test.conditional-text', {
   impl: dataTest({
     $vars: {full: 'full', empty: '' },

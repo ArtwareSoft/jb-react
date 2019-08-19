@@ -384,6 +384,25 @@ jb.component('prop', {
 	impl: ctx => ctx.params
 })
 
+jb.component('constVar', { 
+	type: 'var,system',
+	isSystem: true,
+	params: [
+		{ id: 'name', as: 'string', mandatory: true },
+		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
+	],
+	impl: ({data}, name, val) =>  
+		Object.assign(data,{ $vars: Object.assign(data.$vars || {}, { [name]: val.profile }) })
+})
+
+jb.component('remark', { 
+	type: 'system',
+	isSystem: true,
+	params: [{ id: 'remark', as: 'string', mandatory: true }],
+	impl: ({data},remark) => 
+		Object.assign(data,{remark})
+})
+
 jb.component('If', { 
 	usageByValue: true,
 	params: [
