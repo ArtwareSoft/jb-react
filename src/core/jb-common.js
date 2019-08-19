@@ -136,17 +136,16 @@ jb.component('firstSucceeding', {
 	}
 });
 
-jb.component('property-names', {
+jb.component('keys', {
 	type: 'data',
-  description: 'Object.getOwnPropertyNames',
+  	description: 'Object.keys',
 	params: [
 		{ id: 'obj', defaultValue: '%%', as: 'single' }
 	],
-	impl: (ctx,obj) =>
-		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0)
+	impl: (ctx,obj) => Object.keys(obj)
 })
 
-jb.component('properties',{
+jb.component('properties', {
 	type: 'data',
 	params: [
 		{ id: 'obj', defaultValue: '%%', as: 'single' }
@@ -209,7 +208,7 @@ jb.component('remove-suffix-regex',{
 	}
 });
 
-jb.component('write-value',{
+jb.component('write-value', {
 	type: 'action',
 	params: [
 		{ id: 'to', as: 'ref', mandatory: true },
@@ -380,14 +379,13 @@ jb.component('prop', {
 	params: [
 		{ id: 'title', as: 'string', mandatory: true },
 		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
-		{ id: 'type', as: 'string', options: 'string,number,boolean', defaultValue: 'string' },
+		{ id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string' },
 	],
 	impl: ctx => ctx.params
 })
 
-jb.component('if', { 
+jb.component('If', { 
 	usageByValue: true,
-	reservedWord: true,
 	params: [
 		{ id: 'condition', as: 'boolean', type: 'boolean', mandatory: true },
 		{ id: 'then' },
@@ -723,15 +721,6 @@ jb.component('not-equals', {
 		{ id: 'item2', defaultValue: '%%', as: 'single' }
 	],
 	impl: (ctx, item1, item2) => item1 != item2
-});
-
-jb.component('parent', {
-	type: 'data',
-	params: [
-		{ id: 'item', as: 'ref', defaultValue: '%%'}
-	],
-	impl: (ctx,item) =>
-		item && item.$jb_parent
 });
 
 jb.component('runActions', {

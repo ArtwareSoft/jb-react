@@ -1,6 +1,3 @@
-(function() {
-const {dataTest, pipeline, pipe, join, list, writeValue, splice, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case, runActions, runActionOnItems, prettyPrint} = jb.macros
-
 jb.component('delayedObj', {
   params: [
     { id: 'obj', type: 'data' }
@@ -36,6 +33,14 @@ jb.component('data-test.write-value', {
     runBefore: writeValue('%$person/age%', 20),
 	  calculate: '%$person/age%',
 	  expectedResult: contains('20')
+	})
+})
+
+jb.component('data-test.write-value-false-bug', {
+  impl: dataTest({
+    runBefore: writeValue('%$person/male%', false),
+	  calculate: '%$person/male%',
+	  expectedResult: equals(false)
 	})
 })
 
@@ -291,7 +296,7 @@ jb.component('data-test.assignWithIndex', {
 jb.component('data-test.if', {
   impl: dataTest({
     calculate: pipeline('%$personWithChildren/children%',
-      $if(equals('%name%','Bart'), 'funny','mamy'),
+      If(equals('%name%','Bart'), 'funny','mamy'),
       join()
     ),
     expectedResult: contains('funny,mamy,mamy')
@@ -301,7 +306,7 @@ jb.component('data-test.if', {
 jb.component('data-test.if.filters', {
   impl: dataTest({
     calculate: pipeline('%$personWithChildren/children%',
-      $if(equals('%name%','Bart'), 'funny'),
+      If(equals('%name%','Bart'), 'funny'),
       count()
     ),
     expectedResult: equals(1)
@@ -348,4 +353,3 @@ jb.component('data-test.pretty-print-macro', {
 //     expectedResult :{$: 'contains', text: 'Homer' }
 //   },
 // })
-})()

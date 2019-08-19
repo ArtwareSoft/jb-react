@@ -1,6 +1,5 @@
-const jb = (function() {
 const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-// const pathsToLog = new Set()
+const jb = (function() {
 
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
@@ -667,10 +666,11 @@ Object.assign(jb,{
   studio: { previewjb: jb },
   component: (id,val) => {
     jb.comps[id] = val
+    jb.traceComponentFile && jb.traceComponentFile(val)
     const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
     const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
 
-    jb.macros[fixedId] = (...args) => {
+    frame[fixedId] = jb.macros[fixedId] = (...args) => {
       if (args.length == 0)
         return {$: id }
       const params = val.params || []

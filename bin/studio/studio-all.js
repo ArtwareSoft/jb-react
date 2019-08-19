@@ -1,6 +1,5 @@
-const jb = (function() {
 const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-// const pathsToLog = new Set()
+const jb = (function() {
 
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
@@ -667,10 +666,11 @@ Object.assign(jb,{
   studio: { previewjb: jb },
   component: (id,val) => {
     jb.comps[id] = val
+    jb.traceComponentFile && jb.traceComponentFile(val)
     const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
     const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
 
-    jb.macros[fixedId] = (...args) => {
+    frame[fixedId] = jb.macros[fixedId] = (...args) => {
       if (args.length == 0)
         return {$: id }
       const params = val.params || []
@@ -877,7 +877,7 @@ jb.component('data.if', {
  	params: [
  		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
  		{ id: 'then', mandatory: true, dynamic: true },
- 		{ id: 'else', dynamic: true },
+ 		{ id: 'else', dynamic: true, defaultValue: '%%' },
  	],
  	impl: (ctx,cond,_then,_else) =>
  		cond ? _then() : _else()
@@ -1045,7 +1045,6 @@ jb.component('add-to-array', {
 
 jb.component('splice', {
 	type: 'action',
-	usageByValue: true,
 	params: [
 		{ id: 'array', as: 'ref', mandatory: true },
 		{ id: 'fromIndex', as: 'number', mandatory: true },
@@ -9054,6 +9053,7 @@ jb.component('icon-with-action', {
 })
 ;
 
+(function() {
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 
 function databindField(cmp,ctx,debounceTime,oneWay) {
@@ -9101,6 +9101,7 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
     cmp.state.databindRef = ref
     cmp.state.model = cmp.jbModel()
   })
+  cmp.databindRefChanged.subscribe(()=>{}) // first activation
   cmp.databindRefChangedSub.next(ctx.vars.$model.databind());
   
 
@@ -9133,7 +9134,7 @@ jb.component('field.databind-text', {
 jb.component('field.data', {
   type: 'data',
   impl: ctx =>
-    ctx.vars.$model.databind
+    ctx.vars.$model.databind()
 })
 
 jb.component('field.default', {
@@ -9142,7 +9143,7 @@ jb.component('field.default', {
     { id: 'value', type: 'data'},
   ],
   impl: (ctx,defaultValue) => {
-    var data_ref = ctx.vars.$model.databind;
+    var data_ref = ctx.vars.$model.databind();
     if (data_ref && jb.val(data_ref) == null)
       jb.writeValue(data_ref, jb.val(defaultValue))
   }
@@ -9154,7 +9155,7 @@ jb.component('field.init-value', {
     { id: 'value', type: 'data'},
   ],
   impl: (ctx,value) =>
-    ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind, jb.val(value))
+    ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind(), jb.val(value))
 })
 
 jb.component('field.keyboard-shortcut', {
@@ -9249,7 +9250,8 @@ jb.ui.checkValidationError = cmp => {
     return err;
   }  
 }
-;
+
+})();
 
 jb.type('editable-text.style');
 
@@ -11357,7 +11359,7 @@ jb.component('itemlist-container.search', {
 	params: [
 		{ id: 'title', as: 'string' , dynamic: true, defaultValue: 'Search' },
 		{ id: 'searchIn', as: 'string' , dynamic: true, defaultValue: {$: 'itemlist-container.search-in-all-properties'} },
-		{ id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/search_pattern%'},
+		{ id: 'databind', as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
 		{ id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-search' }, dynamic: true },
 		{ id: 'features', type: 'feature[]', dynamic: true },
 	],
@@ -11365,9 +11367,10 @@ jb.component('itemlist-container.search', {
 		jb.ui.ctrl(ctx,{
 			afterViewInit: cmp => {
 				if (!ctx.vars.itemlistCntr) return;
+				const databindRef = databind()
 
 				ctx.vars.itemlistCntr.filters.push( items => {
-					const toSearch = jb.val(databind) || '';
+					const toSearch = jb.val(databindRef) || '';
 					if (typeof searchIn.profile == 'function') { // improved performance
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 					}
@@ -11517,7 +11520,7 @@ jb.component('picklist', {
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx,{
-      beforeInit: function(cmp) {
+      beforeInit: cmp => {
         cmp.recalcOptions = function() {
           var options = ctx.params.options(ctx);
           var groupsHash = {};
@@ -11540,8 +11543,12 @@ jb.component('picklist', {
           })
         }
         cmp.recalcOptions();
-        jb.ui.databindObservable(cmp,{watchScript: ctx})
+      },
+      afterViewInit: cmp => {
+        if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{watchScript: ctx})
           .subscribe(e=>cmp.onChange && cmp.onChange(jb.val(e.ref)))
+        else jb.ui.refObservable(ctx.params.databind(),cmp,{watchScript: ctx}).subscribe(e=>
+          cmp.onChange && cmp.onChange(jb.val(e.ref)))
       },
     })
 })
@@ -11771,7 +11778,7 @@ jb.component('slider.init', {
           cmp.handleArrowKey = e => {
               var val = Number(cmp.jbModel()) || 0;
               if (e.keyCode == 46) // delete
-                jb.writeValue(ctx.vars.$model.databind,null);
+                jb.writeValue(cmp.state.databindRef || ctx.vars.$model.databind(),null);
               if ([37,39].indexOf(e.keyCode) != -1) {
                 var inc = e.shiftKey ? 9 : 1;
                 if (val !=null && e.keyCode == 39)
@@ -14534,10 +14541,10 @@ jb.component('editable-text.codemirror', {
 	],
 	impl: function(context, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
-			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind) })),
+			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
 			afterViewInit: cmp => {
-				var data_ref = cmp.ctx.vars.$model.databind;
+				var data_ref = cmp.ctx.vars.$model.databind();
 				cm_settings = cm_settings||{};
 				var effective_settings = Object.assign({},cm_settings, {
 					mode: mode || 'javascript',
@@ -14570,7 +14577,7 @@ jb.component('editable-text.codemirror', {
 				}
 				//cmp.lastEdit = new Date().getTime();
 				editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-				jb.ui.refObservable(data_ref,cmp)
+				jb.ui.refObservable(data_ref,cmp,{watchScript: context})
 					.map(e=>jb.tostring(data_ref))
 					.filter(x => x != editor.getValue())
 					.subscribe(x=>
@@ -28267,7 +28274,10 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       return Object.assign({ text: acc.text + separator + valPrefix + result.text, map }, newPos)
     }, {text: '', map: {}, line, col} )
 
-    if (result.text.replace(/\n\s*/g,'').length < colWidth && !flat)
+    const paramDef = jb.studio.paramDef(path) || {}
+    const arrayElem = path.match(/~[0-9]+$/)
+    const ctrls = jb.studio.isOfType(path,'control') && !arrayElem
+    if (!ctrls && result.text.replace(/\n\s*/g,'').length < colWidth && !flat)
       return joinVals({path, line, col}, innerVals, open, close, true, isArray)
 
     const out = { 
@@ -28288,7 +28298,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
 
   function profileToMacro(ctx, profile,flat) {
     const id = jb.compName(profile)
-    if (!id || !jb.comps[id] || id === 'object') { // not tgp
+    if (!id || !jb.comps[id] || ',object,var,'.indexOf(`,${id},`) != -1) { // not tgp
       const props = Object.keys(profile) 
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);
@@ -32403,7 +32413,7 @@ jb.component('studio.profile-as-macro-text', {
 
 					if (st.isPrimitiveValue(val))
 						return ''+val;
-					return jb.prettyPrint(val || '',{macro:true});
+					return jb.prettyPrint(val || '',{macro:true, initialPath: path});
 				} else {
 				}
 			} catch(e) {

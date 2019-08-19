@@ -1,6 +1,5 @@
-const jb = (function() {
 const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-// const pathsToLog = new Set()
+const jb = (function() {
 
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
@@ -667,10 +666,11 @@ Object.assign(jb,{
   studio: { previewjb: jb },
   component: (id,val) => {
     jb.comps[id] = val
+    jb.traceComponentFile && jb.traceComponentFile(val)
     const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
     const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
 
-    jb.macros[fixedId] = (...args) => {
+    frame[fixedId] = jb.macros[fixedId] = (...args) => {
       if (args.length == 0)
         return {$: id }
       const params = val.params || []
@@ -877,7 +877,7 @@ jb.component('data.if', {
  	params: [
  		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
  		{ id: 'then', mandatory: true, dynamic: true },
- 		{ id: 'else', dynamic: true },
+ 		{ id: 'else', dynamic: true, defaultValue: '%%' },
  	],
  	impl: (ctx,cond,_then,_else) =>
  		cond ? _then() : _else()
@@ -1045,7 +1045,6 @@ jb.component('add-to-array', {
 
 jb.component('splice', {
 	type: 'action',
-	usageByValue: true,
 	params: [
 		{ id: 'array', as: 'ref', mandatory: true },
 		{ id: 'fromIndex', as: 'number', mandatory: true },
@@ -2253,7 +2252,10 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       return Object.assign({ text: acc.text + separator + valPrefix + result.text, map }, newPos)
     }, {text: '', map: {}, line, col} )
 
-    if (result.text.replace(/\n\s*/g,'').length < colWidth && !flat)
+    const paramDef = jb.studio.paramDef(path) || {}
+    const arrayElem = path.match(/~[0-9]+$/)
+    const ctrls = jb.studio.isOfType(path,'control') && !arrayElem
+    if (!ctrls && result.text.replace(/\n\s*/g,'').length < colWidth && !flat)
       return joinVals({path, line, col}, innerVals, open, close, true, isArray)
 
     const out = { 
@@ -2274,7 +2276,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
 
   function profileToMacro(ctx, profile,flat) {
     const id = jb.compName(profile)
-    if (!id || !jb.comps[id] || id === 'object') { // not tgp
+    if (!id || !jb.comps[id] || ',object,var,'.indexOf(`,${id},`) != -1) { // not tgp
       const props = Object.keys(profile) 
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);
