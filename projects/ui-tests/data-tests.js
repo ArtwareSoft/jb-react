@@ -176,7 +176,7 @@ jb.component('data-test.exp-with-array-var', {
   })
 })
 
-jb.component('data-test.constVar-in-pipeline', {
+jb.component('data-test.constVar', { // system props
   impl: dataTest({
 	  calculate: pipeline(
         constVar('children','%$personWithChildren/children%'), 
@@ -190,7 +190,10 @@ jb.component('data-test.constVar-in-pipeline', {
 
 jb.component('data-test.conditional-text', {
   impl: dataTest({
-    $vars: {full: 'full', empty: '' },
+    vars: [
+      constVar('full','full'), 
+      constVar('empty','')
+    ],
     calculate: '{?%$full% is full?} {?%$empty% is empty?}',
     expectedResult: and(contains('full'), not(contains('is empty')))
   })

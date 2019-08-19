@@ -674,6 +674,10 @@ Object.assign(jb,{
         else
           args.push(arg)
       })
+      if (args.length == 1 && typeof args[0] === 'object') {
+        jb.toarray(args[0].vars).forEach(arg => ctx.setData(system).run(arg))
+        args[0].remark && ctx.setData(system).run(args[0].remark)
+      }
       return Object.assign(processMacro(args),system)
     }
 
