@@ -108,7 +108,7 @@ jb.component('var', {
   params: [
     { id: 'name', as: 'string', mandatory: true },
     { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
-    { id: 'mutable', as: 'boolean', description: 'E.g., selected item variable' },
+    { id: 'mutable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable' },
     { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
   ],
   impl: (context, name, value, mutable, globalId) => ({

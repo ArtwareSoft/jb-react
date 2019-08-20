@@ -8,18 +8,42 @@ jb.component('delayedObj', {
 
 const {delayedObj} = jb.macros
 
-jb.resource('person',{
+jb.resource('person', {
   name: "Homer Simpson",
   male: true,
   isMale: 'yes',
   age: 42
-});
+})
 
 jb.resource('personWithChildren',{
   name: "Homer Simpson",
   children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ],
   friends: [{ name: 'Barnie' } ],
 })
+
+jb.component('test.getAsBool',{
+  params: [
+    { id: 'val', as: 'boolean'}
+  ],
+  impl: '%$val%'
+})
+
+jb.component('data-test.write-value-via-boolean-type', {
+  impl: dataTest({
+    vars: Var('a','false'),
+	  calculate: test_getAsBool("%$a%"),
+	  expectedResult: equals(false)
+	})
+})
+
+jb.component('data-test.write-value-via-boolean-type-2', {
+  impl: dataTest({
+    vars: Var('a','false'),
+	  calculate: ctx => ctx.exp('%$a%','boolean'),
+	  expectedResult: equals(false)
+	})
+})
+
 
 jb.component('data-test.join', {
 	 impl: dataTest({
@@ -176,12 +200,12 @@ jb.component('data-test.exp-with-array-var', {
   })
 })
 
-jb.component('data-test.constVar', { // system props
+jb.component('data-test.Var', { // system props
   impl: dataTest({
 	  calculate: pipeline(
-        constVar('children','%$personWithChildren/children%'), 
+        Var('children','%$personWithChildren/children%'), 
         remark('hello'),
-        constVar('children2','%$personWithChildren/children%'), 
+        Var('children2','%$personWithChildren/children%'), 
         '%$children[0]/name% %$children2[1]/name%',
     ),
 	  expectedResult: equals('Bart Lisa')
@@ -191,8 +215,8 @@ jb.component('data-test.constVar', { // system props
 jb.component('data-test.conditional-text', {
   impl: dataTest({
     vars: [
-      constVar('full','full'), 
-      constVar('empty','')
+      Var('full','full'), 
+      Var('empty','')
     ],
     calculate: '{?%$full% is full?} {?%$empty% is empty?}',
     expectedResult: and(contains('full'), not(contains('is empty')))

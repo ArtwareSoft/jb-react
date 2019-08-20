@@ -49,16 +49,6 @@ jb.component('test.move-in-tree', {
   }
 })
 
-jb.component('studio-data-test.jb-editor-move', {
-	 impl :{$: 'data-test',
-	 	runBefore : ctx =>
-	 		jb.move(jb.studio.refOfPath('test.move-in-tree~impl~controls~1'), jb.studio.refOfPath('test.move-in-tree~impl~controls~0')),
-		calculate :{$pipeline: [{$: 'studio.val' , path: 'test.move-in-tree~impl~controls' }, '%title%', {$: 'join'} ]},
-		expectedResult : ctx =>
-			ctx.data == 'b,a,c'
-	},
-})
-
 jb.component('studio-data-test.moveFixDestination-null-group', {
 	 impl: dataTest({
 	 	runBefore : ctx =>

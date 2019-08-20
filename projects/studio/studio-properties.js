@@ -75,7 +75,7 @@ jb.component('studio.properties', {
         title: 'accordion', 
         style :{$: 'group.studio-properties-accordion' }, 
         controls: [
-          
+
           {$: 'group', 
             remark: 'properties', 
             title :{
@@ -191,14 +191,14 @@ jb.component('studio.property-field', {
             and(
               '%$paramDef/as%==\"boolean\"',
               or(
-                inGroup(list('true,false'),studio_val('%$path%')),
+                inGroup(list(true,false),studio_val('%$path%')),
                 isEmpty(studio_val('%$path%'))
               ),
               not('%$paramDef/dynamic%')
             ),
             {$: 'studio.property-boolean', path: '%$path%' }
           ),
-          controlWithCondition( studio_isOfType('%$path%','data'), {$: 'studio.property-primitive', path: '%$path%' } ),
+          controlWithCondition( studio_isOfType('%$path%','data,boolean'), {$: 'studio.property-primitive', path: '%$path%' } ),
           {$: 'studio.property-tgp-old', path: '%$path%' }
         ], 
         features: {$: 'first-succeeding.watch-refresh-on-ctrl-change', ref: {$:'studio.ref', path: '%$path%'}, includeChildren: true }

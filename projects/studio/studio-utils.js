@@ -29,17 +29,24 @@ jb.component('studio.last-edit', {
 		{ id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true },
 	],
 	impl: (ctx,justNow) => {
-		var now = new Date().getTime();
-		var lastEvent = st.compsHistory.slice(-1).map(x=>x.opEvent).filter(x=>x)
+		const now = new Date().getTime();
+		const lastEvent = st.compsHistory.slice(-1).map(x=>x.opEvent).filter(x=>x)
 			.filter(r=>
 				!justNow || now - r.timeStamp < 1000)[0];
-		return lastEvent && (lastEvent.insertedPath || lastEvent.path).join('~');
+		const res = lastEvent && (lastEvent.insertedPath || lastEvent.path);
+		if (lastEvent.op.$push)
+			res.push(st.arrayChildren(lastEvent.path.join('~')).length-2)
+		return res.join('~');
 	}
 })
 
 jb.component('studio.goto-last-edit', {
 	type: 'action',
-	impl: {$:'action.if', condition: {$: 'studio.last-edit'}, then: {$: 'studio.goto-path', path: {$: 'studio.last-edit'}} }
+	impl: ctx=>{
+		const lastEdit = ctx.run({$: 'studio.last-edit'})
+		if (lastEdit)
+			ctx.setData(lastEdit).run({$: 'studio.goto-path', path: '%%'})
+	}
 })
 
 jb.component('studio.goto-path', {
