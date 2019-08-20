@@ -239,7 +239,8 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
-    const systemPropsInObj = remark.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
+    const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
+    const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
     const args = systemPropsInObj.concat(params.filter(param=>profile[param.id] !== undefined)
         .map(param=>({innerPath: param.id, val: profile[param.id]})))
       return joinVals(ctx, args, `${macro}({`, '})', flat, false)
