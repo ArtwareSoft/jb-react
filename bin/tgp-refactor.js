@@ -22,9 +22,10 @@ stduioBase.map(fn=>require(JBART_DIR+fn))
 dataTests.map(fn=>require(JBART_DIR+fn))
 
 const content = (jb.entries(jb.comps).filter(e=> typeof e[1].impl === 'object')
-    .slice(1,50)
+//    .slice(1,50)
+    .filter(e=>e[0] === 'data-test.as-array-bug')
     .map(e=>// [e[0], ...e[1][location], 
         jb.prettyPrintComp(e[0],e[1],{macro:true, depth: 1, initialPath: e[0]})))
     .join('\n\n')
-
-fs.writeFileSync('x.txt',content)
+console.log(content)
+//fs.writeFileSync('x.txt',content)
