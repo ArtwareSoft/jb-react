@@ -1,6 +1,5 @@
 const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 const jb = (function() {
-
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
   const res = do_jb_run(...arguments);
@@ -32,7 +31,7 @@ function do_jb_run(ctx,parentParam,settings) {
     const run = prepare(ctxWithVars,parentParam);
     ctx.parentParam = parentParam;
     switch (run.type) {
-      case 'booleanExp': return bool_expression(profile, ctx);
+      case 'booleanExp': return bool_expression(profile, ctx,parentParam);
       case 'expression': return castToParam(expression(profile, ctx,parentParam), parentParam);
       case 'asIs': return profile;
       case 'function': return castToParam(profile(ctx,ctx.vars,ctx.componentContext && ctx.componentContext.params),parentParam);
@@ -381,10 +380,11 @@ function bool_expression(exp, ctx, parentParam) {
     return !bool_expression(exp.substring(1), ctx);
   const parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
   if (!parts) {
-    const ref = expression(exp, ctx, Object.assign(parentParam||{},{as: 'string'}));
-    if (isRef(ref))
+    const ref = expression(exp, ctx, parentParam)
+    if (jb.isRef(ref))
       return ref
-    const val = jb.val(ref);
+    
+    const val = jb.tostring(ref);
     if (typeof val == 'boolean') return val;
     const asString = tostring(val);
     return !!asString && asString != 'false';
@@ -669,6 +669,14 @@ Object.assign(jb,{
     const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
     const ctx = new jb.jbCtx()
 
+    const params = val.params || []
+    params.forEach(p=> {
+      if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
+        p.type = 'boolean'
+    })
+
+    if (typeof frame[fixedId] !== 'undefined')
+      jb.logError('overrding ' + id)
     frame[fixedId] = jb.macros[fixedId] = (...allArgs) => {
       const args=[], system={}, jid = id; // system props: constVar, remark
       allArgs.forEach(arg=>{

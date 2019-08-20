@@ -226,7 +226,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   
     const params = comp.params || []
     const vars = Object.keys(profile.$vars || {})
-      .map(name => ({innerPath: `$vars~${name}`, val: {$: 'constVar', name, val: profile.$vars[name]}}))
+      .map(name => ({innerPath: `$vars~${name}`, val: {$: 'Var', name, val: profile.$vars[name]}}))
     const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
     const systemProps = vars.concat(remark)
     if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus

@@ -241,15 +241,6 @@ jb.component('remove-prefix-regex', {
     text.replace(new RegExp('^'+prefix) ,'')
 })
 
-jb.component('remove-suffix-regex', {
-  params: [
-    {id: 'suffix', as: 'string', mandatory: true },
-    {id: 'text', as: 'string', defaultValue: '%%'},
-  ],
-  impl: (ctx,suffix,text) =>
-    text.replace(new RegExp(suffix+'$') ,'')
-})
-
 jb.component('wrap-as-object-with-array', {
   type: 'aggregator',
   description: 'put all items in an array, wrapped by an object',

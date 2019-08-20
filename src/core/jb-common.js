@@ -384,7 +384,7 @@ jb.component('prop', {
 	impl: ctx => ctx.params
 })
 
-jb.component('constVar', { 
+jb.component('Var', { 
 	type: 'var,system',
 	isSystem: true,
 	params: [
@@ -533,13 +533,6 @@ jb.component('match-regex', {
   impl: (ctx,text,regex,fillText) =>
     text.match(new RegExp(fillText ? `^${regex}$` : regex))
 })
-
-jb.component('to-string', {
-	params: [
-		{ id: 'text', as: 'string', defaultValue: '%%', composite: true}
-	],
-	impl: (ctx,text) =>	text
-});
 
 jb.component('to-uppercase', {
 	params: [
