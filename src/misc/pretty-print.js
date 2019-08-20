@@ -1,4 +1,3 @@
-(function() {
 
 jb.component('pretty-print', {
   params: [
@@ -213,7 +212,8 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
 
   function profileToMacro(ctx, profile,flat) {
     const id = jb.compName(profile)
-    if (!id || !jb.comps[id] || ',object,var,'.indexOf(`,${id},`) != -1) { // not tgp
+    const comp = jb.comps[id]
+    if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
       const props = Object.keys(profile) 
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);
@@ -221,23 +221,27 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       }
       return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
     }
-    const comp = jb.comps[id]
     const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
     const macro = comp.reservedWord ? `$${idAsCamel}` : idAsCamel
   
     const params = comp.params || []
+    const vars = Object.keys(profile.$vars || {})
+      .map(name => ({innerPath: `$vars~${name}`, val: {$: 'constVar', name, val: profile.$vars[name]}}))
+    const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
+    const systemProps = vars.concat(remark)
     if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus
-      const args = jb.toarray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val}))
+      const args = systemProps.concat(jb.toarray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val})))
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
     if (params.length < 3 || comp.usageByValue) {
-      const args = params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]}))
+      const args = systemProps.concat(params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]})))
       if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
-    const args = params.filter(param=>profile[param.id] !== undefined)
-        .map(param=>({innerPath: param.id, val: profile[param.id]}))
+    const systemPropsInObj = remark.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
+    const args = systemPropsInObj.concat(params.filter(param=>profile[param.id] !== undefined)
+        .map(param=>({innerPath: param.id, val: profile[param.id]})))
       return joinVals(ctx, args, `${macro}({`, '})', flat, false)
   }
     
@@ -259,6 +263,3 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   }
  
 }
-
-
-})()

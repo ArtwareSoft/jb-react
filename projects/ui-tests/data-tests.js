@@ -285,16 +285,6 @@ jb.component('data-test.restoreArrayIds-bug', {
   }
 })
 
-jb.component('data-test.as-array-bug', {
-   impl :{$: 'data-test',
-    $vars: {
-        items: [{id: 1},{id:2}]
-    },
-    calculate: ctx => ctx.exp('%$items/id%','array'),
-    expectedResult : ctx => !Array.isArray(ctx.data[0])
-  },
-})
-
 jb.component('data-test.assignWithIndex', {
   impl: dataTest({
     calculate: pipeline('%$personWithChildren/children%',
@@ -361,6 +351,36 @@ jb.component('data-test.pretty-print-macro', {
     expectedResult: contains(["prop('a', 1)", () => "res: '%%'"])
   })
 })
+
+jb.component('data-test.as-array-bug', {
+  impl :{$: 'data-test',
+   $vars: {
+       items: [{id: 1},{id:2}]
+   },
+   remark: 'should return array',
+   calculate: ctx => ctx.exp('%$items/id%','array'),
+   expectedResult: ctx => ctx.data[0] == 1 && !Array.isArray(ctx.data[0])
+ },
+})
+
+jb.component('data-test.pretty-print-macro-vars', {
+  impl: dataTest({
+    calculate: ctx => { try {
+      const testToTest = 'data-test.as-array-bug'
+      const compTxt = jb.prettyPrintComp(testToTest, jb.comps[testToTest], {macro: true, depth: 1, initialPath: testToTest})
+      eval(compTxt)
+      return ctx.run(dataTest_asArrayBug())
+        .then(({success}) => success)
+      } catch(e) {
+        return false
+      }
+    },
+    expectedResult: '%%'
+  })
+})
+
+
+
 
 // jb.component('data-test.http-get', {
 //    impl :{$: 'data-test',

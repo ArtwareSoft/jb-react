@@ -27,14 +27,20 @@ jb.component('data-test', {
 				const result = { id: ctx.vars.testID, success, reason: countersErr}
 				return result
 			})
-			.catch(e=>jb.logException(e,ctx))
+			.catch(e=> {
+				jb.logException(e,ctx)
+				return { id: ctx.vars.testID, success: false, reason: 'Exception ' + e}
+			})
 			.then(result => { // default cleanup
 				if (expectedCounters)
 					jb.frame.initwSpy({resetwSpyToNoop: true})
 				jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 				return result;
 			})
-			.catch(e=>jb.logException(e,ctx))
+			.catch(e=> {
+				jb.logException(e,ctx)
+				return { id: ctx.vars.testID, success: false, reason: 'Exception ' + e}
+			})
 			.then(result =>
 					Promise.resolve(cleanUp())
 					.then(_=> console.log('end ' + ctx.path ))
