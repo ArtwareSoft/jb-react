@@ -68,6 +68,6 @@ jb.component('hello-world.main2', {
         itemVariable: 'item'
       }
     ], 
-    features :{$: 'var', name: 'text', value: 'hello world', mutable: 'true' }
+    features :{$: 'variable', name: 'text', value: 'hello world', mutable: 'true' }
   }
 })

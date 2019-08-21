@@ -149,7 +149,7 @@ jb.component('studio.style-editor', {
                     value :{$: 'studio.jsx-to-h', text: '%$jsx%' }
                   }, 
                   features: [
-                    {$: 'var', 
+                    {$: 'variable', 
                       name: 'jsx', 
                       value: 'paste your jsx here', 
                       mutable: 'true'

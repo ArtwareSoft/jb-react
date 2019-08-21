@@ -287,18 +287,18 @@ jb.component('studio.select-profile', {
     ], 
     features: [
       {$: 'css.margin', top: '10', left: '20' }, 
-      {$: 'var', 
+      {$: 'variable', 
         name: 'unsortedCategories', 
         value :{$: 'studio.categories-of-type', type: '%$type%', path: '%$path%' }
       }, 
-      {$: 'var', 
+      {$: 'variable', 
         name: 'Categories', 
         value :{$: 'picklist.sorted-options', 
           options: '%$unsortedCategories%', 
           marks :{$: 'studio.categories-marks', type: '%$type%', path: '%$path%' }
         }
       }, 
-      {$: 'var', 
+      {$: 'variable', 
         name: 'SelectedCategory', 
         value :{
           $if :{$: 'studio.val', path: '%$path%' }, 
@@ -307,7 +307,7 @@ jb.component('studio.select-profile', {
         }, 
         mutable: true
       }, 
-      {$: 'var', name: 'SearchPattern', value: '', mutable: true }, 
+      {$: 'variable', name: 'SearchPattern', value: '', mutable: true }, 
       {$: 'group.itemlist-container', 
         initialSelection :{$: 'studio.comp-name', path: '%$path%' }
       }
@@ -331,7 +331,7 @@ jb.component('studio.pick-profile', {
       features: [
         {$: 'dialog-feature.auto-focus-on-first-input' },
         {$: 'css.padding', right: '20' },
-//				{$: 'var', name: 'initial-comps-index', value: {$: 'studio.comps-undo-index'}},
+//				{$: 'variable', name: 'initial-comps-index', value: {$: 'studio.comps-undo-index'}},
 //	      {$: 'dialog-feature.onClose',
 //	        action :{ $if: {$not:'%%'},	then: {$: 'studio.revert', toIndex: '%$initial-comps-index%' }}
 //				},
@@ -347,7 +347,7 @@ jb.component('studio.open-new-page', {
   impl :{$: 'open-dialog',
     style :{$: 'dialog.dialog-ok-cancel' },
 		modal: true,
-    features : [{$: 'var', name: 'name', mutable: true },
+    features : [{$: 'variable', name: 'name', mutable: true },
 			{$: 'dialog-feature.auto-focus-on-first-input' }
 		],
     content :{$: 'group',

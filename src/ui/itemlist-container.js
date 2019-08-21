@@ -53,9 +53,9 @@ jb.component('group.itemlist-container', {
 		{ id: 'initialSelection', as: 'single' },
 	],
 	impl :{$list : [
-		{$: 'var', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , 
+		{$: 'variable', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , 
 				mutable: true},
-		{$: 'var', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
+		{$: 'variable', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
 		ctx => ({
 			init: cmp => {
 				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');

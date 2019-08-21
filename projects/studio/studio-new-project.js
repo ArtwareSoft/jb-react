@@ -78,7 +78,7 @@ jb.component('studio.open-new-project', {
     }, 
     modal: true, 
     features: [
-      {$: 'var', name: 'name', mutable: true }, 
+      {$: 'variable', name: 'name', mutable: true }, 
       {$: 'dialog-feature.auto-focus-on-first-input' }, 
       {$: 'dialog-feature.near-launcher-position', offsetLeft: '300', offsetTop: '100' }
     ]

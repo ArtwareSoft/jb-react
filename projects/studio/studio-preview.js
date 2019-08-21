@@ -107,7 +107,7 @@ jb.component('studio.data-comp-inspector', {
   impl :{$: 'group', 
     controls: [{$: 'label', title: ctx => {debugger; return 'hello'} }], 
     features :
-    {$: 'var',  name: 'activateDataToDebug', 
+    {$: 'variable',  name: 'activateDataToDebug', 
       value: ctx => { 
         var _jb = jb.studio.previewjb;
         var dataCompToDebug = ctx.vars.DataToDebug;

@@ -165,7 +165,7 @@ jb.component('group.tabs', {
         jb.val(ctx.exp('%$selectedTab%')),
     ],
     features : [
-        {$: 'var', name: 'selectedTab', value: '%$tabsModel/controls[0]%', mutable: true },
+        {$: 'variable', name: 'selectedTab', value: '%$tabsModel/controls[0]%', mutable: true },
         {$: 'group.init-group'},
     ]
   }}

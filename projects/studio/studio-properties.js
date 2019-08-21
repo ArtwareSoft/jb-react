@@ -140,7 +140,7 @@ jb.component('studio.properties', {
         features :{$: 'css.margin', top: '20', left: '5' }
       }
     ], 
-    features :{$: 'var', 
+    features :{$: 'variable', 
       name: 'PropertiesDialog', 
       value :{$: 'object' }, 
       mutable: false
@@ -344,7 +344,7 @@ jb.component('studio.property-tgp-old', {
       })
     ],
     features: [
-      {$: 'var', name: 'userExpanded', value : false, mutable: true },
+      {$: 'variable', name: 'userExpanded', value : false, mutable: true },
     ]
   })
 })
@@ -413,7 +413,7 @@ jb.component('studio.property-tgp-in-array', {
     ], 
     features: [
       {$: 'css.margin', left: '-100' }, 
-      {$: 'var', 
+      {$: 'variable', 
         name: 'expanded', 
         value :{$: 'studio.is-new', path: '%$path%' }, 
         mutable: true

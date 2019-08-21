@@ -47,9 +47,9 @@ jb.component('play-ground.main', {
       }
     ], 
     features: [
-      {$: 'var', name: 'male', value: true, mutable: true }, 
-      {$: 'var', name: 'name', value: true, mutable: true }, 
-      {$: 'var', name: 'num', mutable: true }
+      {$: 'variable', name: 'male', value: true, mutable: true }, 
+      {$: 'variable', name: 'name', value: true, mutable: true }, 
+      {$: 'variable', name: 'num', mutable: true }
     ]
   }, 
   controls: [
@@ -120,7 +120,7 @@ jb.component('play-ground.invalid-ref', {
         style :{$: 'label.span' }
       }
     ], 
-    features :{$: 'var', 
+    features :{$: 'variable', 
       name: 'Customer', 
       value :{$: 'object', 
         contact :{$: 'object', name: 'Homer' }
@@ -242,6 +242,6 @@ jb.component('play-ground.form', {
         }
       }
     ], 
-    features :{$: 'var', name: 'name', value: 'Dan', mutable: true }
+    features :{$: 'variable', name: 'name', value: 'Dan', mutable: true }
   }
 })

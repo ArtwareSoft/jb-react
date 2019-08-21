@@ -9,7 +9,7 @@ jb.component('cCommerce.main', {
         style :{$: 'editable-text.codemirror', enableFullScreen: true, debounceTime: 300 }
       }
     ], 
-    features :{$: 'var', 
+    features :{$: 'variable', 
       name: 'Product', 
       value :{
         $pipeline: [
@@ -267,7 +267,7 @@ jb.component('cCommerce.histogram', {
     ], 
     features: [
       {$: 'css.padding', left: '7' }, 
-      {$: 'var', name: 'item', value: '%$global/phones[400]%' }
+      {$: 'variable', name: 'item', value: '%$global/phones[400]%' }
     ]
   }
 })
