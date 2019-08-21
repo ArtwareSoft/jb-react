@@ -665,8 +665,7 @@ Object.assign(jb,{
   component: (id,val) => {
     jb.comps[id] = val
     jb.traceComponentFile && jb.traceComponentFile(val)
-    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
-    const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
+    const fixedId = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
     const ctx = new jb.jbCtx()
 
     const params = val.params || []
@@ -681,13 +680,13 @@ Object.assign(jb,{
       const args=[], system={}, jid = id; // system props: constVar, remark
       allArgs.forEach(arg=>{
         if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
-          ctx.setData(system).run(arg)
+          jb.comps[arg.$].macro(system,arg)
         else
           args.push(arg)
       })
       if (args.length == 1 && typeof args[0] === 'object') {
-        jb.toarray(args[0].vars).forEach(arg => ctx.setData(system).run(arg))
-        args[0].remark && ctx.setData(system).run(args[0].remark)
+        jb.toarray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system,arg))
+        args[0].remark && jb.comps.remark.macro(system,args[0])
       }
       return Object.assign(processMacro(args),system)
     }

@@ -391,16 +391,16 @@ jb.component('Var', {
 		{ id: 'name', as: 'string', mandatory: true },
 		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
 	],
-	impl: ({data}, name, val) =>  
-		Object.assign(data,{ $vars: Object.assign(data.$vars || {}, { [name]: val.profile }) })
+	macro: (result, self) =>
+		Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) }),
 })
 
 jb.component('remark', { 
 	type: 'system',
 	isSystem: true,
 	params: [{ id: 'remark', as: 'string', mandatory: true }],
-	impl: ({data},remark) => 
-		Object.assign(data,{remark})
+	macro: (result, self) =>
+		Object.assign(result,{ remark: self.remark }),
 })
 
 jb.component('If', { 

@@ -1,6 +1,5 @@
 const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 const jb = (function() {
-
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
   const res = do_jb_run(...arguments);
@@ -32,7 +31,7 @@ function do_jb_run(ctx,parentParam,settings) {
     const run = prepare(ctxWithVars,parentParam);
     ctx.parentParam = parentParam;
     switch (run.type) {
-      case 'booleanExp': return bool_expression(profile, ctx);
+      case 'booleanExp': return bool_expression(profile, ctx,parentParam);
       case 'expression': return castToParam(expression(profile, ctx,parentParam), parentParam);
       case 'asIs': return profile;
       case 'function': return castToParam(profile(ctx,ctx.vars,ctx.componentContext && ctx.componentContext.params),parentParam);
@@ -366,14 +365,14 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
   }
 }
 
-function bool_expression(exp, ctx) {
+function bool_expression(exp, ctx, parentParam) {
   if (exp.indexOf('$debugger:') == 0) {
     debugger;
     exp = exp.split('$debugger:')[1];
   }
   if (exp.indexOf('$log:') == 0) {
-    const calculated = expression(exp.split('$log:')[1],ctx,{as: 'string'});
-    const result = bool_expression(exp.split('$log:')[1], ctx);
+    const calculated = expression(exp.split('$log:')[1],ctx,{as: 'boolean'});
+    const result = bool_expression(exp.split('$log:')[1], ctx, parentParam);
     jb.comps.log.impl(ctx, calculated + ':' + result);
     return result;
   }
@@ -381,7 +380,11 @@ function bool_expression(exp, ctx) {
     return !bool_expression(exp.substring(1), ctx);
   const parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
   if (!parts) {
-    const val = jb.val(expression(exp, ctx));
+    const ref = expression(exp, ctx, parentParam)
+    if (jb.isRef(ref))
+      return ref
+    
+    const val = jb.tostring(ref);
     if (typeof val == 'boolean') return val;
     const asString = tostring(val);
     return !!asString && asString != 'false';
@@ -662,21 +665,28 @@ Object.assign(jb,{
   component: (id,val) => {
     jb.comps[id] = val
     jb.traceComponentFile && jb.traceComponentFile(val)
-    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
-    const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
+    const fixedId = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
     const ctx = new jb.jbCtx()
 
+    const params = val.params || []
+    params.forEach(p=> {
+      if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
+        p.type = 'boolean'
+    })
+
+    if (typeof frame[fixedId] !== 'undefined')
+      jb.logError('overrding ' + id)
     frame[fixedId] = jb.macros[fixedId] = (...allArgs) => {
       const args=[], system={}, jid = id; // system props: constVar, remark
       allArgs.forEach(arg=>{
         if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
-          ctx.setData(system).run(arg)
+          jb.comps[arg.$].macro(system,arg)
         else
           args.push(arg)
       })
       if (args.length == 1 && typeof args[0] === 'object') {
-        jb.toarray(args[0].vars).forEach(arg => ctx.setData(system).run(arg))
-        args[0].remark && ctx.setData(system).run(args[0].remark)
+        jb.toarray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system,arg))
+        args[0].remark && jb.comps.remark.macro(system,args[0])
       }
       return Object.assign(processMacro(args),system)
     }
@@ -1199,23 +1209,23 @@ jb.component('prop', {
 	impl: ctx => ctx.params
 })
 
-jb.component('constVar', { 
+jb.component('Var', { 
 	type: 'var,system',
 	isSystem: true,
 	params: [
 		{ id: 'name', as: 'string', mandatory: true },
 		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
 	],
-	impl: ({data}, name, val) =>  
-		Object.assign(data,{ $vars: Object.assign(data.$vars || {}, { [name]: val.profile }) })
+	macro: (result, self) =>
+		Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) }),
 })
 
 jb.component('remark', { 
 	type: 'system',
 	isSystem: true,
 	params: [{ id: 'remark', as: 'string', mandatory: true }],
-	impl: ({data},remark) => 
-		Object.assign(data,{remark})
+	macro: (result, self) =>
+		Object.assign(result,{ remark: self.remark }),
 })
 
 jb.component('If', { 
@@ -1348,13 +1358,6 @@ jb.component('match-regex', {
   impl: (ctx,text,regex,fillText) =>
     text.match(new RegExp(fillText ? `^${regex}$` : regex))
 })
-
-jb.component('to-string', {
-	params: [
-		{ id: 'text', as: 'string', defaultValue: '%%', composite: true}
-	],
-	impl: (ctx,text) =>	text
-});
 
 jb.component('to-uppercase', {
 	params: [
@@ -9122,7 +9125,6 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
     cmp.state.model = cmp.jbModel()
   })
   cmp.databindRefChanged.subscribe(()=>{}) // first activation
-  cmp.databindRefChangedSub.next(ctx.vars.$model.databind());
   
 
   const srcCtx = cmp.ctxForPick || cmp.ctx;
@@ -9131,6 +9133,8 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
             watchScript: ctx, onError: _ => cmp.setState({model: null}) })
       .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
       .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,null,e,ctx))
+
+   cmp.databindRefChangedSub.next(ctx.vars.$model.databind());
 }
 
 jb.component('field.databind', {
@@ -9383,7 +9387,7 @@ jb.type('editable-boolean.style');
 jb.component('editable-boolean',{
 	type: 'control', category: 'input:20',
 	params: [
-		{ id: 'databind', as: 'ref', mandaroy: true, dynamic: true },
+		{ id: 'databind', as: 'ref', type: 'boolean', mandaroy: true, dynamic: true, aa: 5 },
 		{ id: 'style', type: 'editable-boolean.style', defaultValue :{$: 'editable-boolean.checkbox' }, dynamic: true },
 		{ id: 'title', as: 'string', dynamic: true },
 		{ id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true },
@@ -9593,7 +9597,7 @@ jb.component('var', {
   params: [
     { id: 'name', as: 'string', mandatory: true },
     { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
-    { id: 'mutable', as: 'boolean', description: 'E.g., selected item variable' },
+    { id: 'mutable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable' },
     { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
   ],
   impl: (context, name, value, mutable, globalId) => ({
@@ -9621,6 +9625,8 @@ jb.component('var', {
       }
   })
 })
+
+jb.component('Variable', jb.comps.var)
 
 jb.component('bind-refs', {
   type: 'feature', category: 'watch',
@@ -28117,7 +28123,6 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 
 ;
 
-(function() {
 
 jb.component('pretty-print', {
   params: [
@@ -28303,20 +28308,24 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       const map = Object.assign({},acc.map, result.map,{[fullInnerPath]: [acc.line, acc.col,newPos.line, newPos.col]})
       const separator = index === 0 ? '' : ',' + (flat ? ' ' : newLine())
       const valPrefix = isArray ? '' : innerPath + ': ';
-      return Object.assign({ text: acc.text + separator + valPrefix + result.text, map }, newPos)
-    }, {text: '', map: {}, line, col} )
+      return Object.assign({ text: acc.text + separator + valPrefix + result.text, map, unflat: acc.unflat || result.unflat }, newPos)
+    }, {text: '', map: {}, line, col, unflat: false} )
 
-    const arrayElem = path.match(/~[0-9]+$/)
-    const ctrls = jb.studio.isOfType(path,'control') && !arrayElem
+    //const arrayElem = path.match(/~[0-9]+$/)
+    const ctrls = path.match(/~controls$/) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
+    // if (!ctrls && path.match(/~controls$/))
+    //   debugger
     const customStyle = jb.studio.compNameOfPath(path) === 'customStyle'
     const top = (path.match(/~/g)||'').length < 2
-    const short = result.text.replace(/\n\s*/g,'').length < colWidth
-    if (!customStyle && !top && !ctrls && short && !flat)
+    const long = result.text.replace(/\n\s*/g,'').length > colWidth
+    const unflat = result.unflat || customStyle || top || ctrls || long
+    if (!unflat && !flat)
       return joinVals({path, line, col}, innerVals, open, close, true, isArray)
 
     const out = { 
       text: open + newLine() + result.text + newLine(-1) + close,
-      map: result.map
+      map: result.map,
+      unflat
     }
     return out
 
@@ -28330,9 +28339,14 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
     }
   }
 
+  function macroName(id) {
+    return id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
+  }
+
   function profileToMacro(ctx, profile,flat) {
     const id = jb.compName(profile)
-    if (!id || !jb.comps[id] || ',object,var,'.indexOf(`,${id},`) != -1) { // not tgp
+    const comp = jb.comps[id]
+    if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
       const props = Object.keys(profile) 
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);
@@ -28340,23 +28354,29 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       }
       return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
     }
-    const comp = jb.comps[id]
-    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
-    const macro = comp.reservedWord ? `$${idAsCamel}` : idAsCamel
+    const macro = macroName(id)
   
     const params = comp.params || []
+    const vars = Object.keys(profile.$vars || {})
+      .map(name => ({innerPath: `$vars~${name}`, val: {$: 'Var', name, val: profile.$vars[name]}}))
+    const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
+    const systemProps = vars.concat(remark)
     if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus
-      const args = jb.toarray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val}))
+      const args = systemProps.concat(jb.toarray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val})))
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
-    if (params.length < 3 || comp.usageByValue) {
-      const args = params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]}))
-      if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
-      if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
+    const keys = Object.keys(profile).filter(x=>x != '$')
+    const oneFirstParam = keys.length === 1 && params && params[0].id == keys[0]
+    if ((params.length < 3 && comp.usageByValue !== false) || comp.usageByValue || oneFirstParam) {
+      const args = systemProps.concat(params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]})))
+      for(let i=0;i<6;i++)
+        if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
-    const args = params.filter(param=>profile[param.id] !== undefined)
-        .map(param=>({innerPath: param.id, val: profile[param.id]}))
+    const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
+    const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
+    const args = systemPropsInObj.concat(params.filter(param=>profile[param.id] !== undefined)
+        .map(param=>({innerPath: param.id, val: profile[param.id]})))
       return joinVals(ctx, args, `${macro}({`, '})', flat, false)
   }
     
@@ -28377,10 +28397,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
     return joinVals(ctx, vals, '[', ']', flat, true)
   }
  
-}
-
-
-})();
+};
 
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
@@ -29589,17 +29606,24 @@ jb.component('studio.last-edit', {
 		{ id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true },
 	],
 	impl: (ctx,justNow) => {
-		var now = new Date().getTime();
-		var lastEvent = st.compsHistory.slice(-1).map(x=>x.opEvent).filter(x=>x)
+		const now = new Date().getTime();
+		const lastEvent = st.compsHistory.slice(-1).map(x=>x.opEvent).filter(x=>x)
 			.filter(r=>
 				!justNow || now - r.timeStamp < 1000)[0];
-		return lastEvent && (lastEvent.insertedPath || lastEvent.path).join('~');
+		const res = lastEvent && (lastEvent.insertedPath || lastEvent.path);
+		if (lastEvent.op.$push)
+			res.push(st.arrayChildren(lastEvent.path.join('~')).length-2)
+		return res.join('~');
 	}
 })
 
 jb.component('studio.goto-last-edit', {
 	type: 'action',
-	impl: {$:'action.if', condition: {$: 'studio.last-edit'}, then: {$: 'studio.goto-path', path: {$: 'studio.last-edit'}} }
+	impl: ctx=>{
+		const lastEdit = ctx.run({$: 'studio.last-edit'})
+		if (lastEdit)
+			ctx.setData(lastEdit).run({$: 'studio.goto-path', path: '%%'})
+	}
 })
 
 jb.component('studio.goto-path', {
@@ -33238,7 +33262,7 @@ jb.component('studio.properties', {
         title: 'accordion', 
         style :{$: 'group.studio-properties-accordion' }, 
         controls: [
-          
+
           {$: 'group', 
             remark: 'properties', 
             title :{
@@ -33354,14 +33378,14 @@ jb.component('studio.property-field', {
             and(
               '%$paramDef/as%==\"boolean\"',
               or(
-                inGroup(list('true,false'),studio_val('%$path%')),
+                inGroup(list(true,false),studio_val('%$path%')),
                 isEmpty(studio_val('%$path%'))
               ),
               not('%$paramDef/dynamic%')
             ),
             {$: 'studio.property-boolean', path: '%$path%' }
           ),
-          controlWithCondition( studio_isOfType('%$path%','data'), {$: 'studio.property-primitive', path: '%$path%' } ),
+          controlWithCondition( studio_isOfType('%$path%','data,boolean'), {$: 'studio.property-primitive', path: '%$path%' } ),
           {$: 'studio.property-tgp-old', path: '%$path%' }
         ], 
         features: {$: 'first-succeeding.watch-refresh-on-ctrl-change', ref: {$:'studio.ref', path: '%$path%'}, includeChildren: true }

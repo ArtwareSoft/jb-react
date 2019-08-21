@@ -137,6 +137,8 @@ jb.component('var', {
   })
 })
 
+jb.component('Variable', jb.comps.var)
+
 jb.component('bind-refs', {
   type: 'feature', category: 'watch',
   description: 'automatically updates a mutual variable when other value is changing',

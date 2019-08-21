@@ -77,8 +77,7 @@ function buildTS() {
 			.map(e=>{
 				const id = e[0], pt = e[1]
 				const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase())
-				const fixedId = pt.reservedWord ? idAsCamel.replace(/([^\.]+$)/, (_,id) => `$${id}`) : idAsCamel
-				jb.ts.macroNames.push(fixedId)
+				jb.ts.macroNames.push(idAsCamel)
 				return TSforMacro(fixedId, pt)
 			}).join('\n')
 
