@@ -89,6 +89,21 @@ jb.component('studio.show-suggestions', {
     new st.suggestions(ctx.data,false).suggestionsRelevant()
 })
 
+jb.component('studio.paste-suggestion', {
+  type: 'action',
+  params: [
+    { id: 'option', as: 'single', defaultValue: '%%' },
+    { id: 'close', as: 'boolean', description: 'ends with % or /' }
+  ],
+  impl: (ctx,option,close) => {
+    option && Promise.resolve(option.paste(ctx,close)).then(_=> {
+      var cmp = ctx.vars.selectionKeySource.cmp;
+      cmp.refreshSuggestionPopupOpenClose();
+      jb.ui.setState(cmp,{model: cmp.jbModel()},null,ctx);
+    })
+  }
+})
+
 jb.component('studio.suggestions-itemlist', {
   params: [{ id: 'path', as: 'string' }, { id: 'source', as: 'string' }],
   impl :{$: 'itemlist',
@@ -225,21 +240,6 @@ jb.component('studio.jb-floating-input', {
       {$: 'css.padding', left: '4', right: '4' }, 
       {$: 'css.margin', $disabled: true, top: '-20', selector: '>*:last-child' }
     ]
-  }
-})
-
-jb.component('studio.paste-suggestion', {
-  type: 'action',
-  params: [
-    { id: 'option', as: 'single', defaultValue: '%%' },
-    { id: 'close', as: 'boolean', description: 'ends with % or /' }
-  ],
-  impl: (ctx,option,close) => {
-    option && Promise.resolve(option.paste(ctx,close)).then(_=> {
-      var cmp = ctx.vars.selectionKeySource.cmp;
-      cmp.refreshSuggestionPopupOpenClose();
-      jb.ui.setState(cmp,{model: cmp.jbModel()},null,ctx);
-    })
   }
 })
 
