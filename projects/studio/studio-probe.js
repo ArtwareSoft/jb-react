@@ -1,7 +1,7 @@
 (function() {
 const st = jb.studio
 
-const probeCounter = 0
+let probeCounter = 0
 st.Probe = class {
     constructor(ctx, noGaps) {
         if (ctx.probe)
@@ -78,7 +78,7 @@ st.Probe = class {
             return
         const st = jb.studio
         // find closest path
-        const _path = st.parentPath(this.pathToTrace),breakingProp=''
+        let _path = st.parentPath(this.pathToTrace),breakingProp=''
         while (!this.probe[_path] && _path.indexOf('~') != -1) {
             breakingProp = _path.split('~').pop()
             _path = st.parentPath(_path)
@@ -129,7 +129,7 @@ st.Probe = class {
             this.probe[path].visits = 0
         }
         this.probe[path].visits++
-        const found
+        let found = null
         this.probe[path].forEach(x=>{
             found = jb.compareArrays(x.in.data,input.data) ? x : found
         })
