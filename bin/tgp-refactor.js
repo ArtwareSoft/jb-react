@@ -3,7 +3,7 @@ const fs = require('fs');
 require('../src/loader/jb-loader.js');
 
 const JBART_DIR = '../';
-const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,testers,studio,studio-tests,pretty-print,parsing,object-encoder'
+const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,testers,pretty-print,studio,studio-tests,parsing,object-encoder'
 
 const filesOfModules = modules => modules.split(',').map(m=>{
     if (m == 'studio')

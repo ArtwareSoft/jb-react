@@ -109,8 +109,8 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       ],
       studio: [
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
-        'tree', 'properties','pick','properties-menu','save','open-project', 'data-browse',
-        'new-project', 'toolbar', 'main', 'references', 'search', 'component-header',
+        'properties','pick','properties-menu','save','open-project', 'data-browse',
+        'new-project', 'toolbar', 'main', 'references', 'search', 'component-header','tree',
         'suggestions','edit-source','jb-editor','jb-editor-styles','style-editor','probe','testers', 'event-tracker','h-to-jsx',
       ],
       'studio-tests': [
