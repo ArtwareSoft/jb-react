@@ -1,46 +1,3 @@
-(function() {
-  const {pipeline, pipe, join, list, writeValue, contains, equals, and, not, or, assign, prop, assignWithIndex, object, obj, $if, count, notEmpty, isEmpty,
-    notEquals, isOfType, inGroup} = jb.macros
-  const {css, group,editableBoolean,label,hidden,watchRef,feature_if,id,uiAction_click, editableBoolean_expandCollapse, control_firstSucceeding, controlWithCondition,
-    layout_horizontal,field_initValue, css_width} = jb.macros
-  const {studio_nonControlChildren, studio_propName, studio_paramType, studio_paramDef, studio_val, studio_compName, studio_isNew, 
-    studio_watchPath, studio_pickProfile, studio_isOfType } = jb.macros  
-
-jb.component('studio.open-properties', {
-  type: 'action',
-  params: [{ id: 'focus', type: 'boolean', as: 'boolean' }],
-  impl :{$: 'open-dialog',
-    style :{$: 'dialog.studio-floating', id: 'studio-properties', width: '500' },
-    content :{$: 'studio.properties',
-      path :{$: 'studio.currentProfilePath' }
-    },
-    title :{
-      $pipeline: [
-        {$: 'object',
-          title :{$: 'studio.short-title',
-            path :{$: 'studio.currentProfilePath' }
-          },
-          comp :{$: 'studio.comp-name',
-            path :{$: 'studio.currentProfilePath' }
-          }
-        },
-        'Properties of %comp% %title%'
-      ]
-    },
-    features: [
-      {
-        $if: '%$focus%',
-        then :{$: 'dialog-feature.auto-focus-on-first-input' }
-      },
-      {$: 'dialog-feature.keyboard-shortcut',
-        shortcut: 'Ctrl+Left',
-        action :{$: 'studio.open-control-tree' }
-      },
-      {$: 'dialog-feature.resizer' }, 
-    ]
-  }
-})
-
 jb.component('studio.focus-on-first-property', {
   type: 'action',
   params: [{ id: 'delay', as: 'number', defaultValue: 100 }],
@@ -469,4 +426,38 @@ jb.component('studio.tgp-path-options',{
 			.concat(jb.studio.PTsOfPath(path).map(op=> ({ code: op, text: op})))
 })
 
-})()
+jb.component('studio.open-properties', {
+  type: 'action',
+  params: [{ id: 'focus', type: 'boolean', as: 'boolean' }],
+  impl :{$: 'open-dialog',
+    style :{$: 'dialog.studio-floating', id: 'studio-properties', width: '500' },
+    content :{$: 'studio.properties',
+      path :{$: 'studio.currentProfilePath' }
+    },
+    title :{
+      $pipeline: [
+        {$: 'object',
+          title :{$: 'studio.short-title',
+            path :{$: 'studio.currentProfilePath' }
+          },
+          comp :{$: 'studio.comp-name',
+            path :{$: 'studio.currentProfilePath' }
+          }
+        },
+        'Properties of %comp% %title%'
+      ]
+    },
+    features: [
+      {
+        $if: '%$focus%',
+        then :{$: 'dialog-feature.auto-focus-on-first-input' }
+      },
+      {$: 'dialog-feature.keyboard-shortcut',
+        shortcut: 'Ctrl+Left',
+        action :{$: 'studio.open-control-tree' }
+      },
+      {$: 'dialog-feature.resizer' }, 
+    ]
+  }
+})
+
