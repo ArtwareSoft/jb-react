@@ -26,7 +26,7 @@ jb.traceComponentFile = function(comp) {
 }
 filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>!x.match(/material/)).filter(x=>!x.match(/.css$/))
     .map(fn=> {
-//        console.log(fn)
+//'studio.path-hyperlink'        console.log(fn)
         require(JBART_DIR+fn)
     })
 
@@ -38,7 +38,7 @@ const content = jb.entries(jb.comps) // .filter(e=> typeof e[1].impl === 'object
 //    .slice(1,50)
     .filter(e=>
 //        e[0] === 'ui-test.wait-for')
-        e[0].indexOf('studio') == 0)
+        e[0].indexOf('studio.path-hyperlink') == 0)
     .forEach(e=>
         swapComp(e[0],e[1]))
     
