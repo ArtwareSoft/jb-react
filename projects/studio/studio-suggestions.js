@@ -1,12 +1,12 @@
 (function() {
 const st = jb.studio
-  
-jb.component('studio.itemlist-refresh-suggestions-options', {
+
+jb.component('studio.itemlist-refresh-suggestions-options',  /* studio_itemlistRefreshSuggestionsOptions */ {
   type: 'feature',
   params: [
     {id: 'path', as: 'string'},
     {id: 'source', as: 'string'},
-    {id: 'expressionOnly', as: 'boolean'},
+    {id: 'expressionOnly', as: 'boolean', type: 'boolean'}
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -26,7 +26,7 @@ jb.component('studio.itemlist-refresh-suggestions-options', {
           // .flatMap(_=> {
           //   if (ctx.params.source != 'floating-input') {
           //     const ctxFromPreview = st.closestCtxInPreview(pathToTrace)
-          //     if (ctxFromPreview && ctxFromPreview.ctx) 
+          //     if (ctxFromPreview && ctxFromPreview.ctx)
           //       return [ctxFromPreview.ctx]
           //   }
           //   return getProbe().then(res=> res && res.result && res.result[0] && res.result[0].in)
@@ -77,23 +77,23 @@ jb.component('studio.itemlist-refresh-suggestions-options', {
         //   var probePath = ctx.params.path;
         //   if (st.valOfPath(probePath) == null)
         //     jb.writeValue(st.refOfPath(probePath),'',ctx);
-          
+
         //   return ctx.run({$: 'studio.probe', path: probePath }).then(res=>cmp.probeResult = res);
         // }
       }
   })
 })
 
-jb.component('studio.show-suggestions', {
+jb.component('studio.show-suggestions',  /* studio_showSuggestions */ {
   impl: ctx =>
     new st.suggestions(ctx.data,false).suggestionsRelevant()
 })
 
-jb.component('studio.paste-suggestion', {
+jb.component('studio.paste-suggestion',  /* studio_pasteSuggestion */ {
   type: 'action',
   params: [
-    { id: 'option', as: 'single', defaultValue: '%%' },
-    { id: 'close', as: 'boolean', description: 'ends with % or /' }
+    {id: 'option', as: 'single', defaultValue: '%%'},
+    {id: 'close', as: 'boolean', description: 'ends with % or /', type: 'boolean'}
   ],
   impl: (ctx,option,close) => {
     option && Promise.resolve(option.paste(ctx,close)).then(_=> {
@@ -104,134 +104,113 @@ jb.component('studio.paste-suggestion', {
   }
 })
 
-jb.component('studio.suggestions-itemlist', {
-  params: [{ id: 'path', as: 'string' }, { id: 'source', as: 'string' }],
-  impl :{$: 'itemlist',
+jb.component('studio.suggestions-itemlist',  /* studio_suggestionsItemlist */ {
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'source', as: 'string'}
+  ],
+  impl: itemlist({
     items: '%$studio/suggestionData/options%',
-    controls :{$: 'label',
-      title: '%text%',
-      features: [
-        {$: 'css.padding', right: '2', left: '3' },
-        //{$: 'watch-ref', ref: '%$studio/suggestionData/tail%'}
-      ]
-//      title: {$: 'highlight', base: '%text%', highlight: '%$studio/suggestionData/tail%'},
-    },
+    controls: label({title: '%text%', features: [css_padding({left: '3', right: '2'})]}),
     watchItems: true,
     features: [
-      {$: 'itemlist.no-container'},
-      {$: 'studio.itemlist-refresh-suggestions-options',
-        path: '%$path%', source: '%$source%'
-//        expressionOnly: true
-      },
-      {$: 'itemlist.selection',
+      itemlist_noContainer(),
+      studio_itemlistRefreshSuggestionsOptions({path: '%$path%', source: '%$source%'}),
+      itemlist_selection({
         databind: '%$studio/suggestionData/selected%',
-        onDoubleClick :{$: 'studio.paste-suggestion' },
+        onDoubleClick: studio_pasteSuggestion(),
         autoSelectFirst: true
-      },
-      {$: 'itemlist.keyboard-selection',
-        onEnter : [
-          {$: 'studio.paste-suggestion', close: true },
-        ],
-        autoFocus: false
-      },
-      {$: 'feature.onKey', code: 39, action :{$: 'studio.paste-suggestion', option: '%$studio/suggestionData/selected%', close: false }}, // right arrow should drill down
-      {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' },
-      {$: 'css.width', width: '300', overflow: 'auto', minMax: 'min' },
-      {$: 'css',
-        css: '{ position: absolute; z-index:1000; background: white }'
-      },
-      {$: 'css.border', width: '1', color: '#cdcdcd' },
-      {$: 'css.padding', top: '2', left: '3', selector: 'li' },
-      {$: 'feature.if', showCondition :{ $notEmpty: '%$studio/suggestionData/options%' } },
+      }),
+      itemlist_keyboardSelection({autoFocus: false, onEnter: [studio_pasteSuggestion(undefined, true)]}),
+      feature_onKey(39, studio_pasteSuggestion('%$studio/suggestionData/selected%', false)),
+      css_height({height: '500', overflow: 'auto', minMax: 'max'}),
+      css_width({width: '300', overflow: 'auto', minMax: 'min'}),
+      css('{ position: absolute; z-index:1000; background: white }'),
+      css_border({width: '1', color: '#cdcdcd'}),
+      css_padding({top: '2', left: '3', selector: 'li'}),
+      feature_if(notEmpty('%$studio/suggestionData/options%'))
     ]
-  }
+  })
 })
 
-jb.component('studio.property-primitive', {
+jb.component('studio.property-primitive',  /* studio_propertyPrimitive */ {
   type: 'control',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'group',
-//    title :{$: 'studio.prop-name', path: '%$path%' },
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
     controls: [
-      {$: 'editable-text',
-        databind :{$: 'studio.ref', path: '%$path%' },
-        style :{$: 'editable-text.studio-primitive-text' },
+      editableText({
+        databind: studio_ref('%$path%'),
+        style: editableText_studioPrimitiveText(),
         features: [
-//          {$: 'studio.undo-support', path: '%$path%' },
-//          {$: 'studio.property-toolbar-feature', path: '%$path%' },
-          {$: 'studio.watch-path', path: '%$path%', includeChildren: true },
-          {$: 'editable-text.helper-popup',
-            features :{$: 'dialog-feature.near-launcher-position' },
-            control :{$: 'studio.suggestions-itemlist', path: '%$path%' },
+          studio_watchPath('%$path%', true),
+          editableText_helperPopup({
+            control: studio_suggestionsItemlist('%$path%'),
             popupId: 'suggestions',
-            popupStyle :{$: 'dialog.popup' },
-            showHelper :{$: 'studio.show-suggestions' }
-          }
+            popupStyle: dialog_popup(),
+            showHelper: studio_showSuggestions()
+          })
         ]
-      }
+      })
     ],
     features: [
-      {$:'feature.init', action :{$: 'write-value', 
-        to: '%$studio/suggestionData%', value :{$: 'object', selected: '', options: [], path: '%$path%' } 
-      }}, 
-//      {$: 'studio.property-toolbar-feature', path: '%$path%' }
+      feature_init(
+        writeValue(
+          '%$studio/suggestionData%',
+          {$: 'object', selected: '', options: [], path: '%$path%'}
+        )
+      )
     ]
-  }
+  })
 })
 
-jb.component('studio.jb-floating-input', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
+jb.component('studio.jb-floating-input',  /* studio_jbFloatingInput */ {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
     controls: [
-      {$: 'editable-text', 
-        title :{$: 'studio.prop-name', path: '%$path%' }, 
-        databind :{$: 'studio.profile-value-as-text', path: '%$path%' }, 
-        updateOnBlur: true, 
-        style :{$: 'custom-style', 
+      editableText({
+        title: studio_propName('%$path%'),
+        databind: studio_profileValueAsText('%$path%'),
+        updateOnBlur: true,
+        style: customStyle({
           template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
         h('input', { class: 'mdl-textfield__input', id1: 'jb_input_' + state.fieldId, type: 'text', autocomplete: 'nop',
             value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
         }),
         h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
-      ]), 
-          css: '{ margin-right: 13px; }', 
-          features: [
-            {$: 'field.databind-text', debounceTime: 300, oneWay: true }, 
-            {$: 'mdl-style.init-dynamic' }
-          ]
-        }, 
+      ]),
+          css: '{ margin-right: 13px; }',
+          features: [field_databindText(300, true), mdlStyle_initDynamic()]
+        }),
         features: [
-          {$:'feature.init', action :{$: 'write-value', 
-            to: '%$studio/suggestionData%', value :{$: 'object', selected: '', options: [], path: '%$path%' } 
-          }}, 
-          {$: 'editable-text.helper-popup', 
-            features :{$: 'dialog-feature.near-launcher-position' }, 
-            control :{$: 'studio.suggestions-itemlist', path: '%$path%', source: 'floating-input' }, 
-            popupId: 'suggestions', 
-            popupStyle :{$: 'dialog.popup' }, 
-            showHelper :{$: 'studio.show-suggestions' }, 
-            onEnter: [
-              {$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' }, 
-              {$: 'tree.regain-focus' }
-            ], 
-            onEsc: [
-              {$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' }, 
-              {$: 'tree.regain-focus' }
-            ]
-          }
+          feature_init(
+            writeValue(
+              '%$studio/suggestionData%',
+              {$: 'object', selected: '', options: [], path: '%$path%'}
+            )
+          ),
+          editableText_helperPopup({
+            control: studio_suggestionsItemlist('%$path%', 'floating-input'),
+            popupId: 'suggestions',
+            popupStyle: dialog_popup(),
+            showHelper: studio_showSuggestions(),
+            onEnter: [dialog_closeDialog('studio-jb-editor-popup'), tree_regainFocus()],
+            onEsc: [dialog_closeDialog('studio-jb-editor-popup'), tree_regainFocus()]
+          })
         ]
-      }, 
-      {$: 'label', 
-        title :{ $pipeline: [{$: 'studio.param-def', path: '%$path%' }, '%description%'] }
-      }
-    ], 
+      }),
+      label({title: pipeline(studio_paramDef('%$path%'), '%description%')})
+    ],
     features: [
-      {$: 'css.padding', left: '4', right: '4' }, 
-      {$: 'css.margin', $disabled: true, top: '-20', selector: '>*:last-child' }
+      css_padding({left: '4', right: '4'}),
+      css_margin({top: '-20', selector: '>*:last-child'})
     ]
-  }
+  })
 })
 
 
