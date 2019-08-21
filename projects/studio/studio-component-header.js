@@ -33,7 +33,7 @@ jb.component('studio.component-header', {
     controls: [
       {$: 'label',
         title: '%$component%',
-        style :{$: 'label.heading', level: 'h5' }
+        style :{$: 'label.htmlTag', htmlTag: 'h5' }
       },
       {$: 'group',
         title: 'type',

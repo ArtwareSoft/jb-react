@@ -153,7 +153,7 @@ jb.component('studio-helper-dummy.simple-label', {
   impl :{$: 'label',
     $vars: { check: 2 },
     title: 'hello',
-    style :{$: 'label.h1' },
+    style :{$: 'label.span' },
     features: [
       {$: 'css', css: '{ color: red }' },
       {$: 'css.padding', top: '20', left: '160' }

@@ -1,24 +1,23 @@
-jb.component('group.section', {
-  type: 'group.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('section',{class:'jb-group'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
-    features:{$: 'group.init-group'}
-  }
-})
-
-
-jb.component('group.div', {
+jb.component('group.htmlTag', {
   type: 'group.style',
 	params: [
+		{ id: 'htmlTag', as: 'string', defaultValue: 'section', options:'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary' },
 		{ id: 'groupClass', as: 'string' },
 		{ id: 'itemClass', as: 'string' },
 	],
   impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('div',{ class: cmp.groupClass },
+    template: (cmp,state,h) => h(cmp.htmlTag,{ class: cmp.groupClass },
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl,{class: cmp.itemClass}),ctrl.ctx.data))),
     features :{$: 'group.init-group'}
   }
+})
+
+jb.component('group.div', {
+  impl :{$: 'group.htmlTag', htmlTag: 'div'}
+})
+
+jb.component('group.section', {
+  impl :{$: 'group.htmlTag', htmlTag: 'section'}
 })
 
 jb.component('first-succeeding.style', {

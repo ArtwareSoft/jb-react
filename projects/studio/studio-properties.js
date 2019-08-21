@@ -379,7 +379,7 @@ jb.component('studio.property-tgp-in-array', {
                 {$: 'suffix', separator: '.', text: '%%' }
               ]
             }, 
-            style :{$: 'label.p' }, 
+            style :{$: 'label.htmlTag', htmlTag: 'p' }, 
             features: [
               {$: 'css.width', width: '100' }, 
               {$: 'css.class', class: 'drag-handle' }, 
@@ -388,7 +388,7 @@ jb.component('studio.property-tgp-in-array', {
           }, 
           {$: 'label', 
             title :{$: 'studio.summary', path: '%$path%' }, 
-            style :{$: 'label.p' }, 
+            style :{$: 'label.htmlTag', htmlTag: 'p' }, 
             features: [
               {$: 'css.width', width: '335' }, 
               {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
