@@ -10,9 +10,11 @@ jb.component('pretty-print', {
 })
 
 jb.prettyPrintComp = function(compId,comp,settings) {
-  if (comp)
-    return "jb.component('" + compId + "', "
+  if (comp) {
+    const macroRemark = settings.macro ? ` /* ${jb.macroName(compId)} */ ` : ''
+    return "jb.component('" + compId + "', " + macroRemark
       + jb.prettyPrintWithPositions(comp,settings).result + ')'
+  }
 }
 
 jb.prettyPrint = function(profile,options) {
@@ -214,10 +216,6 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
     }
   }
 
-  function macroName(id) {
-    return id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
-  }
-
   function profileToMacro(ctx, profile,flat) {
     const id = jb.compName(profile)
     const comp = jb.comps[id]
@@ -229,7 +227,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       }
       return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
     }
-    const macro = macroName(id)
+    const macro = jb.macroName(id)
   
     const params = comp.params || []
     const vars = Object.keys(profile.$vars || {})

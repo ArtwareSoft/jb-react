@@ -662,10 +662,12 @@ return {
 Object.assign(jb,{
   comps: {}, macros: {}, resources: {}, consts: {},
   studio: { previewjb: jb },
+  macroName: id =>
+    id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_'),
   component: (id,val) => {
     jb.comps[id] = val
     jb.traceComponentFile && jb.traceComponentFile(val)
-    const fixedId = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
+    const fixedId = jb.macroName(id)
     const ctx = new jb.jbCtx()
 
     const params = val.params || []

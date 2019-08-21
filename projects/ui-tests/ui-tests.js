@@ -1181,6 +1181,27 @@ jb.component('ui-test.code-mirror', {
   },
 })
 
+jb.component('ui-test.inner-label1-tst', {
+  params: [
+    { id: 'title', mandatory: true, dynamic: true },
+  ],
+  impl: { $: 'label', title: { $call: 'title' } }
+})
+
+jb.component('ui-test.inner-label2-tst', {
+  params: [
+    { id: 'title', mandatory: true, dynamic: true },
+  ],
+  impl: { $: 'ui-test.inner-label1-tst', title: { $call: 'title' } }
+})
+
+jb.component('ui-test.inner-label3-tst', {
+  params: [
+    { id: 'title', mandatory: true, dynamic: true },
+  ],
+  impl: { $: 'ui-test.inner-label2-tst', title: { $call: 'title' } }
+})
+
 jb.component('ui-test.prettyPrintComp', {
   impl: {
     $: 'ui-test2', waitForPromise: { $delay: 50 },
@@ -1188,7 +1209,7 @@ jb.component('ui-test.prettyPrintComp', {
       $: 'group', controls: [
         {
           $: 'text',
-          text: ctx => jb_prettyPrintComp('inner-label1-tst', jb.comps['inner-label1-tst']),
+          text: ctx => jb_prettyPrintComp('ui-test.inner-label1-tst', jb.comps['ui-test.inner-label1-tst']),
           style: { $: 'text.multi-line' }
         },
         {
@@ -1356,7 +1377,7 @@ jb.component('ui-test.group.accordion', {
 jb.component('ui-test.inner-label', {
   impl: {
     $: 'ui-test',
-    control: { $: 'inner-label3-tst', title: 'Hello World2' },
+    control: { $: 'ui-test.inner-label3-tst', title: 'Hello World2' },
     expectedResult: { $: 'contains', text: 'Hello World2' }
   },
 })
@@ -1681,27 +1702,6 @@ jb.component('ui-test.calculated-var-cyclic', {
     action: { $: 'ui-action.set-text', selector: '#var1', value: 'hi' },
     expectedResult: { $: 'contains', text: 'hi world' },
   },
-})
-
-jb.component('inner-label1-tst', {
-  params: [
-    { id: 'title', mandatory: true, dynamic: true },
-  ],
-  impl: { $: 'label', title: { $call: 'title' } }
-})
-
-jb.component('inner-label2-tst', {
-  params: [
-    { id: 'title', mandatory: true, dynamic: true },
-  ],
-  impl: { $: 'inner-label1-tst', title: { $call: 'title' } }
-})
-
-jb.component('inner-label3-tst', {
-  params: [
-    { id: 'title', mandatory: true, dynamic: true },
-  ],
-  impl: { $: 'inner-label2-tst', title: { $call: 'title' } }
 })
 
 jb.component('ui-test.control.first-succeeding', {

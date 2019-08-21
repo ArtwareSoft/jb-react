@@ -29,13 +29,13 @@ function run() {
 		}
 	})
 //    const tgpCode = '' + fs.readFileSync(src);
-	const compsByDir = {}
-	jb.entries(jb.comps).forEach(([id,cmp]) => {
-		const dir = cmp.fileName.split('/').slice(1,-1).join('/')
-		compsByDir[dir] = compsByDir[dir] || []
-		compsByDir[dir].push({id,cmp})
-	})
-	console.log(compsByDir)
+	// const compsByDir = {}
+	// jb.entries(jb.comps).forEach(([id,cmp]) => {
+	// 	const dir = cmp.fileName.split('/').slice(1,-1).join('/')
+	// 	compsByDir[dir] = compsByDir[dir] || []
+	// 	compsByDir[dir].push({id,cmp})
+	// })
+	// console.log(compsByDir)
     //console.log(jb.entries(jb.comps).map(e=>e[0]+' : '+e[1].fileName).join('\n'))
     const content = buildTS();
     if (getProcessArgument('out')) {
@@ -76,8 +76,8 @@ function buildTS() {
 			.filter(e=>path ? e[0].indexOf(path) == 0 : e[0].indexOf('.') == -1)
 			.map(e=>{
 				const id = e[0], pt = e[1]
-				const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase())
-				jb.ts.macroNames.push(idAsCamel)
+				const fixedId = jb.macroName(id)
+				jb.ts.macroNames.push(fixedId)
 				return TSforMacro(fixedId, pt)
 			}).join('\n')
 
