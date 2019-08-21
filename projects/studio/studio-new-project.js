@@ -51,7 +51,7 @@ jb.component('studio.new-project', {
       jb.logException(e,'',ctx)
     })
   }
-});
+})
 
 jb.component('studio.open-new-project', {
   type: 'action', 
