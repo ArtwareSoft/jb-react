@@ -1,20 +1,3 @@
-jb.component('studio.preview-widget', {
-  type: 'control',
-  params: [
-    { id: 'style', type: 'preview-style', dynamic: true, defaultValue :{$: 'studio.preview-widget-impl'}  },
-    { id: 'width', as: 'number'},
-    { id: 'height', as: 'number'},
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx,{
-      init: cmp => {
-        Object.assign(cmp.state,ctx.exp('%$studio%'));
-        cmp.state.cacheKiller = 'cacheKiller='+(''+Math.random()).slice(10);
-        document.title = cmp.state.project + ' with jBart';
-      },
-    })
-})
-
 jb.studio.initPreview = function(preview_window,allowedTypes) {
       var st = jb.studio;
       st.previewWindow = preview_window;
@@ -118,3 +101,21 @@ jb.component('studio.data-comp-inspector', {
     }}
   }
 })
+
+jb.component('studio.preview-widget', {
+  type: 'control',
+  params: [
+    { id: 'style', type: 'preview-style', dynamic: true, defaultValue :{$: 'studio.preview-widget-impl'}  },
+    { id: 'width', as: 'number'},
+    { id: 'height', as: 'number'},
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx,{
+      init: cmp => {
+        Object.assign(cmp.state,ctx.exp('%$studio%'));
+        cmp.state.cacheKiller = 'cacheKiller='+(''+Math.random()).slice(10);
+        document.title = cmp.state.project + ' with jBart';
+      },
+    })
+})
+

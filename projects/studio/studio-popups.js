@@ -1,21 +1,3 @@
-jb.component('studio.open-multiline-edit', {
-	type: 'action',
-	params: [
-	    { id: 'path', as: 'string' }
-	],
-	impl: {
-		$: 'open-dialog',
-		style :{$: 'dialog.studio-multiline-edit' },
-		content :{$: 'editable-text',
-			databind :{$: 'studio.ref', path: '%$path%' },
-			style :{$: 'editable-text.codemirror',
-				mode :{$: 'studio.code-mirror-mode', path: '%$path%'}
-			},
-//			features: {$: 'studio.undo-support', path: '%$path%' },
-		}
-	}
-})
-
 jb.component('dialog.studio-floating', {
 	type: 'dialog.style',
 	params: [
@@ -253,3 +235,22 @@ jb.component('studio.open-responsive-phone-popup', {
     title: 'responsive'
   }
 })
+
+jb.component('studio.open-multiline-edit', {
+	type: 'action',
+	params: [
+	    { id: 'path', as: 'string' }
+	],
+	impl: {
+		$: 'open-dialog',
+		style :{$: 'dialog.studio-multiline-edit' },
+		content :{$: 'editable-text',
+			databind :{$: 'studio.ref', path: '%$path%' },
+			style :{$: 'editable-text.codemirror',
+				mode :{$: 'studio.code-mirror-mode', path: '%$path%'}
+			},
+//			features: {$: 'studio.undo-support', path: '%$path%' },
+		}
+	}
+})
+

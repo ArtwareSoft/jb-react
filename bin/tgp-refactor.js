@@ -38,7 +38,7 @@ const content = jb.entries(jb.comps) // .filter(e=> typeof e[1].impl === 'object
 //    .slice(1,50)
     .filter(e=>
 //        e[0] === 'studio.open-script-history')
-          e[0].indexOf('studio.') == 0)
+          e[0].indexOf('studio.') == 0 || e[0].indexOf('dialog.'))
     .forEach(e=>
         swapComp(e[0],e[1]))
     
@@ -53,8 +53,8 @@ function swapComp(id,comp) {
     const fn = '../' + comp[location][0]
     const content = ('' + fs.readFileSync(fn))//.replace(/\r/g,'')
     const lines = content.split('\n').map(x=>x.replace(/[\s]*$/,''))
-    const lineOfComp = lines.reduce((acc,line,i) => acc ? acc : line.indexOf(`jb.component('${id}'`) == 0 ? i : 0, 0);
-    if (lineOfComp == 0) {
+    const lineOfComp = lines.reduce((acc,line,i) => acc != -1 ? acc : line.indexOf(`jb.component('${id}'`) == 0 ? i : -1, -1);
+    if (lineOfComp == -1) {
         console.log('error can not find ' + id + ' in ' + fn)
         return;
     }
