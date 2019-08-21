@@ -35,7 +35,7 @@ jb.component('open-dialog', {
 		const ctx = context.setVars({
 			$dialog: dialog,
 			formContainer: { err: ''}
-		});
+		})
 		dialog.comp = jb.ui.ctrl(ctx,{
 			beforeInit: cmp => {
 				cmp.dialog = dialog;
@@ -353,11 +353,11 @@ jb.component('dialog-feature.drag-title', {
 			        dialog.el.style.top  = pos.top  + 'px';
 			        dialog.el.style.left = pos.left + 'px';
 			        if (id) sessionStorage.setItem(id, JSON.stringify(pos))
-			      });
+			      })
 			  }
 	       }
 	}
-});
+})
 
 jb.component('dialog.dialog-ok-cancel', {
 	type: 'dialog.style',
@@ -433,7 +433,7 @@ jb.component('dialog-feature.resizer', {
 					        cmp.base.style.width = pos.left + 'px';
                   if (codeMirrorElem)
                     codeMirrorElem.style.height  = (pos.top - codeMirrorSizeDiff) + 'px';
-					      });
+					      })
 					  }
 	     })
 })
@@ -458,7 +458,7 @@ jb.ui.dialogs = {
 				if (dialog.onOK && args && args.OK)
 					return dialog.onOK(context)
 			}).then( _ => {
-				dialog.em.next({type: 'close', OK: args && args.OK});
+				dialog.em.next({type: 'close', OK: args && args.OK})
 				dialog.em.complete();
 
 				var index = self.dialogs.indexOf(dialog);
