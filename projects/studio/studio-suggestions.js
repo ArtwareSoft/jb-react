@@ -179,15 +179,6 @@ jb.component('studio.property-primitive', {
   }
 })
 
-jb.component('studio.jb-floating-input-rich', {
-  type: 'control',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'group',
-    controls: {$: 'studio.property-field', path: '%$path%'},
-    features :{$: 'css', css: '{padding: 20px}' }
-  }
-})
-
 jb.component('studio.jb-floating-input', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 

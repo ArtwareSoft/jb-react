@@ -15,6 +15,15 @@ jb.component('studio.prob-result-customization', {
   }
 })
 
+jb.component('studio.jb-floating-input-rich', {
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'group',
+    controls: {$: 'studio.property-field', path: '%$path%'},
+    features :{$: 'css', css: '{padding: 20px}' }
+  }
+})
+
 jb.component('studio.jb-editor-container', {
   type: 'feature', 
   params: [
@@ -787,7 +796,6 @@ jb.component('studio.add-variable', {
     ]
   }}
 })
-
 
 jb.component('studio.expand-and-select-first-child-in-jb-editor', {
   type: 'action',
