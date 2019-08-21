@@ -1,96 +1,3 @@
-jb.component('studio.open-new-profile-dialog',  /* studio_openNewProfileDialog */ {
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()},
-    {id: 'type', as: 'string'},
-    {id: 'mode', option: 'insert,insert-control,update', defaultValue: 'insert'},
-    {id: 'onClose', type: 'action', dynamic: true}
-  ],
-  impl: openDialog({
-    style: dialog_studioFloating({}),
-    content: studio_selectProfile({
-      onSelect: action_if(
-        '%$mode% == \"insert-control\"',
-        studio_insertControl('%$path%', '%%'),
-        {
-          $if: '%$mode% == \"insert\"',
-          then: studio_addArrayItem('%$path%', {$object: {$: '%%'}}),
-          else: studio_setComp('%$path%', '%%')
-        }
-      ),
-      type: '%$type%',
-      path: '%$path%'
-    }),
-    title: 'new %$type%',
-    features: [
-      css_height({height: '430', overflow: 'hidden'}),
-      css_width({width: '450', overflow: 'hidden'}),
-      dialogFeature_dragTitle('new %$type%'),
-      dialogFeature_nearLauncherPosition({offsetLeft: 0, offsetTop: 0}),
-      dialogFeature_autoFocusOnFirstInput(),
-      dialogFeature_onClose([call('onClose')])
-    ]
-  })
-})
-
-jb.component('studio.categories-marks',  /* studio_categoriesMarks */ {
-  params: [
-    {id: 'type', as: 'string'},
-    {id: 'path', as: 'string'}
-  ],
-  impl: pipeline(
-    {
-      $: 'object',
-      control: pipeline(
-        list(
-          'common:100',
-          'control:95',
-          'input:90',
-          'group:85',
-          'studio-helper:0,suggestions-test:0,studio:0,test:0,basic:0,ui-tests:0,studio-helper-dummy:0,itemlist-container:0'
-        ),
-        split(','),
-        {
-          $: 'object',
-          code: split({separator: ':', part: 'first'}),
-          mark: split({separator: ':', part: 'second'})
-        }
-      ),
-      feature: pipeline(
-        list(
-          'css:100',
-          'watch:95',
-          'lifecycle:90',
-          'events:85',
-          'group:80',
-          'all:20',
-          'feature:0,tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0,itemlist-container:0,editable-text:0,editable-boolean:0',
-          'mdl-style:0'
-        ),
-        split(','),
-        {
-          $: 'object',
-          code: split({separator: ':', part: 'first'}),
-          mark: split({separator: ':', part: 'second'})
-        }
-      ),
-      'group.style': pipeline(
-        list('layout:100', 'group:90', 'tabs:0'),
-        split(','),
-        {
-          $: 'object',
-          code: split({separator: ':', part: 'first'}),
-          mark: split({separator: ':', part: 'second'})
-        }
-      )
-    },
-    firstSucceeding(
-      ctx => ctx.data[ctx.exp('%$type%','string')],
-      {$: 'object', code: 'all', mark: '100'}
-    )
-  )
-})
-
 jb.component('studio.select-profile',  /* studio_selectProfile */ {
   type: 'control',
   params: [
@@ -223,6 +130,99 @@ jb.component('studio.select-profile',  /* studio_selectProfile */ {
       group_itemlistContainer({initialSelection: studio_compName('%$path%')})
     ]
   })
+})
+
+jb.component('studio.open-new-profile-dialog',  /* studio_openNewProfileDialog */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()},
+    {id: 'type', as: 'string'},
+    {id: 'mode', option: 'insert,insert-control,update', defaultValue: 'insert'},
+    {id: 'onClose', type: 'action', dynamic: true}
+  ],
+  impl: openDialog({
+    style: dialog_studioFloating({}),
+    content: studio_selectProfile({
+      onSelect: action_if(
+        '%$mode% == \"insert-control\"',
+        studio_insertControl('%$path%', '%%'),
+        {
+          $if: '%$mode% == \"insert\"',
+          then: studio_addArrayItem('%$path%', {$object: {$: '%%'}}),
+          else: studio_setComp('%$path%', '%%')
+        }
+      ),
+      type: '%$type%',
+      path: '%$path%'
+    }),
+    title: 'new %$type%',
+    features: [
+      css_height({height: '430', overflow: 'hidden'}),
+      css_width({width: '450', overflow: 'hidden'}),
+      dialogFeature_dragTitle('new %$type%'),
+      dialogFeature_nearLauncherPosition({offsetLeft: 0, offsetTop: 0}),
+      dialogFeature_autoFocusOnFirstInput(),
+      dialogFeature_onClose([call('onClose')])
+    ]
+  })
+})
+
+jb.component('studio.categories-marks',  /* studio_categoriesMarks */ {
+  params: [
+    {id: 'type', as: 'string'},
+    {id: 'path', as: 'string'}
+  ],
+  impl: pipeline(
+    {
+      $: 'object',
+      control: pipeline(
+        list(
+          'common:100',
+          'control:95',
+          'input:90',
+          'group:85',
+          'studio-helper:0,suggestions-test:0,studio:0,test:0,basic:0,ui-tests:0,studio-helper-dummy:0,itemlist-container:0'
+        ),
+        split(','),
+        {
+          $: 'object',
+          code: split({separator: ':', part: 'first'}),
+          mark: split({separator: ':', part: 'second'})
+        }
+      ),
+      feature: pipeline(
+        list(
+          'css:100',
+          'watch:95',
+          'lifecycle:90',
+          'events:85',
+          'group:80',
+          'all:20',
+          'feature:0,tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0,itemlist-container:0,editable-text:0,editable-boolean:0',
+          'mdl-style:0'
+        ),
+        split(','),
+        {
+          $: 'object',
+          code: split({separator: ':', part: 'first'}),
+          mark: split({separator: ':', part: 'second'})
+        }
+      ),
+      'group.style': pipeline(
+        list('layout:100', 'group:90', 'tabs:0'),
+        split(','),
+        {
+          $: 'object',
+          code: split({separator: ':', part: 'first'}),
+          mark: split({separator: ':', part: 'second'})
+        }
+      )
+    },
+    firstSucceeding(
+      ctx => ctx.data[ctx.exp('%$type%','string')],
+      {$: 'object', code: 'all', mark: '100'}
+    )
+  )
 })
 
 jb.component('studio.pick-profile',  /* studio_pickProfile */ {
