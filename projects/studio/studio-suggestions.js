@@ -89,6 +89,49 @@ jb.component('studio.show-suggestions', {
     new st.suggestions(ctx.data,false).suggestionsRelevant()
 })
 
+jb.component('studio.suggestions-itemlist', {
+  params: [{ id: 'path', as: 'string' }, { id: 'source', as: 'string' }],
+  impl :{$: 'itemlist',
+    items: '%$studio/suggestionData/options%',
+    controls :{$: 'label',
+      title: '%text%',
+      features: [
+        {$: 'css.padding', right: '2', left: '3' },
+        //{$: 'watch-ref', ref: '%$studio/suggestionData/tail%'}
+      ]
+//      title: {$: 'highlight', base: '%text%', highlight: '%$studio/suggestionData/tail%'},
+    },
+    watchItems: true,
+    features: [
+      {$: 'itemlist.no-container'},
+      {$: 'studio.itemlist-refresh-suggestions-options',
+        path: '%$path%', source: '%$source%'
+//        expressionOnly: true
+      },
+      {$: 'itemlist.selection',
+        databind: '%$studio/suggestionData/selected%',
+        onDoubleClick :{$: 'studio.paste-suggestion' },
+        autoSelectFirst: true
+      },
+      {$: 'itemlist.keyboard-selection',
+        onEnter : [
+          {$: 'studio.paste-suggestion', close: true },
+        ],
+        autoFocus: false
+      },
+      {$: 'feature.onKey', code: 39, action :{$: 'studio.paste-suggestion', option: '%$studio/suggestionData/selected%', close: false }}, // right arrow should drill down
+      {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' },
+      {$: 'css.width', width: '300', overflow: 'auto', minMax: 'min' },
+      {$: 'css',
+        css: '{ position: absolute; z-index:1000; background: white }'
+      },
+      {$: 'css.border', width: '1', color: '#cdcdcd' },
+      {$: 'css.padding', top: '2', left: '3', selector: 'li' },
+      {$: 'feature.if', showCondition :{ $notEmpty: '%$studio/suggestionData/options%' } },
+    ]
+  }
+})
+
 jb.component('studio.property-primitive', {
   type: 'control',
   params: [{ id: 'path', as: 'string' }],
@@ -200,48 +243,6 @@ jb.component('studio.paste-suggestion', {
   }
 })
 
-jb.component('studio.suggestions-itemlist', {
-  params: [{ id: 'path', as: 'string' }, { id: 'source', as: 'string' }],
-  impl :{$: 'itemlist',
-    items: '%$studio/suggestionData/options%',
-    controls :{$: 'label',
-      title: '%text%',
-      features: [
-        {$: 'css.padding', right: '2', left: '3' },
-        //{$: 'watch-ref', ref: '%$studio/suggestionData/tail%'}
-      ]
-//      title: {$: 'highlight', base: '%text%', highlight: '%$studio/suggestionData/tail%'},
-    },
-    watchItems: true,
-    features: [
-      {$: 'itemlist.no-container'},
-      {$: 'studio.itemlist-refresh-suggestions-options',
-        path: '%$path%', source: '%$source%'
-//        expressionOnly: true
-      },
-      {$: 'itemlist.selection',
-        databind: '%$studio/suggestionData/selected%',
-        onDoubleClick :{$: 'studio.paste-suggestion' },
-        autoSelectFirst: true
-      },
-      {$: 'itemlist.keyboard-selection',
-        onEnter : [
-          {$: 'studio.paste-suggestion', close: true },
-        ],
-        autoFocus: false
-      },
-      {$: 'feature.onKey', code: 39, action :{$: 'studio.paste-suggestion', option: '%$studio/suggestionData/selected%', close: false }}, // right arrow should drill down
-      {$: 'css.height', height: '500', overflow: 'auto', minMax: 'max' },
-      {$: 'css.width', width: '300', overflow: 'auto', minMax: 'min' },
-      {$: 'css',
-        css: '{ position: absolute; z-index:1000; background: white }'
-      },
-      {$: 'css.border', width: '1', color: '#cdcdcd' },
-      {$: 'css.padding', top: '2', left: '3', selector: 'li' },
-      {$: 'feature.if', showCondition :{ $notEmpty: '%$studio/suggestionData/options%' } },
-    ]
-  }
-})
 
 function rev(str) {
   return str.split('').reverse().join('');
