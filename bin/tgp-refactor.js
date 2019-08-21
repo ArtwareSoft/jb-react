@@ -38,7 +38,7 @@ const content = jb.entries(jb.comps).filter(e=> typeof e[1].impl === 'object')
 //    .slice(1,50)
     .filter(e=>
 //        e[0] === 'ui-test.wait-for')
-        e[0].indexOf('ui-test.') == 0 || e[0].indexOf('menu-test.') == 0)
+        e[0].indexOf('studio.is-of-type') == 0)
     .forEach(e=>
         swapComp(e[0],e[1]))
     

@@ -237,7 +237,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
-    const oneFirstParam = keys.length === 1 && params && params[0].id == keys[0] 
+    const oneFirstParam = keys.length === 1 && params[0] && params[0].id == keys[0] 
         && (typeof profile[keys[0]] !== 'object' || Array.isArray(profile[keys[0]]))
     if ((params.length < 3 && comp.usageByValue !== false) || comp.usageByValue || oneFirstParam) {
       const args = systemProps.concat(params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]})))
