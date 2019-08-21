@@ -23,14 +23,6 @@ jb.component('studio.itemlist-refresh-suggestions-options',  /* studio_itemlistR
               input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
           .do(e=>jb.log('suggestions',['after distinct', input.value, e, cmp, pathToTrace]))
           .map(closestCtx)
-          // .flatMap(_=> {
-          //   if (ctx.params.source != 'floating-input') {
-          //     const ctxFromPreview = st.closestCtxInPreview(pathToTrace)
-          //     if (ctxFromPreview && ctxFromPreview.ctx)
-          //       return [ctxFromPreview.ctx]
-          //   }
-          //   return getProbe().then(res=> res && res.result && res.result[0] && res.result[0].in)
-          // })
           .do(e=>jb.log('suggestions',['probe ctx', input.value, e, cmp, pathToTrace]))
           .map(probeCtx=>
             new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,pathToTrace))
@@ -41,22 +33,12 @@ jb.component('studio.itemlist-refresh-suggestions-options',  /* studio_itemlistR
           .do(e=>jb.log('suggestions',['generate event', input.value, e, cmp, pathToTrace]))
           .takeUntil( cmp.destroyed )
           .subscribe(e=> {
-            //   if (input.value.indexOf('=') == 0) {
-            //     cmp.ctx.run({$:'write-value', to: {$: 'studio.ref', path: pathToTrace}, value: '' });
-            //     return cmp.ctx.run({$: 'studio.open-new-profile-dialog',
-            //       path: pathToTrace, mode: 'update',
-            //       type: {$:'studio.param-type', path: pathToTrace}
-            //    });
-            //  }
               jb.log('suggestions',['before write values', input.value, cmp, pathToTrace]);
               cmp.ctx.setVars({e}).run(runActions(
-                writeValue('%$studio/suggestionData/options%','%$e.options%'), // let the suggestion options refresh
-                writeValue('%$studio/suggestionData/selected%','%$e.selected%'),
-                writeValue('%$studio/suggestionData/tail%','%$e.tail%') // used for highlighting
+                writeValue('%$suggestionData/options%','%$e.options%'), // let the suggestion options refresh
+                writeValue('%$suggestionData/selected%','%$e.selected%'),
+                writeValue('%$suggestionData/tail%','%$e.tail%') // used for highlighting
               ))
-              // cmp.ctx.run({$:'write-value', to: '%$studio/suggestionData/options%', value: ctx => e.options });
-              // cmp.ctx.run({$:'write-value', to: '%$studio/suggestionData/tail%', value: ctx => e.tail })
-              // cmp.ctx.run({$:'write-value', to: '%$studio/suggestionData/selected%', value: ctx => e.options[0] });
               jb.log('suggestions',['after write values', input.value, cmp, pathToTrace]);
           });
 
@@ -110,25 +92,25 @@ jb.component('studio.suggestions-itemlist',  /* studio_suggestionsItemlist */ {
     {id: 'source', as: 'string'}
   ],
   impl: itemlist({
-    items: '%$studio/suggestionData/options%',
+    items: '%$suggestionData/options%',
     controls: label({title: '%text%', features: [css_padding({left: '3', right: '2'})]}),
     watchItems: true,
     features: [
       itemlist_noContainer(),
       studio_itemlistRefreshSuggestionsOptions({path: '%$path%', source: '%$source%'}),
       itemlist_selection({
-        databind: '%$studio/suggestionData/selected%',
+        databind: '%$suggestionData/selected%',
         onDoubleClick: studio_pasteSuggestion(),
         autoSelectFirst: true
       }),
       itemlist_keyboardSelection({autoFocus: false, onEnter: [studio_pasteSuggestion(undefined, true)]}),
-      feature_onKey(39, studio_pasteSuggestion('%$studio/suggestionData/selected%', false)),
+      feature_onKey(39, studio_pasteSuggestion('%$suggestionData/selected%', false)),
       css_height({height: '500', overflow: 'auto', minMax: 'max'}),
       css_width({width: '300', overflow: 'auto', minMax: 'min'}),
       css('{ position: absolute; z-index:1000; background: white }'),
       css_border({width: '1', color: '#cdcdcd'}),
       css_padding({top: '2', left: '3', selector: 'li'}),
-      feature_if(notEmpty('%$studio/suggestionData/options%'))
+      feature_if(notEmpty('%$suggestionData/options%'))
     ]
   })
 })
@@ -154,14 +136,11 @@ jb.component('studio.property-primitive',  /* studio_propertyPrimitive */ {
         ]
       })
     ],
-    features: [
-      feature_init(
-        writeValue(
-          '%$studio/suggestionData%',
-          {$: 'object', selected: '', options: [], path: '%$path%'}
-        )
-      )
-    ]
+    features: variable({ 
+        name: 'suggestionData', 
+        mutable: true, 
+        value: {$: 'object', selected: '', options: [], path: '%$path%'}
+    }),
   })
 })
 
@@ -190,7 +169,7 @@ jb.component('studio.jb-floating-input',  /* studio_jbFloatingInput */ {
         features: [
           feature_init(
             writeValue(
-              '%$studio/suggestionData%',
+              '%$suggestionData%',
               {$: 'object', selected: '', options: [], path: '%$path%'}
             )
           ),
@@ -317,7 +296,7 @@ class ValueOption {
     }
     writeValue(ctx) {
       var input = ctx.vars.selectionKeySource.input;
-      var path = ctx.exp('%$studio/suggestionData/path%','string');
+      var path = ctx.exp('%$suggestionData/path%','string');
       st.writeValueOfPath(path,input.value);
     }
 }
@@ -341,7 +320,7 @@ class CompOption {
         // };
     }
     writeValue(ctx) {
-      st.setComp(ctx.exp('%$studio/suggestionData/path%','string'),this.toPaste);
+      st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste);
       ctx.run({$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' });
       ctx.run({$:'studio.expand-and-select-first-child-in-jb-editor' });
     }

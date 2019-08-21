@@ -73,9 +73,10 @@ jb.component('control.first-succeeding', {
       controls: ctx2 => {
         for(let i=0;i<ctx.profile.controls.length;i++) {
           const res = ctx2.runInner(ctx.profile.controls[i],null,i)
-          res.firstSucceedingIndex = i;
-          if (res)
+          if (res) {
+            res.firstSucceedingIndex = i;
             return [res]
+          }
         }
         return []
       }
@@ -109,7 +110,6 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
       })
   })
 })
-
 
 jb.component('control-with-condition', {
   type: 'control',

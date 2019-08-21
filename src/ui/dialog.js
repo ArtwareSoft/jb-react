@@ -175,7 +175,7 @@ jb.component('dialog-feature.keyboard-shortcut',  /* dialogFeature_keyboardShort
 			if (!key) return;
 			if (key.indexOf('-') > 0)
 				key = key.replace(/-/,'+');
-            const keyCode = key.split('+').pop().charCodeAt(0);
+            let keyCode = key.split('+').pop().charCodeAt(0);
             if (key == 'Delete') keyCode = 46;
             if (key.match(/\+[Uu]p$/)) keyCode = 38;
             if (key.match(/\+[Dd]own$/)) keyCode = 40;
@@ -254,7 +254,7 @@ jb.component('dialog-feature.close-when-clicking-outside',  /* dialogFeature_clo
 		const dialog = context.vars.$dialog;
 		dialog.isPopup = true;
 		jb.delay(10).then(() =>  { // delay - close older before
-			const clickoutEm = jb.rx.Observable.fromEvent(document, 'mousedown');
+			let clickoutEm = jb.rx.Observable.fromEvent(document, 'mousedown');
 			if (jb.studio.previewWindow)
 				clickoutEm = clickoutEm.merge(jb.rx.Observable.fromEvent(
 			      				(jb.studio.previewWindow || {}).document, 'mousedown'));
@@ -380,57 +380,57 @@ jb.component('dialog-feature.resizer',  /* dialogFeature_resizer */ {
     }
   ],
   impl: (ctx,codeMirror) => ({
-					templateModifier: (vdom,cmp,state) => {
+		templateModifier: (vdom,cmp,state) => {
             if (vdom && vdom.nodeName != 'div') return vdom;
 						vdom.children.push(jb.ui.h('img', {src: '/css/resizer.gif', class: 'resizer'}));
 			      return vdom;
-			    },
-		      css: '>.resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
+		},
+		css: '>.resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
 
-		      afterViewInit: function(cmp) {
-		       	  const resizerElem = cmp.base.querySelector('.resizer');
-		       	  cmp.mousedownEm = jb.rx.Observable.fromEvent(resizerElem, 'mousedown')
-		       	  	.takeUntil( cmp.destroyed );
+		afterViewInit: function(cmp) {
+		const resizerElem = cmp.base.querySelector('.resizer');
+		cmp.mousedownEm = jb.rx.Observable.fromEvent(resizerElem, 'mousedown')
+		.takeUntil( cmp.destroyed );
 
-						  const mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
-						  const mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
+		let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
+		let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
 
-						  if (jb.studio.previewWindow) {
-						  	mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
-						  		.takeUntil( cmp.destroyed );
-						  	mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
-						  		.takeUntil( cmp.destroyed );
-						  }
+		if (jb.studio.previewWindow) {
+		mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
+			.takeUntil( cmp.destroyed );
+		mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
+			.takeUntil( cmp.destroyed );
+		}
 
-              let codeMirrorElem,codeMirrorSizeDiff;
-              if (codeMirror) {
-                codeMirrorElem = cmp.base.querySelector('.CodeMirror');
-                if (codeMirrorElem)
-                  codeMirrorSizeDiff = codeMirrorElem.getBoundingClientRect().top - cmp.base.getBoundingClientRect().top
-                    + (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
-              }
+		let codeMirrorElem,codeMirrorSizeDiff;
+		if (codeMirror) {
+			codeMirrorElem = cmp.base.querySelector('.CodeMirror');
+			if (codeMirrorElem)
+			codeMirrorSizeDiff = codeMirrorElem.getBoundingClientRect().top - cmp.base.getBoundingClientRect().top
+				+ (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
+		}
 
-						  const mousedrag = cmp.mousedownEm
-						  		.map(e =>  ({
-						          left: cmp.base.getBoundingClientRect().left,
-						          top:  cmp.base.getBoundingClientRect().top
-						        }))
-						      	.flatMap(imageOffset =>
-					      			 mouseMoveEm.takeUntil(mouseUpEm)
-					      			 .map(pos => ({
-								        top:  pos.clientY - imageOffset.top,
-								        left: pos.clientX - imageOffset.left
-								     }))
-						      	);
+		const mousedrag = cmp.mousedownEm
+			.map(e =>  ({
+				left: cmp.base.getBoundingClientRect().left,
+				top:  cmp.base.getBoundingClientRect().top
+			}))
+			.flatMap(imageOffset =>
+					mouseMoveEm.takeUntil(mouseUpEm)
+					.map(pos => ({
+					top:  pos.clientY - imageOffset.top,
+					left: pos.clientX - imageOffset.left
+					}))
+		);
 
-						  mousedrag.distinctUntilChanged().subscribe(pos => {
-					        cmp.base.style.height  = pos.top  + 'px';
-					        cmp.base.style.width = pos.left + 'px';
-                  if (codeMirrorElem)
-                    codeMirrorElem.style.height  = (pos.top - codeMirrorSizeDiff) + 'px';
-					      })
-					  }
-	     })
+		mousedrag.distinctUntilChanged().subscribe(pos => {
+			cmp.base.style.height  = pos.top  + 'px';
+			cmp.base.style.width = pos.left + 'px';
+			if (codeMirrorElem)
+				codeMirrorElem.style.height  = (pos.top - codeMirrorSizeDiff) + 'px';
+			})
+		}
+	})
 })
 
 jb.component('dialog.popup',  /* dialog_popup */ {
