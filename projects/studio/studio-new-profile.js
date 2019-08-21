@@ -39,7 +39,7 @@ jb.component('studio.categories-marks',  /* studio_categoriesMarks */ {
           mark: split({separator: ':', part: 'second'})
         }
       ),
-      group.style: pipeline(
+      'group.style': pipeline(
         list('layout:100', 'group:90', 'tabs:0'),
         split(','),
         {
