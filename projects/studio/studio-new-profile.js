@@ -1,420 +1,321 @@
-jb.component('studio.open-new-profile-dialog', {
-  type: 'action', 
+jb.component('studio.categories-marks',  /* studio_categoriesMarks */ {
   params: [
-    {
-      id: 'path', 
-      as: 'string', 
-      defaultValue :{$: 'studio.currentProfilePath' }
-    }, 
-    { id: 'type', as: 'string' }, 
-    { id: 'mode', option: 'insert,insert-control,update', defaultValue: 'insert' }, 
-    { id: 'onClose', type: 'action', dynamic: true }
-  ], 
-  impl :{$: 'open-dialog', 
-    style :{$: 'dialog.studio-floating' }, 
-    content :{$: 'studio.select-profile', 
-      onSelect :{$: 'action.if', 
-        condition: '%$mode% == \"insert-control\"', 
-        then :{$: 'studio.insert-control', path: '%$path%', comp: '%%' }, 
-        else :{
-          $if: '%$mode% == \"insert\"', 
-          then :{$: 'studio.add-array-item', 
-            path: '%$path%', 
-            toAdd :{
-              $object :{$: '%%' }
-            }
-          }, 
-          else :{$: 'studio.set-comp', path: '%$path%', comp: '%%' }
-        }
-      }, 
-      type: '%$type%', 
-      path: '%$path%'
-    }, 
-    title: 'new %$type%', 
-    features: [
-      {$: 'css.height', height: '430', overflow: 'hidden' }, 
-      {$: 'css.width', width: '450', overflow: 'hidden' }, 
-      {$: 'dialog-feature.drag-title', id: 'new %$type%' }, 
-      {$: 'dialog-feature.near-launcher-position', offsetLeft: 0, offsetTop: 0 }, 
-      {$: 'dialog-feature.auto-focus-on-first-input' }, 
-      {$: 'dialog-feature.onClose', action: [{ $call: 'onClose' }] }
-    ]
-  }
-})
-
-jb.component('studio.categories-marks', {
-  params: [
-    { id: 'type', as: 'string' },
-    { id: 'path', as: 'string' },
+    {id: 'type', as: 'string'},
+    {id: 'path', as: 'string'}
   ],
-  impl :{$: 'pipeline',
-    items: [
-        { $: 'object' ,
-          control :{$: 'pipeline',
-            items: [
-              {$: 'list',
-                items: [
-                  'common:100',
-                  'control:95',
-                  'input:90',
-                  'group:85',
-                  'studio-helper:0,suggestions-test:0,studio:0,test:0,basic:0,ui-tests:0,studio-helper-dummy:0,itemlist-container:0'
-                ]
-              },
-              {$: 'split', separator: ',' },
-              {$: 'object',
-                code: {$: 'split', separator: ':', part: 'first'  },
-                mark: {$: 'split', separator: ':', part: 'second'  },
-              }
-            ]
-          },
-          feature :{$: 'pipeline',
-            items: [
-              {$: 'list',
-                items: [
-                  'css:100',
-                  'watch:95',
-									'lifecycle:90',
-                  'events:85',
-									'group:80',
-									'all:20',
-                  'feature:0,tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0,itemlist-container:0,editable-text:0,editable-boolean:0',
-                  'mdl-style:0'
-                ]
-              },
-              {$: 'split', separator: ',' },
-              {$: 'object',
-                code: {$: 'split', separator: ':', part: 'first'  },
-                mark: {$: 'split', separator: ':', part: 'second'  },
-              }
-            ]
-          },
-		  'group.style' :{$: 'pipeline',
-            items: [
-              {$: 'list',
-                items: [
-                  'layout:100',
-                  'group:90',
-                  'tabs:0',
-                ]
-              },
-              {$: 'split', separator: ',' },
-              {$: 'object',
-                code: {$: 'split', separator: ':', part: 'first'  },
-                mark: {$: 'split', separator: ':', part: 'second'  },
-              }
-            ]
-          },
-        },
-       {$firstSucceeding: [ ctx => ctx.data[ctx.exp('%$type%','string')], {$: 'object', code: 'all', mark: '100' }]}
-    ]
-  }
-})
-
-jb.component('studio.select-profile', {
-  type: 'control', 
-  params: [
-    { id: 'onSelect', type: 'action', dynamic: true }, 
-    { id: 'type', as: 'string' },
-    { id: 'path', as: 'string' }
-  ], 
-  impl :{$: 'group', 
-    title: 'itemlist-with-find', 
-    style :{$: 'layout.vertical', spacing: 3 }, 
-    controls: [
-      {$: 'group', 
-      style :{$: 'layout.horizontal', spacing: 3 }, 
-      controls: [
-        {$: 'itemlist-container.search', 
-          title : 'search', //{$: 'studio.prop-name', path: '%$path%' }, 
-          searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
-          databind: '%$itemlistCntrData/search_pattern%', 
-          style :{$: 'editable-text.mdl-input', width: '200' }, 
-          features :{$: 'feature.onEsc', 
-            action :{$: 'dialog.close-containing-popup', id: 'studio-jb-editor-popup', OK: false }
-          }
-        }, 
-        {$: 'material-icon', 
-          icon: 'search', 
-          title: 'search icon', 
-          style :{$: 'icon.material' }, 
-          features :{$: 'css.margin', top: '20', left: '-25' }
+  impl: pipeline(
+    {
+      $: 'object',
+      control: pipeline(
+        list(
+          'common:100',
+          'control:95',
+          'input:90',
+          'group:85',
+          'studio-helper:0,suggestions-test:0,studio:0,test:0,basic:0,ui-tests:0,studio-helper-dummy:0,itemlist-container:0'
+        ),
+        split(','),
+        {
+          $: 'object',
+          code: split({separator: ':', part: 'first'}),
+          mark: split({separator: ':', part: 'second'})
         }
-      ]
+      ),
+      feature: pipeline(
+        list(
+          'css:100',
+          'watch:95',
+          'lifecycle:90',
+          'events:85',
+          'group:80',
+          'all:20',
+          'feature:0,tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0,itemlist-container:0,editable-text:0,editable-boolean:0',
+          'mdl-style:0'
+        ),
+        split(','),
+        {
+          $: 'object',
+          code: split({separator: ':', part: 'first'}),
+          mark: split({separator: ':', part: 'second'})
+        }
+      ),
+      'group.style': pipeline(
+        list('layout:100', 'group:90', 'tabs:0'),
+        split(','),
+        {
+          $: 'object',
+          code: split({separator: ':', part: 'first'}),
+          mark: split({separator: ':', part: 'second'})
+        }
+      )
     },
-          {$: 'group', 
-        title: 'categories and items', 
-        style :{$: 'layout.horizontal', spacing: '33' }, 
-        controls: [
-          {$: 'itemlist', 
-            title: 'items', 
-            items :{
-              $pipeline: [
-                '%$Categories%', 
-                {$: 'filter', 
-                  filter :{$: 'or', 
-                    items: [
-                      {$: 'equals', 
-                        item1: '%code%', 
-                        item2: '%$SelectedCategory%'
-                      }, 
-                      {$: 'notEmpty', 
-                        item: '%$itemlistCntrData/search_pattern%'
-                      }
-                    ]
-                  }
-                }, 
-                '%pts%', 
-                {$: 'itemlist-container.filter' }, 
-                {$: 'unique', id: '%%', items: '%%' }
-              ]
-            }, 
-            controls: [
-              {$: 'label', 
-                title :{$: 'highlight', 
-                  base: '%%', 
-                  highlight: '%$itemlistCntrData/search_pattern%'
-                }, 
-                style :{$: 'label.span', level: 'h3' }, 
-                features: [
-                  {$: 'css', css: '{ text-align: left; }' }, 
-                  {$: 'css.padding', 
-                    top: '0', 
-                    left: '4', 
-                    right: '4', 
-                    bottom: '0'
-                  }, 
-                  {$: 'css.width', width: '250', minMax: 'min' }
-                ]
-              }
-            ], 
-            itemVariable: 'item', 
-            features: [
-              {$: 'css.height', height: '300', overflow: 'auto', minMax: '' }, 
-              {$: 'itemlist.selection', 
-                databind: '%$itemlistCntrData/selected%', 
-                onSelection :{
-                  $runActions: [
-                    {
-                      $if :{$: 'contains', 
-                        text: ['control', 'style'], 
-                        allText: '%$type%'
-                      },
-                      then :{
-                        $call: 'onSelect', 
-                        $vars: { selectionPreview: true }
-                      }
-                    }
-                  ]
-                }, 
-                onDoubleClick :{
-                  $runActions: [
-                    {$: 'studio.clean-selection-preview' }, 
-                    { $call: 'onSelect' }, 
-                    {$: 'dialog.close-containing-popup' }
-                  ]
-                }, 
-                autoSelectFirst: true
-              }, 
-              {$: 'itemlist.keyboard-selection', 
-                onEnter :{
-                  $runActions: [
-                    {$: 'studio.clean-selection-preview' }, 
-                    { $call: 'onSelect' }, 
-                    {$: 'dialog.close-containing-popup' }
-                  ]
-                }
-              }, 
-              {$: 'watch-ref', ref: '%$SelectedCategory%' }, 
-              {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' }, 
-              {$: 'css.margin', top: '3', selector: '>li' }, 
-              {$: 'css.width', width: '200' }
-            ]
-          }, 
-          {$: 'picklist', 
-            title: '', 
-            databind: '%$SelectedCategory%', 
-            options: '%$Categories%', 
-            style :{$: 'style-by-control', 
-              control :{$: 'group', 
-                controls :{$: 'itemlist', 
-                  items: '%$picklistModel/options/code%', 
-                  controls :{$: 'label', 
-                    title :{
-                      $pipeline: [
-                        '%$Categories%', 
-                        {$: 'filter', filter: '%code% == %$item%' }, 
-                        '%code% (%pts/length%)'
-                      ]
-                    }, 
-                    style :{$: 'label.span' }, 
-                    features: [
-                      {$: 'css.width', width: '120' }, 
-                      {$: 'css', css: '{text-align: left}' }, 
-                      {$: 'css.padding', left: '10' }
-                    ]
-                  }, 
-                  style :{$: 'itemlist.ul-li' }, 
-                  watchItems: false, 
-                  features: [
-                    {$: 'itemlist.selection', 
-                      cssForActive: 'background: white', 
-                      databind: '%$SelectedCategory%', 
-                      cssForSelected: 'box-shadow: 3px 0px 0 0 #304ffe inset; color: black !important; background: none !important; !important'
-                    }
-                  ]
-                }, 
-                features :{$: 'group.itemlist-container' }
-              }, 
-              modelVar: 'picklistModel'
-            }, 
-            features :{$: 'picklist.onChange', 
-              action :{$: 'write-value', to: '%$itemlistCntrData/search_pattern%' }
-            }
-          }
-        ]
-      }, 
-      {$: 'label', 
-        title :{
-          $pipeline: [
-            '%$itemlistCntrData/selected%', 
-            {$: 'studio.val', path: '%%' }, 
-            '%description%'
-          ]
-        }, 
-        style :{$: 'label.span' }
-      }
-    ], 
-    features: [
-      {$: 'css.margin', top: '10', left: '20' }, 
-      {$: 'variable', 
-        name: 'unsortedCategories', 
-        value :{$: 'studio.categories-of-type', type: '%$type%', path: '%$path%' }
-      }, 
-      {$: 'variable', 
-        name: 'Categories', 
-        value :{$: 'picklist.sorted-options', 
-          options: '%$unsortedCategories%', 
-          marks :{$: 'studio.categories-marks', type: '%$type%', path: '%$path%' }
-        }
-      }, 
-      {$: 'variable', 
-        name: 'SelectedCategory', 
-        value :{
-          $if :{$: 'studio.val', path: '%$path%' }, 
-          then: 'all', 
-          else: '%$Categories[0]/code%'
-        }, 
-        mutable: true
-      }, 
-      {$: 'variable', name: 'SearchPattern', value: '', mutable: true }, 
-      {$: 'group.itemlist-container', 
-        initialSelection :{$: 'studio.comp-name', path: '%$path%' }
-      }
-    ]
-  }
+    firstSucceeding(
+      ctx => ctx.data[ctx.exp('%$type%','string')],
+      {$: 'object', code: 'all', mark: '100'}
+    )
+  )
 })
 
-jb.component('studio.pick-profile', {
+jb.component('studio.select-profile',  /* studio_selectProfile */ {
+  type: 'control',
+  params: [
+    {id: 'onSelect', type: 'action', dynamic: true},
+    {id: 'type', as: 'string'},
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    title: 'itemlist-with-find',
+    style: layout_vertical(3),
+    controls: [
+      group({
+        style: layout_horizontal(3),
+        controls: [
+          itemlistContainer_search({
+            title: 'search',
+            searchIn: itemlistContainer_searchInAllProperties(),
+            databind: '%$itemlistCntrData/search_pattern%',
+            style: editableText_mdlInput('200'),
+            features: feature_onEsc(dialog_closeContainingPopup(false))
+          }),
+          materialIcon({
+            icon: 'search',
+            title: 'search icon',
+            style: icon_material(),
+            features: css_margin({top: '20', left: '-25'})
+          })
+        ]
+      }),
+      group({
+        title: 'categories and items',
+        style: layout_horizontal('33'),
+        controls: [
+          itemlist({
+            title: 'items',
+            items: pipeline(
+              '%$Categories%',
+              filter(
+                or(
+                  equals('%code%', '%$SelectedCategory%'),
+                  notEmpty('%$itemlistCntrData/search_pattern%')
+                )
+              ),
+              '%pts%',
+              itemlistContainer_filter(),
+              unique('%%', '%%')
+            ),
+            controls: [
+              label({
+                title: highlight('%%', '%$itemlistCntrData/search_pattern%'),
+                style: label_span(),
+                features: [
+                  css('{ text-align: left; }'),
+                  css_padding({top: '0', left: '4', right: '4', bottom: '0'}),
+                  css_width({width: '250', minMax: 'min'})
+                ]
+              })
+            ],
+            itemVariable: 'item',
+            features: [
+              css_height({height: '300', overflow: 'auto', minMax: ''}),
+              itemlist_selection({
+                databind: '%$itemlistCntrData/selected%',
+                onSelection: runActions(
+                  {
+                    $if: contains({text: ['control', 'style'], allText: '%$type%'}),
+                    then: call(Var('selectionPreview', true), 'onSelect')
+                  }
+                ),
+                onDoubleClick: runActions(studio_cleanSelectionPreview(), call('onSelect'), dialog_closeContainingPopup()),
+                autoSelectFirst: true
+              }),
+              itemlist_keyboardSelection({
+                onEnter: runActions(studio_cleanSelectionPreview(), call('onSelect'), dialog_closeContainingPopup())
+              }),
+              watchRef('%$SelectedCategory%'),
+              watchRef('%$itemlistCntrData/search_pattern%'),
+              css_margin({top: '3', selector: '>li'}),
+              css_width('200')
+            ]
+          }),
+          picklist({
+            title: '',
+            databind: '%$SelectedCategory%',
+            options: '%$Categories%',
+            style: styleByControl(
+              group({
+                controls: itemlist({
+                  items: '%$picklistModel/options/code%',
+                  controls: label({
+                    title: pipeline('%$Categories%', filter('%code% == %$item%'), '%code% (%pts/length%)'),
+                    style: label_span(),
+                    features: [css_width('120'), css('{text-align: left}'), css_padding({left: '10'})]
+                  }),
+                  style: itemlist_ulLi(),
+                  watchItems: false,
+                  features: [
+                    itemlist_selection({
+                      databind: '%$SelectedCategory%',
+                      cssForSelected: 'box-shadow: 3px 0px 0 0 #304ffe inset; color: black !important; background: none !important; !important'
+                    })
+                  ]
+                }),
+                features: group_itemlistContainer({})
+              }),
+              'picklistModel'
+            ),
+            features: picklist_onChange(writeValue('%$itemlistCntrData/search_pattern%'))
+          })
+        ]
+      }),
+      label({
+        title: pipeline('%$itemlistCntrData/selected%', studio_val('%%'), '%description%'),
+        style: label_span()
+      })
+    ],
+    features: [
+      css_margin({top: '10', left: '20'}),
+      variable({name: 'unsortedCategories', value: studio_categoriesOfType('%$type%', '%$path%')}),
+      variable({
+        name: 'Categories',
+        value: picklist_sortedOptions('%$unsortedCategories%', studio_categoriesMarks('%$type%', '%$path%'))
+      }),
+      variable({
+        name: 'SelectedCategory',
+        value: {$if: studio_val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
+        mutable: true
+      }),
+      variable({name: 'SearchPattern', value: '', mutable: true}),
+      group_itemlistContainer({initialSelection: studio_compName('%$path%')})
+    ]
+  })
+})
+
+jb.component('studio.open-new-profile-dialog',  /* studio_openNewProfileDialog */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()},
+    {id: 'type', as: 'string'},
+    {id: 'mode', option: 'insert,insert-control,update', defaultValue: 'insert'},
+    {id: 'onClose', type: 'action', dynamic: true}
+  ],
+  impl: openDialog({
+    style: dialog_studioFloating({}),
+    content: studio_selectProfile({
+      onSelect: action_if(
+        '%$mode% == \"insert-control\"',
+        studio_insertControl('%$path%', '%%'),
+        {
+          $if: '%$mode% == \"insert\"',
+          then: studio_addArrayItem('%$path%', {$object: {$: '%%'}}),
+          else: studio_setComp('%$path%', '%%')
+        }
+      ),
+      type: '%$type%',
+      path: '%$path%'
+    }),
+    title: 'new %$type%',
+    features: [
+      css_height({height: '430', overflow: 'hidden'}),
+      css_width({width: '450', overflow: 'hidden'}),
+      dialogFeature_dragTitle('new %$type%'),
+      dialogFeature_nearLauncherPosition({offsetLeft: 0, offsetTop: 0}),
+      dialogFeature_autoFocusOnFirstInput(),
+      dialogFeature_onClose([call('onClose')])
+    ]
+  })
+})
+
+jb.component('studio.pick-profile',  /* studio_pickProfile */ {
   description: 'picklist for picking a profile in a context',
   type: 'control',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'button',
-    title :{ $firstSucceeding: [{$: 'studio.comp-name', path: '%$path%' }, ''] },
-    action :{$: 'open-dialog',
-      style :{$: 'dialog.popup' },
-      content :{$: 'studio.select-profile',
-        onSelect :{$: 'studio.set-comp', path: '%$path%', comp: '%%' },
-        type :{$: 'studio.param-type', path: '%$path%' },
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: button({
+    title: firstSucceeding(studio_compName('%$path%'), ''),
+    action: openDialog({
+      style: dialog_popup(),
+      content: studio_selectProfile({
+        onSelect: studio_setComp('%$path%', '%%'),
+        type: studio_paramType('%$path%'),
         path: '%$path%'
-      },
-      features: [
-        {$: 'dialog-feature.auto-focus-on-first-input' },
-        {$: 'css.padding', right: '20' },
-//				{$: 'variable', name: 'initial-comps-index', value: {$: 'studio.comps-undo-index'}},
-//	      {$: 'dialog-feature.onClose',
-//	        action :{ $if: {$not:'%%'},	then: {$: 'studio.revert', toIndex: '%$initial-comps-index%' }}
-//				},
-      ]
-    },
-    style :{$: 'button.select-profile-style' },
-    features :{$: 'studio.watch-path', path: '%$path%' }
-  }
+      }),
+      features: [dialogFeature_autoFocusOnFirstInput(), css_padding({right: '20'})]
+    }),
+    style: button_selectProfileStyle(),
+    features: studio_watchPath('%$path%')
+  })
 })
 
-jb.component('studio.open-new-page', {
+jb.component('studio.open-new-page',  /* studio_openNewPage */ {
   type: 'action',
-  impl :{$: 'open-dialog',
-    style :{$: 'dialog.dialog-ok-cancel' },
-		modal: true,
-    features : [{$: 'variable', name: 'name', mutable: true },
-			{$: 'dialog-feature.auto-focus-on-first-input' }
-		],
-    content :{$: 'group',
-      style :{$: 'group.div' },
+  impl: openDialog({
+    style: dialog_dialogOkCancel(),
+    content: group({
+      style: group_div(),
       controls: [
-        {$: 'editable-text',
+        editableText({
           title: 'page name',
           databind: '%$name%',
-          style :{$: 'editable-text.mdl-input' },
-          features :{$: 'feature.onEnter',
-            action :{$: 'dialog.close-containing-popup' }
-          }
-        }
+          style: editableText_mdlInput(),
+          features: feature_onEnter(dialog_closeContainingPopup())
+        })
       ],
-      features :{$: 'css.padding', top: '14', left: '11' }
-    },
+      features: css_padding({top: '14', left: '11'})
+    }),
     title: 'New Page',
     onOK: [
-      ctx => jb.studio.previewjb.component(ctx.exp('%$studio/project%.%$name%'), {
+      ctx => jb.studio.previewjb. component(ctx.exp('%$studio/project%.%$name%'), {
           type: 'control',
           impl :{$: 'group', title1: ctx.exp('%$name%'), contorls: []}
       }),
-      //{$: 'studio.goto-path', path: '%$studio/project%.%$name%' },
-      {$: 'write-value', to: '%$studio/profile_path%', value: '%$studio/project%.%$name%~impl' },
-      {$: 'write-value', to: '%$studio/page%', value: '%$name%' },
-      {$: 'studio.open-control-tree'},
-      {$: 'tree.regain-focus' },
-      {$: 'refresh-control-by-id', id: 'pages'}
-      // {$: 'on-next-timer',
-      //   description: 'we need to wait for the itemlist to be updated with new page. However, the mutable name var is lost on next timer so we put it in context var as newName',
-      //   $vars: { newName: '%$name%'},
-      //   action: {$: 'write-value', to: '%$studio/page%', value: '%$newName%' },
-      // }
+      writeValue('%$studio/profile_path%', '%$studio/project%.%$name%~impl'),
+      writeValue('%$studio/page%', '%$name%'),
+      {$: 'studio.open-control-tree' },
+      tree_regainFocus(),
+      refreshControlById('pages')
     ],
-  }
+    modal: true,
+    features: [variable({name: 'name', mutable: true}), dialogFeature_autoFocusOnFirstInput()]
+  })
 })
 
-jb.component('studio.insert-comp-option', {
+jb.component('studio.insert-comp-option',  /* studio_insertCompOption */ {
   params: [
-    { id: 'title', as: 'string' },
-    { id: 'comp', as: 'string' },
+    {id: 'title', as: 'string'},
+    {id: 'comp', as: 'string'}
   ],
-  impl :{$: 'menu.action', title: '%$title%',
-    action :{$: 'studio.insert-control', comp: '%$comp%', path: {$: 'studio.currentProfilePath'} },
-  }
+  impl: menu_action({
+    title: '%$title%',
+    action: studio_insertControl(studio_currentProfilePath(), '%$comp%')
+  })
 })
 
-jb.component('studio.insert-control-menu', {
-  impl :{$: 'menu.menu', title: 'Insert',
-          options: [
-          {$: 'menu.menu', title: 'Control', options: [
-              {$: 'studio.insert-comp-option', title:'Label', comp: 'label'},
-              {$: 'studio.insert-comp-option', title:'Button', comp: 'button'},
-            ]
-          },
-          {$: 'menu.menu', title: 'Input', options: [
-              {$: 'studio.insert-comp-option', title:'Editable Text', comp: 'editable-text'},
-              {$: 'studio.insert-comp-option', title:'Editable Number', comp: 'editable-number'},
-              {$: 'studio.insert-comp-option', title:'Editable Boolean', comp: 'editable-boolean'},
-            ]
-          },
-          {$: 'menu.action',
-              title: 'More...',
-              action :{$: 'studio.open-new-profile-dialog', type: 'control', mode: 'insert-control' }
-          }
-          ]
-        },
+jb.component('studio.insert-control-menu',  /* studio_insertControlMenu */ {
+  impl: menu_menu({
+    title: 'Insert',
+    options: [
+      menu_menu({
+        title: 'Control',
+        options: [
+          studio_insertCompOption('Label', 'label'),
+          studio_insertCompOption('Button', 'button')
+        ]
+      }),
+      menu_menu({
+        title: 'Input',
+        options: [
+          studio_insertCompOption('Editable Text', 'editable-text'),
+          studio_insertCompOption('Editable Number', 'editable-number'),
+          studio_insertCompOption('Editable Boolean', 'editable-boolean')
+        ]
+      }),
+      menu_action({
+        title: 'More...',
+        action: studio_openNewProfileDialog({type: 'control', mode: 'insert-control'})
+      })
+    ]
+  })
 })
 
 jb.studio.newControl = path =>

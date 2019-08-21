@@ -179,10 +179,6 @@ jb.component('studio.ctx-counters', {
   }
 })
 
-jb.component('studio.currentProfilePath', {
-	impl: { $firstSucceeding: [ '%$simulateProfilePath%','%$studio/profile_path%', '%$studio/project%.%$studio/page%'] }
-})
-
 jb.component('studio.is-single-test', {
 	type: 'boolean',
 	impl: ctx => {
@@ -287,3 +283,46 @@ jb.component('studio.main-menu', {
     ]
   }
 })
+
+jb.component('studio.goto-path', {
+	type: 'action',
+	params: [
+		{ id: 'path', as: 'string' },
+	],
+	impl :{$runActions: [
+		{$: 'dialog.close-containing-popup' },
+		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' },
+		{$if :{$: 'studio.is-of-type', type: 'control,table-field', path: '%$path%'},
+			then: {$runActions: [
+				{$: 'studio.open-control-tree'},
+//				{$: 'studio.open-properties', focus: true}
+			]},
+			else :{$: 'studio.open-component-in-jb-editor', path: '%$path%' }
+		}
+	]}
+})
+
+jb.component('studio.path-hyperlink', {
+  type: 'control',
+  params: [
+    { id: 'path', as: 'string', mandatory: true },
+    { id: 'prefix', as: 'string' }
+  ],
+  impl :{$: 'group',
+    style :{$: 'layout.horizontal', spacing: '9' },
+    controls: [
+      {$: 'label', title: '%$prefix%' },
+      {$: 'button',
+        title: ctx => {
+	  		const path = ctx.componentContext.params.path;
+	  		const title = jb.studio.shortTitle(path) || '',compName = jb.studio.compNameOfPath(path) || '';
+	  		return title == compName ? title : compName + ' ' + title;
+	  	},
+        action :{$: 'studio.goto-path', path: '%$path%' },
+        style :{$: 'button.href' },
+        features :{$: 'feature.hover-title', title: '%$path%' }
+      }
+    ]
+  }
+})
+

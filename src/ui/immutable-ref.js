@@ -179,7 +179,7 @@ class ImmutableWithJbId {
     return val;
   }
   cleanVal(val) {
-    return val && val.$jb_secondaryLink && val.$jb_secondaryLink.val || val
+    return (val && val.$jb_secondaryLink && val.$jb_secondaryLink.val) || val
   }
   splice(ref,args,srcCtx) {
     return this.doOp(ref,{$splice: args },srcCtx)

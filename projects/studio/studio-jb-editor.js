@@ -788,7 +788,6 @@ jb.component('studio.add-variable', {
   }}
 })
 
-
 jb.component('studio.expand-and-select-first-child-in-jb-editor', {
   type: 'action',
   impl: ctx => {

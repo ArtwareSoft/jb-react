@@ -25,22 +25,36 @@ jb.component('test.getAsBool',{
   params: [
     { id: 'val', as: 'boolean'}
   ],
-  impl: '%$val%'
+  impl: (ctx,val) => val
 })
 
-jb.component('data-test.write-value-via-boolean-type', {
+jb.component('data-test.get-ref-value-as-boolean', {
   impl: dataTest({
-    vars: Var('a','false'),
-	  calculate: test_getAsBool("%$a%"),
-	  expectedResult: equals(false)
+	  calculate: test_getAsBool("%$person/male%"),
+	  expectedResult: ({data}) => data === true
 	})
 })
 
-jb.component('data-test.write-value-via-boolean-type-2', {
+jb.component('data-test.get-exp-value-as-boolean', {
+  impl: dataTest({
+	  calculate: test_getAsBool("%$person/name%==Homer Simpson"),
+	  expectedResult: ({data}) => data === true
+	})
+})
+
+jb.component('data-test.get-value-via-boolean-type-var', {
   impl: dataTest({
     vars: Var('a','false'),
-	  calculate: ctx => ctx.exp('%$a%','boolean'),
-	  expectedResult: equals(false)
+	  calculate: test_getAsBool("%$a%"),
+	  expectedResult: ({data}) => data === false
+	})
+})
+
+jb.component('data-test.ctx.exp-of-ref-with-boolean-type', {
+  impl: dataTest({
+    vars: Var('a','false'),
+	  calculate: ctx => ctx.exp('%$person/male%','boolean'),
+	  expectedResult: ({data}) => data === true
 	})
 })
 

@@ -1,3 +1,4 @@
+
 jb.component('studio.components-cross-ref',{
 	type: 'data',
 	impl: ctx => {

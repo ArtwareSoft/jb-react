@@ -1,64 +1,70 @@
 (function() {
 var st = jb.studio;
 
-jb.component('studio.val', {
-	params: [ {id: 'path', as: 'string', mandatory: true } ],
-	impl: (ctx,path) =>
+jb.component('studio.val',  /* studio_val */ {
+  params: [
+    {id: 'path', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,path) =>
 		st.valOfPath(path)
 })
 
-jb.component('studio.is-primitive-value', {
-	params: [ {id: 'path', as: 'string', mandatory: true } ],
-	impl: (ctx,path) =>
+jb.component('studio.is-primitive-value',  /* studio_isPrimitiveValue */ {
+  params: [
+    {id: 'path', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,path) =>
 		st.isPrimitiveValue(st.valOfPath(path))
 })
 
-jb.component('studio.is-of-type', {
-	params: [
-		{ id: 'path', as: 'string', mandatory: true },
-		{ id: 'type', as: 'string', mandatory: true },
-	],
-	impl: (ctx,path,_type) =>
+jb.component('studio.is-of-type',  /* studio_isOfType */ {
+  params: [
+    {id: 'path', as: 'string', mandatory: true},
+    {id: 'type', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,path,_type) =>
 			st.isOfType(path,_type)
 })
 
-jb.component('studio.parent-path', {
-	params: [ {id: 'path', as: 'string', mandatory: true } ],
-	impl: (ctx,path) =>
+jb.component('studio.parent-path',  /* studio_parentPath */ {
+  params: [
+    {id: 'path', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,path) =>
 		st.parentPath(path)
 })
 
 
-jb.component('studio.param-type', {
-	params: [
-		{ id: 'path', as: 'string', mandatory: true },
-	],
-	impl: (ctx,path) =>
+jb.component('studio.param-type',  /* studio_paramType */ {
+  params: [
+    {id: 'path', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,path) =>
 			st.paramTypeOfPath(path)
 })
 
-jb.component('studio.PTs-of-type', {
-	params: [
-		{ id: 'type', as: 'string', mandatory: true },
-	],
-	impl: (ctx,_type) =>
+jb.component('studio.PTs-of-type',  /* studio_PTsOfType */ {
+  params: [
+    {id: 'type', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,_type) =>
 			st.PTsOfType(_type)
 })
 
-jb.component('studio.profiles-of-PT', {
-	params: [
-		{ id: 'PT', as: 'string', mandatory: true },
-	],
-	impl: (ctx, pt) =>
+jb.component('studio.profiles-of-PT',  /* studio_profilesOfPT */ {
+  params: [
+    {id: 'PT', as: 'string', mandatory: true}
+  ],
+  impl: (ctx, pt) =>
 			st.profilesOfPT(pt)
 })
 
-jb.component('studio.categories-of-type', {
-	params: [
-		{ id: 'type', as: 'string', mandatory: true },
-		{ id: 'path', as: 'string' },
-	],
-	impl: (ctx,_type,path) => {
+jb.component('studio.categories-of-type',  /* studio_categoriesOfType */ {
+  params: [
+    {id: 'type', as: 'string', mandatory: true},
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,_type,path) => {
 		var val = st.valOfPath(path);
 		var comps = st.previewjb.comps;
 		var pts = st.PTsOfType(_type);
@@ -96,76 +102,92 @@ jb.component('studio.categories-of-type', {
 	}
 })
 
-jb.component('studio.short-title', {
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.short-title',  /* studio_shortTitle */ {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 		st.shortTitle(path)
 })
 
-jb.component('studio.summary', {
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.summary',  /* studio_summary */ {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 		st.summary(path)
 })
 
-jb.component('studio.has-param', {
-	params: [
-		{ id: 'path', as: 'string' },
-		{ id: 'param', as: 'string' },
-	],
-	impl: (ctx,path,param) =>
+jb.component('studio.has-param',  /* studio_hasParam */ {
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'param', as: 'string'}
+  ],
+  impl: (ctx,path,param) =>
 		st.paramDef(path+'~'+param)
 })
 
-jb.component('studio.non-control-children', {
-	params: [
-		{id: 'path', as: 'string' },
-		{id: 'includeFeatures', as: 'boolean' },
-	],
-	impl: (ctx,path,includeFeatures) =>
+jb.component('studio.non-control-children',  /* studio_nonControlChildren */ {
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'includeFeatures', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,path,includeFeatures) =>
 		st.nonControlChildren(path,includeFeatures)
 })
 
-jb.component('studio.as-array-children', {
-	params: [
-		{id: 'path', as: 'string' },
-	],
-	impl: (ctx,path) =>
+jb.component('studio.as-array-children',  /* studio_asArrayChildren */ {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 		st.asArrayChildren(path)
 })
 
-jb.component('studio.comp-name',{
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.compNameOfPath(path) || ''
+jb.component('studio.comp-name',  /* studio_compName */ {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => st.compNameOfPath(path) || ''
 })
 
-jb.component('studio.param-def',{
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.paramDef(path)
+jb.component('studio.param-def',  /* studio_paramDef */ {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => st.paramDef(path)
 })
 
-jb.component('studio.enum-options',{
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.enum-options',  /* studio_enumOptions */ {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 		((st.paramDef(path) || {}).options ||'').split(',').map(x=>({code:x,text:x}))
 })
 
-jb.component('studio.prop-name',{
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.prop-name',  /* studio_propName */ {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 		st.propName(path)
 })
 
-jb.component('studio.more-params',{
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.more-params',  /* studio_moreParams */ {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 				st.jbEditorMoreParams(path)
 })
 
 
-jb.component('studio.comp-name-ref', {
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => ({
+jb.component('studio.comp-name-ref',  /* studio_compNameRef */ {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => ({
 			$jb_path: () => path.split('~'),
 			$jb_val: function(value) {
 				if (typeof value == 'undefined')
@@ -178,10 +200,12 @@ jb.component('studio.comp-name-ref', {
 	})
 })
 
-jb.component('studio.profile-as-text', {
-	type: 'data',
-	params: [{ id: 'path', as: 'string', dynamic: true } ],
-	impl: ctx => ({
+jb.component('studio.profile-as-text',  /* studio_profileAsText */ {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string', dynamic: true}
+  ],
+  impl: ctx => ({
 		$jb_path: () => ctx.params.path().split('~'),
 		$jb_val: function(value) {
 			try {
@@ -223,10 +247,12 @@ jb.component('studio.profile-as-text', {
 	})
 })
 
-jb.component('studio.profile-as-macro-text', {
-	type: 'data',
-	params: [{ id: 'path', as: 'string', dynamic: true } ],
-	impl: ctx => ({
+jb.component('studio.profile-as-macro-text',  /* studio_profileAsMacroText */ {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string', dynamic: true}
+  ],
+  impl: ctx => ({
 		$jb_path: () => ctx.params.path().split('~'),
 		$jb_val: function(value) {
 			try {
@@ -251,10 +277,12 @@ jb.component('studio.profile-as-macro-text', {
 	})
 })
 
-jb.component('studio.profile-as-string-byref', {
-	type: 'data',
-	params: [{ id: 'path', as: 'string', dynamic: true } ],
-	impl: ctx => ({
+jb.component('studio.profile-as-string-byref',  /* studio_profileAsStringByref */ {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string', dynamic: true}
+  ],
+  impl: ctx => ({
 		$jb_path: () => path.split('~'),
 		$jb_val: function(value) {
 			var path = ctx.params.path();
@@ -270,10 +298,12 @@ jb.component('studio.profile-as-string-byref', {
 	})
 })
 
-jb.component('studio.profile-value-as-text', {
-	type: 'data',
-	params: [ { id: 'path', as: 'string' } ],
-	impl: (ctx,path) => ({
+jb.component('studio.profile-value-as-text',  /* studio_profileValueAsText */ {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => ({
 		$jb_path: () => path.split('~'),
 			$jb_val: function(value) {
 				if (typeof value == 'undefined') {
@@ -291,51 +321,59 @@ jb.component('studio.profile-value-as-text', {
 		})
 })
 
-jb.component('studio.insert-control',{
-	type: 'action',
-	params: [
-		{ id: 'path', as: 'string', defaultValue :{$: 'studio.currentProfilePath' }  },
-		{ id: 'comp', as: 'string' },
-	],
-	impl: (ctx,path,comp,type) =>
+jb.component('studio.insert-control',  /* studio_insertControl */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()},
+    {id: 'comp', as: 'string'}
+  ],
+  impl: (ctx,path,comp,type) =>
 		st.insertControl(path, comp,ctx)
 })
 
-jb.component('studio.wrap', {
-	type: 'action',
-	params: [
-		{ id: 'path', as: 'string' },
-		{ id: 'comp', as: 'string' }
-	],
-	impl: (ctx,path,comp) =>
+jb.component('studio.wrap',  /* studio_wrap */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'comp', as: 'string'}
+  ],
+  impl: (ctx,path,comp) =>
 		st.wrap(path,comp,ctx)
 })
 
-jb.component('studio.wrap-with-group', {
-	type: 'action',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.wrap-with-group',  /* studio_wrapWithGroup */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 		st.wrapWithGroup(path,ctx)
 })
 
-jb.component('studio.add-property', {
-	type: 'action',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.add-property',  /* studio_addProperty */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 		st.addProperty(path,ctx)
 })
 
-jb.component('studio.duplicate-control',{
-	type: 'action',
-	params: [ { id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.duplicate-control',  /* studio_duplicateControl */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 		st.duplicateControl(path,ctx)
 })
 
-jb.component('studio.duplicate-array-item',{
-	type: 'action',
-	params: [ { id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.duplicate-array-item',  /* studio_duplicateArrayItem */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 		st.duplicateArrayItem(path,ctx)
 })
 
@@ -349,92 +387,110 @@ jb.component('studio.duplicate-array-item',{
 // 		st.moveInArray(path,moveUp)
 // })
 
-jb.component('studio.new-array-item', {
-	type: 'action',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.new-array-item',  /* studio_newArrayItem */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 		st.addArrayItem(path,ctx)
 })
 
-jb.component('studio.add-array-item',{
-	type: 'action',
-	params: [
-		{id: 'path', as: 'string' },
-		{id: 'toAdd', as: 'single' }
-	],
-	impl: (ctx,path,toAdd) =>
+jb.component('studio.add-array-item',  /* studio_addArrayItem */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'toAdd', as: 'single'}
+  ],
+  impl: (ctx,path,toAdd) =>
 		st.addArrayItem(path, toAdd,ctx)
 })
 
-jb.component('studio.wrap-with-array',{
-	type: 'action',
-	params: [
-		{id: 'path', as: 'string' },
-	],
-	impl: (ctx,path,toAdd) =>
+jb.component('studio.wrap-with-array',  /* studio_wrapWithArray */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path,toAdd) =>
 		st.wrapWithArray(path,ctx)
 })
 
-jb.component('studio.can-wrap-with-array', {
-	type: 'boolean',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.can-wrap-with-array',  /* studio_canWrapWithArray */ {
+  type: 'boolean',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 			st.paramDef(path) && (st.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(st.valOfPath(path))
 })
 
-jb.component('studio.is-array-item', {
-	type: 'boolean',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.is-array-item',  /* studio_isArrayItem */ {
+  type: 'boolean',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 			Array.isArray(st.valOfPath(st.parentPath(path)))
 })
 
 
-jb.component('studio.set-comp',{
-	type: 'action',
-	params: [
-		{id: 'path', as: 'string' },
-		{id: 'comp', as: 'single' }
-	],
-	impl: (ctx,path,comp) =>
+jb.component('studio.set-comp',  /* studio_setComp */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'comp', as: 'single'}
+  ],
+  impl: (ctx,path,comp) =>
 		st.setComp(path, comp,ctx)
 })
 
-jb.component('studio.delete',{
-	type: 'action',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st._delete(path,ctx)
+jb.component('studio.delete',  /* studio_delete */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => st._delete(path,ctx)
 })
 
-jb.component('studio.disabled',{
-	type: 'boolean',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.disabled(path,ctx)
+jb.component('studio.disabled',  /* studio_disabled */ {
+  type: 'boolean',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => st.disabled(path,ctx)
 })
 
-jb.component('studio.toggle-disabled',{
-	type: 'action',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.toggleDisabled(path,ctx)
+jb.component('studio.toggle-disabled',  /* studio_toggleDisabled */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => st.toggleDisabled(path,ctx)
 })
 
-jb.component('studio.make-local',{
-	type: 'action',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => st.makeLocal(path,ctx)
+jb.component('studio.make-local',  /* studio_makeLocal */ {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => st.makeLocal(path,ctx)
 })
 
-jb.component('studio.jb-editor.nodes', {
-	type: 'tree.nodeModel',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.jb-editor.nodes',  /* studio_jbEditor_nodes */ {
+  type: 'tree.nodeModel',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 			new st.jbEditorTree(path,true)
 })
 
-jb.component('studio.icon-of-type', {
-	type: 'data',
-	params: [ {id: 'type', as: 'string' } ],
-	impl: (ctx,type) => {
+jb.component('studio.icon-of-type',  /* studio_iconOfType */ {
+  type: 'data',
+  params: [
+    {id: 'type', as: 'string'}
+  ],
+  impl: (ctx,type) => {
 		if (type.match(/.style$/))
 			type = 'style';
 		return ({
@@ -446,22 +502,26 @@ jb.component('studio.icon-of-type', {
 			feature: 'brush'
 		}[type] || 'extension')
 	}
-
 })
 
-jb.component('studio.is-disabled', {
-	type: 'boolean',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) =>
+jb.component('studio.is-disabled',  /* studio_isDisabled */ {
+  type: 'boolean',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
 			st.disabled(path)
 })
 
-jb.component('studio.disabled-support', {
-	params: [
-		{ id: 'path', as: 'string', mandatory: true },
-	],
-	type: 'feature',
-	impl: {$: 'conditional-class', cssClass: 'jb-disabled', condition: {$: 'studio.is-disabled', path: '%$path%'} }
+jb.component('studio.disabled-support',  /* studio_disabledSupport */ {
+  params: [
+    {id: 'path', as: 'string', mandatory: true}
+  ],
+  type: 'feature',
+  impl: conditionalClass(
+    'jb-disabled',
+    studio_isDisabled('%$path%')
+  )
 })
 
 

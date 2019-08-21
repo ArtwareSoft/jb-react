@@ -21,7 +21,7 @@ jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
       const newVal = `${(+val)+inc}`;
       if (prefix == '-')
         token.start--;
-      editor.replaceRange(newVal, CodeMirror.Pos(cur.line, token.start), CodeMirror.Pos(cur.line, token.end))                
+      editor.replaceRange(newVal, CodeMirror.Pos(cur.line, token.start), CodeMirror.Pos(cur.line, token.end))
     }
   }
 })
@@ -29,7 +29,7 @@ jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
 jb.component('editable-text.studio-codemirror-tgp', {
   type: 'editable-text.style',
   impl :{$: 'editable-text.codemirror', mode: 'javascript',
-    cm_settings :{$: 'object', 
+    cm_settings :{$: 'object',
       extraKeys: {
         'Alt-Left': editor => {
           jb.studio.codeMirrorUtils.incNumberAtCursor(editor, {inc:-1})
@@ -62,14 +62,14 @@ jb.component('button.select-profile-style', {
   }
 })
 
-jb.component('studio.property-toolbar-style', {
+jb.component('studio.property-toolbar-style',  /* studio_propertyToolbarStyle */ {
   type: 'button.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('i',{class: 'material-icons',
+  impl: customStyle({
+    template: (cmp,state,h) => h('i',{class: 'material-icons',
         onclick: ev => cmp.clicked(ev)
       },'more_vert'),
-      css: `{ cursor: pointer;width: 16px; font-size: 16px; padding-top: 3px }`,
-  }
+    css: '{ cursor: pointer;width: 16px; font-size: 16px; padding-top: 3px }'
+  })
 })
 
 
@@ -277,44 +277,9 @@ jb.component('editable-boolean.studio-expand-collapse-in-array', {
    }
 })
 
-
-jb.component('dialog.studio-multiline-edit',{
-	type: 'dialog.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
-      h('button',{class: 'dialog-close', onclick:
-        _=> cmp.dialogClose() },'×'),
-      h(state.contentComp),
-    ]),
-			css: `{ background: #fff; position: absolute; min-width: 280px; min-height: 200px;
-					box-shadow: 2px 2px 3px #d5d5d5; padding: 3px; border: 1px solid rgb(213, 213, 213)
-				  }
-				>.dialog-close {
-						position: absolute;
-						cursor: pointer;
-						right: -7px; top: -22px;
-						font: 21px sans-serif;
-						border: none;
-						background: transparent;
-						color: #000;
-						text-shadow: 0 1px 0 #fff;
-						font-weight: 700;
-						opacity: .2;
-				}
-				>.dialog-close:hover { opacity: .5 }
-				`,
-			features: [
-				{ $: 'dialog-feature.max-zIndex-on-click' },
-				{ $: 'dialog-feature.close-when-clicking-outside' },
-				{ $: 'dialog-feature.css-class-on-launching-element' },
-				{ $: 'dialog-feature.studio-position-under-property' }
-			]
-	}
-})
-
-jb.component('dialog-feature.studio-position-under-property', {
-	type: 'dialog-feature',
-	impl: (context,offsetLeft,offsetTop) => ({
+jb.component('dialog-feature.studio-position-under-property',  /* dialogFeature_studioPositionUnderProperty */ {
+  type: 'dialog-feature',
+  impl: (context,offsetLeft,offsetTop) => ({
 			afterViewInit: function(cmp) {
 				if (!context.vars.$launchingElement)
 					return console.log('no launcher for dialog');
@@ -371,4 +336,22 @@ jb.component('label.studio-message', {
       }`,
     features: {$: 'label.bind-title' }
   }
+})
+
+jb.component('dialog.studio-multiline-edit',  /* dialog_studioMultilineEdit */ {
+  type: 'dialog.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
+      h('button',{class: 'dialog-close', onclick:
+        _=> cmp.dialogClose() },'×'),
+      h(state.contentComp),
+    ]),
+    css: "{ background: #fff; position: absolute; min-width: 280px; min-height: 200px;\n\t\t\t\t\tbox-shadow: 2px 2px 3px #d5d5d5; padding: 3px; border: 1px solid rgb(213, 213, 213)\n\t\t\t\t  }\n\t\t\t\t>.dialog-close {\n\t\t\t\t\t\tposition: absolute;\n\t\t\t\t\t\tcursor: pointer;\n\t\t\t\t\t\tright: -7px; top: -22px;\n\t\t\t\t\t\tfont: 21px sans-serif;\n\t\t\t\t\t\tborder: none;\n\t\t\t\t\t\tbackground: transparent;\n\t\t\t\t\t\tcolor: #000;\n\t\t\t\t\t\ttext-shadow: 0 1px 0 #fff;\n\t\t\t\t\t\tfont-weight: 700;\n\t\t\t\t\t\topacity: .2;\n\t\t\t\t}\n\t\t\t\t>.dialog-close:hover { opacity: .5 }\n\t\t\t\t",
+    features: [
+      dialogFeature_maxZIndexOnClick(),
+      dialogFeature_closeWhenClickingOutside(),
+      dialogFeature_cssClassOnLaunchingElement(),
+      dialogFeature_studioPositionUnderProperty()
+    ]
+  })
 })

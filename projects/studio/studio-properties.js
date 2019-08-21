@@ -1,46 +1,3 @@
-(function() {
-  const {pipeline, pipe, join, list, writeValue, contains, equals, and, not, or, assign, prop, assignWithIndex, object, obj, $if, count, notEmpty, isEmpty,
-    notEquals, isOfType, inGroup} = jb.macros
-  const {css, group,editableBoolean,label,hidden,watchRef,feature_if,id,uiAction_click, editableBoolean_expandCollapse, control_firstSucceeding, controlWithCondition,
-    layout_horizontal,field_initValue, css_width} = jb.macros
-  const {studio_nonControlChildren, studio_propName, studio_paramType, studio_paramDef, studio_val, studio_compName, studio_isNew, 
-    studio_watchPath, studio_pickProfile, studio_isOfType } = jb.macros  
-
-jb.component('studio.open-properties', {
-  type: 'action',
-  params: [{ id: 'focus', type: 'boolean', as: 'boolean' }],
-  impl :{$: 'open-dialog',
-    style :{$: 'dialog.studio-floating', id: 'studio-properties', width: '500' },
-    content :{$: 'studio.properties',
-      path :{$: 'studio.currentProfilePath' }
-    },
-    title :{
-      $pipeline: [
-        {$: 'object',
-          title :{$: 'studio.short-title',
-            path :{$: 'studio.currentProfilePath' }
-          },
-          comp :{$: 'studio.comp-name',
-            path :{$: 'studio.currentProfilePath' }
-          }
-        },
-        'Properties of %comp% %title%'
-      ]
-    },
-    features: [
-      {
-        $if: '%$focus%',
-        then :{$: 'dialog-feature.auto-focus-on-first-input' }
-      },
-      {$: 'dialog-feature.keyboard-shortcut',
-        shortcut: 'Ctrl+Left',
-        action :{$: 'studio.open-control-tree' }
-      },
-      {$: 'dialog-feature.resizer' }, 
-    ]
-  }
-})
-
 jb.component('studio.focus-on-first-property', {
   type: 'action',
   params: [{ id: 'delay', as: 'number', defaultValue: 100 }],
@@ -66,88 +23,6 @@ jb.component('studio.open-source-dialog', {
 		}
 })
 
-jb.component('studio.properties', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
-    controls: [
-      {$: 'group', 
-        title: 'accordion', 
-        style :{$: 'group.studio-properties-accordion' }, 
-        controls: [
-
-          {$: 'group', 
-            remark: 'properties', 
-            title :{
-              $pipeline: [
-                {$: 'count', 
-                  items :{$: 'studio.non-control-children', path: '%$path%' }
-                }, 
-                'Properties (%%)'
-              ], 
-            }, 
-            style :{$: 'custom-style', 
-              template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
-      h('tr',{ class: 'property' },[
-          h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
-          h('td',{ class: 'property-ctrl'},h(ctrl)),
-          h('td',{ class: 'property-toolbar'}, h(ctrl.jbComp.toolbar) ),
-      ])
-    )), 
-              css: `
-      { width: 100% }
-      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px;  font-weight: bold;}
-      >.property>td { vertical-align: top; }
-    `, 
-              features :{$: 'group.init-group' }
-            }, 
-            controls: [
-              {$: 'dynamic-controls', 
-                controlItems :{$: 'studio.non-control-children', path: '%$path%' }, 
-                genericControl :{$: 'studio.property-field', path: '%$controlItem%' }
-              }
-            ]
-          }, 
-          {$: 'group', 
-            remark: 'features', 
-            title :{
-              $pipeline: [
-                {$: 'count', 
-                  items :{$: 'studio.val', path: '%$path%~features' }
-                }, 
-                'Features (%%)'
-              ]
-            }, 
-            controls :{$: 'studio.property-array', path: '%$path%~features' }
-          }
-        ], 
-        features: [
-          {$: 'group.dynamic-titles' }, 
-          {$: 'studio.watch-path', path: '%$path%~features' }, 
-          {$: 'hidden', 
-            showCondition :{$: 'studio.has-param', remark: 'not a control', path: '%$path%', param: 'features' }
-          }
-        ]
-      }, 
-      {$: 'button', 
-        title: 'new feature', 
-        action :{$: 'studio.open-new-profile-dialog', 
-          path: '%$path%~features', 
-          type: 'feature', 
-          onClose :{ $runActions: [ctx => ctx.vars.PropertiesDialog.openFeatureSection()] }
-        }, 
-        style :{$: 'button.href' }, 
-        features :{$: 'css.margin', top: '20', left: '5' }
-      }
-    ], 
-    features :{$: 'variable', 
-      name: 'PropertiesDialog', 
-      value :{$: 'object' }, 
-      mutable: false
-    }
-  }
-})
-
 jb.component('studio.properties-in-tgp',{
   type: 'control',
   params: [ {id: 'path', as: 'string' } ],
@@ -159,55 +34,6 @@ jb.component('studio.properties-in-tgp',{
     },
     features:{$: 'group.auto-focus-on-first-input'}
   }
-})
-
-jb.component('studio.property-field', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl: group({
-    title: studio_propName('%$path%'), 
-    controls: control_firstSucceeding({
-      $vars: {
-        paramDef: studio_paramDef('%$path%'),
-      }, 
-      controls: [
-          controlWithCondition(
-            and(
-              studio_isOfType('%$path%','data,boolean'),
-              not(isOfType('string,number,boolean,undefined',studio_val('%$path%')))
-            ),
-            {$: 'studio.property-script', path: '%$path%' }
-          ),
-          controlWithCondition(
-            and(
-              studio_isOfType('%$path%','action'),
-              isOfType('array',studio_val('%$path%'))
-            ),
-            {$: 'studio.property-script', path: '%$path%' }
-          ),
-          controlWithCondition('%$paramDef/options%',{$: 'studio.property-enum', path: '%$path%' }),
-          controlWithCondition('%$paramDef/as%==\"number\"', {$: 'studio.property-slider', path: '%$path%' }),
-          controlWithCondition(
-            and(
-              '%$paramDef/as%==\"boolean\"',
-              or(
-                inGroup(list(true,false),studio_val('%$path%')),
-                isEmpty(studio_val('%$path%'))
-              ),
-              not('%$paramDef/dynamic%')
-            ),
-            {$: 'studio.property-boolean', path: '%$path%' }
-          ),
-          controlWithCondition( studio_isOfType('%$path%','data,boolean'), {$: 'studio.property-primitive', path: '%$path%' } ),
-          {$: 'studio.property-tgp-old', path: '%$path%' }
-        ], 
-        features: {$: 'first-succeeding.watch-refresh-on-ctrl-change', ref: {$:'studio.ref', path: '%$path%'}, includeChildren: true }
-      }),
-      features: [
-        {$: 'studio.property-toolbar-feature', path: '%$path%' },
-        {$: 'field.keyboard-shortcut', key: 'Ctrl+I', action :{$: 'studio.open-jb-editor',  path : '%$path%' } },
-      ]
-    })
 })
 
 jb.component('studio.property-script', {
@@ -297,7 +123,6 @@ jb.component('studio.property-tgp', {
   impl :{$: 'inline-controls', 
   controls: [
     {$: 'studio.pick-profile', path: '%$path%' }, 
-    {$: 'label', title: 'aa'},
     {$: 'studio.properties-in-tgp', path: '%$path%' }
   ],
   features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
@@ -458,6 +283,145 @@ jb.component('studio.property-array', {
   }
 })
 
+jb.component('studio.property-field', {
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl: group({
+    title: studio_propName('%$path%'), 
+    controls: control_firstSucceeding({
+      $vars: {
+        paramDef: studio_paramDef('%$path%'),
+      }, 
+      controls: [
+          controlWithCondition(
+            and(
+              studio_isOfType('%$path%','data,boolean'),
+              not(isOfType('string,number,boolean,undefined',studio_val('%$path%')))
+            ),
+            {$: 'studio.property-script', path: '%$path%' }
+          ),
+          controlWithCondition(
+            and(
+              studio_isOfType('%$path%','action'),
+              isOfType('array',studio_val('%$path%'))
+            ),
+            {$: 'studio.property-script', path: '%$path%' }
+          ),
+          controlWithCondition('%$paramDef/options%',{$: 'studio.property-enum', path: '%$path%' }),
+          controlWithCondition('%$paramDef/as%==\"number\"', {$: 'studio.property-slider', path: '%$path%' }),
+          controlWithCondition(
+            and(
+              '%$paramDef/as%==\"boolean\"',
+              or(
+                inGroup(list(true,false),studio_val('%$path%')),
+                isEmpty(studio_val('%$path%'))
+              ),
+              not('%$paramDef/dynamic%')
+            ),
+            {$: 'studio.property-boolean', path: '%$path%' }
+          ),
+          controlWithCondition( studio_isOfType('%$path%','data,boolean'), {$: 'studio.property-primitive', path: '%$path%' } ),
+          {$: 'studio.property-tgp-old', path: '%$path%' }
+        ], 
+        features: {$: 'first-succeeding.watch-refresh-on-ctrl-change', ref: {$:'studio.ref', path: '%$path%'}, includeChildren: true }
+      }),
+      features: [
+        {$: 'studio.property-toolbar-feature', path: '%$path%' },
+        {$: 'field.keyboard-shortcut', key: 'Ctrl+I', action :{$: 'studio.open-jb-editor',  path : '%$path%' } },
+      ]
+    })
+})
+
+jb.component('studio.jb-floating-input-rich', {
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'group',
+    controls: {$: 'studio.property-field', path: '%$path%'},
+    features :{$: 'css', css: '{padding: 20px}' }
+  }
+})
+
+jb.component('studio.properties', {
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'group', 
+    controls: [
+      {$: 'group', 
+        title: 'accordion', 
+        style :{$: 'group.studio-properties-accordion' }, 
+        controls: [
+
+          {$: 'group', 
+            remark: 'properties', 
+            title :{
+              $pipeline: [
+                {$: 'count', 
+                  items :{$: 'studio.non-control-children', path: '%$path%' }
+                }, 
+                'Properties (%%)'
+              ], 
+            }, 
+            style :{$: 'custom-style', 
+              template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
+      h('tr',{ class: 'property' },[
+          h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
+          h('td',{ class: 'property-ctrl'},h(ctrl)),
+          h('td',{ class: 'property-toolbar'}, h(ctrl.jbComp.toolbar) ),
+      ])
+    )), 
+              css: `
+      { width: 100% }
+      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px;  font-weight: bold;}
+      >.property>td { vertical-align: top; }
+    `, 
+              features :{$: 'group.init-group' }
+            }, 
+            controls: [
+              {$: 'dynamic-controls', 
+                controlItems :{$: 'studio.non-control-children', path: '%$path%' }, 
+                genericControl :{$: 'studio.property-field', path: '%$controlItem%' }
+              }
+            ]
+          }, 
+          {$: 'group', 
+            remark: 'features', 
+            title :{
+              $pipeline: [
+                {$: 'count', 
+                  items :{$: 'studio.val', path: '%$path%~features' }
+                }, 
+                'Features (%%)'
+              ]
+            }, 
+            controls :{$: 'studio.property-array', path: '%$path%~features' }
+          }
+        ], 
+        features: [
+          {$: 'group.dynamic-titles' }, 
+          {$: 'studio.watch-path', path: '%$path%~features' }, 
+          {$: 'hidden', 
+            showCondition :{$: 'studio.has-param', remark: 'not a control', path: '%$path%', param: 'features' }
+          }
+        ]
+      }, 
+      {$: 'button', 
+        title: 'new feature', 
+        action :{$: 'studio.open-new-profile-dialog', 
+          path: '%$path%~features', 
+          type: 'feature', 
+          onClose :{ $runActions: [ctx => ctx.vars.PropertiesDialog.openFeatureSection()] }
+        }, 
+        style :{$: 'button.href' }, 
+        features :{$: 'css.margin', top: '20', left: '5' }
+      }
+    ], 
+    features :{$: 'variable', 
+      name: 'PropertiesDialog', 
+      value :{$: 'object' }, 
+      mutable: false
+    }
+  }
+})
 
 jb.component('studio.tgp-path-options',{
 	type: 'picklist.options',
@@ -469,4 +433,38 @@ jb.component('studio.tgp-path-options',{
 			.concat(jb.studio.PTsOfPath(path).map(op=> ({ code: op, text: op})))
 })
 
-})()
+jb.component('studio.open-properties', {
+  type: 'action',
+  params: [{ id: 'focus', type: 'boolean', as: 'boolean' }],
+  impl :{$: 'open-dialog',
+    style :{$: 'dialog.studio-floating', id: 'studio-properties', width: '500' },
+    content :{$: 'studio.properties',
+      path :{$: 'studio.currentProfilePath' }
+    },
+    title :{
+      $pipeline: [
+        {$: 'object',
+          title :{$: 'studio.short-title',
+            path :{$: 'studio.currentProfilePath' }
+          },
+          comp :{$: 'studio.comp-name',
+            path :{$: 'studio.currentProfilePath' }
+          }
+        },
+        'Properties of %comp% %title%'
+      ]
+    },
+    features: [
+      {
+        $if: '%$focus%',
+        then :{$: 'dialog-feature.auto-focus-on-first-input' }
+      },
+      {$: 'dialog-feature.keyboard-shortcut',
+        shortcut: 'Ctrl+Left',
+        action :{$: 'studio.open-control-tree' }
+      },
+      {$: 'dialog-feature.resizer' }, 
+    ]
+  }
+})
+

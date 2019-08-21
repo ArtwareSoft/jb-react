@@ -12,7 +12,7 @@ function compsRef(val,opEvent) {
 
 		val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
 		if (!val.$jb_selectionPreview)
-  		st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex});
+  		st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
 
     st.previewjb.comps = val;
     if (opEvent)
@@ -57,7 +57,7 @@ Object.assign(st,{
 	},
   parentPath: path =>
 		path.split('~').slice(0,-1).join('~'),
-  valOfPath: path => 
+  valOfPath: path =>
   	jb.path(st.previewjb.comps,path.split('~')),
   compNameOfPath: (path,silent) => {
     if (path.indexOf('~') == -1)
@@ -76,7 +76,7 @@ Object.assign(st,{
 		st.previewjb.comps[id],
   compAsStr: id =>
 		jb.prettyPrintComp(id,st.getComp(id)),
-});
+})
 
 
 // write operations with logic
@@ -198,7 +198,7 @@ Object.assign(st, {
 			newCtrl = { $: 'field.control', control : newCtrl};
 		// find group parent that can insert the control
 		if (path.indexOf('~') == -1)
-			path = path + '~impl';		
+			path = path + '~impl';
 		var group_path = path;
 		while (st.controlParams(group_path).length == 0 && group_path)
 			group_path = st.parentPath(group_path);
@@ -253,13 +253,13 @@ Object.assign(st, {
 		// 				if (condition_exp.indexOf(pUsage) != -1)
 		// 					return pVal ? condition_exp : '';
 		// 				return match;
-		// 			});
-		// });
+		// 			})
+		// })
 		// // inject param values
 		// jb.compParams(comp).forEach(p=>{
 		// 		var pVal = '' + (profile[p.id] || p.defaultValue || ''); // only primitives
 		// 		res = res.replace(new RegExp(`%\\$${p.id}%`,'g') , pVal);
-		// });
+		// })
 		//
 		// st.writeValueOfPath(path,st.evalProfile(res));
 	},
@@ -302,44 +302,52 @@ Object.assign(st, {
 
 // ******* components ***************
 
-jb.component('studio.ref', {
-	params: [ {id: 'path', as: 'string', mandatory: true } ],
-	impl: (ctx,path) =>
+jb.component('studio.ref',  /* studio_ref */ {
+  params: [
+    {id: 'path', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,path) =>
 		st.refOfPath(path)
-});
+})
 
-jb.component('studio.path-of-ref', {
-	params: [ {id: 'ref', defaultValue: '%%', mandatory: true } ],
-	impl: (ctx,ref) =>
+jb.component('studio.path-of-ref',  /* studio_pathOfRef */ {
+  params: [
+    {id: 'ref', defaultValue: '%%', mandatory: true}
+  ],
+  impl: (ctx,ref) =>
 		st.pathOfRef(ref)
-});
+})
 
-jb.component('studio.name-of-ref', {
-	params: [ {id: 'ref', defaultValue: '%%', mandatory: true } ],
-	impl: (ctx,ref) =>
+jb.component('studio.name-of-ref',  /* studio_nameOfRef */ {
+  params: [
+    {id: 'ref', defaultValue: '%%', mandatory: true}
+  ],
+  impl: (ctx,ref) =>
 		st.nameOfRef(ref)
-});
+})
 
 
-jb.component('studio.is-new', {
-	type: 'boolean',
-	params: [ {id: 'path', as: 'string' } ],
-	impl: (ctx,path) => {
+jb.component('studio.is-new',  /* studio_isNew */ {
+  type: 'boolean',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => {
 		if (st.compsHistory.length == 0 || st.previewjb.comps.$jb_selectionPreview) return false;
 		//var version_before = new jb.ui.ImmutableWithJbId(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
-		var res =  JSON.stringify(jb.path(st.compsHistory.slice(-1)[0].before,path.split('~'))) != 
+		var res =  JSON.stringify(jb.path(st.compsHistory.slice(-1)[0].before,path.split('~'))) !=
 					JSON.stringify(jb.path(st.previewjb.comps,path.split('~')));
 //		var res =  st.valOfPath(path) && !st.val(version_before);
 		return res;
 	}
-});
+})
 
-jb.component('studio.watch-path', {
+jb.component('studio.watch-path',  /* studio_watchPath */ {
   type: 'feature',
   category: 'group:0',
   params: [
-    { id: 'path', as: 'string', mandatory: true },
-    { id: 'includeChildren', as: 'boolean' },
+    {id: 'path', as: 'string', mandatory: true},
+    {id: 'includeChildren', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,path,includeChildren) => ({
       init: cmp =>
@@ -347,7 +355,7 @@ jb.component('studio.watch-path', {
   })
 })
 
-jb.component('studio.watch-script-changes', {
+jb.component('studio.watch-script-changes',  /* studio_watchScriptChanges */ {
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
@@ -356,7 +364,7 @@ jb.component('studio.watch-script-changes', {
    })
 })
 
-jb.component('studio.watch-components', {
+jb.component('studio.watch-components',  /* studio_watchComponents */ {
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
@@ -367,9 +375,9 @@ jb.component('studio.watch-components', {
 })
 
 
-jb.component('studio.watch-typeof-script', {
+jb.component('studio.watch-typeof-script',  /* studio_watchTypeofScript */ {
   params: [
-    { id: 'path', as: 'string', mandatory: true },
+    {id: 'path', as: 'string', mandatory: true}
   ],
   type: 'feature',
   impl: (ctx,path) => ({

@@ -34,16 +34,16 @@ jb.component('watch-ref', {
   type: 'feature', category: 'watch:100',
 	description: 'subscribes to data changes to refresh component',
   params: [
-    { id: 'ref', mandatory: true, as: 'ref', description: 'reference to data' },
+    { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
     { id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
     { id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children' },
   ],
   impl: (ctx,ref,includeChildren,delay,allowSelfRefresh) => ({
-      init: cmp => {
-        cmp.watchRefOn = true
-        jb.ui.watchRef(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh)
-      }
+      beforeInit: cmp => 
+        cmp.watchRefOn = true,
+      init: cmp =>
+        jb.ui.watchRef(cmp.ctx,cmp,ref(cmp.ctx),includeChildren,delay,allowSelfRefresh)
   })
 })
 
@@ -149,7 +149,7 @@ jb.component('bind-refs', {
     { id: 'value', mandatory: true, as: 'single', dynamic: true },
   ],
   impl: (ctx,ref,includeChildren,updateRef,value) => ({
-      init: cmp =>
+    afterViewInit: cmp =>
         jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren, watchScript: ctx}).subscribe(e=>
           jb.writeValue(updateRef,value(cmp.ctx),ctx))
   })
@@ -173,7 +173,7 @@ jb.component('calculated-var', {
         const fullName = globalId || (name + ':' + cmp.resourceId);
         jb.log('calculated var',['new-resource',ctx,fullName])
         jb.resource(fullName, jb.val(value(ctx)));
-        var refToResource = jb.valueByRefHandler.refOfPath([fullName]);
+        const refToResource = jb.valueByRefHandler.refOfPath([fullName]);
         (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
             jb.ui.refObservable(ref,cmp,{includeChildren:true, watchScript: context}).subscribe(e=>
               jb.writeValue(refToResource,value(cmp.ctx),context))
@@ -307,8 +307,8 @@ jb.component('feature.onEvent', {
       [`on${event}`]: true,
       afterViewInit: cmp=>
         (debounceTime ? cmp[`on${event}`].debounceTime(debounceTime) : cmp[`on${event}`])
-          .subscribe(ev=>
-                jb.ui.wrapWithLauchingElement(action, cmp.ctx.setData(ev), cmp.base)())
+          .subscribe(event=>
+                jb.ui.wrapWithLauchingElement(action, cmp.ctx.setVars({event}), cmp.base)())
   })
 })
 
