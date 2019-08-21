@@ -1,22 +1,4 @@
-jb.component('studio.open-style-editor', {
-  type: 'action',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'open-dialog',
-    $vars: {
-      styleSource :{$: 'studio.style-source', path: '%$path%' }
-    },
-    style :{$: 'dialog.studio-floating', id: 'style editor', width: '800' },
-    content :{$: 'studio.style-editor', path: '%$path%' },
-    features: {$: 'dialog-feature.resizer'},
-    menu :{$: 'button',
-      title: 'style menu',
-      action :{$: 'studio.open-style-menu', path: '%$path%' },
-      style :{$: 'button.mdl-icon', icon: 'menu' },
-      features :{$: 'css', css: 'button { background: transparent }' }
-    },
-    title: 'Style Editor - %$styleSource/path%'
-  }
-})
+
 
 jb.component('studio.open-style-menu', {
   type: 'action',
@@ -233,5 +215,25 @@ jb.component('studio.format-css', {
       .replace(/;\s*/g,';\n')
       .replace(/}[^$]/mg,'}\n\n')
       .replace(/^\s*/mg,'')
+  }
+})
+
+jb.component('studio.open-style-editor', {
+  type: 'action',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'open-dialog',
+    $vars: {
+      styleSource :{$: 'studio.style-source', path: '%$path%' }
+    },
+    style :{$: 'dialog.studio-floating', id: 'style editor', width: '800' },
+    content :{$: 'studio.style-editor', path: '%$path%' },
+    features: {$: 'dialog-feature.resizer'},
+    menu :{$: 'button',
+      title: 'style menu',
+      action :{$: 'studio.open-style-menu', path: '%$path%' },
+      style :{$: 'button.mdl-icon', icon: 'menu' },
+      features :{$: 'css', css: 'button { background: transparent }' }
+    },
+    title: 'Style Editor - %$styleSource/path%'
   }
 })
