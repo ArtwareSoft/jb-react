@@ -157,22 +157,16 @@ jb.component('studio.jb-floating-input',  /* studio_jbFloatingInput */ {
         updateOnBlur: true,
         style: customStyle({
           template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
-        h('input', { class: 'mdl-textfield__input', id1: 'jb_input_' + state.fieldId, type: 'text', autocomplete: 'nop',
-            value: state.model,
-            onchange: e => cmp.jbModel(e.target.value),
-        }),
-        h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
+            h('input', { class: 'mdl-textfield__input', id1: 'jb_input_' + state.fieldId, type: 'text', autocomplete: 'nop',
+                value: state.model,
+                onchange: e => cmp.jbModel(e.target.value),
+            }),
+            h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
       ]),
           css: '{ margin-right: 13px; }',
           features: [field_databindText(300, true), mdlStyle_initDynamic()]
         }),
         features: [
-          feature_init(
-            writeValue(
-              '%$suggestionData%',
-              {$: 'object', selected: '', options: [], path: '%$path%'}
-            )
-          ),
           editableText_helperPopup({
             control: studio_suggestionsItemlist('%$path%', 'floating-input'),
             popupId: 'suggestions',
@@ -183,9 +177,15 @@ jb.component('studio.jb-floating-input',  /* studio_jbFloatingInput */ {
           })
         ]
       }),
-      label({title: pipeline(studio_paramDef('%$path%'), '%description%')})
+      label({title: pipeline(studio_paramDef('%$path%'), '%description%') ,
+        features: css('{border: 1px solid white;}') })
     ],
     features: [
+      variable({ 
+        name: 'suggestionData', 
+        mutable: true, 
+        value: {$: 'object', selected: '', options: [], path: '%$path%'}
+      }),
       css_padding({left: '4', right: '4'}),
       css_margin({top: '-20', selector: '>*:last-child'})
     ]

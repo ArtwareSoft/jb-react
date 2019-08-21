@@ -18,8 +18,8 @@ jb.component('dialog-feature.drag-title',  /* dialogFeature_dragTitle */ {
 					    dialog.el.style.left = pos.left + 'px';
 				  }
 
-				  const mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
-				  const mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
+				  let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
+				  let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
 
 				  if (jb.studio.previewWindow) {
 				  	mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
@@ -213,9 +213,9 @@ jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLaun
 				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
 				offsetLeft += rightSide ? jb.ui.outerWidth(control) : 0;
 				const fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
-        jbDialog.style.display = 'block';
-        jbDialog.style.left = (fixedPosition ? fixedPosition.left : pos.left + offsetLeft) + 'px';
-        jbDialog.style.top = (fixedPosition ? fixedPosition.top : pos.top + jb.ui.outerHeight(control) + offsetTop) + 'px';
+				jbDialog.style.display = 'block';
+				jbDialog.style.left = (fixedPosition ? fixedPosition.left : pos.left + offsetLeft) + 'px';
+				jbDialog.style.top = (fixedPosition ? fixedPosition.top : pos.top + jb.ui.outerHeight(control) + offsetTop) + 'px';
 			}
 		}
 

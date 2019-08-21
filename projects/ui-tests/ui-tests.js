@@ -1162,6 +1162,34 @@ jb.component('ui-test.immutable-var',  /* uiTest_immutableVar */ {
   })
 })
 
+jb.component('ui-test.boolean-immutable-var-as-boolean-true-to-false', {
+  impl: uiTest({
+    control: label({
+      title: pipeline(test_getAsBool('%$var1%'),({data}) => data === false ? 'OK' : 'Error'),
+      features: [
+        variable({name: 'var1', value: true, mutable: true}),
+        watchRef('%$var1%'),
+        feature_afterLoad(writeValue('%$var1%', false))
+      ]
+    }),
+    expectedResult: contains('OK')
+  })
+})
+
+jb.component('ui-test.boolean-immutable-var-as-boolean-false-to-true', {
+  impl: uiTest({
+    control: label({
+      title: pipeline(test_getAsBool('%$var1%'),({data}) => data === true ? 'OK' : 'Error'),
+      features: [
+        variable({name: 'var1', value: false, mutable: true}),
+        watchRef('%$var1%'),
+        feature_afterLoad(writeValue('%$var1%', true))
+      ]
+    }),
+    expectedResult: contains('OK')
+  })
+})
+
 jb.component('ui-test.refresh-control-by-id',  /* uiTest_refreshControlById */ {
   impl: uiTest({
     control: itemlist({

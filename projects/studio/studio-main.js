@@ -315,7 +315,7 @@ jb.component('studio.path-hyperlink', {
       {$: 'button',
         title: ctx => {
 	  		const path = ctx.componentContext.params.path;
-	  		const title = jb.studio.shortTitle(path) || '',compName = st.compNameOfPath(path) || '';
+	  		const title = jb.studio.shortTitle(path) || '',compName = jb.studio.compNameOfPath(path) || '';
 	  		return title == compName ? title : compName + ' ' + title;
 	  	},
         action :{$: 'studio.goto-path', path: '%$path%' },

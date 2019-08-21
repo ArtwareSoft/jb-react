@@ -71,14 +71,18 @@ jb.component('control.first-succeeding', {
   impl: ctx => jb.ui.ctrl(new jb.jbCtx(ctx,{params: Object.assign({},ctx.params,{
       originalControls: ctx.profile.controls,
       controls: ctx2 => {
-        for(let i=0;i<ctx.profile.controls.length;i++) {
-          const res = ctx2.runInner(ctx.profile.controls[i],null,i)
-          if (res) {
-            res.firstSucceedingIndex = i;
-            return [res]
+        try {
+          for(let i=0;i<ctx.profile.controls.length;i++) {
+            const res = ctx2.runInner(ctx.profile.controls[i],null,i)
+            if (res) {
+              res.firstSucceedingIndex = i;
+              return [res]
+            }
           }
+          return []
+        } catch(e) {
+          return []
         }
-        return []
       }
     })}))
 })
@@ -97,6 +101,7 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
             console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
           
           const originalControls = ctx.vars.$model.originalControls
+          if (!originalControls) return
           for(let i=0;i<(originalControls ||[]).length;i++) {
             const res = cmp.ctx.runInner(originalControls[i],null,i)
             if (res) {
