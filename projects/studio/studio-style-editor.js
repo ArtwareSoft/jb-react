@@ -89,7 +89,7 @@ jb.component('studio.style-editor', {
               }, 
               {$: 'label', 
                 title: 'jsx', 
-                style :{$: 'label.heading', level: 'h5' }
+                style :{$: 'label.htmlTag', htmlTag: 'h5' }
               }, 
               {$: 'editable-text', 
                 title: 'template', 
@@ -149,7 +149,7 @@ jb.component('studio.style-editor', {
                     value :{$: 'studio.jsx-to-h', text: '%$jsx%' }
                   }, 
                   features: [
-                    {$: 'var', 
+                    {$: 'variable', 
                       name: 'jsx', 
                       value: 'paste your jsx here', 
                       mutable: 'true'

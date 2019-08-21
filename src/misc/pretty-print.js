@@ -10,9 +10,11 @@ jb.component('pretty-print', {
 })
 
 jb.prettyPrintComp = function(compId,comp,settings) {
-  if (comp)
-    return "jb.component('" + compId + "', "
+  if (comp) {
+    const macroRemark = settings.macro ? ` /* ${jb.macroName(compId)} */ ` : ''
+    return "jb.component('" + compId + "', " + macroRemark
       + jb.prettyPrintWithPositions(comp,settings).result + ')'
+  }
 }
 
 jb.prettyPrint = function(profile,options) {
@@ -22,7 +24,7 @@ jb.prettyPrint = function(profile,options) {
 jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls,macro} = {}) {
   const spaces = Array.from(new Array(200)).map(_=>' ').join('')
 
-  colWidth = colWidth || 140;
+  colWidth = colWidth || 80;
   tabSize = tabSize || 2;
 
   let remainedInLine = colWidth;
@@ -183,20 +185,22 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       const map = Object.assign({},acc.map, result.map,{[fullInnerPath]: [acc.line, acc.col,newPos.line, newPos.col]})
       const separator = index === 0 ? '' : ',' + (flat ? ' ' : newLine())
       const valPrefix = isArray ? '' : innerPath + ': ';
-      return Object.assign({ text: acc.text + separator + valPrefix + result.text, map }, newPos)
-    }, {text: '', map: {}, line, col} )
+      return Object.assign({ text: acc.text + separator + valPrefix + result.text, map, unflat: acc.unflat || result.unflat }, newPos)
+    }, {text: '', map: {}, line, col, unflat: false} )
 
-    const arrayElem = path.match(/~[0-9]+$/)
-    const ctrls = jb.studio.isOfType(path,'control') && !arrayElem
+    //const arrayElem = path.match(/~[0-9]+$/)
+    const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
     const customStyle = jb.studio.compNameOfPath(path) === 'customStyle'
     const top = (path.match(/~/g)||'').length < 2
-    const short = result.text.replace(/\n\s*/g,'').length < colWidth
-    if (!customStyle && !top && !ctrls && short && !flat)
+    const long = result.text.replace(/\n\s*/g,'').length > colWidth
+    const unflat = result.unflat || customStyle || top || ctrls || long
+    if (!unflat && !flat)
       return joinVals({path, line, col}, innerVals, open, close, true, isArray)
 
     const out = { 
       text: open + newLine() + result.text + newLine(-1) + close,
-      map: result.map
+      map: result.map,
+      unflat
     }
     return out
 
@@ -221,8 +225,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       }
       return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
     }
-    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
-    const macro = comp.reservedWord ? `$${idAsCamel}` : idAsCamel
+    const macro = jb.macroName(id)
   
     const params = comp.params || []
     const vars = Object.keys(profile.$vars || {})
@@ -233,13 +236,17 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       const args = systemProps.concat(jb.toarray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val})))
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
-    if (params.length < 3 || comp.usageByValue) {
+    const keys = Object.keys(profile).filter(x=>x != '$')
+    const oneFirstParam = keys.length === 1 && params[0] && params[0].id == keys[0] 
+        && (typeof profile[keys[0]] !== 'object' || Array.isArray(profile[keys[0]]))
+    if ((params.length < 3 && comp.usageByValue !== false) || comp.usageByValue || oneFirstParam) {
       const args = systemProps.concat(params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]})))
-      if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
-      if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
+      for(let i=0;i<6;i++)
+        if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
-    const systemPropsInObj = remark.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
+    const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
+    const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
     const args = systemPropsInObj.concat(params.filter(param=>profile[param.id] !== undefined)
         .map(param=>({innerPath: param.id, val: profile[param.id]})))
       return joinVals(ctx, args, `${macro}({`, '})', flat, false)

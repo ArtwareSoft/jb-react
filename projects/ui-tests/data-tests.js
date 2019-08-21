@@ -387,10 +387,21 @@ jb.component('data-test.as-array-bug', {
  },
 })
 
+jb.component('data-test.vars-cases', {
+  impl :{$: 'data-test',
+   $vars: {
+       items: [{id: 1},{id:2}]
+   },
+   remark: 'should return array',
+   calculate: pipeline(Var('sep','-'),remark('hello'), '%$items/id%','%% %$sep%', join()),
+   expectedResult: equals('1 -,2 -')
+ },
+})
+
 jb.component('data-test.pretty-print-macro-vars', {
   impl: dataTest({
     calculate: ctx => { try {
-      const testToTest = 'data-test.as-array-bug'
+      const testToTest = 'data-test.vars-cases'
       const compTxt = jb.prettyPrintComp(testToTest, jb.comps[testToTest], {macro: true, depth: 1, initialPath: testToTest})
       eval(compTxt)
       return ctx.run(dataTest_asArrayBug())

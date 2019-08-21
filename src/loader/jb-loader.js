@@ -71,7 +71,8 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       'codemirror': [
           'dist/codemirror.js',
           'dist/codemirror.css',
-      ],  
+      ],
+      'codemirror-styles': [ 'src/ui/styles/codemirror-styles.js' ],
       'codemirror-js-files': [
         'src/ui/styles/codemirror-styles.js',
         'node_modules/codemirror/lib/codemirror.js',
@@ -107,7 +108,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
           'dist/dragula.css',
       ],
       studio: [
-        'utils','path','main','url', 'completion',
+        'path','utils', 'main','url', 'completion',
         'toolbar','styles', 'search', 'new-profile', 'data-browse', 'preview', 'tgp-model', 'model-components',
         'tree','popups','properties','pick','properties-menu','save','open-project','new-project', 'references', 'component-header',
         'suggestions','undo','edit-source','jb-editor','jb-editor-styles','style-editor','probe','testers', 'event-tracker','h-to-jsx',

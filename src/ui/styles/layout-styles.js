@@ -14,9 +14,7 @@ jb.component('layout.vertical', {
 
 jb.component('layout.horizontal', {
   type: 'group.style',
-  params: [,
-    { id: 'spacing', as: 'number', defaultValue: 3 }
-  ],
+  params: [ { id: 'spacing', as: 'number', defaultValue: 3 } ],
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),

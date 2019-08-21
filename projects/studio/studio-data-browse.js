@@ -29,7 +29,7 @@ jb.component('studio.data-resources', {
             itemVariable: 'item'
           }
         ], 
-        features :{$: 'var', name: 'selected_in_itemlist', mutable: true }
+        features :{$: 'variable', name: 'selected_in_itemlist', mutable: true }
       }
     ], 
     features :{$: 'group.wait', 

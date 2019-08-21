@@ -9,7 +9,7 @@ jb.component('cCommerce.main', {
         style :{$: 'editable-text.codemirror', enableFullScreen: true, debounceTime: 300 }
       }
     ], 
-    features :{$: 'var', 
+    features :{$: 'variable', 
       name: 'Product', 
       value :{
         $pipeline: [
@@ -184,7 +184,7 @@ jb.component('cCommerce.histogram', {
     controls: [
       {$: 'label', 
         title: '%$item/title%', 
-        style :{$: 'label.heading', level: 'h3' }
+        style :{$: 'label.htmlTag', htmlTag: 'h3' }
       }, 
       {$: 'd3.histogram', 
         frame :{$: 'd3.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
@@ -267,7 +267,7 @@ jb.component('cCommerce.histogram', {
     ], 
     features: [
       {$: 'css.padding', left: '7' }, 
-      {$: 'var', name: 'item', value: '%$global/phones[400]%' }
+      {$: 'variable', name: 'item', value: '%$global/phones[400]%' }
     ]
   }
 })

@@ -2,7 +2,7 @@ jb.component('label', {
     type: 'control', category: 'control:100,common:80',
     params: [
         { id: 'title', as: 'ref', mandatory: true, defaultValue: 'my label', dynamic: true },
-        { id: 'style', type: 'label.style', defaultValue: { $: 'label.span' }, dynamic: true },
+        { id: 'style', type: 'label.style', defaultValue :{$: 'label.span' }, dynamic: true },
         { id: 'features', type: 'feature[]', dynamic: true },
     ],
     impl: ctx =>
@@ -31,38 +31,24 @@ jb.component('label.bind-title', {
   })
 })
 
+jb.component('label.htmlTag', {
+  type: 'label.style',
+	params: [
+		{ id: 'htmlTag', as: 'string', defaultValue: 'p', options:'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary' },
+		{ id: 'cssClass', as: 'string' },
+	],
+  impl :{$: 'custom-style',
+      template: (cmp,state,h) => h(cmp.htmlTag,{class: cmp.cssClass},state.title),
+      features :{$: 'label.bind-title' }
+  }
+})
+
 jb.component('label.span', {
     type: 'label.style',
     impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('span',{},state.title),
-        features :{$: 'label.bind-title' }
-    }
-})
-
-jb.component('label.p', {
-    type: 'label.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('p',{},state.title),
-        features :{$: 'label.bind-title' }
-    }
-})
-
-
-jb.component('label.h1', {
-    type: 'label.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('h1',{},state.title),
-        features :{$: 'label.bind-title' }
-    }
-})
-
-jb.component('label.heading', {
-    type: 'label.style',
-    params: [{ id: 'level', as: 'string', defaultValue: 'h1', options: 'h1,h2,h3,h4,h5'}],
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h(cmp.level,{},state.title),
-        features :{$: 'label.bind-title' }
-    }
+      template: (cmp,state,h) => h('span',{},state.title),
+      features :{$: 'label.bind-title' }
+  }
 })
 
 jb.component('label.card-title', {

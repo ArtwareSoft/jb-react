@@ -340,7 +340,7 @@ jb.component('itemlists.phones-chart', {
       }
     }
   }, 
-  features :{$: 'var', 
+  features :{$: 'variable', 
     name: 'devices', 
     value :{
       $pipeline: [

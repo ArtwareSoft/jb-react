@@ -1,6 +1,5 @@
 const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 const jb = (function() {
-
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
   const res = do_jb_run(...arguments);
@@ -32,7 +31,7 @@ function do_jb_run(ctx,parentParam,settings) {
     const run = prepare(ctxWithVars,parentParam);
     ctx.parentParam = parentParam;
     switch (run.type) {
-      case 'booleanExp': return bool_expression(profile, ctx);
+      case 'booleanExp': return bool_expression(profile, ctx,parentParam);
       case 'expression': return castToParam(expression(profile, ctx,parentParam), parentParam);
       case 'asIs': return profile;
       case 'function': return castToParam(profile(ctx,ctx.vars,ctx.componentContext && ctx.componentContext.params),parentParam);
@@ -366,14 +365,14 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
   }
 }
 
-function bool_expression(exp, ctx) {
+function bool_expression(exp, ctx, parentParam) {
   if (exp.indexOf('$debugger:') == 0) {
     debugger;
     exp = exp.split('$debugger:')[1];
   }
   if (exp.indexOf('$log:') == 0) {
-    const calculated = expression(exp.split('$log:')[1],ctx,{as: 'string'});
-    const result = bool_expression(exp.split('$log:')[1], ctx);
+    const calculated = expression(exp.split('$log:')[1],ctx,{as: 'boolean'});
+    const result = bool_expression(exp.split('$log:')[1], ctx, parentParam);
     jb.comps.log.impl(ctx, calculated + ':' + result);
     return result;
   }
@@ -381,7 +380,11 @@ function bool_expression(exp, ctx) {
     return !bool_expression(exp.substring(1), ctx);
   const parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/);
   if (!parts) {
-    const val = jb.val(expression(exp, ctx));
+    const ref = expression(exp, ctx, parentParam)
+    if (jb.isRef(ref))
+      return ref
+    
+    const val = jb.tostring(ref);
     if (typeof val == 'boolean') return val;
     const asString = tostring(val);
     return !!asString && asString != 'false';
@@ -659,24 +662,33 @@ return {
 Object.assign(jb,{
   comps: {}, macros: {}, resources: {}, consts: {},
   studio: { previewjb: jb },
+  macroName: id =>
+    id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_'),
   component: (id,val) => {
     jb.comps[id] = val
     jb.traceComponentFile && jb.traceComponentFile(val)
-    const idAsCamel = id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_')
-    const fixedId = val.reservedWord ? `$${idAsCamel}` : idAsCamel
+    const fixedId = jb.macroName(id)
     const ctx = new jb.jbCtx()
 
+    const params = val.params || []
+    params.forEach(p=> {
+      if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
+        p.type = 'boolean'
+    })
+
+    if (typeof frame[fixedId] !== 'undefined')
+      jb.logError('overrding ' + id)
     frame[fixedId] = jb.macros[fixedId] = (...allArgs) => {
       const args=[], system={}, jid = id; // system props: constVar, remark
       allArgs.forEach(arg=>{
         if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
-          ctx.setData(system).run(arg)
+          jb.comps[arg.$].macro(system,arg)
         else
           args.push(arg)
       })
       if (args.length == 1 && typeof args[0] === 'object') {
-        jb.toarray(args[0].vars).forEach(arg => ctx.setData(system).run(arg))
-        args[0].remark && ctx.setData(system).run(args[0].remark)
+        jb.toarray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system,arg))
+        args[0].remark && jb.comps.remark.macro(system,args[0])
       }
       return Object.assign(processMacro(args),system)
     }
@@ -1199,23 +1211,23 @@ jb.component('prop', {
 	impl: ctx => ctx.params
 })
 
-jb.component('constVar', { 
+jb.component('Var', { 
 	type: 'var,system',
 	isSystem: true,
 	params: [
 		{ id: 'name', as: 'string', mandatory: true },
 		{ id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: '' },
 	],
-	impl: ({data}, name, val) =>  
-		Object.assign(data,{ $vars: Object.assign(data.$vars || {}, { [name]: val.profile }) })
+	macro: (result, self) =>
+		Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) }),
 })
 
 jb.component('remark', { 
 	type: 'system',
 	isSystem: true,
 	params: [{ id: 'remark', as: 'string', mandatory: true }],
-	impl: ({data},remark) => 
-		Object.assign(data,{remark})
+	macro: (result, self) =>
+		Object.assign(result,{ remark: self.remark }),
 })
 
 jb.component('If', { 
@@ -1348,13 +1360,6 @@ jb.component('match-regex', {
   impl: (ctx,text,regex,fillText) =>
     text.match(new RegExp(fillText ? `^${regex}$` : regex))
 })
-
-jb.component('to-string', {
-	params: [
-		{ id: 'text', as: 'string', defaultValue: '%%', composite: true}
-	],
-	impl: (ctx,text) =>	text
-});
 
 jb.component('to-uppercase', {
 	params: [

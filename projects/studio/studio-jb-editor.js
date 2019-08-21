@@ -23,7 +23,7 @@ jb.component('studio.jb-editor-container', {
 		{ id: 'circuit', as: 'single', description: 'path or ctx of circuit to run the probe' },
   ],
   impl :{$list : [
-    {$: 'var', name: 'jbEditorCntrData', value: {$: 'object', selected: '%$initialSelection%', circuit: '%$circuit%' } , 
+    {$: 'variable', name: 'jbEditorCntrData', value: {$: 'object', selected: '%$initialSelection%', circuit: '%$circuit%' } , 
         mutable: true },
   ]}
 })
@@ -317,7 +317,7 @@ jb.component('studio.data-browse', {
           title: 'large array'
         }
       ],
-      features: [{$: 'var', name: 'maxItems', value: '5', mutable: 'true' }]
+      features: [{$: 'variable', name: 'maxItems', value: '5', mutable: 'true' }]
     }
   }
 })
@@ -476,7 +476,7 @@ jb.component('studio.jb-editor-menu', {
           title: 'Add Property', 
           modal: 'true', 
           features: [
-            {$: 'var', name: 'name', mutable: true }, 
+            {$: 'variable', name: 'name', mutable: true }, 
             {$: 'dialog-feature.near-launcher-position' }, 
             {$: 'dialog-feature.auto-focus-on-first-input' }
           ]
@@ -631,7 +631,7 @@ jb.component('studio.jb-editor-menu', {
               title: 'Remark', 
               modal: 'true', 
               features: [
-                {$: 'var', 
+                {$: 'variable', 
                   name: 'remark', 
                   value :{$: 'studio.val', path: '%$path%~remark' }, 
                   mutable: true
@@ -781,7 +781,7 @@ jb.component('studio.add-variable', {
     // ],
     modal: 'true',
     features: [
-      {$: 'var', name: 'name', mutable: true },
+      {$: 'variable', name: 'name', mutable: true },
       {$: 'dialog-feature.near-launcher-position' },
       {$: 'dialog-feature.auto-focus-on-first-input' }
     ]

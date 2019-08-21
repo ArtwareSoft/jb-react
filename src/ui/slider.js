@@ -34,7 +34,7 @@ jb.component('editable-number.slider', {
               features: {$: 'css.width', width: 80},
           },
         ],
-        features: {$: 'var', name: 'sliderCtx', value: {$: 'object'}}
+        features: {$: 'variable', name: 'sliderCtx', value: {$: 'object'}}
       }
     }
   }
