@@ -1,3 +1,58 @@
+jb.component('dialog-feature.drag-title', {
+	type: 'dialog-feature',
+	params: [
+		{ id: 'id', as: 'string' }
+	],
+	impl: function(context, id) {
+		const dialog = context.vars.$dialog;
+		return {
+		       css: '>.dialog-title { cursor: pointer }',
+		       afterViewInit: function(cmp) {
+		       	  const titleElem = cmp.base.querySelector('.dialog-title');
+		       	  cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
+		       	  	.takeUntil( cmp.destroyed );
+
+				  if (id && sessionStorage.getItem(id)) {
+						const pos = JSON.parse(sessionStorage.getItem(id));
+					    dialog.el.style.top  = pos.top  + 'px';
+					    dialog.el.style.left = pos.left + 'px';
+				  }
+
+				  const mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
+				  const mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
+
+				  if (jb.studio.previewWindow) {
+				  	mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
+				  		.takeUntil( cmp.destroyed );
+				  	mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
+				  		.takeUntil( cmp.destroyed );
+				  }
+
+				  const mousedrag = cmp.mousedownEm
+				  		.do(e =>
+				  			e.preventDefault())
+				  		.map(e =>  ({
+				          left: e.clientX - dialog.el.getBoundingClientRect().left,
+				          top:  e.clientY - dialog.el.getBoundingClientRect().top
+				        }))
+				      	.flatMap(imageOffset =>
+			      			 mouseMoveEm.takeUntil(mouseUpEm)
+			      			 .map(pos => ({
+						        top:  Math.max(0,pos.clientY - imageOffset.top),
+						        left: Math.max(0,pos.clientX - imageOffset.left)
+						     }))
+				      	);
+
+				  mousedrag.distinctUntilChanged().subscribe(pos => {
+			        dialog.el.style.top  = pos.top  + 'px';
+			        dialog.el.style.left = pos.left + 'px';
+			        if (id) sessionStorage.setItem(id, JSON.stringify(pos))
+			      })
+			  }
+	       }
+	}
+})
+
 jb.component('dialog.default', {
 	type: 'dialog.style',
 	impl :{$: 'custom-style',
@@ -105,7 +160,7 @@ jb.component('dialog-feature.unique-dialog', {
 	],
 	impl: function(context,id,remeberLastLocation) {
 		if (!id) return;
-		var dialog = context.vars.$dialog;
+		const dialog = context.vars.$dialog;
 		dialog.id = id;
 		dialog.em.filter(e=>
 			e.type == 'new-dialog')
@@ -125,13 +180,13 @@ jb.component('dialog-feature.keyboard-shortcut', {
   impl: (ctx,key,action) => ({
   	  onkeydown : true,
       afterViewInit: cmp=> {
-		var dialog = ctx.vars.$dialog;
+		const dialog = ctx.vars.$dialog;
 		dialog.applyShortcut = e=> {
-			var key = ctx.params.shortcut;
+			const key = ctx.params.shortcut;
 			if (!key) return;
 			if (key.indexOf('-') > 0)
 				key = key.replace(/-/,'+');
-            var keyCode = key.split('+').pop().charCodeAt(0);
+            const keyCode = key.split('+').pop().charCodeAt(0);
             if (key == 'Delete') keyCode = 46;
             if (key.match(/\+[Uu]p$/)) keyCode = 38;
             if (key.match(/\+[Dd]own$/)) keyCode = 40;
@@ -164,11 +219,11 @@ jb.component('dialog-feature.near-launcher-position', {
 				offsetLeft = offsetLeft || 0; offsetTop = offsetTop || 0;
 				if (!context.vars.$launchingElement)
 					return console.log('no launcher for dialog');
-				var control = context.vars.$launchingElement.el;
-				var pos = jb.ui.offset(control);
-				var jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
+				const control = context.vars.$launchingElement.el;
+				const pos = jb.ui.offset(control);
+				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
 				offsetLeft += rightSide ? jb.ui.outerWidth(control) : 0;
-				var fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
+				const fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
         jbDialog.style.display = 'block';
         jbDialog.style.left = (fixedPosition ? fixedPosition.left : pos.left + offsetLeft) + 'px';
         jbDialog.style.top = (fixedPosition ? fixedPosition.top : pos.top + jb.ui.outerHeight(control) + offsetTop) + 'px';
@@ -176,7 +231,8 @@ jb.component('dialog-feature.near-launcher-position', {
 		}
 
 		function fixDialogOverflow(control,dialog,offsetLeft,offsetTop) {
-			var padding = 2,top,left,control_offset = jb.ui.offset(control), dialog_height = jb.ui.outerHeight(dialog), dialog_width = jb.ui.outerWidth(dialog);
+			let top,left
+			const padding = 2,control_offset = jb.ui.offset(control), dialog_height = jb.ui.outerHeight(dialog), dialog_width = jb.ui.outerWidth(dialog);
 			if (control_offset.top > dialog_height && control_offset.top + dialog_height + padding + (offsetTop||0) > window.innerHeight + window.pageYOffset)
 				top = control_offset.top - dialog_height;
 			if (control_offset.left > dialog_width && control_offset.left + dialog_width + padding + (offsetLeft||0) > window.innerWidth + window.pageXOffset)
@@ -206,10 +262,10 @@ jb.component('dialog-feature.close-when-clicking-outside', {
 		{ id: 'delay', as: 'number', defaultValue: 100 }
 	],
 	impl: function(context,delay) {
-		var dialog = context.vars.$dialog;
+		const dialog = context.vars.$dialog;
 		dialog.isPopup = true;
 		jb.delay(10).then(() =>  { // delay - close older before
-			var clickoutEm = jb.rx.Observable.fromEvent(document, 'mousedown');
+			const clickoutEm = jb.rx.Observable.fromEvent(document, 'mousedown');
 			if (jb.studio.previewWindow)
 				clickoutEm = clickoutEm.merge(jb.rx.Observable.fromEvent(
 			      				(jb.studio.previewWindow || {}).document, 'mousedown'));
@@ -254,7 +310,7 @@ jb.component('dialog-feature.auto-focus-on-first-input', {
 	impl: (ctx,selectText) => ({
 		afterViewInit: cmp => {
 			jb.delay(1).then(_=> {
-				var elem = ctx.vars.$dialog.el.querySelector('input,textarea,select');
+				const elem = ctx.vars.$dialog.el.querySelector('input,textarea,select');
 				if (elem)
 					jb.ui.focus(elem, 'dialog-feature.auto-focus-on-first-input',ctx);
 				if (selectText)
@@ -268,8 +324,8 @@ jb.component('dialog-feature.css-class-on-launching-element', {
 	type: 'dialog-feature',
 	impl: context => ({
 		afterViewInit: cmp => {
-			var dialog = context.vars.$dialog;
-			var control = context.vars.$launchingElement.el;
+			const dialog = context.vars.$dialog;
+			const control = context.vars.$launchingElement.el;
 			jb.ui.addClass(control,'dialog-open');
 			dialog.em.filter(e=>
 				e.type == 'close')
@@ -286,7 +342,7 @@ jb.component('dialog-feature.max-zIndex-on-click', {
 		{ id: 'minZIndex', as: 'number'}
 	],
 	impl: function(context,minZIndex) {
-		var dialog = context.vars.$dialog;
+		const dialog = context.vars.$dialog;
 
 		return ({
 			afterViewInit: cmp => {
@@ -296,66 +352,11 @@ jb.component('dialog-feature.max-zIndex-on-click', {
 		})
 
 		function setAsMaxZIndex() {
-			var maxIndex = jb.ui.dialogs.dialogs.reduce(function(max,d) {
+			const maxIndex = jb.ui.dialogs.dialogs.reduce(function(max,d) {
 				return Math.max(max,(d.el && parseInt(d.el.style.zIndex || 100)+1))
 			}, minZIndex || 100)
 			dialog.el.style.zIndex = maxIndex;
 		}
-	}
-})
-
-jb.component('dialog-feature.drag-title', {
-	type: 'dialog-feature',
-	params: [
-		{ id: 'id', as: 'string' }
-	],
-	impl: function(context, id) {
-		var dialog = context.vars.$dialog;
-		return {
-		       css: '>.dialog-title { cursor: pointer }',
-		       afterViewInit: function(cmp) {
-		       	  var titleElem = cmp.base.querySelector('.dialog-title');
-		       	  cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
-		       	  	.takeUntil( cmp.destroyed );
-
-				  if (id && sessionStorage.getItem(id)) {
-						var pos = JSON.parse(sessionStorage.getItem(id));
-					    dialog.el.style.top  = pos.top  + 'px';
-					    dialog.el.style.left = pos.left + 'px';
-				  }
-
-				  var mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
-				  var mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
-
-				  if (jb.studio.previewWindow) {
-				  	mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
-				  		.takeUntil( cmp.destroyed );
-				  	mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
-				  		.takeUntil( cmp.destroyed );
-				  }
-
-				  var mousedrag = cmp.mousedownEm
-				  		.do(e =>
-				  			e.preventDefault())
-				  		.map(e =>  ({
-				          left: e.clientX - dialog.el.getBoundingClientRect().left,
-				          top:  e.clientY - dialog.el.getBoundingClientRect().top
-				        }))
-				      	.flatMap(imageOffset =>
-			      			 mouseMoveEm.takeUntil(mouseUpEm)
-			      			 .map(pos => ({
-						        top:  Math.max(0,pos.clientY - imageOffset.top),
-						        left: Math.max(0,pos.clientX - imageOffset.left)
-						     }))
-				      	);
-
-				  mousedrag.distinctUntilChanged().subscribe(pos => {
-			        dialog.el.style.top  = pos.top  + 'px';
-			        dialog.el.style.left = pos.left + 'px';
-			        if (id) sessionStorage.setItem(id, JSON.stringify(pos))
-			      })
-			  }
-	       }
 	}
 })
 
@@ -393,12 +394,12 @@ jb.component('dialog-feature.resizer', {
 		      css: '>.resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
 
 		      afterViewInit: function(cmp) {
-		       	  var resizerElem = cmp.base.querySelector('.resizer');
+		       	  const resizerElem = cmp.base.querySelector('.resizer');
 		       	  cmp.mousedownEm = jb.rx.Observable.fromEvent(resizerElem, 'mousedown')
 		       	  	.takeUntil( cmp.destroyed );
 
-						  var mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
-						  var mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
+						  const mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
+						  const mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
 
 						  if (jb.studio.previewWindow) {
 						  	mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
@@ -407,7 +408,7 @@ jb.component('dialog-feature.resizer', {
 						  		.takeUntil( cmp.destroyed );
 						  }
 
-              var codeMirrorElem,codeMirrorSizeDiff;
+              let codeMirrorElem,codeMirrorSizeDiff;
               if (codeMirror) {
                 codeMirrorElem = cmp.base.querySelector('.CodeMirror');
                 if (codeMirrorElem)
@@ -415,7 +416,7 @@ jb.component('dialog-feature.resizer', {
                     + (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
               }
 
-						  var mousedrag = cmp.mousedownEm
+						  const mousedrag = cmp.mousedownEm
 						  		.map(e =>  ({
 						          left: cmp.base.getBoundingClientRect().left,
 						          top:  cmp.base.getBoundingClientRect().top
@@ -441,7 +442,7 @@ jb.component('dialog-feature.resizer', {
 jb.ui.dialogs = {
  	dialogs: [],
 	addDialog: function(dialog,context) {
-		var self = this;
+		const self = this;
 		dialog.context = context;
 		this.dialogs.forEach(d=>
 			d.em.next({ type: 'new-dialog', dialog: dialog }));
@@ -461,7 +462,7 @@ jb.ui.dialogs = {
 				dialog.em.next({type: 'close', OK: args && args.OK})
 				dialog.em.complete();
 
-				var index = self.dialogs.indexOf(dialog);
+				const index = self.dialogs.indexOf(dialog);
 				if (index != -1)
 					self.dialogs.splice(index, 1);
 				if (dialog.modal && document.querySelector('.modal-overlay'))
@@ -485,11 +486,11 @@ jb.ui.dialogs = {
   },
   render(dialog) {
     jb.ui.addHTML(this.getOrCreateDialogsElem(),`<div id="${dialog.instanceId}"/>`);
-    var elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
+    const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
     jb.ui.render(jb.ui.h(dialog.comp),elem);
   },
   remove(dialog) {
-    var elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
+    const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
     if (!elem) return; // already closed due to asynch request handling and multiple requests to close
     jb.ui.render('', elem, elem.firstElementChild);// react - remove
     // jb.ui.unmountComponent(elem.firstElementChild._component);
