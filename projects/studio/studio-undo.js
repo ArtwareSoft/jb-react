@@ -24,7 +24,7 @@ function setToVersion(versionIndex, ctx, after) {
   st.compsRefHandler.resourceChange.next(opEvent);
 }
 
-jb.component('studio.undo', {
+jb.component('studio.undo',  /* studio_undo */ {
   type: 'action',
   impl: ctx => {
     if (st.undoIndex > 0)
@@ -32,7 +32,7 @@ jb.component('studio.undo', {
   }
 })
 
-jb.component('studio.clean-selection-preview', {
+jb.component('studio.clean-selection-preview',  /* studio_cleanSelectionPreview */ {
   type: 'action',
   impl: () => {
     if (st.compsHistory.length > 0)
@@ -40,10 +40,10 @@ jb.component('studio.clean-selection-preview', {
   }
 })
 
-jb.component('studio.revert', {
+jb.component('studio.revert',  /* studio_revert */ {
   type: 'action',
   params: [
-    { id: 'toIndex', as: 'number' }
+    {id: 'toIndex', as: 'number'}
   ],
   impl: (ctx, toIndex) => {
     if (st.compsHistory.length == 0 || toIndex < 0) return;
@@ -53,7 +53,7 @@ jb.component('studio.revert', {
   }
 })
 
-jb.component('studio.redo', {
+jb.component('studio.redo',  /* studio_redo */ {
   type: 'action',
   impl: ctx => {
     if (st.undoIndex < st.compsHistory.length)
@@ -61,9 +61,11 @@ jb.component('studio.redo', {
   }
 })
 
-jb.component('studio.copy', {
+jb.component('studio.copy',  /* studio_copy */ {
   type: 'action',
-  params: [{ id: 'path', as: 'string' }],
+  params: [
+    {id: 'path', as: 'string'}
+  ],
   impl: (ctx, path) => {
     try {
       st.clipboard = eval('(' + jb.prettyPrint(st.valOfPath(path)) + ')')
@@ -71,98 +73,69 @@ jb.component('studio.copy', {
   }
 })
 
-jb.component('studio.paste', {
+jb.component('studio.paste',  /* studio_paste */ {
   type: 'action',
-  params: [{ id: 'path', as: 'string' }],
+  params: [
+    {id: 'path', as: 'string'}
+  ],
   impl: (ctx, path) =>
     (st.clipboard != null) && jb.writeValue(st.refOfPath(path), st.clipboard, ctx)
 })
 
-jb.component('studio.script-history-items', {
+jb.component('studio.script-history-items',  /* studio_scriptHistoryItems */ {
   impl: ctx => st.compsHistory
 })
 
-jb.component('studio.comps-undo-index', {
+jb.component('studio.comps-undo-index',  /* studio_compsUndoIndex */ {
   impl: ctx => st.undoIndex - 1
 })
 
-jb.component('studio.script-history', {
+jb.component('studio.script-history',  /* studio_scriptHistory */ {
   type: 'control',
-  impl: {
-    $: 'group',
+  impl: group({
     controls: [
-      {
-        $: 'table',
-        items: { $: 'studio.script-history-items' },
+      table({
+        items: studio_scriptHistoryItems(),
         fields: [
-          {
-            $: 'field.control',
+          field_control({
             title: 'changed',
-            control: {
-              $: 'button',
-              title: { $: 'studio.name-of-ref', ref: '%opEvent/ref%' },
-              action: {
-                $: 'studio.goto-path',
-                path: { $: 'studio.path-of-ref', ref: '%opEvent/ref%' }
-              },
-              style: { $: 'button.href' },
-              features: {
-                $: 'feature.hover-title',
-                title: { $: 'studio.path-of-ref', ref: '%opEvent/ref%' }
-              }
-            },
+            control: button({
+              title: studio_nameOfRef('%opEvent/ref%'),
+              action: studio_gotoPath(studio_pathOfRef('%opEvent/ref%')),
+              style: button_href(),
+              features: feature_hoverTitle(studio_pathOfRef('%opEvent/ref%'))
+            }),
             width: '100'
-          },
-          {
-            $: 'field',
-            title: 'from',
-            data: { $: 'pretty-print', profile: '%opEvent/oldVal%' },
-            width: '200'
-          },
-          {
-            $: 'field',
-            title: 'to',
-            data: { $: 'pretty-print', profile: '%opEvent/newVal%' },
-            width: '200'
-          },
-          {
-            $: 'field.control',
+          }),
+          field({title: 'from', data: prettyPrint('%opEvent/oldVal%'), width: '200'}),
+          field({title: 'to', data: prettyPrint('%opEvent/newVal%'), width: '200'}),
+          field_control({
             title: 'undo/redo',
-            control: {
-              $: 'button',
+            control: button({
               title: 'revert to here',
-              action: { $: 'studio.revert', toIndex: '%undoIndex%' },
-              style: { $: 'button.href' }
-            },
+              action: studio_revert('%undoIndex%'),
+              style: button_href()
+            }),
             width: '100'
-          }
+          })
         ],
-        style: { $: 'table.with-headers' }
-      }
+        style: table_withHeaders()
+      })
     ],
     features: [
-      {
-        $: 'watch-observable',
-        toWatch: ctx => st.compsRefHandler.resourceChange.debounceTime(500),
-      },
-      { $: 'css.height', height: '400', overflow: 'auto', minMax: 'max' }
+      watchObservable(ctx => st.compsRefHandler.resourceChange.debounceTime(500)),
+      css_height({height: '400', overflow: 'auto', minMax: 'max'})
     ]
-  }
+  })
 })
 
-jb.component('studio.open-script-history', {
+jb.component('studio.open-script-history',  /* studio_openScriptHistory */ {
   type: 'action',
-  impl: {
-    $: 'open-dialog',
-    content: { $: 'studio.script-history' },
-    style: {
-      $: 'dialog.studio-floating',
-      id: 'script-history',
-      width: '700',
-      height: '400'
-    },
+  impl: openDialog({
+    style: dialog_studioFloating({id: 'script-history', width: '700', height: '400'}),
+    content: studio_scriptHistory(),
     title: 'Script History'
-  }
+  })
 })
 
 })()
