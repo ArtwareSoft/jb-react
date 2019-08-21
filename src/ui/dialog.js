@@ -1,9 +1,9 @@
-jb.component('dialog-feature.drag-title', {
-	type: 'dialog-feature',
-	params: [
-		{ id: 'id', as: 'string' }
-	],
-	impl: function(context, id) {
+jb.component('dialog-feature.drag-title',  /* dialogFeature_dragTitle */ {
+  type: 'dialog-feature',
+  params: [
+    {id: 'id', as: 'string'}
+  ],
+  impl: function(context, id) {
 		const dialog = context.vars.$dialog;
 		return {
 		       css: '>.dialog-title { cursor: pointer }',
@@ -53,32 +53,38 @@ jb.component('dialog-feature.drag-title', {
 	}
 })
 
-jb.component('dialog.default', {
-	type: 'dialog.style',
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
+jb.component('dialog.default',  /* dialog_default */ {
+  type: 'dialog.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
 			h('div',{class: 'dialog-title'},state.title),
 			h('button',{class: 'dialog-close', onclick:
 				_=> cmp.dialogClose() },'×'),
 			h(state.contentComp),
 		]),
-		features:{$:'dialog-feature.drag-title'}
-	}
+    features: dialogFeature_dragTitle()
+  })
 })
 
-jb.component('open-dialog', {
-	type: 'action',
-	params: [
-		{ id: 'id', as: 'string' },
-		{ id: 'style', type: 'dialog.style', dynamic: true, defaultValue: { $:'dialog.default' } },
-		{ id: 'content', type: 'control', dynamic: true, defaultValue :{$: 'group'}, forceDefaultCreation: true },
-		{ id: 'menu', type: 'control', dynamic: true },
-		{ id: 'title', as: 'renderable', dynamic: true  },
-		{ id: 'onOK', type: 'action', dynamic: true },
-		{ id: 'modal', type: 'boolean', as: 'boolean' },
-		{ id: 'features', type: 'dialog-feature[]', dynamic: true }
-	],
-	impl: function(context,id) {
+jb.component('open-dialog',  /* openDialog */ {
+  type: 'action',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog_default()},
+    {
+      id: 'content',
+      type: 'control',
+      dynamic: true,
+      defaultValue: group({}),
+      forceDefaultCreation: true
+    },
+    {id: 'menu', type: 'control', dynamic: true},
+    {id: 'title', as: 'renderable', dynamic: true},
+    {id: 'onOK', type: 'action', dynamic: true},
+    {id: 'modal', type: 'boolean', as: 'boolean'},
+    {id: 'features', type: 'dialog-feature[]', dynamic: true}
+  ],
+  impl: function(context,id) {
 		const modal = context.params.modal;
 		const dialog = {
 			id: id,
@@ -126,39 +132,22 @@ jb.component('open-dialog', {
 	}
 })
 
-jb.component('dialog.close-containing-popup', {
-	type: 'action',
-	params: [
-		{ id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
-	],
-	impl: (context,OK) =>
+jb.component('dialog.close-containing-popup',  /* dialog_closeContainingPopup */ {
+  type: 'action',
+  params: [
+    {id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
+  ],
+  impl: (context,OK) =>
 		context.vars.$dialog && context.vars.$dialog.close({OK:OK})
 })
 
-jb.component('dialog.popup', {
-  type: 'dialog.style',
-  impl :{$: 'custom-style',
-		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
-			h(state.contentComp),
-		]),
-      features: [
-       { $: 'dialog-feature.max-zIndex-on-click' },
-       { $: 'dialog-feature.close-when-clicking-outside' },
-       { $: 'dialog-feature.css-class-on-launching-element' },
-       { $: 'dialog-feature.near-launcher-position' }
-      ],
-      css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }'
-  }
-})
-
-
-jb.component('dialog-feature.unique-dialog', {
-	type: 'dialog-feature',
-	params: [
-		{ id: 'id', as: 'string' },
-		{ id: 'remeberLastLocation', type: 'boolean', as: 'boolean' }
-	],
-	impl: function(context,id,remeberLastLocation) {
+jb.component('dialog-feature.unique-dialog',  /* dialogFeature_uniqueDialog */ {
+  type: 'dialog-feature',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'remeberLastLocation', type: 'boolean', as: 'boolean'}
+  ],
+  impl: function(context,id,remeberLastLocation) {
 		if (!id) return;
 		const dialog = context.vars.$dialog;
 		dialog.id = id;
@@ -171,11 +160,11 @@ jb.component('dialog-feature.unique-dialog', {
 	}
 })
 
-jb.component('dialog-feature.keyboard-shortcut', {
+jb.component('dialog-feature.keyboard-shortcut',  /* dialogFeature_keyboardShortcut */ {
   type: 'dialog-feature',
   params: [
-    { id: 'shortcut', as: 'string', description: 'Ctrl+C or Alt+V' },
-    { id: 'action', type: 'action', dynamic: true },
+    {id: 'shortcut', as: 'string', description: 'Ctrl+C or Alt+V'},
+    {id: 'action', type: 'action', dynamic: true}
   ],
   impl: (ctx,key,action) => ({
   	  onkeydown : true,
@@ -206,14 +195,14 @@ jb.component('dialog-feature.keyboard-shortcut', {
 	}})
 })
 
-jb.component('dialog-feature.near-launcher-position', {
-	type: 'dialog-feature',
-	params: [
-		{ id: 'offsetLeft', as: 'number', defaultValue: 0 },
-		{ id: 'offsetTop', as: 'number' , defaultValue: 0 },
-		{ id: 'rightSide', as: 'boolean' },
-	],
-	impl: function(context,offsetLeft,offsetTop,rightSide) {
+jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLauncherPosition */ {
+  type: 'dialog-feature',
+  params: [
+    {id: 'offsetLeft', as: 'number', defaultValue: 0},
+    {id: 'offsetTop', as: 'number', defaultValue: 0},
+    {id: 'rightSide', as: 'boolean', type: 'boolean'}
+  ],
+  impl: function(context,offsetLeft,offsetTop,rightSide) {
 		return {
 			afterViewInit: function(cmp) {
 				offsetLeft = offsetLeft || 0; offsetTop = offsetTop || 0;
@@ -243,12 +232,12 @@ jb.component('dialog-feature.near-launcher-position', {
 	}
 })
 
-jb.component('dialog-feature.onClose', {
-	type: 'dialog-feature',
-	params: [
-		{ id: 'action', type: 'action', dynamic: true}
-	],
-	impl: (ctx,action) =>
+jb.component('dialog-feature.onClose',  /* dialogFeature_onClose */ {
+  type: 'dialog-feature',
+  params: [
+    {id: 'action', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,action) =>
 		ctx.vars.$dialog.em
 			.filter(e => e.type == 'close')
 			.take(1)
@@ -256,12 +245,12 @@ jb.component('dialog-feature.onClose', {
 				action(ctx.setData(e.OK)))
 })
 
-jb.component('dialog-feature.close-when-clicking-outside', {
-	type: 'dialog-feature',
-	params: [
-		{ id: 'delay', as: 'number', defaultValue: 100 }
-	],
-	impl: function(context,delay) {
+jb.component('dialog-feature.close-when-clicking-outside',  /* dialogFeature_closeWhenClickingOutside */ {
+  type: 'dialog-feature',
+  params: [
+    {id: 'delay', as: 'number', defaultValue: 100}
+  ],
+  impl: function(context,delay) {
 		const dialog = context.vars.$dialog;
 		dialog.isPopup = true;
 		jb.delay(10).then(() =>  { // delay - close older before
@@ -278,36 +267,36 @@ jb.component('dialog-feature.close-when-clicking-outside', {
 	}
 })
 
-jb.component('dialog.close-dialog', {
-	type: 'action',
-	params: [
-		{ id: 'id', as: 'string' },
-		{ id: 'delay', as: 'number', defaultValue: 200 },
-	],
-	impl: (ctx,id,delay) =>
+jb.component('dialog.close-dialog',  /* dialog_closeDialog */ {
+  type: 'action',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'delay', as: 'number', defaultValue: 200}
+  ],
+  impl: (ctx,id,delay) =>
 		jb.ui.dialogs.dialogs.filter(d=>d.id == id)
   			.forEach(d=>jb.delay(delay).then(d.close()))
 })
 
-jb.component('dialog.close-all-popups', {
-	type: 'action',
-	impl: ctx =>
+jb.component('dialog.close-all-popups',  /* dialog_closeAllPopups */ {
+  type: 'action',
+  impl: ctx =>
 		jb.ui.dialogs.dialogs.filter(d=>d.isPopup)
   			.forEach(d=>d.close())
 })
 
-jb.component('dialog.close-all', {
-	type: 'action',
-	impl: ctx =>
+jb.component('dialog.close-all',  /* dialog_closeAll */ {
+  type: 'action',
+  impl: ctx =>
 		jb.ui.dialogs.dialogs.forEach(d=>d.close())
 })
 
-jb.component('dialog-feature.auto-focus-on-first-input', {
-	type: 'dialog-feature',
-	params: [
-		{ id: 'selectText', as: 'boolean' }
-	],
-	impl: (ctx,selectText) => ({
+jb.component('dialog-feature.auto-focus-on-first-input',  /* dialogFeature_autoFocusOnFirstInput */ {
+  type: 'dialog-feature',
+  params: [
+    {id: 'selectText', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,selectText) => ({
 		afterViewInit: cmp => {
 			jb.delay(1).then(_=> {
 				const elem = ctx.vars.$dialog.el.querySelector('input,textarea,select');
@@ -320,9 +309,9 @@ jb.component('dialog-feature.auto-focus-on-first-input', {
 	})
 })
 
-jb.component('dialog-feature.css-class-on-launching-element', {
-	type: 'dialog-feature',
-	impl: context => ({
+jb.component('dialog-feature.css-class-on-launching-element',  /* dialogFeature_cssClassOnLaunchingElement */ {
+  type: 'dialog-feature',
+  impl: context => ({
 		afterViewInit: cmp => {
 			const dialog = context.vars.$dialog;
 			const control = context.vars.$launchingElement.el;
@@ -336,12 +325,12 @@ jb.component('dialog-feature.css-class-on-launching-element', {
 	})
 })
 
-jb.component('dialog-feature.max-zIndex-on-click', {
-	type: 'dialog-feature',
-	params: [
-		{ id: 'minZIndex', as: 'number'}
-	],
-	impl: function(context,minZIndex) {
+jb.component('dialog-feature.max-zIndex-on-click',  /* dialogFeature_maxZIndexOnClick */ {
+  type: 'dialog-feature',
+  params: [
+    {id: 'minZIndex', as: 'number'}
+  ],
+  impl: function(context,minZIndex) {
 		const dialog = context.vars.$dialog;
 
 		return ({
@@ -360,14 +349,14 @@ jb.component('dialog-feature.max-zIndex-on-click', {
 	}
 })
 
-jb.component('dialog.dialog-ok-cancel', {
-	type: 'dialog.style',
-	params: [
-		{ id: 'okLabel', as: 'string', defaultValue: 'OK' },
-		{ id: 'cancelLabel', as: 'string', defaultValue: 'Cancel' },
-	],
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
+jb.component('dialog.dialog-ok-cancel',  /* dialog_dialogOkCancel */ {
+  type: 'dialog.style',
+  params: [
+    {id: 'okLabel', as: 'string', defaultValue: 'OK'},
+    {id: 'cancelLabel', as: 'string', defaultValue: 'Cancel'}
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
 			h('div',{class: 'dialog-title'},state.title),
 			h('button',{class: 'dialog-close', onclick: _=> cmp.dialogClose() },'×'),
 			h(state.contentComp),
@@ -376,16 +365,21 @@ jb.component('dialog.dialog-ok-cancel', {
 				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },cmp.okLabel),
 			]),
 		]),
-	  css: `>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }`,
-	}
+    css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }'
+  })
 })
 
-jb.component('dialog-feature.resizer', {
-	type: 'dialog-feature',
+jb.component('dialog-feature.resizer',  /* dialogFeature_resizer */ {
+  type: 'dialog-feature',
   params: [
-    { id: 'resizeInnerCodemirror', as: 'boolean', description: 'effective only for dialog with a single codemirror element' }
+    {
+      id: 'resizeInnerCodemirror',
+      as: 'boolean',
+      description: 'effective only for dialog with a single codemirror element',
+      type: 'boolean'
+    }
   ],
-	impl: (ctx,codeMirror) => ({
+  impl: (ctx,codeMirror) => ({
 					templateModifier: (vdom,cmp,state) => {
             if (vdom && vdom.nodeName != 'div') return vdom;
 						vdom.children.push(jb.ui.h('img', {src: '/css/resizer.gif', class: 'resizer'}));
@@ -437,6 +431,22 @@ jb.component('dialog-feature.resizer', {
 					      })
 					  }
 	     })
+})
+
+jb.component('dialog.popup',  /* dialog_popup */ {
+  type: 'dialog.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
+			  h(state.contentComp),
+		  ]),
+    css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }',
+    features: [
+      dialogFeature_maxZIndexOnClick(),
+      dialogFeature_closeWhenClickingOutside(),
+      dialogFeature_cssClassOnLaunchingElement(),
+      dialogFeature_nearLauncherPosition({})
+    ]
+  })
 })
 
 jb.ui.dialogs = {
