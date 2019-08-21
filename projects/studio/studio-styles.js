@@ -277,41 +277,6 @@ jb.component('editable-boolean.studio-expand-collapse-in-array', {
    }
 })
 
-
-jb.component('dialog.studio-multiline-edit',{
-	type: 'dialog.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
-      h('button',{class: 'dialog-close', onclick:
-        _=> cmp.dialogClose() },'×'),
-      h(state.contentComp),
-    ]),
-			css: `{ background: #fff; position: absolute; min-width: 280px; min-height: 200px;
-					box-shadow: 2px 2px 3px #d5d5d5; padding: 3px; border: 1px solid rgb(213, 213, 213)
-				  }
-				>.dialog-close {
-						position: absolute;
-						cursor: pointer;
-						right: -7px; top: -22px;
-						font: 21px sans-serif;
-						border: none;
-						background: transparent;
-						color: #000;
-						text-shadow: 0 1px 0 #fff;
-						font-weight: 700;
-						opacity: .2;
-				}
-				>.dialog-close:hover { opacity: .5 }
-				`,
-			features: [
-				{ $: 'dialog-feature.max-zIndex-on-click' },
-				{ $: 'dialog-feature.close-when-clicking-outside' },
-				{ $: 'dialog-feature.css-class-on-launching-element' },
-				{ $: 'dialog-feature.studio-position-under-property' }
-			]
-	}
-})
-
 jb.component('dialog-feature.studio-position-under-property', {
 	type: 'dialog-feature',
 	impl: (context,offsetLeft,offsetTop) => ({
@@ -371,4 +336,38 @@ jb.component('label.studio-message', {
       }`,
     features: {$: 'label.bind-title' }
   }
+})
+
+jb.component('dialog.studio-multiline-edit',{
+	type: 'dialog.style',
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
+      h('button',{class: 'dialog-close', onclick:
+        _=> cmp.dialogClose() },'×'),
+      h(state.contentComp),
+    ]),
+			css: `{ background: #fff; position: absolute; min-width: 280px; min-height: 200px;
+					box-shadow: 2px 2px 3px #d5d5d5; padding: 3px; border: 1px solid rgb(213, 213, 213)
+				  }
+				>.dialog-close {
+						position: absolute;
+						cursor: pointer;
+						right: -7px; top: -22px;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
+						opacity: .2;
+				}
+				>.dialog-close:hover { opacity: .5 }
+				`,
+			features: [
+				{ $: 'dialog-feature.max-zIndex-on-click' },
+				{ $: 'dialog-feature.close-when-clicking-outside' },
+				{ $: 'dialog-feature.css-class-on-launching-element' },
+				{ $: 'dialog-feature.studio-position-under-property' }
+			]
+	}
 })
