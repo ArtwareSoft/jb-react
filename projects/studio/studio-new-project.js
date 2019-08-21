@@ -10,10 +10,10 @@ jb.component('studio.new-project', {
       project: name,
       files: [
         { fileName: `${name}.js`, content: `
-jb.component('${name}.main', {
-  type: 'control',
-  impl :{$: 'group', controls: [ {$: 'button', title: 'my button'}] }
-})`
+  jb.component('${name}.main', {
+    type: 'control',
+    impl :{$: 'group', controls: [ {$: 'button', title: 'my button'}] }
+  })`
         },
         { fileName: `${name}.html`, content: `
 <!DOCTYPE html>

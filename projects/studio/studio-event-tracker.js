@@ -17,29 +17,29 @@ st.initEventTracker = _ => {
 	})
 }
 
-//ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent});
-//({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources});
+//ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent})
+//({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources})
 
 jb.component('studio.event-title', {
 	type: 'data',
 	params: [ {id: 'event', as: 'single', defaultValue: '%%' } ],
 	impl: (context,event) =>
 		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
-});
+})
 
 jb.component('studio.event-cmp', {
 	type: 'data',
 	params: [ {id: 'event', as: 'single', defaultValue: '%%' } ],
 	impl: (context,event) =>
 		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
-});
+})
 
 jb.component('studio.event-cause', {
 	type: 'data',
 	params: [ {id: 'event', as: 'single', defaultValue: '%%' } ],
 	impl: (context,event) =>
 		(event && event.opEvent) ? st.nameOfRef(event.opEvent.ref) + ' changed to "' + st.valSummary(event.opEvent.newVal) + '"' : ''
-});
+})
 
 jb.component('studio.state-change-events', {
 	type: 'data',

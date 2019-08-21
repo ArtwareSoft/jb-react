@@ -366,7 +366,7 @@ jb.component('studio.open-new-page', {
     },
     title: 'New Page',
     onOK: [
-      ctx => jb.studio.previewjb.component(ctx.exp('%$studio/project%.%$name%'), {
+      ctx => jb.studio.previewjb. component(ctx.exp('%$studio/project%.%$name%'), {
           type: 'control',
           impl :{$: 'group', title1: ctx.exp('%$name%'), contorls: []}
       }),

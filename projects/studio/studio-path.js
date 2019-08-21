@@ -12,7 +12,7 @@ function compsRef(val,opEvent) {
 
 		val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
 		if (!val.$jb_selectionPreview)
-  		st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex});
+  		st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
 
     st.previewjb.comps = val;
     if (opEvent)
@@ -76,7 +76,7 @@ Object.assign(st,{
 		st.previewjb.comps[id],
   compAsStr: id =>
 		jb.prettyPrintComp(id,st.getComp(id)),
-});
+})
 
 
 // write operations with logic
@@ -253,13 +253,13 @@ Object.assign(st, {
 		// 				if (condition_exp.indexOf(pUsage) != -1)
 		// 					return pVal ? condition_exp : '';
 		// 				return match;
-		// 			});
-		// });
+		// 			})
+		// })
 		// // inject param values
 		// jb.compParams(comp).forEach(p=>{
 		// 		var pVal = '' + (profile[p.id] || p.defaultValue || ''); // only primitives
 		// 		res = res.replace(new RegExp(`%\\$${p.id}%`,'g') , pVal);
-		// });
+		// })
 		//
 		// st.writeValueOfPath(path,st.evalProfile(res));
 	},
@@ -306,19 +306,19 @@ jb.component('studio.ref', {
 	params: [ {id: 'path', as: 'string', mandatory: true } ],
 	impl: (ctx,path) =>
 		st.refOfPath(path)
-});
+})
 
 jb.component('studio.path-of-ref', {
 	params: [ {id: 'ref', defaultValue: '%%', mandatory: true } ],
 	impl: (ctx,ref) =>
 		st.pathOfRef(ref)
-});
+})
 
 jb.component('studio.name-of-ref', {
 	params: [ {id: 'ref', defaultValue: '%%', mandatory: true } ],
 	impl: (ctx,ref) =>
 		st.nameOfRef(ref)
-});
+})
 
 
 jb.component('studio.is-new', {
@@ -332,7 +332,7 @@ jb.component('studio.is-new', {
 //		var res =  st.valOfPath(path) && !st.val(version_before);
 		return res;
 	}
-});
+})
 
 jb.component('studio.watch-path', {
   type: 'feature',
