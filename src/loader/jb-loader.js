@@ -108,10 +108,10 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
           'dist/dragula.css',
       ],
       studio: [
-        'path','utils', 'main','url', 'completion',
-        'toolbar','styles', 'search', 'new-profile', 'data-browse', 'preview', 'tgp-model', 'model-components',
-        'tree','popups','properties','pick','properties-menu','save','open-project','new-project', 'references', 'component-header',
-        'suggestions','undo','edit-source','jb-editor','jb-editor-styles','style-editor','probe','testers', 'event-tracker','h-to-jsx',
+        'styles', 'path','utils', 'preview','popups','url', 'completion', 'undo','new-profile', 'data-browse', 'tgp-model', 
+        'model-components', 'tree','properties','pick','properties-menu','save','open-project',
+        'new-project', 'toolbar', 'main', 'references', 'search', 'component-header',
+        'suggestions','edit-source','jb-editor','jb-editor-styles','style-editor','probe','testers', 'event-tracker','h-to-jsx',
       ],
       'studio-tests': [
         'probe','model','tree','suggestion'
