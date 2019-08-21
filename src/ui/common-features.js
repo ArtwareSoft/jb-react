@@ -307,8 +307,8 @@ jb.component('feature.onEvent', {
       [`on${event}`]: true,
       afterViewInit: cmp=>
         (debounceTime ? cmp[`on${event}`].debounceTime(debounceTime) : cmp[`on${event}`])
-          .subscribe(ev=>
-                jb.ui.wrapWithLauchingElement(action, cmp.ctx.setData(ev), cmp.base)())
+          .subscribe(event=>
+                jb.ui.wrapWithLauchingElement(action, cmp.ctx.setVars({event}), cmp.base)())
   })
 })
 
