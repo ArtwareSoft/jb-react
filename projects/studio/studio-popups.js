@@ -1,65 +1,3 @@
-jb.component('dialog.studio-floating', {
-	type: 'dialog.style',
-	params: [
-		{ id: 'id', as: 'string' },
-		{ id: 'width', as: 'number', defaultValue: 300},
-		{ id: 'height', as: 'number', defaultValue: 100},
-	],
-	impl :{$: 'custom-style',
-			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
-				h('div',{class: 'dialog-title noselect'},state.title),
-				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
-				h('button',{class: 'dialog-close', onclick:
-					_=> cmp.dialogClose() },'×'),
-				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
-			]),
-			features: [
-					{$: 'dialog-feature.drag-title', id: '%$id%'},
-					{$: 'dialog-feature.unique-dialog', id: '%$id%', remeberLastLocation: true },
-					{$: 'dialog-feature.max-zIndex-on-click', minZIndex: 5000 },
-					{$: 'studio-dialog-feature.refresh-title' },
-					{$: 'studio-dialog-feature.studio-popup-location' },
-			],
-			css: `{ position: fixed;
-						background: #F9F9F9;
-						width: %$width%px;
-						max-width: 1200px;
-						min-height: %$height%px;
-						overflow: auto;
-						border-radius: 4px;
-						padding: 0 12px 12px 12px;
-						box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
-				}
-				>.dialog-title { background: none; padding: 10px 5px; }
-				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }
-				>.dialog-close {
-						position: absolute;
-						cursor: pointer;
-						right: 4px; top: 4px;
-						font: 21px sans-serif;
-						border: none;
-						background: transparent;
-						color: #000;
-						text-shadow: 0 1px 0 #fff;
-						font-weight: 700;
-						opacity: .2;
-				}
-				>.dialog-menu {
-						position: absolute;
-						cursor: pointer;
-						right: 24px; top: 0;
-						font: 21px sans-serif;
-						border: none;
-						background: transparent;
-						color: #000;
-						text-shadow: 0 1px 0 #fff;
-						font-weight: 700;
-						opacity: .2;
-				}
-				>.dialog-close:hover { opacity: .5 }`
-	}
-})
-
 jb.component('dialog.edit-source-style', {
 	type: 'dialog.style',
 	params: [
@@ -164,6 +102,86 @@ jb.component('studio.code-mirror-mode',{
 	}
 })
 
+jb.component('studio.open-multiline-edit', {
+	type: 'action',
+	params: [
+	    { id: 'path', as: 'string' }
+	],
+	impl: {
+		$: 'open-dialog',
+		style :{$: 'dialog.studio-multiline-edit' },
+		content :{$: 'editable-text',
+			databind :{$: 'studio.ref', path: '%$path%' },
+			style :{$: 'editable-text.codemirror',
+				mode :{$: 'studio.code-mirror-mode', path: '%$path%'}
+			},
+//			features: {$: 'studio.undo-support', path: '%$path%' },
+		}
+	}
+})
+
+jb.component('dialog.studio-floating', {
+	type: 'dialog.style',
+	params: [
+		{ id: 'id', as: 'string' },
+		{ id: 'width', as: 'number', defaultValue: 300},
+		{ id: 'height', as: 'number', defaultValue: 100},
+	],
+	impl :{$: 'custom-style',
+			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
+				h('div',{class: 'dialog-title noselect'},state.title),
+				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
+				h('button',{class: 'dialog-close', onclick:
+					_=> cmp.dialogClose() },'×'),
+				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
+			]),
+			features: [
+					{$: 'dialog-feature.drag-title', id: '%$id%'},
+					{$: 'dialog-feature.unique-dialog', id: '%$id%', remeberLastLocation: true },
+					{$: 'dialog-feature.max-zIndex-on-click', minZIndex: 5000 },
+					{$: 'studio-dialog-feature.refresh-title' },
+					{$: 'studio-dialog-feature.studio-popup-location' },
+			],
+			css: `{ position: fixed;
+						background: #F9F9F9;
+						width: %$width%px;
+						max-width: 1200px;
+						min-height: %$height%px;
+						overflow: auto;
+						border-radius: 4px;
+						padding: 0 12px 12px 12px;
+						box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
+				}
+				>.dialog-title { background: none; padding: 10px 5px; }
+				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }
+				>.dialog-close {
+						position: absolute;
+						cursor: pointer;
+						right: 4px; top: 4px;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
+						opacity: .2;
+				}
+				>.dialog-menu {
+						position: absolute;
+						cursor: pointer;
+						right: 24px; top: 0;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
+						opacity: .2;
+				}
+				>.dialog-close:hover { opacity: .5 }`
+	}
+})
+
 jb.component('studio.open-responsive-phone-popup', {
   type: 'action',
   params: [{ id: 'path', as: 'string' }],
@@ -235,22 +253,3 @@ jb.component('studio.open-responsive-phone-popup', {
     title: 'responsive'
   }
 })
-
-jb.component('studio.open-multiline-edit', {
-	type: 'action',
-	params: [
-	    { id: 'path', as: 'string' }
-	],
-	impl: {
-		$: 'open-dialog',
-		style :{$: 'dialog.studio-multiline-edit' },
-		content :{$: 'editable-text',
-			databind :{$: 'studio.ref', path: '%$path%' },
-			style :{$: 'editable-text.codemirror',
-				mode :{$: 'studio.code-mirror-mode', path: '%$path%'}
-			},
-//			features: {$: 'studio.undo-support', path: '%$path%' },
-		}
-	}
-})
-
