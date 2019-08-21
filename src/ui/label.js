@@ -45,7 +45,10 @@ jb.component('label.htmlTag', {
 
 jb.component('label.span', {
     type: 'label.style',
-    impl :{$: 'label.htmlTag', htmlTag: 'span' }
+    impl :{$: 'custom-style',
+      template: (cmp,state,h) => h('span',{},state.title),
+      features :{$: 'label.bind-title' }
+  }
 })
 
 jb.component('label.card-title', {
