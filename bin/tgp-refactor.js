@@ -37,8 +37,8 @@ filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>!x.match(/material/))
 const content = jb.entries(jb.comps) // .filter(e=> typeof e[1].impl === 'object')
 //    .slice(1,50)
     .filter(e=>
-//        e[0] === 'ui-test.wait-for')
-        e[0].indexOf('studio.path-hyperlink') == 0)
+//        e[0] === 'ui-test.group')
+        e[0].indexOf('studio.') == 0)
     .forEach(e=>
         swapComp(e[0],e[1]))
     

@@ -184,7 +184,7 @@ jb.component('cCommerce.histogram', {
     controls: [
       {$: 'label', 
         title: '%$item/title%', 
-        style :{$: 'label.heading', level: 'h3' }
+        style :{$: 'label.htmlTag', htmlTag: 'h3' }
       }, 
       {$: 'd3.histogram', 
         frame :{$: 'd3.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 

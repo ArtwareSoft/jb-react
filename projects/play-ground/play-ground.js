@@ -11,7 +11,7 @@ jb.component('play-ground.main', {
     controls: [
       {$: 'label', 
         title :{$: 'is-of-type', type: 'string', obj: '123' }, 
-        style :{$: 'label.p' }
+        style :{$: 'label.htmlTag', htmlTag: 'p' }
       }, 
       {$: 'picklist', 
         title: 'name', 
