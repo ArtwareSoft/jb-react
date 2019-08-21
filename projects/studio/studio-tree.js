@@ -1,26 +1,3 @@
-jb.component('studio.open-control-tree', {
-  type: 'action',
-  impl :{$: 'open-dialog',
-    style :{$: 'dialog.studio-floating', id: 'studio-outline', width: '350' },
-    content :{$: 'studio.control-tree' },
-    menu :{$: 'button',
-      title: ' ',
-      action :{$: 'studio.open-tree-menu', path: '%$studio/profile_path%' },
-      style :{$: 'button.mdl-icon', icon: 'menu' },
-      features :{$: 'css', css: '{ background: none }' }
-    },
-    title: 'Outline'
-  }
-})
-
-jb.component('studio.open-tree-menu', {
-  type: 'action',
-  params: [
-    { id: 'path', as: 'string' }
-  ],
-  impl :{$: 'menu.open-context-menu', menu :{$: 'studio.tree-menu', path: '%$path%'} }
-})
-
 jb.component('studio.tree-menu', {
   type: 'menu.option', 
   params: [{ id: 'path', as: 'string' }], 
@@ -224,3 +201,26 @@ jb.component('studio.control-tree.nodes', {
 //     }
 //   })
 // })
+
+jb.component('studio.open-control-tree', {
+  type: 'action',
+  impl :{$: 'open-dialog',
+    style :{$: 'dialog.studio-floating', id: 'studio-outline', width: '350' },
+    content :{$: 'studio.control-tree' },
+    menu :{$: 'button',
+      title: ' ',
+      action :{$: 'studio.open-tree-menu', path: '%$studio/profile_path%' },
+      style :{$: 'button.mdl-icon', icon: 'menu' },
+      features :{$: 'css', css: '{ background: none }' }
+    },
+    title: 'Outline'
+  }
+})
+
+jb.component('studio.open-tree-menu', {
+  type: 'action',
+  params: [
+    { id: 'path', as: 'string' }
+  ],
+  impl :{$: 'menu.open-context-menu', menu :{$: 'studio.tree-menu', path: '%$path%'} }
+})
