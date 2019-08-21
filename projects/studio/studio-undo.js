@@ -86,21 +86,6 @@ jb.component('studio.comps-undo-index', {
   impl: ctx => st.undoIndex - 1
 })
 
-jb.component('studio.open-script-history', {
-  type: 'action',
-  impl: {
-    $: 'open-dialog',
-    content: { $: 'studio.script-history' },
-    style: {
-      $: 'dialog.studio-floating',
-      id: 'script-history',
-      width: '700',
-      height: '400'
-    },
-    title: 'Script History'
-  }
-})
-
 jb.component('studio.script-history', {
   type: 'control',
   impl: {
@@ -162,6 +147,21 @@ jb.component('studio.script-history', {
       },
       { $: 'css.height', height: '400', overflow: 'auto', minMax: 'max' }
     ]
+  }
+})
+
+jb.component('studio.open-script-history', {
+  type: 'action',
+  impl: {
+    $: 'open-dialog',
+    content: { $: 'studio.script-history' },
+    style: {
+      $: 'dialog.studio-floating',
+      id: 'script-history',
+      width: '700',
+      height: '400'
+    },
+    title: 'Script History'
   }
 })
 
