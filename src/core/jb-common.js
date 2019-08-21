@@ -5,7 +5,7 @@ jb.component('call', {
  	],
  	impl: function(context,param) {
  	  const paramObj = context.componentContext && context.componentContext.params[param];
-      if (typeof(paramObj) == 'function')
+      if (typeof paramObj == 'function')
  		return paramObj(new jb.jbCtx(context, {
  			data: context.data,
  			vars: context.vars,

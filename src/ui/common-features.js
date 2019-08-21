@@ -137,7 +137,7 @@ jb.component('var', {
   })
 })
 
-jb.component('Variable', jb.comps.var)
+jb.component('variable', jb.comps.var)
 
 jb.component('bind-refs', {
   type: 'feature', category: 'watch',

@@ -1,6 +1,6 @@
 (function() {
 var st = jb.studio;
-var _window = window.parent || window;
+var _window = jb.frame.parent || jb.frame;
 var elec_remote = _window.require && _window.require('electron').remote;
 var fs = elec_remote && elec_remote.require('fs');
 var jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
