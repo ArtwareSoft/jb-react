@@ -36,8 +36,9 @@ filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>!x.match(/material/))
 
 const content = jb.entries(jb.comps) // .filter(e=> typeof e[1].impl === 'object')
 //    .slice(1,50)
-    .filter(e=> 
-        ! e[1][location][0].match(/[^-]menu.js/)) // e[1][location][0].match(/menu.js/) 
+    .filter(e=> ! e[1][location][0].match(/[^-]menu.js/)) 
+    .filter(e=> ! e[1][location][0].match(/studio-new-profile.js/))
+    
 //        e[0] === 'studio.open-script-history')
     .filter(e=> e[0].indexOf('studio.') == 0 || e[0].indexOf('dialog') == 0 || e[0].indexOf('menu') == 0)
     .forEach(e=>
