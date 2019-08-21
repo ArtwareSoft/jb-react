@@ -10,6 +10,10 @@ st.message = function(message,error) {
 
 // ********* Components ************
 
+jb.component('studio.currentProfilePath', {
+	impl: { $firstSucceeding: [ '%$simulateProfilePath%','%$studio/profile_path%', '%$studio/project%.%$studio/page%'] }
+})
+
 jb.component('studio.message', {
 	type: 'action',
 	params: [ { id: 'message', as: 'string' } ],

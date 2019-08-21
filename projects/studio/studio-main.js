@@ -179,10 +179,6 @@ jb.component('studio.ctx-counters', {
   }
 })
 
-jb.component('studio.currentProfilePath', {
-	impl: { $firstSucceeding: [ '%$simulateProfilePath%','%$studio/profile_path%', '%$studio/project%.%$studio/page%'] }
-})
-
 jb.component('studio.is-single-test', {
 	type: 'boolean',
 	impl: ctx => {
