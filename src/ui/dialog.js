@@ -1,3 +1,16 @@
+jb.component('dialog.default', {
+	type: 'dialog.style',
+	impl :{$: 'custom-style',
+		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
+			h('div',{class: 'dialog-title'},state.title),
+			h('button',{class: 'dialog-close', onclick:
+				_=> cmp.dialogClose() },'×'),
+			h(state.contentComp),
+		]),
+		features:{$:'dialog-feature.drag-title'}
+	}
+})
+
 jb.component('open-dialog', {
 	type: 'action',
 	params: [
@@ -65,19 +78,6 @@ jb.component('dialog.close-containing-popup', {
 	],
 	impl: (context,OK) =>
 		context.vars.$dialog && context.vars.$dialog.close({OK:OK})
-})
-
-jb.component('dialog.default', {
-	type: 'dialog.style',
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
-			h('div',{class: 'dialog-title'},state.title),
-			h('button',{class: 'dialog-close', onclick:
-				_=> cmp.dialogClose() },'×'),
-			h(state.contentComp),
-		]),
-		features:{$:'dialog-feature.drag-title'}
-	}
 })
 
 jb.component('dialog.popup', {
