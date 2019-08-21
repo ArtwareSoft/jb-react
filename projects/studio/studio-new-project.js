@@ -10,7 +10,7 @@ jb.component('studio.new-project', {
       project: name,
       files: [
         { fileName: `${name}.js`, content: `
-  jb.component('${name}.main', {
+  jb['component']('${name}.main', {
     type: 'control',
     impl :{$: 'group', controls: [ {$: 'button', title: 'my button'}] }
   })`
