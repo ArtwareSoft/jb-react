@@ -271,7 +271,7 @@ jb.component('studio.open-new-page',  /* studio_openNewPage */ {
       }),
       writeValue('%$studio/profile_path%', '%$studio/project%.%$name%~impl'),
       writeValue('%$studio/page%', '%$name%'),
-      studio_openControlTree(),
+      {$: 'studio.open-control-tree' },
       tree_regainFocus(),
       refreshControlById('pages')
     ],
