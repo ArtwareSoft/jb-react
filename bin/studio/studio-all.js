@@ -29850,7 +29850,7 @@ Object.assign(st, {
 	setSugarComp: (path,compName,param,srcCtx) => {
 		var emptyVal = (param.type||'').indexOf('[') == -1 ? '' : [];
 		var currentVal = st.valOfPath(path);
-		if (typeof currentVal == 'object') {
+		if (currentVal && typeof currentVal == 'object') {
 			var properties = Object.getOwnPropertyNames(currentVal);
 			if (properties.length == 1 && properties[0].indexOf('$') == 0)
 				currentVal = currentVal[properties[0]];

@@ -158,19 +158,19 @@ body {
 	border-bottom: none;
 }
 
-.todo-list li.editing {
+.todo-list li .editing {
 	border-bottom: none;
 	padding: 0;
 }
 
-.todo-list li.editing .edit {
+.todo-list li .editing .edit {
 	display: block;
 	width: 506px;
 	padding: 12px 16px;
 	margin: 0 0 0 43px;
 }
 
-.todo-list li.editing .view {
+.todo-list li .editing .view {
 	display: none;
 }
 
@@ -214,7 +214,7 @@ body {
 	transition: color 0.4s;
 }
 
-.todo-list li.completed label {
+.todo-list li .completed label {
 	color: #d9d9d9;
 	text-decoration: line-through;
 }
@@ -250,7 +250,7 @@ body {
 	display: none;
 }
 
-.todo-list li.editing:last-child {
+.todo-list li .editing:last-child {
 	margin-bottom: -1px;
 }
 

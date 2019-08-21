@@ -90,11 +90,12 @@ jb.component('control.first-succeeding', {
 jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
   type: 'feature', category: 'watch:30', description: 'relevant only for first-succeeding',
   params: [
-    { id: 'ref', mandatory: true, as: 'ref', description: 'reference to data' },
+    { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
   ],
-  impl: (ctx,ref,includeChildren) => ({
-      init: cmp =>
+  impl: (ctx,refF,includeChildren) => ({
+      init: cmp => {
+        const ref = refF(cmp.ctx)
         ref && jb.ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
         .subscribe(e=>{
           if (ctx && ctx.profile && ctx.profile.$trace)
@@ -113,6 +114,7 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
             }
           }
       })
+    }
   })
 })
 
@@ -120,10 +122,10 @@ jb.component('control-with-condition', {
   type: 'control',
   usageByValue: true,
   params: [
-    { id: 'condition', type: 'boolean', mandatory: true, as: 'boolean' },
+    { id: 'condition', type: 'boolean', dynamic: true, mandatory: true, as: 'boolean' },
     { id: 'control', type: 'control', mandatory: true, dynamic: true },
     { id: 'title', as: 'string' },
   ],
   impl: (ctx,condition,ctrl) =>
-    condition && ctrl(ctx)
+    condition() && ctrl(ctx)
 })
