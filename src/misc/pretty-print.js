@@ -11,9 +11,11 @@ jb.component('pretty-print', {
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {
   if (comp) {
+    settings.macro = true;
     const macroRemark = settings.macro ? ` /* ${jb.macroName(compId)} */ ` : ''
-    return "jb.component('" + compId + "', " + macroRemark
-      + jb.prettyPrintWithPositions(comp,settings).result + ')'
+    const res = "jb.component('" + compId + "', " + jb.prettyPrintWithPositions(comp,settings).result + ')'
+    const withMacroName = res.replace(/\n/, macroRemark + '\n')
+    return withMacroName
   }
 }
 
