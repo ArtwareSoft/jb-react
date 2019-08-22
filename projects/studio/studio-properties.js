@@ -1,3 +1,28 @@
+jb.component('studio.property-toolbar', {
+  type: 'control',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'button',
+    title: 'more...',
+    action :{$: 'studio.open-property-menu', path: '%$path%', $recursive: true },
+    style :{$: 'studio.property-toolbar-style' },
+//    features :{$: 'css.margin', top: '5', left: '4' }
+  }
+})
+
+jb.component('studio.property-toolbar-feature', {
+  type: 'feature',
+  params: [
+    { id: 'path', as: 'string' }
+  ],
+  impl : {$list: [
+    {$: 'field.toolbar',
+        toolbar :{$: 'studio.property-toolbar', path: '%$path%' }
+    },
+    {$: 'studio.disabled-support', path: '%$path%' }
+  ]}
+})
+
+
 jb.component('studio.focus-on-first-property', {
   type: 'action',
   params: [{ id: 'delay', as: 'number', defaultValue: 100 }],
