@@ -136,11 +136,11 @@ jb.component('studio.property-primitive',  /* studio_propertyPrimitive */ {
         ]
       })
     ],
-    features: variable({ 
-        name: 'suggestionData', 
-        mutable: true, 
-        value: {$: 'object', selected: '', options: [], path: '%$path%'}
-    }),
+    features: variable({
+      name: 'suggestionData',
+      value: {$: 'object', selected: '', options: [], path: '%$path%'},
+      mutable: true
+    })
   })
 })
 
@@ -177,14 +177,16 @@ jb.component('studio.jb-floating-input',  /* studio_jbFloatingInput */ {
           })
         ]
       }),
-      label({title: pipeline(studio_paramDef('%$path%'), '%description%') ,
-        features: css('{border: 1px solid white;}') })
+      label({
+        title: pipeline(studio_paramDef('%$path%'), '%description%'),
+        features: css('{border: 1px solid white;}')
+      })
     ],
     features: [
-      variable({ 
-        name: 'suggestionData', 
-        mutable: true, 
-        value: {$: 'object', selected: '', options: [], path: '%$path%'}
+      variable({
+        name: 'suggestionData',
+        value: {$: 'object', selected: '', options: [], path: '%$path%'},
+        mutable: true
       }),
       css_padding({left: '4', right: '4'}),
       css_margin({top: '-20', selector: '>*:last-child'})
