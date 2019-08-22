@@ -8,7 +8,7 @@ jb.component('studio.goto-path', {
 		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' },
 		{$if :{$: 'studio.is-of-type', type: 'control,table-field', path: '%$path%'},
 			then: {$runActions: [
-				{$: 'studio.open-control-tree'},
+				{$: 'studio.open-control-tree', $recursive: true},
 //				{$: 'studio.open-properties', focus: true}
 			]},
 			else :{$: 'studio.open-component-in-jb-editor', path: '%$path%' }
