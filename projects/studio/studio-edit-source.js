@@ -1,5 +1,15 @@
 (function() {
-  var st = jb.studio;
+const st = jb.studio;
+
+jb.component('studio.open-editor', {
+  type: 'action',
+  params: [
+    { id: 'path', as: 'string'},
+  ],
+  impl: (ctx,path) => {
+    path && fetch(`/?op=gotoSource&comp=${path.split('~')[0]}`)
+  }
+})
 
 jb.component('studio.edit-source', {
   type: 'action', 
@@ -43,17 +53,18 @@ jb.component('studio.edit-as-macro', {
   }
 })
 
-jb.component('studio.goto-editor-options', {
-	type: 'menu.option',
-	params: [
-		{ id: 'path', as: 'string'},
-	],
-    impl :{$: 'menu.end-with-separator',
-      options :[
-        {$: 'studio.goto-editor-first', path: '%$path%'},
-        {$: 'studio.goto-editor-secondary', path: '%$path%'},
-      ]
+jb.component('studio.goto-editor-secondary', {
+  type: 'action',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'menu.action',
+    $vars: { baseComp: {$: 'split', text: '%$path%', separator: '~', part: 'first' }},
+    title :  'Goto editor: %$baseComp%',
+    action :{$: 'studio.open-editor', path: '%$baseComp%' },
+    showCondition :{$: 'not-equals',
+      item1 :{$: 'studio.comp-name', path: '%$path%' },
+      item2 : '%$baseComp%'
     }
+  }
 })
 
 jb.component('studio.goto-editor-first', {
@@ -73,28 +84,17 @@ jb.component('studio.goto-editor-first', {
   }
 })
 
-jb.component('studio.goto-editor-secondary', {
-  type: 'action',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'menu.action',
-    $vars: { baseComp: {$: 'split', text: '%$path%', separator: '~', part: 'first' }},
-    title :  'Goto editor: %$baseComp%',
-    action :{$: 'studio.open-editor', path: '%$baseComp%' },
-    showCondition :{$: 'not-equals',
-      item1 :{$: 'studio.comp-name', path: '%$path%' },
-      item2 : '%$baseComp%'
-    }
-  }
-})
-
-jb.component('studio.open-editor', {
-	type: 'action',
+jb.component('studio.goto-editor-options', {
+	type: 'menu.option',
 	params: [
 		{ id: 'path', as: 'string'},
 	],
-	impl: (ctx,path) => {
-		path && fetch(`/?op=gotoSource&comp=${path.split('~')[0]}`)
-	}
+    impl :{$: 'menu.end-with-separator',
+      options :[
+        {$: 'studio.goto-editor-first', path: '%$path%'},
+        {$: 'studio.goto-editor-secondary', path: '%$path%'},
+      ]
+    }
 })
 
 })()
