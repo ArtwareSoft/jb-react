@@ -1,4 +1,16 @@
 
+jb.component('studio.format-css', {
+  params: [
+    { id: 'css', as: 'string' }
+  ],
+  impl: (ctx,css) => {
+    return css
+      .replace(/{\s*/g,'{ ')
+      .replace(/;\s*/g,';\n')
+      .replace(/}[^$]/mg,'}\n\n')
+      .replace(/^\s*/mg,'')
+  }
+})
 
 jb.component('studio.open-style-menu', {
   type: 'action',
@@ -205,18 +217,6 @@ jb.component('studio.style-source', {
   }
 })
 
-jb.component('studio.format-css', {
-  params: [
-    { id: 'css', as: 'string' }
-  ],
-  impl: (ctx,css) => {
-    return css
-      .replace(/{\s*/g,'{ ')
-      .replace(/;\s*/g,';\n')
-      .replace(/}[^$]/mg,'}\n\n')
-      .replace(/^\s*/mg,'')
-  }
-})
 
 jb.component('studio.open-style-editor', {
   type: 'action',
