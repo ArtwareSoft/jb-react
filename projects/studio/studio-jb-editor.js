@@ -178,7 +178,7 @@ jb.component('studio.probe-data-view',  /* studio_probeDataView */ {
     features: [
       group_wait({
         for: studio_probeResults('%$path%'),
-        loadingControl: label({title: '...'}),
+        loadingControl: label('...'),
         varName: 'probeResult'
       })
     ]
