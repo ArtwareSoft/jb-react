@@ -106,6 +106,16 @@ jb.component('studio.property-tgp', {
  }
 })
 
+jb.component('studio.properties-expanded-relevant', {
+	type: 'boolean',
+	params: [{ id: 'path', as: 'string', mandatory: true }],
+	impl: and(
+      notEmpty(studio_nonControlChildren('%$path%')),
+      notEmpty(studio_val('%$path%')),
+      notEquals(studio_compName('%$path%'),'custom-style')
+  )
+})
+
 jb.component('studio.property-tgp-old', {
   type: 'control',
   params: [{ id: 'path', as: 'string' }],
@@ -149,16 +159,6 @@ jb.component('studio.property-tgp-old', {
       {$: 'variable', name: 'userExpanded', value : false, mutable: true },
     ]
   })
-})
-
-jb.component('studio.properties-expanded-relevant', {
-	type: 'boolean',
-	params: [{ id: 'path', as: 'string', mandatory: true }],
-	impl: and(
-      notEmpty(studio_nonControlChildren('%$path%')),
-      notEmpty(studio_val('%$path%')),
-      notEquals(studio_compName('%$path%'),'custom-style')
-  )
 })
 
 jb.component('studio.property-tgp-in-array', {
