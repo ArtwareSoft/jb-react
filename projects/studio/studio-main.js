@@ -1,116 +1,5 @@
 jb.resource('studio',{});
 
-jb.component('studio.all', {
-  type: 'control',
-  impl :{$: 'group',
-    controls: [
-      {$: 'studio.top-bar' },
-      {$: 'studio.preview-widget',
-        features :{$: 'watch-ref', ref: '%$studio/page%' },
-        width: 1280,
-        height: 520
-      },
-      {$: 'studio.pages' },
-      {$: 'studio.ctx-counters' },
-    ],
-    features: [
-      {$: 'group.data', data: '%$studio/project%', watch: true },
-      {$: 'feature.init',
-        action :{$: 'url-history.map-studio-url-to-resource', resource: 'studio' }
-      }
-    ]
-  }
-})
-
-jb.component('studio.dynamic', {
-  type: 'control',
-  impl :{$: 'group',
-    title: 'top bar',
-    style :{$: 'layout.horizontal', spacing: '3' },
-    controls: [
-      {$: 'image',
-        url: '/projects/studio/css/jbartlogo.png',
-        imageHeight: '60',
-        units: 'px',
-        style :{$: 'image.default' },
-        features :{$: 'css.margin', top: '15', left: '5' }
-      },
-      {$: 'group',
-        title: 'title and menu',
-        style :{$: 'layout.vertical', spacing: '17' },
-        controls: [
-          {$: 'label',
-            title: 'message',
-            style :{$: 'label.studio-message' }
-          },
-          {$: 'group',
-            style :{$: 'layout.flex', align: 'space-between' },
-            controls: [
-              {$: 'studio.toolbar' },
-              {$: 'studio.search-component',
-                features :{$: 'css.margin', top: '-10' }
-              }
-            ],
-            features: [{$: 'css.width', width: '1040' }]
-          }
-        ],
-        features :{$: 'css', css: '{ padding-left: 18px; width: 100%; }' }
-      }
-    ],
-    features :{$: 'css', css: '{ height: 90px; border-bottom: 1px #d9d9d9 solid}' }
-  }
-})
-
-jb.component('studio.top-bar', {
-  type: 'control',
-  impl :{$: 'group',
-    title: 'top bar',
-    style :{$: 'layout.horizontal', spacing: '3' },
-    controls: [
-      {$: 'image',
-        url: '/projects/studio/css/jbartlogo.png',
-        imageHeight: '60',
-        units: 'px',
-        style :{$: 'image.default' },
-        features :{$: 'css.margin', top: '15', left: '5' }
-      },
-      {$: 'group',
-        title: 'title and menu',
-        style :{$: 'layout.vertical', spacing: '17' },
-        controls: [
-          {$: 'label',
-            title: 'message',
-            style :{$: 'label.studio-message' }
-          },
-          {$: 'label',
-            title :{$: 'replace', find: '_', replace: ' ', text: '%$studio/project%' },
-            style :{$: 'label.span' },
-            features :{$: 'css', css: '{ font: 20px Arial; margin-left: 6px; }' }
-          },
-          {$: 'group',
-            title: 'menu and toolbar',
-            style :{$: 'layout.flex', align: 'space-between' },
-            controls: [
-              {$: 'menu.control',
-                menu :{$: 'studio.main-menu' },
-                style :{$: 'menu-style.pulldown' },
-                features :{$: 'css.height', height: '30' }
-              },
-              {$: 'studio.toolbar' },
-              {$: 'studio.search-component',
-                features :{$: 'css.margin', top: '-10' }
-              }
-            ],
-            features: [{$: 'css.width', width: '1040' }]
-          }
-        ],
-        features :{$: 'css', css: '{ padding-left: 18px; width: 100%; }' }
-      }
-    ],
-    features :{$: 'css', css: '{ height: 90px; border-bottom: 1px #d9d9d9 solid}' }
-  }
-})
-
 jb.component('studio.pages', {
   type: 'control',
   impl :{$: 'group',
@@ -177,15 +66,6 @@ jb.component('studio.ctx-counters', {
       }
     ]
   }
-})
-
-jb.component('studio.is-single-test', {
-	type: 'boolean',
-	impl: ctx => {
-		var page = location.href.split('/')[6];
-		var profile_path = location.href.split('/')[7];
-		return page == 'tests' && profile_path && profile_path.slice(-6) != '.tests';
-  	}
 })
 
 jb.component('studio.cmps-of-project', {
@@ -284,6 +164,117 @@ jb.component('studio.main-menu', {
   }
 })
 
+jb.component('studio.top-bar', {
+  type: 'control',
+  impl :{$: 'group',
+    title: 'top bar',
+    style :{$: 'layout.horizontal', spacing: '3' },
+    controls: [
+      {$: 'image',
+        url: '/projects/studio/css/jbartlogo.png',
+        imageHeight: '60',
+        units: 'px',
+        style :{$: 'image.default' },
+        features :{$: 'css.margin', top: '15', left: '5' }
+      },
+      {$: 'group',
+        title: 'title and menu',
+        style :{$: 'layout.vertical', spacing: '17' },
+        controls: [
+          {$: 'label',
+            title: 'message',
+            style :{$: 'label.studio-message' }
+          },
+          {$: 'label',
+            title :{$: 'replace', find: '_', replace: ' ', text: '%$studio/project%' },
+            style :{$: 'label.span' },
+            features :{$: 'css', css: '{ font: 20px Arial; margin-left: 6px; }' }
+          },
+          {$: 'group',
+            title: 'menu and toolbar',
+            style :{$: 'layout.flex', align: 'space-between' },
+            controls: [
+              {$: 'menu.control',
+                menu :{$: 'studio.main-menu' },
+                style :{$: 'menu-style.pulldown' },
+                features :{$: 'css.height', height: '30' }
+              },
+              {$: 'studio.toolbar' },
+              {$: 'studio.search-component',
+                features :{$: 'css.margin', top: '-10' }
+              }
+            ],
+            features: [{$: 'css.width', width: '1040' }]
+          }
+        ],
+        features :{$: 'css', css: '{ padding-left: 18px; width: 100%; }' }
+      }
+    ],
+    features :{$: 'css', css: '{ height: 90px; border-bottom: 1px #d9d9d9 solid}' }
+  }
+})
+
+jb.component('studio.all', {
+  type: 'control',
+  impl :{$: 'group',
+    controls: [
+      {$: 'studio.top-bar' },
+      {$: 'studio.preview-widget',
+        features :{$: 'watch-ref', ref: '%$studio/page%' },
+        width: 1280,
+        height: 520
+      },
+      {$: 'studio.pages' },
+      {$: 'studio.ctx-counters' },
+    ],
+    features: [
+      {$: 'group.data', data: '%$studio/project%', watch: true },
+      {$: 'feature.init',
+        action :{$: 'url-history.map-studio-url-to-resource', resource: 'studio' }
+      }
+    ]
+  }
+})
+
+jb.component('studio.dynamic', {
+  type: 'control',
+  impl :{$: 'group',
+    title: 'top bar',
+    style :{$: 'layout.horizontal', spacing: '3' },
+    controls: [
+      {$: 'image',
+        url: '/projects/studio/css/jbartlogo.png',
+        imageHeight: '60',
+        units: 'px',
+        style :{$: 'image.default' },
+        features :{$: 'css.margin', top: '15', left: '5' }
+      },
+      {$: 'group',
+        title: 'title and menu',
+        style :{$: 'layout.vertical', spacing: '17' },
+        controls: [
+          {$: 'label',
+            title: 'message',
+            style :{$: 'label.studio-message' }
+          },
+          {$: 'group',
+            style :{$: 'layout.flex', align: 'space-between' },
+            controls: [
+              {$: 'studio.toolbar' },
+              {$: 'studio.search-component',
+                features :{$: 'css.margin', top: '-10' }
+              }
+            ],
+            features: [{$: 'css.width', width: '1040' }]
+          }
+        ],
+        features :{$: 'css', css: '{ padding-left: 18px; width: 100%; }' }
+      }
+    ],
+    features :{$: 'css', css: '{ height: 90px; border-bottom: 1px #d9d9d9 solid}' }
+  }
+})
+
 jb.component('studio.path-hyperlink', {
   type: 'control',
   params: [
@@ -307,3 +298,4 @@ jb.component('studio.path-hyperlink', {
     ]
   }
 })
+
