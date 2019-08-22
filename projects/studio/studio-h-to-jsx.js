@@ -29,15 +29,15 @@ function h_to_jsx({types: t}) {
         exit: function (path, state) {
           if (path.node.callee.name != 'h' || path.node.arguments[0].type != 'StringLiteral') return;
 
-          var name = t.JSXIdentifier(path.node.arguments[0].value);
-          var props = getAttributes(path.node.arguments[1]);
-          var children = processChildren(path.node.arguments.slice(2));
+          const name = t.JSXIdentifier(path.node.arguments[0].value);
+          const props = getAttributes(path.node.arguments[1]);
+          const children = processChildren(path.node.arguments.slice(2));
 
-          var open = t.JSXOpeningElement(name, props);
+          const open = t.JSXOpeningElement(name, props);
           open.selfClosing = children.length === 0;
-          var close = children.length === 0 ? null : t.JSXClosingElement(name);
+          const close = children.length === 0 ? null : t.JSXClosingElement(name);
 
-          var el = t.JSXElement(open, close, children);
+          const el = t.JSXElement(open, close, children);
           path.replaceWith(path.parent.type === 'ReturnStatement' ? t.ParenthesizedExpression(el) : t.ExpressionStatement(el));
         }
       }
@@ -53,7 +53,7 @@ jb.studio.initJsxToH = _ => {
 
 jb.studio.testJsxToH = _ => {
     input = (state,h) => h('div',{a: state.a},h('span'));
-    var res = jb.studio.hToJSX(input.toString().split('=>').slice(1).join('=>'));
+    const res = jb.studio.hToJSX(input.toString().split('=>').slice(1).join('=>'));
     console.log('jsx',jb.studio.pretty(res));
     console.log('back to h',jb.studio.jsxToH(res))
 }
@@ -83,39 +83,47 @@ jb.studio.hToJSX = hFunc => {
   }
 }
 
-jb.component('studio.pretty', {
-	type: 'data',
-	params: [{ id: 'text', as: 'string', defaultValue: '%%' } ],
-	impl: (ctx,text) => jb.studio.pretty(text)
+jb.component('studio.pretty',  /* studio_pretty */ {
+  type: 'data',
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,text) => jb.studio.pretty(text)
 })
 
-jb.component('studio.jsx-to-h', {
-	type: 'data',
-	params: [{ id: 'text', as: 'string', defaultValue: '%%' } ],
-	impl: (ctx,text) => jb.studio.jsxToH(text)
+jb.component('studio.jsx-to-h',  /* studio_jsxToH */ {
+  type: 'data',
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,text) => jb.studio.jsxToH(text)
 })
 
-jb.component('studio.h-to-jsx', {
-	type: 'data',
-	params: [{ id: 'text', as: 'string', defaultValue: '%%' } ],
-	impl: (ctx,text) => jb.studio.hToJSX(text)
+jb.component('studio.h-to-jsx',  /* studio_hToJsx */ {
+  type: 'data',
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,text) => jb.studio.hToJSX(text)
 })
 
 
-jb.component('studio.template-as-jsx', {
-	type: 'data',
-	params: [{ id: 'path', as: 'string', dynamic: true } ],
-	impl: ctx => ({
+jb.component('studio.template-as-jsx',  /* studio_templateAsJsx */ {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string', dynamic: true}
+  ],
+  impl: ctx => ({
 		$jb_val: function(value) {
-			var st = jb.studio;
-			var path = ctx.params.path();
+			const st = jb.studio;
+			const path = ctx.params.path();
 			if (!path) return;
 			if (typeof value == 'undefined') {
-				var func = st.valOfPath(path);
+				const func = st.valOfPath(path);
 				if (typeof func == 'function')
             		return jb.studio.hToJSX(func.toString().split('=>').slice(1).join('=>') );
 			} else {
-				var funcStr = jb.studio.jsxToH(value);
+				const funcStr = jb.studio.jsxToH(value);
 				if (funcStr)
             		st.writeValueOfPath(path,st.evalProfile('(cmp,state,h) => ' + funcStr) );
 			}
