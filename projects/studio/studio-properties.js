@@ -43,35 +43,12 @@ jb.component('studio.property-script', {
   ],
   impl :{$: 'group',
     controls :{$: 'button',
-        title :{$: 'studio.data-script-summary', path: '%$path%' },
+        title: (ctx,vars,{path}) => jb.prettyPrint(jb.studio.valOfPath(path)),
         action :{$: 'studio.open-jb-editor',path: '%$path%' } ,
         style :{$: 'button.studio-script'}
     },
     features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
   }
-})
-
-// jb.component('studio.property-js-script', {
-//   type: 'control',
-//   params: [
-//     { id: 'path', as: 'string' }
-//   ],
-//   impl :{$: 'group',
-//     controls :{$: 'button',
-//         title :{$: 'studio.js-script-summary', path: '%$path%' },
-//         action :{$: 'studio.open-js-editor',path: '%$path%' } ,
-//         style :{$: 'button.studio-script'}
-//     }
-//   }
-// })
-
-jb.component('studio.data-script-summary', {
-  type: 'data',
-  params: [
-    { id: 'path', as: 'string' }
-  ],
-  impl: (ctx,path) => 
-    jb.prettyPrint(jb.studio.valOfPath(path))
 })
 
 jb.component('studio.property-boolean', {
