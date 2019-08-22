@@ -244,7 +244,7 @@ jb.component('studio.property-array', { /* studio_propertyArray */
     }),
     itemVariable: 'arrayItem',
     features: [
-      studio_watchPath({path: '%$path%', includeChildren: true}),
+      studio_watchPath({path: '%$path%', includeChildren: true, allowSelfRefresh: true}),
       itemlist_divider(),
       itemlist_dragAndDrop()
     ]
@@ -345,7 +345,7 @@ jb.component('studio.properties', { /* studio_properties */
         ],
         features: [
           group_dynamicTitles(),
-          studio_watchPath('%$path%~features'),
+          studio_watchPath({path: '%$path%~features', allowSelfRefresh: true}),
           hidden(
             remark('not a control'),
             studio_hasParam(remark('not a control'), '%$path%', 'features')
