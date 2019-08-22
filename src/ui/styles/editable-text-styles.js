@@ -42,7 +42,10 @@ jb.component('editable-text.mdl-input', {
       css: '{ {?width: %$width%px?} }',
       features :[
           {$: 'field.databind-text' },
-          {$: 'mdl-style.init-dynamic'}
+          {$: 'mdl-style.init-dynamic'},
+          ctx => ({
+            beforeInit: cmp => cmp.elemToInput = elem => elem.children[0]
+          })
       ],
   }
 })

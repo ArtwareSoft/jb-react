@@ -62,7 +62,14 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
 jb.component('field.databind', {
   type: 'feature',
   impl: ctx => ({
-      beforeInit: cmp => databindField(cmp,ctx)
+      beforeInit: cmp => databindField(cmp,ctx),
+      templateModifier: (vdom,cmp,state) => {
+        if (!vdom.attributes || !ctx.vars.$model.updateOnBlur) return;
+        Object.assign(vdom.attributes, {
+          onchange: undefined, onkeyup: undefined, onkeydown: undefined,
+          onblur: e => cmp.jbModel(e.target.value),
+        })
+      }
   })
 })
 
@@ -73,7 +80,15 @@ jb.component('field.databind-text', {
     { id: 'oneWay', type: 'boolean', as: 'boolean'}
   ],
   impl: (ctx,debounceTime,oneWay) => ({
-      beforeInit: cmp => databindField(cmp,ctx,debounceTime,oneWay)
+      beforeInit: cmp => databindField(cmp,ctx,debounceTime,oneWay),
+      templateModifier: (vdom,cmp,state) => {
+        if (!vdom.attributes || !ctx.vars.$model.updateOnBlur) return;
+        const elemToChange = cmp.elemToInput ? cmp.elemToInput(vdom) : vdom
+        Object.assign(elemToChange.attributes, {
+          onchange: undefined, onkeyup: undefined, onkeydown: undefined,
+          onblur: e => cmp.jbModel(e.target.value),
+        })
+      }
   })
 })
 
