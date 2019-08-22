@@ -1,4 +1,5 @@
-(function() { var st = jb.studio;
+(function() { 
+const st = jb.studio;
 
 st.initEventTracker = _ => {
 	// debug the preview
@@ -55,24 +56,6 @@ jb.component('studio.highlight-event', {
 	],
 	impl :{$: 'studio.highlight-in-preview', path: '%$event/cmp/ctx/path%' }
 })
-
-
-jb.component('studio.open-event-tracker', {
-  type: 'action', 
-  params: [ {id: 'studio', as: 'boolean' } ],
-  impl :{$: 'open-dialog', 
-      content :{$: 'studio.event-tracker', studio: '%$studio%' }, 
-      style :{$: 'dialog.studio-floating', 
-        id: 'event-tracker', 
-        width: '700', 
-        height: '400'
-      }, 
-      title: {$if: '%$studio%', then: 'Studio Event Tracking', else: 'Event Tracking'},
-      features: [
-        {$: 'dialog-feature.resizer' }, 
-      ]      
-  }
-}) 
 
 jb.component('studio.event-tracker', {
   type: 'control', 
@@ -154,6 +137,24 @@ jb.component('studio.event-tracker', {
 	      toWatch: ctx => st.previewjb.ui.stateChangeEm.debounceTime(500), 
 	    }
 	}]
+  }
+})
+
+
+jb.component('studio.open-event-tracker', {
+  type: 'action', 
+  params: [ {id: 'studio', as: 'boolean' } ],
+  impl :{$: 'open-dialog', 
+      content :{$: 'studio.event-tracker', studio: '%$studio%' }, 
+      style :{$: 'dialog.studio-floating', 
+        id: 'event-tracker', 
+        width: '700', 
+        height: '400'
+      }, 
+      title: {$if: '%$studio%', then: 'Studio Event Tracking', else: 'Event Tracking'},
+      features: [
+        {$: 'dialog-feature.resizer' }, 
+      ]      
   }
 })
 
