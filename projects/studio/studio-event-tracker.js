@@ -1,4 +1,4 @@
-(function() { 
+(function() {
 const st = jb.studio;
 
 st.initEventTracker = _ => {
@@ -21,141 +21,128 @@ st.initEventTracker = _ => {
 //ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent})
 //({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources})
 
-jb.component('studio.event-title', {
-	type: 'data',
-	params: [ {id: 'event', as: 'single', defaultValue: '%%' } ],
-	impl: (context,event) =>
+jb.component('studio.event-title',  /* studio_eventTitle */ {
+  type: 'data',
+  params: [
+    {id: 'event', as: 'single', defaultValue: '%%'}
+  ],
+  impl: (context,event) =>
 		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
 })
 
-jb.component('studio.event-cmp', {
-	type: 'data',
-	params: [ {id: 'event', as: 'single', defaultValue: '%%' } ],
-	impl: (context,event) =>
+jb.component('studio.event-cmp',  /* studio_eventCmp */ {
+  type: 'data',
+  params: [
+    {id: 'event', as: 'single', defaultValue: '%%'}
+  ],
+  impl: (context,event) =>
 		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
 })
 
-jb.component('studio.event-cause', {
-	type: 'data',
-	params: [ {id: 'event', as: 'single', defaultValue: '%%' } ],
-	impl: (context,event) =>
+jb.component('studio.event-cause',  /* studio_eventCause */ {
+  type: 'data',
+  params: [
+    {id: 'event', as: 'single', defaultValue: '%%'}
+  ],
+  impl: (context,event) =>
 		(event && event.opEvent) ? st.nameOfRef(event.opEvent.ref) + ' changed to "' + st.valSummary(event.opEvent.newVal) + '"' : ''
 })
 
-jb.component('studio.state-change-events', {
-	type: 'data',
-	params: [ {id: 'studio', as: 'boolean' } ],
-	impl: (ctx,studio) => 
+jb.component('studio.state-change-events',  /* studio_stateChangeEvents */ {
+  type: 'data',
+  params: [
+    {id: 'studio', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,studio) =>
 		(studio ? st.studioStateChangeEvents : st.stateChangeEvents) || []
 })
 
-jb.component('studio.highlight-event', {
-	type: 'action',
-	params: [
-		{id: 'event', as: 'single', defaultValue: '%%' }
-	],
-	impl :{$: 'studio.highlight-in-preview', path: '%$event/cmp/ctx/path%' }
+jb.component('studio.highlight-event',  /* studio_highlightEvent */ {
+  type: 'action',
+  params: [
+    {id: 'event', as: 'single', defaultValue: '%%'}
+  ],
+  impl: studio_highlightInPreview(
+    '%$event/cmp/ctx/path%'
+  )
 })
 
-jb.component('studio.event-tracker', {
-  type: 'control', 
-  params: [ {id: 'studio', as: 'boolean' } ],
-  impl :{$: 'group', 
+jb.component('studio.event-tracker',  /* studio_eventTracker */ {
+  type: 'control',
+  params: [
+    {id: 'studio', as: 'boolean', type: 'boolean'}
+  ],
+  impl: group({
     controls: [
-      {$: 'table', 
-        items :{$: 'studio.state-change-events', studio: '%$studio%' }, 
+      table({
+        items: studio_stateChangeEvents('%$studio%'),
         fields: [
-          {$: 'field.control', 
-            title: 'changed', 
-            control :{$: 'button', 
-              title :{$: 'studio.name-of-ref', ref: '%opEvent/ref%' }, 
-              action :{$: 'studio.goto-path', 
-                path :{$: 'studio.path-of-ref', ref: '%opEvent/ref%' }
-              }, 
-              style :{$: 'button.href' }, 
-              features :{$: 'feature.hover-title', 
-                title :{$: 'studio.path-of-ref', ref: '%opEvent/ref%' }
-              }
-            }, 
+          field_control({
+            title: 'changed',
+            control: button({
+              title: studio_nameOfRef('%opEvent/ref%'),
+              action: studio_gotoPath(studio_pathOfRef('%opEvent/ref%')),
+              style: button_href(),
+              features: feature_hoverTitle(studio_pathOfRef('%opEvent/ref%'))
+            }),
             width: '100'
-          }, 
-          {$: 'field', 
-            title: 'from', 
-            data :{$: 'pretty-print', profile: '%opEvent/oldVal%' }, 
-            width: '200'
-          }, 
-          {$: 'field', 
-            title: 'to', 
-            data :{$: 'pretty-print', profile: '%opEvent/newVal%' }, 
-            width: '200'
-          }, 
-          {$: 'field.control', 
-            title: 'action', 
-            control :{$: 'button', 
-              title: '%opEvent/srcCtx/path%', 
-              action :{$: 'studio.goto-path', path: '%opEvent/srcCtx/path%' }, 
-              style :{$: 'button.href' }
-            }, 
+          }),
+          field({title: 'from', data: prettyPrint('%opEvent/oldVal%'), width: '200'}),
+          field({title: 'to', data: prettyPrint('%opEvent/newVal%'), width: '200'}),
+          field_control({
+            title: 'action',
+            control: button({
+              title: '%opEvent/srcCtx/path%',
+              action: studio_gotoPath('%opEvent/srcCtx/path%'),
+              style: button_href()
+            }),
             width: '100'
-          }, 
-          {$: 'field.control', 
-            title: 'refreshing', 
-            control :{$: 'button', 
-              title :{$: 'studio.event-cmp' }, 
-              action :{$: 'studio.goto-path', 
-                target: 'new tab', 
-                path: '%cmp/ctxForPick/path%'
-              }, 
-              style :{$: 'button.href' }, 
-              features: [
-                {$: 'feature.onHover', 
-                  action :{$: 'studio.highlight-event' }
-                }
-              ]
-            }, 
+          }),
+          field_control({
+            title: 'refreshing',
+            control: button({
+              title: studio_eventCmp(),
+              action: studio_gotoPath('%cmp/ctxForPick/path%'),
+              style: button_href(),
+              features: [feature_onHover(studio_highlightEvent())]
+            }),
             width: '200'
-          }, 
-          {$: 'field.control', 
-            title: 'watched at', 
-            control :{$: 'button', 
-              title: '%watchedAt/path%', 
-              action :{$: 'studio.goto-path', path: '%watchedAt/path%' }, 
-              style :{$: 'button.href' }
-            }, 
+          }),
+          field_control({
+            title: 'watched at',
+            control: button({
+              title: '%watchedAt/path%',
+              action: studio_gotoPath('%watchedAt/path%'),
+              style: button_href()
+            }),
             width: '100'
-          }
-        ], 
-        style :{$: 'table.with-headers' }
+          })
+        ],
+        style: table_withHeaders()
+      })
+    ],
+    features: [
+      {
+        $if: '%$studio%',
+        then: watchObservable(ctx => jb.ui.stateChangeEm.debounceTime(500)),
+        else: watchObservable(ctx => st.previewjb.ui.stateChangeEm.debounceTime(500))
       }
-    ], 
-    features : [
-      {$if: '%$studio%',
-	    then: {$: 'watch-observable', 
-	      toWatch: ctx => jb.ui.stateChangeEm.debounceTime(500), 
-	    },
-	    else: {$: 'watch-observable', 
-	      toWatch: ctx => st.previewjb.ui.stateChangeEm.debounceTime(500), 
-	    }
-	}]
-  }
+    ]
+  })
 })
 
 
-jb.component('studio.open-event-tracker', {
-  type: 'action', 
-  params: [ {id: 'studio', as: 'boolean' } ],
-  impl :{$: 'open-dialog', 
-      content :{$: 'studio.event-tracker', studio: '%$studio%' }, 
-      style :{$: 'dialog.studio-floating', 
-        id: 'event-tracker', 
-        width: '700', 
-        height: '400'
-      }, 
-      title: {$if: '%$studio%', then: 'Studio Event Tracking', else: 'Event Tracking'},
-      features: [
-        {$: 'dialog-feature.resizer' }, 
-      ]      
-  }
+jb.component('studio.open-event-tracker',  /* studio_openEventTracker */ {
+  type: 'action',
+  params: [
+    {id: 'studio', as: 'boolean', type: 'boolean'}
+  ],
+  impl: openDialog({
+    style: dialog_studioFloating({id: 'event-tracker', width: '700', height: '400'}),
+    content: studio_eventTracker('%$studio%'),
+    title: {$if: '%$studio%', then: 'Studio Event Tracking', else: 'Event Tracking'},
+    features: [dialogFeature_resizer()]
+  })
 })
 
 })()

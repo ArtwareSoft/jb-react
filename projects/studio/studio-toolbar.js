@@ -1,126 +1,93 @@
-jb.component('studio.pickAndOpen', {
-	type: 'action',
-	params: [
-		{ id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
-	],
-	impl :{$: 'studio.pick',
-		from: '%$from%',
-	  	onSelect: [
-      {$: 'write-value', to: '%$studio/last_pick_selection%', value: '%%' },
-      {$: 'write-value', to: '%$studio/profile_path%', value: '%path%' },
-			{$: 'studio.open-control-tree'},
-      {$: 'studio.open-properties'},
- 		],
-	}
+jb.component('studio.pickAndOpen',  /* studio_pickAndOpen */ {
+  type: 'action',
+  params: [
+    {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
+  ],
+  impl: studio_pick(
+    '%$from%',
+    [
+      writeValue('%$studio/last_pick_selection%', '%%'),
+      writeValue('%$studio/profile_path%', '%path%'),
+      studio_openControlTree(),
+      studio_openProperties()
+    ]
+  )
 })
 
-jb.component('studio.toolbar', {
-  type: 'control', 
-  impl :{$: 'group', 
-    style :{$: 'studio.toolbar-style' }, 
+jb.component('studio.toolbar',  /* studio_toolbar */ {
+  type: 'control',
+  impl: group({
+    style: studio_toolbarStyle(),
     controls: [
-      {$: 'label', 
-        title: '', 
-        features :{$: 'css', css: '{ width: 170px }' }
-      }, 
-      {$: 'button', 
-        title: 'Select', 
-        action :{$: 'studio.pickAndOpen' }, 
-        style :{$: 'button.mdl-icon', 
-          features :{$: 'css', css: '{transform: scaleX(-1)}' }, 
-          icon: 'call_made'
-        }
-      }, 
-      {$: 'button', 
-        title: 'Save', 
-        action :{$: 'studio.save-components' }, 
-        style :{$: 'button.mdl-icon', icon: 'save' }, 
-        features :{$: 'ctrl-action', 
-          action :{$: 'studio.save-components', force: true }
-        }
-      }, 
-      {$: 'button', 
-        title: 'Refresh Preview', 
-        action :{$: 'studio.refresh-preview' }, 
-        style :{$: 'button.mdl-icon', icon: 'refresh' }
-      }, 
-      {$: 'button', 
-        title: 'Javascript', 
-        action :{$: 'studio.edit-as-macro' }, 
-        style :{$: 'button.mdl-icon', icon: 'code' }
-      }, 
-      {$: 'button', 
-        title: 'Outline', 
-        action :{$: 'studio.open-control-tree' }, 
-        style :{$: 'button.mdl-icon', icon: 'format_align_left' }
-      }, 
-      {$: 'button', 
-        title: 'Properties', 
-        action :{$: 'studio.open-properties', focus: 'true' }, 
-        style :{$: 'button.mdl-icon', icon: 'storage' }
-      }, 
-      {$: 'button', 
-        title: 'jbEditor', 
-        action :{$: 'studio.open-component-in-jb-editor', path: '%$studio/project%.%$studio/page%' }, 
-        style :{$: 'button.mdl-icon', icon: 'build' }, 
-        features :{$: 'ctrl-action', 
-          action :{$: 'studio.open-jb-editor', path: '%$studio/profile_path%', newWindow: true }
-        }
-      }, 
-      {$: 'button', 
-        title: 'Event Tracker', 
-        action :{$: 'studio.open-event-tracker' }, 
-        style :{$: 'button.mdl-icon', icon: 'hearing' }, 
-        features :{$: 'ctrl-action', 
-          action :{$: 'studio.open-event-tracker', studio: 'true' }
-        }
-      }, 
-      {$: 'button', 
-        title: 'History', 
-        action :{$: 'studio.open-script-history' }, 
-        style :{$: 'button.mdl-icon', icon: 'pets' }
-      }, 
-      {$: 'button', 
-        title: 'Show Data', 
-        action :{$: 'studio.showProbeData' }, 
-        style :{$: 'button.mdl-icon', icon: 'input' }
-      }, 
-      {$: 'button', 
-        title: 'Insert Control', 
-        action :{$: 'studio.open-new-profile-dialog', 
-          type: 'control', 
-          mode: 'insert-control', 
-          onClose :{$: 'studio.goto-last-edit' }
-        }, 
-        style :{$: 'button.mdl-icon', icon: 'add' }
-      }, 
-      {$: 'button', 
-        title: 'Responsive', 
-        action :{$: 'studio.open-responsive-phone-popup' }, 
-        style :{$: 'button.mdl-icon', icon: 'tablet_android' }
-      }
-    ], 
+      label({title: '', features: css('{ width: 170px }')}),
+      button({title: 'Select', action: studio_pickAndOpen(), style: button_mdlIcon('call_made')}),
+      button({
+        title: 'Save',
+        action: studio_saveComponents(),
+        style: button_mdlIcon('save'),
+        features: ctrlAction(studio_saveComponents(true))
+      }),
+      button({
+        title: 'Refresh Preview',
+        action: studio_refreshPreview(),
+        style: button_mdlIcon('refresh')
+      }),
+      button({title: 'Javascript', action: studio_editAsMacro(), style: button_mdlIcon('code')}),
+      button({
+        title: 'Outline',
+        action: studio_openControlTree(),
+        style: button_mdlIcon('format_align_left')
+      }),
+      button({
+        title: 'Properties',
+        action: studio_openProperties('true'),
+        style: button_mdlIcon('storage')
+      }),
+      button({
+        title: 'jbEditor',
+        action: studio_openComponentInJbEditor('%$studio/project%.%$studio/page%'),
+        style: button_mdlIcon('build'),
+        features: ctrlAction(studio_openJbEditor({path: '%$studio/profile_path%', newWindow: true}))
+      }),
+      button({
+        title: 'Event Tracker',
+        action: studio_openEventTracker(),
+        style: button_mdlIcon('hearing'),
+        features: ctrlAction(studio_openEventTracker('true'))
+      }),
+      button({
+        title: 'History',
+        action: studio_openScriptHistory(),
+        style: button_mdlIcon('pets')
+      }),
+      button({
+        title: 'Show Data',
+        action: {$: 'studio.showProbeData'},
+        style: button_mdlIcon('input')
+      }),
+      button({
+        title: 'Insert Control',
+        action: studio_openNewProfileDialog({type: 'control', mode: 'insert-control', onClose: studio_gotoLastEdit()}),
+        style: button_mdlIcon('add')
+      }),
+      button({
+        title: 'Responsive',
+        action: studio_openResponsivePhonePopup(),
+        style: button_mdlIcon('tablet_android')
+      })
+    ],
     features: [
-      {$: 'feature.keyboard-shortcut', 
-        key: 'Alt+C', 
-        action :{$: 'studio.pickAndOpen' }
-      }, 
-      {$: 'feature.keyboard-shortcut', 
-        key: 'Alt++', 
-        action :{$: 'studio.open-new-profile-dialog', type: 'control', mode: 'insert-control' }
-      }, 
-      {$: 'feature.keyboard-shortcut', 
-        key: 'Alt+N', 
-        action :{$: 'studio.pickAndOpen', from: 'studio' }
-      }, 
-      {$: 'feature.keyboard-shortcut', 
-        key: 'Alt+X', 
-        action :{$: 'studio.open-jb-editor', 
-          path :{ $firstSucceeding: ['%$studio/profile_path%', '%$studio/project%.%$studio/page%'] }
-        }
-      }
+      feature_keyboardShortcut('Alt+C', studio_pickAndOpen()),
+      feature_keyboardShortcut('Alt++', studio_openNewProfileDialog({type: 'control', mode: 'insert-control'})),
+      feature_keyboardShortcut('Alt+N', studio_pickAndOpen('studio')),
+      feature_keyboardShortcut(
+        'Alt+X',
+        studio_openJbEditor({
+          path: firstSucceeding('%$studio/profile_path%', '%$studio/project%.%$studio/page%')
+        })
+      )
     ]
-  }
+  })
 })
 
 jb.component('studio_button.toolbarButton', {
@@ -138,18 +105,12 @@ jb.component('studio_button.toolbarButton', {
 	}
 })
 
-jb.component('studio.toolbar-style', {
+jb.component('studio.toolbar-style',  /* studio_toolbarStyle */ {
   type: 'group.style',
-  impl :{$: 'custom-style',
-    features :{$: 'group.init-group' },
+  impl: customStyle({
     template: (cmp,state,h) => h('section',{class:'jb-group'},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx))),
-    css: `{
-            display: flex;
-            height: 33px;
-            width: 100%;
-        }
-        >*:not(:last-child) { padding-right: 8px }
-        >* { margin-right: 0 }`
-  }
+    css: "{\n            display: flex;\n            height: 33px;\n            width: 100%;\n        }\n        >*:not(:last-child) { padding-right: 8px }\n        >* { margin-right: 0 }",
+    features: group_initGroup()
+  })
 })
