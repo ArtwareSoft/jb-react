@@ -1,63 +1,46 @@
-jb.component('studio.goto-project', {
-  type: 'action', 
-  impl :{$: 'runActions', 
-    actions: [
-      {$: 'goto-url', 
-        url: '/project/studio/%%', 
-        target: 'new tab'
-      }, 
-      {$: 'dialog.close-containing-popup' }
-    ]
-  }
+jb.component('studio.goto-project',  /* studio_gotoProject */ {
+  type: 'action',
+  impl: runActions(
+    gotoUrl('/project/studio/%%', 'new tab'),
+    dialog_closeContainingPopup()
+  )
 })
 
-jb.component('studio.choose-project', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'itemlist-with-find', 
+jb.component('studio.choose-project',  /* studio_chooseProject */ {
+  type: 'control',
+  impl: group({
+    title: 'itemlist-with-find',
     controls: [
-      {$: 'itemlist-container.search', 
-        features :{$: 'css.width', width: '250' }
-      }, 
-      {$: 'itemlist', 
-        items :{
-          $pipeline: [
-            '%projects%', 
-            {$: 'itemlist-container.filter' }
-          ]
-        }, 
-        controls :{$: 'button', 
-          title :{$: 'highlight', base: '%%', highlight: '%$itemlistCntrData/search_pattern%' }, 
-          action :{$: 'studio.goto-project' }, 
-          style :{$: 'button.mdl-flat-ripple' }, 
-          features :{$: 'css', css: '{ text-align: left; width: 250px }' }
-        }, 
+      itemlistContainer_search({features: css_width('250')}),
+      itemlist({
+        items: pipeline('%projects%', itemlistContainer_filter()),
+        controls: button({
+          title: highlight('%%', '%$itemlistCntrData/search_pattern%'),
+          action: studio_gotoProject(),
+          style: button_mdlFlatRipple(),
+          features: css('{ text-align: left; width: 250px }')
+        }),
         features: [
-          {$: 'itemlist.selection' }, 
-          {$: 'itemlist.keyboard-selection', 
-            onEnter :{$: 'studio.goto-project' }, 
-            autoFocus: true
-          }, 
-          {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' }, 
-          {$: 'css.height', height: '400', overflow: 'scroll' }
+          itemlist_selection({}),
+          itemlist_keyboardSelection({autoFocus: true, onEnter: studio_gotoProject()}),
+          watchRef('%$itemlistCntrData/search_pattern%'),
+          css_height({height: '400', overflow: 'scroll'})
         ]
-      }
-    ], 
+      })
+    ],
     features: [
-      {$: 'group.wait', 
-        for :{$: 'http.get', url: '/?op=projects', json: 'true' }
-      }, 
-      {$: 'css.padding', top: '15', left: '15' }, 
-      {$: 'group.itemlist-container' }
+      group_wait({for: http_get('/?op=projects', 'true')}),
+      css_padding({top: '15', left: '15'}),
+      group_itemlistContainer({})
     ]
-  }
+  })
 })
 
-jb.component('studio.open-project', {
-  type: 'action', 
-  impl :{$: 'open-dialog', 
-    title: 'Open project', 
-    style :{$: 'dialog.dialog-ok-cancel', okLabel: 'OK', cancelLabel: 'Cancel' }, 
-    content :{$: 'studio.choose-project' }
-  }
+jb.component('studio.open-project',  /* studio_openProject */ {
+  type: 'action',
+  impl: openDialog({
+    style: dialog_dialogOkCancel('OK', 'Cancel'),
+    content: studio_chooseProject(),
+    title: 'Open project'
+  })
 })
