@@ -356,22 +356,6 @@ jb.component('dialog.studio-multiline-edit',  /* dialog_studioMultilineEdit */ {
   })
 })
 
-jb.component('studio.toolbar-style', {
-  type: 'group.style',
-  impl :{$: 'custom-style',
-    features :{$: 'group.init-group' },
-    template: (cmp,state,h) => h('section',{class:'jb-group'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx))),
-    css: `{
-            display: flex;
-            height: 33px;
-            width: 100%;
-        }
-        >*:not(:last-child) { padding-right: 8px }
-        >* { margin-right: 0 }`
-  }
-})
-
 // jb.component('studio.toolbarButton', {
 // 	type: 'button.style',
 // 	params: [
