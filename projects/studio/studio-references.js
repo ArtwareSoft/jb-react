@@ -61,6 +61,34 @@ jb.component('studio.references', {
 	}
 })
 
+jb.component('studio.goto-references-options', {
+  type: 'menu.option',
+  params: [
+    { id: 'path', as: 'string'},
+    { id: 'refs', as: 'array' },
+  ],
+  impl :{$: 'menu.dynamic-options',
+        items : '%$refs%',
+        genericOption :{$if: '%refs/length% > 1',
+          then:{$: 'menu.menu',
+            title: '%id% (%refs/length%)',
+            options:{$: 'menu.dynamic-options',
+              items : '%$menuData/refs%',
+              genericOption :{$: 'menu.action',
+                title: '%%',
+                action :{$: 'studio.open-component-in-jb-editor', path: '%%', fromPath: '%$path%' }
+              }
+            }
+          },
+          else: {$: 'menu.action',
+            $vars: { compName :{$: 'split', separator: '~', text: '%refs[0]%', part: 'first' } },
+            title: '%$compName%',
+            action :{$: 'studio.open-component-in-jb-editor', path: '%refs[0]%', fromPath: '%$path%' }
+          },
+        }
+      }
+})
+
 jb.component('studio.goto-references-button', {
   type: 'control',
   params: [
@@ -99,30 +127,3 @@ jb.component('studio.goto-references-menu', {
   }
 })
 
-jb.component('studio.goto-references-options', {
-  type: 'menu.option',
-  params: [
-    { id: 'path', as: 'string'},
-    { id: 'refs', as: 'array' },
-  ],
-  impl :{$: 'menu.dynamic-options',
-        items : '%$refs%',
-        genericOption :{$if: '%refs/length% > 1',
-          then:{$: 'menu.menu',
-            title: '%id% (%refs/length%)',
-            options:{$: 'menu.dynamic-options',
-              items : '%$menuData/refs%',
-              genericOption :{$: 'menu.action',
-                title: '%%',
-                action :{$: 'studio.open-component-in-jb-editor', path: '%%', fromPath: '%$path%' }
-              }
-            }
-          },
-          else: {$: 'menu.action',
-            $vars: { compName :{$: 'split', separator: '~', text: '%refs[0]%', part: 'first' } },
-            title: '%$compName%',
-            action :{$: 'studio.open-component-in-jb-editor', path: '%refs[0]%', fromPath: '%$path%' }
-          },
-        }
-      }
-})
