@@ -1,5 +1,24 @@
 jb.resource('studio',{});
 
+jb.component('studio.cmps-of-project', {
+  type: 'data',
+  params: [
+    { id: 'project', as: 'string'}
+  ],
+  impl: (ctx,prj) =>
+      jb.studio.previewjb ? Object.getOwnPropertyNames(jb.studio.previewjb.comps)
+              .filter(id=>id.split('.')[0] == prj) : []
+})
+
+jb.component('studio.project-pages', {
+	type: 'data',
+  impl: {$pipeline: [
+          {$: 'studio.cmps-of-project', project: '%$studio/project%' },
+          { $filter: {$: 'studio.is-of-type', type: 'control', path: '%%'} },
+          {$: 'suffix', separator: '.' }
+      ]}
+})
+
 jb.component('studio.pages', {
   type: 'control',
   impl :{$: 'group',
@@ -66,25 +85,6 @@ jb.component('studio.ctx-counters', {
       }
     ]
   }
-})
-
-jb.component('studio.cmps-of-project', {
-  type: 'data',
-  params: [
-    { id: 'project', as: 'string'}
-  ],
-  impl: (ctx,prj) =>
-      jb.studio.previewjb ? Object.getOwnPropertyNames(jb.studio.previewjb.comps)
-              .filter(id=>id.split('.')[0] == prj) : []
-})
-
-jb.component('studio.project-pages', {
-	type: 'data',
-  impl: {$pipeline: [
-          {$: 'studio.cmps-of-project', project: '%$studio/project%' },
-          { $filter: {$: 'studio.is-of-type', type: 'control', path: '%%'} },
-          {$: 'suffix', separator: '.' }
-      ]}
 })
 
 jb.component('studio.main-menu', {
