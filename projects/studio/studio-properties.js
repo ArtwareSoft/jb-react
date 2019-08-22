@@ -425,7 +425,7 @@ jb.component('studio.properties', {
   }
 })
 
-jb.component('studio.tgp-path-options',{
+jb.component('studio.tgp-path-options', {
 	type: 'picklist.options',
 	params: [
 		{ id: 'path', as: 'string' },
@@ -463,7 +463,7 @@ jb.component('studio.open-properties', {
       },
       {$: 'dialog-feature.keyboard-shortcut',
         shortcut: 'Ctrl+Left',
-        action :{$: 'studio.open-control-tree' }
+        action :{$: 'studio.open-control-tree', $recursive: true }
       },
       {$: 'dialog-feature.resizer' }, 
     ]
