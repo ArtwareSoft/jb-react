@@ -44,7 +44,7 @@ jb.component('studio.property-script', {
   impl :{$: 'group',
     controls :{$: 'button',
         title: (ctx,vars,{path}) => jb.prettyPrint(jb.studio.valOfPath(path)),
-        action :{$: 'studio.open-jb-editor',path: '%$path%' } ,
+        action :{$: 'studio.open-jb-editor',path: '%$path%', $recursive: true },
         style :{$: 'button.studio-script'}
     },
     features: {$: 'studio.watch-path', path: '%$path%', includeChildren: true }
