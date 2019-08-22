@@ -24,7 +24,7 @@ jb.prettyPrint = function(profile,options) {
 jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls,macro} = {}) {
   const spaces = Array.from(new Array(200)).map(_=>' ').join('')
 
-  colWidth = colWidth || 140;
+  colWidth = colWidth || 80;
   tabSize = tabSize || 2;
 
   let remainedInLine = colWidth;
@@ -189,9 +189,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
     }, {text: '', map: {}, line, col, unflat: false} )
 
     //const arrayElem = path.match(/~[0-9]+$/)
-    const ctrls = path.match(/~controls$/) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
-    // if (!ctrls && path.match(/~controls$/))
-    //   debugger
+    const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
     const customStyle = jb.studio.compNameOfPath(path) === 'customStyle'
     const top = (path.match(/~/g)||'').length < 2
     const long = result.text.replace(/\n\s*/g,'').length > colWidth
@@ -219,7 +217,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   function profileToMacro(ctx, profile,flat) {
     const id = jb.compName(profile)
     const comp = jb.comps[id]
-    if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
+    if (!id || !comp || profile.$recursive || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
       const props = Object.keys(profile) 
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);
@@ -239,7 +237,8 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
-    const oneFirstParam = keys.length === 1 && params && params[0].id == keys[0]
+    const oneFirstParam = keys.length === 1 && params[0] && params[0].id == keys[0] 
+        && (typeof profile[keys[0]] !== 'object' || Array.isArray(profile[keys[0]]))
     if ((params.length < 3 && comp.usageByValue !== false) || comp.usageByValue || oneFirstParam) {
       const args = systemProps.concat(params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]})))
       for(let i=0;i<6;i++)

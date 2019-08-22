@@ -9,7 +9,7 @@ jb.component('pretty-print', {
     jb.prettyPrint(profile,ctx.params)
 })
 
-jb.prettyPrintComp = function(compId,comp,settings) {
+jb.prettyPrintComp = function(compId,comp,settings={}) {
   if (comp) {
     const macroRemark = settings.macro ? ` /* ${jb.macroName(compId)} */ ` : ''
     return "jb.component('" + compId + "', " + macroRemark

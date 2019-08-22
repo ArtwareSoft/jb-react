@@ -392,7 +392,7 @@ ui.item = function(cmp,vdom,data) {
 	return vdom;
 }
 
-ui.watchRef = function(ctx,cmp,ref,includeChildren,allowSelfRefresh) {
+ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 		if (!ref)
 			jb.logError('null ref for watch ref',...arguments);
     	ref && ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
@@ -408,7 +408,8 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,allowSelfRefresh) {
 				}
 				if (ctx && ctx.profile && ctx.profile.$trace)
 					console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
-				
+				if (delay)
+					return jb.delay(delay).then(()=> ui.setState(cmp,null,e,ctx))
 				return ui.setState(cmp,null,e,ctx);
 	      })
 }

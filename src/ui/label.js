@@ -34,7 +34,7 @@ jb.component('label.bind-title', {
 jb.component('label.htmlTag', {
   type: 'label.style',
 	params: [
-		{ id: 'htmlTag', as: 'string', defaultValue: 'p', options:'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary' },
+		{ id: 'htmlTag', as: 'string', defaultValue: 'p', options:'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label' },
 		{ id: 'cssClass', as: 'string' },
 	],
   impl :{$: 'custom-style',

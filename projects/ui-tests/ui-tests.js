@@ -508,13 +508,13 @@ jb.component('ui-test.itemlist-container-search-ctrl',  /* uiTest_itemlistContai
           title: highlight('%name%', '%$itemlistCntrData/search_pattern%'),
           features: [
             css_class('label1'),
-            watchRef({ref: '%$itemlistCntrData/search_pattern%', delay: 20})
+            watchRef('%$itemlistCntrData/search_pattern%')
           ]
         }),
         features: [
           itemlist_selection({autoSelectFirst: true}),
           itemlist_keyboardSelection({autoFocus: true, onEnter: writeValue('%$person/selected%', '%name%')}),
-          watchRef({ref: '%$itemlistCntrData/search_pattern%', delay: 20})
+          watchRef('%$itemlistCntrData/search_pattern%')
         ]
       })
     ],

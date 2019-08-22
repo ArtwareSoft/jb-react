@@ -654,7 +654,7 @@ jb.component('json.stringify', {
 		{ id: 'space', as: 'string', description: 'use space or tab to make pretty output' }
 	],
 	impl: (context,value,space) =>
-			JSON.stringify(value,null,space)
+			JSON.stringify(jb.val(value),null,space)
 });
 
 jb.component('json.parse', {
