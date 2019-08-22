@@ -123,6 +123,23 @@ jb.component('studio.tree-menu', {
   }
 })
 
+jb.component('studio.open-tree-menu', {
+  type: 'action',
+  params: [
+    { id: 'path', as: 'string' }
+  ],
+  impl :{$: 'menu.open-context-menu', menu :{$: 'studio.tree-menu', path: '%$path%'} }
+})
+
+jb.component('studio.control-tree.nodes', {
+	type: 'tree.nodeModel',
+	impl: function(context) {
+		var currentPath = context.run({ $: 'studio.currentProfilePath' });
+		var compPath = currentPath.split('~')[0] || '';
+		return new jb.studio.ControlTree(compPath + '~impl');
+	}
+})
+
 jb.component('studio.control-tree', {
   type: 'control',
   impl :{$: 'group',
@@ -162,15 +179,6 @@ jb.component('studio.control-tree', {
         //{$: 'studio.watch-path', path :{$: 'studio.currentProfilePath' } },
     ]
   }
-})
-
-jb.component('studio.control-tree.nodes', {
-	type: 'tree.nodeModel',
-	impl: function(context) {
-		var currentPath = context.run({ $: 'studio.currentProfilePath' });
-		var compPath = currentPath.split('~')[0] || '';
-		return new jb.studio.ControlTree(compPath + '~impl');
-	}
 })
 
 // after model modifications the paths of the selected and expanded nodes may change and the tree should fix it.
@@ -217,10 +225,3 @@ jb.component('studio.open-control-tree', {
   }
 })
 
-jb.component('studio.open-tree-menu', {
-  type: 'action',
-  params: [
-    { id: 'path', as: 'string' }
-  ],
-  impl :{$: 'menu.open-context-menu', menu :{$: 'studio.tree-menu', path: '%$path%'} }
-})
