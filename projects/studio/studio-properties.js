@@ -329,7 +329,7 @@ jb.component('studio.property-field', {
       }),
       features: [
         {$: 'studio.property-toolbar-feature', path: '%$path%' },
-        {$: 'field.keyboard-shortcut', key: 'Ctrl+I', action :{$: 'studio.open-jb-editor',  path : '%$path%' } },
+        {$: 'field.keyboard-shortcut', key: 'Ctrl+I', action :{$: 'studio.open-jb-editor',  path : '%$path%', $recursive: true } },
       ]
     })
 })
