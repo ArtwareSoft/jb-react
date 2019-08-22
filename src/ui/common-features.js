@@ -265,7 +265,7 @@ jb.component('feature.hover-title', {
   impl: (ctx, title) => ({
     templateModifier: (vdom,cmp,state) => {
       vdom.attributes = vdom.attributes || {};
-      vdom.attributes.title = title()
+      vdom.attributes.title = title(cmp.ctx.setData(state.title))
       return vdom;
     }
   })

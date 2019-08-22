@@ -415,7 +415,7 @@ jb.component('studio-helper-sample.properties-params', {
 jb.component('studio-helper-sample.properties-params-prof', {
   type: 'contsdfdswqeqweqwewqe ', 
   impl :{$: 'studio-helper-sample.properties-params', 
-    simpleStr: 'hello',
+    simpleStr: 'hello', 
     strAsComp :{
       $pipeline: [
         {$: 'split', separator: ',', text: '1,2,3,4,5,6,7,8' }, 
@@ -436,7 +436,11 @@ jb.component('studio-helper-sample.properties-params-prof', {
     enumNum: '1', 
     style :{$: 'button.href' }, 
     style2 :{$: 'button.mdl-icon' }, 
-    features :{$: 'css.class' }, 
+    features: [
+      {$: 'css.class', class: '' }, 
+      {$: 'label.bind-title' }, 
+      {$: 'group.dynamic-titles' }
+    ], 
     groupStyle :{$: 'layout.horizontal', spacing: '38' }
   }, 
   $vars: {  }

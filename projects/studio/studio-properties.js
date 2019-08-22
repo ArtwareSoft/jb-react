@@ -359,6 +359,15 @@ jb.component('studio.properties',  /* studio_properties */ {
           )
         ]
       }),
+      label({
+        title: studio_profileAsMacroText('%$path%~features'),
+        style: label_span(),
+        features: [
+          css_width('400'),
+          css('{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis}'),
+          feature_hoverTitle('%%')
+        ]
+      }),
       button({
         title: 'new feature',
         action: studio_openNewProfileDialog({
