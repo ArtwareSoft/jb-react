@@ -217,7 +217,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   function profileToMacro(ctx, profile,flat) {
     const id = jb.compName(profile)
     const comp = jb.comps[id]
-    if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
+    if (!id || !comp || profile.$recursive || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
       const props = Object.keys(profile) 
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);
