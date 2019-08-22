@@ -1,35 +1,3 @@
-
-jb.component('studio.search-component', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
-    title: 'itemlist-with-find', 
-    style :{$: 'layout.horizontal', spacing: '' }, 
-    controls: [
-      {$: 'itemlist-container.search', 
-        control :{$: 'studio.search-list', path: '%$path%' }, 
-        title: 'Search', 
-        searchIn: item =>
-          item.id, 
-        databind: '%$itemlistCntrData/search_pattern%', 
-        style :{$: 'editable-text.mdl-search', width: '200' }, 
-        features: [
-          {$: 'editable-text.helper-popup', 
-            features :{$: 'dialog-feature.near-launcher-position' }, 
-            control :{$: 'studio.search-list' }, 
-            popupId: 'search-component', 
-            popupStyle :{$: 'dialog.popup' }
-          }
-        ]
-      }
-    ], 
-    features: [
-      {$: 'group.itemlist-container' }, 
-      {$: 'css.margin', top: '-13', left: '10' }
-    ]
-  }
-})
-
 jb.component('studio.search-list', {
   type: 'control', 
   params: [{ id: 'path', as: 'string' }], 
@@ -119,14 +87,33 @@ jb.component('studio.search-list', {
   }
 })
 
-jb.component('studio.search-component-selected',{
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: {$runActions: [
-    {$: 'write-value', to: '%$itemlistCntrData/search_pattern%', value: '' },
-    {$: 'studio.goto-path', path: '%$path%' },
-    {$: 'dialog.close-containing-popup' }
-  ]}
+jb.component('studio.search-component', {
+  type: 'control', 
+  params: [{ id: 'path', as: 'string' }], 
+  impl :{$: 'group', 
+    title: 'itemlist-with-find', 
+    style :{$: 'layout.horizontal', spacing: '' }, 
+    controls: [
+      {$: 'itemlist-container.search', 
+        control :{$: 'studio.search-list', path: '%$path%' }, 
+        title: 'Search', 
+        searchIn: item =>
+          item.id, 
+        databind: '%$itemlistCntrData/search_pattern%', 
+        style :{$: 'editable-text.mdl-search', width: '200' }, 
+        features: [
+          {$: 'editable-text.helper-popup', 
+            features :{$: 'dialog-feature.near-launcher-position' }, 
+            control :{$: 'studio.search-list' }, 
+            popupId: 'search-component', 
+            popupStyle :{$: 'dialog.popup' }
+          }
+        ]
+      }
+    ], 
+    features: [
+      {$: 'group.itemlist-container' }, 
+      {$: 'css.margin', top: '-13', left: '10' }
+    ]
+  }
 })
