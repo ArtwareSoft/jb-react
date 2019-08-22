@@ -9,7 +9,7 @@ jb.component('studio.pages', {
       {$: 'button',
         title: 'new page',
         action :{$: 'studio.open-new-page' },
-        style :{$: 'button.mdl-icon-12', icon: 'add' },
+        style :{$: 'button.mdl-icon12', icon: 'add' },
         features :{$: 'css', css: '{margin: 5px}' }
       },
       {$: 'itemlist',

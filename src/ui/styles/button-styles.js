@@ -79,7 +79,7 @@ jb.component('button.mdl-round-icon', {
   }
 })
 
-jb.component('button.mdl-icon-12-with-ripple', {
+jb.component('button.mdl-icon12-with-ripple', {
   type: 'button.style,icon-with-action.style',
   params: [
     { id: 'icon', as: 'string', default: 'code' },
@@ -96,7 +96,7 @@ jb.component('button.mdl-icon-12-with-ripple', {
   }
 })
 
-jb.component('button.mdl-icon-12', {
+jb.component('button.mdl-icon12', {
   type: 'button.style,icon-with-action.style',
   params: [
     { id: 'icon', as: 'string', default: 'code' },
