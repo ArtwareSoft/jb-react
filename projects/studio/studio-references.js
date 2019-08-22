@@ -1,27 +1,3 @@
-jb.component('studio.path-hyperlink', {
-  type: 'control',
-  params: [
-    { id: 'path', as: 'string', mandatory: true },
-    { id: 'prefix', as: 'string' }
-  ],
-  impl :{$: 'group',
-    style :{$: 'layout.horizontal', spacing: '9' },
-    controls: [
-      {$: 'label', title: '%$prefix%' },
-      {$: 'button',
-        title: ctx => {
-	  		const path = ctx.componentContext.params.path;
-	  		const title = jb.studio.shortTitle(path) || '',compName = jb.studio.compNameOfPath(path) || '';
-	  		return title == compName ? title : compName + ' ' + title;
-	  	},
-        action :{$: 'studio.goto-path', path: '%$path%' },
-        style :{$: 'button.href' },
-        features :{$: 'feature.hover-title', title: '%$path%' }
-      }
-    ]
-  }
-})
-
 jb.component('studio.components-cross-ref',  /* studio_componentsCrossRef */ {
   type: 'data',
   impl: ctx => {

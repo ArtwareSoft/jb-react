@@ -327,7 +327,7 @@ jb.component('studio.open-jb-editor',  /* studio_openJbEditor */ {
       action: studio_openJbEditorMenu('%$path%', '%$path%'),
       style: button_mdlIcon('menu')
     }),
-    title: studio_pathHyperlink('%$path%', 'Inteliscript'),
+    title :{$: 'studio.path-hyperlink', path: '%$path%', prefix: 'Inteliscript', $recursive: true},
     features: [studio_jbEditorContainer('jb-editor'), dialogFeature_resizer()]
   })
 })
@@ -349,7 +349,7 @@ jb.component('studio.open-component-in-jb-editor',  /* studio_openComponentInJbE
         action: studio_openJbEditorMenu('%$jbEditorCntrData/selected%', '%$path%'),
         style: button_mdlIcon('menu')
       }),
-      title: studio_pathHyperlink('%$compPath%', 'Inteliscript'),
+      title :{$: 'studio.path-hyperlink', path: '%$compPath%', prefix: 'Inteliscript', $recursive: true},
       features: [studio_jbEditorContainer('comp-in-jb-editor'), dialogFeature_resizer()]
     })
   )
