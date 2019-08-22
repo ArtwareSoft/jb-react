@@ -180,7 +180,7 @@ jb.component('studio-ui-test.goto-references-button', {
 	},
 })
 
-jb.component('studio.completion-prop-of-pt',  /* studio_completionPropOfPt */ {
+jb.component('studio.completion-prop-of-pt', { /* studio_completionPropOfPt */
   impl: dataTest({
     calculate: ctx=> jb.studio.completion.hint("{$: 'group', controls :{$: 'itemlist', '{$$}' "),
     expectedResult: ctx =>
@@ -188,7 +188,7 @@ jb.component('studio.completion-prop-of-pt',  /* studio_completionPropOfPt */ {
   })
 })
 
-jb.component('studio.completion-pt-of-type',  /* studio_completionPtOfType */ {
+jb.component('studio.completion-pt-of-type', { /* studio_completionPtOfType */
   impl: dataTest({
     calculate: ctx=> jb.studio.completion.hint("{$: 'group', controls:{ "),
     expectedResult: ctx =>
@@ -196,7 +196,7 @@ jb.component('studio.completion-pt-of-type',  /* studio_completionPtOfType */ {
   })
 })
 
-jb.component('studio.completion-pt-of-type-in-array',  /* studio_completionPtOfTypeInArray */ {
+jb.component('studio.completion-pt-of-type-in-array', { /* studio_completionPtOfTypeInArray */ 
   impl: dataTest({
     calculate: ctx=> jb.studio.completion.hint("{$: 'group', controls :[{$: 'label' }, {$:'"),
     expectedResult: ctx =>

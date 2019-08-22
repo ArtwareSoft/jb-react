@@ -2,7 +2,7 @@
 const st = jb.studio
 jb.studio.probeResultCustomizers = []
 
-jb.component('studio.jb-editor-path-for-edit',  /* studio_jbEditorPathForEdit */ {
+jb.component('studio.jb-editor-path-for-edit', { /* studio_jbEditorPathForEdit */
   type: 'data',
   description: 'in case of array, use extra element path',
   params: [
@@ -16,7 +16,7 @@ jb.component('studio.jb-editor-path-for-edit',  /* studio_jbEditorPathForEdit */
   }
 })
 
-jb.component('studio.open-jb-editor-menu',  /* studio_openJbEditorMenu */ {
+jb.component('studio.open-jb-editor-menu', { /* studio_openJbEditorMenu */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -28,7 +28,7 @@ jb.component('studio.open-jb-editor-menu',  /* studio_openJbEditorMenu */ {
   })
 })
 
-jb.component('studio.prob-result-customization',  /* studio_probResultCustomization */ {
+jb.component('studio.prob-result-customization', { /* studio_probResultCustomization */
   type: 'data',
   params: [
     {id: 'probeResult', mandatory: true}
@@ -42,7 +42,7 @@ jb.component('studio.prob-result-customization',  /* studio_probResultCustomizat
   }
 })
 
-jb.component('studio.jb-editor-container',  /* studio_jbEditorContainer */ {
+jb.component('studio.jb-editor-container', { /* studio_jbEditorContainer */
   type: 'feature',
   params: [
     {id: 'id', as: 'string', mandatory: true},
@@ -62,7 +62,7 @@ jb.component('studio.jb-editor-container',  /* studio_jbEditorContainer */ {
   )
 })
 
-jb.component('studio.probe-results',  /* studio_probeResults */ {
+jb.component('studio.probe-results', { /* studio_probeResults */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -73,7 +73,7 @@ jb.component('studio.probe-results',  /* studio_probeResults */ {
   })
 })
 
-jb.component('studio.data-browse',  /* studio_dataBrowse */ {
+jb.component('studio.data-browse', { /* studio_dataBrowse */
   type: 'control',
   params: [
     {id: 'obj', mandatory: true, defaultValue: '%%'},
@@ -158,7 +158,7 @@ jb.component('studio.data-browse',  /* studio_dataBrowse */ {
   })
 })
 
-jb.component('studio.probe-data-view',  /* studio_probeDataView */ {
+jb.component('studio.probe-data-view', { /* studio_probeDataView */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -185,7 +185,7 @@ jb.component('studio.probe-data-view',  /* studio_probeDataView */ {
   })
 })
 
-jb.component('studio.open-jb-edit-property',  /* studio_openJbEditProperty */ {
+jb.component('studio.open-jb-edit-property', { /* studio_openJbEditProperty */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -243,7 +243,7 @@ jb.component('studio.open-jb-edit-property',  /* studio_openJbEditProperty */ {
   )
 })
 
-jb.component('studio.jb-editor-inteli-tree',  /* studio_jbEditorInteliTree */ {
+jb.component('studio.jb-editor-inteli-tree', { /* studio_jbEditorInteliTree */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -276,7 +276,7 @@ jb.component('studio.jb-editor-inteli-tree',  /* studio_jbEditorInteliTree */ {
   })
 })
 
-jb.component('studio.jb-editor',  /* studio_jbEditor */ {
+jb.component('studio.jb-editor', { /* studio_jbEditor */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -308,7 +308,7 @@ jb.component('studio.jb-editor',  /* studio_jbEditor */ {
   })
 })
 
-jb.component('studio.open-jb-editor',  /* studio_openJbEditor */ {
+jb.component('studio.open-jb-editor', { /* studio_openJbEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -337,7 +337,7 @@ jb.component('studio.open-jb-editor',  /* studio_openJbEditor */ {
   })
 })
 
-jb.component('studio.open-component-in-jb-editor',  /* studio_openComponentInJbEditor */ {
+jb.component('studio.open-component-in-jb-editor', { /* studio_openComponentInJbEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -365,7 +365,7 @@ jb.component('studio.open-component-in-jb-editor',  /* studio_openComponentInJbE
   )
 })
 
-jb.component('studio.expand-and-select-first-child-in-jb-editor',  /* studio_expandAndSelectFirstChildInJbEditor */ {
+jb.component('studio.expand-and-select-first-child-in-jb-editor', { /* studio_expandAndSelectFirstChildInJbEditor */
   type: 'action',
   impl: ctx => {
     var ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[document.querySelector('.jb-editor').getAttribute('jb-ctx')];
@@ -415,7 +415,7 @@ jb.component('menu.studio-wrap-with-array',  /* menu_studioWrapWithArray */ {
   }
 })
 
-jb.component('studio.add-variable',  /* studio_addVariable */ {
+jb.component('studio.add-variable', { /* studio_addVariable */ 
   type: 'action',
   params: [
     {id: 'path', as: 'string'}

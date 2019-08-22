@@ -1,4 +1,4 @@
-jb.component('studio.categories-marks',  /* studio_categoriesMarks */ {
+jb.component('studio.categories-marks', { /* studio_categoriesMarks */
   params: [
     {id: 'type', as: 'string'},
     {id: 'path', as: 'string'}
@@ -56,7 +56,7 @@ jb.component('studio.categories-marks',  /* studio_categoriesMarks */ {
   )
 })
 
-jb.component('studio.select-profile',  /* studio_selectProfile */ {
+jb.component('studio.select-profile', { /* studio_selectProfile */
   type: 'control',
   params: [
     {id: 'onSelect', type: 'action', dynamic: true},
@@ -190,7 +190,7 @@ jb.component('studio.select-profile',  /* studio_selectProfile */ {
   })
 })
 
-jb.component('studio.open-new-profile-dialog',  /* studio_openNewProfileDialog */ {
+jb.component('studio.open-new-profile-dialog', { /* studio_openNewProfileDialog */
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()},
@@ -225,7 +225,7 @@ jb.component('studio.open-new-profile-dialog',  /* studio_openNewProfileDialog *
   })
 })
 
-jb.component('studio.pick-profile',  /* studio_pickProfile */ {
+jb.component('studio.pick-profile', { /* studio_pickProfile */
   description: 'picklist for picking a profile in a context',
   type: 'control',
   params: [
@@ -247,7 +247,7 @@ jb.component('studio.pick-profile',  /* studio_pickProfile */ {
   })
 })
 
-jb.component('studio.open-new-page',  /* studio_openNewPage */ {
+jb.component('studio.open-new-page', { /* studio_openNewPage */
   type: 'action',
   impl: openDialog({
     style: dialog_dialogOkCancel(),
@@ -271,7 +271,7 @@ jb.component('studio.open-new-page',  /* studio_openNewPage */ {
       }),
       writeValue('%$studio/profile_path%', '%$studio/project%.%$name%~impl'),
       writeValue('%$studio/page%', '%$name%'),
-      {$: 'studio.open-control-tree' },
+      {$: 'studio.open-control-tree', $recursive: true },
       tree_regainFocus(),
       refreshControlById('pages')
     ],
@@ -280,7 +280,7 @@ jb.component('studio.open-new-page',  /* studio_openNewPage */ {
   })
 })
 
-jb.component('studio.insert-comp-option',  /* studio_insertCompOption */ {
+jb.component('studio.insert-comp-option', { /* studio_insertCompOption */
   params: [
     {id: 'title', as: 'string'},
     {id: 'comp', as: 'string'}
@@ -291,7 +291,7 @@ jb.component('studio.insert-comp-option',  /* studio_insertCompOption */ {
   })
 })
 
-jb.component('studio.insert-control-menu',  /* studio_insertControlMenu */ {
+jb.component('studio.insert-control-menu', { /* studio_insertControlMenu */ 
   impl: menu_menu({
     title: 'Insert',
     options: [

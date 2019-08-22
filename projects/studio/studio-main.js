@@ -1,6 +1,6 @@
 jb.resource('studio',{});
 
-jb.component('studio.cmps-of-project',  /* studio_cmpsOfProject */ {
+jb.component('studio.cmps-of-project', { /* studio_cmpsOfProject */
   type: 'data',
   params: [
     {id: 'project', as: 'string'}
@@ -10,7 +10,7 @@ jb.component('studio.cmps-of-project',  /* studio_cmpsOfProject */ {
               .filter(id=>id.split('.')[0] == prj) : []
 })
 
-jb.component('studio.project-pages',  /* studio_projectPages */ {
+jb.component('studio.project-pages', { /* studio_projectPages */
   type: 'data',
   impl: pipeline(
     studio_cmpsOfProject('%$studio/project%'),
@@ -19,7 +19,7 @@ jb.component('studio.project-pages',  /* studio_projectPages */ {
   )
 })
 
-jb.component('studio.pages',  /* studio_pages */ {
+jb.component('studio.pages', { /* studio_pages */
   type: 'control',
   impl: group({
     title: 'pages',
@@ -58,7 +58,7 @@ jb.component('studio.pages',  /* studio_pages */ {
   })
 })
 
-jb.component('studio.ctx-counters',  /* studio_ctxCounters */ {
+jb.component('studio.ctx-counters', { /* studio_ctxCounters */
   type: 'control',
   impl: label({
     title: ctx => (performance.memory.usedJSHeapSize / 1000000)  + 'M',
@@ -69,7 +69,7 @@ jb.component('studio.ctx-counters',  /* studio_ctxCounters */ {
   })
 })
 
-jb.component('studio.main-menu',  /* studio_mainMenu */ {
+jb.component('studio.main-menu', { /* studio_mainMenu */
   type: 'menu.option',
   impl: menu_menu({
     title: 'main',
@@ -113,7 +113,7 @@ jb.component('studio.main-menu',  /* studio_mainMenu */ {
   })
 })
 
-jb.component('studio.top-bar',  /* studio_topBar */ {
+jb.component('studio.top-bar', { /* studio_topBar */
   type: 'control',
   impl: group({
     title: 'top bar',
@@ -154,7 +154,7 @@ jb.component('studio.top-bar',  /* studio_topBar */ {
   })
 })
 
-jb.component('studio.all',  /* studio_all */ {
+jb.component('studio.all', { /* studio_all */
   type: 'control',
   impl: group({
     controls: [
@@ -170,7 +170,7 @@ jb.component('studio.all',  /* studio_all */ {
   })
 })
 
-jb.component('studio.dynamic',  /* studio_dynamic */ {
+jb.component('studio.dynamic', { /* studio_dynamic */
   type: 'control',
   impl: group({
     title: 'top bar',
@@ -204,7 +204,7 @@ jb.component('studio.dynamic',  /* studio_dynamic */ {
   })
 })
 
-jb.component('studio.path-hyperlink',  /* studio_pathHyperlink */ {
+jb.component('studio.path-hyperlink', { /* studio_pathHyperlink */ 
   type: 'control',
   params: [
     {id: 'path', as: 'string', mandatory: true},

@@ -1,5 +1,5 @@
 
-jb.component('studio.new-project',  /* studio_newProject */ {
+jb.component('studio.new-project', { /* studio_newProject */
   type: 'action,has-side-effects',
   params: [
     {id: 'name', as: 'string'},
@@ -53,7 +53,7 @@ jb.component('studio.new-project',  /* studio_newProject */ {
   }
 })
 
-jb.component('studio.open-new-project',  /* studio_openNewProject */ {
+jb.component('studio.open-new-project', { /* studio_openNewProject */ 
   type: 'action',
   impl: openDialog({
     style: dialog_dialogOkCancel(),

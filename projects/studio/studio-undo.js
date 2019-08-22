@@ -24,7 +24,7 @@ function setToVersion(versionIndex, ctx, after) {
   st.compsRefHandler.resourceChange.next(opEvent);
 }
 
-jb.component('studio.undo',  /* studio_undo */ {
+jb.component('studio.undo', { /* studio_undo */
   type: 'action',
   impl: ctx => {
     if (st.undoIndex > 0)
@@ -32,7 +32,7 @@ jb.component('studio.undo',  /* studio_undo */ {
   }
 })
 
-jb.component('studio.clean-selection-preview',  /* studio_cleanSelectionPreview */ {
+jb.component('studio.clean-selection-preview', { /* studio_cleanSelectionPreview */
   type: 'action',
   impl: () => {
     if (st.compsHistory.length > 0)
@@ -40,7 +40,7 @@ jb.component('studio.clean-selection-preview',  /* studio_cleanSelectionPreview 
   }
 })
 
-jb.component('studio.revert',  /* studio_revert */ {
+jb.component('studio.revert', { /* studio_revert */
   type: 'action',
   params: [
     {id: 'toIndex', as: 'number'}
@@ -53,7 +53,7 @@ jb.component('studio.revert',  /* studio_revert */ {
   }
 })
 
-jb.component('studio.redo',  /* studio_redo */ {
+jb.component('studio.redo', { /* studio_redo */
   type: 'action',
   impl: ctx => {
     if (st.undoIndex < st.compsHistory.length)
@@ -61,7 +61,7 @@ jb.component('studio.redo',  /* studio_redo */ {
   }
 })
 
-jb.component('studio.copy',  /* studio_copy */ {
+jb.component('studio.copy', { /* studio_copy */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -73,7 +73,7 @@ jb.component('studio.copy',  /* studio_copy */ {
   }
 })
 
-jb.component('studio.paste',  /* studio_paste */ {
+jb.component('studio.paste', { /* studio_paste */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -82,15 +82,15 @@ jb.component('studio.paste',  /* studio_paste */ {
     (st.clipboard != null) && jb.writeValue(st.refOfPath(path), st.clipboard, ctx)
 })
 
-jb.component('studio.script-history-items',  /* studio_scriptHistoryItems */ {
+jb.component('studio.script-history-items', { /* studio_scriptHistoryItems */
   impl: ctx => st.compsHistory
 })
 
-jb.component('studio.comps-undo-index',  /* studio_compsUndoIndex */ {
+jb.component('studio.comps-undo-index', { /* studio_compsUndoIndex */
   impl: ctx => st.undoIndex - 1
 })
 
-jb.component('studio.script-history',  /* studio_scriptHistory */ {
+jb.component('studio.script-history', { /* studio_scriptHistory */
   type: 'control',
   impl: group({
     controls: [
@@ -129,7 +129,7 @@ jb.component('studio.script-history',  /* studio_scriptHistory */ {
   })
 })
 
-jb.component('studio.open-script-history',  /* studio_openScriptHistory */ {
+jb.component('studio.open-script-history', { /* studio_openScriptHistory */ 
   type: 'action',
   impl: openDialog({
     style: dialog_studioFloating({id: 'script-history', width: '700', height: '400'}),

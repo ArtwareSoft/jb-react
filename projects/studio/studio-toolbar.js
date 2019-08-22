@@ -1,4 +1,4 @@
-jb.component('studio.pickAndOpen',  /* studio_pickAndOpen */ {
+jb.component('studio.pickAndOpen', { /* studio_pickAndOpen */
   type: 'action',
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
@@ -14,7 +14,7 @@ jb.component('studio.pickAndOpen',  /* studio_pickAndOpen */ {
   )
 })
 
-jb.component('studio.toolbar',  /* studio_toolbar */ {
+jb.component('studio.toolbar', { /* studio_toolbar */ 
   type: 'control',
   impl: group({
     style: studio_toolbarStyle(),

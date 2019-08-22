@@ -1,4 +1,4 @@
-jb.component('studio.property-toolbar',  /* studio_propertyToolbar */ {
+jb.component('studio.property-toolbar', { /* studio_propertyToolbar */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -10,7 +10,7 @@ jb.component('studio.property-toolbar',  /* studio_propertyToolbar */ {
   })
 })
 
-jb.component('studio.property-toolbar-feature',  /* studio_propertyToolbarFeature */ {
+jb.component('studio.property-toolbar-feature', { /* studio_propertyToolbarFeature */
   type: 'feature',
   params: [
     {id: 'path', as: 'string'}
@@ -22,7 +22,7 @@ jb.component('studio.property-toolbar-feature',  /* studio_propertyToolbarFeatur
 })
 
 
-jb.component('studio.focus-on-first-property',  /* studio_focusOnFirstProperty */ {
+jb.component('studio.focus-on-first-property', { /* studio_focusOnFirstProperty */
   type: 'action',
   params: [
     {id: 'delay', as: 'number', defaultValue: 100}
@@ -36,7 +36,7 @@ jb.component('studio.focus-on-first-property',  /* studio_focusOnFirstProperty *
   }
 })
 
-jb.component('studio.open-source-dialog',  /* studio_openSourceDialog */ {
+jb.component('studio.open-source-dialog', { /* studio_openSourceDialog */
   type: 'action',
   impl: openDialog({
     style: dialog_dialogOkCancel(),
@@ -46,7 +46,7 @@ jb.component('studio.open-source-dialog',  /* studio_openSourceDialog */ {
   })
 })
 
-jb.component('studio.properties-in-tgp',  /* studio_propertiesInTgp */ {
+jb.component('studio.properties-in-tgp', { /* studio_propertiesInTgp */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -61,7 +61,7 @@ jb.component('studio.properties-in-tgp',  /* studio_propertiesInTgp */ {
   })
 })
 
-jb.component('studio.property-script',  /* studio_propertyScript */ {
+jb.component('studio.property-script', { /* studio_propertyScript */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -72,11 +72,11 @@ jb.component('studio.property-script',  /* studio_propertyScript */ {
       action: {$: 'studio.open-jb-editor', path: '%$path%', $recursive: true},
       style: button_studioScript()
     }),
-    features: studio_watchPath('%$path%', true)
+    features: studio_watchPath({path: '%$path%', includeChildren: true})
   })
 })
 
-jb.component('studio.property-boolean',  /* studio_propertyBoolean */ {
+jb.component('studio.property-boolean', { /* studio_propertyBoolean */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -84,11 +84,11 @@ jb.component('studio.property-boolean',  /* studio_propertyBoolean */ {
   impl: editableBoolean({
     databind: studio_ref('%$path%'),
     style: editableBoolean_mdlSlideToggle(),
-    features: studio_watchPath('%$path%', true)
+    features: studio_watchPath({path: '%$path%', includeChildren: true})
   })
 })
 
-jb.component('studio.property-enum',  /* studio_propertyEnum */ {
+jb.component('studio.property-enum', { /* studio_propertyEnum */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -97,11 +97,11 @@ jb.component('studio.property-enum',  /* studio_propertyEnum */ {
     databind: studio_ref('%$path%'),
     options: studio_enumOptions('%$path%'),
     style: picklist_nativeMdLook(),
-    features: studio_watchPath('%$path%', true)
+    features: studio_watchPath({path: '%$path%', includeChildren: true})
   })
 })
 
-jb.component('studio.property-slider',  /* studio_propertySlider */ {
+jb.component('studio.property-slider', { /* studio_propertySlider */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -117,12 +117,12 @@ jb.component('studio.property-slider',  /* studio_propertySlider */ {
       css(
         ">input-slider { width: 110px; }\n>.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }"
       ),
-      studio_watchPath('%$path%', true)
+      studio_watchPath({path: '%$path%', includeChildren: true})
     ]
   })
 })
 
-jb.component('studio.property-tgp',  /* studio_propertyTgp */ {
+jb.component('studio.property-tgp', { /* studio_propertyTgp */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -133,7 +133,7 @@ jb.component('studio.property-tgp',  /* studio_propertyTgp */ {
   )
 })
 
-jb.component('studio.properties-expanded-relevant',  /* studio_propertiesExpandedRelevant */ {
+jb.component('studio.properties-expanded-relevant', { /* studio_propertiesExpandedRelevant */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string', mandatory: true}
@@ -145,7 +145,7 @@ jb.component('studio.properties-expanded-relevant',  /* studio_propertiesExpande
   )
 })
 
-jb.component('studio.property-tgp-old',  /* studio_propertyTgpOld */ {
+jb.component('studio.property-tgp-old', { /* studio_propertyTgpOld */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -184,7 +184,7 @@ jb.component('studio.property-tgp-old',  /* studio_propertyTgpOld */ {
   })
 })
 
-jb.component('studio.property-tgp-in-array',  /* studio_propertyTgpInArray */ {
+jb.component('studio.property-tgp-in-array', { /* studio_propertyTgpInArray */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -207,7 +207,7 @@ jb.component('studio.property-tgp-in-array',  /* studio_propertyTgpInArray */ {
           label({
             title: studio_summary('%$path%'),
             style: label_htmlTag('p'),
-            features: [css_width('335'), studio_watchPath('%$path%', true)]
+            features: [css_width('335'), studio_watchPath({path: '%$path%', includeChildren: true})]
           }),
           studio_propertyToolbar('%$path%')
         ],
@@ -226,39 +226,32 @@ jb.component('studio.property-tgp-in-array',  /* studio_propertyTgpInArray */ {
     features: [
       css_margin({left: '-100'}),
       variable({name: 'expanded', value: studio_isNew('%$path%'), mutable: true}),
-      studio_watchPath('%$path%', true)
+      studio_watchPath({path: '%$path%', includeChildren: true})
     ]
   })
 })
 
-jb.component('studio.property-array',  /* studio_propertyArray */ {
+jb.component('studio.property-array', { /* studio_propertyArray */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: group({
-    style: layout_vertical('7'),
-    controls: [
-      group({
-        title: 'items',
-        controls: [
-          itemlist({
-            items: studio_asArrayChildren('%$path%'),
-            controls: group({
-              style: propertySheet_studioPlain(),
-              controls: studio_propertyTgpInArray('%$arrayItem%')
-            }),
-            itemVariable: 'arrayItem',
-            features: [studio_watchPath('%$path%'), itemlist_divider(), itemlist_dragAndDrop()]
-          })
-        ],
-        features: studio_watchPath('%$path%', true)
-      })
+  impl: itemlist({
+    items: studio_asArrayChildren('%$path%'),
+    controls: group({
+      style: propertySheet_studioPlain(),
+      controls: studio_propertyTgpInArray('%$arrayItem%')
+    }),
+    itemVariable: 'arrayItem',
+    features: [
+      studio_watchPath({path: '%$path%', includeChildren: true}),
+      itemlist_divider(),
+      itemlist_dragAndDrop()
     ]
   })
 })
 
-jb.component('studio.property-field',  /* studio_propertyField */ {
+jb.component('studio.property-field', { /* studio_propertyField */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -301,7 +294,7 @@ jb.component('studio.property-field',  /* studio_propertyField */ {
   })
 })
 
-jb.component('studio.jb-floating-input-rich',  /* studio_jbFloatingInputRich */ {
+jb.component('studio.jb-floating-input-rich', { /* studio_jbFloatingInputRich */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -312,7 +305,7 @@ jb.component('studio.jb-floating-input-rich',  /* studio_jbFloatingInputRich */ 
   })
 })
 
-jb.component('studio.properties',  /* studio_properties */ {
+jb.component('studio.properties', { /* studio_properties */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -383,7 +376,7 @@ jb.component('studio.properties',  /* studio_properties */ {
   })
 })
 
-jb.component('studio.tgp-path-options',  /* studio_tgpPathOptions */ {
+jb.component('studio.tgp-path-options', { /* studio_tgpPathOptions */
   type: 'picklist.options',
   params: [
     {id: 'path', as: 'string'}
@@ -393,7 +386,7 @@ jb.component('studio.tgp-path-options',  /* studio_tgpPathOptions */ {
 			.concat(jb.studio.PTsOfPath(path).map(op=> ({ code: op, text: op})))
 })
 
-jb.component('studio.open-properties',  /* studio_openProperties */ {
+jb.component('studio.open-properties', { /* studio_openProperties */ 
   type: 'action',
   params: [
     {id: 'focus', type: 'boolean', as: 'boolean'}

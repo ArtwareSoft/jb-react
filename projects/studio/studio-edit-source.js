@@ -1,7 +1,7 @@
 (function() {
 const st = jb.studio;
 
-jb.component('studio.open-editor',  /* studio_openEditor */ {
+jb.component('studio.open-editor', { /* studio_openEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -11,7 +11,7 @@ jb.component('studio.open-editor',  /* studio_openEditor */ {
   }
 })
 
-jb.component('studio.edit-source',  /* studio_editSource */ {
+jb.component('studio.edit-source', { /* studio_editSource */
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()}
@@ -30,7 +30,7 @@ jb.component('studio.edit-source',  /* studio_editSource */ {
   })
 })
 
-jb.component('studio.edit-as-macro',  /* studio_editAsMacro */ {
+jb.component('studio.edit-as-macro', { /* studio_editAsMacro */
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()}
@@ -49,7 +49,7 @@ jb.component('studio.edit-as-macro',  /* studio_editAsMacro */ {
   })
 })
 
-jb.component('studio.goto-editor-secondary',  /* studio_gotoEditorSecondary */ {
+jb.component('studio.goto-editor-secondary', { /* studio_gotoEditorSecondary */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -62,7 +62,7 @@ jb.component('studio.goto-editor-secondary',  /* studio_gotoEditorSecondary */ {
   })
 })
 
-jb.component('studio.goto-editor-first',  /* studio_gotoEditorFirst */ {
+jb.component('studio.goto-editor-first', { /* studio_gotoEditorFirst */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -75,7 +75,7 @@ jb.component('studio.goto-editor-first',  /* studio_gotoEditorFirst */ {
   })
 })
 
-jb.component('studio.goto-editor-options',  /* studio_gotoEditorOptions */ {
+jb.component('studio.goto-editor-options', { /* studio_gotoEditorOptions */ 
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}

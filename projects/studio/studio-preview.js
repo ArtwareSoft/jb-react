@@ -27,7 +27,7 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
 			}
 }
 
-jb.component('studio.preview-widget-impl',  /* studio_previewWidgetImpl */ {
+jb.component('studio.preview-widget-impl', { /* studio_previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
     template: (cmp,state,h) => h('iframe', {
@@ -43,7 +43,7 @@ jb.component('studio.preview-widget-impl',  /* studio_previewWidgetImpl */ {
   })
 })
 
-jb.component('studio.refresh-preview',  /* studio_refreshPreview */ {
+jb.component('studio.refresh-preview', { /* studio_refreshPreview */
   type: 'action',
   impl: _ => {
     jb.ui.garbageCollectCtxDictionary(true);
@@ -52,7 +52,7 @@ jb.component('studio.refresh-preview',  /* studio_refreshPreview */ {
   }
 })
 
-jb.component('studio.set-preview-size',  /* studio_setPreviewSize */ {
+jb.component('studio.set-preview-size', { /* studio_setPreviewSize */
   type: 'action',
   params: [
     {id: 'width', as: 'number'},
@@ -71,7 +71,7 @@ jb.component('studio.set-preview-size',  /* studio_setPreviewSize */ {
   }
 })
 
-jb.component('studio.wait-for-preview-iframe',  /* studio_waitForPreviewIframe */ {
+jb.component('studio.wait-for-preview-iframe', { /* studio_waitForPreviewIframe */
   impl: _ =>
     jb.ui.waitFor(()=>
       jb.studio.previewWindow)
@@ -85,7 +85,7 @@ jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studi
         return jb.resources.studio.page ? [{page, ctrl}] : []
       });
 
-jb.component('studio.data-comp-inspector',  /* studio_dataCompInspector */ {
+jb.component('studio.data-comp-inspector', { /* studio_dataCompInspector */
   type: 'control',
   impl: group({
     controls: [
@@ -105,7 +105,7 @@ jb.component('studio.data-comp-inspector',  /* studio_dataCompInspector */ {
   })
 })
 
-jb.component('studio.preview-widget',  /* studio_previewWidget */ {
+jb.component('studio.preview-widget', { /* studio_previewWidget */ 
   type: 'control',
   params: [
     {

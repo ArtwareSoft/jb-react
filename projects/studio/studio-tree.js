@@ -1,4 +1,4 @@
-jb.component('studio.tree-menu',  /* studio_treeMenu */ {
+jb.component('studio.tree-menu', { /* studio_treeMenu */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -77,7 +77,7 @@ jb.component('studio.tree-menu',  /* studio_treeMenu */ {
   })
 })
 
-jb.component('studio.open-tree-menu',  /* studio_openTreeMenu */ {
+jb.component('studio.open-tree-menu', { /* studio_openTreeMenu */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -87,7 +87,7 @@ jb.component('studio.open-tree-menu',  /* studio_openTreeMenu */ {
   })
 })
 
-jb.component('studio.control-tree.nodes',  /* studio_controlTree_nodes */ {
+jb.component('studio.control-tree.nodes', { /* studio_controlTree_nodes */
   type: 'tree.nodeModel',
   impl: function(context) {
 		var currentPath = context.run({ $: 'studio.currentProfilePath' });
@@ -96,7 +96,7 @@ jb.component('studio.control-tree.nodes',  /* studio_controlTree_nodes */ {
 	}
 })
 
-jb.component('studio.control-tree',  /* studio_controlTree */ {
+jb.component('studio.control-tree', { /* studio_controlTree */
   type: 'control',
   impl: group({
     controls: [
@@ -153,7 +153,7 @@ jb.component('studio.control-tree',  /* studio_controlTree */ {
 //   })
 // })
 
-jb.component('studio.open-control-tree',  /* studio_openControlTree */ {
+jb.component('studio.open-control-tree', { /* studio_openControlTree */ 
   type: 'action',
   impl: openDialog({
     style: dialog_studioFloating({id: 'studio-outline', width: '350'}),

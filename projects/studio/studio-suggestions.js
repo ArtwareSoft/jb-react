@@ -1,7 +1,7 @@
 (function() {
 const st = jb.studio
 
-jb.component('studio.itemlist-refresh-suggestions-options',  /* studio_itemlistRefreshSuggestionsOptions */ {
+jb.component('studio.itemlist-refresh-suggestions-options', { /* studio_itemlistRefreshSuggestionsOptions */
   type: 'feature',
   params: [
     {id: 'path', as: 'string'},
@@ -66,12 +66,12 @@ jb.component('studio.itemlist-refresh-suggestions-options',  /* studio_itemlistR
   })
 })
 
-jb.component('studio.show-suggestions',  /* studio_showSuggestions */ {
+jb.component('studio.show-suggestions', { /* studio_showSuggestions */
   impl: ctx =>
     new st.suggestions(ctx.data,false).suggestionsRelevant()
 })
 
-jb.component('studio.paste-suggestion',  /* studio_pasteSuggestion */ {
+jb.component('studio.paste-suggestion', { /* studio_pasteSuggestion */
   type: 'action',
   params: [
     {id: 'option', as: 'single', defaultValue: '%%'},
@@ -86,7 +86,7 @@ jb.component('studio.paste-suggestion',  /* studio_pasteSuggestion */ {
   }
 })
 
-jb.component('studio.suggestions-itemlist',  /* studio_suggestionsItemlist */ {
+jb.component('studio.suggestions-itemlist', { /* studio_suggestionsItemlist */
   params: [
     {id: 'path', as: 'string'},
     {id: 'source', as: 'string'}
@@ -115,7 +115,7 @@ jb.component('studio.suggestions-itemlist',  /* studio_suggestionsItemlist */ {
   })
 })
 
-jb.component('studio.property-primitive',  /* studio_propertyPrimitive */ {
+jb.component('studio.property-primitive', { /* studio_propertyPrimitive */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -126,7 +126,7 @@ jb.component('studio.property-primitive',  /* studio_propertyPrimitive */ {
         databind: studio_ref('%$path%'),
         style: editableText_studioPrimitiveText(),
         features: [
-          studio_watchPath('%$path%', true),
+          studio_watchPath({path: '%$path%', includeChildren: true}),
           editableText_helperPopup({
             control: studio_suggestionsItemlist('%$path%'),
             popupId: 'suggestions',
@@ -144,7 +144,7 @@ jb.component('studio.property-primitive',  /* studio_propertyPrimitive */ {
   })
 })
 
-jb.component('studio.jb-floating-input',  /* studio_jbFloatingInput */ {
+jb.component('studio.jb-floating-input', { /* studio_jbFloatingInput */ 
   type: 'control',
   params: [
     {id: 'path', as: 'string'}

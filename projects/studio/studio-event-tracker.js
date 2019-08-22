@@ -21,7 +21,7 @@ st.initEventTracker = _ => {
 //ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent})
 //({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources})
 
-jb.component('studio.event-title',  /* studio_eventTitle */ {
+jb.component('studio.event-title', { /* studio_eventTitle */
   type: 'data',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -30,7 +30,7 @@ jb.component('studio.event-title',  /* studio_eventTitle */ {
 		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
 })
 
-jb.component('studio.event-cmp',  /* studio_eventCmp */ {
+jb.component('studio.event-cmp', { /* studio_eventCmp */
   type: 'data',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -39,7 +39,7 @@ jb.component('studio.event-cmp',  /* studio_eventCmp */ {
 		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
 })
 
-jb.component('studio.event-cause',  /* studio_eventCause */ {
+jb.component('studio.event-cause', { /* studio_eventCause */
   type: 'data',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -48,7 +48,7 @@ jb.component('studio.event-cause',  /* studio_eventCause */ {
 		(event && event.opEvent) ? st.nameOfRef(event.opEvent.ref) + ' changed to "' + st.valSummary(event.opEvent.newVal) + '"' : ''
 })
 
-jb.component('studio.state-change-events',  /* studio_stateChangeEvents */ {
+jb.component('studio.state-change-events', { /* studio_stateChangeEvents */
   type: 'data',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}
@@ -57,7 +57,7 @@ jb.component('studio.state-change-events',  /* studio_stateChangeEvents */ {
 		(studio ? st.studioStateChangeEvents : st.stateChangeEvents) || []
 })
 
-jb.component('studio.highlight-event',  /* studio_highlightEvent */ {
+jb.component('studio.highlight-event', { /* studio_highlightEvent */
   type: 'action',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -67,7 +67,7 @@ jb.component('studio.highlight-event',  /* studio_highlightEvent */ {
   )
 })
 
-jb.component('studio.event-tracker',  /* studio_eventTracker */ {
+jb.component('studio.event-tracker', { /* studio_eventTracker */
   type: 'control',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}
@@ -132,7 +132,7 @@ jb.component('studio.event-tracker',  /* studio_eventTracker */ {
 })
 
 
-jb.component('studio.open-event-tracker',  /* studio_openEventTracker */ {
+jb.component('studio.open-event-tracker', { /* studio_openEventTracker */ 
   type: 'action',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}

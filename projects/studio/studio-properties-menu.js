@@ -1,4 +1,4 @@
-jb.component('studio.goto-path',  /* studio_gotoPath */ {
+jb.component('studio.goto-path', { /* studio_gotoPath */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -14,7 +14,7 @@ jb.component('studio.goto-path',  /* studio_gotoPath */ {
   )
 })
 
-jb.component('studio.open-property-menu',  /* studio_openPropertyMenu */ {
+jb.component('studio.open-property-menu', { /* studio_openPropertyMenu */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -64,7 +64,7 @@ jb.component('studio.open-property-menu',  /* studio_openPropertyMenu */ {
   })
 })
 
-jb.component('studio.jb-editor-menu',  /* studio_jbEditorMenu */ {
+jb.component('studio.jb-editor-menu', { /* studio_jbEditorMenu */ 
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},

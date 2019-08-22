@@ -91,7 +91,7 @@ jb.component('studio-dialog-feature.refresh-title', {
 	})
 })
 
-jb.component('studio.code-mirror-mode',  /* studio_codeMirrorMode */ {
+jb.component('studio.code-mirror-mode', { /* studio_codeMirrorMode */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -104,7 +104,7 @@ jb.component('studio.code-mirror-mode',  /* studio_codeMirrorMode */ {
 	}
 })
 
-jb.component('studio.open-multiline-edit',  /* studio_openMultilineEdit */ {
+jb.component('studio.open-multiline-edit', { /* studio_openMultilineEdit */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -144,7 +144,7 @@ jb.component('dialog.studio-floating',  /* dialog_studioFloating */ {
   })
 })
 
-jb.component('studio.open-responsive-phone-popup',  /* studio_openResponsivePhonePopup */ {
+jb.component('studio.open-responsive-phone-popup', { /* studio_openResponsivePhonePopup */ 
   type: 'action',
   params: [
     {id: 'path', as: 'string'}

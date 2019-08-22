@@ -1,5 +1,5 @@
 
-jb.component('studio.data-resources',  /* studio_dataResources */ {
+jb.component('studio.data-resources', { /* studio_dataResources */
   type: 'control',
   impl: group({
     controls: [
@@ -35,7 +35,7 @@ jb.component('studio.data-resources',  /* studio_dataResources */ {
   })
 })
 
-jb.component('studio.open-resource',  /* studio_openResource */ {
+jb.component('studio.open-resource', { /* studio_openResource */
   type: 'action',
   params: [
     {id: 'resource', type: 'data'},
@@ -51,7 +51,7 @@ jb.component('studio.open-resource',  /* studio_openResource */ {
   })
 })
 
-jb.component('studio.data-resource-menu',  /* studio_dataResourceMenu */ {
+jb.component('studio.data-resource-menu', { /* studio_dataResourceMenu */ 
   type: 'menu.option',
   impl: menu_menu({
     title: 'Data',

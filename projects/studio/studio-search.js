@@ -1,4 +1,4 @@
-jb.component('studio.search-list',  /* studio_searchList */ {
+jb.component('studio.search-list', { /* studio_searchList */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -68,7 +68,7 @@ jb.component('studio.search-list',  /* studio_searchList */ {
   })
 })
 
-jb.component('studio.search-component',  /* studio_searchComponent */ {
+jb.component('studio.search-component', { /* studio_searchComponent */ 
   type: 'control',
   params: [
     {id: 'path', as: 'string'}

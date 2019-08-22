@@ -705,6 +705,8 @@ Object.assign(jb,{
         return {$: id, ...args[0]}
       if (args.length == 1 && params.length)
         return {$: id, [params[0].id]: args[0]}
+      if (args.length == 2 && params.length > 1)
+        return {$: id, [params[0].id]: args[0], [params[1].id]: args[1]}
       debugger;
     }
   },
@@ -1481,7 +1483,7 @@ jb.component('json.stringify', {
 		{ id: 'space', as: 'string', description: 'use space or tab to make pretty output' }
 	],
 	impl: (context,value,space) =>
-			JSON.stringify(value,null,space)
+			JSON.stringify(jb.val(value),null,space)
 });
 
 jb.component('json.parse', {
@@ -8355,7 +8357,7 @@ ui.item = function(cmp,vdom,data) {
 	return vdom;
 }
 
-ui.watchRef = function(ctx,cmp,ref,includeChildren,allowSelfRefresh) {
+ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 		if (!ref)
 			jb.logError('null ref for watch ref',...arguments);
     	ref && ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
@@ -8371,7 +8373,8 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,allowSelfRefresh) {
 				}
 				if (ctx && ctx.profile && ctx.profile.$trace)
 					console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
-				
+				if (delay)
+					return jb.delay(delay).then(()=> ui.setState(cmp,null,e,ctx))
 				return ui.setState(cmp,null,e,ctx);
 	      })
 }
@@ -8662,7 +8665,7 @@ class ImmutableWithJbId {
     const fromPath = this.pathOfRef(fromRef), toPath = this.pathOfRef(toRef);
     const sameArray = fromPath.slice(0,-1).join('~') == toPath.slice(0,-1).join('~');
     const fromIndex = Number(fromPath.slice(-1));
-    const toIndex = Number(toPath.slice(-1));
+    let toIndex = Number(toPath.slice(-1));
     const fromArray = this.refOfPath(fromPath.slice(0,-1)),toArray = this.refOfPath(toPath.slice(0,-1));
     if (isNaN(fromIndex) || isNaN(toIndex))
         return jb.logError('move: not array element',srcCtx,fromRef,toRef);
@@ -8850,11 +8853,12 @@ jb.component('control.first-succeeding', {
 jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
   type: 'feature', category: 'watch:30', description: 'relevant only for first-succeeding',
   params: [
-    { id: 'ref', mandatory: true, as: 'ref', description: 'reference to data' },
+    { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
     { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
   ],
-  impl: (ctx,ref,includeChildren) => ({
-      init: cmp =>
+  impl: (ctx,refF,includeChildren) => ({
+      init: cmp => {
+        const ref = refF(cmp.ctx)
         ref && jb.ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
         .subscribe(e=>{
           if (ctx && ctx.profile && ctx.profile.$trace)
@@ -8873,6 +8877,7 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
             }
           }
       })
+    }
   })
 })
 
@@ -8880,12 +8885,12 @@ jb.component('control-with-condition', {
   type: 'control',
   usageByValue: true,
   params: [
-    { id: 'condition', type: 'boolean', mandatory: true, as: 'boolean' },
+    { id: 'condition', type: 'boolean', dynamic: true, mandatory: true, as: 'boolean' },
     { id: 'control', type: 'control', mandatory: true, dynamic: true },
     { id: 'title', as: 'string' },
   ],
   impl: (ctx,condition,ctrl) =>
-    condition && ctrl(ctx)
+    condition() && ctrl(ctx)
 })
 ;
 
@@ -8925,7 +8930,7 @@ jb.component('label.bind-title', {
 jb.component('label.htmlTag', {
   type: 'label.style',
 	params: [
-		{ id: 'htmlTag', as: 'string', defaultValue: 'p', options:'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary' },
+		{ id: 'htmlTag', as: 'string', defaultValue: 'p', options:'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label' },
 		{ id: 'cssClass', as: 'string' },
 	],
   impl :{$: 'custom-style',
@@ -9165,7 +9170,14 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
 jb.component('field.databind', {
   type: 'feature',
   impl: ctx => ({
-      beforeInit: cmp => databindField(cmp,ctx)
+      beforeInit: cmp => databindField(cmp,ctx),
+      templateModifier: (vdom,cmp,state) => {
+        if (!vdom.attributes || !ctx.vars.$model.updateOnBlur) return;
+        Object.assign(vdom.attributes, {
+          onchange: undefined, onkeyup: undefined, onkeydown: undefined,
+          onblur: e => cmp.jbModel(e.target.value),
+        })
+      }
   })
 })
 
@@ -9176,7 +9188,15 @@ jb.component('field.databind-text', {
     { id: 'oneWay', type: 'boolean', as: 'boolean'}
   ],
   impl: (ctx,debounceTime,oneWay) => ({
-      beforeInit: cmp => databindField(cmp,ctx,debounceTime,oneWay)
+      beforeInit: cmp => databindField(cmp,ctx,debounceTime,oneWay),
+      templateModifier: (vdom,cmp,state) => {
+        if (!vdom.attributes || !ctx.vars.$model.updateOnBlur) return;
+        const elemToChange = cmp.elemToInput ? cmp.elemToInput(vdom) : vdom
+        Object.assign(elemToChange.attributes, {
+          onchange: undefined, onkeyup: undefined, onkeydown: undefined,
+          onblur: e => cmp.jbModel(e.target.value),
+        })
+      }
   })
 })
 
@@ -9215,8 +9235,10 @@ jb.component('field.keyboard-shortcut', {
     { id: 'action', type: 'action', dynamic: true },
   ],
   impl: (context,key,action) => ({
-      afterViewInit: cmp =>
-      jb.rx.Observable.fromEvent(cmp.base.querySelector('input'), 'keydown')
+      afterViewInit: cmp => {
+        const elem = cmp.base.querySelector('input') || cmp.base
+        if (elem.tabIndex === undefined) elem.tabIndex = -1
+        jb.rx.Observable.fromEvent(elem, 'keydown')
             .takeUntil( cmp.destroyed )
             .subscribe(event=>{
               var keyStr = key.split('+').slice(1).join('+');
@@ -9229,7 +9251,8 @@ jb.component('field.keyboard-shortcut', {
               if (event.keyCode == keyCode || (event.key && event.key == keyStr))
                 action();
             })
-      })
+      }
+  })
 })
 
 jb.component('field.subscribe', {
@@ -9779,7 +9802,7 @@ jb.component('feature.hover-title', {
   impl: (ctx, title) => ({
     templateModifier: (vdom,cmp,state) => {
       vdom.attributes = vdom.attributes || {};
-      vdom.attributes.title = title()
+      vdom.attributes.title = title(cmp.ctx.setData(state.title))
       return vdom;
     }
   })
@@ -12465,7 +12488,10 @@ jb.component('editable-text.mdl-input', {
       css: '{ {?width: %$width%px?} }',
       features :[
           {$: 'field.databind-text' },
-          {$: 'mdl-style.init-dynamic'}
+          {$: 'mdl-style.init-dynamic'},
+          ctx => ({
+            beforeInit: cmp => cmp.elemToInput = elem => elem.children[0]
+          })
       ],
   }
 })
@@ -12662,7 +12688,7 @@ jb.component('responsive.not-for-phone', {
 jb.component('group.htmlTag', {
   type: 'group.style',
 	params: [
-		{ id: 'htmlTag', as: 'string', defaultValue: 'section', options:'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary' },
+		{ id: 'htmlTag', as: 'string', defaultValue: 'section', options:'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label,form' },
 		{ id: 'groupClass', as: 'string' },
 		{ id: 'itemClass', as: 'string' },
 	],
@@ -28167,11 +28193,13 @@ jb.component('pretty-print', {
     jb.prettyPrint(profile,ctx.params)
 })
 
-jb.prettyPrintComp = function(compId,comp,settings) {
+jb.prettyPrintComp = function(compId,comp,settings={}) {
   if (comp) {
+    settings.macro = true;
     const macroRemark = settings.macro ? ` /* ${jb.macroName(compId)} */ ` : ''
-    return "jb.component('" + compId + "', " + macroRemark
-      + jb.prettyPrintWithPositions(comp,settings).result + ')'
+    const res = "jb.component('" + compId + "', " + jb.prettyPrintWithPositions(comp,settings).result + ')'
+    const withMacroName = res.replace(/\n/, macroRemark + '\n')
+    return withMacroName
   }
 }
 
@@ -30164,7 +30192,7 @@ Object.assign(st, {
 	setSugarComp: (path,compName,param,srcCtx) => {
 		var emptyVal = (param.type||'').indexOf('[') == -1 ? '' : [];
 		var currentVal = st.valOfPath(path);
-		if (typeof currentVal == 'object') {
+		if (currentVal && typeof currentVal == 'object') {
 			var properties = Object.getOwnPropertyNames(currentVal);
 			if (properties.length == 1 && properties[0].indexOf('$') == 0)
 				currentVal = currentVal[properties[0]];
@@ -30338,11 +30366,13 @@ jb.component('studio.watch-path',  /* studio_watchPath */ {
   category: 'group:0',
   params: [
     {id: 'path', as: 'string', mandatory: true},
-    {id: 'includeChildren', as: 'boolean', type: 'boolean'}
+    {id: 'includeChildren', as: 'boolean', type: 'boolean'},
+    {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children' },
   ],
-  impl: (ctx,path,includeChildren) => ({
+  impl: (ctx,path,includeChildren,delay,allowSelfRefresh) => ({
       init: cmp =>
-      	jb.ui.watchRef(ctx,cmp,st.refOfPath(path),includeChildren)
+      	jb.ui.watchRef(ctx,cmp,st.refOfPath(path),includeChildren,delay,allowSelfRefresh)
   })
 })
 
@@ -32931,25 +32961,14 @@ jb.component('studio.property-array',  /* studio_propertyArray */ {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: group({
-    style: layout_vertical('7'),
-    controls: [
-      group({
-        title: 'items',
-        controls: [
-          itemlist({
-            items: studio_asArrayChildren('%$path%'),
-            controls: group({
-              style: propertySheet_studioPlain(),
-              controls: studio_propertyTgpInArray('%$arrayItem%')
-            }),
-            itemVariable: 'arrayItem',
-            features: [studio_watchPath('%$path%'), itemlist_divider(), itemlist_dragAndDrop()]
-          })
-        ],
-        features: studio_watchPath('%$path%', true)
-      })
-    ]
+  impl: itemlist({
+      items: studio_asArrayChildren('%$path%'),
+      controls: group({
+        style: propertySheet_studioPlain(),
+        controls: studio_propertyTgpInArray('%$arrayItem%')
+      }),
+      itemVariable: 'arrayItem',
+      features: [studio_watchPath('%$path%',true), itemlist_divider(), itemlist_dragAndDrop()]
   })
 })
 
@@ -33052,6 +33071,15 @@ jb.component('studio.properties',  /* studio_properties */ {
             remark('not a control'),
             studio_hasParam(remark('not a control'), '%$path%', 'features')
           )
+        ]
+      }),
+      label({
+        title: studio_profileAsMacroText('%$path%~features'),
+        style: label_span(),
+        features: [
+          css_width('400'),
+          css('{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis}'),
+          feature_hoverTitle('%%')
         ]
       }),
       button({

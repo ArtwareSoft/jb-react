@@ -705,6 +705,8 @@ Object.assign(jb,{
         return {$: id, ...args[0]}
       if (args.length == 1 && params.length)
         return {$: id, [params[0].id]: args[0]}
+      if (args.length == 2 && params.length > 1)
+        return {$: id, [params[0].id]: args[0], [params[1].id]: args[1]}
       debugger;
     }
   },
@@ -1481,7 +1483,7 @@ jb.component('json.stringify', {
 		{ id: 'space', as: 'string', description: 'use space or tab to make pretty output' }
 	],
 	impl: (context,value,space) =>
-			JSON.stringify(value,null,space)
+			JSON.stringify(jb.val(value),null,space)
 });
 
 jb.component('json.parse', {

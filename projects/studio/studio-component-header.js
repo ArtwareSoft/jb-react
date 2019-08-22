@@ -26,7 +26,7 @@ jb.component('jb-param', {
   impl: ctx => ctx.params
 })
 
-jb.component('studio.component-header',  /* studio_componentHeader */ {
+jb.component('studio.component-header', { /* studio_componentHeader */ 
   type: 'control',
   params: [
     {id: 'component', as: 'string'}

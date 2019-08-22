@@ -62,7 +62,7 @@ jb.component('button.select-profile-style', {
   }
 })
 
-jb.component('studio.property-toolbar-style',  /* studio_propertyToolbarStyle */ {
+jb.component('studio.property-toolbar-style', { /* studio_propertyToolbarStyle */
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('i',{class: 'material-icons',
@@ -371,7 +371,7 @@ jb.component('dialog.studio-multiline-edit',  /* dialog_studioMultilineEdit */ {
 // 	}
 // })
 
-jb.component('studio.toolbar-style',  /* studio_toolbarStyle */ {
+jb.component('studio.toolbar-style', { /* studio_toolbarStyle */ 
   type: 'group.style',
   impl: customStyle({
     template: (cmp,state,h) => h('section',{class:'jb-group'},

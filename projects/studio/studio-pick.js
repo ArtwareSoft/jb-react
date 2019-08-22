@@ -157,7 +157,7 @@ st.highlight = function(elems) {
     jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
 }
 
-jb.component('studio.highlight-in-preview',  /* studio_highlightInPreview */ {
+jb.component('studio.highlight-in-preview', { /* studio_highlightInPreview */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -183,7 +183,7 @@ jb.component('studio.highlight-in-preview',  /* studio_highlightInPreview */ {
   }
 })
 
-jb.component('studio.pick',  /* studio_pick */ {
+jb.component('studio.pick', { /* studio_pick */ 
   type: 'action',
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},

@@ -1,4 +1,4 @@
-jb.component('studio.components-cross-ref',  /* studio_componentsCrossRef */ {
+jb.component('studio.components-cross-ref', { /* studio_componentsCrossRef */
   type: 'data',
   impl: ctx => {
 	  var _jb = jb.studio.previewjb;
@@ -37,7 +37,7 @@ jb.component('studio.components-cross-ref',  /* studio_componentsCrossRef */ {
 	}
 })
 
-jb.component('studio.references',  /* studio_references */ {
+jb.component('studio.references', { /* studio_references */
   type: 'data',
   params: [
     {id: 'path', as: 'string'}
@@ -62,7 +62,7 @@ jb.component('studio.references',  /* studio_references */ {
 	}
 })
 
-jb.component('studio.goto-references-options',  /* studio_gotoReferencesOptions */ {
+jb.component('studio.goto-references-options', { /* studio_gotoReferencesOptions */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
@@ -88,7 +88,7 @@ jb.component('studio.goto-references-options',  /* studio_gotoReferencesOptions 
   )
 })
 
-jb.component('studio.goto-references-button',  /* studio_gotoReferencesButton */ {
+jb.component('studio.goto-references-button', { /* studio_gotoReferencesButton */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -107,7 +107,7 @@ jb.component('studio.goto-references-button',  /* studio_gotoReferencesButton */
   )
 })
 
-jb.component('studio.goto-references-menu',  /* studio_gotoReferencesMenu */ {
+jb.component('studio.goto-references-menu', { /* studio_gotoReferencesMenu */ 
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}

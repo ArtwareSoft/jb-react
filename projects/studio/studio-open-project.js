@@ -1,4 +1,4 @@
-jb.component('studio.goto-project',  /* studio_gotoProject */ {
+jb.component('studio.goto-project', { /* studio_gotoProject */
   type: 'action',
   impl: runActions(
     gotoUrl('/project/studio/%%', 'new tab'),
@@ -6,7 +6,7 @@ jb.component('studio.goto-project',  /* studio_gotoProject */ {
   )
 })
 
-jb.component('studio.choose-project',  /* studio_chooseProject */ {
+jb.component('studio.choose-project', { /* studio_chooseProject */
   type: 'control',
   impl: group({
     title: 'itemlist-with-find',
@@ -36,7 +36,7 @@ jb.component('studio.choose-project',  /* studio_chooseProject */ {
   })
 })
 
-jb.component('studio.open-project',  /* studio_openProject */ {
+jb.component('studio.open-project', { /* studio_openProject */ 
   type: 'action',
   impl: openDialog({
     style: dialog_dialogOkCancel('OK', 'Cancel'),
