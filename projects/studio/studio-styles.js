@@ -372,17 +372,27 @@ jb.component('studio.toolbar-style', {
   }
 })
 
-jb.component('studio_button.toolbarButton', {
-	type: 'button.style',
-	params: [
-		{ id: 'spritePosition', as: 'string', defaultValue: '0,0' }
-	],
-	impl: {$: 'custom-style',
-			template: (cmp,state,h) => h('button',{class: 'studio-btn-toolbar', click: _=> cmp.clicked() },
-          h('span', {title: state.title, style: { 'background-position': state.pos} })),
-      features: ctx => ({
-          init: cmp =>
-              cmp.state.pos = cmp.spritePosition.split(',').map(item => (-parseInt(item) * 16) + 'px').join(' '),
-      })
-	}
+// jb.component('studio.toolbarButton', {
+// 	type: 'button.style',
+// 	params: [
+// 		{ id: 'spritePosition', as: 'string', defaultValue: '0,0' }
+// 	],
+// 	impl: {$: 'custom-style',
+// 			template: (cmp,state,h) => h('button',{class: 'studio-btn-toolbar', click: _=> cmp.clicked() },
+//           h('span', {title: state.title, style: { 'background-position': state.pos} })),
+//       features: ctx => ({
+//           init: cmp =>
+//               cmp.state.pos = cmp.spritePosition.split(',').map(item => (-parseInt(item) * 16) + 'px').join(' '),
+//       })
+// 	}
+// })
+
+jb.component('studio.toolbar-style',  /* studio_toolbarStyle */ {
+  type: 'group.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('section',{class:'jb-group'},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx))),
+    css: "{\n            display: flex;\n            height: 33px;\n            width: 100%;\n        }\n        >*:not(:last-child) { padding-right: 8px }\n        >* { margin-right: 0 }",
+    features: group_initGroup()
+  })
 })
