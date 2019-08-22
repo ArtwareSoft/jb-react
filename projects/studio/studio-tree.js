@@ -1,184 +1,127 @@
-jb.component('studio.tree-menu', {
-  type: 'menu.option', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'menu.menu', 
+jb.component('studio.tree-menu',  /* studio_treeMenu */ {
+  type: 'menu.option',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: menu_menu({
     options: [
-      {$: 'menu.action', 
-        title: 'Insert Field', 
-        action :{$: 'studio.open-new-profile-dialog', 
-          path: '%$path%', 
-          type: 'table-field', 
-          mode: 'insert-control', 
-          onClose :{$: 'studio.goto-last-edit' }
-        }, 
-        showCondition :{$: 'equals', 
-          path: '%$path%', 
-          type: 'table', 
-          item1 :{ $pipeline: [{$: 'studio.val', path: '%$path%' }, '%$%'] }, 
-          item2: 'table'
-        }
-      }, 
-      {$: 'menu.action', 
-        title: 'Insert', 
-        action :{$: 'studio.open-new-profile-dialog', 
-          path: '%$path%', 
-          type: 'control', 
-          mode: 'insert-control', 
-          onClose :{$: 'studio.goto-last-edit' }
-        }
-      }, 
-      {$: 'menu.action', 
-        title: 'Wrap with group', 
+      menu_action({
+        title: 'Insert Field',
+        action: studio_openNewProfileDialog({
+          path: '%$path%',
+          type: 'table-field',
+          mode: 'insert-control',
+          onClose: studio_gotoLastEdit()
+        }),
+        showCondition: equals(pipeline(studio_val('%$path%'), '%$%'), 'table')
+      }),
+      menu_action({
+        title: 'Insert',
+        action: studio_openNewProfileDialog({
+          path: '%$path%',
+          type: 'control',
+          mode: 'insert-control',
+          onClose: studio_gotoLastEdit()
+        })
+      }),
+      menu_action({
+        title: 'Wrap with group',
         action: [
-          {$: 'studio.wrap-with-group', path: '%$path%' }, 
-          {$: 'on-next-timer', 
-            action: [
-              {$: 'write-value', to: '%$studio/profile_path%', value: '%$path%~controls~0' }, 
-              {$: 'tree.regain-focus' }
-            ]
-          }
+          studio_wrapWithGroup('%$path%'),
+          onNextTimer([writeValue('%$studio/profile_path%', '%$path%~controls~0'), tree_regainFocus()])
         ]
-      }, 
-      {$: 'menu.action', 
-        title: 'Duplicate', 
-        action :{$: 'studio.duplicate-control', path: '%$path%' }, 
-        shortcut: 'Ctrl+D'
-      }, 
-      {$: 'menu.separator' }, 
-      {$: 'menu.action', 
-        title: 'Inteliscript editor', 
-        action :{$: 'studio.open-jb-editor', path: '%$path%' }, 
+      }),
+      menu_action({title: 'Duplicate', action: studio_duplicateControl('%$path%'), shortcut: 'Ctrl+D'}),
+      menu_separator(),
+      menu_action({
+        title: 'Inteliscript editor',
+        action: studio_openJbEditor('%$path%'),
         shortcut: 'Ctrl+I'
-      }, 
-      {$: 'menu.action', 
-        title: 'Context viewer', 
-        action :{$: 'studio.open-context-viewer', path: '%$path%' }
-      }, 
-      {$: 'menu.action', 
-        title: 'Javascript editor', 
-        action :{$: 'studio.edit-source', path: '%$path%' }, 
-        icon: 'code', 
+      }),
+      menu_action({
+        title: 'Context viewer',
+        action: {$: 'studio.open-context-viewer', path: '%$path%'}
+      }),
+      menu_action({
+        title: 'Javascript editor',
+        action: studio_editSource('%$path%'),
+        icon: 'code',
         shortcut: 'Ctrl+J'
-      }, 
-      {$: 'menu.action', 
-        $vars: {
-          compName :{$: 'studio.comp-name', path: '%$path%' }
-        }, 
-        title: 'Goto %$compName%', 
-        action :{$: 'studio.goto-path', path: '%$compName%' }, 
+      }),
+      menu_action({
+        vars: [Var('compName', studio_compName('%$path%'))],
+        title: 'Goto %$compName%',
+        action: studio_gotoPath('%$compName%'),
         showCondition: '%$compName%'
-      }, 
-      {$: 'studio.goto-editor-options', path: '%$path%' }, 
-      {$: 'menu.separator' }, 
-      {$: 'menu.end-with-separator', 
-        options :{$: 'studio.goto-references-options', 
-          action: [
-            {$: 'write-value', to: '%$studio/profile_path%', value: '%%' }, 
-            {$: 'studio.open-control-tree', selection: '%$path%' }
-          ], 
-          path: '%$path%'
-        }
-      }, 
-      {$: 'menu.action', 
-        title: 'Delete', 
-        action :{$: 'studio.delete', path: '%$path%' }, 
-        icon: 'delete', 
+      }),
+      studio_gotoEditorOptions('%$path%'),
+      menu_separator(),
+      menu_endWithSeparator({options: studio_gotoReferencesOptions('%$path%')}),
+      menu_action({
+        title: 'Delete',
+        action: studio_delete('%$path%'),
+        icon: 'delete',
         shortcut: 'Delete'
-      }, 
-      {$: 'menu.action', 
-        title :{
-          $if :{$: 'studio.disabled', path: '%$path%' }, 
-          then: 'Enable', 
-          else: 'Disable'
-        }, 
-        action :{$: 'studio.toggle-disabled', path: '%$path%' }, 
-        icon: 'do_not_disturb', 
+      }),
+      menu_action({
+        title: {$if: studio_disabled('%$path%'), then: 'Enable', else: 'Disable'},
+        action: studio_toggleDisabled('%$path%'),
+        icon: 'do_not_disturb',
         shortcut: 'Ctrl+X'
-      }, 
-      {$: 'menu.action', 
-        title: 'Copy', 
-        action :{$: 'studio.copy', path: '%$path%' }, 
-        icon: 'copy', 
-        shortcut: 'Ctrl+C'
-      }, 
-      {$: 'menu.action', 
-        title: 'Paste', 
-        action :{$: 'studio.paste', path: '%$path%' }, 
-        icon: 'paste', 
-        shortcut: 'Ctrl+V'
-      }, 
-      {$: 'menu.action', 
-        title: 'Undo', 
-        action :{$: 'studio.undo' }, 
-        icon: 'undo', 
-        shortcut: 'Ctrl+Z'
-      }, 
-      {$: 'menu.action', 
-        title: 'Redo', 
-        action :{$: 'studio.redo' }, 
-        icon: 'redo', 
-        shortcut: 'Ctrl+Y'
-      }
+      }),
+      menu_action({title: 'Copy', action: studio_copy('%$path%'), icon: 'copy', shortcut: 'Ctrl+C'}),
+      menu_action({title: 'Paste', action: studio_paste('%$path%'), icon: 'paste', shortcut: 'Ctrl+V'}),
+      menu_action({title: 'Undo', action: studio_undo(), icon: 'undo', shortcut: 'Ctrl+Z'}),
+      menu_action({title: 'Redo', action: studio_redo(), icon: 'redo', shortcut: 'Ctrl+Y'})
     ]
-  }
+  })
 })
 
-jb.component('studio.open-tree-menu', {
+jb.component('studio.open-tree-menu',  /* studio_openTreeMenu */ {
   type: 'action',
   params: [
-    { id: 'path', as: 'string' }
+    {id: 'path', as: 'string'}
   ],
-  impl :{$: 'menu.open-context-menu', menu :{$: 'studio.tree-menu', path: '%$path%'} }
+  impl: menu_openContextMenu({
+    menu: studio_treeMenu('%$path%')
+  })
 })
 
-jb.component('studio.control-tree.nodes', {
-	type: 'tree.nodeModel',
-	impl: function(context) {
+jb.component('studio.control-tree.nodes',  /* studio_controlTree_nodes */ {
+  type: 'tree.nodeModel',
+  impl: function(context) {
 		var currentPath = context.run({ $: 'studio.currentProfilePath' });
 		var compPath = currentPath.split('~')[0] || '';
 		return new jb.studio.ControlTree(compPath + '~impl');
 	}
 })
 
-jb.component('studio.control-tree', {
+jb.component('studio.control-tree',  /* studio_controlTree */ {
   type: 'control',
-  impl :{$: 'group',
+  impl: group({
     controls: [
-      {$: 'tree',
-        nodeModel :{$: 'studio.control-tree.nodes' },
+      tree({
+        nodeModel: studio_controlTree_nodes(),
         features: [
-          {$: 'css.class', class: 'jb-control-tree' },
-          {$: 'tree.selection',
+          css_class('jb-control-tree'),
+          tree_selection({
             databind: '%$studio/profile_path%',
-            onSelection: [
-              {$: 'studio.open-properties' },
-              {$: 'studio.highlight-in-preview',
-                path :{$: 'studio.currentProfilePath' }
-              }
-            ],
-            onRightClick :{$: 'studio.open-tree-menu', path: '%%' },
             autoSelectFirst: true,
-          },
-          {$: 'tree.keyboard-selection',
-            onEnter :{$: 'studio.open-properties', focus: true },
-            onRightClickOfExpanded :{$: 'studio.open-tree-menu', path: '%%' },
-            applyMenuShortcuts :{$: 'studio.tree-menu', path: '%%' },
-//            autoFocus: true,
-          },
-          {$: 'tree.drag-and-drop' },
-//          {$: 'studio.control-tree.refresh-path-changes' },
-          {$: 'studio.watch-script-changes' }
-          // {$: 'tree.onMouseRight',
-          //   action :{$: 'studio.open-tree-menu', path: '%%' }
-          // }
+            onSelection: [studio_openProperties(), studio_highlightInPreview(studio_currentProfilePath())],
+            onRightClick: studio_openTreeMenu('%%')
+          }),
+          tree_keyboardSelection({
+            onEnter: studio_openProperties(true),
+            onRightClickOfExpanded: studio_openTreeMenu('%%'),
+            applyMenuShortcuts: studio_treeMenu('%%')
+          }),
+          tree_dragAndDrop(),
+          studio_watchScriptChanges()
         ]
-      }
+      })
     ],
-    features :[
-        {$: 'css.padding', top: '10' },
-        //{$: 'studio.watch-path', path :{$: 'studio.currentProfilePath' } },
-    ]
-  }
+    features: [css_padding('10')]
+  })
 })
 
 // after model modifications the paths of the selected and expanded nodes may change and the tree should fix it.
@@ -210,18 +153,18 @@ jb.component('studio.control-tree', {
 //   })
 // })
 
-jb.component('studio.open-control-tree', {
+jb.component('studio.open-control-tree',  /* studio_openControlTree */ {
   type: 'action',
-  impl :{$: 'open-dialog',
-    style :{$: 'dialog.studio-floating', id: 'studio-outline', width: '350' },
-    content :{$: 'studio.control-tree' },
-    menu :{$: 'button',
+  impl: openDialog({
+    style: dialog_studioFloating({id: 'studio-outline', width: '350'}),
+    content: studio_controlTree(),
+    menu: button({
       title: ' ',
-      action :{$: 'studio.open-tree-menu', path: '%$studio/profile_path%' },
-      style :{$: 'button.mdl-icon', icon: 'menu' },
-      features :{$: 'css', css: '{ background: none }' }
-    },
+      action: studio_openTreeMenu('%$studio/profile_path%'),
+      style: button_mdlIcon('menu'),
+      features: css('{ background: none }')
+    }),
     title: 'Outline'
-  }
+  })
 })
 

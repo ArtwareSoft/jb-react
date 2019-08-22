@@ -1,95 +1,74 @@
 
-jb.component('studio.data-resources', {
-  type: 'control', 
-  impl :{$: 'group', 
+jb.component('studio.data-resources',  /* studio_dataResources */ {
+  type: 'control',
+  impl: group({
     controls: [
-      {$: 'itemlist', 
-        items: '%$samples%', 
+      itemlist({
+        items: '%$samples%',
         controls: [
-          {$: 'button', 
-            title: '%%', 
-            style :{$: 'button.mdl-flat-ripple' }
-          }
-        ], 
-        style :{$: 'itemlist.ul-li' }, 
-        watchItems: true, 
+          button({title: '%%', style: button_mdlFlatRipple()})
+        ],
+        style: itemlist_ulLi(),
+        watchItems: true,
         itemVariable: 'item'
-      }, 
-      {$: 'button', 
-        title: 'add resource', 
-        style :{$: 'button.mdl-icon', icon: 'add', size: 20 }
-      }, 
-      {$: 'group', 
-        style :{$: 'group.section' }, 
+      }),
+      button({title: 'add resource', style: button_mdlIcon('add')}),
+      group({
+        style: group_section(),
         controls: [
-          {$: 'itemlist', 
-            items :{$: 'list', items: ['1', '2', '3'] }, 
-            style :{$: 'itemlist.ul-li' }, 
-            watchItems: true, 
+          itemlist({
+            items: list('1', '2', '3'),
+            style: itemlist_ulLi(),
+            watchItems: true,
             itemVariable: 'item'
-          }
-        ], 
-        features :{$: 'variable', name: 'selected_in_itemlist', mutable: true }
+          })
+        ],
+        features: variable({name: 'selected_in_itemlist', mutable: true})
+      })
+    ],
+    features: group_wait({
+      for: {
+        $: 'level-up.entries',
+        db: {$: 'level-up.file-db', rootDirectory: '/projects/data-tests/samples'}
       }
-    ], 
-    features :{$: 'group.wait', 
-      for :{$: 'level-up.entries', 
-        db :{$: 'level-up.file-db', rootDirectory: '/projects/data-tests/samples' }
-      }, 
-      resource: 'samples', 
-      mapToResource: '%%'
-    }
-  }
+    })
+  })
 })
 
-jb.component('studio.open-resource', {
-	type: 'action',
-	params: [
-	    { id: 'resource', type: 'data' },
-	    { id: 'id', as: 'string' }
-	], 
-	impl :{$: 'open-dialog',
-		title: '%$id%',
-		style :{$: 'dialog.studio-floating', id: 'resource %$id%', width: 500 },
-		content :{$: 'tree',
-		    nodeModel :{$: 'tree.json-read-only', 
-		      object: '%$resource%', rootPath: '%$id%' 
-		    },
-		    features: [
-	   	        { $: 'css.class', class: 'jb-control-tree'},
-		        { $: 'tree.selection' },
-		        { $: 'tree.keyboard-selection'} 
-		    ] 
-		 },
-	}
+jb.component('studio.open-resource',  /* studio_openResource */ {
+  type: 'action',
+  params: [
+    {id: 'resource', type: 'data'},
+    {id: 'id', as: 'string'}
+  ],
+  impl: openDialog({
+    style: dialog_studioFloating({id: 'resource %$id%', width: 500}),
+    content: tree({
+      nodeModel: tree_jsonReadOnly('%$resource%', '%$id%'),
+      features: [css_class('jb-control-tree'), tree_selection({}), tree_keyboardSelection({})]
+    }),
+    title: '%$id%'
+  })
 })
 
-jb.component('studio.data-resource-menu', {
-  type: 'menu.option', 
-  impl :{$: 'menu.menu', 
-    title: 'Data', 
+jb.component('studio.data-resource-menu',  /* studio_dataResourceMenu */ {
+  type: 'menu.option',
+  impl: menu_menu({
+    title: 'Data',
     options: [
-      {$: 'dynamic-controls', 
-        controlItems :{
-          $pipeline: [
-            ctx => jb.studio.previewjb.resources, 
-            {$: 'keys', obj: '%%' }, 
-            {$: 'filter', 
-              filter :{$: 'not-contains', inOrder: true, text: ':', allText: '%%' }
-            }
-          ]
-        }, 
-        genericControl :{$: 'menu.action', 
-          title: '%$controlItem%', 
-          action :{$: 'studio.open-resource', 
-            resource: function (ctx) {
+      dynamicControls({
+        controlItems: pipeline(ctx => jb.studio.previewjb.resources, keys('%%'), filter(notContains(':', '%%'))),
+        genericControl: menu_action({
+          title: '%$controlItem%',
+          action: studio_openResource(
+            function (ctx) {
                      return jb.path(jb, ['previewWindow', 'jbart_widgets', ctx.exp('%$studio/project%'), 'resources', ctx.exp('%$controlItem%')]);
-                }, 
-            id: '%$controlItem%'
-          }
-        }
-      }
+                },
+            '%$controlItem%'
+          )
+        })
+      })
     ]
-  }
+  })
 })
 
