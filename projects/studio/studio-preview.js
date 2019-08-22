@@ -2,13 +2,20 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       var st = jb.studio;
       st.previewWindow = preview_window;
       st.previewjb = preview_window.jb;
-      st.serverComps = st.previewjb.comps;
+      if (jb.studio.compsHistory.length) {
+        const compsStr = jb.entries(jb.studio.compsHistory.slice(-1)[0].after)
+          .filter(e=>e[1] != st.serverComps[e[0]]).map(e=>[e[0], jb.prettyPrint(e[1])])
+        jb.studio.copyComps && jb.studio.copyComps(compsStr)
+      } else {
+        st.serverComps = st.previewjb.comps;
+      }
       st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
 
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;
       st.previewjb.http_get_cache = {}
       st.previewjb.ctxByPath = {}
+      jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
 
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
@@ -45,10 +52,11 @@ jb.component('studio.preview-widget-impl', { /* studio_previewWidgetImpl */
 
 jb.component('studio.refresh-preview', { /* studio_refreshPreview */
   type: 'action',
-  impl: _ => {
+  impl: ctx => {
     jb.ui.garbageCollectCtxDictionary(true);
     jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
-    jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
+    //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
+    ctx.run(refreshControlById('preview-parent'))
   }
 })
 
@@ -108,12 +116,7 @@ jb.component('studio.data-comp-inspector', { /* studio_dataCompInspector */
 jb.component('studio.preview-widget', { /* studio_previewWidget */ 
   type: 'control',
   params: [
-    {
-      id: 'style',
-      type: 'preview-style',
-      dynamic: true,
-      defaultValue: studio_previewWidgetImpl()
-    },
+    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio_previewWidgetImpl() },
     {id: 'width', as: 'number'},
     {id: 'height', as: 'number'}
   ],

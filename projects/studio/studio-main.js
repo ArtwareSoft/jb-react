@@ -159,7 +159,10 @@ jb.component('studio.all', { /* studio_all */
   impl: group({
     controls: [
       studio_topBar(),
-      studio_previewWidget({width: 1280, height: 520}),
+      group({
+        controls: studio_previewWidget({width: 1280, height: 520}),
+        features: id('preview-parent')
+      }),
       studio_pages(),
       studio_ctxCounters()
     ],

@@ -6,11 +6,17 @@ jb.resource('people',[
 
 
 jb.component('hello-world.main', {
-  type: 'control', 
-  impl :{$: 'group', 
-    style :{$: 'layout.horizontal', spacing: 3 }, 
-    controls: [{$: 'label', title: 'hello world' }]
-  }
+  type: 'control',
+  impl: group({
+    style: layout_horizontal(3),
+    controls: [
+      group({
+        controls: [label('hello world%$second%')],
+        features: {$: 'var', name: 'second', value: '22', mutable: true}
+      })
+    ],
+    features: {$: 'var', name: 'adsa', value: 'asdasdas', mutable: true, globalId: 'mukki'}
+  })
 })
 
 
