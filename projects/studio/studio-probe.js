@@ -39,8 +39,8 @@ st.Probe = class {
             this.handleGaps())
             .catch(e => jb.logException(e,'probe run'))
             .then(() => // resolve all top promises in result.out
-            (this.result || []).reduce((pr,item,i) => 
-                pr.then(_=>Promise.resolve(item.out)).then(resolved=> this.result[i].out =resolved), 
+            (this.result || []).reduce((pr,item,i) =>
+                pr.then(_=>Promise.resolve(item.out)).then(resolved=> this.result[i].out =resolved),
             Promise.resolve())
             )
             .then(() =>{
@@ -145,10 +145,12 @@ st.Probe = class {
 
 const probeEmitter = new jb.rx.Subject()
 
-jb.component('studio.probe', {
-    type:'data',
-    params: [ { id: 'path', as: 'string', dynamic: true } ],
-    impl: (ctx,path) => {
+jb.component('studio.probe',  /* studio_probe */ {
+  type: 'data',
+  params: [
+    {id: 'path', as: 'string', dynamic: true}
+  ],
+  impl: (ctx,path) => {
         const _jb = st.previewjb
         /* Finding the best circuit
     1. direct selection
