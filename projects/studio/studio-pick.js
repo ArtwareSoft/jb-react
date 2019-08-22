@@ -1,64 +1,5 @@
 (function() {
-var st = jb.studio;
-
-jb.component('studio.pick', {
-    type: 'action',
-    params: [
-        { id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},
-        { id: 'onSelect', type:'action', dynamic:true }
-    ],
-    impl :{$: 'open-dialog',
-        $vars: { pickSelection: ctx =>
-            ctx.vars.pickSelection || {} },
-        style: {$: 'dialog.studio-pick-dialog', from: '%$from%'},
-        content: {$: 'label', title: ''}, // dummy
-        onOK: ctx =>
-            ctx.componentContext.params.onSelect(ctx.setData(ctx.vars.pickSelection.ctx))
-     }
-})
-
-jb.component('dialog.studio-pick-dialog', {
-    hidden: true,
-    type: 'dialog.style',
-    params: [
-        { id: 'from', as: 'string' },
-    ],
-    impl: {$: 'custom-style',
-          template: (cmp,state,h) => h('div',{ class: 'jb-dialog' },[
-h('div',{ class: 'edge top', style: { width: state.width + 'px', top: state.top + 'px', left: state.left + 'px' }}) ,
-h('div',{ class: 'edge left', style: { height: state.height +'px', top: state.top + 'px', left: state.left + 'px' }}),
-h('div',{ class: 'edge right', style: { height: state.height +'px', top: state.top + 'px', left: (state.left + state.width) + 'px' }}) ,
-h('div',{ class: 'edge bottom', style: { width: state.width + 'px', top: (state.top + state.height) +'px', left: state.left + 'px' }}) ,
-h('div',{ class: 'title' + (state.titleBelow ? ' bottom' : ''), style: { top: state.titleTop + 'px', left: state.titleLeft + 'px'} },[
-            h('div',{ class: 'text'},state.title),
-            h('div',{ class: 'triangle'}),
-    ])]),
-        css: `
->.edge {
-    z-index: 6001;
-    position: absolute;
-    background: red;
-    box-shadow: 0 0 1px 1px gray;
-    width: 1px; height: 1px;
-    cursor: pointer;
-}
->.title {
-    z-index: 6001;
-    position: absolute;
-    font: 14px arial; padding: 0; cursor: pointer;
-    transition:top 100ms, left 100ms;
-}
->.title .triangle {	width:0;height:0; border-style: solid; 	border-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}
->.title .text {	background: #e0e0e0; font: 14px arial; padding: 3px; }
->.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}
->.title.bottom .text { transform: translateY(6px);}
-                `,
-            features: [
-                { $: 'dialog-feature.studio-pick', from: '%$from%' },
-            ]
-    }
-})
-
+const st = jb.studio;
 
 jb.component('dialog-feature.studio-pick', {
     type: 'dialog-feature',
@@ -105,6 +46,48 @@ jb.component('dialog-feature.studio-pick', {
               })
         }
     })
+})
+
+jb.component('dialog.studio-pick-dialog', {
+    hidden: true,
+    type: 'dialog.style',
+    params: [
+        { id: 'from', as: 'string' },
+    ],
+    impl: {$: 'custom-style',
+          template: (cmp,state,h) => h('div',{ class: 'jb-dialog' },[
+h('div',{ class: 'edge top', style: { width: state.width + 'px', top: state.top + 'px', left: state.left + 'px' }}) ,
+h('div',{ class: 'edge left', style: { height: state.height +'px', top: state.top + 'px', left: state.left + 'px' }}),
+h('div',{ class: 'edge right', style: { height: state.height +'px', top: state.top + 'px', left: (state.left + state.width) + 'px' }}) ,
+h('div',{ class: 'edge bottom', style: { width: state.width + 'px', top: (state.top + state.height) +'px', left: state.left + 'px' }}) ,
+h('div',{ class: 'title' + (state.titleBelow ? ' bottom' : ''), style: { top: state.titleTop + 'px', left: state.titleLeft + 'px'} },[
+            h('div',{ class: 'text'},state.title),
+            h('div',{ class: 'triangle'}),
+    ])]),
+        css: `
+>.edge {
+    z-index: 6001;
+    position: absolute;
+    background: red;
+    box-shadow: 0 0 1px 1px gray;
+    width: 1px; height: 1px;
+    cursor: pointer;
+}
+>.title {
+    z-index: 6001;
+    position: absolute;
+    font: 14px arial; padding: 0; cursor: pointer;
+    transition:top 100ms, left 100ms;
+}
+>.title .triangle {	width:0;height:0; border-style: solid; 	border-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}
+>.title .text {	background: #e0e0e0; font: 14px arial; padding: 3px; }
+>.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}
+>.title.bottom .text { transform: translateY(6px);}
+                `,
+            features: [
+                { $: 'dialog-feature.studio-pick', from: '%$from%' },
+            ]
+    }
 })
 
 function pathFromElem(_window,profElem) {
@@ -195,7 +178,7 @@ st.highlight = function(elems) {
     jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
 }
 
-jb.component('studio.highlight-in-preview',{
+jb.component('studio.highlight-in-preview', {
     type: 'action',
     params: [
         { id: 'path', as: 'string' }
@@ -219,6 +202,22 @@ jb.component('studio.highlight-in-preview',{
 
         jb.studio.highlight(elems);
   }
+})
+
+jb.component('studio.pick', {
+    type: 'action',
+    params: [
+        { id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},
+        { id: 'onSelect', type:'action', dynamic:true }
+    ],
+    impl :{$: 'open-dialog',
+        $vars: { pickSelection: ctx =>
+            ctx.vars.pickSelection || {} },
+        style: {$: 'dialog.studio-pick-dialog', from: '%$from%'},
+        content: {$: 'label', title: ''}, // dummy
+        onOK: ctx =>
+            ctx.componentContext.params.onSelect(ctx.setData(ctx.vars.pickSelection.ctx))
+     }
 })
 
 st.closestCtxInPreview = _path => {
