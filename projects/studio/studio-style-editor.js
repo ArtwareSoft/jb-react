@@ -25,7 +25,7 @@ jb.component('studio.open-style-menu', {
           icon: 'build',
           action : [
             {$: 'studio.make-local', path: '%$path%' },
-            {$: 'studio.open-style-editor', path: '%$styleSource/innerPath%' },
+            {$: 'studio.open-style-editor', path: '%$styleSource/innerPath%', $recursive: true },
             {$: 'studio.open-properties' },
           ],
           showCondition: "%$styleSource/type% == 'global'",
