@@ -355,3 +355,34 @@ jb.component('dialog.studio-multiline-edit',  /* dialog_studioMultilineEdit */ {
     ]
   })
 })
+
+jb.component('studio.toolbar-style', {
+  type: 'group.style',
+  impl :{$: 'custom-style',
+    features :{$: 'group.init-group' },
+    template: (cmp,state,h) => h('section',{class:'jb-group'},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx))),
+    css: `{
+            display: flex;
+            height: 33px;
+            width: 100%;
+        }
+        >*:not(:last-child) { padding-right: 8px }
+        >* { margin-right: 0 }`
+  }
+})
+
+jb.component('studio_button.toolbarButton', {
+	type: 'button.style',
+	params: [
+		{ id: 'spritePosition', as: 'string', defaultValue: '0,0' }
+	],
+	impl: {$: 'custom-style',
+			template: (cmp,state,h) => h('button',{class: 'studio-btn-toolbar', click: _=> cmp.clicked() },
+          h('span', {title: state.title, style: { 'background-position': state.pos} })),
+      features: ctx => ({
+          init: cmp =>
+              cmp.state.pos = cmp.spritePosition.split(',').map(item => (-parseInt(item) * 16) + 'px').join(' '),
+      })
+	}
+})

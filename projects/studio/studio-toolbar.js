@@ -17,7 +17,7 @@ jb.component('studio.pickAndOpen', {
 jb.component('studio.toolbar', {
   type: 'control', 
   impl :{$: 'group', 
-    style :{$: 'studio-toolbar' }, 
+    style :{$: 'studio.toolbar-style' }, 
     controls: [
       {$: 'label', 
         title: '', 
@@ -138,7 +138,7 @@ jb.component('studio_button.toolbarButton', {
 	}
 })
 
-jb.component('studio-toolbar', {
+jb.component('studio.toolbar-style', {
   type: 'group.style',
   impl :{$: 'custom-style',
     features :{$: 'group.init-group' },
