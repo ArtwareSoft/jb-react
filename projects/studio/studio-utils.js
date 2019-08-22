@@ -59,24 +59,6 @@ jb.component('studio.goto-last-edit',  /* studio_gotoLastEdit */ {
 	}
 })
 
-jb.component('studio.goto-path', {
-	type: 'action',
-	params: [
-		{ id: 'path', as: 'string' },
-	],
-	impl :{$runActions: [
-		{$: 'dialog.close-containing-popup' },
-		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' },
-		{$if :{$: 'studio.is-of-type', type: 'control,table-field', path: '%$path%'},
-			then: {$runActions: [
-				{$: 'studio.open-control-tree'},
-//				{$: 'studio.open-properties', focus: true}
-			]},
-			else :{$: 'studio.open-component-in-jb-editor', path: '%$path%' }
-		}
-	]}
-})
-
 jb.component('studio.project-source',  /* studio_projectSource */ {
   params: [
     {id: 'project', as: 'string', defaultValue: '%$studio/project%'}
