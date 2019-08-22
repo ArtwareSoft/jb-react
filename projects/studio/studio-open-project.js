@@ -1,12 +1,3 @@
-jb.component('studio.open-project', {
-  type: 'action', 
-  impl :{$: 'open-dialog', 
-    title: 'Open project', 
-    style :{$: 'dialog.dialog-ok-cancel', okLabel: 'OK', cancelLabel: 'Cancel' }, 
-    content :{$: 'studio.choose-project' }
-  }
-})
-
 jb.component('studio.goto-project', {
   type: 'action', 
   impl :{$: 'runActions', 
@@ -62,3 +53,11 @@ jb.component('studio.choose-project', {
   }
 })
 
+jb.component('studio.open-project', {
+  type: 'action', 
+  impl :{$: 'open-dialog', 
+    title: 'Open project', 
+    style :{$: 'dialog.dialog-ok-cancel', okLabel: 'OK', cancelLabel: 'Cancel' }, 
+    content :{$: 'studio.choose-project' }
+  }
+})
