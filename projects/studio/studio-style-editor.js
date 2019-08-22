@@ -166,6 +166,42 @@ jb.component('studio.style-editor', {
   }
 })
 
+jb.component('studio.style-source', {
+  params: [
+    { id: 'path', as: 'string' }
+  ],
+  impl: (ctx,path) => {
+      var st = jb.studio;
+      var style = st.valOfPath(path);
+      var compName = jb.compName(style);
+      if (compName == 'custom-style')
+        return { type: 'inner', path: path, style : style }
+      var comp = compName && st.getComp(compName);
+      if (comp && jb.compName(comp.impl) == 'custom-style')
+          return { type: 'global', path: compName, style: comp.impl, innerPath: path }
+  }
+})
+
+jb.component('studio.open-style-editor', {
+  type: 'action',
+  params: [{ id: 'path', as: 'string' }],
+  impl :{$: 'open-dialog',
+    $vars: {
+      styleSource :{$: 'studio.style-source', path: '%$path%' }
+    },
+    style :{$: 'dialog.studio-floating', id: 'style editor', width: '800' },
+    content :{$: 'studio.style-editor', path: '%$path%' },
+    features: {$: 'dialog-feature.resizer'},
+    menu :{$: 'button',
+      title: 'style menu',
+      action :{$: 'studio.open-style-menu', path: '%$path%' },
+      style :{$: 'button.mdl-icon', icon: 'menu' },
+      features :{$: 'css', css: 'button { background: transparent }' }
+    },
+    title: 'Style Editor - %$styleSource/path%'
+  }
+})
+
 jb.component('studio.style-editor-options', {
 	type: 'menu.option',
 	params: [
@@ -198,42 +234,4 @@ jb.component('studio.style-editor-options', {
 			},
 		]
     }
-})
-
-
-jb.component('studio.style-source', {
-  params: [
-    { id: 'path', as: 'string' }
-  ],
-  impl: (ctx,path) => {
-      var st = jb.studio;
-      var style = st.valOfPath(path);
-      var compName = jb.compName(style);
-      if (compName == 'custom-style')
-        return { type: 'inner', path: path, style : style }
-      var comp = compName && st.getComp(compName);
-      if (comp && jb.compName(comp.impl) == 'custom-style')
-          return { type: 'global', path: compName, style: comp.impl, innerPath: path }
-  }
-})
-
-
-jb.component('studio.open-style-editor', {
-  type: 'action',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'open-dialog',
-    $vars: {
-      styleSource :{$: 'studio.style-source', path: '%$path%' }
-    },
-    style :{$: 'dialog.studio-floating', id: 'style editor', width: '800' },
-    content :{$: 'studio.style-editor', path: '%$path%' },
-    features: {$: 'dialog-feature.resizer'},
-    menu :{$: 'button',
-      title: 'style menu',
-      action :{$: 'studio.open-style-menu', path: '%$path%' },
-      style :{$: 'button.mdl-icon', icon: 'menu' },
-      features :{$: 'css', css: 'button { background: transparent }' }
-    },
-    title: 'Style Editor - %$styleSource/path%'
-  }
 })
