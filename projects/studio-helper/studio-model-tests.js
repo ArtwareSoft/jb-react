@@ -1,7 +1,3 @@
-(function() {
-const { dataTest, pipeline, pipe, join, list, writeValue, splice, contains, equals, and, not, assign, prop, assignWithIndex, obj, $if, count, data_switch, data_case, runActions} = jb.macros
-const { studio_val } = jb.macros
-
 jb.component('studio-data-test.list-for-tests', {
 	 impl :{$: 'list' }
 })
@@ -233,5 +229,3 @@ jb.component('studio-data-test.pathOfText-prop-after-array', {
 		expectedResult : ctx => ctx.data.join('~') == "style"
  },
 })
-
-})()

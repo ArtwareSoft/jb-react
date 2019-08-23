@@ -170,20 +170,20 @@ jb.component('group.tabs', {
   }}
 })
 
-jb.component('toolbar.simple', {
-  type: 'group.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('div',{class:'toolbar'},
-        state.ctrls.map(ctrl=> h(ctrl))),
-    css: `{
-            display: flex;
-            background: #F5F5F5;
-            height: 33px;
-            width: 100%;
-            border-bottom: 1px solid #D9D9D9;
-            border-top: 1px solid #fff;
-        }
-        >* { margin-right: 0 }`,
-    features :{$: 'group.init-group'}
-  }
-})
+// jb.component('toolbar.simple', {
+//   type: 'group.style',
+//   impl :{$: 'custom-style',
+//     template: (cmp,state,h) => h('div',{class:'toolbar'},
+//         state.ctrls.map(ctrl=> h(ctrl))),
+//     css: `{
+//             display: flex;
+//             background: #F5F5F5;
+//             height: 33px;
+//             width: 100%;
+//             border-bottom: 1px solid #D9D9D9;
+//             border-top: 1px solid #fff;
+//         }
+//         >* { margin-right: 0 }`,
+//     features :{$: 'group.init-group'}
+//   }
+// })

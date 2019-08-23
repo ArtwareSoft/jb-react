@@ -6,8 +6,6 @@ jb.component('delayedObj', {
     jb.delay(1).then(_=>obj)
 })
 
-const {delayedObj} = jb.macros
-
 jb.resource('person', {
   name: "Homer Simpson",
   male: true,
@@ -428,7 +426,12 @@ jb.component('data-test.pretty-print-macro-vars', {
   })
 })
 
-
+jb.component('data-test.macro-ns', {
+  impl: dataTest({
+    calculate: json.stringify(()=>({a:5})),
+    expectedResult: contains(['a','5'])
+  })
+})
 
 
 // jb.component('data-test.http-get', {
