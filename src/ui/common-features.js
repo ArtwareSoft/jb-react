@@ -88,6 +88,24 @@ jb.component('group.data', {
   })
 })
 
+
+jb.component('html-attribute', {
+  type: 'feature',
+	description: 'set attribute to html element and give it value',
+  params: [
+    { id: 'attribute', mandatory: true, as: 'string' },
+    { id: 'value', mandatory: true, as: 'string' }
+  ],
+  impl: (ctx,attribute,value) => ({
+    templateModifier: (vdom,cmp,state) => {
+        vdom.attributes = vdom.attributes || {};
+        vdom.attributes[attribute] = value
+        return vdom;
+      }
+  })
+})
+
+
 jb.component('id', {
   type: 'feature',
 	description: 'adds id to html element',
