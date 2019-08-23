@@ -91,7 +91,7 @@ jb.component('studio-dialog-feature.refresh-title', {
 	})
 })
 
-jb.component('studio.code-mirror-mode', { /* studio_codeMirrorMode */
+jb.component('studio.code-mirror-mode', { /* studio.codeMirrorMode */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -104,16 +104,16 @@ jb.component('studio.code-mirror-mode', { /* studio_codeMirrorMode */
 	}
 })
 
-jb.component('studio.open-multiline-edit', { /* studio_openMultilineEdit */
+jb.component('studio.open-multiline-edit', { /* studio.openMultilineEdit */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: openDialog({
-    style: dialog_studioMultilineEdit(),
+    style: dialog.studioMultilineEdit(),
     content: editableText({
-      databind: studio_ref('%$path%'),
-      style: editableText_codemirror({mode: studio_codeMirrorMode('%$path%')})
+      databind: studio.ref('%$path%'),
+      style: editableText.codemirror({mode: studio.codeMirrorMode('%$path%')})
     })
   })
 })
@@ -144,13 +144,13 @@ jb.component('dialog.studio-floating',  /* dialog_studioFloating */ {
   })
 })
 
-jb.component('studio.open-responsive-phone-popup', { /* studio_openResponsivePhonePopup */ 
+jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePhonePopup */ 
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: openDialog({
-    style: dialog_studioFloating('responsive'),
+    style: dialog.studioFloating('responsive'),
     content: tabs({
       tabs: dynamicControls({
         controlItems: asIs(
@@ -174,35 +174,35 @@ jb.component('studio.open-responsive-phone-popup', { /* studio_openResponsivePho
         ),
         genericControl: group({
           title: '%$controlItem/id%',
-          style: propertySheet_titlesLeft({vSpacing: 20, hSpacing: 20, titleWidth: 100}),
+          style: propertySheet.titlesLeft({vSpacing: 20, hSpacing: 20, titleWidth: 100}),
           controls: [
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/width%',
               title: 'width',
-              style: editableNumber_slider(),
+              style: editableNumber.slider(),
               min: '%$controlItem/width/min%',
               max: '%$controlItem/width/max%',
               features: [
-                field_default('%$controlItem/width/default%'),
-                field_subscribe(studio_setPreviewSize('%%'), true)
+                field.default('%$controlItem/width/default%'),
+                field.subscribe(studio.setPreviewSize('%%'), true)
               ]
             }),
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/height%',
               title: 'height',
-              style: editableNumber_slider(),
+              style: editableNumber.slider(),
               min: '%$controlItem/height/min%',
               max: '%$controlItem/height/max%',
               features: [
-                field_default('%$controlItem/height/default%'),
-                field_subscribe(studio_setPreviewSize(undefined, '%%'), true)
+                field.default('%$controlItem/height/default%'),
+                field.subscribe(studio.setPreviewSize(undefined, '%%'), true)
               ]
             })
           ],
           features: [css('{ padding-left: 12px; padding-top: 7px }')]
         })
       }),
-      style: tabs_simple()
+      style: tabs.simple()
     }),
     title: 'responsive'
   })

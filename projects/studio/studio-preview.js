@@ -34,7 +34,7 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
 			}
 }
 
-jb.component('studio.preview-widget-impl', { /* studio_previewWidgetImpl */
+jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
     template: (cmp,state,h) => h('iframe', {
@@ -50,7 +50,7 @@ jb.component('studio.preview-widget-impl', { /* studio_previewWidgetImpl */
   })
 })
 
-jb.component('studio.refresh-preview', { /* studio_refreshPreview */
+jb.component('studio.refresh-preview', { /* studio.refreshPreview */
   type: 'action',
   impl: ctx => {
     jb.ui.garbageCollectCtxDictionary(true);
@@ -60,7 +60,7 @@ jb.component('studio.refresh-preview', { /* studio_refreshPreview */
   }
 })
 
-jb.component('studio.set-preview-size', { /* studio_setPreviewSize */
+jb.component('studio.set-preview-size', { /* studio.setPreviewSize */
   type: 'action',
   params: [
     {id: 'width', as: 'number'},
@@ -79,7 +79,7 @@ jb.component('studio.set-preview-size', { /* studio_setPreviewSize */
   }
 })
 
-jb.component('studio.wait-for-preview-iframe', { /* studio_waitForPreviewIframe */
+jb.component('studio.wait-for-preview-iframe', { /* studio.waitForPreviewIframe */
   impl: _ =>
     jb.ui.waitFor(()=>
       jb.studio.previewWindow)
@@ -93,7 +93,7 @@ jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studi
         return jb.resources.studio.page ? [{page, ctrl}] : []
       });
 
-jb.component('studio.data-comp-inspector', { /* studio_dataCompInspector */
+jb.component('studio.data-comp-inspector', { /* studio.dataCompInspector */
   type: 'control',
   impl: group({
     controls: [
@@ -113,10 +113,15 @@ jb.component('studio.data-comp-inspector', { /* studio_dataCompInspector */
   })
 })
 
-jb.component('studio.preview-widget', { /* studio_previewWidget */ 
+jb.component('studio.preview-widget', { /* studio.previewWidget */ 
   type: 'control',
   params: [
-    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio_previewWidgetImpl() },
+    {
+      id: 'style',
+      type: 'preview-style',
+      dynamic: true,
+      defaultValue: studio.previewWidgetImpl()
+    },
     {id: 'width', as: 'number'},
     {id: 'height', as: 'number'}
   ],

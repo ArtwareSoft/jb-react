@@ -1,6 +1,6 @@
 jb.resource('studio',{});
 
-jb.component('studio.cmps-of-project', { /* studio_cmpsOfProject */
+jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
   type: 'data',
   params: [
     {id: 'project', as: 'string'}
@@ -10,34 +10,34 @@ jb.component('studio.cmps-of-project', { /* studio_cmpsOfProject */
               .filter(id=>id.split('.')[0] == prj) : []
 })
 
-jb.component('studio.project-pages', { /* studio_projectPages */
+jb.component('studio.project-pages', { /* studio.projectPages */
   type: 'data',
   impl: pipeline(
-    studio_cmpsOfProject('%$studio/project%'),
-    filter(studio_isOfType('%%', 'control')),
+    studio.cmpsOfProject('%$studio/project%'),
+    filter(studio.isOfType('%%', 'control')),
     suffix('.')
   )
 })
 
-jb.component('studio.pages', { /* studio_pages */
+jb.component('studio.pages', { /* studio.pages */
   type: 'control',
   impl: group({
     title: 'pages',
-    style: layout_horizontal(),
+    style: layout.horizontal(),
     controls: [
       button({
         title: 'new page',
-        action: studio_openNewPage(),
-        style: button_mdlIcon12('add'),
+        action: studio.openNewPage(),
+        style: button.mdlIcon12('add'),
         features: css('{margin: 5px}')
       }),
       itemlist({
-        items: studio_projectPages(),
-        controls: label({title: extractSuffix('.'), features: css_class('studio-page')}),
-        style: itemlist_horizontal(),
+        items: studio.projectPages(),
+        controls: label({title: extractSuffix('.'), features: css.class('studio-page')}),
+        style: itemlist.horizontal(),
         features: [
           id('pages'),
-          itemlist_selection({
+          itemlist.selection({
             databind: '%$studio/page%',
             onSelection: writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
             autoSelectFirst: true
@@ -52,13 +52,13 @@ jb.component('studio.pages', { /* studio_pages */
       css(
         '{ background: #F5F5F5; position: absolute; bottom: 0; left: 0; width: 100%; border-top: 1px solid #aaa}'
       ),
-      group_wait({for: studio_waitForPreviewIframe(), loadingControl: label({})}),
-      studio_watchComponents()
+      group.wait({for: studio.waitForPreviewIframe(), loadingControl: label({})}),
+      studio.watchComponents()
     ]
   })
 })
 
-jb.component('studio.ctx-counters', { /* studio_ctxCounters */
+jb.component('studio.ctx-counters', { /* studio.ctxCounters */
   type: 'control',
   impl: label({
     title: ctx => (performance.memory.usedJSHeapSize / 1000000)  + 'M',
@@ -69,82 +69,82 @@ jb.component('studio.ctx-counters', { /* studio_ctxCounters */
   })
 })
 
-jb.component('studio.main-menu', { /* studio_mainMenu */
+jb.component('studio.main-menu', { /* studio.mainMenu */
   type: 'menu.option',
-  impl: menu_menu({
+  impl: menu.menu({
     title: 'main',
     options: [
-      menu_menu({
+      menu.menu({
         title: 'File',
         options: [
-          menu_action({title: 'New Project', action: studio_openNewProject(), icon: 'new'}),
-          menu_action({title: 'Open Project ...', action: studio_openProject()}),
-          menu_action({title: 'Save', action: studio_saveComponents(), icon: 'save', shortcut: 'Ctrl+S'}),
-          menu_action({title: 'Force Save', action: studio_saveComponents(true), icon: 'save'}),
-          menu_action({title: 'Source ...', action: studio_editSource(studio_currentProfilePath())})
+          menu.action({title: 'New Project', action: studio.openNewProject(), icon: 'new'}),
+          menu.action({title: 'Open Project ...', action: studio.openProject()}),
+          menu.action({title: 'Save', action: studio.saveComponents(), icon: 'save', shortcut: 'Ctrl+S'}),
+          menu.action({title: 'Force Save', action: studio.saveComponents(true), icon: 'save'}),
+          menu.action({title: 'Source ...', action: studio.editSource(studio.currentProfilePath())})
         ]
       }),
-      menu_menu({
+      menu.menu({
         title: 'View',
         options: [
-          menu_action({title: 'Refresh Preview', action: studio_refreshPreview()}),
-          menu_action({title: 'Redraw Studio', action: studio_redrawStudio()}),
-          menu_action({title: 'Edit source', action: studio_editSource()}),
-          menu_action({title: 'Outline', action: studio_openControlTree()}),
-          menu_action({
+          menu.action({title: 'Refresh Preview', action: studio.refreshPreview()}),
+          menu.action({title: 'Redraw Studio', action: studio.redrawStudio()}),
+          menu.action({title: 'Edit source', action: studio.editSource()}),
+          menu.action({title: 'Outline', action: studio.openControlTree()}),
+          menu.action({
             title: 'Inteliscript Editor',
-            action: studio_openJbEditor({path: studio_currentProfilePath()})
+            action: studio.openJbEditor({path: studio.currentProfilePath()})
           }),
-          menu_action({
+          menu.action({
             title: 'Disable probe',
             action: ctx => jb.studio.probeDisabled = true,
             showCondition: ctx => !jb.studio.probeDisabled
           }),
-          menu_action({
+          menu.action({
             title: 'Enable probe',
             action: ctx => jb.studio.probeDisabled = false,
             showCondition: ctx => jb.studio.probeDisabled
           })
         ]
       }),
-      studio_insertControlMenu(),
-      studio_dataResourceMenu()
+      studio.insertControlMenu(),
+      studio.dataResourceMenu()
     ]
   })
 })
 
-jb.component('studio.top-bar', { /* studio_topBar */
+jb.component('studio.top-bar', { /* studio.topBar */
   type: 'control',
   impl: group({
     title: 'top bar',
-    style: layout_horizontal('3'),
+    style: layout.horizontal('3'),
     controls: [
       image({
         url: '/projects/studio/css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
-        style: image_default(),
-        features: css_margin({top: '15', left: '5'})
+        style: image.default(),
+        features: css.margin({top: '15', left: '5'})
       }),
       group({
         title: 'title and menu',
-        style: layout_vertical('17'),
+        style: layout.vertical('17'),
         controls: [
-          label({title: 'message', style: label_studioMessage()}),
+          label({title: 'message', style: label.studioMessage()}),
           label({
             title: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
-            style: label_span(),
+            style: label.span(),
             features: css('{ font: 20px Arial; margin-left: 6px; }')
           }),
           group({
             title: 'menu and toolbar',
-            style: layout_flex('space-between'),
+            style: layout.flex('space-between'),
             controls: [
-              menu_control({menu: studio_mainMenu(), style: menuStyle_pulldown({}), features: css_height('30')}),
-              studio_toolbar(),
-              studio_searchComponent()
+              menu.control({menu: studio.mainMenu(), style: menuStyle.pulldown({}), features: css.height('30')}),
+              studio.toolbar(),
+              studio.searchComponent()
             ],
-            features: [css_width('1040')]
+            features: [css.width('1040')]
           })
         ],
         features: css('{ padding-left: 18px; width: 100%; }')
@@ -154,50 +154,50 @@ jb.component('studio.top-bar', { /* studio_topBar */
   })
 })
 
-jb.component('studio.all', { /* studio_all */
+jb.component('studio.all', { /* studio.all */
   type: 'control',
   impl: group({
     controls: [
-      studio_topBar(),
+      studio.topBar(),
       group({
-        controls: studio_previewWidget({width: 1280, height: 520}),
+        controls: studio.previewWidget({width: 1280, height: 520}),
         features: id('preview-parent')
       }),
-      studio_pages(),
-      studio_ctxCounters()
+      studio.pages(),
+      studio.ctxCounters()
     ],
     features: [
-      group_data({data: '%$studio/project%', watch: true}),
-      feature_init(urlHistory_mapStudioUrlToResource('studio'))
+      group.data({data: '%$studio/project%', watch: true}),
+      feature.init(urlHistory.mapStudioUrlToResource('studio'))
     ]
   })
 })
 
-jb.component('studio.dynamic', { /* studio_dynamic */
+jb.component('studio.dynamic', { /* studio.dynamic */
   type: 'control',
   impl: group({
     title: 'top bar',
-    style: layout_horizontal('3'),
+    style: layout.horizontal('3'),
     controls: [
       image({
         url: '/projects/studio/css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
-        style: image_default(),
-        features: css_margin({top: '15', left: '5'})
+        style: image.default(),
+        features: css.margin({top: '15', left: '5'})
       }),
       group({
         title: 'title and menu',
-        style: layout_vertical('17'),
+        style: layout.vertical('17'),
         controls: [
-          label({title: 'message', style: label_studioMessage()}),
+          label({title: 'message', style: label.studioMessage()}),
           group({
-            style: layout_flex('space-between'),
+            style: layout.flex('space-between'),
             controls: [
-              studio_toolbar(),
-              studio_searchComponent()
+              studio.toolbar(),
+              studio.searchComponent()
             ],
-            features: [css_width('1040')]
+            features: [css.width('1040')]
           })
         ],
         features: css('{ padding-left: 18px; width: 100%; }')
@@ -207,14 +207,14 @@ jb.component('studio.dynamic', { /* studio_dynamic */
   })
 })
 
-jb.component('studio.path-hyperlink', { /* studio_pathHyperlink */ 
+jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */ 
   type: 'control',
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {id: 'prefix', as: 'string'}
   ],
   impl: group({
-    style: layout_horizontal('9'),
+    style: layout.horizontal('9'),
     controls: [
       label('%$prefix%'),
       button({
@@ -223,9 +223,9 @@ jb.component('studio.path-hyperlink', { /* studio_pathHyperlink */
 	  		const title = jb.studio.shortTitle(path) || '',compName = jb.studio.compNameOfPath(path) || '';
 	  		return title == compName ? title : compName + ' ' + title;
 	  	},
-        action: studio_gotoPath('%$path%'),
-        style: button_href(),
-        features: feature_hoverTitle('%$path%')
+        action: studio.gotoPath('%$path%'),
+        style: button.href(),
+        features: feature.hoverTitle('%$path%')
       })
     ]
   })

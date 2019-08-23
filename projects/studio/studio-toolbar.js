@@ -1,88 +1,88 @@
-jb.component('studio.pickAndOpen', { /* studio_pickAndOpen */
+jb.component('studio.pickAndOpen', { /* studio.pickAndOpen */
   type: 'action',
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
   ],
-  impl: studio_pick(
+  impl: studio.pick(
     '%$from%',
     [
       writeValue('%$studio/last_pick_selection%', '%%'),
       writeValue('%$studio/profile_path%', '%path%'),
-      studio_openControlTree(),
-      studio_openProperties()
+      studio.openControlTree(),
+      studio.openProperties()
     ]
   )
 })
 
-jb.component('studio.toolbar', { /* studio_toolbar */ 
+jb.component('studio.toolbar', { /* studio.toolbar */ 
   type: 'control',
   impl: group({
-    style: studio_toolbarStyle(),
+    style: studio.toolbarStyle(),
     controls: [
       label({title: '', features: css('{ width: 170px }')}),
-      button({title: 'Select', action: studio_pickAndOpen(), style: button_mdlIcon('call_made')}),
+      button({title: 'Select', action: studio.pickAndOpen(), style: button.mdlIcon('call_made')}),
       button({
         title: 'Save',
-        action: studio_saveComponents(),
-        style: button_mdlIcon('save'),
-        features: ctrlAction(studio_saveComponents(true))
+        action: studio.saveComponents(),
+        style: button.mdlIcon('save'),
+        features: ctrlAction(studio.saveComponents(true))
       }),
       button({
         title: 'Refresh Preview',
-        action: studio_refreshPreview(),
-        style: button_mdlIcon('refresh')
+        action: studio.refreshPreview(),
+        style: button.mdlIcon('refresh')
       }),
-      button({title: 'Javascript', action: studio_editAsMacro(), style: button_mdlIcon('code')}),
+      button({title: 'Javascript', action: studio.editAsMacro(), style: button.mdlIcon('code')}),
       button({
         title: 'Outline',
-        action: studio_openControlTree(),
-        style: button_mdlIcon('format_align_left')
+        action: studio.openControlTree(),
+        style: button.mdlIcon('format_align_left')
       }),
       button({
         title: 'Properties',
-        action: studio_openProperties('true'),
-        style: button_mdlIcon('storage')
+        action: studio.openProperties('true'),
+        style: button.mdlIcon('storage')
       }),
       button({
         title: 'jbEditor',
-        action: studio_openComponentInJbEditor('%$studio/project%.%$studio/page%'),
-        style: button_mdlIcon('build'),
-        features: ctrlAction(studio_openJbEditor({path: '%$studio/profile_path%', newWindow: true}))
+        action: studio.openComponentInJbEditor('%$studio/project%.%$studio/page%'),
+        style: button.mdlIcon('build'),
+        features: ctrlAction(studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true}))
       }),
       button({
         title: 'Event Tracker',
-        action: studio_openEventTracker(),
-        style: button_mdlIcon('hearing'),
-        features: ctrlAction(studio_openEventTracker('true'))
+        action: studio.openEventTracker(),
+        style: button.mdlIcon('hearing'),
+        features: ctrlAction(studio.openEventTracker('true'))
       }),
       button({
         title: 'History',
-        action: studio_openScriptHistory(),
-        style: button_mdlIcon('pets')
+        action: studio.openScriptHistory(),
+        style: button.mdlIcon('pets')
       }),
       button({
         title: 'Show Data',
         action: {$: 'studio.showProbeData'},
-        style: button_mdlIcon('input')
+        style: button.mdlIcon('input')
       }),
       button({
         title: 'Insert Control',
-        action: studio_openNewProfileDialog({type: 'control', mode: 'insert-control', onClose: studio_gotoLastEdit()}),
-        style: button_mdlIcon('add')
+        action: studio.openNewProfileDialog({type: 'control', mode: 'insert-control', onClose: studio.gotoLastEdit()}),
+        style: button.mdlIcon('add')
       }),
       button({
         title: 'Responsive',
-        action: studio_openResponsivePhonePopup(),
-        style: button_mdlIcon('tablet_android')
+        action: studio.openResponsivePhonePopup(),
+        style: button.mdlIcon('tablet_android')
       })
     ],
     features: [
-      feature_keyboardShortcut('Alt+C', studio_pickAndOpen()),
-      feature_keyboardShortcut('Alt++', studio_openNewProfileDialog({type: 'control', mode: 'insert-control'})),
-      feature_keyboardShortcut('Alt+N', studio_pickAndOpen('studio')),
-      feature_keyboardShortcut(
+      feature.keyboardShortcut('Alt+C', studio.pickAndOpen()),
+      feature.keyboardShortcut('Alt++', studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})),
+      feature.keyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
+      feature.keyboardShortcut(
         'Alt+X',
-        studio_openJbEditor({
+        studio.openJbEditor({
           path: firstSucceeding('%$studio/profile_path%', '%$studio/project%.%$studio/page%')
         })
       )
