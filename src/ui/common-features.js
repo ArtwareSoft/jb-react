@@ -106,7 +106,6 @@ jb.component('html-attribute', {
 })
 
 
-
 jb.component('id', {
   type: 'feature',
 	description: 'adds id to html element',
