@@ -88,7 +88,7 @@ jb.component('group.data', {
   })
 })
 
-jb.component('id', {
+jb.component('ida', {
   type: 'feature',
 	description: 'adds id to html element',
   params: [
