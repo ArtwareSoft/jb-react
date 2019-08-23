@@ -1,31 +1,21 @@
-jb.component('studio.preview-widget', {
-  type: 'control',
-  params: [
-    { id: 'style', type: 'preview-style', dynamic: true, defaultValue :{$: 'studio.preview-widget-impl'}  },
-    { id: 'width', as: 'number'},
-    { id: 'height', as: 'number'},
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx,{
-      init: cmp => {
-        Object.assign(cmp.state,ctx.exp('%$studio%'));
-        cmp.state.cacheKiller = 'cacheKiller='+(''+Math.random()).slice(10);
-        document.title = cmp.state.project + ' with jBart';
-      },
-    })
-})
-
 jb.studio.initPreview = function(preview_window,allowedTypes) {
       var st = jb.studio;
       st.previewWindow = preview_window;
       st.previewjb = preview_window.jb;
-      st.serverComps = st.previewjb.comps;
+      if (jb.studio.compsHistory.length) {
+        const compsStr = jb.entries(jb.studio.compsHistory.slice(-1)[0].after)
+          .filter(e=>e[1] != st.serverComps[e[0]]).map(e=>[e[0], jb.prettyPrint(e[1])])
+        jb.studio.copyComps && jb.studio.copyComps(compsStr)
+      } else {
+        st.serverComps = st.previewjb.comps;
+      }
       st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
 
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;
       st.previewjb.http_get_cache = {}
       st.previewjb.ctxByPath = {}
+      jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
 
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
@@ -44,10 +34,10 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
 			}
 }
 
-jb.component('studio.preview-widget-impl', {
+jb.component('studio.preview-widget-impl', { /* studio_previewWidgetImpl */
   type: 'preview-style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('iframe', {
+  impl: customStyle({
+    template: (cmp,state,h) => h('iframe', {
           id:'jb-preview',
           sandbox: 'allow-same-origin allow-forms allow-scripts',
           frameborder: 0,
@@ -56,31 +46,32 @@ jb.component('studio.preview-widget-impl', {
           height: cmp.ctx.vars.$model.height,
           src: (state.entry_file ? `/${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
       }),
-      css: `{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }`
-  }
+    css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
+  })
 })
 
-jb.component('studio.refresh-preview', {
+jb.component('studio.refresh-preview', { /* studio_refreshPreview */
   type: 'action',
-  impl: _ => {
+  impl: ctx => {
     jb.ui.garbageCollectCtxDictionary(true);
     jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
-    jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
+    //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
+    ctx.run(refreshControlById('preview-parent'))
   }
 })
 
-jb.component('studio.set-preview-size', {
+jb.component('studio.set-preview-size', { /* studio_setPreviewSize */
   type: 'action',
   params: [
-    { id: 'width', as: 'number'},
-    { id: 'height', as: 'number'},
+    {id: 'width', as: 'number'},
+    {id: 'height', as: 'number'}
   ],
   impl: (ctx,width,height) => {
     document.querySelector('.preview-iframe').style.width = `${width}px`
     if (width) {
       document.querySelector('.preview-iframe').style.width = `${width}px`
       document.querySelector('.preview-iframe').setAttribute('width',width);
-    } 
+    }
     if (height) {
       document.querySelector('.preview-iframe').style.height = `${height}px`
       document.querySelector('.preview-iframe').setAttribute('height',height);
@@ -88,7 +79,7 @@ jb.component('studio.set-preview-size', {
   }
 })
 
-jb.component('studio.wait-for-preview-iframe', {
+jb.component('studio.wait-for-preview-iframe', { /* studio_waitForPreviewIframe */
   impl: _ =>
     jb.ui.waitFor(()=>
       jb.studio.previewWindow)
@@ -102,19 +93,40 @@ jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studi
         return jb.resources.studio.page ? [{page, ctrl}] : []
       });
 
-jb.component('studio.data-comp-inspector', {
-  type: 'control', 
-  impl :{$: 'group', 
-    controls: [{$: 'label', title: ctx => {debugger; return 'hello'} }], 
-    features :
-    {$: 'variable',  name: 'activateDataToDebug', 
-      value: ctx => { 
+jb.component('studio.data-comp-inspector', { /* studio_dataCompInspector */
+  type: 'control',
+  impl: group({
+    controls: [
+      label(ctx => {debugger; return 'hello'})
+    ],
+    features: variable({
+      name: 'activateDataToDebug',
+      value: ctx => {
         var _jb = jb.studio.previewjb;
         var dataCompToDebug = ctx.vars.DataToDebug;
         var debugCtx = ctx.setVars({debugSourceRef: true});
-        var inputData = _jb.comps[dataCompToDebug] && debugCtx.exp(_jb.comps[dataCompToDebug].sampleInput || ''); 
+        var inputData = _jb.comps[dataCompToDebug] && debugCtx.exp(_jb.comps[dataCompToDebug].sampleInput || '');
         debugCtx.setData(inputData)
           .run({$: dataCompToDebug })
-    }}
-  }
+    }
+    })
+  })
 })
+
+jb.component('studio.preview-widget', { /* studio_previewWidget */ 
+  type: 'control',
+  params: [
+    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio_previewWidgetImpl() },
+    {id: 'width', as: 'number'},
+    {id: 'height', as: 'number'}
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx,{
+      init: cmp => {
+        Object.assign(cmp.state,ctx.exp('%$studio%'));
+        cmp.state.cacheKiller = 'cacheKiller='+(''+Math.random()).slice(10);
+        document.title = cmp.state.project + ' with jBart';
+      },
+    })
+})
+

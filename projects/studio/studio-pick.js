@@ -1,71 +1,12 @@
 (function() {
-var st = jb.studio;
+const st = jb.studio;
 
-jb.component('studio.pick', {
-    type: 'action',
-    params: [
-        { id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},
-        { id: 'onSelect', type:'action', dynamic:true }
-    ],
-    impl :{$: 'open-dialog',
-        $vars: { pickSelection: ctx =>
-            ctx.vars.pickSelection || {} },
-        style: {$: 'dialog.studio-pick-dialog', from: '%$from%'},
-        content: {$: 'label', title: ''}, // dummy
-        onOK: ctx =>
-            ctx.componentContext.params.onSelect(ctx.setData(ctx.vars.pickSelection.ctx))
-     }
-})
-
-jb.component('dialog.studio-pick-dialog', {
-    hidden: true,
-    type: 'dialog.style',
-    params: [
-        { id: 'from', as: 'string' },
-    ],
-    impl: {$: 'custom-style',
-          template: (cmp,state,h) => h('div',{ class: 'jb-dialog' },[
-h('div',{ class: 'edge top', style: { width: state.width + 'px', top: state.top + 'px', left: state.left + 'px' }}) ,
-h('div',{ class: 'edge left', style: { height: state.height +'px', top: state.top + 'px', left: state.left + 'px' }}),
-h('div',{ class: 'edge right', style: { height: state.height +'px', top: state.top + 'px', left: (state.left + state.width) + 'px' }}) ,
-h('div',{ class: 'edge bottom', style: { width: state.width + 'px', top: (state.top + state.height) +'px', left: state.left + 'px' }}) ,
-h('div',{ class: 'title' + (state.titleBelow ? ' bottom' : ''), style: { top: state.titleTop + 'px', left: state.titleLeft + 'px'} },[
-            h('div',{ class: 'text'},state.title),
-            h('div',{ class: 'triangle'}),
-    ])]),
-        css: `
->.edge {
-    z-index: 6001;
-    position: absolute;
-    background: red;
-    box-shadow: 0 0 1px 1px gray;
-    width: 1px; height: 1px;
-    cursor: pointer;
-}
->.title {
-    z-index: 6001;
-    position: absolute;
-    font: 14px arial; padding: 0; cursor: pointer;
-    transition:top 100ms, left 100ms;
-}
->.title .triangle {	width:0;height:0; border-style: solid; 	border-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}
->.title .text {	background: #e0e0e0; font: 14px arial; padding: 3px; }
->.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}
->.title.bottom .text { transform: translateY(6px);}
-                `,
-            features: [
-                { $: 'dialog-feature.studio-pick', from: '%$from%' },
-            ]
-    }
-})
-
-
-jb.component('dialog-feature.studio-pick', {
-    type: 'dialog-feature',
-    params: [
-        { id: 'from', as: 'string' },
-    ],
-    impl: ctx => ({
+jb.component('dialog-feature.studio-pick',  /* dialogFeature_studioPick */ {
+  type: 'dialog-feature',
+  params: [
+    {id: 'from', as: 'string'}
+  ],
+  impl: ctx => ({
       init: cmp=> {
           const _window = ctx.params.from == 'preview' ? st.previewWindow : window;
           const previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
@@ -105,6 +46,27 @@ jb.component('dialog-feature.studio-pick', {
               })
         }
     })
+})
+
+jb.component('dialog.studio-pick-dialog',  /* dialog_studioPickDialog */ {
+  hidden: true,
+  type: 'dialog.style',
+  params: [
+    {id: 'from', as: 'string'}
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'jb-dialog' },[
+h('div',{ class: 'edge top', style: { width: state.width + 'px', top: state.top + 'px', left: state.left + 'px' }}) ,
+h('div',{ class: 'edge left', style: { height: state.height +'px', top: state.top + 'px', left: state.left + 'px' }}),
+h('div',{ class: 'edge right', style: { height: state.height +'px', top: state.top + 'px', left: (state.left + state.width) + 'px' }}) ,
+h('div',{ class: 'edge bottom', style: { width: state.width + 'px', top: (state.top + state.height) +'px', left: state.left + 'px' }}) ,
+h('div',{ class: 'title' + (state.titleBelow ? ' bottom' : ''), style: { top: state.titleTop + 'px', left: state.titleLeft + 'px'} },[
+            h('div',{ class: 'text'},state.title),
+            h('div',{ class: 'triangle'}),
+    ])]),
+    css: "\n>.edge {\n    z-index: 6001;\n    position: absolute;\n    background: red;\n    box-shadow: 0 0 1px 1px gray;\n    width: 1px; height: 1px;\n    cursor: pointer;\n}\n>.title {\n    z-index: 6001;\n    position: absolute;\n    font: 14px arial; padding: 0; cursor: pointer;\n    transition:top 100ms, left 100ms;\n}\n>.title .triangle {\twidth:0;height:0; border-style: solid; \tborder-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}\n>.title .text {\tbackground: #e0e0e0; font: 14px arial; padding: 3px; }\n>.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}\n>.title.bottom .text { transform: translateY(6px);}\n                ",
+    features: [dialogFeature_studioPick('%$from%')]
+  })
 })
 
 function pathFromElem(_window,profElem) {
@@ -182,7 +144,7 @@ st.highlight = function(elems) {
     const html = elems.map(el => {
         const offset = jb.ui.offset(el);
         let width = jb.ui.outerWidth(el);
-        if (width == jb.ui.outerWidth(document.body)) 
+        if (width == jb.ui.outerWidth(document.body))
             width -= 10;
         return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; zIndex: 5000;
             width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
@@ -195,12 +157,12 @@ st.highlight = function(elems) {
     jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
 }
 
-jb.component('studio.highlight-in-preview',{
-    type: 'action',
-    params: [
-        { id: 'path', as: 'string' }
-    ],
-    impl: (ctx,path) => {
+jb.component('studio.highlight-in-preview', { /* studio_highlightInPreview */
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => {
         const _window = st.previewWindow || window;
         if (!_window) return;
         let elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
@@ -219,6 +181,22 @@ jb.component('studio.highlight-in-preview',{
 
         jb.studio.highlight(elems);
   }
+})
+
+jb.component('studio.pick', { /* studio_pick */ 
+  type: 'action',
+  params: [
+    {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},
+    {id: 'onSelect', type: 'action', dynamic: true}
+  ],
+  impl: openDialog({
+    vars: [Var('pickSelection', ctx =>
+            ctx.vars.pickSelection || {})],
+    style: dialog_studioPickDialog('%$from%'),
+    content: label(''),
+    onOK: ctx =>
+            ctx.componentContext.params.onSelect(ctx.setData(ctx.vars.pickSelection.ctx))
+  })
 })
 
 st.closestCtxInPreview = _path => {

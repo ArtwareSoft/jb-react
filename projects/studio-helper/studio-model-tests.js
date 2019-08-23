@@ -144,8 +144,8 @@ jb.component('test.profile-as-text-example', {
 
 jb.component('studio-data-test.studio.profile-as-text.change-diff-only', {
 	impl :{$: 'data-test',
-		runBefore : {$: 'write-value', 
-		to :{$: 'studio.profile-as-text', path: 'test.profile-as-text-example~impl' }, 
+		runBefore : {$: 'write-value',
+		to :{$: 'studio.profile-as-text', path: 'test.profile-as-text-example~impl' },
 		value: "{$: 'label', title: 'b'}"
 	},
  	calculate :{$: 'studio.val' , path: 'test.profile-as-text-example~impl~title' },
@@ -180,28 +180,28 @@ jb.component('studio-ui-test.goto-references-button', {
 	},
 })
 
-jb.component('studio.completion-prop-of-pt', {
-	impl :{$: 'data-test',
-	calculate : ctx=> jb.studio.completion.hint("{$: 'group', controls :{$: 'itemlist', '{$$}' "),
-	expectedResult : ctx =>
+jb.component('studio.completion-prop-of-pt', { /* studio_completionPropOfPt */
+  impl: dataTest({
+    calculate: ctx=> jb.studio.completion.hint("{$: 'group', controls :{$: 'itemlist', '{$$}' "),
+    expectedResult: ctx =>
 		JSON.stringify(ctx.data || '').indexOf('items') != -1
-	},
+  })
 })
 
-jb.component('studio.completion-pt-of-type', {
-	impl :{$: 'data-test',
-	calculate : ctx=> jb.studio.completion.hint("{$: 'group', controls:{ "),
-	expectedResult : ctx =>
+jb.component('studio.completion-pt-of-type', { /* studio_completionPtOfType */
+  impl: dataTest({
+    calculate: ctx=> jb.studio.completion.hint("{$: 'group', controls:{ "),
+    expectedResult: ctx =>
 		JSON.stringify(ctx.data || '').indexOf('"displayText":"itemlist"') != -1
-	},
+  })
 })
 
-jb.component('studio.completion-pt-of-type-in-array', {
-	impl :{$: 'data-test',
-	calculate : ctx=> jb.studio.completion.hint("{$: 'group', controls :[{$: 'label' }, {$:'"),
-	expectedResult : ctx =>
+jb.component('studio.completion-pt-of-type-in-array', { /* studio_completionPtOfTypeInArray */ 
+  impl: dataTest({
+    calculate: ctx=> jb.studio.completion.hint("{$: 'group', controls :[{$: 'label' }, {$:'"),
+    expectedResult: ctx =>
 		JSON.stringify(ctx.data || '').indexOf('"displayText":"itemlist"') != -1
-	},
+  })
 })
 
 

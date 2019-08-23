@@ -31,7 +31,7 @@ function do_jb_run(ctx,parentParam,settings) {
     const run = prepare(ctxWithVars,parentParam);
     ctx.parentParam = parentParam;
     switch (run.type) {
-      case 'booleanExp': return bool_expression(profile, ctx,parentParam);
+      case 'booleanExp': return castToParam(bool_expression(profile, ctx,parentParam), parentParam);
       case 'expression': return castToParam(expression(profile, ctx,parentParam), parentParam);
       case 'asIs': return profile;
       case 'function': return castToParam(profile(ctx,ctx.vars,ctx.componentContext && ctx.componentContext.params),parentParam);
@@ -705,6 +705,8 @@ Object.assign(jb,{
         return {$: id, ...args[0]}
       if (args.length == 1 && params.length)
         return {$: id, [params[0].id]: args[0]}
+      if (args.length == 2 && params.length > 1)
+        return {$: id, [params[0].id]: args[0], [params[1].id]: args[1]}
       debugger;
     }
   },

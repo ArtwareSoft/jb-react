@@ -1,19 +1,19 @@
 
-jb.component('studio.new-project', {
-	type: 'action,has-side-effects',
-	params: [
-		{ id: 'name',as: 'string' },
-    { id: 'onSuccess', type: 'action', dynamic: true }
-	],
-	impl : (ctx,name) => {
+jb.component('studio.new-project', { /* studio_newProject */
+  type: 'action,has-side-effects',
+  params: [
+    {id: 'name', as: 'string'},
+    {id: 'onSuccess', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,name) => {
     var request = {
       project: name,
       files: [
         { fileName: `${name}.js`, content: `
-jb.component('${name}.main', {
-  type: 'control',
-  impl :{$: 'group', controls: [ {$: 'button', title: 'my button'}] }
-})`
+  jb['component']('${name}.main', {
+    type: 'control',
+    impl :{$: 'group', controls: [ {$: 'button', title: 'my button'}] }
+  })`
         },
         { fileName: `${name}.html`, content: `
 <!DOCTYPE html>
@@ -51,36 +51,31 @@ jb.component('${name}.main', {
       jb.logException(e,'',ctx)
     })
   }
-});
+})
 
-jb.component('studio.open-new-project', {
-  type: 'action', 
-  impl :{$: 'open-dialog', 
-    style :{$: 'dialog.dialog-ok-cancel' }, 
-    content :{$: 'group', 
-      style :{$: 'group.div' }, 
+jb.component('studio.open-new-project', { /* studio_openNewProject */ 
+  type: 'action',
+  impl: openDialog({
+    style: dialog_dialogOkCancel(),
+    content: group({
+      style: group_div(),
       controls: [
-        {$: 'editable-text', 
-          title: 'project name', 
-          databind: '%$name%', 
-          style :{$: 'editable-text.mdl-input' }, 
-          features :{$: 'feature.onEnter', 
-            action :{$: 'dialog.close-containing-popup' }
-          }
-        }
-      ], 
-      features :{$: 'css.padding', top: '14', left: '11' }
-    }, 
-    title: 'New Project', 
-    onOK :{$: 'studio.new-project', 
-      name: '%$name%', 
-      onSuccess :{$: 'goto-url', url: '/project/studio/%$name%/' }
-    }, 
-    modal: true, 
+        editableText({
+          title: 'project name',
+          databind: '%$name%',
+          style: editableText_mdlInput(),
+          features: feature_onEnter(dialog_closeContainingPopup())
+        })
+      ],
+      features: css_padding({top: '14', left: '11'})
+    }),
+    title: 'New Project',
+    onOK: studio_newProject('%$name%', gotoUrl('/project/studio/%$name%/')),
+    modal: true,
     features: [
-      {$: 'variable', name: 'name', mutable: true }, 
-      {$: 'dialog-feature.auto-focus-on-first-input' }, 
-      {$: 'dialog-feature.near-launcher-position', offsetLeft: '300', offsetTop: '100' }
+      variable({name: 'name', mutable: true}),
+      dialogFeature_autoFocusOnFirstInput(),
+      dialogFeature_nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
     ]
-  }
+  })
 })

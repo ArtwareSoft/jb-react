@@ -179,7 +179,7 @@ class ImmutableWithJbId {
     return val;
   }
   cleanVal(val) {
-    return val && val.$jb_secondaryLink && val.$jb_secondaryLink.val || val
+    return (val && val.$jb_secondaryLink && val.$jb_secondaryLink.val) || val
   }
   splice(ref,args,srcCtx) {
     return this.doOp(ref,{$splice: args },srcCtx)
@@ -188,7 +188,7 @@ class ImmutableWithJbId {
     const fromPath = this.pathOfRef(fromRef), toPath = this.pathOfRef(toRef);
     const sameArray = fromPath.slice(0,-1).join('~') == toPath.slice(0,-1).join('~');
     const fromIndex = Number(fromPath.slice(-1));
-    const toIndex = Number(toPath.slice(-1));
+    let toIndex = Number(toPath.slice(-1));
     const fromArray = this.refOfPath(fromPath.slice(0,-1)),toArray = this.refOfPath(toPath.slice(0,-1));
     if (isNaN(fromIndex) || isNaN(toIndex))
         return jb.logError('move: not array element',srcCtx,fromRef,toRef);

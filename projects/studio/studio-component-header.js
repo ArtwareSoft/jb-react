@@ -26,141 +26,93 @@ jb.component('jb-param', {
   impl: ctx => ctx.params
 })
 
-jb.component('studio.component-header', {
+jb.component('studio.component-header', { /* studio_componentHeader */ 
   type: 'control',
-  params: [{ id: 'component', as: 'string' }],
-  impl :{$: 'group',
+  params: [
+    {id: 'component', as: 'string'}
+  ],
+  impl: group({
     controls: [
-      {$: 'label',
-        title: '%$component%',
-        style :{$: 'label.htmlTag', htmlTag: 'h5' }
-      },
-      {$: 'group',
+      label({title: '%$component%', style: label_htmlTag('h5')}),
+      group({
         title: 'type',
-        style :{$: 'layout.horizontal',
-          vSpacing: 20,
-          hSpacing: 20,
-          titleWidth: 100,
-          spacing: '20'
-        },
+        style: layout_horizontal('20'),
         controls: [
-          {$: 'editable-text',
-            title: 'type',
-            databind: '%type%',
-            style :{$: 'editable-text.mdl-input', width: '100' }
-          },
-          {$: 'editable-text',
-            title: 'category',
-            databind: '%category%',
-            style :{$: 'editable-text.mdl-input', width: '250' }
-          }
+          editableText({title: 'type', databind: '%type%', style: editableText_mdlInput('100')}),
+          editableText({title: 'category', databind: '%category%', style: editableText_mdlInput('250')})
         ]
-      },
-      {$: 'group',
+      }),
+      group({
         title: 'params',
         controls: [
-          {$: 'table',
+          table({
             items: '%params%',
             fields: [
-              {$: 'field.control',
+              field_control({
                 title: '',
-                control :{$: 'material-icon',
-                  icon: 'home',
-                  style :{$: 'icon.material' },
-                  features :{$: 'itemlist.drag-handle' }
-                },
+                control: materialIcon({icon: 'home', style: icon_material(), features: itemlist_dragHandle()}),
                 width: '60'
-              },
-              {$: 'field.control',
+              }),
+              field_control({
                 title: 'id',
-                control :{$: 'editable-text',
-                  icon: 'person',
+                control: editableText({
                   title: 'id',
-                  databind :{$: 'studio.ref',
-                    path :{
-                      $pipeline: [
-                        ctx => Number(ctx.vars.itemlistCntr.items.indexOf(ctx.data)).toString(),
-                        '%$component%~params~%%~id'
-                      ]
-                    }
-                  },
-                  style :{$: 'editable-text.mdl-input-no-floating-label',
-                    width: '101'
-                  }
-                }
-              },
-              {$: 'field.control',
+                  databind: studio_ref(
+                    pipeline(
+                      ctx => Number(ctx.vars.itemlistCntr.items.indexOf(ctx.data)).toString(),
+                      '%$component%~params~%%~id'
+                    )
+                  ),
+                  style: editableText_mdlInputNoFloatingLabel('101')
+                })
+              }),
+              field_control({
                 title: 'type',
-                control :{$: 'editable-text',
-                  icon: 'person',
+                control: editableText({
                   title: 'type',
-                  databind :{$: 'studio.ref',
-                    path :{
-                      $pipeline: [
-                        ctx => Number(ctx.vars.itemlistCntr.items.indexOf(ctx.data)).toString(),
-                        '%$component%~params~%%~type'
-                      ]
-                    }
-                  },
-                  style :{$: 'editable-text.mdl-input-no-floating-label',
-                    width: '100'
-                  }
-                }
-              },
-              {$: 'field.control',
+                  databind: studio_ref(
+                    pipeline(
+                      ctx => Number(ctx.vars.itemlistCntr.items.indexOf(ctx.data)).toString(),
+                      '%$component%~params~%%~type'
+                    )
+                  ),
+                  style: editableText_mdlInputNoFloatingLabel('100')
+                })
+              }),
+              field_control({
                 title: 'as',
-                control :{$: 'editable-text',
-                  icon: 'person',
-                  title: 'as',
-                  databind: '%as%',
-                  style :{$: 'editable-text.mdl-input-no-floating-label',
-                    width: '100'
-                  }
-                }
-              },
-              {$: 'field.control',
+                control: editableText({title: 'as', databind: '%as%', style: editableText_mdlInputNoFloatingLabel('100')})
+              }),
+              field_control({
                 title: 'dynamic',
-                control :{$: 'editable-boolean',
-                  icon: 'person',
+                control: editableBoolean({
                   databind: '%dynamic%',
-                  style :{$: 'editable-boolean.checkbox', width: '150' },
+                  style: editableBoolean_checkbox(),
                   title: 'as',
                   textForTrue: 'yes',
                   textForFalse: 'no'
-                }
-              },
-              {$: 'field.control',
+                })
+              }),
+              field_control({
                 title: '',
-                control :{$: 'button',
-                  icon: 'delete',
+                control: button({
                   title: 'delete',
-                  action :{$: 'itemlist-container.delete', item: '%%' },
-                  style :{$: 'button.x', size: '21' },
-                  features :{$: 'itemlist.shown-only-on-item-hover' }
-                },
+                  action: itemlistContainer_delete('%%'),
+                  style: button_x('21'),
+                  features: itemlist_shownOnlyOnItemHover()
+                }),
                 width: '60'
-              }
+              })
             ],
-            style :{$: 'table.mdl',
-              classForTable: 'mdl-data-table mdl-shadow--2dp',
-              classForTd: 'mdl-data-table__cell--non-numeric'
-            },
+            style: table_mdl('mdl-data-table mdl-shadow--2dp', 'mdl-data-table__cell--non-numeric'),
             watchItems: 'true',
-            features: [{$: 'itemlist.drag-and-drop' }]
-          },
-          {$: 'button',
-            title: 'add',
-            action :{$: 'itemlist-container.add' },
-            style :{$: 'button.mdl-raised' }
-          }
+            features: [itemlist_dragAndDrop()]
+          }),
+          button({title: 'add', action: itemlistContainer_add(), style: button_mdlRaised()})
         ],
-        features :{$: 'group.itemlist-container',
-          defaultItem :{$: 'object' }
-        }
-      }
+        features: group_itemlistContainer({defaultItem: {$: 'object'}})
+      })
     ],
-    features :{$: 'group.data',
-      data :{$: 'studio.ref', path: '%$component%' }
-    }
-  }
+    features: group_data({data: studio_ref('%$component%')})
+  })
 })

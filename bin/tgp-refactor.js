@@ -3,7 +3,7 @@ const fs = require('fs');
 require('../src/loader/jb-loader.js');
 
 const JBART_DIR = '../';
-const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,testers,studio,studio-tests,pretty-print,parsing,object-encoder'
+const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,testers,pretty-print,studio,studio-tests,parsing,object-encoder'
 
 const filesOfModules = modules => modules.split(',').map(m=>{
     if (m == 'studio')
@@ -36,9 +36,11 @@ filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>!x.match(/material/))
 
 const content = jb.entries(jb.comps) // .filter(e=> typeof e[1].impl === 'object')
 //    .slice(1,50)
-    .filter(e=>
-//        e[0] === 'ui-test.group')
-        e[0].indexOf('studio.') == 0)
+    .filter(e=> ! e[1][location][0].match(/[^-]menu.js/)) 
+    .filter(e=> e[1][location][0].match(/studio-properties.js/))
+    
+//        e[0] === 'studio.open-script-history')
+    .filter(e=> e[0].indexOf('studio.') == 0) // || e[0].indexOf('dialog') == 0 || e[0].indexOf('menu') == 0)
     .forEach(e=>
         swapComp(e[0],e[1]))
     
@@ -53,7 +55,7 @@ function swapComp(id,comp) {
     const fn = '../' + comp[location][0]
     const content = ('' + fs.readFileSync(fn))//.replace(/\r/g,'')
     const lines = content.split('\n').map(x=>x.replace(/[\s]*$/,''))
-    const lineOfComp = lines.reduce((acc,line,i) => acc ? acc : line.indexOf(`jb.component('${id}'`) == 0 ? i : 0, 0);
+    const lineOfComp = lines.reduce((acc,line,i) => acc != -1 ? acc : line.indexOf(`jb.component('${id}'`) == 0 ? i : -1, -1);
     if (lineOfComp == -1) {
         console.log('error can not find ' + id + ' in ' + fn)
         return;

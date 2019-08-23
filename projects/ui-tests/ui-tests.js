@@ -508,13 +508,13 @@ jb.component('ui-test.itemlist-container-search-ctrl',  /* uiTest_itemlistContai
           title: highlight('%name%', '%$itemlistCntrData/search_pattern%'),
           features: [
             css_class('label1'),
-            watchRef({ref: '%$itemlistCntrData/search_pattern%', delay: 20})
+            watchRef('%$itemlistCntrData/search_pattern%')
           ]
         }),
         features: [
           itemlist_selection({autoSelectFirst: true}),
           itemlist_keyboardSelection({autoFocus: true, onEnter: writeValue('%$person/selected%', '%name%')}),
-          watchRef({ref: '%$itemlistCntrData/search_pattern%', delay: 20})
+          watchRef('%$itemlistCntrData/search_pattern%')
         ]
       })
     ],
@@ -1159,6 +1159,34 @@ jb.component('ui-test.immutable-var',  /* uiTest_immutableVar */ {
     }),
     action: ctx => jb.delay(1),
     expectedResult: contains('foo')
+  })
+})
+
+jb.component('ui-test.boolean-immutable-var-as-boolean-true-to-false', {
+  impl: uiTest({
+    control: label({
+      title: pipeline(test_getAsBool('%$var1%'),({data}) => data === false ? 'OK' : 'Error'),
+      features: [
+        variable({name: 'var1', value: true, mutable: true}),
+        watchRef('%$var1%'),
+        feature_afterLoad(writeValue('%$var1%', false))
+      ]
+    }),
+    expectedResult: contains('OK')
+  })
+})
+
+jb.component('ui-test.boolean-immutable-var-as-boolean-false-to-true', {
+  impl: uiTest({
+    control: label({
+      title: pipeline(test_getAsBool('%$var1%'),({data}) => data === true ? 'OK' : 'Error'),
+      features: [
+        variable({name: 'var1', value: false, mutable: true}),
+        watchRef('%$var1%'),
+        feature_afterLoad(writeValue('%$var1%', true))
+      ]
+    }),
+    expectedResult: contains('OK')
   })
 })
 

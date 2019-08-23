@@ -1,7 +1,7 @@
 jb.component('group.htmlTag', {
   type: 'group.style',
 	params: [
-		{ id: 'htmlTag', as: 'string', defaultValue: 'section', options:'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary' },
+		{ id: 'htmlTag', as: 'string', defaultValue: 'section', options:'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label,form' },
 		{ id: 'groupClass', as: 'string' },
 		{ id: 'itemClass', as: 'string' },
 	],

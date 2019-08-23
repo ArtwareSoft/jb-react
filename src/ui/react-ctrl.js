@@ -264,24 +264,40 @@ ui.preserveCtx = ctx => {
 }
 
 ui.renderWidget = function(profile,top) {
+	let formerReactElem, formerParentElem;
 	try {
 		if (typeof window != 'undefined' && window.parent != window && window.parent.jb) {
 			const st = window.parent.jb.studio
-			st.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
-
 			const originalResources = jb.resources
 			st.refreshPreviewWidget = _ => {
 				jb.resources = originalResources;
 				doRender();
 			}
+			st.copyComps = comps => { 
+				comps.forEach(e=> {
+					try {
+						jb.comps[e[0]] = eval(`(${e[1]})`)
+					} catch(e) {
+						jb.logException(e)				
+					}
+				})
+			}
+			st.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
+			return
 		}
-	} catch(e) {}
+	} catch(e) {
+		jb.logException(e)
+		return
+	}
 
 	doRender()
-
+	
 	function doRender() {
+		if (formerReactElem)
+			ui.render(ui.h('div',{}),formerParentElem,formerReactElem)
+
 		top.innerHTML = '';
-		const innerElem = document.createElement('div');
+		const innerElem = formerParentElem = document.createElement('div');
 		top.appendChild(innerElem);
 
 		class R extends jb.ui.Component {
@@ -311,7 +327,7 @@ ui.renderWidget = function(profile,top) {
 			}
 		}
 
-		ui.render(ui.h(R),innerElem);
+		formerReactElem = ui.render(ui.h(R),innerElem);
 	}
 }
 
@@ -392,7 +408,7 @@ ui.item = function(cmp,vdom,data) {
 	return vdom;
 }
 
-ui.watchRef = function(ctx,cmp,ref,includeChildren,allowSelfRefresh) {
+ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 		if (!ref)
 			jb.logError('null ref for watch ref',...arguments);
     	ref && ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
@@ -408,7 +424,8 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,allowSelfRefresh) {
 				}
 				if (ctx && ctx.profile && ctx.profile.$trace)
 					console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
-				
+				if (delay)
+					return jb.delay(delay).then(()=> ui.setState(cmp,null,e,ctx))
 				return ui.setState(cmp,null,e,ctx);
 	      })
 }

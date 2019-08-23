@@ -10,25 +10,35 @@ st.message = function(message,error) {
 
 // ********* Components ************
 
-jb.component('studio.message', {
-	type: 'action',
-	params: [ { id: 'message', as: 'string' } ],
-	impl: (ctx,message) =>
+jb.component('studio.currentProfilePath', { /* studio_currentProfilePath */
+  impl: firstSucceeding(
+    '%$simulateProfilePath%',
+    '%$studio/profile_path%',
+    '%$studio/project%.%$studio/page%'
+  )
+})
+
+jb.component('studio.message', { /* studio_message */
+  type: 'action',
+  params: [
+    {id: 'message', as: 'string'}
+  ],
+  impl: (ctx,message) =>
 		st.message(message)
 })
 
-jb.component('studio.redraw-studio', {
-	type: 'action',
-	impl: ctx =>
+jb.component('studio.redraw-studio', { /* studio_redrawStudio */
+  type: 'action',
+  impl: ctx =>
     	st.redrawStudio && st.redrawStudio()
 })
 
-jb.component('studio.last-edit', {
-	type: 'data',
-	params: [
-		{ id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true },
-	],
-	impl: (ctx,justNow) => {
+jb.component('studio.last-edit', { /* studio_lastEdit */
+  type: 'data',
+  params: [
+    {id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true}
+  ],
+  impl: (ctx,justNow) => {
 		const now = new Date().getTime();
 		const lastEvent = st.compsHistory.slice(-1).map(x=>x.opEvent).filter(x=>x)
 			.filter(r=>
@@ -40,58 +50,40 @@ jb.component('studio.last-edit', {
 	}
 })
 
-jb.component('studio.goto-last-edit', {
-	type: 'action',
-	impl: ctx=>{
+jb.component('studio.goto-last-edit', { /* studio_gotoLastEdit */
+  type: 'action',
+  impl: ctx=>{
 		const lastEdit = ctx.run({$: 'studio.last-edit'})
 		if (lastEdit)
 			ctx.setData(lastEdit).run({$: 'studio.goto-path', path: '%%'})
 	}
 })
 
-jb.component('studio.goto-path', {
-	type: 'action',
-	params: [
-		{ id: 'path', as: 'string' },
-	],
-	impl :{$runActions: [
-		{$: 'dialog.close-containing-popup' },
-		{$: 'write-value', to: '%$studio/profile_path%', value: '%$path%' },
-		{$if :{$: 'studio.is-of-type', type: 'control,table-field', path: '%$path%'},
-			then: {$runActions: [
-				{$: 'studio.open-control-tree'},
-//				{$: 'studio.open-properties', focus: true}
-			]},
-			else :{$: 'studio.open-component-in-jb-editor', path: '%$path%' }
-		}
-	]}
-})
-
-jb.component('studio.project-source',{
-	params: [
-		{ id: 'project', as: 'string', defaultValue: '%$studio/project%' }
-	],
-	impl: (context,project) => {
+jb.component('studio.project-source', { /* studio_projectSource */
+  params: [
+    {id: 'project', as: 'string', defaultValue: '%$studio/project%'}
+  ],
+  impl: (context,project) => {
 		if (!project) return;
 		var comps = jb.entries(st.previewjb.comps).map(x=>x[0]).filter(x=>x.indexOf(project) == 0);
 		return comps.map(comp=>st.compAsStr(comp)).join('\n\n')
 	}
 })
 
-jb.component('studio.comp-source',{
-	params: [
-		{ id: 'comp', as: 'string', defaultValue: { $: 'studio.currentProfilePath' } }
-	],
-	impl: (context,comp) =>
+jb.component('studio.comp-source', { /* studio_compSource */
+  params: [
+    {id: 'comp', as: 'string', defaultValue: studio_currentProfilePath()}
+  ],
+  impl: (context,comp) =>
 		st.compAsStr(comp.split('~')[0])
 })
 
-jb.component('studio.dynamic-options-watch-new-comp', {
+jb.component('studio.dynamic-options-watch-new-comp', { /* studio_dynamicOptionsWatchNewComp */ 
   type: 'feature',
-  impl :{$: 'picklist.dynamic-options',
-        recalcEm: () =>
+  impl: picklist_dynamicOptions(
+    () =>
           st.scriptChange.filter(e => e.path.length == 1)
-  }
+  )
 })
 
 

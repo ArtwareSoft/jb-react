@@ -9,16 +9,19 @@ jb.component('pretty-print', {
     jb.prettyPrint(profile,ctx.params)
 })
 
-jb.prettyPrintComp = function(compId,comp,settings) {
+jb.prettyPrintComp = function(compId,comp,settings={}) {
   if (comp) {
+    settings.macro = true;
     const macroRemark = settings.macro ? ` /* ${jb.macroName(compId)} */ ` : ''
-    return "jb.component('" + compId + "', " + macroRemark
-      + jb.prettyPrintWithPositions(comp,settings).result + ')'
+    const res = "jb.component('" + compId + "', " + jb.prettyPrintWithPositions(comp,settings).result + ')'
+    const withMacroName = res.replace(/\n/, macroRemark + '\n')
+    return withMacroName
   }
 }
 
-jb.prettyPrint = function(profile,options) {
-  return jb.prettyPrintWithPositions(profile,options).result;
+jb.prettyPrint = function(profile,settings = {}) {
+  settings.macro = true;
+  return jb.prettyPrintWithPositions(profile,settings).result;
 }
 
 jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls,macro} = {}) {
@@ -217,7 +220,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   function profileToMacro(ctx, profile,flat) {
     const id = jb.compName(profile)
     const comp = jb.comps[id]
-    if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
+    if (!id || !comp || profile.$recursive || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
       const props = Object.keys(profile) 
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);

@@ -22,7 +22,7 @@ declare var jb: jbObj;
 
 
 // type data
-type dataType = pipelinePT | pipePT | data_ifPT | listPT | firstSucceedingPT | keysPT | propertiesPT | prefixPT | suffixPT | remove_prefixPT | remove_suffixPT | remove_suffix_regexPT | index_ofPT | objPT | assignPT | IfPT | to_uppercasePT | to_lowercasePT | capitalizePT | logPT | asIsPT | objectPT | json_stringifyPT | json_parsePT | splitPT | replacePT | delayPT | extract_prefixPT | extract_suffixPT | rangePT | type_ofPT | class_namePT | http_getPT | isRefPT | asRefPT | data_switchPT | newlinePT | jison_parsePT | extract_textPT | break_textPT | zip_arraysPT | remove_sectionsPT | mergePT | dynamic_objectPT | filter_empty_propertiesPT | trimPT | remove_prefix_regexPT | pretty_printPT | fs_readFilePT | fs_statPT | fs_readdirPT | fs_directory_contentPT | test_dialog_contentPT | field_dataPT | itemlist_container_search_in_all_propertiesPT | highlightPT | custom_stylePT | style_by_controlPT | ((ctx: ctx) => any)
+type dataType = pipelinePT | pipePT | data_ifPT | listPT | firstSucceedingPT | keysPT | propertiesPT | prefixPT | suffixPT | remove_prefixPT | remove_suffixPT | remove_suffix_regexPT | index_ofPT | objPT | assignPT | IfPT | to_uppercasePT | to_lowercasePT | capitalizePT | logPT | asIsPT | objectPT | json_stringifyPT | json_parsePT | splitPT | replacePT | delayPT | extract_prefixPT | extract_suffixPT | rangePT | type_ofPT | class_namePT | http_getPT | isRefPT | asRefPT | data_switchPT | newlinePT | jison_parsePT | extract_textPT | break_textPT | zip_arraysPT | remove_sectionsPT | mergePT | dynamic_objectPT | filter_empty_propertiesPT | trimPT | remove_prefix_regexPT | pretty_printPT | fs_readFilePT | fs_statPT | fs_readdirPT | fs_directory_contentPT | test_dialog_contentPT | field_dataPT | itemlist_container_search_in_all_propertiesPT | highlightPT | custom_stylePT | style_by_controlPT | group_divPT | group_sectionPT | ((ctx: ctx) => any)
 type cmp_def_dataType = {
 	type: 'data',
 	params?: [param],
@@ -102,6 +102,8 @@ type itemlist_container_search_in_all_propertiesPT = {$: 'itemlist-container.sea
 type highlightPT = {$: 'highlight', base: dataType, highlight: dataType, cssClass: dataType}
 type custom_stylePT = {$: 'custom-style', template: dataType, css: dataType, features: [featureType]}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
+type group_divPT = {$: 'group.div', }
+type group_sectionPT = {$: 'group.section', }
 
 // type aggregator
 type aggregatorType = slicePT | sortPT | firstPT | lastPT | countPT | reversePT | samplePT | assign_with_indexPT | filterPT | joinPT | uniquePT | wrap_as_object_with_arrayPT | wrap_as_objectPT | d3_histogramPT | itemlist_container_filterPT | ((ctx: ctx) => any)
@@ -157,7 +159,7 @@ type is_of_typePT = {$: 'is-of-type',
 type in_groupPT = {$: 'in-group', group: dataType, item: dataType}
 
 // type action
-type actionType = action_ifPT | jb_runPT | write_valuePT | add_to_arrayPT | splicePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | run_transactionPT | run_action_on_itemsPT | on_next_timerPT | http_postPT | action_switchPT | refresh_control_by_idPT | focus_on_first_elementPT | open_dialogPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | itemlist_container_addPT | itemlist_container_deletePT | menu_open_context_menuPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
+type actionType = action_ifPT | jb_runPT | write_valuePT | add_to_arrayPT | splicePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | run_transactionPT | run_action_on_itemsPT | on_next_timerPT | http_postPT | action_switchPT | refresh_control_by_idPT | focus_on_first_elementPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | itemlist_container_addPT | itemlist_container_deletePT | menu_open_context_menuPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
 type cmp_def_actionType = {
 	type: 'action',
 	params?: [param],
@@ -184,7 +186,6 @@ type http_postPT = {$: 'http.post', url: dataType, postData: dataType,
 type action_switchPT = {$: 'action.switch', cases: [action_switch_caseType], defaultAction: actionType}
 type refresh_control_by_idPT = {$: 'refresh-control-by-id', id: dataType}
 type focus_on_first_elementPT = {$: 'focus-on-first-element', selector: dataType}
-type open_dialogPT = {$: 'open-dialog', id: dataType, style: dialog_styleType, content: controlType, menu: controlType, title: dataType, onOK: actionType, modal: booleanType, features: [dialog_featureType]}
 type dialog_close_containing_popupPT = {$: 'dialog.close-containing-popup', OK: booleanType}
 type dialog_close_dialogPT = {$: 'dialog.close-dialog', id: dataType, delay: dataType}
 type dialog_close_all_popupsPT = {$: 'dialog.close-all-popups', }
@@ -371,7 +372,7 @@ type icon_with_actionPT = {$: 'icon-with-action', icon: dataType, title: dataTyp
 type menu_controlPT = {$: 'menu.control', menu: menu_optionType, style: menu_styleType, features: [featureType]}
 
 // type feature
-type featureType = ctrl_actionPT | alt_actionPT | button_disabledPT | card_initPT | group_waitPT | watch_refPT | watch_observablePT | group_dataPT | idPT | varPT | VariablePT | bind_refsPT | calculated_varPT | featuresPT | feature_initPT | feature_after_loadPT | feature_ifPT | hiddenPT | conditional_classPT | feature_hover_titlePT | feature_keyboard_shortcutPT | feature_onEventPT | feature_onHoverPT | feature_onKeyPT | feature_onEnterPT | feature_onEscPT | feature_onDeletePT | group_auto_focus_on_first_inputPT | cssPT | css_classPT | css_widthPT | css_heightPT | css_opacityPT | css_paddingPT | css_marginPT | css_transform_rotatePT | css_colorPT | css_transform_scalePT | css_box_shadowPT | css_borderPT | d3_scatter_initPT | editable_boolean_keyboard_supportPT | editable_text_x_buttonPT | editable_text_helper_popupPT | field_databindPT | field_databind_textPT | field_defaultPT | field_init_valuePT | field_keyboard_shortcutPT | field_subscribePT | field_on_changePT | field_toolbarPT | validationPT | group_init_groupPT | group_dynamic_titlesPT | first_succeeding_watch_refresh_on_ctrl_changePT | group_itemlist_containerPT | itemlist_itemlist_selectedPT | itemlist_container_filter_fieldPT | itemlist_watch_items_with_headingPT | itemlist_no_containerPT | itemlist_initPT | itemlist_selectionPT | itemlist_keyboard_selectionPT | itemlist_drag_and_dropPT | itemlist_drag_handlePT | itemlist_shown_only_on_item_hoverPT | itemlist_dividerPT | label_bind_titlePT | menu_init_popup_menuPT | menu_init_menu_optionPT | picklist_dynamic_optionsPT | picklist_onChangePT | slider_initPT | slider_text_handleArrowKeysPT | slider_edit_as_text_popupPT | group_init_expandablePT | group_init_accordionPT | flex_layout_container_align_main_axisPT | flex_item_growPT | flex_item_basisPT | flex_item_align_selfPT | responsive_not_for_phonePT | mdl_style_init_dynamicPT | mdl_ripple_effectPT | table_initPT | table_init_sortPT | group_init_tabsPT | text_bind_textPT | group_themePT | tree_selectionPT | tree_keyboard_selectionPT | tree_drag_and_dropPT | ((ctx: ctx) => any)
+type featureType = ctrl_actionPT | alt_actionPT | button_disabledPT | card_initPT | group_waitPT | watch_refPT | watch_observablePT | group_dataPT | idPT | varPT | variablePT | bind_refsPT | calculated_varPT | featuresPT | feature_initPT | feature_after_loadPT | feature_ifPT | hiddenPT | conditional_classPT | feature_hover_titlePT | feature_keyboard_shortcutPT | feature_onEventPT | feature_onHoverPT | feature_onKeyPT | feature_onEnterPT | feature_onEscPT | feature_onDeletePT | group_auto_focus_on_first_inputPT | cssPT | css_classPT | css_widthPT | css_heightPT | css_opacityPT | css_paddingPT | css_marginPT | css_transform_rotatePT | css_colorPT | css_transform_scalePT | css_box_shadowPT | css_borderPT | d3_scatter_initPT | editable_boolean_keyboard_supportPT | editable_text_x_buttonPT | editable_text_helper_popupPT | field_databindPT | field_databind_textPT | field_defaultPT | field_init_valuePT | field_keyboard_shortcutPT | field_subscribePT | field_on_changePT | field_toolbarPT | validationPT | group_init_groupPT | group_dynamic_titlesPT | first_succeeding_watch_refresh_on_ctrl_changePT | group_itemlist_containerPT | itemlist_itemlist_selectedPT | itemlist_container_filter_fieldPT | itemlist_watch_items_with_headingPT | itemlist_no_containerPT | itemlist_initPT | itemlist_selectionPT | itemlist_keyboard_selectionPT | itemlist_drag_and_dropPT | itemlist_drag_handlePT | itemlist_shown_only_on_item_hoverPT | itemlist_dividerPT | label_bind_titlePT | menu_init_popup_menuPT | menu_init_menu_optionPT | picklist_dynamic_optionsPT | picklist_onChangePT | slider_initPT | slider_text_handleArrowKeysPT | slider_edit_as_text_popupPT | group_init_expandablePT | group_init_accordionPT | flex_layout_container_align_main_axisPT | flex_item_growPT | flex_item_basisPT | flex_item_align_selfPT | responsive_not_for_phonePT | mdl_style_init_dynamicPT | mdl_ripple_effectPT | table_initPT | table_init_sortPT | group_init_tabsPT | text_bind_textPT | group_themePT | tree_selectionPT | tree_keyboard_selectionPT | tree_drag_and_dropPT | ((ctx: ctx) => any)
 type cmp_def_featureType = {
 	type: 'feature',
 	params?: [param],
@@ -395,7 +396,7 @@ type idPT = {$: 'id', id: dataType}
 type varPT = {$: 'var', name: dataType, value: dataType, 
 /** E.g., selected item variable */mutable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType}
-type VariablePT = {$: 'Variable', name: dataType, value: dataType, 
+type variablePT = {$: 'variable', name: dataType, value: dataType, 
 /** E.g., selected item variable */mutable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType}
 type bind_refsPT = {$: 'bind-refs', watchRef: dataType, 
@@ -491,7 +492,7 @@ type tree_keyboard_selectionPT = {$: 'tree.keyboard-selection', onKeyboardSelect
 type tree_drag_and_dropPT = {$: 'tree.drag-and-drop', }
 
 // type dialog-feature
-type dialog_featureType = cssPT | css_classPT | css_widthPT | css_heightPT | css_paddingPT | css_marginPT | css_box_shadowPT | css_borderPT | dialog_feature_unique_dialogPT | dialog_feature_keyboard_shortcutPT | dialog_feature_near_launcher_positionPT | dialog_feature_onClosePT | dialog_feature_close_when_clicking_outsidePT | dialog_feature_auto_focus_on_first_inputPT | dialog_feature_css_class_on_launching_elementPT | dialog_feature_max_zIndex_on_clickPT | dialog_feature_drag_titlePT | dialog_feature_resizerPT | ((ctx: ctx) => any)
+type dialog_featureType = cssPT | css_classPT | css_widthPT | css_heightPT | css_paddingPT | css_marginPT | css_box_shadowPT | css_borderPT | dialog_feature_drag_titlePT | dialog_feature_unique_dialogPT | dialog_feature_keyboard_shortcutPT | dialog_feature_near_launcher_positionPT | dialog_feature_onClosePT | dialog_feature_close_when_clicking_outsidePT | dialog_feature_auto_focus_on_first_inputPT | dialog_feature_css_class_on_launching_elementPT | dialog_feature_max_zIndex_on_clickPT | dialog_feature_resizerPT | ((ctx: ctx) => any)
 type cmp_def_dialog_featureType = {
 	type: 'dialog_feature',
 	params?: [param],
@@ -505,6 +506,7 @@ type css_paddingPT = {$: 'css.padding', top: dataType, left: dataType, right: da
 type css_marginPT = {$: 'css.margin', top: dataType, left: dataType, right: dataType, bottom: dataType, selector: dataType}
 type css_box_shadowPT = {$: 'css.box-shadow', blurRadius: dataType, spreadRadius: dataType, shadowColor: dataType, opacity: dataType, horizontal: dataType, vertical: dataType, selector: dataType}
 type css_borderPT = {$: 'css.border', width: dataType, side: dataType, style: dataType, color: dataType, selector: dataType}
+type dialog_feature_drag_titlePT = {$: 'dialog-feature.drag-title', id: dataType}
 type dialog_feature_unique_dialogPT = {$: 'dialog-feature.unique-dialog', id: dataType, remeberLastLocation: booleanType}
 type dialog_feature_keyboard_shortcutPT = {$: 'dialog-feature.keyboard-shortcut', 
 /** Ctrl+C or Alt+V */shortcut: dataType, action: actionType}
@@ -514,7 +516,6 @@ type dialog_feature_close_when_clicking_outsidePT = {$: 'dialog-feature.close-wh
 type dialog_feature_auto_focus_on_first_inputPT = {$: 'dialog-feature.auto-focus-on-first-input', selectText: booleanType}
 type dialog_feature_css_class_on_launching_elementPT = {$: 'dialog-feature.css-class-on-launching-element', }
 type dialog_feature_max_zIndex_on_clickPT = {$: 'dialog-feature.max-zIndex-on-click', minZIndex: dataType}
-type dialog_feature_drag_titlePT = {$: 'dialog-feature.drag-title', id: dataType}
 type dialog_feature_resizerPT = {$: 'dialog-feature.resizer', 
 /** effective only for dialog with a single codemirror element */resizeInnerCodemirror: booleanType}
 
@@ -608,18 +609,6 @@ type cmp_def_d3_domainType = {
 }
 type d3_domain_by_valuesPT = {$: 'd3.domain-by-values', }
 
-// type dialog.style
-type dialog_styleType = dialog_defaultPT | dialog_popupPT | dialog_dialog_ok_cancelPT | dialog_context_menu_popupPT | ((ctx: ctx) => any)
-type cmp_def_dialog_styleType = {
-	type: 'dialog_style',
-	params?: [param],
-	impl: dialog_styleType,
-}
-type dialog_defaultPT = {$: 'dialog.default', }
-type dialog_popupPT = {$: 'dialog.popup', }
-type dialog_dialog_ok_cancelPT = {$: 'dialog.dialog-ok-cancel', okLabel: dataType, cancelLabel: dataType}
-type dialog_context_menu_popupPT = {$: 'dialog.context-menu-popup', offsetTop: dataType, rightSide: booleanType}
-
 // type divider.style
 type divider_styleType = divider_brPT | divider_flex_auto_growPT | ((ctx: ctx) => any)
 type cmp_def_divider_styleType = {
@@ -643,7 +632,7 @@ type editable_number_sliderPT = {$: 'editable-number.slider', }
 type editable_number_mdl_sliderPT = {$: 'editable-number.mdl-slider', }
 
 // type icon-with-action.style
-type icon_with_action_styleType = icon_icon_in_buttonPT | icon_materialPT | button_mdl_iconPT | button_mdl_round_iconPT | button_mdl_icon_12_with_ripplePT | button_mdl_icon_12PT | ((ctx: ctx) => any)
+type icon_with_action_styleType = icon_icon_in_buttonPT | icon_materialPT | button_mdl_iconPT | button_mdl_round_iconPT | button_mdl_icon12_with_ripplePT | button_mdl_icon12PT | ((ctx: ctx) => any)
 type cmp_def_icon_with_action_styleType = {
 	type: 'icon_with_action_style',
 	params?: [param],
@@ -653,8 +642,8 @@ type icon_icon_in_buttonPT = {$: 'icon.icon-in-button', }
 type icon_materialPT = {$: 'icon.material', }
 type button_mdl_iconPT = {$: 'button.mdl-icon', icon: dataType}
 type button_mdl_round_iconPT = {$: 'button.mdl-round-icon', icon: dataType}
-type button_mdl_icon_12_with_ripplePT = {$: 'button.mdl-icon-12-with-ripple', icon: dataType}
-type button_mdl_icon_12PT = {$: 'button.mdl-icon-12', icon: dataType}
+type button_mdl_icon12_with_ripplePT = {$: 'button.mdl-icon12-with-ripple', icon: dataType}
+type button_mdl_icon12PT = {$: 'button.mdl-icon12', icon: dataType}
 
 // type image
 type imageType = imagePT | ((ctx: ctx) => any)
@@ -714,7 +703,7 @@ type itemlist_ul_liPT = {$: 'itemlist.ul-li', }
 type itemlist_horizontalPT = {$: 'itemlist.horizontal', , spacing: dataType}
 
 // type group.style
-type group_styleType = itemlog_divPT | card_cardPT | card_media_groupPT | card_actions_groupPT | card_menuPT | group_sectionPT | group_divPT | group_ul_liPT | group_expandablePT | group_accordionPT | group_tabsPT | toolbar_simplePT | layout_verticalPT | layout_horizontalPT | layout_horizontal_fixed_splitPT | layout_horizontal_wrappedPT | layout_flexPT | property_sheet_titles_abovePT | property_sheet_titles_above_float_leftPT | property_sheet_titles_leftPT | tabs_simplePT | ((ctx: ctx) => any)
+type group_styleType = itemlog_divPT | card_cardPT | card_media_groupPT | card_actions_groupPT | card_menuPT | group_htmlTagPT | group_ul_liPT | group_expandablePT | group_accordionPT | group_tabsPT | toolbar_simplePT | layout_verticalPT | layout_horizontalPT | layout_horizontal_fixed_splitPT | layout_horizontal_wrappedPT | layout_flexPT | property_sheet_titles_abovePT | property_sheet_titles_above_float_leftPT | property_sheet_titles_leftPT | tabs_simplePT | ((ctx: ctx) => any)
 type cmp_def_group_styleType = {
 	type: 'group_style',
 	params?: [param],
@@ -725,15 +714,14 @@ type card_cardPT = {$: 'card.card', width: dataType, shadow: dataType}
 type card_media_groupPT = {$: 'card.media-group', }
 type card_actions_groupPT = {$: 'card.actions-group', }
 type card_menuPT = {$: 'card.menu', }
-type group_sectionPT = {$: 'group.section', }
-type group_divPT = {$: 'group.div', groupClass: dataType, itemClass: dataType}
+type group_htmlTagPT = {$: 'group.htmlTag', htmlTag: dataType, groupClass: dataType, itemClass: dataType}
 type group_ul_liPT = {$: 'group.ul-li', }
 type group_expandablePT = {$: 'group.expandable', }
 type group_accordionPT = {$: 'group.accordion', }
 type group_tabsPT = {$: 'group.tabs', width: dataType}
 type toolbar_simplePT = {$: 'toolbar.simple', }
 type layout_verticalPT = {$: 'layout.vertical', spacing: dataType}
-type layout_horizontalPT = {$: 'layout.horizontal', , spacing: dataType}
+type layout_horizontalPT = {$: 'layout.horizontal', spacing: dataType}
 type layout_horizontal_fixed_splitPT = {$: 'layout.horizontal-fixed-split', , leftWidth: dataType, rightWidth: dataType, spacing: dataType}
 type layout_horizontal_wrappedPT = {$: 'layout.horizontal-wrapped', , spacing: dataType}
 type layout_flexPT = {$: 'layout.flex', align: dataType, direction: dataType, wrap: dataType}
@@ -743,16 +731,14 @@ type property_sheet_titles_leftPT = {$: 'property-sheet.titles-left', vSpacing: 
 type tabs_simplePT = {$: 'tabs.simple', }
 
 // type label.style
-type label_styleType = label_spanPT | label_pPT | label_h1PT | label_headingPT | label_card_titlePT | label_card_supporting_textPT | label_mdl_ripple_effectPT | label_mdl_buttonPT | ((ctx: ctx) => any)
+type label_styleType = label_htmlTagPT | label_spanPT | label_card_titlePT | label_card_supporting_textPT | label_mdl_ripple_effectPT | label_mdl_buttonPT | ((ctx: ctx) => any)
 type cmp_def_label_styleType = {
 	type: 'label_style',
 	params?: [param],
 	impl: label_styleType,
 }
+type label_htmlTagPT = {$: 'label.htmlTag', htmlTag: dataType, cssClass: dataType}
 type label_spanPT = {$: 'label.span', }
-type label_pPT = {$: 'label.p', }
-type label_h1PT = {$: 'label.h1', }
-type label_headingPT = {$: 'label.heading', level: dataType}
 type label_card_titlePT = {$: 'label.card-title', }
 type label_card_supporting_textPT = {$: 'label.card-supporting-text', }
 type label_mdl_ripple_effectPT = {$: 'label.mdl-ripple-effect', }
@@ -814,6 +800,15 @@ type cmp_def_menu_option_styleType = {
 type menu_style_option_linePT = {$: 'menu-style.option-line', }
 type menu_option_as_icon24PT = {$: 'menu.option-as-icon24', }
 
+// type dialog.style
+type dialog_styleType = dialog_context_menu_popupPT | ((ctx: ctx) => any)
+type cmp_def_dialog_styleType = {
+	type: 'dialog_style',
+	params?: [param],
+	impl: dialog_styleType,
+}
+type dialog_context_menu_popupPT = {$: 'dialog.context-menu-popup', offsetTop: dataType, rightSide: booleanType}
+
 // type menu-separator.style
 type menu_separator_styleType = menu_separator_linePT | ((ctx: ctx) => any)
 type cmp_def_menu_separator_styleType = {
@@ -846,7 +841,7 @@ type cmp_def_picklist_promoteType = {
 type picklist_promotePT = {$: 'picklist.promote', groups: dataType, options: dataType}
 
 // type button.style
-type button_styleType = button_hrefPT | button_xPT | button_mdl_raisedPT | button_mdl_flat_ripplePT | button_mdl_iconPT | button_mdl_round_iconPT | button_mdl_icon_12_with_ripplePT | button_mdl_icon_12PT | button_mdl_card_flatPT | table_button_hrefPT | ((ctx: ctx) => any)
+type button_styleType = button_hrefPT | button_xPT | button_mdl_raisedPT | button_mdl_flat_ripplePT | button_mdl_iconPT | button_mdl_round_iconPT | button_mdl_icon12_with_ripplePT | button_mdl_icon12PT | button_mdl_card_flatPT | table_button_hrefPT | ((ctx: ctx) => any)
 type cmp_def_button_styleType = {
 	type: 'button_style',
 	params?: [param],
@@ -858,8 +853,8 @@ type button_mdl_raisedPT = {$: 'button.mdl-raised', }
 type button_mdl_flat_ripplePT = {$: 'button.mdl-flat-ripple', }
 type button_mdl_iconPT = {$: 'button.mdl-icon', icon: dataType}
 type button_mdl_round_iconPT = {$: 'button.mdl-round-icon', icon: dataType}
-type button_mdl_icon_12_with_ripplePT = {$: 'button.mdl-icon-12-with-ripple', icon: dataType}
-type button_mdl_icon_12PT = {$: 'button.mdl-icon-12', icon: dataType}
+type button_mdl_icon12_with_ripplePT = {$: 'button.mdl-icon12-with-ripple', icon: dataType}
+type button_mdl_icon12PT = {$: 'button.mdl-icon12', icon: dataType}
 type button_mdl_card_flatPT = {$: 'button.mdl-card-flat', }
 type table_button_hrefPT = {$: 'table-button.href', }
 
@@ -995,7 +990,7 @@ type cmp_def_tree_styleType = {
 }
 type tree_ul_liPT = {$: 'tree.ul-li', }
 type tree_no_headPT = {$: 'tree.no-head', }
-type cmpDef = cmp_def_dataType | cmp_def_aggregatorType | cmp_def_booleanType | cmp_def_actionType | cmp_def_propType | cmp_def_varType | cmp_def_systemType | cmp_def_data_switch_caseType | cmp_def_action_switch_caseType | cmp_def_jison_parserType | cmp_def_lexer_ruleType | cmp_def_bnf_expressionType | cmp_def_expression_optionType | cmp_def_testType | cmp_def_ui_actionType | cmp_def_controlType | cmp_def_clickableType | cmp_def_featureType | cmp_def_dialog_featureType | cmp_def_d3_scatter_styleType | cmp_def_d3_frameType | cmp_def_d3_histogram_styleType | cmp_def_d3_featureType | cmp_def_d3_axesType | cmp_def_d3_pivotType | cmp_def_d3_scaleType | cmp_def_d3_rangeType | cmp_def_d3_domainType | cmp_def_dialog_styleType | cmp_def_divider_styleType | cmp_def_editable_number_styleType | cmp_def_icon_with_action_styleType | cmp_def_imageType | cmp_def_image_styleType | cmp_def_inner_html_styleType | cmp_def_filter_typeType | cmp_def_itemlist_group_byType | cmp_def_itemlist_styleType | cmp_def_group_styleType | cmp_def_label_styleType | cmp_def_markdown_styleType | cmp_def_menu_optionType | cmp_def_menuType | cmp_def_menu_styleType | cmp_def_menu_option_styleType | cmp_def_menu_separator_styleType | cmp_def_picklist_optionsType | cmp_def_picklist_promoteType | cmp_def_button_styleType | cmp_def_editable_text_styleType | cmp_def_text_styleType | cmp_def_editable_boolean_styleType | cmp_def_first_succeeding_styleType | cmp_def_picklist_styleType | cmp_def_table_styleType | cmp_def_tableType | cmp_def_table_fieldType | cmp_def_rich_text_styleType | cmp_def_themeType | cmp_def_tree_nodeModelType | cmp_def_tree_styleType
+type cmpDef = cmp_def_dataType | cmp_def_aggregatorType | cmp_def_booleanType | cmp_def_actionType | cmp_def_propType | cmp_def_varType | cmp_def_systemType | cmp_def_data_switch_caseType | cmp_def_action_switch_caseType | cmp_def_jison_parserType | cmp_def_lexer_ruleType | cmp_def_bnf_expressionType | cmp_def_expression_optionType | cmp_def_testType | cmp_def_ui_actionType | cmp_def_controlType | cmp_def_clickableType | cmp_def_featureType | cmp_def_dialog_featureType | cmp_def_d3_scatter_styleType | cmp_def_d3_frameType | cmp_def_d3_histogram_styleType | cmp_def_d3_featureType | cmp_def_d3_axesType | cmp_def_d3_pivotType | cmp_def_d3_scaleType | cmp_def_d3_rangeType | cmp_def_d3_domainType | cmp_def_divider_styleType | cmp_def_editable_number_styleType | cmp_def_icon_with_action_styleType | cmp_def_imageType | cmp_def_image_styleType | cmp_def_inner_html_styleType | cmp_def_filter_typeType | cmp_def_itemlist_group_byType | cmp_def_itemlist_styleType | cmp_def_group_styleType | cmp_def_label_styleType | cmp_def_markdown_styleType | cmp_def_menu_optionType | cmp_def_menuType | cmp_def_menu_styleType | cmp_def_menu_option_styleType | cmp_def_dialog_styleType | cmp_def_menu_separator_styleType | cmp_def_picklist_optionsType | cmp_def_picklist_promoteType | cmp_def_button_styleType | cmp_def_editable_text_styleType | cmp_def_text_styleType | cmp_def_editable_boolean_styleType | cmp_def_first_succeeding_styleType | cmp_def_picklist_styleType | cmp_def_table_styleType | cmp_def_tableType | cmp_def_table_fieldType | cmp_def_rich_text_styleType | cmp_def_themeType | cmp_def_tree_nodeModelType | cmp_def_tree_styleType
 type macros = {
 	call(param: dataType) : *Type,
 	pipeline(items: dataType | [aggregatorType]) : dataType,
@@ -1132,7 +1127,7 @@ type macros = {
 	var({ name: dataType, value: dataType, 
 /** E.g., selected item variable */mutable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType }) : featureType,
-	Variable({ name: dataType, value: dataType, 
+	variable({ name: dataType, value: dataType, 
 /** E.g., selected item variable */mutable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType }) : featureType,
 	bindRefs({ watchRef: dataType, 
@@ -1146,7 +1141,6 @@ type macros = {
 	refreshControlById(id: dataType) : actionType,
 	focusOnFirstElement(selector: dataType) : actionType,
 	css(css: dataType) : featureType | dialog_featureType,
-	openDialog({ id: dataType, style: dialog_styleType, content: controlType, menu: controlType, title: dataType, onOK: actionType, modal: booleanType, features: [dialog_featureType] }) : actionType,
 	divider({ style: divider_styleType, title: dataType, features: [featureType] }) : controlType,
 	editableBoolean({ databind: booleanType, style: editable_boolean_styleType, title: dataType, textForTrue: dataType, textForFalse: dataType, features: [featureType] }) : controlType,
 	editableNumber({ databind: dataType, title: dataType, style: editable_number_styleType, 
@@ -1186,4 +1180,4 @@ type macros = {
 	gotoUrl(url: dataType, target: enumType) : actionType,
 	resetWspy(param: dataType) : actionType,
 }
-// const {call,pipeline,pipe,jbRun,list,firstSucceeding,keys,properties,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,writeValue,indexOf,addToArray,splice,removeFromArray,toggleBooleanValue,slice,sort,first,last,count,reverse,sample,obj,assign,assignWithIndex,prop,Var,remark,If,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUppercase,toLowercase,capitalize,join,unique,log,asIs,object,split,replace,touch,isNull,isEmpty,notEmpty,equals,notEquals,runActions,runTransaction,runActionOnItems,delay,onNextTimer,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,isRef,asRef,newline,lexerRule,bnfExpression,expressionOption,extractText,breakText,zipArrays,removeSections,merge,dynamicObject,filterEmptyProperties,trim,removePrefixRegex,wrapAsObjectWithArray,wrapAsObject,prettyPrint,dataTest,uiTest,button,ctrlAction,altAction,buttonDisabled,iconWithAction,card,watchRef,watchObservable,id,var,Variable,bindRefs,calculatedVar,features,hidden,conditionalClass,refreshControlById,focusOnFirstElement,css,openDialog,divider,editableBoolean,editableNumber,editableText,validation,group,inlineControls,dynamicControls,controlWithCondition,materialIcon,image,innerHtml,itemlistWithGroups,itemlistDefaultHeading,itemlist,itemlog,label,highlight,markdown,picklist,customStyle,styleByControl,sidenav,table,field,tabs,text,richText,tree,gotoUrl,resetWspy} = jb.macros
+// const {call,pipeline,pipe,jbRun,list,firstSucceeding,keys,properties,prefix,suffix,removePrefix,removeSuffix,removeSuffixRegex,writeValue,indexOf,addToArray,splice,removeFromArray,toggleBooleanValue,slice,sort,first,last,count,reverse,sample,obj,assign,assignWithIndex,prop,Var,remark,If,not,and,or,between,contains,notContains,startsWith,endsWith,filter,matchRegex,toUppercase,toLowercase,capitalize,join,unique,log,asIs,object,split,replace,touch,isNull,isEmpty,notEmpty,equals,notEquals,runActions,runTransaction,runActionOnItems,delay,onNextTimer,extractPrefix,extractSuffix,range,typeOf,className,isOfType,inGroup,isRef,asRef,newline,lexerRule,bnfExpression,expressionOption,extractText,breakText,zipArrays,removeSections,merge,dynamicObject,filterEmptyProperties,trim,removePrefixRegex,wrapAsObjectWithArray,wrapAsObject,prettyPrint,dataTest,uiTest,button,ctrlAction,altAction,buttonDisabled,iconWithAction,card,watchRef,watchObservable,id,var,variable,bindRefs,calculatedVar,features,hidden,conditionalClass,refreshControlById,focusOnFirstElement,css,divider,editableBoolean,editableNumber,editableText,validation,group,inlineControls,dynamicControls,controlWithCondition,materialIcon,image,innerHtml,itemlistWithGroups,itemlistDefaultHeading,itemlist,itemlog,label,highlight,markdown,picklist,customStyle,styleByControl,sidenav,table,field,tabs,text,richText,tree,gotoUrl,resetWspy} = jb.macros

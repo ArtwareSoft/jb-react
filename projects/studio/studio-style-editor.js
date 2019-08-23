@@ -1,215 +1,137 @@
-jb.component('studio.open-style-editor', {
-  type: 'action',
-  params: [{ id: 'path', as: 'string' }],
-  impl :{$: 'open-dialog',
-    $vars: {
-      styleSource :{$: 'studio.style-source', path: '%$path%' }
-    },
-    style :{$: 'dialog.studio-floating', id: 'style editor', width: '800' },
-    content :{$: 'studio.style-editor', path: '%$path%' },
-    features: {$: 'dialog-feature.resizer'},
-    menu :{$: 'button',
-      title: 'style menu',
-      action :{$: 'studio.open-style-menu', path: '%$path%' },
-      style :{$: 'button.mdl-icon', icon: 'menu' },
-      features :{$: 'css', css: 'button { background: transparent }' }
-    },
-    title: 'Style Editor - %$styleSource/path%'
-  }
-})
 
-jb.component('studio.open-style-menu', {
-  type: 'action',
+jb.component('studio.format-css', { /* studio_formatCss */
   params: [
-    { id: 'path', as: 'string' }
+    {id: 'css', as: 'string'}
   ],
-  impl :{$: 'menu.open-context-menu',
-    menu :{$: 'menu.menu',
-      options: [
-        {$: 'menu.action',
-          title: 'Clone as local style',
-          icon: 'build',
-          action : [
-            {$: 'studio.make-local', path: '%$path%' },
-            {$: 'studio.open-style-editor', path: '%$styleSource/innerPath%' },
-            {$: 'studio.open-properties' },
-          ],
-          showCondition: "%$styleSource/type% == 'global'",
-        },
-        {$: 'menu.action',
-          title: 'Extract style as a reusable component',
-          icon: 'build',
-          action :{$: 'studio.open-make-global-style', path: '%$path%' },
-          showCondition: "%$styleSource/type% == 'inner'",
-        },
-        {$: 'menu.action',
-          title: 'Format css',
-          action :{$: 'write-value',
-            to :{$: 'studio.profile-as-text',  path: '%$styleSource/path%~css', stringOnly: true },
-            value :{$: 'studio.format-css',
-              css:{$: 'studio.profile-as-text',  path: '%$styleSource/path%~css' }
-            }
-          }
-        }
-      ]
-    }
+  impl: (ctx,css) => {
+    return css
+      .replace(/{\s*/g,'{ ')
+      .replace(/;\s*/g,';\n')
+      .replace(/}[^$]/mg,'}\n\n')
+      .replace(/^\s*/mg,'')
   }
 })
 
-jb.component('studio.style-editor', {
-  type: 'control', 
-  params: [{ id: 'path', as: 'string' }], 
-  impl :{$: 'group', 
-    controls: [
-      {$: 'tabs', 
-        tabs: [
-          {$: 'group', 
-            title: 'css', 
-            style :{$: 'layout.vertical', 
-              vSpacing: 20, 
-              hSpacing: 20, 
-              titleWidth: 100, 
-              spacing: 3
-            }, 
-            controls: [
-              {$: 'editable-text', 
-                title: 'css', 
-                databind :{$: 'studio.profile-as-string-byref', 
-                  stringOnly: true, 
-                  path: '%$path%~css'
-                }, 
-                style :{$: 'editable-text.codemirror', 
-                  cm_settings: '', 
-                  enableFullScreen: false, 
-                  height: '300', 
-                  mode: 'css', 
-                  debounceTime: '2000', 
-                  onCtrlEnter :{$: 'studio.refresh-preview' }
-                }
-              }, 
-              {$: 'label', 
-                title: 'jsx', 
-                style :{$: 'label.htmlTag', htmlTag: 'h5' }
-              }, 
-              {$: 'editable-text', 
-                title: 'template', 
-                databind :{
-                  $pipeline: [
-                    {$: 'studio.template-as-jsx', path: '%$path%~template' }, 
-                    {$: 'studio.pretty', text: '%%' }
-                  ]
-                }, 
-                style :{$: 'editable-text.codemirror', 
-                  cm_settings: '', 
-                  height: '200', 
-                  mode: 'jsx', 
-                  onCtrlEnter :{$: 'studio.refresh-preview' }
-                }
-              }
-            ]
-          }, 
-          {$: 'group', 
-            title: 'js', 
-            controls: [
-              {$: 'editable-text', 
-                title: 'template', 
-                databind :{$: 'studio.profile-as-text', 
-                  stringOnly: true, 
-                  path: '%$path%~template'
-                }, 
-                style :{$: 'editable-text.codemirror', 
-                  cm_settings: '', 
-                  height: '400', 
-                  mode: 'javascript', 
-                  onCtrlEnter :{$: 'studio.refresh-preview' }
-                }
-              }, 
-              {$: 'button', 
-                title: 'load from jsx/html', 
-                action :{$: 'open-dialog', 
-                  style :{$: 'dialog.dialog-ok-cancel', 
-                    okLabel: 'OK', 
-                    cancelLabel: 'Cancel'
-                  }, 
-                  content :{$: 'group', 
-                    controls: [
-                      {$: 'editable-text', 
-                        title: 'jsx', 
-                        databind: '%$jsx%', 
-                        style :{$: 'editable-text.codemirror', 
-                          enableFullScreen: true, 
-                          debounceTime: 300
-                        }
-                      }
-                    ]
-                  }, 
-                  title: 'Paste html / jsx', 
-                  onOK :{$: 'write-value', 
-                    to :{$: 'studio.ref', path: '%$path%~template' }, 
-                    value :{$: 'studio.jsx-to-h', text: '%$jsx%' }
-                  }, 
-                  features: [
-                    {$: 'variable', 
-                      name: 'jsx', 
-                      value: 'paste your jsx here', 
-                      mutable: 'true'
-                    }
-                  ]
-                }, 
-                style :{$: 'button.mdl-raised' }
-              }
-            ]
-          }, 
-          {$: 'group', 
-            title: 'Inteliscript editor', 
-            style :{$: 'layout.vertical' }, 
-            controls: [{$: 'studio.jb-editor', path: '%$path%' }]
-          }
-        ], 
-        style :{$: 'tabs.simple' }
-      }
-    ]
-  }
-})
-
-jb.component('studio.style-editor-options', {
-	type: 'menu.option',
-	params: [
-		{ id: 'path', as: 'string'},
-	],
-    impl :{$: 'menu.end-with-separator',
-		$vars: {
-		  compName :{$: 'studio.comp-name', path: '%$path%' }
-		},
-	  options: [
-			{$: 'menu.action',
-			  title: 'Style editor',
-			  action :{
-				$runActions: [
-				  {$: 'studio.make-local', path: '%$path%' },
-				  {$: 'studio.open-style-editor', path: '%$path%' }
-				]
-			  },
-			  showCondition :{$: 'ends-with', endsWith: '~style', text: '%$path%' }
-			},
-			{$: 'menu.action',
-			  title: 'Style editor of %$compName%',
-			  action :{$: 'studio.open-style-editor', path: '%$compName%~impl' },
-			  showCondition :{
-				$and: [
-				  {$: 'ends-with', endsWith: '~style', text: '%$path%' },
-				  {$: 'notEmpty', item: '%$compName%' }
-				]
-			  }
-			},
-		]
-    }
-})
-
-
-jb.component('studio.style-source', {
+jb.component('studio.open-style-menu', { /* studio_openStyleMenu */
+  type: 'action',
   params: [
-    { id: 'path', as: 'string' }
+    {id: 'path', as: 'string'}
+  ],
+  impl: menu_openContextMenu({
+    menu: menu_menu({
+      options: [
+        menu_action({
+          title: 'Clone as local style',
+          action: [
+            studio_makeLocal('%$path%'),
+            {$: 'studio.open-style-editor', path: '%$styleSource/innerPath%', $recursive: true},
+            studio_openProperties()
+          ],
+          icon: 'build',
+          showCondition: "%$styleSource/type% == 'global'"
+        }),
+        menu_action({
+          title: 'Extract style as a reusable component',
+          action: {$: 'studio.open-make-global-style', path: '%$path%'},
+          icon: 'build',
+          showCondition: "%$styleSource/type% == 'inner'"
+        }),
+        menu_action({
+          title: 'Format css',
+          action: writeValue(
+            studio_profileAsText('%$styleSource/path%~css'),
+            studio_formatCss(studio_profileAsText('%$styleSource/path%~css'))
+          )
+        })
+      ]
+    })
+  })
+})
+
+jb.component('studio.style-editor', { /* studio_styleEditor */
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    controls: [
+      tabs({
+        tabs: [
+          group({
+            title: 'css',
+            style: layout_vertical(3),
+            controls: [
+              editableText({
+                title: 'css',
+                databind: studio_profileAsStringByref('%$path%~css'),
+                style: editableText_codemirror({
+                  cm_settings: '',
+                  enableFullScreen: false,
+                  height: '300',
+                  mode: 'css',
+                  debounceTime: '2000',
+                  onCtrlEnter: studio_refreshPreview()
+                })
+              }),
+              label({title: 'jsx', style: label_htmlTag('h5')}),
+              editableText({
+                title: 'template',
+                databind: pipeline(studio_templateAsJsx('%$path%~template'), studio_pretty('%%')),
+                style: editableText_codemirror({cm_settings: '', height: '200', mode: 'jsx', onCtrlEnter: studio_refreshPreview()})
+              })
+            ]
+          }),
+          group({
+            title: 'js',
+            controls: [
+              editableText({
+                title: 'template',
+                databind: studio_profileAsText('%$path%~template'),
+                style: editableText_codemirror({
+                  cm_settings: '',
+                  height: '400',
+                  mode: 'javascript',
+                  onCtrlEnter: studio_refreshPreview()
+                })
+              }),
+              button({
+                title: 'load from jsx/html',
+                action: openDialog({
+                  style: dialog_dialogOkCancel('OK', 'Cancel'),
+                  content: group({
+                    controls: [
+                      editableText({
+                        title: 'jsx',
+                        databind: '%$jsx%',
+                        style: editableText_codemirror({enableFullScreen: true, debounceTime: 300})
+                      })
+                    ]
+                  }),
+                  title: 'Paste html / jsx',
+                  onOK: writeValue(studio_ref('%$path%~template'), studio_jsxToH('%$jsx%')),
+                  features: [variable({name: 'jsx', value: 'paste your jsx here', mutable: 'true'})]
+                }),
+                style: button_mdlRaised()
+              })
+            ]
+          }),
+          group({
+            title: 'Inteliscript editor',
+            style: layout_vertical(),
+            controls: [
+              studio_jbEditor('%$path%')
+            ]
+          })
+        ],
+        style: tabs_simple()
+      })
+    ]
+  })
+})
+
+jb.component('studio.style-source', { /* studio_styleSource */
+  params: [
+    {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
       var st = jb.studio;
@@ -223,15 +145,44 @@ jb.component('studio.style-source', {
   }
 })
 
-jb.component('studio.format-css', {
+jb.component('studio.open-style-editor', { /* studio_openStyleEditor */
+  type: 'action',
   params: [
-    { id: 'css', as: 'string' }
+    {id: 'path', as: 'string'}
   ],
-  impl: (ctx,css) => {
-    return css
-      .replace(/{\s*/g,'{ ')
-      .replace(/;\s*/g,';\n')
-      .replace(/}[^$]/mg,'}\n\n')
-      .replace(/^\s*/mg,'')
-  }
+  impl: openDialog({
+    vars: [Var('styleSource', studio_styleSource('%$path%'))],
+    style: dialog_studioFloating({id: 'style editor', width: '800'}),
+    content: studio_styleEditor('%$path%'),
+    menu: button({
+      title: 'style menu',
+      action: studio_openStyleMenu('%$path%'),
+      style: button_mdlIcon('menu'),
+      features: css('button { background: transparent }')
+    }),
+    title: 'Style Editor - %$styleSource/path%',
+    features: dialogFeature_resizer()
+  })
+})
+
+jb.component('studio.style-editor-options', { /* studio_styleEditorOptions */ 
+  type: 'menu.option',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: menu_endWithSeparator({
+    vars: [Var('compName', studio_compName('%$path%'))],
+    options: [
+      menu_action({
+        title: 'Style editor',
+        action: runActions(studio_makeLocal('%$path%'), studio_openStyleEditor('%$path%')),
+        showCondition: endsWith('~style', '%$path%')
+      }),
+      menu_action({
+        title: 'Style editor of %$compName%',
+        action: studio_openStyleEditor('%$compName%~impl'),
+        showCondition: and(endsWith('~style', '%$path%'), notEmpty('%$compName%'))
+      })
+    ]
+  })
 })
