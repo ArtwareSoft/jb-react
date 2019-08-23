@@ -12,1003 +12,826 @@ jb.resource('todo_list',[
 
 
 jb.component('todomvc.main', {
-  type: 'control', 
-  impl :{$: 'group', 
+  type: 'control',
+  impl: group({
     controls: [
-      {$: 'editable-text', 
-        title: 'text', 
-        databind: '%$input%', 
-        updateOnBlur: 'false', 
-        style :{$: 'editable-text.input' }, 
+      editableText({
+        title: 'text',
+        databind: '%$input%',
+        updateOnBlur: 'false',
+        style: editableText_input(),
         features: [
-          {$: 'feature.onEnter', 
-            event: 'keypress', 
-            action :{
-              $runActions: [
-                {$: 'add-to-array', 
-                  array: '%$todo_list%', 
-                  itemsToAdd :{
-                    $obj: [
-                      {$: 'prop', title: 'task', val: '%$input%', type: 'string' }, 
-                      {$: 'prop', title: 'completed', val: 'false', type: 'boolean' }
-                    ]
-                  }
-                }, 
-                {$: 'refresh-control-by-id', id: 'list' }, 
-                {$: 'write-value', to: '%$input%' }
-              ]
-            }
-          }, 
-          {$: 'feature.onEvent', 
-            event: 'blur', 
-            action :{$: 'write-value', 
-              content :{$: 'group' }, 
-              title: 'hey', 
-              style :{$: 'dialog.default' }, 
-              to: '%$input%', 
-              value: ''
-            }
-          }
+          feature_onEnter(
+            runActions(
+              addToArray(
+                '%$todo_list%',
+                obj(prop('task', '%$input%', 'string'), prop('completed', 'false', 'boolean'))
+              ),
+              refreshControlById('list'),
+              writeValue('%$input%')
+            )
+          ),
+          feature_onEvent({event: 'blur', action: writeValue('%$input%', '')})
         ]
-      }, 
-      {$: 'itemlist', 
-        items: '%$todo_list%', 
+      }),
+      itemlist({
+        items: '%$todo_list%',
         controls: [
-          {$: 'group', 
-            title: 'switch first succeeding', 
-            style :{$: 'layout.horizontal', spacing: 3 }, 
+          group({
+            title: 'switch first succeeding',
+            style: layout_horizontal(3),
             controls: [
-              {$: 'editable-boolean', 
-                databind: '%completed%', 
-                style :{$: 'editable-boolean.checkbox' }, 
-                title: 'completed', 
-                textForTrue: 'yes', 
+              editableBoolean({
+                databind: '%completed%',
+                style: editableBoolean_checkbox(),
+                title: 'completed',
+                textForTrue: 'yes',
                 textForFalse: 'no'
-              }, 
-              {$: 'control.first-succeeding', 
+              }),
+              control_firstSucceeding({
                 controls: [
-                  {$: 'control-with-condition', 
-                    condition :{$: 'equals', item1: '%$state%', item2: 'label' }, 
-                    control :{$: 'label', 
-                      title: '%task%', 
-                      style :{$: 'label.span' }, 
-                      features: [
-                        {$: 'feature.onEvent', 
-                          event: 'dblclick', 
-                          action :{$: 'write-value', to: '%$state%', value: 'text' }
-                        }
-                      ]
-                    }, 
-                    title: 'label task'
-                  }, 
-                  {$: 'editable-text', 
-                    title: 'task editable', 
-                    databind: '%task%', 
-                    updateOnBlur: true, 
-                    style :{$: 'editable-text.input' }, 
-                    features: [
-                      {$: 'feature.onEvent', 
-                        event: 'blur', 
-                        action :{$: 'write-value', to: '%$state%', value: 'label' }
-                      }
-                    ]
-                  }
-                ], 
-                title: 'switch', 
-                style :{$: 'first-succeeding.style' }, 
-                features: [{$: 'watch-ref', ref: '%$state%', allowSelfRefresh: 'true' }]
-              }
-            ], 
-            features :{$: 'var', name: 'state', value: 'label', mutable: true }
-          }
-        ], 
-        style :{$: 'itemlist.ul-li' }, 
-        itemVariable: '%$todo_list%', 
-        features :{$: 'id', id: 'list' }
-      }, 
-      {$: 'group', 
-        $disabled: true, 
-        title: 'switch-hidden', 
-        style :{$: 'layout.horizontal', spacing: 3 }, 
+                  controlWithCondition(
+                    equals('%$state%', 'label'),
+                    label({
+                      title: '%task%',
+                      style: label_span(),
+                      features: [feature_onEvent({event: 'dblclick', action: writeValue('%$state%', 'text')})]
+                    }),
+                    'label task'
+                  ),
+                  editableText({
+                    title: 'task editable',
+                    databind: '%task%',
+                    updateOnBlur: true,
+                    style: editableText_input(),
+                    features: [feature_onEvent({event: 'blur', action: writeValue('%$state%', 'label')})]
+                  })
+                ],
+                title: 'switch',
+                style: firstSucceeding_style(),
+                features: [watchRef({ref: '%$state%', allowSelfRefresh: 'true'})]
+              })
+            ],
+            features: {$: 'var', name: 'state', value: 'label', mutable: true}
+          })
+        ],
+        style: itemlist_ulLi(),
+        itemVariable: '%$todo_list%',
+        features: id('list')
+      }),
+      group({
+        title: 'switch-hidden',
+        style: layout_horizontal(3),
         controls: [
-          {$: 'label', 
-            title: 'my label', 
-            style :{$: 'label.span' }, 
+          label({
+            title: 'my label',
+            style: label_span(),
             features: [
-              {$: 'feature.onEvent', 
-                event: 'dblclick', 
-                action :{$: 'write-value', to: '%$filterBy%', value: 'text' }
-              }, 
-              {$: 'hidden', 
-                showCondition :{$: 'equals', item1: '%$filterBy%', item2: 'label' }
-              }, 
-              {$: 'watch-ref', ref: '%$filterBy%', allowSelfRefresh: true }
+              feature_onEvent({event: 'dblclick', action: writeValue('%$filterBy%', 'text')}),
+              hidden(equals('%$filterBy%', 'label')),
+              watchRef({ref: '%$filterBy%', allowSelfRefresh: true})
             ]
-          }, 
-          {$: 'editable-text', 
-            databind: '%$input%', 
-            style :{$: 'editable-text.input' }, 
+          }),
+          editableText({
+            databind: '%$input%',
+            style: editableText_input(),
             features: [
-              {$: 'feature.onEvent', 
-                event: 'blur', 
-                action :{
-                  $runActions: [
-                    {$: 'write-value', to: '%$filterBy%', value: 'label' }, 
-                    {$: 'open-dialog', 
-                      $disabled: true, 
-                      content :{$: 'label', title: 'my label' }
-                    }, 
-                    {$: 'write-value', to: '%$input%', value: 'wow' }
-                  ]
-                }
-              }, 
-              {$: 'hidden', 
-                showCondition :{$: 'equals', item1: 'text', item2: '%$filterBy%' }
-              }, 
-              {$: 'watch-ref', ref: '%$filterBy%', allowSelfRefresh: true }
+              feature_onEvent({
+                event: 'blur',
+                action: runActions(
+                  writeValue('%$filterBy%', 'label'),
+                  openDialog({content: label('my label')}),
+                  writeValue('%$input%', 'wow')
+                )
+              }),
+              hidden(equals('text', '%$filterBy%')),
+              watchRef({ref: '%$filterBy%', allowSelfRefresh: true})
             ]
-          }
+          })
         ]
-      }, 
-      {$: 'label', 
-        title :{$: 'json.stringify', value: '%$todo_list%' }, 
-        style :{$: 'label.span' }, 
-        features: [{$: 'id', id: 'show' }]
-      }
-    ], 
+      }),
+      label({title: json_stringify('%$todo_list%'), style: label_span(), features: [id('show')]})
+    ],
     features: [
-      {$: 'var', name: 'filterBy', value: 'label', mutable: true }, 
-      {$: 'var', name: 'input', value: 'hey', mutable: true }, 
-      {$: 'var', name: 'todolist', value: '', mutable: true }
+      {$: 'var', name: 'filterBy', value: 'label', mutable: true},
+      {$: 'var', name: 'input', value: 'hey', mutable: true},
+      {$: 'var', name: 'todolist', value: '', mutable: true}
     ]
-  }
+  })
 })
 
 jb.component('todomvc.classes', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'classes', 
+  type: 'control',
+  impl: group({
+    title: 'classes',
     controls: [
-      {$: 'label', 
-        title: 'todos', 
-        style :{$: 'label.h1' }
-      }, 
-      {$: 'group', 
-        style :{$: 'layout.horizontal', spacing: 3 }, 
+      label({title: 'todos', style: {$: 'label.h1'}}),
+      group({
+        style: layout_horizontal(3),
         controls: [
-          {$: 'editable-text', 
-            title: 'text', 
-            databind: '%$input%', 
-            style :{$: 'editable-text.input' }, 
-            features :{$: 'feature.onEnter', 
-              event: 'keypress', 
-              action :{
-                $runActions: [
-                  {$: 'add-to-array', 
-                    array: '%$todo_list%', 
-                    itemsToAdd :{
-                      $obj: [
-                        {$: 'prop', title: 'task', val: '%$input%', type: 'string' }, 
-                        {$: 'prop', title: 'completed', val: '', type: 'boolean' }
-                      ]
-                    }
-                  }, 
-                  {$: 'write-value', to: '%$input%' }, 
-                  {$: 'refresh-control-by-id', id: 'counter' }
-                ]
-              }
-            }
-          }
+          editableText({
+            title: 'text',
+            databind: '%$input%',
+            style: editableText_input(),
+            features: feature_onEnter(
+              runActions(
+                addToArray(
+                  '%$todo_list%',
+                  obj(prop('task', '%$input%', 'string'), prop('completed', '', 'boolean'))
+                ),
+                writeValue('%$input%'),
+                refreshControlById('counter')
+              )
+            )
+          })
         ]
-      }, 
-      {$: 'group', 
+      }),
+      group({
         controls: [
-          {$: 'editable-boolean', 
-            databind :{$: 'todomvc.status' }, 
-            style :{$: 'todomvc.editable-boolean.label+editableboolen', inputCssClass: 'toggle-all' }, 
-            textForTrue: 'yes', 
-            textForFalse: 'no', 
+          editableBoolean({
+            databind: {$: 'todomvc.status'},
+            style: {$: 'todomvc.editable-boolean.label+editableboolen', inputCssClass: 'toggle-all'},
+            textForTrue: 'yes',
+            textForFalse: 'no',
             features: [
-              {$: 'id', id: 'status' }, 
-              {$: 'feature.onEvent', 
-                event: 'change', 
-                action :{
-                  $runActions: [
-                    {$: 'action.if', 
-                      condition :{$: 'equals', 
-                        item1 :{$: 'todomvc.status' }, 
-                        item2: true
-                      }, 
-                      then :{
-                        $runActions: [
-                          {$: 'run-action-on-items', 
-                            items: '%$todo_list%', 
-                            action :{$: 'write-value', to: '%completed%', value: false }
-                          }
-                        ]
-                      }
-                    }, 
-                    {$: 'action.if', 
-                      condition :{$: 'equals', 
-                        item1 :{$: 'todomvc.status' }, 
-                        item2: false
-                      }, 
-                      then :{$: 'run-action-on-items', 
-                        items: '%$todo_list%', 
-                        action :{$: 'write-value', to: '%completed%', value: true }
-                      }
-                    }, 
-                    {$: 'refresh-control-by-id', id: 'counter' }
-                  ]
-                }
-              }, 
-              {$: 'watch-ref', ref: '%$todo_list%', includeChildren: true, allowSelfRefresh: true }
+              id('status'),
+              feature_onEvent({
+                event: 'change',
+                action: runActions(
+                  action_if(
+                    equals({$: 'todomvc.status'}, true),
+                    runActions(runActionOnItems('%$todo_list%', writeValue('%completed%', false)))
+                  ),
+                  action_if(
+                    equals({$: 'todomvc.status'}, false),
+                    runActionOnItems('%$todo_list%', writeValue('%completed%', true))
+                  ),
+                  refreshControlById('counter')
+                )
+              }),
+              watchRef({ref: '%$todo_list%', includeChildren: true, allowSelfRefresh: true})
             ]
-          }, 
-          {$: 'itemlist', 
-            items :{$: 'todomvc.todofilters1' }, 
+          }),
+          itemlist({
+            items: {$: 'todomvc.todofilters1'},
             controls: [
-              {$: 'group', 
-                title: 'item', 
-                style :{$: 'layout.horizontal', spacing: 3 }, 
+              group({
+                title: 'item',
+                style: layout_horizontal(3),
                 controls: [
-                  {$: 'editable-boolean', 
-                    databind: '%completed%', 
-                    title: '', 
-                    textForTrue: 'yes', 
-                    textForFalse: 'no', 
-                    features :{$: 'feature.onEvent', 
-                      event: 'change', 
-                      action :{
-                        $runActions: [
-                          {$: 'refresh-control-by-id', id: 'todolist' }, 
-                          {$: 'refresh-control-by-id', id: 'counter' }
-                        ]
-                      }
-                    }
-                  }, 
-                  {$: 'control.first-succeeding', 
+                  editableBoolean({
+                    databind: '%completed%',
+                    title: '',
+                    textForTrue: 'yes',
+                    textForFalse: 'no',
+                    features: feature_onEvent({
+                      event: 'change',
+                      action: runActions(refreshControlById('todolist'), refreshControlById('counter'))
+                    })
+                  }),
+                  control_firstSucceeding({
                     controls: [
-                      {$: 'control-with-condition', 
-                        condition :{$: 'equals', item1: '%$state%', item2: 'label' }, 
-                        control :{$: 'label', 
-                          title: '%task%', 
-                          style :{$: 'label.span' }, 
-                          features: [
-                            {$: 'feature.onEvent', 
-                              event: 'dblclick', 
-                              action :{$: 'write-value', to: '%$state%', value: 'text' }
-                            }
-                          ]
-                        }, 
-                        title: 'label task'
-                      }, 
-                      {$: 'editable-text', 
-                        title: 'task editable', 
-                        databind: '%task%', 
-                        updateOnBlur: true, 
-                        style :{$: 'editable-text.input' }, 
-                        features: [
-                          {$: 'feature.onEvent', 
-                            event: 'blur', 
-                            action :{$: 'write-value', to: '%$state%', value: 'label' }
-                          }
-                        ]
-                      }
-                    ], 
-                    title: 'switch', 
-                    style :{$: 'first-succeeding.style' }, 
-                    features: [{$: 'watch-ref', ref: '%$state%', allowSelfRefresh: 'true' }]
-                  }, 
-                  {$: 'button', 
-                    title: 'delete', 
-                    action :{
-                      $runActions: [
-                        {$: 'splice', 
-                          array: '%$todo_list%', 
-                          fromIndex :{$: 'index-of', array: '%$todo_list%', item: '%$item%' }, 
-                          noOfItemsToRemove: '1', 
-                          itemsToAdd: []
-                        }, 
-                        {$: 'refresh-control-by-id', id: 'counter' }
-                      ]
-                    }, 
-                    style :{$: 'table-button.href' }
-                  }
-                ], 
-                features :{$: 'var', name: 'state', value: 'label', mutable: true }
-              }
-            ], 
-            style :{$: 'itemlist.ul-li' }, 
-            itemVariable: 'item', 
+                      controlWithCondition(
+                        equals('%$state%', 'label'),
+                        label({
+                          title: '%task%',
+                          style: label_span(),
+                          features: [feature_onEvent({event: 'dblclick', action: writeValue('%$state%', 'text')})]
+                        }),
+                        'label task'
+                      ),
+                      editableText({
+                        title: 'task editable',
+                        databind: '%task%',
+                        updateOnBlur: true,
+                        style: editableText_input(),
+                        features: [feature_onEvent({event: 'blur', action: writeValue('%$state%', 'label')})]
+                      })
+                    ],
+                    title: 'switch',
+                    style: firstSucceeding_style(),
+                    features: [watchRef({ref: '%$state%', allowSelfRefresh: 'true'})]
+                  }),
+                  button({
+                    title: 'delete',
+                    action: runActions(
+                      splice({
+                        array: '%$todo_list%',
+                        fromIndex: indexOf('%$todo_list%', '%$item%'),
+                        noOfItemsToRemove: '1',
+                        itemsToAdd: []
+                      }),
+                      refreshControlById('counter')
+                    ),
+                    style: tableButton_href()
+                  })
+                ],
+                features: {$: 'var', name: 'state', value: 'label', mutable: true}
+              })
+            ],
+            style: itemlist_ulLi(),
+            itemVariable: 'item',
             features: [
-              {$: 'watch-ref', ref: '%$todo_list%', includeChildren: 'true', allowSelfRefresh: 'true' }, 
-              {$: 'watch-ref', ref: '%$filterby%', allowSelfRefresh: true }, 
-              {$: 'id', id: 'todolist' }
+              watchRef({ref: '%$todo_list%', includeChildren: 'true', allowSelfRefresh: 'true'}),
+              watchRef({ref: '%$filterby%', allowSelfRefresh: true}),
+              id('todolist')
             ]
-          }
+          })
         ]
-      }, 
-      {$: 'group', 
-        title: 'footer', 
-        style :{$: 'todomvc.footer', leftWidth: 200, rightWidth: 200, spacing: 3 }, 
+      }),
+      group({
+        title: 'footer',
+        style: {$: 'todomvc.footer', leftWidth: 200, rightWidth: 200, spacing: 3},
         controls: [
-          {$: 'label', 
-            title :{
-              $pipeline: [
-                '%$todo_list%', 
-                {$: 'filter', 
-                  filter :{ $not: '', of: '%completed%' }
-                }, 
-                {$: 'count', items: '%%' }, 
-                '%% item left'
-              ]
-            }, 
-            style :{$: 'label.span' }, 
+          label({
+            title: pipeline('%$todo_list%', filter(not('%completed%')), count('%%'), '%% item left'),
+            style: label_span(),
             features: [
-              {$: 'watch-ref', ref: '$todo_list%', includeChildren: true }, 
-              {$: 'id', id: 'counter' }, 
-              {$: 'css.class', class: 'todo-count' }
+              watchRef({ref: '$todo_list%', includeChildren: true}),
+              id('counter'),
+              css_class('todo-count')
             ]
-          }, 
-          {$: 'group', 
-            title: 'ul', 
-            style :{$: 'group.ul-li' }, 
+          }),
+          group({
+            title: 'ul',
+            style: group_ulLi(),
             controls: [
-              {$: 'button', 
-                title: 'all', 
-                action :{$: 'write-value', to: '%$filterby%', value: 'all' }, 
-                style :{$: 'table-button.href' }, 
-                features :{$: 'conditional-class', 
-                  cssClass: 'selected', 
-                  condition :{$: 'equals', item1: '%$filterby%', item2: 'all' }
-                }
-              }, 
-              {$: 'button', 
-                title: 'active', 
-                action :{$: 'write-value', to: '%$filterby%', value: 'active' }, 
-                style :{$: 'table-button.href' }, 
-                features :{$: 'conditional-class', 
-                  cssClass: 'selected', 
-                  condition :{$: 'equals', item1: '%$filterby%', item2: 'active' }
-                }
-              }, 
-              {$: 'button', 
-                title: 'completed', 
-                action :{$: 'write-value', to: '%$filterby%', value: 'completed' }, 
-                style :{$: 'table-button.href' }, 
-                features :{$: 'conditional-class', 
-                  cssClass: 'selected', 
-                  condition :{$: 'equals', item1: '%$filterby%', item2: 'completed' }
-                }
-              }
-            ], 
-            features: [
-              {$: 'css.class', class: 'filters' }, 
-              {$: 'watch-ref', ref: '%$filterby%', allowSelfRefresh: true }
-            ]
-          }, 
-          {$: 'button', 
-            title: 'delete all', 
-            action :{$: 'run-action-on-items', 
-              items :{$: 'todomvc.completed1', 
-                $pipeline: [
-                  '%$to_do_list%', 
-                  {$: 'filter', filter: '%completed%' }
-                ]
-              }, 
-              action :{$: 'splice', 
-                array: '%$todo_list%', 
-                fromIndex :{$: 'index-of', array: '%$todo_list%', item: '%%' }, 
-                noOfItemsToRemove: '1', 
+              button({
+                title: 'all',
+                action: writeValue('%$filterby%', 'all'),
+                style: tableButton_href(),
+                features: conditionalClass('selected', equals('%$filterby%', 'all'))
+              }),
+              button({
+                title: 'active',
+                action: writeValue('%$filterby%', 'active'),
+                style: tableButton_href(),
+                features: conditionalClass('selected', equals('%$filterby%', 'active'))
+              }),
+              button({
+                title: 'completed',
+                action: writeValue('%$filterby%', 'completed'),
+                style: tableButton_href(),
+                features: conditionalClass('selected', equals('%$filterby%', 'completed'))
+              })
+            ],
+            features: [css_class('filters'), watchRef({ref: '%$filterby%', allowSelfRefresh: true})]
+          }),
+          button({
+            title: 'delete all',
+            action: runActionOnItems(
+              {$: 'todomvc.completed1', $pipeline: ['%$to_do_list%', filter('%completed%')]},
+              splice({
+                array: '%$todo_list%',
+                fromIndex: indexOf('%$todo_list%', '%%'),
+                noOfItemsToRemove: '1',
                 itemsToAdd: []
-              }
-            }, 
-            style :{$: 'table-button.href' }, 
+              })
+            ),
+            style: tableButton_href(),
             features: [
-              {$: 'hidden', 
-                showCondition :{$: 'not-equals', 
-                  item :{$: 'todomvc.completed' }, 
-                  item2 :{$: 'todomvc.completed1' }
-                }
-              }, 
-              {$: 'watch-ref', ref: '%$todo_list%', includeChildren: true, allowSelfRefresh: '' }, 
-              {$: 'css.class', class: 'clear-completed' }
+              hidden(notEquals(undefined, {$: 'todomvc.completed1'})),
+              watchRef({ref: '%$todo_list%', includeChildren: true, allowSelfRefresh: ''}),
+              css_class('clear-completed')
             ]
-          }
-        ], 
-        features :{$: 'css.class', class: 'footer' }
-      }, 
-      {$: 'label', 
-        title :{$: 'json.stringify', 
-          $pipeline: [
-            '%$to_do_list%', 
-            {$: 'json.stringify', 
-              separator: ' ,,', 
-              items: '%%', 
-              itemName: 'todo', 
-              itemText: 'task:%task% , state:%completed%', 
-              value: '%%'
-            }
-          ], 
-          value: '%$todo_list%'
-        }, 
-        style :{$: 'label.span' }, 
-        features: [
-          {$: 'watch-ref', ref: '%$todo_list%', includeChildren: 'true' }, 
-          {$: 'id', id: 'show' }
-        ]
-      }
-    ], 
+          })
+        ],
+        features: css_class('footer')
+      }),
+      label({
+        title: json_stringify('%$todo_list%'),
+        style: label_span(),
+        features: [watchRef({ref: '%$todo_list%', includeChildren: 'true'}), id('show')]
+      })
+    ],
     features: [
-      {$: 'var', name: 'filterby', value: 'all', mutable: true }, 
-      {$: 'var', name: 'input', mutable: true }, 
-      {$: 'css.class', class: 'todoapp' }
+      {$: 'var', name: 'filterby', value: 'all', mutable: true},
+      {$: 'var', name: 'input', mutable: true},
+      css_class('todoapp')
     ]
-  }
+  })
 })
 
 
 
 
 jb.component('todomvc.almost', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'almost', 
+  type: 'control',
+  impl: group({
+    title: 'almost',
     controls: [
-      {$: 'group', 
-        style :{$: 'layout.horizontal', spacing: 3 }, 
+      group({
+        style: layout_horizontal(3),
         controls: [
-          {$: 'button', 
-            title: 'done all', 
-            action :{
-              $runActions: [
-                {$: 'run-action-on-items', 
-                  items: '%$todo_list%', 
-                  action :{$: 'write-value', to: '%completed%', value: 'true' }
-                }, 
-                {$: 'refresh-control-by-id', id: 'counter' }
-              ]
-            }, 
-            style :{$: 'table-button.href' }
-          }, 
-          {$: 'editable-text', 
-            title: 'text', 
-            databind: '%$input%', 
-            style :{$: 'editable-text.input' }, 
-            features :{$: 'feature.onEnter', 
-              event: 'keypress', 
-              action :{
-                $runActions: [
-                  {$: 'add-to-array', 
-                    array: '%$todo_list%', 
-                    itemsToAdd :{
-                      $obj: [
-                        {$: 'prop', title: 'task', val: '%$input%', type: 'string' }, 
-                        {$: 'prop', title: 'completed', val: '', type: 'boolean' }
-                      ]
-                    }
-                  }, 
-                  {$: 'write-value', to: '%$input%' }, 
-                  {$: 'refresh-control-by-id', id: 'counter' }
-                ]
-              }
-            }
-          }
+          button({
+            title: 'done all',
+            action: runActions(
+              runActionOnItems('%$todo_list%', writeValue('%completed%', 'true')),
+              refreshControlById('counter')
+            ),
+            style: tableButton_href()
+          }),
+          editableText({
+            title: 'text',
+            databind: '%$input%',
+            style: editableText_input(),
+            features: feature_onEnter(
+              runActions(
+                addToArray(
+                  '%$todo_list%',
+                  obj(prop('task', '%$input%', 'string'), prop('completed', '', 'boolean'))
+                ),
+                writeValue('%$input%'),
+                refreshControlById('counter')
+              )
+            )
+          })
         ]
-      }, 
-      {$: 'itemlist', 
-        items :{$: 'todomvc.todofilters1' }, 
+      }),
+      itemlist({
+        items: {$: 'todomvc.todofilters1'},
         controls: [
-          {$: 'group', 
-            title: 'item', 
-            style :{$: 'layout.horizontal', spacing: 3 }, 
+          group({
+            title: 'item',
+            style: layout_horizontal(3),
             controls: [
-              {$: 'editable-boolean', 
-                databind: '%completed%', 
-                title: '', 
-                textForTrue: 'yes', 
-                textForFalse: 'no', 
-                features :{$: 'feature.onEvent', 
-                  event: 'change', 
-                  action :{
-                    $runActions: [
-                      {$: 'refresh-control-by-id', id: 'todolist' }, 
-                      {$: 'refresh-control-by-id', id: 'counter' }
-                    ]
-                  }
-                }
-              }, 
-              {$: 'control.first-succeeding', 
+              editableBoolean({
+                databind: '%completed%',
+                title: '',
+                textForTrue: 'yes',
+                textForFalse: 'no',
+                features: feature_onEvent({
+                  event: 'change',
+                  action: runActions(refreshControlById('todolist'), refreshControlById('counter'))
+                })
+              }),
+              control_firstSucceeding({
                 controls: [
-                  {$: 'control-with-condition', 
-                    condition :{$: 'equals', item1: '%$state%', item2: 'label' }, 
-                    control :{$: 'label', 
-                      title: '%task%', 
-                      style :{$: 'label.span' }, 
-                      features: [
-                        {$: 'feature.onEvent', 
-                          event: 'dblclick', 
-                          action :{$: 'write-value', to: '%$state%', value: 'text' }
-                        }
-                      ]
-                    }, 
-                    title: 'label task'
-                  }, 
-                  {$: 'editable-text', 
-                    title: 'task editable', 
-                    databind: '%task%', 
-                    updateOnBlur: true, 
-                    style :{$: 'editable-text.input' }, 
-                    features: [
-                      {$: 'feature.onEvent', 
-                        event: 'blur', 
-                        action :{$: 'write-value', to: '%$state%', value: 'label' }
-                      }
-                    ]
-                  }
-                ], 
-                title: 'switch', 
-                style :{$: 'first-succeeding.style' }, 
-                features: [{$: 'watch-ref', ref: '%$state%', allowSelfRefresh: 'true' }]
-              }, 
-              {$: 'button', 
-                title: 'delete', 
-                action :{
-                  $runActions: [
-                    {$: 'splice', 
-                      array: '%$todo_list%', 
-                      fromIndex :{$: 'index-of', array: '%$todo_list%', item: '%$item%' }, 
-                      noOfItemsToRemove: '1', 
-                      itemsToAdd: []
-                    }, 
-                    {$: 'refresh-control-by-id', id: 'counter' }
-                  ]
-                }, 
-                style :{$: 'table-button.href' }
-              }
-            ], 
-            features :{$: 'var', name: 'state', value: 'label', mutable: true }
-          }
-        ], 
-        style :{$: 'itemlist.ul-li' }, 
-        itemVariable: 'item', 
+                  controlWithCondition(
+                    equals('%$state%', 'label'),
+                    label({
+                      title: '%task%',
+                      style: label_span(),
+                      features: [feature_onEvent({event: 'dblclick', action: writeValue('%$state%', 'text')})]
+                    }),
+                    'label task'
+                  ),
+                  editableText({
+                    title: 'task editable',
+                    databind: '%task%',
+                    updateOnBlur: true,
+                    style: editableText_input(),
+                    features: [feature_onEvent({event: 'blur', action: writeValue('%$state%', 'label')})]
+                  })
+                ],
+                title: 'switch',
+                style: firstSucceeding_style(),
+                features: [watchRef({ref: '%$state%', allowSelfRefresh: 'true'})]
+              }),
+              button({
+                title: 'delete',
+                action: runActions(
+                  splice({
+                    array: '%$todo_list%',
+                    fromIndex: indexOf('%$todo_list%', '%$item%'),
+                    noOfItemsToRemove: '1',
+                    itemsToAdd: []
+                  }),
+                  refreshControlById('counter')
+                ),
+                style: tableButton_href()
+              })
+            ],
+            features: {$: 'var', name: 'state', value: 'label', mutable: true}
+          })
+        ],
+        style: itemlist_ulLi(),
+        itemVariable: 'item',
         features: [
-          {$: 'watch-ref', ref: '%$todo_list%', includeChildren: 'true', allowSelfRefresh: 'true' }, 
-          {$: 'watch-ref', ref: '%$filterby%', allowSelfRefresh: true }, 
-          {$: 'id', id: 'todolist' }
+          watchRef({ref: '%$todo_list%', includeChildren: 'true', allowSelfRefresh: 'true'}),
+          watchRef({ref: '%$filterby%', allowSelfRefresh: true}),
+          id('todolist')
         ]
-      }, 
-      {$: 'group', 
-        style :{$: 'layout.horizontal', leftWidth: 200, rightWidth: 200, spacing: 3 }, 
+      }),
+      group({
+        style: layout_horizontal(3),
         controls: [
-          {$: 'label', 
-            title :{
-              $pipeline: [
-                '%$todo_list%', 
-                {$: 'filter', 
-                  filter :{ $not: '', of: '%completed%' }
-                }, 
-                {$: 'count', items: '%%' }, 
-                '%% item left'
-              ]
-            }, 
-            style :{$: 'label.span' }, 
-            features: [
-              {$: 'watch-ref', ref: '$todo_list%', includeChildren: true }, 
-              {$: 'id', id: 'counter' }
-            ]
-          }, 
-          {$: 'button', 
-            title: 'all', 
-            action :{$: 'write-value', to: '%$filterby%', value: 'all' }, 
-            style :{$: 'table-button.href' }
-          }, 
-          {$: 'button', 
-            title: 'active', 
-            action :{$: 'write-value', to: '%$filterby%', value: 'active' }, 
-            style :{$: 'table-button.href' }
-          }, 
-          {$: 'button', 
-            title: 'completed', 
-            action :{$: 'write-value', to: '%$filterby%', value: 'completed' }, 
-            style :{$: 'table-button.href' }
-          }, 
-          {$: 'button', 
-            title: 'delete all', 
-            action :{$: 'run-action-on-items', 
-              items :{$: 'todomvc.completed1', 
-                $pipeline: [
-                  '%$to_do_list%', 
-                  {$: 'filter', filter: '%completed%' }
-                ]
-              }, 
-              action :{$: 'splice', 
-                array: '%$todo_list%', 
-                fromIndex :{$: 'index-of', array: '%$todo_list%', item: '%%' }, 
-                noOfItemsToRemove: '1', 
+          label({
+            title: pipeline('%$todo_list%', filter(not('%completed%')), count('%%'), '%% item left'),
+            style: label_span(),
+            features: [watchRef({ref: '$todo_list%', includeChildren: true}), id('counter')]
+          }),
+          button({title: 'all', action: writeValue('%$filterby%', 'all'), style: tableButton_href()}),
+          button({
+            title: 'active',
+            action: writeValue('%$filterby%', 'active'),
+            style: tableButton_href()
+          }),
+          button({
+            title: 'completed',
+            action: writeValue('%$filterby%', 'completed'),
+            style: tableButton_href()
+          }),
+          button({
+            title: 'delete all',
+            action: runActionOnItems(
+              {$: 'todomvc.completed1', $pipeline: ['%$to_do_list%', filter('%completed%')]},
+              splice({
+                array: '%$todo_list%',
+                fromIndex: indexOf('%$todo_list%', '%%'),
+                noOfItemsToRemove: '1',
                 itemsToAdd: []
-              }
-            }, 
-            style :{$: 'table-button.href' }, 
+              })
+            ),
+            style: tableButton_href(),
             features: [
-              {$: 'hidden', 
-                showCondition :{$: 'not-equals', 
-                  item :{$: 'todomvc.completed' }, 
-                  item2 :{$: 'todomvc.completed1' }
-                }
-              }, 
-              {$: 'watch-ref', ref: '%$todo_list%', includeChildren: true, allowSelfRefresh: '' }
+              hidden(notEquals(undefined, {$: 'todomvc.completed1'})),
+              watchRef({ref: '%$todo_list%', includeChildren: true, allowSelfRefresh: ''})
             ]
-          }
+          })
         ]
-      }, 
-      {$: 'label', 
-        title :{$: 'json.stringify', 
-          $pipeline: [
-            '%$to_do_list%', 
-            {$: 'json.stringify', 
-              separator: ' ,,', 
-              items: '%%', 
-              itemName: 'todo', 
-              itemText: 'task:%task% , state:%completed%', 
-              value: '%%'
-            }
-          ], 
-          value: '%$todo_list%'
-        }, 
-        style :{$: 'label.span' }, 
-        features: [
-          {$: 'watch-ref', ref: '%$todo_list%', includeChildren: 'true' }, 
-          {$: 'id', id: 'show' }
-        ]
-      }
-    ], 
+      }),
+      label({
+        title: json_stringify('%$todo_list%'),
+        style: label_span(),
+        features: [watchRef({ref: '%$todo_list%', includeChildren: 'true'}), id('show')]
+      })
+    ],
     features: [
-      {$: 'var', name: 'filterby', value: 'all', mutable: true }, 
-      {$: 'var', name: 'input', mutable: true }
+      {$: 'var', name: 'filterby', value: 'all', mutable: true},
+      {$: 'var', name: 'input', mutable: true}
     ]
-  }
+  })
 })
 
 
 jb.component('todomvc.check', {
-  type: 'control', 
-  impl :{$: 'group', 
-    title: 'check', 
+  type: 'control',
+  impl: group({
+    title: 'check',
     controls: [
-      {$: 'label', 
-        title: 'todos', 
-        style :{$: 'label.h1' }
-      }, 
-      {$: 'group', 
-        style :{$: 'layout.horizontal', spacing: 3 }, 
+      label({title: 'todos', style: {$: 'label.h1'}}),
+      group({
+        style: layout_horizontal(3),
         controls: [
-          {$: 'editable-text', 
-            title: 'text', 
-            databind: '%$input%', 
-            style :{$: 'editable-text.input' }, 
-            features :{$: 'feature.onEnter', 
-              event: 'keypress', 
-              action :{
-                $runActions: [
-                  {$: 'add-to-array', 
-                    array: '%$todo_list%', 
-                    itemsToAdd :{
-                      $obj: [
-                        {$: 'prop', title: 'task', val: '%$input%', type: 'string' }, 
-                        {$: 'prop', title: 'completed', val: '', type: 'boolean' }
-                      ]
-                    }
-                  }, 
-                  {$: 'write-value', to: '%$input%' }, 
-                  {$: 'refresh-control-by-id', id: 'counter' }
-                ]
-              }
-            }
-          }
+          editableText({
+            title: 'text',
+            databind: '%$input%',
+            style: editableText_input(),
+            features: feature_onEnter(
+              runActions(
+                addToArray(
+                  '%$todo_list%',
+                  obj(prop('task', '%$input%', 'string'), prop('completed', '', 'boolean'))
+                ),
+                writeValue('%$input%'),
+                refreshControlById('counter')
+              )
+            )
+          })
         ]
-      }, 
-      {$: 'group', 
+      }),
+      group({
         controls: [
-          {$: 'editable-boolean', 
-            databind :{$: 'todomvc.status' }, 
-            style :{$: 'todomvc.editable-boolean.label+editableboolen', inputCssClass: 'toggle-all' }, 
-            textForTrue: 'yes', 
-            textForFalse: 'no', 
+          editableBoolean({
+            databind: {$: 'todomvc.status'},
+            style: {$: 'todomvc.editable-boolean.label+editableboolen', inputCssClass: 'toggle-all'},
+            textForTrue: 'yes',
+            textForFalse: 'no',
             features: [
-              {$: 'id', id: 'status' }, 
-              {$: 'feature.onEvent', 
-                event: 'change', 
-                action :{
-                  $runActions: [
-                    {$: 'action.if', 
-                      condition :{$: 'equals', 
-                        item1 :{$: 'todomvc.status' }, 
-                        item2: true
-                      }, 
-                      then :{
-                        $runActions: [
-                          {$: 'run-action-on-items', 
-                            items: '%$todo_list%', 
-                            action :{$: 'write-value', to: '%completed%', value: false }
-                          }
-                        ]
-                      }
-                    }, 
-                    {$: 'action.if', 
-                      condition :{$: 'equals', 
-                        item1 :{$: 'todomvc.status' }, 
-                        item2: false
-                      }, 
-                      then :{$: 'run-action-on-items', 
-                        items: '%$todo_list%', 
-                        action :{$: 'write-value', to: '%completed%', value: true }
-                      }
-                    }, 
-                    {$: 'refresh-control-by-id', id: 'counter' }
-                  ]
-                }
-              }, 
-              {$: 'watch-ref', ref: '%$todo_list%', includeChildren: true, allowSelfRefresh: true }
+              id('status'),
+              feature_onEvent({
+                event: 'change',
+                action: runActions(
+                  action_if(
+                    equals({$: 'todomvc.status'}, true),
+                    runActions(runActionOnItems('%$todo_list%', writeValue('%completed%', false)))
+                  ),
+                  action_if(
+                    equals({$: 'todomvc.status'}, false),
+                    runActionOnItems('%$todo_list%', writeValue('%completed%', true))
+                  ),
+                  refreshControlById('counter')
+                )
+              }),
+              watchRef({ref: '%$todo_list%', includeChildren: true, allowSelfRefresh: true})
             ]
-          }, 
-          {$: 'itemlist', 
-            items :{$: 'todomvc.todofilters1' }, 
+          }),
+          itemlist({
+            items: {$: 'todomvc.todofilters1'},
             controls: [
-              {$: 'group', 
-                title: 'item', 
-                style :{$: 'layout.horizontal', spacing: 3 }, 
+              group({
+                title: 'item',
+                style: layout_horizontal(3),
                 controls: [
-                  {$: 'editable-boolean', 
-                    databind: '%completed%', 
-                    title: '', 
-                    textForTrue: 'yes', 
-                    textForFalse: 'no', 
-                    features :{$: 'feature.onEvent', 
-                      event: 'change', 
-                      action :{
-                        $runActions: [
-                          {$: 'refresh-control-by-id', id: 'todolist' }, 
-                          {$: 'refresh-control-by-id', id: 'counter' }
-                        ]
-                      }
-                    }
-                  }, 
-                  {$: 'control.first-succeeding', 
+                  editableBoolean({
+                    databind: '%completed%',
+                    title: '',
+                    textForTrue: 'yes',
+                    textForFalse: 'no',
+                    features: feature_onEvent({
+                      event: 'change',
+                      action: runActions(refreshControlById('todolist'), refreshControlById('counter'))
+                    })
+                  }),
+                  control_firstSucceeding({
                     controls: [
-                      {$: 'control-with-condition', 
-                        condition :{$: 'equals', item1: '%$state%', item2: 'label' }, 
-                        control :{$: 'label', 
-                          title: '%task%', 
-                          style :{$: 'label.span' }, 
-                          features: [
-                            {$: 'feature.onEvent', 
-                              event: 'dblclick', 
-                              action :{$: 'write-value', to: '%$state%', value: 'text' }
-                            }
-                          ]
-                        }, 
-                        title: 'label task'
-                      }, 
-                      {$: 'editable-text', 
-                        title: 'task editable', 
-                        databind: '%task%', 
-                        updateOnBlur: true, 
-                        style :{$: 'editable-text.input' }, 
-                        features: [
-                          {$: 'feature.onEvent', 
-                            event: 'blur', 
-                            action :{$: 'write-value', to: '%$state%', value: 'label' }
-                          }
-                        ]
-                      }
-                    ], 
-                    title: 'switch', 
-                    style :{$: 'first-succeeding.style' }, 
-                    features: [{$: 'watch-ref', ref: '%$state%', allowSelfRefresh: 'true' }]
-                  }, 
-                  {$: 'button', 
-                    title: 'delete', 
-                    action :{
-                      $runActions: [
-                        {$: 'splice', 
-                          array: '%$todo_list%', 
-                          fromIndex :{$: 'index-of', array: '%$todo_list%', item: '%$item%' }, 
-                          noOfItemsToRemove: '1', 
-                          itemsToAdd: []
-                        }, 
-                        {$: 'refresh-control-by-id', id: 'counter' }
-                      ]
-                    }, 
-                    style :{$: 'table-button.href' }
-                  }
-                ], 
-                features :{$: 'var', name: 'state', value: 'label', mutable: true }
-              }
-            ], 
-            style :{$: 'itemlist.ul-li' }, 
-            itemVariable: 'item', 
+                      controlWithCondition(
+                        equals('%$state%', 'label'),
+                        label({
+                          title: '%task%',
+                          style: label_span(),
+                          features: [feature_onEvent({event: 'dblclick', action: writeValue('%$state%', 'text')})]
+                        }),
+                        'label task'
+                      ),
+                      editableText({
+                        title: 'task editable',
+                        databind: '%task%',
+                        updateOnBlur: true,
+                        style: editableText_input(),
+                        features: [feature_onEvent({event: 'blur', action: writeValue('%$state%', 'label')})]
+                      })
+                    ],
+                    title: 'switch',
+                    style: firstSucceeding_style(),
+                    features: [watchRef({ref: '%$state%', allowSelfRefresh: 'true'})]
+                  }),
+                  button({
+                    title: 'delete',
+                    action: runActions(
+                      splice({
+                        array: '%$todo_list%',
+                        fromIndex: indexOf('%$todo_list%', '%$item%'),
+                        noOfItemsToRemove: '1',
+                        itemsToAdd: []
+                      }),
+                      refreshControlById('counter')
+                    ),
+                    style: tableButton_href()
+                  })
+                ],
+                features: {$: 'var', name: 'state', value: 'label', mutable: true}
+              })
+            ],
+            style: itemlist_ulLi(),
+            itemVariable: 'item',
             features: [
-              {$: 'watch-ref', ref: '%$todo_list%', includeChildren: 'true', allowSelfRefresh: 'true' }, 
-              {$: 'watch-ref', ref: '%$filterby%', allowSelfRefresh: true }, 
-              {$: 'id', id: 'todolist' }
+              watchRef({ref: '%$todo_list%', includeChildren: 'true', allowSelfRefresh: 'true'}),
+              watchRef({ref: '%$filterby%', allowSelfRefresh: true}),
+              id('todolist')
             ]
-          }
+          })
         ]
-      }, 
-      {$: 'group', 
-        title: 'footer', 
-        style :{$: 'todomvc.footer', leftWidth: 200, rightWidth: 200, spacing: 3 }, 
+      }),
+      group({
+        title: 'footer',
+        style: {$: 'todomvc.footer', leftWidth: 200, rightWidth: 200, spacing: 3},
         controls: [
-          {$: 'label', 
-            title :{
-              $pipeline: [
-                '%$todo_list%', 
-                {$: 'filter', 
-                  filter :{ $not: '', of: '%completed%' }
-                }, 
-                {$: 'count', items: '%%' }, 
-                '%% item left'
-              ]
-            }, 
-            style :{$: 'label.span' }, 
+          label({
+            title: pipeline('%$todo_list%', filter(not('%completed%')), count('%%'), '%% item left'),
+            style: label_span(),
             features: [
-              {$: 'watch-ref', ref: '$todo_list%', includeChildren: true }, 
-              {$: 'id', id: 'counter' }, 
-              {$: 'css.class', class: 'todo-count' }
+              watchRef({ref: '$todo_list%', includeChildren: true}),
+              id('counter'),
+              css_class('todo-count')
             ]
-          }, 
-          {$: 'group', 
-            title: 'ul', 
-            style :{$: 'group.ul-li' }, 
+          }),
+          group({
+            title: 'ul',
+            style: group_ulLi(),
             controls: [
-              {$: 'button', 
-                title: 'all', 
-                action :{$: 'write-value', to: '%$filterby%', value: 'all' }, 
-                style :{$: 'table-button.href' }, 
-                features :{$: 'conditional-class', 
-                  cssClass: 'selected', 
-                  condition :{$: 'equals', item1: '%$filterby%', item2: 'all' }
-                }
-              }, 
-              {$: 'button', 
-                title: 'active', 
-                action :{$: 'write-value', to: '%$filterby%', value: 'active' }, 
-                style :{$: 'table-button.href' }, 
-                features :{$: 'conditional-class', 
-                  cssClass: 'selected', 
-                  condition :{$: 'equals', item1: '%$filterby%', item2: 'active' }
-                }
-              }, 
-              {$: 'button', 
-                title: 'completed', 
-                action :{$: 'write-value', to: '%$filterby%', value: 'completed' }, 
-                style :{$: 'table-button.href' }, 
-                features :{$: 'conditional-class', 
-                  cssClass: 'selected', 
-                  condition :{$: 'equals', item1: '%$filterby%', item2: 'completed' }
-                }
-              }
-            ], 
-            features: [
-              {$: 'css.class', class: 'filters' }, 
-              {$: 'watch-ref', ref: '%$filterby%', allowSelfRefresh: true }
-            ]
-          }, 
-          {$: 'button', 
-            title: 'delete all', 
-            action :{$: 'run-action-on-items', 
-              items :{$: 'todomvc.completed1', 
-                $pipeline: [
-                  '%$to_do_list%', 
-                  {$: 'filter', filter: '%completed%' }
-                ]
-              }, 
-              action :{$: 'splice', 
-                array: '%$todo_list%', 
-                fromIndex :{$: 'index-of', array: '%$todo_list%', item: '%%' }, 
-                noOfItemsToRemove: '1', 
+              button({
+                title: 'all',
+                action: writeValue('%$filterby%', 'all'),
+                style: tableButton_href(),
+                features: conditionalClass('selected', equals('%$filterby%', 'all'))
+              }),
+              button({
+                title: 'active',
+                action: writeValue('%$filterby%', 'active'),
+                style: tableButton_href(),
+                features: conditionalClass('selected', equals('%$filterby%', 'active'))
+              }),
+              button({
+                title: 'completed',
+                action: writeValue('%$filterby%', 'completed'),
+                style: tableButton_href(),
+                features: conditionalClass('selected', equals('%$filterby%', 'completed'))
+              })
+            ],
+            features: [css_class('filters'), watchRef({ref: '%$filterby%', allowSelfRefresh: true})]
+          }),
+          button({
+            title: 'delete all',
+            action: runActionOnItems(
+              {$: 'todomvc.completed1', $pipeline: ['%$to_do_list%', filter('%completed%')]},
+              splice({
+                array: '%$todo_list%',
+                fromIndex: indexOf('%$todo_list%', '%%'),
+                noOfItemsToRemove: '1',
                 itemsToAdd: []
-              }
-            }, 
-            style :{$: 'table-button.href' }, 
+              })
+            ),
+            style: tableButton_href(),
             features: [
-              {$: 'hidden', 
-                showCondition :{$: 'not-equals', 
-                  item :{$: 'todomvc.completed' }, 
-                  item2 :{$: 'todomvc.completed1' }
-                }
-              }, 
-              {$: 'watch-ref', ref: '%$todo_list%', includeChildren: true, allowSelfRefresh: '' }, 
-              {$: 'css.class', class: 'clear-completed' }
+              hidden(notEquals(undefined, {$: 'todomvc.completed1'})),
+              watchRef({ref: '%$todo_list%', includeChildren: true, allowSelfRefresh: ''}),
+              css_class('clear-completed')
             ]
-          }
-        ], 
-        features :{$: 'css.class', class: 'footer' }
-      }, 
-      {$: 'label', 
-        title :{$: 'json.stringify', 
-          $pipeline: [
-            '%$to_do_list%', 
-            {$: 'json.stringify', 
-              separator: ' ,,', 
-              items: '%%', 
-              itemName: 'todo', 
-              itemText: 'task:%task% , state:%completed%', 
-              value: '%%'
-            }
-          ], 
-          value: '%$todo_list%'
-        }, 
-        style :{$: 'label.span' }, 
-        features: [
-          {$: 'watch-ref', ref: '%$todo_list%', includeChildren: 'true' }, 
-          {$: 'id', id: 'show' }
-        ]
-      }
-    ], 
+          })
+        ],
+        features: css_class('footer')
+      }),
+      label({
+        title: json_stringify('%$todo_list%'),
+        style: label_span(),
+        features: [watchRef({ref: '%$todo_list%', includeChildren: 'true'}), id('show')]
+      })
+    ],
     features: [
-      {$: 'var', name: 'filterby', value: 'all', mutable: true }, 
-      {$: 'var', name: 'input', mutable: true }, 
-      {$: 'css.class', class: 'todoapp' }
+      {$: 'var', name: 'filterby', value: 'all', mutable: true},
+      {$: 'var', name: 'input', mutable: true},
+      css_class('todoapp')
     ]
-  }
+  })
 })
 
 
 
-
-
-jb.component("todomvc.completed" , {
-  impl :{
-    $pipeline: [
-      '%$to_do_list%', 
-      {$: 'filter', filter: '%completed%' }, 
-
-    ]
-  }
-} )
-jb.component("todomvc.completed1" , {
-  impl :{
-    $pipeline: [
-      '%$todo_list%', 
-      {$: 'filter', filter: '%completed%' }, 
-
-    ]
-  }
-} )
-jb.component("todomvc.todofilters",{
-  impl :{
-    $pipeline: [
-      {
-        $firstSucceeding: [
-          {$: 'data.if', condition: '%$filterby%==all', then: '%$to_do_list%' }, 
-          {$: 'data.if', 
-            condition: '%$filterby%==completed', 
-            then :{
-              $pipeline: [
-                '%$to_do_list%', 
-                {$: 'filter', filter: '%completed%' }
-              ]
-            }
-          }, 
-          {$: 'data.if', 
-            condition: '%$filterby%==active', 
-            then :{
-              $pipeline: [
-                '%$to_do_list%', 
-                {$: 'filter', filter: '%completed% == false' }
-              ]
-            }
-          }
+jb.component('todomvc.start', {
+  impl: group({
+    title: 'start',
+    controls: [
+      editableBoolean({
+        databind: equals({$: 'todomvc.ToggleAllFilter'}, true),
+        style: editableBoolean_checkbox(),
+        textForTrue: 'yes',
+        textForFalse: 'no',
+        features: [
+          watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
+          feature_onEvent({
+            event: 'change',
+            action: action_if(
+              equals({$: 'todomvc.ToggleAllFilter'}, true),
+              runActionOnItems('%$todo%', toggleBooleanValue('%completed%')),
+              runActionOnItems(
+                pipeline('%$todo%', filter(not('%completed%'))),
+                toggleBooleanValue('%completed%')
+              )
+            )
+          }),
+          hidden(notEmpty('%$todo%'))
         ]
-      }
-      
+      }),
+      editableText({
+        databind: '%$input%',
+        style: editableText_input(),
+        features: [
+          feature_onEnter(
+            runActions(
+              addToArray(
+                '%$todo%',
+                obj(prop('task', '%$input%', 'string'), prop('completed', undefined, 'boolean'))
+              ),
+              writeValue('%$input%')
+            )
+          ),
+          htmlAttribute('placeholder', 'What needs to be done?')
+        ]
+      }),
+      itemlist({
+        items: pipeline(
+          '%$todo%',
+          data_if(
+            or(
+              and(equals('%$filterBy%', 'completed'), '%completed%'),
+              and(equals('%$filterBy%', 'active'), not('%completed%')),
+              equals('%$filterBy%', 'all')
+            ),
+            '%%',
+            null
+          )
+        ),
+        controls: [
+          group({
+            style: layout_horizontal(3),
+            controls: [
+              editableBoolean({
+                databind: '%completed%',
+                style: editableBoolean_checkbox(),
+                textForTrue: 'yes',
+                textForFalse: 'no'
+              }),
+              editableText({databind: '%task%', updateOnBlur: true, style: {$: 'editable-text.input-or-label'}}),
+              button({
+                title: 'delete',
+                action: splice({
+                  array: '%$todo%',
+                  fromIndex: indexOf('%$todo%', '%%'),
+                  noOfItemsToRemove: '1',
+                  itemsToAdd: []
+                }),
+                style: button_href()
+              })
+            ]
+          })
+        ],
+        style: itemlist_ulLi(),
+        itemVariable: 'item',
+        features: [
+          watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
+          watchRef({ref: '%$filterBy%', allowSelfRefresh: false})
+        ]
+      }),
+      group({
+        title: 'toolbar',
+        style: layout_horizontal(3),
+        controls: [
+          label({
+            title: pipeline('%$todo%', filter(not('%completed%')), count('%%'), '%% items left'),
+            style: label_span(),
+            features: [watchRef({ref: '%$todo%', includeChildren: true})]
+          }),
+          group({
+            title: 'filters',
+            style: layout_horizontal(3),
+            controls: [
+              button({title: 'all', action: writeValue('%$filterBy%', 'all'), style: button_href()}),
+              button({title: 'active', action: writeValue('%$filterBy%', 'active'), style: button_href()}),
+              button({
+                title: 'completed',
+                action: writeValue('%$filterBy%', 'completed'),
+                style: button_href()
+              })
+            ]
+          }),
+          button({
+            title: 'delete all',
+            action: runActionOnItems(
+              pipeline('%$todo%', filter('%completed%')),
+              splice({
+                array: '%$todo%',
+                fromIndex: indexOf('%$todo%', '%%'),
+                noOfItemsToRemove: '1',
+                itemsToAdd: []
+              })
+            ),
+            style: button_href(),
+            features: [
+              hidden(notEmpty(pipeline('%$todo%', filter('%completed%')))),
+              watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true})
+            ]
+          })
+        ]
+      }),
+      label({
+        title: pipeline(json_stringify('%$todo%'), '%$filterBy%: %%'),
+        style: label_span(),
+        features: [
+          watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: false}),
+          watchRef('%$filterBy%')
+        ]
+      })
+    ],
+    features: [
+      {$: 'var', name: 'filterBy', value: 'all', mutable: true},
+      {
+        $: 'var',
+        name: 'todo',
+        mutable: true,
+        value: asIs([{task: 'home', completed: true}])
+      },
+      {$: 'var', name: 'input', mutable: true}
     ]
-  }
-
+  })
 })
+
+                      
+
+
+  jb.component("todomvc.ToggleAllFilter",{
+    params: [
+      { id: 'data', as: 'string'}]
+    ,
+    impl :{$: 'equals', 
+      item1 :{$: 'count', items: '%$todo%' }, 
+      item2 :{ $pipeline: ['%$todo%', 
+            {$: 'count', 
+              items :{$: 'filter', filter: '%completed%' }
+            }
+          ]
+      }
+              
+    }
+              
+              
+  })
+
+
+
+
+
 jb.component("todomvc.todofilters1",{
   impl :{
     $pipeline: [
@@ -1040,73 +863,35 @@ jb.component("todomvc.todofilters1",{
   }
 
 })
-jb.component("todomvc.status",{
-  impl: {
-    $and: [
-      {$: 'equals', 
-        $pipeline: [], 
-        item1 :{$: 'count', items: '%$todo_list%' }, 
-        item2 :{$: 'count', 
-          items :{$: 'todomvc.completed1' }
-        }
-      }, 
-      {$: 'not-equals', 
-        $not: '', 
-        item1 :{$: 'count', items: '%$todo_list%' }, 
-        item2: '0'
-      }
-    ]  
-  }
-    
 
-  
-})
-jb.component('todomvc.footer', {
-  type: 'group.style',
-  params: [
-  ],
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('footer',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
-    css:'',
-    features :{$: 'group.init-group'}
-  }
-})
-jb.component('todomvc.ul', {
-  type: 'group.style',
-  params: [
-  ],
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('ul',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
-    css:'',
-    features :{$: 'group.init-group'}
-  }
-})
 
-jb.component('todomvc.editable-boolean.label+editableboolen', {
-  type: 'editable-boolean.style',
-  params : [ { id: 'inputCssClass', as: 'string', mandatory: false, defaultvalue: "" },],
-  impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('div',{}, [
-        h('input', { class : cmp.inputCssClass,type: 'checkbox', id: 'switch_'+cmp.inputCssClass  ,
-          checked: state.model, onchange: e => cmp.jbModel(e.target.checked) }),
-        h('label',{ for: 'switch_'+cmp.inputCssClass}  )
+jb.component('editable-text.input-or-label', {
+  type: 'editable-text.style',
+  impl: styleByControl(
+    control_firstSucceeding({
+      controls: [
+        controlWithCondition(
+          '%$editable%',
+          editableText({
+            databind: '%$editableTextModel/databind%',
+            updateOnBlur: true,
+            style: editableText_input(),
+            features: feature_onEvent({event: 'blur', action: writeValue('%$editable%', false)})
+          })
+        ),
+        label({
+          title: ctx => ctx.exp('%$editableTextModel/databind%'),
+          style: label_span(),
+          features: feature_onEvent({event: 'dblclick', action: runActions(focusOnSibling('input'), writeValue('%$editable%', true))})
+        })
+      ],
+      style: firstSucceeding_style(),
+      features: [
+        {$: 'var', name: 'editable', mutable: true},
+        firstSucceeding_watchRefreshOnCtrlChange('%$editable%', false)
       ]
-      ),
-      features :[
-        {$: 'field.databind' },
-        {$: 'editable-boolean.keyboard-support' },
-      ]
-
-  }
+    }),
+    'editableTextModel'
+  )
 })
 
-
-jb.component('todomvc.label.label', {
-  type: 'label.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('label',{},state.title),
-      features :{$: 'label.bind-title' }
-  }
-})
