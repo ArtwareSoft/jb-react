@@ -666,7 +666,9 @@ Object.assign(jb,{
     id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
   component: (id,val) => {
     jb.comps[id] = val
-    jb.traceComponentFile && jb.traceComponentFile(val)
+    try {
+      jb.traceComponentFile && jb.traceComponentFile(val)
+    } catch(e) {}
 
     // fix as boolean params to have type: 'boolean'
     (val.params || []).forEach(p=> {

@@ -1,6 +1,5 @@
 const jb = require('../dist/jbart-core.js')
 const fs = require('fs')
-var p = require("path");
 
 jb.ts = {
 	types: {}

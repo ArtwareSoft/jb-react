@@ -19,8 +19,9 @@ jb.prettyPrintComp = function(compId,comp,settings={}) {
   }
 }
 
-jb.prettyPrint = function(profile,options) {
-  return jb.prettyPrintWithPositions(profile,options).result;
+jb.prettyPrint = function(profile,settings = {}) {
+  settings.macro = true;
+  return jb.prettyPrintWithPositions(profile,settings).result;
 }
 
 jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls,macro} = {}) {

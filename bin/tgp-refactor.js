@@ -1,4 +1,4 @@
-jb = require('../dist/jbart-core.js')
+jb = require('../src/core/jb-core.js')
 const fs = require('fs');
 require('../src/loader/jb-loader.js');
 
@@ -26,7 +26,6 @@ jb.traceComponentFile = function(comp) {
 }
 filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>!x.match(/material/)).filter(x=>!x.match(/.css$/))
     .map(fn=> {
-//'studio.path-hyperlink'        console.log(fn)
         require(JBART_DIR+fn)
     })
 

@@ -68,12 +68,12 @@ type rangePT = {$: 'range', from: dataType, to: dataType}
 type type_ofPT = {$: 'type-of', obj: dataType}
 type class_namePT = {$: 'class-name', obj: dataType}
 type http_getPT = {$: 'http.get', url: dataType, 
-/** convert result to json */json: booleanType}
+/** convert result to json */json: dataType}
 type isRefPT = {$: 'isRef', obj: dataType}
 type asRefPT = {$: 'asRef', obj: dataType}
 type data_switchPT = {$: 'data.switch', cases: [data_switch_caseType], default: dataType}
 type newlinePT = {$: 'newline', }
-type jison_parsePT = {$: 'jison.parse', parser: jison_parserType, goal: dataType, text: dataType, debug: booleanType}
+type jison_parsePT = {$: 'jison.parse', parser: jison_parserType, goal: dataType, text: dataType, debug: dataType}
 type extract_textPT = {$: 'extract-text', text: dataType, startMarkers: dataType, endMarker: dataType, 
 /** include the marker at part of the result */includingStartMarker: booleanType, 
 /** include the marker at part of the result */includingEndMarker: booleanType, 
@@ -91,11 +91,11 @@ type dynamic_objectPT = {$: 'dynamic-object', items: dataType, propertyName: dat
 type filter_empty_propertiesPT = {$: 'filter-empty-properties', obj: dataType}
 type trimPT = {$: 'trim', text: dataType}
 type remove_prefix_regexPT = {$: 'remove-prefix-regex', prefix: dataType, text: dataType}
-type pretty_printPT = {$: 'pretty-print', profile: dataType, colWidth: dataType, macro: booleanType}
+type pretty_printPT = {$: 'pretty-print', profile: dataType, colWidth: dataType, macro: dataType}
 type fs_readFilePT = {$: 'fs.readFile', fileName: dataType, directory: dataType}
 type fs_statPT = {$: 'fs.stat', fileName: dataType, directory: dataType}
 type fs_readdirPT = {$: 'fs.readdir', directory: dataType}
-type fs_directory_contentPT = {$: 'fs.directory-content', directory: dataType, filter: booleanType}
+type fs_directory_contentPT = {$: 'fs.directory-content', directory: dataType, filter: dataType}
 type test_dialog_contentPT = {$: 'test.dialog-content', id: dataType}
 type field_dataPT = {$: 'field.data', }
 type itemlist_container_search_in_all_propertiesPT = {$: 'itemlist-container.search-in-all-properties', }
@@ -129,7 +129,7 @@ type uniquePT = {$: 'unique', id: dataType, items: dataType}
 type wrap_as_object_with_arrayPT = {$: 'wrap-as-object-with-array', arrayProperty: dataType, items: dataType}
 type wrap_as_objectPT = {$: 'wrap-as-object', itemToPropName: dataType, items: dataType}
 type d3_histogramPT = {$: 'd3.histogram', bins: dataType, values: dataType}
-type itemlist_container_filterPT = {$: 'itemlist-container.filter', updateCounters: booleanType}
+type itemlist_container_filterPT = {$: 'itemlist-container.filter', updateCounters: dataType}
 
 // type boolean
 type booleanType = notPT | andPT | orPT | betweenPT | containsPT | not_containsPT | starts_withPT | ends_withPT | match_regexPT | isNullPT | isEmptyPT | notEmptyPT | equalsPT | not_equalsPT | is_of_typePT | in_groupPT | ((ctx: ctx) => any)
@@ -182,7 +182,7 @@ type run_action_on_itemsPT = {$: 'run-action-on-items', items: dataType, action:
 /** notification for watch-ref, defualt behavior is after each action */notifications: dataType}
 type on_next_timerPT = {$: 'on-next-timer', action: actionType, delay: numberType}
 type http_postPT = {$: 'http.post', url: dataType, postData: dataType, 
-/** convert result to json */jsonResult: booleanType}
+/** convert result to json */jsonResult: dataType}
 type action_switchPT = {$: 'action.switch', cases: [action_switch_caseType], defaultAction: actionType}
 type refresh_control_by_idPT = {$: 'refresh-control-by-id', id: dataType}
 type focus_on_first_elementPT = {$: 'focus-on-first-element', selector: dataType}
@@ -329,7 +329,7 @@ type dividerPT = {$: 'divider', style: divider_styleType, title: dataType, featu
 type editable_booleanPT = {$: 'editable-boolean', databind: booleanType, style: editable_boolean_styleType, title: dataType, textForTrue: dataType, textForFalse: dataType, features: [featureType]}
 type editable_numberPT = {$: 'editable-number', databind: dataType, title: dataType, style: editable_number_styleType, 
 /** leave empty to parse symbol from value */symbol: dataType, min: dataType, max: dataType, displayString: dataType, dataString: dataType, 
-/** adjust its scale if at edges */autoScale: booleanType, 
+/** adjust its scale if at edges */autoScale: dataType, 
 /** used by slider */step: dataType, 
 /** used by slider */initialPixelsPerUnit: dataType, features: [featureType]}
 type editable_textPT = {$: 'editable-text', title: dataType, databind: dataType, updateOnBlur: booleanType, style: editable_text_styleType, features: [featureType]}
@@ -346,14 +346,14 @@ type itemlist_container_more_items_buttonPT = {$: 'itemlist-container.more-items
 type itemlist_with_groupsPT = {$: 'itemlist-with-groups', title: dataType, items: dataType, controls: [controlType], style: itemlist_styleType, groupBy: itemlist_group_byType, headingCtrl: controlType, 
 /** resources to watch */watch: dataType, itemVariable: dataType, features: [featureType]}
 type itemlist_default_headingPT = {$: 'itemlist-default-heading', }
-type itemlistPT = {$: 'itemlist', title: dataType, items: dataType, controls: [controlType], style: itemlist_styleType, watchItems: booleanType, itemVariable: dataType, features: [featureType]}
+type itemlistPT = {$: 'itemlist', title: dataType, items: dataType, controls: [controlType], style: itemlist_styleType, watchItems: dataType, itemVariable: dataType, features: [featureType]}
 type itemlogPT = {$: 'itemlog', title: dataType, items: dataType, controls: [controlType], style: itemlog_styleType, itemVariable: dataType, counter: dataType, features: [featureType]}
 type labelPT = {$: 'label', title: dataType, style: label_styleType, features: [featureType]}
 type markdownPT = {$: 'markdown', markdown: dataType, style: markdown_styleType, title: dataType, features: [featureType]}
 type menu_controlPT = {$: 'menu.control', menu: menu_optionType, style: menu_styleType, features: [featureType]}
 type picklistPT = {$: 'picklist', title: dataType, databind: dataType, options: picklist_optionsType, promote: picklist_promoteType, style: picklist_styleType, features: [featureType]}
 type sidenavPT = {$: 'sidenav', controls: [controlType], title: dataType, style: sidenav_styleType, features: [featureType]}
-type tablePT = {$: 'table', title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: booleanType, 
+type tablePT = {$: 'table', title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: dataType, 
 /** by default table is limmited to 100 shown items */visualSizeLimit: dataType, features: [featureType]}
 type tabsPT = {$: 'tabs', tabs: [controlType], style: tabs_styleType, features: [featureType]}
 type textPT = {$: 'text', text: dataType, style: text_styleType, title: dataType, features: [featureType]}
@@ -385,13 +385,13 @@ type card_initPT = {$: 'card.init', }
 type group_waitPT = {$: 'group.wait', for: dataType, loadingControl: controlType, error: controlType, varName: dataType}
 type watch_refPT = {$: 'watch-ref', 
 /** reference to data */ref: dataType, 
-/** watch childern change as well */includeChildren: booleanType, 
+/** watch childern change as well */includeChildren: dataType, 
 /** delay in activation, can be used to set priority */delay: dataType, 
-/** allow refresh originated from the components or its children */allowSelfRefresh: booleanType}
+/** allow refresh originated from the components or its children */allowSelfRefresh: dataType}
 type watch_observablePT = {$: 'watch-observable', toWatch: dataType}
 type group_dataPT = {$: 'group.data', data: dataType, 
-/** optional. define data as a local variable */itemVariable: dataType, watch: booleanType, 
-/** watch childern change as well */includeChildren: booleanType}
+/** optional. define data as a local variable */itemVariable: dataType, watch: dataType, 
+/** watch childern change as well */includeChildren: dataType}
 type idPT = {$: 'id', id: dataType}
 type varPT = {$: 'var', name: dataType, value: dataType, 
 /** E.g., selected item variable */mutable: booleanType, 
@@ -400,7 +400,7 @@ type variablePT = {$: 'variable', name: dataType, value: dataType,
 /** E.g., selected item variable */mutable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType}
 type bind_refsPT = {$: 'bind-refs', watchRef: dataType, 
-/** watch childern change as well */includeChildren: booleanType, updateRef: dataType, value: dataType}
+/** watch childern change as well */includeChildren: dataType, updateRef: dataType, value: dataType}
 type calculated_varPT = {$: 'calculated-var', name: dataType, value: dataType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType, 
 /** variable to watch. needs to be in array */watchRefs: dataType}
@@ -437,7 +437,7 @@ type d3_scatter_initPT = {$: 'd3-scatter.init', }
 type editable_boolean_keyboard_supportPT = {$: 'editable-boolean.keyboard-support', }
 type editable_text_x_buttonPT = {$: 'editable-text.x-button', }
 type editable_text_helper_popupPT = {$: 'editable-text.helper-popup', control: controlType, popupId: dataType, popupStyle: dialog_styleType, 
-/** show/hide helper according to input content */showHelper: booleanType, onEnter: actionType, onEsc: actionType}
+/** show/hide helper according to input content */showHelper: dataType, onEnter: actionType, onEsc: actionType}
 type field_databindPT = {$: 'field.databind', }
 type field_databind_textPT = {$: 'field.databind-text', debounceTime: dataType, oneWay: booleanType}
 type field_defaultPT = {$: 'field.default', value: dataType}
@@ -452,7 +452,7 @@ type group_init_groupPT = {$: 'group.init-group', }
 type group_dynamic_titlesPT = {$: 'group.dynamic-titles', }
 type first_succeeding_watch_refresh_on_ctrl_changePT = {$: 'first-succeeding.watch-refresh-on-ctrl-change', 
 /** reference to data */ref: dataType, 
-/** watch childern change as well */includeChildren: booleanType}
+/** watch childern change as well */includeChildren: dataType}
 type group_itemlist_containerPT = {$: 'group.itemlist-container', id: dataType, defaultItem: dataType, maxItems: dataType, initialSelection: dataType}
 type itemlist_itemlist_selectedPT = {$: 'itemlist.itemlist-selected', }
 type itemlist_container_filter_fieldPT = {$: 'itemlist-container.filter-field', fieldData: dataType, filterType: filter_typeType}
@@ -474,7 +474,7 @@ type slider_initPT = {$: 'slider.init', }
 type slider_text_handleArrowKeysPT = {$: 'slider-text.handleArrowKeys', }
 type slider_edit_as_text_popupPT = {$: 'slider.edit-as-text-popup', }
 type group_init_expandablePT = {$: 'group.init-expandable', }
-type group_init_accordionPT = {$: 'group.init-accordion', keyboardSupport: booleanType, autoFocus: booleanType}
+type group_init_accordionPT = {$: 'group.init-accordion', keyboardSupport: dataType, autoFocus: dataType}
 type flex_layout_container_align_main_axisPT = {$: 'flex-layout-container.align-main-axis', align: dataType}
 type flex_item_growPT = {$: 'flex-item.grow', factor: dataType}
 type flex_item_basisPT = {$: 'flex-item.basis', factor: dataType}
@@ -484,7 +484,7 @@ type mdl_style_init_dynamicPT = {$: 'mdl-style.init-dynamic', query: dataType}
 type mdl_ripple_effectPT = {$: 'mdl.ripple-effect', }
 type table_initPT = {$: 'table.init', }
 type table_init_sortPT = {$: 'table.init-sort', }
-type group_init_tabsPT = {$: 'group.init-tabs', keyboardSupport: booleanType, autoFocus: booleanType}
+type group_init_tabsPT = {$: 'group.init-tabs', keyboardSupport: dataType, autoFocus: dataType}
 type text_bind_textPT = {$: 'text.bind-text', }
 type group_themePT = {$: 'group.theme', theme: themeType}
 type tree_selectionPT = {$: 'tree.selection', databind: dataType, autoSelectFirst: booleanType, onSelection: actionType, onRightClick: actionType}
@@ -679,7 +679,7 @@ type cmp_def_filter_typeType = {
 	params?: [param],
 	impl: filter_typeType,
 }
-type filter_type_textPT = {$: 'filter-type.text', ignoreCase: booleanType}
+type filter_type_textPT = {$: 'filter-type.text', ignoreCase: dataType}
 type filter_type_exact_matchPT = {$: 'filter-type.exact-match', }
 type filter_type_numericPT = {$: 'filter-type.numeric', }
 
@@ -703,7 +703,7 @@ type itemlist_ul_liPT = {$: 'itemlist.ul-li', }
 type itemlist_horizontalPT = {$: 'itemlist.horizontal', , spacing: dataType}
 
 // type group.style
-type group_styleType = itemlog_divPT | card_cardPT | card_media_groupPT | card_actions_groupPT | card_menuPT | group_htmlTagPT | group_ul_liPT | group_expandablePT | group_accordionPT | group_tabsPT | toolbar_simplePT | layout_verticalPT | layout_horizontalPT | layout_horizontal_fixed_splitPT | layout_horizontal_wrappedPT | layout_flexPT | property_sheet_titles_abovePT | property_sheet_titles_above_float_leftPT | property_sheet_titles_leftPT | tabs_simplePT | ((ctx: ctx) => any)
+type group_styleType = itemlog_divPT | card_cardPT | card_media_groupPT | card_actions_groupPT | card_menuPT | group_htmlTagPT | group_ul_liPT | group_expandablePT | group_accordionPT | group_tabsPT | layout_verticalPT | layout_horizontalPT | layout_horizontal_fixed_splitPT | layout_horizontal_wrappedPT | layout_flexPT | property_sheet_titles_abovePT | property_sheet_titles_above_float_leftPT | property_sheet_titles_leftPT | tabs_simplePT | ((ctx: ctx) => any)
 type cmp_def_group_styleType = {
 	type: 'group_style',
 	params?: [param],
@@ -719,7 +719,6 @@ type group_ul_liPT = {$: 'group.ul-li', }
 type group_expandablePT = {$: 'group.expandable', }
 type group_accordionPT = {$: 'group.accordion', }
 type group_tabsPT = {$: 'group.tabs', width: dataType}
-type toolbar_simplePT = {$: 'toolbar.simple', }
 type layout_verticalPT = {$: 'layout.vertical', spacing: dataType}
 type layout_horizontalPT = {$: 'layout.horizontal', spacing: dataType}
 type layout_horizontal_fixed_splitPT = {$: 'layout.horizontal-fixed-split', , leftWidth: dataType, rightWidth: dataType, spacing: dataType}
@@ -807,7 +806,7 @@ type cmp_def_dialog_styleType = {
 	params?: [param],
 	impl: dialog_styleType,
 }
-type dialog_context_menu_popupPT = {$: 'dialog.context-menu-popup', offsetTop: dataType, rightSide: booleanType}
+type dialog_context_menu_popupPT = {$: 'dialog.context-menu-popup', offsetTop: dataType, rightSide: dataType}
 
 // type menu-separator.style
 type menu_separator_styleType = menu_separator_linePT | ((ctx: ctx) => any)
@@ -866,7 +865,7 @@ type cmp_def_editable_text_styleType = {
 	impl: editable_text_styleType,
 }
 type editable_text_codemirrorPT = {$: 'editable-text.codemirror', cm_settings: dataType, enableFullScreen: booleanType, 
-/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, debounceTime: dataType, lineWrapping: booleanType, lineNumbers: booleanType, readOnly: dataType, onCtrlEnter: actionType, hint: booleanType}
+/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, debounceTime: dataType, lineWrapping: dataType, lineNumbers: dataType, readOnly: dataType, onCtrlEnter: actionType, hint: dataType}
 type editable_text_inputPT = {$: 'editable-text.input', }
 type editable_text_textareaPT = {$: 'editable-text.textarea', rows: dataType, cols: dataType}
 type editable_text_mdl_inputPT = {$: 'editable-text.mdl-input', width: dataType}
@@ -881,7 +880,7 @@ type cmp_def_text_styleType = {
 	impl: text_styleType,
 }
 type text_codemirrorPT = {$: 'text.codemirror', cm_settings: dataType, enableFullScreen: booleanType, 
-/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, lineWrapping: booleanType}
+/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, lineWrapping: dataType}
 type text_multi_linePT = {$: 'text.multi-line', rows: dataType, cols: dataType}
 type text_paragraphPT = {$: 'text.paragraph', }
 
@@ -936,7 +935,7 @@ type cmp_def_tableType = {
 	params?: [param],
 	impl: tableType,
 }
-type tablePT = {$: 'table', title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: booleanType, 
+type tablePT = {$: 'table', title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: dataType, 
 /** by default table is limmited to 100 shown items */visualSizeLimit: dataType, features: [featureType]}
 
 // type table-field
@@ -1108,7 +1107,7 @@ type macros = {
 	removePrefixRegex(prefix: dataType, text: dataType) : dataType,
 	wrapAsObjectWithArray(arrayProperty: dataType, items: dataType) : aggregatorType,
 	wrapAsObject(itemToPropName: dataType, items: dataType) : aggregatorType,
-	prettyPrint({ profile: dataType, colWidth: dataType, macro: booleanType }) : dataType,
+	prettyPrint({ profile: dataType, colWidth: dataType, macro: dataType }) : dataType,
 	dataTest({ calculate: dataType, runBefore: actionType, expectedResult: booleanType, cleanUp: actionType, expectedCounters: dataType }) : testType,
 	uiTest({ control: controlType, runBefore: actionType, action: actionType, expectedResult: booleanType, cleanUp: actionType, expectedCounters: dataType }) : testType,
 	button({ title: dataType, action: actionType, style: button_styleType, features: [featureType] }) : controlType | clickableType,
@@ -1119,9 +1118,9 @@ type macros = {
 	card({ title: dataType, subTitle: dataType, text: dataType, image: dataType, topButton: clickableType, menu: menuType, style: card_styleType, features: [featureType] }) : controlType,
 	watchRef({ 
 /** reference to data */ref: dataType, 
-/** watch childern change as well */includeChildren: booleanType, 
+/** watch childern change as well */includeChildren: dataType, 
 /** delay in activation, can be used to set priority */delay: dataType, 
-/** allow refresh originated from the components or its children */allowSelfRefresh: booleanType }) : featureType,
+/** allow refresh originated from the components or its children */allowSelfRefresh: dataType }) : featureType,
 	watchObservable(toWatch: dataType) : featureType,
 	id(id: dataType) : featureType,
 	var({ name: dataType, value: dataType, 
@@ -1131,7 +1130,7 @@ type macros = {
 /** E.g., selected item variable */mutable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType }) : featureType,
 	bindRefs({ watchRef: dataType, 
-/** watch childern change as well */includeChildren: booleanType, updateRef: dataType, value: dataType }) : featureType,
+/** watch childern change as well */includeChildren: dataType, updateRef: dataType, value: dataType }) : featureType,
 	calculatedVar({ name: dataType, value: dataType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType, 
 /** variable to watch. needs to be in array */watchRefs: dataType }) : featureType,
@@ -1145,7 +1144,7 @@ type macros = {
 	editableBoolean({ databind: booleanType, style: editable_boolean_styleType, title: dataType, textForTrue: dataType, textForFalse: dataType, features: [featureType] }) : controlType,
 	editableNumber({ databind: dataType, title: dataType, style: editable_number_styleType, 
 /** leave empty to parse symbol from value */symbol: dataType, min: dataType, max: dataType, displayString: dataType, dataString: dataType, 
-/** adjust its scale if at edges */autoScale: booleanType, 
+/** adjust its scale if at edges */autoScale: dataType, 
 /** used by slider */step: dataType, 
 /** used by slider */initialPixelsPerUnit: dataType, features: [featureType] }) : controlType,
 	editableText({ title: dataType, databind: dataType, updateOnBlur: booleanType, style: editable_text_styleType, features: [featureType] }) : controlType,
@@ -1160,7 +1159,7 @@ type macros = {
 	itemlistWithGroups({ title: dataType, items: dataType, controls: [controlType], style: itemlist_styleType, groupBy: itemlist_group_byType, headingCtrl: controlType, 
 /** resources to watch */watch: dataType, itemVariable: dataType, features: [featureType] }) : controlType,
 	itemlistDefaultHeading() : controlType,
-	itemlist({ title: dataType, items: dataType, controls: [controlType], style: itemlist_styleType, watchItems: booleanType, itemVariable: dataType, features: [featureType] }) : controlType,
+	itemlist({ title: dataType, items: dataType, controls: [controlType], style: itemlist_styleType, watchItems: dataType, itemVariable: dataType, features: [featureType] }) : controlType,
 	itemlog({ title: dataType, items: dataType, controls: [controlType], style: itemlog_styleType, itemVariable: dataType, counter: dataType, features: [featureType] }) : controlType,
 	label({ title: dataType, style: label_styleType, features: [featureType] }) : controlType,
 	highlight(base: dataType, highlight: dataType, cssClass: dataType) : dataType,
@@ -1169,7 +1168,7 @@ type macros = {
 	customStyle({ template: dataType, css: dataType, features: [featureType] }) : dataType,
 	styleByControl(control: controlType, modelVar: dataType) : dataType,
 	sidenav({ controls: [controlType], title: dataType, style: sidenav_styleType, features: [featureType] }) : controlType,
-	table({ title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: booleanType, 
+	table({ title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: dataType, 
 /** by default table is limmited to 100 shown items */visualSizeLimit: dataType, features: [featureType] }) : controlType | tableType,
 	field({ title: dataType, data: dataType, width: dataType, numeric: booleanType, 
 /** extend the items with the calculated field using the title as field name */extendItems: booleanType, class: dataType }) : table_fieldType,
