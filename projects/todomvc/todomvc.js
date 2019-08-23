@@ -778,25 +778,78 @@ jb.component('todomvc.start', {
   impl :{$: 'group', 
     title: 'start', 
     controls: [
+      {$: 'editable-boolean', 
+        databind :{$: 'equals', 
+          item1 :{$: 'todomvc.ToggleAllFilter' }, 
+          item2: true
+        }, 
+        style :{$: 'editable-boolean.checkbox' }, 
+        textForTrue: 'yes', 
+        textForFalse: 'no', 
+        features: [
+          {$: 'watch-ref', 
+            ref: '%$todo%', 
+            includeChildren: true, 
+            allowSelfRefresh: true
+          }, 
+          {$: 'feature.onEvent', 
+            event: 'change', 
+            action :{$: 'action.if', 
+              condition :{$: 'equals', 
+                item1 :{$: 'todomvc.ToggleAllFilter' }, 
+                item2: true
+              }, 
+              then :{$: 'run-action-on-items', 
+                items: '%$todo%', 
+                action :{$: 'toggle-boolean-value', of: '%completed%' }
+              }, 
+              else :{$: 'run-action-on-items', 
+                items :{
+                  $pipeline: [
+                    '%$todo%', 
+                    {$: 'filter', 
+                      filter :{ $not: '%completed%' }
+                    }
+                  ]
+                }, 
+                action :{$: 'toggle-boolean-value', of: '%completed%' }
+              }
+            }
+          }, 
+          {$: 'hidden', 
+            showCondition :{$: 'notEmpty', item: '%$todo%' }
+          }
+        ]
+      }, 
       {$: 'editable-text', 
         databind: '%$input%', 
         style :{$: 'editable-text.input' }, 
-        features :{$: 'feature.onEnter', 
-          action :{
-            $runActions: [
-              {$: 'add-to-array', 
-                array: '%$todo%', 
-                itemsToAdd :{
-                  $obj: [
-                    {$: 'prop', title: 'task', val: '%$input%', type: 'string' }, 
-                    {$: 'prop', title: 'completed', type: 'boolean' }
-                  ]
-                }
-              }, 
-              {$: 'write-value', to: '%$input%' }
-            ]
+        features: [
+          {$: 'feature.onEnter', 
+            action :{
+              $runActions: [
+                {$: 'add-to-array', 
+                  array: '%$todo%', 
+                  itemsToAdd :{
+                    $obj: [
+                      {$: 'prop', 
+                        title: 'task', 
+                        val: '%$input%', 
+                        type: 'string'
+                      }, 
+                      {$: 'prop', title: 'completed', type: 'boolean' }
+                    ]
+                  }
+                }, 
+                {$: 'write-value', to: '%$input%' }
+              ]
+            }
+          }, 
+          {$: 'html-attribute', 
+            attribute: 'placeholder', 
+            value: 'What needs to be done?'
           }
-        }
+        ]
       }, 
       {$: 'itemlist', 
         items :{
@@ -820,8 +873,7 @@ jb.component('todomvc.start', {
                   {$: 'equals', item1: '%$filterBy%', item2: 'all' }
                 ]
               }, 
-              then: '%%', 
-              else: ''
+              then: '%%'
             }
           ]
         }, 
@@ -840,6 +892,16 @@ jb.component('todomvc.start', {
                 databind: '%task%', 
                 updateOnBlur: true, 
                 style :{$: 'editable-text.input-or-label' }
+              }, 
+              {$: 'button', 
+                title: 'delete', 
+                action :{$: 'splice', 
+                  array: '%$todo%', 
+                  fromIndex :{$: 'index-of', array: '%$todo%', item: '%%' }, 
+                  noOfItemsToRemove: '1', 
+                  itemsToAdd: []
+                }, 
+                style :{$: 'button.href' }
               }
             ]
           }
@@ -869,20 +931,75 @@ jb.component('todomvc.start', {
         title: 'toolbar', 
         style :{$: 'layout.horizontal', spacing: 3 }, 
         controls: [
-          {$: 'button', 
-            title: 'all', 
-            action :{$: 'write-value', to: '%$filterBy%', value: 'all' }, 
-            style :{$: 'button.mdl-raised' }
+          {$: 'label', 
+            title :{
+              $pipeline: [
+                '%$todo%', 
+                {$: 'filter', 
+                  filter :{ $not: '%completed%' }
+                }, 
+                {$: 'count', items: '%%' }, 
+                '%% items left'
+              ]
+            }, 
+            style :{$: 'label.span', htmlTag: 'span' }, 
+            features: [{$: 'watch-ref', ref: '%$todo%', includeChildren: true }]
+          }, 
+          {$: 'group', 
+            title: 'filters', 
+            style :{$: 'layout.horizontal', spacing: 3 }, 
+            controls: [
+              {$: 'button', 
+                title: 'all', 
+                action :{$: 'write-value', to: '%$filterBy%', value: 'all' }, 
+                style :{$: 'button.href' }
+              }, 
+              {$: 'button', 
+                title: 'active', 
+                action :{$: 'write-value', to: '%$filterBy%', value: 'active' }, 
+                style :{$: 'button.href' }
+              }, 
+              {$: 'button', 
+                title: 'completed', 
+                action :{$: 'write-value', to: '%$filterBy%', value: 'completed' }, 
+                style :{$: 'button.href' }
+              }
+            ]
           }, 
           {$: 'button', 
-            title: 'active', 
-            action :{$: 'write-value', to: '%$filterBy%', value: 'active' }, 
-            style :{$: 'button.mdl-raised' }
-          }, 
-          {$: 'button', 
-            title: 'completed', 
-            action :{$: 'write-value', to: '%$filterBy%', value: 'completed' }, 
-            style :{$: 'button.mdl-raised' }
+            title: 'delete all', 
+            action :{$: 'run-action-on-items', 
+              items :{
+                $pipeline: [
+                  '%$todo%', 
+                  {$: 'filter', filter: '%completed%' }
+                ]
+              }, 
+              action :{$: 'splice', 
+                array: '%$todo%', 
+                fromIndex :{$: 'index-of', array: '%$todo%', item: '%%' }, 
+                noOfItemsToRemove: '1', 
+                itemsToAdd: []
+              }
+            }, 
+            style :{$: 'button.href' }, 
+            features: [
+              {$: 'hidden', 
+                showCondition :{$: 'notEmpty', 
+                  item :{
+                    $pipeline: [
+                      '%$todo%', 
+                      {$: 'filter', filter: '%completed%' }
+                    ]
+                  }
+                }
+              }, 
+              {$: 'watch-ref', 
+                ref: '%$todo%', 
+                includeChildren: true, 
+                allowSelfRefresh: true
+              }
+            ]
           }
         ]
       }
@@ -899,36 +1016,23 @@ jb.component('todomvc.start', {
   }
 })
 
-jb.component("todomvc.todofilters1",{
-  impl :{
+jb.component("todomvc.ToggleAllFilter",{
+  params: [
+    { id: 'data', as: 'string'}]
+    ,
+  impl :{$: 'equals', 
+  item1 :{$: 'count', items: '%$todo%' }, 
+  item2 :{
     $pipeline: [
-      {
-        $firstSucceeding: [
-          {$: 'data.if', condition: '%$filterby%==all', then: '%$todo_list%' }, 
-          {$: 'data.if', 
-            condition: '%$filterby%==completed', 
-            then :{
-              $pipeline: [
-                '%$todo_list%', 
-                {$: 'filter', filter: '%completed%' }
-              ]
-            }
-          }, 
-          {$: 'data.if', 
-            condition: '%$filterby%==active', 
-            then :{
-              $pipeline: [
-                '%$todo_list%', 
-                {$: 'filter', filter: '%completed% == false' }
-              ]
-            }
-          }
-        ]
+      '%$todo%', 
+      {$: 'count', 
+        items :{$: 'filter', filter: '%completed%' }
       }
-      
     ]
   }
-
+}
+          
+          
 })
 jb.component("todomvc.status",{
   impl: {
