@@ -663,7 +663,7 @@ Object.assign(jb,{
   comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, //macros: {},
   studio: { previewjb: jb },
   macroName: id =>
-    id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_'),
+    id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
   component: (id,val) => {
     jb.comps[id] = val
     jb.traceComponentFile && jb.traceComponentFile(val)
@@ -686,7 +686,7 @@ Object.assign(jb,{
   const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
   functionDef: (id,val) => jb.functions[id] = val,
   registerMacro: (id, profile) => {
-    const macroId = jb.macroName(id)
+    const macroId = jb.macroName(id).replace(/\./g,'_')
     const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
 
     if (checkId(macroId))
