@@ -33,12 +33,11 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
           .do(e=>jb.log('suggestions',['generate event', input.value, e, cmp, pathToTrace]))
           .takeUntil( cmp.destroyed )
           .subscribe(e=> {
-              jb.log('suggestions',['before write values', input.value, cmp, pathToTrace]);
-              cmp.ctx.setVars({e}).run(runActions(
-                writeValue('%$suggestionData/options%','%$e.options%'), // let the suggestion options refresh
-                writeValue('%$suggestionData/selected%','%$e.selected%'),
-                writeValue('%$suggestionData/tail%','%$e.tail%') // used for highlighting
-              ))
+              jb.log('suggestions',['before write values', e, input.value, cmp, pathToTrace]);
+              cmp.ctx.run((ctx,{suggestionData}) => {
+                suggestionData && Object.assign(suggestionData,e)
+              })
+              cmp.ctx.run(refreshControlById('suggestions-itemlist'))
               jb.log('suggestions',['after write values', input.value, cmp, pathToTrace]);
           });
 
@@ -74,10 +73,11 @@ jb.component('studio.show-suggestions', { /* studio.showSuggestions */
 jb.component('studio.paste-suggestion', { /* studio.pasteSuggestion */
   type: 'action',
   params: [
-    {id: 'option', as: 'single', defaultValue: '%%'},
+    {id: 'option', as: 'single', defaultValue: '%%', dynamic: 'true'},
     {id: 'close', as: 'boolean', description: 'ends with % or /', type: 'boolean'}
   ],
-  impl: (ctx,option,close) => {
+  impl: (ctx,optionF,close) => {
+    const option = optionF(ctx)
     option && Promise.resolve(option.paste(ctx,close)).then(_=> {
       var cmp = ctx.vars.selectionKeySource.cmp;
       cmp.refreshSuggestionPopupOpenClose();
@@ -94,8 +94,8 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
   impl: itemlist({
     items: '%$suggestionData/options%',
     controls: label({title: '%text%', features: [css.padding({left: '3', right: '2'})]}),
-    watchItems: true,
     features: [
+      id('suggestions-itemlist'),
       itemlist.noContainer(),
       studio.itemlistRefreshSuggestionsOptions({path: '%$path%', source: '%$source%'}),
       itemlist.selection({
@@ -103,14 +103,13 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
         onDoubleClick: studio.pasteSuggestion(),
         autoSelectFirst: true
       }),
-      itemlist.keyboardSelection({autoFocus: false, onEnter: [studio.pasteSuggestion(undefined, true)]}),
+      itemlist.keyboardSelection({autoFocus: false, onEnter: [studio.pasteSuggestion('%%', true)]}),
       feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', false)),
       css.height({height: '500', overflow: 'auto', minMax: 'max'}),
       css.width({width: '300', overflow: 'auto', minMax: 'min'}),
       css('{ position: absolute; z-index:1000; background: white }'),
       css.border({width: '1', color: '#cdcdcd'}),
       css.padding({top: '2', left: '3', selector: 'li'}),
-      feature.if(notEmpty('%$suggestionData/options%'))
     ]
   })
 })
@@ -139,7 +138,6 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
     features: variable({
       name: 'suggestionData',
       value: {$: 'object', selected: '', options: [], path: '%$path%'},
-      mutable: true
     })
   })
 })
@@ -186,7 +184,6 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
       variable({
         name: 'suggestionData',
         value: {$: 'object', selected: '', options: [], path: '%$path%'},
-        mutable: true
       }),
       css.padding({left: '4', right: '4'}),
       css.margin({top: '-20', selector: '>*:last-child'})
@@ -314,17 +311,11 @@ class CompOption {
       var input = ctx.vars.selectionKeySource.input;
       input.value = '=' + this.toPaste;
       this.writeValue(ctx);
-      // dirty design ?
-        // var closeAndWriteValue = _ => {
-        //   params.closeFloatingInput();
-        //   var option = input.value.indexOf('=') == 0 ? new CompOption(input.value.substr(1)) : new ValueOption();
-        //   option.writeValue(cmp.ctx);
-        // };
     }
     writeValue(ctx) {
       st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste);
       ctx.run({$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' });
-      ctx.run({$:'studio.expand-and-select-first-child-in-jb-editor' });
+      ctx.run({$: 'studio.expand-and-select-first-child-in-jb-editor' });
     }
 }
 
