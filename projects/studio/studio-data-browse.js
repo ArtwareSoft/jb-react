@@ -20,7 +20,7 @@ jb.component('studio.open-new-resource', {
     title: 'New %$constOrMutable%',
     onOK: [
       (ctx,{name},{constOrMutable}) => jb.studio.previewjb. component(jb.tostring(name), { 
-        [constOrMutable+'Data'] : {}
+        [constOrMutable+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
       })
     ],
     modal: true,

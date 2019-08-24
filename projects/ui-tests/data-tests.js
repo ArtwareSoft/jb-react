@@ -433,6 +433,17 @@ jb.component('data-test.macro-ns', {
   })
 })
 
+jb.component('data-test.create-new-resource-and-write', {
+  impl: dataTest({
+    runBefore: runActions(
+      ctx => jb.component('zzz',{mutableData: {}}),
+      writeValue('%$zzz%', () => ({a: 5}))
+    ),
+    calculate: '%$zzz/a%',
+    expectedResult: equals(5)
+  })
+})
+
 
 // jb.component('data-test.http-get', {
 //    impl :{$: 'data-test',
