@@ -12,7 +12,7 @@ jb.component('hello-world.main', {
     style: layout.horizontal(3),
     controls: [
       group({
-        controls: [label('%$people[0]/name%')],
+        controls: [label('%$person/b%')],
         features: variable({name: 'second', value: '22', mutable: true})
       })
     ],
@@ -96,5 +96,24 @@ jb.component("hello-world.xx",
         })
       ]
     }
+})
+
+jb.component('person', { /* person */ 
+  mutableData: {
+    name: 'aabb',
+    b: 992000,
+    cc: 5465
   }
-)
+})
+
+jb.component('hello-world.aaa', { /* helloWorld.aaa */ 
+  type: 'control',
+  impl: group({
+    controls: [label({title: 'my label', style: label.span()})]
+  })
+})
+
+
+
+
+

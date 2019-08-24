@@ -288,13 +288,14 @@ body {
 .filters {
 	margin: 0;
 	padding: 0;
+	float:left;
 	list-style: none;
 	position: absolute;
 	right: 0;
 	left: 0;
 }
 
-.filters li {
+.filters li { 
 	display: inline;
 }
 
