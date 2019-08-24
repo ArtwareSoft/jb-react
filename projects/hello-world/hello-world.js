@@ -12,7 +12,7 @@ jb.component('hello-world.main', {
     style: layout.horizontal(3),
     controls: [
       group({
-        controls: [label('hello world%$second%')],
+        controls: [label('%$people[0]/name%')],
         features: variable({name: 'second', value: '22', mutable: true})
       })
     ],
