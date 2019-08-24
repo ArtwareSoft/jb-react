@@ -276,7 +276,7 @@ ui.renderWidget = function(profile,top) {
 			st.copyComps = comps => { 
 				comps.forEach(e=> {
 					try {
-						jb.comps[e[0]] = eval(`(${e[1]})`)
+						jb.component(e[0],eval(`(${e[1]})`))
 					} catch(e) {
 						jb.logException(e)				
 					}

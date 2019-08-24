@@ -354,8 +354,10 @@ function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
 
     if (comp_found)
       return comp_found
-    else
-      throw `Can not find component ${comp} in project`;
+    else {
+      fs.appendFileSync(projDir+'/'+project+'.js', toSave)
+      return `component ${comp} added to ${project}.js`
+    }
 
     function findSection(source,toFind,srcFile) {
       const index = source.indexOf(toFind[0]);
