@@ -69,25 +69,46 @@ function buildTS() {
 					.forEach(t => jb.ts.types[t] = {}))
 	}
 
-	function calcMacros(path) {
+	function calcMacros() {
 		jb.ts.macroNames = []
-		return jb.entries(jb.comps)
-			.filter(e=>path ? e[0].indexOf(path) == 0 : e[0].indexOf('.') == -1)
-			.map(e=>{
+		jb.ts.nameSpaces = {}
+		const globalMacros = jb.entries(jb.comps).map(e=>{
 				const id = e[0], pt = e[1]
-				const fixedId = jb.macroName(id)
-				jb.ts.macroNames.push(fixedId)
-				return TSforMacro(fixedId, pt)
+				const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
+				const macroName = jb.macroName(id)
+				if (nameSpace) {
+					jb.ts.nameSpaces[nameSpace] = jb.ts.nameSpaces[nameSpace] || []
+					jb.ts.nameSpaces[nameSpace].push({macroName : jb.macroName(id.split('.')[1]),pt})
+					return TSforMacro(macroName.replace(/\./g,'_'), pt,'function ',';')
+				} else {
+					return TSforMacro(macroName, pt,'function ',';')
+				}
 			}).join('\n')
+		const ns = Object.keys(jb.ts.nameSpaces).map(nameSpace=>{
+			const content = jb.ts.nameSpaces[nameSpace].map(({macroName,pt}) => TSforMacro(macroName, pt,'',',')).join('\n')
+			return `type ${nameSpace} = {
+${content}
+}
+declare var ${nameSpace} : ${nameSpace};` })
 
-		function TSforMacro(id, pt) {
+		return [globalMacros,ns].join('\n')
+
+		function TSforMacro(macroName, pt, prefix, sep) {
 			// buttonMacro = button(action: actionType)
 			const params = (pt.params || [])
 			const types = TSforType(pt.type).join(' | ')
-			if (params.length > 2 && !pt.usageByValue)
-				return `\t${id}({ ${params.map(param=>TSforParam(param)).join(', ')} }) : ${types},`
+			const options = ['']
+			if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1)  // pipeline, or, and, plus
+				options.push(`(...${TSforParam(params[0])}[])`)
+			else if (!(pt.usageByValue === false) && (params.length < 3 || pt.usageByValue))
+				options.push(`(${params.map(param=>TSforParam(param)).join(', ')})`)
 			else
-				return `\t${id}(${params.map(param=>TSforParam(param)).join(', ')}) : ${types},`
+				options.push(`(profile: { ${params.map(param=>TSforParam(param)).join(', ')}})`)
+
+			if (params.length > 1 && params[0] && (params[0].type||'').indexOf('[]') == -1)
+				options.push(`(${TSforParam(params[0])})`)
+
+			return options.map(x=>`${prefix}${macroName}${x} : ${types}${sep}`).join('\n')
 		}
 	}
 
@@ -166,8 +187,7 @@ declare var jb: jbObj;
 `,
 		...Object.keys(jb.ts.types).map(type=>TSforSingleType(type)),
 		'type cmpDef = ' + Object.keys(jb.ts.types).map(type=>`cmp_def_${fixId(type)}Type`).join(' | '),
-		'type macros = {\n' + calcMacros('') + '\n}',
-		`// const {${jb.ts.macroNames.join(',')}} = jb.macros`
+		calcMacros()
 		].join('\n')
 	return content
 }

@@ -347,7 +347,7 @@ jb.component('studio.watch-path', { /* studio.watchPath */
   category: 'group:0',
   params: [
     {id: 'path', as: 'string', mandatory: true},
-    {id: 'includeChildren', as: 'boolean', type: 'boolean'},
+    {id: 'includeChildren', as: 'boolean', type: 'boolean', defaultValue: true},
     {
       id: 'delay',
       as: 'number',
@@ -357,7 +357,8 @@ jb.component('studio.watch-path', { /* studio.watchPath */
       id: 'allowSelfRefresh',
       as: 'boolean',
       description: 'allow refresh originated from the components or its children',
-      type: 'boolean'
+	  type: 'boolean',
+	  defaultValue: true
     }
   ],
   impl: (ctx,path,includeChildren,delay,allowSelfRefresh) => ({

@@ -1,5 +1,5 @@
 jb.component('jb-component', {
-  type: '*',
+  type: 'any',
   params: [
     { id: 'type', as: 'string', mandatory: true },
     { id: 'category', as: 'string'},

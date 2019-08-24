@@ -1,5 +1,5 @@
 jb.component('call', {
- 	type: '*',
+ 	type: 'any',
  	params: [
  		{ id: 'param', as: 'string' }
  	],

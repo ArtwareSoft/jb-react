@@ -126,7 +126,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         databind: studio.ref('%$path%'),
         style: editableText.studioPrimitiveText(),
         features: [
-          studio.watchPath({path: '%$path%', includeChildren: true}),
+          studio.watchPath({path: '%$path%', includeChildren: true, allowSelfRefresh: false}),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
             popupId: 'suggestions',
