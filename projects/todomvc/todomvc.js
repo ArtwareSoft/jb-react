@@ -661,32 +661,12 @@ jb.component('todomvc.start', {
   impl: group({
     title: 'start',
     controls: [
-      editableBoolean({
-        databind: equals({$: 'todomvc.ToggleAllFilter'}, true),
-        style: editableBoolean_checkbox(),
-        textForTrue: 'yes',
-        textForFalse: 'no',
-        features: [
-          watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
-          feature_onEvent({
-            event: 'change',
-            action: action_if(
-              equals({$: 'todomvc.ToggleAllFilter'}, true),
-              runActionOnItems('%$todo%', toggleBooleanValue('%completed%')),
-              runActionOnItems(
-                pipeline('%$todo%', filter(not('%completed%'))),
-                toggleBooleanValue('%completed%')
-              )
-            )
-          }),
-          hidden(notEmpty('%$todo%'))
-        ]
-      }),
+      label({title: 'todos', style: label.htmlTag('h1')}),
       editableText({
         databind: '%$input%',
-        style: editableText_input(),
+        style: editableText.input(),
         features: [
-          feature_onEnter(
+          feature.onEnter(
             runActions(
               addToArray(
                 '%$todo%',
@@ -695,72 +675,106 @@ jb.component('todomvc.start', {
               writeValue('%$input%')
             )
           ),
-          htmlAttribute('placeholder', 'What needs to be done?')
-        ]
-      }),
-      itemlist({
-        items: pipeline(
-          '%$todo%',
-          data_if(
-            or(
-              and(equals('%$filterBy%', 'completed'), '%completed%'),
-              and(equals('%$filterBy%', 'active'), not('%completed%')),
-              equals('%$filterBy%', 'all')
-            ),
-            '%%',
-            null
-          )
-        ),
-        controls: [
-          group({
-            style: layout_horizontal(3),
-            controls: [
-              editableBoolean({
-                databind: '%completed%',
-                style: editableBoolean_checkbox(),
-                textForTrue: 'yes',
-                textForFalse: 'no'
-              }),
-              editableText({databind: '%task%', updateOnBlur: true, style: {$: 'editable-text.input-or-label'}}),
-              button({
-                title: 'delete',
-                action: splice({
-                  array: '%$todo%',
-                  fromIndex: indexOf('%$todo%', '%%'),
-                  noOfItemsToRemove: '1',
-                  itemsToAdd: []
-                }),
-                style: button_href()
-              })
-            ]
-          })
-        ],
-        style: itemlist_ulLi(),
-        itemVariable: 'item',
-        features: [
-          watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
-          watchRef({ref: '%$filterBy%', allowSelfRefresh: false})
+          htmlAttribute('placeholder', 'What needs to be done?'),
+          css.class('new-todo')
         ]
       }),
       group({
+        controls: [
+          editableBoolean({
+            databind: equals({$: 'todomvc.ToggleAllFilter'}, true),
+            style: {$: 'editable-boolean.checkbox-with-label', editableBooleanCssClass: 'toggle-all'},
+            textForTrue: 'yes',
+            textForFalse: 'no',
+            features: [
+              watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
+              feature.onEvent({
+                event: 'change',
+                action: action.if(
+                  equals({$: 'todomvc.ToggleAllFilter'}, true),
+                  runActionOnItems('%$todo%', toggleBooleanValue('%completed%')),
+                  runActionOnItems(
+                    pipeline('%$todo%', filter(not('%completed%'))),
+                    toggleBooleanValue('%completed%')
+                  )
+                )
+              }),
+              hidden(notEmpty('%$todo%'))
+            ]
+          }),
+          itemlist({
+            items: pipeline(
+              '%$todo%',
+              data.if(
+                or(
+                  and(equals('%$filterBy%', 'completed'), '%completed%'),
+                  and(equals('%$filterBy%', 'active'), not('%completed%')),
+                  equals('%$filterBy%', 'all')
+                ),
+                '%%',
+                null
+              )
+            ),
+            controls: [
+              group({
+                style: layout.horizontal(3),
+                controls: [
+                  editableBoolean({
+                    databind: '%completed%',
+                    style: editableBoolean.checkbox(),
+                    textForTrue: 'yes',
+                    textForFalse: 'no',
+                    features: null
+                  }),
+                  editableText({
+                    databind: '%task%',
+                    updateOnBlur: true,
+                    style: {$: 'editable-text.input-or-label', inputCssClass: 'edit', labelCssClass: ''}
+                  }),
+                  button({
+                    title: 'delete',
+                    action: splice({
+                      array: '%$todo%',
+                      fromIndex: indexOf('%$todo%', '%%'),
+                      noOfItemsToRemove: '1',
+                      itemsToAdd: []
+                    }),
+                    style: button.href(),
+                    features: css.class('destroy')
+                  })
+                ],
+                features: conditionalClass('completed', '%completed%')
+              })
+            ],
+            style: itemlist.ulLi(),
+            itemVariable: 'item',
+            features: [
+              watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
+              watchRef({ref: '%$filterBy%', allowSelfRefresh: false})
+            ]
+          })
+        ],
+        features: css.class('main')
+      }),
+      group({
         title: 'toolbar',
-        style: layout_horizontal(3),
+        style: layout.horizontal(3),
         controls: [
           label({
             title: pipeline('%$todo%', filter(not('%completed%')), count('%%'), '%% items left'),
-            style: label_span(),
+            style: label.span(),
             features: [watchRef({ref: '%$todo%', includeChildren: true})]
           }),
           group({
             title: 'filters',
-            style: layout_horizontal(3),
+            style: layout.horizontal(3),
             controls: [
-              button({title: 'all', action: writeValue('%$filterBy%', 'all'), style: button_href()}),
-              button({title: 'active', action: writeValue('%$filterBy%', 'active'), style: button_href()}),
+              button({title: 'all', action: writeValue('%$filterBy%', 'all'), style: button.href()}),
+              button({title: 'active', action: writeValue('%$filterBy%', 'active'), style: button.href()}),
               button({
                 title: 'completed',
                 action: writeValue('%$filterBy%', 'completed'),
-                style: button_href()
+                style: button.href()
               })
             ]
           }),
@@ -775,7 +789,7 @@ jb.component('todomvc.start', {
                 itemsToAdd: []
               })
             ),
-            style: button_href(),
+            style: button.href(),
             features: [
               hidden(notEmpty(pipeline('%$todo%', filter('%completed%')))),
               watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true})
@@ -784,8 +798,8 @@ jb.component('todomvc.start', {
         ]
       }),
       label({
-        title: pipeline(json_stringify('%$todo%'), '%$filterBy%: %%'),
-        style: label_span(),
+        title: pipeline(json.stringify('%$todo%'), '%$filterBy%: %%'),
+        style: label.span(),
         features: [
           watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: false}),
           watchRef('%$filterBy%')
@@ -793,14 +807,10 @@ jb.component('todomvc.start', {
       })
     ],
     features: [
-      {$: 'var', name: 'filterBy', value: 'all', mutable: true},
-      {
-        $: 'var',
-        name: 'todo',
-        mutable: true,
-        value: asIs([{task: 'home', completed: true}])
-      },
-      {$: 'var', name: 'input', mutable: true}
+      variable({name: 'filterBy', value: 'all', mutable: true}),
+      variable({name: 'todo', value: asIs([{task: 'home', completed: true}]), mutable: true}),
+      variable({name: 'input', mutable: true}),
+      css.class('todoapp')
     ]
   })
 })
@@ -831,29 +841,12 @@ jb.component('todomvc.start', {
 
 
 
-
-jb.component("todomvc.ToggleAllFilter",{
-  params: [
-    { id: 'data', as: 'string'}]
-    ,
-  impl :{$: 'equals', 
-  item1 :{$: 'count', items: '%$todo%' }, 
-  item2 :{
-    $pipeline: [
-      '%$todo%', 
-      {$: 'count', 
-        items :{$: 'filter', filter: '%completed%' }
-      }
-    ]
-  }
-}
-          
-          
-})
-
-
 jb.component('editable-text.input-or-label', {
   type: 'editable-text.style',
+  params:[
+    { id: 'labelCssClass', as: 'string'  },
+    { id: 'inputCssClass', as: 'string' , defaultValue: "input"  }
+  ], 
   impl: styleByControl(
     control_firstSucceeding({
       controls: [
@@ -863,13 +856,21 @@ jb.component('editable-text.input-or-label', {
             databind: '%$editableTextModel/databind%',
             updateOnBlur: true,
             style: editableText_input(),
-            features: feature_onEvent({event: 'blur', action: writeValue('%$editable%', false)})
+            features:[
+            feature_onEvent({event: 'blur', action: writeValue('%$editable%', false)}),
+            css_class("%$inputCssClass%")
+            ]
+
           })
         ),
         label({
           title: ctx => ctx.exp('%$editableTextModel/databind%'),
-          style: label_span(),
-          features: feature_onEvent({event: 'dblclick', action: runActions(focusOnSibling('input'), writeValue('%$editable%', true))})
+          style: label.htmlTag('label'),
+          features:[
+           feature_onEvent({event: 'dblclick', action: runActions(focusOnSibling('.'+"%$inputCssClass%"), writeValue('%$editable%', true))})
+           ,
+           css_class("%$labelCssClass%")
+          ]
         })
       ],
       style: firstSucceeding_style(),
@@ -880,4 +881,18 @@ jb.component('editable-text.input-or-label', {
     }),
     'editableTextModel'
   )
+})
+
+jb.component('editable-boolean.checkbox-with-label', {
+  type: 'editable-boolean.style',
+  params: [{id:"editableBooleanCssClass", as: 'string'}],
+  impl :{$: 'custom-style', 
+      features :{$: 'field.databind' },
+      template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
+        checked: state.model, 
+        onchange: e => cmp.jbModel(e.target.checked), 
+        onkeyup: e => cmp.jbModel(e.target.checked,'keyup'), class: cmp.editableBooleanCssClass,id: 'switch_' + state.fieldId  }),
+        h('label',{for: 'switch_' + state.fieldId })
+      ])
+  }
 })

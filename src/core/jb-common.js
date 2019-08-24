@@ -260,9 +260,9 @@ jb.component('focus-on-sibling', {
 	impl: (ctx,siblingSelector,delay) => {
 	  if (!ctx.vars.event) 
 		return jb.error('no event for action focus-on-sibling',ctx)
-	  delayedFocus(ctx.vars.event.srcElement.parent,delay,siblingSelector)
+	  delayedFocus(ctx.vars.event.srcElement.parentElement,delay,siblingSelector)
 	  
-	  function delayedFocus(parent, {delay = 0, selector}) {
+	  function delayedFocus(parent, delay = 0, selector) {
 		jb.delay(delay).then(() => jb.ui.focus(parent.querySelector(selector), 'focus-on-sibling', ctx))
 	  }
 	}

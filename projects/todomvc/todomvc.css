@@ -158,23 +158,22 @@ body {
 	border-bottom: none;
 }
 
-.todo-list li .editing {
+.editing {
 	border-bottom: none;
 	padding: 0;
 }
-
-.todo-list li .editing .edit {
+.editing .edit {
 	display: block;
 	width: 506px;
 	padding: 12px 16px;
 	margin: 0 0 0 43px;
 }
 
-.todo-list li .editing .view {
+.editing:not(.edit) {
 	display: none;
 }
 
-.todo-list li .toggle {
+.toggle {
 	text-align: center;
 	width: 40px;
 	/* auto, since non-WebKit browsers doesn't support input styling */
