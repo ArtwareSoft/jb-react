@@ -250,6 +250,26 @@ jb.component('add-to-array', {
 	}
 });
 
+
+jb.component('focus-on-sibling', {
+	type: 'action',
+	params: [
+	  {id: 'siblingSelector', as: 'string', mandatory: true},
+	  {id: 'delay', as: 'number', defaultValue: 0}
+	],
+	impl: (ctx,siblingSelector,delay) => {
+	  if (!ctx.vars.event) 
+		return jb.error('no event for action focus-on-sibling',ctx)
+	  delayedFocus(ctx.vars.event.srcElement.parentElement,delay,siblingSelector)
+	  
+	  function delayedFocus(parent, delay = 0, selector) {
+		jb.delay(delay).then(() => jb.ui.focus(parent.querySelector(selector), 'focus-on-sibling', ctx))
+	  }
+	}
+  })
+
+
+
 jb.component('splice', {
 	type: 'action',
 	params: [
