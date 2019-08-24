@@ -218,7 +218,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   }
 
   function profileToMacro(ctx, profile,flat) {
-    const id = jb.compName(profile)
+    const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
     const comp = jb.comps[id]
     if (!id || !comp || profile.$recursive || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
       const props = Object.keys(profile) 
@@ -255,7 +255,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       return joinVals(ctx, args, `${macro}({`, '})', flat, false)
   }
     
-    function valueToMacro(ctx, val, flat) {
+  function valueToMacro(ctx, val, flat) {
     if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
     if (val === null) return 'null';
     if (val === undefined) return 'undefined';

@@ -10,7 +10,7 @@ st.message = function(message,error) {
 
 // ********* Components ************
 
-jb.component('studio.currentProfilePath', { /* studio_currentProfilePath */
+jb.component('studio.currentProfilePath', { /* studio.currentProfilePath */
   impl: firstSucceeding(
     '%$simulateProfilePath%',
     '%$studio/profile_path%',
@@ -18,7 +18,7 @@ jb.component('studio.currentProfilePath', { /* studio_currentProfilePath */
   )
 })
 
-jb.component('studio.message', { /* studio_message */
+jb.component('studio.message', { /* studio.message */
   type: 'action',
   params: [
     {id: 'message', as: 'string'}
@@ -27,13 +27,13 @@ jb.component('studio.message', { /* studio_message */
 		st.message(message)
 })
 
-jb.component('studio.redraw-studio', { /* studio_redrawStudio */
+jb.component('studio.redraw-studio', { /* studio.redrawStudio */
   type: 'action',
   impl: ctx =>
     	st.redrawStudio && st.redrawStudio()
 })
 
-jb.component('studio.last-edit', { /* studio_lastEdit */
+jb.component('studio.last-edit', { /* studio.lastEdit */
   type: 'data',
   params: [
     {id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true}
@@ -50,7 +50,7 @@ jb.component('studio.last-edit', { /* studio_lastEdit */
 	}
 })
 
-jb.component('studio.goto-last-edit', { /* studio_gotoLastEdit */
+jb.component('studio.goto-last-edit', { /* studio.gotoLastEdit */
   type: 'action',
   impl: ctx=>{
 		const lastEdit = ctx.run({$: 'studio.last-edit'})
@@ -59,7 +59,7 @@ jb.component('studio.goto-last-edit', { /* studio_gotoLastEdit */
 	}
 })
 
-jb.component('studio.project-source', { /* studio_projectSource */
+jb.component('studio.project-source', { /* studio.projectSource */
   params: [
     {id: 'project', as: 'string', defaultValue: '%$studio/project%'}
   ],
@@ -70,17 +70,17 @@ jb.component('studio.project-source', { /* studio_projectSource */
 	}
 })
 
-jb.component('studio.comp-source', { /* studio_compSource */
+jb.component('studio.comp-source', { /* studio.compSource */
   params: [
-    {id: 'comp', as: 'string', defaultValue: studio_currentProfilePath()}
+    {id: 'comp', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: (context,comp) =>
 		st.compAsStr(comp.split('~')[0])
 })
 
-jb.component('studio.dynamic-options-watch-new-comp', { /* studio_dynamicOptionsWatchNewComp */ 
+jb.component('studio.dynamic-options-watch-new-comp', { /* studio.dynamicOptionsWatchNewComp */ 
   type: 'feature',
-  impl: picklist_dynamicOptions(
+  impl: picklist.dynamicOptions(
     () =>
           st.scriptChange.filter(e => e.path.length == 1)
   )

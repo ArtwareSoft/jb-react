@@ -1,4 +1,4 @@
-jb = require('../dist/jbart-core.js')
+jb = require('../src/core/jb-core.js')
 const fs = require('fs');
 require('../src/loader/jb-loader.js');
 
@@ -26,7 +26,6 @@ jb.traceComponentFile = function(comp) {
 }
 filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>!x.match(/material/)).filter(x=>!x.match(/.css$/))
     .map(fn=> {
-//'studio.path-hyperlink'        console.log(fn)
         require(JBART_DIR+fn)
     })
 
@@ -37,7 +36,7 @@ filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>!x.match(/material/))
 const content = jb.entries(jb.comps) // .filter(e=> typeof e[1].impl === 'object')
 //    .slice(1,50)
     .filter(e=> ! e[1][location][0].match(/[^-]menu.js/)) 
-    .filter(e=> e[1][location][0].match(/studio-properties.js/))
+    .filter(e=> e[1][location][0].match(/studio-[a-z]*.js/))
     
 //        e[0] === 'studio.open-script-history')
     .filter(e=> e[0].indexOf('studio.') == 0) // || e[0].indexOf('dialog') == 0 || e[0].indexOf('menu') == 0)

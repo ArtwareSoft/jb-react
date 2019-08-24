@@ -1,4 +1,4 @@
-jb.component('studio.components-cross-ref', { /* studio_componentsCrossRef */
+jb.component('studio.components-cross-ref', { /* studio.componentsCrossRef */
   type: 'data',
   impl: ctx => {
 	  var _jb = jb.studio.previewjb;
@@ -37,7 +37,7 @@ jb.component('studio.components-cross-ref', { /* studio_componentsCrossRef */
 	}
 })
 
-jb.component('studio.references', { /* studio_references */
+jb.component('studio.references', { /* studio.references */
   type: 'data',
   params: [
     {id: 'path', as: 'string'}
@@ -62,39 +62,39 @@ jb.component('studio.references', { /* studio_references */
 	}
 })
 
-jb.component('studio.goto-references-options', { /* studio_gotoReferencesOptions */
+jb.component('studio.goto-references-options', { /* studio.gotoReferencesOptions */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
     {id: 'refs', as: 'array'}
   ],
-  impl: menu_dynamicOptions(
+  impl: menu.dynamicOptions(
     '%$refs%',
     {
       $if: '%refs/length% > 1',
-      then: menu_menu({
+      then: menu.menu({
         title: '%id% (%refs/length%)',
-        options: menu_dynamicOptions(
+        options: menu.dynamicOptions(
           '%$menuData/refs%',
-          menu_action({title: '%%', action: studio_openComponentInJbEditor('%%', '%$path%')})
+          menu.action({title: '%%', action: studio.openComponentInJbEditor('%%', '%$path%')})
         )
       }),
-      else: menu_action({
+      else: menu.action({
         vars: [Var('compName', split({separator: '~', text: '%refs[0]%', part: 'first'}))],
         title: '%$compName%',
-        action: studio_openComponentInJbEditor('%refs[0]%', '%$path%')
+        action: studio.openComponentInJbEditor('%refs[0]%', '%$path%')
       })
     }
   )
 })
 
-jb.component('studio.goto-references-button', { /* studio_gotoReferencesButton */
+jb.component('studio.goto-references-button', { /* studio.gotoReferencesButton */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: controlWithCondition(
-    Var('refs', studio_references('%$path%')),
+    Var('refs', studio.references('%$path%')),
     Var(
         'noOfReferences',
         ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0)
@@ -102,12 +102,12 @@ jb.component('studio.goto-references-button', { /* studio_gotoReferencesButton *
     '%$refs/length%',
     button({
       title: '%$noOfReferences% references',
-      action: menu_openContextMenu({menu: menu_menu({options: studio_gotoReferencesOptions('%$path%', '%$refs%')})})
+      action: menu.openContextMenu({menu: menu.menu({options: studio.gotoReferencesOptions('%$path%', '%$refs%')})})
     })
   )
 })
 
-jb.component('studio.goto-references-menu', { /* studio_gotoReferencesMenu */ 
+jb.component('studio.goto-references-menu', { /* studio.gotoReferencesMenu */ 
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -115,14 +115,14 @@ jb.component('studio.goto-references-menu', { /* studio_gotoReferencesMenu */
   impl: {
     $if: '%$noOfReferences% > 0',
     $vars: {
-      refs: studio_references('%$path%'),
+      refs: studio.references('%$path%'),
       noOfReferences: ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0)
     },
-    then: menu_menu({
+    then: menu.menu({
       title: '%$noOfReferences% references for %$path%',
-      options: studio_gotoReferencesOptions('%$path%', '%$refs%')
+      options: studio.gotoReferencesOptions('%$path%', '%$refs%')
     }),
-    else: menu_action('no references for %$path%')
+    else: menu.action('no references for %$path%')
   }
 })
 

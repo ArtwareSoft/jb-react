@@ -32,27 +32,32 @@ jb.component('studio.data-resources', { /* studio_dataResources */
 jb.component('studio.open-resource', { /* studio_openResource */
   type: 'action',
   params: [
-    {id: 'resourceId', as: 'string'}
+    {id: 'path', as: 'string'},
   ],
   impl: openDialog({
-    style: dialog_editSourceStyle({id: 'edit-source', width: 600}),
+    style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
     content: editableText({
-      databind: (ctx,vars,{resourceId}) => jb.prettyPrint(jb.studio.previewjb.resources[resourceId]),
-      style: editableText_studioCodemirrorTgp()
+      databind: studio.profileAsMacroText('%$path%'),
+      style: editableText.studioCodemirrorTgp()
     }),
-    title: studio_shortTitle('%$resourceId%'),
+    title: studio.shortTitle('%$path%'),
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
-      dialogFeature_resizer(true)
+      dialogFeature.resizer(true)
     ]
   })
   // impl: openDialog({
-  //   style: dialog_studioFloating({id: 'resource %$id%', width: 500}),
-  //   content: tree({
-  //     nodeModel: tree_jsonReadOnly('%$resource%', '%$id%'),
-  //     features: [css_class('jb-control-tree'), tree_selection({}), tree_keyboardSelection({})]
+  //   style: dialog_editSourceStyle({id: 'edit-source', width: 600}),
+  //   content: editableText({
+  //     databind: 
+  //     (ctx,vars,{resourceId}) => jb.prettyPrint(jb.studio.previewjb.resources[resourceId]),
+  //     style: editableText_studioCodemirrorTgp()
   //   }),
-  //   title: '%$id%'
+  //   title: studio_shortTitle('%$resourceId%'),
+  //   features: [
+  //     css('.jb-dialog-content-parent {overflow-y: hidden}'),
+  //     dialogFeature_resizer(true)
+  //   ]
   // })
 })
 
@@ -62,10 +67,16 @@ jb.component('studio.data-resource-menu', { /* studio_dataResourceMenu */
     title: 'Data',
     options: [
       dynamicControls({
-        controlItems: ctx => Object.keys(jb.studio.previewjb.resources),
-        genericControl: menu_action({
-          title: '%$controlItem%',
-          action: studio_openResource('%$controlItem%')
+        controlItems: ctx => jb.entries(jb.studio.previewjb.comps)
+        .filter(e=>! jb.comps[e[0]])
+        .filter(e=>e[1].mutableData || e[1].constData)
+          .map(e=>({
+            name: e[0],
+            path: `${e[0]}~${e[1].mutableData ? 'mutable' : 'const'}Data`
+          })),
+        genericControl: menu.action({
+          title: '%$controlItem/name%',
+          action: studio.openResource('%$controlItem/path%')
         })
       })
     ]

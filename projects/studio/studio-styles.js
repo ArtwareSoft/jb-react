@@ -62,7 +62,7 @@ jb.component('button.select-profile-style', {
   }
 })
 
-jb.component('studio.property-toolbar-style', { /* studio_propertyToolbarStyle */
+jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle */
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('i',{class: 'material-icons',
@@ -371,12 +371,12 @@ jb.component('dialog.studio-multiline-edit',  /* dialog_studioMultilineEdit */ {
 // 	}
 // })
 
-jb.component('studio.toolbar-style', { /* studio_toolbarStyle */ 
+jb.component('studio.toolbar-style', { /* studio.toolbarStyle */ 
   type: 'group.style',
   impl: customStyle({
     template: (cmp,state,h) => h('section',{class:'jb-group'},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx))),
     css: "{\n            display: flex;\n            height: 33px;\n            width: 100%;\n        }\n        >*:not(:last-child) { padding-right: 8px }\n        >* { margin-right: 0 }",
-    features: group_initGroup()
+    features: group.initGroup()
   })
 })

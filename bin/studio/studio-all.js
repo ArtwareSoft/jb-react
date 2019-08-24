@@ -660,55 +660,21 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, macros: {}, resources: {}, consts: {},
+  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, //macros: {},
   studio: { previewjb: jb },
   macroName: id =>
-    id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()).replace(/\./g,'_'),
+    id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
   component: (id,val) => {
     jb.comps[id] = val
     jb.traceComponentFile && jb.traceComponentFile(val)
-    const fixedId = jb.macroName(id)
-    const ctx = new jb.jbCtx()
 
-    const params = val.params || []
-    params.forEach(p=> {
+    // fix as boolean params to have type: 'boolean'
+    (val.params || []).forEach(p=> {
       if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
         p.type = 'boolean'
     })
 
-    if (typeof frame[fixedId] !== 'undefined')
-      jb.logError('overrding ' + id)
-    frame[fixedId] = jb.macros[fixedId] = (...allArgs) => {
-      const args=[], system={}, jid = id; // system props: constVar, remark
-      allArgs.forEach(arg=>{
-        if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
-          jb.comps[arg.$].macro(system,arg)
-        else
-          args.push(arg)
-      })
-      if (args.length == 1 && typeof args[0] === 'object') {
-        jb.toarray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system,arg))
-        args[0].remark && jb.comps.remark.macro(system,args[0])
-      }
-      return Object.assign(processMacro(args),system)
-    }
-
-    function processMacro(args) {
-      if (args.length == 0)
-        return {$: id }
-      const params = val.params || []
-      if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) // pipeline, or, and, plus
-        return {$: id, [params[0].id]: args }
-      if (!(val.usageByValue === false) && (params.length < 3 || val.usageByValue))
-        return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
-      if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object')
-        return {$: id, ...args[0]}
-      if (args.length == 1 && params.length)
-        return {$: id, [params[0].id]: args[0]}
-      if (args.length == 2 && params.length > 1)
-        return {$: id, [params[0].id]: args[0], [params[1].id]: args[1]}
-      debugger;
-    }
+    jb.registerMacro(id, val)
   },
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => { 
@@ -719,7 +685,74 @@ Object.assign(jb,{
   },
   const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
   functionDef: (id,val) => jb.functions[id] = val,
+  registerMacro: (id, profile) => {
+    const macroId = jb.macroName(id).replace(/\./g,'_')
+    const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
 
+    if (checkId(macroId))
+      registerProxy(macroId)
+    if (nameSpace && checkId(nameSpace,true) && !frame[nameSpace]) {
+      registerProxy(nameSpace, true)
+      jb.macroNs[nameSpace] = true
+    }
+
+    function registerProxy(proxyId) {
+      frame[proxyId] = new Proxy(()=>0, { 
+          get: (o,p) => {
+            if (typeof p === 'symbol') return true
+            return frame[proxyId+'_'+p]
+          },
+          apply: function(target, thisArg, allArgs) {
+            const {args,system} = splitSystemArgs(allArgs)
+            return Object.assign(processMacro(args),system)
+          }
+      })
+    }
+  
+    function splitSystemArgs(allArgs) {
+      const args=[], system={} // system props: constVar, remark
+      allArgs.forEach(arg=>{
+        if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
+          jb.comps[arg.$].macro(system,arg)
+        else
+          args.push(arg)
+      })
+      if (args.length == 1 && typeof args[0] === 'object') {
+        jb.toarray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system,arg))
+        args[0].remark && jb.comps.remark.macro(system,args[0])
+      }
+      return {args,system}
+    }
+
+    function checkId(macroId,isNS) {
+      if (frame[macroId] && !frame[macroId][jb.macroDef]) {
+        jb.logError(macroId +' is reserved by system or libs. please use a different name')
+        return false
+      }
+      if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId])
+        jb.logError(macroId + ' is defined more than once, using last definition ' + id)
+      if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
+        jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
+      return true;
+    }
+   
+    function processMacro(args) {
+      if (args.length == 0)
+        return {$: id }
+      const params = profile.params || []
+      if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) // pipeline, or, and, plus
+        return {$: id, [params[0].id]: args }
+      if (!(profile.usageByValue === false) && (params.length < 3 || profile.usageByValue))
+        return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
+      if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object')
+        return {$: id, ...args[0]}
+      if (args.length == 1 && params.length)
+        return {$: id, [params[0].id]: args[0]}
+      if (args.length == 2 && params.length > 1)
+        return {$: id, [params[0].id]: args[0], [params[1].id]: args[1]}
+      debugger;
+    }
+ },
 // force path - create objects in the path if not exist
   path: (object,path,value) => {
     let cur = object;
@@ -8229,24 +8262,40 @@ ui.preserveCtx = ctx => {
 }
 
 ui.renderWidget = function(profile,top) {
+	let formerReactElem, formerParentElem;
 	try {
 		if (typeof window != 'undefined' && window.parent != window && window.parent.jb) {
 			const st = window.parent.jb.studio
-			st.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
-
 			const originalResources = jb.resources
 			st.refreshPreviewWidget = _ => {
 				jb.resources = originalResources;
 				doRender();
 			}
+			st.copyComps = comps => { 
+				comps.forEach(e=> {
+					try {
+						jb.comps[e[0]] = eval(`(${e[1]})`)
+					} catch(e) {
+						jb.logException(e)				
+					}
+				})
+			}
+			st.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
+			return
 		}
-	} catch(e) {}
+	} catch(e) {
+		jb.logException(e)
+		return
+	}
 
 	doRender()
-
+	
 	function doRender() {
+		if (formerReactElem)
+			ui.render(ui.h('div',{}),formerParentElem,formerReactElem)
+
 		top.innerHTML = '';
-		const innerElem = document.createElement('div');
+		const innerElem = formerParentElem = document.createElement('div');
 		top.appendChild(innerElem);
 
 		class R extends jb.ui.Component {
@@ -8276,7 +8325,7 @@ ui.renderWidget = function(profile,top) {
 			}
 		}
 
-		ui.render(ui.h(R),innerElem);
+		formerReactElem = ui.render(ui.h(R),innerElem);
 	}
 }
 
@@ -12857,23 +12906,23 @@ jb.component('group.tabs', {
   }}
 })
 
-jb.component('toolbar.simple', {
-  type: 'group.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('div',{class:'toolbar'},
-        state.ctrls.map(ctrl=> h(ctrl))),
-    css: `{
-            display: flex;
-            background: #F5F5F5;
-            height: 33px;
-            width: 100%;
-            border-bottom: 1px solid #D9D9D9;
-            border-top: 1px solid #fff;
-        }
-        >* { margin-right: 0 }`,
-    features :{$: 'group.init-group'}
-  }
-})
+// jb.component('toolbar.simple', {
+//   type: 'group.style',
+//   impl :{$: 'custom-style',
+//     template: (cmp,state,h) => h('div',{class:'toolbar'},
+//         state.ctrls.map(ctrl=> h(ctrl))),
+//     css: `{
+//             display: flex;
+//             background: #F5F5F5;
+//             height: 33px;
+//             width: 100%;
+//             border-bottom: 1px solid #D9D9D9;
+//             border-top: 1px solid #fff;
+//         }
+//         >* { margin-right: 0 }`,
+//     features :{$: 'group.init-group'}
+//   }
+// })
 ;
 
 jb.component('table.with-headers', {
@@ -28203,8 +28252,9 @@ jb.prettyPrintComp = function(compId,comp,settings={}) {
   }
 }
 
-jb.prettyPrint = function(profile,options) {
-  return jb.prettyPrintWithPositions(profile,options).result;
+jb.prettyPrint = function(profile,settings = {}) {
+  settings.macro = true;
+  return jb.prettyPrintWithPositions(profile,settings).result;
 }
 
 jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls,macro} = {}) {
@@ -29697,7 +29747,7 @@ jb.component('button.select-profile-style', {
   }
 })
 
-jb.component('studio.property-toolbar-style',  /* studio_propertyToolbarStyle */ {
+jb.component('studio.property-toolbar-style', { /* studio_propertyToolbarStyle */
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('i',{class: 'material-icons',
@@ -30006,7 +30056,7 @@ jb.component('dialog.studio-multiline-edit',  /* dialog_studioMultilineEdit */ {
 // 	}
 // })
 
-jb.component('studio.toolbar-style',  /* studio_toolbarStyle */ {
+jb.component('studio.toolbar-style', { /* studio_toolbarStyle */ 
   type: 'group.style',
   impl: customStyle({
     template: (cmp,state,h) => h('section',{class:'jb-group'},
@@ -30321,7 +30371,7 @@ Object.assign(st, {
 
 // ******* components ***************
 
-jb.component('studio.ref',  /* studio_ref */ {
+jb.component('studio.ref', { /* studio_ref */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -30329,7 +30379,7 @@ jb.component('studio.ref',  /* studio_ref */ {
 		st.refOfPath(path)
 })
 
-jb.component('studio.path-of-ref',  /* studio_pathOfRef */ {
+jb.component('studio.path-of-ref', { /* studio_pathOfRef */
   params: [
     {id: 'ref', defaultValue: '%%', mandatory: true}
   ],
@@ -30337,7 +30387,7 @@ jb.component('studio.path-of-ref',  /* studio_pathOfRef */ {
 		st.pathOfRef(ref)
 })
 
-jb.component('studio.name-of-ref',  /* studio_nameOfRef */ {
+jb.component('studio.name-of-ref', { /* studio_nameOfRef */
   params: [
     {id: 'ref', defaultValue: '%%', mandatory: true}
   ],
@@ -30346,7 +30396,7 @@ jb.component('studio.name-of-ref',  /* studio_nameOfRef */ {
 })
 
 
-jb.component('studio.is-new',  /* studio_isNew */ {
+jb.component('studio.is-new', { /* studio_isNew */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string'}
@@ -30361,14 +30411,23 @@ jb.component('studio.is-new',  /* studio_isNew */ {
 	}
 })
 
-jb.component('studio.watch-path',  /* studio_watchPath */ {
+jb.component('studio.watch-path', { /* studio_watchPath */
   type: 'feature',
   category: 'group:0',
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {id: 'includeChildren', as: 'boolean', type: 'boolean'},
-    {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children' },
+    {
+      id: 'delay',
+      as: 'number',
+      description: 'delay in activation, can be used to set priority'
+    },
+    {
+      id: 'allowSelfRefresh',
+      as: 'boolean',
+      description: 'allow refresh originated from the components or its children',
+      type: 'boolean'
+    }
   ],
   impl: (ctx,path,includeChildren,delay,allowSelfRefresh) => ({
       init: cmp =>
@@ -30376,7 +30435,7 @@ jb.component('studio.watch-path',  /* studio_watchPath */ {
   })
 })
 
-jb.component('studio.watch-script-changes',  /* studio_watchScriptChanges */ {
+jb.component('studio.watch-script-changes', { /* studio_watchScriptChanges */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
@@ -30385,7 +30444,7 @@ jb.component('studio.watch-script-changes',  /* studio_watchScriptChanges */ {
    })
 })
 
-jb.component('studio.watch-components',  /* studio_watchComponents */ {
+jb.component('studio.watch-components', { /* studio_watchComponents */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
@@ -30396,7 +30455,7 @@ jb.component('studio.watch-components',  /* studio_watchComponents */ {
 })
 
 
-jb.component('studio.watch-typeof-script',  /* studio_watchTypeofScript */ {
+jb.component('studio.watch-typeof-script', { /* studio_watchTypeofScript */ 
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -30426,7 +30485,7 @@ st.message = function(message,error) {
 
 // ********* Components ************
 
-jb.component('studio.currentProfilePath',  /* studio_currentProfilePath */ {
+jb.component('studio.currentProfilePath', { /* studio_currentProfilePath */
   impl: firstSucceeding(
     '%$simulateProfilePath%',
     '%$studio/profile_path%',
@@ -30434,7 +30493,7 @@ jb.component('studio.currentProfilePath',  /* studio_currentProfilePath */ {
   )
 })
 
-jb.component('studio.message',  /* studio_message */ {
+jb.component('studio.message', { /* studio_message */
   type: 'action',
   params: [
     {id: 'message', as: 'string'}
@@ -30443,13 +30502,13 @@ jb.component('studio.message',  /* studio_message */ {
 		st.message(message)
 })
 
-jb.component('studio.redraw-studio',  /* studio_redrawStudio */ {
+jb.component('studio.redraw-studio', { /* studio_redrawStudio */
   type: 'action',
   impl: ctx =>
     	st.redrawStudio && st.redrawStudio()
 })
 
-jb.component('studio.last-edit',  /* studio_lastEdit */ {
+jb.component('studio.last-edit', { /* studio_lastEdit */
   type: 'data',
   params: [
     {id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true}
@@ -30466,7 +30525,7 @@ jb.component('studio.last-edit',  /* studio_lastEdit */ {
 	}
 })
 
-jb.component('studio.goto-last-edit',  /* studio_gotoLastEdit */ {
+jb.component('studio.goto-last-edit', { /* studio_gotoLastEdit */
   type: 'action',
   impl: ctx=>{
 		const lastEdit = ctx.run({$: 'studio.last-edit'})
@@ -30475,7 +30534,7 @@ jb.component('studio.goto-last-edit',  /* studio_gotoLastEdit */ {
 	}
 })
 
-jb.component('studio.project-source',  /* studio_projectSource */ {
+jb.component('studio.project-source', { /* studio_projectSource */
   params: [
     {id: 'project', as: 'string', defaultValue: '%$studio/project%'}
   ],
@@ -30486,7 +30545,7 @@ jb.component('studio.project-source',  /* studio_projectSource */ {
 	}
 })
 
-jb.component('studio.comp-source',  /* studio_compSource */ {
+jb.component('studio.comp-source', { /* studio_compSource */
   params: [
     {id: 'comp', as: 'string', defaultValue: studio_currentProfilePath()}
   ],
@@ -30494,7 +30553,7 @@ jb.component('studio.comp-source',  /* studio_compSource */ {
 		st.compAsStr(comp.split('~')[0])
 })
 
-jb.component('studio.dynamic-options-watch-new-comp',  /* studio_dynamicOptionsWatchNewComp */ {
+jb.component('studio.dynamic-options-watch-new-comp', { /* studio_dynamicOptionsWatchNewComp */ 
   type: 'feature',
   impl: picklist_dynamicOptions(
     () =>
@@ -30510,13 +30569,20 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       var st = jb.studio;
       st.previewWindow = preview_window;
       st.previewjb = preview_window.jb;
-      st.serverComps = st.previewjb.comps;
+      if (jb.studio.compsHistory.length) {
+        const compsStr = jb.entries(jb.studio.compsHistory.slice(-1)[0].after)
+          .filter(e=>e[1] != st.serverComps[e[0]]).map(e=>[e[0], jb.prettyPrint(e[1])])
+        jb.studio.copyComps && jb.studio.copyComps(compsStr)
+      } else {
+        st.serverComps = st.previewjb.comps;
+      }
       st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
 
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;
       st.previewjb.http_get_cache = {}
       st.previewjb.ctxByPath = {}
+      jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
 
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
@@ -30535,7 +30601,7 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
 			}
 }
 
-jb.component('studio.preview-widget-impl',  /* studio_previewWidgetImpl */ {
+jb.component('studio.preview-widget-impl', { /* studio_previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
     template: (cmp,state,h) => h('iframe', {
@@ -30551,16 +30617,17 @@ jb.component('studio.preview-widget-impl',  /* studio_previewWidgetImpl */ {
   })
 })
 
-jb.component('studio.refresh-preview',  /* studio_refreshPreview */ {
+jb.component('studio.refresh-preview', { /* studio_refreshPreview */
   type: 'action',
-  impl: _ => {
+  impl: ctx => {
     jb.ui.garbageCollectCtxDictionary(true);
     jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
-    jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
+    //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
+    ctx.run(refreshControlById('preview-parent'))
   }
 })
 
-jb.component('studio.set-preview-size',  /* studio_setPreviewSize */ {
+jb.component('studio.set-preview-size', { /* studio_setPreviewSize */
   type: 'action',
   params: [
     {id: 'width', as: 'number'},
@@ -30579,7 +30646,7 @@ jb.component('studio.set-preview-size',  /* studio_setPreviewSize */ {
   }
 })
 
-jb.component('studio.wait-for-preview-iframe',  /* studio_waitForPreviewIframe */ {
+jb.component('studio.wait-for-preview-iframe', { /* studio_waitForPreviewIframe */
   impl: _ =>
     jb.ui.waitFor(()=>
       jb.studio.previewWindow)
@@ -30593,7 +30660,7 @@ jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studi
         return jb.resources.studio.page ? [{page, ctrl}] : []
       });
 
-jb.component('studio.data-comp-inspector',  /* studio_dataCompInspector */ {
+jb.component('studio.data-comp-inspector', { /* studio_dataCompInspector */
   type: 'control',
   impl: group({
     controls: [
@@ -30613,15 +30680,10 @@ jb.component('studio.data-comp-inspector',  /* studio_dataCompInspector */ {
   })
 })
 
-jb.component('studio.preview-widget',  /* studio_previewWidget */ {
+jb.component('studio.preview-widget', { /* studio_previewWidget */ 
   type: 'control',
   params: [
-    {
-      id: 'style',
-      type: 'preview-style',
-      dynamic: true,
-      defaultValue: studio_previewWidgetImpl()
-    },
+    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio_previewWidgetImpl() },
     {id: 'width', as: 'number'},
     {id: 'height', as: 'number'}
   ],
@@ -30730,7 +30792,7 @@ jb.component('studio-dialog-feature.refresh-title', {
 	})
 })
 
-jb.component('studio.code-mirror-mode',  /* studio_codeMirrorMode */ {
+jb.component('studio.code-mirror-mode', { /* studio_codeMirrorMode */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -30743,7 +30805,7 @@ jb.component('studio.code-mirror-mode',  /* studio_codeMirrorMode */ {
 	}
 })
 
-jb.component('studio.open-multiline-edit',  /* studio_openMultilineEdit */ {
+jb.component('studio.open-multiline-edit', { /* studio_openMultilineEdit */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -30783,7 +30845,7 @@ jb.component('dialog.studio-floating',  /* dialog_studioFloating */ {
   })
 })
 
-jb.component('studio.open-responsive-phone-popup',  /* studio_openResponsivePhonePopup */ {
+jb.component('studio.open-responsive-phone-popup', { /* studio_openResponsivePhonePopup */ 
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -30914,7 +30976,7 @@ jb.component('url-history.map-studio-url-to-resource', {
 (function() {
 var st = jb.studio;
 
-jb.component('studio.val',  /* studio_val */ {
+jb.component('studio.val', { /* studio_val */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -30922,7 +30984,7 @@ jb.component('studio.val',  /* studio_val */ {
 		st.valOfPath(path)
 })
 
-jb.component('studio.is-primitive-value',  /* studio_isPrimitiveValue */ {
+jb.component('studio.is-primitive-value', { /* studio_isPrimitiveValue */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -30930,7 +30992,7 @@ jb.component('studio.is-primitive-value',  /* studio_isPrimitiveValue */ {
 		st.isPrimitiveValue(st.valOfPath(path))
 })
 
-jb.component('studio.is-of-type',  /* studio_isOfType */ {
+jb.component('studio.is-of-type', { /* studio_isOfType */
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {id: 'type', as: 'string', mandatory: true}
@@ -30939,7 +31001,7 @@ jb.component('studio.is-of-type',  /* studio_isOfType */ {
 			st.isOfType(path,_type)
 })
 
-jb.component('studio.parent-path',  /* studio_parentPath */ {
+jb.component('studio.parent-path', { /* studio_parentPath */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -30948,7 +31010,7 @@ jb.component('studio.parent-path',  /* studio_parentPath */ {
 })
 
 
-jb.component('studio.param-type',  /* studio_paramType */ {
+jb.component('studio.param-type', { /* studio_paramType */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -30956,7 +31018,7 @@ jb.component('studio.param-type',  /* studio_paramType */ {
 			st.paramTypeOfPath(path)
 })
 
-jb.component('studio.PTs-of-type',  /* studio_PTsOfType */ {
+jb.component('studio.PTs-of-type', { /* studio_PTsOfType */
   params: [
     {id: 'type', as: 'string', mandatory: true}
   ],
@@ -30964,7 +31026,7 @@ jb.component('studio.PTs-of-type',  /* studio_PTsOfType */ {
 			st.PTsOfType(_type)
 })
 
-jb.component('studio.profiles-of-PT',  /* studio_profilesOfPT */ {
+jb.component('studio.profiles-of-PT', { /* studio_profilesOfPT */
   params: [
     {id: 'PT', as: 'string', mandatory: true}
   ],
@@ -30972,7 +31034,7 @@ jb.component('studio.profiles-of-PT',  /* studio_profilesOfPT */ {
 			st.profilesOfPT(pt)
 })
 
-jb.component('studio.categories-of-type',  /* studio_categoriesOfType */ {
+jb.component('studio.categories-of-type', { /* studio_categoriesOfType */
   params: [
     {id: 'type', as: 'string', mandatory: true},
     {id: 'path', as: 'string'}
@@ -31015,7 +31077,7 @@ jb.component('studio.categories-of-type',  /* studio_categoriesOfType */ {
 	}
 })
 
-jb.component('studio.short-title',  /* studio_shortTitle */ {
+jb.component('studio.short-title', { /* studio_shortTitle */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -31023,7 +31085,7 @@ jb.component('studio.short-title',  /* studio_shortTitle */ {
 		st.shortTitle(path)
 })
 
-jb.component('studio.summary',  /* studio_summary */ {
+jb.component('studio.summary', { /* studio_summary */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -31031,7 +31093,7 @@ jb.component('studio.summary',  /* studio_summary */ {
 		st.summary(path)
 })
 
-jb.component('studio.has-param',  /* studio_hasParam */ {
+jb.component('studio.has-param', { /* studio_hasParam */
   params: [
     {id: 'path', as: 'string'},
     {id: 'param', as: 'string'}
@@ -31040,7 +31102,7 @@ jb.component('studio.has-param',  /* studio_hasParam */ {
 		st.paramDef(path+'~'+param)
 })
 
-jb.component('studio.non-control-children',  /* studio_nonControlChildren */ {
+jb.component('studio.non-control-children', { /* studio_nonControlChildren */
   params: [
     {id: 'path', as: 'string'},
     {id: 'includeFeatures', as: 'boolean', type: 'boolean'}
@@ -31049,7 +31111,7 @@ jb.component('studio.non-control-children',  /* studio_nonControlChildren */ {
 		st.nonControlChildren(path,includeFeatures)
 })
 
-jb.component('studio.as-array-children',  /* studio_asArrayChildren */ {
+jb.component('studio.as-array-children', { /* studio_asArrayChildren */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -31057,21 +31119,21 @@ jb.component('studio.as-array-children',  /* studio_asArrayChildren */ {
 		st.asArrayChildren(path)
 })
 
-jb.component('studio.comp-name',  /* studio_compName */ {
+jb.component('studio.comp-name', { /* studio_compName */
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => st.compNameOfPath(path) || ''
 })
 
-jb.component('studio.param-def',  /* studio_paramDef */ {
+jb.component('studio.param-def', { /* studio_paramDef */
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => st.paramDef(path)
 })
 
-jb.component('studio.enum-options',  /* studio_enumOptions */ {
+jb.component('studio.enum-options', { /* studio_enumOptions */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -31079,7 +31141,7 @@ jb.component('studio.enum-options',  /* studio_enumOptions */ {
 		((st.paramDef(path) || {}).options ||'').split(',').map(x=>({code:x,text:x}))
 })
 
-jb.component('studio.prop-name',  /* studio_propName */ {
+jb.component('studio.prop-name', { /* studio_propName */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -31087,7 +31149,7 @@ jb.component('studio.prop-name',  /* studio_propName */ {
 		st.propName(path)
 })
 
-jb.component('studio.more-params',  /* studio_moreParams */ {
+jb.component('studio.more-params', { /* studio_moreParams */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -31096,7 +31158,7 @@ jb.component('studio.more-params',  /* studio_moreParams */ {
 })
 
 
-jb.component('studio.comp-name-ref',  /* studio_compNameRef */ {
+jb.component('studio.comp-name-ref', { /* studio_compNameRef */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -31113,7 +31175,7 @@ jb.component('studio.comp-name-ref',  /* studio_compNameRef */ {
 	})
 })
 
-jb.component('studio.profile-as-text',  /* studio_profileAsText */ {
+jb.component('studio.profile-as-text', { /* studio_profileAsText */
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}
@@ -31160,7 +31222,7 @@ jb.component('studio.profile-as-text',  /* studio_profileAsText */ {
 	})
 })
 
-jb.component('studio.profile-as-macro-text',  /* studio_profileAsMacroText */ {
+jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}
@@ -31190,7 +31252,7 @@ jb.component('studio.profile-as-macro-text',  /* studio_profileAsMacroText */ {
 	})
 })
 
-jb.component('studio.profile-as-string-byref',  /* studio_profileAsStringByref */ {
+jb.component('studio.profile-as-string-byref', { /* studio_profileAsStringByref */
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}
@@ -31211,7 +31273,7 @@ jb.component('studio.profile-as-string-byref',  /* studio_profileAsStringByref *
 	})
 })
 
-jb.component('studio.profile-value-as-text',  /* studio_profileValueAsText */ {
+jb.component('studio.profile-value-as-text', { /* studio_profileValueAsText */
   type: 'data',
   params: [
     {id: 'path', as: 'string'}
@@ -31234,7 +31296,7 @@ jb.component('studio.profile-value-as-text',  /* studio_profileValueAsText */ {
 		})
 })
 
-jb.component('studio.insert-control',  /* studio_insertControl */ {
+jb.component('studio.insert-control', { /* studio_insertControl */
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()},
@@ -31244,7 +31306,7 @@ jb.component('studio.insert-control',  /* studio_insertControl */ {
 		st.insertControl(path, comp,ctx)
 })
 
-jb.component('studio.wrap',  /* studio_wrap */ {
+jb.component('studio.wrap', { /* studio_wrap */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -31254,7 +31316,7 @@ jb.component('studio.wrap',  /* studio_wrap */ {
 		st.wrap(path,comp,ctx)
 })
 
-jb.component('studio.wrap-with-group',  /* studio_wrapWithGroup */ {
+jb.component('studio.wrap-with-group', { /* studio_wrapWithGroup */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31263,7 +31325,7 @@ jb.component('studio.wrap-with-group',  /* studio_wrapWithGroup */ {
 		st.wrapWithGroup(path,ctx)
 })
 
-jb.component('studio.add-property',  /* studio_addProperty */ {
+jb.component('studio.add-property', { /* studio_addProperty */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31272,7 +31334,7 @@ jb.component('studio.add-property',  /* studio_addProperty */ {
 		st.addProperty(path,ctx)
 })
 
-jb.component('studio.duplicate-control',  /* studio_duplicateControl */ {
+jb.component('studio.duplicate-control', { /* studio_duplicateControl */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31281,7 +31343,7 @@ jb.component('studio.duplicate-control',  /* studio_duplicateControl */ {
 		st.duplicateControl(path,ctx)
 })
 
-jb.component('studio.duplicate-array-item',  /* studio_duplicateArrayItem */ {
+jb.component('studio.duplicate-array-item', { /* studio_duplicateArrayItem */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31300,7 +31362,7 @@ jb.component('studio.duplicate-array-item',  /* studio_duplicateArrayItem */ {
 // 		st.moveInArray(path,moveUp)
 // })
 
-jb.component('studio.new-array-item',  /* studio_newArrayItem */ {
+jb.component('studio.new-array-item', { /* studio_newArrayItem */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31309,7 +31371,7 @@ jb.component('studio.new-array-item',  /* studio_newArrayItem */ {
 		st.addArrayItem(path,ctx)
 })
 
-jb.component('studio.add-array-item',  /* studio_addArrayItem */ {
+jb.component('studio.add-array-item', { /* studio_addArrayItem */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -31319,7 +31381,7 @@ jb.component('studio.add-array-item',  /* studio_addArrayItem */ {
 		st.addArrayItem(path, toAdd,ctx)
 })
 
-jb.component('studio.wrap-with-array',  /* studio_wrapWithArray */ {
+jb.component('studio.wrap-with-array', { /* studio_wrapWithArray */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31328,7 +31390,7 @@ jb.component('studio.wrap-with-array',  /* studio_wrapWithArray */ {
 		st.wrapWithArray(path,ctx)
 })
 
-jb.component('studio.can-wrap-with-array',  /* studio_canWrapWithArray */ {
+jb.component('studio.can-wrap-with-array', { /* studio_canWrapWithArray */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string'}
@@ -31337,7 +31399,7 @@ jb.component('studio.can-wrap-with-array',  /* studio_canWrapWithArray */ {
 			st.paramDef(path) && (st.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(st.valOfPath(path))
 })
 
-jb.component('studio.is-array-item',  /* studio_isArrayItem */ {
+jb.component('studio.is-array-item', { /* studio_isArrayItem */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string'}
@@ -31347,7 +31409,7 @@ jb.component('studio.is-array-item',  /* studio_isArrayItem */ {
 })
 
 
-jb.component('studio.set-comp',  /* studio_setComp */ {
+jb.component('studio.set-comp', { /* studio_setComp */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -31357,7 +31419,7 @@ jb.component('studio.set-comp',  /* studio_setComp */ {
 		st.setComp(path, comp,ctx)
 })
 
-jb.component('studio.delete',  /* studio_delete */ {
+jb.component('studio.delete', { /* studio_delete */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31365,7 +31427,7 @@ jb.component('studio.delete',  /* studio_delete */ {
   impl: (ctx,path) => st._delete(path,ctx)
 })
 
-jb.component('studio.disabled',  /* studio_disabled */ {
+jb.component('studio.disabled', { /* studio_disabled */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string'}
@@ -31373,7 +31435,7 @@ jb.component('studio.disabled',  /* studio_disabled */ {
   impl: (ctx,path) => st.disabled(path,ctx)
 })
 
-jb.component('studio.toggle-disabled',  /* studio_toggleDisabled */ {
+jb.component('studio.toggle-disabled', { /* studio_toggleDisabled */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31381,7 +31443,7 @@ jb.component('studio.toggle-disabled',  /* studio_toggleDisabled */ {
   impl: (ctx,path) => st.toggleDisabled(path,ctx)
 })
 
-jb.component('studio.make-local',  /* studio_makeLocal */ {
+jb.component('studio.make-local', { /* studio_makeLocal */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31389,7 +31451,7 @@ jb.component('studio.make-local',  /* studio_makeLocal */ {
   impl: (ctx,path) => st.makeLocal(path,ctx)
 })
 
-jb.component('studio.jb-editor.nodes',  /* studio_jbEditor_nodes */ {
+jb.component('studio.jb-editor.nodes', { /* studio_jbEditor_nodes */
   type: 'tree.nodeModel',
   params: [
     {id: 'path', as: 'string'}
@@ -31398,7 +31460,7 @@ jb.component('studio.jb-editor.nodes',  /* studio_jbEditor_nodes */ {
 			new st.jbEditorTree(path,true)
 })
 
-jb.component('studio.icon-of-type',  /* studio_iconOfType */ {
+jb.component('studio.icon-of-type', { /* studio_iconOfType */
   type: 'data',
   params: [
     {id: 'type', as: 'string'}
@@ -31417,7 +31479,7 @@ jb.component('studio.icon-of-type',  /* studio_iconOfType */ {
 	}
 })
 
-jb.component('studio.is-disabled',  /* studio_isDisabled */ {
+jb.component('studio.is-disabled', { /* studio_isDisabled */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string'}
@@ -31426,7 +31488,7 @@ jb.component('studio.is-disabled',  /* studio_isDisabled */ {
 			st.disabled(path)
 })
 
-jb.component('studio.disabled-support',  /* studio_disabledSupport */ {
+jb.component('studio.disabled-support', { /* studio_disabledSupport */ 
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -31600,7 +31662,7 @@ function setToVersion(versionIndex, ctx, after) {
   st.compsRefHandler.resourceChange.next(opEvent);
 }
 
-jb.component('studio.undo',  /* studio_undo */ {
+jb.component('studio.undo', { /* studio_undo */
   type: 'action',
   impl: ctx => {
     if (st.undoIndex > 0)
@@ -31608,7 +31670,7 @@ jb.component('studio.undo',  /* studio_undo */ {
   }
 })
 
-jb.component('studio.clean-selection-preview',  /* studio_cleanSelectionPreview */ {
+jb.component('studio.clean-selection-preview', { /* studio_cleanSelectionPreview */
   type: 'action',
   impl: () => {
     if (st.compsHistory.length > 0)
@@ -31616,7 +31678,7 @@ jb.component('studio.clean-selection-preview',  /* studio_cleanSelectionPreview 
   }
 })
 
-jb.component('studio.revert',  /* studio_revert */ {
+jb.component('studio.revert', { /* studio_revert */
   type: 'action',
   params: [
     {id: 'toIndex', as: 'number'}
@@ -31629,7 +31691,7 @@ jb.component('studio.revert',  /* studio_revert */ {
   }
 })
 
-jb.component('studio.redo',  /* studio_redo */ {
+jb.component('studio.redo', { /* studio_redo */
   type: 'action',
   impl: ctx => {
     if (st.undoIndex < st.compsHistory.length)
@@ -31637,7 +31699,7 @@ jb.component('studio.redo',  /* studio_redo */ {
   }
 })
 
-jb.component('studio.copy',  /* studio_copy */ {
+jb.component('studio.copy', { /* studio_copy */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31649,7 +31711,7 @@ jb.component('studio.copy',  /* studio_copy */ {
   }
 })
 
-jb.component('studio.paste',  /* studio_paste */ {
+jb.component('studio.paste', { /* studio_paste */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31658,15 +31720,15 @@ jb.component('studio.paste',  /* studio_paste */ {
     (st.clipboard != null) && jb.writeValue(st.refOfPath(path), st.clipboard, ctx)
 })
 
-jb.component('studio.script-history-items',  /* studio_scriptHistoryItems */ {
+jb.component('studio.script-history-items', { /* studio_scriptHistoryItems */
   impl: ctx => st.compsHistory
 })
 
-jb.component('studio.comps-undo-index',  /* studio_compsUndoIndex */ {
+jb.component('studio.comps-undo-index', { /* studio_compsUndoIndex */
   impl: ctx => st.undoIndex - 1
 })
 
-jb.component('studio.script-history',  /* studio_scriptHistory */ {
+jb.component('studio.script-history', { /* studio_scriptHistory */
   type: 'control',
   impl: group({
     controls: [
@@ -31705,7 +31767,7 @@ jb.component('studio.script-history',  /* studio_scriptHistory */ {
   })
 })
 
-jb.component('studio.open-script-history',  /* studio_openScriptHistory */ {
+jb.component('studio.open-script-history', { /* studio_openScriptHistory */ 
   type: 'action',
   impl: openDialog({
     style: dialog_studioFloating({id: 'script-history', width: '700', height: '400'}),
@@ -32061,7 +32123,7 @@ Object.assign(st,{
 })()
 ;
 
-jb.component('studio.categories-marks',  /* studio_categoriesMarks */ {
+jb.component('studio.categories-marks', { /* studio_categoriesMarks */
   params: [
     {id: 'type', as: 'string'},
     {id: 'path', as: 'string'}
@@ -32119,7 +32181,7 @@ jb.component('studio.categories-marks',  /* studio_categoriesMarks */ {
   )
 })
 
-jb.component('studio.select-profile',  /* studio_selectProfile */ {
+jb.component('studio.select-profile', { /* studio_selectProfile */
   type: 'control',
   params: [
     {id: 'onSelect', type: 'action', dynamic: true},
@@ -32253,7 +32315,7 @@ jb.component('studio.select-profile',  /* studio_selectProfile */ {
   })
 })
 
-jb.component('studio.open-new-profile-dialog',  /* studio_openNewProfileDialog */ {
+jb.component('studio.open-new-profile-dialog', { /* studio_openNewProfileDialog */
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()},
@@ -32288,7 +32350,7 @@ jb.component('studio.open-new-profile-dialog',  /* studio_openNewProfileDialog *
   })
 })
 
-jb.component('studio.pick-profile',  /* studio_pickProfile */ {
+jb.component('studio.pick-profile', { /* studio_pickProfile */
   description: 'picklist for picking a profile in a context',
   type: 'control',
   params: [
@@ -32310,7 +32372,7 @@ jb.component('studio.pick-profile',  /* studio_pickProfile */ {
   })
 })
 
-jb.component('studio.open-new-page',  /* studio_openNewPage */ {
+jb.component('studio.open-new-page', { /* studio_openNewPage */
   type: 'action',
   impl: openDialog({
     style: dialog_dialogOkCancel(),
@@ -32334,7 +32396,7 @@ jb.component('studio.open-new-page',  /* studio_openNewPage */ {
       }),
       writeValue('%$studio/profile_path%', '%$studio/project%.%$name%~impl'),
       writeValue('%$studio/page%', '%$name%'),
-      {$: 'studio.open-control-tree' },
+      {$: 'studio.open-control-tree', $recursive: true },
       tree_regainFocus(),
       refreshControlById('pages')
     ],
@@ -32343,7 +32405,7 @@ jb.component('studio.open-new-page',  /* studio_openNewPage */ {
   })
 })
 
-jb.component('studio.insert-comp-option',  /* studio_insertCompOption */ {
+jb.component('studio.insert-comp-option', { /* studio_insertCompOption */
   params: [
     {id: 'title', as: 'string'},
     {id: 'comp', as: 'string'}
@@ -32354,7 +32416,7 @@ jb.component('studio.insert-comp-option',  /* studio_insertCompOption */ {
   })
 })
 
-jb.component('studio.insert-control-menu',  /* studio_insertControlMenu */ {
+jb.component('studio.insert-control-menu', { /* studio_insertControlMenu */ 
   impl: menu_menu({
     title: 'Insert',
     options: [
@@ -32392,7 +32454,7 @@ jb.studio.newControl = path =>
 (function() {
 const st = jb.studio
 
-jb.component('studio.itemlist-refresh-suggestions-options',  /* studio_itemlistRefreshSuggestionsOptions */ {
+jb.component('studio.itemlist-refresh-suggestions-options', { /* studio_itemlistRefreshSuggestionsOptions */
   type: 'feature',
   params: [
     {id: 'path', as: 'string'},
@@ -32457,12 +32519,12 @@ jb.component('studio.itemlist-refresh-suggestions-options',  /* studio_itemlistR
   })
 })
 
-jb.component('studio.show-suggestions',  /* studio_showSuggestions */ {
+jb.component('studio.show-suggestions', { /* studio_showSuggestions */
   impl: ctx =>
     new st.suggestions(ctx.data,false).suggestionsRelevant()
 })
 
-jb.component('studio.paste-suggestion',  /* studio_pasteSuggestion */ {
+jb.component('studio.paste-suggestion', { /* studio_pasteSuggestion */
   type: 'action',
   params: [
     {id: 'option', as: 'single', defaultValue: '%%'},
@@ -32477,7 +32539,7 @@ jb.component('studio.paste-suggestion',  /* studio_pasteSuggestion */ {
   }
 })
 
-jb.component('studio.suggestions-itemlist',  /* studio_suggestionsItemlist */ {
+jb.component('studio.suggestions-itemlist', { /* studio_suggestionsItemlist */
   params: [
     {id: 'path', as: 'string'},
     {id: 'source', as: 'string'}
@@ -32506,7 +32568,7 @@ jb.component('studio.suggestions-itemlist',  /* studio_suggestionsItemlist */ {
   })
 })
 
-jb.component('studio.property-primitive',  /* studio_propertyPrimitive */ {
+jb.component('studio.property-primitive', { /* studio_propertyPrimitive */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32517,7 +32579,7 @@ jb.component('studio.property-primitive',  /* studio_propertyPrimitive */ {
         databind: studio_ref('%$path%'),
         style: editableText_studioPrimitiveText(),
         features: [
-          studio_watchPath('%$path%', true),
+          studio_watchPath({path: '%$path%', includeChildren: true}),
           editableText_helperPopup({
             control: studio_suggestionsItemlist('%$path%'),
             popupId: 'suggestions',
@@ -32535,7 +32597,7 @@ jb.component('studio.property-primitive',  /* studio_propertyPrimitive */ {
   })
 })
 
-jb.component('studio.jb-floating-input',  /* studio_jbFloatingInput */ {
+jb.component('studio.jb-floating-input', { /* studio_jbFloatingInput */ 
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32723,7 +32785,7 @@ class CompOption {
 })()
 ;
 
-jb.component('studio.property-toolbar',  /* studio_propertyToolbar */ {
+jb.component('studio.property-toolbar', { /* studio_propertyToolbar */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32735,7 +32797,7 @@ jb.component('studio.property-toolbar',  /* studio_propertyToolbar */ {
   })
 })
 
-jb.component('studio.property-toolbar-feature',  /* studio_propertyToolbarFeature */ {
+jb.component('studio.property-toolbar-feature', { /* studio_propertyToolbarFeature */
   type: 'feature',
   params: [
     {id: 'path', as: 'string'}
@@ -32747,7 +32809,7 @@ jb.component('studio.property-toolbar-feature',  /* studio_propertyToolbarFeatur
 })
 
 
-jb.component('studio.focus-on-first-property',  /* studio_focusOnFirstProperty */ {
+jb.component('studio.focus-on-first-property', { /* studio_focusOnFirstProperty */
   type: 'action',
   params: [
     {id: 'delay', as: 'number', defaultValue: 100}
@@ -32761,7 +32823,7 @@ jb.component('studio.focus-on-first-property',  /* studio_focusOnFirstProperty *
   }
 })
 
-jb.component('studio.open-source-dialog',  /* studio_openSourceDialog */ {
+jb.component('studio.open-source-dialog', { /* studio_openSourceDialog */
   type: 'action',
   impl: openDialog({
     style: dialog_dialogOkCancel(),
@@ -32771,7 +32833,7 @@ jb.component('studio.open-source-dialog',  /* studio_openSourceDialog */ {
   })
 })
 
-jb.component('studio.properties-in-tgp',  /* studio_propertiesInTgp */ {
+jb.component('studio.properties-in-tgp', { /* studio_propertiesInTgp */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32786,7 +32848,7 @@ jb.component('studio.properties-in-tgp',  /* studio_propertiesInTgp */ {
   })
 })
 
-jb.component('studio.property-script',  /* studio_propertyScript */ {
+jb.component('studio.property-script', { /* studio_propertyScript */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32797,11 +32859,11 @@ jb.component('studio.property-script',  /* studio_propertyScript */ {
       action: {$: 'studio.open-jb-editor', path: '%$path%', $recursive: true},
       style: button_studioScript()
     }),
-    features: studio_watchPath('%$path%', true)
+    features: studio_watchPath({path: '%$path%', includeChildren: true})
   })
 })
 
-jb.component('studio.property-boolean',  /* studio_propertyBoolean */ {
+jb.component('studio.property-boolean', { /* studio_propertyBoolean */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32809,11 +32871,11 @@ jb.component('studio.property-boolean',  /* studio_propertyBoolean */ {
   impl: editableBoolean({
     databind: studio_ref('%$path%'),
     style: editableBoolean_mdlSlideToggle(),
-    features: studio_watchPath('%$path%', true)
+    features: studio_watchPath({path: '%$path%', includeChildren: true})
   })
 })
 
-jb.component('studio.property-enum',  /* studio_propertyEnum */ {
+jb.component('studio.property-enum', { /* studio_propertyEnum */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32822,11 +32884,11 @@ jb.component('studio.property-enum',  /* studio_propertyEnum */ {
     databind: studio_ref('%$path%'),
     options: studio_enumOptions('%$path%'),
     style: picklist_nativeMdLook(),
-    features: studio_watchPath('%$path%', true)
+    features: studio_watchPath({path: '%$path%', includeChildren: true})
   })
 })
 
-jb.component('studio.property-slider',  /* studio_propertySlider */ {
+jb.component('studio.property-slider', { /* studio_propertySlider */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32842,12 +32904,12 @@ jb.component('studio.property-slider',  /* studio_propertySlider */ {
       css(
         ">input-slider { width: 110px; }\n>.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }"
       ),
-      studio_watchPath('%$path%', true)
+      studio_watchPath({path: '%$path%', includeChildren: true})
     ]
   })
 })
 
-jb.component('studio.property-tgp',  /* studio_propertyTgp */ {
+jb.component('studio.property-tgp', { /* studio_propertyTgp */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32858,7 +32920,7 @@ jb.component('studio.property-tgp',  /* studio_propertyTgp */ {
   )
 })
 
-jb.component('studio.properties-expanded-relevant',  /* studio_propertiesExpandedRelevant */ {
+jb.component('studio.properties-expanded-relevant', { /* studio_propertiesExpandedRelevant */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string', mandatory: true}
@@ -32870,7 +32932,7 @@ jb.component('studio.properties-expanded-relevant',  /* studio_propertiesExpande
   )
 })
 
-jb.component('studio.property-tgp-old',  /* studio_propertyTgpOld */ {
+jb.component('studio.property-tgp-old', { /* studio_propertyTgpOld */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32909,7 +32971,7 @@ jb.component('studio.property-tgp-old',  /* studio_propertyTgpOld */ {
   })
 })
 
-jb.component('studio.property-tgp-in-array',  /* studio_propertyTgpInArray */ {
+jb.component('studio.property-tgp-in-array', { /* studio_propertyTgpInArray */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32932,7 +32994,7 @@ jb.component('studio.property-tgp-in-array',  /* studio_propertyTgpInArray */ {
           label({
             title: studio_summary('%$path%'),
             style: label_htmlTag('p'),
-            features: [css_width('335'), studio_watchPath('%$path%', true)]
+            features: [css_width('335'), studio_watchPath({path: '%$path%', includeChildren: true})]
           }),
           studio_propertyToolbar('%$path%')
         ],
@@ -32951,28 +33013,32 @@ jb.component('studio.property-tgp-in-array',  /* studio_propertyTgpInArray */ {
     features: [
       css_margin({left: '-100'}),
       variable({name: 'expanded', value: studio_isNew('%$path%'), mutable: true}),
-      studio_watchPath('%$path%', true)
+      studio_watchPath({path: '%$path%', includeChildren: true})
     ]
   })
 })
 
-jb.component('studio.property-array',  /* studio_propertyArray */ {
+jb.component('studio.property-array', { /* studio_propertyArray */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: itemlist({
-      items: studio_asArrayChildren('%$path%'),
-      controls: group({
-        style: propertySheet_studioPlain(),
-        controls: studio_propertyTgpInArray('%$arrayItem%')
-      }),
-      itemVariable: 'arrayItem',
-      features: [studio_watchPath('%$path%',true), itemlist_divider(), itemlist_dragAndDrop()]
+    items: studio_asArrayChildren('%$path%'),
+    controls: group({
+      style: propertySheet_studioPlain(),
+      controls: studio_propertyTgpInArray('%$arrayItem%')
+    }),
+    itemVariable: 'arrayItem',
+    features: [
+      studio_watchPath({path: '%$path%', includeChildren: true, allowSelfRefresh: true}),
+      itemlist_divider(),
+      itemlist_dragAndDrop()
+    ]
   })
 })
 
-jb.component('studio.property-field',  /* studio_propertyField */ {
+jb.component('studio.property-field', { /* studio_propertyField */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -33015,7 +33081,7 @@ jb.component('studio.property-field',  /* studio_propertyField */ {
   })
 })
 
-jb.component('studio.jb-floating-input-rich',  /* studio_jbFloatingInputRich */ {
+jb.component('studio.jb-floating-input-rich', { /* studio_jbFloatingInputRich */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -33026,7 +33092,7 @@ jb.component('studio.jb-floating-input-rich',  /* studio_jbFloatingInputRich */ 
   })
 })
 
-jb.component('studio.properties',  /* studio_properties */ {
+jb.component('studio.properties', { /* studio_properties */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -33065,8 +33131,8 @@ jb.component('studio.properties',  /* studio_properties */ {
           })
         ],
         features: [
-          group_dynamicTitles(),
-          studio_watchPath('%$path%~features'),
+          group.dynamicTitles(),
+          studio.watchPath({path: '%$path%~features', allowSelfRefresh: true}),
           hidden(
             remark('not a control'),
             studio_hasParam(remark('not a control'), '%$path%', 'features')
@@ -33097,7 +33163,7 @@ jb.component('studio.properties',  /* studio_properties */ {
   })
 })
 
-jb.component('studio.tgp-path-options',  /* studio_tgpPathOptions */ {
+jb.component('studio.tgp-path-options', { /* studio_tgpPathOptions */
   type: 'picklist.options',
   params: [
     {id: 'path', as: 'string'}
@@ -33107,7 +33173,7 @@ jb.component('studio.tgp-path-options',  /* studio_tgpPathOptions */ {
 			.concat(jb.studio.PTsOfPath(path).map(op=> ({ code: op, text: op})))
 })
 
-jb.component('studio.open-properties',  /* studio_openProperties */ {
+jb.component('studio.open-properties', { /* studio_openProperties */ 
   type: 'action',
   params: [
     {id: 'focus', type: 'boolean', as: 'boolean'}
@@ -33187,7 +33253,7 @@ jb.component('dialog.studio-suggestions-popup',  /* dialog_studioSuggestionsPopu
 (function() {
 const st = jb.studio;
 
-jb.component('studio.open-editor',  /* studio_openEditor */ {
+jb.component('studio.open-editor', { /* studio_openEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -33197,7 +33263,7 @@ jb.component('studio.open-editor',  /* studio_openEditor */ {
   }
 })
 
-jb.component('studio.edit-source',  /* studio_editSource */ {
+jb.component('studio.edit-source', { /* studio_editSource */
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()}
@@ -33216,7 +33282,7 @@ jb.component('studio.edit-source',  /* studio_editSource */ {
   })
 })
 
-jb.component('studio.edit-as-macro',  /* studio_editAsMacro */ {
+jb.component('studio.edit-as-macro', { /* studio_editAsMacro */
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()}
@@ -33235,7 +33301,7 @@ jb.component('studio.edit-as-macro',  /* studio_editAsMacro */ {
   })
 })
 
-jb.component('studio.goto-editor-secondary',  /* studio_gotoEditorSecondary */ {
+jb.component('studio.goto-editor-secondary', { /* studio_gotoEditorSecondary */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -33248,7 +33314,7 @@ jb.component('studio.goto-editor-secondary',  /* studio_gotoEditorSecondary */ {
   })
 })
 
-jb.component('studio.goto-editor-first',  /* studio_gotoEditorFirst */ {
+jb.component('studio.goto-editor-first', { /* studio_gotoEditorFirst */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -33261,7 +33327,7 @@ jb.component('studio.goto-editor-first',  /* studio_gotoEditorFirst */ {
   })
 })
 
-jb.component('studio.goto-editor-options',  /* studio_gotoEditorOptions */ {
+jb.component('studio.goto-editor-options', { /* studio_gotoEditorOptions */ 
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -33278,7 +33344,7 @@ jb.component('studio.goto-editor-options',  /* studio_gotoEditorOptions */ {
 const st = jb.studio
 jb.studio.probeResultCustomizers = []
 
-jb.component('studio.jb-editor-path-for-edit',  /* studio_jbEditorPathForEdit */ {
+jb.component('studio.jb-editor-path-for-edit', { /* studio_jbEditorPathForEdit */
   type: 'data',
   description: 'in case of array, use extra element path',
   params: [
@@ -33292,7 +33358,7 @@ jb.component('studio.jb-editor-path-for-edit',  /* studio_jbEditorPathForEdit */
   }
 })
 
-jb.component('studio.open-jb-editor-menu',  /* studio_openJbEditorMenu */ {
+jb.component('studio.open-jb-editor-menu', { /* studio_openJbEditorMenu */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -33304,7 +33370,7 @@ jb.component('studio.open-jb-editor-menu',  /* studio_openJbEditorMenu */ {
   })
 })
 
-jb.component('studio.prob-result-customization',  /* studio_probResultCustomization */ {
+jb.component('studio.prob-result-customization', { /* studio_probResultCustomization */
   type: 'data',
   params: [
     {id: 'probeResult', mandatory: true}
@@ -33318,7 +33384,7 @@ jb.component('studio.prob-result-customization',  /* studio_probResultCustomizat
   }
 })
 
-jb.component('studio.jb-editor-container',  /* studio_jbEditorContainer */ {
+jb.component('studio.jb-editor-container', { /* studio_jbEditorContainer */
   type: 'feature',
   params: [
     {id: 'id', as: 'string', mandatory: true},
@@ -33338,7 +33404,7 @@ jb.component('studio.jb-editor-container',  /* studio_jbEditorContainer */ {
   )
 })
 
-jb.component('studio.probe-results',  /* studio_probeResults */ {
+jb.component('studio.probe-results', { /* studio_probeResults */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -33349,7 +33415,7 @@ jb.component('studio.probe-results',  /* studio_probeResults */ {
   })
 })
 
-jb.component('studio.data-browse',  /* studio_dataBrowse */ {
+jb.component('studio.data-browse', { /* studio_dataBrowse */
   type: 'control',
   params: [
     {id: 'obj', mandatory: true, defaultValue: '%%'},
@@ -33434,7 +33500,7 @@ jb.component('studio.data-browse',  /* studio_dataBrowse */ {
   })
 })
 
-jb.component('studio.probe-data-view',  /* studio_probeDataView */ {
+jb.component('studio.probe-data-view', { /* studio_probeDataView */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -33461,7 +33527,7 @@ jb.component('studio.probe-data-view',  /* studio_probeDataView */ {
   })
 })
 
-jb.component('studio.open-jb-edit-property',  /* studio_openJbEditProperty */ {
+jb.component('studio.open-jb-edit-property', { /* studio_openJbEditProperty */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -33519,7 +33585,7 @@ jb.component('studio.open-jb-edit-property',  /* studio_openJbEditProperty */ {
   )
 })
 
-jb.component('studio.jb-editor-inteli-tree',  /* studio_jbEditorInteliTree */ {
+jb.component('studio.jb-editor-inteli-tree', { /* studio_jbEditorInteliTree */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -33552,7 +33618,7 @@ jb.component('studio.jb-editor-inteli-tree',  /* studio_jbEditorInteliTree */ {
   })
 })
 
-jb.component('studio.jb-editor',  /* studio_jbEditor */ {
+jb.component('studio.jb-editor', { /* studio_jbEditor */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -33584,7 +33650,7 @@ jb.component('studio.jb-editor',  /* studio_jbEditor */ {
   })
 })
 
-jb.component('studio.open-jb-editor',  /* studio_openJbEditor */ {
+jb.component('studio.open-jb-editor', { /* studio_openJbEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -33613,7 +33679,7 @@ jb.component('studio.open-jb-editor',  /* studio_openJbEditor */ {
   })
 })
 
-jb.component('studio.open-component-in-jb-editor',  /* studio_openComponentInJbEditor */ {
+jb.component('studio.open-component-in-jb-editor', { /* studio_openComponentInJbEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -33641,7 +33707,7 @@ jb.component('studio.open-component-in-jb-editor',  /* studio_openComponentInJbE
   )
 })
 
-jb.component('studio.expand-and-select-first-child-in-jb-editor',  /* studio_expandAndSelectFirstChildInJbEditor */ {
+jb.component('studio.expand-and-select-first-child-in-jb-editor', { /* studio_expandAndSelectFirstChildInJbEditor */
   type: 'action',
   impl: ctx => {
     var ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[document.querySelector('.jb-editor').getAttribute('jb-ctx')];
@@ -33691,7 +33757,7 @@ jb.component('menu.studio-wrap-with-array',  /* menu_studioWrapWithArray */ {
   }
 })
 
-jb.component('studio.add-variable',  /* studio_addVariable */ {
+jb.component('studio.add-variable', { /* studio_addVariable */ 
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -33891,7 +33957,7 @@ st.highlight = function(elems) {
     jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
 }
 
-jb.component('studio.highlight-in-preview',  /* studio_highlightInPreview */ {
+jb.component('studio.highlight-in-preview', { /* studio_highlightInPreview */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -33917,7 +33983,7 @@ jb.component('studio.highlight-in-preview',  /* studio_highlightInPreview */ {
   }
 })
 
-jb.component('studio.pick',  /* studio_pick */ {
+jb.component('studio.pick', { /* studio_pick */ 
   type: 'action',
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},
@@ -34056,7 +34122,7 @@ jb.studio.hToJSX = hFunc => {
   }
 }
 
-jb.component('studio.pretty',  /* studio_pretty */ {
+jb.component('studio.pretty', { /* studio_pretty */
   type: 'data',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -34064,7 +34130,7 @@ jb.component('studio.pretty',  /* studio_pretty */ {
   impl: (ctx,text) => jb.studio.pretty(text)
 })
 
-jb.component('studio.jsx-to-h',  /* studio_jsxToH */ {
+jb.component('studio.jsx-to-h', { /* studio_jsxToH */
   type: 'data',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -34072,7 +34138,7 @@ jb.component('studio.jsx-to-h',  /* studio_jsxToH */ {
   impl: (ctx,text) => jb.studio.jsxToH(text)
 })
 
-jb.component('studio.h-to-jsx',  /* studio_hToJsx */ {
+jb.component('studio.h-to-jsx', { /* studio_hToJsx */
   type: 'data',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -34081,7 +34147,7 @@ jb.component('studio.h-to-jsx',  /* studio_hToJsx */ {
 })
 
 
-jb.component('studio.template-as-jsx',  /* studio_templateAsJsx */ {
+jb.component('studio.template-as-jsx', { /* studio_templateAsJsx */ 
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}
@@ -34108,7 +34174,7 @@ jb.component('studio.template-as-jsx',  /* studio_templateAsJsx */ {
 ;
 
 
-jb.component('studio.format-css',  /* studio_formatCss */ {
+jb.component('studio.format-css', { /* studio_formatCss */
   params: [
     {id: 'css', as: 'string'}
   ],
@@ -34121,7 +34187,7 @@ jb.component('studio.format-css',  /* studio_formatCss */ {
   }
 })
 
-jb.component('studio.open-style-menu',  /* studio_openStyleMenu */ {
+jb.component('studio.open-style-menu', { /* studio_openStyleMenu */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -34157,7 +34223,7 @@ jb.component('studio.open-style-menu',  /* studio_openStyleMenu */ {
   })
 })
 
-jb.component('studio.style-editor',  /* studio_styleEditor */ {
+jb.component('studio.style-editor', { /* studio_styleEditor */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -34238,7 +34304,7 @@ jb.component('studio.style-editor',  /* studio_styleEditor */ {
   })
 })
 
-jb.component('studio.style-source',  /* studio_styleSource */ {
+jb.component('studio.style-source', { /* studio_styleSource */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -34254,7 +34320,7 @@ jb.component('studio.style-source',  /* studio_styleSource */ {
   }
 })
 
-jb.component('studio.open-style-editor',  /* studio_openStyleEditor */ {
+jb.component('studio.open-style-editor', { /* studio_openStyleEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -34274,7 +34340,7 @@ jb.component('studio.open-style-editor',  /* studio_openStyleEditor */ {
   })
 })
 
-jb.component('studio.style-editor-options',  /* studio_styleEditorOptions */ {
+jb.component('studio.style-editor-options', { /* studio_styleEditorOptions */ 
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -34297,7 +34363,7 @@ jb.component('studio.style-editor-options',  /* studio_styleEditorOptions */ {
 })
 ;
 
-jb.component('studio.components-cross-ref',  /* studio_componentsCrossRef */ {
+jb.component('studio.components-cross-ref', { /* studio_componentsCrossRef */
   type: 'data',
   impl: ctx => {
 	  var _jb = jb.studio.previewjb;
@@ -34336,7 +34402,7 @@ jb.component('studio.components-cross-ref',  /* studio_componentsCrossRef */ {
 	}
 })
 
-jb.component('studio.references',  /* studio_references */ {
+jb.component('studio.references', { /* studio_references */
   type: 'data',
   params: [
     {id: 'path', as: 'string'}
@@ -34361,7 +34427,7 @@ jb.component('studio.references',  /* studio_references */ {
 	}
 })
 
-jb.component('studio.goto-references-options',  /* studio_gotoReferencesOptions */ {
+jb.component('studio.goto-references-options', { /* studio_gotoReferencesOptions */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
@@ -34387,7 +34453,7 @@ jb.component('studio.goto-references-options',  /* studio_gotoReferencesOptions 
   )
 })
 
-jb.component('studio.goto-references-button',  /* studio_gotoReferencesButton */ {
+jb.component('studio.goto-references-button', { /* studio_gotoReferencesButton */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -34406,7 +34472,7 @@ jb.component('studio.goto-references-button',  /* studio_gotoReferencesButton */
   )
 })
 
-jb.component('studio.goto-references-menu',  /* studio_gotoReferencesMenu */ {
+jb.component('studio.goto-references-menu', { /* studio_gotoReferencesMenu */ 
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -34427,7 +34493,7 @@ jb.component('studio.goto-references-menu',  /* studio_gotoReferencesMenu */ {
 
 ;
 
-jb.component('studio.goto-path',  /* studio_gotoPath */ {
+jb.component('studio.goto-path', { /* studio_gotoPath */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -34443,7 +34509,7 @@ jb.component('studio.goto-path',  /* studio_gotoPath */ {
   )
 })
 
-jb.component('studio.open-property-menu',  /* studio_openPropertyMenu */ {
+jb.component('studio.open-property-menu', { /* studio_openPropertyMenu */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -34493,7 +34559,7 @@ jb.component('studio.open-property-menu',  /* studio_openPropertyMenu */ {
   })
 })
 
-jb.component('studio.jb-editor-menu',  /* studio_jbEditorMenu */ {
+jb.component('studio.jb-editor-menu', { /* studio_jbEditorMenu */ 
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
@@ -34804,7 +34870,7 @@ function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
 })();
 ;
 
-jb.component('studio.goto-project',  /* studio_gotoProject */ {
+jb.component('studio.goto-project', { /* studio_gotoProject */
   type: 'action',
   impl: runActions(
     gotoUrl('/project/studio/%%', 'new tab'),
@@ -34812,7 +34878,7 @@ jb.component('studio.goto-project',  /* studio_gotoProject */ {
   )
 })
 
-jb.component('studio.choose-project',  /* studio_chooseProject */ {
+jb.component('studio.choose-project', { /* studio_chooseProject */
   type: 'control',
   impl: group({
     title: 'itemlist-with-find',
@@ -34842,7 +34908,7 @@ jb.component('studio.choose-project',  /* studio_chooseProject */ {
   })
 })
 
-jb.component('studio.open-project',  /* studio_openProject */ {
+jb.component('studio.open-project', { /* studio_openProject */ 
   type: 'action',
   impl: openDialog({
     style: dialog_dialogOkCancel('OK', 'Cancel'),
@@ -34851,7 +34917,7 @@ jb.component('studio.open-project',  /* studio_openProject */ {
   })
 });
 
-jb.component('studio.tree-menu',  /* studio_treeMenu */ {
+jb.component('studio.tree-menu', { /* studio_treeMenu */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -34930,7 +34996,7 @@ jb.component('studio.tree-menu',  /* studio_treeMenu */ {
   })
 })
 
-jb.component('studio.open-tree-menu',  /* studio_openTreeMenu */ {
+jb.component('studio.open-tree-menu', { /* studio_openTreeMenu */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -34940,7 +35006,7 @@ jb.component('studio.open-tree-menu',  /* studio_openTreeMenu */ {
   })
 })
 
-jb.component('studio.control-tree.nodes',  /* studio_controlTree_nodes */ {
+jb.component('studio.control-tree.nodes', { /* studio_controlTree_nodes */
   type: 'tree.nodeModel',
   impl: function(context) {
 		var currentPath = context.run({ $: 'studio.currentProfilePath' });
@@ -34949,7 +35015,7 @@ jb.component('studio.control-tree.nodes',  /* studio_controlTree_nodes */ {
 	}
 })
 
-jb.component('studio.control-tree',  /* studio_controlTree */ {
+jb.component('studio.control-tree', { /* studio_controlTree */
   type: 'control',
   impl: group({
     controls: [
@@ -35006,7 +35072,7 @@ jb.component('studio.control-tree',  /* studio_controlTree */ {
 //   })
 // })
 
-jb.component('studio.open-control-tree',  /* studio_openControlTree */ {
+jb.component('studio.open-control-tree', { /* studio_openControlTree */ 
   type: 'action',
   impl: openDialog({
     style: dialog_studioFloating({id: 'studio-outline', width: '350'}),
@@ -35024,7 +35090,7 @@ jb.component('studio.open-control-tree',  /* studio_openControlTree */ {
 ;
 
 
-jb.component('studio.data-resources',  /* studio_dataResources */ {
+jb.component('studio.data-resources', { /* studio_dataResources */
   type: 'control',
   impl: group({
     controls: [
@@ -35051,46 +35117,46 @@ jb.component('studio.data-resources',  /* studio_dataResources */ {
         features: variable({name: 'selected_in_itemlist', mutable: true})
       })
     ],
-    features: group_wait({
-      for: {
-        $: 'level-up.entries',
-        db: {$: 'level-up.file-db', rootDirectory: '/projects/data-tests/samples'}
-      }
-    })
   })
 })
 
-jb.component('studio.open-resource',  /* studio_openResource */ {
+jb.component('studio.open-resource', { /* studio_openResource */
   type: 'action',
   params: [
-    {id: 'resource', type: 'data'},
-    {id: 'id', as: 'string'}
+    {id: 'resourceId', as: 'string'}
   ],
   impl: openDialog({
-    style: dialog_studioFloating({id: 'resource %$id%', width: 500}),
-    content: tree({
-      nodeModel: tree_jsonReadOnly('%$resource%', '%$id%'),
-      features: [css_class('jb-control-tree'), tree_selection({}), tree_keyboardSelection({})]
+    style: dialog_editSourceStyle({id: 'edit-source', width: 600}),
+    content: editableText({
+      databind: (ctx,vars,{resourceId}) => jb.prettyPrint(jb.studio.previewjb.resources[resourceId]),
+      style: editableText_studioCodemirrorTgp()
     }),
-    title: '%$id%'
+    title: studio_shortTitle('%$resourceId%'),
+    features: [
+      css('.jb-dialog-content-parent {overflow-y: hidden}'),
+      dialogFeature_resizer(true)
+    ]
   })
+  // impl: openDialog({
+  //   style: dialog_studioFloating({id: 'resource %$id%', width: 500}),
+  //   content: tree({
+  //     nodeModel: tree_jsonReadOnly('%$resource%', '%$id%'),
+  //     features: [css_class('jb-control-tree'), tree_selection({}), tree_keyboardSelection({})]
+  //   }),
+  //   title: '%$id%'
+  // })
 })
 
-jb.component('studio.data-resource-menu',  /* studio_dataResourceMenu */ {
+jb.component('studio.data-resource-menu', { /* studio_dataResourceMenu */ 
   type: 'menu.option',
   impl: menu_menu({
     title: 'Data',
     options: [
       dynamicControls({
-        controlItems: pipeline(ctx => jb.studio.previewjb.resources, keys('%%'), filter(notContains(':', '%%'))),
+        controlItems: ctx => Object.keys(jb.studio.previewjb.resources),
         genericControl: menu_action({
           title: '%$controlItem%',
-          action: studio_openResource(
-            function (ctx) {
-                     return jb.path(jb, ['previewWindow', 'jbart_widgets', ctx.exp('%$studio/project%'), 'resources', ctx.exp('%$controlItem%')]);
-                },
-            '%$controlItem%'
-          )
+          action: studio_openResource('%$controlItem%')
         })
       })
     ]
@@ -35100,7 +35166,7 @@ jb.component('studio.data-resource-menu',  /* studio_dataResourceMenu */ {
 ;
 
 
-jb.component('studio.new-project',  /* studio_newProject */ {
+jb.component('studio.new-project', { /* studio_newProject */
   type: 'action,has-side-effects',
   params: [
     {id: 'name', as: 'string'},
@@ -35154,7 +35220,7 @@ jb.component('studio.new-project',  /* studio_newProject */ {
   }
 })
 
-jb.component('studio.open-new-project',  /* studio_openNewProject */ {
+jb.component('studio.open-new-project', { /* studio_openNewProject */ 
   type: 'action',
   impl: openDialog({
     style: dialog_dialogOkCancel(),
@@ -35205,7 +35271,7 @@ st.initEventTracker = _ => {
 //ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent})
 //({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources})
 
-jb.component('studio.event-title',  /* studio_eventTitle */ {
+jb.component('studio.event-title', { /* studio_eventTitle */
   type: 'data',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -35214,7 +35280,7 @@ jb.component('studio.event-title',  /* studio_eventTitle */ {
 		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
 })
 
-jb.component('studio.event-cmp',  /* studio_eventCmp */ {
+jb.component('studio.event-cmp', { /* studio_eventCmp */
   type: 'data',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -35223,7 +35289,7 @@ jb.component('studio.event-cmp',  /* studio_eventCmp */ {
 		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
 })
 
-jb.component('studio.event-cause',  /* studio_eventCause */ {
+jb.component('studio.event-cause', { /* studio_eventCause */
   type: 'data',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -35232,7 +35298,7 @@ jb.component('studio.event-cause',  /* studio_eventCause */ {
 		(event && event.opEvent) ? st.nameOfRef(event.opEvent.ref) + ' changed to "' + st.valSummary(event.opEvent.newVal) + '"' : ''
 })
 
-jb.component('studio.state-change-events',  /* studio_stateChangeEvents */ {
+jb.component('studio.state-change-events', { /* studio_stateChangeEvents */
   type: 'data',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}
@@ -35241,7 +35307,7 @@ jb.component('studio.state-change-events',  /* studio_stateChangeEvents */ {
 		(studio ? st.studioStateChangeEvents : st.stateChangeEvents) || []
 })
 
-jb.component('studio.highlight-event',  /* studio_highlightEvent */ {
+jb.component('studio.highlight-event', { /* studio_highlightEvent */
   type: 'action',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -35251,7 +35317,7 @@ jb.component('studio.highlight-event',  /* studio_highlightEvent */ {
   )
 })
 
-jb.component('studio.event-tracker',  /* studio_eventTracker */ {
+jb.component('studio.event-tracker', { /* studio_eventTracker */
   type: 'control',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}
@@ -35316,7 +35382,7 @@ jb.component('studio.event-tracker',  /* studio_eventTracker */ {
 })
 
 
-jb.component('studio.open-event-tracker',  /* studio_openEventTracker */ {
+jb.component('studio.open-event-tracker', { /* studio_openEventTracker */ 
   type: 'action',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}
@@ -35331,7 +35397,7 @@ jb.component('studio.open-event-tracker',  /* studio_openEventTracker */ {
 
 })();
 
-jb.component('studio.pickAndOpen',  /* studio_pickAndOpen */ {
+jb.component('studio.pickAndOpen', { /* studio_pickAndOpen */
   type: 'action',
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
@@ -35347,7 +35413,7 @@ jb.component('studio.pickAndOpen',  /* studio_pickAndOpen */ {
   )
 })
 
-jb.component('studio.toolbar',  /* studio_toolbar */ {
+jb.component('studio.toolbar', { /* studio_toolbar */ 
   type: 'control',
   impl: group({
     style: studio_toolbarStyle(),
@@ -35424,7 +35490,7 @@ jb.component('studio.toolbar',  /* studio_toolbar */ {
 })
 ;
 
-jb.component('studio.search-list',  /* studio_searchList */ {
+jb.component('studio.search-list', { /* studio_searchList */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -35494,7 +35560,7 @@ jb.component('studio.search-list',  /* studio_searchList */ {
   })
 })
 
-jb.component('studio.search-component',  /* studio_searchComponent */ {
+jb.component('studio.search-component', { /* studio_searchComponent */ 
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -35525,7 +35591,7 @@ jb.component('studio.search-component',  /* studio_searchComponent */ {
 
 jb.resource('studio',{});
 
-jb.component('studio.cmps-of-project',  /* studio_cmpsOfProject */ {
+jb.component('studio.cmps-of-project', { /* studio_cmpsOfProject */
   type: 'data',
   params: [
     {id: 'project', as: 'string'}
@@ -35535,7 +35601,7 @@ jb.component('studio.cmps-of-project',  /* studio_cmpsOfProject */ {
               .filter(id=>id.split('.')[0] == prj) : []
 })
 
-jb.component('studio.project-pages',  /* studio_projectPages */ {
+jb.component('studio.project-pages', { /* studio_projectPages */
   type: 'data',
   impl: pipeline(
     studio_cmpsOfProject('%$studio/project%'),
@@ -35544,7 +35610,7 @@ jb.component('studio.project-pages',  /* studio_projectPages */ {
   )
 })
 
-jb.component('studio.pages',  /* studio_pages */ {
+jb.component('studio.pages', { /* studio_pages */
   type: 'control',
   impl: group({
     title: 'pages',
@@ -35583,7 +35649,7 @@ jb.component('studio.pages',  /* studio_pages */ {
   })
 })
 
-jb.component('studio.ctx-counters',  /* studio_ctxCounters */ {
+jb.component('studio.ctx-counters', { /* studio_ctxCounters */
   type: 'control',
   impl: label({
     title: ctx => (performance.memory.usedJSHeapSize / 1000000)  + 'M',
@@ -35594,7 +35660,7 @@ jb.component('studio.ctx-counters',  /* studio_ctxCounters */ {
   })
 })
 
-jb.component('studio.main-menu',  /* studio_mainMenu */ {
+jb.component('studio.main-menu', { /* studio_mainMenu */
   type: 'menu.option',
   impl: menu_menu({
     title: 'main',
@@ -35638,7 +35704,7 @@ jb.component('studio.main-menu',  /* studio_mainMenu */ {
   })
 })
 
-jb.component('studio.top-bar',  /* studio_topBar */ {
+jb.component('studio.top-bar', { /* studio_topBar */
   type: 'control',
   impl: group({
     title: 'top bar',
@@ -35679,12 +35745,15 @@ jb.component('studio.top-bar',  /* studio_topBar */ {
   })
 })
 
-jb.component('studio.all',  /* studio_all */ {
+jb.component('studio.all', { /* studio_all */
   type: 'control',
   impl: group({
     controls: [
       studio_topBar(),
-      studio_previewWidget({width: 1280, height: 520}),
+      group({
+        controls: studio_previewWidget({width: 1280, height: 520}),
+        features: id('preview-parent')
+      }),
       studio_pages(),
       studio_ctxCounters()
     ],
@@ -35695,7 +35764,7 @@ jb.component('studio.all',  /* studio_all */ {
   })
 })
 
-jb.component('studio.dynamic',  /* studio_dynamic */ {
+jb.component('studio.dynamic', { /* studio_dynamic */
   type: 'control',
   impl: group({
     title: 'top bar',
@@ -35729,7 +35798,7 @@ jb.component('studio.dynamic',  /* studio_dynamic */ {
   })
 })
 
-jb.component('studio.path-hyperlink',  /* studio_pathHyperlink */ {
+jb.component('studio.path-hyperlink', { /* studio_pathHyperlink */ 
   type: 'control',
   params: [
     {id: 'path', as: 'string', mandatory: true},
@@ -35783,7 +35852,7 @@ jb.component('jb-param', {
   impl: ctx => ctx.params
 })
 
-jb.component('studio.component-header',  /* studio_componentHeader */ {
+jb.component('studio.component-header', { /* studio_componentHeader */ 
   type: 'control',
   params: [
     {id: 'component', as: 'string'}
@@ -36022,7 +36091,7 @@ st.Probe = class {
 
 const probeEmitter = new jb.rx.Subject()
 
-jb.component('studio.probe',  /* studio_probe */ {
+jb.component('studio.probe', { /* studio_probe */ 
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}

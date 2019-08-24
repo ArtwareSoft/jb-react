@@ -6,20 +6,18 @@ jb.component('delayedObj', {
     jb.delay(1).then(_=>obj)
 })
 
-const {delayedObj} = jb.macros
-
-jb.resource('person', {
+jb.component('person', { mutableData: {
   name: "Homer Simpson",
   male: true,
   isMale: 'yes',
   age: 42
-})
+}})
 
-jb.resource('personWithChildren',{
+jb.component('personWithChildren', { mutableData: {
   name: "Homer Simpson",
   children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ],
   friends: [{ name: 'Barnie' } ],
-})
+}})
 
 jb.component('test.getAsBool',{
   params: [
@@ -307,7 +305,7 @@ jb.component('data-test.data-switch-singleInType', {
   })
 })
 
-jb.resource('ar-test',{ ar: ['0'] })
+jb.component('ar-test', { mutableData: { ar: ['0'] }})
 
 jb.component('data-test.restoreArrayIds-bug', {
    impl :{$: 'data-test',
@@ -428,7 +426,12 @@ jb.component('data-test.pretty-print-macro-vars', {
   })
 })
 
-
+jb.component('data-test.macro-ns', {
+  impl: dataTest({
+    calculate: json.stringify(()=>({a:5})),
+    expectedResult: contains(['a','5'])
+  })
+})
 
 
 // jb.component('data-test.http-get', {

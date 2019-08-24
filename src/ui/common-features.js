@@ -88,7 +88,6 @@ jb.component('group.data', {
   })
 })
 
-
 jb.component('html-attribute', {
   type: 'feature',
 	description: 'set attribute to html element and give it value',
@@ -105,22 +104,31 @@ jb.component('html-attribute', {
   })
 })
 
-
 jb.component('id', {
   type: 'feature',
 	description: 'adds id to html element',
   params: [
     { id: 'id', mandatory: true, as: 'string' },
   ],
-  impl: (ctx,id) => ({
+  impl :{$: 'html-attribute', attribute: 'id', value: '%$id%'} 
+})
+
+jb.component('feature.hover-title', {
+  type: 'feature',
+	description: 'set element title, usually shown by browser on hover',
+  params: [
+    { id: 'title', as: 'string', dynamic: true },
+  ],
+  impl: (ctx, title) => ({
     templateModifier: (vdom,cmp,state) => {
-        vdom.attributes.id = id
-        return vdom;
-      }
+      vdom.attributes = vdom.attributes || {};
+      vdom.attributes.title = title(cmp.ctx.setData(state.title))
+      return vdom;
+    }
   })
 })
 
-jb.component('var', {
+jb.component('variable', {
   type: 'feature', category: 'general:90',
 	description: 'define a variable. mutable or const, local or global',
   params: [
@@ -155,7 +163,8 @@ jb.component('var', {
   })
 })
 
-jb.component('variable', jb.comps.var)
+// to delete soon
+jb.component('var', jb.comps.variable)
 
 jb.component('bind-refs', {
   type: 'feature', category: 'watch',
@@ -270,21 +279,6 @@ jb.component('conditional-class', {
     templateModifier: (vdom,cmp,state) => {
       if (cond())
         jb.ui.addClassToVdom(vdom,cssClass())
-    }
-  })
-})
-
-jb.component('feature.hover-title', {
-  type: 'feature',
-	description: 'set element title, usually shown by browser on hover',
-  params: [
-    { id: 'title', as: 'string', dynamic: true },
-  ],
-  impl: (ctx, title) => ({
-    templateModifier: (vdom,cmp,state) => {
-      vdom.attributes = vdom.attributes || {};
-      vdom.attributes.title = title(cmp.ctx.setData(state.title))
-      return vdom;
     }
   })
 })
@@ -419,4 +413,21 @@ jb.component('focus-on-first-element', {
         const elem = document.querySelector(selector)
         elem && jb.ui.focus(elem,'focus-on-first-element',ctx)
     })
+})
+
+jb.component('focus-on-sibling', {
+	type: 'action',
+	params: [
+	  {id: 'siblingSelector', as: 'string', mandatory: true},
+	  {id: 'delay', as: 'number', defaultValue: 0}
+	],
+	impl: (ctx,siblingSelector,delay) => {
+	  if (!ctx.vars.event) 
+		  return jb.error('no event for action focus-on-sibling',ctx)
+	  delayedFocus(ctx.vars.event.srcElement.parent,{delay,siblingSelector})
+
+ 	  function delayedFocus(parent, {delay = 0, selector}) {
+		  jb.delay(delay).then(() => jb.ui.focus(parent.querySelector(selector), 'focus-on-sibling', ctx))
+	  }
+	}
 })

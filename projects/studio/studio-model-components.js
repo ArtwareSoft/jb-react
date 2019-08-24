@@ -247,6 +247,13 @@ jb.component('studio.profile-as-text', { /* studio_profileAsText */
 	})
 })
 
+function scriptPathToExpression(path) {
+	const dataPath = path.replace(/mutableData~/,'')
+		.replace(/~[0-9]+~/g,x => x.replace(/~/,'[').replace(/~/,']~'))
+		.replace(/~/g,'/')
+	return '%$' + dataPath +'%';
+}
+
 jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
   type: 'data',
   params: [
@@ -258,7 +265,7 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 			try {
 				const path = ctx.params.path();
 				if (!path) return '';
-				if (typeof value == 'undefined') {
+				if (value == undefined) {
 					const val = st.valOfPath(path);
 					if (typeof val == 'function')
 						return val.toString();
@@ -267,6 +274,26 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 						return ''+val;
 					return jb.prettyPrint(val || '',{macro:true, initialPath: path});
 				} else {
+					const notPrimitive = value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
+					const newVal = notPrimitive ? st.evalProfile(value) : value;
+					if (newVal && typeof newVal == 'object') {
+						const currentVal = st.valOfPath(path);
+						const diff = st.diff(currentVal, newVal).filter(x=>(''+x.path.slice(-1)[0]).indexOf('$jb_') != 0);
+						jb.log('profileAsText',[diff, currentVal, newVal])
+						if (diff && diff.length == 1 && diff[0].kind == 'E') {
+							const innerValue = diff[0].rhs;
+							const fullPath = [path,...diff[0].path].join('~');
+							jb.log('profileAsTextDiffActivated',diff)
+							if (fullPath.match(/^[^~]+~mutableData/))
+								(new st.previewjb.jbCtx()).run(writeValue(scriptPathToExpression(fullPath),innerValue))
+						
+							st.writeValueOfPath(fullPath, innerValue,ctx);
+							return;
+						}
+					}
+					if (newVal != null) {
+						st.writeValueOfPath(path, newVal,ctx);
+					}
 				}
 			} catch(e) {
 				jb.logException(e,'studio.profile-as-text',ctx)

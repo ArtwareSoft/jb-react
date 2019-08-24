@@ -302,7 +302,7 @@ Object.assign(st, {
 
 // ******* components ***************
 
-jb.component('studio.ref', { /* studio_ref */
+jb.component('studio.ref', { /* studio.ref */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -310,7 +310,7 @@ jb.component('studio.ref', { /* studio_ref */
 		st.refOfPath(path)
 })
 
-jb.component('studio.path-of-ref', { /* studio_pathOfRef */
+jb.component('studio.path-of-ref', { /* studio.pathOfRef */
   params: [
     {id: 'ref', defaultValue: '%%', mandatory: true}
   ],
@@ -318,7 +318,7 @@ jb.component('studio.path-of-ref', { /* studio_pathOfRef */
 		st.pathOfRef(ref)
 })
 
-jb.component('studio.name-of-ref', { /* studio_nameOfRef */
+jb.component('studio.name-of-ref', { /* studio.nameOfRef */
   params: [
     {id: 'ref', defaultValue: '%%', mandatory: true}
   ],
@@ -327,7 +327,7 @@ jb.component('studio.name-of-ref', { /* studio_nameOfRef */
 })
 
 
-jb.component('studio.is-new', { /* studio_isNew */
+jb.component('studio.is-new', { /* studio.isNew */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string'}
@@ -342,12 +342,12 @@ jb.component('studio.is-new', { /* studio_isNew */
 	}
 })
 
-jb.component('studio.watch-path', { /* studio_watchPath */
+jb.component('studio.watch-path', { /* studio.watchPath */
   type: 'feature',
   category: 'group:0',
   params: [
     {id: 'path', as: 'string', mandatory: true},
-    {id: 'includeChildren', as: 'boolean', type: 'boolean'},
+    {id: 'includeChildren', as: 'boolean', type: 'boolean', defaultValue: true},
     {
       id: 'delay',
       as: 'number',
@@ -357,7 +357,8 @@ jb.component('studio.watch-path', { /* studio_watchPath */
       id: 'allowSelfRefresh',
       as: 'boolean',
       description: 'allow refresh originated from the components or its children',
-      type: 'boolean'
+      type: 'boolean',
+      defaultValue: true
     }
   ],
   impl: (ctx,path,includeChildren,delay,allowSelfRefresh) => ({
@@ -366,7 +367,7 @@ jb.component('studio.watch-path', { /* studio_watchPath */
   })
 })
 
-jb.component('studio.watch-script-changes', { /* studio_watchScriptChanges */
+jb.component('studio.watch-script-changes', { /* studio.watchScriptChanges */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
@@ -375,7 +376,7 @@ jb.component('studio.watch-script-changes', { /* studio_watchScriptChanges */
    })
 })
 
-jb.component('studio.watch-components', { /* studio_watchComponents */
+jb.component('studio.watch-components', { /* studio.watchComponents */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
@@ -386,7 +387,7 @@ jb.component('studio.watch-components', { /* studio_watchComponents */
 })
 
 
-jb.component('studio.watch-typeof-script', { /* studio_watchTypeofScript */ 
+jb.component('studio.watch-typeof-script', { /* studio.watchTypeofScript */ 
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],

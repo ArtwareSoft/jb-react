@@ -1,5 +1,5 @@
 jb.component('call', {
- 	type: '*',
+ 	type: 'any',
  	params: [
  		{ id: 'param', as: 'string' }
  	],
@@ -1042,8 +1042,5 @@ jb.component('action.switch-case', {
   impl: ctx => ctx.params
 })
 
-jb.component('newline', {
-  impl: ctx => '\n'
-})
-
-jb.const('global', typeof window != 'undefined' ? window : typeof global != 'undefined' ? global : null)
+jb.component('newline', { constData: '\n' })
+jb.component('frame',   { constData: jb.frame })

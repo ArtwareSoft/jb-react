@@ -1,7 +1,7 @@
 (function() {
 const st = jb.studio
 
-jb.component('studio.itemlist-refresh-suggestions-options', { /* studio_itemlistRefreshSuggestionsOptions */
+jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlistRefreshSuggestionsOptions */
   type: 'feature',
   params: [
     {id: 'path', as: 'string'},
@@ -66,12 +66,12 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio_itemlist
   })
 })
 
-jb.component('studio.show-suggestions', { /* studio_showSuggestions */
+jb.component('studio.show-suggestions', { /* studio.showSuggestions */
   impl: ctx =>
     new st.suggestions(ctx.data,false).suggestionsRelevant()
 })
 
-jb.component('studio.paste-suggestion', { /* studio_pasteSuggestion */
+jb.component('studio.paste-suggestion', { /* studio.pasteSuggestion */
   type: 'action',
   params: [
     {id: 'option', as: 'single', defaultValue: '%%'},
@@ -86,36 +86,36 @@ jb.component('studio.paste-suggestion', { /* studio_pasteSuggestion */
   }
 })
 
-jb.component('studio.suggestions-itemlist', { /* studio_suggestionsItemlist */
+jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
   params: [
     {id: 'path', as: 'string'},
     {id: 'source', as: 'string'}
   ],
   impl: itemlist({
     items: '%$suggestionData/options%',
-    controls: label({title: '%text%', features: [css_padding({left: '3', right: '2'})]}),
+    controls: label({title: '%text%', features: [css.padding({left: '3', right: '2'})]}),
     watchItems: true,
     features: [
-      itemlist_noContainer(),
-      studio_itemlistRefreshSuggestionsOptions({path: '%$path%', source: '%$source%'}),
-      itemlist_selection({
+      itemlist.noContainer(),
+      studio.itemlistRefreshSuggestionsOptions({path: '%$path%', source: '%$source%'}),
+      itemlist.selection({
         databind: '%$suggestionData/selected%',
-        onDoubleClick: studio_pasteSuggestion(),
+        onDoubleClick: studio.pasteSuggestion(),
         autoSelectFirst: true
       }),
-      itemlist_keyboardSelection({autoFocus: false, onEnter: [studio_pasteSuggestion(undefined, true)]}),
-      feature_onKey(39, studio_pasteSuggestion('%$suggestionData/selected%', false)),
-      css_height({height: '500', overflow: 'auto', minMax: 'max'}),
-      css_width({width: '300', overflow: 'auto', minMax: 'min'}),
+      itemlist.keyboardSelection({autoFocus: false, onEnter: [studio.pasteSuggestion(undefined, true)]}),
+      feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', false)),
+      css.height({height: '500', overflow: 'auto', minMax: 'max'}),
+      css.width({width: '300', overflow: 'auto', minMax: 'min'}),
       css('{ position: absolute; z-index:1000; background: white }'),
-      css_border({width: '1', color: '#cdcdcd'}),
-      css_padding({top: '2', left: '3', selector: 'li'}),
-      feature_if(notEmpty('%$suggestionData/options%'))
+      css.border({width: '1', color: '#cdcdcd'}),
+      css.padding({top: '2', left: '3', selector: 'li'}),
+      feature.if(notEmpty('%$suggestionData/options%'))
     ]
   })
 })
 
-jb.component('studio.property-primitive', { /* studio_propertyPrimitive */
+jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -123,15 +123,15 @@ jb.component('studio.property-primitive', { /* studio_propertyPrimitive */
   impl: group({
     controls: [
       editableText({
-        databind: studio_ref('%$path%'),
-        style: editableText_studioPrimitiveText(),
+        databind: studio.ref('%$path%'),
+        style: editableText.studioPrimitiveText(),
         features: [
-          studio_watchPath({path: '%$path%', includeChildren: true}),
-          editableText_helperPopup({
-            control: studio_suggestionsItemlist('%$path%'),
+          studio.watchPath({path: '%$path%', includeChildren: true, allowSelfRefresh: false}),
+          editableText.helperPopup({
+            control: studio.suggestionsItemlist('%$path%'),
             popupId: 'suggestions',
-            popupStyle: dialog_popup(),
-            showHelper: studio_showSuggestions()
+            popupStyle: dialog.popup(),
+            showHelper: studio.showSuggestions()
           })
         ]
       })
@@ -144,7 +144,7 @@ jb.component('studio.property-primitive', { /* studio_propertyPrimitive */
   })
 })
 
-jb.component('studio.jb-floating-input', { /* studio_jbFloatingInput */ 
+jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */ 
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -152,8 +152,8 @@ jb.component('studio.jb-floating-input', { /* studio_jbFloatingInput */
   impl: group({
     controls: [
       editableText({
-        title: studio_propName('%$path%'),
-        databind: studio_profileValueAsText('%$path%'),
+        title: studio.propName('%$path%'),
+        databind: studio.profileValueAsText('%$path%'),
         updateOnBlur: true,
         style: customStyle({
           template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
@@ -164,21 +164,21 @@ jb.component('studio.jb-floating-input', { /* studio_jbFloatingInput */
             h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
       ]),
           css: '{ margin-right: 13px; }',
-          features: [field_databindText(300, true), mdlStyle_initDynamic()]
+          features: [field.databindText(300, true), mdlStyle.initDynamic()]
         }),
         features: [
-          editableText_helperPopup({
-            control: studio_suggestionsItemlist('%$path%', 'floating-input'),
+          editableText.helperPopup({
+            control: studio.suggestionsItemlist('%$path%', 'floating-input'),
             popupId: 'suggestions',
-            popupStyle: dialog_popup(),
-            showHelper: studio_showSuggestions(),
-            onEnter: [dialog_closeDialog('studio-jb-editor-popup'), tree_regainFocus()],
-            onEsc: [dialog_closeDialog('studio-jb-editor-popup'), tree_regainFocus()]
+            popupStyle: dialog.popup(),
+            showHelper: studio.showSuggestions(),
+            onEnter: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()],
+            onEsc: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()]
           })
         ]
       }),
       label({
-        title: pipeline(studio_paramDef('%$path%'), '%description%'),
+        title: pipeline(studio.paramDef('%$path%'), '%description%'),
         features: css('{border: 1px solid white;}')
       })
     ],
@@ -188,8 +188,8 @@ jb.component('studio.jb-floating-input', { /* studio_jbFloatingInput */
         value: {$: 'object', selected: '', options: [], path: '%$path%'},
         mutable: true
       }),
-      css_padding({left: '4', right: '4'}),
-      css_margin({top: '-20', selector: '>*:last-child'})
+      css.padding({left: '4', right: '4'}),
+      css.margin({top: '-20', selector: '>*:last-child'})
     ]
   })
 })
