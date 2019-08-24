@@ -656,27 +656,31 @@ jb.component('todomvc.check', {
 })
 
 
-
-jb.component('todomvc.start', {
+jb.component('todomvc.start', { /* todomvc.start */ 
   impl: group({
     title: 'start',
     controls: [
-      label({title: 'todos', style: label.htmlTag('h1')}),
-      editableText({
-        databind: '%$input%',
-        style: editableText.input(),
-        features: [
-          feature.onEnter(
-            runActions(
-              addToArray(
-                '%$todo%',
-                obj(prop('task', '%$input%', 'string'), prop('completed', undefined, 'boolean'))
+      group({
+        style: group.htmlTag('header'),
+        controls: [
+          label({title: 'todos', style: label.htmlTag('h1')}),
+          editableText({
+            databind: '%$input%',
+            style: editableText.input(),
+            features: [
+              feature.onEnter(
+                runActions(
+                  addToArray(
+                    '%$todo%',
+                    obj(prop('task', '%$input%', 'string'), prop('completed', undefined, 'boolean'))
+                  ),
+                  writeValue('%$input%')
+                )
               ),
-              writeValue('%$input%')
-            )
-          ),
-          htmlAttribute('placeholder', 'What needs to be done?'),
-          css.class('new-todo')
+              htmlAttribute('placeholder', 'What needs to be done?'),
+              css.class('new-todo')
+            ]
+          })
         ]
       }),
       group({
@@ -719,38 +723,49 @@ jb.component('todomvc.start', {
               group({
                 style: layout.horizontal(3),
                 controls: [
-                  editableBoolean({
-                    databind: '%completed%',
-                    style: editableBoolean.checkbox(),
-                    textForTrue: 'yes',
-                    textForFalse: 'no',
-                    features: null
-                  }),
-                  editableText({
-                    databind: '%task%',
-                    updateOnBlur: true,
-                    style: {$: 'editable-text.input-or-label', inputCssClass: 'edit', labelCssClass: ''}
-                  }),
-                  button({
-                    title: 'delete',
-                    action: splice({
-                      array: '%$todo%',
-                      fromIndex: indexOf('%$todo%', '%%'),
-                      noOfItemsToRemove: '1',
-                      itemsToAdd: []
-                    }),
-                    style: button.href(),
-                    features: css.class('destroy')
+                  group({
+                    style: layout.horizontal(3),
+                    controls: [
+                      editableBoolean({
+                        databind: '%completed%',
+                        style: editableBoolean.checkbox(),
+                        textForTrue: 'yes',
+                        textForFalse: 'no',
+                        features: css.class('toggle')
+                      }),
+                      editableText({
+                        databind: '%task%',
+                        updateOnBlur: true,
+                        style: {$: 'editable-text.input-or-label', inputCssClass: 'edit', labelCssClass: ''
+                         ,onToggle: toggleBooleanValue("%$editableline%") }
+                      }),
+                      button({
+                        title: '',
+                        action: splice({
+                          array: '%$todo%',
+                          fromIndex: indexOf('%$todo%', '%%'),
+                          noOfItemsToRemove: '1',
+                          itemsToAdd: []
+                        }),
+                        style: {$: 'todomvc.button.simple', size: '21'},
+                        features: css.class('destroy')
+                      })
+                    ],
+                    features: [
+                      conditionalClass('completed', '%completed%'),
+                      watchRef({ref: '%$editableline%', includeChildren: null, allowSelfRefresh: true})
+                    ]
                   })
                 ],
-                features: conditionalClass('completed', '%completed%')
+                features: [variable({name: 'editableline', value: false, mutable: true})]
               })
             ],
             style: itemlist.ulLi(),
             itemVariable: 'item',
             features: [
               watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
-              watchRef({ref: '%$filterBy%', allowSelfRefresh: false})
+              watchRef({ref: '%$filterBy%', allowSelfRefresh: false}),
+              css.class('todo-list')
             ]
           })
         ],
@@ -758,28 +773,49 @@ jb.component('todomvc.start', {
       }),
       group({
         title: 'toolbar',
-        style: layout.horizontal(3),
+        style: group.htmlTag('footer'),
         controls: [
           label({
             title: pipeline('%$todo%', filter(not('%completed%')), count('%%'), '%% items left'),
             style: label.span(),
-            features: [watchRef({ref: '%$todo%', includeChildren: true})]
+            features: [watchRef({ref: '%$todo%', includeChildren: true}), css.class('todo-count')]
           }),
           group({
             title: 'filters',
-            style: layout.horizontal(3),
+            style: {$: 'todomvc.group.ul-li'},
             controls: [
-              button({title: 'all', action: writeValue('%$filterBy%', 'all'), style: button.href()}),
-              button({title: 'active', action: writeValue('%$filterBy%', 'active'), style: button.href()}),
+              button({
+                title: 'all',
+                action: writeValue('%$filterBy%', 'all'),
+                style: button.href(),
+                features: [
+                  conditionalClass('selected', equals('%$filterBy%', 'all')),
+                  watchRef({ref: '%$filterBy%', allowSelfRefresh: true})
+                ]
+              }),
+              button({
+                title: 'active',
+                action: writeValue('%$filterBy%', 'active'),
+                style: button.href(),
+                features: [
+                  conditionalClass('selected', equals('%$filterBy%', 'active')),
+                  watchRef({ref: '%$filterBy%', allowSelfRefresh: true})
+                ]
+              }),
               button({
                 title: 'completed',
                 action: writeValue('%$filterBy%', 'completed'),
-                style: button.href()
+                style: button.href(),
+                features: [
+                  conditionalClass('selected', equals('%$filterBy%', 'completed')),
+                  watchRef({ref: '%$filterBy%', allowSelfRefresh: true})
+                ]
               })
-            ]
+            ],
+            features: css.class('filters')
           }),
           button({
-            title: 'delete all',
+            title: 'Clear completed',
             action: runActionOnItems(
               pipeline('%$todo%', filter('%completed%')),
               splice({
@@ -789,13 +825,15 @@ jb.component('todomvc.start', {
                 itemsToAdd: []
               })
             ),
-            style: button.href(),
+            style: {$: 'todomvc.button.simple'},
             features: [
               hidden(notEmpty(pipeline('%$todo%', filter('%completed%')))),
-              watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true})
+              watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
+              css.class('clear-completed')
             ]
           })
-        ]
+        ],
+        features: css.class('footer')
       }),
       label({
         title: pipeline(json.stringify('%$todo%'), '%$filterBy%: %%'),
@@ -845,7 +883,8 @@ jb.component('editable-text.input-or-label', {
   type: 'editable-text.style',
   params:[
     { id: 'labelCssClass', as: 'string'  },
-    { id: 'inputCssClass', as: 'string' , defaultValue: "input"  }
+    { id: 'inputCssClass', as: 'string' , defaultValue: "input"  },
+    { id: 'onToggle', type: 'action' , dynamic: true  }
   ], 
   impl: styleByControl(
     control_firstSucceeding({
@@ -857,7 +896,11 @@ jb.component('editable-text.input-or-label', {
             updateOnBlur: true,
             style: editableText_input(),
             features:[
-            feature_onEvent({event: 'blur', action: writeValue('%$editable%', false)}),
+            feature_onEvent({event: 'blur', action: 
+              runActions(writeValue('%$editable%', false), 
+              call('onToggle')
+              )
+            }),
             css_class("%$inputCssClass%")
             ]
 
@@ -867,7 +910,12 @@ jb.component('editable-text.input-or-label', {
           title: ctx => ctx.exp('%$editableTextModel/databind%'),
           style: label.htmlTag('label'),
           features:[
-           feature_onEvent({event: 'dblclick', action: runActions(focusOnSibling('.'+"%$inputCssClass%"), writeValue('%$editable%', true))})
+           feature_onEvent({event: 'dblclick', 
+           action: runActions(
+             writeValue('%$editable%', true),
+             focusOnSibling(".%$inputCssClass%"), 
+             call('onToggle')
+             )})
            ,
            css_class("%$labelCssClass%")
           ]
@@ -896,3 +944,25 @@ jb.component('editable-boolean.checkbox-with-label', {
       ])
   }
 })
+
+
+jb.component('todomvc.group.ul-li', {
+  type: 'group.style',
+  impl :{$: 'custom-style',
+    template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li', {class: 'jb-item'} ,h(ctrl)),ctrl.ctx.data))),
+    css: `{ list-style: none; padding: 0; margin: 0;}
+    >li { list-style: none; padding: 0; margin: 0; display: inline;}`,
+    features :{$: 'group.init-group'}
+  },
+})
+
+
+jb.component('todomvc.button.simple', {
+  type: 'button.style',
+    impl :{$: 'custom-style',
+        template: (cmp,state,h) => h('button',{onclick: ev => cmp.clicked(ev)}, state.title),
+        
+    }
+})
+
