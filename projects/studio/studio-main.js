@@ -140,7 +140,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
             title: 'menu and toolbar',
             style: layout.flex('space-between'),
             controls: [
-              menu.control({menu: studio.mainMenu(), style: menuStyle.pulldown({}), features: css.height('30')}),
+              menu.control({menu: studio.mainMenu(), style: menuStyle.pulldown({}), features: [ id('mainMenu'), css.height('30')] }),
               studio.toolbar(),
               studio.searchComponent()
             ],

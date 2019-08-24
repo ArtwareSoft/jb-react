@@ -574,6 +574,7 @@ const log = (logName, record) => frame.wSpy && frame.wSpy.log(logName, record, {
 }});
 
 function pathSummary(path) {
+  if (!path) return ''
   const _path = path.split('~');
   while(!jb.compName(profileOfPath(_path)) && _path.length > 0)
     _path.pop();
@@ -587,7 +588,7 @@ function logError() {
 
 function logException(e,errorStr,ctx, ...rest) {
   frame.console && frame.console.log(...arguments)
-  log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx.path),e, ...rest])
+  log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx && ctx.path),e, ...rest])
 }
 
 function val(v) {
@@ -668,9 +669,9 @@ Object.assign(jb,{
     jb.comps[id] = comp
     try {
       jb.traceComponentFile && jb.traceComponentFile(comp)
-      if (comp.mutableData)
+      if (comp.mutableData !== undefined)
         return jb.resource(id,comp.mutableData)
-      if (comp.constData)
+      if (comp.constData !== undefined)
         return jb.const(id,comp.constData)
     } catch(e) {}
 

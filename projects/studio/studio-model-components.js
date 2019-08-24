@@ -248,7 +248,7 @@ jb.component('studio.profile-as-text', { /* studio_profileAsText */
 })
 
 function scriptPathToExpression(path) {
-	const dataPath = path.replace(/mutableData~/,'')
+	const dataPath = path.replace(/~mutableData/,'')
 		.replace(/~[0-9]+~/g,x => x.replace(/~/,'[').replace(/~/,']~'))
 		.replace(/~/g,'/')
 	return '%$' + dataPath +'%';
@@ -292,6 +292,8 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 						}
 					}
 					if (newVal != null) {
+						if (path.match(/^[^~]+~mutableData/))
+							(new st.previewjb.jbCtx()).run(writeValue(scriptPathToExpression(path),newVal))
 						st.writeValueOfPath(path, newVal,ctx);
 					}
 				}

@@ -1,3 +1,32 @@
+jb.component('studio.open-new-resource', { 
+  params: [
+    {id: 'constOrMutable', as: 'string' }
+  ],
+  type: 'action',
+  impl: openDialog({
+    style: dialog_dialogOkCancel(),
+    content: group({
+      style: group_div(),
+      controls: [
+        editableText({
+          title: 'resource name',
+          databind: '%$name%',
+          style: editableText_mdlInput(),
+          features: feature_onEnter(dialog_closeContainingPopup())
+        })
+      ],
+      features: css_padding({top: '14', left: '11'})
+    }),
+    title: 'New %$constOrMutable%',
+    onOK: [
+      (ctx,{name},{constOrMutable}) => jb.studio.previewjb. component(jb.tostring(name), { 
+        [constOrMutable+'Data'] : {}
+      })
+    ],
+    modal: true,
+    features: [variable({name: 'name', mutable: true}), dialogFeature_autoFocusOnFirstInput()]
+  })
+})
 
 jb.component('studio.data-resources', { /* studio_dataResources */
   type: 'control',
@@ -66,20 +95,26 @@ jb.component('studio.data-resource-menu', { /* studio_dataResourceMenu */
   impl: menu_menu({
     title: 'Data',
     options: [
-      dynamicControls({
-        controlItems: ctx => jb.entries(jb.studio.previewjb.comps)
-        .filter(e=>! jb.comps[e[0]])
-        .filter(e=>e[1].mutableData || e[1].constData)
-          .map(e=>({
-            name: e[0],
-            path: `${e[0]}~${e[1].mutableData ? 'mutable' : 'const'}Data`
-          })),
-        genericControl: menu.action({
-          title: '%$controlItem/name%',
-          action: studio.openResource('%$controlItem/path%')
+      menu_endWithSeparator({
+        options: dynamicControls({
+          controlItems: ctx => jb.entries(jb.studio.previewjb.comps)
+          .filter(e=>! jb.comps[e[0]])
+          .filter(e=>e[1].mutableData || e[1].constData)
+            .map(e=>({
+              name: e[0],
+              path: `${e[0]}~${e[1].mutableData ? 'mutable' : 'const'}Data`
+            })),
+          genericControl: menu.action({
+            title: '%$controlItem/name%',
+            action: studio.openResource('%$controlItem/path%')
+          })
         })
-      })
+      }),
+      menu.action({title: 'new mutable', action: studio.openNewResource('mutable')}),
+      menu.action({title: 'new const', action: studio.openNewResource('const')}),
     ]
   })
 })
+
+
 
