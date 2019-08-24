@@ -1,8 +1,8 @@
-jb.resource('people',[
+jb.component('people', { mutableData: [
   { "name": "Homer Simpson" ,age: 42 , male: true},
   { "name": "Marge Simpson" ,age: 38 , male: false},
   { "name": "Bart Simpson"  ,age: 12 , male: true}
-]);
+]});
 
 
 jb.component('hello-world.main', {

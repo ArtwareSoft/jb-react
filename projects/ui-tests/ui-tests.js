@@ -1,38 +1,38 @@
-jb.resource('globals', {});
+jb.component('globals', { mutableData:  {}});
 
-jb.resource('mutable-people', [
+jb.component('mutable-people', { mutableData: [
   { "name": "Homer Simpson - mutable", age: 42, male: true },
   { "name": "Marge Simpson - mutable", age: 38, male: false },
   { "name": "Bart Simpson - mutable", age: 12, male: true }
-])
+]})
 
-jb.const('people', [
+jb.component('people', { constData: [
   { "name": "Homer Simpson", age: 42, male: true },
   { "name": "Marge Simpson", age: 38, male: false },
   { "name": "Bart Simpson", age: 12, male: true }
-])
+]})
 
 
-jb.resource('person', {
+jb.component('person', { mutableData: {
   name: "Homer Simpson",
   male: true,
   isMale: 'yes',
   age: 42
-})
+}})
 
-jb.resource('personWithAddress', {
+jb.component('personWithAddress', { mutableData: {
   "name": "Homer Simpson",
   "address": {
     "city": "Springfield",
     "street": "742 Evergreen Terrace"
   }
-})
+}})
 
-jb.resource('personWithChildren', {
+jb.component('personWithChildren', { mutableData: {
   name: "Homer Simpson",
   children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' }],
   friends: [{ name: 'Barnie' }],
-})
+}})
 
 jb.component('ui-test.label',  /* uiTest_label */ {
   impl: uiTest({

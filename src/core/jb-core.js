@@ -664,19 +664,23 @@ Object.assign(jb,{
   studio: { previewjb: jb },
   macroName: id =>
     id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
-  component: (id,val) => {
-    jb.comps[id] = val
+  component: (id,comp) => {
+    jb.comps[id] = comp
     try {
-      jb.traceComponentFile && jb.traceComponentFile(val)
+      jb.traceComponentFile && jb.traceComponentFile(comp)
+      if (comp.mutableData)
+        return jb.resource(id,comp.mutableData)
+      if (comp.constData)
+        return jb.const(id,comp.constData)
     } catch(e) {}
 
     // fix as boolean params to have type: 'boolean'
-    (val.params || []).forEach(p=> {
+    (comp.params || []).forEach(p=> {
       if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
         p.type = 'boolean'
     })
 
-    jb.registerMacro(id, val)
+    jb.registerMacro(id, comp)
   },
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => { 
