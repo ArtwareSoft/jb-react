@@ -357,8 +357,8 @@ jb.component('studio.watch-path', { /* studio.watchPath */
       id: 'allowSelfRefresh',
       as: 'boolean',
       description: 'allow refresh originated from the components or its children',
-	  type: 'boolean',
-	  defaultValue: true
+      type: 'boolean',
+      defaultValue: true
     }
   ],
   impl: (ctx,path,includeChildren,delay,allowSelfRefresh) => ({

@@ -128,7 +128,7 @@ jb.component('feature.hover-title', {
   })
 })
 
-jb.component('var', {
+jb.component('variable', {
   type: 'feature', category: 'general:90',
 	description: 'define a variable. mutable or const, local or global',
   params: [
@@ -163,7 +163,8 @@ jb.component('var', {
   })
 })
 
-jb.component('variable', jb.comps.var)
+// to delete soon
+jb.component('var', jb.comps.variable)
 
 jb.component('bind-refs', {
   type: 'feature', category: 'watch',

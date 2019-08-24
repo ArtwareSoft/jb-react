@@ -8,72 +8,47 @@ jb.resource('people',[
 jb.component('hello-world.main', {
   type: 'control',
   impl: group({
-    style: layout_horizontal(3),
+    title: '',
+    style: layout.horizontal(3),
     controls: [
       group({
         controls: [label('hello world%$second%')],
-        features: {$: 'var', name: 'second', value: '22', mutable: true}
+        features: variable({name: 'second', value: '22', mutable: true})
       })
     ],
-    features: {$: 'var', name: 'adsa', value: 'asdasdas', mutable: true, globalId: 'mukki'}
+    features: variable({name: 'adsa', value: 'asdasdas', mutable: true, globalId: 'mukki'})
   })
 })
 
 
 jb.component('hello-world.main2', {
-  type: 'control', 
-  impl :{$: 'group', 
+  type: 'control',
+  impl: group({
     controls: [
-      {$: 'group', 
-        style :{$: 'layout.horizontal', spacing: '66' }, 
+      group({
+        style: layout.horizontal('66'),
         controls: [
-          {$: 'label', title: 'test' }, 
-          {$: 'editable-text', 
-            title: 'text', 
-            databind: '%$text%', 
-            style :{$: 'editable-text.mdl-input' }
-          }
+          label('test'),
+          editableText({title: 'text', databind: '%$text%', style: editableText.mdlInput()})
         ]
-      }, 
-      {$: 'table', 
-        items :{$: 'pipeline', 
-          items: [
-            '1,2,3', 
-            {$: 'split', separator: ',', text: '%%' }, 
-            {$: 'object', text: '%%' }
-          ]
-        }, 
+      }),
+      table({
+        items: pipeline('1,2,3', split({separator: ',', text: '%%'}), {$: 'object', text: '%%'}),
         fields: [
-          {$: 'field', 
-            title: 'name', 
-            data :{
-              $pipeline: [
-                '%text%', 
-                {$: 'object', huyt: '%%', blbl: '%%*2' }, 
-                '%huyt%'
-              ]
-            }
-          }, 
-          {$: 'field.control', 
-            control :{$: 'itemlist', 
-              style :{$: 'itemlist.ul-li' }, 
-              itemVariable: 'item'
-            }
-          }
+          field({
+            title: 'name',
+            data: pipeline('%text%', {$: 'object', huyt: '%%', blbl: '%%*2'}, '%huyt%')
+          }),
+          field.control({control: itemlist({style: itemlist.ulLi(), itemVariable: 'item'})})
         ]
-      }, 
-      {$: 'itemlist', 
-        items: '%$people%', 
-        controls: [
-          {$: 'label', 
-            title: '%name%', 
-            style :{$: 'label.span' }
-          }
-        ], 
-        style :{$: 'itemlist.ul-li' }, 
+      }),
+      itemlist({
+        items: '%$people%',
+        controls: [label({title: '%name%', style: label.span()})],
+        style: itemlist.ulLi(),
         itemVariable: 'item'
-      }
-    ], 
-    features :{$: 'variable', name: 'text', value: 'hello world', mutable: 'true' }
-  }
+      })
+    ],
+    features: variable({name: 'text', value: 'hello world', mutable: 'true'})
+  })
 })
