@@ -96,7 +96,7 @@ jb.component('html-attribute', {
     { id: 'value', mandatory: true, as: 'string' }
   ],
   impl: (ctx,attribute,value) => ({
-    templateModifier: vdom => {
+    templateModifier: (vdom,cmp,state) => {
         vdom.attributes = vdom.attributes || {};
         vdom.attributes[attribute] = value
         return vdom;
@@ -419,19 +419,3 @@ jb.component('focus-on-first-element', {
     })
 })
 
-jb.component('focus-on-sibling', {
-	type: 'action',
-	params: [
-	  {id: 'siblingSelector', as: 'string', mandatory: true},
-	  {id: 'delay', as: 'number', defaultValue: 0}
-	],
-	impl: (ctx,siblingSelector,delay) => {
-	  if (!ctx.vars.event) 
-		  return jb.error('no event for action focus-on-sibling',ctx)
-	  delayedFocus(ctx.vars.event.srcElement.parent,{delay,siblingSelector})
-
- 	  function delayedFocus(parent, {delay = 0, selector}) {
-		  jb.delay(delay).then(() => jb.ui.focus(parent.querySelector(selector), 'focus-on-sibling', ctx))
-	  }
-	}
-})

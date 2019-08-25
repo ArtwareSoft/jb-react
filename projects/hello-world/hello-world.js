@@ -12,7 +12,7 @@ jb.component('hello-world.main', {
     style: layout.horizontal(3),
     controls: [
       group({
-        controls: [label('%$people[0]/name%')],
+        controls: [label('%$person/b%')],
         features: variable({name: 'second', value: '22', mutable: true})
       })
     ],
@@ -52,3 +52,68 @@ jb.component('hello-world.main2', {
     features: variable({name: 'text', value: 'hello world', mutable: 'true'})
   })
 })
+jb.component("hello-world.xx",
+  {
+    type: 'control', 
+    impl :{$: 'group', 
+      style :{$: 'layout.horizontal', spacing: '66' }, 
+      controls: [
+        group({
+          style: layout_horizontal('66'),
+          controls: [
+            group({
+              controls: [
+                editableText({databind: '%$gender%'}),
+                button({title: 'female', action: writeValue('%$gender%', 'female'), features: id('female')}),
+                button({title: 'zee', action: writeValue('%$gender%', 'zee'), features: id('zee')}),
+                button({title: 'male', action: writeValue('%$gender%', 'male'), features: id('male')}),
+                control_firstSucceeding({
+                  controls: [
+                    controlWithCondition('%$gender% == \"male\"', label('male')),
+                    label('not male')
+                  ],
+                  features: firstSucceeding_watchRefreshOnCtrlChange('%$gender%')
+                })
+              ],
+              features: variable({name: 'gender', value: 'male', mutable: true})
+            }),
+            group({
+              controls: [
+                label({title: 'is male %$male%', style: label_span(), features: watchRef('%$male%')}),
+                button({title: 'female', action: writeValue('%$male%', false)}),
+                button({title: 'male', action: writeValue('%$male%', true)}),
+                control_firstSucceeding({
+                  controls: [
+                    controlWithCondition('%$male%', label('male')),
+                    label('not male')
+                  ],
+                  features: firstSucceeding_watchRefreshOnCtrlChange('%$male%')
+                })
+              ],
+              features: variable({name: 'male', value: true, mutable: true})
+            })
+          ]
+        })
+      ]
+    }
+})
+
+jb.component('person', { /* person */ 
+  mutableData: {
+    name: 'aabb',
+    b: 992000,
+    cc: 5465
+  }
+})
+
+jb.component('hello-world.aaa', { /* helloWorld.aaa */ 
+  type: 'control',
+  impl: group({
+    controls: [label({title: 'my label', style: label.span()})]
+  })
+})
+
+
+
+
+
