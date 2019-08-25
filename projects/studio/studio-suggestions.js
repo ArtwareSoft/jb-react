@@ -104,7 +104,6 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
         autoSelectFirst: true
       }),
       itemlist.keyboardSelection({autoFocus: false, onEnter: [studio.pasteSuggestion('%%', true)]}),
-      feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', false)),
       css.height({height: '500', overflow: 'auto', minMax: 'max'}),
       css.width({width: '300', overflow: 'auto', minMax: 'min'}),
       css('{ position: absolute; z-index:1000; background: white }'),
@@ -125,6 +124,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         databind: studio.ref('%$path%'),
         style: editableText.studioPrimitiveText(),
         features: [
+          feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', false)),
           studio.watchPath({path: '%$path%', includeChildren: true, allowSelfRefresh: false}),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
@@ -170,6 +170,7 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
             popupId: 'suggestions',
             popupStyle: dialog.popup(),
             showHelper: studio.showSuggestions(),
+            onKeydown: ctx => ctx.data == 9 && ctx.run(pasteSuggestion('%$suggestionData/selected%/')),
             onEnter: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()],
             onEsc: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()]
           })
@@ -223,11 +224,13 @@ st.suggestions = class {
   extendWithOptions(probeCtx,path) {
     var options = [];
     probeCtx = probeCtx || new st.previewjb.jbCtx();
-    var vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources,st.previewjb.consts))
+    const resources = jb.entries(jb.studio.previewjb.comps)
+          .filter(e=>! jb.comps[e[0]])
+          .filter(e=>e[1].mutableData || e[1].constData)
+    const vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars)).concat(resources)
         .map(x=>new ValueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
-        .filter(x=> x.toPaste.indexOf(':') == -1)
-        .filter(x=>['$window'].indexOf(x.toPaste) == -1)
+        // .filter(x=> x.toPaste.indexOf(':') == -1)
 
     if (this.inputVal.indexOf('=') == 0 && !this.expressionOnly)
       options = st.PTsOfPath(path).map(compName=> {
@@ -249,6 +252,7 @@ st.suggestions = class {
 
     options = jb.unique(options,x=>x.toPaste)
         .filter(x=> x.toPaste.indexOf('$jb_') != 0)
+        
 //        .filter(x=> x.toPaste != this.tail)
         .filter(x=>
           this.tail == '' || typeof x.toPaste != 'string' || (x.description + x.toPaste).toLowerCase().indexOf(this.tail.toLowerCase()) != -1)

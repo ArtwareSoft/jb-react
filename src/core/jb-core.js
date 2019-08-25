@@ -578,7 +578,7 @@ function pathSummary(path) {
   const _path = path.split('~');
   while(!jb.compName(profileOfPath(_path)) && _path.length > 0)
     _path.pop();
-	return jb.compName(profileOfPath(_path)) + ':' + path;
+	return jb.compName(profileOfPath(_path)) + ': ' + path;
 }
 
 function logError() {

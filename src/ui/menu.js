@@ -118,7 +118,7 @@ jb.component('menu.open-context-menu', {
 	params: [
 		{id: 'menu', type: 'menu.option', dynamic: true, mandatory: true },
 		{id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup'}  },
-	{ id: 'features', type: 'dialog-feature[]', dynamic: true }
+		{id: 'features', type: 'dialog-feature[]', dynamic: true }
 	],
 	impl :{$: 'open-dialog',
 			style :{$call: 'popupStyle' },

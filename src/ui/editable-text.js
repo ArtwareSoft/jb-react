@@ -55,7 +55,10 @@ jb.component('editable-text.helper-popup', {
               id: ctx.params.popupId,
               style: _ctx => ctx.params.popupStyle(_ctx),
               content: _ctx => ctx.params.control(_ctx),
-              features: {$: 'dialog-feature.unique-dialog', id: ctx.params.popupId}
+              features: [
+                dialogFeature.uniqueDialog(ctx.params.popupId),
+                css('{z-index: 10000 !important}'),
+              ]
             })
           , cmp.ctx, cmp.base );
 
@@ -76,7 +79,7 @@ jb.component('editable-text.helper-popup', {
       }
 
       cmp.ctx.vars.selectionKeySource.input = input;
-      var keyup = cmp.ctx.vars.selectionKeySource.keyup = cmp.onkeyup.delay(1); // delay to have input updated
+      const keyup = cmp.ctx.vars.selectionKeySource.keyup = cmp.onkeyup.delay(1); // delay to have input updated
       cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown;
       cmp.ctx.vars.selectionKeySource.cmp = cmp;
 
@@ -87,8 +90,7 @@ jb.component('editable-text.helper-popup', {
           if (!showHelper)
             ctx.params.onEnter(cmp.ctx)
         });
-        cmp.onkeydown.filter(e=> e.keyCode == 27 ).subscribe(_=>
-          ctx.params.onEsc(cmp.ctx));
+        cmp.onkeydown.filter(e=> e.keyCode == 27 ).subscribe(_=> ctx.params.onEsc(cmp.ctx));
       })
 
       keyup.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)

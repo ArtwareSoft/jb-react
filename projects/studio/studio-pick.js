@@ -146,7 +146,7 @@ st.highlight = function(elems) {
         let width = jb.ui.outerWidth(el);
         if (width == jb.ui.outerWidth(document.body))
             width -= 10;
-        return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; zIndex: 5000;
+        return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; z-index: 5000;
             width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
     }).join('');
 
