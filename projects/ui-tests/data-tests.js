@@ -444,6 +444,15 @@ jb.component('data-test.create-new-resource-and-write', {
   })
 })
 
+jb.component('data-test.non-watchable-ref', {
+  impl: dataTest({
+    vars: Var('constA',() => ({a: 5})),
+    runBefore: writeValue('%$constA/a%', '7'),
+    calculate: '%$constA/a%',
+    expectedResult: equals(7)
+  })
+})
+
 
 // jb.component('data-test.http-get', {
 //    impl :{$: 'data-test',

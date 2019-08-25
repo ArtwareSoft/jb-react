@@ -314,7 +314,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
           return input;
 
       const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || (input && input.handler) || jb.watchableValueByRef;
+      const refHandler = refHandlerArg || jb.refHandler(input) || jb.watchableValueByRef && jb.watchableValueByRef.watchable(input) && jb.watchableValueByRef || jb.simpleValueByRefHandler;
       if (arrayIndexMatch) {
         const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
         const index = arrayIndexMatch[2];
@@ -855,7 +855,7 @@ Object.assign(jb,{
 
   // valueByRef API
   safeRefCall: (ref,f) => {
-    const handler = ref.handler || jb.refHandler(ref)
+    const handler = ref && ref.handler || jb.refHandler(ref)
     if (!handler || !handler.isRef(ref))
       return jb.logError('invalid ref', ref)
     return f(handler)
