@@ -10,7 +10,6 @@ jb.component('data-test', {
 	impl: function(ctx,calculate,runBefore,expectedResult,cleanUp,expectedCounters) {
 		console.log('starting ' + ctx.path )
 		var initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
-		jb.resources = JSON.parse(ctx.vars.initial_resources); jb.rebuildRefHandler && jb.rebuildRefHandler();
 		if (expectedCounters) {
 			if (!jb.frame.wSpy.enabled())
 				jb.frame.initwSpy({wSpyParam: 'data-test'})
@@ -34,6 +33,7 @@ jb.component('data-test', {
 			.then(result => { // default cleanup
 				if (expectedCounters)
 					jb.frame.initwSpy({resetwSpyToNoop: true})
+				jb.resources = JSON.parse(ctx.vars.initial_resources); jb.rebuildRefHandler && jb.rebuildRefHandler();
 				jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 				return result;
 			})

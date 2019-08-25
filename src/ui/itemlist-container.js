@@ -14,14 +14,14 @@ const createItemlistCntr = (ctx,params) => ({
 	add: function(item) {
 		const newItem = item || JSON.parse(JSON.stringify(this.defaultItem || {}));
 		if (this.items) {
-			jb.splice(this.items,[[this.items.length,0,newItem]]);
+			jb.splice(jb.asRef(this.items),[[this.items.length,0,newItem]]);
 			this.selected(newItem);
 		}
 	},
 	delete: function(item) {
 		if (this.items && this.items.indexOf(item) != -1) {
 			this.changeSelectionBeforeDelete();
-			jb.splice(this.items,[[this.items.indexOf(item),1]]);
+			jb.splice(jb.asRef(this.items),[[this.items.indexOf(item),1]]);
 		}
 	},
 	reSelectAfterFilter: function(filteredItems) {

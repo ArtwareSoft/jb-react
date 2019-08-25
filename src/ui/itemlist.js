@@ -88,7 +88,7 @@ jb.component('itemlist.horizontal', {
 jb.component('itemlist.selection', {
   type: 'feature',
   params: [
-    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%' },
+    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%' , dynamic: true },
     { id: 'selectedToDatabind', dynamic: true ,defaultValue: '%%' },
     { id: 'databindToSelected', dynamic: true ,defaultValue: '%%' },
     { id: 'onSelection', type: 'action', dynamic: true },
@@ -96,7 +96,7 @@ jb.component('itemlist.selection', {
     { id: 'autoSelectFirst', type: 'boolean'},
     { id: 'cssForSelected', as: 'string', defaultValue: 'background: #bbb !important; color: #fff !important' },
   ],
-  impl: ctx => ({
+  impl: (ctx,databind) => ({
     onclick: true,
     afterViewInit: cmp => {
         cmp.selectionEmitter = new jb.rx.Subject();
@@ -111,8 +111,9 @@ jb.component('itemlist.selection', {
               cmp.setState({selected: selected});
               ctx.params.onSelection(cmp.ctx.setData(selected));
           });
-
-        jb.ui.refObservable(ctx.params.databind,cmp,{throw: true, watchScript: ctx})
+        
+        const selectedRef = databind()
+        jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, watchScript: ctx})
           .catch(e=>jb.ui.setState(cmp,{selected: null }) || [])
           .subscribe(e=>
             jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
@@ -124,32 +125,23 @@ jb.component('itemlist.selection', {
           .subscribe(buff=>
             ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
 
-     //    cmp.jbEmitter.filter(x=> x =='after-update').startWith(jb.delay(1)).subscribe(x=>{
-     //      if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
-     //        cmp.state.selected = null;
-		 // if (jb.val(ctx.params.databind))
-		 // 	cmp.setState({selected: selectedOfDatabind()});
-     //      if (!cmp.state.selected)
-     //        autoSelectFirst()
-     //    })
-
         function autoSelectFirst() {
-          if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
+          if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(selectedRef))
               return cmp.selectionEmitter.next(cmp.items[0])
         }
         function writeSelectedToDatabind(selected) {
-          return ctx.params.databind && jb.writeValue(ctx.params.databind,ctx.params.selectedToDatabind(ctx.setData(selected)))
+          return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)))
         }
         function selectedOfDatabind() {
-          return ctx.params.databind && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(ctx.params.databind))))
+          return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(selectedRef))))
         }
         jb.delay(1).then(_=>{
            if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
               cmp.state.selected = null;
-           if (jb.val(ctx.params.databind))
+           if (selectedRef && jb.val(selectedRef))
              cmp.setState({selected: selectedOfDatabind()});
            if (!cmp.state.selected)
-                  autoSelectFirst()
+              autoSelectFirst()
         })
     },
     extendItem: (cmp,vdom,data) => {
@@ -225,7 +217,7 @@ jb.component('itemlist.drag-and-drop', {
         drake.on('drop', (dropElm, target, source,sibling) => {
             var draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
             var targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
-            jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
+            jb.splice(jb.asRef(cmp.items),[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
 
             dropElm.dragged = null;
         });
@@ -240,7 +232,7 @@ jb.component('itemlist.drag-and-drop', {
               var selectedIndex = cmp.items.indexOf(cmp.state.selected);
               if (selectedIndex == -1) return;
               var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-              jb.splice(cmp.items,[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
+              jb.splice(jb.asRef(cmp.items),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
           })
 //        })
       }

@@ -25,7 +25,7 @@ st.Probe = class {
         this.result.visits = 0
         this.probe[pathToTrace] = this.result
         this.pathToTrace = pathToTrace
-        const initial_resources = st.previewjb.valueByRefHandler.resources()
+        const initial_resources = st.previewjb.resources
         const initial_comps = st.compsRefHandler.resources()
         if (st.probeDisabled) {
             this.completed = false
@@ -49,7 +49,7 @@ st.Probe = class {
                 jb.log('probe',['completed',pathToTrace, this.result, this.totalTime, this])
                 // make values out of ref
                 this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)})
-                st.previewjb.valueByRefHandler.resources(initial_resources)
+                st.previewjb.assignResources(initial_resources)
                 st.compsRefHandler.resources(initial_comps)
                     return this
             })

@@ -314,7 +314,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
           return input;
 
       const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || (input && input.handler) || jb.valueByRefHandler;
+      const refHandler = refHandlerArg || (input && input.handler) || jb.watchableValueByRef;
       if (arrayIndexMatch) {
         const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
         const index = arrayIndexMatch[2];
@@ -471,7 +471,7 @@ const jstypes = {
       return val(value);
     },
     ref(value) {
-      return jb.valueByRefHandler.asRef(value);
+      return jb.asRef(value);
     }
 }
 
@@ -591,9 +591,13 @@ function logException(e,errorStr,ctx, ...rest) {
   log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx && ctx.path),e, ...rest])
 }
 
-function val(v) {
-  if (v == null) return v;
-  return jb.valueByRefHandler.val(v)
+function val(ref) {
+  if (ref == null || typeof ref != 'object') return ref;
+  if (jb.simpleValueByRefHandler.isRef(ref)) 
+    return jb.simpleValueByRefHandler.val(ref);
+  if (jb.watchableValueByRef && jb.watchableValueByRef.isRef(ref)) 
+    return jb.watchableValueByRef.val(ref)
+  return ref
 }
 // Object.getOwnPropertyNames does not keep the order !!!
 function entries(obj) {
@@ -617,12 +621,12 @@ function extend(obj,obj1,obj2,obj3) {
   return obj;
 }
 
-const valueByRefHandlerWithjbParent = {
-  val: function(v) {
+const simpleValueByRefHandler = {
+  val(v) {
     if (v.$jb_val) return v.$jb_val();
-    return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
+    return v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
   },
-  writeValue: function(to,value,srcCtx) {
+  writeValue(to,value,srcCtx) {
     jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
     if (!to) return;
     if (to.$jb_val)
@@ -631,15 +635,16 @@ const valueByRefHandlerWithjbParent = {
       to.$jb_parent[to.$jb_property] = this.val(value);
     return to;
   },
-  asRef: function(value) {
-    if (value && (value.$jb_parent || value.$jb_val))
-        return value;
-    return { $jb_val: () => value, $jb_path: () => [] }
+  asRef(value) {
+    return value
+    // if (value && (value.$jb_parent || value.$jb_val))
+    //     return value;
+    // return { $jb_val: () => value, $jb_path: () => [] }
   },
-  isRef: function(value) {
+  isRef(value) {
     return value && (value.$jb_parent || value.$jb_val);
   },
-  objectProperty: function(obj,prop) {
+  objectProperty(obj,prop) {
       if (this.isRef(obj[prop]))
         return obj[prop];
       else
@@ -647,15 +652,13 @@ const valueByRefHandlerWithjbParent = {
   }
 }
 
-const valueByRefHandler = valueByRefHandlerWithjbParent;
-
 let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 
 return {
   run: jb_run,
   jbCtx, expression, bool_expression, profileType, compName, pathSummary, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame,
-  ctxCounter: _ => ctxCounter
+  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame,
+  ctxCounter: _ => ctxCounter, simpleValueByRefHandler
 }
 
 })();
@@ -687,7 +690,7 @@ Object.assign(jb,{
   resource: (id,val) => { 
     if (typeof val !== 'undefined')
       jb.resources[id] = val
-    jb.valueByRefHandler && jb.valueByRefHandler.resourceReferred && jb.valueByRefHandler.resourceReferred(id);
+    jb.watchableValueByRef && jb.watchableValueByRef.resourceReferred(id);
     return jb.resources[id];
   },
   const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
@@ -725,7 +728,7 @@ Object.assign(jb,{
           args.push(arg)
       })
       if (args.length == 1 && typeof args[0] === 'object') {
-        jb.toarray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system,arg))
+        jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system,arg))
         args[0].remark && jb.comps.remark.macro(system,args[0])
       }
       return {args,system}
@@ -843,6 +846,7 @@ Object.assign(jb,{
     return res;
   },
 
+  asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
 
@@ -850,17 +854,31 @@ Object.assign(jb,{
     new Promise(r=>{setTimeout(r,mSec)}),
 
   // valueByRef API
-  refHandler: ref => (ref && ref.handler) || jb.valueByRefHandler,
-  writeValue: (ref,value,srcCtx) => jb.refHandler(ref).writeValue(ref,value,srcCtx),
-  splice: (ref,args,srcCtx) => jb.refHandler(ref).splice(ref,args,srcCtx),
-  move: (fromRef,toRef,srcCtx) => jb.refHandler(fromRef).move(fromRef,toRef,srcCtx),
-  isRef: ref => jb.refHandler(ref).isRef(ref),
-  isValid: ref => jb.refHandler(ref).isValid(ref),
-  refreshRef: ref => jb.refHandler(ref).refresh(ref),
-  asRef: obj => jb.valueByRefHandler.asRef(obj),
-  startTransaction: () => jb.refHandler().startTransaction(),
-  endTransaction: () => jb.refHandler().endTransaction(),
-  resourceChange: () => jb.valueByRefHandler.resourceChange
+  safeRefCall: (ref,f) => {
+    const handler = ref.handler || jb.refHandler(ref)
+    if (!handler || !handler.isRef(ref))
+      return jb.logError('invalid ref', ref)
+    return f(handler)
+  },
+  refHandler: ref => {
+    if (jb.simpleValueByRefHandler.isRef(ref)) 
+      return jb.simpleValueByRefHandler;
+    if (jb.watchableValueByRef && jb.watchableValueByRef.isRef(ref)) 
+      return jb.watchableValueByRef
+  },
+  asRef: obj => {
+    if (jb.watchableValueByRef && (jb.watchableValueByRef.watchable(obj) || jb.watchableValueByRef.isRef(obj)))
+      return jb.watchableValueByRef.asRef(obj)
+    return jb.simpleValueByRefHandler.asRef(obj)
+  },
+  writeValue: (ref,value,srcCtx) => jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
+  splice: (ref,args,srcCtx) => jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
+  move: (ref,toRef,srcCtx) => jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
+  isRef: ref => jb.refHandler(ref),
+  isWatchable: ref => false, // overriden by the watchable-ref.js (if loaded)
+  isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
+  refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),
+  assignResources: resourcesToAssign => jb.watchableValueByRef && jb.watchableValueByRef.resources(resourcesToAssign)
 })
 if (typeof self != 'undefined')
   self.jb = jb

@@ -141,8 +141,8 @@ jb.component('variable', {
       destroy: cmp => {
         const fullName = globalId || (name + ':' + cmp.resourceId);
         if (mutable) {
-          jb.writeValue(jb.valueByRefHandler.refOfPath([fullName]),null,context)
-          delete jb.valueByRefHandler.resources()[fullName]
+          jb.writeValue(jb.watchableValueByRef.refOfPath([fullName]),null,context)
+          delete jb.watchableValueByRef.resources()[fullName]
         }
       },
       extendCtxOnce: (ctx,cmp) => {
@@ -153,8 +153,8 @@ jb.component('variable', {
           const fullName = globalId || (name + ':' + cmp.resourceId);
           jb.log('var',['new-resource',ctx,fullName])
           jb.resource(fullName, jb.val(value(ctx)));
-          //jb.valueByRefHandler.resourceReferred && jb.valueByRefHandler.resourceReferred(fullName);
-          const refToResource = jb.valueByRefHandler.refOfPath([fullName]);
+          //jb.watchableValueByRef.resourceReferred && jb.watchableValueByRef.resourceReferred(fullName);
+          const refToResource = jb.watchableValueByRef.refOfPath([fullName]);
           //jb.writeValue(refToResource,value(ctx.setData(cmp)),context);
           //jb.writeValue(refToResource, jb.val(value(ctx)), context);
           return ctx.setVars(jb.obj(name, refToResource));
@@ -193,14 +193,14 @@ jb.component('calculated-var', {
   ],
   impl: (context, name, value,globalId, watchRefs) => ({
       destroy: cmp => {
-        jb.writeValue(jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]),null,context)
+        jb.writeValue(jb.watchableValueByRef.refOfPath([name + ':' + cmp.resourceId]),null,context)
       },
       extendCtxOnce: (ctx,cmp) => {
         cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
         const fullName = globalId || (name + ':' + cmp.resourceId);
         jb.log('calculated var',['new-resource',ctx,fullName])
         jb.resource(fullName, jb.val(value(ctx)));
-        const refToResource = jb.valueByRefHandler.refOfPath([fullName]);
+        const refToResource = jb.watchableValueByRef.refOfPath([fullName]);
         (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
             jb.ui.refObservable(ref,cmp,{includeChildren:true, watchScript: context}).subscribe(e=>
               jb.writeValue(refToResource,value(cmp.ctx),context))

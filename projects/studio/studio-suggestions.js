@@ -239,7 +239,7 @@ st.suggestions = class {
             return new CompOption(compName, compName, ns ? `${name} (${ns})` : name, st.getComp(compName).description || '')
         })
     else if (this.tailSymbol == '%')
-      options = [].concat.apply([],jb.toarray(probeCtx.exp('%%'))
+      options = [].concat.apply([],jb.asArray(probeCtx.exp('%%'))
         .map(x=>
           jb.entries(x).map(x=> new ValueOption(x[0],x[1],this.pos,this.tail))))
         .concat(vars)
@@ -247,7 +247,7 @@ st.suggestions = class {
       options = vars
     else if (this.tailSymbol == '/' || this.tailSymbol == '.')
       options = [].concat.apply([],
-        jb.toarray(probeCtx.exp(this.base))
+        jb.asArray(probeCtx.exp(this.base))
           .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail))) )
 
     options = jb.unique(options,x=>x.toPaste)

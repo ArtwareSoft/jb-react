@@ -20,7 +20,7 @@ function compsRef(val,opEvent) {
   }
 }
 
-st.compsRefHandler = new jb.ui.ImmutableWithJbId(compsRef);
+st.compsRefHandler = new jb.ui.WatchableValueByRef(compsRef);
 st.compsRefHandler.resourceChange.subscribe(e=>{
 	jb.log('scriptChange',[e.srcCtx,e]);
 	st.highlightByScriptPath(e.path);
@@ -334,7 +334,7 @@ jb.component('studio.is-new', { /* studio.isNew */
   ],
   impl: (ctx,path) => {
 		if (st.compsHistory.length == 0 || st.previewjb.comps.$jb_selectionPreview) return false;
-		//var version_before = new jb.ui.ImmutableWithJbId(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
+		//var version_before = new jb.ui.WatchableValueByRef(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
 		var res =  JSON.stringify(jb.path(st.compsHistory.slice(-1)[0].before,path.split('~'))) !=
 					JSON.stringify(jb.path(st.previewjb.comps,path.split('~')));
 //		var res =  st.valOfPath(path) && !st.val(version_before);

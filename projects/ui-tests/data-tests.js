@@ -310,10 +310,10 @@ jb.component('ar-test', { mutableData: { ar: ['0'] }})
 jb.component('data-test.restoreArrayIds-bug', {
    impl :{$: 'data-test',
    runBefore: ctx => {
-      var ar_ref = ctx.exp('%$ar-test/ar%','ref');
-      var refWithBug = jb.refHandler().refOfPath(['ar-test','ar','0']);
+      const ar_ref = ctx.run('%$ar-test/ar%',{as: 'ref'});
+      const refWithBug = jb.refHandler(ar_ref).refOfPath(['ar-test','ar','0']);
       jb.splice(ar_ref,[[1,0,'1']]);
-      var v = jb.val(refWithBug);
+      const v = jb.val(refWithBug);
       jb.writeValue(ctx.exp('%$ar-test/result%','ref'),v);
    },
    calculate: '%$ar-test/result%',

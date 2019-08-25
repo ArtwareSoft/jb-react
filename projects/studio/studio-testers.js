@@ -18,7 +18,7 @@ jb.component('suggestions-test', {
       return probeRes.then(res=>{
         var probeCtx = res.result[0] && res.result[0].in;
         var obj = new jb.studio.suggestions({ value: params.expression, selectionStart: selectionStart })
-          .extendWithOptions(probeCtx,probeCtx.path);
+          .extendWithOptions(probeCtx.setVars({'people-array': ctx.exp('%$people-array%')}),probeCtx.path);
         return JSON.stringify(JSON.stringify(obj.options.map(x=>x.text)));
       })
     },

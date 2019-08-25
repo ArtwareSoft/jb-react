@@ -1,9 +1,9 @@
-jb.resource('person',{ 
+jb.component('person', { mutableData: { 
 	name: "Homer Simpson", 
 	male: true,
 	isMale: 'yes', 
 	age: 42 
- });
+}});
   
  jb.component('probe-test.single-control', {
 	impl :{$: 'studio-probe-test',

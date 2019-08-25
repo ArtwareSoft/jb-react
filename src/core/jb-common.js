@@ -18,10 +18,10 @@ jb.component('call', {
 });
 
 jb.pipe = function(context,items,ptName) {
-	const start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
+	const start = [jb.asArray(context.data)[0]]; // use only one data item, the first or null
 	if (typeof context.profile.items == 'string')
 		return context.runInner(context.profile.items,null,'items');
-	const profiles = jb.toarray(context.profile.items || context.profile[ptName]);
+	const profiles = jb.asArray(context.profile.items || context.profile[ptName]);
 	const innerPath = (context.profile.items && context.profile.items.sugar) ? ''
 		: (context.profile[ptName] ? (ptName + '~') : 'items~');
 
@@ -245,7 +245,7 @@ jb.component('add-to-array', {
 		{ id: 'itemsToAdd', as: 'array', mandatory: true },
 	],
 	impl: (ctx,array,itemsToAdd) => {
-		const ar = jb.toarray(array);
+		const ar = jb.asArray(array);
 		jb.splice(array,[[ar.length,0,...itemsToAdd]],ctx)
 	}
 });
@@ -259,7 +259,7 @@ jb.component('splice', {
 		{ id: 'itemsToAdd', as: 'array', defaultValue: [] },
 	],
 	impl: (ctx,array,fromIndex,noOfItemsToRemove,itemsToAdd) => {
-		const ar = jb.toarray(array);
+		const ar = jb.asArray(array);
 		jb.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
 	}
 });
@@ -272,7 +272,7 @@ jb.component('remove-from-array', {
 		{ id: 'index', as: 'number', description: 'choose item or index' },
 	],
 	impl: (ctx,array,itemToRemove,_index) => {
-		const ar = jb.toarray(array);
+		const ar = jb.asArray(array);
 		const index = itemToRemove ? ar.indexOf(item) : _index;
 		if (index != -1 && ar.length > index)
 			jb.splice(array,[[index,1]],ctx)
@@ -769,28 +769,12 @@ jb.component('runActions', {
 	],
 	impl: ctx => {
 		if (!ctx.profile) debugger;
-		const actions = jb.toarray(ctx.profile.actions || ctx.profile['$runActions']);
+		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']);
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
 		return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
 			,Promise.resolve())
-	}
-});
-
-jb.component('run-transaction', {
-	type: 'action',
-	params: [
-		{ id: 'actions', type:'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: [] },
-		{ id: 'disableNotifications', as: 'boolean', type: 'boolean' }
-	],
-	impl: (ctx,actions,disableNotifications) => {
-		jb.startTransaction()
-		return actions.reduce((def,action,index) =>
-				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
-			,Promise.resolve())
-			.catch((e) => jb.logException(e,ctx))
-			.then(() => jb.endTransaction(disableNotifications))
 	}
 });
 
@@ -808,10 +792,10 @@ jb.component('run-action-on-items',  /* runActionOnItems */ {
     }
   ],
   impl: (ctx,items,action,notifications) => {
-		if (notifications) jb.startTransaction()
+		if (notifications && jb.watchableValueByRef) jb.watchableValueByRef.startTransaction()
 		return items.reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,ctx))
-			.then(() => notifications && jb.endTransaction(notifications === 'no notifications'));
+			.then(() => notifications && jb.watchableValueByRef && jb.watchableValueByRef.endTransaction(notifications === 'no notifications'));
 	}
 })
 

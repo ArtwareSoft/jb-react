@@ -126,7 +126,7 @@ class JbComponent {
 		var features = (context.params.features && context.params.features(context) || []);
 		features.forEach(f => this.jbExtend(f,context));
 		if (context.params.style && context.params.style.profile && context.params.style.profile.features) {
-			jb.toarray(context.params.style.profile.features)
+			jb.asArray(context.params.style.profile.features)
 				.forEach((f,i)=>
 					this.jbExtend(context.runInner(f,{type:'feature'},context.path+'~features~'+i),context))
 		}
@@ -411,7 +411,7 @@ ui.item = function(cmp,vdom,data) {
 ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 		if (!ref)
 			jb.logError('null ref for watch ref',...arguments);
-    	ref && ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
+    	ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
 			.subscribe(e=>{
 				if (!allowSelfRefresh) {
 					ctxStack=[];for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
@@ -432,7 +432,8 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 
 ui.databindObservable = (cmp,settings) =>
 	cmp.databindRefChanged.flatMap(ref =>
-			(!cmp.watchRefOn && jb.ui.refObservable(ref,cmp,settings).map(e=>Object.assign({ref},e)) ) || [])
+			(!cmp.watchRefOn && jb.ui.refObservable(ref,cmp,settings)
+				.map(e=>Object.assign({ref},e)) ) || [])
 
 
 ui.toVdomOrStr = val => {

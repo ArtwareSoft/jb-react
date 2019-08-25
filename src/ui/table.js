@@ -130,7 +130,7 @@ jb.component('table.init', {
           jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
 
         function calcItems() {
-          cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
+          cmp.items = jb.asArray(jb.val(ctx.vars.$model.items(cmp.ctx)));
           if (cmp.ctx.vars.itemlistCntr)
               cmp.ctx.vars.itemlistCntr.items = cmp.items;
           extendItemsWithCalculatedFields();

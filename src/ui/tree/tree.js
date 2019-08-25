@@ -119,20 +119,21 @@ jb.component('tree.no-head', {
 jb.component('tree.selection', {
   type: 'feature',
   params: [
-	  { id: 'databind', as: 'ref' },
+	  { id: 'databind', as: 'ref', dynamic: true },
 	  { id: 'autoSelectFirst', type: 'boolean' },
 	  { id: 'onSelection', type: 'action', dynamic: true },
 	  { id: 'onRightClick', type: 'action', dynamic: true },
   ],
-  impl: context=> ({
+  impl: (ctx,databind) => ({
 	    onclick: true,
   		afterViewInit: cmp => {
-  		  var tree = cmp.tree;
+		  const tree = cmp.tree;
+		  const selectedRef = databind()
 
-  		  var databindObs = jb.ui.refObservable(context.params.databind,cmp,{watchScript: context}).map(e=>jb.val(e.ref));
+  		  const databindObs = jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{watchScript: ctx}).map(e=>jb.val(e.ref));
 
 		  tree.selectionEmitter
-		  	.merge(databindObs)
+		  	.merge(databindObs || [])
 		  	.merge(cmp.onclick.map(event =>
 		  		tree.elemToPath(event.target)))
 		  	.filter(x=>x)
@@ -148,9 +149,9 @@ jb.component('tree.selection', {
 				  tree.expanded[path] = true;
 				  return path;
 			  },'')
-			  if (context.params.databind)
-				  jb.writeValue(context.params.databind, selected);
-			  context.params.onSelection(cmp.ctx.setData(selected));
+			  if (selectedRef)
+				  jb.writeValue(selectedRef, selected);
+			  ctx.params.onSelection(cmp.ctx.setData(selected));
 			  tree.redraw();
 		  });
 
@@ -158,16 +159,16 @@ jb.component('tree.selection', {
 		  	tree.regainFocus && tree.regainFocus()
 		  );
 
-		if (context.params.onRightClick.profile)
+		if (ctx.params.onRightClick.profile)
 			cmp.base.oncontextmenu = (e=> {
-				jb.ui.wrapWithLauchingElement(context.params.onRightClick,
+				jb.ui.wrapWithLauchingElement(ctx.params.onRightClick,
 					context.setData(tree.elemToPath(e.target)), e.target)();
 				return false;
 			});
 
 		  // first auto selection selection
-		  var first_selected = jb.val(context.params.databind);
-		  if (!first_selected && context.params.autoSelectFirst) {
+		  var first_selected = jb.val(selectedRef);
+		  if (!first_selected && ctx.params.autoSelectFirst) {
 			  var first = jb.ui.find(tree.el.parentNode,'.treenode')[0];
 			  first_selected = tree.elemToPath(first);
 		  }

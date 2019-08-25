@@ -1,9 +1,9 @@
-jb.resource('people-array', { "people": [
+jb.component('people-array', { mutableData: { "people": [
   { "name": "Homer Simpson" ,"age": 42 , "male": true},
   { "name": "Marge Simpson" ,"age": 38 , "male": false},
   { "name": "Bart Simpson"  ,"age": 12 , "male": true}
   ]
-})
+}})
 
 jb.component('suggestions-test.default-probe', {
 	type: 'control',
