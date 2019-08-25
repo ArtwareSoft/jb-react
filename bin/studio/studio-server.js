@@ -340,7 +340,7 @@ function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
           const srcPath = projDir+'/'+srcFile;
           const source = ('' + fs.readFileSync(srcPath)).replace(/\r/g,'').split('\n');
           const toFind = original.replace(/\r/g,'').split('\n');
-          toFind[0] = toFind[0].slice(0,toFind[0].indexOf('{')+1)
+          //toFind[0] = toFind[0].slice(0,toFind[0].indexOf('{')+1)
           const replaceWith = toSave.replace(/\r/g,'').split('\n');
           const found = findSection(source,toFind,srcFile);
           if (found) {
@@ -355,7 +355,7 @@ function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
     if (comp_found)
       return comp_found
     else {
-      fs.appendFileSync(projDir+'/'+project+'.js', toSave)
+      fs.appendFileSync(projDir+'/'+project+'.js', toSave) + '\n\n'
       return `component ${comp} added to ${project}.js`
     }
 
