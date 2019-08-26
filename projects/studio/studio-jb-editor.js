@@ -295,13 +295,13 @@ jb.component('studio.jb-editor', { /* studio_jbEditor */
               group({
                 title: 'watch selection content',
                 controls: studio_probeDataView('%$jbEditorCntrData/selected%'),
-                features: watchRef({ref: studio_ref('%$jbEditorCntrData/selected%')})
+                features: watchRef('%$jbEditorCntrData/selected%')
               })
             ],
             features: feature_if('%$jbEditorCntrData/selected%')
           })
         ],
-        features: [watchRef('%$jbEditorCntrData/selected%'), studio_watchScriptChanges()]
+        features: [studio_watchScriptChanges()]
       })
     ],
     features: [css_padding('10'), css_height({height: '800', minMax: 'max'})]
