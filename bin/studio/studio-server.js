@@ -355,7 +355,7 @@ function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
     if (comp_found)
       return comp_found
     else {
-      fs.appendFileSync(projDir+'/'+project+'.js', toSave) + '\n\n'
+      fs.appendFileSync(projDir+'/'+project+'.js', toSave + ' \n\n') 
       return `component ${comp} added to ${project}.js`
     }
 

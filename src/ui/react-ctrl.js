@@ -196,29 +196,33 @@ function injectLifeCycleMethods(Comp,jbComp) {
 }
 
 ui.garbageCollectCtxDictionary = function(force) {
-	var now = new Date().getTime();
+	const now = new Date().getTime();
 	ui.ctxDictionaryLastCleanUp = ui.ctxDictionaryLastCleanUp || now;
-	var timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp;
+	const timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp;
 	if (!force && timeSinceLastCleanUp < 10000)
 		return;
 	ui.ctxDictionaryLastCleanUp = now;
+	jb.resourcesToDelete = jb.resourcesToDelete || []
+	console.log('garbageCollect',jb.resourcesToDelete)
+	jb.resourcesToDelete.forEach(id => delete jb.resources[id])
+	jb.resourcesToDelete = []
 
-	var used = Array.from(document.querySelectorAll('[jb-ctx]')).map(e=>Number(e.getAttribute('jb-ctx'))).sort((x,y)=>x-y);
-	var dict = Object.getOwnPropertyNames(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y);
-	var lastUsedIndex = 0;
-	for(var i=0;i<dict.length;i++) {
+	const used = Array.from(document.querySelectorAll('[jb-ctx]')).map(e=>Number(e.getAttribute('jb-ctx'))).sort((x,y)=>x-y);
+	const dict = Object.getOwnPropertyNames(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y);
+	let lastUsedIndex = 0;
+	for(let i=0;i<dict.length;i++) {
 		while (used[lastUsedIndex] < dict[i])
 			lastUsedIndex++;
 		if (used[lastUsedIndex] != dict[i])
 			delete jb.ctxDictionary[''+dict[i]];
 	}
-	const globalVarsUsed = jb.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>
-		jb.entries(ctx.vars).map(e=>e[1] && e[1].$jb_path && e[1].$jb_path()).filter(x=>x).filter(x=>x.length == 1).map(x=>x[0])).flat())
+	const ctxToPath = ctx => jb.entries(ctx.vars).map(e=>e[1]).filter(v=>jb.isWatchable(v)).map(v => jb.asRef(v)).map(ref=>jb.refHandler(ref).pathOfRef(ref)).flat()
+	const globalVarsUsed = jb.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
 	Object.keys(jb.resources).filter(id=>id.indexOf(':') != -1)
 		.forEach(id=>{
 			if (globalVarsUsed.indexOf(id) == -1)
-				delete jb.resources[id]
-		})
+				jb.resourcesToDelete.push(id)
+	})
 }
 
 ui.focus = function(elem,logTxt,srcCtx) {
@@ -443,7 +447,7 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 
 ui.databindObservable = (cmp,settings) =>
 	cmp.databindRefChanged.flatMap(ref =>
-			(!cmp.watchRefOn && jb.ui.refObservable(ref,cmp,settings)
+			(!cmp.watchRefOn && jb.isWatchable(ref) && jb.ui.refObservable(ref,cmp,settings)
 				.map(e=>Object.assign({ref},e)) ) || [])
 
 

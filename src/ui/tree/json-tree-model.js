@@ -1,12 +1,11 @@
 jb.component('tree.json-read-only',{
 	type: 'tree.nodeModel',
 	params: [
-		{ id: 'object' },
+		{ id: 'object', as: 'single' },
 		{ id: 'rootPath', as: 'string'}
 	],
-	impl: function(context, json, rootPath) {
-		return new ROjson(json,rootPath)
-	}
+	impl: (ctx, json, rootPath) =>
+		new ROjson(json,rootPath)
 })
 
 class ROjson {

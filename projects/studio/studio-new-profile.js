@@ -185,7 +185,7 @@ jb.component('studio.select-profile', { /* studio_selectProfile */
         mutable: true
       }),
       variable({name: 'SearchPattern', value: '', mutable: true}),
-      group_itemlistContainer({initialSelection: studio_compName('%$path%')})
+      group_itemlistContainer({initialSelection: studio_compName('%$path%'), id1: 'new-profile'})
     ]
   })
 })

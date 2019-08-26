@@ -69,14 +69,14 @@ jb.component('studio.probe-results', { /* studio_probeResults */
   ],
   impl: (ctx, path) => jb.delay(300).then(_ => {
     const inCtx = st.closestCtxByPath(path) || new jb.jbCtx()
-    return [{in: inCtx.data, out: st.isOfType(path,'action') ? null : inCtx.runItself()}]
+    return [{in: st.previewjb.val(inCtx.data), out: st.isOfType(path,'action') ? null : st.previewjb.val(inCtx.runItself())}]
   })
 })
 
 jb.component('studio.data-browse', { /* studio_dataBrowse */
   type: 'control',
   params: [
-    {id: 'obj', mandatory: true, defaultValue: '%%'},
+    {id: 'obj', mandatory: true, as: 'value', defaultValue: '%%'},
     {id: 'title', as: 'string'},
     {id: 'width', as: 'number', defaultValue: 200}
   ],

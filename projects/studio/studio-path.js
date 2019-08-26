@@ -279,7 +279,7 @@ Object.assign(st, {
 		try {
 			return (st.previewWindow || window).eval('('+prof_str+')')
 		} catch (e) {
-			//jb.logException(e,'eval profile:'+prof_str);
+			jb.logException(e,'eval profile:'+prof_str);
 		}
 	},
 

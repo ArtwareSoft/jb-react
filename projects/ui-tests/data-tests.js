@@ -453,6 +453,14 @@ jb.component('data-test.non-watchable-ref', {
   })
 })
 
+jb.component('data-test.inner-of-undefined-var', {
+  impl: dataTest({
+    runBefore: writeValue('%$unknown/a%', '7'),
+    calculate: '%$unknown/a%',
+    expectedResult: ({data}) => data === undefined
+  })
+})
+
 
 // jb.component('data-test.http-get', {
 //    impl :{$: 'data-test',

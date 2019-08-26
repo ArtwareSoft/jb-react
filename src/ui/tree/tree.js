@@ -162,7 +162,7 @@ jb.component('tree.selection', {
 		if (ctx.params.onRightClick.profile)
 			cmp.base.oncontextmenu = (e=> {
 				jb.ui.wrapWithLauchingElement(ctx.params.onRightClick,
-					context.setData(tree.elemToPath(e.target)), e.target)();
+					ctx.setData(tree.elemToPath(e.target)), e.target)();
 				return false;
 			});
 

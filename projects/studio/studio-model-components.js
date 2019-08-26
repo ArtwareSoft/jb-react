@@ -224,7 +224,7 @@ jb.component('studio.profile-as-text', { /* studio_profileAsText */
 					const newVal = notPrimitive ? st.evalProfile(value) : value;
 					if (newVal && typeof newVal == 'object') {
 						const currentVal = st.valOfPath(path);
-						const diff = st.diff(currentVal, newVal).filter(x=>(''+x.path.slice(-1)[0]).indexOf('$jb_') != 0);
+						const diff = (st.diff(currentVal, newVal) || []).filter(x=>(''+x.path.slice(-1)[0]).indexOf('$jb_') != 0);
 						jb.log('profileAsText',[diff, currentVal, newVal])
 						if (diff && diff.length == 1 && diff[0].kind == 'E') {
 							const innerValue = diff[0].rhs;
@@ -278,7 +278,8 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 					const newVal = notPrimitive ? st.evalProfile(value) : value;
 					if (newVal && typeof newVal == 'object') {
 						const currentVal = st.valOfPath(path);
-						const diff = st.diff(currentVal, newVal).filter(x=>(''+x.path.slice(-1)[0]).indexOf('$jb_') != 0);
+            const diff = (st.diff(currentVal, newVal) || [])
+              .filter(x=> x.path && (''+x.path.slice(-1)[0]).indexOf('$jb_') != 0).filter(x=>x);
 						jb.log('profileAsText',[diff, currentVal, newVal])
 						if (diff && diff.length == 1 && diff[0].kind == 'E') {
 							const innerValue = diff[0].rhs;

@@ -15,25 +15,16 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
         const keyup = selectionKeySource.keyup.takeUntil( cmp.destroyed )
         const input = selectionKeySource.input
 
-        keyup
-          .debounceTime(20) // solves timing of closing the floating input
+        keyup.debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
-          .do(e=>jb.log('suggestions',['after debounce', input.value, e, cmp, pathToTrace]))
-          .map(e=>
-              input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
-          .do(e=>jb.log('suggestions',['after distinct', input.value, e, cmp, pathToTrace]))
+          .map(e=> input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
           .map(closestCtx)
-          .do(e=>jb.log('suggestions',['probe ctx', input.value, e, cmp, pathToTrace]))
           .map(probeCtx=>
             new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,pathToTrace))
-          .do(e=>jb.log('suggestions',['create suggestions obj', input.value, e, cmp, pathToTrace]))
           .catch(e=> jb.logException(e,'suggestions',cmp.ctx) || [])
-          .distinctUntilChanged((e1,e2)=>
-            e1.key == e2.key) // compare options - if options are the same - leave it.
-          .do(e=>jb.log('suggestions',['generate event', input.value, e, cmp, pathToTrace]))
+          .distinctUntilChanged((e1,e2)=> e1.key == e2.key) // compare options - if options are the same - leave it.
           .takeUntil( cmp.destroyed )
           .subscribe(e=> {
-              jb.log('suggestions',['before write values', e, input.value, cmp, pathToTrace]);
               cmp.ctx.run((ctx,{suggestionData}) => {
                 suggestionData && Object.assign(suggestionData,e)
                 if (suggestionData.options.indexOf(suggestionData.selected) == -1)
@@ -41,7 +32,6 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
                 suggestionData.selected = suggestionData.selected || suggestionData.options[0]
               })
               cmp.ctx.run(refreshControlById('suggestions-itemlist'))
-              jb.log('suggestions',['after write values', input.value, cmp, pathToTrace]);
           });
 
         function closestCtx() {
@@ -54,16 +44,6 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
           }
           return st.closestCtxByPath(pathToTrace)
         }
-
-        // function getProbe() {
-        //   if (cmp.probeResult)
-        //     return [cmp.probeResult];
-        //   var probePath = ctx.params.path;
-        //   if (st.valOfPath(probePath) == null)
-        //     jb.writeValue(st.refOfPath(probePath),'',ctx);
-
-        //   return ctx.run({$: 'studio.probe', path: probePath }).then(res=>cmp.probeResult = res);
-        // }
       }
   })
 })
@@ -76,17 +56,14 @@ jb.component('studio.show-suggestions', { /* studio.showSuggestions */
 jb.component('studio.paste-suggestion', { /* studio.pasteSuggestion */
   type: 'action',
   params: [
-    {id: 'option', as: 'single', defaultValue: '%%', dynamic: 'true'},
+    {id: 'option', as: 'single', defaultValue: '%%'},
     {id: 'toAdd', as: 'string', description: '% or /', defaultValue: '%'}
   ],
-  impl: (ctx,optionF,toAdd) => {
-    const option = optionF(ctx)
+  impl: (ctx,option,toAdd) => {
     if (option && ctx.exp('%$suggestionData/options%','array').length)
     Promise.resolve(option.paste(ctx,toAdd)).then(_=> {
       var cmp = ctx.vars.selectionKeySource.cmp;
       cmp.closePopup();
-      //refreshSuggestionPopupOpenClose();
-//      jb.ui.setState(cmp,{model: cmp.jbModel()},null,ctx);
     })
   }
 })
@@ -142,8 +119,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
       })
     ],
     features: variable({
-      name: 'suggestionData',
-      value: {$: 'object', selected: '', options: [], path: '%$path%'},
+      name: 'suggestionData', value: {$: 'object', selected: '', options: [], path: '%$path%'},
     })
   })
 })
@@ -171,6 +147,8 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
           features: [field.databindText(300, true), mdlStyle.initDynamic()]
         }),
         features: [
+          feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', '/')),
+          feature.onKey(13, studio.pasteSuggestion('%$suggestionData/selected%')),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%', 'floating-input'),
             popupId: 'suggestions',

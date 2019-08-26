@@ -296,7 +296,6 @@ function expression(exp, ctx, parentParam) {
   }
 }
 
-
 function evalExpressionPart(expressionPart,ctx,parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   // example: %$person.name%.
@@ -472,6 +471,9 @@ const jstypes = {
     },
     ref(value) {
       return jb.asRef(value);
+    },
+    value(value) {
+      return val(value);
     }
 }
 
