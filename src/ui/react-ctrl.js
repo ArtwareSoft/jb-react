@@ -212,6 +212,13 @@ ui.garbageCollectCtxDictionary = function(force) {
 		if (used[lastUsedIndex] != dict[i])
 			delete jb.ctxDictionary[''+dict[i]];
 	}
+	const globalVarsUsed = jb.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>
+		jb.entries(ctx.vars).map(e=>e[1].$jb_path && e[1].$jb_path()).filter(x=>x).filter(x=>x.length == 1).map(x=>x[0])).flat())
+	Object.keys(jb.resources).filter(id=>id.indexOf(':') != -1)
+		.forEach(id=>{
+			if (globalVarsUsed.indexOf(id) == -1)
+				delete jb.resources[id]
+		})
 }
 
 ui.focus = function(elem,logTxt,srcCtx) {

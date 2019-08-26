@@ -138,13 +138,6 @@ jb.component('variable', {
     { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
   ],
   impl: (context, name, value, mutable, globalId) => ({
-      destroy: cmp => {
-        const fullName = globalId || (name + ':' + cmp.resourceId);
-        if (mutable) {
-          jb.writeValue(jb.mainWatchableHandler.refOfPath([fullName]),null,context)
-          delete jb.mainWatchableHandler.resources()[fullName]
-        }
-      },
       extendCtxOnce: (ctx,cmp) => {
         if (!mutable) {
           return ctx.setVars(jb.obj(name, value(ctx)))
