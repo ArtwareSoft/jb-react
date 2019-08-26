@@ -74,14 +74,16 @@ jb.component('studio.paste-suggestion', { /* studio.pasteSuggestion */
   type: 'action',
   params: [
     {id: 'option', as: 'single', defaultValue: '%%', dynamic: 'true'},
-    {id: 'close', as: 'boolean', description: 'ends with % or /', type: 'boolean'}
+    {id: 'toAdd', as: 'string', description: '% or /', defaultValue: '%'}
   ],
-  impl: (ctx,optionF,close) => {
+  impl: (ctx,optionF,toAdd) => {
     const option = optionF(ctx)
-    option && Promise.resolve(option.paste(ctx,close)).then(()=>jb.delay(100)).then(_=> {
+    if (option && ctx.exp('%$suggestionData/options%','array').length)
+    Promise.resolve(option.paste(ctx,toAdd)).then(_=> {
       var cmp = ctx.vars.selectionKeySource.cmp;
-      cmp.refreshSuggestionPopupOpenClose();
-      jb.ui.setState(cmp,{model: cmp.jbModel()},null,ctx);
+      cmp.closePopup();
+      //refreshSuggestionPopupOpenClose();
+//      jb.ui.setState(cmp,{model: cmp.jbModel()},null,ctx);
     })
   }
 })
@@ -103,7 +105,7 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
         onDoubleClick: studio.pasteSuggestion(),
         autoSelectFirst: true
       }),
-      itemlist.keyboardSelection({autoFocus: false, onEnter1: [studio.pasteSuggestion('%%', true)]}),
+      itemlist.keyboardSelection({autoFocus: false}),
       css.height({height: '500', overflow: 'auto', minMax: 'max'}),
       css.width({width: '300', overflow: 'auto', minMax: 'min'}),
       css('{ position: absolute; z-index:1000; background: white }'),
@@ -124,8 +126,8 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         databind: studio.ref('%$path%'),
         style: editableText.studioPrimitiveText(),
         features: [
-          feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', false)),
-          feature.onKey(13, studio.pasteSuggestion('%$suggestionData/selected%', true)),
+          feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', '/')),
+          feature.onKey(13, studio.pasteSuggestion('%$suggestionData/selected%')),
           studio.watchPath({path: '%$path%', includeChildren: true, allowSelfRefresh: false}),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
@@ -171,7 +173,6 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
             popupId: 'suggestions',
             popupStyle: dialog.popup(),
             showHelper: studio.showSuggestions(),
-            onKeydown: ctx => ctx.data == 9 && ctx.run(pasteSuggestion('%$suggestionData/selected%/')),
             onEnter: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()],
             onEsc: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()]
           })
@@ -284,24 +285,18 @@ class ValueOption {
         return ` (${val.length} items)`
       return ``;
     }
-    paste(ctx,_close) {
-      //var close = typeof this.value != 'object' || Array.isArray(this.value) || _close;
-
-      var toPaste = this.toPaste + (_close ? '%' : '/');
-      var input = ctx.vars.selectionKeySource.input;
-      var pos = this.pos + 1;
+    paste(ctx,_toAdd) {
+      const input = ctx.vars.selectionKeySource.input;
+      const primiteVal = typeof this.value != 'object'
+      const toPaste = this.toPaste + (primiteVal ? '%' : _toAdd);
+      const pos = this.pos + 1;
       input.value = input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos);
-      this.writeValue(ctx);
-//      suggestionCtx.selected = null;
+      ctx.exp('%$suggestionData%').options = [] // disable more pastes...
+
       return jb.delay(1,ctx).then (() => {
         input.selectionStart = pos + toPaste.length;
         input.selectionEnd = input.selectionStart;
       })
-    }
-    writeValue(ctx) {
-      var input = ctx.vars.selectionKeySource.input;
-      var path = ctx.exp('%$suggestionData/path%','string');
-      st.writeValueOfPath(path,input.value);
     }
 }
 

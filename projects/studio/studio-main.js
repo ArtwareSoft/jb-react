@@ -1,4 +1,6 @@
-jb.resource('studio',{});
+jb.component('studio', {
+  mutableData: { project:'', page:'', profile_path: ''}
+})
 
 jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
   type: 'data',
@@ -39,7 +41,10 @@ jb.component('studio.pages', { /* studio.pages */
           id('pages'),
           itemlist.selection({
             databind: '%$studio/page%',
-            onSelection: writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
+            onSelection: runActions(
+              writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
+              studio.refreshPreview()
+            ),
             autoSelectFirst: true
           }),
           css(

@@ -792,10 +792,10 @@ jb.component('run-action-on-items',  /* runActionOnItems */ {
     }
   ],
   impl: (ctx,items,action,notifications) => {
-		if (notifications && jb.watchableValueByRef) jb.watchableValueByRef.startTransaction()
+		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
 		return items.reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,ctx))
-			.then(() => notifications && jb.watchableValueByRef && jb.watchableValueByRef.endTransaction(notifications === 'no notifications'));
+			.then(() => notifications && jb.mainWatchableHandler && jb.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
 })
 

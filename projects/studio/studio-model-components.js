@@ -196,7 +196,7 @@ jb.component('studio.comp-name-ref', { /* studio_compNameRef */
 					st.setComp(path,value,ctx)
 			},
 			$jb_observable: cmp =>
-				st.refObservable(st.refOfPath(path),cmp,{includeChildren: true})
+				jb.ui.refObservable(st.refOfPath(path),cmp,{includeChildren: true})
 	})
 })
 
@@ -243,7 +243,7 @@ jb.component('studio.profile-as-text', { /* studio_profileAsText */
 			}
 		},
 		$jb_observable: cmp =>
-			st.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+			jb.ui.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
 	})
 })
 
@@ -302,7 +302,7 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 			}
 		},
 		$jb_observable: cmp =>
-			st.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+			jb.ui.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
 	})
 })
 
@@ -323,7 +323,7 @@ jb.component('studio.profile-as-string-byref', { /* studio_profileAsStringByref 
 			}
 		},
 		$jb_observable: cmp =>
-			st.refObservable(st.refOfPath(ctx.params.path()),cmp)
+			jb.ui.refObservable(st.refOfPath(ctx.params.path()),cmp)
 	})
 })
 

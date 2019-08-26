@@ -222,23 +222,18 @@ class WatchableValueByRef {
   }
   getOrCreateObservable(req) {
       const subject = new jb.rx.Subject()
-      const entry = { ...req, subject}
+      const key = req.srcCtx && this.pathOfRef(req.ref).join('~') + ' : ' + req.srcCtx.path
+      const entry = { ...req, subject, key}
+      if (key && this.observables.find(e=>e.key === key))
+        return jb.logError('observable already exists', entry)
       this.observables.push(entry);
       this.observables.sort((e1,e2) => comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
       req.cmp.destroyed.then(_=> {
           this.observables.splice(this.observables.indexOf(entry), 1);
           subject.complete()
       });
+      jb.log('registerCmpObservable',[entry])
       return subject
-  }
-  refObservable(ref,cmp,settings={}) {
-    jb.log('registerCmpObservable',[cmp.ctx, ...arguments])
-    if (ref && ref.$jb_observable)
-      return ref.$jb_observable(cmp);
-    if (!ref || !this.isRef(ref))
-      return jb.rx.Observable.of().takeUntil(cmp.destroyed);
-
-    return this.getOrCreateObservable({ref,cmp,...settings})
   }
 
   propagateResourceChangeToObservables() {
@@ -246,7 +241,10 @@ class WatchableValueByRef {
           const changed_path = this.pathOfRef(e.ref);
           if (changed_path)
             this.observables.forEach(obs=>{
-                const diff = comparePaths(changed_path, this.pathOfRef(obs.ref))
+                const obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
+                if (!obsPath)
+                  return jb.logError('observer ref path is empty',obs,e)
+                const diff = comparePaths(changed_path, obsPath)
                 if (diff == -1 || diff == 0 || diff == 1 && obs.includeChildren) {
                     jb.log('notifyCmpObservable',['notify change',e.srcCtx,obs,e])
                     obs.subject.next(e)
@@ -274,19 +272,23 @@ function resourcesRef(val) {
   else
     jb.resources = val;
 }
-jb.watchableValueByRef = new WatchableValueByRef(resourcesRef);
-jb.rebuildRefHandler = () => jb.watchableValueByRef = new WatchableValueByRef(resourcesRef);
-jb.isWatchable = ref => jb.refHandler(ref) instanceof WatchableValueByRef
+jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef));
+jb.rebuildRefHandler = () => jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef));
+jb.isWatchable = ref => jb.refHandler(ref) instanceof WatchableValueByRef || ref && ref.$jb_observable
 
-jb.ui.refObservable = (ref,cmp,settings) => {
-  const handler = jb.refHandler(ref)
-  if (!jb.isWatchable(ref))
+jb.ui.refObservable = (ref,cmp,settings={}) => {
+  if (ref && ref.$jb_observable)
+    return ref.$jb_observable(cmp);
+  if (!jb.isWatchable(ref)) {
     jb.logError('ref is not watchable', ref)
-  return handler && handler.refObservable(ref,cmp,settings) || jb.rx.Observable.from([]);
+    return jb.rx.Observable.from([])
+  }
+  return jb.refHandler(ref).getOrCreateObservable({ref,cmp,...settings})
+  //jb.refHandler(ref).refObservable(ref,cmp,settings);
 }
 
-jb.ui.WatchableValueByRef = WatchableValueByRef;
-jb.ui.resourceChange = jb.watchableValueByRef.resourceChange;
+jb.ui.addExtraWatchableHandler = resources => jb.addExtraWatchableHandler(new WatchableValueByRef(resources));
+jb.ui.resourceChange = jb.mainWatchableHandler.resourceChange;
 
 jb.component('run-transaction', {
 	type: 'action',
@@ -295,12 +297,12 @@ jb.component('run-transaction', {
 		{ id: 'disableNotifications', as: 'boolean', type: 'boolean' }
 	],
 	impl: (ctx,actions,disableNotifications) => {
-		jb.watchableValueByRef.startTransaction()
+		jb.mainWatchableHandler.startTransaction()
 		return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
 			,Promise.resolve())
 			.catch((e) => jb.logException(e,ctx))
-			.then(() => jb.watchableValueByRef.endTransaction(disableNotifications))
+			.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
 	}
 });
 

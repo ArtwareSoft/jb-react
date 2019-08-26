@@ -20,7 +20,7 @@ function compsRef(val,opEvent) {
   }
 }
 
-st.compsRefHandler = new jb.ui.WatchableValueByRef(compsRef);
+st.compsRefHandler = jb.ui.addExtraWatchableHandler(compsRef);
 st.compsRefHandler.resourceChange.subscribe(e=>{
 	jb.log('scriptChange',[e.srcCtx,e]);
 	st.highlightByScriptPath(e.path);
@@ -47,9 +47,8 @@ Object.assign(st,{
     st.compsRefHandler.asRef(obj),
   refreshRef: (ref) =>
     st.compsRefHandler.refresh(ref),
-  scriptChange: st.compsRefHandler.resourceChange,
-  refObservable: (ref,cmp,settings) =>
-  	st.compsRefHandler.refObservable(ref,cmp,settings),
+  scriptChange: 
+  	st.compsRefHandler.resourceChange,
   refOfPath: (path,silent) => {
 		const _path = path.split('~');
 		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0]);

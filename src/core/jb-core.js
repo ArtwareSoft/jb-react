@@ -314,7 +314,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
           return input;
 
       const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || jb.refHandler(input) || jb.watchableValueByRef && jb.watchableValueByRef.watchable(input) && jb.watchableValueByRef || jb.simpleValueByRefHandler;
+      const refHandler = refHandlerArg || jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
       if (arrayIndexMatch) {
         const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
         const index = arrayIndexMatch[2];
@@ -593,10 +593,9 @@ function logException(e,errorStr,ctx, ...rest) {
 
 function val(ref) {
   if (ref == null || typeof ref != 'object') return ref;
-  if (jb.simpleValueByRefHandler.isRef(ref)) 
-    return jb.simpleValueByRefHandler.val(ref);
-  if (jb.watchableValueByRef && jb.watchableValueByRef.isRef(ref)) 
-    return jb.watchableValueByRef.val(ref)
+  const handler = jb.refHandler(ref)
+  if (handler)
+    return handler.val(ref)
   return ref
 }
 // Object.getOwnPropertyNames does not keep the order !!!
@@ -690,7 +689,7 @@ Object.assign(jb,{
   resource: (id,val) => { 
     if (typeof val !== 'undefined')
       jb.resources[id] = val
-    jb.watchableValueByRef && jb.watchableValueByRef.resourceReferred(id);
+    jb.watchableHandlers.forEach(handler => handler.resourceReferred(id));
     return jb.resources[id];
   },
   const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
@@ -846,7 +845,7 @@ Object.assign(jb,{
     return res;
   },
 
-  asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+  asArray: v => jb.toarray(v), //v == null ? [] : (Array.isArray(v) ? v : [v]),
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
 
@@ -854,21 +853,33 @@ Object.assign(jb,{
     new Promise(r=>{setTimeout(r,mSec)}),
 
   // valueByRef API
+  extraWatchableHandlers: [],
+  addExtraWatchableHandler: handler => { 
+    jb.extraWatchableHandlers.push(handler)
+    jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
+    return handler
+  },
+  setMainWatchableHandler: handler => { 
+    jb.mainWatchableHandler = handler
+    jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
+  },
+  watchableHandlers: [],
   safeRefCall: (ref,f) => {
     const handler = ref && ref.handler || jb.refHandler(ref)
     if (!handler || !handler.isRef(ref))
       return jb.logError('invalid ref', ref)
     return f(handler)
   },
+ 
   refHandler: ref => {
     if (jb.simpleValueByRefHandler.isRef(ref)) 
-      return jb.simpleValueByRefHandler;
-    if (jb.watchableValueByRef && jb.watchableValueByRef.isRef(ref)) 
-      return jb.watchableValueByRef
+      return jb.simpleValueByRefHandler
+    return jb.watchableHandlers.find(handler => handler.isRef(ref))
   },
   asRef: obj => {
-    if (jb.watchableValueByRef && (jb.watchableValueByRef.watchable(obj) || jb.watchableValueByRef.isRef(obj)))
-      return jb.watchableValueByRef.asRef(obj)
+    const watchableHanlder = jb.watchableHandlers.find(handler => handler.watchable(obj) || handler.isRef(obj))
+    if (watchableHanlder)
+      return watchableHanlder.asRef(obj)
     return jb.simpleValueByRefHandler.asRef(obj)
   },
   writeValue: (ref,value,srcCtx) => jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
@@ -878,7 +889,6 @@ Object.assign(jb,{
   isWatchable: ref => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
   refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),
-  assignResources: resourcesToAssign => jb.watchableValueByRef && jb.watchableValueByRef.resources(resourcesToAssign)
 })
 if (typeof self != 'undefined')
   self.jb = jb

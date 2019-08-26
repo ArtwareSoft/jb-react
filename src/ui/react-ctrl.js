@@ -413,13 +413,17 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 			jb.logError('null ref for watch ref',...arguments);
     	ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
 			.subscribe(e=>{
+				let ctxStack=[]; for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
+				const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x)
+				const callerPathsUniqe = jb.unique(callerPaths)
+				if (callerPathsUniqe.length !== callerPaths.length)
+					return jb.logError('circular watchRef',callerPaths)
+						
 				if (!allowSelfRefresh) {
-					ctxStack=[];for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
-					const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x).
-						map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
+					const callerPathsToCompare = callerPaths.map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
 					const ctxStylePath = ctx.path.replace(/~features~?[0-9]*$/,'')
-					for(let i=0;i<callerPaths.length;i++)
-						if (callerPaths[i].indexOf(ctxStylePath) == 0) // ignore - generated from a watchRef feature in the call stack
+					for(let i=0;i<callerPathsToCompare.length;i++)
+						if (callerPathsToCompare[i].indexOf(ctxStylePath) == 0) // ignore - generated from a watchRef feature in the call stack
 							return
 				}
 				if (ctx && ctx.profile && ctx.profile.$trace)
