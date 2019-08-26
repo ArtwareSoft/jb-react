@@ -49,7 +49,7 @@ st.Probe = class {
                 jb.log('probe',['completed',pathToTrace, this.result, this.totalTime, this])
                 // make values out of ref
                 this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)})
-                st.previewjb.resources = initial_resources
+                jbst.previewjb.watchableValueByRef && st.previewjb.watchableValueByRef.resources(initial_resources)
                 st.compsRefHandler.resources(initial_comps)
                 return this
             })

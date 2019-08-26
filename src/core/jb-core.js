@@ -689,7 +689,7 @@ Object.assign(jb,{
   resource: (id,val) => { 
     if (typeof val !== 'undefined')
       jb.resources[id] = val
-    jb.watchableHandlers.forEach(handler => handler.resourceReferred(id));
+    jb.mainWatchableHandler && jb.mainWatchableHandler.resourceReferred(id);
     return jb.resources[id];
   },
   const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
@@ -845,7 +845,7 @@ Object.assign(jb,{
     return res;
   },
 
-  asArray: v => jb.toarray(v), //v == null ? [] : (Array.isArray(v) ? v : [v]),
+  asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
 

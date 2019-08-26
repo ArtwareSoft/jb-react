@@ -230,7 +230,7 @@ st.suggestions = class {
           .filter(e=>! jb.comps[e[0]])
           .filter(e=>e[1].mutableData || e[1].constData)
     const vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars)).concat(resources)
-        .map(x=>new ValueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail))
+        .map(x=>new ValueOption('$'+x[0],jb.studio.previewjb.val(x[1]),this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
         // .filter(x=> x.toPaste.indexOf(':') == -1)
 
