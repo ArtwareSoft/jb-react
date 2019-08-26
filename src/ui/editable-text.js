@@ -93,7 +93,7 @@ jb.component('editable-text.helper-popup', {
         cmp.onkeydown.filter(e=> e.keyCode == 27 ).subscribe(_=> ctx.params.onEsc(cmp.ctx));
       })
 
-      keyup.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)
+      keyup.filter(e=> [13,27,37,38,40].indexOf(e.keyCode) == -1)
         .subscribe(_=>cmp.refreshSuggestionPopupOpenClose())
 
       keyup.filter(e=>e.keyCode == 27) // ESC

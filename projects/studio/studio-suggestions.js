@@ -36,6 +36,9 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
               jb.log('suggestions',['before write values', e, input.value, cmp, pathToTrace]);
               cmp.ctx.run((ctx,{suggestionData}) => {
                 suggestionData && Object.assign(suggestionData,e)
+                if (suggestionData.options.indexOf(suggestionData.selected) == -1)
+                  suggestionData.selected = null
+                suggestionData.selected = suggestionData.selected || suggestionData.options[0]
               })
               cmp.ctx.run(refreshControlById('suggestions-itemlist'))
               jb.log('suggestions',['after write values', input.value, cmp, pathToTrace]);
@@ -249,7 +252,7 @@ st.suggestions = class {
       options = vars
     else if (this.tailSymbol == '/' || this.tailSymbol == '.')
       options = [].concat.apply([],
-        jb.asArray(probeCtx.exp(this.base))
+        jb.toarray(probeCtx.exp(this.base))
           .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail))) )
 
     options = jb.unique(options,x=>x.toPaste)
@@ -291,6 +294,9 @@ class ValueOption {
       const toPaste = this.toPaste + (primiteVal ? '%' : _toAdd);
       const pos = this.pos + 1;
       input.value = input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos);
+      try {
+        input._component.jbModel(input.value,'keyup') // sometimes the onupdate event is not activated...
+      } catch (e) {}
       ctx.exp('%$suggestionData%').options = [] // disable more pastes...
 
       return jb.delay(1,ctx).then (() => {
