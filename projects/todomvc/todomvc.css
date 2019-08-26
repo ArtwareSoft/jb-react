@@ -158,20 +158,9 @@ body {
 	border-bottom: none;
 }
 
-.editing {
-	border-bottom: none;
-	padding: 0;
-}
-.editing .edit {
-	display: block;
-	width: 506px;
-	padding: 12px 16px;
-	margin: 0 0 0 43px;
-}
 
-.editing :not(.edit) {
-	display: none;
-}
+
+
 
 .toggle {
 	text-align: center;
@@ -243,14 +232,6 @@ body {
 
 .todo-list li:hover .destroy {
 	display: block;
-}
-
-.todo-list li .edit {
-	display: none;
-}
-
-.todo-list li .editing:last-child {
-	margin-bottom: -1px;
 }
 
 .footer {
