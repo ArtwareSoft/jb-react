@@ -209,7 +209,7 @@ st.suggestions = class {
     probeCtx = probeCtx || new st.previewjb.jbCtx();
     const resources = jb.entries(jb.studio.previewjb.comps)
           .filter(e=>! jb.comps[e[0]])
-          .filter(e=>e[1].mutableData || e[1].constData)
+          .filter(e=>e[1].watchableData || e[1].passiveData)
     const vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars)).concat(resources)
         .map(x=>new ValueOption('$'+x[0],jb.studio.previewjb.val(x[1]),this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)

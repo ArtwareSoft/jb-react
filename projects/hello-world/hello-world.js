@@ -1,4 +1,4 @@
-jb.component('people', { mutableData: [
+jb.component('people', { watchableData: [
   { "name": "Homer Simpson" ,age: 42 , male: true},
   { "name": "Marge Simpson" ,age: 38 , male: false},
   { "name": "Bart Simpson"  ,age: 12 , male: true}
@@ -19,7 +19,6 @@ jb.component('hello-world.main', {
     features: variable({name: 'adsa', value: 'asdasdas', mutable: true, globalId: 'mukki'})
   })
 })
-
 
 jb.component('hello-world.main2', {
   type: 'control',
@@ -52,3 +51,32 @@ jb.component('hello-world.main2', {
     features: variable({name: 'text', value: 'hello world', mutable: 'true'})
   })
 })
+
+jb.component('aaa', { /* aaa */ 
+  watchableData: {
+    c: 2,
+    g: 2
+  }
+})
+
+jb.component('pp', { /* pp */ 
+  passiveData: {
+    t: 3,
+    d: 3
+  }
+})
+
+jb.component('xx', { /* xx */ 
+  watchableData: {
+    x: 1
+  }
+})
+
+jb.component('people', { /* people */ 
+  watchableData: [
+    {name: 'Homer Simpson', age: 32, male: true},
+    {name: 'Marge Simpson', age: 38, male: false},
+    {name: 'Bart Simpson', age: 12, male: true}
+  ]
+})
+

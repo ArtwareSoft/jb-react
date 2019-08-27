@@ -203,7 +203,7 @@ ui.garbageCollectCtxDictionary = function(force) {
 		return;
 	ui.ctxDictionaryLastCleanUp = now;
 	jb.resourcesToDelete = jb.resourcesToDelete || []
-	console.log('garbageCollect',jb.resourcesToDelete)
+	jb.log('garbageCollect',jb.resourcesToDelete)
 	jb.resourcesToDelete.forEach(id => delete jb.resources[id])
 	jb.resourcesToDelete = []
 

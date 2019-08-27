@@ -673,10 +673,10 @@ Object.assign(jb,{
     jb.comps[id] = comp
     try {
       jb.traceComponentFile && jb.traceComponentFile(comp)
-      if (comp.mutableData !== undefined)
-        return jb.resource(id,comp.mutableData)
-      if (comp.constData !== undefined)
-        return jb.const(id,comp.constData)
+      if (comp.watchableData !== undefined)
+        return jb.resource(id,comp.watchableData)
+      if (comp.passiveData !== undefined)
+        return jb.const(id,comp.passiveData)
     } catch(e) {}
 
     // fix as boolean params to have type: 'boolean'

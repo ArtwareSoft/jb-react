@@ -6,14 +6,14 @@ jb.component('delayedObj', {
     jb.delay(1).then(_=>obj)
 })
 
-jb.component('person', { mutableData: {
+jb.component('person', { watchableData: {
   name: "Homer Simpson",
   male: true,
   isMale: 'yes',
   age: 42
 }})
 
-jb.component('personWithChildren', { mutableData: {
+jb.component('personWithChildren', { watchableData: {
   name: "Homer Simpson",
   children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ],
   friends: [{ name: 'Barnie' } ],
@@ -305,7 +305,7 @@ jb.component('data-test.data-switch-singleInType', {
   })
 })
 
-jb.component('ar-test', { mutableData: { ar: ['0'] }})
+jb.component('ar-test', { watchableData: { ar: ['0'] }})
 
 jb.component('data-test.restoreArrayIds-bug', {
    impl :{$: 'data-test',
@@ -436,7 +436,7 @@ jb.component('data-test.macro-ns', {
 jb.component('data-test.create-new-resource-and-write', {
   impl: dataTest({
     runBefore: runActions(
-      ctx => jb.component('zzz',{mutableData: {}}),
+      ctx => jb.component('zzz',{watchableData: {}}),
       writeValue('%$zzz%', () => ({a: 5}))
     ),
     calculate: '%$zzz/a%',

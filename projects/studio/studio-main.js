@@ -1,5 +1,5 @@
 jb.component('studio', {
-  mutableData: { project:'', page:'', profile_path: ''}
+  watchableData: { project:'', page:'', profile_path: ''}
 })
 
 jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */

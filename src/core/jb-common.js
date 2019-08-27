@@ -1006,5 +1006,5 @@ jb.component('action.switch-case', {
   impl: ctx => ctx.params
 })
 
-jb.component('newline', { constData: '\n' })
-jb.component('frame',   { constData: jb.frame })
+jb.component('newline', { passiveData: '\n' })
+jb.component('frame',   { passiveData: jb.frame })

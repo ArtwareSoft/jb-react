@@ -1,4 +1,4 @@
-jb.component('people-array', { mutableData: { "people": [
+jb.component('people-array', { watchableData: { "people": [
   { "name": "Homer Simpson" ,"age": 42 , "male": true},
   { "name": "Marge Simpson" ,"age": 38 , "male": false},
   { "name": "Bart Simpson"  ,"age": 12 , "male": true}

@@ -10,16 +10,17 @@ jb.component('studio.save-components', {
 	params: [
 		{ id: 'force',as: 'boolean', type: 'boolean' }
 	],
-	impl : (ctx,force) =>
+	impl : (ctx,force) => {
+    const messages = []
 		jb.rx.Observable.from(Object.getOwnPropertyNames(st.previewjb.comps))
 			.filter(id=>id.indexOf('$jb') != 0)
 			.filter(id=>st.previewjb.comps[id] != st.serverComps[id])
 			.concatMap(id=>{
-				var original = st.serverComps[id] ? jb.prettyPrintComp(id,st.serverComps[id]) : '';
+        let original = st.serverComps[id] ? jb.prettyPrintComp(id,st.serverComps[id]) : '';
 				st.message('saving ' + id + '...');
 				if (force && !original)
 					original = `jb.component('${id}', {`;
-        var project = ctx.exp('%$studio/project%');
+        const project = ctx.exp('%$studio/project%');
 
         if (fs) {
             return [{message: saveComp(st.compAsStr(id),original,id,project,force,jb_projectFolder && jb_projectFolder(project),''), type: 'success'}]
@@ -33,16 +34,20 @@ jb.component('studio.save-components', {
         }
 			})
 			.catch(e=>{
-				st.message('error saving: ' + (typeof e == 'string' ? e : e.e), true);
+        messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.e), error: true })
+				st.showMultiMessages(messages)
 				return jb.logException(e,'error while saving ' + e.id,ctx) || []
 			})
 			.subscribe(entry=>{
-				var result = entry.res || entry;
-				st.message((result.type || '') + ': ' + (result.desc || '') + (result.message || ''), result.type != 'success');
-				if (result.type == 'success')
+        const result = entry.res || entry;
+        const success = result.type === 'success'
+        messages.push({text: (result.type || '') + ': ' + (result.desc || '') + (result.message || ''), error: !success})
+				st.showMultiMessages(messages)
+				if (success)
 					st.serverComps[entry.id] = st.previewjb.comps[entry.id];
-			})
-});
+      })
+    }
+})
 
 // directly saving the comp - duplicated in studio-server
 function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {

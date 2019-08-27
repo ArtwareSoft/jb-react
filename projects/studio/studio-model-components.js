@@ -248,7 +248,7 @@ jb.component('studio.profile-as-text', { /* studio_profileAsText */
 })
 
 function scriptPathToExpression(path) {
-	const dataPath = path.replace(/~mutableData/,'')
+	const dataPath = path.replace(/~(watchable|passive)Data/,'')
 		.replace(/~[0-9]+~/g,x => x.replace(/~/,'[').replace(/~/,']~'))
 		.replace(/~/g,'/')
 	return '%$' + dataPath +'%';
@@ -285,7 +285,7 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 							const innerValue = diff[0].rhs;
 							const fullPath = [path,...diff[0].path].join('~');
 							jb.log('profileAsTextDiffActivated',diff)
-							if (fullPath.match(/^[^~]+~mutableData/))
+							if (fullPath.match(/^[^~]+~(watchable|passive)Data/))
 								(new st.previewjb.jbCtx()).run(writeValue(scriptPathToExpression(fullPath),innerValue))
 						
 							st.writeValueOfPath(fullPath, innerValue,ctx);
@@ -293,7 +293,7 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 						}
 					}
 					if (newVal != null) {
-						if (path.match(/^[^~]+~mutableData/))
+						if (path.match(/^[^~]+~(watchable|passive)Data/))
 							(new st.previewjb.jbCtx()).run(writeValue(scriptPathToExpression(path),newVal))
 						st.writeValueOfPath(path, newVal,ctx);
 					}

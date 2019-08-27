@@ -1,4 +1,4 @@
-jb.component('person', { mutableData: { 
+jb.component('person', { watchableData: { 
 	name: "Homer Simpson", 
 	male: true,
 	isMale: 'yes', 

@@ -1,16 +1,16 @@
 jb.component('todo', { /* todo */ 
-  mutableData: [
+  watchableData: [
     {task: 'home', completed: false},
     {task: 'gym', completed: true}
   ]
 })
 
 jb.component('filterBy', { /* filterBy */ 
-  mutableData: 'all'
+  watchableData: 'all'
 })
 
 jb.component('input', { /* input */ 
-  mutableData: ""
+  watchableData: ""
 })
 
 jb.component('todomvc.main', { /* todomvc.main */ 

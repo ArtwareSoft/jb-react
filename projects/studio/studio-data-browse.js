@@ -1,6 +1,13 @@
+jb.component('studio.watchable-or-passive', { 
+  params: [
+    {id: 'path', as: 'string' }
+  ],
+  impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
+})
+
 jb.component('studio.open-new-resource', { 
   params: [
-    {id: 'constOrMutable', as: 'string' }
+    {id: 'watchableOrPassive', as: 'string' }
   ],
   type: 'action',
   impl: openDialog({
@@ -17,10 +24,10 @@ jb.component('studio.open-new-resource', {
       ],
       features: css_padding({top: '14', left: '11'})
     }),
-    title: 'New %$constOrMutable%',
+    title: 'New %$watchableOrPassive% Data Source',
     onOK: [
-      (ctx,{name},{constOrMutable}) => jb.studio.previewjb. component(jb.tostring(name), { 
-        [constOrMutable+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
+      (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component(jb.tostring(name), { 
+        [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
       })
     ],
     modal: true,
@@ -40,7 +47,7 @@ jb.component('studio.open-resource', { /* studio_openResource */
       databind: studio.profileAsMacroText('%$path%'),
       style: editableText.studioCodemirrorTgp()
     }),
-    title: 'Edit %$name%',
+    title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
       dialogFeature.resizer(true)
@@ -57,19 +64,24 @@ jb.component('studio.data-resource-menu', { /* studio_dataResourceMenu */
         options: dynamicControls({
           controlItems: ctx => jb.entries(jb.studio.previewjb.comps)
           .filter(e=>! jb.comps[e[0]])
-          .filter(e=>e[1].mutableData !== undefined || e[1].constData !== undefined)
-            .map(e=>({
-              name: e[0],
-              path: `${e[0]}~${e[1].mutableData ? 'mutable' : 'const'}Data`
-            })),
+          .filter(e=>e[1].watchableData !== undefined || e[1].passiveData !== undefined)
+            .map(e=> {
+              const watchableOrPassive = e[1].watchableData ? 'watchable' : 'passive'
+              const upper = watchableOrPassive.charAt(0).toUpperCase() + watchableOrPassive.slice(1)
+              return {
+                name: `${e[0]} (${upper})`,
+                path: `${e[0]}~${watchableOrPassive}Data`
+              }
+            }
+            ),
           genericControl: menu.action({
             title: '%$controlItem/name%',
             action: studio.openResource('%$controlItem/path%','%$controlItem/name%')
           })
         })
       }),
-      menu.action({title: 'new mutable', action: studio.openNewResource('mutable')}),
-      menu.action({title: 'new const', action: studio.openNewResource('const')}),
+      menu.action({title: 'New Watchable', action: studio.openNewResource('watchable')}),
+      menu.action({title: 'New Passive', action: studio.openNewResource('passive')}),
     ]
   })
 })

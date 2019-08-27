@@ -328,6 +328,7 @@ jb.component('label.studio-message', {
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.title),
     css: `{ position: absolute;
+      z-index: 10000,
       color: white;  padding: 10px;  background: #327DC8;
       width: 1000px;
       margin-top: -100px;

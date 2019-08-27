@@ -2,13 +2,13 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       var st = jb.studio;
       st.previewWindow = preview_window;
       st.previewjb = preview_window.jb;
+      st.serverComps = st.previewjb.comps;
       if (jb.studio.compsHistory.length) {
-        const compsStr = jb.entries(jb.studio.compsHistory.slice(-1)[0].after)
-          .filter(e=>e[1] != st.serverComps[e[0]]).map(e=>[e[0], jb.prettyPrint(e[1])])
+        const changedComps = jb.entries(jb.studio.compsHistory.slice(-1)[0].after).filter(e=>e[1] != st.serverComps[e[0]])
+        const compsStr = changedComps.map(e=>[e[0], jb.prettyPrint(e[1])])
         jb.studio.copyComps && jb.studio.copyComps(compsStr)
-      } else {
-        st.serverComps = st.previewjb.comps;
       }
+
       st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
 
       st.previewjb.studio.studioWindow = window;

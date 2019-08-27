@@ -1,35 +1,35 @@
-jb.component('globals', { mutableData:  {}});
+jb.component('globals', { watchableData:  {}});
 
-jb.component('mutable-people', { mutableData: [
-  { "name": "Homer Simpson - mutable", age: 42, male: true },
-  { "name": "Marge Simpson - mutable", age: 38, male: false },
-  { "name": "Bart Simpson - mutable", age: 12, male: true }
+jb.component('mutable-people', { watchableData: [
+  { name: 'Homer Simpson - mutable', age: 42, male: true },
+  { name: 'Marge Simpson - mutable', age: 38, male: false },
+  { name: 'Bart Simpson - mutable', age: 12, male: true }
 ]})
 
-jb.component('people', { constData: [
-  { "name": "Homer Simpson", age: 42, male: true },
-  { "name": "Marge Simpson", age: 38, male: false },
-  { "name": "Bart Simpson", age: 12, male: true }
+jb.component('people', { passiveData: [
+  { name: 'Homer Simpson', age: 42, male: true },
+  { name: 'Marge Simpson', age: 38, male: false },
+  { name: 'Bart Simpson', age: 12, male: true }
 ]})
 
 
-jb.component('person', { mutableData: {
-  name: "Homer Simpson",
+jb.component('person', { watchableData: {
+  name: 'Homer Simpson',
   male: true,
   isMale: 'yes',
   age: 42
 }})
 
-jb.component('personWithAddress', { mutableData: {
-  "name": "Homer Simpson",
-  "address": {
-    "city": "Springfield",
-    "street": "742 Evergreen Terrace"
+jb.component('personWithAddress', { watchableData: {
+  name: 'Homer Simpson',
+  address: {
+    city: 'Springfield',
+    street: '742 Evergreen Terrace'
   }
 }})
 
-jb.component('personWithChildren', { mutableData: {
-  name: "Homer Simpson",
+jb.component('personWithChildren', { watchableData: {
+  name: 'Homer Simpson',
   children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' }],
   friends: [{ name: 'Barnie' }],
 }})
@@ -1162,34 +1162,6 @@ jb.component('ui-test.immutable-var',  /* uiTest_immutableVar */ {
   })
 })
 
-jb.component('ui-test.boolean-immutable-var-as-boolean-true-to-false', {
-  impl: uiTest({
-    control: label({
-      title: pipeline(test_getAsBool('%$var1%'),({data}) => data === false ? 'OK' : 'Error'),
-      features: [
-        variable({name: 'var1', value: true, mutable: true}),
-        watchRef('%$var1%'),
-        feature_afterLoad(writeValue('%$var1%', false))
-      ]
-    }),
-    expectedResult: contains('OK')
-  })
-})
-
-jb.component('ui-test.boolean-immutable-var-as-boolean-false-to-true', {
-  impl: uiTest({
-    control: label({
-      title: pipeline(test_getAsBool('%$var1%'),({data}) => data === true ? 'OK' : 'Error'),
-      features: [
-        variable({name: 'var1', value: false, mutable: true}),
-        watchRef('%$var1%'),
-        feature_afterLoad(writeValue('%$var1%', true))
-      ]
-    }),
-    expectedResult: contains('OK')
-  })
-})
-
 jb.component('ui-test.refresh-control-by-id',  /* uiTest_refreshControlById */ {
   impl: uiTest({
     control: itemlist({
@@ -1232,127 +1204,6 @@ jb.component('ui-test.refresh-control-by-id',  /* uiTest_refreshControlById */ {
 //     expectedResult :{$: 'contains', text: 'hello world' },
 //   },
 // })
-
-jb.component('ui-test.mutable-var',  /* uiTest_mutableVar */ {
-  impl: uiTest({
-    control: label({
-      title: '%$var1%',
-      features: [
-        variable({name: 'var1', value: 'hello', mutable: true}),
-        feature_afterLoad(writeValue('%$var1%', 'foo'))
-      ]
-    }),
-    action: ctx => jb.delay(1).then(_ => jb.delay(1)),
-    expectedResult: contains('foo')
-  })
-})
-
-jb.component('ui-test.mutable-var-with-global-id',  /* uiTest_mutableVarWithGlobalId */ {
-  impl: uiTest({
-    control: label({
-      title: '%$var1%',
-      features: [
-        variable({name: 'var1', value: 'hello', mutable: true, globalId: 'globalVar1'}),
-        feature_afterLoad(writeValue('%$var1%', 'foo'))
-      ]
-    }),
-    action: ctx => jb.delay(1).then(_ => jb.delay(1)),
-    expectedResult: contains('foo')
-  })
-})
-
-
-jb.component('ui-test.mutable-var-as-object',  /* uiTest_mutableVarAsObject */ {
-  impl: uiTest({
-    control: label({
-      title: '%$obj1/txt%',
-      features: [
-        variable({name: 'obj1', value: {$: 'object', txt: 'hello'}, mutable: true}),
-        feature_afterLoad(writeValue('%$obj1/txt%', 'foo'))
-      ]
-    }),
-    action: ctx => jb.delay(1).then(_ => jb.delay(1)),
-    expectedResult: contains('foo')
-  })
-})
-
-jb.component('ui-test.mutable-var-as-array',  /* uiTest_mutableVarAsArray */ {
-  impl: uiTest({
-    control: group({
-      controls: label('%$items[1]/title%'),
-      features: variable({
-        name: 'items',
-        value: asIs([{title: 'koo'}, {title: 'foo'}]),
-        mutable: true,
-        globalId: 'items'
-      })
-    }),
-    expectedResult: contains('foo')
-  })
-})
-
-jb.component('ui-test.mutable-var-as-array-one-item',  /* uiTest_mutableVarAsArrayOneItem */ {
-  impl: uiTest({
-    control: group({
-      controls: label('%$items[0]/title%'),
-      features: variable({name: 'items', value: asIs([{title: 'foo'}]), mutable: true, globalId: 'items'})
-    }),
-    expectedResult: contains('foo')
-  })
-})
-
-
-jb.component('ui-test.mutable-var-as-object-not-initialized',  /* uiTest_mutableVarAsObjectNotInitialized */ {
-  impl: uiTest({
-    control: label({
-      title: '%$obj1/txt%',
-      features: [
-        variable({name: 'obj1', value: {$: 'object'}, mutable: true}),
-        feature_afterLoad(writeValue('%$obj1/txt%', 'foo'))
-      ]
-    }),
-    action: ctx => jb.delay(1).then(_ => jb.delay(1)),
-    expectedResult: contains('foo')
-  })
-})
-
-jb.component('ui-test.calculated-var',  /* uiTest_calculatedVar */ {
-  impl: uiTest({
-    control: group({
-      controls: [
-        editableText({databind: '%$var1%', features: id('var1')}),
-        editableText({databind: '%$var2%'}),
-        label('%$var3%')
-      ],
-      features: [
-        variable({name: 'var1', value: 'hello', mutable: true}),
-        variable({name: 'var2', value: 'world', mutable: true}),
-        calculatedVar({name: 'var3', value: '%$var1% %$var2%', watchRefs: list('%$var1%', '%$var2%')})
-      ]
-    }),
-    action: uiAction_setText('hi', '#var1'),
-    expectedResult: contains('hi world')
-  })
-})
-
-jb.component('ui-test.calculated-var-cyclic',  /* uiTest_calculatedVarCyclic */ {
-  impl: uiTest({
-    control: group({
-      controls: [
-        editableText({databind: '%$var1%', features: id('var1')}),
-        editableText({databind: '%$var2%'}),
-        label('%$var3%')
-      ],
-      features: [
-        calculatedVar({name: 'var1', value: 'xx%$var3%', watchRefs: '%$var3%'}),
-        variable({name: 'var2', value: 'world', mutable: true}),
-        calculatedVar({name: 'var3', value: '%$var1% %$var2%', watchRefs: list('%$var1%', '%$var2%')})
-      ]
-    }),
-    action: uiAction_setText('hi', '#var1'),
-    expectedResult: contains('hi world')
-  })
-})
 
 jb.component('ui-test.control.first-succeeding',  /* uiTest_control_firstSucceeding */ {
   impl: uiTest({
@@ -1408,32 +1259,6 @@ jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change',  /* uiTest
   })
 })
 
-jb.component('ui-test.boolean-not-reffable-true',  /* uiTest_booleanNotReffableTrue */ {
-  impl: uiTest({
-    control: label({title: isOfType('string', '123')}),
-    expectedResult: contains('true')
-  })
-})
-
-jb.component('ui-test.boolean-not-reffable-false',  /* uiTest_booleanNotReffableFalse */ {
-  impl: uiTest({
-    control: label({title: isOfType('string2', '123')}),
-    expectedResult: contains('false')
-  })
-})
-
-jb.component('ui-test.label-with-watch-ref',  /* uiTest_labelWithWatchRef */ {
-  impl: uiTest({
-    control: label({
-      title: '%$personWithChildren/children[1]/name%',
-      features: watchRef('%$personWithChildren/children%')
-    }),
-    action: splice({array: '%$personWithChildren/children%', fromIndex: 0, noOfItemsToRemove: 1}),
-    expectedResult: contains('Maggie'),
-    expectedCounters: {setState: 1}
-  })
-})
-
 jb.component('ui-test.focus-on-first-element',  /* uiTest_focusOnFirstElement */ {
   impl: uiTest({
     control: group({
@@ -1461,20 +1286,5 @@ jb.component('ui-test.check-box-with-text',  /* uiTest_checkBoxWithText */ {
       ]
     }),
     expectedResult: true
-  })
-})
-
-jb.component('ui-test.check-box-with-calculated-and-watch-ref',  /* uiTest_checkBoxWithCalculatedAndWatchRef */ {
-  impl: uiTest({
-    control: editableBoolean({
-      databind: '%$person/name% == \"Homer Simpson\"',
-      style: editableBoolean_checkboxWithTitle(),
-      textForTrue: 'yes',
-      textForFalse: 'nonono',
-      features: watchRef('%$person/name%')
-    }),
-    action: runActions(writeValue('%$person/name%', 'Mukki'), delay(200)),
-    expectedResult: contains('nonono'),
-    expectedCounters: {setState: 1}
   })
 })

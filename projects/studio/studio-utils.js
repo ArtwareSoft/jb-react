@@ -1,12 +1,27 @@
 (function() { var st = jb.studio;
 
 st.message = function(message,error) {
-  var el = document.querySelector('.studio-message');
+  const el = document.querySelector('.studio-message');
+  el.innerHTML = ''
 	el.textContent = message;
   el.style.background = error ? 'red' : '#327DC8';
   el.style.animation = '';
 	jb.delay(1).then(()=>	el.style.animation = 'slide_from_top 5s ease')
 }
+
+st.showMultiMessages = function(messages) {
+  const el = document.querySelector('.studio-message');
+  el.innerHTML = ''
+  messages.forEach(m=>{
+    const inner = document.createElement('div')
+    inner.style.background = m.error ? 'red' : '#327DC8';
+    inner.textContent = m.text;
+    el.appendChild(inner)
+  })
+  el.style.animation = '';
+	jb.delay(1).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+}
+
 
 // ********* Components ************
 
