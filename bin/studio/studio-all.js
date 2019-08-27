@@ -296,7 +296,6 @@ function expression(exp, ctx, parentParam) {
   }
 }
 
-
 function evalExpressionPart(expressionPart,ctx,parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   // example: %$person.name%.
@@ -314,7 +313,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
           return input;
 
       const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || (input && input.handler) || jb.valueByRefHandler;
+      const refHandler = refHandlerArg || jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
       if (arrayIndexMatch) {
         const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
         const index = arrayIndexMatch[2];
@@ -471,7 +470,10 @@ const jstypes = {
       return val(value);
     },
     ref(value) {
-      return jb.valueByRefHandler.asRef(value);
+      return jb.asRef(value);
+    },
+    value(value) {
+      return val(value);
     }
 }
 
@@ -574,10 +576,11 @@ const log = (logName, record) => frame.wSpy && frame.wSpy.log(logName, record, {
 }});
 
 function pathSummary(path) {
+  if (!path) return ''
   const _path = path.split('~');
   while(!jb.compName(profileOfPath(_path)) && _path.length > 0)
     _path.pop();
-	return jb.compName(profileOfPath(_path)) + ':' + path;
+	return jb.compName(profileOfPath(_path)) + ': ' + path;
 }
 
 function logError() {
@@ -587,12 +590,15 @@ function logError() {
 
 function logException(e,errorStr,ctx, ...rest) {
   frame.console && frame.console.log(...arguments)
-  log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx.path),e, ...rest])
+  log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx && ctx.path),e, ...rest])
 }
 
-function val(v) {
-  if (v == null) return v;
-  return jb.valueByRefHandler.val(v)
+function val(ref) {
+  if (ref == null || typeof ref != 'object') return ref;
+  const handler = jb.refHandler(ref)
+  if (handler)
+    return handler.val(ref)
+  return ref
 }
 // Object.getOwnPropertyNames does not keep the order !!!
 function entries(obj) {
@@ -616,12 +622,12 @@ function extend(obj,obj1,obj2,obj3) {
   return obj;
 }
 
-const valueByRefHandlerWithjbParent = {
-  val: function(v) {
+const simpleValueByRefHandler = {
+  val(v) {
     if (v.$jb_val) return v.$jb_val();
-    return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
+    return v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
   },
-  writeValue: function(to,value,srcCtx) {
+  writeValue(to,value,srcCtx) {
     jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
     if (!to) return;
     if (to.$jb_val)
@@ -630,15 +636,16 @@ const valueByRefHandlerWithjbParent = {
       to.$jb_parent[to.$jb_property] = this.val(value);
     return to;
   },
-  asRef: function(value) {
-    if (value && (value.$jb_parent || value.$jb_val))
-        return value;
-    return { $jb_val: () => value, $jb_path: () => [] }
+  asRef(value) {
+    return value
+    // if (value && (value.$jb_parent || value.$jb_val))
+    //     return value;
+    // return { $jb_val: () => value, $jb_path: () => [] }
   },
-  isRef: function(value) {
+  isRef(value) {
     return value && (value.$jb_parent || value.$jb_val);
   },
-  objectProperty: function(obj,prop) {
+  objectProperty(obj,prop) {
       if (this.isRef(obj[prop]))
         return obj[prop];
       else
@@ -646,15 +653,13 @@ const valueByRefHandlerWithjbParent = {
   }
 }
 
-const valueByRefHandler = valueByRefHandlerWithjbParent;
-
 let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 
 return {
   run: jb_run,
   jbCtx, expression, bool_expression, profileType, compName, pathSummary, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame,
-  ctxCounter: _ => ctxCounter
+  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame,
+  ctxCounter: _ => ctxCounter, simpleValueByRefHandler
 }
 
 })();
@@ -662,25 +667,32 @@ return {
 Object.assign(jb,{
   comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, //macros: {},
   studio: { previewjb: jb },
+  knownNSAndCompCases: ['field'],
   macroName: id =>
     id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
-  component: (id,val) => {
-    jb.comps[id] = val
-    jb.traceComponentFile && jb.traceComponentFile(val)
+  component: (id,comp) => {
+    jb.comps[id] = comp
+    try {
+      jb.traceComponentFile && jb.traceComponentFile(comp)
+      if (comp.watchableData !== undefined)
+        return jb.resource(id,comp.watchableData)
+      if (comp.passiveData !== undefined)
+        return jb.const(id,comp.passiveData)
+    } catch(e) {}
 
     // fix as boolean params to have type: 'boolean'
-    (val.params || []).forEach(p=> {
+    (comp.params || []).forEach(p=> {
       if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
         p.type = 'boolean'
     })
 
-    jb.registerMacro(id, val)
+    jb.registerMacro(id, comp)
   },
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => { 
     if (typeof val !== 'undefined')
       jb.resources[id] = val
-    jb.valueByRefHandler && jb.valueByRefHandler.resourceReferred && jb.valueByRefHandler.resourceReferred(id);
+    jb.mainWatchableHandler && jb.mainWatchableHandler.resourceReferred(id);
     return jb.resources[id];
   },
   const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
@@ -718,7 +730,7 @@ Object.assign(jb,{
           args.push(arg)
       })
       if (args.length == 1 && typeof args[0] === 'object') {
-        jb.toarray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system,arg))
+        jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system,arg))
         args[0].remark && jb.comps.remark.macro(system,args[0])
       }
       return {args,system}
@@ -731,7 +743,7 @@ Object.assign(jb,{
       }
       if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId])
         jb.logError(macroId + ' is defined more than once, using last definition ' + id)
-      if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
+      if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId] && jb.knownNSAndCompCases.indexOf[macroId] == -1)
         jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
       return true;
     }
@@ -836,6 +848,7 @@ Object.assign(jb,{
     return res;
   },
 
+  asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
 
@@ -843,17 +856,42 @@ Object.assign(jb,{
     new Promise(r=>{setTimeout(r,mSec)}),
 
   // valueByRef API
-  refHandler: ref => (ref && ref.handler) || jb.valueByRefHandler,
-  writeValue: (ref,value,srcCtx) => jb.refHandler(ref).writeValue(ref,value,srcCtx),
-  splice: (ref,args,srcCtx) => jb.refHandler(ref).splice(ref,args,srcCtx),
-  move: (fromRef,toRef,srcCtx) => jb.refHandler(fromRef).move(fromRef,toRef,srcCtx),
-  isRef: ref => jb.refHandler(ref).isRef(ref),
-  isValid: ref => jb.refHandler(ref).isValid(ref),
-  refreshRef: ref => jb.refHandler(ref).refresh(ref),
-  asRef: obj => jb.valueByRefHandler.asRef(obj),
-  startTransaction: () => jb.refHandler().startTransaction(),
-  endTransaction: () => jb.refHandler().endTransaction(),
-  resourceChange: () => jb.valueByRefHandler.resourceChange
+  extraWatchableHandlers: [],
+  addExtraWatchableHandler: handler => { 
+    jb.extraWatchableHandlers.push(handler)
+    jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
+    return handler
+  },
+  setMainWatchableHandler: handler => { 
+    jb.mainWatchableHandler = handler
+    jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
+  },
+  watchableHandlers: [],
+  safeRefCall: (ref,f) => {
+    const handler = ref && ref.handler || jb.refHandler(ref)
+    if (!handler || !handler.isRef(ref))
+      return jb.logError('invalid ref', ref)
+    return f(handler)
+  },
+ 
+  refHandler: ref => {
+    if (jb.simpleValueByRefHandler.isRef(ref)) 
+      return jb.simpleValueByRefHandler
+    return jb.watchableHandlers.find(handler => handler.isRef(ref))
+  },
+  asRef: obj => {
+    const watchableHanlder = jb.watchableHandlers.find(handler => handler.watchable(obj) || handler.isRef(obj))
+    if (watchableHanlder)
+      return watchableHanlder.asRef(obj)
+    return jb.simpleValueByRefHandler.asRef(obj)
+  },
+  writeValue: (ref,value,srcCtx) => jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
+  splice: (ref,args,srcCtx) => jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
+  move: (ref,toRef,srcCtx) => jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
+  isRef: ref => jb.refHandler(ref),
+  isWatchable: ref => false, // overriden by the watchable-ref.js (if loaded)
+  isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
+  refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),
 })
 if (typeof self != 'undefined')
   self.jb = jb
@@ -861,7 +899,7 @@ if (typeof module != 'undefined')
   module.exports = jb;
 
 jb.component('call', {
- 	type: '*',
+ 	type: 'any',
  	params: [
  		{ id: 'param', as: 'string' }
  	],
@@ -883,7 +921,7 @@ jb.pipe = function(context,items,ptName) {
 	const start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
 	if (typeof context.profile.items == 'string')
 		return context.runInner(context.profile.items,null,'items');
-	const profiles = jb.toarray(context.profile.items || context.profile[ptName]);
+	const profiles = jb.asArray(context.profile.items || context.profile[ptName]);
 	const innerPath = (context.profile.items && context.profile.items.sugar) ? ''
 		: (context.profile[ptName] ? (ptName + '~') : 'items~');
 
@@ -1631,28 +1669,12 @@ jb.component('runActions', {
 	],
 	impl: ctx => {
 		if (!ctx.profile) debugger;
-		const actions = jb.toarray(ctx.profile.actions || ctx.profile['$runActions']);
+		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']);
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
 		return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
 			,Promise.resolve())
-	}
-});
-
-jb.component('run-transaction', {
-	type: 'action',
-	params: [
-		{ id: 'actions', type:'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: [] },
-		{ id: 'disableNotifications', as: 'boolean', type: 'boolean' }
-	],
-	impl: (ctx,actions,disableNotifications) => {
-		jb.startTransaction()
-		return actions.reduce((def,action,index) =>
-				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
-			,Promise.resolve())
-			.catch((e) => jb.logException(e,ctx))
-			.then(() => jb.endTransaction(disableNotifications))
 	}
 });
 
@@ -1670,10 +1692,10 @@ jb.component('run-action-on-items',  /* runActionOnItems */ {
     }
   ],
   impl: (ctx,items,action,notifications) => {
-		if (notifications) jb.startTransaction()
+		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
 		return items.reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,ctx))
-			.then(() => notifications && jb.endTransaction(notifications === 'no notifications'));
+			.then(() => notifications && jb.mainWatchableHandler && jb.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
 })
 
@@ -1884,11 +1906,8 @@ jb.component('action.switch-case', {
   impl: ctx => ctx.params
 })
 
-jb.component('newline', {
-  impl: ctx => '\n'
-})
-
-jb.const('global', typeof window != 'undefined' ? window : typeof global != 'undefined' ? global : null);
+jb.component('newline', { passiveData: '\n' })
+jb.component('frame',   { passiveData: jb.frame });
 
 (function() {
 'use strict'
@@ -8124,7 +8143,7 @@ class JbComponent {
 		var features = (context.params.features && context.params.features(context) || []);
 		features.forEach(f => this.jbExtend(f,context));
 		if (context.params.style && context.params.style.profile && context.params.style.profile.features) {
-			jb.toarray(context.params.style.profile.features)
+			jb.asArray(context.params.style.profile.features)
 				.forEach((f,i)=>
 					this.jbExtend(context.runInner(f,{type:'feature'},context.path+'~features~'+i),context))
 		}
@@ -8194,22 +8213,33 @@ function injectLifeCycleMethods(Comp,jbComp) {
 }
 
 ui.garbageCollectCtxDictionary = function(force) {
-	var now = new Date().getTime();
+	const now = new Date().getTime();
 	ui.ctxDictionaryLastCleanUp = ui.ctxDictionaryLastCleanUp || now;
-	var timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp;
+	const timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp;
 	if (!force && timeSinceLastCleanUp < 10000)
 		return;
 	ui.ctxDictionaryLastCleanUp = now;
+	jb.resourcesToDelete = jb.resourcesToDelete || []
+	jb.log('garbageCollect',jb.resourcesToDelete)
+	jb.resourcesToDelete.forEach(id => delete jb.resources[id])
+	jb.resourcesToDelete = []
 
-	var used = Array.from(document.querySelectorAll('[jb-ctx]')).map(e=>Number(e.getAttribute('jb-ctx'))).sort((x,y)=>x-y);
-	var dict = Object.getOwnPropertyNames(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y);
-	var lastUsedIndex = 0;
-	for(var i=0;i<dict.length;i++) {
+	const used = Array.from(document.querySelectorAll('[jb-ctx]')).map(e=>Number(e.getAttribute('jb-ctx'))).sort((x,y)=>x-y);
+	const dict = Object.getOwnPropertyNames(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y);
+	let lastUsedIndex = 0;
+	for(let i=0;i<dict.length;i++) {
 		while (used[lastUsedIndex] < dict[i])
 			lastUsedIndex++;
 		if (used[lastUsedIndex] != dict[i])
 			delete jb.ctxDictionary[''+dict[i]];
 	}
+	const ctxToPath = ctx => jb.entries(ctx.vars).map(e=>e[1]).filter(v=>jb.isWatchable(v)).map(v => jb.asRef(v)).map(ref=>jb.refHandler(ref).pathOfRef(ref)).flat()
+	const globalVarsUsed = jb.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
+	Object.keys(jb.resources).filter(id=>id.indexOf(':') != -1)
+		.forEach(id=>{
+			if (globalVarsUsed.indexOf(id) == -1)
+				jb.resourcesToDelete.push(id)
+	})
 }
 
 ui.focus = function(elem,logTxt,srcCtx) {
@@ -8274,7 +8304,7 @@ ui.renderWidget = function(profile,top) {
 			st.copyComps = comps => { 
 				comps.forEach(e=> {
 					try {
-						jb.comps[e[0]] = eval(`(${e[1]})`)
+						jb.component(e[0],eval(`(${e[1]})`))
 					} catch(e) {
 						jb.logException(e)				
 					}
@@ -8409,15 +8439,19 @@ ui.item = function(cmp,vdom,data) {
 ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 		if (!ref)
 			jb.logError('null ref for watch ref',...arguments);
-    	ref && ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
+    	ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
 			.subscribe(e=>{
+				let ctxStack=[]; for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
+				const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x)
+				const callerPathsUniqe = jb.unique(callerPaths)
+				if (callerPathsUniqe.length !== callerPaths.length)
+					return jb.logError('circular watchRef',callerPaths)
+						
 				if (!allowSelfRefresh) {
-					ctxStack=[];for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
-					const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x).
-						map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
+					const callerPathsToCompare = callerPaths.map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
 					const ctxStylePath = ctx.path.replace(/~features~?[0-9]*$/,'')
-					for(let i=0;i<callerPaths.length;i++)
-						if (callerPaths[i].indexOf(ctxStylePath) == 0) // ignore - generated from a watchRef feature in the call stack
+					for(let i=0;i<callerPathsToCompare.length;i++)
+						if (callerPathsToCompare[i].indexOf(ctxStylePath) == 0) // ignore - generated from a watchRef feature in the call stack
 							return
 				}
 				if (ctx && ctx.profile && ctx.profile.$trace)
@@ -8430,7 +8464,8 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 
 ui.databindObservable = (cmp,settings) =>
 	cmp.databindRefChanged.flatMap(ref =>
-			(!cmp.watchRefOn && jb.ui.refObservable(ref,cmp,settings).map(e=>Object.assign({ref},e)) ) || [])
+			(!cmp.watchRefOn && jb.isWatchable(ref) && jb.ui.refObservable(ref,cmp,settings)
+				.map(e=>Object.assign({ref},e)) ) || [])
 
 
 ui.toVdomOrStr = val => {
@@ -8535,7 +8570,7 @@ const isProxy = Symbol("isProxy")
 const targetVal = Symbol("targetVal")
 const jbId = Symbol("jbId")
 
-class ImmutableWithJbId {
+class WatchableValueByRef {
   constructor(resources) {
     this.resources = resources;
     this.objToPath = new Map();
@@ -8543,13 +8578,12 @@ class ImmutableWithJbId {
     this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
     this.resourceChange = new jb.rx.Subject();
     this.observables = [];
-    jb.delay(1).then(_=>{
-        jb.ui.originalResources = jb.resources
-        const resourcesObj = resources()
-        resourcesObj[jbId] = this.idCounter++
-        this.objToPath.set(resourcesObj[jbId],[])
-        this.propagateResourceChangeToObservables()
-    })
+
+    jb.ui.originalResources = jb.resources
+    const resourcesObj = resources()
+    resourcesObj[jbId] = this.idCounter++
+    this.objToPath.set(resourcesObj[jbId],[])
+    this.propagateResourceChangeToObservables()
   }
   resourceReferred(resName) {
     const resource = this.resources()[resName]
@@ -8557,40 +8591,48 @@ class ImmutableWithJbId {
     this.addObjToMap(resource,[resName])
   }
   doOp(ref,opOnRef,srcCtx) {
-    const opVal = opOnRef.$set || opOnRef.$merge || opOnRef.$push || opOnRef.$splice;
-    if (!this.isRef(ref))
-      ref = this.asRef(ref);
-    jb.log('doOp',[this.asStr(ref),opVal,...arguments]);
+    try {
+      const opVal = opOnRef.$set || opOnRef.$merge || opOnRef.$push || opOnRef.$splice;
+      if (!this.isRef(ref))
+        ref = this.asRef(ref);
+      jb.log('doOp',[this.asStr(ref),opVal,...arguments]);
 
-    const path = this.pathOfRef(ref), op = {}, oldVal = this.valOfPath(path);
-    if (!path || ref.$jb_val) return;
-    if (opOnRef.$set && opOnRef.$set == oldVal) return;
-    path.forEach((p,i)=> { // hash ancestors with $jb_id because the objects will be re-generated by redux
-        const innerPath = path.slice(0,i+1)
-        const val = this.valOfPath(innerPath)
-        if (val && typeof val === 'object' && !val[jbId]) {
-            val[jbId] = this.idCounter++
-            this.objToPath.delete(val)
-            this.objToPath.set(val[jbId],innerPath)
-        }
-    })
-    jb.path(op,path,opOnRef); // create op as nested object
-    const opEvent = {op: opOnRef, path, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime()};
-    this.resources(jb.ui.update(this.resources(),op),opEvent);
-    const newVal = (opVal != null && opVal[isProxy]) ? opVal : this.valOfPath(path);
-    if (opOnRef.$push) {
-        this.addObjToMap(opOnRef.$push,[...path,oldVal.length])
-    } else {
-        // TODO: make is more effecient in case of $merge, $splice
+      const path = this.pathOfRef(ref), op = {}, oldVal = this.valOfPath(path);
+      if (!path || ref.$jb_val) return;
+      if (opOnRef.$set !== undefined && opOnRef.$set === oldVal) return;
+      path.forEach((p,i)=> { // hash ancestors with $jb_id because the objects will be re-generated by redux
+          const innerPath = path.slice(0,i+1)
+          const val = this.valOfPath(innerPath)
+          if (val && typeof val === 'object' && !val[jbId]) {
+              val[jbId] = this.idCounter++
+              this.objToPath.delete(val)
+              this.objToPath.set(val[jbId],innerPath)
+          }
+      })
+      jb.path(op,path,opOnRef); // create op as nested object
+      const opEvent = {op: opOnRef, path, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime()};
+      this.resources(jb.ui.update(this.resources(),op),opEvent);
+      const newVal = (opVal != null && opVal[isProxy]) ? opVal : this.valOfPath(path);
+      if (opOnRef.$push) {
+          this.addObjToMap(opOnRef.$push,[...path,oldVal.length])
+      } else if (opOnRef.$set === null && typeof oldVal === 'object') { // delete object should return the path that was deleted
         this.removeObjFromMap(oldVal)
         this.addObjToMap(newVal,path)
+        opEvent.ref.$jb_path = () => path
+      } else {
+          // TODO: make is more effecient in case of $merge, $splice
+          this.removeObjFromMap(oldVal)
+          this.addObjToMap(newVal,path)
+      } 
+      opEvent.newVal = newVal;
+      if (this.transactionEventsLog)
+        this.transactionEventsLog.push(opEvent)
+      else
+        this.resourceChange.next(opEvent);
+      return opEvent;
+    } catch(e) {
+      jb.logException(e,'doOp',srcCtx,...arguments)
     }
-    opEvent.newVal = newVal;
-    if (this.transactionEventsLog)
-      this.transactionEventsLog.push(opEvent)
-    else
-      this.resourceChange.next(opEvent);
-    return opEvent;
   }
   addObjToMap(top,path) {
     if (!top || top[isProxy] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
@@ -8669,8 +8711,11 @@ class ImmutableWithJbId {
     }
     return this.valOfPath(path)
   }
+  watchable(val) {
+    return this.resources() === val || this.objToPath.get(val) || (val && this.objToPath.get(val[jbId]))
+  }
   isRef(ref) {
-    return ref && (ref.$jb_obj || ref.$jb_val);
+    return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
   }
   objectProperty(obj,prop,ctx) {
     jb.log('immutable',['objectProperty',...arguments]);
@@ -8745,32 +8790,34 @@ class ImmutableWithJbId {
   }
   getOrCreateObservable(req) {
       const subject = new jb.rx.Subject()
-      const entry = { ...req, subject}
+      const key = req.srcCtx && this.pathOfRef(req.ref).join('~') + ' : ' + req.srcCtx.path
+      const entry = { ...req, subject, key}
+      if (key && this.observables.find(e=>e.key === key))
+        return jb.logError('observable already exists', entry)
       this.observables.push(entry);
       this.observables.sort((e1,e2) => comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
       req.cmp.destroyed.then(_=> {
           this.observables.splice(this.observables.indexOf(entry), 1);
           subject.complete()
       });
+      jb.log('registerCmpObservable',[entry])
       return subject
-  }
-  refObservable(ref,cmp,settings={}) {
-    jb.log('registerCmpObservable',[cmp.ctx, ...arguments])
-    if (ref && ref.$jb_observable)
-      return ref.$jb_observable(cmp);
-    if (!ref || !this.isRef(ref))
-      return jb.rx.Observable.of().takeUntil(cmp.destroyed);
-
-    return this.getOrCreateObservable({ref,cmp,...settings})
   }
 
   propagateResourceChangeToObservables() {
       this.resourceChange.subscribe(e=>{
           const changed_path = this.pathOfRef(e.ref);
+          this.observables = this.observables.filter(obs=>jb.refHandler(obs.ref))
           if (changed_path)
             this.observables.forEach(obs=>{
-                const diff = comparePaths(changed_path, this.pathOfRef(obs.ref))
-                if (diff == -1 || diff == 0 || diff == 1 && obs.includeChildren) {
+                const obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
+                if (!obsPath)
+                  return jb.logError('observer ref path is empty',obs,e)
+                const diff = comparePaths(changed_path, obsPath)
+                const isChildOfChange = diff == 1
+                const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
+                const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
+                if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
                     jb.log('notifyCmpObservable',['notify change',e.srcCtx,obs,e])
                     obs.subject.next(e)
                 }
@@ -8797,15 +8844,39 @@ function resourcesRef(val) {
   else
     jb.resources = val;
 }
-jb.valueByRefHandler = new ImmutableWithJbId(resourcesRef);
-jb.rebuildRefHandler = () => jb.valueByRefHandler = new ImmutableWithJbId(resourcesRef);
+jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef));
+jb.rebuildRefHandler = () => jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef));
+jb.isWatchable = ref => jb.refHandler(ref) instanceof WatchableValueByRef || ref && ref.$jb_observable
 
-jb.ui.refObservable = (ref,cmp,settings) =>
-  jb.refHandler(ref).refObservable(ref,cmp,settings);
+jb.ui.refObservable = (ref,cmp,settings={}) => {
+  if (ref && ref.$jb_observable)
+    return ref.$jb_observable(cmp);
+  if (!jb.isWatchable(ref)) {
+    jb.logError('ref is not watchable', ref)
+    return jb.rx.Observable.from([])
+  }
+  return jb.refHandler(ref).getOrCreateObservable({ref,cmp,...settings})
+  //jb.refHandler(ref).refObservable(ref,cmp,settings);
+}
 
-jb.ui.ImmutableWithJbId = ImmutableWithJbId;
-jb.ui.resourceChange = jb.valueByRefHandler.resourceChange;
+jb.ui.addExtraWatchableHandler = resources => jb.addExtraWatchableHandler(new WatchableValueByRef(resources));
+jb.ui.resourceChange = jb.mainWatchableHandler.resourceChange;
 
+jb.component('run-transaction', {
+	type: 'action',
+	params: [
+		{ id: 'actions', type:'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: [] },
+		{ id: 'disableNotifications', as: 'boolean', type: 'boolean' }
+	],
+	impl: (ctx,actions,disableNotifications) => {
+		jb.mainWatchableHandler.startTransaction()
+		return actions.reduce((def,action,index) =>
+				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
+			,Promise.resolve())
+			.catch((e) => jb.logException(e,ctx))
+			.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
+	}
+});
 
 })()
 ;
@@ -8960,7 +9031,7 @@ jb.component('label.bind-title', {
     init: cmp => {
       const ref = ctx.vars.$model.title(cmp.ctx);
       cmp.state.title = fixTitleVal(ref);
-      if (jb.isRef(ref))
+      if (jb.isWatchable(ref))
         jb.ui.refObservable(ref,cmp,{watchScript: ctx})
             .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,{title: fixTitleVal(ref)},e,ctx));
 
@@ -9431,7 +9502,10 @@ jb.component('editable-text.helper-popup', {
               id: ctx.params.popupId,
               style: _ctx => ctx.params.popupStyle(_ctx),
               content: _ctx => ctx.params.control(_ctx),
-              features: {$: 'dialog-feature.unique-dialog', id: ctx.params.popupId}
+              features: [
+                dialogFeature.uniqueDialog(ctx.params.popupId),
+                css('{z-index: 10000 !important}'),
+              ]
             })
           , cmp.ctx, cmp.base );
 
@@ -9452,7 +9526,7 @@ jb.component('editable-text.helper-popup', {
       }
 
       cmp.ctx.vars.selectionKeySource.input = input;
-      var keyup = cmp.ctx.vars.selectionKeySource.keyup = cmp.onkeyup.delay(1); // delay to have input updated
+      const keyup = cmp.ctx.vars.selectionKeySource.keyup = cmp.onkeyup.delay(1); // delay to have input updated
       cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown;
       cmp.ctx.vars.selectionKeySource.cmp = cmp;
 
@@ -9463,11 +9537,10 @@ jb.component('editable-text.helper-popup', {
           if (!showHelper)
             ctx.params.onEnter(cmp.ctx)
         });
-        cmp.onkeydown.filter(e=> e.keyCode == 27 ).subscribe(_=>
-          ctx.params.onEsc(cmp.ctx));
+        cmp.onkeydown.filter(e=> e.keyCode == 27 ).subscribe(_=> ctx.params.onEsc(cmp.ctx));
       })
 
-      keyup.filter(e=> [13,27,37,38,39,40].indexOf(e.keyCode) == -1)
+      keyup.filter(e=> [13,27,37,38,40].indexOf(e.keyCode) == -1)
         .subscribe(_=>cmp.refreshSuggestionPopupOpenClose())
 
       keyup.filter(e=>e.keyCode == 27) // ESC
@@ -9621,7 +9694,7 @@ jb.component('watch-ref', {
 	description: 'subscribes to data changes to refresh component',
   params: [
     { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
-    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
     { id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
     { id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children' },
   ],
@@ -9657,7 +9730,7 @@ jb.component('group.data', {
     { id: 'data', mandatory: true, dynamic: true, as: 'ref' },
     { id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable' },
     { id: 'watch', as: 'boolean' },
-    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
   ],
   impl: (ctx, data_ref, itemVariable,watch,includeChildren) => ({
       init: cmp => {
@@ -9674,21 +9747,47 @@ jb.component('group.data', {
   })
 })
 
+jb.component('html-attribute', {
+  type: 'feature',
+	description: 'set attribute to html element and give it value',
+  params: [
+    { id: 'attribute', mandatory: true, as: 'string' },
+    { id: 'value', mandatory: true, as: 'string' }
+  ],
+  impl: (ctx,attribute,value) => ({
+    templateModifier: vdom => {
+        vdom.attributes = vdom.attributes || {};
+        vdom.attributes[attribute] = value
+        return vdom;
+      }
+  })
+})
+
 jb.component('id', {
   type: 'feature',
 	description: 'adds id to html element',
   params: [
     { id: 'id', mandatory: true, as: 'string' },
   ],
-  impl: (ctx,id) => ({
+  impl :{$: 'html-attribute', attribute: 'id', value: '%$id%'} 
+})
+
+jb.component('feature.hover-title', {
+  type: 'feature',
+	description: 'set element title, usually shown by browser on hover',
+  params: [
+    { id: 'title', as: 'string', dynamic: true },
+  ],
+  impl: (ctx, title) => ({
     templateModifier: (vdom,cmp,state) => {
-        vdom.attributes.id = id
-        return vdom;
-      }
+      vdom.attributes = vdom.attributes || {};
+      vdom.attributes.title = title(cmp.ctx.setData(state.title))
+      return vdom;
+    }
   })
 })
 
-jb.component('var', {
+jb.component('variable', {
   type: 'feature', category: 'general:90',
 	description: 'define a variable. mutable or const, local or global',
   params: [
@@ -9698,13 +9797,6 @@ jb.component('var', {
     { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
   ],
   impl: (context, name, value, mutable, globalId) => ({
-      destroy: cmp => {
-        const fullName = globalId || (name + ':' + cmp.resourceId);
-        if (mutable) {
-          jb.writeValue(jb.valueByRefHandler.refOfPath([fullName]),null,context)
-          delete jb.valueByRefHandler.resources()[fullName]
-        }
-      },
       extendCtxOnce: (ctx,cmp) => {
         if (!mutable) {
           return ctx.setVars(jb.obj(name, value(ctx)))
@@ -9713,24 +9805,22 @@ jb.component('var', {
           const fullName = globalId || (name + ':' + cmp.resourceId);
           jb.log('var',['new-resource',ctx,fullName])
           jb.resource(fullName, jb.val(value(ctx)));
-          //jb.valueByRefHandler.resourceReferred && jb.valueByRefHandler.resourceReferred(fullName);
-          const refToResource = jb.valueByRefHandler.refOfPath([fullName]);
-          //jb.writeValue(refToResource,value(ctx.setData(cmp)),context);
-          //jb.writeValue(refToResource, jb.val(value(ctx)), context);
+          const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
           return ctx.setVars(jb.obj(name, refToResource));
         }
       }
   })
 })
 
-jb.component('variable', jb.comps.var)
+// to delete soon
+jb.component('var', jb.comps.variable)
 
 jb.component('bind-refs', {
   type: 'feature', category: 'watch',
   description: 'automatically updates a mutual variable when other value is changing',
   params: [
     { id: 'watchRef', mandatory: true, as: 'ref' },
-    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
     { id: 'updateRef', mandatory: true, as: 'ref' },
     { id: 'value', mandatory: true, as: 'single', dynamic: true },
   ],
@@ -9752,16 +9842,16 @@ jb.component('calculated-var', {
   ],
   impl: (context, name, value,globalId, watchRefs) => ({
       destroy: cmp => {
-        jb.writeValue(jb.valueByRefHandler.refOfPath([name + ':' + cmp.resourceId]),null,context)
+        jb.writeValue(jb.mainWatchableHandler.refOfPath([name + ':' + cmp.resourceId]),null,context)
       },
       extendCtxOnce: (ctx,cmp) => {
         cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
         const fullName = globalId || (name + ':' + cmp.resourceId);
         jb.log('calculated var',['new-resource',ctx,fullName])
         jb.resource(fullName, jb.val(value(ctx)));
-        const refToResource = jb.valueByRefHandler.refOfPath([fullName]);
+        const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
         (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
-            jb.ui.refObservable(ref,cmp,{includeChildren:true, watchScript: context}).subscribe(e=>
+            jb.ui.refObservable(ref,cmp,{includeChildren: 'yes', watchScript: context}).subscribe(e=>
               jb.writeValue(refToResource,value(cmp.ctx),context))
           )
         return ctx.setVars(jb.obj(name, refToResource));
@@ -9838,21 +9928,6 @@ jb.component('conditional-class', {
     templateModifier: (vdom,cmp,state) => {
       if (cond())
         jb.ui.addClassToVdom(vdom,cssClass())
-    }
-  })
-})
-
-jb.component('feature.hover-title', {
-  type: 'feature',
-	description: 'set element title, usually shown by browser on hover',
-  params: [
-    { id: 'title', as: 'string', dynamic: true },
-  ],
-  impl: (ctx, title) => ({
-    templateModifier: (vdom,cmp,state) => {
-      vdom.attributes = vdom.attributes || {};
-      vdom.attributes.title = title(cmp.ctx.setData(state.title))
-      return vdom;
     }
   })
 })
@@ -9959,7 +10034,11 @@ jb.component('refresh-control-by-id', {
   impl : (ctx,id) => {
     const base = ctx.vars.elemToTest || typeof document !== 'undefined' && document
     const elem = base && base.querySelector('#'+id)
+    if (!elem)
+      jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
     const comp = elem && elem._component
+    if (!comp)
+      jb.logError('refresh-control-by-id can not get comp for elem', ctx)
     if (comp && comp.refresh)
       comp.refresh(ctx)
   }
@@ -9987,6 +10066,24 @@ jb.component('focus-on-first-element', {
         const elem = document.querySelector(selector)
         elem && jb.ui.focus(elem,'focus-on-first-element',ctx)
     })
+})
+
+jb.component('focus-on-sibling', {
+	type: 'action',
+	params: [
+	  {id: 'siblingSelector', as: 'string', mandatory: true},
+	  {id: 'delay', as: 'number', defaultValue: 0}
+	],
+	impl: (ctx,siblingSelector,delay) => {
+	  if (!ctx.vars.event) 
+      return jb.error('no event for action focus-on-sibling',ctx)
+    const path = event.path || (event.composedPath && event.composedPath())
+	  path && delayedFocus(path[1],{delay,siblingSelector})
+
+ 	  function delayedFocus(parent, {delay, siblingSelector}) {
+		  jb.delay(delay).then(() => jb.ui.focus(parent.querySelector(siblingSelector), 'focus-on-sibling', ctx))
+	  }
+	}
 })
 ;
 
@@ -10780,7 +10877,7 @@ jb.component('menu.open-context-menu', {
 	params: [
 		{id: 'menu', type: 'menu.option', dynamic: true, mandatory: true },
 		{id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup'}  },
-	{ id: 'features', type: 'dialog-feature[]', dynamic: true }
+		{id: 'features', type: 'dialog-feature[]', dynamic: true }
 	],
 	impl :{$: 'open-dialog',
 			style :{$call: 'popupStyle' },
@@ -11201,7 +11298,7 @@ jb.component('itemlist.horizontal', {
 jb.component('itemlist.selection', {
   type: 'feature',
   params: [
-    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%' },
+    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%' , dynamic: true },
     { id: 'selectedToDatabind', dynamic: true ,defaultValue: '%%' },
     { id: 'databindToSelected', dynamic: true ,defaultValue: '%%' },
     { id: 'onSelection', type: 'action', dynamic: true },
@@ -11209,7 +11306,7 @@ jb.component('itemlist.selection', {
     { id: 'autoSelectFirst', type: 'boolean'},
     { id: 'cssForSelected', as: 'string', defaultValue: 'background: #bbb !important; color: #fff !important' },
   ],
-  impl: ctx => ({
+  impl: (ctx,databind) => ({
     onclick: true,
     afterViewInit: cmp => {
         cmp.selectionEmitter = new jb.rx.Subject();
@@ -11224,8 +11321,9 @@ jb.component('itemlist.selection', {
               cmp.setState({selected: selected});
               ctx.params.onSelection(cmp.ctx.setData(selected));
           });
-
-        jb.ui.refObservable(ctx.params.databind,cmp,{throw: true, watchScript: ctx})
+        
+        const selectedRef = databind()
+        jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, watchScript: ctx})
           .catch(e=>jb.ui.setState(cmp,{selected: null }) || [])
           .subscribe(e=>
             jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
@@ -11237,32 +11335,23 @@ jb.component('itemlist.selection', {
           .subscribe(buff=>
             ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
 
-     //    cmp.jbEmitter.filter(x=> x =='after-update').startWith(jb.delay(1)).subscribe(x=>{
-     //      if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
-     //        cmp.state.selected = null;
-		 // if (jb.val(ctx.params.databind))
-		 // 	cmp.setState({selected: selectedOfDatabind()});
-     //      if (!cmp.state.selected)
-     //        autoSelectFirst()
-     //    })
-
         function autoSelectFirst() {
-          if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(ctx.params.databind))
+          if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(selectedRef))
               return cmp.selectionEmitter.next(cmp.items[0])
         }
         function writeSelectedToDatabind(selected) {
-          return ctx.params.databind && jb.writeValue(ctx.params.databind,ctx.params.selectedToDatabind(ctx.setData(selected)))
+          return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)))
         }
         function selectedOfDatabind() {
-          return ctx.params.databind && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(ctx.params.databind))))
+          return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(selectedRef))))
         }
         jb.delay(1).then(_=>{
            if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
               cmp.state.selected = null;
-           if (jb.val(ctx.params.databind))
+           if (selectedRef && jb.val(selectedRef))
              cmp.setState({selected: selectedOfDatabind()});
            if (!cmp.state.selected)
-                  autoSelectFirst()
+              autoSelectFirst()
         })
     },
     extendItem: (cmp,vdom,data) => {
@@ -11338,7 +11427,7 @@ jb.component('itemlist.drag-and-drop', {
         drake.on('drop', (dropElm, target, source,sibling) => {
             var draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
             var targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
-            jb.splice(cmp.items,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
+            jb.splice(jb.asRef(cmp.items),[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
 
             dropElm.dragged = null;
         });
@@ -11353,7 +11442,7 @@ jb.component('itemlist.drag-and-drop', {
               var selectedIndex = cmp.items.indexOf(cmp.state.selected);
               if (selectedIndex == -1) return;
               var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-              jb.splice(cmp.items,[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
+              jb.splice(jb.asRef(cmp.items),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
           })
 //        })
       }
@@ -11401,14 +11490,14 @@ const createItemlistCntr = (ctx,params) => ({
 	add: function(item) {
 		const newItem = item || JSON.parse(JSON.stringify(this.defaultItem || {}));
 		if (this.items) {
-			jb.splice(this.items,[[this.items.length,0,newItem]]);
+			jb.splice(jb.asRef(this.items),[[this.items.length,0,newItem]]);
 			this.selected(newItem);
 		}
 	},
 	delete: function(item) {
 		if (this.items && this.items.indexOf(item) != -1) {
 			this.changeSelectionBeforeDelete();
-			jb.splice(this.items,[[this.items.indexOf(item),1]]);
+			jb.splice(jb.asRef(this.items),[[this.items.indexOf(item),1]]);
 		}
 	},
 	reSelectAfterFilter: function(filteredItems) {
@@ -11441,7 +11530,7 @@ jb.component('group.itemlist-container', {
 	],
 	impl :{$list : [
 		{$: 'variable', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , 
-				mutable: true},
+				mutable: true, globalId1: '%$id%-cntr-data'},
 		{$: 'variable', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
 		ctx => ({
 			init: cmp => {
@@ -12145,7 +12234,7 @@ jb.component('table.init', {
           jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
 
         function calcItems() {
-          cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
+          cmp.items = jb.toarray(ctx.vars.$model.items(cmp.ctx));
           if (cmp.ctx.vars.itemlistCntr)
               cmp.ctx.vars.itemlistCntr.items = cmp.items;
           extendItemsWithCalculatedFields();
@@ -13403,20 +13492,21 @@ jb.component('tree.no-head', {
 jb.component('tree.selection', {
   type: 'feature',
   params: [
-	  { id: 'databind', as: 'ref' },
+	  { id: 'databind', as: 'ref', dynamic: true },
 	  { id: 'autoSelectFirst', type: 'boolean' },
 	  { id: 'onSelection', type: 'action', dynamic: true },
 	  { id: 'onRightClick', type: 'action', dynamic: true },
   ],
-  impl: context=> ({
+  impl: (ctx,databind) => ({
 	    onclick: true,
   		afterViewInit: cmp => {
-  		  var tree = cmp.tree;
+		  const tree = cmp.tree;
+		  const selectedRef = databind()
 
-  		  var databindObs = jb.ui.refObservable(context.params.databind,cmp,{watchScript: context}).map(e=>jb.val(e.ref));
+  		  const databindObs = jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{watchScript: ctx}).map(e=>jb.val(e.ref));
 
 		  tree.selectionEmitter
-		  	.merge(databindObs)
+		  	.merge(databindObs || [])
 		  	.merge(cmp.onclick.map(event =>
 		  		tree.elemToPath(event.target)))
 		  	.filter(x=>x)
@@ -13432,9 +13522,9 @@ jb.component('tree.selection', {
 				  tree.expanded[path] = true;
 				  return path;
 			  },'')
-			  if (context.params.databind)
-				  jb.writeValue(context.params.databind, selected);
-			  context.params.onSelection(cmp.ctx.setData(selected));
+			  if (selectedRef)
+				  jb.writeValue(selectedRef, selected);
+			  ctx.params.onSelection(cmp.ctx.setData(selected));
 			  tree.redraw();
 		  });
 
@@ -13442,16 +13532,16 @@ jb.component('tree.selection', {
 		  	tree.regainFocus && tree.regainFocus()
 		  );
 
-		if (context.params.onRightClick.profile)
+		if (ctx.params.onRightClick.profile)
 			cmp.base.oncontextmenu = (e=> {
-				jb.ui.wrapWithLauchingElement(context.params.onRightClick,
-					context.setData(tree.elemToPath(e.target)), e.target)();
+				jb.ui.wrapWithLauchingElement(ctx.params.onRightClick,
+					ctx.setData(tree.elemToPath(e.target)), e.target)();
 				return false;
 			});
 
 		  // first auto selection selection
-		  var first_selected = jb.val(context.params.databind);
-		  if (!first_selected && context.params.autoSelectFirst) {
+		  var first_selected = jb.val(selectedRef);
+		  if (!first_selected && ctx.params.autoSelectFirst) {
 			  var first = jb.ui.find(tree.el.parentNode,'.treenode')[0];
 			  first_selected = tree.elemToPath(first);
 		  }
@@ -13643,12 +13733,11 @@ addOneToIndex = path => {
 jb.component('tree.json-read-only',{
 	type: 'tree.nodeModel',
 	params: [
-		{ id: 'object' },
+		{ id: 'object', as: 'single' },
 		{ id: 'rootPath', as: 'string'}
 	],
-	impl: function(context, json, rootPath) {
-		return new ROjson(json,rootPath)
-	}
+	impl: (ctx, json, rootPath) =>
+		new ROjson(json,rootPath)
 })
 
 class ROjson {
@@ -28451,7 +28540,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   }
 
   function profileToMacro(ctx, profile,flat) {
-    const id = jb.compName(profile)
+    const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
     const comp = jb.comps[id]
     if (!id || !comp || profile.$recursive || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
       const props = Object.keys(profile) 
@@ -28469,7 +28558,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
     const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
     const systemProps = vars.concat(remark)
     if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus
-      const args = systemProps.concat(jb.toarray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val})))
+      const args = systemProps.concat(jb.asArray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val})))
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
@@ -28488,7 +28577,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       return joinVals(ctx, args, `${macro}({`, '})', flat, false)
   }
     
-    function valueToMacro(ctx, val, flat) {
+  function valueToMacro(ctx, val, flat) {
     if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
     if (val === null) return 'null';
     if (val === undefined) return 'undefined';
@@ -29693,7 +29782,7 @@ jb.component('editable-text.studio-primitive-text', {
           onchange: e => cmp.jbModel(e.target.value),
           onkeyup: e => cmp.jbModel(e.target.value,'keyup')
       }),
-    css: `{ width1: 367px} :focus { border-color: #3F51B5; border-width: 2px}`,
+    css: `:focus { border-color: #3F51B5; border-width: 2px}`,
 	}
 })
 
@@ -29747,7 +29836,7 @@ jb.component('button.select-profile-style', {
   }
 })
 
-jb.component('studio.property-toolbar-style', { /* studio_propertyToolbarStyle */
+jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle */
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('i',{class: 'material-icons',
@@ -30015,6 +30104,7 @@ jb.component('label.studio-message', {
   impl :{$: 'custom-style',
     template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.title),
     css: `{ position: absolute;
+      z-index: 10000,
       color: white;  padding: 10px;  background: #327DC8;
       width: 1000px;
       margin-top: -100px;
@@ -30056,13 +30146,13 @@ jb.component('dialog.studio-multiline-edit',  /* dialog_studioMultilineEdit */ {
 // 	}
 // })
 
-jb.component('studio.toolbar-style', { /* studio_toolbarStyle */ 
+jb.component('studio.toolbar-style', { /* studio.toolbarStyle */ 
   type: 'group.style',
   impl: customStyle({
     template: (cmp,state,h) => h('section',{class:'jb-group'},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx))),
     css: "{\n            display: flex;\n            height: 33px;\n            width: 100%;\n        }\n        >*:not(:last-child) { padding-right: 8px }\n        >* { margin-right: 0 }",
-    features: group_initGroup()
+    features: group.initGroup()
   })
 })
 ;
@@ -30089,7 +30179,7 @@ function compsRef(val,opEvent) {
   }
 }
 
-st.compsRefHandler = new jb.ui.ImmutableWithJbId(compsRef);
+st.compsRefHandler = jb.ui.addExtraWatchableHandler(compsRef);
 st.compsRefHandler.resourceChange.subscribe(e=>{
 	jb.log('scriptChange',[e.srcCtx,e]);
 	st.highlightByScriptPath(e.path);
@@ -30116,9 +30206,8 @@ Object.assign(st,{
     st.compsRefHandler.asRef(obj),
   refreshRef: (ref) =>
     st.compsRefHandler.refresh(ref),
-  scriptChange: st.compsRefHandler.resourceChange,
-  refObservable: (ref,cmp,settings) =>
-  	st.compsRefHandler.refObservable(ref,cmp,settings),
+  scriptChange: 
+  	st.compsRefHandler.resourceChange,
   refOfPath: (path,silent) => {
 		const _path = path.split('~');
 		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0]);
@@ -30371,7 +30460,7 @@ Object.assign(st, {
 
 // ******* components ***************
 
-jb.component('studio.ref', { /* studio_ref */
+jb.component('studio.ref', { /* studio.ref */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -30379,7 +30468,7 @@ jb.component('studio.ref', { /* studio_ref */
 		st.refOfPath(path)
 })
 
-jb.component('studio.path-of-ref', { /* studio_pathOfRef */
+jb.component('studio.path-of-ref', { /* studio.pathOfRef */
   params: [
     {id: 'ref', defaultValue: '%%', mandatory: true}
   ],
@@ -30387,7 +30476,7 @@ jb.component('studio.path-of-ref', { /* studio_pathOfRef */
 		st.pathOfRef(ref)
 })
 
-jb.component('studio.name-of-ref', { /* studio_nameOfRef */
+jb.component('studio.name-of-ref', { /* studio.nameOfRef */
   params: [
     {id: 'ref', defaultValue: '%%', mandatory: true}
   ],
@@ -30396,14 +30485,14 @@ jb.component('studio.name-of-ref', { /* studio_nameOfRef */
 })
 
 
-jb.component('studio.is-new', { /* studio_isNew */
+jb.component('studio.is-new', { /* studio.isNew */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
 		if (st.compsHistory.length == 0 || st.previewjb.comps.$jb_selectionPreview) return false;
-		//var version_before = new jb.ui.ImmutableWithJbId(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
+		//var version_before = new jb.ui.WatchableValueByRef(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
 		var res =  JSON.stringify(jb.path(st.compsHistory.slice(-1)[0].before,path.split('~'))) !=
 					JSON.stringify(jb.path(st.previewjb.comps,path.split('~')));
 //		var res =  st.valOfPath(path) && !st.val(version_before);
@@ -30411,12 +30500,12 @@ jb.component('studio.is-new', { /* studio_isNew */
 	}
 })
 
-jb.component('studio.watch-path', { /* studio_watchPath */
+jb.component('studio.watch-path', { /* studio.watchPath */
   type: 'feature',
   category: 'group:0',
   params: [
     {id: 'path', as: 'string', mandatory: true},
-    {id: 'includeChildren', as: 'boolean', type: 'boolean'},
+    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
     {
       id: 'delay',
       as: 'number',
@@ -30426,7 +30515,8 @@ jb.component('studio.watch-path', { /* studio_watchPath */
       id: 'allowSelfRefresh',
       as: 'boolean',
       description: 'allow refresh originated from the components or its children',
-      type: 'boolean'
+      type: 'boolean',
+      defaultValue: true
     }
   ],
   impl: (ctx,path,includeChildren,delay,allowSelfRefresh) => ({
@@ -30435,7 +30525,7 @@ jb.component('studio.watch-path', { /* studio_watchPath */
   })
 })
 
-jb.component('studio.watch-script-changes', { /* studio_watchScriptChanges */
+jb.component('studio.watch-script-changes', { /* studio.watchScriptChanges */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
@@ -30444,7 +30534,7 @@ jb.component('studio.watch-script-changes', { /* studio_watchScriptChanges */
    })
 })
 
-jb.component('studio.watch-components', { /* studio_watchComponents */
+jb.component('studio.watch-components', { /* studio.watchComponents */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
@@ -30455,14 +30545,14 @@ jb.component('studio.watch-components', { /* studio_watchComponents */
 })
 
 
-jb.component('studio.watch-typeof-script', { /* studio_watchTypeofScript */ 
+jb.component('studio.watch-typeof-script', { /* studio.watchTypeofScript */ 
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
   type: 'feature',
   impl: (ctx,path) => ({
       init: cmp =>
-    	jb.ui.refObservable(st.refOfPath(path),cmp,{ includeChildren: true, watchScript: ctx})
+    	jb.ui.refObservable(st.refOfPath(path),cmp,{ includeChildren: 'yes', watchScript: ctx})
     		.filter(e=>
     			(typeof e.oldVal == 'object') != (typeof e.newVal == 'object'))
     		.subscribe(e=>
@@ -30476,16 +30566,31 @@ jb.component('studio.watch-typeof-script', { /* studio_watchTypeofScript */
 (function() { var st = jb.studio;
 
 st.message = function(message,error) {
-  var el = document.querySelector('.studio-message');
+  const el = document.querySelector('.studio-message');
+  el.innerHTML = ''
 	el.textContent = message;
   el.style.background = error ? 'red' : '#327DC8';
   el.style.animation = '';
 	jb.delay(1).then(()=>	el.style.animation = 'slide_from_top 5s ease')
 }
 
+st.showMultiMessages = function(messages) {
+  const el = document.querySelector('.studio-message');
+  el.innerHTML = ''
+  messages.forEach(m=>{
+    const inner = document.createElement('div')
+    inner.style.background = m.error ? 'red' : '#327DC8';
+    inner.textContent = m.text;
+    el.appendChild(inner)
+  })
+  el.style.animation = '';
+	jb.delay(1).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+}
+
+
 // ********* Components ************
 
-jb.component('studio.currentProfilePath', { /* studio_currentProfilePath */
+jb.component('studio.currentProfilePath', { /* studio.currentProfilePath */
   impl: firstSucceeding(
     '%$simulateProfilePath%',
     '%$studio/profile_path%',
@@ -30493,7 +30598,7 @@ jb.component('studio.currentProfilePath', { /* studio_currentProfilePath */
   )
 })
 
-jb.component('studio.message', { /* studio_message */
+jb.component('studio.message', { /* studio.message */
   type: 'action',
   params: [
     {id: 'message', as: 'string'}
@@ -30502,13 +30607,13 @@ jb.component('studio.message', { /* studio_message */
 		st.message(message)
 })
 
-jb.component('studio.redraw-studio', { /* studio_redrawStudio */
+jb.component('studio.redraw-studio', { /* studio.redrawStudio */
   type: 'action',
   impl: ctx =>
     	st.redrawStudio && st.redrawStudio()
 })
 
-jb.component('studio.last-edit', { /* studio_lastEdit */
+jb.component('studio.last-edit', { /* studio.lastEdit */
   type: 'data',
   params: [
     {id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true}
@@ -30525,7 +30630,7 @@ jb.component('studio.last-edit', { /* studio_lastEdit */
 	}
 })
 
-jb.component('studio.goto-last-edit', { /* studio_gotoLastEdit */
+jb.component('studio.goto-last-edit', { /* studio.gotoLastEdit */
   type: 'action',
   impl: ctx=>{
 		const lastEdit = ctx.run({$: 'studio.last-edit'})
@@ -30534,7 +30639,7 @@ jb.component('studio.goto-last-edit', { /* studio_gotoLastEdit */
 	}
 })
 
-jb.component('studio.project-source', { /* studio_projectSource */
+jb.component('studio.project-source', { /* studio.projectSource */
   params: [
     {id: 'project', as: 'string', defaultValue: '%$studio/project%'}
   ],
@@ -30545,17 +30650,17 @@ jb.component('studio.project-source', { /* studio_projectSource */
 	}
 })
 
-jb.component('studio.comp-source', { /* studio_compSource */
+jb.component('studio.comp-source', { /* studio.compSource */
   params: [
-    {id: 'comp', as: 'string', defaultValue: studio_currentProfilePath()}
+    {id: 'comp', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: (context,comp) =>
 		st.compAsStr(comp.split('~')[0])
 })
 
-jb.component('studio.dynamic-options-watch-new-comp', { /* studio_dynamicOptionsWatchNewComp */ 
+jb.component('studio.dynamic-options-watch-new-comp', { /* studio.dynamicOptionsWatchNewComp */ 
   type: 'feature',
-  impl: picklist_dynamicOptions(
+  impl: picklist.dynamicOptions(
     () =>
           st.scriptChange.filter(e => e.path.length == 1)
   )
@@ -30569,13 +30674,13 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       var st = jb.studio;
       st.previewWindow = preview_window;
       st.previewjb = preview_window.jb;
+      st.serverComps = st.previewjb.comps;
       if (jb.studio.compsHistory.length) {
-        const compsStr = jb.entries(jb.studio.compsHistory.slice(-1)[0].after)
-          .filter(e=>e[1] != st.serverComps[e[0]]).map(e=>[e[0], jb.prettyPrint(e[1])])
+        const changedComps = jb.entries(jb.studio.compsHistory.slice(-1)[0].after).filter(e=>e[1] != st.serverComps[e[0]])
+        const compsStr = changedComps.map(e=>[e[0], jb.prettyPrint(e[1])])
         jb.studio.copyComps && jb.studio.copyComps(compsStr)
-      } else {
-        st.serverComps = st.previewjb.comps;
       }
+
       st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
 
       st.previewjb.studio.studioWindow = window;
@@ -30601,7 +30706,7 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
 			}
 }
 
-jb.component('studio.preview-widget-impl', { /* studio_previewWidgetImpl */
+jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
     template: (cmp,state,h) => h('iframe', {
@@ -30617,7 +30722,7 @@ jb.component('studio.preview-widget-impl', { /* studio_previewWidgetImpl */
   })
 })
 
-jb.component('studio.refresh-preview', { /* studio_refreshPreview */
+jb.component('studio.refresh-preview', { /* studio.refreshPreview */
   type: 'action',
   impl: ctx => {
     jb.ui.garbageCollectCtxDictionary(true);
@@ -30627,7 +30732,7 @@ jb.component('studio.refresh-preview', { /* studio_refreshPreview */
   }
 })
 
-jb.component('studio.set-preview-size', { /* studio_setPreviewSize */
+jb.component('studio.set-preview-size', { /* studio.setPreviewSize */
   type: 'action',
   params: [
     {id: 'width', as: 'number'},
@@ -30646,7 +30751,7 @@ jb.component('studio.set-preview-size', { /* studio_setPreviewSize */
   }
 })
 
-jb.component('studio.wait-for-preview-iframe', { /* studio_waitForPreviewIframe */
+jb.component('studio.wait-for-preview-iframe', { /* studio.waitForPreviewIframe */
   impl: _ =>
     jb.ui.waitFor(()=>
       jb.studio.previewWindow)
@@ -30660,7 +30765,7 @@ jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studi
         return jb.resources.studio.page ? [{page, ctrl}] : []
       });
 
-jb.component('studio.data-comp-inspector', { /* studio_dataCompInspector */
+jb.component('studio.data-comp-inspector', { /* studio.dataCompInspector */
   type: 'control',
   impl: group({
     controls: [
@@ -30680,10 +30785,15 @@ jb.component('studio.data-comp-inspector', { /* studio_dataCompInspector */
   })
 })
 
-jb.component('studio.preview-widget', { /* studio_previewWidget */ 
+jb.component('studio.preview-widget', { /* studio.previewWidget */ 
   type: 'control',
   params: [
-    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio_previewWidgetImpl() },
+    {
+      id: 'style',
+      type: 'preview-style',
+      dynamic: true,
+      defaultValue: studio.previewWidgetImpl()
+    },
     {id: 'width', as: 'number'},
     {id: 'height', as: 'number'}
   ],
@@ -30792,7 +30902,7 @@ jb.component('studio-dialog-feature.refresh-title', {
 	})
 })
 
-jb.component('studio.code-mirror-mode', { /* studio_codeMirrorMode */
+jb.component('studio.code-mirror-mode', { /* studio.codeMirrorMode */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -30805,16 +30915,16 @@ jb.component('studio.code-mirror-mode', { /* studio_codeMirrorMode */
 	}
 })
 
-jb.component('studio.open-multiline-edit', { /* studio_openMultilineEdit */
+jb.component('studio.open-multiline-edit', { /* studio.openMultilineEdit */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: openDialog({
-    style: dialog_studioMultilineEdit(),
+    style: dialog.studioMultilineEdit(),
     content: editableText({
-      databind: studio_ref('%$path%'),
-      style: editableText_codemirror({mode: studio_codeMirrorMode('%$path%')})
+      databind: studio.ref('%$path%'),
+      style: editableText.codemirror({mode: studio.codeMirrorMode('%$path%')})
     })
   })
 })
@@ -30845,13 +30955,13 @@ jb.component('dialog.studio-floating',  /* dialog_studioFloating */ {
   })
 })
 
-jb.component('studio.open-responsive-phone-popup', { /* studio_openResponsivePhonePopup */ 
+jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePhonePopup */ 
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: openDialog({
-    style: dialog_studioFloating('responsive'),
+    style: dialog.studioFloating('responsive'),
     content: tabs({
       tabs: dynamicControls({
         controlItems: asIs(
@@ -30875,35 +30985,35 @@ jb.component('studio.open-responsive-phone-popup', { /* studio_openResponsivePho
         ),
         genericControl: group({
           title: '%$controlItem/id%',
-          style: propertySheet_titlesLeft({vSpacing: 20, hSpacing: 20, titleWidth: 100}),
+          style: propertySheet.titlesLeft({vSpacing: 20, hSpacing: 20, titleWidth: 100}),
           controls: [
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/width%',
               title: 'width',
-              style: editableNumber_slider(),
+              style: editableNumber.slider(),
               min: '%$controlItem/width/min%',
               max: '%$controlItem/width/max%',
               features: [
-                field_default('%$controlItem/width/default%'),
-                field_subscribe(studio_setPreviewSize('%%'), true)
+                field.default('%$controlItem/width/default%'),
+                field.subscribe(studio.setPreviewSize('%%'), true)
               ]
             }),
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/height%',
               title: 'height',
-              style: editableNumber_slider(),
+              style: editableNumber.slider(),
               min: '%$controlItem/height/min%',
               max: '%$controlItem/height/max%',
               features: [
-                field_default('%$controlItem/height/default%'),
-                field_subscribe(studio_setPreviewSize(undefined, '%%'), true)
+                field.default('%$controlItem/height/default%'),
+                field.subscribe(studio.setPreviewSize(undefined, '%%'), true)
               ]
             })
           ],
           features: [css('{ padding-left: 12px; padding-top: 7px }')]
         })
       }),
-      style: tabs_simple()
+      style: tabs.simple()
     }),
     title: 'responsive'
   })
@@ -31171,7 +31281,7 @@ jb.component('studio.comp-name-ref', { /* studio_compNameRef */
 					st.setComp(path,value,ctx)
 			},
 			$jb_observable: cmp =>
-				st.refObservable(st.refOfPath(path),cmp,{includeChildren: true})
+				jb.ui.refObservable(st.refOfPath(path),cmp,{includeChildren: 'yes'})
 	})
 })
 
@@ -31199,7 +31309,7 @@ jb.component('studio.profile-as-text', { /* studio_profileAsText */
 					const newVal = notPrimitive ? st.evalProfile(value) : value;
 					if (newVal && typeof newVal == 'object') {
 						const currentVal = st.valOfPath(path);
-						const diff = st.diff(currentVal, newVal).filter(x=>(''+x.path.slice(-1)[0]).indexOf('$jb_') != 0);
+						const diff = (st.diff(currentVal, newVal) || []).filter(x=>(''+x.path.slice(-1)[0]).indexOf('$jb_') != 0);
 						jb.log('profileAsText',[diff, currentVal, newVal])
 						if (diff && diff.length == 1 && diff[0].kind == 'E') {
 							const innerValue = diff[0].rhs;
@@ -31218,9 +31328,16 @@ jb.component('studio.profile-as-text', { /* studio_profileAsText */
 			}
 		},
 		$jb_observable: cmp =>
-			st.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+			jb.ui.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: 'yes'})
 	})
 })
+
+function scriptPathToExpression(path) {
+	const dataPath = path.replace(/~(watchable|passive)Data/,'')
+		.replace(/~[0-9]+~/g,x => x.replace(/~/,'[').replace(/~/,']~'))
+		.replace(/~/g,'/')
+	return '%$' + dataPath +'%';
+}
 
 jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
   type: 'data',
@@ -31233,7 +31350,7 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 			try {
 				const path = ctx.params.path();
 				if (!path) return '';
-				if (typeof value == 'undefined') {
+				if (value == undefined) {
 					const val = st.valOfPath(path);
 					if (typeof val == 'function')
 						return val.toString();
@@ -31242,13 +31359,36 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 						return ''+val;
 					return jb.prettyPrint(val || '',{macro:true, initialPath: path});
 				} else {
+					const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
+					const newVal = notPrimitive ? st.evalProfile(value) : value;
+					if (newVal && typeof newVal == 'object') {
+						const currentVal = st.valOfPath(path);
+            const diff = (st.diff(currentVal, newVal) || [])
+              .filter(x=> x.path && (''+x.path.slice(-1)[0]).indexOf('$jb_') != 0).filter(x=>x);
+						jb.log('profileAsText',[diff, currentVal, newVal])
+						if (diff && diff.length == 1 && diff[0].kind == 'E') {
+							const innerValue = diff[0].rhs;
+							const fullPath = [path,...diff[0].path].join('~');
+							jb.log('profileAsTextDiffActivated',diff)
+							if (fullPath.match(/^[^~]+~(watchable|passive)Data/))
+								(new st.previewjb.jbCtx()).run(writeValue(scriptPathToExpression(fullPath),innerValue))
+						
+							st.writeValueOfPath(fullPath, innerValue,ctx);
+							return;
+						}
+					}
+					if (newVal != null) {
+						if (path.match(/^[^~]+~(watchable|passive)Data/))
+							(new st.previewjb.jbCtx()).run(writeValue(scriptPathToExpression(path),newVal))
+						st.writeValueOfPath(path, newVal,ctx);
+					}
 				}
 			} catch(e) {
 				jb.logException(e,'studio.profile-as-text',ctx)
 			}
 		},
 		$jb_observable: cmp =>
-			st.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+			jb.ui.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: 'yes'})
 	})
 })
 
@@ -31269,7 +31409,7 @@ jb.component('studio.profile-as-string-byref', { /* studio_profileAsStringByref 
 			}
 		},
 		$jb_observable: cmp =>
-			st.refObservable(st.refOfPath(ctx.params.path()),cmp)
+			jb.ui.refObservable(st.refOfPath(ctx.params.path()),cmp)
 	})
 })
 
@@ -31662,7 +31802,7 @@ function setToVersion(versionIndex, ctx, after) {
   st.compsRefHandler.resourceChange.next(opEvent);
 }
 
-jb.component('studio.undo', { /* studio_undo */
+jb.component('studio.undo', { /* studio.undo */
   type: 'action',
   impl: ctx => {
     if (st.undoIndex > 0)
@@ -31670,7 +31810,7 @@ jb.component('studio.undo', { /* studio_undo */
   }
 })
 
-jb.component('studio.clean-selection-preview', { /* studio_cleanSelectionPreview */
+jb.component('studio.clean-selection-preview', { /* studio.cleanSelectionPreview */
   type: 'action',
   impl: () => {
     if (st.compsHistory.length > 0)
@@ -31678,7 +31818,7 @@ jb.component('studio.clean-selection-preview', { /* studio_cleanSelectionPreview
   }
 })
 
-jb.component('studio.revert', { /* studio_revert */
+jb.component('studio.revert', { /* studio.revert */
   type: 'action',
   params: [
     {id: 'toIndex', as: 'number'}
@@ -31691,7 +31831,7 @@ jb.component('studio.revert', { /* studio_revert */
   }
 })
 
-jb.component('studio.redo', { /* studio_redo */
+jb.component('studio.redo', { /* studio.redo */
   type: 'action',
   impl: ctx => {
     if (st.undoIndex < st.compsHistory.length)
@@ -31699,7 +31839,7 @@ jb.component('studio.redo', { /* studio_redo */
   }
 })
 
-jb.component('studio.copy', { /* studio_copy */
+jb.component('studio.copy', { /* studio.copy */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31711,7 +31851,7 @@ jb.component('studio.copy', { /* studio_copy */
   }
 })
 
-jb.component('studio.paste', { /* studio_paste */
+jb.component('studio.paste', { /* studio.paste */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -31720,58 +31860,58 @@ jb.component('studio.paste', { /* studio_paste */
     (st.clipboard != null) && jb.writeValue(st.refOfPath(path), st.clipboard, ctx)
 })
 
-jb.component('studio.script-history-items', { /* studio_scriptHistoryItems */
+jb.component('studio.script-history-items', { /* studio.scriptHistoryItems */
   impl: ctx => st.compsHistory
 })
 
-jb.component('studio.comps-undo-index', { /* studio_compsUndoIndex */
+jb.component('studio.comps-undo-index', { /* studio.compsUndoIndex */
   impl: ctx => st.undoIndex - 1
 })
 
-jb.component('studio.script-history', { /* studio_scriptHistory */
+jb.component('studio.script-history', { /* studio.scriptHistory */
   type: 'control',
   impl: group({
     controls: [
       table({
-        items: studio_scriptHistoryItems(),
+        items: studio.scriptHistoryItems(),
         fields: [
-          field_control({
+          field.control({
             title: 'changed',
             control: button({
-              title: studio_nameOfRef('%opEvent/ref%'),
-              action: {$: 'studio.goto-path', path: studio_pathOfRef('%opEvent/ref%'), $recursive: true},
-              style: button_href(),
-              features: feature_hoverTitle(studio_pathOfRef('%opEvent/ref%'))
+              title: studio.nameOfRef('%opEvent/ref%'),
+              action: {$: 'studio.goto-path', path: studio.pathOfRef('%opEvent/ref%'), $recursive: true},
+              style: button.href(),
+              features: feature.hoverTitle(studio.pathOfRef('%opEvent/ref%'))
             }),
             width: '100'
           }),
           field({title: 'from', data: prettyPrint('%opEvent/oldVal%'), width: '200'}),
           field({title: 'to', data: prettyPrint('%opEvent/newVal%'), width: '200'}),
-          field_control({
+          field.control({
             title: 'undo/redo',
             control: button({
               title: 'revert to here',
-              action: studio_revert('%undoIndex%'),
-              style: button_href()
+              action: studio.revert('%undoIndex%'),
+              style: button.href()
             }),
             width: '100'
           })
         ],
-        style: table_withHeaders()
+        style: table.withHeaders()
       })
     ],
     features: [
       watchObservable(ctx => st.compsRefHandler.resourceChange.debounceTime(500)),
-      css_height({height: '400', overflow: 'auto', minMax: 'max'})
+      css.height({height: '400', overflow: 'auto', minMax: 'max'})
     ]
   })
 })
 
-jb.component('studio.open-script-history', { /* studio_openScriptHistory */ 
+jb.component('studio.open-script-history', { /* studio.openScriptHistory */ 
   type: 'action',
   impl: openDialog({
-    style: dialog_studioFloating({id: 'script-history', width: '700', height: '400'}),
-    content: studio_scriptHistory(),
+    style: dialog.studioFloating({id: 'script-history', width: '700', height: '400'}),
+    content: studio.scriptHistory(),
     title: 'Script History'
   })
 })
@@ -32310,7 +32450,7 @@ jb.component('studio.select-profile', { /* studio_selectProfile */
         mutable: true
       }),
       variable({name: 'SearchPattern', value: '', mutable: true}),
-      group_itemlistContainer({initialSelection: studio_compName('%$path%')})
+      group_itemlistContainer({initialSelection: studio_compName('%$path%'), id1: 'new-profile'})
     ]
   })
 })
@@ -32454,7 +32594,7 @@ jb.studio.newControl = path =>
 (function() {
 const st = jb.studio
 
-jb.component('studio.itemlist-refresh-suggestions-options', { /* studio_itemlistRefreshSuggestionsOptions */
+jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlistRefreshSuggestionsOptions */
   type: 'feature',
   params: [
     {id: 'path', as: 'string'},
@@ -32468,31 +32608,23 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio_itemlist
         const keyup = selectionKeySource.keyup.takeUntil( cmp.destroyed )
         const input = selectionKeySource.input
 
-        keyup
-          .debounceTime(20) // solves timing of closing the floating input
+        keyup.debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
-          .do(e=>jb.log('suggestions',['after debounce', input.value, e, cmp, pathToTrace]))
-          .map(e=>
-              input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
-          .do(e=>jb.log('suggestions',['after distinct', input.value, e, cmp, pathToTrace]))
+          .map(e=> input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
           .map(closestCtx)
-          .do(e=>jb.log('suggestions',['probe ctx', input.value, e, cmp, pathToTrace]))
           .map(probeCtx=>
             new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,pathToTrace))
-          .do(e=>jb.log('suggestions',['create suggestions obj', input.value, e, cmp, pathToTrace]))
           .catch(e=> jb.logException(e,'suggestions',cmp.ctx) || [])
-          .distinctUntilChanged((e1,e2)=>
-            e1.key == e2.key) // compare options - if options are the same - leave it.
-          .do(e=>jb.log('suggestions',['generate event', input.value, e, cmp, pathToTrace]))
+          .distinctUntilChanged((e1,e2)=> e1.key == e2.key) // compare options - if options are the same - leave it.
           .takeUntil( cmp.destroyed )
           .subscribe(e=> {
-              jb.log('suggestions',['before write values', input.value, cmp, pathToTrace]);
-              cmp.ctx.setVars({e}).run(runActions(
-                writeValue('%$suggestionData/options%','%$e.options%'), // let the suggestion options refresh
-                writeValue('%$suggestionData/selected%','%$e.selected%'),
-                writeValue('%$suggestionData/tail%','%$e.tail%') // used for highlighting
-              ))
-              jb.log('suggestions',['after write values', input.value, cmp, pathToTrace]);
+              cmp.ctx.run((ctx,{suggestionData}) => {
+                suggestionData && Object.assign(suggestionData,e)
+                if (suggestionData.options.indexOf(suggestionData.selected) == -1)
+                  suggestionData.selected = null
+                suggestionData.selected = suggestionData.selected || suggestionData.options[0]
+              })
+              cmp.ctx.run(refreshControlById('suggestions-itemlist'))
           });
 
         function closestCtx() {
@@ -32505,70 +32637,58 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio_itemlist
           }
           return st.closestCtxByPath(pathToTrace)
         }
-
-        // function getProbe() {
-        //   if (cmp.probeResult)
-        //     return [cmp.probeResult];
-        //   var probePath = ctx.params.path;
-        //   if (st.valOfPath(probePath) == null)
-        //     jb.writeValue(st.refOfPath(probePath),'',ctx);
-
-        //   return ctx.run({$: 'studio.probe', path: probePath }).then(res=>cmp.probeResult = res);
-        // }
       }
   })
 })
 
-jb.component('studio.show-suggestions', { /* studio_showSuggestions */
+jb.component('studio.show-suggestions', { /* studio.showSuggestions */
   impl: ctx =>
     new st.suggestions(ctx.data,false).suggestionsRelevant()
 })
 
-jb.component('studio.paste-suggestion', { /* studio_pasteSuggestion */
+jb.component('studio.paste-suggestion', { /* studio.pasteSuggestion */
   type: 'action',
   params: [
     {id: 'option', as: 'single', defaultValue: '%%'},
-    {id: 'close', as: 'boolean', description: 'ends with % or /', type: 'boolean'}
+    {id: 'toAdd', as: 'string', description: '% or /', defaultValue: '%'}
   ],
-  impl: (ctx,option,close) => {
-    option && Promise.resolve(option.paste(ctx,close)).then(_=> {
+  impl: (ctx,option,toAdd) => {
+    if (option && ctx.exp('%$suggestionData/options%','array').length)
+    Promise.resolve(option.paste(ctx,toAdd)).then(_=> {
       var cmp = ctx.vars.selectionKeySource.cmp;
-      cmp.refreshSuggestionPopupOpenClose();
-      jb.ui.setState(cmp,{model: cmp.jbModel()},null,ctx);
+      cmp.closePopup();
     })
   }
 })
 
-jb.component('studio.suggestions-itemlist', { /* studio_suggestionsItemlist */
+jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
   params: [
     {id: 'path', as: 'string'},
     {id: 'source', as: 'string'}
   ],
   impl: itemlist({
     items: '%$suggestionData/options%',
-    controls: label({title: '%text%', features: [css_padding({left: '3', right: '2'})]}),
-    watchItems: true,
+    controls: label({title: '%text%', features: [css.padding({left: '3', right: '2'})]}),
     features: [
-      itemlist_noContainer(),
-      studio_itemlistRefreshSuggestionsOptions({path: '%$path%', source: '%$source%'}),
-      itemlist_selection({
+      id('suggestions-itemlist'),
+      itemlist.noContainer(),
+      studio.itemlistRefreshSuggestionsOptions({path: '%$path%', source: '%$source%'}),
+      itemlist.selection({
         databind: '%$suggestionData/selected%',
-        onDoubleClick: studio_pasteSuggestion(),
+        onDoubleClick: studio.pasteSuggestion(),
         autoSelectFirst: true
       }),
-      itemlist_keyboardSelection({autoFocus: false, onEnter: [studio_pasteSuggestion(undefined, true)]}),
-      feature_onKey(39, studio_pasteSuggestion('%$suggestionData/selected%', false)),
-      css_height({height: '500', overflow: 'auto', minMax: 'max'}),
-      css_width({width: '300', overflow: 'auto', minMax: 'min'}),
+      itemlist.keyboardSelection({autoFocus: false}),
+      css.height({height: '500', overflow: 'auto', minMax: 'max'}),
+      css.width({width: '300', overflow: 'auto', minMax: 'min'}),
       css('{ position: absolute; z-index:1000; background: white }'),
-      css_border({width: '1', color: '#cdcdcd'}),
-      css_padding({top: '2', left: '3', selector: 'li'}),
-      feature_if(notEmpty('%$suggestionData/options%'))
+      css.border({width: '1', color: '#cdcdcd'}),
+      css.padding({top: '2', left: '3', selector: 'li'}),
     ]
   })
 })
 
-jb.component('studio.property-primitive', { /* studio_propertyPrimitive */
+jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32576,28 +32696,28 @@ jb.component('studio.property-primitive', { /* studio_propertyPrimitive */
   impl: group({
     controls: [
       editableText({
-        databind: studio_ref('%$path%'),
-        style: editableText_studioPrimitiveText(),
+        databind: studio.ref('%$path%'),
+        style: editableText.studioPrimitiveText(),
         features: [
-          studio_watchPath({path: '%$path%', includeChildren: true}),
-          editableText_helperPopup({
-            control: studio_suggestionsItemlist('%$path%'),
+          feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', '/')),
+          feature.onKey(13, studio.pasteSuggestion('%$suggestionData/selected%')),
+          studio.watchPath({path: '%$path%', includeChildren: 'yes', allowSelfRefresh: false}),
+          editableText.helperPopup({
+            control: studio.suggestionsItemlist('%$path%'),
             popupId: 'suggestions',
-            popupStyle: dialog_popup(),
-            showHelper: studio_showSuggestions()
+            popupStyle: dialog.popup(),
+            showHelper: studio.showSuggestions()
           })
         ]
       })
     ],
     features: variable({
-      name: 'suggestionData',
-      value: {$: 'object', selected: '', options: [], path: '%$path%'},
-      mutable: true
+      name: 'suggestionData', value: {$: 'object', selected: '', options: [], path: '%$path%'},
     })
   })
 })
 
-jb.component('studio.jb-floating-input', { /* studio_jbFloatingInput */ 
+jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */ 
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32605,8 +32725,8 @@ jb.component('studio.jb-floating-input', { /* studio_jbFloatingInput */
   impl: group({
     controls: [
       editableText({
-        title: studio_propName('%$path%'),
-        databind: studio_profileValueAsText('%$path%'),
+        title: studio.propName('%$path%'),
+        databind: studio.profileValueAsText('%$path%'),
         updateOnBlur: true,
         style: customStyle({
           template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
@@ -32617,21 +32737,23 @@ jb.component('studio.jb-floating-input', { /* studio_jbFloatingInput */
             h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
       ]),
           css: '{ margin-right: 13px; }',
-          features: [field_databindText(300, true), mdlStyle_initDynamic()]
+          features: [field.databindText(300, true), mdlStyle.initDynamic()]
         }),
         features: [
-          editableText_helperPopup({
-            control: studio_suggestionsItemlist('%$path%', 'floating-input'),
+          feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', '/')),
+          feature.onKey(13, studio.pasteSuggestion('%$suggestionData/selected%')),
+          editableText.helperPopup({
+            control: studio.suggestionsItemlist('%$path%', 'floating-input'),
             popupId: 'suggestions',
-            popupStyle: dialog_popup(),
-            showHelper: studio_showSuggestions(),
-            onEnter: [dialog_closeDialog('studio-jb-editor-popup'), tree_regainFocus()],
-            onEsc: [dialog_closeDialog('studio-jb-editor-popup'), tree_regainFocus()]
+            popupStyle: dialog.popup(),
+            showHelper: studio.showSuggestions(),
+            onEnter: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()],
+            onEsc: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()]
           })
         ]
       }),
       label({
-        title: pipeline(studio_paramDef('%$path%'), '%description%'),
+        title: pipeline(studio.paramDef('%$path%'), '%description%'),
         features: css('{border: 1px solid white;}')
       })
     ],
@@ -32639,10 +32761,9 @@ jb.component('studio.jb-floating-input', { /* studio_jbFloatingInput */
       variable({
         name: 'suggestionData',
         value: {$: 'object', selected: '', options: [], path: '%$path%'},
-        mutable: true
       }),
-      css_padding({left: '4', right: '4'}),
-      css_margin({top: '-20', selector: '>*:last-child'})
+      css.padding({left: '4', right: '4'}),
+      css.margin({top: '-20', selector: '>*:last-child'})
     ]
   })
 })
@@ -32679,11 +32800,13 @@ st.suggestions = class {
   extendWithOptions(probeCtx,path) {
     var options = [];
     probeCtx = probeCtx || new st.previewjb.jbCtx();
-    var vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars,st.previewjb.resources,st.previewjb.consts))
-        .map(x=>new ValueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail))
+    const resources = jb.entries(jb.studio.previewjb.comps)
+          .filter(e=>! jb.comps[e[0]])
+          .filter(e=>e[1].watchableData || e[1].passiveData)
+    const vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars)).concat(resources)
+        .map(x=>new ValueOption('$'+x[0],jb.studio.previewjb.val(x[1]),this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
-        .filter(x=> x.toPaste.indexOf(':') == -1)
-        .filter(x=>['$window'].indexOf(x.toPaste) == -1)
+        // .filter(x=> x.toPaste.indexOf(':') == -1)
 
     if (this.inputVal.indexOf('=') == 0 && !this.expressionOnly)
       options = st.PTsOfPath(path).map(compName=> {
@@ -32705,6 +32828,7 @@ st.suggestions = class {
 
     options = jb.unique(options,x=>x.toPaste)
         .filter(x=> x.toPaste.indexOf('$jb_') != 0)
+        
 //        .filter(x=> x.toPaste != this.tail)
         .filter(x=>
           this.tail == '' || typeof x.toPaste != 'string' || (x.description + x.toPaste).toLowerCase().indexOf(this.tail.toLowerCase()) != -1)
@@ -32735,24 +32859,21 @@ class ValueOption {
         return ` (${val.length} items)`
       return ``;
     }
-    paste(ctx,_close) {
-      //var close = typeof this.value != 'object' || Array.isArray(this.value) || _close;
-
-      var toPaste = this.toPaste + (_close ? '%' : '/');
-      var input = ctx.vars.selectionKeySource.input;
-      var pos = this.pos + 1;
+    paste(ctx,_toAdd) {
+      const input = ctx.vars.selectionKeySource.input;
+      const primiteVal = typeof this.value != 'object'
+      const toPaste = this.toPaste + (primiteVal ? '%' : _toAdd);
+      const pos = this.pos + 1;
       input.value = input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos);
-      this.writeValue(ctx);
-//      suggestionCtx.selected = null;
+      try {
+        input._component.jbModel(input.value,'keyup') // sometimes the onupdate event is not activated...
+      } catch (e) {}
+      ctx.exp('%$suggestionData%').options = [] // disable more pastes...
+
       return jb.delay(1,ctx).then (() => {
         input.selectionStart = pos + toPaste.length;
         input.selectionEnd = input.selectionStart;
       })
-    }
-    writeValue(ctx) {
-      var input = ctx.vars.selectionKeySource.input;
-      var path = ctx.exp('%$suggestionData/path%','string');
-      st.writeValueOfPath(path,input.value);
     }
 }
 
@@ -32767,17 +32888,11 @@ class CompOption {
       var input = ctx.vars.selectionKeySource.input;
       input.value = '=' + this.toPaste;
       this.writeValue(ctx);
-      // dirty design ?
-        // var closeAndWriteValue = _ => {
-        //   params.closeFloatingInput();
-        //   var option = input.value.indexOf('=') == 0 ? new CompOption(input.value.substr(1)) : new ValueOption();
-        //   option.writeValue(cmp.ctx);
-        // };
     }
     writeValue(ctx) {
       st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste);
       ctx.run({$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' });
-      ctx.run({$:'studio.expand-and-select-first-child-in-jb-editor' });
+      ctx.run({$: 'studio.expand-and-select-first-child-in-jb-editor' });
     }
 }
 
@@ -32785,7 +32900,7 @@ class CompOption {
 })()
 ;
 
-jb.component('studio.property-toolbar', { /* studio_propertyToolbar */
+jb.component('studio.property-toolbar', { /* studio.propertyToolbar */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32793,23 +32908,23 @@ jb.component('studio.property-toolbar', { /* studio_propertyToolbar */
   impl: button({
     title: 'more...',
     action: {$: 'studio.open-property-menu', path: '%$path%', $recursive: true},
-    style: studio_propertyToolbarStyle()
+    style: studio.propertyToolbarStyle()
   })
 })
 
-jb.component('studio.property-toolbar-feature', { /* studio_propertyToolbarFeature */
+jb.component('studio.property-toolbar-feature', { /* studio.propertyToolbarFeature */
   type: 'feature',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: list(
-    field_toolbar(studio_propertyToolbar('%$path%')),
-    studio_disabledSupport('%$path%')
+    field.toolbar(studio.propertyToolbar('%$path%')),
+    studio.disabledSupport('%$path%')
   )
 })
 
 
-jb.component('studio.focus-on-first-property', { /* studio_focusOnFirstProperty */
+jb.component('studio.focus-on-first-property', { /* studio.focusOnFirstProperty */
   type: 'action',
   params: [
     {id: 'delay', as: 'number', defaultValue: 100}
@@ -32823,32 +32938,32 @@ jb.component('studio.focus-on-first-property', { /* studio_focusOnFirstProperty 
   }
 })
 
-jb.component('studio.open-source-dialog', { /* studio_openSourceDialog */
+jb.component('studio.open-source-dialog', { /* studio.openSourceDialog */
   type: 'action',
   impl: openDialog({
-    style: dialog_dialogOkCancel(),
-    content: {$: 'text', text: studio_compSource(), style: text_codemirror({})},
+    style: dialog.dialogOkCancel(),
+    content: {$: 'text', text: studio.compSource(), style: text.codemirror({})},
     title: 'Source',
     modal: true
   })
 })
 
-jb.component('studio.properties-in-tgp', { /* studio_propertiesInTgp */
+jb.component('studio.properties-in-tgp', { /* studio.propertiesInTgp */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: group({
-    style: propertySheet_studioPropertiesInTgp(),
+    style: propertySheet.studioPropertiesInTgp(),
     controls: dynamicControls({
-      controlItems: studio_nonControlChildren('%$path%', true),
+      controlItems: studio.nonControlChildren('%$path%', true),
       genericControl: {$: 'studio.property-field', path: '%$controlItem%', $recursive: true}
     }),
-    features: group_autoFocusOnFirstInput()
+    features: group.autoFocusOnFirstInput()
   })
 })
 
-jb.component('studio.property-script', { /* studio_propertyScript */
+jb.component('studio.property-script', { /* studio.propertyScript */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32857,46 +32972,46 @@ jb.component('studio.property-script', { /* studio_propertyScript */
     controls: button({
       title: (ctx,vars,{path}) => jb.prettyPrint(jb.studio.valOfPath(path)),
       action: {$: 'studio.open-jb-editor', path: '%$path%', $recursive: true},
-      style: button_studioScript()
+      style: button.studioScript()
     }),
-    features: studio_watchPath({path: '%$path%', includeChildren: true})
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
   })
 })
 
-jb.component('studio.property-boolean', { /* studio_propertyBoolean */
+jb.component('studio.property-boolean', { /* studio.propertyBoolean */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: editableBoolean({
-    databind: studio_ref('%$path%'),
-    style: editableBoolean_mdlSlideToggle(),
-    features: studio_watchPath({path: '%$path%', includeChildren: true})
+    databind: studio.ref('%$path%'),
+    style: editableBoolean.mdlSlideToggle(),
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
   })
 })
 
-jb.component('studio.property-enum', { /* studio_propertyEnum */
+jb.component('studio.property-enum', { /* studio.propertyEnum */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: picklist({
-    databind: studio_ref('%$path%'),
-    options: studio_enumOptions('%$path%'),
-    style: picklist_nativeMdLook(),
-    features: studio_watchPath({path: '%$path%', includeChildren: true})
+    databind: studio.ref('%$path%'),
+    options: studio.enumOptions('%$path%'),
+    style: picklist.nativeMdLook(),
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
   })
 })
 
-jb.component('studio.property-slider', { /* studio_propertySlider */
+jb.component('studio.property-slider', { /* studio.propertySlider */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: editableNumber({
-    vars: [Var('paramDef', studio_paramDef('%$path%'))],
-    databind: studio_ref('%$path%'),
-    style: editableNumber_slider(),
+    vars: [Var('paramDef', studio.paramDef('%$path%'))],
+    databind: studio.ref('%$path%'),
+    style: editableNumber.slider(),
     min: firstSucceeding('%$paramDef/min%', 0),
     max: firstSucceeding('%$paramDef/max%', 100),
     step: firstSucceeding('%$paramDef/step%', 1),
@@ -32904,35 +33019,35 @@ jb.component('studio.property-slider', { /* studio_propertySlider */
       css(
         ">input-slider { width: 110px; }\n>.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }"
       ),
-      studio_watchPath({path: '%$path%', includeChildren: true})
+      studio.watchPath({path: '%$path%', includeChildren: 'yes'})
     ]
   })
 })
 
-jb.component('studio.property-tgp', { /* studio_propertyTgp */
+jb.component('studio.property-tgp', { /* studio.propertyTgp */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: inlineControls(
-    studio_pickProfile('%$path%'),
-    studio_propertiesInTgp('%$path%')
+    studio.pickProfile('%$path%'),
+    studio.propertiesInTgp('%$path%')
   )
 })
 
-jb.component('studio.properties-expanded-relevant', { /* studio_propertiesExpandedRelevant */
+jb.component('studio.properties-expanded-relevant', { /* studio.propertiesExpandedRelevant */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
   impl: and(
-    notEmpty(studio_nonControlChildren('%$path%')),
-    notEmpty(studio_val('%$path%')),
-    notEquals(studio_compName('%$path%'), 'custom-style')
+    notEmpty(studio.nonControlChildren('%$path%')),
+    notEmpty(studio.val('%$path%')),
+    notEquals(studio.compName('%$path%'), 'custom-style')
   )
 })
 
-jb.component('studio.property-tgp-old', { /* studio_propertyTgpOld */
+jb.component('studio.property-tgp-old', { /* studio.propertyTgpOld */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32941,28 +33056,28 @@ jb.component('studio.property-tgp-old', { /* studio_propertyTgpOld */
     controls: [
       group({
         title: 'header',
-        style: layout_horizontal(0),
+        style: layout.horizontal(0),
         controls: [
           editableBoolean({
             databind: '%$userExpanded%',
-            style: editableBoolean_expandCollapse(),
+            style: editableBoolean.expandCollapse(),
             features: [
-              field_initValue(studio_isNew('%$path%')),
-              hidden(studio_propertiesExpandedRelevant('%$path%')),
+              field.initValue(studio.isNew('%$path%')),
+              hidden(studio.propertiesExpandedRelevant('%$path%')),
               css('{ position: absolute; margin-left: -20px; margin-top: 5px }')
             ]
           }),
-          group({controls: studio_pickProfile('%$path%'), features: css_width(150)})
+          group({controls: studio.pickProfile('%$path%'), features: css.width(150)})
         ],
-        features: [css('{ position: relative }'), studio_watchPath('%$path%')]
+        features: [css('{ position: relative }'), studio.watchPath('%$path%')]
       }),
       group({
         title: 'inner',
-        controls: studio_propertiesInTgp('%$path%'),
+        controls: studio.propertiesInTgp('%$path%'),
         features: [
-          studio_watchPath('%$path%'),
+          studio.watchPath('%$path%'),
           watchRef('%$userExpanded%'),
-          feature_if('%$userExpanded%'),
+          feature.if('%$userExpanded%'),
           css('{ margin-top: 9px; margin-left: -83px; margin-bottom: 4px;}')
         ]
       })
@@ -32971,7 +33086,7 @@ jb.component('studio.property-tgp-old', { /* studio_propertyTgpOld */
   })
 })
 
-jb.component('studio.property-tgp-in-array', { /* studio_propertyTgpInArray */
+jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32979,120 +33094,120 @@ jb.component('studio.property-tgp-in-array', { /* studio_propertyTgpInArray */
   impl: group({
     controls: [
       group({
-        style: layout_flex('space-between'),
+        style: layout.flex('space-between'),
         controls: [
           editableBoolean({
             databind: '%$expanded%',
-            style: editableBoolean_expandCollapse(),
-            features: [css_padding('4')]
+            style: editableBoolean.expandCollapse(),
+            features: [css.padding('4')]
           }),
           label({
-            title: pipeline(studio_compName('%$path%'), suffix('.', '%%')),
-            style: label_htmlTag('p'),
-            features: [css_width('100'), css_class('drag-handle'), css('{font-weight: bold}')]
+            title: pipeline(studio.compName('%$path%'), suffix('.', '%%')),
+            style: label.htmlTag('p'),
+            features: [css.width('100'), css.class('drag-handle'), css('{font-weight: bold}')]
           }),
           label({
-            title: studio_summary('%$path%'),
-            style: label_htmlTag('p'),
-            features: [css_width('335'), studio_watchPath({path: '%$path%', includeChildren: true})]
+            title: studio.summary('%$path%'),
+            style: label.htmlTag('p'),
+            features: [css.width('335'), studio.watchPath({path: '%$path%', includeChildren: 'yes'})]
           }),
-          studio_propertyToolbar('%$path%')
+          studio.propertyToolbar('%$path%')
         ],
-        features: [studio_disabledSupport('%$path%')]
+        features: [studio.disabledSupport('%$path%')]
       }),
       group({
-        controls: studio_propertiesInTgp('%$path%'),
+        controls: studio.propertiesInTgp('%$path%'),
         features: [
-          feature_if('%$expanded%'),
+          feature.if('%$expanded%'),
           watchRef('%$expanded%'),
           css('{ margin-left: 10px; margin-bottom: 4px;}'),
-          studio_disabledSupport('%$path%')
+          studio.disabledSupport('%$path%')
         ]
       })
     ],
     features: [
-      css_margin({left: '-100'}),
-      variable({name: 'expanded', value: studio_isNew('%$path%'), mutable: true}),
-      studio_watchPath({path: '%$path%', includeChildren: true})
+      css.margin({left: '-100'}),
+      variable({name: 'expanded', value: studio.isNew('%$path%'), mutable: true}),
+      studio.watchPath({path: '%$path%', includeChildren: 'yes'})
     ]
   })
 })
 
-jb.component('studio.property-array', { /* studio_propertyArray */
+jb.component('studio.property-array', { /* studio.propertyArray */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: itemlist({
-    items: studio_asArrayChildren('%$path%'),
+    items: studio.asArrayChildren('%$path%'),
     controls: group({
-      style: propertySheet_studioPlain(),
-      controls: studio_propertyTgpInArray('%$arrayItem%')
+      style: propertySheet.studioPlain(),
+      controls: studio.propertyTgpInArray('%$arrayItem%')
     }),
     itemVariable: 'arrayItem',
     features: [
-      studio_watchPath({path: '%$path%', includeChildren: true, allowSelfRefresh: true}),
-      itemlist_divider(),
-      itemlist_dragAndDrop()
+      studio.watchPath({path: '%$path%', includeChildren: 'yes', allowSelfRefresh: true}),
+      itemlist.divider(),
+      itemlist.dragAndDrop()
     ]
   })
 })
 
-jb.component('studio.property-field', { /* studio_propertyField */
+jb.component('studio.property-field', { /* studio.propertyField */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: group({
-    title: studio_propName('%$path%'),
-    controls: control_firstSucceeding({
-      vars: [Var('paramDef', studio_paramDef('%$path%'))],
+    title: studio.propName('%$path%'),
+    controls: control.firstSucceeding({
+      vars: [Var('paramDef', studio.paramDef('%$path%'))],
       controls: [
         controlWithCondition(
           and(
-            studio_isOfType('%$path%', 'data,boolean'),
-            not(isOfType('string,number,boolean,undefined', studio_val('%$path%')))
+            studio.isOfType('%$path%', 'data,boolean'),
+            not(isOfType('string,number,boolean,undefined', studio.val('%$path%')))
           ),
-          studio_propertyScript('%$path%')
+          studio.propertyScript('%$path%')
         ),
         controlWithCondition(
-          and(studio_isOfType('%$path%', 'action'), isOfType('array', studio_val('%$path%'))),
-          studio_propertyScript('%$path%')
+          and(studio.isOfType('%$path%', 'action'), isOfType('array', studio.val('%$path%'))),
+          studio.propertyScript('%$path%')
         ),
-        controlWithCondition('%$paramDef/options%', studio_propertyEnum('%$path%')),
-        controlWithCondition('%$paramDef/as%==\"number\"', studio_propertySlider('%$path%')),
+        controlWithCondition('%$paramDef/options%', studio.propertyEnum('%$path%')),
+        controlWithCondition('%$paramDef/as%==\"number\"', studio.propertySlider('%$path%')),
         controlWithCondition(
           and(
             '%$paramDef/as%==\"boolean\"',
-            or(inGroup(list(true, false), studio_val('%$path%')), isEmpty(studio_val('%$path%'))),
+            or(inGroup(list(true, false), studio.val('%$path%')), isEmpty(studio.val('%$path%'))),
             not('%$paramDef/dynamic%')
           ),
-          studio_propertyBoolean('%$path%')
+          studio.propertyBoolean('%$path%')
         ),
-        controlWithCondition(studio_isOfType('%$path%', 'data,boolean'), studio_propertyPrimitive('%$path%')),
-        studio_propertyTgpOld('%$path%')
+        controlWithCondition(studio.isOfType('%$path%', 'data,boolean'), studio.propertyPrimitive('%$path%')),
+        studio.propertyTgpOld('%$path%')
       ],
-      features: firstSucceeding_watchRefreshOnCtrlChange(studio_ref('%$path%'), true)
+      features: firstSucceeding.watchRefreshOnCtrlChange(studio.ref('%$path%'), true)
     }),
     features: [
-      studio_propertyToolbarFeature('%$path%'),
-      field_keyboardShortcut('Ctrl+I', {$: 'studio.open-jb-editor', path: '%$path%', $recursive: true})
+      studio.propertyToolbarFeature('%$path%'),
+      field.keyboardShortcut('Ctrl+I', {$: 'studio.open-jb-editor', path: '%$path%', $recursive: true})
     ]
   })
 })
 
-jb.component('studio.jb-floating-input-rich', { /* studio_jbFloatingInputRich */
+jb.component('studio.jb-floating-input-rich', { /* studio.jbFloatingInputRich */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: group({
-    controls: studio_propertyField('%$path%'),
+    controls: studio.propertyField('%$path%'),
     features: css('{padding: 20px}')
   })
 })
 
-jb.component('studio.properties', { /* studio_properties */
+jb.component('studio.properties', { /* studio.properties */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -33101,11 +33216,11 @@ jb.component('studio.properties', { /* studio_properties */
     controls: [
       group({
         title: 'accordion',
-        style: group_studioPropertiesAccordion(),
+        style: group.studioPropertiesAccordion(),
         controls: [
           group({
             remark: 'properties',
-            title: pipeline(count(studio_nonControlChildren('%$path%')), 'Properties (%%)'),
+            title: pipeline(count(studio.nonControlChildren('%$path%')), 'Properties (%%)'),
             style: customStyle({
               template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
       h('tr',{ class: 'property' },[
@@ -33115,19 +33230,19 @@ jb.component('studio.properties', { /* studio_properties */
       ])
     )),
               css: "\n      { width: 100% }\n      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px;  font-weight: bold;}\n      >.property>td { vertical-align: top; }\n    ",
-              features: group_initGroup()
+              features: group.initGroup()
             }),
             controls: [
               dynamicControls({
-                controlItems: studio_nonControlChildren('%$path%'),
-                genericControl: studio_propertyField('%$controlItem%')
+                controlItems: studio.nonControlChildren('%$path%'),
+                genericControl: studio.propertyField('%$controlItem%')
               })
             ]
           }),
           group({
             remark: 'features',
-            title: pipeline(count(studio_val('%$path%~features')), 'Features (%%)'),
-            controls: studio_propertyArray('%$path%~features')
+            title: pipeline(count(studio.val('%$path%~features')), 'Features (%%)'),
+            controls: studio.propertyArray('%$path%~features')
           })
         ],
         features: [
@@ -33135,35 +33250,35 @@ jb.component('studio.properties', { /* studio_properties */
           studio.watchPath({path: '%$path%~features', allowSelfRefresh: true}),
           hidden(
             remark('not a control'),
-            studio_hasParam(remark('not a control'), '%$path%', 'features')
+            studio.hasParam(remark('not a control'), '%$path%', 'features')
           )
         ]
       }),
       label({
-        title: studio_profileAsMacroText('%$path%~features'),
-        style: label_span(),
+        title: studio.profileAsMacroText('%$path%~features'),
+        style: label.span(),
         features: [
-          css_width('400'),
+          css.width('400'),
           css('{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis}'),
-          feature_hoverTitle('%%')
+          feature.hoverTitle('%%')
         ]
       }),
       button({
         title: 'new feature',
-        action: studio_openNewProfileDialog({
+        action: studio.openNewProfileDialog({
           path: '%$path%~features',
           type: 'feature',
           onClose: runActions(ctx => ctx.vars.PropertiesDialog.openFeatureSection())
         }),
-        style: button_href(),
-        features: css_margin({top: '20', left: '5'})
+        style: button.href(),
+        features: css.margin({top: '20', left: '5'})
       })
     ],
     features: variable({name: 'PropertiesDialog', value: {$: 'object'}, mutable: false})
   })
 })
 
-jb.component('studio.tgp-path-options', { /* studio_tgpPathOptions */
+jb.component('studio.tgp-path-options', { /* studio.tgpPathOptions */
   type: 'picklist.options',
   params: [
     {id: 'path', as: 'string'}
@@ -33173,26 +33288,26 @@ jb.component('studio.tgp-path-options', { /* studio_tgpPathOptions */
 			.concat(jb.studio.PTsOfPath(path).map(op=> ({ code: op, text: op})))
 })
 
-jb.component('studio.open-properties', { /* studio_openProperties */ 
+jb.component('studio.open-properties', { /* studio.openProperties */ 
   type: 'action',
   params: [
     {id: 'focus', type: 'boolean', as: 'boolean'}
   ],
   impl: openDialog({
-    style: dialog_studioFloating({id: 'studio-properties', width: '500'}),
-    content: studio_properties(studio_currentProfilePath()),
+    style: dialog.studioFloating({id: 'studio-properties', width: '500'}),
+    content: studio.properties(studio.currentProfilePath()),
     title: pipeline(
       {
         $: 'object',
-        title: studio_shortTitle(studio_currentProfilePath()),
-        comp: studio_compName(studio_currentProfilePath())
+        title: studio.shortTitle(studio.currentProfilePath()),
+        comp: studio.compName(studio.currentProfilePath())
       },
       'Properties of %comp% %title%'
     ),
     features: [
-      {$if: '%$focus%', then: dialogFeature_autoFocusOnFirstInput()},
-      dialogFeature_keyboardShortcut('Ctrl+Left', {$: 'studio.open-control-tree', $recursive: true}),
-      dialogFeature_resizer()
+      {$if: '%$focus%', then: dialogFeature.autoFocusOnFirstInput()},
+      dialogFeature.keyboardShortcut('Ctrl+Left', {$: 'studio.open-control-tree', $recursive: true}),
+      dialogFeature.resizer()
     ]
   })
 })
@@ -33411,14 +33526,14 @@ jb.component('studio.probe-results', { /* studio_probeResults */
   ],
   impl: (ctx, path) => jb.delay(300).then(_ => {
     const inCtx = st.closestCtxByPath(path) || new jb.jbCtx()
-    return [{in: inCtx.data, out: st.isOfType(path,'action') ? null : inCtx.runItself()}]
+    return [{in: st.previewjb.val(inCtx.data), out: st.isOfType(path,'action') ? null : st.previewjb.val(inCtx.runItself())}]
   })
 })
 
 jb.component('studio.data-browse', { /* studio_dataBrowse */
   type: 'control',
   params: [
-    {id: 'obj', mandatory: true, defaultValue: '%%'},
+    {id: 'obj', mandatory: true, as: 'value', defaultValue: '%%'},
     {id: 'title', as: 'string'},
     {id: 'width', as: 'number', defaultValue: 200}
   ],
@@ -33637,13 +33752,13 @@ jb.component('studio.jb-editor', { /* studio_jbEditor */
               group({
                 title: 'watch selection content',
                 controls: studio_probeDataView('%$jbEditorCntrData/selected%'),
-                features: watchRef({ref: studio_ref('%$jbEditorCntrData/selected%')})
+                features: watchRef('%$jbEditorCntrData/selected%')
               })
             ],
             features: feature_if('%$jbEditorCntrData/selected%')
           })
         ],
-        features: [watchRef('%$jbEditorCntrData/selected%'), studio_watchScriptChanges()]
+        features: [studio_watchScriptChanges()]
       })
     ],
     features: [css_padding('10'), css_height({height: '800', minMax: 'max'})]
@@ -33946,7 +34061,7 @@ st.highlight = function(elems) {
         let width = jb.ui.outerWidth(el);
         if (width == jb.ui.outerWidth(document.body))
             width -= 10;
-        return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; zIndex: 5000;
+        return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; z-index: 5000;
             width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
     }).join('');
 
@@ -33957,7 +34072,7 @@ st.highlight = function(elems) {
     jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
 }
 
-jb.component('studio.highlight-in-preview', { /* studio_highlightInPreview */
+jb.component('studio.highlight-in-preview', { /* studio.highlightInPreview */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -33983,7 +34098,7 @@ jb.component('studio.highlight-in-preview', { /* studio_highlightInPreview */
   }
 })
 
-jb.component('studio.pick', { /* studio_pick */ 
+jb.component('studio.pick', { /* studio.pick */ 
   type: 'action',
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},
@@ -33992,7 +34107,7 @@ jb.component('studio.pick', { /* studio_pick */
   impl: openDialog({
     vars: [Var('pickSelection', ctx =>
             ctx.vars.pickSelection || {})],
-    style: dialog_studioPickDialog('%$from%'),
+    style: dialog.studioPickDialog('%$from%'),
     content: label(''),
     onOK: ctx =>
             ctx.componentContext.params.onSelect(ctx.setData(ctx.vars.pickSelection.ctx))
@@ -34168,7 +34283,7 @@ jb.component('studio.template-as-jsx', { /* studio_templateAsJsx */
 			}
 		},
 		$jb_observable: cmp =>
-			jb.studio.refObservable(jb.studio.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+			jb.studio.refObservable(jb.studio.refOfPath(ctx.params.path()),cmp,{includeChildren: 'yes'})
 	})
 })
 ;
@@ -34363,7 +34478,7 @@ jb.component('studio.style-editor-options', { /* studio_styleEditorOptions */
 })
 ;
 
-jb.component('studio.components-cross-ref', { /* studio_componentsCrossRef */
+jb.component('studio.components-cross-ref', { /* studio.componentsCrossRef */
   type: 'data',
   impl: ctx => {
 	  var _jb = jb.studio.previewjb;
@@ -34402,7 +34517,7 @@ jb.component('studio.components-cross-ref', { /* studio_componentsCrossRef */
 	}
 })
 
-jb.component('studio.references', { /* studio_references */
+jb.component('studio.references', { /* studio.references */
   type: 'data',
   params: [
     {id: 'path', as: 'string'}
@@ -34427,39 +34542,39 @@ jb.component('studio.references', { /* studio_references */
 	}
 })
 
-jb.component('studio.goto-references-options', { /* studio_gotoReferencesOptions */
+jb.component('studio.goto-references-options', { /* studio.gotoReferencesOptions */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
     {id: 'refs', as: 'array'}
   ],
-  impl: menu_dynamicOptions(
+  impl: menu.dynamicOptions(
     '%$refs%',
     {
       $if: '%refs/length% > 1',
-      then: menu_menu({
+      then: menu.menu({
         title: '%id% (%refs/length%)',
-        options: menu_dynamicOptions(
+        options: menu.dynamicOptions(
           '%$menuData/refs%',
-          menu_action({title: '%%', action: studio_openComponentInJbEditor('%%', '%$path%')})
+          menu.action({title: '%%', action: studio.openComponentInJbEditor('%%', '%$path%')})
         )
       }),
-      else: menu_action({
+      else: menu.action({
         vars: [Var('compName', split({separator: '~', text: '%refs[0]%', part: 'first'}))],
         title: '%$compName%',
-        action: studio_openComponentInJbEditor('%refs[0]%', '%$path%')
+        action: studio.openComponentInJbEditor('%refs[0]%', '%$path%')
       })
     }
   )
 })
 
-jb.component('studio.goto-references-button', { /* studio_gotoReferencesButton */
+jb.component('studio.goto-references-button', { /* studio.gotoReferencesButton */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: controlWithCondition(
-    Var('refs', studio_references('%$path%')),
+    Var('refs', studio.references('%$path%')),
     Var(
         'noOfReferences',
         ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0)
@@ -34467,12 +34582,12 @@ jb.component('studio.goto-references-button', { /* studio_gotoReferencesButton *
     '%$refs/length%',
     button({
       title: '%$noOfReferences% references',
-      action: menu_openContextMenu({menu: menu_menu({options: studio_gotoReferencesOptions('%$path%', '%$refs%')})})
+      action: menu.openContextMenu({menu: menu.menu({options: studio.gotoReferencesOptions('%$path%', '%$refs%')})})
     })
   )
 })
 
-jb.component('studio.goto-references-menu', { /* studio_gotoReferencesMenu */ 
+jb.component('studio.goto-references-menu', { /* studio.gotoReferencesMenu */ 
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -34480,14 +34595,14 @@ jb.component('studio.goto-references-menu', { /* studio_gotoReferencesMenu */
   impl: {
     $if: '%$noOfReferences% > 0',
     $vars: {
-      refs: studio_references('%$path%'),
+      refs: studio.references('%$path%'),
       noOfReferences: ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0)
     },
-    then: menu_menu({
+    then: menu.menu({
       title: '%$noOfReferences% references for %$path%',
-      options: studio_gotoReferencesOptions('%$path%', '%$refs%')
+      options: studio.gotoReferencesOptions('%$path%', '%$refs%')
     }),
-    else: menu_action('no references for %$path%')
+    else: menu.action('no references for %$path%')
   }
 })
 
@@ -34754,16 +34869,17 @@ jb.component('studio.save-components', {
 	params: [
 		{ id: 'force',as: 'boolean', type: 'boolean' }
 	],
-	impl : (ctx,force) =>
+	impl : (ctx,force) => {
+    const messages = []
 		jb.rx.Observable.from(Object.getOwnPropertyNames(st.previewjb.comps))
 			.filter(id=>id.indexOf('$jb') != 0)
 			.filter(id=>st.previewjb.comps[id] != st.serverComps[id])
 			.concatMap(id=>{
-				var original = st.serverComps[id] ? jb.prettyPrintComp(id,st.serverComps[id]) : '';
+        let original = st.serverComps[id] ? jb.prettyPrintComp(id,st.serverComps[id]) : '';
 				st.message('saving ' + id + '...');
 				if (force && !original)
 					original = `jb.component('${id}', {`;
-        var project = ctx.exp('%$studio/project%');
+        const project = ctx.exp('%$studio/project%');
 
         if (fs) {
             return [{message: saveComp(st.compAsStr(id),original,id,project,force,jb_projectFolder && jb_projectFolder(project),''), type: 'success'}]
@@ -34777,16 +34893,20 @@ jb.component('studio.save-components', {
         }
 			})
 			.catch(e=>{
-				st.message('error saving: ' + (typeof e == 'string' ? e : e.e), true);
+        messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.e), error: true })
+				st.showMultiMessages(messages)
 				return jb.logException(e,'error while saving ' + e.id,ctx) || []
 			})
 			.subscribe(entry=>{
-				var result = entry.res || entry;
-				st.message((result.type || '') + ': ' + (result.desc || '') + (result.message || ''), result.type != 'success');
-				if (result.type == 'success')
+        const result = entry.res || entry;
+        const success = result.type === 'success'
+        messages.push({text: (result.type || '') + ': ' + (result.desc || '') + (result.message || ''), error: !success})
+				st.showMultiMessages(messages)
+				if (success)
 					st.serverComps[entry.id] = st.previewjb.comps[entry.id];
-			})
-});
+      })
+    }
+})
 
 // directly saving the comp - duplicated in studio-server
 function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
@@ -34917,96 +35037,96 @@ jb.component('studio.open-project', { /* studio_openProject */
   })
 });
 
-jb.component('studio.tree-menu', { /* studio_treeMenu */
+jb.component('studio.tree-menu', { /* studio.treeMenu */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu_menu({
+  impl: menu.menu({
     options: [
-      menu_action({
+      menu.action({
         title: 'Insert Field',
-        action: studio_openNewProfileDialog({
+        action: studio.openNewProfileDialog({
           path: '%$path%',
           type: 'table-field',
           mode: 'insert-control',
-          onClose: studio_gotoLastEdit()
+          onClose: studio.gotoLastEdit()
         }),
-        showCondition: equals(pipeline(studio_val('%$path%'), '%$%'), 'table')
+        showCondition: equals(pipeline(studio.val('%$path%'), '%$%'), 'table')
       }),
-      menu_action({
+      menu.action({
         title: 'Insert',
-        action: studio_openNewProfileDialog({
+        action: studio.openNewProfileDialog({
           path: '%$path%',
           type: 'control',
           mode: 'insert-control',
-          onClose: studio_gotoLastEdit()
+          onClose: studio.gotoLastEdit()
         })
       }),
-      menu_action({
+      menu.action({
         title: 'Wrap with group',
         action: [
-          studio_wrapWithGroup('%$path%'),
-          onNextTimer([writeValue('%$studio/profile_path%', '%$path%~controls~0'), tree_regainFocus()])
+          studio.wrapWithGroup('%$path%'),
+          onNextTimer([writeValue('%$studio/profile_path%', '%$path%~controls~0'), tree.regainFocus()])
         ]
       }),
-      menu_action({title: 'Duplicate', action: studio_duplicateControl('%$path%'), shortcut: 'Ctrl+D'}),
-      menu_separator(),
-      menu_action({
+      menu.action({title: 'Duplicate', action: studio.duplicateControl('%$path%'), shortcut: 'Ctrl+D'}),
+      menu.separator(),
+      menu.action({
         title: 'Inteliscript editor',
-        action: studio_openJbEditor('%$path%'),
+        action: studio.openJbEditor('%$path%'),
         shortcut: 'Ctrl+I'
       }),
-      menu_action({
+      menu.action({
         title: 'Context viewer',
         action: {$: 'studio.open-context-viewer', path: '%$path%'}
       }),
-      menu_action({
+      menu.action({
         title: 'Javascript editor',
-        action: studio_editSource('%$path%'),
+        action: studio.editSource('%$path%'),
         icon: 'code',
         shortcut: 'Ctrl+J'
       }),
-      menu_action({
-        vars: [Var('compName', studio_compName('%$path%'))],
+      menu.action({
+        vars: [Var('compName', studio.compName('%$path%'))],
         title: 'Goto %$compName%',
-        action: studio_gotoPath('%$compName%'),
+        action: studio.gotoPath('%$compName%'),
         showCondition: '%$compName%'
       }),
-      studio_gotoEditorOptions('%$path%'),
-      menu_separator(),
-      menu_endWithSeparator({options: studio_gotoReferencesOptions('%$path%')}),
-      menu_action({
+      studio.gotoEditorOptions('%$path%'),
+      menu.separator(),
+      menu.endWithSeparator({options: studio.gotoReferencesOptions('%$path%')}),
+      menu.action({
         title: 'Delete',
-        action: studio_delete('%$path%'),
+        action: studio.delete('%$path%'),
         icon: 'delete',
         shortcut: 'Delete'
       }),
-      menu_action({
-        title: {$if: studio_disabled('%$path%'), then: 'Enable', else: 'Disable'},
-        action: studio_toggleDisabled('%$path%'),
+      menu.action({
+        title: {$if: studio.disabled('%$path%'), then: 'Enable', else: 'Disable'},
+        action: studio.toggleDisabled('%$path%'),
         icon: 'do_not_disturb',
         shortcut: 'Ctrl+X'
       }),
-      menu_action({title: 'Copy', action: studio_copy('%$path%'), icon: 'copy', shortcut: 'Ctrl+C'}),
-      menu_action({title: 'Paste', action: studio_paste('%$path%'), icon: 'paste', shortcut: 'Ctrl+V'}),
-      menu_action({title: 'Undo', action: studio_undo(), icon: 'undo', shortcut: 'Ctrl+Z'}),
-      menu_action({title: 'Redo', action: studio_redo(), icon: 'redo', shortcut: 'Ctrl+Y'})
+      menu.action({title: 'Copy', action: studio.copy('%$path%'), icon: 'copy', shortcut: 'Ctrl+C'}),
+      menu.action({title: 'Paste', action: studio.paste('%$path%'), icon: 'paste', shortcut: 'Ctrl+V'}),
+      menu.action({title: 'Undo', action: studio.undo(), icon: 'undo', shortcut: 'Ctrl+Z'}),
+      menu.action({title: 'Redo', action: studio.redo(), icon: 'redo', shortcut: 'Ctrl+Y'})
     ]
   })
 })
 
-jb.component('studio.open-tree-menu', { /* studio_openTreeMenu */
+jb.component('studio.open-tree-menu', { /* studio.openTreeMenu */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu_openContextMenu({
-    menu: studio_treeMenu('%$path%')
+  impl: menu.openContextMenu({
+    menu: studio.treeMenu('%$path%')
   })
 })
 
-jb.component('studio.control-tree.nodes', { /* studio_controlTree_nodes */
+jb.component('studio.control-tree-nodes', { /* studio.controlTreeNodes */
   type: 'tree.nodeModel',
   impl: function(context) {
 		var currentPath = context.run({ $: 'studio.currentProfilePath' });
@@ -35015,31 +35135,31 @@ jb.component('studio.control-tree.nodes', { /* studio_controlTree_nodes */
 	}
 })
 
-jb.component('studio.control-tree', { /* studio_controlTree */
+jb.component('studio.control-tree', { /* studio.controlTree */
   type: 'control',
   impl: group({
     controls: [
       tree({
-        nodeModel: studio_controlTree_nodes(),
+        nodeModel: studio.controlTreeNodes(),
         features: [
-          css_class('jb-control-tree'),
-          tree_selection({
+          css.class('jb-control-tree'),
+          tree.selection({
             databind: '%$studio/profile_path%',
             autoSelectFirst: true,
-            onSelection: [studio_openProperties(), studio_highlightInPreview(studio_currentProfilePath())],
-            onRightClick: studio_openTreeMenu('%%')
+            onSelection: [studio.openProperties(), studio.highlightInPreview(studio.currentProfilePath())],
+            onRightClick: studio.openTreeMenu('%%')
           }),
-          tree_keyboardSelection({
-            onEnter: studio_openProperties(true),
-            onRightClickOfExpanded: studio_openTreeMenu('%%'),
-            applyMenuShortcuts: studio_treeMenu('%%')
+          tree.keyboardSelection({
+            onEnter: studio.openProperties(true),
+            onRightClickOfExpanded: studio.openTreeMenu('%%'),
+            applyMenuShortcuts: studio.treeMenu('%%')
           }),
-          tree_dragAndDrop(),
-          studio_watchScriptChanges()
+          tree.dragAndDrop(),
+          studio.watchScriptChanges()
         ]
       })
     ],
-    features: [css_padding('10')]
+    features: [css.padding('10')]
   })
 })
 
@@ -35072,15 +35192,15 @@ jb.component('studio.control-tree', { /* studio_controlTree */
 //   })
 // })
 
-jb.component('studio.open-control-tree', { /* studio_openControlTree */ 
+jb.component('studio.open-control-tree', { /* studio.openControlTree */ 
   type: 'action',
   impl: openDialog({
-    style: dialog_studioFloating({id: 'studio-outline', width: '350'}),
-    content: studio_controlTree(),
+    style: dialog.studioFloating({id: 'studio-outline', width: '350'}),
+    content: studio.controlTree(),
     menu: button({
       title: ' ',
-      action: studio_openTreeMenu('%$studio/profile_path%'),
-      style: button_mdlIcon('menu'),
+      action: studio.openTreeMenu('%$studio/profile_path%'),
+      style: button.mdlIcon('menu'),
       features: css('{ background: none }')
     }),
     title: 'Outline'
@@ -35089,62 +35209,61 @@ jb.component('studio.open-control-tree', { /* studio_openControlTree */
 
 ;
 
+jb.component('studio.watchable-or-passive', { 
+  params: [
+    {id: 'path', as: 'string' }
+  ],
+  impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
+})
 
-jb.component('studio.data-resources', { /* studio_dataResources */
-  type: 'control',
-  impl: group({
-    controls: [
-      itemlist({
-        items: '%$samples%',
-        controls: [
-          button({title: '%%', style: button_mdlFlatRipple()})
-        ],
-        style: itemlist_ulLi(),
-        watchItems: true,
-        itemVariable: 'item'
-      }),
-      button({title: 'add resource', style: button_mdlIcon('add')}),
-      group({
-        style: group_section(),
-        controls: [
-          itemlist({
-            items: list('1', '2', '3'),
-            style: itemlist_ulLi(),
-            watchItems: true,
-            itemVariable: 'item'
-          })
-        ],
-        features: variable({name: 'selected_in_itemlist', mutable: true})
+jb.component('studio.open-new-resource', { 
+  params: [
+    {id: 'watchableOrPassive', as: 'string' }
+  ],
+  type: 'action',
+  impl: openDialog({
+    style: dialog_dialogOkCancel(),
+    content: group({
+      style: group_div(),
+      controls: [
+        editableText({
+          title: 'resource name',
+          databind: '%$name%',
+          style: editableText_mdlInput(),
+          features: feature_onEnter(dialog_closeContainingPopup())
+        })
+      ],
+      features: css_padding({top: '14', left: '11'})
+    }),
+    title: 'New %$watchableOrPassive% Data Source',
+    onOK: [
+      (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component(jb.tostring(name), { 
+        [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
       })
     ],
+    modal: true,
+    features: [variable({name: 'name', mutable: true}), dialogFeature_autoFocusOnFirstInput()]
   })
 })
 
 jb.component('studio.open-resource', { /* studio_openResource */
   type: 'action',
   params: [
-    {id: 'resourceId', as: 'string'}
+    {id: 'path', as: 'string'},
+    {id: 'name', as: 'string'},
   ],
   impl: openDialog({
-    style: dialog_editSourceStyle({id: 'edit-source', width: 600}),
+    style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
     content: editableText({
-      databind: (ctx,vars,{resourceId}) => jb.prettyPrint(jb.studio.previewjb.resources[resourceId]),
-      style: editableText_studioCodemirrorTgp()
+      databind: studio.profileAsMacroText('%$path%'),
+      style: editableText.studioCodemirrorTgp()
     }),
-    title: studio_shortTitle('%$resourceId%'),
+    title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
-      dialogFeature_resizer(true)
+      dialogFeature.resizer(true)
     ]
   })
-  // impl: openDialog({
-  //   style: dialog_studioFloating({id: 'resource %$id%', width: 500}),
-  //   content: tree({
-  //     nodeModel: tree_jsonReadOnly('%$resource%', '%$id%'),
-  //     features: [css_class('jb-control-tree'), tree_selection({}), tree_keyboardSelection({})]
-  //   }),
-  //   title: '%$id%'
-  // })
 })
 
 jb.component('studio.data-resource-menu', { /* studio_dataResourceMenu */ 
@@ -35152,16 +35271,33 @@ jb.component('studio.data-resource-menu', { /* studio_dataResourceMenu */
   impl: menu_menu({
     title: 'Data',
     options: [
-      dynamicControls({
-        controlItems: ctx => Object.keys(jb.studio.previewjb.resources),
-        genericControl: menu_action({
-          title: '%$controlItem%',
-          action: studio_openResource('%$controlItem%')
+      menu_endWithSeparator({
+        options: dynamicControls({
+          controlItems: ctx => jb.entries(jb.studio.previewjb.comps)
+          .filter(e=>! jb.comps[e[0]])
+          .filter(e=>e[1].watchableData !== undefined || e[1].passiveData !== undefined)
+            .map(e=> {
+              const watchableOrPassive = e[1].watchableData ? 'watchable' : 'passive'
+              const upper = watchableOrPassive.charAt(0).toUpperCase() + watchableOrPassive.slice(1)
+              return {
+                name: `${e[0]} (${upper})`,
+                path: `${e[0]}~${watchableOrPassive}Data`
+              }
+            }
+            ),
+          genericControl: menu.action({
+            title: '%$controlItem/name%',
+            action: studio.openResource('%$controlItem/path%','%$controlItem/name%')
+          })
         })
-      })
+      }),
+      menu.action({title: 'New Watchable', action: studio.openNewResource('watchable')}),
+      menu.action({title: 'New Passive', action: studio.openNewResource('passive')}),
     ]
   })
 })
+
+
 
 ;
 
@@ -35397,91 +35533,91 @@ jb.component('studio.open-event-tracker', { /* studio_openEventTracker */
 
 })();
 
-jb.component('studio.pickAndOpen', { /* studio_pickAndOpen */
+jb.component('studio.pickAndOpen', { /* studio.pickAndOpen */
   type: 'action',
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
   ],
-  impl: studio_pick(
+  impl: studio.pick(
     '%$from%',
     [
       writeValue('%$studio/last_pick_selection%', '%%'),
       writeValue('%$studio/profile_path%', '%path%'),
-      studio_openControlTree(),
-      studio_openProperties()
+      studio.openControlTree(),
+      studio.openProperties()
     ]
   )
 })
 
-jb.component('studio.toolbar', { /* studio_toolbar */ 
+jb.component('studio.toolbar', { /* studio.toolbar */ 
   type: 'control',
   impl: group({
-    style: studio_toolbarStyle(),
+    style: studio.toolbarStyle(),
     controls: [
       label({title: '', features: css('{ width: 170px }')}),
-      button({title: 'Select', action: studio_pickAndOpen(), style: button_mdlIcon('call_made')}),
+      button({title: 'Select', action: studio.pickAndOpen(), style: button.mdlIcon('call_made')}),
       button({
         title: 'Save',
-        action: studio_saveComponents(),
-        style: button_mdlIcon('save'),
-        features: ctrlAction(studio_saveComponents(true))
+        action: studio.saveComponents(),
+        style: button.mdlIcon('save'),
+        features: ctrlAction(studio.saveComponents(true))
       }),
       button({
         title: 'Refresh Preview',
-        action: studio_refreshPreview(),
-        style: button_mdlIcon('refresh')
+        action: studio.refreshPreview(),
+        style: button.mdlIcon('refresh')
       }),
-      button({title: 'Javascript', action: studio_editAsMacro(), style: button_mdlIcon('code')}),
+      button({title: 'Javascript', action: studio.editAsMacro(), style: button.mdlIcon('code')}),
       button({
         title: 'Outline',
-        action: studio_openControlTree(),
-        style: button_mdlIcon('format_align_left')
+        action: studio.openControlTree(),
+        style: button.mdlIcon('format_align_left')
       }),
       button({
         title: 'Properties',
-        action: studio_openProperties('true'),
-        style: button_mdlIcon('storage')
+        action: studio.openProperties('true'),
+        style: button.mdlIcon('storage')
       }),
       button({
         title: 'jbEditor',
-        action: studio_openComponentInJbEditor('%$studio/project%.%$studio/page%'),
-        style: button_mdlIcon('build'),
-        features: ctrlAction(studio_openJbEditor({path: '%$studio/profile_path%', newWindow: true}))
+        action: studio.openComponentInJbEditor('%$studio/project%.%$studio/page%'),
+        style: button.mdlIcon('build'),
+        features: ctrlAction(studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true}))
       }),
       button({
         title: 'Event Tracker',
-        action: studio_openEventTracker(),
-        style: button_mdlIcon('hearing'),
-        features: ctrlAction(studio_openEventTracker('true'))
+        action: studio.openEventTracker(),
+        style: button.mdlIcon('hearing'),
+        features: ctrlAction(studio.openEventTracker('true'))
       }),
       button({
         title: 'History',
-        action: studio_openScriptHistory(),
-        style: button_mdlIcon('pets')
+        action: studio.openScriptHistory(),
+        style: button.mdlIcon('pets')
       }),
       button({
         title: 'Show Data',
         action: {$: 'studio.showProbeData'},
-        style: button_mdlIcon('input')
+        style: button.mdlIcon('input')
       }),
       button({
         title: 'Insert Control',
-        action: studio_openNewProfileDialog({type: 'control', mode: 'insert-control', onClose: studio_gotoLastEdit()}),
-        style: button_mdlIcon('add')
+        action: studio.openNewProfileDialog({type: 'control', mode: 'insert-control', onClose: studio.gotoLastEdit()}),
+        style: button.mdlIcon('add')
       }),
       button({
         title: 'Responsive',
-        action: studio_openResponsivePhonePopup(),
-        style: button_mdlIcon('tablet_android')
+        action: studio.openResponsivePhonePopup(),
+        style: button.mdlIcon('tablet_android')
       })
     ],
     features: [
-      feature_keyboardShortcut('Alt+C', studio_pickAndOpen()),
-      feature_keyboardShortcut('Alt++', studio_openNewProfileDialog({type: 'control', mode: 'insert-control'})),
-      feature_keyboardShortcut('Alt+N', studio_pickAndOpen('studio')),
-      feature_keyboardShortcut(
+      feature.keyboardShortcut('Alt+C', studio.pickAndOpen()),
+      feature.keyboardShortcut('Alt++', studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})),
+      feature.keyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
+      feature.keyboardShortcut(
         'Alt+X',
-        studio_openJbEditor({
+        studio.openJbEditor({
           path: firstSucceeding('%$studio/profile_path%', '%$studio/project%.%$studio/page%')
         })
       )
@@ -35490,7 +35626,7 @@ jb.component('studio.toolbar', { /* studio_toolbar */
 })
 ;
 
-jb.component('studio.search-list', { /* studio_searchList */
+jb.component('studio.search-list', { /* studio.searchList */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -35499,99 +35635,101 @@ jb.component('studio.search-list', { /* studio_searchList */
     controls: [
       table({
         items: pipeline(
-          studio_componentsCrossRef(),
-          itemlistContainer_filter(),
+          studio.componentsCrossRef(),
+          itemlistContainer.filter(),
           sort('refCount'),
           slice('0', '50')
         ),
         fields: [
-          field_control({
+          field.control({
             control: materialIcon({
-              icon: studio_iconOfType('%type%'),
-              features: [css_opacity('0.3'), css('{ font-size: 16px }'), css_padding({top: '5', left: '5'})]
+              icon: studio.iconOfType('%type%'),
+              features: [css.opacity('0.3'), css('{ font-size: 16px }'), css.padding({top: '5', left: '5'})]
             })
           }),
-          field_control({
+          field.control({
             title: 'id',
             control: button({
               title: pipeline(
                 highlight('%id%', '%$itemlistCntrData/search_pattern%', 'mdl-color-text--indigo-A700')
               ),
-              action: studio_gotoPath('%id%'),
-              style: button_href()
+              action: studio.gotoPath('%id%'),
+              style: button.href()
             }),
             width: '200'
           }),
-          field_control({
+          field.control({
             title: 'refs',
             control: button({
               title: '%refCount%',
-              action: menu_openContextMenu({
-                menu: menu_menu({options: [studio_gotoReferencesOptions('%id%', studio_references('%id%'))]})
+              action: menu.openContextMenu({
+                menu: menu.menu({options: [studio.gotoReferencesOptions('%id%', studio.references('%id%'))]})
               }),
-              style: button_href()
+              style: button.href()
             })
           }),
           field({title: 'type', data: '%type%'}),
           field({
             title: 'impl',
-            data: pipeline('%implType%', data_if('%% = \"function\"', 'javascript', ''))
+            data: pipeline('%implType%', data.if('%% = \"function\"', 'javascript', ''))
           })
         ],
-        style: table_withHeaders(),
+        style: table.withHeaders(),
         features: [
           watchRef('%$itemlistCntrData/search_pattern%'),
-          itemlist_selection({
+          itemlist.selection({
             databind: '%$itemlistCntrData/selected%',
             selectedToDatabind: '%%',
             databindToSelected: '%%',
             cssForSelected: 'background: #bbb !important; color: #fff !important'
           }),
-          itemlist_keyboardSelection({onEnter: studio_gotoPath('%id%')})
+          itemlist.keyboardSelection({onEnter: studio.gotoPath('%id%')})
         ]
       })
     ],
     features: [
-      css_boxShadow({shadowColor: '#cccccc'}),
-      css_padding({top: '4', right: '5'}),
-      css_height({height: '600', overflow: 'auto', minMax: 'max'}),
-      css_width({width: '400', minMax: 'min'})
+      css.boxShadow({shadowColor: '#cccccc'}),
+      css.padding({top: '4', right: '5'}),
+      css.height({height: '600', overflow: 'auto', minMax: 'max'}),
+      css.width({width: '400', minMax: 'min'})
     ]
   })
 })
 
-jb.component('studio.search-component', { /* studio_searchComponent */ 
+jb.component('studio.search-component', { /* studio.searchComponent */ 
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: group({
     title: 'itemlist-with-find',
-    style: layout_horizontal(''),
+    style: layout.horizontal(''),
     controls: [
-      itemlistContainer_search({
+      itemlistContainer.search({
         title: 'Search',
         searchIn: item =>
           item.id,
         databind: '%$itemlistCntrData/search_pattern%',
-        style: editableText_mdlSearch(),
+        style: editableText.mdlSearch(),
         features: [
-          editableText_helperPopup({
-            control: studio_searchList(),
+          editableText.helperPopup({
+            control: studio.searchList(),
             popupId: 'search-component',
-            popupStyle: dialog_popup()
+            popupStyle: dialog.popup()
           })
         ]
       })
     ],
-    features: [group_itemlistContainer({}), css_margin({top: '-13', left: '10'})]
+    features: [group.itemlistContainer({}), css.margin({top: '-13', left: '10'})]
   })
 })
 ;
 
-jb.resource('studio',{});
+jb.component('studio', {
+  watchableData: { project:'', page:'', profile_path: ''}
+})
 
-jb.component('studio.cmps-of-project', { /* studio_cmpsOfProject */
+jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
   type: 'data',
   params: [
     {id: 'project', as: 'string'}
@@ -35601,36 +35739,39 @@ jb.component('studio.cmps-of-project', { /* studio_cmpsOfProject */
               .filter(id=>id.split('.')[0] == prj) : []
 })
 
-jb.component('studio.project-pages', { /* studio_projectPages */
+jb.component('studio.project-pages', { /* studio.projectPages */
   type: 'data',
   impl: pipeline(
-    studio_cmpsOfProject('%$studio/project%'),
-    filter(studio_isOfType('%%', 'control')),
+    studio.cmpsOfProject('%$studio/project%'),
+    filter(studio.isOfType('%%', 'control')),
     suffix('.')
   )
 })
 
-jb.component('studio.pages', { /* studio_pages */
+jb.component('studio.pages', { /* studio.pages */
   type: 'control',
   impl: group({
     title: 'pages',
-    style: layout_horizontal(),
+    style: layout.horizontal(),
     controls: [
       button({
         title: 'new page',
-        action: studio_openNewPage(),
-        style: button_mdlIcon12('add'),
+        action: studio.openNewPage(),
+        style: button.mdlIcon12('add'),
         features: css('{margin: 5px}')
       }),
       itemlist({
-        items: studio_projectPages(),
-        controls: label({title: extractSuffix('.'), features: css_class('studio-page')}),
-        style: itemlist_horizontal(),
+        items: studio.projectPages(),
+        controls: label({title: extractSuffix('.'), features: css.class('studio-page')}),
+        style: itemlist.horizontal(),
         features: [
           id('pages'),
-          itemlist_selection({
+          itemlist.selection({
             databind: '%$studio/page%',
-            onSelection: writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
+            onSelection: runActions(
+              writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
+              studio.refreshPreview()
+            ),
             autoSelectFirst: true
           }),
           css(
@@ -35643,13 +35784,13 @@ jb.component('studio.pages', { /* studio_pages */
       css(
         '{ background: #F5F5F5; position: absolute; bottom: 0; left: 0; width: 100%; border-top: 1px solid #aaa}'
       ),
-      group_wait({for: studio_waitForPreviewIframe(), loadingControl: label({})}),
-      studio_watchComponents()
+      group.wait({for: studio.waitForPreviewIframe(), loadingControl: label({})}),
+      studio.watchComponents()
     ]
   })
 })
 
-jb.component('studio.ctx-counters', { /* studio_ctxCounters */
+jb.component('studio.ctx-counters', { /* studio.ctxCounters */
   type: 'control',
   impl: label({
     title: ctx => (performance.memory.usedJSHeapSize / 1000000)  + 'M',
@@ -35660,82 +35801,82 @@ jb.component('studio.ctx-counters', { /* studio_ctxCounters */
   })
 })
 
-jb.component('studio.main-menu', { /* studio_mainMenu */
+jb.component('studio.main-menu', { /* studio.mainMenu */
   type: 'menu.option',
-  impl: menu_menu({
+  impl: menu.menu({
     title: 'main',
     options: [
-      menu_menu({
+      menu.menu({
         title: 'File',
         options: [
-          menu_action({title: 'New Project', action: studio_openNewProject(), icon: 'new'}),
-          menu_action({title: 'Open Project ...', action: studio_openProject()}),
-          menu_action({title: 'Save', action: studio_saveComponents(), icon: 'save', shortcut: 'Ctrl+S'}),
-          menu_action({title: 'Force Save', action: studio_saveComponents(true), icon: 'save'}),
-          menu_action({title: 'Source ...', action: studio_editSource(studio_currentProfilePath())})
+          menu.action({title: 'New Project', action: studio.openNewProject(), icon: 'new'}),
+          menu.action({title: 'Open Project ...', action: studio.openProject()}),
+          menu.action({title: 'Save', action: studio.saveComponents(), icon: 'save', shortcut: 'Ctrl+S'}),
+          menu.action({title: 'Force Save', action: studio.saveComponents(true), icon: 'save'}),
+          menu.action({title: 'Source ...', action: studio.editSource(studio.currentProfilePath())})
         ]
       }),
-      menu_menu({
+      menu.menu({
         title: 'View',
         options: [
-          menu_action({title: 'Refresh Preview', action: studio_refreshPreview()}),
-          menu_action({title: 'Redraw Studio', action: studio_redrawStudio()}),
-          menu_action({title: 'Edit source', action: studio_editSource()}),
-          menu_action({title: 'Outline', action: studio_openControlTree()}),
-          menu_action({
+          menu.action({title: 'Refresh Preview', action: studio.refreshPreview()}),
+          menu.action({title: 'Redraw Studio', action: studio.redrawStudio()}),
+          menu.action({title: 'Edit source', action: studio.editSource()}),
+          menu.action({title: 'Outline', action: studio.openControlTree()}),
+          menu.action({
             title: 'Inteliscript Editor',
-            action: studio_openJbEditor({path: studio_currentProfilePath()})
+            action: studio.openJbEditor({path: studio.currentProfilePath()})
           }),
-          menu_action({
+          menu.action({
             title: 'Disable probe',
             action: ctx => jb.studio.probeDisabled = true,
             showCondition: ctx => !jb.studio.probeDisabled
           }),
-          menu_action({
+          menu.action({
             title: 'Enable probe',
             action: ctx => jb.studio.probeDisabled = false,
             showCondition: ctx => jb.studio.probeDisabled
           })
         ]
       }),
-      studio_insertControlMenu(),
-      studio_dataResourceMenu()
+      studio.insertControlMenu(),
+      studio.dataResourceMenu()
     ]
   })
 })
 
-jb.component('studio.top-bar', { /* studio_topBar */
+jb.component('studio.top-bar', { /* studio.topBar */
   type: 'control',
   impl: group({
     title: 'top bar',
-    style: layout_horizontal('3'),
+    style: layout.horizontal('3'),
     controls: [
       image({
         url: '/projects/studio/css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
-        style: image_default(),
-        features: css_margin({top: '15', left: '5'})
+        style: image.default(),
+        features: css.margin({top: '15', left: '5'})
       }),
       group({
         title: 'title and menu',
-        style: layout_vertical('17'),
+        style: layout.vertical('17'),
         controls: [
-          label({title: 'message', style: label_studioMessage()}),
+          label({title: 'message', style: label.studioMessage()}),
           label({
             title: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
-            style: label_span(),
+            style: label.span(),
             features: css('{ font: 20px Arial; margin-left: 6px; }')
           }),
           group({
             title: 'menu and toolbar',
-            style: layout_flex('space-between'),
+            style: layout.flex('space-between'),
             controls: [
-              menu_control({menu: studio_mainMenu(), style: menuStyle_pulldown({}), features: css_height('30')}),
-              studio_toolbar(),
-              studio_searchComponent()
+              menu.control({menu: studio.mainMenu(), style: menuStyle.pulldown({}), features: [ id('mainMenu'), css.height('30')] }),
+              studio.toolbar(),
+              studio.searchComponent()
             ],
-            features: [css_width('1040')]
+            features: [css.width('1040')]
           })
         ],
         features: css('{ padding-left: 18px; width: 100%; }')
@@ -35745,50 +35886,50 @@ jb.component('studio.top-bar', { /* studio_topBar */
   })
 })
 
-jb.component('studio.all', { /* studio_all */
+jb.component('studio.all', { /* studio.all */
   type: 'control',
   impl: group({
     controls: [
-      studio_topBar(),
+      studio.topBar(),
       group({
-        controls: studio_previewWidget({width: 1280, height: 520}),
+        controls: studio.previewWidget({width: 1280, height: 520}),
         features: id('preview-parent')
       }),
-      studio_pages(),
-      studio_ctxCounters()
+      studio.pages(),
+      studio.ctxCounters()
     ],
     features: [
-      group_data({data: '%$studio/project%', watch: true}),
-      feature_init(urlHistory_mapStudioUrlToResource('studio'))
+      group.data({data: '%$studio/project%', watch: true}),
+      feature.init(urlHistory.mapStudioUrlToResource('studio'))
     ]
   })
 })
 
-jb.component('studio.dynamic', { /* studio_dynamic */
+jb.component('studio.dynamic', { /* studio.dynamic */
   type: 'control',
   impl: group({
     title: 'top bar',
-    style: layout_horizontal('3'),
+    style: layout.horizontal('3'),
     controls: [
       image({
         url: '/projects/studio/css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
-        style: image_default(),
-        features: css_margin({top: '15', left: '5'})
+        style: image.default(),
+        features: css.margin({top: '15', left: '5'})
       }),
       group({
         title: 'title and menu',
-        style: layout_vertical('17'),
+        style: layout.vertical('17'),
         controls: [
-          label({title: 'message', style: label_studioMessage()}),
+          label({title: 'message', style: label.studioMessage()}),
           group({
-            style: layout_flex('space-between'),
+            style: layout.flex('space-between'),
             controls: [
-              studio_toolbar(),
-              studio_searchComponent()
+              studio.toolbar(),
+              studio.searchComponent()
             ],
-            features: [css_width('1040')]
+            features: [css.width('1040')]
           })
         ],
         features: css('{ padding-left: 18px; width: 100%; }')
@@ -35798,14 +35939,14 @@ jb.component('studio.dynamic', { /* studio_dynamic */
   })
 })
 
-jb.component('studio.path-hyperlink', { /* studio_pathHyperlink */ 
+jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */ 
   type: 'control',
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {id: 'prefix', as: 'string'}
   ],
   impl: group({
-    style: layout_horizontal('9'),
+    style: layout.horizontal('9'),
     controls: [
       label('%$prefix%'),
       button({
@@ -35814,9 +35955,9 @@ jb.component('studio.path-hyperlink', { /* studio_pathHyperlink */
 	  		const title = jb.studio.shortTitle(path) || '',compName = jb.studio.compNameOfPath(path) || '';
 	  		return title == compName ? title : compName + ' ' + title;
 	  	},
-        action: studio_gotoPath('%$path%'),
-        style: button_href(),
-        features: feature_hoverTitle('%$path%')
+        action: studio.gotoPath('%$path%'),
+        style: button.href(),
+        features: feature.hoverTitle('%$path%')
       })
     ]
   })
@@ -35825,7 +35966,7 @@ jb.component('studio.path-hyperlink', { /* studio_pathHyperlink */
 ;
 
 jb.component('jb-component', {
-  type: '*',
+  type: 'any',
   params: [
     { id: 'type', as: 'string', mandatory: true },
     { id: 'category', as: 'string'},
@@ -35971,7 +36112,7 @@ st.Probe = class {
         this.result.visits = 0
         this.probe[pathToTrace] = this.result
         this.pathToTrace = pathToTrace
-        const initial_resources = st.previewjb.valueByRefHandler.resources()
+        const initial_resources = st.previewjb.resources
         const initial_comps = st.compsRefHandler.resources()
         if (st.probeDisabled) {
             this.completed = false
@@ -35995,9 +36136,9 @@ st.Probe = class {
                 jb.log('probe',['completed',pathToTrace, this.result, this.totalTime, this])
                 // make values out of ref
                 this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)})
-                st.previewjb.valueByRefHandler.resources(initial_resources)
+                st.previewjb.watchableValueByRef && st.previewjb.watchableValueByRef.resources(initial_resources)
                 st.compsRefHandler.resources(initial_comps)
-                    return this
+                return this
             })
     }
 
@@ -36091,7 +36232,7 @@ st.Probe = class {
 
 const probeEmitter = new jb.rx.Subject()
 
-jb.component('studio.probe', { /* studio_probe */ 
+jb.component('studio.probe', { /* studio.probe */ 
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}
@@ -36166,7 +36307,7 @@ jb.component('suggestions-test', {
       return probeRes.then(res=>{
         var probeCtx = res.result[0] && res.result[0].in;
         var obj = new jb.studio.suggestions({ value: params.expression, selectionStart: selectionStart })
-          .extendWithOptions(probeCtx,probeCtx.path);
+          .extendWithOptions(probeCtx.setVars({'people-array': ctx.exp('%$people-array%')}),probeCtx.path);
         return JSON.stringify(JSON.stringify(obj.options.map(x=>x.text)));
       })
     },

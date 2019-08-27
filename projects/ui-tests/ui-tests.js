@@ -402,6 +402,7 @@ jb.component('ui-test.itemlist-DD',  /* uiTest_itemlistDD */ {
       controls: [
         itemlist({
           items: '%$mutable-people%',
+          watchItems: true,
           controls: label({title: '%name%', features: css_class('drag-handle')}),
           features: [
             itemlist_selection({databind: '%$globals/selectedPerson%', autoSelectFirst: true}),
@@ -410,7 +411,7 @@ jb.component('ui-test.itemlist-DD',  /* uiTest_itemlistDD */ {
             id('itemlist')
           ]
         }),
-        itemlist({items: '%$mutable-people%', controls: label('%name%'), watchItems: true})
+        itemlist({items: '%$mutable-people%', controls: label('%name%'), watchItems: true })
       ]
     }),
     action: [
@@ -609,7 +610,7 @@ jb.component('ui-test.table-DD',  /* uiTest_tableDD */ {
             itemlist_dragAndDrop()
           ]
         }),
-        label({title: pipeline('%$people/name%', join({})), features: watchRef('%$people%')})
+        label({title: pipeline('%$mutable-people/name%', join({})), features: watchRef('%$mutable-people%')})
       ]
     }),
     expectedResult: contains(['age', 'Homer Simpson', '12'])

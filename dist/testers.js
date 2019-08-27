@@ -109,7 +109,7 @@ jb.component('ui-test', {
 
 function countersErrors(expectedCounters) {
 	return Object.keys(expectedCounters || {}).map(
-		counter => expectedCounters[counter] != jb.frame.wSpy.logs.$counters[counter] 
+		counter => expectedCounters[counter] !== (jb.frame.wSpy.logs.$counters[counter] || 0)
 			? `${counter}: ${jb.frame.wSpy.logs.$counters[counter]} instead of ${expectedCounters[counter]}` : '')
 		.filter(x=>x)
 		.join(', ')
@@ -224,7 +224,9 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 			jb.logs.error = [];
 			return Promise.resolve(new jb.jbCtx().setVars({testID: e[0], initial_resources }).run({$:e[0]}))
 				.then(res => {
-					if (res.success && jb.logs.error.length > 0) {
+					if (!res)
+						return { id: e[0], success: false, reason: 'empty result'}
+					if (res && res.success && jb.logs.error.length > 0) {
 						res.success = false;
 						res.reason = 'log errors: ' + JSON.stringify(jb.logs.error) 
 					}

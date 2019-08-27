@@ -145,7 +145,7 @@ jb.component('play-ground.more-items', {
         controls :{$: 'label', title: '%%' }, 
         style :{$: 'itemlist.ul-li' }, 
         itemVariable: 'item', 
-        features :{$: 'watch-ref', ref: '%$itemlistCntrData%', includeChildren: true }
+        features :{$: 'watch-ref', ref: '%$itemlistCntrData%', includeChildren: 'yes' }
       }, 
       {$: 'itemlist-container.more-items-button', 
         maxItemsRef: '%$itemlistCntrData/maxItems%', 

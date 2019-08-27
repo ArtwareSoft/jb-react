@@ -35,7 +35,7 @@ jb.component('watch-ref', {
 	description: 'subscribes to data changes to refresh component',
   params: [
     { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
-    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
     { id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
     { id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children' },
   ],
@@ -71,7 +71,7 @@ jb.component('group.data', {
     { id: 'data', mandatory: true, dynamic: true, as: 'ref' },
     { id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable' },
     { id: 'watch', as: 'boolean' },
-    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
   ],
   impl: (ctx, data_ref, itemVariable,watch,includeChildren) => ({
       init: cmp => {
@@ -161,7 +161,7 @@ jb.component('bind-refs', {
   description: 'automatically updates a mutual variable when other value is changing',
   params: [
     { id: 'watchRef', mandatory: true, as: 'ref' },
-    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
     { id: 'updateRef', mandatory: true, as: 'ref' },
     { id: 'value', mandatory: true, as: 'single', dynamic: true },
   ],
@@ -192,7 +192,7 @@ jb.component('calculated-var', {
         jb.resource(fullName, jb.val(value(ctx)));
         const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
         (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
-            jb.ui.refObservable(ref,cmp,{includeChildren:true, watchScript: context}).subscribe(e=>
+            jb.ui.refObservable(ref,cmp,{includeChildren: 'yes', watchScript: context}).subscribe(e=>
               jb.writeValue(refToResource,value(cmp.ctx),context))
           )
         return ctx.setVars(jb.obj(name, refToResource));

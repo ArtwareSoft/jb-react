@@ -196,7 +196,7 @@ jb.component('studio.comp-name-ref', { /* studio_compNameRef */
 					st.setComp(path,value,ctx)
 			},
 			$jb_observable: cmp =>
-				jb.ui.refObservable(st.refOfPath(path),cmp,{includeChildren: true})
+				jb.ui.refObservable(st.refOfPath(path),cmp,{includeChildren: 'yes'})
 	})
 })
 
@@ -243,7 +243,7 @@ jb.component('studio.profile-as-text', { /* studio_profileAsText */
 			}
 		},
 		$jb_observable: cmp =>
-			jb.ui.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+			jb.ui.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: 'yes'})
 	})
 })
 
@@ -274,7 +274,7 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 						return ''+val;
 					return jb.prettyPrint(val || '',{macro:true, initialPath: path});
 				} else {
-					const notPrimitive = value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
+					const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
 					const newVal = notPrimitive ? st.evalProfile(value) : value;
 					if (newVal && typeof newVal == 'object') {
 						const currentVal = st.valOfPath(path);
@@ -303,7 +303,7 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 			}
 		},
 		$jb_observable: cmp =>
-			jb.ui.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+			jb.ui.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: 'yes'})
 	})
 })
 

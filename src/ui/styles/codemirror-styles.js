@@ -51,13 +51,13 @@ jb.component('editable-text.codemirror', {
 				}
 				//cmp.lastEdit = new Date().getTime();
 				editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-				jb.ui.refObservable(data_ref,cmp,{watchScript: context})
+				jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: context})
 					.map(e=>jb.tostring(data_ref))
 					.filter(x => x != editor.getValue())
 					.subscribe(x=>
 						editor.setValue(x));
 
-				var editorTextChange = jb.rx.Observable.create(obs=>
+				const editorTextChange = jb.rx.Observable.create(obs=>
 					editor.on('change', () => {
 						//cmp.lastEdit = new Date().getTime();
 						obs.next(editor.getValue())
@@ -162,15 +162,15 @@ jb.component('text.codemirror', {
                     theme: 'solarized light',
                 };
                 try {
-                  var editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
-        					var wrapper = editor.getWrapperElement();
-        					if (height)
-        						wrapper.style.height = height + 'px';
-        					jb.delay(1).then(() => {
-        						if (_enableFullScreen)
-        							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
-        						editor.refresh(); // ????
-        					});
+                  const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+				  const wrapper = editor.getWrapperElement();
+					if (height)
+						wrapper.style.height = height + 'px';
+					jb.delay(1).then(() => {
+						if (_enableFullScreen)
+							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
+						editor.refresh(); // ????
+					});
                 } catch(e) {
                     jb.logException(e,'editable-text.codemirror',context);
                     return;

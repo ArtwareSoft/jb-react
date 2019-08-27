@@ -246,13 +246,17 @@ class WatchableValueByRef {
   propagateResourceChangeToObservables() {
       this.resourceChange.subscribe(e=>{
           const changed_path = this.pathOfRef(e.ref);
+          this.observables = this.observables.filter(obs=>jb.refHandler(obs.ref))
           if (changed_path)
             this.observables.forEach(obs=>{
                 const obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
                 if (!obsPath)
                   return jb.logError('observer ref path is empty',obs,e)
                 const diff = comparePaths(changed_path, obsPath)
-                if (diff == -1 || diff == 0 || diff == 1 && obs.includeChildren) {
+                const isChildOfChange = diff == 1
+                const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
+                const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
+                if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
                     jb.log('notifyCmpObservable',['notify change',e.srcCtx,obs,e])
                     obs.subject.next(e)
                 }

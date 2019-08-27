@@ -109,7 +109,7 @@ jb.component('ui-test', {
 
 function countersErrors(expectedCounters) {
 	return Object.keys(expectedCounters || {}).map(
-		counter => expectedCounters[counter] != jb.frame.wSpy.logs.$counters[counter] 
+		counter => expectedCounters[counter] !== (jb.frame.wSpy.logs.$counters[counter] || 0)
 			? `${counter}: ${jb.frame.wSpy.logs.$counters[counter]} instead of ${expectedCounters[counter]}` : '')
 		.filter(x=>x)
 		.join(', ')

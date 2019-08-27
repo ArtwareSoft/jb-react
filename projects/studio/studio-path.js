@@ -346,7 +346,7 @@ jb.component('studio.watch-path', { /* studio.watchPath */
   category: 'group:0',
   params: [
     {id: 'path', as: 'string', mandatory: true},
-    {id: 'includeChildren', as: 'boolean', type: 'boolean', defaultValue: true},
+    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
     {
       id: 'delay',
       as: 'number',
@@ -393,7 +393,7 @@ jb.component('studio.watch-typeof-script', { /* studio.watchTypeofScript */
   type: 'feature',
   impl: (ctx,path) => ({
       init: cmp =>
-    	jb.ui.refObservable(st.refOfPath(path),cmp,{ includeChildren: true, watchScript: ctx})
+    	jb.ui.refObservable(st.refOfPath(path),cmp,{ includeChildren: 'yes', watchScript: ctx})
     		.filter(e=>
     			(typeof e.oldVal == 'object') != (typeof e.newVal == 'object'))
     		.subscribe(e=>

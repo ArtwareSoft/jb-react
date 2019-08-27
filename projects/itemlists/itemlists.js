@@ -185,7 +185,7 @@ jb.component('itemlists.table-with-search', {
             ], 
             watchItems: 'true', 
             features: [
-              {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%', includeChildren: '' }, 
+              {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' }, 
               {$: 'itemlist.selection', autoSelectFirst: 'true' }, 
               {$: 'itemlist.keyboard-selection' }, 
               {$: 'css.width', width: '300' }
@@ -241,7 +241,7 @@ jb.component('itemlists.table-with-filters', {
               {$: 'field', title: 'age', data: '%age%' }
             ], 
             watchItems: 'true', 
-            features :{$: 'watch-ref', ref: '%$itemlistCntrData%', includeChildren: 'true' }
+            features :{$: 'watch-ref', ref: '%$itemlistCntrData%', includeChildren: 'yes' }
           }
         ], 
         features :{$: 'group.itemlist-container' }

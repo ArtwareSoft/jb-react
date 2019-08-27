@@ -296,7 +296,6 @@ function expression(exp, ctx, parentParam) {
   }
 }
 
-
 function evalExpressionPart(expressionPart,ctx,parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   // example: %$person.name%.
@@ -314,7 +313,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
           return input;
 
       const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || (input && input.handler) || jb.valueByRefHandler;
+      const refHandler = refHandlerArg || jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
       if (arrayIndexMatch) {
         const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
         const index = arrayIndexMatch[2];
@@ -471,7 +470,10 @@ const jstypes = {
       return val(value);
     },
     ref(value) {
-      return jb.valueByRefHandler.asRef(value);
+      return jb.asRef(value);
+    },
+    value(value) {
+      return val(value);
     }
 }
 
@@ -574,10 +576,11 @@ const log = (logName, record) => frame.wSpy && frame.wSpy.log(logName, record, {
 }});
 
 function pathSummary(path) {
+  if (!path) return ''
   const _path = path.split('~');
   while(!jb.compName(profileOfPath(_path)) && _path.length > 0)
     _path.pop();
-	return jb.compName(profileOfPath(_path)) + ':' + path;
+	return jb.compName(profileOfPath(_path)) + ': ' + path;
 }
 
 function logError() {
@@ -587,12 +590,15 @@ function logError() {
 
 function logException(e,errorStr,ctx, ...rest) {
   frame.console && frame.console.log(...arguments)
-  log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx.path),e, ...rest])
+  log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx && ctx.path),e, ...rest])
 }
 
-function val(v) {
-  if (v == null) return v;
-  return jb.valueByRefHandler.val(v)
+function val(ref) {
+  if (ref == null || typeof ref != 'object') return ref;
+  const handler = jb.refHandler(ref)
+  if (handler)
+    return handler.val(ref)
+  return ref
 }
 // Object.getOwnPropertyNames does not keep the order !!!
 function entries(obj) {
@@ -616,12 +622,12 @@ function extend(obj,obj1,obj2,obj3) {
   return obj;
 }
 
-const valueByRefHandlerWithjbParent = {
-  val: function(v) {
+const simpleValueByRefHandler = {
+  val(v) {
     if (v.$jb_val) return v.$jb_val();
-    return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
+    return v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
   },
-  writeValue: function(to,value,srcCtx) {
+  writeValue(to,value,srcCtx) {
     jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
     if (!to) return;
     if (to.$jb_val)
@@ -630,15 +636,16 @@ const valueByRefHandlerWithjbParent = {
       to.$jb_parent[to.$jb_property] = this.val(value);
     return to;
   },
-  asRef: function(value) {
-    if (value && (value.$jb_parent || value.$jb_val))
-        return value;
-    return { $jb_val: () => value, $jb_path: () => [] }
+  asRef(value) {
+    return value
+    // if (value && (value.$jb_parent || value.$jb_val))
+    //     return value;
+    // return { $jb_val: () => value, $jb_path: () => [] }
   },
-  isRef: function(value) {
+  isRef(value) {
     return value && (value.$jb_parent || value.$jb_val);
   },
-  objectProperty: function(obj,prop) {
+  objectProperty(obj,prop) {
       if (this.isRef(obj[prop]))
         return obj[prop];
       else
@@ -646,15 +653,13 @@ const valueByRefHandlerWithjbParent = {
   }
 }
 
-const valueByRefHandler = valueByRefHandlerWithjbParent;
-
 let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 
 return {
   run: jb_run,
   jbCtx, expression, bool_expression, profileType, compName, pathSummary, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  valueByRefHandler, types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame,
-  ctxCounter: _ => ctxCounter
+  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame,
+  ctxCounter: _ => ctxCounter, simpleValueByRefHandler
 }
 
 })();
@@ -662,25 +667,32 @@ return {
 Object.assign(jb,{
   comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, //macros: {},
   studio: { previewjb: jb },
+  knownNSAndCompCases: ['field'],
   macroName: id =>
     id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
-  component: (id,val) => {
-    jb.comps[id] = val
-    jb.traceComponentFile && jb.traceComponentFile(val)
+  component: (id,comp) => {
+    jb.comps[id] = comp
+    try {
+      jb.traceComponentFile && jb.traceComponentFile(comp)
+      if (comp.watchableData !== undefined)
+        return jb.resource(id,comp.watchableData)
+      if (comp.passiveData !== undefined)
+        return jb.const(id,comp.passiveData)
+    } catch(e) {}
 
     // fix as boolean params to have type: 'boolean'
-    (val.params || []).forEach(p=> {
+    (comp.params || []).forEach(p=> {
       if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
         p.type = 'boolean'
     })
 
-    jb.registerMacro(id, val)
+    jb.registerMacro(id, comp)
   },
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => { 
     if (typeof val !== 'undefined')
       jb.resources[id] = val
-    jb.valueByRefHandler && jb.valueByRefHandler.resourceReferred && jb.valueByRefHandler.resourceReferred(id);
+    jb.mainWatchableHandler && jb.mainWatchableHandler.resourceReferred(id);
     return jb.resources[id];
   },
   const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
@@ -718,7 +730,7 @@ Object.assign(jb,{
           args.push(arg)
       })
       if (args.length == 1 && typeof args[0] === 'object') {
-        jb.toarray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system,arg))
+        jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system,arg))
         args[0].remark && jb.comps.remark.macro(system,args[0])
       }
       return {args,system}
@@ -731,7 +743,7 @@ Object.assign(jb,{
       }
       if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId])
         jb.logError(macroId + ' is defined more than once, using last definition ' + id)
-      if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
+      if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId] && jb.knownNSAndCompCases.indexOf[macroId] == -1)
         jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
       return true;
     }
@@ -836,6 +848,7 @@ Object.assign(jb,{
     return res;
   },
 
+  asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
 
@@ -843,17 +856,42 @@ Object.assign(jb,{
     new Promise(r=>{setTimeout(r,mSec)}),
 
   // valueByRef API
-  refHandler: ref => (ref && ref.handler) || jb.valueByRefHandler,
-  writeValue: (ref,value,srcCtx) => jb.refHandler(ref).writeValue(ref,value,srcCtx),
-  splice: (ref,args,srcCtx) => jb.refHandler(ref).splice(ref,args,srcCtx),
-  move: (fromRef,toRef,srcCtx) => jb.refHandler(fromRef).move(fromRef,toRef,srcCtx),
-  isRef: ref => jb.refHandler(ref).isRef(ref),
-  isValid: ref => jb.refHandler(ref).isValid(ref),
-  refreshRef: ref => jb.refHandler(ref).refresh(ref),
-  asRef: obj => jb.valueByRefHandler.asRef(obj),
-  startTransaction: () => jb.refHandler().startTransaction(),
-  endTransaction: () => jb.refHandler().endTransaction(),
-  resourceChange: () => jb.valueByRefHandler.resourceChange
+  extraWatchableHandlers: [],
+  addExtraWatchableHandler: handler => { 
+    jb.extraWatchableHandlers.push(handler)
+    jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
+    return handler
+  },
+  setMainWatchableHandler: handler => { 
+    jb.mainWatchableHandler = handler
+    jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
+  },
+  watchableHandlers: [],
+  safeRefCall: (ref,f) => {
+    const handler = ref && ref.handler || jb.refHandler(ref)
+    if (!handler || !handler.isRef(ref))
+      return jb.logError('invalid ref', ref)
+    return f(handler)
+  },
+ 
+  refHandler: ref => {
+    if (jb.simpleValueByRefHandler.isRef(ref)) 
+      return jb.simpleValueByRefHandler
+    return jb.watchableHandlers.find(handler => handler.isRef(ref))
+  },
+  asRef: obj => {
+    const watchableHanlder = jb.watchableHandlers.find(handler => handler.watchable(obj) || handler.isRef(obj))
+    if (watchableHanlder)
+      return watchableHanlder.asRef(obj)
+    return jb.simpleValueByRefHandler.asRef(obj)
+  },
+  writeValue: (ref,value,srcCtx) => jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
+  splice: (ref,args,srcCtx) => jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
+  move: (ref,toRef,srcCtx) => jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
+  isRef: ref => jb.refHandler(ref),
+  isWatchable: ref => false, // overriden by the watchable-ref.js (if loaded)
+  isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
+  refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),
 })
 if (typeof self != 'undefined')
   self.jb = jb
@@ -861,7 +899,7 @@ if (typeof module != 'undefined')
   module.exports = jb;
 
 jb.component('call', {
- 	type: '*',
+ 	type: 'any',
  	params: [
  		{ id: 'param', as: 'string' }
  	],
@@ -883,7 +921,7 @@ jb.pipe = function(context,items,ptName) {
 	const start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
 	if (typeof context.profile.items == 'string')
 		return context.runInner(context.profile.items,null,'items');
-	const profiles = jb.toarray(context.profile.items || context.profile[ptName]);
+	const profiles = jb.asArray(context.profile.items || context.profile[ptName]);
 	const innerPath = (context.profile.items && context.profile.items.sugar) ? ''
 		: (context.profile[ptName] ? (ptName + '~') : 'items~');
 
@@ -1631,28 +1669,12 @@ jb.component('runActions', {
 	],
 	impl: ctx => {
 		if (!ctx.profile) debugger;
-		const actions = jb.toarray(ctx.profile.actions || ctx.profile['$runActions']);
+		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']);
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
 		return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
 			,Promise.resolve())
-	}
-});
-
-jb.component('run-transaction', {
-	type: 'action',
-	params: [
-		{ id: 'actions', type:'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: [] },
-		{ id: 'disableNotifications', as: 'boolean', type: 'boolean' }
-	],
-	impl: (ctx,actions,disableNotifications) => {
-		jb.startTransaction()
-		return actions.reduce((def,action,index) =>
-				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
-			,Promise.resolve())
-			.catch((e) => jb.logException(e,ctx))
-			.then(() => jb.endTransaction(disableNotifications))
 	}
 });
 
@@ -1670,10 +1692,10 @@ jb.component('run-action-on-items',  /* runActionOnItems */ {
     }
   ],
   impl: (ctx,items,action,notifications) => {
-		if (notifications) jb.startTransaction()
+		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
 		return items.reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,ctx))
-			.then(() => notifications && jb.endTransaction(notifications === 'no notifications'));
+			.then(() => notifications && jb.mainWatchableHandler && jb.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
 })
 
@@ -1884,11 +1906,8 @@ jb.component('action.switch-case', {
   impl: ctx => ctx.params
 })
 
-jb.component('newline', {
-  impl: ctx => '\n'
-})
-
-jb.const('global', typeof window != 'undefined' ? window : typeof global != 'undefined' ? global : null);
+jb.component('newline', { passiveData: '\n' })
+jb.component('frame',   { passiveData: jb.frame });
 
 (function() {
 'use strict'
@@ -2121,39 +2140,6 @@ if (typeof window == 'object') {
 })()
 ;
 
-var valueByRefHandlerWithjbParent = {
-  val: function(v) {
-    if (v.$jb_val) return v.$jb_val();
-    return (v.$jb_parent) ? v.$jb_parent[v.$jb_property] : v;
-  },
-  writeValue: function(to,value,srcCtx) {
-    jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
-    if (!to) return;
-    if (to.$jb_val)
-      to.$jb_val(this.val(value))
-    else if (to.$jb_parent)
-      to.$jb_parent[to.$jb_property] = this.val(value);
-    return to;
-  },
-  asRef: function(value) {
-    if (value && (value.$jb_parent || value.$jb_val))
-        return value;
-    return { $jb_val: () => value }
-  },
-  isRef: function(value) {
-    return value && (value.$jb_parent || value.$jb_val);
-  },
-  objectProperty: function(obj,prop) {
-      if (this.isRef(obj[prop]))
-        return obj[prop];
-      else
-        return { $jb_parent: obj, $jb_property: prop };
-  }
-}
-
-jb.valueByRefHandler = valueByRefHandlerWithjbParent;
-;
-
 
 jb.component('pretty-print', {
   params: [
@@ -2374,7 +2360,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   }
 
   function profileToMacro(ctx, profile,flat) {
-    const id = jb.compName(profile)
+    const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
     const comp = jb.comps[id]
     if (!id || !comp || profile.$recursive || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
       const props = Object.keys(profile) 
@@ -2392,7 +2378,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
     const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
     const systemProps = vars.concat(remark)
     if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus
-      const args = systemProps.concat(jb.toarray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val})))
+      const args = systemProps.concat(jb.asArray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val})))
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
@@ -2411,7 +2397,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
       return joinVals(ctx, args, `${macro}({`, '})', flat, false)
   }
     
-    function valueToMacro(ctx, val, flat) {
+  function valueToMacro(ctx, val, flat) {
     if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
     if (val === null) return 'null';
     if (val === undefined) return 'undefined';
