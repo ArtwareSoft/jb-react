@@ -260,21 +260,25 @@ jb.component('ui-test.group-watching-structure', {
   })
 })
 
-jb.component('ui-test.watch-ref-array-delete',  {
+jb.component('ui-test.watch-ref-array-delete-with-run-action-on-items',  {
   impl: uiTest({
     control: group({
-      controls: [label({title: json.stringify("%$people%"),
-      features:[watchRef({ref: '%$people%', includeChildren: 'yes'})] 
+      controls: label({
+          title: json.stringify("%$mutable-people%"),
+          features: watchRef({ref: '%$mutable-people%', includeChildren: 'yes'}) 
+      }),
+      features: [
+        feature_afterLoad( 
+          runActionOnItems('%$mutable-people%', 
+            splice({
+              array: "%$mutable-people%",
+              fromIndex: indexOf("%$mutable-people%", '%%'),
+              noOfItemsToRemove: '1',
+              itemsToAdd: []
+            })))
+      ]
     }),
-    label("hey")] 
-    ,features: [feature_afterLoad( runActionOnItems('%$people%',splice(
-      {array: "%$people%",
-        fromIndex: indexOf("%$people%", '%%'),
-        noOfItemsToRemove: '1',
-        itemsToAdd: []
-      })))]
-    
-    }),
+    expectedCounters: { setState: 3},
     expectedResult: contains('[]')
   })
 })   
