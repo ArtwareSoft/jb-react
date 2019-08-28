@@ -13,10 +13,10 @@ jb.component('hello-world.main', {
     controls: [
       group({
         controls: [label('%$people[0]/name%')],
-        features: variable({name: 'second', value: '22', mutable: true})
+        features: variable({name: 'second', value: '22', watchable: true})
       })
     ],
-    features: variable({name: 'adsa', value: 'asdasdas', mutable: true, globalId: 'mukki'})
+    features: variable({name: 'adsa', value: 'asdasdas', watchable: true, globalId: 'mukki'})
   })
 })
 
@@ -48,7 +48,7 @@ jb.component('hello-world.main2', {
         itemVariable: 'item'
       })
     ],
-    features: variable({name: 'text', value: 'hello world', mutable: 'true'})
+    features: variable({name: 'text', value: 'hello world', watchable: 'true'})
   })
 })
 

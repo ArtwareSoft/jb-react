@@ -73,7 +73,7 @@ jb.component('studio.open-new-project', { /* studio_openNewProject */
     onOK: studio_newProject('%$name%', gotoUrl('/project/studio/%$name%/')),
     modal: true,
     features: [
-      variable({name: 'name', mutable: true}),
+      variable({name: 'name', watchable: true}),
       dialogFeature_autoFocusOnFirstInput(),
       dialogFeature_nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
     ]

@@ -130,25 +130,24 @@ jb.component('feature.hover-title', {
 
 jb.component('variable', {
   type: 'feature', category: 'general:90',
-	description: 'define a variable. mutable or const, local or global',
+	description: 'define a variable. watchable or passive, local or global',
   params: [
     { id: 'name', as: 'string', mandatory: true },
     { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
-    { id: 'mutable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable' },
+    { id: 'watchable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable' },
     { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
   ],
-  impl: (context, name, value, mutable, globalId) => ({
+  impl: (context, name, value, watchable, globalId) => ({
       extendCtxOnce: (ctx,cmp) => {
-        if (!mutable) {
+        if (!watchable)
           return ctx.setVars(jb.obj(name, value(ctx)))
-        } else {
-          cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
-          const fullName = globalId || (name + ':' + cmp.resourceId);
-          jb.log('var',['new-resource',ctx,fullName])
-          jb.resource(fullName, jb.val(value(ctx)));
-          const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
-          return ctx.setVars(jb.obj(name, refToResource));
-        }
+
+        cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
+        const fullName = globalId || (name + ':' + cmp.resourceId);
+        jb.log('var',['new-resource',ctx,fullName])
+        jb.resource(fullName, jb.val(value(ctx)));
+        const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
+        return ctx.setVars(jb.obj(name, refToResource));
       }
   })
 })
