@@ -238,9 +238,9 @@ function calcVar(ctx,varname,jstype) {
   else if (ctx.vars.scope && ctx.vars.scope[varname] != null)
     res = ctx.vars.scope[varname];
   else if (jb.resources && jb.resources[varname] != null)
-    res = jb.resource(varname);
+    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.mainWatchableHandler.objectProperty(jb.resources,varname) : jb.resource(varname)
   else if (jb.consts && jb.consts[varname] != null)
-    res = jb.consts[varname];
+    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
   if (ctx.vars.debugSourceRef && typeof res == 'string' && jstype == 'string-with-source-ref' && jb.stringWithSourceRef)
     return new jb.stringWithSourceRef(ctx,varname,0,res.length)
   return resolveFinishedPromise(res);
