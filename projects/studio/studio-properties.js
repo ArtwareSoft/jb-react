@@ -72,7 +72,7 @@ jb.component('studio.property-script', { /* studio.propertyScript */
       action: {$: 'studio.open-jb-editor', path: '%$path%', $recursive: true},
       style: button.studioScript()
     }),
-    features: studio.watchPath({path: '%$path%', includeChildren: true})
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
   })
 })
 
@@ -84,7 +84,7 @@ jb.component('studio.property-boolean', { /* studio.propertyBoolean */
   impl: editableBoolean({
     databind: studio.ref('%$path%'),
     style: editableBoolean.mdlSlideToggle(),
-    features: studio.watchPath({path: '%$path%', includeChildren: true})
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
   })
 })
 
@@ -97,7 +97,7 @@ jb.component('studio.property-enum', { /* studio.propertyEnum */
     databind: studio.ref('%$path%'),
     options: studio.enumOptions('%$path%'),
     style: picklist.nativeMdLook(),
-    features: studio.watchPath({path: '%$path%', includeChildren: true})
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
   })
 })
 
@@ -117,7 +117,7 @@ jb.component('studio.property-slider', { /* studio.propertySlider */
       css(
         ">input-slider { width: 110px; }\n>.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }"
       ),
-      studio.watchPath({path: '%$path%', includeChildren: true})
+      studio.watchPath({path: '%$path%', includeChildren: 'yes'})
     ]
   })
 })
@@ -207,7 +207,7 @@ jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
           label({
             title: studio.summary('%$path%'),
             style: label.htmlTag('p'),
-            features: [css.width('335'), studio.watchPath({path: '%$path%', includeChildren: true})]
+            features: [css.width('335'), studio.watchPath({path: '%$path%', includeChildren: 'yes'})]
           }),
           studio.propertyToolbar('%$path%')
         ],
@@ -226,7 +226,7 @@ jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
     features: [
       css.margin({left: '-100'}),
       variable({name: 'expanded', value: studio.isNew('%$path%'), mutable: true}),
-      studio.watchPath({path: '%$path%', includeChildren: true})
+      studio.watchPath({path: '%$path%', includeChildren: 'yes'})
     ]
   })
 })
@@ -244,7 +244,7 @@ jb.component('studio.property-array', { /* studio.propertyArray */
     }),
     itemVariable: 'arrayItem',
     features: [
-      studio.watchPath({path: '%$path%', includeChildren: true, allowSelfRefresh: true}),
+      studio.watchPath({path: '%$path%', includeChildren: 'structure', allowSelfRefresh: true}),
       itemlist.divider(),
       itemlist.dragAndDrop()
     ]

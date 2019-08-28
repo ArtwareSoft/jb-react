@@ -22,7 +22,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'dist/jb-rx.js',
 
         'src/ui/react-ctrl.js',
-        'src/ui/immutable-ref.js',
+        'src/ui/watchable-ref.js',
 
         'src/ui/group.js',
         'src/ui/label.js',
@@ -139,7 +139,6 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       'parsing': [ 'src/misc/parsing.js' ],
       'spy': [ 'src/misc/spy.js' ],
       'dynamic-studio': [ 'src/misc/dynamic-studio.js' ],
-      'node': [ 'src/core/jb-node.js' ],
 });
 
 function jb_dynamicLoad(modules,prefix) {

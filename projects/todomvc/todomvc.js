@@ -53,7 +53,7 @@ jb.component('todomvc.main', { /* todomvc.main */
         ],
         style: itemlist.ulLi(),
         itemVariable: 'item',
-        features: watchRef({ref: '%$to_do_list%', includeChildren: true, allowSelfRefresh: true})
+        features: watchRef({ref: '%$to_do_list%', includeChildren: 'yes', allowSelfRefresh: true})
       }),
       button({
         title: 'delete all',
@@ -67,12 +67,12 @@ jb.component('todomvc.main', { /* todomvc.main */
           })
         ),
         style: button.mdlRaised(),
-        features: watchRef({ref: '%$to_do_list%', includeChildren: true, allowSelfRefresh: true})
+        features: watchRef({ref: '%$to_do_list%', includeChildren: 'yes', allowSelfRefresh: true})
       }),
       label({
         title: json.stringify('%$to_do_list%'),
         style: label.span(),
-        features: [id('show'), watchRef({ref: '%$to_do_list%', includeChildren: true})]
+        features: [id('show'), watchRef({ref: '%$to_do_list%', includeChildren: 'yes'})]
       })
     ],
     features: [variable({name: 'to_do_list', value: asIs([{task: 'home', completed: true}]), mutable: true}),
@@ -118,7 +118,7 @@ jb.component('todomvc.test', { /* todomvc.test */
             textForTrue: 'yes',
             textForFalse: 'no',
             features: [
-              watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
+              watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true}),
               feature.onEvent({
                 event: 'change',
                 action: action.if(
@@ -186,7 +186,7 @@ jb.component('todomvc.test', { /* todomvc.test */
             style: itemlist.ulLi(),
             itemVariable: 'item',
             features: [
-              watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
+              watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true}),
               watchRef({ref: '%$filterBy%', allowSelfRefresh: false}),
               css.class('todo-list')
             ]
@@ -201,7 +201,7 @@ jb.component('todomvc.test', { /* todomvc.test */
           label({
             title: pipeline('%$todo%', filter(not('%completed%')), count('%%'), '%% items left'),
             style: label.span(),
-            features: [watchRef({ref: '%$todo%', includeChildren: true}), css.class('todo-count')]
+            features: [watchRef({ref: '%$todo%', includeChildren: 'yes'}), css.class('todo-count')]
           }),
           group({
             title: 'filters',
@@ -251,7 +251,7 @@ jb.component('todomvc.test', { /* todomvc.test */
             style: {$: 'todomvc.button.simple'},
             features: [
               hidden(notEmpty(pipeline('%$todo%', filter('%completed%')))),
-              watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
+              watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true}),
               css.class('clear-completed')
             ]
           })
@@ -262,7 +262,7 @@ jb.component('todomvc.test', { /* todomvc.test */
         title: pipeline(json.stringify('%$todo%'), '%$filterBy%: %%'),
         style: label.span(),
         features: [
-          watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: false}),
+          watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: false}),
           watchRef('%$filterBy%')
         ]
       })
@@ -311,7 +311,7 @@ jb.component('todomvc.start', { /* todomvc.start */
             textForTrue: 'yes',
             textForFalse: 'no',
             features: [
-              watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
+              watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true}),
               feature.onEvent({
                 event: 'change',
                 action: action.if(
@@ -381,7 +381,7 @@ jb.component('todomvc.start', { /* todomvc.start */
             style: itemlist.ulLi(),
             itemVariable: 'item',
             features: [
-              watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
+              watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true}),
               watchRef({ref: '%$filterBy%', allowSelfRefresh: false}),
               css.class('todo-list')
             ]
@@ -396,7 +396,7 @@ jb.component('todomvc.start', { /* todomvc.start */
           label({
             title: pipeline('%$todo%', filter(not('%completed%')), count('%%'), '%% items left'),
             style: label.span(),
-            features: [watchRef({ref: '%$todo%', includeChildren: true}), css.class('todo-count')]
+            features: [watchRef({ref: '%$todo%', includeChildren: 'yes'}), css.class('todo-count')]
           }),
           group({
             title: 'filters',
@@ -446,7 +446,7 @@ jb.component('todomvc.start', { /* todomvc.start */
             style: {$: 'todomvc.button.simple'},
             features: [
               hidden(notEmpty('%$todo/completed%')),
-              watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: true}),
+              watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true}),
               css.class('clear-completed')
             ]
           })
@@ -457,7 +457,7 @@ jb.component('todomvc.start', { /* todomvc.start */
         title: pipeline(json.stringify('%$todo%'), '%$filterBy%: %%'),
         style: label.span(),
         features: [
-          watchRef({ref: '%$todo%', includeChildren: true, allowSelfRefresh: false}),
+          watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: false}),
           watchRef('%$filterBy%')
         ]
       })

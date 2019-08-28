@@ -12,7 +12,7 @@ function concatFiles(files,target) {
     fs.appendFileSync(fn,fs.readFileSync(f) + ';\n\n'));
 }
 
-const filesOfModules = modules => modules.split(',').map(m=>resources[m]).flat()
+const filesOfModules = modules => modules.split(',').map(m=>resources[m]).flat().filter(x=>typeof x == 'string')
 
 const jbReactFiles = filesOfModules('common','ui-common','ui-tree').filter(x=>!x.match(/.css$/));
 const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,pretty-print,history,deep-diff').filter(x=>!x.match(/.css$/))

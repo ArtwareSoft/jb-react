@@ -129,6 +129,6 @@ jb.component('studio.template-as-jsx', { /* studio_templateAsJsx */
 			}
 		},
 		$jb_observable: cmp =>
-			jb.studio.refObservable(jb.studio.refOfPath(ctx.params.path()),cmp,{includeChildren: true})
+			jb.studio.refObservable(jb.studio.refOfPath(ctx.params.path()),cmp,{includeChildren: 'yes'})
 	})
 })

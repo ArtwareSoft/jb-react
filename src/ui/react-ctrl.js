@@ -294,7 +294,6 @@ ui.renderWidget = function(profile,top) {
 				})
 			}
 			st.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
-			return
 		}
 	} catch(e) {
 		jb.logException(e)

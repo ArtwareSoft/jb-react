@@ -1,9 +1,3 @@
-function x(a: string);
-function y() : string;
-function yy() : number;
-
-x(yy(),3,4)
-
 type param = {
 	id: string,
 	type?: tgpTypeStr,
@@ -37,7 +31,7 @@ type cmp_def_anyType = {
 type callPT = {$: 'call', param: dataType}
 
 // type data
-type dataType = pipelinePT | pipePT | data_ifPT | listPT | firstSucceedingPT | keysPT | propertiesPT | prefixPT | suffixPT | remove_prefixPT | remove_suffixPT | remove_suffix_regexPT | index_ofPT | objPT | assignPT | IfPT | to_uppercasePT | to_lowercasePT | capitalizePT | logPT | asIsPT | objectPT | json_stringifyPT | json_parsePT | splitPT | replacePT | delayPT | extract_prefixPT | extract_suffixPT | rangePT | type_ofPT | class_namePT | http_getPT | isRefPT | asRefPT | data_switchPT | newlinePT | jison_parsePT | extract_textPT | break_textPT | zip_arraysPT | remove_sectionsPT | mergePT | dynamic_objectPT | filter_empty_propertiesPT | trimPT | remove_prefix_regexPT | pretty_printPT | fs_readFilePT | fs_statPT | fs_readdirPT | fs_directory_contentPT | test_dialog_contentPT | field_dataPT | itemlist_container_search_in_all_propertiesPT | highlightPT | custom_stylePT | style_by_controlPT | group_divPT | group_sectionPT | ((ctx: ctx) => any)
+type dataType = pipelinePT | pipePT | data_ifPT | listPT | firstSucceedingPT | keysPT | propertiesPT | prefixPT | suffixPT | remove_prefixPT | remove_suffixPT | remove_suffix_regexPT | index_ofPT | objPT | assignPT | IfPT | to_uppercasePT | to_lowercasePT | capitalizePT | logPT | asIsPT | objectPT | json_stringifyPT | json_parsePT | splitPT | replacePT | delayPT | extract_prefixPT | extract_suffixPT | rangePT | type_ofPT | class_namePT | http_getPT | isRefPT | asRefPT | data_switchPT | jison_parsePT | extract_textPT | break_textPT | zip_arraysPT | remove_sectionsPT | mergePT | dynamic_objectPT | filter_empty_propertiesPT | trimPT | remove_prefix_regexPT | pretty_printPT | fs_readFilePT | fs_statPT | fs_readdirPT | fs_directory_contentPT | test_dialog_contentPT | field_dataPT | itemlist_container_search_in_all_propertiesPT | highlightPT | style_by_controlPT | group_divPT | group_sectionPT | ((ctx: ctx) => any)
 type cmp_def_dataType = {
 	type: 'data',
 	params?: [param],
@@ -83,12 +77,11 @@ type rangePT = {$: 'range', from: dataType, to: dataType}
 type type_ofPT = {$: 'type-of', obj: dataType}
 type class_namePT = {$: 'class-name', obj: dataType}
 type http_getPT = {$: 'http.get', url: dataType, 
-/** convert result to json */json: dataType}
+/** convert result to json */json: booleanType}
 type isRefPT = {$: 'isRef', obj: dataType}
 type asRefPT = {$: 'asRef', obj: dataType}
 type data_switchPT = {$: 'data.switch', cases: [data_switch_caseType], default: dataType}
-type newlinePT = {$: 'newline', }
-type jison_parsePT = {$: 'jison.parse', parser: jison_parserType, goal: dataType, text: dataType, debug: dataType}
+type jison_parsePT = {$: 'jison.parse', parser: jison_parserType, goal: dataType, text: dataType, debug: booleanType}
 type extract_textPT = {$: 'extract-text', text: dataType, startMarkers: dataType, endMarker: dataType, 
 /** include the marker at part of the result */includingStartMarker: booleanType, 
 /** include the marker at part of the result */includingEndMarker: booleanType, 
@@ -106,16 +99,15 @@ type dynamic_objectPT = {$: 'dynamic-object', items: dataType, propertyName: dat
 type filter_empty_propertiesPT = {$: 'filter-empty-properties', obj: dataType}
 type trimPT = {$: 'trim', text: dataType}
 type remove_prefix_regexPT = {$: 'remove-prefix-regex', prefix: dataType, text: dataType}
-type pretty_printPT = {$: 'pretty-print', profile: dataType, colWidth: dataType, macro: dataType}
+type pretty_printPT = {$: 'pretty-print', profile: dataType, colWidth: dataType, macro: booleanType}
 type fs_readFilePT = {$: 'fs.readFile', fileName: dataType, directory: dataType}
 type fs_statPT = {$: 'fs.stat', fileName: dataType, directory: dataType}
 type fs_readdirPT = {$: 'fs.readdir', directory: dataType}
-type fs_directory_contentPT = {$: 'fs.directory-content', directory: dataType, filter: dataType}
+type fs_directory_contentPT = {$: 'fs.directory-content', directory: dataType, filter: booleanType}
 type test_dialog_contentPT = {$: 'test.dialog-content', id: dataType}
 type field_dataPT = {$: 'field.data', }
 type itemlist_container_search_in_all_propertiesPT = {$: 'itemlist-container.search-in-all-properties', }
 type highlightPT = {$: 'highlight', base: dataType, highlight: dataType, cssClass: dataType}
-type custom_stylePT = {$: 'custom-style', template: dataType, css: dataType, features: [featureType]}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 type group_divPT = {$: 'group.div', }
 type group_sectionPT = {$: 'group.section', }
@@ -144,7 +136,7 @@ type uniquePT = {$: 'unique', id: dataType, items: dataType}
 type wrap_as_object_with_arrayPT = {$: 'wrap-as-object-with-array', arrayProperty: dataType, items: dataType}
 type wrap_as_objectPT = {$: 'wrap-as-object', itemToPropName: dataType, items: dataType}
 type d3_histogramPT = {$: 'd3.histogram', bins: dataType, values: dataType}
-type itemlist_container_filterPT = {$: 'itemlist-container.filter', updateCounters: dataType}
+type itemlist_container_filterPT = {$: 'itemlist-container.filter', updateCounters: booleanType}
 
 // type boolean
 type booleanType = notPT | andPT | orPT | betweenPT | containsPT | not_containsPT | starts_withPT | ends_withPT | match_regexPT | isNullPT | isEmptyPT | notEmptyPT | equalsPT | not_equalsPT | is_of_typePT | in_groupPT | ((ctx: ctx) => any)
@@ -174,7 +166,7 @@ type is_of_typePT = {$: 'is-of-type',
 type in_groupPT = {$: 'in-group', group: dataType, item: dataType}
 
 // type action
-type actionType = action_ifPT | jb_runPT | write_valuePT | add_to_arrayPT | splicePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | run_transactionPT | run_action_on_itemsPT | on_next_timerPT | http_postPT | action_switchPT | refresh_control_by_idPT | focus_on_first_elementPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | itemlist_container_addPT | itemlist_container_deletePT | menu_open_context_menuPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
+type actionType = action_ifPT | jb_runPT | write_valuePT | add_to_arrayPT | splicePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | run_action_on_itemsPT | on_next_timerPT | http_postPT | action_switchPT | refresh_control_by_idPT | focus_on_first_elementPT | focus_on_siblingPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | itemlist_container_addPT | itemlist_container_deletePT | menu_open_context_menuPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | run_transactionPT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
 type cmp_def_actionType = {
 	type: 'action',
 	params?: [param],
@@ -192,15 +184,15 @@ type remove_from_arrayPT = {$: 'remove-from-array', array: dataType,
 type toggle_boolean_valuePT = {$: 'toggle-boolean-value', of: dataType}
 type touchPT = {$: 'touch', data: dataType}
 type runActionsPT = {$: 'runActions', actions: [actionType]}
-type run_transactionPT = {$: 'run-transaction', actions: [actionType], disableNotifications: booleanType}
 type run_action_on_itemsPT = {$: 'run-action-on-items', items: dataType, action: actionType, 
 /** notification for watch-ref, defualt behavior is after each action */notifications: dataType}
 type on_next_timerPT = {$: 'on-next-timer', action: actionType, delay: numberType}
 type http_postPT = {$: 'http.post', url: dataType, postData: dataType, 
-/** convert result to json */jsonResult: dataType}
+/** convert result to json */jsonResult: booleanType}
 type action_switchPT = {$: 'action.switch', cases: [action_switch_caseType], defaultAction: actionType}
 type refresh_control_by_idPT = {$: 'refresh-control-by-id', id: dataType}
 type focus_on_first_elementPT = {$: 'focus-on-first-element', selector: dataType}
+type focus_on_siblingPT = {$: 'focus-on-sibling', siblingSelector: dataType, delay: dataType}
 type dialog_close_containing_popupPT = {$: 'dialog.close-containing-popup', OK: booleanType}
 type dialog_close_dialogPT = {$: 'dialog.close-dialog', id: dataType, delay: dataType}
 type dialog_close_all_popupsPT = {$: 'dialog.close-all-popups', }
@@ -212,6 +204,7 @@ type tree_regain_focusPT = {$: 'tree.regain-focus', }
 type tree_redrawPT = {$: 'tree.redraw', strong: booleanType}
 type url_history_map_url_to_resourcePT = {$: 'url-history.map-url-to-resource', params: [dataType], resource: dataType, 
 /** base string to add/ingnore in url */base: dataType, onUrlChange: actionType}
+type run_transactionPT = {$: 'run-transaction', actions: [actionType], disableNotifications: booleanType}
 type goto_urlPT = {$: 'goto-url', url: dataType, target: enumType}
 type reset_wspyPT = {$: 'reset-wspy', param: dataType}
 
@@ -344,7 +337,7 @@ type dividerPT = {$: 'divider', style: divider_styleType, title: dataType, featu
 type editable_booleanPT = {$: 'editable-boolean', databind: booleanType, style: editable_boolean_styleType, title: dataType, textForTrue: dataType, textForFalse: dataType, features: [featureType]}
 type editable_numberPT = {$: 'editable-number', databind: dataType, title: dataType, style: editable_number_styleType, 
 /** leave empty to parse symbol from value */symbol: dataType, min: dataType, max: dataType, displayString: dataType, dataString: dataType, 
-/** adjust its scale if at edges */autoScale: dataType, 
+/** adjust its scale if at edges */autoScale: booleanType, 
 /** used by slider */step: dataType, 
 /** used by slider */initialPixelsPerUnit: dataType, features: [featureType]}
 type editable_textPT = {$: 'editable-text', title: dataType, databind: dataType, updateOnBlur: booleanType, style: editable_text_styleType, features: [featureType]}
@@ -361,14 +354,14 @@ type itemlist_container_more_items_buttonPT = {$: 'itemlist-container.more-items
 type itemlist_with_groupsPT = {$: 'itemlist-with-groups', title: dataType, items: dataType, controls: [controlType], style: itemlist_styleType, groupBy: itemlist_group_byType, headingCtrl: controlType, 
 /** resources to watch */watch: dataType, itemVariable: dataType, features: [featureType]}
 type itemlist_default_headingPT = {$: 'itemlist-default-heading', }
-type itemlistPT = {$: 'itemlist', title: dataType, items: dataType, controls: [controlType], style: itemlist_styleType, watchItems: dataType, itemVariable: dataType, features: [featureType]}
+type itemlistPT = {$: 'itemlist', title: dataType, items: dataType, controls: [controlType], style: itemlist_styleType, watchItems: booleanType, itemVariable: dataType, features: [featureType]}
 type itemlogPT = {$: 'itemlog', title: dataType, items: dataType, controls: [controlType], style: itemlog_styleType, itemVariable: dataType, counter: dataType, features: [featureType]}
 type labelPT = {$: 'label', title: dataType, style: label_styleType, features: [featureType]}
 type markdownPT = {$: 'markdown', markdown: dataType, style: markdown_styleType, title: dataType, features: [featureType]}
 type menu_controlPT = {$: 'menu.control', menu: menu_optionType, style: menu_styleType, features: [featureType]}
 type picklistPT = {$: 'picklist', title: dataType, databind: dataType, options: picklist_optionsType, promote: picklist_promoteType, style: picklist_styleType, features: [featureType]}
 type sidenavPT = {$: 'sidenav', controls: [controlType], title: dataType, style: sidenav_styleType, features: [featureType]}
-type tablePT = {$: 'table', title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: dataType, 
+type tablePT = {$: 'table', title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: booleanType, 
 /** by default table is limmited to 100 shown items */visualSizeLimit: dataType, features: [featureType]}
 type tabsPT = {$: 'tabs', tabs: [controlType], style: tabs_styleType, features: [featureType]}
 type textPT = {$: 'text', text: dataType, style: text_styleType, title: dataType, features: [featureType]}
@@ -387,7 +380,7 @@ type icon_with_actionPT = {$: 'icon-with-action', icon: dataType, title: dataTyp
 type menu_controlPT = {$: 'menu.control', menu: menu_optionType, style: menu_styleType, features: [featureType]}
 
 // type feature
-type featureType = ctrl_actionPT | alt_actionPT | button_disabledPT | card_initPT | group_waitPT | watch_refPT | watch_observablePT | group_dataPT | idPT | varPT | variablePT | bind_refsPT | calculated_varPT | featuresPT | feature_initPT | feature_after_loadPT | feature_ifPT | hiddenPT | conditional_classPT | feature_hover_titlePT | feature_keyboard_shortcutPT | feature_onEventPT | feature_onHoverPT | feature_onKeyPT | feature_onEnterPT | feature_onEscPT | feature_onDeletePT | group_auto_focus_on_first_inputPT | cssPT | css_classPT | css_widthPT | css_heightPT | css_opacityPT | css_paddingPT | css_marginPT | css_transform_rotatePT | css_colorPT | css_transform_scalePT | css_box_shadowPT | css_borderPT | d3_scatter_initPT | editable_boolean_keyboard_supportPT | editable_text_x_buttonPT | editable_text_helper_popupPT | field_databindPT | field_databind_textPT | field_defaultPT | field_init_valuePT | field_keyboard_shortcutPT | field_subscribePT | field_on_changePT | field_toolbarPT | validationPT | group_init_groupPT | group_dynamic_titlesPT | first_succeeding_watch_refresh_on_ctrl_changePT | group_itemlist_containerPT | itemlist_itemlist_selectedPT | itemlist_container_filter_fieldPT | itemlist_watch_items_with_headingPT | itemlist_no_containerPT | itemlist_initPT | itemlist_selectionPT | itemlist_keyboard_selectionPT | itemlist_drag_and_dropPT | itemlist_drag_handlePT | itemlist_shown_only_on_item_hoverPT | itemlist_dividerPT | label_bind_titlePT | menu_init_popup_menuPT | menu_init_menu_optionPT | picklist_dynamic_optionsPT | picklist_onChangePT | slider_initPT | slider_text_handleArrowKeysPT | slider_edit_as_text_popupPT | group_init_expandablePT | group_init_accordionPT | flex_layout_container_align_main_axisPT | flex_item_growPT | flex_item_basisPT | flex_item_align_selfPT | responsive_not_for_phonePT | mdl_style_init_dynamicPT | mdl_ripple_effectPT | table_initPT | table_init_sortPT | group_init_tabsPT | text_bind_textPT | group_themePT | tree_selectionPT | tree_keyboard_selectionPT | tree_drag_and_dropPT | ((ctx: ctx) => any)
+type featureType = ctrl_actionPT | alt_actionPT | button_disabledPT | card_initPT | group_waitPT | watch_refPT | watch_observablePT | group_dataPT | html_attributePT | idPT | feature_hover_titlePT | variablePT | varPT | bind_refsPT | calculated_varPT | featuresPT | feature_initPT | feature_after_loadPT | feature_ifPT | hiddenPT | conditional_classPT | feature_keyboard_shortcutPT | feature_onEventPT | feature_onHoverPT | feature_onKeyPT | feature_onEnterPT | feature_onEscPT | feature_onDeletePT | group_auto_focus_on_first_inputPT | cssPT | css_classPT | css_widthPT | css_heightPT | css_opacityPT | css_paddingPT | css_marginPT | css_transform_rotatePT | css_colorPT | css_transform_scalePT | css_box_shadowPT | css_borderPT | d3_scatter_initPT | editable_boolean_keyboard_supportPT | editable_text_x_buttonPT | editable_text_helper_popupPT | field_databindPT | field_databind_textPT | field_defaultPT | field_init_valuePT | field_keyboard_shortcutPT | field_subscribePT | field_on_changePT | field_toolbarPT | validationPT | group_init_groupPT | group_dynamic_titlesPT | first_succeeding_watch_refresh_on_ctrl_changePT | group_itemlist_containerPT | itemlist_itemlist_selectedPT | itemlist_container_filter_fieldPT | itemlist_watch_items_with_headingPT | itemlist_no_containerPT | itemlist_initPT | itemlist_selectionPT | itemlist_keyboard_selectionPT | itemlist_drag_and_dropPT | itemlist_drag_handlePT | itemlist_shown_only_on_item_hoverPT | itemlist_dividerPT | label_bind_titlePT | menu_init_popup_menuPT | menu_init_menu_optionPT | picklist_dynamic_optionsPT | picklist_onChangePT | slider_initPT | slider_text_handleArrowKeysPT | slider_edit_as_text_popupPT | group_init_expandablePT | group_init_accordionPT | flex_layout_container_align_main_axisPT | flex_item_growPT | flex_item_basisPT | flex_item_align_selfPT | responsive_not_for_phonePT | mdl_style_init_dynamicPT | mdl_ripple_effectPT | table_initPT | table_init_sortPT | group_init_tabsPT | text_bind_textPT | group_themePT | tree_selectionPT | tree_keyboard_selectionPT | tree_drag_and_dropPT | ((ctx: ctx) => any)
 type cmp_def_featureType = {
 	type: 'feature',
 	params?: [param],
@@ -402,16 +395,18 @@ type watch_refPT = {$: 'watch-ref',
 /** reference to data */ref: dataType, 
 /** watch childern change as well */includeChildren: dataType, 
 /** delay in activation, can be used to set priority */delay: dataType, 
-/** allow refresh originated from the components or its children */allowSelfRefresh: dataType}
+/** allow refresh originated from the components or its children */allowSelfRefresh: booleanType}
 type watch_observablePT = {$: 'watch-observable', toWatch: dataType}
 type group_dataPT = {$: 'group.data', data: dataType, 
-/** optional. define data as a local variable */itemVariable: dataType, watch: dataType, 
+/** optional. define data as a local variable */itemVariable: dataType, watch: booleanType, 
 /** watch childern change as well */includeChildren: dataType}
+type html_attributePT = {$: 'html-attribute', attribute: dataType, value: dataType}
 type idPT = {$: 'id', id: dataType}
-type varPT = {$: 'var', name: dataType, value: dataType, 
+type feature_hover_titlePT = {$: 'feature.hover-title', title: dataType}
+type variablePT = {$: 'variable', name: dataType, value: dataType, 
 /** E.g., selected item variable */mutable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType}
-type variablePT = {$: 'variable', name: dataType, value: dataType, 
+type varPT = {$: 'var', name: dataType, value: dataType, 
 /** E.g., selected item variable */mutable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType}
 type bind_refsPT = {$: 'bind-refs', watchRef: dataType, 
@@ -425,7 +420,6 @@ type feature_after_loadPT = {$: 'feature.after-load', action: [actionType]}
 type feature_ifPT = {$: 'feature.if', showCondition: dataType}
 type hiddenPT = {$: 'hidden', showCondition: booleanType}
 type conditional_classPT = {$: 'conditional-class', cssClass: dataType, condition: booleanType}
-type feature_hover_titlePT = {$: 'feature.hover-title', title: dataType}
 type feature_keyboard_shortcutPT = {$: 'feature.keyboard-shortcut', 
 /** e.g. Alt+C */key: dataType, action: actionType}
 type feature_onEventPT = {$: 'feature.onEvent', event: dataType, action: [actionType], 
@@ -452,7 +446,7 @@ type d3_scatter_initPT = {$: 'd3-scatter.init', }
 type editable_boolean_keyboard_supportPT = {$: 'editable-boolean.keyboard-support', }
 type editable_text_x_buttonPT = {$: 'editable-text.x-button', }
 type editable_text_helper_popupPT = {$: 'editable-text.helper-popup', control: controlType, popupId: dataType, popupStyle: dialog_styleType, 
-/** show/hide helper according to input content */showHelper: dataType, onEnter: actionType, onEsc: actionType}
+/** show/hide helper according to input content */showHelper: booleanType, onEnter: actionType, onEsc: actionType}
 type field_databindPT = {$: 'field.databind', }
 type field_databind_textPT = {$: 'field.databind-text', debounceTime: dataType, oneWay: booleanType}
 type field_defaultPT = {$: 'field.default', value: dataType}
@@ -467,7 +461,7 @@ type group_init_groupPT = {$: 'group.init-group', }
 type group_dynamic_titlesPT = {$: 'group.dynamic-titles', }
 type first_succeeding_watch_refresh_on_ctrl_changePT = {$: 'first-succeeding.watch-refresh-on-ctrl-change', 
 /** reference to data */ref: dataType, 
-/** watch childern change as well */includeChildren: dataType}
+/** watch childern change as well */includeChildren: booleanType}
 type group_itemlist_containerPT = {$: 'group.itemlist-container', id: dataType, defaultItem: dataType, maxItems: dataType, initialSelection: dataType}
 type itemlist_itemlist_selectedPT = {$: 'itemlist.itemlist-selected', }
 type itemlist_container_filter_fieldPT = {$: 'itemlist-container.filter-field', fieldData: dataType, filterType: filter_typeType}
@@ -489,7 +483,7 @@ type slider_initPT = {$: 'slider.init', }
 type slider_text_handleArrowKeysPT = {$: 'slider-text.handleArrowKeys', }
 type slider_edit_as_text_popupPT = {$: 'slider.edit-as-text-popup', }
 type group_init_expandablePT = {$: 'group.init-expandable', }
-type group_init_accordionPT = {$: 'group.init-accordion', keyboardSupport: dataType, autoFocus: dataType}
+type group_init_accordionPT = {$: 'group.init-accordion', keyboardSupport: booleanType, autoFocus: booleanType}
 type flex_layout_container_align_main_axisPT = {$: 'flex-layout-container.align-main-axis', align: dataType}
 type flex_item_growPT = {$: 'flex-item.grow', factor: dataType}
 type flex_item_basisPT = {$: 'flex-item.basis', factor: dataType}
@@ -499,7 +493,7 @@ type mdl_style_init_dynamicPT = {$: 'mdl-style.init-dynamic', query: dataType}
 type mdl_ripple_effectPT = {$: 'mdl.ripple-effect', }
 type table_initPT = {$: 'table.init', }
 type table_init_sortPT = {$: 'table.init-sort', }
-type group_init_tabsPT = {$: 'group.init-tabs', keyboardSupport: dataType, autoFocus: dataType}
+type group_init_tabsPT = {$: 'group.init-tabs', keyboardSupport: booleanType, autoFocus: booleanType}
 type text_bind_textPT = {$: 'text.bind-text', }
 type group_themePT = {$: 'group.theme', theme: themeType}
 type tree_selectionPT = {$: 'tree.selection', databind: dataType, autoSelectFirst: booleanType, onSelection: actionType, onRightClick: actionType}
@@ -535,14 +529,13 @@ type dialog_feature_resizerPT = {$: 'dialog-feature.resizer',
 /** effective only for dialog with a single codemirror element */resizeInnerCodemirror: booleanType}
 
 // type d3.scatter-style
-type d3_scatter_styleType = d3_scatter_plainPT | custom_stylePT | style_by_controlPT | ((ctx: ctx) => any)
+type d3_scatter_styleType = d3_scatter_plainPT | style_by_controlPT | ((ctx: ctx) => any)
 type cmp_def_d3_scatter_styleType = {
 	type: 'd3_scatter_style',
 	params?: [param],
 	impl: d3_scatter_styleType,
 }
 type d3_scatter_plainPT = {$: 'd3-scatter.plain', }
-type custom_stylePT = {$: 'custom-style', template: dataType, css: dataType, features: [featureType]}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
 // type d3.frame
@@ -555,14 +548,13 @@ type cmp_def_d3_frameType = {
 type d3_framePT = {$: 'd3.frame', width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}
 
 // type d3.histogram-style
-type d3_histogram_styleType = d3_histogram_plainPT | custom_stylePT | style_by_controlPT | ((ctx: ctx) => any)
+type d3_histogram_styleType = d3_histogram_plainPT | style_by_controlPT | ((ctx: ctx) => any)
 type cmp_def_d3_histogram_styleType = {
 	type: 'd3_histogram_style',
 	params?: [param],
 	impl: d3_histogram_styleType,
 }
 type d3_histogram_plainPT = {$: 'd3-histogram.plain', }
-type custom_stylePT = {$: 'custom-style', template: dataType, css: dataType, features: [featureType]}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
 // type d3-feature
@@ -694,7 +686,7 @@ type cmp_def_filter_typeType = {
 	params?: [param],
 	impl: filter_typeType,
 }
-type filter_type_textPT = {$: 'filter-type.text', ignoreCase: dataType}
+type filter_type_textPT = {$: 'filter-type.text', ignoreCase: booleanType}
 type filter_type_exact_matchPT = {$: 'filter-type.exact-match', }
 type filter_type_numericPT = {$: 'filter-type.numeric', }
 
@@ -745,6 +737,7 @@ type property_sheet_titles_leftPT = {$: 'property-sheet.titles-left', vSpacing: 
 type tabs_simplePT = {$: 'tabs.simple', }
 
 // type label.style
+type label_styleType = label_htmlTagPT | label_spanPT | label_card_titlePT | label_card_supporting_textPT | label_mdl_ripple_effectPT | label_mdl_buttonPT | ((ctx: ctx) => any)
 type cmp_def_label_styleType = {
 	type: 'label_style',
 	params?: [param],
@@ -820,7 +813,7 @@ type cmp_def_dialog_styleType = {
 	params?: [param],
 	impl: dialog_styleType,
 }
-type dialog_context_menu_popupPT = {$: 'dialog.context-menu-popup', offsetTop: dataType, rightSide: dataType}
+type dialog_context_menu_popupPT = {$: 'dialog.context-menu-popup', offsetTop: dataType, rightSide: booleanType}
 
 // type menu-separator.style
 type menu_separator_styleType = menu_separator_linePT | ((ctx: ctx) => any)
@@ -879,7 +872,7 @@ type cmp_def_editable_text_styleType = {
 	impl: editable_text_styleType,
 }
 type editable_text_codemirrorPT = {$: 'editable-text.codemirror', cm_settings: dataType, enableFullScreen: booleanType, 
-/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, debounceTime: dataType, lineWrapping: dataType, lineNumbers: dataType, readOnly: dataType, onCtrlEnter: actionType, hint: dataType}
+/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, debounceTime: dataType, lineWrapping: booleanType, lineNumbers: booleanType, readOnly: dataType, onCtrlEnter: actionType, hint: booleanType}
 type editable_text_inputPT = {$: 'editable-text.input', }
 type editable_text_textareaPT = {$: 'editable-text.textarea', rows: dataType, cols: dataType}
 type editable_text_mdl_inputPT = {$: 'editable-text.mdl-input', width: dataType}
@@ -894,7 +887,7 @@ type cmp_def_text_styleType = {
 	impl: text_styleType,
 }
 type text_codemirrorPT = {$: 'text.codemirror', cm_settings: dataType, enableFullScreen: booleanType, 
-/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, lineWrapping: dataType}
+/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, lineWrapping: booleanType}
 type text_multi_linePT = {$: 'text.multi-line', rows: dataType, cols: dataType}
 type text_paragraphPT = {$: 'text.paragraph', }
 
@@ -949,7 +942,7 @@ type cmp_def_tableType = {
 	params?: [param],
 	impl: tableType,
 }
-type tablePT = {$: 'table', title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: dataType, 
+type tablePT = {$: 'table', title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: booleanType, 
 /** by default table is limmited to 100 shown items */visualSizeLimit: dataType, features: [featureType]}
 
 // type table-field
@@ -1177,8 +1170,6 @@ function notEquals(item1: dataType, item2: dataType) : booleanType;
 function notEquals(item1: dataType) : booleanType;
 function runActions : actionType;
 function runActions(...actions: [actionType][]) : actionType;
-function runTransaction : actionType;
-function runTransaction(actions: [actionType], disableNotifications: booleanType) : actionType;
 function runActionOnItems : actionType;
 function runActionOnItems(items: dataType, action: actionType, 
 /** notification for watch-ref, defualt behavior is after each action */notifications: dataType) : actionType;
@@ -1217,11 +1208,11 @@ function inGroup(group: dataType, item: dataType) : booleanType;
 function inGroup(group: dataType) : booleanType;
 function http_get : dataType;
 function http_get(url: dataType, 
-/** convert result to json */json: dataType) : dataType;
+/** convert result to json */json: booleanType) : dataType;
 function http_get(url: dataType) : dataType;
 function http_post : actionType;
 function http_post(profile: { url: dataType, postData: dataType, 
-/** convert result to json */jsonResult: dataType}) : actionType;
+/** convert result to json */jsonResult: booleanType}) : actionType;
 function http_post(url: dataType) : actionType;
 function isRef : dataType;
 function isRef(obj: dataType) : dataType;
@@ -1237,10 +1228,8 @@ function action_switch(cases: [action_switch_caseType], defaultAction: actionTyp
 function action_switchCase : action_switch_caseType;
 function action_switchCase(condition: booleanType, action: actionType) : action_switch_caseType;
 function action_switchCase(condition: booleanType) : action_switch_caseType;
-function newline : dataType;
-function newline() : dataType;
 function jison_parse : dataType;
-function jison_parse(profile: { parser: jison_parserType, goal: dataType, text: dataType, debug: dataType}) : dataType;
+function jison_parse(profile: { parser: jison_parserType, goal: dataType, text: dataType, debug: booleanType}) : dataType;
 function jison_parse(parser: jison_parserType) : dataType;
 function jison_parser : jison_parserType;
 function jison_parser(profile: { lex: [lexer_ruleType], bnf: [bnf_expressionType], 
@@ -1309,7 +1298,7 @@ function wrapAsObject : aggregatorType;
 function wrapAsObject(itemToPropName: dataType, items: dataType) : aggregatorType;
 function wrapAsObject(itemToPropName: dataType) : aggregatorType;
 function prettyPrint : dataType;
-function prettyPrint(profile: { profile: dataType, colWidth: dataType, macro: dataType}) : dataType;
+function prettyPrint(profile: { profile: dataType, colWidth: dataType, macro: booleanType}) : dataType;
 function prettyPrint(profile: dataType) : dataType;
 function fs_readFile : dataType;
 function fs_readFile(fileName: dataType, directory: dataType) : dataType;
@@ -1320,7 +1309,7 @@ function fs_stat(fileName: dataType) : dataType;
 function fs_readdir : dataType;
 function fs_readdir(directory: dataType) : dataType;
 function fs_directoryContent : dataType;
-function fs_directoryContent(directory: dataType, filter: dataType) : dataType;
+function fs_directoryContent(directory: dataType, filter: booleanType) : dataType;
 function fs_directoryContent(directory: dataType) : dataType;
 function dataTest : testType;
 function dataTest(profile: { calculate: dataType, runBefore: actionType, expectedResult: booleanType, cleanUp: actionType, expectedCounters: dataType}) : testType;
@@ -1364,28 +1353,33 @@ function watchRef(profile: {
 /** reference to data */ref: dataType, 
 /** watch childern change as well */includeChildren: dataType, 
 /** delay in activation, can be used to set priority */delay: dataType, 
-/** allow refresh originated from the components or its children */allowSelfRefresh: dataType}) : featureType;
+/** allow refresh originated from the components or its children */allowSelfRefresh: booleanType}) : featureType;
 function watchRef(
 /** reference to data */ref: dataType) : featureType;
 function watchObservable : featureType;
 function watchObservable(toWatch: dataType) : featureType;
 function group_data : featureType;
 function group_data(profile: { data: dataType, 
-/** optional. define data as a local variable */itemVariable: dataType, watch: dataType, 
+/** optional. define data as a local variable */itemVariable: dataType, watch: booleanType, 
 /** watch childern change as well */includeChildren: dataType}) : featureType;
 function group_data(data: dataType) : featureType;
+function htmlAttribute : featureType;
+function htmlAttribute(attribute: dataType, value: dataType) : featureType;
+function htmlAttribute(attribute: dataType) : featureType;
 function id : featureType;
 function id(id: dataType) : featureType;
-function var : featureType;
-function var(profile: { name: dataType, value: dataType, 
-/** E.g., selected item variable */mutable: booleanType, 
-/** If specified, the var will be defined as global with this id */globalId: dataType}) : featureType;
-function var(name: dataType) : featureType;
+function feature_hoverTitle : featureType;
+function feature_hoverTitle(title: dataType) : featureType;
 function variable : featureType;
 function variable(profile: { name: dataType, value: dataType, 
 /** E.g., selected item variable */mutable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType}) : featureType;
 function variable(name: dataType) : featureType;
+function var : featureType;
+function var(profile: { name: dataType, value: dataType, 
+/** E.g., selected item variable */mutable: booleanType, 
+/** If specified, the var will be defined as global with this id */globalId: dataType}) : featureType;
+function var(name: dataType) : featureType;
 function bindRefs : featureType;
 function bindRefs(profile: { watchRef: dataType, 
 /** watch childern change as well */includeChildren: dataType, updateRef: dataType, value: dataType}) : featureType;
@@ -1408,8 +1402,6 @@ function hidden(showCondition: booleanType) : featureType;
 function conditionalClass : featureType;
 function conditionalClass(cssClass: dataType, condition: booleanType) : featureType;
 function conditionalClass(cssClass: dataType) : featureType;
-function feature_hoverTitle : featureType;
-function feature_hoverTitle(title: dataType) : featureType;
 function feature_keyboardShortcut : featureType;
 function feature_keyboardShortcut(
 /** e.g. Alt+C */key: dataType, action: actionType) : featureType;
@@ -1436,6 +1428,9 @@ function group_autoFocusOnFirstInput : featureType;
 function group_autoFocusOnFirstInput() : featureType;
 function focusOnFirstElement : actionType;
 function focusOnFirstElement(selector: dataType) : actionType;
+function focusOnSibling : actionType;
+function focusOnSibling(siblingSelector: dataType, delay: dataType) : actionType;
+function focusOnSibling(siblingSelector: dataType) : actionType;
 function css : featureType | dialog_featureType;
 function css(css: dataType) : featureType | dialog_featureType;
 function css_class : featureType | dialog_featureType;
@@ -1559,7 +1554,7 @@ function editableBoolean_keyboardSupport() : featureType;
 function editableNumber : controlType;
 function editableNumber(profile: { databind: dataType, title: dataType, style: editable_number_styleType, 
 /** leave empty to parse symbol from value */symbol: dataType, min: dataType, max: dataType, displayString: dataType, dataString: dataType, 
-/** adjust its scale if at edges */autoScale: dataType, 
+/** adjust its scale if at edges */autoScale: booleanType, 
 /** used by slider */step: dataType, 
 /** used by slider */initialPixelsPerUnit: dataType, features: [featureType]}) : controlType;
 function editableNumber(databind: dataType) : controlType;
@@ -1572,7 +1567,7 @@ function editableText_xButton : featureType;
 function editableText_xButton() : featureType;
 function editableText_helperPopup : featureType;
 function editableText_helperPopup(profile: { control: controlType, popupId: dataType, popupStyle: dialog_styleType, 
-/** show/hide helper according to input content */showHelper: dataType, onEnter: actionType, onEsc: actionType}) : featureType;
+/** show/hide helper according to input content */showHelper: booleanType, onEnter: actionType, onEsc: actionType}) : featureType;
 function editableText_helperPopup(control: controlType) : featureType;
 function field_databind : featureType;
 function field_databind() : featureType;
@@ -1618,7 +1613,7 @@ function control_firstSucceeding(profile: { controls: [controlType], title: data
 function firstSucceeding_watchRefreshOnCtrlChange : featureType;
 function firstSucceeding_watchRefreshOnCtrlChange(
 /** reference to data */ref: dataType, 
-/** watch childern change as well */includeChildren: dataType) : featureType;
+/** watch childern change as well */includeChildren: booleanType) : featureType;
 function firstSucceeding_watchRefreshOnCtrlChange(
 /** reference to data */ref: dataType) : featureType;
 function controlWithCondition : controlType;
@@ -1651,7 +1646,7 @@ function itemlistContainer_add(toAdd: dataType) : actionType;
 function itemlistContainer_delete : actionType;
 function itemlistContainer_delete(item: dataType) : actionType;
 function itemlistContainer_filter : aggregatorType;
-function itemlistContainer_filter(updateCounters: dataType) : aggregatorType;
+function itemlistContainer_filter(updateCounters: booleanType) : aggregatorType;
 function itemlistContainer_search : controlType;
 function itemlistContainer_search(profile: { title: dataType, searchIn: dataType, databind: dataType, style: editable_text_styleType, features: [featureType]}) : controlType;
 function itemlistContainer_search(title: dataType) : controlType;
@@ -1662,7 +1657,7 @@ function itemlistContainer_filterField : featureType;
 function itemlistContainer_filterField(fieldData: dataType, filterType: filter_typeType) : featureType;
 function itemlistContainer_filterField(fieldData: dataType) : featureType;
 function filterType_text : filter_typeType;
-function filterType_text(ignoreCase: dataType) : filter_typeType;
+function filterType_text(ignoreCase: booleanType) : filter_typeType;
 function filterType_exactMatch : filter_typeType;
 function filterType_exactMatch() : filter_typeType;
 function filterType_numeric : filter_typeType;
@@ -1682,7 +1677,7 @@ function itemlistHeading_groupBy : itemlist_group_byType;
 function itemlistHeading_groupBy(itemToGroupID: dataType, promoteGroups: [dataType]) : itemlist_group_byType;
 function itemlistHeading_groupBy(itemToGroupID: dataType) : itemlist_group_byType;
 function itemlist : controlType;
-function itemlist(profile: { title: dataType, items: dataType, controls: [controlType], style: itemlist_styleType, watchItems: dataType, itemVariable: dataType, features: [featureType]}) : controlType;
+function itemlist(profile: { title: dataType, items: dataType, controls: [controlType], style: itemlist_styleType, watchItems: booleanType, itemVariable: dataType, features: [featureType]}) : controlType;
 function itemlist(title: dataType) : controlType;
 function itemlist_noContainer : featureType;
 function itemlist_noContainer() : featureType;
@@ -1711,8 +1706,20 @@ function itemlog(profile: { title: dataType, items: dataType, controls: [control
 function itemlog(title: dataType) : controlType;
 function itemlog_div : group_styleType;
 function itemlog_div() : group_styleType;
-function label_bindTitle : featureType;	
+function label : controlType;
+function label(profile: { title: dataType, style: label_styleType, features: [featureType]}) : controlType;
+function label(title: dataType) : controlType;
+function label_bindTitle : featureType;
 function label_bindTitle() : featureType;
+function label_htmlTag : label_styleType;
+function label_htmlTag(htmlTag: dataType, cssClass: dataType) : label_styleType;
+function label_htmlTag(htmlTag: dataType) : label_styleType;
+function label_span : label_styleType;
+function label_span() : label_styleType;
+function label_cardTitle : label_styleType;
+function label_cardTitle() : label_styleType;
+function label_cardSupportingText : label_styleType;
+function label_cardSupportingText() : label_styleType;
 function highlight : dataType;
 function highlight(base: dataType, highlight: dataType, cssClass: dataType) : dataType;
 function highlight(base: dataType) : dataType;
@@ -1765,7 +1772,7 @@ function menuStyle_popupThumb() : menu_styleType;
 function menuStyle_toolbar : menu_styleType;
 function menuStyle_toolbar() : menu_styleType;
 function dialog_contextMenuPopup : dialog_styleType;
-function dialog_contextMenuPopup(offsetTop: dataType, rightSide: dataType) : dialog_styleType;
+function dialog_contextMenuPopup(offsetTop: dataType, rightSide: booleanType) : dialog_styleType;
 function dialog_contextMenuPopup(offsetTop: dataType) : dialog_styleType;
 function menuSeparator_line : menu_separator_styleType;
 function menuSeparator_line() : menu_separator_styleType;
@@ -1792,9 +1799,6 @@ function picklist_sortedOptions(options: picklist_optionsType) : picklist_option
 function picklist_promote : picklist_promoteType;
 function picklist_promote(groups: dataType, options: dataType) : picklist_promoteType;
 function picklist_promote(groups: dataType) : picklist_promoteType;
-function customStyle : dataType;
-function customStyle(profile: { template: dataType, css: dataType, features: [featureType]}) : dataType;
-function customStyle(template: dataType) : dataType;
 function styleByControl : dataType;
 function styleByControl(control: controlType, modelVar: dataType) : dataType;
 function styleByControl(control: controlType) : dataType;
@@ -1841,11 +1845,11 @@ function card_menu : group_styleType;
 function card_menu() : group_styleType;
 function editableText_codemirror : editable_text_styleType;
 function editableText_codemirror(profile: { cm_settings: dataType, enableFullScreen: booleanType, 
-/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, debounceTime: dataType, lineWrapping: dataType, lineNumbers: dataType, readOnly: dataType, onCtrlEnter: actionType, hint: dataType}) : editable_text_styleType;
+/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, debounceTime: dataType, lineWrapping: booleanType, lineNumbers: booleanType, readOnly: dataType, onCtrlEnter: actionType, hint: booleanType}) : editable_text_styleType;
 function editableText_codemirror(cm_settings: dataType) : editable_text_styleType;
 function text_codemirror : text_styleType;
 function text_codemirror(profile: { cm_settings: dataType, enableFullScreen: booleanType, 
-/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, lineWrapping: dataType}) : text_styleType;
+/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, lineWrapping: booleanType}) : text_styleType;
 function text_codemirror(cm_settings: dataType) : text_styleType;
 function editableBoolean_checkbox : editable_boolean_styleType;
 function editableBoolean_checkbox() : editable_boolean_styleType;
@@ -1884,8 +1888,8 @@ function group_initExpandable() : featureType;
 function group_accordion : group_styleType;
 function group_accordion() : group_styleType;
 function group_initAccordion : featureType;
-function group_initAccordion(keyboardSupport: dataType, autoFocus: dataType) : featureType;
-function group_initAccordion(keyboardSupport: dataType) : featureType;
+function group_initAccordion(keyboardSupport: booleanType, autoFocus: booleanType) : featureType;
+function group_initAccordion(keyboardSupport: booleanType) : featureType;
 function group_tabs : group_styleType;
 function group_tabs(width: dataType) : group_styleType;
 function layout_vertical : group_styleType;
@@ -1941,7 +1945,7 @@ function table_mdl : table_styleType;
 function table_mdl(classForTable: dataType, classForTd: dataType) : table_styleType;
 function table_mdl(classForTable: dataType) : table_styleType;
 function table : controlType | tableType;
-function table(profile: { title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: dataType, 
+function table(profile: { title: dataType, items: dataType, fields: [table_fieldType], style: table_styleType, watchItems: booleanType, 
 /** by default table is limmited to 100 shown items */visualSizeLimit: dataType, features: [featureType]}) : controlType | tableType;
 function table(title: dataType) : controlType | tableType;
 function field : table_fieldType;
@@ -1966,8 +1970,8 @@ function table_initSort() : featureType;
 function tabs : controlType;
 function tabs(profile: { tabs: [controlType], style: tabs_styleType, features: [featureType]}) : controlType;
 function group_initTabs : featureType;
-function group_initTabs(keyboardSupport: dataType, autoFocus: dataType) : featureType;
-function group_initTabs(keyboardSupport: dataType) : featureType;
+function group_initTabs(keyboardSupport: booleanType, autoFocus: booleanType) : featureType;
+function group_initTabs(keyboardSupport: booleanType) : featureType;
 function tabs_simple : group_styleType;
 function tabs_simple() : group_styleType;
 function text : controlType;
@@ -2019,6 +2023,8 @@ function tree_dragAndDrop() : featureType;
 function urlHistory_mapUrlToResource : actionType;
 function urlHistory_mapUrlToResource(profile: { params: [dataType], resource: dataType, 
 /** base string to add/ingnore in url */base: dataType, onUrlChange: actionType}) : actionType;
+function runTransaction : actionType;
+function runTransaction(actions: [actionType], disableNotifications: booleanType) : actionType;
 function gotoUrl : actionType;
 function gotoUrl(url: dataType, target: enumType) : actionType;
 function gotoUrl(url: dataType) : actionType;
@@ -2055,16 +2061,16 @@ parse(text: dataType) : dataType,
 declare var json : json;,type http = {
 get : dataType,
 get(url: dataType, 
-/** convert result to json */json: dataType) : dataType,
+/** convert result to json */json: booleanType) : dataType,
 get(url: dataType) : dataType,
 post : actionType,
 post(profile: { url: dataType, postData: dataType, 
-/** convert result to json */jsonResult: dataType}) : actionType,
+/** convert result to json */jsonResult: booleanType}) : actionType,
 post(url: dataType) : actionType,
 }
 declare var http : http;,type jison = {
 parse : dataType,
-parse(profile: { parser: jison_parserType, goal: dataType, text: dataType, debug: dataType}) : dataType,
+parse(profile: { parser: jison_parserType, goal: dataType, text: dataType, debug: booleanType}) : dataType,
 parse(parser: jison_parserType) : dataType,
 parser : jison_parserType,
 parser(profile: { lex: [lexer_ruleType], bnf: [bnf_expressionType], 
@@ -2093,7 +2099,7 @@ stat(fileName: dataType) : dataType,
 readdir : dataType,
 readdir(directory: dataType) : dataType,
 directoryContent : dataType,
-directoryContent(directory: dataType, filter: dataType) : dataType,
+directoryContent(directory: dataType, filter: booleanType) : dataType,
 directoryContent(directory: dataType) : dataType,
 }
 declare var fs : fs;,type uiAction = {
@@ -2130,7 +2136,7 @@ wait(profile: { for: dataType, loadingControl: controlType, error: controlType, 
 wait(for: dataType) : featureType,
 data : featureType,
 data(profile: { data: dataType, 
-/** optional. define data as a local variable */itemVariable: dataType, watch: dataType, 
+/** optional. define data as a local variable */itemVariable: dataType, watch: booleanType, 
 /** watch childern change as well */includeChildren: dataType}) : featureType,
 data(data: dataType) : featureType,
 autoFocusOnFirstInput : featureType,
@@ -2158,25 +2164,25 @@ initExpandable() : featureType,
 accordion : group_styleType,
 accordion() : group_styleType,
 initAccordion : featureType,
-initAccordion(keyboardSupport: dataType, autoFocus: dataType) : featureType,
-initAccordion(keyboardSupport: dataType) : featureType,
+initAccordion(keyboardSupport: booleanType, autoFocus: booleanType) : featureType,
+initAccordion(keyboardSupport: booleanType) : featureType,
 tabs : group_styleType,
 tabs(width: dataType) : group_styleType,
 initTabs : featureType,
-initTabs(keyboardSupport: dataType, autoFocus: dataType) : featureType,
-initTabs(keyboardSupport: dataType) : featureType,
+initTabs(keyboardSupport: booleanType, autoFocus: booleanType) : featureType,
+initTabs(keyboardSupport: booleanType) : featureType,
 theme : featureType,
 theme(theme: themeType) : featureType,
 }
 declare var group : group;,type feature = {
+hoverTitle : featureType,
+hoverTitle(title: dataType) : featureType,
 init : featureType,
 init(...action: [actionType][]) : featureType,
 afterLoad : featureType,
 afterLoad(...action: [actionType][]) : featureType,
 if : featureType,
 if(showCondition: dataType) : featureType,
-hoverTitle : featureType,
-hoverTitle(title: dataType) : featureType,
 keyboardShortcut : featureType,
 keyboardShortcut(
 /** e.g. Alt+C */key: dataType, action: actionType) : featureType,
@@ -2316,7 +2322,7 @@ closeAllPopups() : actionType,
 closeAll : actionType,
 closeAll() : actionType,
 contextMenuPopup : dialog_styleType,
-contextMenuPopup(offsetTop: dataType, rightSide: dataType) : dialog_styleType,
+contextMenuPopup(offsetTop: dataType, rightSide: booleanType) : dialog_styleType,
 contextMenuPopup(offsetTop: dataType) : dialog_styleType,
 }
 declare var dialog : dialog;,type divider = {
@@ -2352,11 +2358,11 @@ xButton : featureType,
 xButton() : featureType,
 helperPopup : featureType,
 helperPopup(profile: { control: controlType, popupId: dataType, popupStyle: dialog_styleType, 
-/** show/hide helper according to input content */showHelper: dataType, onEnter: actionType, onEsc: actionType}) : featureType,
+/** show/hide helper according to input content */showHelper: booleanType, onEnter: actionType, onEsc: actionType}) : featureType,
 helperPopup(control: controlType) : featureType,
 codemirror : editable_text_styleType,
 codemirror(profile: { cm_settings: dataType, enableFullScreen: booleanType, 
-/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, debounceTime: dataType, lineWrapping: dataType, lineNumbers: dataType, readOnly: dataType, onCtrlEnter: actionType, hint: dataType}) : editable_text_styleType,
+/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, debounceTime: dataType, lineWrapping: booleanType, lineNumbers: booleanType, readOnly: dataType, onCtrlEnter: actionType, hint: booleanType}) : editable_text_styleType,
 codemirror(cm_settings: dataType) : editable_text_styleType,
 input : editable_text_styleType,
 input() : editable_text_styleType,
@@ -2413,7 +2419,7 @@ declare var control : control;,type firstSucceeding = {
 watchRefreshOnCtrlChange : featureType,
 watchRefreshOnCtrlChange(
 /** reference to data */ref: dataType, 
-/** watch childern change as well */includeChildren: dataType) : featureType,
+/** watch childern change as well */includeChildren: booleanType) : featureType,
 watchRefreshOnCtrlChange(
 /** reference to data */ref: dataType) : featureType,
 style : first_succeeding_styleType,
@@ -2468,7 +2474,7 @@ add(toAdd: dataType) : actionType,
 delete : actionType,
 delete(item: dataType) : actionType,
 filter : aggregatorType,
-filter(updateCounters: dataType) : aggregatorType,
+filter(updateCounters: booleanType) : aggregatorType,
 search : controlType,
 search(profile: { title: dataType, searchIn: dataType, databind: dataType, style: editable_text_styleType, features: [featureType]}) : controlType,
 search(title: dataType) : controlType,
@@ -2483,7 +2489,7 @@ searchInAllProperties() : dataType,
 }
 declare var itemlistContainer : itemlistContainer;,type filterType = {
 text : filter_typeType,
-text(ignoreCase: dataType) : filter_typeType,
+text(ignoreCase: booleanType) : filter_typeType,
 exactMatch : filter_typeType,
 exactMatch() : filter_typeType,
 numeric : filter_typeType,
@@ -2498,9 +2504,24 @@ declare var itemlistHeading : itemlistHeading;,type itemlog = {
 div : group_styleType,
 div() : group_styleType,
 }
-declare var itemlog : itemlog;
-
-type markdown = {
+declare var itemlog : itemlog;,type label = {
+bindTitle : featureType,
+bindTitle() : featureType,
+htmlTag : label_styleType,
+htmlTag(htmlTag: dataType, cssClass: dataType) : label_styleType,
+htmlTag(htmlTag: dataType) : label_styleType,
+span : label_styleType,
+span() : label_styleType,
+cardTitle : label_styleType,
+cardTitle() : label_styleType,
+cardSupportingText : label_styleType,
+cardSupportingText() : label_styleType,
+mdlRippleEffect : label_styleType,
+mdlRippleEffect() : label_styleType,
+mdlButton : label_styleType,
+mdlButton(width: dataType) : label_styleType,
+}
+declare var label : label;,type markdown = {
 showdown : markdown_styleType,
 showdown() : markdown_styleType,
 }
@@ -2620,7 +2641,7 @@ mdlCardFlat() : button_styleType,
 declare var button : button;,type text = {
 codemirror : text_styleType,
 codemirror(profile: { cm_settings: dataType, enableFullScreen: booleanType, 
-/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, lineWrapping: dataType}) : text_styleType,
+/** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, lineWrapping: booleanType}) : text_styleType,
 codemirror(cm_settings: dataType) : text_styleType,
 bindText : featureType,
 bindText() : featureType,

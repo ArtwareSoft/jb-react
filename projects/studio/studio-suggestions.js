@@ -108,7 +108,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         features: [
           feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', '/')),
           feature.onKey(13, studio.pasteSuggestion('%$suggestionData/selected%')),
-          studio.watchPath({path: '%$path%', includeChildren: true, allowSelfRefresh: false}),
+          studio.watchPath({path: '%$path%', includeChildren: 'yes', allowSelfRefresh: false}),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
             popupId: 'suggestions',
@@ -222,7 +222,7 @@ st.suggestions = class {
             return new CompOption(compName, compName, ns ? `${name} (${ns})` : name, st.getComp(compName).description || '')
         })
     else if (this.tailSymbol == '%')
-      options = [].concat.apply([],jb.asArray(probeCtx.exp('%%'))
+      options = [].concat.apply([],jb.toarray(probeCtx.exp('%%'))
         .map(x=>
           jb.entries(x).map(x=> new ValueOption(x[0],x[1],this.pos,this.tail))))
         .concat(vars)

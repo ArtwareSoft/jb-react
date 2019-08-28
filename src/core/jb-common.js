@@ -18,7 +18,7 @@ jb.component('call', {
 });
 
 jb.pipe = function(context,items,ptName) {
-	const start = [jb.asArray(context.data)[0]]; // use only one data item, the first or null
+	const start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
 	if (typeof context.profile.items == 'string')
 		return context.runInner(context.profile.items,null,'items');
 	const profiles = jb.asArray(context.profile.items || context.profile[ptName]);
@@ -245,7 +245,7 @@ jb.component('add-to-array', {
 		{ id: 'itemsToAdd', as: 'array', mandatory: true },
 	],
 	impl: (ctx,array,itemsToAdd) => {
-		const ar = jb.asArray(array);
+		const ar = jb.toarray(array);
 		jb.splice(array,[[ar.length,0,...itemsToAdd]],ctx)
 	}
 });
@@ -259,7 +259,7 @@ jb.component('splice', {
 		{ id: 'itemsToAdd', as: 'array', defaultValue: [] },
 	],
 	impl: (ctx,array,fromIndex,noOfItemsToRemove,itemsToAdd) => {
-		const ar = jb.asArray(array);
+		const ar = jb.toarray(array);
 		jb.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
 	}
 });
@@ -272,7 +272,7 @@ jb.component('remove-from-array', {
 		{ id: 'index', as: 'number', description: 'choose item or index' },
 	],
 	impl: (ctx,array,itemToRemove,_index) => {
-		const ar = jb.asArray(array);
+		const ar = jb.toarray(array);
 		const index = itemToRemove ? ar.indexOf(item) : _index;
 		if (index != -1 && ar.length > index)
 			jb.splice(array,[[index,1]],ctx)
