@@ -231,15 +231,15 @@ function resolveFinishedPromise(val) {
 
 function calcVar(ctx,varname,jstype) {
   let res;
-  if (ctx.componentContext && typeof ctx.componentContext.params[varname] != 'undefined')
+  if (ctx.componentContext && ctx.componentContext.params[varname] !== undefined)
     res = ctx.componentContext.params[varname];
-  else if (ctx.vars[varname] != null)
-    res = ctx.vars[varname];
-  else if (ctx.vars.scope && ctx.vars.scope[varname] != null)
-    res = ctx.vars.scope[varname];
-  else if (jb.resources && jb.resources[varname] != null)
+  else if (ctx.vars[varname] !== undefined)
+    res = ctx.vars[varname]
+  else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
+    res = ctx.vars.scope[varname]
+  else if (jb.resources && jb.resources[varname] !== undefined)
     res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
-  else if (jb.consts && jb.consts[varname] != null)
+  else if (jb.consts && jb.consts[varname] !== undefined)
     res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
   if (ctx.vars.debugSourceRef && typeof res == 'string' && jstype == 'string-with-source-ref' && jb.stringWithSourceRef)
     return new jb.stringWithSourceRef(ctx,varname,0,res.length)
