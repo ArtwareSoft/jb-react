@@ -83,8 +83,7 @@ jb.component('todomvc.main', { /* todomvc.main */
 
 
 jb.component('todomvc.test', { /* todomvc.test */ 
-  impl: 
-  group({
+  impl: group({
     title: 'test',
     controls: [
       group({
@@ -147,39 +146,86 @@ jb.component('todomvc.test', { /* todomvc.test */
               )
             ),
             controls: [
-                  group({
-                    style: layout.horizontal(3),
-                    controls: [
-                      editableBoolean({
-                        databind: '%completed%',
-                        style: editableBoolean.checkbox(),
-                        textForTrue: 'yes',
-                        textForFalse: 'no',
-                        features: css.class('toggle')
+              group({
+                style: layout.horizontal(3),
+                controls: [
+                  editableBoolean({
+                    databind: '%completed%',
+                    style: editableBoolean.checkbox(),
+                    textForTrue: 'yes',
+                    textForFalse: 'no',
+                    features: [css.class('toggle'), hidden('%$editableline%')]
+                  }),
+                  editableText({
+                    databind: '%task%',
+                    updateOnBlur: true,
+                    style: {
+                      $: 'editable-text.input-or-label',
+                      control: control.firstSucceeding({
+                        controls: [
+                          controlWithCondition(
+                            '%$editable%',
+                            editableText({
+                              databind: '%$editableTextModel/databind%',
+                              updateOnBlur: true,
+                              style: editableText.input(),
+                              features: [
+                                feature.onEvent({
+                                  event: 'blur',
+                                  action: runActions(writeValue('%$editable%', false), call('onToggle'))
+                                }),
+                                css.class('%$inputCssClass%')
+                              ]
+                            })
+                          ),
+                          label({
+                            title: ctx => ctx.exp('%$editableTextModel/databind%'),
+                            style: label.htmlTag('label'),
+                            features: [
+                              feature.onEvent({
+                                event: 'dblclick',
+                                action: runActions(
+                                  writeValue('%$editable%', true),
+                                  focusOnSibling('.%$inputCssClass%'),
+                                  call('onToggle')
+                                )
+                              }),
+                              css.class('%$labelCssClass%')
+                            ]
+                          })
+                        ],
+                        style: firstSucceeding.style(),
+                        features: [
+                          variable({name: 'editable', mutable: true}),
+                          firstSucceeding.watchRefreshOnCtrlChange('%$editable%', false)
+                        ]
                       }),
-                      editableText({
-                        databind: '%task%',
-                        updateOnBlur: true,
-                        style: editableText.input(),
-                        features: css.class('edit')
-                      }),
-                      button({
-                        title: '',
-                        action: splice({
-                          array: '%$todo%',
-                          fromIndex: indexOf('%$todo%', '%%'),
-                          noOfItemsToRemove: '1',
-                          itemsToAdd: []
-                        }),
-                        style: {$: 'todomvc.button.simple', size: '21'},
-                        features: css.class('destroy')
-                      }),
-                      label({title: '%task%', style: label.htmlTag('label')})
-
-                    ],
+                      modelVar: 'editableTextModel',
+                      inputCssClass: 'edit',
+                      labelCssClass: '',
+                      onToggle: toggleBooleanValue('%$editableline%')
+                    },
+                    features: null
+                  }),
+                  button({
+                    title: '',
+                    action: splice({
+                      array: '%$todo%',
+                      fromIndex: indexOf('%$todo%', '%%'),
+                      noOfItemsToRemove: '1',
+                      itemsToAdd: []
+                    }),
+                    style: {$: 'todomvc.button.simple', size: '21'},
                     features: [
-                      conditionalClass('completed', '%completed%')
-                  ,variable({name: 'editableline', value: false, mutable: true})
+                      css.class('destroy'),
+                      hidden('%$editableline%'),
+                      watchRef({ref: '%$editableline%', allowSelfRefresh: false})
+                    ]
+                  })
+                ],
+                features: [
+                  conditionalClass('completed', '%completed%'),
+                  variable({name: '%$editableline%', value: false, mutable: true})
                 ]
               })
             ],
@@ -575,4 +621,11 @@ jb.component('todomvc.button.simple', {
     }
 })
 
+
+jb.component('todomvc.xx', { /* todomvc.xx */ 
+  type: 'control',
+  impl: group({
+    controls: [label({title: 'my label', style: label.span()})]
+  })
+}) 
 
