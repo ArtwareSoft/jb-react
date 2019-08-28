@@ -5,8 +5,8 @@ jb.component('editable-text.input', {
       template: (cmp,state,h) => h('input', {
         value: state.model,
         onchange: e => cmp.jbModel(e.target.value),
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-    css: '{height: 16px}'
+        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  })
+   
   }
 })
 
