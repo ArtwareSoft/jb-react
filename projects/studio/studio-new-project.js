@@ -21,7 +21,7 @@ jb.component('studio.new-project', { /* studio_newProject */
   <script type="text/javascript">
     startTime = new Date().getTime();
   </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common"></script>
+  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>
   <script type="text/javascript" src="/projects/${name}/${name}.js"></script>
   <script1 type="text/javascript" src="/projects/${name}/samples.js"></script1>
 </head>
