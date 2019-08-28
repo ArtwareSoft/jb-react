@@ -1,3 +1,5 @@
+(function() {
+
 jb.component('editable-text.codemirror', {
 	type: 'editable-text.style',
 	params: [
@@ -8,78 +10,79 @@ jb.component('editable-text.codemirror', {
 		{ id: 'mode', as: 'string' },
 		{ id: 'debounceTime', as: 'number', defaultValue: 300 },
 		{ id: 'lineWrapping', as: 'boolean' },
-    { id: 'lineNumbers', as: 'boolean' },
-    { id: 'readOnly', options: ',true,nocursor' },
+		{ id: 'lineNumbers', as: 'boolean' },
+		{ id: 'readOnly', options: ',true,nocursor' },
 		{ id: 'onCtrlEnter', type: 'action', dynamic: true },
 		{ id: 'hint', as: 'boolean' }
 	],
-	impl: function(context, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
+	impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
 			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
 			afterViewInit: cmp => {
-				var data_ref = cmp.ctx.vars.$model.databind();
-				cm_settings = cm_settings||{};
-				var effective_settings = Object.assign({},cm_settings, {
-					mode: mode || 'javascript',
-					lineWrapping: lineWrapping,
-          lineNumbers: context.params.lineNumbers,
-					theme: 'solarized light',
-          autofocus: false,
-					extraKeys: Object.assign({
-						'Ctrl-Space': 'autocomplete',
-						'Ctrl-Enter': () => context.params.onCtrlEnter()
-					}, cm_settings.extraKeys || {}),
-          readOnly: context.params.readOnly,
-				});
 				try {
-					var editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
-					if (context.params.hint)
+					const data_ref = cmp.ctx.vars.$model.databind();
+					cm_settings = cm_settings||{};
+					const effective_settings = Object.assign({},cm_settings, {
+						mode: mode || 'javascript',
+						lineWrapping: lineWrapping,
+						lineNumbers: ctx.params.lineNumbers,
+						theme: 'solarized light',
+						autofocus: false,
+						extraKeys: Object.assign({
+							'Ctrl-Space': 'autocomplete',
+							'Ctrl-Enter': editor => ctx.params.onCtrlEnter(ctx.setVars({editor}))
+						}, cm_settings.extraKeys || {}),
+						readOnly: ctx.params.readOnly,
+					});
+					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+					if (ctx.params.hint)
 						tgpHint(CodeMirror)
-					var wrapper = editor.getWrapperElement();
+					const wrapper = editor.getWrapperElement();
 					if (height)
 						wrapper.style.height = height + 'px';
-					// jb.delay(1).then(() => {
-					// 	if (_enableFullScreen)
-					// 		enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
-					// 	editor.refresh(); // ????
-					// });
+					jb.delay(1).then(() => {
+						if (_enableFullScreen)
+							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
+						editor.refresh(); // ????
+					});
 					editor.setValue(jb.tostring(data_ref));
+				//cmp.lastEdit = new Date().getTime();
+					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
+					jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
+						.map(e=>jb.tostring(data_ref))
+						.filter(x => x != editor.getValue())
+						.subscribe(x=>
+							editor.setValue(x));
+
+					const editorTextChange = jb.rx.Observable.create(obs=>
+						editor.on('change', () => {
+							//cmp.lastEdit = new Date().getTime();
+							obs.next(editor.getValue())
+						})
+					);
+					editorTextChange.takeUntil( cmp.destroyed )
+						.debounceTime(debounceTime)
+						.filter(x =>
+							x != jb.tostring(data_ref))
+						.distinctUntilChanged()
+						.subscribe(x=>
+							jb.writeValue(data_ref,x));
+				
 				} catch(e) {
-					jb.logException(e,'editable-text.codemirror',context);
+					jb.logException(e,'editable-text.codemirror',ctx);
 					return;
 				}
-				//cmp.lastEdit = new Date().getTime();
-				editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-				jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: context})
-					.map(e=>jb.tostring(data_ref))
-					.filter(x => x != editor.getValue())
-					.subscribe(x=>
-						editor.setValue(x));
-
-				const editorTextChange = jb.rx.Observable.create(obs=>
-					editor.on('change', () => {
-						//cmp.lastEdit = new Date().getTime();
-						obs.next(editor.getValue())
-					})
-				);
-				editorTextChange.takeUntil( cmp.destroyed )
-					.debounceTime(debounceTime)
-					.filter(x =>
-						x != jb.tostring(data_ref))
-					.distinctUntilChanged()
-					.subscribe(x=>
-						jb.writeValue(data_ref,x));
-			}
+			 }
 		}
 	}
 })
 
 function enableFullScreen(editor,width,height) {
-	var escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>';
-	var fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
-	var lineNumbers = true;
-	var css = `
+	const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>';
+	const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
+	const lineNumbers = true;
+	const css = `
 		.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
 		.jb-codemirror-escCss:hover { text-decoration: underline; }
 		.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:5px; -webkit-transition: opacity 1s; z-index: 20; }
@@ -90,19 +93,19 @@ function enableFullScreen(editor,width,height) {
 	if (!jb.ui.find('#jb_codemirror_fullscreen')[0])
     jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`);
 
-	var jEditorElem = editor.getWrapperElement();
-  jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
-	var prevLineNumbers = editor.getOption("lineNumbers");
-  jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
-	var fullScreenButton =jb.ui.find('.jb-codemirror-fullScreenBtnCss')[0];
-  fullScreenButton.onclick = _ => switchMode();
-  fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
-  fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
+	const jEditorElem = editor.getWrapperElement();
+  	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
+	const prevLineNumbers = editor.getOption("lineNumbers");
+  	jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
+	const fullScreenButton =jb.ui.find('.jb-codemirror-fullScreenBtnCss')[0];
+	fullScreenButton.onclick = _ => switchMode();
+	fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
+	fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
 
-	var fullScreenClass = 'jb-codemirror-fullScreenEditorCss';
+	const fullScreenClass = 'jb-codemirror-fullScreenEditorCss';
 
 	function onresize() {
-		var wrapper = editor.getWrapperElement();
+		const wrapper = editor.getWrapperElement();
 		wrapper.style.width = window.innerWidth + 'px';
 		wrapper.style.height = window.innerHeight + 'px';
 		editor.setSize(window.innerWidth, window.innerHeight - 20);
@@ -116,16 +119,16 @@ function enableFullScreen(editor,width,height) {
 			editor.setOption("lineNumbers", prevLineNumbers);
 			editor.setSize(width, height);
 			editor.refresh();
-      jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0]);
-		} else if (!onlyBackToNormal) {
-      jb.ui.addClass(jEditorElem,fullScreenClass);
+			jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0]);
+				} else if (!onlyBackToNormal) {
+			jb.ui.addClass(jEditorElem,fullScreenClass);
 			window.addEventListener('resize', onresize);
 			onresize();
 			document.documentElement.style.overflow = "hidden";
 			if (lineNumbers) editor.setOption("lineNumbers", true);
 			editor.refresh();
 			jb.ui.addHTML(jEditorElem,escText);
-      jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true);
+      		jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true);
 			jb.ui.focus(editor,'code mirror',ctx);
 		}
 	}
@@ -150,7 +153,7 @@ jb.component('text.codemirror', {
         { id: 'mode', as: 'string', options: 'htmlmixed,javascript,css' },
         { id: 'lineWrapping', as: 'boolean' },
     ],
-    impl: function(context, cm_settings, _enableFullScreen, resizer,height, mode, lineWrapping) {
+    impl: function(ctx, cm_settings, _enableFullScreen, resizer,height, mode, lineWrapping) {
         return {
 			template: (cmp,state,h) => h('textarea', {class: 'jb-codemirror'}),
 			afterViewInit: function(cmp) {
@@ -172,12 +175,12 @@ jb.component('text.codemirror', {
 						editor.refresh(); // ????
 					});
                 } catch(e) {
-                    jb.logException(e,'editable-text.codemirror',context);
+                    jb.logException(e,'editable-text.codemirror',ctx);
                     return;
                 }
                 editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
                 jb.ui.resourceChange.takeUntil(cmp.destroyed)
-                    .map(()=> context.vars.$model.text())
+                    .map(()=> ctx.vars.$model.text())
                     .filter(x=>x)
                     .distinctUntilChanged()
                     .subscribe(x=>
@@ -187,9 +190,9 @@ jb.component('text.codemirror', {
     }
 })
 
-function tgpHint(CodeMirror) {
-	
-};
+function tgpHint(CodeMirror) {}
+  
+})();
 
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: https://codemirror.net/LICENSE
