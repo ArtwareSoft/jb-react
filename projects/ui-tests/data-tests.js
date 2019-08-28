@@ -475,22 +475,19 @@ jb.component('data-test.inner-of-undefined-var', {
 //   },
 // })
 
- jb.component('ui-test.string-watchable-var',   {
-  impl: uiTest({
-    control: label({
-      title: '%$watchableVar%',
-    }),
-    action: writeValue('%$$watchableVar%', 'foo'),
-    expectedResult: contains('foo')
-  })
-})
+ jb.component('data-test.string-watchable-var',   {
+  impl: dataTest({
+    
+    runBefore: writeValue('%$watchableVar%', 'foo'),
+    calculate: '%$watchableVar%',
+    expectedResult: equals('foo')
+  })})
 
-jb.component('ui-test.string-passive-var',  {
-  impl: uiTest({
-    control: label({
-      title: '%$passiveVar%',
-    }),
-    action: writeValue('%$passiveVar%', 'foo'),
-    expectedResult: contains('foo')
-   })})
+jb.component('data-test.string-passive-var',  {
+  impl: dataTest({
+    
+    runBefore: writeValue('%$passiveVar%', 'foo'),
+    calculate: '%$passiveVar%',
+    expectedResult: equals('foo')
+  })})
  
