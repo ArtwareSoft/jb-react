@@ -19,6 +19,12 @@ jb.component('personWithChildren', { watchableData: {
   friends: [{ name: 'Barnie' } ],
 }})
 
+jb.component('watchableVar', { watchableData: "hey"
+ })
+
+jb.component('passiveVar', { passiveData: "hey"
+}) 
+
 jb.component('test.getAsBool',{
   params: [
     { id: 'val', as: 'boolean'}
@@ -468,3 +474,20 @@ jb.component('data-test.inner-of-undefined-var', {
 //     expectedResult :{$: 'contains', text: 'Homer' }
 //   },
 // })
+
+ jb.component('data-test.string-watchable-var',   {
+  impl: dataTest({
+    
+    runBefore: writeValue('%$watchableVar%', 'foo'),
+    calculate: '%$watchableVar%',
+    expectedResult: equals('foo')
+  })})
+
+jb.component('data-test.string-passive-var',  {
+  impl: dataTest({
+    
+    runBefore: writeValue('%$passiveVar%', 'foo'),
+    calculate: '%$passiveVar%',
+    expectedResult: equals('foo')
+  })})
+ 

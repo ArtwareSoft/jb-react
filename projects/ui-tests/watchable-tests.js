@@ -259,3 +259,22 @@ jb.component('ui-test.group-watching-structure', {
     expectedResult: contains('changed')
   })
 })
+
+jb.component('ui-test.watch-ref-array-delete',  {
+  impl: uiTest({
+    control: group({
+      controls: [label({title: json.stringify("%$people%"),
+      features:[watchRef({ref: '%$people%', includeChildren: 'yes'})] 
+    }),
+    label("hey")] 
+    ,features: [feature_afterLoad( runActionOnItems('%$people%',splice(
+      {array: "%$people%",
+        fromIndex: indexOf("%$people%", '%%'),
+        noOfItemsToRemove: '1',
+        itemsToAdd: []
+      })))]
+    
+    }),
+    expectedResult: contains('[]')
+  })
+})   
