@@ -19,9 +19,11 @@ jb.component('editable-text.codemirror', {
 		return {
 			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
+			beforeInit: cmp =>
+				cmp.state.databindRef = cmp.ctx.vars.$model.databind(),
 			afterViewInit: cmp => {
 				try {
-					const data_ref = cmp.ctx.vars.$model.databind();
+					const data_ref = cmp.state.databindRef;
 					cm_settings = cm_settings||{};
 					const effective_settings = Object.assign({},cm_settings, {
 						mode: mode || 'javascript',
@@ -35,7 +37,8 @@ jb.component('editable-text.codemirror', {
 						}, cm_settings.extraKeys || {}),
 						readOnly: ctx.params.readOnly,
 					});
-					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+					const editor = cmp.editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+					editor.cursorPath = () => locationPath(editor,data_ref)
 					if (ctx.params.hint)
 						tgpHint(CodeMirror)
 					const wrapper = editor.getWrapperElement();
@@ -78,6 +81,14 @@ jb.component('editable-text.codemirror', {
 	}
 })
 
+function locationPath(editor,data_ref) {
+	const pos = editor.getCursor()
+	const path = jb.entries(data_ref.locationMap)
+		.find(e=>e[1][0] == pos.line && e[1][1] <= pos.ch && (e[1][0] < e[1][2] || pos.ch <= e[1][3]))
+	return path
+}
+
+
 function enableFullScreen(editor,width,height) {
 	const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>';
 	const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
@@ -97,7 +108,7 @@ function enableFullScreen(editor,width,height) {
   	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
 	const prevLineNumbers = editor.getOption("lineNumbers");
   	jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
-	const fullScreenButton =jb.ui.find('.jb-codemirror-fullScreenBtnCss')[0];
+	const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0];
 	fullScreenButton.onclick = _ => switchMode();
 	fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
 	fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
@@ -120,7 +131,7 @@ function enableFullScreen(editor,width,height) {
 			editor.setSize(width, height);
 			editor.refresh();
 			jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0]);
-				} else if (!onlyBackToNormal) {
+		} else if (!onlyBackToNormal) {
 			jb.ui.addClass(jEditorElem,fullScreenClass);
 			window.addEventListener('resize', onresize);
 			onresize();

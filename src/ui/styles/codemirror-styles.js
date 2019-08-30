@@ -19,9 +19,11 @@ jb.component('editable-text.codemirror', {
 		return {
 			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
+			beforeInit: cmp =>
+				cmp.state.databindRef = cmp.ctx.vars.$model.databind(),
 			afterViewInit: cmp => {
 				try {
-					const data_ref = cmp.ctx.vars.$model.databind();
+					const data_ref = cmp.state.databindRef;
 					cm_settings = cm_settings||{};
 					const effective_settings = Object.assign({},cm_settings, {
 						mode: mode || 'javascript',
@@ -35,7 +37,11 @@ jb.component('editable-text.codemirror', {
 						}, cm_settings.extraKeys || {}),
 						readOnly: ctx.params.readOnly,
 					});
-					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+					const editor = cmp.editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+					editor.getCursorPos = function() {
+						const cmPos = editor.getCursor()
+						return { line: cmPos.line, col : cmPos.ch}
+					}
 					if (ctx.params.hint)
 						tgpHint(CodeMirror)
 					const wrapper = editor.getWrapperElement();
@@ -97,7 +103,7 @@ function enableFullScreen(editor,width,height) {
   	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
 	const prevLineNumbers = editor.getOption("lineNumbers");
   	jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
-	const fullScreenButton =jb.ui.find('.jb-codemirror-fullScreenBtnCss')[0];
+	const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0];
 	fullScreenButton.onclick = _ => switchMode();
 	fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
 	fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
@@ -120,7 +126,7 @@ function enableFullScreen(editor,width,height) {
 			editor.setSize(width, height);
 			editor.refresh();
 			jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0]);
-				} else if (!onlyBackToNormal) {
+		} else if (!onlyBackToNormal) {
 			jb.ui.addClass(jEditorElem,fullScreenClass);
 			window.addEventListener('resize', onresize);
 			onresize();

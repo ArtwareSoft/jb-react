@@ -144,7 +144,7 @@ jb.component('variable', {
 
         cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
         const fullName = globalId || (name + ':' + cmp.resourceId);
-        jb.log('var',['new-resource',ctx,fullName])
+        jb.log('var',['new-watchable',ctx,fullName])
         jb.resource(fullName, jb.val(value(ctx)));
         const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
         return ctx.setVars(jb.obj(name, refToResource));
@@ -215,9 +215,7 @@ jb.component('feature.init', {
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl: (ctx,action) => ({ init: cmp =>
-      action(cmp.ctx)
-  })
+  impl: (ctx,action) => ({ init: cmp => action(cmp.ctx) })
 })
 
 jb.component('feature.after-load', {
@@ -225,9 +223,7 @@ jb.component('feature.after-load', {
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl: ctx => ({ afterViewInit: cmp =>
-      jb.delay(1).then(_ => ctx.params.action(cmp.ctx))
-    })
+  impl: ctx => ({ afterViewInit: cmp => jb.delay(1).then(_ => ctx.params.action(cmp.ctx)) })
 })
 
 jb.component('feature.if', {
@@ -326,18 +322,35 @@ jb.component('feature.onHover', {
   })
 })
 
+jb.ui.checkKey = function(e, key) {
+	if (!key) return;
+  const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
+
+  key = key.replace(/-/,'+');
+  const keyWithoutPrefix = key.split('+').pop()
+  let keyCode = dict[keyWithoutPrefix.toLowerCase()]
+  if (+keyWithoutPrefix) 
+    keyCode = +keyWithoutPrefix
+  if (keyWithoutPrefix.length == 1)
+    keyCode = keyWithoutPrefix.charCodeAt(0);
+
+	if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
+	if (key.match(/^[Aa]lt/) && !e.altKey) return;
+	return e.keyCode == keyCode
+}
+
 jb.component('feature.onKey', {
   type: 'feature', category: 'events',
   params: [
-    { id: 'code', as: 'number' },
+    { id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl: (ctx,code) => ({
+  impl: (ctx,key) => ({
       onkeydown: true,
-      afterViewInit: cmp=> {
+      afterViewInit: cmp => {
         cmp.base.setAttribute('tabIndex','0');
-        cmp.onkeydown.filter(e=> e.keyCode == code).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
+        cmp.onkeydown.subscribe(e=>
+          jb.ui.checkKey(e,key) && jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
       }
   })
 })
@@ -347,7 +360,7 @@ jb.component('feature.onEnter', {
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl :{$: 'feature.onKey', code: 13, action :{$call: 'action'}}
+  impl: feature.onKey('Enter',call('action'))
 })
 
 jb.component('feature.onEsc', {
@@ -355,15 +368,7 @@ jb.component('feature.onEsc', {
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl :{$: 'feature.onKey', code: 27, action :{$call: 'action'}}
-})
-
-jb.component('feature.onDelete', {
-  type: 'feature', category: 'events',
-  params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
-  ],
-  impl :{$: 'feature.onKey', code: 46, action :{$call: 'action'}}
+  impl: feature.onKey('Esc',call('action'))
 })
 
 jb.component('refresh-control-by-id', {

@@ -380,7 +380,7 @@ type icon_with_actionPT = {$: 'icon-with-action', icon: dataType, title: dataTyp
 type menu_controlPT = {$: 'menu.control', menu: menu_optionType, style: menu_styleType, features: [featureType]}
 
 // type feature
-type featureType = ctrl_actionPT | alt_actionPT | button_disabledPT | card_initPT | group_waitPT | watch_refPT | watch_observablePT | group_dataPT | html_attributePT | idPT | feature_hover_titlePT | variablePT | varPT | bind_refsPT | calculated_varPT | featuresPT | feature_initPT | feature_after_loadPT | feature_ifPT | hiddenPT | conditional_classPT | feature_keyboard_shortcutPT | feature_onEventPT | feature_onHoverPT | feature_onKeyPT | feature_onEnterPT | feature_onEscPT | feature_onDeletePT | group_auto_focus_on_first_inputPT | cssPT | css_classPT | css_widthPT | css_heightPT | css_opacityPT | css_paddingPT | css_marginPT | css_transform_rotatePT | css_colorPT | css_transform_scalePT | css_box_shadowPT | css_borderPT | d3_scatter_initPT | editable_boolean_keyboard_supportPT | editable_text_x_buttonPT | editable_text_helper_popupPT | field_databindPT | field_databind_textPT | field_defaultPT | field_init_valuePT | field_keyboard_shortcutPT | field_subscribePT | field_on_changePT | field_toolbarPT | validationPT | group_init_groupPT | group_dynamic_titlesPT | first_succeeding_watch_refresh_on_ctrl_changePT | group_itemlist_containerPT | itemlist_itemlist_selectedPT | itemlist_container_filter_fieldPT | itemlist_watch_items_with_headingPT | itemlist_no_containerPT | itemlist_initPT | itemlist_selectionPT | itemlist_keyboard_selectionPT | itemlist_drag_and_dropPT | itemlist_drag_handlePT | itemlist_shown_only_on_item_hoverPT | itemlist_dividerPT | label_bind_titlePT | menu_init_popup_menuPT | menu_init_menu_optionPT | picklist_dynamic_optionsPT | picklist_onChangePT | slider_initPT | slider_text_handleArrowKeysPT | slider_edit_as_text_popupPT | group_init_expandablePT | group_init_accordionPT | flex_layout_container_align_main_axisPT | flex_item_growPT | flex_item_basisPT | flex_item_align_selfPT | responsive_not_for_phonePT | mdl_style_init_dynamicPT | mdl_ripple_effectPT | table_initPT | table_init_sortPT | group_init_tabsPT | text_bind_textPT | group_themePT | tree_selectionPT | tree_keyboard_selectionPT | tree_drag_and_dropPT | ((ctx: ctx) => any)
+type featureType = ctrl_actionPT | alt_actionPT | button_disabledPT | card_initPT | group_waitPT | watch_refPT | watch_observablePT | group_dataPT | html_attributePT | idPT | feature_hover_titlePT | variablePT | varPT | bind_refsPT | calculated_varPT | featuresPT | feature_initPT | feature_after_loadPT | feature_ifPT | hiddenPT | conditional_classPT | feature_keyboard_shortcutPT | feature_onEventPT | feature_onHoverPT | feature_onKeyPT | feature_onEnterPT | feature_onEscPT | group_auto_focus_on_first_inputPT | cssPT | css_classPT | css_widthPT | css_heightPT | css_opacityPT | css_paddingPT | css_marginPT | css_transform_rotatePT | css_colorPT | css_transform_scalePT | css_box_shadowPT | css_borderPT | d3_scatter_initPT | editable_boolean_keyboard_supportPT | editable_text_x_buttonPT | editable_text_helper_popupPT | field_databindPT | field_databind_textPT | field_defaultPT | field_init_valuePT | field_keyboard_shortcutPT | field_subscribePT | field_on_changePT | field_toolbarPT | validationPT | group_init_groupPT | group_dynamic_titlesPT | first_succeeding_watch_refresh_on_ctrl_changePT | group_itemlist_containerPT | itemlist_itemlist_selectedPT | itemlist_container_filter_fieldPT | itemlist_watch_items_with_headingPT | itemlist_no_containerPT | itemlist_initPT | itemlist_selectionPT | itemlist_keyboard_selectionPT | itemlist_drag_and_dropPT | itemlist_drag_handlePT | itemlist_shown_only_on_item_hoverPT | itemlist_dividerPT | label_bind_titlePT | menu_init_popup_menuPT | menu_init_menu_optionPT | picklist_dynamic_optionsPT | picklist_onChangePT | slider_initPT | slider_text_handleArrowKeysPT | slider_edit_as_text_popupPT | group_init_expandablePT | group_init_accordionPT | flex_layout_container_align_main_axisPT | flex_item_growPT | flex_item_basisPT | flex_item_align_selfPT | responsive_not_for_phonePT | mdl_style_init_dynamicPT | mdl_ripple_effectPT | table_initPT | table_init_sortPT | group_init_tabsPT | text_bind_textPT | group_themePT | tree_selectionPT | tree_keyboard_selectionPT | tree_drag_and_dropPT | ((ctx: ctx) => any)
 type cmp_def_featureType = {
 	type: 'feature',
 	params?: [param],
@@ -404,10 +404,10 @@ type html_attributePT = {$: 'html-attribute', attribute: dataType, value: dataTy
 type idPT = {$: 'id', id: dataType}
 type feature_hover_titlePT = {$: 'feature.hover-title', title: dataType}
 type variablePT = {$: 'variable', name: dataType, value: dataType, 
-/** E.g., selected item variable */mutable: booleanType, 
+/** E.g., selected item variable */watchable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType}
 type varPT = {$: 'var', name: dataType, value: dataType, 
-/** E.g., selected item variable */mutable: booleanType, 
+/** E.g., selected item variable */watchable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType}
 type bind_refsPT = {$: 'bind-refs', watchRef: dataType, 
 /** watch childern change as well */includeChildren: dataType, updateRef: dataType, value: dataType}
@@ -425,10 +425,10 @@ type feature_keyboard_shortcutPT = {$: 'feature.keyboard-shortcut',
 type feature_onEventPT = {$: 'feature.onEvent', event: dataType, action: [actionType], 
 /** used for mouse events such as mousemove */debounceTime: dataType}
 type feature_onHoverPT = {$: 'feature.onHover', action: [actionType]}
-type feature_onKeyPT = {$: 'feature.onKey', code: dataType, action: [actionType]}
+type feature_onKeyPT = {$: 'feature.onKey', 
+/** E.g., a,27,Enter,Esc,Ctrl+C or Alt+V */key: dataType, action: [actionType]}
 type feature_onEnterPT = {$: 'feature.onEnter', action: [actionType]}
 type feature_onEscPT = {$: 'feature.onEsc', action: [actionType]}
-type feature_onDeletePT = {$: 'feature.onDelete', action: [actionType]}
 type group_auto_focus_on_first_inputPT = {$: 'group.auto-focus-on-first-input', }
 type cssPT = {$: 'css', css: dataType}
 type css_classPT = {$: 'css.class', class: dataType}
@@ -1372,12 +1372,12 @@ function feature_hoverTitle : featureType;
 function feature_hoverTitle(title: dataType) : featureType;
 function variable : featureType;
 function variable(profile: { name: dataType, value: dataType, 
-/** E.g., selected item variable */mutable: booleanType, 
+/** E.g., selected item variable */watchable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType}) : featureType;
 function variable(name: dataType) : featureType;
 function var : featureType;
 function var(profile: { name: dataType, value: dataType, 
-/** E.g., selected item variable */mutable: booleanType, 
+/** E.g., selected item variable */watchable: booleanType, 
 /** If specified, the var will be defined as global with this id */globalId: dataType}) : featureType;
 function var(name: dataType) : featureType;
 function bindRefs : featureType;
@@ -1414,14 +1414,14 @@ function feature_onEvent(event: dataType) : featureType;
 function feature_onHover : featureType;
 function feature_onHover(...action: [actionType][]) : featureType;
 function feature_onKey : featureType;
-function feature_onKey(code: dataType, action: [actionType]) : featureType;
-function feature_onKey(code: dataType) : featureType;
+function feature_onKey(
+/** E.g., a,27,Enter,Esc,Ctrl+C or Alt+V */key: dataType, action: [actionType]) : featureType;
+function feature_onKey(
+/** E.g., a,27,Enter,Esc,Ctrl+C or Alt+V */key: dataType) : featureType;
 function feature_onEnter : featureType;
 function feature_onEnter(...action: [actionType][]) : featureType;
 function feature_onEsc : featureType;
 function feature_onEsc(...action: [actionType][]) : featureType;
-function feature_onDelete : featureType;
-function feature_onDelete(...action: [actionType][]) : featureType;
 function refreshControlById : actionType;
 function refreshControlById(id: dataType) : actionType;
 function group_autoFocusOnFirstInput : featureType;
@@ -2195,14 +2195,14 @@ onEvent(event: dataType) : featureType,
 onHover : featureType,
 onHover(...action: [actionType][]) : featureType,
 onKey : featureType,
-onKey(code: dataType, action: [actionType]) : featureType,
-onKey(code: dataType) : featureType,
+onKey(
+/** E.g., a,27,Enter,Esc,Ctrl+C or Alt+V */key: dataType, action: [actionType]) : featureType,
+onKey(
+/** E.g., a,27,Enter,Esc,Ctrl+C or Alt+V */key: dataType) : featureType,
 onEnter : featureType,
 onEnter(...action: [actionType][]) : featureType,
 onEsc : featureType,
 onEsc(...action: [actionType][]) : featureType,
-onDelete : featureType,
-onDelete(...action: [actionType][]) : featureType,
 }
 declare var feature : feature;,type css = {
 class : featureType | dialog_featureType,

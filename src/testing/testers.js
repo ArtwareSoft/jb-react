@@ -61,7 +61,6 @@ jb.component('ui-test', {
 	impl: function(ctx,control,runBefore,action,expectedResult,cleanUp,expectedCounters) {
 		console.log('starting ' + ctx.path )
 		var initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
-		jb.resources = JSON.parse(ctx.vars.initial_resources); jb.rebuildRefHandler && jb.rebuildRefHandler();
 		return Promise.resolve(runBefore())
 			.then(_ => {
 				try {
@@ -95,6 +94,8 @@ jb.component('ui-test', {
 			}).then(result=> { // default cleanup
 				if (new URL(location.href).searchParams.get('show') === null) {
 					jb.ui.dialogs.dialogs.forEach(d=>d.close())
+					jb.rebuildRefHandler && jb.rebuildRefHandler();
+					jb.entries(JSON.parse(ctx.vars.initial_resources)).forEach(e=>jb.resource(e[0],e[1]))
 					jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 					if (expectedCounters)
 						jb.frame.initwSpy({resetwSpyToNoop: true})

@@ -214,7 +214,7 @@ function prepare(ctx,parentParam) {
   resCtx.params = {}; // TODO: try to delete this line
   const preparedParams = prepareParams(comp,profile,resCtx);
   if (typeof comp.impl === 'function') {
-    Object.defineProperty(comp.impl, "name", { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
+    Object.defineProperty(comp.impl, 'name', { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
     return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams: preparedParams }
   } else
     return { type:'profile', ctx: new jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
@@ -231,18 +231,17 @@ function resolveFinishedPromise(val) {
 
 function calcVar(ctx,varname,jstype) {
   let res;
-  if (ctx.componentContext && typeof ctx.componentContext.params[varname] != 'undefined')
+  if (ctx.componentContext && ctx.componentContext.params[varname] !== undefined)
     res = ctx.componentContext.params[varname];
-  else if (ctx.vars[varname] != null)
-    res = ctx.vars[varname];
-  else if (ctx.vars.scope && ctx.vars.scope[varname] != null)
-    res = ctx.vars.scope[varname];
-  else if (jb.resources && jb.resources[varname] != null)
-    res = jb.resource(varname);
-  else if (jb.consts && jb.consts[varname] != null)
-    res = jb.consts[varname];
-  if (ctx.vars.debugSourceRef && typeof res == 'string' && jstype == 'string-with-source-ref' && jb.stringWithSourceRef)
-    return new jb.stringWithSourceRef(ctx,varname,0,res.length)
+  else if (ctx.vars[varname] !== undefined)
+    res = ctx.vars[varname]
+  else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
+    res = ctx.vars.scope[varname]
+  else if (jb.resources && jb.resources[varname] !== undefined)
+    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
+  else if (jb.consts && jb.consts[varname] !== undefined)
+    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
+
   return resolveFinishedPromise(res);
 }
 
@@ -8341,8 +8340,8 @@ ui.renderWidget = function(profile,top) {
 
 					st.pageChange.debounceTime(200)
 						.filter(({page})=>page != this.state.profile.$)
-						.subscribe(({page,ctrl})=>
-							this.setState({profile: {$: ctrl || page, $vars: {DataToDebug: page }} }));
+						.subscribe(({page})=>
+							this.setState({profile: {$: page }}));
 					st.scriptChange.debounceTime(200).subscribe(_=>
 							this.setState(null));
 				}
@@ -9788,25 +9787,24 @@ jb.component('feature.hover-title', {
 
 jb.component('variable', {
   type: 'feature', category: 'general:90',
-	description: 'define a variable. mutable or const, local or global',
+	description: 'define a variable. watchable or passive, local or global',
   params: [
     { id: 'name', as: 'string', mandatory: true },
     { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
-    { id: 'mutable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable' },
+    { id: 'watchable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable' },
     { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
   ],
-  impl: (context, name, value, mutable, globalId) => ({
+  impl: (context, name, value, watchable, globalId) => ({
       extendCtxOnce: (ctx,cmp) => {
-        if (!mutable) {
+        if (!watchable)
           return ctx.setVars(jb.obj(name, value(ctx)))
-        } else {
-          cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
-          const fullName = globalId || (name + ':' + cmp.resourceId);
-          jb.log('var',['new-resource',ctx,fullName])
-          jb.resource(fullName, jb.val(value(ctx)));
-          const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
-          return ctx.setVars(jb.obj(name, refToResource));
-        }
+
+        cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
+        const fullName = globalId || (name + ':' + cmp.resourceId);
+        jb.log('var',['new-watchable',ctx,fullName])
+        jb.resource(fullName, jb.val(value(ctx)));
+        const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
+        return ctx.setVars(jb.obj(name, refToResource));
       }
   })
 })
@@ -9985,18 +9983,35 @@ jb.component('feature.onHover', {
   })
 })
 
+jb.ui.checkKey = function(e, key) {
+	if (!key) return;
+  const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
+
+  key = key.replace(/-/,'+');
+  const keyWithoutPrefix = key.split('+').pop()
+  let keyCode = dict[keyWithoutPrefix.toLowerCase()]
+  if (+keyWithoutPrefix) 
+    keyCode = +keyWithoutPrefix
+  if (keyWithoutPrefix.length == 1)
+    keyCode = keyWithoutPrefix.charCodeAt(0);
+
+	if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
+	if (key.match(/^[Aa]lt/) && !e.altKey) return;
+	return e.keyCode == keyCode
+}
+
 jb.component('feature.onKey', {
   type: 'feature', category: 'events',
   params: [
-    { id: 'code', as: 'number' },
+    { id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl: (ctx,code) => ({
+  impl: (ctx,key) => ({
       onkeydown: true,
-      afterViewInit: cmp=> {
+      afterViewInit: cmp => {
         cmp.base.setAttribute('tabIndex','0');
-        cmp.onkeydown.filter(e=> e.keyCode == code).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
+        cmp.onkeydown.subscribe(e=>
+          jb.ui.checkKey(e,key) && jb.ui.wrapWithLauchingElement(ctx.params.action, cmp, cmp.base)())
       }
   })
 })
@@ -10006,7 +10021,7 @@ jb.component('feature.onEnter', {
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl :{$: 'feature.onKey', code: 13, action :{$call: 'action'}}
+  impl: feature.onKey('Enter',call('action'))
 })
 
 jb.component('feature.onEsc', {
@@ -10014,15 +10029,7 @@ jb.component('feature.onEsc', {
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl :{$: 'feature.onKey', code: 27, action :{$call: 'action'}}
-})
-
-jb.component('feature.onDelete', {
-  type: 'feature', category: 'events',
-  params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
-  ],
-  impl :{$: 'feature.onKey', code: 46, action :{$call: 'action'}}
+  impl: feature.onKey('Esc',call('action'))
 })
 
 jb.component('refresh-control-by-id', {
@@ -10407,39 +10414,35 @@ jb.component('dialog-feature.unique-dialog',  /* dialogFeature_uniqueDialog */ {
 	}
 })
 
+jb.ui.checkKey = function(e, key) {
+	if (!key) return;
+	if (key.indexOf('-') > 0)
+		key = key.replace(/-/,'+');
+	let keyCode = key.split('+').pop().charCodeAt(0);
+	if (key == 'Delete') keyCode = 46;
+	if (key.match(/\+[Uu]p$/)) keyCode = 38;
+	if (key.match(/\+[Dd]own$/)) keyCode = 40;
+	if (key.match(/\+Right$/)) keyCode = 39;
+	if (key.match(/\+Left$/)) keyCode = 37;
+
+	if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
+	if (key.match(/^[Aa]lt/) && !e.altKey) return;
+	return e.keyCode == keyCode
+}
+
 jb.component('dialog-feature.keyboard-shortcut',  /* dialogFeature_keyboardShortcut */ {
   type: 'dialog-feature',
   params: [
     {id: 'shortcut', as: 'string', description: 'Ctrl+C or Alt+V'},
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: (ctx,key,action) => ({
+  impl: ctx => ({
   	  onkeydown : true,
-      afterViewInit: cmp=> {
-		const dialog = ctx.vars.$dialog;
-		dialog.applyShortcut = e=> {
-			const key = ctx.params.shortcut;
-			if (!key) return;
-			if (key.indexOf('-') > 0)
-				key = key.replace(/-/,'+');
-            let keyCode = key.split('+').pop().charCodeAt(0);
-            if (key == 'Delete') keyCode = 46;
-            if (key.match(/\+[Uu]p$/)) keyCode = 38;
-            if (key.match(/\+[Dd]own$/)) keyCode = 40;
-            if (key.match(/\+Right$/)) keyCode = 39;
-            if (key.match(/\+Left$/)) keyCode = 37;
-
-            if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-            if (key.match(/^[Aa]lt/) && !e.altKey) return;
-            if (e.keyCode == keyCode)
-                return ctx.params.action();
-		};
-
+      afterViewInit: cmp=>
 	    cmp.onkeydown.filter(e=> e.keyCode != 17 && e.keyCode != 18) // ctrl ot alt alone
    	  		.subscribe(e=>
-   	  			dialog.applyShortcut(e))
-
-	}})
+				jb.ui.checkKey(ctx.params.shortcut) && ctx.params.action())
+	})
 })
 
 jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLauncherPosition */ {
@@ -10830,23 +10833,10 @@ jb.component('menu.action', {
 			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
 			title: ctx.params.title(ctx),
 			applyShortcut: e=> {
-				let key = ctx.params.shortcut;
-				if (!key) return;
-				if (key.indexOf('-') > 0)
-					key = key.replace(/-/,'+');
-				let keyCode = key.split('+').pop().charCodeAt(0);
-				if (key == 'Delete') keyCode = 46;
-				if (key.match(/\+[Uu]p$/)) keyCode = 38;
-				if (key.match(/\+[Dd]own$/)) keyCode = 40;
-				if (key.match(/\+Right$/)) keyCode = 39;
-				if (key.match(/\+Left$/)) keyCode = 37;
-
-				if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-				if (key.match(/^[Aa]lt/) && !e.altKey) return;
-				if (e.keyCode == keyCode) {
-						e.stopPropagation();
-						ctx.params.action();
-						return true;
+				if (jb.ui.checkKey(ctx.params.shortcut)) {
+					e.stopPropagation();
+					ctx.params.action();
+					return true;
 				}
 			},
 			ctx: ctx
@@ -11529,7 +11519,7 @@ jb.component('group.itemlist-container', {
 	],
 	impl :{$list : [
 		{$: 'variable', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , 
-				mutable: true, globalId1: '%$id%-cntr-data'},
+				watchable: true, globalId1: '%$id%-cntr-data'},
 		{$: 'variable', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
 		ctx => ({
 			init: cmp => {
@@ -12588,8 +12578,8 @@ jb.component('editable-text.input', {
       template: (cmp,state,h) => h('input', {
         value: state.model,
         onchange: e => cmp.jbModel(e.target.value),
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-    css: '{height: 16px}'
+        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  })
+   
   }
 })
 
@@ -12988,7 +12978,7 @@ jb.component('group.tabs', {
         jb.val(ctx.exp('%$selectedTab%')),
     ],
     features : [
-        {$: 'variable', name: 'selectedTab', value: '%$tabsModel/controls[0]%', mutable: true },
+        {$: 'variable', name: 'selectedTab', value: '%$tabsModel/controls[0]%', watchable: true },
         {$: 'group.init-group'},
     ]
   }}
@@ -14758,6 +14748,8 @@ module.exports = tick;
 
 ;
 
+(function() {
+
 jb.component('editable-text.codemirror', {
 	type: 'editable-text.style',
 	params: [
@@ -14794,16 +14786,17 @@ jb.component('editable-text.codemirror', {
 						readOnly: ctx.params.readOnly,
 					});
 					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+					editor.cursorPath = () => locationPath(editor,data_ref)
 					if (ctx.params.hint)
 						tgpHint(CodeMirror)
 					const wrapper = editor.getWrapperElement();
 					if (height)
 						wrapper.style.height = height + 'px';
-					// jb.delay(1).then(() => {
-					// 	if (_enableFullScreen)
-					// 		enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
-					// 	editor.refresh(); // ????
-					// });
+					jb.delay(1).then(() => {
+						if (_enableFullScreen)
+							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
+						editor.refresh(); // ????
+					});
 					editor.setValue(jb.tostring(data_ref));
 				//cmp.lastEdit = new Date().getTime();
 					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
@@ -14836,11 +14829,19 @@ jb.component('editable-text.codemirror', {
 	}
 })
 
+function locationPath(editor,data_ref) {
+	const pos = editor.getCursor()
+	const path = jb.entries(data_ref.locationMap)
+		.find(e=>e[1][0] == pos.line && e[1][1] <= pos.ch && (e[1][0] < e[1][2] || pos.ch <= e[1][3]))
+	return path
+}
+
+
 function enableFullScreen(editor,width,height) {
-	var escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>';
-	var fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
-	var lineNumbers = true;
-	var css = `
+	const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>';
+	const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
+	const lineNumbers = true;
+	const css = `
 		.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
 		.jb-codemirror-escCss:hover { text-decoration: underline; }
 		.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:5px; -webkit-transition: opacity 1s; z-index: 20; }
@@ -14851,19 +14852,19 @@ function enableFullScreen(editor,width,height) {
 	if (!jb.ui.find('#jb_codemirror_fullscreen')[0])
     jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`);
 
-	var jEditorElem = editor.getWrapperElement();
-  jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
-	var prevLineNumbers = editor.getOption("lineNumbers");
-  jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
-	var fullScreenButton =jb.ui.find('.jb-codemirror-fullScreenBtnCss')[0];
-  fullScreenButton.onclick = _ => switchMode();
-  fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
-  fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
+	const jEditorElem = editor.getWrapperElement();
+  	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
+	const prevLineNumbers = editor.getOption("lineNumbers");
+  	jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
+	const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0];
+	fullScreenButton.onclick = _ => switchMode();
+	fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
+	fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
 
-	var fullScreenClass = 'jb-codemirror-fullScreenEditorCss';
+	const fullScreenClass = 'jb-codemirror-fullScreenEditorCss';
 
 	function onresize() {
-		var wrapper = editor.getWrapperElement();
+		const wrapper = editor.getWrapperElement();
 		wrapper.style.width = window.innerWidth + 'px';
 		wrapper.style.height = window.innerHeight + 'px';
 		editor.setSize(window.innerWidth, window.innerHeight - 20);
@@ -14877,16 +14878,16 @@ function enableFullScreen(editor,width,height) {
 			editor.setOption("lineNumbers", prevLineNumbers);
 			editor.setSize(width, height);
 			editor.refresh();
-      jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0]);
+			jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0]);
 		} else if (!onlyBackToNormal) {
-      jb.ui.addClass(jEditorElem,fullScreenClass);
+			jb.ui.addClass(jEditorElem,fullScreenClass);
 			window.addEventListener('resize', onresize);
 			onresize();
 			document.documentElement.style.overflow = "hidden";
 			if (lineNumbers) editor.setOption("lineNumbers", true);
 			editor.refresh();
 			jb.ui.addHTML(jEditorElem,escText);
-      jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true);
+      		jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true);
 			jb.ui.focus(editor,'code mirror',ctx);
 		}
 	}
@@ -14948,9 +14949,9 @@ jb.component('text.codemirror', {
     }
 })
 
-function tgpHint(CodeMirror) {
-	
-};
+function tgpHint(CodeMirror) {}
+  
+})();
 
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: https://codemirror.net/LICENSE
@@ -30691,7 +30692,7 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
         st.previewjb.studio.initEventTracker();
-      ['jb-component','jb-param','studio.data-comp-inspector'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
+      ['jb-component','jb-param'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
 
 			fixInvalidUrl()
 
@@ -30760,29 +30761,8 @@ jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studi
       .startWith(1)
       .flatMap(e=> {
         const page = jb.resources.studio.project + '.' + jb.resources.studio.page;
-        const ctrl = jb.studio.previewjb.comps[page] && jb.studio.previewjb.comps[page].type == 'data' ? 'studio.data-comp-inspector' : null;
-        return jb.resources.studio.page ? [{page, ctrl}] : []
+        return jb.resources.studio.page ? [{page}] : []
       });
-
-jb.component('studio.data-comp-inspector', { /* studio.dataCompInspector */
-  type: 'control',
-  impl: group({
-    controls: [
-      label(ctx => {debugger; return 'hello'})
-    ],
-    features: variable({
-      name: 'activateDataToDebug',
-      value: ctx => {
-        var _jb = jb.studio.previewjb;
-        var dataCompToDebug = ctx.vars.DataToDebug;
-        var debugCtx = ctx.setVars({debugSourceRef: true});
-        var inputData = _jb.comps[dataCompToDebug] && debugCtx.exp(_jb.comps[dataCompToDebug].sampleInput || '');
-        debugCtx.setData(inputData)
-          .run({$: dataCompToDebug })
-    }
-    })
-  })
-})
 
 jb.component('studio.preview-widget', { /* studio.previewWidget */ 
   type: 'control',
@@ -31344,8 +31324,13 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
     {id: 'path', as: 'string', dynamic: true}
   ],
   impl: ctx => ({
+    refreshLocationMaps() {
+      const val = st.valOfPath(ctx.params.path());
+      const res = jb.prettyPrintWithPositions(val || '',{macro:true, initialPath: path})
+      this.locationMap = res.map
+    },
 		$jb_path: () => ctx.params.path().split('~'),
-		$jb_val: function(value) {
+		$jb_val(value) {
 			try {
 				const path = ctx.params.path();
 				if (!path) return '';
@@ -31356,7 +31341,9 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 
 					if (st.isPrimitiveValue(val))
 						return ''+val;
-					return jb.prettyPrint(val || '',{macro:true, initialPath: path});
+          const res = jb.prettyPrintWithPositions(val || '',{macro:true, initialPath: path})
+          this.locationMap = res.map
+          return res.text
 				} else {
 					const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
 					const newVal = notPrimitive ? st.evalProfile(value) : value;
@@ -31372,14 +31359,16 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 							if (fullPath.match(/^[^~]+~(watchable|passive)Data/))
 								(new st.previewjb.jbCtx()).run(writeValue(scriptPathToExpression(fullPath),innerValue))
 						
-							st.writeValueOfPath(fullPath, innerValue,ctx);
+              st.writeValueOfPath(fullPath, innerValue,ctx);
+              this.refreshLocationMaps()
 							return;
 						}
 					}
 					if (newVal != null) {
 						if (path.match(/^[^~]+~(watchable|passive)Data/))
 							(new st.previewjb.jbCtx()).run(writeValue(scriptPathToExpression(path),newVal))
-						st.writeValueOfPath(path, newVal,ctx);
+            st.writeValueOfPath(path, newVal,ctx);
+            this.refreshLocationMaps()
 					}
 				}
 			} catch(e) {
@@ -32446,9 +32435,9 @@ jb.component('studio.select-profile', { /* studio_selectProfile */
       variable({
         name: 'SelectedCategory',
         value: {$if: studio_val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
-        mutable: true
+        watchable: true
       }),
-      variable({name: 'SearchPattern', value: '', mutable: true}),
+      variable({name: 'SearchPattern', value: '', watchable: true}),
       group_itemlistContainer({initialSelection: studio_compName('%$path%'), id1: 'new-profile'})
     ]
   })
@@ -32540,7 +32529,7 @@ jb.component('studio.open-new-page', { /* studio_openNewPage */
       refreshControlById('pages')
     ],
     modal: true,
-    features: [variable({name: 'name', mutable: true}), dialogFeature_autoFocusOnFirstInput()]
+    features: [variable({name: 'name', watchable: true}), dialogFeature_autoFocusOnFirstInput()]
   })
 })
 
@@ -32698,8 +32687,8 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         databind: studio.ref('%$path%'),
         style: editableText.studioPrimitiveText(),
         features: [
-          feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', '/')),
-          feature.onKey(13, studio.pasteSuggestion('%$suggestionData/selected%')),
+          feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
+          feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
           studio.watchPath({path: '%$path%', includeChildren: 'yes', allowSelfRefresh: false}),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
@@ -32739,8 +32728,8 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
           features: [field.databindText(300, true), mdlStyle.initDynamic()]
         }),
         features: [
-          feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', '/')),
-          feature.onKey(13, studio.pasteSuggestion('%$suggestionData/selected%')),
+          feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
+          feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%', 'floating-input'),
             popupId: 'suggestions',
@@ -33081,7 +33070,7 @@ jb.component('studio.property-tgp-old', { /* studio.propertyTgpOld */
         ]
       })
     ],
-    features: [variable({name: 'userExpanded', value: false, mutable: true})]
+    features: [variable({name: 'userExpanded', value: false, watchable: true})]
   })
 })
 
@@ -33126,7 +33115,7 @@ jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
     ],
     features: [
       css.margin({left: '-100'}),
-      variable({name: 'expanded', value: studio.isNew('%$path%'), mutable: true}),
+      variable({name: 'expanded', value: studio.isNew('%$path%'), watchable: true}),
       studio.watchPath({path: '%$path%', includeChildren: 'yes'})
     ]
   })
@@ -33273,7 +33262,7 @@ jb.component('studio.properties', { /* studio.properties */
         features: css.margin({top: '20', left: '5'})
       })
     ],
-    features: variable({name: 'PropertiesDialog', value: {$: 'object'}, mutable: false})
+    features: variable({name: 'PropertiesDialog', value: {$: 'object'}, watchable: false})
   })
 })
 
@@ -33513,7 +33502,7 @@ jb.component('studio.jb-editor-container', { /* studio_jbEditorContainer */
     variable({
       name: 'jbEditorCntrData',
       value: {$: 'object', selected: '%$initialSelection%', circuit: '%$circuit%'},
-      mutable: true
+      watchable: true
     })
   )
 })
@@ -33609,7 +33598,7 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
           'large array'
         )
       ],
-      features: [variable({name: 'maxItems', value: '5', mutable: 'true'})]
+      features: [variable({name: 'maxItems', value: '5', watchable: 'true'})]
     })
   })
 })
@@ -33902,7 +33891,7 @@ jb.component('studio.add-variable', { /* studio_addVariable */
       title: 'New variable',
       modal: 'true',
       features: [
-        variable({name: 'name', mutable: true}),
+        variable({name: 'name', watchable: true}),
         dialogFeature_nearLauncherPosition({}),
         dialogFeature_autoFocusOnFirstInput()
       ]
@@ -34398,7 +34387,7 @@ jb.component('studio.style-editor', { /* studio_styleEditor */
                   }),
                   title: 'Paste html / jsx',
                   onOK: writeValue(studio_ref('%$path%~template'), studio_jsxToH('%$jsx%')),
-                  features: [variable({name: 'jsx', value: 'paste your jsx here', mutable: 'true'})]
+                  features: [variable({name: 'jsx', value: 'paste your jsx here', watchable: 'true'})]
                 }),
                 style: button_mdlRaised()
               })
@@ -34707,7 +34696,7 @@ jb.component('studio.jb-editor-menu', { /* studio_jbEditorMenu */
           title: 'Add Property',
           modal: 'true',
           features: [
-            variable({name: 'name', mutable: true}),
+            variable({name: 'name', watchable: true}),
             dialogFeature_nearLauncherPosition({}),
             dialogFeature_autoFocusOnFirstInput()
           ]
@@ -34819,7 +34808,7 @@ jb.component('studio.jb-editor-menu', { /* studio_jbEditorMenu */
               title: 'Remark',
               modal: 'true',
               features: [
-                variable({name: 'remark', value: studio_val('%$path%~remark'), mutable: true}),
+                variable({name: 'remark', value: studio_val('%$path%~remark'), watchable: true}),
                 dialogFeature_nearLauncherPosition({}),
                 dialogFeature_autoFocusOnFirstInput()
               ]
@@ -35241,7 +35230,7 @@ jb.component('studio.open-new-resource', {
       })
     ],
     modal: true,
-    features: [variable({name: 'name', mutable: true}), dialogFeature_autoFocusOnFirstInput()]
+    features: [variable({name: 'name', watchable: true}), dialogFeature_autoFocusOnFirstInput()]
   })
 })
 
@@ -35323,7 +35312,7 @@ jb.component('studio.new-project', { /* studio_newProject */
   <script type="text/javascript">
     startTime = new Date().getTime();
   </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common"></script>
+  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>
   <script type="text/javascript" src="/projects/${name}/${name}.js"></script>
   <script1 type="text/javascript" src="/projects/${name}/samples.js"></script1>
 </head>
@@ -35375,7 +35364,7 @@ jb.component('studio.open-new-project', { /* studio_openNewProject */
     onOK: studio_newProject('%$name%', gotoUrl('/project/studio/%$name%/')),
     modal: true,
     features: [
-      variable({name: 'name', mutable: true}),
+      variable({name: 'name', watchable: true}),
       dialogFeature_autoFocusOnFirstInput(),
       dialogFeature_nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
     ]
@@ -35769,7 +35758,7 @@ jb.component('studio.pages', { /* studio.pages */
             databind: '%$studio/page%',
             onSelection: runActions(
               writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
-              studio.refreshPreview()
+              //studio.refreshPreview()
             ),
             autoSelectFirst: true
           }),

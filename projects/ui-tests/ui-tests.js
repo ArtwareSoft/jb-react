@@ -882,34 +882,41 @@ jb.component('ui-test.editable-boolean.expand-collapse-with-default-collapse',  
   })
 })
 
-jb.component('ui-test.codemirror-for-script', {
+jb.component('ui-test.watchableAsText', {
   impl: uiTest({
-    vars: Var('script', () => jb.prettyPrintWithPositions(jb.comps['ui-test.itemlist-container-search-ctrl'])),
     control: group({
       controls: [
-        editableText({databind: '%$script/text%', 
-          style: editableText_codemirror({mode: 'javascript', onCtrlEnter: (ctx,{editor}) => {
-            const pos = editor.getCursor()
-            const map = ctx.exp('%$script/map%')
-            const elem = jb.entries(map)
-              .find(e=>e[1][0] == pos.line && e[1][1] <= pos.ch && (e[1][0] < e[1][2] || pos.ch <= e[1][3]))
-            console.log(elem)
-          }
-        })}),
         editableText({
-          databind: ctx => jb.prettyPrint(ctx.exp('%$script/map%')), 
-          style: editableText_codemirror({mode: 'javascript'})
+          databind: watchableAsText('%$watchable-people%'),
+          features: [
+            feature.onKey('Alt-P', textEditor.withCursorPath(addToArray('%$path%','%$cursorPath%'))),
+            textEditor.watchSourceChanges()
+          ],
+          style: editableText.textarea(30,80)
         }),
         button({
-          title: 'recalc',
-          action: runActions((ctx,{script}) =>
-            Object.assign(script,jb.prettyPrintWithPositions(eval('('+script.text+')')))
-          , refreshControlById('group'))
-        })
+          title: 'add path',
+          action: textEditor.withCursorPath(addToArray('%$path%','%$cursorPath%')),
+          features: id('add-path')
+        }),
+        button({
+          features: id('change-name'),
+          title: 'change name',
+          action: writeValue('%$watchable-people[0]/name%','mukki')
+        }),
+        label('%$path%'),
       ],
-      features: id('group')
+      features: [
+        id('group'),
+        variable({name: 'path', value: '', watchable: true})
+      ]
     }),
-    expectedResult: true
+    action: runActions(
+      ctx => document.querySelector('textarea').setSelectionRange(25,25),
+      uiAction.click('add-path'),
+      uiAction.click('change-name')
+    ),
+    expectedResult: contains(['mukki','ppp'])
   })
 })
 
@@ -1296,7 +1303,7 @@ jb.component('ui-test.focus-on-first-element',  /* uiTest_focusOnFirstElement */
     control: group({
       controls: [
         editableBoolean('%$person/gender%'),
-        editableText({databind: '%$person/name%', style: editableText_textarea()})
+        editableText({databind: '%$person/name%', style: editableText.textarea()})
       ]
     }),
     action: focusOnFirstElement('textarea'),

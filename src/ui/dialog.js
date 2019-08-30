@@ -166,33 +166,13 @@ jb.component('dialog-feature.keyboard-shortcut',  /* dialogFeature_keyboardShort
     {id: 'shortcut', as: 'string', description: 'Ctrl+C or Alt+V'},
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: (ctx,key,action) => ({
+  impl: ctx => ({
   	  onkeydown : true,
-      afterViewInit: cmp=> {
-		const dialog = ctx.vars.$dialog;
-		dialog.applyShortcut = e=> {
-			const key = ctx.params.shortcut;
-			if (!key) return;
-			if (key.indexOf('-') > 0)
-				key = key.replace(/-/,'+');
-            let keyCode = key.split('+').pop().charCodeAt(0);
-            if (key == 'Delete') keyCode = 46;
-            if (key.match(/\+[Uu]p$/)) keyCode = 38;
-            if (key.match(/\+[Dd]own$/)) keyCode = 40;
-            if (key.match(/\+Right$/)) keyCode = 39;
-            if (key.match(/\+Left$/)) keyCode = 37;
-
-            if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-            if (key.match(/^[Aa]lt/) && !e.altKey) return;
-            if (e.keyCode == keyCode)
-                return ctx.params.action();
-		};
-
+      afterViewInit: cmp=>
 	    cmp.onkeydown.filter(e=> e.keyCode != 17 && e.keyCode != 18) // ctrl ot alt alone
    	  		.subscribe(e=>
-   	  			dialog.applyShortcut(e))
-
-	}})
+				jb.ui.checkKey(ctx.params.shortcut) && ctx.params.action())
+	})
 })
 
 jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLauncherPosition */ {

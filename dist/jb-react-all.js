@@ -214,7 +214,7 @@ function prepare(ctx,parentParam) {
   resCtx.params = {}; // TODO: try to delete this line
   const preparedParams = prepareParams(comp,profile,resCtx);
   if (typeof comp.impl === 'function') {
-    Object.defineProperty(comp.impl, "name", { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
+    Object.defineProperty(comp.impl, 'name', { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
     return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams: preparedParams }
   } else
     return { type:'profile', ctx: new jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
@@ -231,18 +231,17 @@ function resolveFinishedPromise(val) {
 
 function calcVar(ctx,varname,jstype) {
   let res;
-  if (ctx.componentContext && typeof ctx.componentContext.params[varname] != 'undefined')
+  if (ctx.componentContext && ctx.componentContext.params[varname] !== undefined)
     res = ctx.componentContext.params[varname];
-  else if (ctx.vars[varname] != null)
-    res = ctx.vars[varname];
-  else if (ctx.vars.scope && ctx.vars.scope[varname] != null)
-    res = ctx.vars.scope[varname];
-  else if (jb.resources && jb.resources[varname] != null)
-    res = jb.resource(varname);
-  else if (jb.consts && jb.consts[varname] != null)
-    res = jb.consts[varname];
-  if (ctx.vars.debugSourceRef && typeof res == 'string' && jstype == 'string-with-source-ref' && jb.stringWithSourceRef)
-    return new jb.stringWithSourceRef(ctx,varname,0,res.length)
+  else if (ctx.vars[varname] !== undefined)
+    res = ctx.vars[varname]
+  else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
+    res = ctx.vars.scope[varname]
+  else if (jb.resources && jb.resources[varname] !== undefined)
+    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
+  else if (jb.consts && jb.consts[varname] !== undefined)
+    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
+
   return resolveFinishedPromise(res);
 }
 

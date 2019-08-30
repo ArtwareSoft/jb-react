@@ -17,11 +17,29 @@ jb.component('editable-text.textarea', {
     { id: 'cols', as: 'number', defaultValue: 120 },
   ],
   impl :{$: 'custom-style',
-      features :{$: 'field.databind-text' },
+      features :[{$: 'field.databind-text' }, {$: 'textarea.init-textarea-editor'}],
       template: (cmp,state,h) => h('textarea', {
         rows: cmp.rows, cols: cmp.cols,
         value: state.model, onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
 	}
+})
+
+jb.component('textarea.init-textarea-editor', {
+  type: 'feature',
+  impl: ctx => ({
+      beforeInit: cmp => {
+        if (!jb.textEditor) return
+        cmp.editor = {
+          getCursorPos: () => jb.textEditor.offsetToLineCol(cmp._base.value,cmp._base.selectionStart),
+          markText: () => {},
+          replaceRange: (text, from, to) => {
+            const _from = jb.textEditor.lineColToOffset(cmp._base.value,from)
+            const _to = jb.textEditor.lineColToOffset(cmp._base.value,to)
+            cmp._base.value = cmp._base.value.slice(0,_from) + text + cmp._base.value.slice(_to)
+          }
+        }
+      }
+  })
 })
 
 jb.component('editable-text.mdl-input', {
