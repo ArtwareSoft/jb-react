@@ -1,5 +1,8 @@
 (function() {
 
+const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
+const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
+
 jb.component('editable-text.codemirror', {
 	type: 'editable-text.style',
 	params: [
@@ -37,10 +40,13 @@ jb.component('editable-text.codemirror', {
 						}, cm_settings.extraKeys || {}),
 						readOnly: ctx.params.readOnly,
 					});
-					const editor = cmp.editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
-					editor.getCursorPos = function() {
-						const cmPos = editor.getCursor()
-						return { line: cmPos.line, col : cmPos.ch}
+					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+					cmp.editor = {
+						getCursorPos: () => posFromCM(editor.getCursor()),
+						markText: (from,to) => editor.markText(posToCM(from),posToCM(to)),
+						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
+						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
+						cmEditor: editor
 					}
 					if (ctx.params.hint)
 						tgpHint(CodeMirror)

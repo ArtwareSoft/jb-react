@@ -238,9 +238,9 @@ function calcVar(ctx,varname,jstype) {
   else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
     res = ctx.vars.scope[varname]
   else if (jb.resources && jb.resources[varname] !== undefined)
-    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
+    res = jstype == 'ref' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
   else if (jb.consts && jb.consts[varname] !== undefined)
-    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
+    res = jstype == 'ref' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
 
   return resolveFinishedPromise(res);
 }
@@ -274,7 +274,7 @@ function expression(exp, ctx, parentParam) {
       return tostring(conditionalExp(contents));
   })
   if (exp.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
-    return expPart(exp.substring(1,exp.length-1));
+    return expPart(exp.substring(1,exp.length-1),parentParam);
 
   exp = exp.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
       return tostring(expPart(contents,{as: 'string'}));
@@ -333,7 +333,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
       if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(ctx,subExp.substr(1),jstype)
+        return calcVar(ctx,subExp.substr(1),last ? jstype : null)
       const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
@@ -767,6 +767,8 @@ Object.assign(jb,{
 // force path - create objects in the path if not exist
   path: (object,path,value) => {
     let cur = object;
+    if (typeof path === 'string') path = path.split('.')
+    path = jb.asArray(path)
 
     if (typeof value == 'undefined') {  // get
       for(let i=0;i<path.length;i++) {
@@ -846,8 +848,10 @@ Object.assign(jb,{
     })
     return res;
   },
-
+  isEmpty: o => Object.keys(o).length === 0,
+  isObject: o => o != null && typeof o === 'object',
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
 

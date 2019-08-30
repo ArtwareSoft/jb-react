@@ -767,6 +767,8 @@ Object.assign(jb,{
 // force path - create objects in the path if not exist
   path: (object,path,value) => {
     let cur = object;
+    if (typeof path === 'string') path = path.split('.')
+    path = jb.asArray(path)
 
     if (typeof value == 'undefined') {  // get
       for(let i=0;i<path.length;i++) {
@@ -849,7 +851,7 @@ Object.assign(jb,{
   isEmpty: o => Object.keys(o).length === 0,
   isObject: o => o != null && typeof o === 'object',
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
-  
+
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
 

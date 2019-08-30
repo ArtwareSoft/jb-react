@@ -31,7 +31,7 @@ type cmp_def_anyType = {
 type callPT = {$: 'call', param: dataType}
 
 // type data
-type dataType = pipelinePT | pipePT | data_ifPT | listPT | firstSucceedingPT | keysPT | propertiesPT | prefixPT | suffixPT | remove_prefixPT | remove_suffixPT | remove_suffix_regexPT | index_ofPT | objPT | assignPT | IfPT | to_uppercasePT | to_lowercasePT | capitalizePT | logPT | asIsPT | objectPT | json_stringifyPT | json_parsePT | splitPT | replacePT | delayPT | extract_prefixPT | extract_suffixPT | rangePT | type_ofPT | class_namePT | http_getPT | isRefPT | asRefPT | data_switchPT | jison_parsePT | extract_textPT | break_textPT | zip_arraysPT | remove_sectionsPT | mergePT | dynamic_objectPT | filter_empty_propertiesPT | trimPT | remove_prefix_regexPT | pretty_printPT | fs_readFilePT | fs_statPT | fs_readdirPT | fs_directory_contentPT | test_dialog_contentPT | field_dataPT | itemlist_container_search_in_all_propertiesPT | highlightPT | style_by_controlPT | group_divPT | group_sectionPT | ((ctx: ctx) => any)
+type dataType = pipelinePT | pipePT | data_ifPT | listPT | firstSucceedingPT | keysPT | propertiesPT | prefixPT | suffixPT | remove_prefixPT | remove_suffixPT | remove_suffix_regexPT | index_ofPT | objPT | assignPT | IfPT | to_uppercasePT | to_lowercasePT | capitalizePT | logPT | asIsPT | objectPT | json_stringifyPT | json_parsePT | splitPT | replacePT | delayPT | extract_prefixPT | extract_suffixPT | rangePT | type_ofPT | class_namePT | http_getPT | isRefPT | asRefPT | data_switchPT | jison_parsePT | extract_textPT | break_textPT | zip_arraysPT | remove_sectionsPT | mergePT | dynamic_objectPT | filter_empty_propertiesPT | trimPT | remove_prefix_regexPT | pretty_printPT | fs_readFilePT | fs_statPT | fs_readdirPT | fs_directory_contentPT | test_dialog_contentPT | field_dataPT | itemlist_container_search_in_all_propertiesPT | highlightPT | style_by_controlPT | group_divPT | group_sectionPT | watchable_as_textPT | ((ctx: ctx) => any)
 type cmp_def_dataType = {
 	type: 'data',
 	params?: [param],
@@ -111,6 +111,7 @@ type highlightPT = {$: 'highlight', base: dataType, highlight: dataType, cssClas
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 type group_divPT = {$: 'group.div', }
 type group_sectionPT = {$: 'group.section', }
+type watchable_as_textPT = {$: 'watchable-as-text', ref: dataType, targetFrame: dataType}
 
 // type aggregator
 type aggregatorType = slicePT | sortPT | firstPT | lastPT | countPT | reversePT | samplePT | assign_with_indexPT | filterPT | joinPT | uniquePT | wrap_as_object_with_arrayPT | wrap_as_objectPT | d3_histogramPT | itemlist_container_filterPT | ((ctx: ctx) => any)
@@ -166,7 +167,7 @@ type is_of_typePT = {$: 'is-of-type',
 type in_groupPT = {$: 'in-group', group: dataType, item: dataType}
 
 // type action
-type actionType = action_ifPT | jb_runPT | write_valuePT | add_to_arrayPT | splicePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | run_action_on_itemsPT | on_next_timerPT | http_postPT | action_switchPT | refresh_control_by_idPT | focus_on_first_elementPT | focus_on_siblingPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | itemlist_container_addPT | itemlist_container_deletePT | menu_open_context_menuPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | run_transactionPT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
+type actionType = action_ifPT | jb_runPT | write_valuePT | add_to_arrayPT | splicePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | run_action_on_itemsPT | on_next_timerPT | http_postPT | action_switchPT | refresh_control_by_idPT | focus_on_first_elementPT | focus_on_siblingPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | itemlist_container_addPT | itemlist_container_deletePT | menu_open_context_menuPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | run_transactionPT | text_editor_with_cursor_pathPT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
 type cmp_def_actionType = {
 	type: 'action',
 	params?: [param],
@@ -205,6 +206,7 @@ type tree_redrawPT = {$: 'tree.redraw', strong: booleanType}
 type url_history_map_url_to_resourcePT = {$: 'url-history.map-url-to-resource', params: [dataType], resource: dataType, 
 /** base string to add/ingnore in url */base: dataType, onUrlChange: actionType}
 type run_transactionPT = {$: 'run-transaction', actions: [actionType], disableNotifications: booleanType}
+type text_editor_with_cursor_pathPT = {$: 'text-editor.with-cursor-path', action: actionType, editorId: dataType}
 type goto_urlPT = {$: 'goto-url', url: dataType, target: enumType}
 type reset_wspyPT = {$: 'reset-wspy', param: dataType}
 
@@ -380,7 +382,7 @@ type icon_with_actionPT = {$: 'icon-with-action', icon: dataType, title: dataTyp
 type menu_controlPT = {$: 'menu.control', menu: menu_optionType, style: menu_styleType, features: [featureType]}
 
 // type feature
-type featureType = ctrl_actionPT | alt_actionPT | button_disabledPT | card_initPT | group_waitPT | watch_refPT | watch_observablePT | group_dataPT | html_attributePT | idPT | feature_hover_titlePT | variablePT | varPT | bind_refsPT | calculated_varPT | featuresPT | feature_initPT | feature_after_loadPT | feature_ifPT | hiddenPT | conditional_classPT | feature_keyboard_shortcutPT | feature_onEventPT | feature_onHoverPT | feature_onKeyPT | feature_onEnterPT | feature_onEscPT | group_auto_focus_on_first_inputPT | cssPT | css_classPT | css_widthPT | css_heightPT | css_opacityPT | css_paddingPT | css_marginPT | css_transform_rotatePT | css_colorPT | css_transform_scalePT | css_box_shadowPT | css_borderPT | d3_scatter_initPT | editable_boolean_keyboard_supportPT | editable_text_x_buttonPT | editable_text_helper_popupPT | field_databindPT | field_databind_textPT | field_defaultPT | field_init_valuePT | field_keyboard_shortcutPT | field_subscribePT | field_on_changePT | field_toolbarPT | validationPT | group_init_groupPT | group_dynamic_titlesPT | first_succeeding_watch_refresh_on_ctrl_changePT | group_itemlist_containerPT | itemlist_itemlist_selectedPT | itemlist_container_filter_fieldPT | itemlist_watch_items_with_headingPT | itemlist_no_containerPT | itemlist_initPT | itemlist_selectionPT | itemlist_keyboard_selectionPT | itemlist_drag_and_dropPT | itemlist_drag_handlePT | itemlist_shown_only_on_item_hoverPT | itemlist_dividerPT | label_bind_titlePT | menu_init_popup_menuPT | menu_init_menu_optionPT | picklist_dynamic_optionsPT | picklist_onChangePT | slider_initPT | slider_text_handleArrowKeysPT | slider_edit_as_text_popupPT | group_init_expandablePT | group_init_accordionPT | flex_layout_container_align_main_axisPT | flex_item_growPT | flex_item_basisPT | flex_item_align_selfPT | responsive_not_for_phonePT | mdl_style_init_dynamicPT | mdl_ripple_effectPT | table_initPT | table_init_sortPT | group_init_tabsPT | text_bind_textPT | group_themePT | tree_selectionPT | tree_keyboard_selectionPT | tree_drag_and_dropPT | ((ctx: ctx) => any)
+type featureType = ctrl_actionPT | alt_actionPT | button_disabledPT | card_initPT | group_waitPT | watch_refPT | watch_observablePT | group_dataPT | html_attributePT | idPT | feature_hover_titlePT | variablePT | varPT | bind_refsPT | calculated_varPT | featuresPT | feature_initPT | feature_after_loadPT | feature_ifPT | hiddenPT | conditional_classPT | feature_keyboard_shortcutPT | feature_onEventPT | feature_onHoverPT | feature_onKeyPT | feature_onEnterPT | feature_onEscPT | group_auto_focus_on_first_inputPT | cssPT | css_classPT | css_widthPT | css_heightPT | css_opacityPT | css_paddingPT | css_marginPT | css_transform_rotatePT | css_colorPT | css_transform_scalePT | css_box_shadowPT | css_borderPT | d3_scatter_initPT | editable_boolean_keyboard_supportPT | editable_text_x_buttonPT | editable_text_helper_popupPT | field_databindPT | field_databind_textPT | field_defaultPT | field_init_valuePT | field_keyboard_shortcutPT | field_subscribePT | field_on_changePT | field_toolbarPT | validationPT | group_init_groupPT | group_dynamic_titlesPT | first_succeeding_watch_refresh_on_ctrl_changePT | group_itemlist_containerPT | itemlist_itemlist_selectedPT | itemlist_container_filter_fieldPT | itemlist_watch_items_with_headingPT | itemlist_no_containerPT | itemlist_initPT | itemlist_selectionPT | itemlist_keyboard_selectionPT | itemlist_drag_and_dropPT | itemlist_drag_handlePT | itemlist_shown_only_on_item_hoverPT | itemlist_dividerPT | label_bind_titlePT | menu_init_popup_menuPT | menu_init_menu_optionPT | picklist_dynamic_optionsPT | picklist_onChangePT | slider_initPT | slider_text_handleArrowKeysPT | slider_edit_as_text_popupPT | textarea_init_textarea_editorPT | group_init_expandablePT | group_init_accordionPT | flex_layout_container_align_main_axisPT | flex_item_growPT | flex_item_basisPT | flex_item_align_selfPT | responsive_not_for_phonePT | mdl_style_init_dynamicPT | mdl_ripple_effectPT | table_initPT | table_init_sortPT | group_init_tabsPT | text_bind_textPT | group_themePT | tree_selectionPT | tree_keyboard_selectionPT | tree_drag_and_dropPT | text_editor_watch_source_changesPT | ((ctx: ctx) => any)
 type cmp_def_featureType = {
 	type: 'feature',
 	params?: [param],
@@ -482,6 +484,7 @@ type picklist_onChangePT = {$: 'picklist.onChange', action: actionType}
 type slider_initPT = {$: 'slider.init', }
 type slider_text_handleArrowKeysPT = {$: 'slider-text.handleArrowKeys', }
 type slider_edit_as_text_popupPT = {$: 'slider.edit-as-text-popup', }
+type textarea_init_textarea_editorPT = {$: 'textarea.init-textarea-editor', }
 type group_init_expandablePT = {$: 'group.init-expandable', }
 type group_init_accordionPT = {$: 'group.init-accordion', keyboardSupport: booleanType, autoFocus: booleanType}
 type flex_layout_container_align_main_axisPT = {$: 'flex-layout-container.align-main-axis', align: dataType}
@@ -499,6 +502,7 @@ type group_themePT = {$: 'group.theme', theme: themeType}
 type tree_selectionPT = {$: 'tree.selection', databind: dataType, autoSelectFirst: booleanType, onSelection: actionType, onRightClick: actionType}
 type tree_keyboard_selectionPT = {$: 'tree.keyboard-selection', onKeyboardSelection: actionType, onEnter: actionType, onRightClickOfExpanded: actionType, autoFocus: booleanType, applyMenuShortcuts: menu_optionType}
 type tree_drag_and_dropPT = {$: 'tree.drag-and-drop', }
+type text_editor_watch_source_changesPT = {$: 'text-editor.watch-source-changes', }
 
 // type dialog-feature
 type dialog_featureType = cssPT | css_classPT | css_widthPT | css_heightPT | css_paddingPT | css_marginPT | css_box_shadowPT | css_borderPT | dialog_feature_drag_titlePT | dialog_feature_unique_dialogPT | dialog_feature_keyboard_shortcutPT | dialog_feature_near_launcher_positionPT | dialog_feature_onClosePT | dialog_feature_close_when_clicking_outsidePT | dialog_feature_auto_focus_on_first_inputPT | dialog_feature_css_class_on_launching_elementPT | dialog_feature_max_zIndex_on_clickPT | dialog_feature_resizerPT | ((ctx: ctx) => any)
@@ -874,7 +878,7 @@ type cmp_def_editable_text_styleType = {
 type editable_text_codemirrorPT = {$: 'editable-text.codemirror', cm_settings: dataType, enableFullScreen: booleanType, 
 /** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, debounceTime: dataType, lineWrapping: booleanType, lineNumbers: booleanType, readOnly: dataType, onCtrlEnter: actionType, hint: booleanType}
 type editable_text_inputPT = {$: 'editable-text.input', }
-type editable_text_textareaPT = {$: 'editable-text.textarea', rows: dataType, cols: dataType}
+type editable_text_textareaPT = {$: 'editable-text.textarea', rows: dataType, cols: dataType, oneWay: booleanType}
 type editable_text_mdl_inputPT = {$: 'editable-text.mdl-input', width: dataType}
 type editable_text_mdl_input_no_floating_labelPT = {$: 'editable-text.mdl-input-no-floating-label', width: dataType}
 type editable_text_mdl_searchPT = {$: 'editable-text.mdl-search', }
@@ -1862,8 +1866,10 @@ function editableBoolean_mdlSlideToggle() : editable_boolean_styleType;
 function editableText_input : editable_text_styleType;
 function editableText_input() : editable_text_styleType;
 function editableText_textarea : editable_text_styleType;
-function editableText_textarea(rows: dataType, cols: dataType) : editable_text_styleType;
+function editableText_textarea(profile: { rows: dataType, cols: dataType, oneWay: booleanType}) : editable_text_styleType;
 function editableText_textarea(rows: dataType) : editable_text_styleType;
+function textarea_initTextareaEditor : featureType;
+function textarea_initTextareaEditor() : featureType;
 function editableText_mdlInput : editable_text_styleType;
 function editableText_mdlInput(width: dataType) : editable_text_styleType;
 function editableText_mdlInputNoFloatingLabel : editable_text_styleType;
@@ -2025,6 +2031,14 @@ function urlHistory_mapUrlToResource(profile: { params: [dataType], resource: da
 /** base string to add/ingnore in url */base: dataType, onUrlChange: actionType}) : actionType;
 function runTransaction : actionType;
 function runTransaction(actions: [actionType], disableNotifications: booleanType) : actionType;
+function watchableAsText : dataType;
+function watchableAsText(ref: dataType, targetFrame: dataType) : dataType;
+function watchableAsText(ref: dataType) : dataType;
+function textEditor_withCursorPath : actionType;
+function textEditor_withCursorPath(action: actionType, editorId: dataType) : actionType;
+function textEditor_withCursorPath(action: actionType) : actionType;
+function textEditor_watchSourceChanges : featureType;
+function textEditor_watchSourceChanges() : featureType;
 function gotoUrl : actionType;
 function gotoUrl(url: dataType, target: enumType) : actionType;
 function gotoUrl(url: dataType) : actionType;
@@ -2367,7 +2381,7 @@ codemirror(cm_settings: dataType) : editable_text_styleType,
 input : editable_text_styleType,
 input() : editable_text_styleType,
 textarea : editable_text_styleType,
-textarea(rows: dataType, cols: dataType) : editable_text_styleType,
+textarea(profile: { rows: dataType, cols: dataType, oneWay: booleanType}) : editable_text_styleType,
 textarea(rows: dataType) : editable_text_styleType,
 mdlInput : editable_text_styleType,
 mdlInput(width: dataType) : editable_text_styleType,
@@ -2651,7 +2665,11 @@ multiLine(rows: dataType) : text_styleType,
 paragraph : text_styleType,
 paragraph() : text_styleType,
 }
-declare var text : text;,type layout = {
+declare var text : text;,type textarea = {
+initTextareaEditor : featureType,
+initTextareaEditor() : featureType,
+}
+declare var textarea : textarea;,type layout = {
 vertical : group_styleType,
 vertical(spacing: dataType) : group_styleType,
 horizontal : group_styleType,
@@ -2756,4 +2774,11 @@ mapUrlToResource : actionType,
 mapUrlToResource(profile: { params: [dataType], resource: dataType, 
 /** base string to add/ingnore in url */base: dataType, onUrlChange: actionType}) : actionType,
 }
-declare var urlHistory : urlHistory;
+declare var urlHistory : urlHistory;,type textEditor = {
+withCursorPath : actionType,
+withCursorPath(action: actionType, editorId: dataType) : actionType,
+withCursorPath(action: actionType) : actionType,
+watchSourceChanges : featureType,
+watchSourceChanges() : featureType,
+}
+declare var textEditor : textEditor;

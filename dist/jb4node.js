@@ -238,9 +238,9 @@ function calcVar(ctx,varname,jstype) {
   else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
     res = ctx.vars.scope[varname]
   else if (jb.resources && jb.resources[varname] !== undefined)
-    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
+    res = jstype == 'ref' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
   else if (jb.consts && jb.consts[varname] !== undefined)
-    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
+    res = jstype == 'ref' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
 
   return resolveFinishedPromise(res);
 }
@@ -274,7 +274,7 @@ function expression(exp, ctx, parentParam) {
       return tostring(conditionalExp(contents));
   })
   if (exp.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
-    return expPart(exp.substring(1,exp.length-1));
+    return expPart(exp.substring(1,exp.length-1),parentParam);
 
   exp = exp.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
       return tostring(expPart(contents,{as: 'string'}));
@@ -333,7 +333,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
       if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(ctx,subExp.substr(1),jstype)
+        return calcVar(ctx,subExp.substr(1),last ? jstype : null)
       const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
@@ -767,6 +767,8 @@ Object.assign(jb,{
 // force path - create objects in the path if not exist
   path: (object,path,value) => {
     let cur = object;
+    if (typeof path === 'string') path = path.split('.')
+    path = jb.asArray(path)
 
     if (typeof value == 'undefined') {  // get
       for(let i=0;i<path.length;i++) {
@@ -846,8 +848,10 @@ Object.assign(jb,{
     })
     return res;
   },
-
+  isEmpty: o => Object.keys(o).length === 0,
+  isObject: o => o != null && typeof o === 'object',
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
 
@@ -2163,26 +2167,35 @@ jb.prettyPrint = function(profile,settings = {}) {
   return jb.prettyPrintWithPositions(profile,settings).text;
 }
 
+jb.prettyPrint.advanceLineCol = function({line,col},text) {
+  const noOfLines = (text.match(/\n/g) || '').length
+  const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
+  return { line: line + noOfLines, col: newCol }
+}
+
 const spaces = Array.from(new Array(200)).map(_=>' ').join('')
 jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
+  const advanceLineCol = jb.prettyPrint.advanceLineCol
   return valueToMacro({path: initialPath, line:0, col: 0}, profile)
 
   function joinVals({path, line, col}, innerVals, open, close, flat, isArray) {
-    const lineColAfterOpen = advanceLineCol({line,col},open + newLine())
+    const afterOpenPos = advanceLineCol({line,col},open + newLine())
     const result = innerVals.reduce((acc,{innerPath, val}, index) => {
       const fullInnerPath = [path,innerPath].join('~')
-      let result = valueToMacro({path: fullInnerPath, line: acc.line, col: acc.col}, val, flat)
-      if (typeof result === 'string')
-        result = { text: result, map: {}}
-      const separator = index === 0 ? '' : ',' + (flat ? ' ' : newLine())
+      const result = valueToMacro({path: fullInnerPath, line: acc.line, col: acc.col}, val, flat)
+      const separator = index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())
       const valPrefix = isArray ? '' : innerPath + ': ';
-      const startValuePos = advanceLineCol(acc, separator)
-      const endValuePos = advanceLineCol(acc, separator + valPrefix + result.text)
-      const afterClosePos = advanceLineCol(acc, separator + valPrefix + result.text + newLine(-1) + close)
-      const map = Object.assign({},acc.map, result.map,{[fullInnerPath]: 
-          [startValuePos.line, startValuePos.col,endValuePos.line, endValuePos.col]})
-      return Object.assign({ text: acc.text + separator + valPrefix + result.text, map, unflat: acc.unflat || result.unflat }, afterClosePos)
-    }, {text: '', map: {}, ...lineColAfterOpen, unflat: false} )
+      const startAttValuePos = acc
+      const startValuePos = advanceLineCol(acc, valPrefix)
+      const endValuePos = advanceLineCol(startValuePos, result.text)
+      const afterSeparatorPos = advanceLineCol(endValuePos, separator)
+      const map = Object.assign({},acc.map, result.map,{
+        [fullInnerPath+'~!prefix']:[startAttValuePos.line, startAttValuePos.col, startValuePos.line, startValuePos.col],
+        [fullInnerPath+'~!value']:[startValuePos.line, startValuePos.col,endValuePos.line, endValuePos.col],
+//        [fullInnerPath]:[startAttValuePos.line, startAttValuePos.col,endValuePos.line, endValuePos.col]
+      })
+      return Object.assign({ text: acc.text + valPrefix + result.text + separator, map, unflat: acc.unflat || result.unflat }, afterSeparatorPos)
+    }, {text: '', map: {}, ...afterOpenPos, unflat: false} )
 
     //const arrayElem = path.match(/~[0-9]+$/)
     const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
@@ -2202,11 +2215,6 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
 
     function newLine(offset = 0) {
       return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
-    }
-    function advanceLineCol({line,col},text) {
-      const noOfLines = (text.match(/\n/g) || '').length
-      const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
-      return { line: line + noOfLines, col: newCol }
     }
   }
 
@@ -2249,16 +2257,25 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
   }
     
   function valueToMacro(ctx, val, flat) {
-    if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
-    if (val === null) return 'null';
-    if (val === undefined) return 'undefined';
-    if (typeof val === 'object') return profileToMacro(ctx, val, flat);
-    if (typeof val === 'function') return val.toString();
-    if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-      return "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
-    else
-      return JSON.stringify(val); // primitives
-  }
+    let result = doValueToMacro()
+    if (typeof result === 'string')
+      result = { text: result, map: {}}
+    return result
+
+    function doValueToMacro() {
+      if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
+      if (val === null) return 'null';
+      if (val === undefined) return 'undefined';
+      if (typeof val === 'object') return profileToMacro(ctx, val, flat);
+      if (typeof val === 'function') return val.toString();
+      if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
+        return "'" + JSON.stringify(val).slice(1,-1) + "'";
+      else if (typeof val === 'string' && val.indexOf('\n') != -1)
+        return "`" + val.replace(/`/g,'\\`') + "`"
+      else
+        return JSON.stringify(val); // primitives
+    }
+}
   
   function arrayToMacro(ctx, array, flat) {
     const vals = array.map((val,i) => ({innerPath: i, val}))

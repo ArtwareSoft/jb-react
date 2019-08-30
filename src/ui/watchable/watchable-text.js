@@ -40,26 +40,25 @@ jb.component('watchable-as-text', {
     type: 'data',
     params: [
       {id: 'ref', as: 'ref', dynamic: true},
-//      {id: 'initialPath', as: 'string', defaultValue: ''},
       {id: 'targetFrame'}
     ],
     impl: (ctx,refF) => ({
-      getRef() {
-        return this.ref || (this.ref = refF())
-      },
-      getHandler() {
-        return jb.getHandler(this.getRef())
-      },
-      getVal() {
-        return jb.val(this.getRef())
-      },
-      prettyPrintWithPositions() {
-        const initialPath = this.getHandler.pathOfRef(this.getRef()).join('~')
-        const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath})
-        this.locationMap = res.map
-        return res
-      },
-      $jb_val(value) { try {
+        getRef() {
+            return this.ref || (this.ref = refF())
+        },
+        getHandler() {
+            return jb.getHandler(this.getRef())
+        },
+        getVal() {
+            return jb.val(this.getRef())
+        },
+        prettyPrintWithPositions() {
+            const initialPath = jb.refHandler(this.getRef()).pathOfRef(this.getRef()).join('~')
+            const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath})
+            this.locationMap = res.map
+            return res
+        },
+        $jb_val(value) { try {
             if (value === undefined) {
                 const val = this.getVal();
                 if (typeof val === 'function')
@@ -74,8 +73,9 @@ jb.component('watchable-as-text', {
             jb.logException(e,'watchable-obj-as-text-ref',ctx)
         }},
 
-        $jb_observable: cmp =>
-            jb.ui.refObservable(st.refOfPath(ctx.params.path()),cmp,{includeChildren: 'yes'})
+        $jb_observable(cmp) {
+            return jb.ui.refObservable(this.getRef(),cmp,{includeChildren: 'yes'})
+        }
     })
 })
   
@@ -113,7 +113,7 @@ jb.textEditor = {
         return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
     },
     offsetToLineCol(text,offset) {
-        return { line: (text.slice(0,offset).match(/\m/g) || []).length || 0, 
+        return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0, 
             col: offset - text.slice(0,offset).lastIndexOf('\n') }
     }
 }
@@ -122,14 +122,17 @@ jb.component('text-editor.with-cursor-path', {
     type: 'action',
     params: [
       {id: 'action', type: 'action', dynamic: true, mandatory: true},
+      {id: 'editorId', as: 'string', desscription: 'only needed if launched from button'},
     ],
-    impl: (ctx,action) => {
+    impl: (ctx,action,editorId) => {
       try {
-      const cmp = jb.path(ctx.vars.$launchingElement,['el','_component'])
-      const editor = cmp.editor
-      if (editor && editor.getCursorPos)
-        action(ctx.setVars({cursorPath: jb.textEditor.pathOfPosition(cmp.state.databindRef.locationMap, editor.getCursorPos()) }))
-      } catch(e) {}
+          const base = ctx.vars.elemToTest || (typeof document !== 'undefined' && document)
+          const elem = editorId && base && base.querySelector('#'+editorId) || jb.path(ctx.vars.$launchingElement,'el')
+          const cmp = elem._component
+          const editor = cmp.editor
+          if (editor && editor.getCursorPos)
+                action(ctx.setVars({cursorPath: jb.textEditor.pathOfPosition(cmp.state.databindRef.locationMap, editor.getCursorPos()) }))
+        } catch(e) {}
     }
 })
   
@@ -138,20 +141,22 @@ jb.component('text-editor.watch-source-changes', {
     params: [
     ],
     impl: ctx => ({ init: cmp => {
-      const data_ref = cmp.state.databindRef
-      jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: cmp.ctx, includeChildren: 'yes'})
-        .subscribe(e => {
-          const path = e.path
-          const editor = cmp.editor
-          const locations = cmp.state.databindRef.locationMap
-          const loc = locations[path.concat('!value').join('~')]
-          const newVal = jb.prettyPrint(e.newVal)
-          editor.replaceRange(newVal, {line: loc[0], ch:loc[1]}, {line: loc[2], ch: loc[3]})
-          const newEndPos = jb.prettyPrint.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
-          editor.markText({line: loc[0], ch:loc[1]}, {line: newEndPos.line, ch: newEndPos.col},{
-            className: 'jb-highlight-comp-changed'
-          })
-        })
+      try {
+        const data_ref = cmp.state.databindRef.getRef()
+        jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: cmp.ctx, includeChildren: 'yes'})
+            .subscribe(e => {
+            const path = e.path
+            const editor = cmp.editor
+            const locations = cmp.state.databindRef.locationMap
+            const loc = locations[path.concat('!value').join('~')]
+            const newVal = jb.prettyPrint(e.newVal)
+            editor.replaceRange(newVal, {line: loc[0], col:loc[1]}, {line: loc[2], col: loc[3]})
+            const newEndPos = jb.prettyPrint.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
+            editor.markText({line: loc[0], col:loc[1]}, {line: newEndPos.line, col: newEndPos.col},{
+                className: 'jb-highlight-comp-changed'
+            })
+            })
+        } catch (e) {}
     }})
 })
 

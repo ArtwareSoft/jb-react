@@ -889,20 +889,22 @@ jb.component('ui-test.watchableAsText', {
         editableText({
           databind: watchableAsText('%$watchable-people%'),
           features: [
-            feature.onKey('Alt-P', textEditor.withCursorPath(addToArray('%$path%','%$cursorPath%'))),
+            id('editor'),
+            feature.onKey('Alt-P', textEditor.withCursorPath(writeValue('%$path%','%$cursorPath%'))),
             textEditor.watchSourceChanges()
           ],
-          style: editableText.textarea(30,80)
+          style1: editableText.codemirror(),
+          style: editableText.textarea({rows: 30,cols: 80})
         }),
         button({
-          title: 'add path',
-          action: textEditor.withCursorPath(addToArray('%$path%','%$cursorPath%')),
-          features: id('add-path')
+          title: 'show path of cursor',
+          action: textEditor.withCursorPath(writeValue('%$path%','%$cursorPath%'),'editor'),
+          features: id('show-path')
         }),
         button({
           features: id('change-name'),
           title: 'change name',
-          action: writeValue('%$watchable-people[0]/name%','mukki')
+          action: writeValue('%$watchable-people[1]/name%','mukki')
         }),
         label('%$path%'),
       ],
@@ -912,11 +914,12 @@ jb.component('ui-test.watchableAsText', {
       ]
     }),
     action: runActions(
-      ctx => document.querySelector('textarea').setSelectionRange(25,25),
-      uiAction.click('add-path'),
-      uiAction.click('change-name')
+      ctx => jb.ui.cmpOfSelector('#editor',ctx).editor.setSelectionRange({line: 2, col: 20}),
+      uiAction.click('#show-path'),
+      uiAction.click('#change-name')
     ),
-    expectedResult: contains(['mukki','ppp'])
+    expectedCounters: {setState: 1},
+    expectedResult: contains(["name: 'mukki'",'watchable-people~0~name~!value'])
   })
 })
 

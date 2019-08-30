@@ -238,9 +238,9 @@ function calcVar(ctx,varname,jstype) {
   else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
     res = ctx.vars.scope[varname]
   else if (jb.resources && jb.resources[varname] !== undefined)
-    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
+    res = jstype == 'ref' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
   else if (jb.consts && jb.consts[varname] !== undefined)
-    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
+    res = jstype == 'ref' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
 
   return resolveFinishedPromise(res);
 }
@@ -274,7 +274,7 @@ function expression(exp, ctx, parentParam) {
       return tostring(conditionalExp(contents));
   })
   if (exp.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
-    return expPart(exp.substring(1,exp.length-1));
+    return expPart(exp.substring(1,exp.length-1),parentParam);
 
   exp = exp.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
       return tostring(expPart(contents,{as: 'string'}));
@@ -333,7 +333,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
       if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(ctx,subExp.substr(1),jstype)
+        return calcVar(ctx,subExp.substr(1),last ? jstype : null)
       const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
@@ -767,6 +767,8 @@ Object.assign(jb,{
 // force path - create objects in the path if not exist
   path: (object,path,value) => {
     let cur = object;
+    if (typeof path === 'string') path = path.split('.')
+    path = jb.asArray(path)
 
     if (typeof value == 'undefined') {  // get
       for(let i=0;i<path.length;i++) {
@@ -846,8 +848,10 @@ Object.assign(jb,{
     })
     return res;
   },
-
+  isEmpty: o => Object.keys(o).length === 0,
+  isObject: o => o != null && typeof o === 'object',
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
 
@@ -8874,10 +8878,174 @@ jb.component('run-transaction', {
 			.catch((e) => jb.logException(e,ctx))
 			.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
 	}
-});
+})
 
 })()
 ;
+
+(function(){
+
+// should be move to studio onScript change
+// function writeValueToResource(path,value,jbToUse) {
+//     if (path.match(/^[^~]+~(watchable|passive)Data/)) {
+//         const dataPath = path.replace(/~(watchable|passive)Data/,'')
+//             .replace(/~[0-9]+~/g,x => x.replace(/~/,'[').replace(/~/,']~'))
+//             .replace(/~/g,'/')
+//             .replace(/.*/,x=>`%$${x}%`)
+//         (new jbToUse.jbCtx()).run(writeValue(dataPath,value))
+//     }
+// }
+
+function getSinglePathChange(newVal, currentVal) {
+    return pathAndValueOfSingleChange(jb.objectDiff(currentVal, newVal),'')
+    
+    function pathAndValueOfSingleChange(obj, pathSoFar) { 
+        if (typeof obj !== 'object')
+            return { innerPath: pathSoFar, innerValue: obj }
+        const entries = jb.entries(obj)
+        if (entries.length != 1) // if not single returns empty answer
+            return {}
+        return pathAndValueOfSingleChange(entries[0][1],pathSoFar+'~'+entries[0][0])
+    }
+}
+
+function setStrValue(value, ref, targetFrame) {
+    const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
+    const newVal = notPrimitive ? jb.evalStr(value,targetFrame) : value;
+    if (newVal && typeof newVal === 'object') {
+        const {innerPath, innerValue} = getSinglePathChange(newVal,jb.getVal(ref))
+        if (innerPath)
+            jb.getHandler(ref).refOfPath(innerPath).writeValue(innerValue)
+        else
+            ref.writeValue(newVal)
+    }
+}
+
+jb.component('watchable-as-text', {
+    type: 'data',
+    params: [
+      {id: 'ref', as: 'ref', dynamic: true},
+      {id: 'targetFrame'}
+    ],
+    impl: (ctx,refF) => ({
+        getRef() {
+            return this.ref || (this.ref = refF())
+        },
+        getHandler() {
+            return jb.getHandler(this.getRef())
+        },
+        getVal() {
+            return jb.val(this.getRef())
+        },
+        prettyPrintWithPositions() {
+            const initialPath = jb.refHandler(this.getRef()).pathOfRef(this.getRef()).join('~')
+            const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath})
+            this.locationMap = res.map
+            return res
+        },
+        $jb_val(value) { try {
+            if (value === undefined) {
+                const val = this.getVal();
+                if (typeof val === 'function')
+                    return val.toString();
+
+                return this.prettyPrintWithPositions().text
+            } else {
+                setStrValue(value,this.getRef(), ctx.params.targetFrame)
+                this.prettyPrintWithPositions()
+            }
+        } catch(e) {
+            jb.logException(e,'watchable-obj-as-text-ref',ctx)
+        }},
+
+        $jb_observable(cmp) {
+            return jb.ui.refObservable(this.getRef(),cmp,{includeChildren: 'yes'})
+        }
+    })
+})
+  
+jb.evalStr = function(str,frame) {
+    try {
+      return (frame || jb.frame).eval('('+str+')')
+    } catch (e) {
+        jb.logException(e,'eval: '+str);
+    }
+}
+  
+jb.objectDiff = function(newObj, orig) {
+    if (orig === newObj) return {}
+    if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
+    const deletedValues = Object.keys(orig).reduce((acc, key) =>
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: undefined }
+    , {})
+  
+    return Object.keys(newObj).reduce((acc, key) => {
+      if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
+      const difference = jb.objectDiff(newObj[key], orig[key])
+      if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
+      return { ...acc, [key]: difference } // return updated key
+    }, deletedValues)
+}
+
+jb.textEditor = {
+    pathOfPosition(locationMap,_pos) {
+        const pos = Number(_pos) ? this.offsetToLineCol(_pos) : _pos
+        const path = jb.entries(locationMap)
+            .find(e=>e[1][0] == pos.line && e[1][1] <= pos.col && (e[1][0] < e[1][2] || pos.col <= e[1][3]))
+        return path
+    },
+    lineColToOffset(text,{line,col}) {
+        return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
+    },
+    offsetToLineCol(text,offset) {
+        return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0, 
+            col: offset - text.slice(0,offset).lastIndexOf('\n') }
+    }
+}
+
+jb.component('text-editor.with-cursor-path', {
+    type: 'action',
+    params: [
+      {id: 'action', type: 'action', dynamic: true, mandatory: true},
+      {id: 'editorId', as: 'string', desscription: 'only needed if launched from button'},
+    ],
+    impl: (ctx,action,editorId) => {
+      try {
+          const base = ctx.vars.elemToTest || (typeof document !== 'undefined' && document)
+          const elem = editorId && base && base.querySelector('#'+editorId) || jb.path(ctx.vars.$launchingElement,'el')
+          const cmp = elem._component
+          const editor = cmp.editor
+          if (editor && editor.getCursorPos)
+                action(ctx.setVars({cursorPath: jb.textEditor.pathOfPosition(cmp.state.databindRef.locationMap, editor.getCursorPos()) }))
+        } catch(e) {}
+    }
+})
+  
+jb.component('text-editor.watch-source-changes', {
+    type: 'feature',
+    params: [
+    ],
+    impl: ctx => ({ init: cmp => {
+      try {
+        const data_ref = cmp.state.databindRef.getRef()
+        jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: cmp.ctx, includeChildren: 'yes'})
+            .subscribe(e => {
+            const path = e.path
+            const editor = cmp.editor
+            const locations = cmp.state.databindRef.locationMap
+            const loc = locations[path.concat('!value').join('~')]
+            const newVal = jb.prettyPrint(e.newVal)
+            editor.replaceRange(newVal, {line: loc[0], col:loc[1]}, {line: loc[2], col: loc[3]})
+            const newEndPos = jb.prettyPrint.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
+            editor.markText({line: loc[0], col:loc[1]}, {line: newEndPos.line, col: newEndPos.col},{
+                className: 'jb-highlight-comp-changed'
+            })
+            })
+        } catch (e) {}
+    }})
+})
+
+})();
 
 jb.component('group', {
   type: 'control', category: 'group:100,common:90',
@@ -9872,9 +10040,7 @@ jb.component('feature.init', {
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl: (ctx,action) => ({ init: cmp =>
-      action(cmp.ctx)
-  })
+  impl: (ctx,action) => ({ init: cmp => action(cmp.ctx) })
 })
 
 jb.component('feature.after-load', {
@@ -9882,9 +10048,7 @@ jb.component('feature.after-load', {
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl: ctx => ({ afterViewInit: cmp =>
-      jb.delay(1).then(_ => ctx.params.action(cmp.ctx))
-    })
+  impl: ctx => ({ afterViewInit: cmp => jb.delay(1).then(_ => ctx.params.action(cmp.ctx)) })
 })
 
 jb.component('feature.if', {
@@ -10011,7 +10175,7 @@ jb.component('feature.onKey', {
       afterViewInit: cmp => {
         cmp.base.setAttribute('tabIndex','0');
         cmp.onkeydown.subscribe(e=>
-          jb.ui.checkKey(e,key) && jb.ui.wrapWithLauchingElement(ctx.params.action, cmp, cmp.base)())
+          jb.ui.checkKey(e,key) && jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
       }
   })
 })
@@ -10413,22 +10577,6 @@ jb.component('dialog-feature.unique-dialog',  /* dialogFeature_uniqueDialog */ {
 		})
 	}
 })
-
-jb.ui.checkKey = function(e, key) {
-	if (!key) return;
-	if (key.indexOf('-') > 0)
-		key = key.replace(/-/,'+');
-	let keyCode = key.split('+').pop().charCodeAt(0);
-	if (key == 'Delete') keyCode = 46;
-	if (key.match(/\+[Uu]p$/)) keyCode = 38;
-	if (key.match(/\+[Dd]own$/)) keyCode = 40;
-	if (key.match(/\+Right$/)) keyCode = 39;
-	if (key.match(/\+Left$/)) keyCode = 37;
-
-	if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-	if (key.match(/^[Aa]lt/) && !e.altKey) return;
-	return e.keyCode == keyCode
-}
 
 jb.component('dialog-feature.keyboard-shortcut',  /* dialogFeature_keyboardShortcut */ {
   type: 'dialog-feature',
@@ -12588,13 +12736,37 @@ jb.component('editable-text.textarea', {
   params: [
     { id: 'rows', as: 'number', defaultValue: 4 },
     { id: 'cols', as: 'number', defaultValue: 120 },
+    { id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
   impl :{$: 'custom-style',
-      features :{$: 'field.databind-text' },
+      features :[{$: 'field.databind-text', oneWay: '%$oneWay' }, {$: 'textarea.init-textarea-editor'}],
       template: (cmp,state,h) => h('textarea', {
         rows: cmp.rows, cols: cmp.cols,
         value: state.model, onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
 	}
+})
+
+jb.component('textarea.init-textarea-editor', {
+  type: 'feature',
+  impl: ctx => ({
+      beforeInit: cmp => {
+        if (!jb.textEditor) return
+        cmp.editor = {
+          getCursorPos: () => jb.textEditor.offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
+          markText: () => {},
+          replaceRange: (text, from, to) => {
+            const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
+            const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
+            cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
+          },
+          setSelectionRange: (from, to) => {
+            const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
+            const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
+            cmp.base.setSelectionRange(_from,_to)
+          },
+        }
+      }
+  })
 })
 
 jb.component('editable-text.mdl-input', {
@@ -14750,6 +14922,9 @@ module.exports = tick;
 
 (function() {
 
+const posToCM = pos => ({line: pos.line, ch: pos.col})
+const posFromCM = pos => ({line: pos.line, col: pos.ch})
+
 jb.component('editable-text.codemirror', {
 	type: 'editable-text.style',
 	params: [
@@ -14769,9 +14944,11 @@ jb.component('editable-text.codemirror', {
 		return {
 			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
+			beforeInit: cmp =>
+				cmp.state.databindRef = cmp.ctx.vars.$model.databind(),
 			afterViewInit: cmp => {
 				try {
-					const data_ref = cmp.ctx.vars.$model.databind();
+					const data_ref = cmp.state.databindRef;
 					cm_settings = cm_settings||{};
 					const effective_settings = Object.assign({},cm_settings, {
 						mode: mode || 'javascript',
@@ -14786,7 +14963,13 @@ jb.component('editable-text.codemirror', {
 						readOnly: ctx.params.readOnly,
 					});
 					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
-					editor.cursorPath = () => locationPath(editor,data_ref)
+					cmp.editor = {
+						getCursorPos: () => posFromCM(editor.getCursor()),
+						markText: (from,to) => editor.markText(posToCM(from),posToCM(to)),
+						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
+						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
+						cmEditor: editor
+					}
 					if (ctx.params.hint)
 						tgpHint(CodeMirror)
 					const wrapper = editor.getWrapperElement();
@@ -14828,14 +15011,6 @@ jb.component('editable-text.codemirror', {
 		}
 	}
 })
-
-function locationPath(editor,data_ref) {
-	const pos = editor.getCursor()
-	const path = jb.entries(data_ref.locationMap)
-		.find(e=>e[1][0] == pos.line && e[1][1] <= pos.ch && (e[1][0] < e[1][2] || pos.ch <= e[1][3]))
-	return path
-}
-
 
 function enableFullScreen(editor,width,height) {
 	const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>';
@@ -28345,26 +28520,35 @@ jb.prettyPrint = function(profile,settings = {}) {
   return jb.prettyPrintWithPositions(profile,settings).text;
 }
 
+jb.prettyPrint.advanceLineCol = function({line,col},text) {
+  const noOfLines = (text.match(/\n/g) || '').length
+  const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
+  return { line: line + noOfLines, col: newCol }
+}
+
 const spaces = Array.from(new Array(200)).map(_=>' ').join('')
 jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
+  const advanceLineCol = jb.prettyPrint.advanceLineCol
   return valueToMacro({path: initialPath, line:0, col: 0}, profile)
 
   function joinVals({path, line, col}, innerVals, open, close, flat, isArray) {
-    const lineColAfterOpen = advanceLineCol({line,col},open + newLine())
+    const afterOpenPos = advanceLineCol({line,col},open + newLine())
     const result = innerVals.reduce((acc,{innerPath, val}, index) => {
       const fullInnerPath = [path,innerPath].join('~')
-      let result = valueToMacro({path: fullInnerPath, line: acc.line, col: acc.col}, val, flat)
-      if (typeof result === 'string')
-        result = { text: result, map: {}}
-      const separator = index === 0 ? '' : ',' + (flat ? ' ' : newLine())
+      const result = valueToMacro({path: fullInnerPath, line: acc.line, col: acc.col}, val, flat)
+      const separator = index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())
       const valPrefix = isArray ? '' : innerPath + ': ';
-      const startValuePos = advanceLineCol(acc, separator)
-      const endValuePos = advanceLineCol(acc, separator + valPrefix + result.text)
-      const afterClosePos = advanceLineCol(acc, separator + valPrefix + result.text + newLine(-1) + close)
-      const map = Object.assign({},acc.map, result.map,{[fullInnerPath]: 
-          [startValuePos.line, startValuePos.col,endValuePos.line, endValuePos.col]})
-      return Object.assign({ text: acc.text + separator + valPrefix + result.text, map, unflat: acc.unflat || result.unflat }, afterClosePos)
-    }, {text: '', map: {}, ...lineColAfterOpen, unflat: false} )
+      const startAttValuePos = acc
+      const startValuePos = advanceLineCol(acc, valPrefix)
+      const endValuePos = advanceLineCol(startValuePos, result.text)
+      const afterSeparatorPos = advanceLineCol(endValuePos, separator)
+      const map = Object.assign({},acc.map, result.map,{
+        [fullInnerPath+'~!prefix']:[startAttValuePos.line, startAttValuePos.col, startValuePos.line, startValuePos.col],
+        [fullInnerPath+'~!value']:[startValuePos.line, startValuePos.col,endValuePos.line, endValuePos.col],
+//        [fullInnerPath]:[startAttValuePos.line, startAttValuePos.col,endValuePos.line, endValuePos.col]
+      })
+      return Object.assign({ text: acc.text + valPrefix + result.text + separator, map, unflat: acc.unflat || result.unflat }, afterSeparatorPos)
+    }, {text: '', map: {}, ...afterOpenPos, unflat: false} )
 
     //const arrayElem = path.match(/~[0-9]+$/)
     const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
@@ -28384,11 +28568,6 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
 
     function newLine(offset = 0) {
       return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
-    }
-    function advanceLineCol({line,col},text) {
-      const noOfLines = (text.match(/\n/g) || '').length
-      const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
-      return { line: line + noOfLines, col: newCol }
     }
   }
 
@@ -28431,16 +28610,25 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
   }
     
   function valueToMacro(ctx, val, flat) {
-    if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
-    if (val === null) return 'null';
-    if (val === undefined) return 'undefined';
-    if (typeof val === 'object') return profileToMacro(ctx, val, flat);
-    if (typeof val === 'function') return val.toString();
-    if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-      return "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
-    else
-      return JSON.stringify(val); // primitives
-  }
+    let result = doValueToMacro()
+    if (typeof result === 'string')
+      result = { text: result, map: {}}
+    return result
+
+    function doValueToMacro() {
+      if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
+      if (val === null) return 'null';
+      if (val === undefined) return 'undefined';
+      if (typeof val === 'object') return profileToMacro(ctx, val, flat);
+      if (typeof val === 'function') return val.toString();
+      if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
+        return "'" + JSON.stringify(val).slice(1,-1) + "'";
+      else if (typeof val === 'string' && val.indexOf('\n') != -1)
+        return "`" + val.replace(/`/g,'\\`') + "`"
+      else
+        return JSON.stringify(val); // primitives
+    }
+}
   
   function arrayToMacro(ctx, array, flat) {
     const vals = array.map((val,i) => ({innerPath: i, val}))
@@ -31324,13 +31512,8 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
     {id: 'path', as: 'string', dynamic: true}
   ],
   impl: ctx => ({
-    refreshLocationMaps() {
-      const val = st.valOfPath(ctx.params.path());
-      const res = jb.prettyPrintWithPositions(val || '',{macro:true, initialPath: path})
-      this.locationMap = res.map
-    },
 		$jb_path: () => ctx.params.path().split('~'),
-		$jb_val(value) {
+		$jb_val: function(value) {
 			try {
 				const path = ctx.params.path();
 				if (!path) return '';
@@ -31341,9 +31524,7 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 
 					if (st.isPrimitiveValue(val))
 						return ''+val;
-          const res = jb.prettyPrintWithPositions(val || '',{macro:true, initialPath: path})
-          this.locationMap = res.map
-          return res.text
+					return jb.prettyPrint(val || '',{macro:true, initialPath: path});
 				} else {
 					const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
 					const newVal = notPrimitive ? st.evalProfile(value) : value;
@@ -31359,16 +31540,14 @@ jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
 							if (fullPath.match(/^[^~]+~(watchable|passive)Data/))
 								(new st.previewjb.jbCtx()).run(writeValue(scriptPathToExpression(fullPath),innerValue))
 						
-              st.writeValueOfPath(fullPath, innerValue,ctx);
-              this.refreshLocationMaps()
+							st.writeValueOfPath(fullPath, innerValue,ctx);
 							return;
 						}
 					}
 					if (newVal != null) {
 						if (path.match(/^[^~]+~(watchable|passive)Data/))
 							(new st.previewjb.jbCtx()).run(writeValue(scriptPathToExpression(path),newVal))
-            st.writeValueOfPath(path, newVal,ctx);
-            this.refreshLocationMaps()
+						st.writeValueOfPath(path, newVal,ctx);
 					}
 				}
 			} catch(e) {
