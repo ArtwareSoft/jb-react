@@ -217,7 +217,6 @@ jb.component('todomvc.test', { /* todomvc.test */
                     }),
                     style: {$: 'todomvc.button.simple', size: '21'},
                     features: [
-<<<<<<< HEAD
                       css.class('destroy'),
                       hidden('%$editableline%'),
                       watchRef({ref: '%$editableline%', allowSelfRefresh: false})
@@ -227,10 +226,6 @@ jb.component('todomvc.test', { /* todomvc.test */
                 features: [
                   conditionalClass('completed', '%completed%'),
                   variable({name: '%$editableline%', value: false, mutable: true})
-=======
-                      conditionalClass('completed', '%completed%')
-                  ,variable({name: 'editableline', value: false, watchable: true})
->>>>>>> b27e73f749d14f3eb3a53b8d0030c79e9390bc9a
                 ]
               })
             ],
