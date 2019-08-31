@@ -39,7 +39,8 @@ jb.component('studio.edit-as-macro', { /* studio_editAsMacro */
     style: dialog_editSourceStyle({id: 'edit-source', width: 600}),
     content: editableText({
       databind: studio_profileAsMacroText('%$path%'),
-      style: editableText_studioCodemirrorTgp()
+      style: editableText_studioCodemirrorTgp(),
+      //features: textEditor.watchSourceChanges(),
     }),
     title: studio_shortTitle('%$path%'),
     features: [

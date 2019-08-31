@@ -281,4 +281,67 @@ jb.component('ui-test.watch-ref-array-delete-with-run-action-on-items',  {
     expectedCounters: { setState: 3},
     expectedResult: contains('[]')
   })
-})   
+})
+
+jb.component('ui-test.watchable-as-text', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        editableText({
+          databind: watchableAsText('%$watchable-people%'),
+          features: [
+            id('editor'),
+            feature.onKey('Alt-P', textEditor.withCursorPath(writeValue('%$path%','%$cursorPath%'))),
+            textEditor.watchSourceChanges()
+          ],
+          style1: editableText.codemirror(),
+          style: editableText.textarea({rows: 30,cols: 80})
+        }),
+        button({
+          title: 'show path of cursor',
+          action: textEditor.withCursorPath(writeValue('%$path%','%$cursorPath%'),'editor'),
+          features: id('show-path')
+        }),
+        button({
+          features: id('change-name'),
+          title: 'change name',
+          action: writeValue('%$watchable-people[1]/name%','mukki')
+        }),
+        label('%$path%'),
+      ],
+      features: [
+        id('group'),
+        variable({name: 'path', value: '', watchable: true})
+      ]
+    }),
+    action: runActions(
+      ctx => jb.ui.cmpOfSelector('#editor',ctx).editor.setSelectionRange({line: 2, col: 20}),
+      uiAction.click('#show-path'),
+      uiAction.click('#change-name')
+    ),
+    expectedCounters: {setState: 1},
+    expectedResult: contains(["name: 'mukki'",'watchable-people~0~name~!value'])
+  })
+})
+
+jb.component('ui-test.watchable-as-text-write', {
+  impl: uiTest({
+    control: editableText({
+      databind: watchableAsText('%$watchable-people%'),
+      features: id('editor'),
+      style: editableText.textarea({rows: 30,cols: 80})
+    }),
+    action: uiAction_setText('hello','#editor'),
+    expectedResult: equals('%$watchable-people%','hello')
+  })
+})
+
+jb.component('data-test.watchable-object-to-primitive-bug', {
+  impl: uiTest({
+    control: label('%$person%'),
+    action: runActions(
+      writeValue('%$person%', 'world'), 
+      writeValue('%$person%', 'hello') ),
+	  expectedResult: contains('hello')
+	})
+})

@@ -257,6 +257,14 @@ function scriptPathToExpression(path) {
 jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
   type: 'data',
   params: [
+    {id: 'path', as: 'string' }
+  ],
+  impl: watchableAsText(studio.ref('%$path%'))
+})
+
+jb.component('studio.profile-as-macro-text-old', { /* studio_profileAsMacroText */
+  type: 'data',
+  params: [
     {id: 'path', as: 'string', dynamic: true}
   ],
   impl: ctx => ({

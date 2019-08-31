@@ -882,48 +882,6 @@ jb.component('ui-test.editable-boolean.expand-collapse-with-default-collapse',  
   })
 })
 
-jb.component('ui-test.watchableAsText', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        editableText({
-          databind: watchableAsText('%$watchable-people%'),
-          features: [
-            id('editor'),
-            feature.onKey('Alt-P', textEditor.withCursorPath(writeValue('%$path%','%$cursorPath%'))),
-            textEditor.watchSourceChanges()
-          ],
-          style1: editableText.codemirror(),
-          style: editableText.textarea({rows: 30,cols: 80})
-        }),
-        button({
-          title: 'show path of cursor',
-          action: textEditor.withCursorPath(writeValue('%$path%','%$cursorPath%'),'editor'),
-          features: id('show-path')
-        }),
-        button({
-          features: id('change-name'),
-          title: 'change name',
-          action: writeValue('%$watchable-people[1]/name%','mukki')
-        }),
-        label('%$path%'),
-      ],
-      features: [
-        id('group'),
-        variable({name: 'path', value: '', watchable: true})
-      ]
-    }),
-    action: runActions(
-      ctx => jb.ui.cmpOfSelector('#editor',ctx).editor.setSelectionRange({line: 2, col: 20}),
-      uiAction.click('#show-path'),
-      uiAction.click('#change-name')
-    ),
-    expectedCounters: {setState: 1},
-    expectedResult: contains(["name: 'mukki'",'watchable-people~0~name~!value'])
-  })
-})
-
-
 jb.component('ui-test.code-mirror',  /* uiTest_codeMirror */ {
   impl: uiTest({
     control: group({
@@ -1190,7 +1148,7 @@ jb.component('menu-test.open-context-menu',  /* menuTest_openContextMenu */ {
   })
 })
 
-jb.component('ui-test.immutable-var',  /* uiTest_immutableVar */ {
+jb.component('ui-test.watchable-var', {
   impl: uiTest({
     control: label({
       title: '%$var1%',

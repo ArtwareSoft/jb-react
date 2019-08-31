@@ -312,7 +312,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
           return input;
 
       const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
+      const refHandler = refHandlerArg || input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
       if (arrayIndexMatch) {
         const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
         const index = arrayIndexMatch[2];
@@ -751,7 +751,8 @@ Object.assign(jb,{
       if (args.length == 0)
         return {$: id }
       const params = profile.params || []
-      if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) // pipeline, or, and, plus
+      const firstParamIsArray = (params[0] && params[0].type||'').indexOf('[]') != -1
+      if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
         return {$: id, [params[0].id]: args }
       if (!(profile.usageByValue === false) && (params.length < 3 || profile.usageByValue))
         return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
@@ -860,8 +861,11 @@ Object.assign(jb,{
 
   // valueByRef API
   extraWatchableHandlers: [],
-  addExtraWatchableHandler: handler => { 
+  extraWatchableHandler: (handler,oldHandler) => { 
     jb.extraWatchableHandlers.push(handler)
+    const oldHandlerIndex = oldHandler && jb.extraWatchableHandlers.indexOf(oldHandler)
+    if (oldHandlerIndex != -1)
+      jb.extraWatchableHandlers.splice(oldHandlerIndex,1)
     jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
     return handler
   },
@@ -871,13 +875,14 @@ Object.assign(jb,{
   },
   watchableHandlers: [],
   safeRefCall: (ref,f) => {
-    const handler = ref && ref.handler || jb.refHandler(ref)
+    const handler = jb.refHandler(ref)
     if (!handler || !handler.isRef(ref))
       return jb.logError('invalid ref', ref)
     return f(handler)
   },
  
   refHandler: ref => {
+    if (ref && ref.handler) return ref.handler
     if (jb.simpleValueByRefHandler.isRef(ref)) 
       return jb.simpleValueByRefHandler
     return jb.watchableHandlers.find(handler => handler.isRef(ref))
@@ -1863,6 +1868,7 @@ jb.component('asRef', {
 })
 
 jb.component('data.switch', {
+	usageByValue: false,
 	params: [
   	{ id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
   	{ id: 'default', dynamic: true },
@@ -1871,7 +1877,7 @@ jb.component('data.switch', {
 		for(let i=0;i<cases.length;i++)
 			if (cases[i].condition(ctx))
 				return cases[i].value(ctx)
-		return defaultValue(ctx);
+		return defaultValue(ctx)
 	}
 })
 
@@ -2030,6 +2036,8 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 			Object.keys(this.logs).forEach(log => this.logs[log] = this.logs[log].slice(countFromEnd))
 		},
 		setLogs(logs) {
+			if (logs === 'all')
+				this.wSpyParam = 'all'
 			this.includeLogs = (logs||'').split(',').reduce((acc,log) => {acc[log] = true; return acc },{})
 		},
 		clear(logs) {
@@ -8304,14 +8312,11 @@ ui.renderWidget = function(profile,top) {
 				jb.resources = originalResources;
 				doRender();
 			}
-			st.copyComps = comps => { 
-				comps.forEach(e=> {
-					try {
-						jb.component(e[0],eval(`(${e[1]})`))
-					} catch(e) {
-						jb.logException(e)				
-					}
-				})
+			st.reloadCompInPreviewWindow = (id,comp) => { 
+				try {
+					jb.component(id,eval('('+comp+')'))
+					return jb.comps[id]
+				} catch(e) { jb.logException(e)	}
 			}
 			st.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
 		}
@@ -8574,12 +8579,12 @@ const jbId = Symbol("jbId")
 
 class WatchableValueByRef {
   constructor(resources) {
-    this.resources = resources;
-    this.objToPath = new Map();
-    this.idCounter = 1;
-    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
-    this.resourceChange = new jb.rx.Subject();
-    this.observables = [];
+    this.resources = resources
+    this.objToPath = new Map()
+    this.idCounter = 1
+    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])]
+    this.resourceChange = new jb.rx.Subject()
+    this.observables = []
 
     jb.ui.originalResources = jb.resources
     const resourcesObj = resources()
@@ -8647,12 +8652,12 @@ class WatchableValueByRef {
     Object.keys(top).filter(key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0)
         .forEach(key => this.addObjToMap(top[key],[...path,key]))
   }
-  removeObjFromMap(top) {
+  removeObjFromMap(top,isInner) {
     if (!top || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
     this.objToPath.delete(top)
-    if (top[jbId])
+    if (top[jbId] && isInner)
         this.objToPath.delete(top[jbId])
-    Object.keys(top).filter(key=>key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key]))
+    Object.keys(top).filter(key=>key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key],true))
   }
   refreshMapDown(top) {
     const ref = this.asRef(top)
@@ -8720,7 +8725,7 @@ class WatchableValueByRef {
     return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
   }
   objectProperty(obj,prop,ctx) {
-    jb.log('immutable',['objectProperty',...arguments]);
+    jb.log('watchable',['objectProperty',...arguments]);
     if (!obj)
       return jb.logError('objectProperty: null obj',ctx);
     var ref = this.asRef(obj);
@@ -8734,7 +8739,7 @@ class WatchableValueByRef {
     if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
       return jb.logError('writeValue: err in ref', srcCtx, ref, value);
 
-    jb.log('writeValue',['immutable',this.asStr(ref),value,ref,srcCtx]);
+    jb.log('writeValue',['watchable',this.asStr(ref),value,ref,srcCtx]);
     if (ref.$jb_val)
       return ref.$jb_val(value);
     if (this.val(ref) === value) return;
@@ -8805,6 +8810,9 @@ class WatchableValueByRef {
       jb.log('registerCmpObservable',[entry])
       return subject
   }
+  frame() {
+    return this.resources.frame || jb.frame
+  }
 
   propagateResourceChangeToObservables() {
       this.resourceChange.subscribe(e=>{
@@ -8861,7 +8869,7 @@ jb.ui.refObservable = (ref,cmp,settings={}) => {
   //jb.refHandler(ref).refObservable(ref,cmp,settings);
 }
 
-jb.ui.addExtraWatchableHandler = resources => jb.addExtraWatchableHandler(new WatchableValueByRef(resources));
+jb.ui.extraWatchableHandler = (resources,oldHandler) => jb.extraWatchableHandler(new WatchableValueByRef(resources),oldHandler);
 jb.ui.resourceChange = jb.mainWatchableHandler.resourceChange;
 
 jb.component('run-transaction', {
@@ -8885,19 +8893,8 @@ jb.component('run-transaction', {
 
 (function(){
 
-// should be move to studio onScript change
-// function writeValueToResource(path,value,jbToUse) {
-//     if (path.match(/^[^~]+~(watchable|passive)Data/)) {
-//         const dataPath = path.replace(/~(watchable|passive)Data/,'')
-//             .replace(/~[0-9]+~/g,x => x.replace(/~/,'[').replace(/~/,']~'))
-//             .replace(/~/g,'/')
-//             .replace(/.*/,x=>`%$${x}%`)
-//         (new jbToUse.jbCtx()).run(writeValue(dataPath,value))
-//     }
-// }
-
 function getSinglePathChange(newVal, currentVal) {
-    return pathAndValueOfSingleChange(jb.objectDiff(currentVal, newVal),'')
+    return pathAndValueOfSingleChange(jb.objectDiff(newVal,currentVal),'')
     
     function pathAndValueOfSingleChange(obj, pathSoFar) { 
         if (typeof obj !== 'object')
@@ -8909,25 +8906,30 @@ function getSinglePathChange(newVal, currentVal) {
     }
 }
 
-function setStrValue(value, ref, targetFrame) {
+function setStrValue(value, ref, ctx) {
     const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-    const newVal = notPrimitive ? jb.evalStr(value,targetFrame) : value;
+    const newVal = notPrimitive ? jb.evalStr(value,ref.handler.frame()) : value;
+    // do not save in editing ',' at the end of line means editing
+    if (typeof newVal === 'object' && value.match(/,\s*}/m))
+        return
     if (newVal && typeof newVal === 'object') {
-        const {innerPath, innerValue} = getSinglePathChange(newVal,jb.getVal(ref))
-        if (innerPath)
-            jb.getHandler(ref).refOfPath(innerPath).writeValue(innerValue)
-        else
-            ref.writeValue(newVal)
+        const {innerPath, innerValue} = getSinglePathChange(newVal,jb.val(ref))
+        if (innerPath) {
+            const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
+            return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
+        } 
     }
+    if (newVal !== undefined)
+       jb.writeValue(ref,newVal,ctx)
 }
 
 jb.component('watchable-as-text', {
     type: 'data',
     params: [
       {id: 'ref', as: 'ref', dynamic: true},
-      {id: 'targetFrame'}
     ],
     impl: (ctx,refF) => ({
+        oneWay: true,
         getRef() {
             return this.ref || (this.ref = refF())
         },
@@ -8938,7 +8940,8 @@ jb.component('watchable-as-text', {
             return jb.val(this.getRef())
         },
         prettyPrintWithPositions() {
-            const initialPath = jb.refHandler(this.getRef()).pathOfRef(this.getRef()).join('~')
+            const ref = this.getRef()
+            const initialPath = ref.handler.pathOfRef(ref).join('~')
             const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath})
             this.locationMap = res.map
             return res
@@ -8951,8 +8954,8 @@ jb.component('watchable-as-text', {
 
                 return this.prettyPrintWithPositions().text
             } else {
-                setStrValue(value,this.getRef(), ctx.params.targetFrame)
-                this.prettyPrintWithPositions()
+                setStrValue(value,this.getRef(),ctx)
+                this.prettyPrintWithPositions() // refreshing location map
             }
         } catch(e) {
             jb.logException(e,'watchable-obj-as-text-ref',ctx)
@@ -9027,7 +9030,8 @@ jb.component('text-editor.watch-source-changes', {
     ],
     impl: ctx => ({ init: cmp => {
       try {
-        const data_ref = cmp.state.databindRef.getRef()
+        const text_ref = cmp.state.databindRef
+        const data_ref = text_ref.getRef()
         jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: cmp.ctx, includeChildren: 'yes'})
             .subscribe(e => {
             const path = e.path
@@ -12761,7 +12765,7 @@ jb.component('textarea.init-textarea-editor', {
           },
           setSelectionRange: (from, to) => {
             const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-            const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
+            const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
             cmp.base.setSelectionRange(_from,_to)
           },
         }
@@ -14922,8 +14926,8 @@ module.exports = tick;
 
 (function() {
 
-const posToCM = pos => ({line: pos.line, ch: pos.col})
-const posFromCM = pos => ({line: pos.line, col: pos.ch})
+const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
+const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
 
 jb.component('editable-text.codemirror', {
 	type: 'editable-text.style',
@@ -14965,7 +14969,7 @@ jb.component('editable-text.codemirror', {
 					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
 					cmp.editor = {
 						getCursorPos: () => posFromCM(editor.getCursor()),
-						markText: (from,to) => editor.markText(posToCM(from),posToCM(to)),
+						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
 						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
 						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
 						cmEditor: editor
@@ -14983,11 +14987,15 @@ jb.component('editable-text.codemirror', {
 					editor.setValue(jb.tostring(data_ref));
 				//cmp.lastEdit = new Date().getTime();
 					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-					jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
+					!data_ref.oneWay && jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
 						.map(e=>jb.tostring(data_ref))
 						.filter(x => x != editor.getValue())
-						.subscribe(x=>
-							editor.setValue(x));
+						.subscribe(x=>{
+							const cur = editor.getCursor()
+							editor.setValue(x)
+							editor.setSelection(cur)
+							cmp.editor.markText({line: 0, col:0}, {line: editor.laseLine(), col: 0})
+						});
 
 					const editorTextChange = jb.rx.Observable.create(obs=>
 						editor.on('change', () => {
@@ -28585,11 +28593,12 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     const macro = jb.macroName(id)
   
     const params = comp.params || []
+    const firstParamIsArray = (params[0] && params[0].type||'').indexOf('[]') != -1
     const vars = Object.keys(profile.$vars || {})
       .map(name => ({innerPath: `$vars~${name}`, val: {$: 'Var', name, val: profile.$vars[name]}}))
     const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
     const systemProps = vars.concat(remark)
-    if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus
+    if (params.length == 1 && firstParamIsArray) { // pipeline, or, and, plus
       const args = systemProps.concat(jb.asArray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val})))
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
@@ -28598,7 +28607,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
         && (typeof profile[keys[0]] !== 'object' || Array.isArray(profile[keys[0]]))
     if ((params.length < 3 && comp.usageByValue !== false) || comp.usageByValue || oneFirstParam) {
       const args = systemProps.concat(params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]})))
-      for(let i=0;i<6;i++)
+      for(let i=0;i<3;i++)
         if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
@@ -30347,32 +30356,49 @@ jb.component('studio.toolbar-style', { /* studio.toolbarStyle */
 
 (function() { var st = jb.studio;
 
-//  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
-jb.issuesTolog = [];
+function compsRefOfPreviewJb(previewjb) {
+	st.compsHistory = [];
+	function compsRef(val,opEvent) {
+		if (typeof val == 'undefined')
+			return previewjb.comps;
+		else {
+			val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
+			if (!val.$jb_selectionPreview)
+			st.compsHistory.push({before: previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
 
-function compsRef(val,opEvent) {
-  if (typeof val == 'undefined')
-    return st.previewjb.comps;
-  else {
-		// if (val.$jb_historyIndex && val == st.compsHistory[val.$jb_historyIndex].after)
-		// 	st.compsHistory.slice()
-
-		val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
-		if (!val.$jb_selectionPreview)
-  		st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
-
-    st.previewjb.comps = val;
-    if (opEvent)
-      st.undoIndex = st.compsHistory.length;
-  }
+			previewjb.comps = val;
+			if (opEvent)
+			st.undoIndex = st.compsHistory.length;
+		}
+	}
+	compsRef.frame = previewjb.frame
+	return compsRef
+}
+st.scriptChange = new jb.rx.Subject()
+st.initCompsRefHandler = function(previewjb,allowedTypes) {
+	const oldCompsRefHandler = st.compsRefHandler
+	oldCompsRefHandler && oldCompsRefHandler.stopListening.next(1)
+	const compsRef = compsRefOfPreviewJb(previewjb);
+	st.compsRefHandler = jb.ui.extraWatchableHandler(compsRef, oldCompsRefHandler)
+	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes);
+	st.compsRefHandler.stopListening = new jb.rx.Subject()
+	
+	st.compsRefHandler.resourceChange.takeUntil(st.compsRefHandler.stopListening).subscribe(e=>{
+		jb.log('scriptChange',[e.srcCtx,e]);
+		st.scriptChange.next(e)
+		st.highlightByScriptPath(e.path)
+		writeValueToDataResource(e.path,e.newVal)
+		st.lastStudioActivity= new Date().getTime()
+	})
 }
 
-st.compsRefHandler = jb.ui.addExtraWatchableHandler(compsRef);
-st.compsRefHandler.resourceChange.subscribe(e=>{
-	jb.log('scriptChange',[e.srcCtx,e]);
-	st.highlightByScriptPath(e.path);
-	st.lastStudioActivity= new Date().getTime()
-})
+function writeValueToDataResource(path,value) {
+	if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
+		const dataPath = '%$' + [path[0], ...path.slice(2)].map(x=>+x ? `[${x}]` : x).join('/') + '%'
+		return (new st.previewjb.jbCtx()).run(writeValue(dataPath,value))
+	}
+}
+
 // adaptors
 
 Object.assign(st,{
@@ -30394,8 +30420,6 @@ Object.assign(st,{
     st.compsRefHandler.asRef(obj),
   refreshRef: (ref) =>
     st.compsRefHandler.refresh(ref),
-  scriptChange: 
-  	st.compsRefHandler.resourceChange,
   refOfPath: (path,silent) => {
 		const _path = path.split('~');
 		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0]);
@@ -30680,10 +30704,8 @@ jb.component('studio.is-new', { /* studio.isNew */
   ],
   impl: (ctx,path) => {
 		if (st.compsHistory.length == 0 || st.previewjb.comps.$jb_selectionPreview) return false;
-		//var version_before = new jb.ui.WatchableValueByRef(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
 		var res =  JSON.stringify(jb.path(st.compsHistory.slice(-1)[0].before,path.split('~'))) !=
 					JSON.stringify(jb.path(st.previewjb.comps,path.split('~')));
-//		var res =  st.valOfPath(path) && !st.val(version_before);
 		return res;
 	}
 })
@@ -30717,7 +30739,7 @@ jb.component('studio.watch-script-changes', { /* studio.watchScriptChanges */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
-        st.compsRefHandler.resourceChange.debounceTime(200).subscribe(e=>
+        st.scriptChange.debounceTime(200).subscribe(e=>
             jb.ui.setState(cmp,null,e,ctx))
    })
 })
@@ -30726,7 +30748,7 @@ jb.component('studio.watch-components', { /* studio.watchComponents */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
-        st.compsRefHandler.resourceChange.filter(e=>e.path.length == 1)
+        st.scriptChange.filter(e=>e.path.length == 1)
         	.subscribe(e=>
             	jb.ui.setState(cmp,null,e,ctx))
    })
@@ -30858,21 +30880,39 @@ jb.component('studio.dynamic-options-watch-new-comp', { /* studio.dynamicOptions
 })();
 ;
 
-jb.studio.initPreview = function(preview_window,allowedTypes) {
-      var st = jb.studio;
+(function() {
+
+const st = jb.studio;
+
+st.changedComps = function() {
+  if (!st.compsHistory || !st.compsHistory.length) return []
+  
+  const changedComps = jb.entries(st.compsHistory.slice(-1)[0].after).filter(e=>e[1] != st.serverComps[e[0]])
+  if (changedComps.map(e=>e[0]).indexOf('call') != -1) {
+    jb.logError('bug. servers comps differ from history')
+    return []
+  }
+  return changedComps
+}
+
+st.initPreview = function(preview_window,allowedTypes) {
+      const changedComps = st.changedComps()
+
       st.previewWindow = preview_window;
       st.previewjb = preview_window.jb;
+      ['jb-component','jb-param'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
       st.serverComps = st.previewjb.comps;
-      if (jb.studio.compsHistory.length) {
-        const changedComps = jb.entries(jb.studio.compsHistory.slice(-1)[0].after).filter(e=>e[1] != st.serverComps[e[0]])
-        const compsStr = changedComps.map(e=>[e[0], jb.prettyPrint(e[1])])
-        jb.studio.copyComps && jb.studio.copyComps(compsStr)
-      }
-
-      st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
-
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;
+
+      // reload the changed components and rebuild the history
+      st.initCompsRefHandler(st.previewjb, allowedTypes)
+      changedComps.forEach(e=>{
+        //st.reloadCompInPreviewWindow && st.reloadCompInPreviewWindow(e[0],jb.prettyPrint(e[1]))
+        st.compsRefHandler.resourceReferred(e[0])
+        st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1])})`)) // update the history for future save
+      })
+
       st.previewjb.http_get_cache = {}
       st.previewjb.ctxByPath = {}
       //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
@@ -30880,7 +30920,6 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
         st.previewjb.studio.initEventTracker();
-      ['jb-component','jb-param'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
 
 			fixInvalidUrl()
 
@@ -30974,7 +31013,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
     })
 })
 
-;
+})();
 
 jb.component('dialog.edit-source-style',  /* dialog_editSourceStyle */ {
   type: 'dialog.style',
@@ -31509,6 +31548,14 @@ function scriptPathToExpression(path) {
 jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
   type: 'data',
   params: [
+    {id: 'path', as: 'string' }
+  ],
+  impl: watchableAsText(studio.ref('%$path%'))
+})
+
+jb.component('studio.profile-as-macro-text-old', { /* studio_profileAsMacroText */
+  type: 'data',
+  params: [
     {id: 'path', as: 'string', dynamic: true}
   ],
   impl: ctx => ({
@@ -31946,7 +31993,6 @@ if (typeof CodeMirror != 'undefined') {
 (function () {
 const st = jb.studio;
 
-st.compsHistory = [];
 st.undoIndex = 0;
 
 function setToVersion(versionIndex, ctx, after) {
@@ -31966,7 +32012,7 @@ function setToVersion(versionIndex, ctx, after) {
     st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsBefore;
   }
 
-  st.compsRefHandler.resourceChange.next(opEvent);
+  st.scriptChange.next(opEvent);
 }
 
 jb.component('studio.undo', { /* studio.undo */
@@ -33573,7 +33619,8 @@ jb.component('studio.edit-as-macro', { /* studio_editAsMacro */
     style: dialog_editSourceStyle({id: 'edit-source', width: 600}),
     content: editableText({
       databind: studio_profileAsMacroText('%$path%'),
-      style: editableText_studioCodemirrorTgp()
+      style: editableText_studioCodemirrorTgp(),
+      //features: textEditor.watchSourceChanges(),
     }),
     title: studio_shortTitle('%$path%'),
     features: [
@@ -35025,11 +35072,11 @@ jb.component('studio.jb-editor-menu', { /* studio_jbEditorMenu */
 ;
 
 (function() {
-var st = jb.studio;
-var _window = jb.frame.parent || jb.frame;
-var elec_remote = _window.require && _window.require('electron').remote;
-var fs = elec_remote && elec_remote.require('fs');
-var jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
+const st = jb.studio;
+const _window = jb.frame.parent || jb.frame;
+const elec_remote = _window.require && _window.require('electron').remote;
+const fs = elec_remote && elec_remote.require('fs');
+const jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
 
 jb.component('studio.save-components', {
 	type: 'action,has-side-effects',
@@ -35038,9 +35085,7 @@ jb.component('studio.save-components', {
 	],
 	impl : (ctx,force) => {
     const messages = []
-		jb.rx.Observable.from(Object.getOwnPropertyNames(st.previewjb.comps))
-			.filter(id=>id.indexOf('$jb') != 0)
-			.filter(id=>st.previewjb.comps[id] != st.serverComps[id])
+		jb.rx.Observable.from(st.changedComps().map(e=>e[0]))
 			.concatMap(id=>{
         let original = st.serverComps[id] ? jb.prettyPrintComp(id,st.serverComps[id]) : '';
 				st.message('saving ' + id + '...');
@@ -35337,7 +35382,7 @@ jb.component('studio.control-tree', { /* studio.controlTree */
 //     init : cmp => {
 //       var tree = cmp.ctx.vars.$tree;
 //       if (!tree) return;
-//       jb.studio.compsRefHandler.resourceChange.takeUntil( cmp.destroyed )
+//       jb.studio.scriptChange.takeUntil( cmp.destroyed )
 //         .subscribe(opEvent => {
 //           var new_expanded = {};
 //           jb.entries(tree.expanded)
@@ -35383,6 +35428,27 @@ jb.component('studio.watchable-or-passive', {
   impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
 })
 
+jb.component('studio.open-resource', { /* studio_openResource */
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'name', as: 'string'},
+  ],
+  impl: openDialog({
+    style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
+    content: editableText({
+      databind: studio.profileAsMacroText('%$path%'),
+      style: editableText.studioCodemirrorTgp(),
+      //features: textEditor.watchSourceChanges()
+    }),
+    title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
+    features: [
+      css('.jb-dialog-content-parent {overflow-y: hidden}'),
+      dialogFeature.resizer(true)
+    ]
+  })
+})
+
 jb.component('studio.open-new-resource', { 
   params: [
     {id: 'watchableOrPassive', as: 'string' }
@@ -35406,30 +35472,11 @@ jb.component('studio.open-new-resource', {
     onOK: [
       (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component(jb.tostring(name), { 
         [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
-      })
+      }),
+      studio.openResource('%$name%~%$watchableOrPassive%Data','%$name%')
     ],
     modal: true,
     features: [variable({name: 'name', watchable: true}), dialogFeature_autoFocusOnFirstInput()]
-  })
-})
-
-jb.component('studio.open-resource', { /* studio_openResource */
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'name', as: 'string'},
-  ],
-  impl: openDialog({
-    style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
-    content: editableText({
-      databind: studio.profileAsMacroText('%$path%'),
-      style: editableText.studioCodemirrorTgp()
-    }),
-    title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
-    features: [
-      css('.jb-dialog-content-parent {overflow-y: hidden}'),
-      dialogFeature.resizer(true)
-    ]
   })
 })
 
@@ -35963,7 +36010,7 @@ jb.component('studio.ctx-counters', { /* studio.ctxCounters */
     title: ctx => (performance.memory.usedJSHeapSize / 1000000)  + 'M',
     features: [
       css('{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'),
-      watchObservable(ctx => jb.studio.compsRefHandler.resourceChange.debounceTime(500))
+      watchObservable(ctx => jb.studio.scriptChange.debounceTime(500))
     ]
   })
 })
@@ -36454,6 +36501,16 @@ jb.component('studio.probe', { /* studio.probe */
 })()
 ;
 
+const st = jb.studio
+function compsRef(val,opEvent) {
+  if (typeof val == 'undefined')
+    return jb.comps;
+  else {
+    jb.comps = val;
+  }
+}
+
+st.compsRefHandler = jb.ui.extraWatchableHandler(compsRef);
 
 jb.component('suggestions-test', {
   type: 'test',

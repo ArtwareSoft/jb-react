@@ -1,18 +1,7 @@
 (function(){
 
-// should be move to studio onScript change
-// function writeValueToResource(path,value,jbToUse) {
-//     if (path.match(/^[^~]+~(watchable|passive)Data/)) {
-//         const dataPath = path.replace(/~(watchable|passive)Data/,'')
-//             .replace(/~[0-9]+~/g,x => x.replace(/~/,'[').replace(/~/,']~'))
-//             .replace(/~/g,'/')
-//             .replace(/.*/,x=>`%$${x}%`)
-//         (new jbToUse.jbCtx()).run(writeValue(dataPath,value))
-//     }
-// }
-
 function getSinglePathChange(newVal, currentVal) {
-    return pathAndValueOfSingleChange(jb.objectDiff(currentVal, newVal),'')
+    return pathAndValueOfSingleChange(jb.objectDiff(newVal,currentVal),'')
     
     function pathAndValueOfSingleChange(obj, pathSoFar) { 
         if (typeof obj !== 'object')
@@ -24,25 +13,30 @@ function getSinglePathChange(newVal, currentVal) {
     }
 }
 
-function setStrValue(value, ref, targetFrame) {
+function setStrValue(value, ref, ctx) {
     const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-    const newVal = notPrimitive ? jb.evalStr(value,targetFrame) : value;
+    const newVal = notPrimitive ? jb.evalStr(value,ref.handler.frame()) : value;
+    // do not save in editing ',' at the end of line means editing
+    if (typeof newVal === 'object' && value.match(/,\s*}/m))
+        return
     if (newVal && typeof newVal === 'object') {
-        const {innerPath, innerValue} = getSinglePathChange(newVal,jb.getVal(ref))
-        if (innerPath)
-            jb.getHandler(ref).refOfPath(innerPath).writeValue(innerValue)
-        else
-            ref.writeValue(newVal)
+        const {innerPath, innerValue} = getSinglePathChange(newVal,jb.val(ref))
+        if (innerPath) {
+            const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
+            return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
+        } 
     }
+    if (newVal !== undefined)
+       jb.writeValue(ref,newVal,ctx)
 }
 
 jb.component('watchable-as-text', {
     type: 'data',
     params: [
       {id: 'ref', as: 'ref', dynamic: true},
-      {id: 'targetFrame'}
     ],
     impl: (ctx,refF) => ({
+        oneWay: true,
         getRef() {
             return this.ref || (this.ref = refF())
         },
@@ -53,7 +47,8 @@ jb.component('watchable-as-text', {
             return jb.val(this.getRef())
         },
         prettyPrintWithPositions() {
-            const initialPath = jb.refHandler(this.getRef()).pathOfRef(this.getRef()).join('~')
+            const ref = this.getRef()
+            const initialPath = ref.handler.pathOfRef(ref).join('~')
             const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath})
             this.locationMap = res.map
             return res
@@ -66,8 +61,8 @@ jb.component('watchable-as-text', {
 
                 return this.prettyPrintWithPositions().text
             } else {
-                setStrValue(value,this.getRef(), ctx.params.targetFrame)
-                this.prettyPrintWithPositions()
+                setStrValue(value,this.getRef(),ctx)
+                this.prettyPrintWithPositions() // refreshing location map
             }
         } catch(e) {
             jb.logException(e,'watchable-obj-as-text-ref',ctx)
@@ -142,7 +137,8 @@ jb.component('text-editor.watch-source-changes', {
     ],
     impl: ctx => ({ init: cmp => {
       try {
-        const data_ref = cmp.state.databindRef.getRef()
+        const text_ref = cmp.state.databindRef
+        const data_ref = text_ref.getRef()
         jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: cmp.ctx, includeChildren: 'yes'})
             .subscribe(e => {
             const path = e.path

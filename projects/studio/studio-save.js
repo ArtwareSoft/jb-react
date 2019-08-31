@@ -1,9 +1,9 @@
 (function() {
-var st = jb.studio;
-var _window = jb.frame.parent || jb.frame;
-var elec_remote = _window.require && _window.require('electron').remote;
-var fs = elec_remote && elec_remote.require('fs');
-var jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
+const st = jb.studio;
+const _window = jb.frame.parent || jb.frame;
+const elec_remote = _window.require && _window.require('electron').remote;
+const fs = elec_remote && elec_remote.require('fs');
+const jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
 
 jb.component('studio.save-components', {
 	type: 'action,has-side-effects',
@@ -12,9 +12,7 @@ jb.component('studio.save-components', {
 	],
 	impl : (ctx,force) => {
     const messages = []
-		jb.rx.Observable.from(Object.getOwnPropertyNames(st.previewjb.comps))
-			.filter(id=>id.indexOf('$jb') != 0)
-			.filter(id=>st.previewjb.comps[id] != st.serverComps[id])
+		jb.rx.Observable.from(st.changedComps().map(e=>e[0]))
 			.concatMap(id=>{
         let original = st.serverComps[id] ? jb.prettyPrintComp(id,st.serverComps[id]) : '';
 				st.message('saving ' + id + '...');

@@ -5,6 +5,27 @@ jb.component('studio.watchable-or-passive', {
   impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
 })
 
+jb.component('studio.open-resource', { /* studio_openResource */
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'name', as: 'string'},
+  ],
+  impl: openDialog({
+    style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
+    content: editableText({
+      databind: studio.profileAsMacroText('%$path%'),
+      style: editableText.studioCodemirrorTgp(),
+      //features: textEditor.watchSourceChanges()
+    }),
+    title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
+    features: [
+      css('.jb-dialog-content-parent {overflow-y: hidden}'),
+      dialogFeature.resizer(true)
+    ]
+  })
+})
+
 jb.component('studio.open-new-resource', { 
   params: [
     {id: 'watchableOrPassive', as: 'string' }
@@ -28,30 +49,11 @@ jb.component('studio.open-new-resource', {
     onOK: [
       (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component(jb.tostring(name), { 
         [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
-      })
+      }),
+      studio.openResource('%$name%~%$watchableOrPassive%Data','%$name%')
     ],
     modal: true,
     features: [variable({name: 'name', watchable: true}), dialogFeature_autoFocusOnFirstInput()]
-  })
-})
-
-jb.component('studio.open-resource', { /* studio_openResource */
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'name', as: 'string'},
-  ],
-  impl: openDialog({
-    style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
-    content: editableText({
-      databind: studio.profileAsMacroText('%$path%'),
-      style: editableText.studioCodemirrorTgp()
-    }),
-    title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
-    features: [
-      css('.jb-dialog-content-parent {overflow-y: hidden}'),
-      dialogFeature.resizer(true)
-    ]
   })
 })
 

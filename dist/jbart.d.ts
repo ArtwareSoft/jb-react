@@ -111,7 +111,7 @@ type highlightPT = {$: 'highlight', base: dataType, highlight: dataType, cssClas
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 type group_divPT = {$: 'group.div', }
 type group_sectionPT = {$: 'group.section', }
-type watchable_as_textPT = {$: 'watchable-as-text', ref: dataType, targetFrame: dataType}
+type watchable_as_textPT = {$: 'watchable-as-text', ref: dataType}
 
 // type aggregator
 type aggregatorType = slicePT | sortPT | firstPT | lastPT | countPT | reversePT | samplePT | assign_with_indexPT | filterPT | joinPT | uniquePT | wrap_as_object_with_arrayPT | wrap_as_objectPT | d3_histogramPT | itemlist_container_filterPT | ((ctx: ctx) => any)
@@ -1223,7 +1223,7 @@ function isRef(obj: dataType) : dataType;
 function asRef : dataType;
 function asRef(obj: dataType) : dataType;
 function data_switch : dataType;
-function data_switch(cases: [data_switch_caseType], default: dataType) : dataType;
+function data_switch(profile: { cases: [data_switch_caseType], default: dataType}) : dataType;
 function data_case : data_switch_caseType;
 function data_case(condition: booleanType, value: dataType) : data_switch_caseType;
 function data_case(condition: booleanType) : data_switch_caseType;
@@ -2032,7 +2032,6 @@ function urlHistory_mapUrlToResource(profile: { params: [dataType], resource: da
 function runTransaction : actionType;
 function runTransaction(actions: [actionType], disableNotifications: booleanType) : actionType;
 function watchableAsText : dataType;
-function watchableAsText(ref: dataType, targetFrame: dataType) : dataType;
 function watchableAsText(ref: dataType) : dataType;
 function textEditor_withCursorPath : actionType;
 function textEditor_withCursorPath(action: actionType, editorId: dataType) : actionType;
@@ -2049,7 +2048,7 @@ if : dataType,
 if(condition: booleanType, then: dataType, else: dataType) : dataType,
 if(condition: booleanType) : dataType,
 switch : dataType,
-switch(cases: [data_switch_caseType], default: dataType) : dataType,
+switch(profile: { cases: [data_switch_caseType], default: dataType}) : dataType,
 case : data_switch_caseType,
 case(condition: booleanType, value: dataType) : data_switch_caseType,
 case(condition: booleanType) : data_switch_caseType,

@@ -1,31 +1,48 @@
 (function() { var st = jb.studio;
 
-//  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
-jb.issuesTolog = [];
+function compsRefOfPreviewJb(previewjb) {
+	st.compsHistory = [];
+	function compsRef(val,opEvent) {
+		if (typeof val == 'undefined')
+			return previewjb.comps;
+		else {
+			val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
+			if (!val.$jb_selectionPreview)
+			st.compsHistory.push({before: previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
 
-function compsRef(val,opEvent) {
-  if (typeof val == 'undefined')
-    return st.previewjb.comps;
-  else {
-		// if (val.$jb_historyIndex && val == st.compsHistory[val.$jb_historyIndex].after)
-		// 	st.compsHistory.slice()
-
-		val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
-		if (!val.$jb_selectionPreview)
-  		st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
-
-    st.previewjb.comps = val;
-    if (opEvent)
-      st.undoIndex = st.compsHistory.length;
-  }
+			previewjb.comps = val;
+			if (opEvent)
+			st.undoIndex = st.compsHistory.length;
+		}
+	}
+	compsRef.frame = previewjb.frame
+	return compsRef
+}
+st.scriptChange = new jb.rx.Subject()
+st.initCompsRefHandler = function(previewjb,allowedTypes) {
+	const oldCompsRefHandler = st.compsRefHandler
+	oldCompsRefHandler && oldCompsRefHandler.stopListening.next(1)
+	const compsRef = compsRefOfPreviewJb(previewjb);
+	st.compsRefHandler = jb.ui.extraWatchableHandler(compsRef, oldCompsRefHandler)
+	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes);
+	st.compsRefHandler.stopListening = new jb.rx.Subject()
+	
+	st.compsRefHandler.resourceChange.takeUntil(st.compsRefHandler.stopListening).subscribe(e=>{
+		jb.log('scriptChange',[e.srcCtx,e]);
+		st.scriptChange.next(e)
+		st.highlightByScriptPath(e.path)
+		writeValueToDataResource(e.path,e.newVal)
+		st.lastStudioActivity= new Date().getTime()
+	})
 }
 
-st.compsRefHandler = jb.ui.addExtraWatchableHandler(compsRef);
-st.compsRefHandler.resourceChange.subscribe(e=>{
-	jb.log('scriptChange',[e.srcCtx,e]);
-	st.highlightByScriptPath(e.path);
-	st.lastStudioActivity= new Date().getTime()
-})
+function writeValueToDataResource(path,value) {
+	if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
+		const dataPath = '%$' + [path[0], ...path.slice(2)].map(x=>+x ? `[${x}]` : x).join('/') + '%'
+		return (new st.previewjb.jbCtx()).run(writeValue(dataPath,value))
+	}
+}
+
 // adaptors
 
 Object.assign(st,{
@@ -47,8 +64,6 @@ Object.assign(st,{
     st.compsRefHandler.asRef(obj),
   refreshRef: (ref) =>
     st.compsRefHandler.refresh(ref),
-  scriptChange: 
-  	st.compsRefHandler.resourceChange,
   refOfPath: (path,silent) => {
 		const _path = path.split('~');
 		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0]);
@@ -333,10 +348,8 @@ jb.component('studio.is-new', { /* studio.isNew */
   ],
   impl: (ctx,path) => {
 		if (st.compsHistory.length == 0 || st.previewjb.comps.$jb_selectionPreview) return false;
-		//var version_before = new jb.ui.WatchableValueByRef(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
 		var res =  JSON.stringify(jb.path(st.compsHistory.slice(-1)[0].before,path.split('~'))) !=
 					JSON.stringify(jb.path(st.previewjb.comps,path.split('~')));
-//		var res =  st.valOfPath(path) && !st.val(version_before);
 		return res;
 	}
 })
@@ -370,7 +383,7 @@ jb.component('studio.watch-script-changes', { /* studio.watchScriptChanges */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
-        st.compsRefHandler.resourceChange.debounceTime(200).subscribe(e=>
+        st.scriptChange.debounceTime(200).subscribe(e=>
             jb.ui.setState(cmp,null,e,ctx))
    })
 })
@@ -379,7 +392,7 @@ jb.component('studio.watch-components', { /* studio.watchComponents */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
-        st.compsRefHandler.resourceChange.filter(e=>e.path.length == 1)
+        st.scriptChange.filter(e=>e.path.length == 1)
         	.subscribe(e=>
             	jb.ui.setState(cmp,null,e,ctx))
    })

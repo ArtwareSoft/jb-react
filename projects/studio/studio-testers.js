@@ -1,3 +1,13 @@
+const st = jb.studio
+function compsRef(val,opEvent) {
+  if (typeof val == 'undefined')
+    return jb.comps;
+  else {
+    jb.comps = val;
+  }
+}
+
+st.compsRefHandler = jb.ui.extraWatchableHandler(compsRef);
 
 jb.component('suggestions-test', {
   type: 'test',

@@ -43,7 +43,7 @@ jb.component('editable-text.codemirror', {
 					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
 					cmp.editor = {
 						getCursorPos: () => posFromCM(editor.getCursor()),
-						markText: (from,to) => editor.markText(posToCM(from),posToCM(to)),
+						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
 						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
 						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
 						cmEditor: editor
@@ -61,11 +61,15 @@ jb.component('editable-text.codemirror', {
 					editor.setValue(jb.tostring(data_ref));
 				//cmp.lastEdit = new Date().getTime();
 					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-					jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
+					!data_ref.oneWay && jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
 						.map(e=>jb.tostring(data_ref))
 						.filter(x => x != editor.getValue())
-						.subscribe(x=>
-							editor.setValue(x));
+						.subscribe(x=>{
+							const cur = editor.getCursor()
+							editor.setValue(x)
+							editor.setSelection(cur)
+							cmp.editor.markText({line: 0, col:0}, {line: editor.laseLine(), col: 0})
+						});
 
 					const editorTextChange = jb.rx.Observable.create(obs=>
 						editor.on('change', () => {
