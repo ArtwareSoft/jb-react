@@ -468,3 +468,20 @@ jb.component('data-test.inner-of-undefined-var', {
 //     expectedResult :{$: 'contains', text: 'Homer' }
 //   },
 // })
+
+jb.component('watchableVar', { watchableData: 'hey' })
+jb.component('data-test.string-watchable-var', {
+  impl: dataTest({
+    runBefore: writeValue('%$watchableVar%', 'foo'),
+    calculate: '%$watchableVar%',
+    expectedResult: equals('foo')
+})})
+
+jb.component('passiveVar', { passiveData: 'hey' }) 
+jb.component('data-test.string-passive-var', {
+  impl: dataTest({
+    runBefore: writeValue('%$passiveVar%', 'foo'),
+    calculate: '%$passiveVar%',
+    expectedResult: equals('foo')
+})})
+ 

@@ -21,7 +21,7 @@ jb.component('studio.new-project', { /* studio_newProject */
   <script type="text/javascript">
     startTime = new Date().getTime();
   </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common"></script>
+  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>
   <script type="text/javascript" src="/projects/${name}/${name}.js"></script>
   <script1 type="text/javascript" src="/projects/${name}/samples.js"></script1>
 </head>
@@ -73,7 +73,7 @@ jb.component('studio.open-new-project', { /* studio_openNewProject */
     onOK: studio_newProject('%$name%', gotoUrl('/project/studio/%$name%/')),
     modal: true,
     features: [
-      variable({name: 'name', mutable: true}),
+      variable({name: 'name', watchable: true}),
       dialogFeature_autoFocusOnFirstInput(),
       dialogFeature_nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
     ]

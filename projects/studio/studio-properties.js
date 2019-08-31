@@ -180,7 +180,7 @@ jb.component('studio.property-tgp-old', { /* studio.propertyTgpOld */
         ]
       })
     ],
-    features: [variable({name: 'userExpanded', value: false, mutable: true})]
+    features: [variable({name: 'userExpanded', value: false, watchable: true})]
   })
 })
 
@@ -225,7 +225,7 @@ jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
     ],
     features: [
       css.margin({left: '-100'}),
-      variable({name: 'expanded', value: studio.isNew('%$path%'), mutable: true}),
+      variable({name: 'expanded', value: studio.isNew('%$path%'), watchable: true}),
       studio.watchPath({path: '%$path%', includeChildren: 'yes'})
     ]
   })
@@ -372,7 +372,7 @@ jb.component('studio.properties', { /* studio.properties */
         features: css.margin({top: '20', left: '5'})
       })
     ],
-    features: variable({name: 'PropertiesDialog', value: {$: 'object'}, mutable: false})
+    features: variable({name: 'PropertiesDialog', value: {$: 'object'}, watchable: false})
   })
 })
 

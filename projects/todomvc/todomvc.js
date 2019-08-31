@@ -75,8 +75,8 @@ jb.component('todomvc.main', { /* todomvc.main */
         features: [id('show'), watchRef({ref: '%$to_do_list%', includeChildren: 'yes'})]
       })
     ],
-    features: [variable({name: 'to_do_list', value: asIs([{task: 'home', completed: true}]), mutable: true}),
-      variable({name: 'input', value: 'hey', mutable: true})
+    features: [variable({name: 'to_do_list', value: asIs([{task: 'home', completed: true}]), watchable: true}),
+      variable({name: 'input', value: 'hey', watchable: true})
     ]
   })
 })
@@ -217,6 +217,7 @@ jb.component('todomvc.test', { /* todomvc.test */
                     }),
                     style: {$: 'todomvc.button.simple', size: '21'},
                     features: [
+<<<<<<< HEAD
                       css.class('destroy'),
                       hidden('%$editableline%'),
                       watchRef({ref: '%$editableline%', allowSelfRefresh: false})
@@ -226,6 +227,10 @@ jb.component('todomvc.test', { /* todomvc.test */
                 features: [
                   conditionalClass('completed', '%completed%'),
                   variable({name: '%$editableline%', value: false, mutable: true})
+=======
+                      conditionalClass('completed', '%completed%')
+                  ,variable({name: 'editableline', value: false, watchable: true})
+>>>>>>> b27e73f749d14f3eb3a53b8d0030c79e9390bc9a
                 ]
               })
             ],
@@ -314,8 +319,8 @@ jb.component('todomvc.test', { /* todomvc.test */
       })
     ],
     features: [
-      variable({name: 'filterBy', value: 'all', mutable: true}),
-      variable({name: 'input', mutable: true}),
+      variable({name: 'filterBy', value: 'all', watchable: true}),
+      variable({name: 'input', watchable: true}),
       css.class('todoapp')
     ]
   })
@@ -420,7 +425,7 @@ jb.component('todomvc.start', { /* todomvc.start */
                 ],
                 features: [
                   conditionalClass('completed', '%completed%'),
-                  variable({name: 'editableline', value: true, mutable: true})
+                  variable({name: 'editableline', value: true, watchable: true})
                 ]
               })
             ],
@@ -509,8 +514,8 @@ jb.component('todomvc.start', { /* todomvc.start */
       })
     ],
     features: [
-      variable({name: 'filterBy', value: 'all', mutable: true}),
-      variable({name: 'input', mutable: true}),
+      variable({name: 'filterBy', value: 'all', watchable: true}),
+      variable({name: 'input', watchable: true}),
       css.class('todoapp')
     ]
   })
@@ -578,7 +583,7 @@ jb.component('editable-text.input-or-label', {
       ],
       style: firstSucceeding_style(),
       features: [
-        {$: 'var', name: 'editable', mutable: true},
+        {$: 'var', name: 'editable', watchable: true},
         firstSucceeding_watchRefreshOnCtrlChange('%$editable%', false)
       ]
     }),

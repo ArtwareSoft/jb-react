@@ -43,7 +43,7 @@ jb.component('studio.pages', { /* studio.pages */
             databind: '%$studio/page%',
             onSelection: runActions(
               writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
-              studio.refreshPreview()
+              //studio.refreshPreview()
             ),
             autoSelectFirst: true
           }),

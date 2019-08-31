@@ -13,7 +13,7 @@ jb.component('bnf-parser.main', {
       }
     ], 
     features: [
-      {$: 'variable', name: 'Text', value: '1 +2', mutable: true }, 
+      {$: 'variable', name: 'Text', value: '1 +2', watchable: true }, 
       {$: 'variable', 
         name: 'parser', 
         value :{$: 'jison.parser', 

@@ -1,9 +1,9 @@
 jb.component('globals', { watchableData:  {}});
 
-jb.component('mutable-people', { watchableData: [
-  { name: 'Homer Simpson - mutable', age: 42, male: true },
-  { name: 'Marge Simpson - mutable', age: 38, male: false },
-  { name: 'Bart Simpson - mutable', age: 12, male: true }
+jb.component('watchable-people', { watchableData: [
+  { name: 'Homer Simpson - watchable', age: 42, male: true },
+  { name: 'Marge Simpson - watchable', age: 38, male: false },
+  { name: 'Bart Simpson - watchable', age: 12, male: true }
 ]})
 
 jb.component('people', { passiveData: [
@@ -401,7 +401,7 @@ jb.component('ui-test.itemlist-DD',  /* uiTest_itemlistDD */ {
     control: group({
       controls: [
         itemlist({
-          items: '%$mutable-people%',
+          items: '%$watchable-people%',
           watchItems: true,
           controls: label({title: '%name%', features: css_class('drag-handle')}),
           features: [
@@ -411,7 +411,7 @@ jb.component('ui-test.itemlist-DD',  /* uiTest_itemlistDD */ {
             id('itemlist')
           ]
         }),
-        itemlist({items: '%$mutable-people%', controls: label('%name%'), watchItems: true })
+        itemlist({items: '%$watchable-people%', controls: label('%name%'), watchItems: true })
       ]
     }),
     action: [
@@ -595,7 +595,7 @@ jb.component('ui-test.table-DD',  /* uiTest_tableDD */ {
     control: group({
       controls: [
         table({
-          items: '%$mutable-people%',
+          items: '%$watchable-people%',
           fields: [
             field({title: 'name', data: '%name%', width: 300, class: 'drag-handle'}),
             field({title: 'age', data: '%age%', width: 50}),
@@ -610,7 +610,7 @@ jb.component('ui-test.table-DD',  /* uiTest_tableDD */ {
             itemlist_dragAndDrop()
           ]
         }),
-        label({title: pipeline('%$mutable-people/name%', join({})), features: watchRef('%$mutable-people%')})
+        label({title: pipeline('%$watchable-people/name%', join({})), features: watchRef('%$watchable-people%')})
       ]
     }),
     expectedResult: contains(['age', 'Homer Simpson', '12'])
@@ -831,7 +831,7 @@ jb.component('ui-test.editable-boolean.expand-collapse',  /* uiTest_editableBool
           features: [feature_if('%$expanded%'), watchRef('%$expanded%')]
         })
       ],
-      features: variable({name: 'expanded', value: false, mutable: true})
+      features: variable({name: 'expanded', value: false, watchable: true})
     }),
     action: uiAction_click('#toggle', 'toggle'),
     expectedResult: contains('inner text')
@@ -860,8 +860,8 @@ jb.component('ui-test.expand-collapse-with-default-collapse',  /* uiTest_expandC
       })
     ],
     features: [
-      variable({name: 'expanded', value: null, mutable: true}),
-      variable({name: 'default', value: false, mutable: true})
+      variable({name: 'expanded', value: null, watchable: true}),
+      variable({name: 'default', value: false, watchable: true})
     ]
   })
 })
@@ -879,6 +879,37 @@ jb.component('ui-test.editable-boolean.expand-collapse-with-default-collapse',  
     control: uiTest_expandCollapseWithDefaultCollapse(),
     action: runActions(uiAction_click('#default', 'toggle'), uiAction_click('#expCollapse', 'toggle')),
     expectedResult: not(contains('inner text'))
+  })
+})
+
+jb.component('ui-test.codemirror-for-script', {
+  impl: uiTest({
+    vars: Var('script', () => jb.prettyPrintWithPositions(jb.comps['ui-test.itemlist-container-search-ctrl'])),
+    control: group({
+      controls: [
+        editableText({databind: '%$script/text%', 
+          style: editableText_codemirror({mode: 'javascript', onCtrlEnter: (ctx,{editor}) => {
+            const pos = editor.getCursor()
+            const map = ctx.exp('%$script/map%')
+            const elem = jb.entries(map)
+              .find(e=>e[1][0] == pos.line && e[1][1] <= pos.ch && (e[1][0] < e[1][2] || pos.ch <= e[1][3]))
+            console.log(elem)
+          }
+        })}),
+        editableText({
+          databind: ctx => jb.prettyPrint(ctx.exp('%$script/map%')), 
+          style: editableText_codemirror({mode: 'javascript'})
+        }),
+        button({
+          title: 'recalc',
+          action: runActions((ctx,{script}) =>
+            Object.assign(script,jb.prettyPrintWithPositions(eval('('+script.text+')')))
+          , refreshControlById('group'))
+        })
+      ],
+      features: id('group')
+    }),
+    expectedResult: true
   })
 })
 
@@ -1154,7 +1185,7 @@ jb.component('ui-test.immutable-var',  /* uiTest_immutableVar */ {
     control: label({
       title: '%$var1%',
       features: [
-        variable({name: 'var1', value: 'hello', mutable: true}),
+        variable({name: 'var1', value: 'hello', watchable: true}),
         feature_afterLoad(writeValue('%$var1%', 'foo'))
       ]
     }),
@@ -1172,7 +1203,7 @@ jb.component('ui-test.refresh-control-by-id',  /* uiTest_refreshControlById */ {
         variable({
           name: 'items',
           value: asIs([{title: 'i1'}, {title: 'i2'}]),
-          mutable: true,
+          watchable: true,
           globalId: 'items'
         }),
         id('itemlist')
@@ -1252,7 +1283,7 @@ jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change',  /* uiTest
           features: firstSucceeding_watchRefreshOnCtrlChange('%$gender%')
         })
       ],
-      features: variable({name: 'gender', value: 'male', mutable: true})
+      features: variable({name: 'gender', value: 'male', watchable: true})
     }),
     action: runActions(uiAction_click('#female'), uiAction_click('#zee')),
     expectedResult: contains('not male'),

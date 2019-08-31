@@ -8,12 +8,13 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'src/core/jb-common.js',
         'src/misc/wSpy.js',
       ],
+      'material-css': [
+        'dist/material.css',
+        'dist/material.indigo-pink.min.css',
+      ],
       'ui-common': [
 //        'node_modules/jquery/dist/jquery.min.js',
         'dist/material.js',
-        'dist/material.css',
-        'dist/material.indigo-pink.min.css',
-
         'css/font.css',
         'css/styles.css',
 

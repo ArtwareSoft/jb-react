@@ -57,7 +57,7 @@ jb.component('studio.jb-editor-container', { /* studio_jbEditorContainer */
     variable({
       name: 'jbEditorCntrData',
       value: {$: 'object', selected: '%$initialSelection%', circuit: '%$circuit%'},
-      mutable: true
+      watchable: true
     })
   )
 })
@@ -153,7 +153,7 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
           'large array'
         )
       ],
-      features: [variable({name: 'maxItems', value: '5', mutable: 'true'})]
+      features: [variable({name: 'maxItems', value: '5', watchable: 'true'})]
     })
   })
 })
@@ -446,7 +446,7 @@ jb.component('studio.add-variable', { /* studio_addVariable */
       title: 'New variable',
       modal: 'true',
       features: [
-        variable({name: 'name', mutable: true}),
+        variable({name: 'name', watchable: true}),
         dialogFeature_nearLauncherPosition({}),
         dialogFeature_autoFocusOnFirstInput()
       ]

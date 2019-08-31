@@ -182,9 +182,9 @@ jb.component('studio.select-profile', { /* studio_selectProfile */
       variable({
         name: 'SelectedCategory',
         value: {$if: studio_val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
-        mutable: true
+        watchable: true
       }),
-      variable({name: 'SearchPattern', value: '', mutable: true}),
+      variable({name: 'SearchPattern', value: '', watchable: true}),
       group_itemlistContainer({initialSelection: studio_compName('%$path%'), id1: 'new-profile'})
     ]
   })
@@ -276,7 +276,7 @@ jb.component('studio.open-new-page', { /* studio_openNewPage */
       refreshControlById('pages')
     ],
     modal: true,
-    features: [variable({name: 'name', mutable: true}), dialogFeature_autoFocusOnFirstInput()]
+    features: [variable({name: 'name', watchable: true}), dialogFeature_autoFocusOnFirstInput()]
   })
 })
 

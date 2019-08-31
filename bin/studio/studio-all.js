@@ -8311,7 +8311,6 @@ ui.renderWidget = function(profile,top) {
 				})
 			}
 			st.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
-			return
 		}
 	} catch(e) {
 		jb.logException(e)
@@ -14769,35 +14768,35 @@ jb.component('editable-text.codemirror', {
 		{ id: 'mode', as: 'string' },
 		{ id: 'debounceTime', as: 'number', defaultValue: 300 },
 		{ id: 'lineWrapping', as: 'boolean' },
-    { id: 'lineNumbers', as: 'boolean' },
-    { id: 'readOnly', options: ',true,nocursor' },
+		{ id: 'lineNumbers', as: 'boolean' },
+		{ id: 'readOnly', options: ',true,nocursor' },
 		{ id: 'onCtrlEnter', type: 'action', dynamic: true },
 		{ id: 'hint', as: 'boolean' }
 	],
-	impl: function(context, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
+	impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
 			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
 			afterViewInit: cmp => {
-				var data_ref = cmp.ctx.vars.$model.databind();
-				cm_settings = cm_settings||{};
-				var effective_settings = Object.assign({},cm_settings, {
-					mode: mode || 'javascript',
-					lineWrapping: lineWrapping,
-          lineNumbers: context.params.lineNumbers,
-					theme: 'solarized light',
-          autofocus: false,
-					extraKeys: Object.assign({
-						'Ctrl-Space': 'autocomplete',
-						'Ctrl-Enter': () => context.params.onCtrlEnter()
-					}, cm_settings.extraKeys || {}),
-          readOnly: context.params.readOnly,
-				});
 				try {
-					var editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
-					if (context.params.hint)
+					const data_ref = cmp.ctx.vars.$model.databind();
+					cm_settings = cm_settings||{};
+					const effective_settings = Object.assign({},cm_settings, {
+						mode: mode || 'javascript',
+						lineWrapping: lineWrapping,
+						lineNumbers: ctx.params.lineNumbers,
+						theme: 'solarized light',
+						autofocus: false,
+						extraKeys: Object.assign({
+							'Ctrl-Space': 'autocomplete',
+							'Ctrl-Enter': editor => ctx.params.onCtrlEnter(ctx.setVars({editor}))
+						}, cm_settings.extraKeys || {}),
+						readOnly: ctx.params.readOnly,
+					});
+					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+					if (ctx.params.hint)
 						tgpHint(CodeMirror)
-					var wrapper = editor.getWrapperElement();
+					const wrapper = editor.getWrapperElement();
 					if (height)
 						wrapper.style.height = height + 'px';
 					// jb.delay(1).then(() => {
@@ -14806,32 +14805,33 @@ jb.component('editable-text.codemirror', {
 					// 	editor.refresh(); // ????
 					// });
 					editor.setValue(jb.tostring(data_ref));
+				//cmp.lastEdit = new Date().getTime();
+					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
+					jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
+						.map(e=>jb.tostring(data_ref))
+						.filter(x => x != editor.getValue())
+						.subscribe(x=>
+							editor.setValue(x));
+
+					const editorTextChange = jb.rx.Observable.create(obs=>
+						editor.on('change', () => {
+							//cmp.lastEdit = new Date().getTime();
+							obs.next(editor.getValue())
+						})
+					);
+					editorTextChange.takeUntil( cmp.destroyed )
+						.debounceTime(debounceTime)
+						.filter(x =>
+							x != jb.tostring(data_ref))
+						.distinctUntilChanged()
+						.subscribe(x=>
+							jb.writeValue(data_ref,x));
+				
 				} catch(e) {
-					jb.logException(e,'editable-text.codemirror',context);
+					jb.logException(e,'editable-text.codemirror',ctx);
 					return;
 				}
-				//cmp.lastEdit = new Date().getTime();
-				editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-				jb.ui.refObservable(data_ref,cmp,{watchScript: context})
-					.map(e=>jb.tostring(data_ref))
-					.filter(x => x != editor.getValue())
-					.subscribe(x=>
-						editor.setValue(x));
-
-				var editorTextChange = jb.rx.Observable.create(obs=>
-					editor.on('change', () => {
-						//cmp.lastEdit = new Date().getTime();
-						obs.next(editor.getValue())
-					})
-				);
-				editorTextChange.takeUntil( cmp.destroyed )
-					.debounceTime(debounceTime)
-					.filter(x =>
-						x != jb.tostring(data_ref))
-					.distinctUntilChanged()
-					.subscribe(x=>
-						jb.writeValue(data_ref,x));
-			}
+			 }
 		}
 	}
 })
@@ -14911,7 +14911,7 @@ jb.component('text.codemirror', {
         { id: 'mode', as: 'string', options: 'htmlmixed,javascript,css' },
         { id: 'lineWrapping', as: 'boolean' },
     ],
-    impl: function(context, cm_settings, _enableFullScreen, resizer,height, mode, lineWrapping) {
+    impl: function(ctx, cm_settings, _enableFullScreen, resizer,height, mode, lineWrapping) {
         return {
 			template: (cmp,state,h) => h('textarea', {class: 'jb-codemirror'}),
 			afterViewInit: function(cmp) {
@@ -14923,22 +14923,22 @@ jb.component('text.codemirror', {
                     theme: 'solarized light',
                 };
                 try {
-                  var editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
-        					var wrapper = editor.getWrapperElement();
-        					if (height)
-        						wrapper.style.height = height + 'px';
-        					jb.delay(1).then(() => {
-        						if (_enableFullScreen)
-        							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
-        						editor.refresh(); // ????
-        					});
+                  const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+				  const wrapper = editor.getWrapperElement();
+					if (height)
+						wrapper.style.height = height + 'px';
+					jb.delay(1).then(() => {
+						if (_enableFullScreen)
+							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
+						editor.refresh(); // ????
+					});
                 } catch(e) {
-                    jb.logException(e,'editable-text.codemirror',context);
+                    jb.logException(e,'editable-text.codemirror',ctx);
                     return;
                 }
                 editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
                 jb.ui.resourceChange.takeUntil(cmp.destroyed)
-                    .map(()=> context.vars.$model.text())
+                    .map(()=> ctx.vars.$model.text())
                     .filter(x=>x)
                     .distinctUntilChanged()
                     .subscribe(x=>
@@ -28333,185 +28333,37 @@ jb.component('pretty-print', {
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {
   if (comp) {
-    settings.macro = true;
-    const macroRemark = settings.macro ? ` /* ${jb.macroName(compId)} */ ` : ''
-    const res = "jb.component('" + compId + "', " + jb.prettyPrintWithPositions(comp,settings).result + ')'
+    const macroRemark = ` /* ${jb.macroName(compId)} */ `
+    const res = "jb.component('" + compId + "', " + jb.prettyPrint(comp,settings) + ')'
     const withMacroName = res.replace(/\n/, macroRemark + '\n')
     return withMacroName
   }
 }
 
 jb.prettyPrint = function(profile,settings = {}) {
-  settings.macro = true;
-  return jb.prettyPrintWithPositions(profile,settings).result;
+  return jb.prettyPrintWithPositions(profile,settings).text;
 }
 
-jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,showNulls,macro} = {}) {
-  const spaces = Array.from(new Array(200)).map(_=>' ').join('')
-
-  colWidth = colWidth || 80;
-  tabSize = tabSize || 2;
-
-  let remainedInLine = colWidth;
-  let result = '';
-  let depth = 0;
-  let lineNum = 0;
-  let positions = {};
-  
-  if (macro)
-    return [valueToMacro({path: initialPath || '', line:0, col: 0}, profile)].map(({text,pos}) => ({result: text, positions: pos}))[0]
-
-  printValue(profile,initialPath || '');
-  return { result, positions }
-
-  function sortedPropertyNames(obj) {
-    let props = jb.entries(obj)
-      .filter(p=>showNulls || p[1] != null)
-      .map(x=>x[0]) // try to keep the order
-      .filter(p=>p.indexOf('$jb') != 0)
-
-    const comp_name = jb.compName(obj);
-    if (comp_name) { // tgp obj - sort by params def
-      const params = jb.compParams(jb.comps[comp_name]).map(p=>p.id);
-      props.sort((p1,p2)=>params.indexOf(p1) - params.indexOf(p2));
-    }
-    if (props.indexOf('$') > 0) { // make the $ first
-      props.splice(props.indexOf('$'),1);
-      props.unshift('$');
-    }
-    return props;
-  }
-
-  function printValue(val,path) {
-    positions[path] = lineNum;
-    if (!val) return;
-    if (val.$jb_arrayShortcut)
-      val = val.items;
-    if (Array.isArray(val)) return printArray(val,path);
-    if (typeof val === 'object') return printObj(val,path);
-    if (typeof val === 'function')
-      result += val.toString();
-    else if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-      result += "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
-    else if (typeof val === 'string' && val.indexOf('\n') != -1) {
-      result += "`" + val.replace(/`/g,'\\`') + "`"
-    } else {
-      result += JSON.stringify(val);
-    }
-  }
-
-  function printObj(obj,path) {
-      var obj_str = flat_obj(obj);
-      if (!printInLine(obj_str)) { // object does not fit in parent line
-        depth++;
-        result += '{';
-        if (!printInLine(obj_str)) { // object does not fit in its own line
-          sortedPropertyNames(obj).forEach(function(prop,index,array) {
-              if (prop != '$')
-                newLine();
-              if (showNulls || obj[prop] != null) {
-                printProp(obj,prop,path);
-                if (index < array.length -1)
-                  result += ', ';//newLine();
-              }
-          });
-        }
-        depth--;
-        newLine();
-        result += '}';
-      }
-  }
-  function quotePropName(p) {
-    if (p.match(/^[$a-zA-Z_][$a-zA-Z0-9_]*$/))
-      return p;
-    else
-      return `"${p}"`
-  }
-  function printProp(obj,prop,path) {
-    if (obj[prop] && obj[prop].$jb_arrayShortcut)
-      obj = obj(prop,obj[prop].items);
-
-    if (printInLine(flat_property(obj,prop))) return;
-
-    if (prop == '$')
-      result += '$: '
-    else
-      result += quotePropName(prop) + (jb.compName(obj[prop]) ? ' :' : ': ');
-    //depth++;
-    printValue(obj[prop],path+'~'+prop);
-    //depth--;
-  }
-  function printArray(array,path) {
-    if (printInLine(flat_array(array))) return;
-    result += '[';
-    depth++;
-    newLine();
-    array.forEach(function(val,index) {
-      printValue(val,path+'~'+index);
-      if (index < array.length -1) {
-        result += ', ';
-        newLine();
-      }
-    })
-    depth--;newLine();
-    result += ']';
-  }
-  function printInLine(text) {
-    if (remainedInLine < text.length || text.match(/:\s?{/) || text.match(/, {\$/)) return false;
-    result += text;
-    remainedInLine -= text.length;
-    return true;
-  }
-  function newLine() {
-    result += '\n';
-    lineNum++;
-    for (var i = 0; i < depth; i++) result += '               '.substr(0,tabSize);
-    remainedInLine = colWidth - tabSize * depth;
-  }
-
-  function flat_obj(obj) {
-    var props = sortedPropertyNames(obj)
-      .filter(p=>showNulls || obj[p] != null)
-      .filter(x=>x!='$')
-      .map(prop =>
-      quotePropName(prop) + ': ' + flat_val(obj[prop]));
-    if (obj && obj.$) {
-      props.unshift("$: '" + obj.$+ "'");
-      return '{' + props.join(', ') + ' }'
-    }
-    return '{ ' + props.join(', ') + ' }'
-  }
-  function flat_property(obj,prop) {
-    if (jb.compName(obj[prop]))
-      return quotePropName(prop) + ' :' + flat_val(obj[prop]);
-    else
-      return quotePropName(prop) + ': ' + flat_val(obj[prop]);
-  }
-  function flat_val(val) {
-    if (Array.isArray(val)) return flat_array(val);
-    if (typeof val === 'object') return flat_obj(val);
-    if (typeof val === 'function') return val.toString();
-    if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-      return "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
-    else
-      return JSON.stringify(val); // primitives
-  }
-  function flat_array(array) {
-    return '[' + array.map(item=>flat_val(item)).join(', ') + ']';
-  }
+const spaces = Array.from(new Array(200)).map(_=>' ').join('')
+jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
+  return valueToMacro({path: initialPath, line:0, col: 0}, profile)
 
   function joinVals({path, line, col}, innerVals, open, close, flat, isArray) {
+    const lineColAfterOpen = advanceLineCol({line,col},open + newLine())
     const result = innerVals.reduce((acc,{innerPath, val}, index) => {
       const fullInnerPath = [path,innerPath].join('~')
       let result = valueToMacro({path: fullInnerPath, line: acc.line, col: acc.col}, val, flat)
       if (typeof result === 'string')
         result = { text: result, map: {}}
-      const newPos = advanceLineCol(acc, result.text)
-      const map = Object.assign({},acc.map, result.map,{[fullInnerPath]: [acc.line, acc.col,newPos.line, newPos.col]})
       const separator = index === 0 ? '' : ',' + (flat ? ' ' : newLine())
       const valPrefix = isArray ? '' : innerPath + ': ';
-      return Object.assign({ text: acc.text + separator + valPrefix + result.text, map, unflat: acc.unflat || result.unflat }, newPos)
-    }, {text: '', map: {}, line, col, unflat: false} )
+      const startValuePos = advanceLineCol(acc, separator)
+      const endValuePos = advanceLineCol(acc, separator + valPrefix + result.text)
+      const afterClosePos = advanceLineCol(acc, separator + valPrefix + result.text + newLine(-1) + close)
+      const map = Object.assign({},acc.map, result.map,{[fullInnerPath]: 
+          [startValuePos.line, startValuePos.col,endValuePos.line, endValuePos.col]})
+      return Object.assign({ text: acc.text + separator + valPrefix + result.text, map, unflat: acc.unflat || result.unflat }, afterClosePos)
+    }, {text: '', map: {}, ...lineColAfterOpen, unflat: false} )
 
     //const arrayElem = path.match(/~[0-9]+$/)
     const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
@@ -28592,6 +28444,153 @@ jb.prettyPrintWithPositions = function(profile,{colWidth,tabSize,initialPath,sho
   function arrayToMacro(ctx, array, flat) {
     const vals = array.map((val,i) => ({innerPath: i, val}))
     return joinVals(ctx, vals, '[', ']', flat, true)
+  }
+
+  function rawFormat() {
+    let remainedInLine = colWidth;
+    let result = '';
+    let depth = 0;
+    let lineNum = 0;
+    let positions = {};
+    printValue(profile,initialPath || '');
+    return { result, positions }
+  
+    function sortedPropertyNames(obj) {
+      let props = jb.entries(obj)
+        .filter(p=>showNulls || p[1] != null)
+        .map(x=>x[0]) // try to keep the order
+        .filter(p=>p.indexOf('$jb') != 0)
+  
+      const comp_name = jb.compName(obj);
+      if (comp_name) { // tgp obj - sort by params def
+        const params = jb.compParams(jb.comps[comp_name]).map(p=>p.id);
+        props.sort((p1,p2)=>params.indexOf(p1) - params.indexOf(p2));
+      }
+      if (props.indexOf('$') > 0) { // make the $ first
+        props.splice(props.indexOf('$'),1);
+        props.unshift('$');
+      }
+      return props;
+    }
+  
+    function printValue(val,path) {
+      positions[path] = lineNum;
+      if (!val) return;
+      if (val.$jb_arrayShortcut)
+        val = val.items;
+      if (Array.isArray(val)) return printArray(val,path);
+      if (typeof val === 'object') return printObj(val,path);
+      if (typeof val === 'function')
+        result += val.toString();
+      else if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
+        result += "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
+      else if (typeof val === 'string' && val.indexOf('\n') != -1) {
+        result += "`" + val.replace(/`/g,'\\`') + "`"
+      } else {
+        result += JSON.stringify(val);
+      }
+    }
+  
+    function printObj(obj,path) {
+        var obj_str = flat_obj(obj);
+        if (!printInLine(obj_str)) { // object does not fit in parent line
+          depth++;
+          result += '{';
+          if (!printInLine(obj_str)) { // object does not fit in its own line
+            sortedPropertyNames(obj).forEach(function(prop,index,array) {
+                if (prop != '$')
+                  newLine();
+                if (showNulls || obj[prop] != null) {
+                  printProp(obj,prop,path);
+                  if (index < array.length -1)
+                    result += ', ';//newLine();
+                }
+            });
+          }
+          depth--;
+          newLine();
+          result += '}';
+        }
+    }
+    function quotePropName(p) {
+      if (p.match(/^[$a-zA-Z_][$a-zA-Z0-9_]*$/))
+        return p;
+      else
+        return `"${p}"`
+    }
+    function printProp(obj,prop,path) {
+      if (obj[prop] && obj[prop].$jb_arrayShortcut)
+        obj = obj(prop,obj[prop].items);
+  
+      if (printInLine(flat_property(obj,prop))) return;
+  
+      if (prop == '$')
+        result += '$: '
+      else
+        result += quotePropName(prop) + (jb.compName(obj[prop]) ? ' :' : ': ');
+      //depth++;
+      printValue(obj[prop],path+'~'+prop);
+      //depth--;
+    }
+    function printArray(array,path) {
+      if (printInLine(flat_array(array))) return;
+      result += '[';
+      depth++;
+      newLine();
+      array.forEach(function(val,index) {
+        printValue(val,path+'~'+index);
+        if (index < array.length -1) {
+          result += ', ';
+          newLine();
+        }
+      })
+      depth--;newLine();
+      result += ']';
+    }
+    function printInLine(text) {
+      if (remainedInLine < text.length || text.match(/:\s?{/) || text.match(/, {\$/)) return false;
+      result += text;
+      remainedInLine -= text.length;
+      return true;
+    }
+    function newLine() {
+      result += '\n';
+      lineNum++;
+      for (var i = 0; i < depth; i++) result += '               '.substr(0,tabSize);
+      remainedInLine = colWidth - tabSize * depth;
+    }
+  
+    function flat_obj(obj) {
+      var props = sortedPropertyNames(obj)
+        .filter(p=>showNulls || obj[p] != null)
+        .filter(x=>x!='$')
+        .map(prop =>
+        quotePropName(prop) + ': ' + flat_val(obj[prop]));
+      if (obj && obj.$) {
+        props.unshift("$: '" + obj.$+ "'");
+        return '{' + props.join(', ') + ' }'
+      }
+      return '{ ' + props.join(', ') + ' }'
+    }
+    function flat_property(obj,prop) {
+      if (jb.compName(obj[prop]))
+        return quotePropName(prop) + ' :' + flat_val(obj[prop]);
+      else
+        return quotePropName(prop) + ': ' + flat_val(obj[prop]);
+    }
+    function flat_val(val) {
+      if (Array.isArray(val)) return flat_array(val);
+      if (typeof val === 'object') return flat_obj(val);
+      if (typeof val === 'function') return val.toString();
+      if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
+        return "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
+      else
+        return JSON.stringify(val); // primitives
+    }
+    function flat_array(array) {
+      return '[' + array.map(item=>flat_val(item)).join(', ') + ']';
+    }
+  
   }
  
 };
@@ -30687,7 +30686,7 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       st.previewjb.studio.previewjb = st.previewjb;
       st.previewjb.http_get_cache = {}
       st.previewjb.ctxByPath = {}
-      jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
+      //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
 
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
@@ -33146,7 +33145,7 @@ jb.component('studio.property-array', { /* studio.propertyArray */
     }),
     itemVariable: 'arrayItem',
     features: [
-      studio.watchPath({path: '%$path%', includeChildren: 'yes', allowSelfRefresh: true}),
+      studio.watchPath({path: '%$path%', includeChildren: 'structure', allowSelfRefresh: true}),
       itemlist.divider(),
       itemlist.dragAndDrop()
     ]

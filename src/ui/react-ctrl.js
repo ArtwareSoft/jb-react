@@ -324,8 +324,8 @@ ui.renderWidget = function(profile,top) {
 
 					st.pageChange.debounceTime(200)
 						.filter(({page})=>page != this.state.profile.$)
-						.subscribe(({page,ctrl})=>
-							this.setState({profile: {$: ctrl || page, $vars: {DataToDebug: page }} }));
+						.subscribe(({page})=>
+							this.setState({profile: {$: page }}));
 					st.scriptChange.debounceTime(200).subscribe(_=>
 							this.setState(null));
 				}

@@ -31,7 +31,7 @@ jb.component('studio.open-new-resource', {
       })
     ],
     modal: true,
-    features: [variable({name: 'name', mutable: true}), dialogFeature_autoFocusOnFirstInput()]
+    features: [variable({name: 'name', watchable: true}), dialogFeature_autoFocusOnFirstInput()]
   })
 })
 
