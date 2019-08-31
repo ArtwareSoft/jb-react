@@ -166,6 +166,14 @@ function prepareParams(comp,profile,ctx) {
   })
 }
 
+function fixByValue(profile,comp) {
+  if (profile && profile.$byValue) {
+    const params = compParams(comp)
+    profile.$byValue.forEach((v,i)=> Object.assign(profile,{[params[i].id]: v}))
+    delete profile.$byValue
+  }
+}
+
 function prepare(ctx,parentParam) {
   const profile = ctx.profile;
   const profile_jstype = typeof profile;
@@ -209,6 +217,7 @@ function prepare(ctx,parentParam) {
   if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined', ctx); return { type:'null' } }
   if (!comp.impl) { logError('component ' + comp_name + ' has no implementation', ctx); return { type:'null' } }
 
+  fixByValue(profile,comp)
   const resCtx = new jbCtx(ctx,{});
   resCtx.parentParam = parentParam;
   resCtx.params = {}; // TODO: try to delete this line
@@ -711,7 +720,7 @@ Object.assign(jb,{
       frame[proxyId] = new Proxy(()=>0, { 
           get: (o,p) => {
             if (typeof p === 'symbol') return true
-            return frame[proxyId+'_'+p]
+            return frame[proxyId+'_'+p] || genericMacroProcessor(proxyId,p)
           },
           apply: function(target, thisArg, allArgs) {
             const {args,system} = splitSystemArgs(allArgs)
@@ -764,7 +773,19 @@ Object.assign(jb,{
         return {$: id, [params[0].id]: args[0], [params[1].id]: args[1]}
       debugger;
     }
- },
+    const unMacro = macroId => macroId.replace(/([A-Z])/g, (all,s)=>'-'+s.toLowerCase())
+    function genericMacroProcessor(ns,macroId) {
+      return (...allArgs) => {
+        const {args,system} = splitSystemArgs(allArgs)
+        const out = {$: unMacro(ns) +'.'+ unMacro(macroId)}
+        if (args.length == 1 && typeof args[0] == 'object')
+          Object.assign(out,args[0])
+        else
+          Object.assign(out,{$byValue: args})
+        return Object.assign(out,system)
+      }
+    }
+   },
 // force path - create objects in the path if not exist
   path: (object,path,value) => {
     let cur = object;

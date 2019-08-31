@@ -497,3 +497,24 @@ jb.component('data-test.string-passive-var', {
     calculate: '%$passiveVar%',
     expectedResult: equals('foo')
 })})
+
+jb.component('data-test.forward-macro', {
+  impl: dataTest({
+    calculate: data.test1({first: 'a', second: 'b'}),
+    expectedResult: equals('a-b')
+})})
+
+jb.component('data-test.forward-macro-by-value', {
+  impl: dataTest({
+    calculate: data.test1('a','b'),
+    expectedResult: equals('a-b')
+})})
+
+jb.component('data.test1', {
+  params:[
+    {id: 'first'},
+    {id: 'second'},
+  ],
+  impl: '%$first%-%$second%'
+})
+

@@ -1,6 +1,9 @@
 (function() {
 const st = jb.studio;
 
+jb.component('sourceEditor.open-editor', {
+})
+
 jb.component('studio.open-editor', { /* studio_openEditor */
   type: 'action',
   params: [
@@ -85,5 +88,60 @@ jb.component('studio.goto-editor-options', { /* studio_gotoEditorOptions */
     [studio_gotoEditorFirst('%$path%'), studio_gotoEditorSecondary('%$path%')]
   )
 })
+
+jb.component('studio.open-edit-property', { /* studio_openEditProperty */
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: action.switch(
+    Var('actualPath', studio.jbEditorPathForEdit('%$path%')),
+    Var('paramDef', studio.paramDef('%$actualPath%')),
+    [
+      action.switchCase(endsWith('$vars', '%$path%')),
+      action.switchCase(
+        '%$paramDef/options%',
+        openDialog({
+          style: dialog.studioJbEditorPopup(),
+          content: group({
+            controls: [
+              studio.jbFloatingInputRich('%$actualPath%')
+            ],
+            features: [
+              feature.onEsc(dialog.closeContainingPopup(true)),
+              feature.onEnter(dialog.closeContainingPopup(true), sourceEditor.refreshAndRegainFocus())
+            ]
+          }),
+          features: [dialogFeature.autoFocusOnFirstInput(), dialogFeature.onClose(sourceEditor.refreshAndRegainFocus())]
+        })
+      ),
+      action.switchCase(
+        studio.isOfType('%$actualPath%', 'data,boolean'),
+        openDialog({
+          style: dialog.studioJbEditorPopup(),
+          content: studio.jbFloatingInput('%$actualPath%'),
+          features: [
+            dialogFeature.autoFocusOnFirstInput(),
+            dialogFeature.onClose(
+              runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshAndRegainFocus())
+            )
+          ]
+        })
+      ),
+      action.switchCase(
+        Var('ptsOfType', studio.PTsOfType(studio.paramType('%$actualPath%'))),
+        '%$ptsOfType/length% == 1',
+        runActions(studio.setComp('%$path%', '%$ptsOfType[0]%'),sourceEditor.refreshAndRegainFocus())
+      )
+    ],
+    studio.openNewProfileDialog({
+      path: '%$actualPath%',
+      type: studio.paramType('%$actualPath%'),
+      mode: 'update',
+      onClose: sourceEditor.refreshAndRegainFocus()
+    })
+  )
+})
+
 
 })()
