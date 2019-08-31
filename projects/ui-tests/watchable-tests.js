@@ -263,18 +263,36 @@ jb.component('ui-test.group-watching-structure', {
 jb.component('ui-test.watch-ref-array-delete',  {
   impl: uiTest({
     control: group({
-      controls: [label({title: json.stringify("%$people%"),
-      features:[watchRef({ref: '%$people%', includeChildren: 'yes'})] 
+      controls: [label({title: json.stringify("%$mutable-people%"),
+      features:[watchRef({ref: '%$mutable-people%', includeChildren: 'yes'})] 
     }),
     label("hey")] 
-    ,features: [feature_afterLoad( runActionOnItems('%$people%',splice(
-      {array: "%$people%",
-        fromIndex: indexOf("%$people%", '%%'),
+    ,features: [feature_afterLoad( runActionOnItems('%$mutable-people%',splice(
+      {array: "%$mutable-people%",
+        fromIndex: indexOf("%$mutable-people%", '%%'),
         noOfItemsToRemove: '1',
         itemsToAdd: []
       })))]
     
     }),
     expectedResult: contains('[]')
+  })
+})   
+
+jb.component('ui-test.updated-itemlist',  {
+  impl: uiTest({
+    control: group({
+      controls: [ itemlist({
+        items: '%$mutable-people%',
+        controls: [
+          label({title: '%name%', style: label.span()})
+        ]})
+      ],
+    }),
+    action:writeValue('%$mutable-people[0]/name%', 'Mukki'),
+    expectedCounters: {setState: undefined },
+    expectedResult: contains('Homer Simpson - mutable')
+
+    
   })
 })   
