@@ -86,9 +86,7 @@ jb.component('studio-helper.top-bar', {
 jb.component('studio-helper.editable-source', {
   params: [{ id: 'path', defaultValue: 'studio-helper-sample.control' }],
   type: 'control',
-  impl :{$: 'studio.editable-source', path: '%$path%',
-    $vars: { simulateProfilePath: '%$path%' }
-  }
+  impl: group({controls: studio.editableSource('%$path%')})
 })
 
 jb.component('studio-helper.pages', {

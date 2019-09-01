@@ -32,6 +32,7 @@ jb.component('textarea.init-textarea-editor', {
         if (!jb.textEditor) return
         cmp.editor = {
           getCursorPos: () => jb.textEditor.offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
+          cursorCoords: () => {},
           markText: () => {},
           replaceRange: (text, from, to) => {
             const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)

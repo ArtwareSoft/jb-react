@@ -178,14 +178,14 @@ jb.component('dialog-feature.keyboard-shortcut',  /* dialogFeature_keyboardShort
 jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLauncherPosition */ {
   type: 'dialog-feature',
   params: [
-    {id: 'offsetLeft', as: 'number', defaultValue: 0},
-    {id: 'offsetTop', as: 'number', defaultValue: 0},
+    {id: 'offsetLeft', as: 'number', dynamic: true, defaultValue: 0},
+    {id: 'offsetTop', as: 'number', dynamic: true, defaultValue: 0},
     {id: 'rightSide', as: 'boolean', type: 'boolean'}
   ],
-  impl: function(context,offsetLeft,offsetTop,rightSide) {
+  impl: function(context,offsetLeftF,offsetTopF,rightSide) {
 		return {
 			afterViewInit: function(cmp) {
-				offsetLeft = offsetLeft || 0; offsetTop = offsetTop || 0;
+				let offsetLeft = offsetLeftF() || 0, offsetTop = offsetTopF() || 0;
 				if (!context.vars.$launchingElement)
 					return console.log('no launcher for dialog');
 				const control = context.vars.$launchingElement.el;

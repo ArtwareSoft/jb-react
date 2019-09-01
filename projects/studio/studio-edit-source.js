@@ -21,9 +21,11 @@ jb.component('studio.editable-source', { /* studio.editableSource */
   ],
   impl: editableText({
       databind: studio.profileAsText('%$path%'),
-      style: editableText.studioCodemirrorTgp(),
-      features: feature.onKey('Ctrl-Enter', textEditor.withCursorPath(studio.openEditProperty(
-        split({text: '%$cursorPath[0]%', separator: '~!', part: 'first'})))),
+      style: editableText.codemirror(),
+      features: feature.onKey('Ctrl-Enter', textEditor.withCursorPath(
+          studio.openEditProperty(
+              split({text: '%$cursorPath[0]%', separator: '~!', part: 'first'}))
+          )),
   })
 })
 
@@ -34,12 +36,12 @@ jb.component('studio.edit-source', { /* studio_editSource */
     {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()}
   ],
   impl: openDialog({
-    style: dialog_editSourceStyle({id: 'edit-source', width: 600}),
+    style: dialog.editSourceStyle({id: 'edit-source', width: 600}),
     content: studio.editableSource('%$path%'),
     title: studio_shortTitle('%$path%'),
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
-      dialogFeature_resizer(true)
+      dialogFeature.resizer(true)
     ]
   })
 })
@@ -103,7 +105,11 @@ jb.component('studio.open-edit-property', { /* studio_openEditProperty */
               feature.onEnter(dialog.closeContainingPopup(true), sourceEditor.refreshAndRegainFocus())
             ]
           }),
-          features: [dialogFeature.autoFocusOnFirstInput(), dialogFeature.onClose(sourceEditor.refreshAndRegainFocus())]
+          features: [
+            studio.nearLauncherPosition(),
+            dialogFeature.autoFocusOnFirstInput(), 
+            dialogFeature.onClose(sourceEditor.refreshAndRegainFocus())
+          ]
         })
       ),
       action.switchCase(
@@ -113,6 +119,7 @@ jb.component('studio.open-edit-property', { /* studio_openEditProperty */
           content: studio.jbFloatingInput('%$actualPath%'),
           features: [
             dialogFeature.autoFocusOnFirstInput(),
+            studio.nearLauncherPosition(),
             dialogFeature.onClose(
               runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshAndRegainFocus())
             )
