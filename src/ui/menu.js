@@ -72,23 +72,10 @@ jb.component('menu.action', {
 			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
 			title: ctx.params.title(ctx),
 			applyShortcut: e=> {
-				let key = ctx.params.shortcut;
-				if (!key) return;
-				if (key.indexOf('-') > 0)
-					key = key.replace(/-/,'+');
-				let keyCode = key.split('+').pop().charCodeAt(0);
-				if (key == 'Delete') keyCode = 46;
-				if (key.match(/\+[Uu]p$/)) keyCode = 38;
-				if (key.match(/\+[Dd]own$/)) keyCode = 40;
-				if (key.match(/\+Right$/)) keyCode = 39;
-				if (key.match(/\+Left$/)) keyCode = 37;
-
-				if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-				if (key.match(/^[Aa]lt/) && !e.altKey) return;
-				if (e.keyCode == keyCode) {
-						e.stopPropagation();
-						ctx.params.action();
-						return true;
+				if (jb.ui.checkKey(ctx.params.shortcut)) {
+					e.stopPropagation();
+					ctx.params.action();
+					return true;
 				}
 			},
 			ctx: ctx

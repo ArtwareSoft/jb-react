@@ -23,7 +23,8 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'dist/jb-rx.js',
 
         'src/ui/react-ctrl.js',
-        'src/ui/watchable-ref.js',
+        'src/ui/watchable/watchable-ref.js',
+        'src/ui/watchable/watchable-text.js',
 
         'src/ui/group.js',
         'src/ui/label.js',

@@ -11,12 +11,12 @@ const jbId = Symbol("jbId")
 
 class WatchableValueByRef {
   constructor(resources) {
-    this.resources = resources;
-    this.objToPath = new Map();
-    this.idCounter = 1;
-    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
-    this.resourceChange = new jb.rx.Subject();
-    this.observables = [];
+    this.resources = resources
+    this.objToPath = new Map()
+    this.idCounter = 1
+    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])]
+    this.resourceChange = new jb.rx.Subject()
+    this.observables = []
 
     jb.ui.originalResources = jb.resources
     const resourcesObj = resources()
@@ -84,12 +84,12 @@ class WatchableValueByRef {
     Object.keys(top).filter(key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0)
         .forEach(key => this.addObjToMap(top[key],[...path,key]))
   }
-  removeObjFromMap(top) {
+  removeObjFromMap(top,isInner) {
     if (!top || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
     this.objToPath.delete(top)
-    if (top[jbId])
+    if (top[jbId] && isInner)
         this.objToPath.delete(top[jbId])
-    Object.keys(top).filter(key=>key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key]))
+    Object.keys(top).filter(key=>key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key],true))
   }
   refreshMapDown(top) {
     const ref = this.asRef(top)
@@ -157,7 +157,7 @@ class WatchableValueByRef {
     return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
   }
   objectProperty(obj,prop,ctx) {
-    jb.log('immutable',['objectProperty',...arguments]);
+    jb.log('watchable',['objectProperty',...arguments]);
     if (!obj)
       return jb.logError('objectProperty: null obj',ctx);
     var ref = this.asRef(obj);
@@ -171,7 +171,7 @@ class WatchableValueByRef {
     if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
       return jb.logError('writeValue: err in ref', srcCtx, ref, value);
 
-    jb.log('writeValue',['immutable',this.asStr(ref),value,ref,srcCtx]);
+    jb.log('writeValue',['watchable',this.asStr(ref),value,ref,srcCtx]);
     if (ref.$jb_val)
       return ref.$jb_val(value);
     if (this.val(ref) === value) return;
@@ -242,6 +242,9 @@ class WatchableValueByRef {
       jb.log('registerCmpObservable',[entry])
       return subject
   }
+  frame() {
+    return this.resources.frame || jb.frame
+  }
 
   propagateResourceChangeToObservables() {
       this.resourceChange.subscribe(e=>{
@@ -298,7 +301,7 @@ jb.ui.refObservable = (ref,cmp,settings={}) => {
   //jb.refHandler(ref).refObservable(ref,cmp,settings);
 }
 
-jb.ui.addExtraWatchableHandler = resources => jb.addExtraWatchableHandler(new WatchableValueByRef(resources));
+jb.ui.extraWatchableHandler = (resources,oldHandler) => jb.extraWatchableHandler(new WatchableValueByRef(resources),oldHandler);
 jb.ui.resourceChange = jb.mainWatchableHandler.resourceChange;
 
 jb.component('run-transaction', {
@@ -315,6 +318,6 @@ jb.component('run-transaction', {
 			.catch((e) => jb.logException(e,ctx))
 			.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
 	}
-});
+})
 
 })()

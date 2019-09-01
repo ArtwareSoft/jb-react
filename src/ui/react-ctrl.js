@@ -284,14 +284,11 @@ ui.renderWidget = function(profile,top) {
 				jb.resources = originalResources;
 				doRender();
 			}
-			st.copyComps = comps => { 
-				comps.forEach(e=> {
-					try {
-						jb.component(e[0],eval(`(${e[1]})`))
-					} catch(e) {
-						jb.logException(e)				
-					}
-				})
+			st.reloadCompInPreviewWindow = (id,comp) => { 
+				try {
+					jb.component(id,eval('('+comp+')'))
+					return jb.comps[id]
+				} catch(e) { jb.logException(e)	}
 			}
 			st.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
 		}

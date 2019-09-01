@@ -1,5 +1,8 @@
 (function() {
 
+const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
+const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
+
 jb.component('editable-text.codemirror', {
 	type: 'editable-text.style',
 	params: [
@@ -19,9 +22,11 @@ jb.component('editable-text.codemirror', {
 		return {
 			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
+			beforeInit: cmp =>
+				cmp.state.databindRef = cmp.ctx.vars.$model.databind(),
 			afterViewInit: cmp => {
 				try {
-					const data_ref = cmp.ctx.vars.$model.databind();
+					const data_ref = cmp.state.databindRef;
 					cm_settings = cm_settings||{};
 					const effective_settings = Object.assign({},cm_settings, {
 						mode: mode || 'javascript',
@@ -36,6 +41,13 @@ jb.component('editable-text.codemirror', {
 						readOnly: ctx.params.readOnly,
 					});
 					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+					cmp.editor = {
+						getCursorPos: () => posFromCM(editor.getCursor()),
+						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
+						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
+						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
+						cmEditor: editor
+					}
 					if (ctx.params.hint)
 						tgpHint(CodeMirror)
 					const wrapper = editor.getWrapperElement();
@@ -49,11 +61,15 @@ jb.component('editable-text.codemirror', {
 					editor.setValue(jb.tostring(data_ref));
 				//cmp.lastEdit = new Date().getTime();
 					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-					jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
+					!data_ref.oneWay && jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
 						.map(e=>jb.tostring(data_ref))
 						.filter(x => x != editor.getValue())
-						.subscribe(x=>
-							editor.setValue(x));
+						.subscribe(x=>{
+							const cur = editor.getCursor()
+							editor.setValue(x)
+							editor.setSelection(cur)
+							cmp.editor.markText({line: 0, col:0}, {line: editor.laseLine(), col: 0})
+						});
 
 					const editorTextChange = jb.rx.Observable.create(obs=>
 						editor.on('change', () => {
@@ -97,7 +113,7 @@ function enableFullScreen(editor,width,height) {
   	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
 	const prevLineNumbers = editor.getOption("lineNumbers");
   	jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
-	const fullScreenButton =jb.ui.find('.jb-codemirror-fullScreenBtnCss')[0];
+	const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0];
 	fullScreenButton.onclick = _ => switchMode();
 	fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
 	fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
@@ -120,7 +136,7 @@ function enableFullScreen(editor,width,height) {
 			editor.setSize(width, height);
 			editor.refresh();
 			jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0]);
-				} else if (!onlyBackToNormal) {
+		} else if (!onlyBackToNormal) {
 			jb.ui.addClass(jEditorElem,fullScreenClass);
 			window.addEventListener('resize', onresize);
 			onresize();

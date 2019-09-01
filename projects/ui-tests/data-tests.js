@@ -60,7 +60,7 @@ jb.component('data-test.ctx.exp-of-ref-with-boolean-type', {
 jb.component('data-test.join', {
 	 impl: dataTest({
 		calculate: pipeline(list(1,2), join()),
-		expectedResult: contains('1,2')
+		expectedResult: equals('1,2')
 	 })
 })
 
@@ -68,7 +68,7 @@ jb.component('data-test.write-value', {
   impl: dataTest({
     runBefore: writeValue('%$person/age%', 20),
 	  calculate: '%$person/age%',
-	  expectedResult: contains('20')
+	  expectedResult: equals('20')
 	})
 })
 
@@ -107,7 +107,7 @@ jb.component('data-test.write-value-inner', {
   impl: dataTest({
     runBefore: writeValue('%$person/zz/age%', 20),
 	  calculate: '%$person/zz/age%',
-	  expectedResult: contains('20')
+	  expectedResult: equals('20')
 	})
 })
 
@@ -255,53 +255,67 @@ jb.component('data-test.empty-param-as-string', {
 jb.component('data-test.wait-for-promise', {
   impl: dataTest({
     calculate: ctx => jb.delay(100).then(()=>5),
-    expectedResult: contains('5')
+    expectedResult: equals('5')
   })
 })
 
 jb.component('data-test.pipe', {
   impl: dataTest({
     calculate: pipe(list(1,2), join()),
-    expectedResult: contains('1,2')
+    expectedResult: equals('1,2')
   })
 })
 
 jb.component('data-test.pipe-with-promise', {
   impl: dataTest({
     calculate: pipe(ctx => Promise.resolve([1,2]), join()),
-    expectedResult: contains('1,2')
+    expectedResult: equals('1,2')
   })
 })
 
 jb.component('data-test.pipe-with-promise2', {
   impl: dataTest({
     calculate: pipe(delayedObj(list(1,2)), join()),
-    expectedResult: contains('1,2')
+    expectedResult: equals('1,2')
   })
 })
 
 jb.component('data-test.pipe-with-promise3', {
   impl: dataTest({
     calculate: pipe(list(delayedObj(1), 2, delayedObj(3)), join()),
-    expectedResult: contains('1,2,3')
+    expectedResult: equals('1,2,3')
   })
 })
 
 jb.component('data-test.pipe-with-observable', {
   impl: dataTest({
     calculate: pipe(ctx => jb.rx.Observable.of([1,2]), '%%a', join()),
-    expectedResult: contains('1a,2a')
+    expectedResult: equals('1a,2a')
   })
 })
 
-jb.component('data-test.data-switch-singleInType', {
+jb.component('data-test.data-switch', {
   impl: dataTest({
     calculate: pipeline(5,
-      data_switch(
-          data_case(equals(4), 'a'), 
-          data_case(equals(5), 'b')
-      )),
-    expectedResult: contains('b')
+      data.switch({cases:[
+          data.case(equals(4), 'a'), data.case(equals(5), 'b'), data.case(equals(6), 'c')
+      ]})
+    ),
+    expectedResult: equals('b')
+  })
+})
+
+jb.component('data-test.data-switch-default', {
+  impl: dataTest({
+    calculate: pipeline(7,
+      data.switch({
+        cases:[
+          data.case(equals(4), 'a'), data.case(equals(5), 'b'), data.case(equals(6), 'c')
+        ],
+        default: 'd'
+    })
+    ),
+    expectedResult: equals('d')
   })
 })
 
@@ -461,7 +475,6 @@ jb.component('data-test.inner-of-undefined-var', {
   })
 })
 
-
 // jb.component('data-test.http-get', {
 //    impl :{$: 'data-test',
 //     calculate: {$pipe : [ {$: 'http.get', url: '/projects/ui-tests/people.json'}, '%people/name%', {$join:','}  ]},
@@ -484,4 +497,24 @@ jb.component('data-test.string-passive-var', {
     calculate: '%$passiveVar%',
     expectedResult: equals('foo')
 })})
- 
+
+jb.component('data-test.forward-macro', {
+  impl: dataTest({
+    calculate: data.test1({first: 'a', second: 'b'}),
+    expectedResult: equals('a-b')
+})})
+
+jb.component('data-test.forward-macro-by-value', {
+  impl: dataTest({
+    calculate: data.test1('a','b'),
+    expectedResult: equals('a-b')
+})})
+
+jb.component('data.test1', {
+  params:[
+    {id: 'first'},
+    {id: 'second'},
+  ],
+  impl: '%$first%-%$second%'
+})
+

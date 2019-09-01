@@ -214,7 +214,7 @@ function prepare(ctx,parentParam) {
   resCtx.params = {}; // TODO: try to delete this line
   const preparedParams = prepareParams(comp,profile,resCtx);
   if (typeof comp.impl === 'function') {
-    Object.defineProperty(comp.impl, "name", { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
+    Object.defineProperty(comp.impl, 'name', { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
     return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams: preparedParams }
   } else
     return { type:'profile', ctx: new jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
@@ -231,18 +231,17 @@ function resolveFinishedPromise(val) {
 
 function calcVar(ctx,varname,jstype) {
   let res;
-  if (ctx.componentContext && typeof ctx.componentContext.params[varname] != 'undefined')
+  if (ctx.componentContext && ctx.componentContext.params[varname] !== undefined)
     res = ctx.componentContext.params[varname];
-  else if (ctx.vars[varname] != null)
-    res = ctx.vars[varname];
-  else if (ctx.vars.scope && ctx.vars.scope[varname] != null)
-    res = ctx.vars.scope[varname];
-  else if (jb.resources && jb.resources[varname] != null)
-    res = jb.resource(varname);
-  else if (jb.consts && jb.consts[varname] != null)
-    res = jb.consts[varname];
-  if (ctx.vars.debugSourceRef && typeof res == 'string' && jstype == 'string-with-source-ref' && jb.stringWithSourceRef)
-    return new jb.stringWithSourceRef(ctx,varname,0,res.length)
+  else if (ctx.vars[varname] !== undefined)
+    res = ctx.vars[varname]
+  else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
+    res = ctx.vars.scope[varname]
+  else if (jb.resources && jb.resources[varname] !== undefined)
+    res = jstype == 'ref' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
+  else if (jb.consts && jb.consts[varname] !== undefined)
+    res = jstype == 'ref' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
+
   return resolveFinishedPromise(res);
 }
 
@@ -275,7 +274,7 @@ function expression(exp, ctx, parentParam) {
       return tostring(conditionalExp(contents));
   })
   if (exp.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
-    return expPart(exp.substring(1,exp.length-1));
+    return expPart(exp.substring(1,exp.length-1),parentParam);
 
   exp = exp.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
       return tostring(expPart(contents,{as: 'string'}));
@@ -313,7 +312,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
           return input;
 
       const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
+      const refHandler = refHandlerArg || input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
       if (arrayIndexMatch) {
         const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
         const index = arrayIndexMatch[2];
@@ -334,7 +333,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
       if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(ctx,subExp.substr(1),jstype)
+        return calcVar(ctx,subExp.substr(1),last ? jstype : null)
       const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
@@ -752,7 +751,8 @@ Object.assign(jb,{
       if (args.length == 0)
         return {$: id }
       const params = profile.params || []
-      if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) // pipeline, or, and, plus
+      const firstParamIsArray = (params[0] && params[0].type||'').indexOf('[]') != -1
+      if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
         return {$: id, [params[0].id]: args }
       if (!(profile.usageByValue === false) && (params.length < 3 || profile.usageByValue))
         return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
@@ -768,6 +768,8 @@ Object.assign(jb,{
 // force path - create objects in the path if not exist
   path: (object,path,value) => {
     let cur = object;
+    if (typeof path === 'string') path = path.split('.')
+    path = jb.asArray(path)
 
     if (typeof value == 'undefined') {  // get
       for(let i=0;i<path.length;i++) {
@@ -847,8 +849,10 @@ Object.assign(jb,{
     })
     return res;
   },
-
+  isEmpty: o => Object.keys(o).length === 0,
+  isObject: o => o != null && typeof o === 'object',
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
 
@@ -857,8 +861,11 @@ Object.assign(jb,{
 
   // valueByRef API
   extraWatchableHandlers: [],
-  addExtraWatchableHandler: handler => { 
+  extraWatchableHandler: (handler,oldHandler) => { 
     jb.extraWatchableHandlers.push(handler)
+    const oldHandlerIndex = oldHandler && jb.extraWatchableHandlers.indexOf(oldHandler)
+    if (oldHandlerIndex != -1)
+      jb.extraWatchableHandlers.splice(oldHandlerIndex,1)
     jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
     return handler
   },
@@ -868,13 +875,14 @@ Object.assign(jb,{
   },
   watchableHandlers: [],
   safeRefCall: (ref,f) => {
-    const handler = ref && ref.handler || jb.refHandler(ref)
+    const handler = jb.refHandler(ref)
     if (!handler || !handler.isRef(ref))
       return jb.logError('invalid ref', ref)
     return f(handler)
   },
  
   refHandler: ref => {
+    if (ref && ref.handler) return ref.handler
     if (jb.simpleValueByRefHandler.isRef(ref)) 
       return jb.simpleValueByRefHandler
     return jb.watchableHandlers.find(handler => handler.isRef(ref))
@@ -1860,6 +1868,7 @@ jb.component('asRef', {
 })
 
 jb.component('data.switch', {
+	usageByValue: false,
 	params: [
   	{ id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
   	{ id: 'default', dynamic: true },
@@ -1868,7 +1877,7 @@ jb.component('data.switch', {
 		for(let i=0;i<cases.length;i++)
 			if (cases[i].condition(ctx))
 				return cases[i].value(ctx)
-		return defaultValue(ctx);
+		return defaultValue(ctx)
 	}
 })
 
@@ -2027,6 +2036,8 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 			Object.keys(this.logs).forEach(log => this.logs[log] = this.logs[log].slice(countFromEnd))
 		},
 		setLogs(logs) {
+			if (logs === 'all')
+				this.wSpyParam = 'all'
 			this.includeLogs = (logs||'').split(',').reduce((acc,log) => {acc[log] = true; return acc },{})
 		},
 		clear(logs) {
@@ -8301,14 +8312,11 @@ ui.renderWidget = function(profile,top) {
 				jb.resources = originalResources;
 				doRender();
 			}
-			st.copyComps = comps => { 
-				comps.forEach(e=> {
-					try {
-						jb.component(e[0],eval(`(${e[1]})`))
-					} catch(e) {
-						jb.logException(e)				
-					}
-				})
+			st.reloadCompInPreviewWindow = (id,comp) => { 
+				try {
+					jb.component(id,eval('('+comp+')'))
+					return jb.comps[id]
+				} catch(e) { jb.logException(e)	}
 			}
 			st.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
 		}
@@ -8341,8 +8349,8 @@ ui.renderWidget = function(profile,top) {
 
 					st.pageChange.debounceTime(200)
 						.filter(({page})=>page != this.state.profile.$)
-						.subscribe(({page,ctrl})=>
-							this.setState({profile: {$: ctrl || page, $vars: {DataToDebug: page }} }));
+						.subscribe(({page})=>
+							this.setState({profile: {$: page }}));
 					st.scriptChange.debounceTime(200).subscribe(_=>
 							this.setState(null));
 				}
@@ -8571,12 +8579,12 @@ const jbId = Symbol("jbId")
 
 class WatchableValueByRef {
   constructor(resources) {
-    this.resources = resources;
-    this.objToPath = new Map();
-    this.idCounter = 1;
-    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])];
-    this.resourceChange = new jb.rx.Subject();
-    this.observables = [];
+    this.resources = resources
+    this.objToPath = new Map()
+    this.idCounter = 1
+    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])]
+    this.resourceChange = new jb.rx.Subject()
+    this.observables = []
 
     jb.ui.originalResources = jb.resources
     const resourcesObj = resources()
@@ -8644,12 +8652,12 @@ class WatchableValueByRef {
     Object.keys(top).filter(key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0)
         .forEach(key => this.addObjToMap(top[key],[...path,key]))
   }
-  removeObjFromMap(top) {
+  removeObjFromMap(top,isInner) {
     if (!top || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
     this.objToPath.delete(top)
-    if (top[jbId])
+    if (top[jbId] && isInner)
         this.objToPath.delete(top[jbId])
-    Object.keys(top).filter(key=>key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key]))
+    Object.keys(top).filter(key=>key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key],true))
   }
   refreshMapDown(top) {
     const ref = this.asRef(top)
@@ -8717,7 +8725,7 @@ class WatchableValueByRef {
     return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
   }
   objectProperty(obj,prop,ctx) {
-    jb.log('immutable',['objectProperty',...arguments]);
+    jb.log('watchable',['objectProperty',...arguments]);
     if (!obj)
       return jb.logError('objectProperty: null obj',ctx);
     var ref = this.asRef(obj);
@@ -8731,7 +8739,7 @@ class WatchableValueByRef {
     if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
       return jb.logError('writeValue: err in ref', srcCtx, ref, value);
 
-    jb.log('writeValue',['immutable',this.asStr(ref),value,ref,srcCtx]);
+    jb.log('writeValue',['watchable',this.asStr(ref),value,ref,srcCtx]);
     if (ref.$jb_val)
       return ref.$jb_val(value);
     if (this.val(ref) === value) return;
@@ -8802,6 +8810,9 @@ class WatchableValueByRef {
       jb.log('registerCmpObservable',[entry])
       return subject
   }
+  frame() {
+    return this.resources.frame || jb.frame
+  }
 
   propagateResourceChangeToObservables() {
       this.resourceChange.subscribe(e=>{
@@ -8858,7 +8869,7 @@ jb.ui.refObservable = (ref,cmp,settings={}) => {
   //jb.refHandler(ref).refObservable(ref,cmp,settings);
 }
 
-jb.ui.addExtraWatchableHandler = resources => jb.addExtraWatchableHandler(new WatchableValueByRef(resources));
+jb.ui.extraWatchableHandler = (resources,oldHandler) => jb.extraWatchableHandler(new WatchableValueByRef(resources),oldHandler);
 jb.ui.resourceChange = jb.mainWatchableHandler.resourceChange;
 
 jb.component('run-transaction', {
@@ -8875,10 +8886,170 @@ jb.component('run-transaction', {
 			.catch((e) => jb.logException(e,ctx))
 			.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
 	}
-});
+})
 
 })()
 ;
+
+(function(){
+
+function getSinglePathChange(newVal, currentVal) {
+    return pathAndValueOfSingleChange(jb.objectDiff(newVal,currentVal),'')
+    
+    function pathAndValueOfSingleChange(obj, pathSoFar) { 
+        if (typeof obj !== 'object')
+            return { innerPath: pathSoFar, innerValue: obj }
+        const entries = jb.entries(obj)
+        if (entries.length != 1) // if not single returns empty answer
+            return {}
+        return pathAndValueOfSingleChange(entries[0][1],pathSoFar+'~'+entries[0][0])
+    }
+}
+
+function setStrValue(value, ref, ctx) {
+    const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
+    const newVal = notPrimitive ? jb.evalStr(value,ref.handler.frame()) : value;
+    // do not save in editing ',' at the end of line means editing
+    if (typeof newVal === 'object' && value.match(/,\s*}/m))
+        return
+    if (newVal && typeof newVal === 'object') {
+        const {innerPath, innerValue} = getSinglePathChange(newVal,jb.val(ref))
+        if (innerPath) {
+            const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
+            return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
+        } 
+    }
+    if (newVal !== undefined)
+       jb.writeValue(ref,newVal,ctx)
+}
+
+jb.component('watchable-as-text', {
+    type: 'data',
+    params: [
+      {id: 'ref', as: 'ref', dynamic: true},
+    ],
+    impl: (ctx,refF) => ({
+        oneWay: true,
+        getRef() {
+            return this.ref || (this.ref = refF())
+        },
+        getHandler() {
+            return jb.getHandler(this.getRef())
+        },
+        getVal() {
+            return jb.val(this.getRef())
+        },
+        prettyPrintWithPositions() {
+            const ref = this.getRef()
+            const initialPath = ref.handler.pathOfRef(ref).join('~')
+            const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath})
+            this.locationMap = res.map
+            return res
+        },
+        $jb_val(value) { try {
+            if (value === undefined) {
+                const val = this.getVal();
+                if (typeof val === 'function')
+                    return val.toString();
+
+                return this.prettyPrintWithPositions().text
+            } else {
+                setStrValue(value,this.getRef(),ctx)
+                this.prettyPrintWithPositions() // refreshing location map
+            }
+        } catch(e) {
+            jb.logException(e,'watchable-obj-as-text-ref',ctx)
+        }},
+
+        $jb_observable(cmp) {
+            return jb.ui.refObservable(this.getRef(),cmp,{includeChildren: 'yes'})
+        }
+    })
+})
+  
+jb.evalStr = function(str,frame) {
+    try {
+      return (frame || jb.frame).eval('('+str+')')
+    } catch (e) {
+        jb.logException(e,'eval: '+str);
+    }
+}
+  
+jb.objectDiff = function(newObj, orig) {
+    if (orig === newObj) return {}
+    if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
+    const deletedValues = Object.keys(orig).reduce((acc, key) =>
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: undefined }
+    , {})
+  
+    return Object.keys(newObj).reduce((acc, key) => {
+      if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
+      const difference = jb.objectDiff(newObj[key], orig[key])
+      if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
+      return { ...acc, [key]: difference } // return updated key
+    }, deletedValues)
+}
+
+jb.textEditor = {
+    pathOfPosition(locationMap,_pos) {
+        const pos = Number(_pos) ? this.offsetToLineCol(_pos) : _pos
+        const path = jb.entries(locationMap)
+            .find(e=>e[1][0] == pos.line && e[1][1] <= pos.col && (e[1][0] < e[1][2] || pos.col <= e[1][3]))
+        return path
+    },
+    lineColToOffset(text,{line,col}) {
+        return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
+    },
+    offsetToLineCol(text,offset) {
+        return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0, 
+            col: offset - text.slice(0,offset).lastIndexOf('\n') }
+    }
+}
+
+jb.component('text-editor.with-cursor-path', {
+    type: 'action',
+    params: [
+      {id: 'action', type: 'action', dynamic: true, mandatory: true},
+      {id: 'editorId', as: 'string', desscription: 'only needed if launched from button'},
+    ],
+    impl: (ctx,action,editorId) => {
+      try {
+          const base = ctx.vars.elemToTest || (typeof document !== 'undefined' && document)
+          const elem = editorId && base && base.querySelector('#'+editorId) || jb.path(ctx.vars.$launchingElement,'el')
+          const cmp = elem._component
+          const editor = cmp.editor
+          if (editor && editor.getCursorPos)
+                action(ctx.setVars({cursorPath: jb.textEditor.pathOfPosition(cmp.state.databindRef.locationMap, editor.getCursorPos()) }))
+        } catch(e) {}
+    }
+})
+  
+jb.component('text-editor.watch-source-changes', {
+    type: 'feature',
+    params: [
+    ],
+    impl: ctx => ({ init: cmp => {
+      try {
+        const text_ref = cmp.state.databindRef
+        const data_ref = text_ref.getRef()
+        jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: cmp.ctx, includeChildren: 'yes'})
+            .subscribe(e => {
+            const path = e.path
+            const editor = cmp.editor
+            const locations = cmp.state.databindRef.locationMap
+            const loc = locations[path.concat('!value').join('~')]
+            const newVal = jb.prettyPrint(e.newVal)
+            editor.replaceRange(newVal, {line: loc[0], col:loc[1]}, {line: loc[2], col: loc[3]})
+            const newEndPos = jb.prettyPrint.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
+            editor.markText({line: loc[0], col:loc[1]}, {line: newEndPos.line, col: newEndPos.col},{
+                className: 'jb-highlight-comp-changed'
+            })
+            })
+        } catch (e) {}
+    }})
+})
+
+})();
 
 jb.component('group', {
   type: 'control', category: 'group:100,common:90',
@@ -9788,25 +9959,24 @@ jb.component('feature.hover-title', {
 
 jb.component('variable', {
   type: 'feature', category: 'general:90',
-	description: 'define a variable. mutable or const, local or global',
+	description: 'define a variable. watchable or passive, local or global',
   params: [
     { id: 'name', as: 'string', mandatory: true },
     { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
-    { id: 'mutable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable' },
+    { id: 'watchable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable' },
     { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
   ],
-  impl: (context, name, value, mutable, globalId) => ({
+  impl: (context, name, value, watchable, globalId) => ({
       extendCtxOnce: (ctx,cmp) => {
-        if (!mutable) {
+        if (!watchable)
           return ctx.setVars(jb.obj(name, value(ctx)))
-        } else {
-          cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
-          const fullName = globalId || (name + ':' + cmp.resourceId);
-          jb.log('var',['new-resource',ctx,fullName])
-          jb.resource(fullName, jb.val(value(ctx)));
-          const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
-          return ctx.setVars(jb.obj(name, refToResource));
-        }
+
+        cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
+        const fullName = globalId || (name + ':' + cmp.resourceId);
+        jb.log('var',['new-watchable',ctx,fullName])
+        jb.resource(fullName, jb.val(value(ctx)));
+        const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
+        return ctx.setVars(jb.obj(name, refToResource));
       }
   })
 })
@@ -9874,9 +10044,7 @@ jb.component('feature.init', {
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl: (ctx,action) => ({ init: cmp =>
-      action(cmp.ctx)
-  })
+  impl: (ctx,action) => ({ init: cmp => action(cmp.ctx) })
 })
 
 jb.component('feature.after-load', {
@@ -9884,9 +10052,7 @@ jb.component('feature.after-load', {
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl: ctx => ({ afterViewInit: cmp =>
-      jb.delay(1).then(_ => ctx.params.action(cmp.ctx))
-    })
+  impl: ctx => ({ afterViewInit: cmp => jb.delay(1).then(_ => ctx.params.action(cmp.ctx)) })
 })
 
 jb.component('feature.if', {
@@ -9985,18 +10151,35 @@ jb.component('feature.onHover', {
   })
 })
 
+jb.ui.checkKey = function(e, key) {
+	if (!key) return;
+  const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
+
+  key = key.replace(/-/,'+');
+  const keyWithoutPrefix = key.split('+').pop()
+  let keyCode = dict[keyWithoutPrefix.toLowerCase()]
+  if (+keyWithoutPrefix) 
+    keyCode = +keyWithoutPrefix
+  if (keyWithoutPrefix.length == 1)
+    keyCode = keyWithoutPrefix.charCodeAt(0);
+
+	if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
+	if (key.match(/^[Aa]lt/) && !e.altKey) return;
+	return e.keyCode == keyCode
+}
+
 jb.component('feature.onKey', {
   type: 'feature', category: 'events',
   params: [
-    { id: 'code', as: 'number' },
+    { id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl: (ctx,code) => ({
+  impl: (ctx,key) => ({
       onkeydown: true,
-      afterViewInit: cmp=> {
+      afterViewInit: cmp => {
         cmp.base.setAttribute('tabIndex','0');
-        cmp.onkeydown.filter(e=> e.keyCode == code).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
+        cmp.onkeydown.subscribe(e=>
+          jb.ui.checkKey(e,key) && jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
       }
   })
 })
@@ -10006,7 +10189,7 @@ jb.component('feature.onEnter', {
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl :{$: 'feature.onKey', code: 13, action :{$call: 'action'}}
+  impl: feature.onKey('Enter',call('action'))
 })
 
 jb.component('feature.onEsc', {
@@ -10014,15 +10197,7 @@ jb.component('feature.onEsc', {
   params: [
     { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
   ],
-  impl :{$: 'feature.onKey', code: 27, action :{$call: 'action'}}
-})
-
-jb.component('feature.onDelete', {
-  type: 'feature', category: 'events',
-  params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
-  ],
-  impl :{$: 'feature.onKey', code: 46, action :{$call: 'action'}}
+  impl: feature.onKey('Esc',call('action'))
 })
 
 jb.component('refresh-control-by-id', {
@@ -10413,33 +10588,13 @@ jb.component('dialog-feature.keyboard-shortcut',  /* dialogFeature_keyboardShort
     {id: 'shortcut', as: 'string', description: 'Ctrl+C or Alt+V'},
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: (ctx,key,action) => ({
+  impl: ctx => ({
   	  onkeydown : true,
-      afterViewInit: cmp=> {
-		const dialog = ctx.vars.$dialog;
-		dialog.applyShortcut = e=> {
-			const key = ctx.params.shortcut;
-			if (!key) return;
-			if (key.indexOf('-') > 0)
-				key = key.replace(/-/,'+');
-            let keyCode = key.split('+').pop().charCodeAt(0);
-            if (key == 'Delete') keyCode = 46;
-            if (key.match(/\+[Uu]p$/)) keyCode = 38;
-            if (key.match(/\+[Dd]own$/)) keyCode = 40;
-            if (key.match(/\+Right$/)) keyCode = 39;
-            if (key.match(/\+Left$/)) keyCode = 37;
-
-            if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-            if (key.match(/^[Aa]lt/) && !e.altKey) return;
-            if (e.keyCode == keyCode)
-                return ctx.params.action();
-		};
-
+      afterViewInit: cmp=>
 	    cmp.onkeydown.filter(e=> e.keyCode != 17 && e.keyCode != 18) // ctrl ot alt alone
    	  		.subscribe(e=>
-   	  			dialog.applyShortcut(e))
-
-	}})
+				jb.ui.checkKey(ctx.params.shortcut) && ctx.params.action())
+	})
 })
 
 jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLauncherPosition */ {
@@ -10830,23 +10985,10 @@ jb.component('menu.action', {
 			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
 			title: ctx.params.title(ctx),
 			applyShortcut: e=> {
-				let key = ctx.params.shortcut;
-				if (!key) return;
-				if (key.indexOf('-') > 0)
-					key = key.replace(/-/,'+');
-				let keyCode = key.split('+').pop().charCodeAt(0);
-				if (key == 'Delete') keyCode = 46;
-				if (key.match(/\+[Uu]p$/)) keyCode = 38;
-				if (key.match(/\+[Dd]own$/)) keyCode = 40;
-				if (key.match(/\+Right$/)) keyCode = 39;
-				if (key.match(/\+Left$/)) keyCode = 37;
-
-				if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-				if (key.match(/^[Aa]lt/) && !e.altKey) return;
-				if (e.keyCode == keyCode) {
-						e.stopPropagation();
-						ctx.params.action();
-						return true;
+				if (jb.ui.checkKey(ctx.params.shortcut)) {
+					e.stopPropagation();
+					ctx.params.action();
+					return true;
 				}
 			},
 			ctx: ctx
@@ -11529,7 +11671,7 @@ jb.component('group.itemlist-container', {
 	],
 	impl :{$list : [
 		{$: 'variable', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , 
-				mutable: true, globalId1: '%$id%-cntr-data'},
+				watchable: true, globalId1: '%$id%-cntr-data'},
 		{$: 'variable', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
 		ctx => ({
 			init: cmp => {
@@ -12588,8 +12730,8 @@ jb.component('editable-text.input', {
       template: (cmp,state,h) => h('input', {
         value: state.model,
         onchange: e => cmp.jbModel(e.target.value),
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-    css: '{height: 16px}'
+        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  })
+   
   }
 })
 
@@ -12598,13 +12740,37 @@ jb.component('editable-text.textarea', {
   params: [
     { id: 'rows', as: 'number', defaultValue: 4 },
     { id: 'cols', as: 'number', defaultValue: 120 },
+    { id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
   impl :{$: 'custom-style',
-      features :{$: 'field.databind-text' },
+      features :[{$: 'field.databind-text', oneWay: '%$oneWay' }, {$: 'textarea.init-textarea-editor'}],
       template: (cmp,state,h) => h('textarea', {
         rows: cmp.rows, cols: cmp.cols,
         value: state.model, onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
 	}
+})
+
+jb.component('textarea.init-textarea-editor', {
+  type: 'feature',
+  impl: ctx => ({
+      beforeInit: cmp => {
+        if (!jb.textEditor) return
+        cmp.editor = {
+          getCursorPos: () => jb.textEditor.offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
+          markText: () => {},
+          replaceRange: (text, from, to) => {
+            const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
+            const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
+            cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
+          },
+          setSelectionRange: (from, to) => {
+            const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
+            const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
+            cmp.base.setSelectionRange(_from,_to)
+          },
+        }
+      }
+  })
 })
 
 jb.component('editable-text.mdl-input', {
@@ -12988,7 +13154,7 @@ jb.component('group.tabs', {
         jb.val(ctx.exp('%$selectedTab%')),
     ],
     features : [
-        {$: 'variable', name: 'selectedTab', value: '%$tabsModel/controls[0]%', mutable: true },
+        {$: 'variable', name: 'selectedTab', value: '%$tabsModel/controls[0]%', watchable: true },
         {$: 'group.init-group'},
     ]
   }}
@@ -14758,6 +14924,11 @@ module.exports = tick;
 
 ;
 
+(function() {
+
+const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
+const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
+
 jb.component('editable-text.codemirror', {
 	type: 'editable-text.style',
 	params: [
@@ -14777,9 +14948,11 @@ jb.component('editable-text.codemirror', {
 		return {
 			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
+			beforeInit: cmp =>
+				cmp.state.databindRef = cmp.ctx.vars.$model.databind(),
 			afterViewInit: cmp => {
 				try {
-					const data_ref = cmp.ctx.vars.$model.databind();
+					const data_ref = cmp.state.databindRef;
 					cm_settings = cm_settings||{};
 					const effective_settings = Object.assign({},cm_settings, {
 						mode: mode || 'javascript',
@@ -14794,24 +14967,35 @@ jb.component('editable-text.codemirror', {
 						readOnly: ctx.params.readOnly,
 					});
 					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+					cmp.editor = {
+						getCursorPos: () => posFromCM(editor.getCursor()),
+						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
+						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
+						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
+						cmEditor: editor
+					}
 					if (ctx.params.hint)
 						tgpHint(CodeMirror)
 					const wrapper = editor.getWrapperElement();
 					if (height)
 						wrapper.style.height = height + 'px';
-					// jb.delay(1).then(() => {
-					// 	if (_enableFullScreen)
-					// 		enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
-					// 	editor.refresh(); // ????
-					// });
+					jb.delay(1).then(() => {
+						if (_enableFullScreen)
+							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
+						editor.refresh(); // ????
+					});
 					editor.setValue(jb.tostring(data_ref));
 				//cmp.lastEdit = new Date().getTime();
 					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-					jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
+					!data_ref.oneWay && jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
 						.map(e=>jb.tostring(data_ref))
 						.filter(x => x != editor.getValue())
-						.subscribe(x=>
-							editor.setValue(x));
+						.subscribe(x=>{
+							const cur = editor.getCursor()
+							editor.setValue(x)
+							editor.setSelection(cur)
+							cmp.editor.markText({line: 0, col:0}, {line: editor.laseLine(), col: 0})
+						});
 
 					const editorTextChange = jb.rx.Observable.create(obs=>
 						editor.on('change', () => {
@@ -14837,10 +15021,10 @@ jb.component('editable-text.codemirror', {
 })
 
 function enableFullScreen(editor,width,height) {
-	var escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>';
-	var fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
-	var lineNumbers = true;
-	var css = `
+	const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>';
+	const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
+	const lineNumbers = true;
+	const css = `
 		.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
 		.jb-codemirror-escCss:hover { text-decoration: underline; }
 		.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:5px; -webkit-transition: opacity 1s; z-index: 20; }
@@ -14851,19 +15035,19 @@ function enableFullScreen(editor,width,height) {
 	if (!jb.ui.find('#jb_codemirror_fullscreen')[0])
     jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`);
 
-	var jEditorElem = editor.getWrapperElement();
-  jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
-	var prevLineNumbers = editor.getOption("lineNumbers");
-  jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
-	var fullScreenButton =jb.ui.find('.jb-codemirror-fullScreenBtnCss')[0];
-  fullScreenButton.onclick = _ => switchMode();
-  fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
-  fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
+	const jEditorElem = editor.getWrapperElement();
+  	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
+	const prevLineNumbers = editor.getOption("lineNumbers");
+  	jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
+	const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0];
+	fullScreenButton.onclick = _ => switchMode();
+	fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
+	fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
 
-	var fullScreenClass = 'jb-codemirror-fullScreenEditorCss';
+	const fullScreenClass = 'jb-codemirror-fullScreenEditorCss';
 
 	function onresize() {
-		var wrapper = editor.getWrapperElement();
+		const wrapper = editor.getWrapperElement();
 		wrapper.style.width = window.innerWidth + 'px';
 		wrapper.style.height = window.innerHeight + 'px';
 		editor.setSize(window.innerWidth, window.innerHeight - 20);
@@ -14877,16 +15061,16 @@ function enableFullScreen(editor,width,height) {
 			editor.setOption("lineNumbers", prevLineNumbers);
 			editor.setSize(width, height);
 			editor.refresh();
-      jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0]);
+			jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0]);
 		} else if (!onlyBackToNormal) {
-      jb.ui.addClass(jEditorElem,fullScreenClass);
+			jb.ui.addClass(jEditorElem,fullScreenClass);
 			window.addEventListener('resize', onresize);
 			onresize();
 			document.documentElement.style.overflow = "hidden";
 			if (lineNumbers) editor.setOption("lineNumbers", true);
 			editor.refresh();
 			jb.ui.addHTML(jEditorElem,escText);
-      jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true);
+      		jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true);
 			jb.ui.focus(editor,'code mirror',ctx);
 		}
 	}
@@ -14948,9 +15132,9 @@ jb.component('text.codemirror', {
     }
 })
 
-function tgpHint(CodeMirror) {
-	
-};
+function tgpHint(CodeMirror) {}
+  
+})();
 
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: https://codemirror.net/LICENSE
@@ -28344,26 +28528,35 @@ jb.prettyPrint = function(profile,settings = {}) {
   return jb.prettyPrintWithPositions(profile,settings).text;
 }
 
+jb.prettyPrint.advanceLineCol = function({line,col},text) {
+  const noOfLines = (text.match(/\n/g) || '').length
+  const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
+  return { line: line + noOfLines, col: newCol }
+}
+
 const spaces = Array.from(new Array(200)).map(_=>' ').join('')
 jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
+  const advanceLineCol = jb.prettyPrint.advanceLineCol
   return valueToMacro({path: initialPath, line:0, col: 0}, profile)
 
   function joinVals({path, line, col}, innerVals, open, close, flat, isArray) {
-    const lineColAfterOpen = advanceLineCol({line,col},open + newLine())
+    const afterOpenPos = advanceLineCol({line,col},open + newLine())
     const result = innerVals.reduce((acc,{innerPath, val}, index) => {
       const fullInnerPath = [path,innerPath].join('~')
-      let result = valueToMacro({path: fullInnerPath, line: acc.line, col: acc.col}, val, flat)
-      if (typeof result === 'string')
-        result = { text: result, map: {}}
-      const separator = index === 0 ? '' : ',' + (flat ? ' ' : newLine())
+      const result = valueToMacro({path: fullInnerPath, line: acc.line, col: acc.col}, val, flat)
+      const separator = index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())
       const valPrefix = isArray ? '' : innerPath + ': ';
-      const startValuePos = advanceLineCol(acc, separator)
-      const endValuePos = advanceLineCol(acc, separator + valPrefix + result.text)
-      const afterClosePos = advanceLineCol(acc, separator + valPrefix + result.text + newLine(-1) + close)
-      const map = Object.assign({},acc.map, result.map,{[fullInnerPath]: 
-          [startValuePos.line, startValuePos.col,endValuePos.line, endValuePos.col]})
-      return Object.assign({ text: acc.text + separator + valPrefix + result.text, map, unflat: acc.unflat || result.unflat }, afterClosePos)
-    }, {text: '', map: {}, ...lineColAfterOpen, unflat: false} )
+      const startAttValuePos = acc
+      const startValuePos = advanceLineCol(acc, valPrefix)
+      const endValuePos = advanceLineCol(startValuePos, result.text)
+      const afterSeparatorPos = advanceLineCol(endValuePos, separator)
+      const map = Object.assign({},acc.map, result.map,{
+        [fullInnerPath+'~!prefix']:[startAttValuePos.line, startAttValuePos.col, startValuePos.line, startValuePos.col],
+        [fullInnerPath+'~!value']:[startValuePos.line, startValuePos.col,endValuePos.line, endValuePos.col],
+//        [fullInnerPath]:[startAttValuePos.line, startAttValuePos.col,endValuePos.line, endValuePos.col]
+      })
+      return Object.assign({ text: acc.text + valPrefix + result.text + separator, map, unflat: acc.unflat || result.unflat }, afterSeparatorPos)
+    }, {text: '', map: {}, ...afterOpenPos, unflat: false} )
 
     //const arrayElem = path.match(/~[0-9]+$/)
     const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
@@ -28384,11 +28577,6 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     function newLine(offset = 0) {
       return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
     }
-    function advanceLineCol({line,col},text) {
-      const noOfLines = (text.match(/\n/g) || '').length
-      const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
-      return { line: line + noOfLines, col: newCol }
-    }
   }
 
   function profileToMacro(ctx, profile,flat) {
@@ -28405,11 +28593,12 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     const macro = jb.macroName(id)
   
     const params = comp.params || []
+    const firstParamIsArray = (params[0] && params[0].type||'').indexOf('[]') != -1
     const vars = Object.keys(profile.$vars || {})
       .map(name => ({innerPath: `$vars~${name}`, val: {$: 'Var', name, val: profile.$vars[name]}}))
     const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
     const systemProps = vars.concat(remark)
-    if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) { // pipeline, or, and, plus
+    if (params.length == 1 && firstParamIsArray) { // pipeline, or, and, plus
       const args = systemProps.concat(jb.asArray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val})))
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
@@ -28418,7 +28607,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
         && (typeof profile[keys[0]] !== 'object' || Array.isArray(profile[keys[0]]))
     if ((params.length < 3 && comp.usageByValue !== false) || comp.usageByValue || oneFirstParam) {
       const args = systemProps.concat(params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]})))
-      for(let i=0;i<6;i++)
+      for(let i=0;i<3;i++)
         if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       return joinVals(ctx, args, `${macro}(`, ')', flat, true)
     }
@@ -28430,16 +28619,25 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
   }
     
   function valueToMacro(ctx, val, flat) {
-    if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
-    if (val === null) return 'null';
-    if (val === undefined) return 'undefined';
-    if (typeof val === 'object') return profileToMacro(ctx, val, flat);
-    if (typeof val === 'function') return val.toString();
-    if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-      return "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
-    else
-      return JSON.stringify(val); // primitives
-  }
+    let result = doValueToMacro()
+    if (typeof result === 'string')
+      result = { text: result, map: {}}
+    return result
+
+    function doValueToMacro() {
+      if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
+      if (val === null) return 'null';
+      if (val === undefined) return 'undefined';
+      if (typeof val === 'object') return profileToMacro(ctx, val, flat);
+      if (typeof val === 'function') return val.toString();
+      if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
+        return "'" + JSON.stringify(val).slice(1,-1) + "'";
+      else if (typeof val === 'string' && val.indexOf('\n') != -1)
+        return "`" + val.replace(/`/g,'\\`') + "`"
+      else
+        return JSON.stringify(val); // primitives
+    }
+}
   
   function arrayToMacro(ctx, array, flat) {
     const vals = array.map((val,i) => ({innerPath: i, val}))
@@ -30158,32 +30356,49 @@ jb.component('studio.toolbar-style', { /* studio.toolbarStyle */
 
 (function() { var st = jb.studio;
 
-//  var types = ['focus','apply','check','suggestions','writeValue','render','probe','setState'];
-jb.issuesTolog = [];
+function compsRefOfPreviewJb(previewjb) {
+	st.compsHistory = [];
+	function compsRef(val,opEvent) {
+		if (typeof val == 'undefined')
+			return previewjb.comps;
+		else {
+			val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
+			if (!val.$jb_selectionPreview)
+			st.compsHistory.push({before: previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
 
-function compsRef(val,opEvent) {
-  if (typeof val == 'undefined')
-    return st.previewjb.comps;
-  else {
-		// if (val.$jb_historyIndex && val == st.compsHistory[val.$jb_historyIndex].after)
-		// 	st.compsHistory.slice()
-
-		val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
-		if (!val.$jb_selectionPreview)
-  		st.compsHistory.push({before: st.previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
-
-    st.previewjb.comps = val;
-    if (opEvent)
-      st.undoIndex = st.compsHistory.length;
-  }
+			previewjb.comps = val;
+			if (opEvent)
+			st.undoIndex = st.compsHistory.length;
+		}
+	}
+	compsRef.frame = previewjb.frame
+	return compsRef
+}
+st.scriptChange = new jb.rx.Subject()
+st.initCompsRefHandler = function(previewjb,allowedTypes) {
+	const oldCompsRefHandler = st.compsRefHandler
+	oldCompsRefHandler && oldCompsRefHandler.stopListening.next(1)
+	const compsRef = compsRefOfPreviewJb(previewjb);
+	st.compsRefHandler = jb.ui.extraWatchableHandler(compsRef, oldCompsRefHandler)
+	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes);
+	st.compsRefHandler.stopListening = new jb.rx.Subject()
+	
+	st.compsRefHandler.resourceChange.takeUntil(st.compsRefHandler.stopListening).subscribe(e=>{
+		jb.log('scriptChange',[e.srcCtx,e]);
+		st.scriptChange.next(e)
+		st.highlightByScriptPath(e.path)
+		writeValueToDataResource(e.path,e.newVal)
+		st.lastStudioActivity= new Date().getTime()
+	})
 }
 
-st.compsRefHandler = jb.ui.addExtraWatchableHandler(compsRef);
-st.compsRefHandler.resourceChange.subscribe(e=>{
-	jb.log('scriptChange',[e.srcCtx,e]);
-	st.highlightByScriptPath(e.path);
-	st.lastStudioActivity= new Date().getTime()
-})
+function writeValueToDataResource(path,value) {
+	if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
+		const dataPath = '%$' + [path[0], ...path.slice(2)].map(x=>+x ? `[${x}]` : x).join('/') + '%'
+		return (new st.previewjb.jbCtx()).run(writeValue(dataPath,value))
+	}
+}
+
 // adaptors
 
 Object.assign(st,{
@@ -30205,8 +30420,6 @@ Object.assign(st,{
     st.compsRefHandler.asRef(obj),
   refreshRef: (ref) =>
     st.compsRefHandler.refresh(ref),
-  scriptChange: 
-  	st.compsRefHandler.resourceChange,
   refOfPath: (path,silent) => {
 		const _path = path.split('~');
 		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0]);
@@ -30491,10 +30704,8 @@ jb.component('studio.is-new', { /* studio.isNew */
   ],
   impl: (ctx,path) => {
 		if (st.compsHistory.length == 0 || st.previewjb.comps.$jb_selectionPreview) return false;
-		//var version_before = new jb.ui.WatchableValueByRef(_=>st.compsHistory.slice(-1)[0].before).refOfPath(path.split('~'),true);
 		var res =  JSON.stringify(jb.path(st.compsHistory.slice(-1)[0].before,path.split('~'))) !=
 					JSON.stringify(jb.path(st.previewjb.comps,path.split('~')));
-//		var res =  st.valOfPath(path) && !st.val(version_before);
 		return res;
 	}
 })
@@ -30528,7 +30739,7 @@ jb.component('studio.watch-script-changes', { /* studio.watchScriptChanges */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
-        st.compsRefHandler.resourceChange.debounceTime(200).subscribe(e=>
+        st.scriptChange.debounceTime(200).subscribe(e=>
             jb.ui.setState(cmp,null,e,ctx))
    })
 })
@@ -30537,7 +30748,7 @@ jb.component('studio.watch-components', { /* studio.watchComponents */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
-        st.compsRefHandler.resourceChange.filter(e=>e.path.length == 1)
+        st.scriptChange.filter(e=>e.path.length == 1)
         	.subscribe(e=>
             	jb.ui.setState(cmp,null,e,ctx))
    })
@@ -30669,21 +30880,39 @@ jb.component('studio.dynamic-options-watch-new-comp', { /* studio.dynamicOptions
 })();
 ;
 
-jb.studio.initPreview = function(preview_window,allowedTypes) {
-      var st = jb.studio;
+(function() {
+
+const st = jb.studio;
+
+st.changedComps = function() {
+  if (!st.compsHistory || !st.compsHistory.length) return []
+  
+  const changedComps = jb.entries(st.compsHistory.slice(-1)[0].after).filter(e=>e[1] != st.serverComps[e[0]])
+  if (changedComps.map(e=>e[0]).indexOf('call') != -1) {
+    jb.logError('bug. servers comps differ from history')
+    return []
+  }
+  return changedComps
+}
+
+st.initPreview = function(preview_window,allowedTypes) {
+      const changedComps = st.changedComps()
+
       st.previewWindow = preview_window;
       st.previewjb = preview_window.jb;
+      ['jb-component','jb-param'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
       st.serverComps = st.previewjb.comps;
-      if (jb.studio.compsHistory.length) {
-        const changedComps = jb.entries(jb.studio.compsHistory.slice(-1)[0].after).filter(e=>e[1] != st.serverComps[e[0]])
-        const compsStr = changedComps.map(e=>[e[0], jb.prettyPrint(e[1])])
-        jb.studio.copyComps && jb.studio.copyComps(compsStr)
-      }
-
-      st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
-
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;
+
+      // reload the changed components and rebuild the history
+      st.initCompsRefHandler(st.previewjb, allowedTypes)
+      changedComps.forEach(e=>{
+        //st.reloadCompInPreviewWindow && st.reloadCompInPreviewWindow(e[0],jb.prettyPrint(e[1]))
+        st.compsRefHandler.resourceReferred(e[0])
+        st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1])})`)) // update the history for future save
+      })
+
       st.previewjb.http_get_cache = {}
       st.previewjb.ctxByPath = {}
       //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
@@ -30691,7 +30920,6 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
         st.previewjb.studio.initEventTracker();
-      ['jb-component','jb-param','studio.data-comp-inspector'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
 
 			fixInvalidUrl()
 
@@ -30760,29 +30988,8 @@ jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studi
       .startWith(1)
       .flatMap(e=> {
         const page = jb.resources.studio.project + '.' + jb.resources.studio.page;
-        const ctrl = jb.studio.previewjb.comps[page] && jb.studio.previewjb.comps[page].type == 'data' ? 'studio.data-comp-inspector' : null;
-        return jb.resources.studio.page ? [{page, ctrl}] : []
+        return jb.resources.studio.page ? [{page}] : []
       });
-
-jb.component('studio.data-comp-inspector', { /* studio.dataCompInspector */
-  type: 'control',
-  impl: group({
-    controls: [
-      label(ctx => {debugger; return 'hello'})
-    ],
-    features: variable({
-      name: 'activateDataToDebug',
-      value: ctx => {
-        var _jb = jb.studio.previewjb;
-        var dataCompToDebug = ctx.vars.DataToDebug;
-        var debugCtx = ctx.setVars({debugSourceRef: true});
-        var inputData = _jb.comps[dataCompToDebug] && debugCtx.exp(_jb.comps[dataCompToDebug].sampleInput || '');
-        debugCtx.setData(inputData)
-          .run({$: dataCompToDebug })
-    }
-    })
-  })
-})
 
 jb.component('studio.preview-widget', { /* studio.previewWidget */ 
   type: 'control',
@@ -30806,7 +31013,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
     })
 })
 
-;
+})();
 
 jb.component('dialog.edit-source-style',  /* dialog_editSourceStyle */ {
   type: 'dialog.style',
@@ -31341,6 +31548,14 @@ function scriptPathToExpression(path) {
 jb.component('studio.profile-as-macro-text', { /* studio_profileAsMacroText */
   type: 'data',
   params: [
+    {id: 'path', as: 'string' }
+  ],
+  impl: watchableAsText(studio.ref('%$path%'))
+})
+
+jb.component('studio.profile-as-macro-text-old', { /* studio_profileAsMacroText */
+  type: 'data',
+  params: [
     {id: 'path', as: 'string', dynamic: true}
   ],
   impl: ctx => ({
@@ -31778,7 +31993,6 @@ if (typeof CodeMirror != 'undefined') {
 (function () {
 const st = jb.studio;
 
-st.compsHistory = [];
 st.undoIndex = 0;
 
 function setToVersion(versionIndex, ctx, after) {
@@ -31798,7 +32012,7 @@ function setToVersion(versionIndex, ctx, after) {
     st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsBefore;
   }
 
-  st.compsRefHandler.resourceChange.next(opEvent);
+  st.scriptChange.next(opEvent);
 }
 
 jb.component('studio.undo', { /* studio.undo */
@@ -32446,9 +32660,9 @@ jb.component('studio.select-profile', { /* studio_selectProfile */
       variable({
         name: 'SelectedCategory',
         value: {$if: studio_val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
-        mutable: true
+        watchable: true
       }),
-      variable({name: 'SearchPattern', value: '', mutable: true}),
+      variable({name: 'SearchPattern', value: '', watchable: true}),
       group_itemlistContainer({initialSelection: studio_compName('%$path%'), id1: 'new-profile'})
     ]
   })
@@ -32540,7 +32754,7 @@ jb.component('studio.open-new-page', { /* studio_openNewPage */
       refreshControlById('pages')
     ],
     modal: true,
-    features: [variable({name: 'name', mutable: true}), dialogFeature_autoFocusOnFirstInput()]
+    features: [variable({name: 'name', watchable: true}), dialogFeature_autoFocusOnFirstInput()]
   })
 })
 
@@ -32698,8 +32912,8 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         databind: studio.ref('%$path%'),
         style: editableText.studioPrimitiveText(),
         features: [
-          feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', '/')),
-          feature.onKey(13, studio.pasteSuggestion('%$suggestionData/selected%')),
+          feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
+          feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
           studio.watchPath({path: '%$path%', includeChildren: 'yes', allowSelfRefresh: false}),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
@@ -32739,8 +32953,8 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
           features: [field.databindText(300, true), mdlStyle.initDynamic()]
         }),
         features: [
-          feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', '/')),
-          feature.onKey(13, studio.pasteSuggestion('%$suggestionData/selected%')),
+          feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
+          feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%', 'floating-input'),
             popupId: 'suggestions',
@@ -33081,7 +33295,7 @@ jb.component('studio.property-tgp-old', { /* studio.propertyTgpOld */
         ]
       })
     ],
-    features: [variable({name: 'userExpanded', value: false, mutable: true})]
+    features: [variable({name: 'userExpanded', value: false, watchable: true})]
   })
 })
 
@@ -33126,7 +33340,7 @@ jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
     ],
     features: [
       css.margin({left: '-100'}),
-      variable({name: 'expanded', value: studio.isNew('%$path%'), mutable: true}),
+      variable({name: 'expanded', value: studio.isNew('%$path%'), watchable: true}),
       studio.watchPath({path: '%$path%', includeChildren: 'yes'})
     ]
   })
@@ -33273,7 +33487,7 @@ jb.component('studio.properties', { /* studio.properties */
         features: css.margin({top: '20', left: '5'})
       })
     ],
-    features: variable({name: 'PropertiesDialog', value: {$: 'object'}, mutable: false})
+    features: variable({name: 'PropertiesDialog', value: {$: 'object'}, watchable: false})
   })
 })
 
@@ -33405,7 +33619,8 @@ jb.component('studio.edit-as-macro', { /* studio_editAsMacro */
     style: dialog_editSourceStyle({id: 'edit-source', width: 600}),
     content: editableText({
       databind: studio_profileAsMacroText('%$path%'),
-      style: editableText_studioCodemirrorTgp()
+      style: editableText_studioCodemirrorTgp(),
+      //features: textEditor.watchSourceChanges(),
     }),
     title: studio_shortTitle('%$path%'),
     features: [
@@ -33513,7 +33728,7 @@ jb.component('studio.jb-editor-container', { /* studio_jbEditorContainer */
     variable({
       name: 'jbEditorCntrData',
       value: {$: 'object', selected: '%$initialSelection%', circuit: '%$circuit%'},
-      mutable: true
+      watchable: true
     })
   )
 })
@@ -33609,7 +33824,7 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
           'large array'
         )
       ],
-      features: [variable({name: 'maxItems', value: '5', mutable: 'true'})]
+      features: [variable({name: 'maxItems', value: '5', watchable: 'true'})]
     })
   })
 })
@@ -33902,7 +34117,7 @@ jb.component('studio.add-variable', { /* studio_addVariable */
       title: 'New variable',
       modal: 'true',
       features: [
-        variable({name: 'name', mutable: true}),
+        variable({name: 'name', watchable: true}),
         dialogFeature_nearLauncherPosition({}),
         dialogFeature_autoFocusOnFirstInput()
       ]
@@ -34398,7 +34613,7 @@ jb.component('studio.style-editor', { /* studio_styleEditor */
                   }),
                   title: 'Paste html / jsx',
                   onOK: writeValue(studio_ref('%$path%~template'), studio_jsxToH('%$jsx%')),
-                  features: [variable({name: 'jsx', value: 'paste your jsx here', mutable: 'true'})]
+                  features: [variable({name: 'jsx', value: 'paste your jsx here', watchable: 'true'})]
                 }),
                 style: button_mdlRaised()
               })
@@ -34707,7 +34922,7 @@ jb.component('studio.jb-editor-menu', { /* studio_jbEditorMenu */
           title: 'Add Property',
           modal: 'true',
           features: [
-            variable({name: 'name', mutable: true}),
+            variable({name: 'name', watchable: true}),
             dialogFeature_nearLauncherPosition({}),
             dialogFeature_autoFocusOnFirstInput()
           ]
@@ -34819,7 +35034,7 @@ jb.component('studio.jb-editor-menu', { /* studio_jbEditorMenu */
               title: 'Remark',
               modal: 'true',
               features: [
-                variable({name: 'remark', value: studio_val('%$path%~remark'), mutable: true}),
+                variable({name: 'remark', value: studio_val('%$path%~remark'), watchable: true}),
                 dialogFeature_nearLauncherPosition({}),
                 dialogFeature_autoFocusOnFirstInput()
               ]
@@ -34857,11 +35072,11 @@ jb.component('studio.jb-editor-menu', { /* studio_jbEditorMenu */
 ;
 
 (function() {
-var st = jb.studio;
-var _window = jb.frame.parent || jb.frame;
-var elec_remote = _window.require && _window.require('electron').remote;
-var fs = elec_remote && elec_remote.require('fs');
-var jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
+const st = jb.studio;
+const _window = jb.frame.parent || jb.frame;
+const elec_remote = _window.require && _window.require('electron').remote;
+const fs = elec_remote && elec_remote.require('fs');
+const jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
 
 jb.component('studio.save-components', {
 	type: 'action,has-side-effects',
@@ -34870,9 +35085,7 @@ jb.component('studio.save-components', {
 	],
 	impl : (ctx,force) => {
     const messages = []
-		jb.rx.Observable.from(Object.getOwnPropertyNames(st.previewjb.comps))
-			.filter(id=>id.indexOf('$jb') != 0)
-			.filter(id=>st.previewjb.comps[id] != st.serverComps[id])
+		jb.rx.Observable.from(st.changedComps().map(e=>e[0]))
 			.concatMap(id=>{
         let original = st.serverComps[id] ? jb.prettyPrintComp(id,st.serverComps[id]) : '';
 				st.message('saving ' + id + '...');
@@ -35169,7 +35382,7 @@ jb.component('studio.control-tree', { /* studio.controlTree */
 //     init : cmp => {
 //       var tree = cmp.ctx.vars.$tree;
 //       if (!tree) return;
-//       jb.studio.compsRefHandler.resourceChange.takeUntil( cmp.destroyed )
+//       jb.studio.scriptChange.takeUntil( cmp.destroyed )
 //         .subscribe(opEvent => {
 //           var new_expanded = {};
 //           jb.entries(tree.expanded)
@@ -35215,6 +35428,27 @@ jb.component('studio.watchable-or-passive', {
   impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
 })
 
+jb.component('studio.open-resource', { /* studio_openResource */
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'name', as: 'string'},
+  ],
+  impl: openDialog({
+    style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
+    content: editableText({
+      databind: studio.profileAsMacroText('%$path%'),
+      style: editableText.studioCodemirrorTgp(),
+      //features: textEditor.watchSourceChanges()
+    }),
+    title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
+    features: [
+      css('.jb-dialog-content-parent {overflow-y: hidden}'),
+      dialogFeature.resizer(true)
+    ]
+  })
+})
+
 jb.component('studio.open-new-resource', { 
   params: [
     {id: 'watchableOrPassive', as: 'string' }
@@ -35238,30 +35472,11 @@ jb.component('studio.open-new-resource', {
     onOK: [
       (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component(jb.tostring(name), { 
         [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
-      })
+      }),
+      studio.openResource('%$name%~%$watchableOrPassive%Data','%$name%')
     ],
     modal: true,
-    features: [variable({name: 'name', mutable: true}), dialogFeature_autoFocusOnFirstInput()]
-  })
-})
-
-jb.component('studio.open-resource', { /* studio_openResource */
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'name', as: 'string'},
-  ],
-  impl: openDialog({
-    style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
-    content: editableText({
-      databind: studio.profileAsMacroText('%$path%'),
-      style: editableText.studioCodemirrorTgp()
-    }),
-    title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
-    features: [
-      css('.jb-dialog-content-parent {overflow-y: hidden}'),
-      dialogFeature.resizer(true)
-    ]
+    features: [variable({name: 'name', watchable: true}), dialogFeature_autoFocusOnFirstInput()]
   })
 })
 
@@ -35323,7 +35538,7 @@ jb.component('studio.new-project', { /* studio_newProject */
   <script type="text/javascript">
     startTime = new Date().getTime();
   </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common"></script>
+  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>
   <script type="text/javascript" src="/projects/${name}/${name}.js"></script>
   <script1 type="text/javascript" src="/projects/${name}/samples.js"></script1>
 </head>
@@ -35375,7 +35590,7 @@ jb.component('studio.open-new-project', { /* studio_openNewProject */
     onOK: studio_newProject('%$name%', gotoUrl('/project/studio/%$name%/')),
     modal: true,
     features: [
-      variable({name: 'name', mutable: true}),
+      variable({name: 'name', watchable: true}),
       dialogFeature_autoFocusOnFirstInput(),
       dialogFeature_nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
     ]
@@ -35769,7 +35984,7 @@ jb.component('studio.pages', { /* studio.pages */
             databind: '%$studio/page%',
             onSelection: runActions(
               writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
-              studio.refreshPreview()
+              //studio.refreshPreview()
             ),
             autoSelectFirst: true
           }),
@@ -35795,7 +36010,7 @@ jb.component('studio.ctx-counters', { /* studio.ctxCounters */
     title: ctx => (performance.memory.usedJSHeapSize / 1000000)  + 'M',
     features: [
       css('{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'),
-      watchObservable(ctx => jb.studio.compsRefHandler.resourceChange.debounceTime(500))
+      watchObservable(ctx => jb.studio.scriptChange.debounceTime(500))
     ]
   })
 })
@@ -36286,6 +36501,16 @@ jb.component('studio.probe', { /* studio.probe */
 })()
 ;
 
+const st = jb.studio
+function compsRef(val,opEvent) {
+  if (typeof val == 'undefined')
+    return jb.comps;
+  else {
+    jb.comps = val;
+  }
+}
+
+st.compsRefHandler = jb.ui.extraWatchableHandler(compsRef);
 
 jb.component('suggestions-test', {
   type: 'test',

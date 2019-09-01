@@ -1,3 +1,12 @@
+(function(){
+const st = jb.studio
+function compsRef(val,opEvent) {
+  if (typeof val == 'undefined')
+    return jb.comps;
+  else {
+    jb.comps = val;
+  }
+}
 
 jb.component('suggestions-test', {
   type: 'test',
@@ -9,6 +18,8 @@ jb.component('suggestions-test', {
   ],
   impl :{$: 'data-test',
     calculate: ctx => {
+      st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
+
       var params = ctx.componentContext.params;
       var selectionStart = params.selectionStart == -1 ? params.expression.length : params.selectionStart;
 
@@ -35,6 +46,8 @@ jb.component('jb-editor-children-test', {
   ],
   impl :{$: 'data-test',
     calculate: ctx => {
+      st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
+
       var params = ctx.componentContext.params;
       var mdl = new jb.studio.jbEditorTree('');
       var titles = mdl.children(params.path)
@@ -55,6 +68,7 @@ jb.component('studio-probe-test', {
     { id: 'expectedVisits', as: 'number', defaultValue : -1 },
   ],
   impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits)=> {
+    st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
 
     var testId = ctx.vars.testID;
     var failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
@@ -91,6 +105,8 @@ jb.component('path-change-test', {
     { id: 'cleanUp', type: 'action', dynamic: true  },
   ],
   impl: (ctx,path,action,expectedPathAfter,cleanUp)=> {
+    st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
+
     var testId = ctx.vars.testID;
     var failure = (part,reason) => ({ id: testId, title: testId + '- ' + part, success:false, reason: reason });
     var success = _ => ({ id: testId, title: testId, success: true });
@@ -108,3 +124,5 @@ jb.component('path-change-test', {
     return res;
   }
 })
+
+})()

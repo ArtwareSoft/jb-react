@@ -960,6 +960,7 @@ jb.component('asRef', {
 })
 
 jb.component('data.switch', {
+	usageByValue: false,
 	params: [
   	{ id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
   	{ id: 'default', dynamic: true },
@@ -968,7 +969,7 @@ jb.component('data.switch', {
 		for(let i=0;i<cases.length;i++)
 			if (cases[i].condition(ctx))
 				return cases[i].value(ctx)
-		return defaultValue(ctx);
+		return defaultValue(ctx)
 	}
 })
 

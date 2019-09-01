@@ -32,7 +32,7 @@ jb.component('studio.toolbar', { /* studio.toolbar */
         action: studio.refreshPreview(),
         style: button.mdlIcon('refresh')
       }),
-      button({title: 'Javascript', action: studio.editAsMacro(), style: button.mdlIcon('code')}),
+      button({title: 'Javascript', action: studio.editSource(), style: button.mdlIcon('code')}),
       button({
         title: 'Outline',
         action: studio.openControlTree(),

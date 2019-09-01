@@ -9,7 +9,7 @@ jb.component('studio.jb-editor-path-for-edit', { /* studio_jbEditorPathForEdit *
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
-    var ar = jb.studio.valOfPath(path);
+    const ar = jb.studio.valOfPath(path);
     if (Array.isArray(ar))
       return path + '~' + ar.length;
     return path;
@@ -262,7 +262,7 @@ jb.component('studio.jb-editor-inteli-tree', { /* studio_jbEditorInteliTree */
             onRightClick: studio_openJbEditorMenu('%%', '%$path%')
           }),
           tree_keyboardSelection({
-            onEnter: studio_openJbEditProperty('%$jbEditorCntrData/selected%'),
+            onEnter: studio.openJbEditProperty('%$jbEditorCntrData/selected%'),
             onRightClickOfExpanded: studio_openJbEditorMenu('%%', '%$path%'),
             autoFocus: true,
             applyMenuShortcuts: {$: 'studio.jb-editor-menu', path: '%%', root: '%$path%', $recursive: true}

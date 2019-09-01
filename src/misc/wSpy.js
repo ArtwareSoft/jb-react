@@ -116,6 +116,8 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 			Object.keys(this.logs).forEach(log => this.logs[log] = this.logs[log].slice(countFromEnd))
 		},
 		setLogs(logs) {
+			if (logs === 'all')
+				this.wSpyParam = 'all'
 			this.includeLogs = (logs||'').split(',').reduce((acc,log) => {acc[log] = true; return acc },{})
 		},
 		clear(logs) {

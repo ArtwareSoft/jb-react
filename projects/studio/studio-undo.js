@@ -1,7 +1,6 @@
 (function () {
 const st = jb.studio;
 
-st.compsHistory = [];
 st.undoIndex = 0;
 
 function setToVersion(versionIndex, ctx, after) {
@@ -21,7 +20,7 @@ function setToVersion(versionIndex, ctx, after) {
     st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsBefore;
   }
 
-  st.compsRefHandler.resourceChange.next(opEvent);
+  st.scriptChange.next(opEvent);
 }
 
 jb.component('studio.undo', { /* studio.undo */

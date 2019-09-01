@@ -1,18 +1,36 @@
-jb.studio.initPreview = function(preview_window,allowedTypes) {
-      var st = jb.studio;
+(function() {
+
+const st = jb.studio;
+
+st.changedComps = function() {
+  if (!st.compsHistory || !st.compsHistory.length) return []
+  
+  const changedComps = jb.entries(st.compsHistory.slice(-1)[0].after).filter(e=>e[1] != st.serverComps[e[0]])
+  if (changedComps.map(e=>e[0]).indexOf('call') != -1) {
+    jb.logError('bug. servers comps differ from history')
+    return []
+  }
+  return changedComps
+}
+
+st.initPreview = function(preview_window,allowedTypes) {
+      const changedComps = st.changedComps()
+
       st.previewWindow = preview_window;
       st.previewjb = preview_window.jb;
+      ['jb-component','jb-param'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
       st.serverComps = st.previewjb.comps;
-      if (jb.studio.compsHistory.length) {
-        const changedComps = jb.entries(jb.studio.compsHistory.slice(-1)[0].after).filter(e=>e[1] != st.serverComps[e[0]])
-        const compsStr = changedComps.map(e=>[e[0], jb.prettyPrint(e[1])])
-        jb.studio.copyComps && jb.studio.copyComps(compsStr)
-      }
-
-      st.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes);
-
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;
+
+      // reload the changed components and rebuild the history
+      st.initCompsRefHandler(st.previewjb, allowedTypes)
+      changedComps.forEach(e=>{
+        //st.reloadCompInPreviewWindow && st.reloadCompInPreviewWindow(e[0],jb.prettyPrint(e[1]))
+        st.compsRefHandler.resourceReferred(e[0])
+        st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1])})`)) // update the history for future save
+      })
+
       st.previewjb.http_get_cache = {}
       st.previewjb.ctxByPath = {}
       //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
@@ -20,7 +38,6 @@ jb.studio.initPreview = function(preview_window,allowedTypes) {
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
         st.previewjb.studio.initEventTracker();
-      ['jb-component','jb-param'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
 
 			fixInvalidUrl()
 
@@ -114,3 +131,4 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
     })
 })
 
+})()

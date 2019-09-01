@@ -60,8 +60,7 @@ jb.component('ui-test', {
 	],
 	impl: function(ctx,control,runBefore,action,expectedResult,cleanUp,expectedCounters) {
 		console.log('starting ' + ctx.path )
-		var initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
-		jb.resources = JSON.parse(ctx.vars.initial_resources); jb.rebuildRefHandler && jb.rebuildRefHandler();
+		const initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 		return Promise.resolve(runBefore())
 			.then(_ => {
 				try {
@@ -70,9 +69,10 @@ jb.component('ui-test', {
 							jb.frame.initwSpy({wSpyParam: 'ui-test'})
 						jb.frame.wSpy.clear()
 					}
-					var elem = document.createElement('div');
-					var vdom = jb.ui.h(jb.ui.renderable(control()));
-					var cmp = jb.ui.render(vdom, elem)._component;
+					const elem = document.createElement('div');
+					const ctxForTst = ctx.setVars({elemToTest : elem })
+					const vdom = jb.ui.h(jb.ui.renderable(control(ctxForTst)));
+					const cmp = jb.ui.render(vdom, elem)._component;
 					return Promise.resolve(cmp && cmp.delayed)
 						.then(_ => jb.delay(1))
 						.then(_=> elem)
@@ -85,7 +85,7 @@ jb.component('ui-test', {
 				Promise.resolve(action(ctx.setVars({elemToTest : elem }))).then(_=>elem))
 			.then(elem=> {
 				// put input values as text
-				Array.from(elem.querySelectorAll('input')).forEach(e=>{
+				Array.from(elem.querySelectorAll('input,textarea')).forEach(e=>{
 					if (e.parentNode)
 						jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`)
 				})
@@ -95,6 +95,8 @@ jb.component('ui-test', {
 			}).then(result=> { // default cleanup
 				if (new URL(location.href).searchParams.get('show') === null) {
 					jb.ui.dialogs.dialogs.forEach(d=>d.close())
+					jb.rebuildRefHandler && jb.rebuildRefHandler();
+					jb.entries(JSON.parse(ctx.vars.initial_resources)).forEach(e=>jb.resource(e[0],e[1]))
 					jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 					if (expectedCounters)
 						jb.frame.initwSpy({resetwSpyToNoop: true})
@@ -114,6 +116,9 @@ function countersErrors(expectedCounters) {
 		.filter(x=>x)
 		.join(', ')
 }
+
+jb.ui.elemOfSelector = (selector,ctx) => ctx.vars.elemToTest.querySelector(selector)
+jb.ui.cmpOfSelector = (selector,ctx) => jb.path(jb.ui.elemOfSelector(selector,ctx),['_component'])
 
 jb.component('ui-action.click', {
 	type: 'ui-action',
@@ -153,14 +158,14 @@ jb.component('ui-action.set-text', {
 	usageByValue: true,
 	params: [
 		{ id: 'value', as: 'string', mandatory: true },
-		{ id: 'selector', as: 'string', defaultValue: 'input' },
+		{ id: 'selector', as: 'string', defaultValue: 'input,textarea' },
 		{ id: 'delay', as: 'number', defaultValue: 1}
 	],
 	impl: (ctx,value,selector,delay) => {
 		const elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=> {
 			e._component.jbModel(value);
-			jb.ui.findIncludeSelf(e,'input').forEach(el=>el.value = value);
+			jb.ui.findIncludeSelf(e,selector).forEach(el=>el.value = value);
 		})
 		return jb.delay(delay);
 	}

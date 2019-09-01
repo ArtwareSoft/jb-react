@@ -882,38 +882,6 @@ jb.component('ui-test.editable-boolean.expand-collapse-with-default-collapse',  
   })
 })
 
-jb.component('ui-test.codemirror-for-script', {
-  impl: uiTest({
-    vars: Var('script', () => jb.prettyPrintWithPositions(jb.comps['ui-test.itemlist-container-search-ctrl'])),
-    control: group({
-      controls: [
-        editableText({databind: '%$script/text%', 
-          style: editableText_codemirror({mode: 'javascript', onCtrlEnter: (ctx,{editor}) => {
-            const pos = editor.getCursor()
-            const map = ctx.exp('%$script/map%')
-            const elem = jb.entries(map)
-              .find(e=>e[1][0] == pos.line && e[1][1] <= pos.ch && (e[1][0] < e[1][2] || pos.ch <= e[1][3]))
-            console.log(elem)
-          }
-        })}),
-        editableText({
-          databind: ctx => jb.prettyPrint(ctx.exp('%$script/map%')), 
-          style: editableText_codemirror({mode: 'javascript'})
-        }),
-        button({
-          title: 'recalc',
-          action: runActions((ctx,{script}) =>
-            Object.assign(script,jb.prettyPrintWithPositions(eval('('+script.text+')')))
-          , refreshControlById('group'))
-        })
-      ],
-      features: id('group')
-    }),
-    expectedResult: true
-  })
-})
-
-
 jb.component('ui-test.code-mirror',  /* uiTest_codeMirror */ {
   impl: uiTest({
     control: group({
@@ -1180,7 +1148,7 @@ jb.component('menu-test.open-context-menu',  /* menuTest_openContextMenu */ {
   })
 })
 
-jb.component('ui-test.immutable-var',  /* uiTest_immutableVar */ {
+jb.component('ui-test.watchable-var', {
   impl: uiTest({
     control: label({
       title: '%$var1%',
@@ -1296,7 +1264,7 @@ jb.component('ui-test.focus-on-first-element',  /* uiTest_focusOnFirstElement */
     control: group({
       controls: [
         editableBoolean('%$person/gender%'),
-        editableText({databind: '%$person/name%', style: editableText_textarea()})
+        editableText({databind: '%$person/name%', style: editableText.textarea()})
       ]
     }),
     action: focusOnFirstElement('textarea'),

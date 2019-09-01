@@ -353,7 +353,7 @@ jb.component('studio.properties', { /* studio.properties */
         ]
       }),
       label({
-        title: studio.profileAsMacroText('%$path%~features'),
+        title: studio.profileAsText('%$path%~features'),
         style: label.span(),
         features: [
           css.width('400'),

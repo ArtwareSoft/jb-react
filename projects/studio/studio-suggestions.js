@@ -106,8 +106,8 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         databind: studio.ref('%$path%'),
         style: editableText.studioPrimitiveText(),
         features: [
-          feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', '/')),
-          feature.onKey(13, studio.pasteSuggestion('%$suggestionData/selected%')),
+          feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
+          feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
           studio.watchPath({path: '%$path%', includeChildren: 'yes', allowSelfRefresh: false}),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
@@ -147,8 +147,8 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
           features: [field.databindText(300, true), mdlStyle.initDynamic()]
         }),
         features: [
-          feature.onKey(39, studio.pasteSuggestion('%$suggestionData/selected%', '/')),
-          feature.onKey(13, studio.pasteSuggestion('%$suggestionData/selected%')),
+          feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
+          feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%', 'floating-input'),
             popupId: 'suggestions',

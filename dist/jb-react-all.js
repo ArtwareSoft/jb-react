@@ -214,7 +214,7 @@ function prepare(ctx,parentParam) {
   resCtx.params = {}; // TODO: try to delete this line
   const preparedParams = prepareParams(comp,profile,resCtx);
   if (typeof comp.impl === 'function') {
-    Object.defineProperty(comp.impl, "name", { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
+    Object.defineProperty(comp.impl, 'name', { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
     return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams: preparedParams }
   } else
     return { type:'profile', ctx: new jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
@@ -231,18 +231,17 @@ function resolveFinishedPromise(val) {
 
 function calcVar(ctx,varname,jstype) {
   let res;
-  if (ctx.componentContext && typeof ctx.componentContext.params[varname] != 'undefined')
+  if (ctx.componentContext && ctx.componentContext.params[varname] !== undefined)
     res = ctx.componentContext.params[varname];
-  else if (ctx.vars[varname] != null)
-    res = ctx.vars[varname];
-  else if (ctx.vars.scope && ctx.vars.scope[varname] != null)
-    res = ctx.vars.scope[varname];
-  else if (jb.resources && jb.resources[varname] != null)
-    res = jb.resource(varname);
-  else if (jb.consts && jb.consts[varname] != null)
-    res = jb.consts[varname];
-  if (ctx.vars.debugSourceRef && typeof res == 'string' && jstype == 'string-with-source-ref' && jb.stringWithSourceRef)
-    return new jb.stringWithSourceRef(ctx,varname,0,res.length)
+  else if (ctx.vars[varname] !== undefined)
+    res = ctx.vars[varname]
+  else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
+    res = ctx.vars.scope[varname]
+  else if (jb.resources && jb.resources[varname] !== undefined)
+    res = jstype == 'ref' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
+  else if (jb.consts && jb.consts[varname] !== undefined)
+    res = jstype == 'ref' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
+
   return resolveFinishedPromise(res);
 }
 
@@ -275,7 +274,7 @@ function expression(exp, ctx, parentParam) {
       return tostring(conditionalExp(contents));
   })
   if (exp.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
-    return expPart(exp.substring(1,exp.length-1));
+    return expPart(exp.substring(1,exp.length-1),parentParam);
 
   exp = exp.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
       return tostring(expPart(contents,{as: 'string'}));
@@ -313,7 +312,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
           return input;
 
       const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
+      const refHandler = refHandlerArg || input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
       if (arrayIndexMatch) {
         const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
         const index = arrayIndexMatch[2];
@@ -334,7 +333,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
       if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(ctx,subExp.substr(1),jstype)
+        return calcVar(ctx,subExp.substr(1),last ? jstype : null)
       const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
@@ -752,7 +751,8 @@ Object.assign(jb,{
       if (args.length == 0)
         return {$: id }
       const params = profile.params || []
-      if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) // pipeline, or, and, plus
+      const firstParamIsArray = (params[0] && params[0].type||'').indexOf('[]') != -1
+      if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
         return {$: id, [params[0].id]: args }
       if (!(profile.usageByValue === false) && (params.length < 3 || profile.usageByValue))
         return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
@@ -768,6 +768,8 @@ Object.assign(jb,{
 // force path - create objects in the path if not exist
   path: (object,path,value) => {
     let cur = object;
+    if (typeof path === 'string') path = path.split('.')
+    path = jb.asArray(path)
 
     if (typeof value == 'undefined') {  // get
       for(let i=0;i<path.length;i++) {
@@ -847,8 +849,10 @@ Object.assign(jb,{
     })
     return res;
   },
-
+  isEmpty: o => Object.keys(o).length === 0,
+  isObject: o => o != null && typeof o === 'object',
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
 
@@ -857,8 +861,11 @@ Object.assign(jb,{
 
   // valueByRef API
   extraWatchableHandlers: [],
-  addExtraWatchableHandler: handler => { 
+  extraWatchableHandler: (handler,oldHandler) => { 
     jb.extraWatchableHandlers.push(handler)
+    const oldHandlerIndex = oldHandler && jb.extraWatchableHandlers.indexOf(oldHandler)
+    if (oldHandlerIndex != -1)
+      jb.extraWatchableHandlers.splice(oldHandlerIndex,1)
     jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
     return handler
   },
@@ -868,13 +875,14 @@ Object.assign(jb,{
   },
   watchableHandlers: [],
   safeRefCall: (ref,f) => {
-    const handler = ref && ref.handler || jb.refHandler(ref)
+    const handler = jb.refHandler(ref)
     if (!handler || !handler.isRef(ref))
       return jb.logError('invalid ref', ref)
     return f(handler)
   },
  
   refHandler: ref => {
+    if (ref && ref.handler) return ref.handler
     if (jb.simpleValueByRefHandler.isRef(ref)) 
       return jb.simpleValueByRefHandler
     return jb.watchableHandlers.find(handler => handler.isRef(ref))
@@ -1860,6 +1868,7 @@ jb.component('asRef', {
 })
 
 jb.component('data.switch', {
+	usageByValue: false,
 	params: [
   	{ id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
   	{ id: 'default', dynamic: true },
@@ -1868,7 +1877,7 @@ jb.component('data.switch', {
 		for(let i=0;i<cases.length;i++)
 			if (cases[i].condition(ctx))
 				return cases[i].value(ctx)
-		return defaultValue(ctx);
+		return defaultValue(ctx)
 	}
 })
 
@@ -2027,6 +2036,8 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 			Object.keys(this.logs).forEach(log => this.logs[log] = this.logs[log].slice(countFromEnd))
 		},
 		setLogs(logs) {
+			if (logs === 'all')
+				this.wSpyParam = 'all'
 			this.includeLogs = (logs||'').split(',').reduce((acc,log) => {acc[log] = true; return acc },{})
 		},
 		clear(logs) {

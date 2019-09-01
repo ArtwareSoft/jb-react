@@ -166,6 +166,14 @@ function prepareParams(comp,profile,ctx) {
   })
 }
 
+function fixByValue(profile,comp) {
+  if (profile && profile.$byValue) {
+    const params = compParams(comp)
+    profile.$byValue.forEach((v,i)=> Object.assign(profile,{[params[i].id]: v}))
+    delete profile.$byValue
+  }
+}
+
 function prepare(ctx,parentParam) {
   const profile = ctx.profile;
   const profile_jstype = typeof profile;
@@ -209,6 +217,7 @@ function prepare(ctx,parentParam) {
   if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined', ctx); return { type:'null' } }
   if (!comp.impl) { logError('component ' + comp_name + ' has no implementation', ctx); return { type:'null' } }
 
+  fixByValue(profile,comp)
   const resCtx = new jbCtx(ctx,{});
   resCtx.parentParam = parentParam;
   resCtx.params = {}; // TODO: try to delete this line
@@ -238,9 +247,9 @@ function calcVar(ctx,varname,jstype) {
   else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
     res = ctx.vars.scope[varname]
   else if (jb.resources && jb.resources[varname] !== undefined)
-    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
+    res = jstype == 'ref' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
   else if (jb.consts && jb.consts[varname] !== undefined)
-    res = jstype == 'ref' && typeof jb.resources[varname] != 'object' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
+    res = jstype == 'ref' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
 
   return resolveFinishedPromise(res);
 }
@@ -274,7 +283,7 @@ function expression(exp, ctx, parentParam) {
       return tostring(conditionalExp(contents));
   })
   if (exp.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
-    return expPart(exp.substring(1,exp.length-1));
+    return expPart(exp.substring(1,exp.length-1),parentParam);
 
   exp = exp.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
       return tostring(expPart(contents,{as: 'string'}));
@@ -312,7 +321,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
           return input;
 
       const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
+      const refHandler = refHandlerArg || input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
       if (arrayIndexMatch) {
         const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
         const index = arrayIndexMatch[2];
@@ -333,7 +342,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
       if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(ctx,subExp.substr(1),jstype)
+        return calcVar(ctx,subExp.substr(1),last ? jstype : null)
       const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
@@ -711,7 +720,7 @@ Object.assign(jb,{
       frame[proxyId] = new Proxy(()=>0, { 
           get: (o,p) => {
             if (typeof p === 'symbol') return true
-            return frame[proxyId+'_'+p]
+            return frame[proxyId+'_'+p] || genericMacroProcessor(proxyId,p)
           },
           apply: function(target, thisArg, allArgs) {
             const {args,system} = splitSystemArgs(allArgs)
@@ -751,7 +760,8 @@ Object.assign(jb,{
       if (args.length == 0)
         return {$: id }
       const params = profile.params || []
-      if (params.length == 1 && (params[0].type||'').indexOf('[]') != -1) // pipeline, or, and, plus
+      const firstParamIsArray = (params[0] && params[0].type||'').indexOf('[]') != -1
+      if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
         return {$: id, [params[0].id]: args }
       if (!(profile.usageByValue === false) && (params.length < 3 || profile.usageByValue))
         return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
@@ -763,10 +773,24 @@ Object.assign(jb,{
         return {$: id, [params[0].id]: args[0], [params[1].id]: args[1]}
       debugger;
     }
- },
+    const unMacro = macroId => macroId.replace(/([A-Z])/g, (all,s)=>'-'+s.toLowerCase())
+    function genericMacroProcessor(ns,macroId) {
+      return (...allArgs) => {
+        const {args,system} = splitSystemArgs(allArgs)
+        const out = {$: unMacro(ns) +'.'+ unMacro(macroId)}
+        if (args.length == 1 && typeof args[0] == 'object' && !jb.compName(args[0]))
+          Object.assign(out,args[0])
+        else
+          Object.assign(out,{$byValue: args})
+        return Object.assign(out,system)
+      }
+    }
+   },
 // force path - create objects in the path if not exist
   path: (object,path,value) => {
     let cur = object;
+    if (typeof path === 'string') path = path.split('.')
+    path = jb.asArray(path)
 
     if (typeof value == 'undefined') {  // get
       for(let i=0;i<path.length;i++) {
@@ -846,8 +870,10 @@ Object.assign(jb,{
     })
     return res;
   },
-
+  isEmpty: o => Object.keys(o).length === 0,
+  isObject: o => o != null && typeof o === 'object',
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
 
@@ -856,8 +882,11 @@ Object.assign(jb,{
 
   // valueByRef API
   extraWatchableHandlers: [],
-  addExtraWatchableHandler: handler => { 
+  extraWatchableHandler: (handler,oldHandler) => { 
     jb.extraWatchableHandlers.push(handler)
+    const oldHandlerIndex = oldHandler && jb.extraWatchableHandlers.indexOf(oldHandler)
+    if (oldHandlerIndex != -1)
+      jb.extraWatchableHandlers.splice(oldHandlerIndex,1)
     jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
     return handler
   },
@@ -867,13 +896,14 @@ Object.assign(jb,{
   },
   watchableHandlers: [],
   safeRefCall: (ref,f) => {
-    const handler = ref && ref.handler || jb.refHandler(ref)
+    const handler = jb.refHandler(ref)
     if (!handler || !handler.isRef(ref))
       return jb.logError('invalid ref', ref)
     return f(handler)
   },
  
   refHandler: ref => {
+    if (ref && ref.handler) return ref.handler
     if (jb.simpleValueByRefHandler.isRef(ref)) 
       return jb.simpleValueByRefHandler
     return jb.watchableHandlers.find(handler => handler.isRef(ref))

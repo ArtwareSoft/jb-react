@@ -131,7 +131,7 @@ jb.component('studio.control-tree', { /* studio.controlTree */
 //     init : cmp => {
 //       var tree = cmp.ctx.vars.$tree;
 //       if (!tree) return;
-//       jb.studio.compsRefHandler.resourceChange.takeUntil( cmp.destroyed )
+//       jb.studio.scriptChange.takeUntil( cmp.destroyed )
 //         .subscribe(opEvent => {
 //           var new_expanded = {};
 //           jb.entries(tree.expanded)
