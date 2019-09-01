@@ -138,18 +138,6 @@ jb.component('test.profile-as-text-example', {
 	impl :{$: 'label', title: 'a'}
 })
 
-jb.component('studio-data-test.studio.profile-as-text.change-diff-only', {
-	impl :{$: 'data-test',
-		runBefore : {$: 'write-value',
-		to :{$: 'studio.profile-as-text', path: 'test.profile-as-text-example~impl' },
-		value: "{$: 'label', title: 'b'}"
-	},
- 	calculate :{$: 'studio.val' , path: 'test.profile-as-text-example~impl~title' },
-	expectedResult : ctx => ctx.data == 'b',
-	expectedCounters: ctx => ({ profileAsTextDiffActivated: 1 })
- },
-})
-
 // jb.component('studio-data-test.components-cross-ref', {
 // 	 impl :{$: 'data-test',
 // 		calculate :{$: 'studio.components-cross-ref' },

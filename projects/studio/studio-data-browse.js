@@ -14,7 +14,7 @@ jb.component('studio.open-resource', { /* studio_openResource */
   impl: openDialog({
     style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
     content: editableText({
-      databind: studio.profileAsMacroText('%$path%'),
+      databind: studio.profileAsText('%$path%'),
       style: editableText.studioCodemirrorTgp(),
       //features: textEditor.watchSourceChanges()
     }),

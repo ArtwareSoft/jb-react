@@ -14,6 +14,20 @@ jb.component('studio.open-editor', { /* studio_openEditor */
   }
 })
 
+jb.component('studio.editable-source', { /* studio.editableSource */
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: editableText({
+      databind: studio.profileAsText('%$path%'),
+      style: editableText.studioCodemirrorTgp(),
+      features: feature.onKey('Ctrl-Enter', textEditor.withCursorPath(studio.openEditProperty(
+        split({text: '%$cursorPath[0]%', separator: '~!', part: 'first'})))),
+  })
+})
+
+
 jb.component('studio.edit-source', { /* studio_editSource */
   type: 'action',
   params: [
@@ -21,30 +35,7 @@ jb.component('studio.edit-source', { /* studio_editSource */
   ],
   impl: openDialog({
     style: dialog_editSourceStyle({id: 'edit-source', width: 600}),
-    content: editableText({
-      databind: studio_profileAsText('%$path%'),
-      style: editableText_studioCodemirrorTgp()
-    }),
-    title: studio_shortTitle('%$path%'),
-    features: [
-      css('.jb-dialog-content-parent {overflow-y: hidden}'),
-      dialogFeature_resizer(true)
-    ]
-  })
-})
-
-jb.component('studio.edit-as-macro', { /* studio_editAsMacro */
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()}
-  ],
-  impl: openDialog({
-    style: dialog_editSourceStyle({id: 'edit-source', width: 600}),
-    content: editableText({
-      databind: studio_profileAsMacroText('%$path%'),
-      style: editableText_studioCodemirrorTgp(),
-      //features: textEditor.watchSourceChanges(),
-    }),
+    content: studio.editableSource('%$path%'),
     title: studio_shortTitle('%$path%'),
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),

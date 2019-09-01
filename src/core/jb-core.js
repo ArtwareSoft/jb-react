@@ -778,7 +778,7 @@ Object.assign(jb,{
       return (...allArgs) => {
         const {args,system} = splitSystemArgs(allArgs)
         const out = {$: unMacro(ns) +'.'+ unMacro(macroId)}
-        if (args.length == 1 && typeof args[0] == 'object')
+        if (args.length == 1 && typeof args[0] == 'object' && !jb.compName(args[0]))
           Object.assign(out,args[0])
         else
           Object.assign(out,{$byValue: args})

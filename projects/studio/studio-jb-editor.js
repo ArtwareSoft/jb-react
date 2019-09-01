@@ -9,7 +9,7 @@ jb.component('studio.jb-editor-path-for-edit', { /* studio_jbEditorPathForEdit *
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
-    var ar = jb.studio.valOfPath(path);
+    const ar = jb.studio.valOfPath(path);
     if (Array.isArray(ar))
       return path + '~' + ar.length;
     return path;

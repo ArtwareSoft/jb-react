@@ -1,3 +1,5 @@
+jb.studio.initCompsRefHandler(jb)
+
 jb.resource('person',{
   name: "Homer Simpson",
   male: true,
@@ -74,8 +76,19 @@ jb.component('studio-helper.event-tracker', {
 })
 
 jb.component('studio-helper.top-bar', {
+  params: [{ id: 'path', defaultValue: 'studio-helper-sample.control' }],
   type: 'control',
-  impl :{$: 'studio.top-bar' }
+  impl :{$: 'studio.top-bar',
+    $vars: { simulateProfilePath: '%$path%' }
+  }
+})
+
+jb.component('studio-helper.editable-source', {
+  params: [{ id: 'path', defaultValue: 'studio-helper-sample.control' }],
+  type: 'control',
+  impl :{$: 'studio.editable-source', path: '%$path%',
+    $vars: { simulateProfilePath: '%$path%' }
+  }
 })
 
 jb.component('studio-helper.pages', {
