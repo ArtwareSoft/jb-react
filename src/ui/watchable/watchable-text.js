@@ -126,7 +126,10 @@ jb.component('text-editor.with-cursor-path', {
           const cmp = elem._component
           const editor = cmp.editor
           if (editor && editor.getCursorPos)
-                action(ctx.setVars({cursorPath: jb.textEditor.pathOfPosition(cmp.state.databindRef.locationMap, editor.getCursorPos()) }))
+                action(ctx.setVars({
+                    cursorPath: jb.textEditor.pathOfPosition(cmp.state.databindRef.locationMap, editor.getCursorPos()),
+                    cursorCoord: editor.cursorCoords(editor)
+                }))
         } catch(e) {}
     }
 })

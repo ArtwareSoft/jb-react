@@ -218,7 +218,7 @@ jb.component('studio.open-new-profile-dialog', { /* studio_openNewProfileDialog 
       css_height({height: '430', overflow: 'hidden'}),
       css_width({width: '450', overflow: 'hidden'}),
       dialogFeature_dragTitle('new %$type%'),
-      dialogFeature_nearLauncherPosition({offsetLeft: 0, offsetTop: 0}),
+      studio.nearLauncherPosition(),
       dialogFeature_autoFocusOnFirstInput(),
       dialogFeature_onClose([call('onClose')])
     ]

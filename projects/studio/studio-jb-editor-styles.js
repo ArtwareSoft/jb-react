@@ -9,7 +9,7 @@ jb.component('dialog.studio-jb-editor-popup',  /* dialog_studioJbEditorPopup */ 
     features: [
       dialogFeature_maxZIndexOnClick(),
       dialogFeature_closeWhenClickingOutside(),
-      dialogFeature_nearLauncherPosition({}),
+      dialogFeature_nearLauncherPosition(),
       dialogFeature_uniqueDialog('studio-jb-editor-popup'),
       css_boxShadow({
         blurRadius: 5,
@@ -20,6 +20,14 @@ jb.component('dialog.studio-jb-editor-popup',  /* dialog_studioJbEditorPopup */ 
         vertical: 0
       })
     ]
+  })
+})
+
+jb.component('studio.near-launcher-position',  /* studio.nearLauncherPosition */ {
+  type: 'dialog-feature',
+  impl: dialogFeature.nearLauncherPosition({
+    offsetLeft: (ctx,{cursorCoord}) => cursorCoord && cursorCoord.bottom || 0,
+    offsetTop: (ctx,{cursorCoord}) => cursorCoord && cursorCoord.top || 0,
   })
 })
 
