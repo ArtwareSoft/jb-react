@@ -111,10 +111,10 @@ Object.assign(st, {
 		st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] },srcCtx),
 
 	wrap: (path,compName,srcCtx) => {
-		var comp = st.getComp(compName);
-		var compositeParam = jb.compParams(comp).filter(p=>p.composite)[0];
+		const comp = st.getComp(compName);
+		const compositeParam = jb.compParams(comp).filter(p=>p.composite)[0];
 		if (compositeParam) {
-			var singleOrArray = compositeParam.type.indexOf('[') == -1 ? st.valOfPath(path) : [st.valOfPath(path)];
+			const singleOrArray = compositeParam.type.indexOf('[') == -1 ? st.valOfPath(path) : [st.valOfPath(path)];
 			if (jb.compParams(comp).length == 1) // use sugar
 				var result = jb.obj('$'+compName,singleOrArray);
 			else
@@ -125,8 +125,8 @@ Object.assign(st, {
 	addProperty: (path,srcCtx) => {
 		// if (st.paramTypeOfPath(path) == 'data')
 		// 	return st.writeValueOfPath(path,'');
-		var param = st.paramDef(path);
-		var result = param.defaultValue || {$: ''};
+		const param = st.paramDef(path);
+		let result = param.defaultValue || {$: ''};
 		if (st.paramTypeOfPath(path).indexOf('data') != -1)
 			result = '';
 		if (param.type.indexOf('[') != -1)
@@ -135,40 +135,41 @@ Object.assign(st, {
 	},
 
 	duplicateControl: (path,srcCtx) => {
-		var prop = path.split('~').pop();
-		var val = st.valOfPath(path);
-		var parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
+		const prop = path.split('~').pop();
+		const val = st.valOfPath(path);
+		const parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
 		if (parent_ref) {
-			var clone = st.evalProfile(jb.prettyPrint(val));
+			const clone = st.evalProfile(jb.prettyPrint(val));
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
 	duplicateArrayItem: (path,srcCtx) => {
-		var prop = path.split('~').pop();
-		var val = st.valOfPath(path);
-		var parent_ref = st.refOfPath(st.parentPath(path));
+		const prop = path.split('~').pop();
+		const val = st.valOfPath(path);
+		const parent_ref = st.refOfPath(st.parentPath(path));
 		if (parent_ref && Array.isArray(st.val(parent_ref))) {
-			var clone = st.evalProfile(jb.prettyPrint(val));
+			const clone = st.evalProfile(jb.prettyPrint(val));
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
 	disabled: path => {
-		var prof = st.valOfPath(path);
+		const prof = st.valOfPath(path);
 		return prof && typeof prof == 'object' && prof.$disabled;
 	},
 	toggleDisabled: (path,srcCtx) => {
-		var prof = st.valOfPath(path);
+		const prof = st.valOfPath(path);
 		if (prof && typeof prof == 'object' && !Array.isArray(prof))
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
 	setComp: (path,compName,srcCtx) => {
-		var comp = compName && st.getComp(compName);
+		const comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
-		var params = jb.compParams(comp);
+		const params = jb.compParams(comp);
 		if (params.length == 1 && (params[0]||{}).composite == true || (params[0]||{}).sugar)
 			return st.setSugarComp(path,compName,params[0],srcCtx);
 
-		var result = comp.singleInType ? {} : { $: compName };
+		const result = comp.singleInType ? {} : { $: compName };
+		const currentVal = st.valOfPath(path);
 		params.forEach(p=>{
 			if (p.composite)
 				result[p.id] = [];
@@ -176,12 +177,10 @@ Object.assign(st, {
 				result[p.id] = p.defaultValue;
 			if (p.defaultValue && typeof p.defaultValue == 'object' && (p.forceDefaultCreation || Array.isArray(p.defaultValue)))
 				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue));
+			if (currentVal && currentVal[p.id] !== undefined)
+				result[p.id] = currentVal[p.id]
 		})
-		var currentVal = st.valOfPath(path);
-		if (!currentVal || typeof currentVal != 'object')
-			st.writeValue(st.refOfPath(path),result,srcCtx)
-		else
-			st.merge(st.refOfPath(path),result,srcCtx);
+		st.writeValue(st.refOfPath(path),result,srcCtx)
 	},
 
 	setSugarComp: (path,compName,param,srcCtx) => {
@@ -220,7 +219,7 @@ Object.assign(st, {
 		if (group_ref)
 			st.push(group_ref,[newCtrl],srcCtx);
 	},
-    // if dest is not an array item, fix it
+    // if drop destination is not an array item, fix it
    moveFixDestination(from,to,srcCtx) {
 		if (isNaN(Number(to.split('~').slice(-1)))) {
             if (st.valOfPath(to) === undefined)
@@ -230,11 +229,14 @@ Object.assign(st, {
 		return jb.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
 	},
 
-	addArrayItem: (path,toAdd,srcCtx) => {
-		var val = st.valOfPath(path);
-		var toAdd = toAdd || {$:''};
+	addArrayItem: (path,{toAdd,srcCtx, index} = {}) => {
+		const val = st.valOfPath(path);
+		toAdd = toAdd || {$:''};
 		if (Array.isArray(val)) {
-			st.push(st.refOfPath(path),[toAdd],srcCtx);
+			if (index === undefined)
+				st.push(st.refOfPath(path),[toAdd],srcCtx);
+			else
+				st.splice(st.refOfPath(path),[[index,0,toAdd]],srcCtx);
 //			return { newPath: path + '~' + (val.length-1) }
 		}
 		else if (!val) {

@@ -343,15 +343,13 @@ jb.component('feature.onKey', {
   type: 'feature', category: 'events',
   params: [
     { id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
+    { id: 'action', type: 'action', mandatory: true, dynamic: true }
   ],
-  impl: (ctx,key) => ({
+  impl: (ctx,key,action) => ({
       onkeydown: true,
-      afterViewInit: cmp => {
-        cmp.base.setAttribute('tabIndex','0');
+      afterViewInit: cmp =>
         cmp.onkeydown.subscribe(e=>
-          jb.ui.checkKey(e,key) && jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
-      }
+          jb.ui.checkKey(e,key) && jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
   })
 })
 

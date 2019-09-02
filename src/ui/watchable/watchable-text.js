@@ -110,6 +110,15 @@ jb.textEditor = {
     offsetToLineCol(text,offset) {
         return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0, 
             col: offset - text.slice(0,offset).lastIndexOf('\n') }
+    },
+    refreshEditor(cmp,path) {
+        const editor = cmp.editor
+        path = path || this.pathOfPosition(cmp.state.databindRef.locationMap, editor.getCursorPos())
+        const text = jb.tostring(jb.val(cmp.state.databindRef))
+        editor.setValue(text);
+        const pos = cmp.state.databindRef.locationMap[path.split('~!')[0]+'~!value']
+        if (pos)
+            editor.setSelectionRange({line: pos[0], col: pos[1]})
     }
 }
 

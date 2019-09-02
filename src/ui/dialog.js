@@ -160,21 +160,6 @@ jb.component('dialog-feature.unique-dialog',  /* dialogFeature_uniqueDialog */ {
 	}
 })
 
-jb.component('dialog-feature.keyboard-shortcut',  /* dialogFeature_keyboardShortcut */ {
-  type: 'dialog-feature',
-  params: [
-    {id: 'shortcut', as: 'string', description: 'Ctrl+C or Alt+V'},
-    {id: 'action', type: 'action', dynamic: true}
-  ],
-  impl: ctx => ({
-  	  onkeydown : true,
-      afterViewInit: cmp=>
-	    cmp.onkeydown.filter(e=> e.keyCode != 17 && e.keyCode != 18) // ctrl ot alt alone
-   	  		.subscribe(e=>
-				jb.ui.checkKey(ctx.params.shortcut) && ctx.params.action())
-	})
-})
-
 jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLauncherPosition */ {
   type: 'dialog-feature',
   params: [

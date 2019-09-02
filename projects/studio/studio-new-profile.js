@@ -195,21 +195,18 @@ jb.component('studio.open-new-profile-dialog', { /* studio_openNewProfileDialog 
   params: [
     {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()},
     {id: 'type', as: 'string'},
+    {id: 'index', as: 'number'},
     {id: 'mode', option: 'insert,insert-control,update', defaultValue: 'insert'},
     {id: 'onClose', type: 'action', dynamic: true}
   ],
   impl: openDialog({
     style: dialog_studioFloating({}),
     content: studio_selectProfile({
-      onSelect: action_if(
-        '%$mode% == \"insert-control\"',
-        studio_insertControl('%$path%', '%%'),
-        {
-          $if: '%$mode% == \"insert\"',
-          then: studio_addArrayItem('%$path%', {$object: {$: '%%'}}),
-          else: studio_setComp('%$path%', '%%')
-        }
-      ),
+      onSelect: action.switch([
+          action.switchCase('%$mode% == \"insert-control\"', studio.insertControl('%$path%', '%%')),
+          action.switchCase('%$mode% == \"insert\"', studio.addArrayItem({path: '%$path%', index: '%$index%', toAdd: {$object: {$: '%%'}} })),
+          action.switchCase('%$mode% == \"update\"', studio.setComp('%$path%', '%%'))
+      ]),
       type: '%$type%',
       path: '%$path%'
     }),
@@ -220,7 +217,7 @@ jb.component('studio.open-new-profile-dialog', { /* studio_openNewProfileDialog 
       dialogFeature_dragTitle('new %$type%'),
       studio.nearLauncherPosition(),
       dialogFeature_autoFocusOnFirstInput(),
-      dialogFeature_onClose([call('onClose')])
+      dialogFeature_onClose(call('onClose'))
     ]
   })
 })
