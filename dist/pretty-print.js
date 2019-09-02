@@ -34,23 +34,31 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
   return valueToMacro({path: initialPath, line:0, col: 0}, profile)
 
   function joinVals({path, line, col}, innerVals, open, close, flat, isArray) {
-    const afterOpenPos = advanceLineCol({line,col},open + newLine())
+    const openStr = open + newLine()
+    const afterOpenPos = advanceLineCol({line,col},openStr)
+    const mapWithOpen = { [path+'~!open']: [line,col,afterOpenPos.line,afterOpenPos.col]}
     const result = innerVals.reduce((acc,{innerPath, val}, index) => {
       const fullInnerPath = [path,innerPath].join('~')
-      const result = valueToMacro({path: fullInnerPath, line: acc.line, col: acc.col}, val, flat)
+      const valPrefix = isArray ? '' : innerPath + ': '
+      const startAttValuePos = advanceLineCol(acc,'')
+      const startValuePos = advanceLineCol(startAttValuePos, valPrefix)
+      const result = valueToMacro({path: fullInnerPath, line: startValuePos.line, col: startValuePos.col}, val, flat)
       const separator = index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())
-      const valPrefix = isArray ? '' : innerPath + ': ';
-      const startAttValuePos = acc
-      const startValuePos = advanceLineCol(acc, valPrefix)
       const endValuePos = advanceLineCol(startValuePos, result.text)
       const afterSeparatorPos = advanceLineCol(endValuePos, separator)
       const map = Object.assign({},acc.map, result.map,{
         [fullInnerPath+'~!prefix']:[startAttValuePos.line, startAttValuePos.col, startValuePos.line, startValuePos.col],
         [fullInnerPath+'~!value']:[startValuePos.line, startValuePos.col,endValuePos.line, endValuePos.col],
+        [fullInnerPath+'~!separator']:[endValuePos.line, endValuePos.col,afterSeparatorPos.line, afterSeparatorPos.col],
 //        [fullInnerPath]:[startAttValuePos.line, startAttValuePos.col,endValuePos.line, endValuePos.col]
       })
       return Object.assign({ text: acc.text + valPrefix + result.text + separator, map, unflat: acc.unflat || result.unflat }, afterSeparatorPos)
-    }, {text: '', map: {}, ...afterOpenPos, unflat: false} )
+    }, {text: openStr, map: mapWithOpen, ...afterOpenPos, unflat: false} )
+    const beforeClosePos = advanceLineCol(result,'')
+    const closeStr = newLine(-1) + close
+    const afterClosePos = advanceLineCol(result,closeStr)
+    result.text += closeStr
+    Object.assign(result.map,{[path+'~!close']: [beforeClosePos.line,beforeClosePos.col,afterClosePos.line,afterClosePos.col]})
 
     //const arrayElem = path.match(/~[0-9]+$/)
     const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
@@ -60,13 +68,8 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     const unflat = result.unflat || customStyle || top || ctrls || long
     if (!unflat && !flat)
       return joinVals({path, line, col}, innerVals, open, close, true, isArray)
+    return Object.assign(result,{unflat})
 
-    const out = { 
-      text: open + newLine() + result.text + newLine(-1) + close,
-      map: result.map,
-      unflat
-    }
-    return out
 
     function newLine(offset = 0) {
       return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)

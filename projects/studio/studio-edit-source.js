@@ -1,13 +1,16 @@
 (function() {
 const st = jb.studio;
 
-jb.component('sourceEditor.refresh-editor', {
+jb.component('source-editor.refresh-editor', {
   type: 'action',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,path) =>
-    ctx.vars.refreshEditor && ctx.vars.refreshEditor(path)
+  params: [ {id: 'path', as: 'string'} ],
+  impl: (ctx,path) =>  ctx.vars.editor.refreshEditor && ctx.vars.editor.refreshEditor(path)
+})
+
+jb.component('source-editor.refresh-from-data-ref', {
+  type: 'action',
+  params: [ {id: 'path', as: 'string'} ],
+  impl: (ctx,path) =>  ctx.vars.editor && ctx.vars.editor.refreshFromDataRef()
 })
 
 jb.component('studio.open-editor', { /* studio_openEditor */
@@ -29,7 +32,9 @@ jb.component('studio.editable-source', { /* studio.editableSource */
       databind: studio.profileAsText('%$path%'),
       style: editableText.codemirror(),
       features: [
+        feature.onKey('Enter', sourceEditor.refreshEditor()),
         feature.onKey('Ctrl-Enter', textEditor.withCursorPath(studio.openEditProperty('%$cursorPath[0]%'))),
+        textEditor.init(),
         ctx => ({
             extendCtxOnce: (ctx,cmp) => ctx.setVars({
                 refreshEditor: path => jb.textEditor.refreshEditor(cmp,path)

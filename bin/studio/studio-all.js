@@ -1841,6 +1841,7 @@ jb.component('in-group', {
 })
 
 jb.component('http.get', {
+	description: 'fetch data from external url',
 	params: [
 		{ id: 'url', as: 'string' },
 		{ id: 'json', as: 'boolean', description: 'convert result to json' }
@@ -8912,169 +8913,6 @@ jb.component('run-transaction', {
 })()
 ;
 
-(function(){
-
-function getSinglePathChange(newVal, currentVal) {
-    return pathAndValueOfSingleChange(jb.objectDiff(newVal,currentVal),'')
-    
-    function pathAndValueOfSingleChange(obj, pathSoFar) { 
-        if (typeof obj !== 'object')
-            return { innerPath: pathSoFar, innerValue: obj }
-        const entries = jb.entries(obj)
-        if (entries.length != 1) // if not single returns empty answer
-            return {}
-        return pathAndValueOfSingleChange(entries[0][1],pathSoFar+'~'+entries[0][0])
-    }
-}
-
-function setStrValue(value, ref, ctx) {
-    const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-    const newVal = notPrimitive ? jb.evalStr(value,ref.handler.frame()) : value;
-    // do not save in editing ',' at the end of line means editing
-    if (typeof newVal === 'object' && value.match(/,\s*}/m))
-        return
-    if (newVal && typeof newVal === 'object') {
-        const {innerPath, innerValue} = getSinglePathChange(newVal,jb.val(ref))
-        if (innerPath) {
-            const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
-            return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
-        } 
-    }
-    if (newVal !== undefined)
-       jb.writeValue(ref,newVal,ctx)
-}
-
-jb.component('watchable-as-text', {
-    type: 'data',
-    params: [
-      {id: 'ref', as: 'ref', dynamic: true},
-    ],
-    impl: (ctx,refF) => ({
-        oneWay: true,
-        getRef() {
-            return this.ref || (this.ref = refF())
-        },
-        getHandler() {
-            return jb.getHandler(this.getRef())
-        },
-        getVal() {
-            return jb.val(this.getRef())
-        },
-        prettyPrintWithPositions() {
-            const ref = this.getRef()
-            const initialPath = ref.handler.pathOfRef(ref).join('~')
-            const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath})
-            this.locationMap = res.map
-            return res
-        },
-        $jb_val(value) { try {
-            if (value === undefined) {
-                const val = this.getVal();
-                if (typeof val === 'function')
-                    return val.toString();
-
-                return this.prettyPrintWithPositions().text
-            } else {
-                setStrValue(value,this.getRef(),ctx)
-                this.prettyPrintWithPositions() // refreshing location map
-            }
-        } catch(e) {
-            jb.logException(e,'watchable-obj-as-text-ref',ctx)
-        }},
-
-        $jb_observable(cmp) {
-            return jb.ui.refObservable(this.getRef(),cmp,{includeChildren: 'yes'})
-        }
-    })
-})
-  
-jb.evalStr = function(str,frame) {
-    try {
-      return (frame || jb.frame).eval('('+str+')')
-    } catch (e) {
-        jb.logException(e,'eval: '+str);
-    }
-}
-  
-jb.objectDiff = function(newObj, orig) {
-    if (orig === newObj) return {}
-    if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
-    const deletedValues = Object.keys(orig).reduce((acc, key) =>
-        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: undefined }
-    , {})
-  
-    return Object.keys(newObj).reduce((acc, key) => {
-      if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
-      const difference = jb.objectDiff(newObj[key], orig[key])
-      if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
-      return { ...acc, [key]: difference } // return updated key
-    }, deletedValues)
-}
-
-jb.textEditor = {
-    pathOfPosition(locationMap,_pos) {
-        const pos = Number(_pos) ? this.offsetToLineCol(_pos) : _pos
-        const path = jb.entries(locationMap)
-            .find(e=>e[1][0] == pos.line && e[1][1] <= pos.col && (e[1][0] < e[1][2] || pos.col <= e[1][3]))
-        return path
-    },
-    lineColToOffset(text,{line,col}) {
-        return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
-    },
-    offsetToLineCol(text,offset) {
-        return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0, 
-            col: offset - text.slice(0,offset).lastIndexOf('\n') }
-    }
-}
-
-jb.component('text-editor.with-cursor-path', {
-    type: 'action',
-    params: [
-      {id: 'action', type: 'action', dynamic: true, mandatory: true},
-      {id: 'editorId', as: 'string', desscription: 'only needed if launched from button'},
-    ],
-    impl: (ctx,action,editorId) => {
-      try {
-          const base = ctx.vars.elemToTest || (typeof document !== 'undefined' && document)
-          const elem = editorId && base && base.querySelector('#'+editorId) || jb.path(ctx.vars.$launchingElement,'el')
-          const cmp = elem._component
-          const editor = cmp.editor
-          if (editor && editor.getCursorPos)
-                action(ctx.setVars({
-                    cursorPath: jb.textEditor.pathOfPosition(cmp.state.databindRef.locationMap, editor.getCursorPos()),
-                    cursorCoord: editor.cursorCoords(editor)
-                }))
-        } catch(e) {}
-    }
-})
-  
-jb.component('text-editor.watch-source-changes', {
-    type: 'feature',
-    params: [
-    ],
-    impl: ctx => ({ init: cmp => {
-      try {
-        const text_ref = cmp.state.databindRef
-        const data_ref = text_ref.getRef()
-        jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: cmp.ctx, includeChildren: 'yes'})
-            .subscribe(e => {
-            const path = e.path
-            const editor = cmp.editor
-            const locations = cmp.state.databindRef.locationMap
-            const loc = locations[path.concat('!value').join('~')]
-            const newVal = jb.prettyPrint(e.newVal)
-            editor.replaceRange(newVal, {line: loc[0], col:loc[1]}, {line: loc[2], col: loc[3]})
-            const newEndPos = jb.prettyPrint.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
-            editor.markText({line: loc[0], col:loc[1]}, {line: newEndPos.line, col: newEndPos.col},{
-                className: 'jb-highlight-comp-changed'
-            })
-            })
-        } catch (e) {}
-    }})
-})
-
-})();
-
 jb.component('group', {
   type: 'control', category: 'group:100,common:90',
   params: [
@@ -10196,15 +10034,13 @@ jb.component('feature.onKey', {
   type: 'feature', category: 'events',
   params: [
     { id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
+    { id: 'action', type: 'action', mandatory: true, dynamic: true }
   ],
-  impl: (ctx,key) => ({
+  impl: (ctx,key,action) => ({
       onkeydown: true,
-      afterViewInit: cmp => {
-        cmp.base.setAttribute('tabIndex','0');
+      afterViewInit: cmp =>
         cmp.onkeydown.subscribe(e=>
-          jb.ui.checkKey(e,key) && jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)())
-      }
+          jb.ui.checkKey(e,key) && jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
   })
 })
 
@@ -10606,21 +10442,6 @@ jb.component('dialog-feature.unique-dialog',  /* dialogFeature_uniqueDialog */ {
 	}
 })
 
-jb.component('dialog-feature.keyboard-shortcut',  /* dialogFeature_keyboardShortcut */ {
-  type: 'dialog-feature',
-  params: [
-    {id: 'shortcut', as: 'string', description: 'Ctrl+C or Alt+V'},
-    {id: 'action', type: 'action', dynamic: true}
-  ],
-  impl: ctx => ({
-  	  onkeydown : true,
-      afterViewInit: cmp=>
-	    cmp.onkeydown.filter(e=> e.keyCode != 17 && e.keyCode != 18) // ctrl ot alt alone
-   	  		.subscribe(e=>
-				jb.ui.checkKey(ctx.params.shortcut) && ctx.params.action())
-	})
-})
-
 jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLauncherPosition */ {
   type: 'dialog-feature',
   params: [
@@ -11009,7 +10830,7 @@ jb.component('menu.action', {
 			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
 			title: ctx.params.title(ctx),
 			applyShortcut: e=> {
-				if (jb.ui.checkKey(ctx.params.shortcut)) {
+				if (jb.ui.checkKey(e,ctx.params.shortcut)) {
 					e.stopPropagation();
 					ctx.params.action();
 					return true;
@@ -12772,30 +12593,6 @@ jb.component('editable-text.textarea', {
         rows: cmp.rows, cols: cmp.cols,
         value: state.model, onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
 	}
-})
-
-jb.component('textarea.init-textarea-editor', {
-  type: 'feature',
-  impl: ctx => ({
-      beforeInit: cmp => {
-        if (!jb.textEditor) return
-        cmp.editor = {
-          getCursorPos: () => jb.textEditor.offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
-          cursorCoords: () => {},
-          markText: () => {},
-          replaceRange: (text, from, to) => {
-            const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-            const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
-            cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
-          },
-          setSelectionRange: (from, to) => {
-            const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-            const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
-            cmp.base.setSelectionRange(_from,_to)
-          },
-        }
-      }
-  })
 })
 
 jb.component('editable-text.mdl-input', {
@@ -14948,222 +14745,6 @@ module.exports = tick;
 ;
 
 ;
-
-(function() {
-
-const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
-const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
-
-jb.component('editable-text.codemirror', {
-	type: 'editable-text.style',
-	params: [
-		{ id: 'cm_settings', as: 'single' },
-		{ id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
-		{ id: 'resizer', type: 'boolean', as: 'boolean', description: 'resizer id or true (id is used to keep size in session storage)' },
-		{ id: 'height', as: 'number' },
-		{ id: 'mode', as: 'string' },
-		{ id: 'debounceTime', as: 'number', defaultValue: 300 },
-		{ id: 'lineWrapping', as: 'boolean' },
-		{ id: 'lineNumbers', as: 'boolean' },
-		{ id: 'readOnly', options: ',true,nocursor' },
-		{ id: 'onCtrlEnter', type: 'action', dynamic: true },
-		{ id: 'hint', as: 'boolean' }
-	],
-	impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
-		return {
-			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
-			css: '{width: 100%}',
-			beforeInit: cmp =>
-				cmp.state.databindRef = cmp.ctx.vars.$model.databind(),
-			afterViewInit: cmp => {
-				try {
-					const data_ref = cmp.state.databindRef;
-					cm_settings = cm_settings||{};
-					const effective_settings = Object.assign({},cm_settings, {
-						mode: mode || 'javascript',
-						lineWrapping: lineWrapping,
-						lineNumbers: ctx.params.lineNumbers,
-						theme: 'solarized light',
-						autofocus: false,
-						extraKeys: Object.assign({
-							'Ctrl-Space': 'autocomplete',
-							'Ctrl-Enter': editor => ctx.params.onCtrlEnter(ctx.setVars({editor}))
-						}, cm_settings.extraKeys || {}),
-						readOnly: ctx.params.readOnly,
-					});
-					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
-					cmp.editor = {
-						getCursorPos: () => posFromCM(editor.getCursor()),
-						cursorCoords: editor => {
-							const coords = editor.cmEditor.cursorCoords()
-							return Object.assign(coords,{top: coords.top - cmp.base.offsetHeight})
-						},
-						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
-						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
-						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
-						cmEditor: editor
-					}
-					if (ctx.params.hint)
-						tgpHint(CodeMirror)
-					const wrapper = editor.getWrapperElement();
-					if (height)
-						wrapper.style.height = height + 'px';
-					jb.delay(1).then(() => {
-						if (_enableFullScreen)
-							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
-						editor.refresh(); // ????
-					});
-					editor.setValue(jb.tostring(data_ref));
-				//cmp.lastEdit = new Date().getTime();
-					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-					!data_ref.oneWay && jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
-						.map(e=>jb.tostring(data_ref))
-						.filter(x => x != editor.getValue())
-						.subscribe(x=>{
-							const cur = editor.getCursor()
-							editor.setValue(x)
-							editor.setSelection(cur)
-							cmp.editor.markText({line: 0, col:0}, {line: editor.laseLine(), col: 0})
-						});
-
-					const editorTextChange = jb.rx.Observable.create(obs=>
-						editor.on('change', () => {
-							//cmp.lastEdit = new Date().getTime();
-							obs.next(editor.getValue())
-						})
-					);
-					editorTextChange.takeUntil( cmp.destroyed )
-						.debounceTime(debounceTime)
-						.filter(x =>
-							x != jb.tostring(data_ref))
-						.distinctUntilChanged()
-						.subscribe(x=>
-							jb.writeValue(data_ref,x));
-				
-				} catch(e) {
-					jb.logException(e,'editable-text.codemirror',ctx);
-					return;
-				}
-			 }
-		}
-	}
-})
-
-function enableFullScreen(editor,width,height) {
-	const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>';
-	const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
-	const lineNumbers = true;
-	const css = `
-		.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
-		.jb-codemirror-escCss:hover { text-decoration: underline; }
-		.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:5px; -webkit-transition: opacity 1s; z-index: 20; }
-		.jb-codemirror-fullScreenBtnCss.hidden { opacity:0; }
-		.jb-codemirror-editorCss { position:relative; }
-		.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
-	`;
-	if (!jb.ui.find('#jb_codemirror_fullscreen')[0])
-    jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`);
-
-	const jEditorElem = editor.getWrapperElement();
-  	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
-	const prevLineNumbers = editor.getOption("lineNumbers");
-  	jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
-	const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0];
-	fullScreenButton.onclick = _ => switchMode();
-	fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
-	fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
-
-	const fullScreenClass = 'jb-codemirror-fullScreenEditorCss';
-
-	function onresize() {
-		const wrapper = editor.getWrapperElement();
-		wrapper.style.width = window.innerWidth + 'px';
-		wrapper.style.height = window.innerHeight + 'px';
-		editor.setSize(window.innerWidth, window.innerHeight - 20);
-		jEditorElem.style.height = document.body.innerHeight + 'px'; //Math.max( document.body.innerHeight, $(window).height()) + 'px' );
-	}
-
-	function switchMode(onlyBackToNormal) {
-		if (jb.ui.hasClass(jEditorElem,fullScreenClass)) {
-			jb.ui.removeClass(jEditorElem,fullScreenClass);
-			window.removeEventListener('resize', onresize);
-			editor.setOption("lineNumbers", prevLineNumbers);
-			editor.setSize(width, height);
-			editor.refresh();
-			jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0]);
-		} else if (!onlyBackToNormal) {
-			jb.ui.addClass(jEditorElem,fullScreenClass);
-			window.addEventListener('resize', onresize);
-			onresize();
-			document.documentElement.style.overflow = "hidden";
-			if (lineNumbers) editor.setOption("lineNumbers", true);
-			editor.refresh();
-			jb.ui.addHTML(jEditorElem,escText);
-      		jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true);
-			jb.ui.focus(editor,'code mirror',ctx);
-		}
-	}
-
-	editor.addKeyMap({
-		"F11": function(editor) {
-			switchMode();
-		},
-		"Esc": function(editor) {
-			switchMode(true);
-		}
-	})
-}
-
-jb.component('text.codemirror', {
-    type: 'text.style',
-    params: [
-        { id: 'cm_settings', as: 'single' },
-        { id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
-        { id: 'resizer', type: 'boolean', as: 'boolean', description: 'resizer id or true (id is used to keep size in session storage)' },
-        { id: 'height', as: 'number' },
-        { id: 'mode', as: 'string', options: 'htmlmixed,javascript,css' },
-        { id: 'lineWrapping', as: 'boolean' },
-    ],
-    impl: function(ctx, cm_settings, _enableFullScreen, resizer,height, mode, lineWrapping) {
-        return {
-			template: (cmp,state,h) => h('textarea', {class: 'jb-codemirror'}),
-			afterViewInit: function(cmp) {
-                mode = mode || 'javascript';
-                cm_settings = {
-                    readOnly: true,
-                    mode: mode,
-                    lineWrapping: lineWrapping,
-                    theme: 'solarized light',
-                };
-                try {
-                  const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
-				  const wrapper = editor.getWrapperElement();
-					if (height)
-						wrapper.style.height = height + 'px';
-					jb.delay(1).then(() => {
-						if (_enableFullScreen)
-							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
-						editor.refresh(); // ????
-					});
-                } catch(e) {
-                    jb.logException(e,'editable-text.codemirror',ctx);
-                    return;
-                }
-                editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-                jb.ui.resourceChange.takeUntil(cmp.destroyed)
-                    .map(()=> ctx.vars.$model.text())
-                    .filter(x=>x)
-                    .distinctUntilChanged()
-                    .subscribe(x=>
-                        editor.setValue(x));
-            }
-        }
-    }
-})
-
-function tgpHint(CodeMirror) {}
-  
-})();
 
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: https://codemirror.net/LICENSE
@@ -27645,23 +27226,31 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
   return valueToMacro({path: initialPath, line:0, col: 0}, profile)
 
   function joinVals({path, line, col}, innerVals, open, close, flat, isArray) {
-    const afterOpenPos = advanceLineCol({line,col},open + newLine())
+    const openStr = open + newLine()
+    const afterOpenPos = advanceLineCol({line,col},openStr)
+    const mapWithOpen = { [path+'~!open']: [line,col,afterOpenPos.line,afterOpenPos.col]}
     const result = innerVals.reduce((acc,{innerPath, val}, index) => {
       const fullInnerPath = [path,innerPath].join('~')
-      const result = valueToMacro({path: fullInnerPath, line: acc.line, col: acc.col}, val, flat)
+      const valPrefix = isArray ? '' : innerPath + ': '
+      const startAttValuePos = advanceLineCol(acc,'')
+      const startValuePos = advanceLineCol(startAttValuePos, valPrefix)
+      const result = valueToMacro({path: fullInnerPath, line: startValuePos.line, col: startValuePos.col}, val, flat)
       const separator = index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())
-      const valPrefix = isArray ? '' : innerPath + ': ';
-      const startAttValuePos = acc
-      const startValuePos = advanceLineCol(acc, valPrefix)
       const endValuePos = advanceLineCol(startValuePos, result.text)
       const afterSeparatorPos = advanceLineCol(endValuePos, separator)
       const map = Object.assign({},acc.map, result.map,{
         [fullInnerPath+'~!prefix']:[startAttValuePos.line, startAttValuePos.col, startValuePos.line, startValuePos.col],
         [fullInnerPath+'~!value']:[startValuePos.line, startValuePos.col,endValuePos.line, endValuePos.col],
+        [fullInnerPath+'~!separator']:[endValuePos.line, endValuePos.col,afterSeparatorPos.line, afterSeparatorPos.col],
 //        [fullInnerPath]:[startAttValuePos.line, startAttValuePos.col,endValuePos.line, endValuePos.col]
       })
       return Object.assign({ text: acc.text + valPrefix + result.text + separator, map, unflat: acc.unflat || result.unflat }, afterSeparatorPos)
-    }, {text: '', map: {}, ...afterOpenPos, unflat: false} )
+    }, {text: openStr, map: mapWithOpen, ...afterOpenPos, unflat: false} )
+    const beforeClosePos = advanceLineCol(result,'')
+    const closeStr = newLine(-1) + close
+    const afterClosePos = advanceLineCol(result,closeStr)
+    result.text += closeStr
+    Object.assign(result.map,{[path+'~!close']: [beforeClosePos.line,beforeClosePos.col,afterClosePos.line,afterClosePos.col]})
 
     //const arrayElem = path.match(/~[0-9]+$/)
     const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
@@ -27671,13 +27260,8 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     const unflat = result.unflat || customStyle || top || ctrls || long
     if (!unflat && !flat)
       return joinVals({path, line, col}, innerVals, open, close, true, isArray)
+    return Object.assign(result,{unflat})
 
-    const out = { 
-      text: open + newLine() + result.text + newLine(-1) + close,
-      map: result.map,
-      unflat
-    }
-    return out
 
     function newLine(offset = 0) {
       return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
@@ -28961,118 +28545,430 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
 
 ;
 
-/******/ (function(modules) { // webpackBootstrap
-/******/ 	// The module cache
-/******/ 	var installedModules = {};
-/******/
-/******/ 	// The require function
-/******/ 	function __webpack_require__(moduleId) {
-/******/
-/******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId]) {
-/******/ 			return installedModules[moduleId].exports;
-/******/ 		}
-/******/ 		// Create a new module (and put it into the cache)
-/******/ 		var module = installedModules[moduleId] = {
-/******/ 			i: moduleId,
-/******/ 			l: false,
-/******/ 			exports: {}
-/******/ 		};
-/******/
-/******/ 		// Execute the module function
-/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-/******/
-/******/ 		// Flag the module as loaded
-/******/ 		module.l = true;
-/******/
-/******/ 		// Return the exports of the module
-/******/ 		return module.exports;
-/******/ 	}
-/******/
-/******/
-/******/ 	// expose the modules object (__webpack_modules__)
-/******/ 	__webpack_require__.m = modules;
-/******/
-/******/ 	// expose the module cache
-/******/ 	__webpack_require__.c = installedModules;
-/******/
-/******/ 	// define getter function for harmony exports
-/******/ 	__webpack_require__.d = function(exports, name, getter) {
-/******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
-/******/ 		}
-/******/ 	};
-/******/
-/******/ 	// define __esModule on exports
-/******/ 	__webpack_require__.r = function(exports) {
-/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
-/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
-/******/ 		}
-/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
-/******/ 	};
-/******/
-/******/ 	// create a fake namespace object
-/******/ 	// mode & 1: value is a module id, require it
-/******/ 	// mode & 2: merge all properties of value into the ns
-/******/ 	// mode & 4: return value when already ns object
-/******/ 	// mode & 8|1: behave like require
-/******/ 	__webpack_require__.t = function(value, mode) {
-/******/ 		if(mode & 1) value = __webpack_require__(value);
-/******/ 		if(mode & 8) return value;
-/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
-/******/ 		var ns = Object.create(null);
-/******/ 		__webpack_require__.r(ns);
-/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
-/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
-/******/ 		return ns;
-/******/ 	};
-/******/
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__webpack_require__.n = function(module) {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			function getDefault() { return module['default']; } :
-/******/ 			function getModuleExports() { return module; };
-/******/ 		__webpack_require__.d(getter, 'a', getter);
-/******/ 		return getter;
-/******/ 	};
-/******/
-/******/ 	// Object.prototype.hasOwnProperty.call
-/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
-/******/
-/******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "";
-/******/
-/******/
-/******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./projects/studio/studio-deep-diff-ext.js");
-/******/ })
-/************************************************************************/
-/******/ ({
+(function(){
 
-/***/ "./node_modules/deep-diff/index.js":
-/*!*****************************************!*\
-  !*** ./node_modules/deep-diff/index.js ***!
-  \*****************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+function getSinglePathChange(newVal, currentVal) {
+    return pathAndValueOfSingleChange(jb.objectDiff(newVal,currentVal),'')
+    
+    function pathAndValueOfSingleChange(obj, pathSoFar) { 
+        if (typeof obj !== 'object')
+            return { innerPath: pathSoFar, innerValue: obj }
+        const entries = jb.entries(obj)
+        if (entries.length != 1) // if not single returns empty answer
+            return {}
+        return pathAndValueOfSingleChange(entries[0][1],pathSoFar+'~'+entries[0][0])
+    }
+}
 
-eval("var __WEBPACK_AMD_DEFINE_RESULT__;;(function(root, factory) { // eslint-disable-line no-extra-semi\n  var deepDiff = factory(root);\n  // eslint-disable-next-line no-undef\n  if (true) {\n      // AMD\n      !(__WEBPACK_AMD_DEFINE_RESULT__ = (function() { // eslint-disable-line no-undef\n          return deepDiff;\n      }).call(exports, __webpack_require__, exports, module),\n\t\t\t\t__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));\n  } else { var _deepdiff; }\n}(this, function(root) {\n  var validKinds = ['N', 'E', 'A', 'D'];\n\n  // nodejs compatible on server side and in the browser.\n  function inherits(ctor, superCtor) {\n    ctor.super_ = superCtor;\n    ctor.prototype = Object.create(superCtor.prototype, {\n      constructor: {\n        value: ctor,\n        enumerable: false,\n        writable: true,\n        configurable: true\n      }\n    });\n  }\n\n  function Diff(kind, path) {\n    Object.defineProperty(this, 'kind', {\n      value: kind,\n      enumerable: true\n    });\n    if (path && path.length) {\n      Object.defineProperty(this, 'path', {\n        value: path,\n        enumerable: true\n      });\n    }\n  }\n\n  function DiffEdit(path, origin, value) {\n    DiffEdit.super_.call(this, 'E', path);\n    Object.defineProperty(this, 'lhs', {\n      value: origin,\n      enumerable: true\n    });\n    Object.defineProperty(this, 'rhs', {\n      value: value,\n      enumerable: true\n    });\n  }\n  inherits(DiffEdit, Diff);\n\n  function DiffNew(path, value) {\n    DiffNew.super_.call(this, 'N', path);\n    Object.defineProperty(this, 'rhs', {\n      value: value,\n      enumerable: true\n    });\n  }\n  inherits(DiffNew, Diff);\n\n  function DiffDeleted(path, value) {\n    DiffDeleted.super_.call(this, 'D', path);\n    Object.defineProperty(this, 'lhs', {\n      value: value,\n      enumerable: true\n    });\n  }\n  inherits(DiffDeleted, Diff);\n\n  function DiffArray(path, index, item) {\n    DiffArray.super_.call(this, 'A', path);\n    Object.defineProperty(this, 'index', {\n      value: index,\n      enumerable: true\n    });\n    Object.defineProperty(this, 'item', {\n      value: item,\n      enumerable: true\n    });\n  }\n  inherits(DiffArray, Diff);\n\n  function arrayRemove(arr, from, to) {\n    var rest = arr.slice((to || from) + 1 || arr.length);\n    arr.length = from < 0 ? arr.length + from : from;\n    arr.push.apply(arr, rest);\n    return arr;\n  }\n\n  function realTypeOf(subject) {\n    var type = typeof subject;\n    if (type !== 'object') {\n      return type;\n    }\n\n    if (subject === Math) {\n      return 'math';\n    } else if (subject === null) {\n      return 'null';\n    } else if (Array.isArray(subject)) {\n      return 'array';\n    } else if (Object.prototype.toString.call(subject) === '[object Date]') {\n      return 'date';\n    } else if (typeof subject.toString === 'function' && /^\\/.*\\//.test(subject.toString())) {\n      return 'regexp';\n    }\n    return 'object';\n  }\n\n  // http://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/\n  function hashThisString(string) {\n    var hash = 0;\n    if (string.length === 0) { return hash; }\n    for (var i = 0; i < string.length; i++) {\n      var char = string.charCodeAt(i);\n      hash = ((hash << 5) - hash) + char;\n      hash = hash & hash; // Convert to 32bit integer\n    }\n    return hash;\n  }\n\n  // Gets a hash of the given object in an array order-independent fashion\n  // also object key order independent (easier since they can be alphabetized)\n  function getOrderIndependentHash(object) {\n    var accum = 0;\n    var type = realTypeOf(object);\n\n    if (type === 'array') {\n      object.forEach(function (item) {\n        // Addition is commutative so this is order indep\n        accum += getOrderIndependentHash(item);\n      });\n\n      var arrayString = '[type: array, hash: ' + accum + ']';\n      return accum + hashThisString(arrayString);\n    }\n\n    if (type === 'object') {\n      for (var key in object) {\n        if (object.hasOwnProperty(key)) {\n          var keyValueString = '[ type: object, key: ' + key + ', value hash: ' + getOrderIndependentHash(object[key]) + ']';\n          accum += hashThisString(keyValueString);\n        }\n      }\n\n      return accum;\n    }\n\n    // Non object, non array...should be good?\n    var stringToHash = '[ type: ' + type + ' ; value: ' + object + ']';\n    return accum + hashThisString(stringToHash);\n  }\n\n  function deepDiff(lhs, rhs, changes, prefilter, path, key, stack, orderIndependent) {\n    changes = changes || [];\n    path = path || [];\n    stack = stack || [];\n    var currentPath = path.slice(0);\n    if (typeof key !== 'undefined' && key !== null) {\n      if (prefilter) {\n        if (typeof (prefilter) === 'function' && prefilter(currentPath, key)) {\n          return;\n        } else if (typeof (prefilter) === 'object') {\n          if (prefilter.prefilter && prefilter.prefilter(currentPath, key)) {\n            return;\n          }\n          if (prefilter.normalize) {\n            var alt = prefilter.normalize(currentPath, key, lhs, rhs);\n            if (alt) {\n              lhs = alt[0];\n              rhs = alt[1];\n            }\n          }\n        }\n      }\n      currentPath.push(key);\n    }\n\n    // Use string comparison for regexes\n    if (realTypeOf(lhs) === 'regexp' && realTypeOf(rhs) === 'regexp') {\n      lhs = lhs.toString();\n      rhs = rhs.toString();\n    }\n\n    var ltype = typeof lhs;\n    var rtype = typeof rhs;\n    var i, j, k, other;\n\n    var ldefined = ltype !== 'undefined' ||\n      (stack && (stack.length > 0) && stack[stack.length - 1].lhs &&\n        Object.getOwnPropertyDescriptor(stack[stack.length - 1].lhs, key));\n    var rdefined = rtype !== 'undefined' ||\n      (stack && (stack.length > 0) && stack[stack.length - 1].rhs &&\n        Object.getOwnPropertyDescriptor(stack[stack.length - 1].rhs, key));\n\n    if (!ldefined && rdefined) {\n      changes.push(new DiffNew(currentPath, rhs));\n    } else if (!rdefined && ldefined) {\n      changes.push(new DiffDeleted(currentPath, lhs));\n    } else if (realTypeOf(lhs) !== realTypeOf(rhs)) {\n      changes.push(new DiffEdit(currentPath, lhs, rhs));\n    } else if (realTypeOf(lhs) === 'date' && (lhs - rhs) !== 0) {\n      changes.push(new DiffEdit(currentPath, lhs, rhs));\n    } else if (ltype === 'object' && lhs !== null && rhs !== null) {\n      for (i = stack.length - 1; i > -1; --i) {\n        if (stack[i].lhs === lhs) {\n          other = true;\n          break;\n        }\n      }\n      if (!other) {\n        stack.push({ lhs: lhs, rhs: rhs });\n        if (Array.isArray(lhs)) {\n          // If order doesn't matter, we need to sort our arrays\n          if (orderIndependent) {\n            lhs.sort(function (a, b) {\n              return getOrderIndependentHash(a) - getOrderIndependentHash(b);\n            });\n\n            rhs.sort(function (a, b) {\n              return getOrderIndependentHash(a) - getOrderIndependentHash(b);\n            });\n          }\n          i = rhs.length - 1;\n          j = lhs.length - 1;\n          while (i > j) {\n            changes.push(new DiffArray(currentPath, i, new DiffNew(undefined, rhs[i--])));\n          }\n          while (j > i) {\n            changes.push(new DiffArray(currentPath, j, new DiffDeleted(undefined, lhs[j--])));\n          }\n          for (; i >= 0; --i) {\n            deepDiff(lhs[i], rhs[i], changes, prefilter, currentPath, i, stack, orderIndependent);\n          }\n        } else {\n          var akeys = Object.keys(lhs);\n          var pkeys = Object.keys(rhs);\n          for (i = 0; i < akeys.length; ++i) {\n            k = akeys[i];\n            other = pkeys.indexOf(k);\n            if (other >= 0) {\n              deepDiff(lhs[k], rhs[k], changes, prefilter, currentPath, k, stack, orderIndependent);\n              pkeys[other] = null;\n            } else {\n              deepDiff(lhs[k], undefined, changes, prefilter, currentPath, k, stack, orderIndependent);\n            }\n          }\n          for (i = 0; i < pkeys.length; ++i) {\n            k = pkeys[i];\n            if (k) {\n              deepDiff(undefined, rhs[k], changes, prefilter, currentPath, k, stack, orderIndependent);\n            }\n          }\n        }\n        stack.length = stack.length - 1;\n      } else if (lhs !== rhs) {\n        // lhs is contains a cycle at this element and it differs from rhs\n        changes.push(new DiffEdit(currentPath, lhs, rhs));\n      }\n    } else if (lhs !== rhs) {\n      if (!(ltype === 'number' && isNaN(lhs) && isNaN(rhs))) {\n        changes.push(new DiffEdit(currentPath, lhs, rhs));\n      }\n    }\n  }\n\n  function observableDiff(lhs, rhs, observer, prefilter, orderIndependent) {\n    var changes = [];\n    deepDiff(lhs, rhs, changes, prefilter, null, null, null, orderIndependent);\n    if (observer) {\n      for (var i = 0; i < changes.length; ++i) {\n        observer(changes[i]);\n      }\n    }\n    return changes;\n  }\n\n  function orderIndependentDeepDiff(lhs, rhs, changes, prefilter, path, key, stack) {\n    return deepDiff(lhs, rhs, changes, prefilter, path, key, stack, true);\n  }\n\n  function accumulateDiff(lhs, rhs, prefilter, accum) {\n    var observer = (accum) ?\n      function (difference) {\n        if (difference) {\n          accum.push(difference);\n        }\n      } : undefined;\n    var changes = observableDiff(lhs, rhs, observer, prefilter);\n    return (accum) ? accum : (changes.length) ? changes : undefined;\n  }\n\n  function accumulateOrderIndependentDiff(lhs, rhs, prefilter, accum) {\n    var observer = (accum) ?\n      function (difference) {\n        if (difference) {\n          accum.push(difference);\n        }\n      } : undefined;\n    var changes = observableDiff(lhs, rhs, observer, prefilter, true);\n    return (accum) ? accum : (changes.length) ? changes : undefined;\n  }\n\n  function applyArrayChange(arr, index, change) {\n    if (change.path && change.path.length) {\n      var it = arr[index],\n        i, u = change.path.length - 1;\n      for (i = 0; i < u; i++) {\n        it = it[change.path[i]];\n      }\n      switch (change.kind) {\n        case 'A':\n          applyArrayChange(it[change.path[i]], change.index, change.item);\n          break;\n        case 'D':\n          delete it[change.path[i]];\n          break;\n        case 'E':\n        case 'N':\n          it[change.path[i]] = change.rhs;\n          break;\n      }\n    } else {\n      switch (change.kind) {\n        case 'A':\n          applyArrayChange(arr[index], change.index, change.item);\n          break;\n        case 'D':\n          arr = arrayRemove(arr, index);\n          break;\n        case 'E':\n        case 'N':\n          arr[index] = change.rhs;\n          break;\n      }\n    }\n    return arr;\n  }\n\n  function applyChange(target, source, change) {\n    if (typeof change === 'undefined' && source && ~validKinds.indexOf(source.kind)) {\n      change = source;\n    }\n    if (target && change && change.kind) {\n      var it = target,\n        i = -1,\n        last = change.path ? change.path.length - 1 : 0;\n      while (++i < last) {\n        if (typeof it[change.path[i]] === 'undefined') {\n          it[change.path[i]] = (typeof change.path[i + 1] !== 'undefined' && typeof change.path[i + 1] === 'number') ? [] : {};\n        }\n        it = it[change.path[i]];\n      }\n      switch (change.kind) {\n        case 'A':\n          if (change.path && typeof it[change.path[i]] === 'undefined') {\n            it[change.path[i]] = [];\n          }\n          applyArrayChange(change.path ? it[change.path[i]] : it, change.index, change.item);\n          break;\n        case 'D':\n          delete it[change.path[i]];\n          break;\n        case 'E':\n        case 'N':\n          it[change.path[i]] = change.rhs;\n          break;\n      }\n    }\n  }\n\n  function revertArrayChange(arr, index, change) {\n    if (change.path && change.path.length) {\n      // the structure of the object at the index has changed...\n      var it = arr[index],\n        i, u = change.path.length - 1;\n      for (i = 0; i < u; i++) {\n        it = it[change.path[i]];\n      }\n      switch (change.kind) {\n        case 'A':\n          revertArrayChange(it[change.path[i]], change.index, change.item);\n          break;\n        case 'D':\n          it[change.path[i]] = change.lhs;\n          break;\n        case 'E':\n          it[change.path[i]] = change.lhs;\n          break;\n        case 'N':\n          delete it[change.path[i]];\n          break;\n      }\n    } else {\n      // the array item is different...\n      switch (change.kind) {\n        case 'A':\n          revertArrayChange(arr[index], change.index, change.item);\n          break;\n        case 'D':\n          arr[index] = change.lhs;\n          break;\n        case 'E':\n          arr[index] = change.lhs;\n          break;\n        case 'N':\n          arr = arrayRemove(arr, index);\n          break;\n      }\n    }\n    return arr;\n  }\n\n  function revertChange(target, source, change) {\n    if (target && source && change && change.kind) {\n      var it = target,\n        i, u;\n      u = change.path.length - 1;\n      for (i = 0; i < u; i++) {\n        if (typeof it[change.path[i]] === 'undefined') {\n          it[change.path[i]] = {};\n        }\n        it = it[change.path[i]];\n      }\n      switch (change.kind) {\n        case 'A':\n          // Array was modified...\n          // it will be an array...\n          revertArrayChange(it[change.path[i]], change.index, change.item);\n          break;\n        case 'D':\n          // Item was deleted...\n          it[change.path[i]] = change.lhs;\n          break;\n        case 'E':\n          // Item was edited...\n          it[change.path[i]] = change.lhs;\n          break;\n        case 'N':\n          // Item is new...\n          delete it[change.path[i]];\n          break;\n      }\n    }\n  }\n\n  function applyDiff(target, source, filter) {\n    if (target && source) {\n      var onChange = function (change) {\n        if (!filter || filter(target, source, change)) {\n          applyChange(target, source, change);\n        }\n      };\n      observableDiff(target, source, onChange);\n    }\n  }\n\n  Object.defineProperties(accumulateDiff, {\n\n    diff: {\n      value: accumulateDiff,\n      enumerable: true\n    },\n    orderIndependentDiff: {\n      value: accumulateOrderIndependentDiff,\n      enumerable: true\n    },\n    observableDiff: {\n      value: observableDiff,\n      enumerable: true\n    },\n    orderIndependentObservableDiff: {\n      value: orderIndependentDeepDiff,\n      enumerable: true\n    },\n    orderIndepHash: {\n      value: getOrderIndependentHash,\n      enumerable: true\n    },\n    applyDiff: {\n      value: applyDiff,\n      enumerable: true\n    },\n    applyChange: {\n      value: applyChange,\n      enumerable: true\n    },\n    revertChange: {\n      value: revertChange,\n      enumerable: true\n    },\n    isConflict: {\n      value: function () {\n        return typeof $conflict !== 'undefined';\n      },\n      enumerable: true\n    }\n  });\n\n  // hackish...\n  accumulateDiff.DeepDiff = accumulateDiff;\n  // ...but works with:\n  // import DeepDiff from 'deep-diff'\n  // import { DeepDiff } from 'deep-diff'\n  // const DeepDiff = require('deep-diff');\n  // const { DeepDiff } = require('deep-diff');\n\n  if (root) {\n    root.DeepDiff = accumulateDiff;\n  }\n\n  return accumulateDiff;\n}));\n\n\n//# sourceURL=webpack:///./node_modules/deep-diff/index.js?");
+function setStrValue(value, ref, ctx) {
+    const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
+    const newVal = notPrimitive ? jb.evalStr(value,ref.handler.frame()) : value;
+    // do not save in editing ',' at the end of line means editing
+    if (typeof newVal === 'object' && value.match(/,\s*}/m))
+        return
+    if (newVal && typeof newVal === 'object') {
+        const {innerPath, innerValue} = getSinglePathChange(newVal,jb.val(ref))
+        if (innerPath) {
+            const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
+            return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
+        } 
+    }
+    if (newVal !== undefined)
+       jb.writeValue(ref,newVal,ctx)
+}
 
-/***/ }),
+jb.component('watchable-as-text', {
+    type: 'data',
+    params: [
+      {id: 'ref', as: 'ref', dynamic: true},
+    ],
+    impl: (ctx,refF) => ({
+        oneWay: true,
+        getRef() {
+            return this.ref || (this.ref = refF())
+        },
+        getHandler() {
+            return jb.getHandler(this.getRef())
+        },
+        getVal() {
+            return jb.val(this.getRef())
+        },
+        prettyPrintWithPositions() {
+            const ref = this.getRef()
+            const initialPath = ref.handler.pathOfRef(ref).join('~')
+            const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath})
+            this.locationMap = res.map
+            return res
+        },
+        $jb_val(value) { try {
+            if (value === undefined) {
+                const val = this.getVal();
+                if (typeof val === 'function')
+                    return val.toString();
 
-/***/ "./projects/studio/studio-deep-diff-ext.js":
-/*!*************************************************!*\
-  !*** ./projects/studio/studio-deep-diff-ext.js ***!
-  \*************************************************/
-/*! no exports provided */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
+                return this.prettyPrintWithPositions().text
+            } else {
+                setStrValue(value,this.getRef(),ctx)
+                this.prettyPrintWithPositions() // refreshing location map
+            }
+        } catch(e) {
+            jb.logException(e,'watchable-obj-as-text-ref',ctx)
+        }},
 
-"use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var deep_diff__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! deep-diff */ \"./node_modules/deep-diff/index.js\");\n/* harmony import */ var deep_diff__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(deep_diff__WEBPACK_IMPORTED_MODULE_0__);\n\r\njb.studio.diff = deep_diff__WEBPACK_IMPORTED_MODULE_0___default.a;\r\n\n\n//# sourceURL=webpack:///./projects/studio/studio-deep-diff-ext.js?");
+        $jb_observable(cmp) {
+            return jb.ui.refObservable(this.getRef(),cmp,{includeChildren: 'yes'})
+        }
+    })
+})
+  
+jb.evalStr = function(str,frame) {
+    try {
+      return (frame || jb.frame).eval('('+str+')')
+    } catch (e) {
+        jb.logException(e,'eval: '+str);
+    }
+}
+  
+jb.objectDiff = function(newObj, orig) {
+    if (orig === newObj) return {}
+    if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
+    const deletedValues = Object.keys(orig).reduce((acc, key) =>
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: undefined }
+    , {})
+  
+    return Object.keys(newObj).reduce((acc, key) => {
+      if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
+      const difference = jb.objectDiff(newObj[key], orig[key])
+      if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
+      return { ...acc, [key]: difference } // return updated key
+    }, deletedValues)
+}
 
-/***/ })
+jb.textEditor = {
+    pathOfPosition(locationMap,_pos) {
+        const pos = Number(_pos) ? this.offsetToLineCol(_pos) : _pos
+        const path = jb.entries(locationMap)
+            .find(e=>e[1][0] == pos.line && e[1][1] <= pos.col && (e[1][0] < e[1][2] || pos.col <= e[1][3]))
+        return path
+    },
+    lineColToOffset(text,{line,col}) {
+        return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
+    },
+    offsetToLineCol(text,offset) {
+        return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0, 
+            col: offset - text.slice(0,offset).lastIndexOf('\n') }
+    },
+    refreshEditor(cmp,path) {
+        const editor = cmp.editor
+        path = path || this.pathOfPosition(cmp.state.databindRef.locationMap, editor.getCursorPos())
+        const text = jb.tostring(jb.val(cmp.state.databindRef))
+        editor.setValue(text);
+        const pos = cmp.state.databindRef.locationMap[path.split('~!')[0]+'~!value']
+        if (pos)
+            editor.setSelectionRange({line: pos[0], col: pos[1]})
+    }
+}
 
-/******/ });;
+jb.component('text-editor.with-cursor-path', {
+    type: 'action',
+    params: [
+      {id: 'action', type: 'action', dynamic: true, mandatory: true},
+      {id: 'editorId', as: 'string', desscription: 'only needed if launched from button'},
+    ],
+    impl: (ctx,action,editorId) => {
+      try {
+          const base = ctx.vars.elemToTest || (typeof document !== 'undefined' && document)
+          const elem = editorId && base && base.querySelector('#'+editorId) || jb.path(ctx.vars.$launchingElement,'el')
+          const cmp = elem._component
+          const editor = cmp.editor
+          if (editor && editor.getCursorPos)
+                action(ctx.setVars({
+                    cursorPath: jb.textEditor.pathOfPosition(cmp.state.databindRef.locationMap, editor.getCursorPos()),
+                    cursorCoord: editor.cursorCoords(editor)
+                }))
+        } catch(e) {}
+    }
+})
+  
+jb.component('text-editor.watch-source-changes', {
+    type: 'feature',
+    params: [],
+    impl: ctx => ({ init: cmp => {
+      try {
+        const text_ref = cmp.state.databindRef
+        const data_ref = text_ref.getRef()
+        jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: cmp.ctx, includeChildren: 'yes'})
+            .subscribe(e => {
+            const path = e.path
+            const editor = cmp.editor
+            const locations = cmp.state.databindRef.locationMap
+            const loc = locations[path.concat('!value').join('~')]
+            const newVal = jb.prettyPrint(e.newVal)
+            editor.replaceRange(newVal, {line: loc[0], col:loc[1]}, {line: loc[2], col: loc[3]})
+            const newEndPos = jb.prettyPrint.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
+            editor.markText({line: loc[0], col:loc[1]}, {line: newEndPos.line, col: newEndPos.col},{
+                className: 'jb-highlight-comp-changed'
+            })
+            })
+        } catch (e) {}
+    }})
+})
+
+jb.component('text-editor.init', {
+    type: 'feature',
+    params: [],
+    impl: ctx => ({
+    extendCtxOnce: (ctx,cmp) => ctx.setVars({
+        editor: cmp.editor,
+        refreshEditor: path => jb.textEditor.refreshEditor(cmp,path)
+      })
+  })
+})
+
+jb.component('textarea.init-textarea-editor', {
+    type: 'feature',
+    impl: ctx => ({
+        beforeInit: cmp => {
+          if (!jb.textEditor) return
+          cmp.editor = {
+            getCursorPos: () => jb.textEditor.offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
+            cursorCoords: () => {},
+            markText: () => {},
+            replaceRange: (text, from, to) => {
+              const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
+              const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
+              cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
+            },
+            setSelectionRange: (from, to) => {
+              const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
+              const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
+              cmp.base.setSelectionRange(_from,_to)
+            },
+          }
+        }
+    })
+})
+  
+
+})();
+
+(function() {
+
+const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
+const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
+
+jb.component('editable-text.codemirror', {
+	type: 'editable-text.style',
+	params: [
+		{ id: 'cm_settings', as: 'single' },
+		{ id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
+		{ id: 'resizer', type: 'boolean', as: 'boolean', description: 'resizer id or true (id is used to keep size in session storage)' },
+		{ id: 'height', as: 'number' },
+		{ id: 'mode', as: 'string' },
+		{ id: 'debounceTime', as: 'number', defaultValue: 300 },
+		{ id: 'lineWrapping', as: 'boolean' },
+		{ id: 'lineNumbers', as: 'boolean' },
+		{ id: 'readOnly', options: ',true,nocursor' },
+		{ id: 'onCtrlEnter', type: 'action', dynamic: true },
+		{ id: 'hint', as: 'boolean' }
+	],
+	impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
+		return {
+			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
+			css: '{width: 100%}',
+			beforeInit: cmp =>
+				cmp.state.databindRef = cmp.ctx.vars.$model.databind(),
+			afterViewInit: cmp => {
+				try {
+					const data_ref = cmp.state.databindRef;
+					cm_settings = cm_settings||{};
+					const effective_settings = Object.assign({},cm_settings, {
+						mode: mode || 'javascript',
+						lineWrapping: lineWrapping,
+						lineNumbers: ctx.params.lineNumbers,
+						theme: 'solarized light',
+						autofocus: false,
+						extraKeys: Object.assign({
+							'Ctrl-Space': 'autocomplete',
+							'Ctrl-Enter': editor => ctx.params.onCtrlEnter(ctx.setVars({editor}))
+						}, cm_settings.extraKeys || {}),
+						readOnly: ctx.params.readOnly,
+					});
+					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+					cmp.editor = {
+						getCursorPos: () => posFromCM(editor.getCursor()),
+						cursorCoords: editor => {
+							const coords = editor.cmEditor && editor.cmEditor.cursorCoords()
+							return coords && Object.assign(coords,{top: coords.top - cmp.base.offsetHeight})
+						},
+						refreshFromDataRef: () => editor.setValue(jb.tostring(data_ref)),
+						setValue: text => editor.setValue(text),
+						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
+						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
+						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
+						cmEditor: editor
+					}
+					if (ctx.params.hint)
+						tgpHint(CodeMirror)
+					const wrapper = editor.getWrapperElement();
+					if (height)
+						wrapper.style.height = height + 'px';
+					jb.delay(1).then(() => {
+						if (_enableFullScreen)
+							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
+						editor.refresh(); // ????
+					});
+					editor.setValue(jb.tostring(data_ref));
+				//cmp.lastEdit = new Date().getTime();
+					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
+					!data_ref.oneWay && jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
+						.map(e=>jb.tostring(data_ref))
+						.filter(x => x != editor.getValue())
+						.subscribe(x=>{
+							const cur = editor.getCursor()
+							editor.setValue(x)
+							editor.setSelection(cur)
+							cmp.editor.markText({line: 0, col:0}, {line: editor.laseLine(), col: 0})
+						});
+
+					const editorTextChange = jb.rx.Observable.create(obs=>
+						editor.on('change', () => {
+							//cmp.lastEdit = new Date().getTime();
+							obs.next(editor.getValue())
+						})
+					);
+					editorTextChange.takeUntil( cmp.destroyed )
+						.debounceTime(debounceTime)
+						.filter(x =>
+							x != jb.tostring(data_ref))
+						.distinctUntilChanged()
+						.subscribe(x=>
+							jb.writeValue(data_ref,x));
+				
+				} catch(e) {
+					jb.logException(e,'editable-text.codemirror',ctx);
+					return;
+				}
+			 }
+		}
+	}
+})
+
+function enableFullScreen(editor,width,height) {
+	const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>';
+	const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
+	const lineNumbers = true;
+	const css = `
+		.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
+		.jb-codemirror-escCss:hover { text-decoration: underline; }
+		.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:5px; -webkit-transition: opacity 1s; z-index: 20; }
+		.jb-codemirror-fullScreenBtnCss.hidden { opacity:0; }
+		.jb-codemirror-editorCss { position:relative; }
+		.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
+	`;
+	if (!jb.ui.find('#jb_codemirror_fullscreen')[0])
+    jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`);
+
+	const jEditorElem = editor.getWrapperElement();
+  	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
+	const prevLineNumbers = editor.getOption("lineNumbers");
+  	jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
+	const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0];
+	fullScreenButton.onclick = _ => switchMode();
+	fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
+	fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
+
+	const fullScreenClass = 'jb-codemirror-fullScreenEditorCss';
+
+	function onresize() {
+		const wrapper = editor.getWrapperElement();
+		wrapper.style.width = window.innerWidth + 'px';
+		wrapper.style.height = window.innerHeight + 'px';
+		editor.setSize(window.innerWidth, window.innerHeight - 20);
+		jEditorElem.style.height = document.body.innerHeight + 'px'; //Math.max( document.body.innerHeight, $(window).height()) + 'px' );
+	}
+
+	function switchMode(onlyBackToNormal) {
+		if (jb.ui.hasClass(jEditorElem,fullScreenClass)) {
+			jb.ui.removeClass(jEditorElem,fullScreenClass);
+			window.removeEventListener('resize', onresize);
+			editor.setOption("lineNumbers", prevLineNumbers);
+			editor.setSize(width, height);
+			editor.refresh();
+			jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0]);
+		} else if (!onlyBackToNormal) {
+			jb.ui.addClass(jEditorElem,fullScreenClass);
+			window.addEventListener('resize', onresize);
+			onresize();
+			document.documentElement.style.overflow = "hidden";
+			if (lineNumbers) editor.setOption("lineNumbers", true);
+			editor.refresh();
+			jb.ui.addHTML(jEditorElem,escText);
+      		jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true);
+			jb.ui.focus(editor,'code mirror',ctx);
+		}
+	}
+
+	editor.addKeyMap({
+		"F11": function(editor) {
+			switchMode();
+		},
+		"Esc": function(editor) {
+			switchMode(true);
+		}
+	})
+}
+
+jb.component('text.codemirror', {
+    type: 'text.style',
+    params: [
+        { id: 'cm_settings', as: 'single' },
+        { id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
+        { id: 'resizer', type: 'boolean', as: 'boolean', description: 'resizer id or true (id is used to keep size in session storage)' },
+        { id: 'height', as: 'number' },
+        { id: 'mode', as: 'string', options: 'htmlmixed,javascript,css' },
+        { id: 'lineWrapping', as: 'boolean' },
+    ],
+    impl: function(ctx, cm_settings, _enableFullScreen, resizer,height, mode, lineWrapping) {
+        return {
+			template: (cmp,state,h) => h('textarea', {class: 'jb-codemirror'}),
+			afterViewInit: function(cmp) {
+                mode = mode || 'javascript';
+                cm_settings = {
+                    readOnly: true,
+                    mode: mode,
+                    lineWrapping: lineWrapping,
+                    theme: 'solarized light',
+                };
+                try {
+                  const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+				  const wrapper = editor.getWrapperElement();
+					if (height)
+						wrapper.style.height = height + 'px';
+					jb.delay(1).then(() => {
+						if (_enableFullScreen)
+							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
+						editor.refresh(); // ????
+					});
+                } catch(e) {
+                    jb.logException(e,'editable-text.codemirror',ctx);
+                    return;
+                }
+                editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
+                jb.ui.resourceChange.takeUntil(cmp.destroyed)
+                    .map(()=> ctx.vars.$model.text())
+                    .filter(x=>x)
+                    .distinctUntilChanged()
+                    .subscribe(x=>
+                        editor.setValue(x));
+            }
+        }
+    }
+})
+
+function tgpHint(CodeMirror) {}
+  
+})();
 
 jb.component('editable-text.studio-primitive-text', {
   type: 'editable-text.style',
@@ -29572,10 +29468,10 @@ Object.assign(st, {
 		st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] },srcCtx),
 
 	wrap: (path,compName,srcCtx) => {
-		var comp = st.getComp(compName);
-		var compositeParam = jb.compParams(comp).filter(p=>p.composite)[0];
+		const comp = st.getComp(compName);
+		const compositeParam = jb.compParams(comp).filter(p=>p.composite)[0];
 		if (compositeParam) {
-			var singleOrArray = compositeParam.type.indexOf('[') == -1 ? st.valOfPath(path) : [st.valOfPath(path)];
+			const singleOrArray = compositeParam.type.indexOf('[') == -1 ? st.valOfPath(path) : [st.valOfPath(path)];
 			if (jb.compParams(comp).length == 1) // use sugar
 				var result = jb.obj('$'+compName,singleOrArray);
 			else
@@ -29586,8 +29482,8 @@ Object.assign(st, {
 	addProperty: (path,srcCtx) => {
 		// if (st.paramTypeOfPath(path) == 'data')
 		// 	return st.writeValueOfPath(path,'');
-		var param = st.paramDef(path);
-		var result = param.defaultValue || {$: ''};
+		const param = st.paramDef(path);
+		let result = param.defaultValue || {$: ''};
 		if (st.paramTypeOfPath(path).indexOf('data') != -1)
 			result = '';
 		if (param.type.indexOf('[') != -1)
@@ -29596,40 +29492,41 @@ Object.assign(st, {
 	},
 
 	duplicateControl: (path,srcCtx) => {
-		var prop = path.split('~').pop();
-		var val = st.valOfPath(path);
-		var parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
+		const prop = path.split('~').pop();
+		const val = st.valOfPath(path);
+		const parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
 		if (parent_ref) {
-			var clone = st.evalProfile(jb.prettyPrint(val));
+			const clone = st.evalProfile(jb.prettyPrint(val));
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
 	duplicateArrayItem: (path,srcCtx) => {
-		var prop = path.split('~').pop();
-		var val = st.valOfPath(path);
-		var parent_ref = st.refOfPath(st.parentPath(path));
+		const prop = path.split('~').pop();
+		const val = st.valOfPath(path);
+		const parent_ref = st.refOfPath(st.parentPath(path));
 		if (parent_ref && Array.isArray(st.val(parent_ref))) {
-			var clone = st.evalProfile(jb.prettyPrint(val));
+			const clone = st.evalProfile(jb.prettyPrint(val));
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
 	disabled: path => {
-		var prof = st.valOfPath(path);
+		const prof = st.valOfPath(path);
 		return prof && typeof prof == 'object' && prof.$disabled;
 	},
 	toggleDisabled: (path,srcCtx) => {
-		var prof = st.valOfPath(path);
+		const prof = st.valOfPath(path);
 		if (prof && typeof prof == 'object' && !Array.isArray(prof))
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
 	setComp: (path,compName,srcCtx) => {
-		var comp = compName && st.getComp(compName);
+		const comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
-		var params = jb.compParams(comp);
+		const params = jb.compParams(comp);
 		if (params.length == 1 && (params[0]||{}).composite == true || (params[0]||{}).sugar)
 			return st.setSugarComp(path,compName,params[0],srcCtx);
 
-		var result = comp.singleInType ? {} : { $: compName };
+		const result = comp.singleInType ? {} : { $: compName };
+		const currentVal = st.valOfPath(path);
 		params.forEach(p=>{
 			if (p.composite)
 				result[p.id] = [];
@@ -29637,12 +29534,10 @@ Object.assign(st, {
 				result[p.id] = p.defaultValue;
 			if (p.defaultValue && typeof p.defaultValue == 'object' && (p.forceDefaultCreation || Array.isArray(p.defaultValue)))
 				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue));
+			if (currentVal && currentVal[p.id] !== undefined)
+				result[p.id] = currentVal[p.id]
 		})
-		var currentVal = st.valOfPath(path);
-		if (!currentVal || typeof currentVal != 'object')
-			st.writeValue(st.refOfPath(path),result,srcCtx)
-		else
-			st.merge(st.refOfPath(path),result,srcCtx);
+		st.writeValue(st.refOfPath(path),result,srcCtx)
 	},
 
 	setSugarComp: (path,compName,param,srcCtx) => {
@@ -29681,7 +29576,7 @@ Object.assign(st, {
 		if (group_ref)
 			st.push(group_ref,[newCtrl],srcCtx);
 	},
-    // if dest is not an array item, fix it
+    // if drop destination is not an array item, fix it
    moveFixDestination(from,to,srcCtx) {
 		if (isNaN(Number(to.split('~').slice(-1)))) {
             if (st.valOfPath(to) === undefined)
@@ -29691,11 +29586,14 @@ Object.assign(st, {
 		return jb.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
 	},
 
-	addArrayItem: (path,toAdd,srcCtx) => {
-		var val = st.valOfPath(path);
-		var toAdd = toAdd || {$:''};
+	addArrayItem: (path,{toAdd,srcCtx, index} = {}) => {
+		const val = st.valOfPath(path);
+		toAdd = toAdd || {$:''};
 		if (Array.isArray(val)) {
-			st.push(st.refOfPath(path),[toAdd],srcCtx);
+			if (index === undefined)
+				st.push(st.refOfPath(path),[toAdd],srcCtx);
+			else
+				st.splice(st.refOfPath(path),[[index,0,toAdd]],srcCtx);
 //			return { newPath: path + '~' + (val.length-1) }
 		}
 		else if (!val) {
@@ -30418,41 +30316,42 @@ jb.component('studio.is-of-type', { /* studio_isOfType */
     {id: 'path', as: 'string', mandatory: true},
     {id: 'type', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path,_type) =>
-			st.isOfType(path,_type)
+  impl: (ctx,path,_type) =>	st.isOfType(path,_type)
+})
+
+jb.component('studio.is-array-type', {
+  params: [
+    {id: 'path', as: 'string', mandatory: true},
+  ],
+  impl: (ctx,path) =>	st.isArrayType(path)
 })
 
 jb.component('studio.parent-path', { /* studio_parentPath */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) =>
-		st.parentPath(path)
+  impl: (ctx,path) => st.parentPath(path)
 })
-
 
 jb.component('studio.param-type', { /* studio_paramType */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) =>
-			st.paramTypeOfPath(path)
+  impl: (ctx,path) =>	st.paramTypeOfPath(path)
 })
 
 jb.component('studio.PTs-of-type', { /* studio_PTsOfType */
   params: [
     {id: 'type', as: 'string', mandatory: true}
   ],
-  impl: (ctx,_type) =>
-			st.PTsOfType(_type)
+  impl: (ctx,_type) => st.PTsOfType(_type)
 })
 
 jb.component('studio.profiles-of-PT', { /* studio_profilesOfPT */
   params: [
     {id: 'PT', as: 'string', mandatory: true}
   ],
-  impl: (ctx, pt) =>
-			st.profilesOfPT(pt)
+  impl: (ctx, pt) => st.profilesOfPT(pt)
 })
 
 jb.component('studio.categories-of-type', { /* studio_categoriesOfType */
@@ -30720,17 +30619,19 @@ jb.component('studio.new-array-item', { /* studio_newArrayItem */
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) =>
-		st.addArrayItem(path,ctx)
+		st.addArrayItem(path,{srcCtx: ctx})
 })
 
 jb.component('studio.add-array-item', { /* studio_addArrayItem */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'toAdd', as: 'single'}
+    {id: 'toAdd', as: 'single'},
+    {id: 'index', as: 'number', defaultValue: -1},
   ],
-  impl: (ctx,path,toAdd) =>
-		st.addArrayItem(path, toAdd,ctx)
+  impl: (ctx,path,toAdd,index) =>
+    index == -1 ? st.addArrayItem(path, {srcCtx: ctx, toAdd}) 
+      : st.addArrayItem(path, {srcCtx: ctx, toAdd, index})
 })
 
 jb.component('studio.wrap-with-array', { /* studio_wrapWithArray */
@@ -31404,7 +31305,7 @@ Object.assign(st,{
 			return params[0];
 		return params.filter(p=>p.id==paramName)[0] || {};
 	},
-
+	isArrayType: path => ((st.paramDef(path)||{}).type||'').indexOf('[]') != -1,
 	isOfType: (path,type) => {
 		const types = type.split(',');
 		if (types.length > 1)
@@ -31671,21 +31572,18 @@ jb.component('studio.open-new-profile-dialog', { /* studio_openNewProfileDialog 
   params: [
     {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()},
     {id: 'type', as: 'string'},
+    {id: 'index', as: 'number'},
     {id: 'mode', option: 'insert,insert-control,update', defaultValue: 'insert'},
     {id: 'onClose', type: 'action', dynamic: true}
   ],
   impl: openDialog({
     style: dialog_studioFloating({}),
     content: studio_selectProfile({
-      onSelect: action_if(
-        '%$mode% == \"insert-control\"',
-        studio_insertControl('%$path%', '%%'),
-        {
-          $if: '%$mode% == \"insert\"',
-          then: studio_addArrayItem('%$path%', {$object: {$: '%%'}}),
-          else: studio_setComp('%$path%', '%%')
-        }
-      ),
+      onSelect: action.switch([
+          action.switchCase('%$mode% == \"insert-control\"', studio.insertControl('%$path%', '%%')),
+          action.switchCase('%$mode% == \"insert\"', studio.addArrayItem({path: '%$path%', index: '%$index%', toAdd: {$object: {$: '%%'}} })),
+          action.switchCase('%$mode% == \"update\"', studio.setComp('%$path%', '%%'))
+      ]),
       type: '%$type%',
       path: '%$path%'
     }),
@@ -31696,7 +31594,7 @@ jb.component('studio.open-new-profile-dialog', { /* studio_openNewProfileDialog 
       dialogFeature_dragTitle('new %$type%'),
       studio.nearLauncherPosition(),
       dialogFeature_autoFocusOnFirstInput(),
-      dialogFeature_onClose([call('onClose')])
+      dialogFeature_onClose(call('onClose'))
     ]
   })
 })
@@ -32587,7 +32485,16 @@ jb.component('dialog.studio-suggestions-popup',  /* dialog_studioSuggestionsPopu
 (function() {
 const st = jb.studio;
 
-jb.component('sourceEditor.open-editor', {
+jb.component('source-editor.refresh-editor', {
+  type: 'action',
+  params: [ {id: 'path', as: 'string'} ],
+  impl: (ctx,path) =>  ctx.vars.editor.refreshEditor && ctx.vars.editor.refreshEditor(path)
+})
+
+jb.component('source-editor.refresh-from-data-ref', {
+  type: 'action',
+  params: [ {id: 'path', as: 'string'} ],
+  impl: (ctx,path) =>  ctx.vars.editor && ctx.vars.editor.refreshFromDataRef()
 })
 
 jb.component('studio.open-editor', { /* studio_openEditor */
@@ -32608,10 +32515,16 @@ jb.component('studio.editable-source', { /* studio.editableSource */
   impl: editableText({
       databind: studio.profileAsText('%$path%'),
       style: editableText.codemirror(),
-      features: feature.onKey('Ctrl-Enter', textEditor.withCursorPath(
-          studio.openEditProperty(
-              split({text: '%$cursorPath[0]%', separator: '~!', part: 'first'}))
-          )),
+      features: [
+        feature.onKey('Enter', sourceEditor.refreshEditor()),
+        feature.onKey('Ctrl-Enter', textEditor.withCursorPath(studio.openEditProperty('%$cursorPath[0]%'))),
+        textEditor.init(),
+        ctx => ({
+            extendCtxOnce: (ctx,cmp) => ctx.setVars({
+                refreshEditor: path => jb.textEditor.refreshEditor(cmp,path)
+              })
+          }),
+      ]
   })
 })
 
@@ -32668,18 +32581,19 @@ jb.component('studio.goto-editor-options', { /* studio_gotoEditorOptions */
   )
 })
 
-jb.component('studio.open-edit-property', { /* studio_openEditProperty */
+jb.component('studio.open-edit-property', { /* studio.openEditProperty */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: action.switch(
-    Var('actualPath', studio.jbEditorPathForEdit('%$path%')),
+    Var('actualPath', split({text: '%$path%', separator: '~!', part: 'first'})),
+    Var('parentPath', studio.parentPath('%$actualPath%')),
+    Var('pathType', split({text: '%$path%', separator: '~!', part: 'last'})),
     Var('paramDef', studio.paramDef('%$actualPath%')),
     [
       action.switchCase(endsWith('$vars', '%$path%')),
-      action.switchCase(
-        '%$paramDef/options%',
+      action.switchCase( '%$paramDef/options%',
         openDialog({
           style: dialog.studioJbEditorPopup(),
           content: group({
@@ -32688,18 +32602,17 @@ jb.component('studio.open-edit-property', { /* studio_openEditProperty */
             ],
             features: [
               feature.onEsc(dialog.closeContainingPopup(true)),
-              feature.onEnter(dialog.closeContainingPopup(true), sourceEditor.refreshAndRegainFocus())
+              feature.onEnter(dialog.closeContainingPopup(true), sourceEditor.refreshEditor())
             ]
           }),
           features: [
             studio.nearLauncherPosition(),
             dialogFeature.autoFocusOnFirstInput(), 
-            dialogFeature.onClose(sourceEditor.refreshAndRegainFocus())
+            dialogFeature.onClose(sourceEditor.refreshEditor())
           ]
         })
       ),
-      action.switchCase(
-        studio.isOfType('%$actualPath%', 'data,boolean'),
+      action.switchCase(studio.isOfType('%$actualPath%', 'data,boolean'),
         openDialog({
           style: dialog.studioJbEditorPopup(),
           content: studio.jbFloatingInput('%$actualPath%'),
@@ -32707,7 +32620,7 @@ jb.component('studio.open-edit-property', { /* studio_openEditProperty */
             dialogFeature.autoFocusOnFirstInput(),
             studio.nearLauncherPosition(),
             dialogFeature.onClose(
-              runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshAndRegainFocus())
+              runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshEditor())
             )
           ]
         })
@@ -32715,14 +32628,46 @@ jb.component('studio.open-edit-property', { /* studio_openEditProperty */
       action.switchCase(
         Var('ptsOfType', studio.PTsOfType(studio.paramType('%$actualPath%'))),
         '%$ptsOfType/length% == 1',
-        runActions(studio.setComp('%$path%', '%$ptsOfType[0]%'),sourceEditor.refreshAndRegainFocus())
-      )
+        runActions(studio.setComp('%$path%', '%$ptsOfType[0]%'),sourceEditor.refreshEditor())
+      ),
+      action.switchCase(and(equals('%$pathType%','open'), studio.isArrayType('%$actualPath%')),
+          studio.openNewProfileDialog({
+            path: '%$actualPath%',
+            type: studio.paramType('%$actualPath%'),
+            index: 0,
+            mode: 'insert',
+            onClose: sourceEditor.refreshEditor('%$actualPath%~0')
+          })
+      ),
+      action.switchCase(and(equals('%$pathType%','close'), studio.isArrayType('%$parentPath%')),
+          studio.openNewProfileDialog({
+            vars: Var('length', count(studio.val('%$parentPath%'))),
+            path: '%$parentPath%',
+            type: studio.paramType('%$actualPath%'),
+            index: '%$length%',
+            mode: 'insert',
+            onClose: sourceEditor.refreshEditor('%$actualPath%~%$length%')
+          })
+      ),
+      action.switchCase(and(equals('%$pathType%','separator'), studio.isArrayType('%$parentPath%')),
+          studio.openNewProfileDialog({
+            vars: [
+              Var('index', (ctx,{actualPath}) => +actualPath.split('~').pop()+1),
+              Var('nextSiblingPath',pipeline(list('%$parentPath%','%$index%'),join())),
+            ],            
+            path: '%$parentPath%',
+            type: studio.paramType('%$actualPath%'),
+            index: '%$index%',
+            mode: 'insert',
+            onClose: sourceEditor.refreshEditor('%$nextSiblingPath%')
+          })
+      ),
     ],
     studio.openNewProfileDialog({
       path: '%$actualPath%',
       type: studio.paramType('%$actualPath%'),
       mode: 'update',
-      onClose: sourceEditor.refreshAndRegainFocus()
+      onClose: sourceEditor.refreshEditor('%$actualPath%')
     })
   )
 })

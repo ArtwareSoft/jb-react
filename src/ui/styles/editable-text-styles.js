@@ -25,30 +25,6 @@ jb.component('editable-text.textarea', {
 	}
 })
 
-jb.component('textarea.init-textarea-editor', {
-  type: 'feature',
-  impl: ctx => ({
-      beforeInit: cmp => {
-        if (!jb.textEditor) return
-        cmp.editor = {
-          getCursorPos: () => jb.textEditor.offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
-          cursorCoords: () => {},
-          markText: () => {},
-          replaceRange: (text, from, to) => {
-            const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-            const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
-            cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
-          },
-          setSelectionRange: (from, to) => {
-            const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-            const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
-            cmp.base.setSelectionRange(_from,_to)
-          },
-        }
-      }
-  })
-})
-
 jb.component('editable-text.mdl-input', {
   type: 'editable-text.style',
   params: [

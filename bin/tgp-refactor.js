@@ -7,7 +7,7 @@ const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,testers,pretty
 
 const filesOfModules = modules => modules.split(',').map(m=>{
     if (m == 'studio')
-        return resources[m].map(file => 'projects/studio/studio-' + file + '.js')
+        return resources[m].map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js')
     else if (m == 'studio-tests')
         return resources[m].map(file => 'projects/studio-helper/studio-' + file + '-tests.js')
     else return resources[m] 
