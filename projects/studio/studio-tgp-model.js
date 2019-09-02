@@ -272,7 +272,7 @@ Object.assign(st,{
 			return params[0];
 		return params.filter(p=>p.id==paramName)[0] || {};
 	},
-
+	isArrayType: path => ((st.paramDef(path)||{}).type||'').indexOf('[]') != -1,
 	isOfType: (path,type) => {
 		const types = type.split(',');
 		if (types.length > 1)

@@ -25,6 +25,13 @@ jb.component('studio.is-of-type', { /* studio_isOfType */
   impl: (ctx,path,_type) =>	st.isOfType(path,_type)
 })
 
+jb.component('studio.is-array-type', {
+  params: [
+    {id: 'path', as: 'string', mandatory: true},
+  ],
+  impl: (ctx,path) =>	st.isArrayType(path)
+})
+
 jb.component('studio.parent-path', { /* studio_parentPath */
   params: [
     {id: 'path', as: 'string', mandatory: true}

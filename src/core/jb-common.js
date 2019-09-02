@@ -912,6 +912,7 @@ jb.component('in-group', {
 })
 
 jb.component('http.get', {
+	description: 'fetch data from external url',
 	params: [
 		{ id: 'url', as: 'string' },
 		{ id: 'json', as: 'boolean', description: 'convert result to json' }

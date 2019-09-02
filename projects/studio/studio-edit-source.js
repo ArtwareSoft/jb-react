@@ -139,18 +139,45 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
         Var('ptsOfType', studio.PTsOfType(studio.paramType('%$actualPath%'))),
         '%$ptsOfType/length% == 1',
         runActions(studio.setComp('%$path%', '%$ptsOfType[0]%'),sourceEditor.refreshEditor())
-      )
+      ),
+      action.switchCase(and(equals('%$pathType%','open'), studio.isArrayType('%$actualPath%')),
+          studio.openNewProfileDialog({
+            path: '%$actualPath%',
+            type: studio.paramType('%$actualPath%~0'),
+            index: 0,
+            mode: 'insert',
+            onClose: sourceEditor.refreshEditor('%$actualPath%~0')
+          })
+      ),
+      action.switchCase(and(equals('%$pathType%','close'), studio.isArrayType('%$actualPath%')),
+          studio.openNewProfileDialog({
+            vars: Var('length', pipeline(studio.val('%$actualPath%'),'%length%')),            
+            path: '%$actualPath%',
+            type: studio.paramType('%$actualPath%~0'),
+            index: '%$length%',
+            mode: 'insert',
+            onClose: sourceEditor.refreshEditor('%$actualPath%~%$length%')
+          })
+      ),
+      action.switchCase(and(equals('%$pathType%','separator'), studio.isArrayType('%$actualPath%')),
+          studio.openNewProfileDialog({
+            vars: [
+              Var('index', split({text: '%$actualPath%', separator: '~', part: 'last'})),
+              Var('nextSiblingPath',pipeline(list(studio.parentPath('%$actualPath%'),'%$index'),join())),
+            ],            
+            path: '%$actualPath%',
+            type: studio.parentPath('%$actualPath%'),
+            index: '%$index%',
+            mode: 'insert',
+            onClose: sourceEditor.refreshEditor('%$nextSiblingPath%')
+          })
+      ),
     ],
     studio.openNewProfileDialog({
-      vars: [
-        Var('index',(ctx,{actualPath}) => ''+(+(actualPath.match(/([0-9]+)$/) || [0,-2])[1]+1)),
-        Var('nextSiblingPath',(ctx,{index,actualPath}) => index != -1 ? actualPath.replace(/([0-9]+)$/,index) : actualPath),
-      ],
-      path: data.if(studio.isArrayItem('%$actualPath%'),studio.parentPath('%$actualPath%'),'%$actualPath%'),
+      path: '%$actualPath%',
       type: studio.paramType('%$actualPath%'),
-      index: '%$index%',
-      mode: data.if(and(equals('%$pathType%','separator'), studio.isArrayItem('%$actualPath%')),'insert','update'),
-      onClose: sourceEditor.refreshEditor('%$nextSiblingPath%')
+      mode: 'update',
+      onClose: sourceEditor.refreshEditor('%$actualPath%')
     })
   )
 })
