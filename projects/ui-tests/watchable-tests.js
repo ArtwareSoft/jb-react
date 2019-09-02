@@ -344,3 +344,15 @@ jb.component('data-test.watchable-object-to-primitive-bug', {
 	  expectedResult: contains('hello')
 	})
 })
+
+jb.component('ui-test.splice-should-not-fire-full-container-change',  {
+  impl: uiTest({
+    control: itemlist({
+      items: '%$watchable-people%',
+      controls: label('%name%')
+    }),
+    action: addToArray('%$watchable-people%', obj(prop('name','mukki'))),
+    expectedCounters: {setState: undefined },
+    expectedResult: not(contains('mukki'))
+  })
+})
