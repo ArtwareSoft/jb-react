@@ -491,7 +491,7 @@ jb.component('todomvc.start', { /* todomvc.start */
             ),
             style: {$: 'todomvc.button.simple'},
             features: [
-              hidden(notEmpty('%$todo/completed%')),
+              hidden(notEmpty(pipeline('%$todo%', filter('%completed%')))),
               watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true}),
               css.class('clear-completed')
             ]
