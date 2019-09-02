@@ -99,6 +99,7 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
   ],
   impl: action.switch(
     Var('actualPath', split({text: '%$path%', separator: '~!', part: 'first'})),
+    Var('parentPath', studio.parentPath('%$actualPath%')),
     Var('pathType', split({text: '%$path%', separator: '~!', part: 'last'})),
     Var('paramDef', studio.paramDef('%$actualPath%')),
     [
@@ -143,30 +144,30 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
       action.switchCase(and(equals('%$pathType%','open'), studio.isArrayType('%$actualPath%')),
           studio.openNewProfileDialog({
             path: '%$actualPath%',
-            type: studio.paramType('%$actualPath%~0'),
+            type: studio.paramType('%$actualPath%'),
             index: 0,
             mode: 'insert',
             onClose: sourceEditor.refreshEditor('%$actualPath%~0')
           })
       ),
-      action.switchCase(and(equals('%$pathType%','close'), studio.isArrayType('%$actualPath%')),
+      action.switchCase(and(equals('%$pathType%','close'), studio.isArrayType('%$parentPath%')),
           studio.openNewProfileDialog({
-            vars: Var('length', pipeline(studio.val('%$actualPath%'),'%length%')),            
-            path: '%$actualPath%',
-            type: studio.paramType('%$actualPath%~0'),
+            vars: Var('length', count(studio.val('%$parentPath%'))),
+            path: '%$parentPath%',
+            type: studio.paramType('%$actualPath%'),
             index: '%$length%',
             mode: 'insert',
             onClose: sourceEditor.refreshEditor('%$actualPath%~%$length%')
           })
       ),
-      action.switchCase(and(equals('%$pathType%','separator'), studio.isArrayType('%$actualPath%')),
+      action.switchCase(and(equals('%$pathType%','separator'), studio.isArrayType('%$parentPath%')),
           studio.openNewProfileDialog({
             vars: [
-              Var('index', split({text: '%$actualPath%', separator: '~', part: 'last'})),
-              Var('nextSiblingPath',pipeline(list(studio.parentPath('%$actualPath%'),'%$index'),join())),
+              Var('index', (ctx,{actualPath}) => +actualPath.split('~').pop()+1),
+              Var('nextSiblingPath',pipeline(list('%$parentPath%','%$index%'),join())),
             ],            
-            path: '%$actualPath%',
-            type: studio.parentPath('%$actualPath%'),
+            path: '%$parentPath%',
+            type: studio.paramType('%$actualPath%'),
             index: '%$index%',
             mode: 'insert',
             onClose: sourceEditor.refreshEditor('%$nextSiblingPath%')
