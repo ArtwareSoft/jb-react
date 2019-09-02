@@ -22,41 +22,35 @@ jb.component('studio.is-of-type', { /* studio_isOfType */
     {id: 'path', as: 'string', mandatory: true},
     {id: 'type', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path,_type) =>
-			st.isOfType(path,_type)
+  impl: (ctx,path,_type) =>	st.isOfType(path,_type)
 })
 
 jb.component('studio.parent-path', { /* studio_parentPath */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) =>
-		st.parentPath(path)
+  impl: (ctx,path) => st.parentPath(path)
 })
-
 
 jb.component('studio.param-type', { /* studio_paramType */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) =>
-			st.paramTypeOfPath(path)
+  impl: (ctx,path) =>	st.paramTypeOfPath(path)
 })
 
 jb.component('studio.PTs-of-type', { /* studio_PTsOfType */
   params: [
     {id: 'type', as: 'string', mandatory: true}
   ],
-  impl: (ctx,_type) =>
-			st.PTsOfType(_type)
+  impl: (ctx,_type) => st.PTsOfType(_type)
 })
 
 jb.component('studio.profiles-of-PT', { /* studio_profilesOfPT */
   params: [
     {id: 'PT', as: 'string', mandatory: true}
   ],
-  impl: (ctx, pt) =>
-			st.profilesOfPT(pt)
+  impl: (ctx, pt) => st.profilesOfPT(pt)
 })
 
 jb.component('studio.categories-of-type', { /* studio_categoriesOfType */
@@ -324,17 +318,19 @@ jb.component('studio.new-array-item', { /* studio_newArrayItem */
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) =>
-		st.addArrayItem(path,ctx)
+		st.addArrayItem(path,{srcCtx: ctx})
 })
 
 jb.component('studio.add-array-item', { /* studio_addArrayItem */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'toAdd', as: 'single'}
+    {id: 'toAdd', as: 'single'},
+    {id: 'index', as: 'number', defaultValue: -1},
   ],
-  impl: (ctx,path,toAdd) =>
-		st.addArrayItem(path, toAdd,ctx)
+  impl: (ctx,path,toAdd,index) =>
+    index == -1 ? st.addArrayItem(path, {srcCtx: ctx, toAdd}) 
+      : st.addArrayItem(path, {srcCtx: ctx, toAdd, index})
 })
 
 jb.component('studio.wrap-with-array', { /* studio_wrapWithArray */

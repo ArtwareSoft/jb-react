@@ -50,7 +50,6 @@ jb.component('ui-test.watchable-var',  /* uiTest_mutableVar */ {
           feature_afterLoad(writeValue('%$var1%', 'foo'))
         ]
       }),
-      action: ctx => jb.delay(1).then(_ => jb.delay(1)),
       expectedResult: contains('foo')
     })
 })

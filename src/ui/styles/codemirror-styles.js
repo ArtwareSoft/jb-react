@@ -47,6 +47,7 @@ jb.component('editable-text.codemirror', {
 							const coords = editor.cmEditor && editor.cmEditor.cursorCoords()
 							return coords && Object.assign(coords,{top: coords.top - cmp.base.offsetHeight})
 						},
+						setValue: text => editor.setValue(text),
 						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
 						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
 						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),

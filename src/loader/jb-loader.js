@@ -73,6 +73,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       'codemirror': [
           'dist/codemirror.js',
           'dist/codemirror.css',
+          'src/ui/styles/codemirror-styles.js'
       ],
       'codemirror-styles': [ 'src/ui/styles/codemirror-styles.js' ],
       'codemirror-js-files': [

@@ -1148,20 +1148,6 @@ jb.component('menu-test.open-context-menu',  /* menuTest_openContextMenu */ {
   })
 })
 
-jb.component('ui-test.watchable-var', {
-  impl: uiTest({
-    control: label({
-      title: '%$var1%',
-      features: [
-        variable({name: 'var1', value: 'hello', watchable: true}),
-        feature_afterLoad(writeValue('%$var1%', 'foo'))
-      ]
-    }),
-    action: ctx => jb.delay(1),
-    expectedResult: contains('foo')
-  })
-})
-
 jb.component('ui-test.refresh-control-by-id',  /* uiTest_refreshControlById */ {
   impl: uiTest({
     control: itemlist({

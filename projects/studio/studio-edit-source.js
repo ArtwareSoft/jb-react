@@ -1,7 +1,13 @@
 (function() {
 const st = jb.studio;
 
-jb.component('sourceEditor.open-editor', {
+jb.component('sourceEditor.refresh-editor', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>
+    ctx.vars.refreshEditor && ctx.vars.refreshEditor(path)
 })
 
 jb.component('studio.open-editor', { /* studio_openEditor */
@@ -22,10 +28,14 @@ jb.component('studio.editable-source', { /* studio.editableSource */
   impl: editableText({
       databind: studio.profileAsText('%$path%'),
       style: editableText.codemirror(),
-      features: feature.onKey('Ctrl-Enter', textEditor.withCursorPath(
-          studio.openEditProperty(
-              split({text: '%$cursorPath[0]%', separator: '~!', part: 'first'}))
-          )),
+      features: [
+        feature.onKey('Ctrl-Enter', textEditor.withCursorPath(studio.openEditProperty('%$cursorPath[0]%'))),
+        ctx => ({
+            extendCtxOnce: (ctx,cmp) => ctx.setVars({
+                refreshEditor: path => jb.textEditor.refreshEditor(cmp,path)
+              })
+          }),
+      ]
   })
 })
 
@@ -82,18 +92,18 @@ jb.component('studio.goto-editor-options', { /* studio_gotoEditorOptions */
   )
 })
 
-jb.component('studio.open-edit-property', { /* studio_openEditProperty */
+jb.component('studio.open-edit-property', { /* studio.openEditProperty */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: action.switch(
-    Var('actualPath', studio.jbEditorPathForEdit('%$path%')),
+    Var('actualPath', split({text: '%$path%', separator: '~!', part: 'first'})),
+    Var('pathType', split({text: '%$path%', separator: '~!', part: 'last'})),
     Var('paramDef', studio.paramDef('%$actualPath%')),
     [
       action.switchCase(endsWith('$vars', '%$path%')),
-      action.switchCase(
-        '%$paramDef/options%',
+      action.switchCase( '%$paramDef/options%',
         openDialog({
           style: dialog.studioJbEditorPopup(),
           content: group({
@@ -102,18 +112,17 @@ jb.component('studio.open-edit-property', { /* studio_openEditProperty */
             ],
             features: [
               feature.onEsc(dialog.closeContainingPopup(true)),
-              feature.onEnter(dialog.closeContainingPopup(true), sourceEditor.refreshAndRegainFocus())
+              feature.onEnter(dialog.closeContainingPopup(true), sourceEditor.refreshEditor())
             ]
           }),
           features: [
             studio.nearLauncherPosition(),
             dialogFeature.autoFocusOnFirstInput(), 
-            dialogFeature.onClose(sourceEditor.refreshAndRegainFocus())
+            dialogFeature.onClose(sourceEditor.refreshEditor())
           ]
         })
       ),
-      action.switchCase(
-        studio.isOfType('%$actualPath%', 'data,boolean'),
+      action.switchCase(studio.isOfType('%$actualPath%', 'data,boolean'),
         openDialog({
           style: dialog.studioJbEditorPopup(),
           content: studio.jbFloatingInput('%$actualPath%'),
@@ -121,7 +130,7 @@ jb.component('studio.open-edit-property', { /* studio_openEditProperty */
             dialogFeature.autoFocusOnFirstInput(),
             studio.nearLauncherPosition(),
             dialogFeature.onClose(
-              runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshAndRegainFocus())
+              runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshEditor())
             )
           ]
         })
@@ -129,14 +138,19 @@ jb.component('studio.open-edit-property', { /* studio_openEditProperty */
       action.switchCase(
         Var('ptsOfType', studio.PTsOfType(studio.paramType('%$actualPath%'))),
         '%$ptsOfType/length% == 1',
-        runActions(studio.setComp('%$path%', '%$ptsOfType[0]%'),sourceEditor.refreshAndRegainFocus())
+        runActions(studio.setComp('%$path%', '%$ptsOfType[0]%'),sourceEditor.refreshEditor())
       )
     ],
     studio.openNewProfileDialog({
-      path: '%$actualPath%',
+      vars: [
+        Var('index',(ctx,{actualPath}) => ''+(+(actualPath.match(/([0-9]+)$/) || [0,-2])[1]+1)),
+        Var('nextSiblingPath',(ctx,{index,actualPath}) => index != -1 ? actualPath.replace(/([0-9]+)$/,index) : actualPath),
+      ],
+      path: data.if(studio.isArrayItem('%$actualPath%'),studio.parentPath('%$actualPath%'),'%$actualPath%'),
       type: studio.paramType('%$actualPath%'),
-      mode: 'update',
-      onClose: sourceEditor.refreshAndRegainFocus()
+      index: '%$index%',
+      mode: data.if(and(equals('%$pathType%','separator'), studio.isArrayItem('%$actualPath%')),'insert','update'),
+      onClose: sourceEditor.refreshEditor('%$nextSiblingPath%')
     })
   )
 })

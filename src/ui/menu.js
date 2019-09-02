@@ -72,7 +72,7 @@ jb.component('menu.action', {
 			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
 			title: ctx.params.title(ctx),
 			applyShortcut: e=> {
-				if (jb.ui.checkKey(ctx.params.shortcut)) {
+				if (jb.ui.checkKey(e,ctx.params.shortcut)) {
 					e.stopPropagation();
 					ctx.params.action();
 					return true;

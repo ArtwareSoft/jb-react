@@ -518,3 +518,32 @@ jb.component('data.test1', {
   impl: '%$first%-%$second%'
 })
 
+jb.component('data-test.pretty-print-positions', {
+  impl: dataTest({
+    calculate: pipeline(
+      () => jb.prettyPrintWithPositions(group({title: '2.0', controls: label('my label')})),
+      '%map/~controls~title~!value%',
+      join()
+    ),
+    expectedResult: equals('3,4,3,14')
+  })
+})
+
+jb.component('data-test.pretty-print-positions-inner-flat', {
+  impl: dataTest({
+    calculate: pipeline(
+      () => jb.prettyPrintWithPositions(
+      group({
+        title: 'main',
+        controls: [
+          group({title: '2.0', controls: label('my label')}),
+          label('1.00')
+        ]
+      })
+      ),
+      '%map/~controls~0~controls~title~!value%',
+      join()
+    ),
+    expectedResult: equals('3,41,3,51')
+  })
+})
