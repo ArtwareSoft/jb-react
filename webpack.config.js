@@ -49,16 +49,6 @@ const babel_ext = {
   resolve: { modules: [ 'node_modules' ] },
 };
 
-const deepDiff = {
-  mode: 'development',
-  entry: JBART_DIR + 'projects/studio/studio-deep-diff-ext.js',
-  output: {
-    path: JBART_DIR + 'dist',
-    filename: 'deep-diff.js',
-  },
-  resolve: { modules: [ 'node_modules' ] },
-};
-
 const jbRxMin = {
   mode: 'development',
   entry: JBART_DIR + 'src/ui/jb-rx.js',
@@ -85,4 +75,4 @@ const jbJison = {
   resolve: { modules: [ 'node_modules'] },
 };
 
-module.exports = [jbPreact,jbImmutable,jbRx,babel_ext,jbJison,deepDiff];
+module.exports = [jbPreact,jbImmutable,jbRx,babel_ext,jbJison];

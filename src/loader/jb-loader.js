@@ -24,7 +24,6 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
 
         'src/ui/react-ctrl.js',
         'src/ui/watchable/watchable-ref.js',
-        'src/ui/watchable/watchable-text.js',
 
         'src/ui/group.js',
         'src/ui/label.js',
@@ -73,11 +72,8 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       'codemirror': [
           'dist/codemirror.js',
           'dist/codemirror.css',
-          'src/ui/styles/codemirror-styles.js'
       ],
-      'codemirror-styles': [ 'src/ui/styles/codemirror-styles.js' ],
       'codemirror-js-files': [
-        'src/ui/styles/codemirror-styles.js',
         'node_modules/codemirror/lib/codemirror.js',
         'node_modules/codemirror/mode/xml/xml.js',
         'node_modules/codemirror/mode/javascript/javascript.js',
@@ -111,6 +107,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
           'dist/dragula.css',
       ],
       studio: [
+        'src/ui/watchable/text-editor.js','src/ui/styles/codemirror-styles.js',
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
@@ -149,7 +146,7 @@ function jb_dynamicLoad(modules,prefix) {
   modules.split(',').forEach(m=>{
     (resources[m] || []).forEach(file=>{
       if (m == 'studio')
-        file = 'projects/studio/studio-' + file + '.js';
+        file = file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js';
       if (m == 'studio-tests')
         file = 'projects/studio-helper/studio-' + file + '-tests.js';
       // if (m=='node_modules/jquery/dist/jquery.min.js' && electron)
