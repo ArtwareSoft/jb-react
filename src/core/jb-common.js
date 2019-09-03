@@ -514,16 +514,18 @@ jb.component('not-contains',  /* notContains */ {
 })
 
 jb.component('starts-with',  /* startsWith */ {
+  description: 'begins with, includes, contains',
   type: 'boolean',
   params: [
     {id: 'startsWith', as: 'string', mandatory: true},
     {id: 'text', defaultValue: '%%', as: 'string'}
   ],
   impl: (context,startsWith,text) =>
-		text.lastIndexOf(startsWith,0) == 0
+		text.indexOf(startsWith) == 0
 })
 
 jb.component('ends-with',  /* endsWith */ {
+  description: 'includes, contains',
   type: 'boolean',
   params: [
     {id: 'endsWith', as: 'string', mandatory: true},

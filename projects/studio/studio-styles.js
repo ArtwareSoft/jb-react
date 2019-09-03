@@ -12,6 +12,22 @@ jb.component('editable-text.studio-primitive-text', {
 	}
 })
 
+jb.component('editable-text.floating-input', {
+  type: 'editable-text.style',
+  impl :customStyle({
+    template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
+      h('input', { class: 'mdl-textfield__input', id1: 'jb_input_' + state.fieldId, type: 'text', autocomplete: 'nop',
+          value: state.model,
+          onchange: e => cmp.jbModel(e.target.value),
+      }),
+      h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
+  ]),
+    css: '{ margin-right: 13px; }',
+    features: [field.databindText(300, true), mdlStyle.initDynamic()]
+  })
+})
+
+
 jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
   incNumberAtCursor(editor, {inc}) {
     const cur = editor.getCursor(), token = editor.getTokenAt(cur);

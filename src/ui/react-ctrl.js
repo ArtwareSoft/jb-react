@@ -239,10 +239,10 @@ ui.focus = function(elem,logTxt,srcCtx) {
   })
 }
 
-ui.wrapWithLauchingElement = (f,context,elem) =>
+ui.wrapWithLauchingElement = (f,context,elem,options={}) =>
 	ctx2 => {
 		if (!elem) debugger;
-		return f(context.extendVars(ctx2).setVars({ $launchingElement: { el : elem }}));
+		return f(context.extendVars(ctx2).setVars({ $launchingElement: { el : elem, ...options }}));
 	}
 
 

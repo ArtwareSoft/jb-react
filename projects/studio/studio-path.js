@@ -231,7 +231,7 @@ Object.assign(st, {
 
 	addArrayItem: (path,{toAdd,srcCtx, index} = {}) => {
 		const val = st.valOfPath(path);
-		toAdd = toAdd || {$:''};
+		toAdd = toAdd === undefined ? {$:''} : toAdd;
 		if (Array.isArray(val)) {
 			if (index === undefined)
 				st.push(st.refOfPath(path),[toAdd],srcCtx);

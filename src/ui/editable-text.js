@@ -37,6 +37,7 @@ jb.component('editable-text.helper-popup', {
     { id: 'popupId', as: 'string', mandatory: true },
     { id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.popup' } },
     { id: 'showHelper', as: 'boolean', dynamic: true, defaultValue :{$notEmpty: '%value%' }, description: 'show/hide helper according to input content' },
+    { id: 'autoOpen', as: 'boolean' },
     { id: 'onEnter', type: 'action', dynamic: true },
     { id: 'onEsc', type: 'action', dynamic: true },
   ],
@@ -51,16 +52,17 @@ jb.component('editable-text.helper-popup', {
       if (!input) return;
 
       cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 =>
-            ctx2.run( {$: 'open-dialog',
+            ctx2.run( openDialog({
               id: ctx.params.popupId,
               style: _ctx => ctx.params.popupStyle(_ctx),
               content: _ctx => ctx.params.control(_ctx),
               features: [
+                dialogFeature.maxZIndexOnClick(),
                 dialogFeature.uniqueDialog(ctx.params.popupId),
-                css('{z-index: 10000 !important}'),
+//                css('{z-index: 10000 !important}'),
               ]
-            })
-          , cmp.ctx, cmp.base );
+            }))
+          ,cmp.ctx, cmp.base);
 
       cmp.popup = _ =>
         jb.ui.dialogs.dialogs.filter(d=>d.id == ctx.params.popupId)[0];
@@ -98,6 +100,8 @@ jb.component('editable-text.helper-popup', {
 
       keyup.filter(e=>e.keyCode == 27) // ESC
           .subscribe(_=>cmp.closePopup())
+      if (ctx.params.autoOpen)
+        cmp.refreshSuggestionPopupOpenClose()
     },
     destroy: cmp =>
         cmp.closePopup(),

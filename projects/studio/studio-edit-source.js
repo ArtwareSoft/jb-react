@@ -7,6 +7,20 @@ jb.component('source-editor.refresh-editor', {
   impl: (ctx,path) =>  ctx.vars.refreshEditor && ctx.vars.refreshEditor(path)
 })
 
+jb.component('source-editor.prop-options', {
+  params: [ {id: 'path', as: 'string'} ],
+  impl: (ctx,path) =>  {
+    const val = st.val(path) || {}
+    return st.paramsOfPath(path).filter(p=> val[p.id] === undefined)
+      .map(param=> Object.assign(param,{ text: param.id }))
+  }
+})
+
+jb.component('source-editor.store-to-ref', {
+  type: 'action',
+  impl: ctx => ctx.vars.editor && ctx.vars.editor() && ctx.vars.editor().storeToRef()
+})
+
 jb.component('source-editor.first-param-as-array-path', {
   type: 'action',
   params: [ {id: 'path', as: 'string'} ],
@@ -36,11 +50,12 @@ jb.component('studio.editable-source', { /* studio.editableSource */
       databind: studio.profileAsText('%$path%'),
       style: editableText.codemirror({
         cm_settings: { extraKeys: {
-          'Enter': action.if(textEditor.isDirty(), sourceEditor.refreshEditor(), 
+          'Enter': action.if(textEditor.isDirty(), runActions(sourceEditor.storeToRef(), sourceEditor.refreshEditor()), 
             textEditor.withCursorPath(studio.openEditProperty('%$cursorPath%')))
         }}
       }),
       features: [
+        feature.onKey('Ctrl-I',studio.openJbEditor('%$path%')),
         textEditor.init(),
       ]
   })
@@ -105,11 +120,24 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
     {id: 'path', as: 'string'}
   ],
   impl: action.switch(
-    Var('actualPath', split({text: '%$path%', separator: '~!', part: 'first'})), // sourceEditor.firstParamAsArrayPath(
-    Var('parentPath', studio.parentPath('%$actualPath%')),
     Var('pathType', split({text: '%$path%', separator: '~!', part: 'last'})),
+    Var('actualPath', split({text: '%$path%', separator: '~!', part: 'first'})), 
+    Var('parentPath', studio.parentPath('%$actualPath%')),
     Var('paramDef', studio.paramDef('%$actualPath%')),
     [
+      action.switchCase( or(
+          startsWith('obj-separator','%$pathType%'),
+          inGroup(list('close-profile','open-profile','open-by-value','close-by-value'),'%$pathType%')
+        ), 
+        openDialog({
+          style: dialog.studioJbEditorPopup(),
+          content: sourceEditor.addProp('%$actualPath%'),
+          features: [
+            studio.nearLauncherPosition(),
+            dialogFeature.autoFocusOnFirstInput(), 
+            dialogFeature.onClose(sourceEditor.refreshEditor())
+          ]
+      })),
       action.switchCase(endsWith('$vars', '%$path%')),
       action.switchCase( '%$paramDef/options%',
         openDialog({
@@ -131,24 +159,33 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
         })
       ),
       action.switchCase(studio.isOfType('%$actualPath%', 'data,boolean'),
-        openDialog({
-          style: dialog.studioJbEditorPopup(),
-          content: studio.jbFloatingInput('%$actualPath%'),
-          features: [
-            dialogFeature.autoFocusOnFirstInput(),
-            studio.nearLauncherPosition(),
-            dialogFeature.onClose(
-              runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshEditor())
-            )
-          ]
-        })
-      ),
+        runActions(
+          Var('sugarArrayPath', sourceEditor.firstParamAsArrayPath('%$actualPath%')), 
+          Var('index', data.switch({cases:[
+            data.case(equals('open-sugar','%$pathType%'), 0),
+            data.case(equals('close-sugar','%$pathType%'), count(studio.val('%$sugarArrayPath%')))
+          ]})),
+          Var('actualPathHere',data.if(endsWith('open-sugar','%$pathType%'), '%$sugarArrayPath%~%$index%','%$actualPath%')),
+          action.if(equals('open-sugar','%$pathType%'), studio.addArrayItem({path: '%$sugarArrayPath%', index: 0, toAdd: ''})),
+          action.if(equals('close-sugar','%$pathType%'), studio.addArrayItem({path: '%$sugarArrayPath%', toAdd: ''})),
+          openDialog({
+            style: dialog.studioJbEditorPopup(),
+            content: studio.jbFloatingInput('%$actualPathHere%'),
+            features: [
+              dialogFeature.autoFocusOnFirstInput(),
+              studio.nearLauncherPosition(),
+              dialogFeature.onClose(
+                runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshEditor())
+              )
+            ]
+          })
+      )),
       action.switchCase(
         Var('ptsOfType', studio.PTsOfType(studio.paramType('%$actualPath%'))),
         '%$ptsOfType/length% == 1',
         runActions(studio.setComp('%$path%', '%$ptsOfType[0]%'),sourceEditor.refreshEditor())
       ),
-      action.switchCase(and(equals('%$pathType%','open'), studio.isArrayType('%$actualPath%')),
+      action.switchCase(and(startsWith('open','%$pathType%'), studio.isArrayType('%$actualPath%')),
           studio.openNewProfileDialog({
             path: '%$actualPath%',
             type: studio.paramType('%$actualPath%'),
@@ -157,7 +194,7 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
             onClose: sourceEditor.refreshEditor('%$actualPath%~0')
           })
       ),
-      action.switchCase(and(equals('%$pathType%','close'), studio.isArrayType('%$parentPath%')),
+      action.switchCase(and(startsWith('close','%$pathType%'), studio.isArrayType('%$parentPath%')),
           studio.openNewProfileDialog({
             vars: Var('length', count(studio.val('%$parentPath%'))),
             path: '%$parentPath%',
@@ -188,6 +225,67 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
       onClose: sourceEditor.refreshEditor('%$actualPath%')
     })
   )
+})
+
+jb.component('source-editor.add-prop', {
+  type: 'control',
+  params: [ {id: 'path', as: 'string'} ],
+  impl: group({
+    controls: [
+      editableText({
+        title: pipeline(studio.compName('%$path%'), '%% properties'),
+        databind: '%$suggestionData/text%',
+        style: editableText.floatingInput(),
+        features: [
+          feature.onKey('Enter', runActions(
+            dialog.closeDialog('studio-jb-editor-popup'),
+            studio.openEditProperty('%$path%~%$suggestionData/selected/id%'),true)
+          ),
+          editableText.helperPopup({
+            control: sourceEditor.suggestionsItemlist('%$path%'),
+            popupId: 'suggestions',
+            popupStyle: dialog.popup(),
+            showHelper: true,
+            autoOpen: true,
+            // onEnter: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()],
+            onEsc: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()]
+          })
+        ]
+      }),
+      label({title: '', features: css('{border: 1px solid white;}')})
+    ],
+    features: [
+      variable({
+        name: 'suggestionData',
+        value: {$: 'object', selected: '', text: '' },
+      }),
+      css.padding({left: '4', right: '4'}),
+      css.margin({top: '-20', selector: '>*:last-child'})
+    ]
+  })
+})
+
+jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestionsItemlist */
+  params: [ {id: 'path', as: 'string'}],
+  impl: itemlist({
+    items: sourceEditor.propOptions('%$path%'),
+    controls: label({title: '%text%', features: [css.padding({left: '3', right: '2'})]}),
+    features: [
+      id('suggestions-itemlist'),
+      itemlist.noContainer(),
+      itemlist.selection({
+        databind: '%$suggestionData/selected%',
+//        onDoubleClick: studio.pasteSuggestion(),
+        autoSelectFirst: true
+      }),
+      itemlist.keyboardSelection({autoFocus: false}),
+      css.height({height: '500', overflow: 'auto', minMax: 'max'}),
+      css.width({width: '300', overflow: 'auto', minMax: 'min'}),
+      css('{ position: absolute; z-index:1000; background: white }'),
+      css.border({width: '1', color: '#cdcdcd'}),
+      css.padding({top: '2', left: '3', selector: 'li'}),
+    ]
+  })
 })
 
 
