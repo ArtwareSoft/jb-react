@@ -26,7 +26,7 @@ jb.component('dialog.studio-jb-editor-popup',  /* dialog_studioJbEditorPopup */ 
 jb.component('studio.near-launcher-position',  /* studio.nearLauncherPosition */ {
   type: 'dialog-feature',
   impl: dialogFeature.nearLauncherPosition({
-    offsetLeft: (ctx,{cursorCoord}) => cursorCoord && cursorCoord.bottom || 0,
+    offsetLeft: (ctx,{cursorCoord}) => cursorCoord && cursorCoord.left || 0,
     offsetTop: (ctx,{cursorCoord}) => cursorCoord && cursorCoord.top || 0,
   })
 })

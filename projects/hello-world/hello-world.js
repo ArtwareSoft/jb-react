@@ -1,6 +1,6 @@
 jb.component('hello-world.main', { /* helloWorld.main */ 
   type: 'control',
-  impl: label(
-    'hello world'
-  )
+  impl: group({
+    controls: [label('hello world')]
+  })
 })

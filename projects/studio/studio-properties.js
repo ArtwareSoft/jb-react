@@ -404,7 +404,7 @@ jb.component('studio.open-properties', { /* studio.openProperties */
     ),
     features: [
       {$if: '%$focus%', then: dialogFeature.autoFocusOnFirstInput()},
-      dialogFeature.keyboardShortcut('Ctrl+Left', {$: 'studio.open-control-tree', $recursive: true}),
+      feature.keyboardShortcut('Ctrl+Left', {$: 'studio.open-control-tree', $recursive: true}),
       dialogFeature.resizer()
     ]
   })

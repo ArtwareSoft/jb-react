@@ -28,6 +28,9 @@ jb.component('editable-text.codemirror', {
 				try {
 					const data_ref = cmp.state.databindRef;
 					cm_settings = cm_settings||{};
+					const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
+						e[0], _ => jb.ui.wrapWithLauchingElement(ctx2 => ctx2.run(e[1]), cmp.ctx, cmp.base)(cmp.ctx)
+					]))
 					const effective_settings = Object.assign({},cm_settings, {
 						mode: mode || 'javascript',
 						lineWrapping: lineWrapping,
@@ -37,21 +40,30 @@ jb.component('editable-text.codemirror', {
 						extraKeys: Object.assign({
 							'Ctrl-Space': 'autocomplete',
 							'Ctrl-Enter': editor => ctx.params.onCtrlEnter(ctx.setVars({editor}))
-						}, cm_settings.extraKeys || {}),
+						}, adjustedExtraKeys),
 						readOnly: ctx.params.readOnly,
 					});
 					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
 					cmp.editor = {
+						data_ref,
+						cmp,
+						ctx: () => cmp.ctx.setVars({$launchingElement: { el : cmp.base }}),
 						getCursorPos: () => posFromCM(editor.getCursor()),
 						cursorCoords: editor => {
 							const coords = editor.cmEditor && editor.cmEditor.cursorCoords()
-							return coords && Object.assign(coords,{top: coords.top - cmp.base.offsetHeight})
+							const offset = jb.ui.offset(cmp.base)
+							return coords && Object.assign(coords,{
+								top: coords.top - offset.top - jb.ui.outerHeight(cmp.base),
+								left: coords.left - offset.left
+							})
 						},
 						refreshFromDataRef: () => editor.setValue(jb.tostring(data_ref)),
 						setValue: text => editor.setValue(text),
+						isDirty: () => editor.getValue() !== jb.tostring(data_ref),
 						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
 						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
 						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
+						focus: () => editor.focus(),
 						cmEditor: editor
 					}
 					if (ctx.params.hint)

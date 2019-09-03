@@ -540,7 +540,7 @@ jb.component('studio-helper.component-header', {
 jb.component('studio-helper-sample.control', { /* studioHelperSample.control */ 
   type: 'control',
   impl: group({
-    title: 'main',
+    title: pipeline('main'),
     controls: [
       group({title: '2.0', controls: [label('my label'), label('fdsfsdfd')]}),
       label('1.00')

@@ -4,13 +4,17 @@ const st = jb.studio;
 jb.component('source-editor.refresh-editor', {
   type: 'action',
   params: [ {id: 'path', as: 'string'} ],
-  impl: (ctx,path) =>  ctx.vars.editor.refreshEditor && ctx.vars.editor.refreshEditor(path)
+  impl: (ctx,path) =>  ctx.vars.refreshEditor && ctx.vars.refreshEditor(path)
 })
 
-jb.component('source-editor.refresh-from-data-ref', {
+jb.component('source-editor.first-param-as-array-path', {
   type: 'action',
   params: [ {id: 'path', as: 'string'} ],
-  impl: (ctx,path) =>  ctx.vars.editor && ctx.vars.editor.refreshFromDataRef()
+  impl: (ctx,path) => {
+    const params = st.paramsOfPath(path)
+    const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+    return firstParamIsArray ? path + '~' + params[0].id : path
+  }
 })
 
 jb.component('studio.open-editor', { /* studio_openEditor */
@@ -30,16 +34,14 @@ jb.component('studio.editable-source', { /* studio.editableSource */
   ],
   impl: editableText({
       databind: studio.profileAsText('%$path%'),
-      style: editableText.codemirror(),
+      style: editableText.codemirror({
+        cm_settings: { extraKeys: {
+          'Enter': action.if(textEditor.isDirty(), sourceEditor.refreshEditor(), 
+            textEditor.withCursorPath(studio.openEditProperty('%$cursorPath%')))
+        }}
+      }),
       features: [
-        feature.onKey('Enter', sourceEditor.refreshEditor()),
-        feature.onKey('Ctrl-Enter', textEditor.withCursorPath(studio.openEditProperty('%$cursorPath[0]%'))),
         textEditor.init(),
-        ctx => ({
-            extendCtxOnce: (ctx,cmp) => ctx.setVars({
-                refreshEditor: path => jb.textEditor.refreshEditor(cmp,path)
-              })
-          }),
       ]
   })
 })
@@ -103,7 +105,7 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
     {id: 'path', as: 'string'}
   ],
   impl: action.switch(
-    Var('actualPath', split({text: '%$path%', separator: '~!', part: 'first'})),
+    Var('actualPath', split({text: '%$path%', separator: '~!', part: 'first'})), // sourceEditor.firstParamAsArrayPath(
     Var('parentPath', studio.parentPath('%$actualPath%')),
     Var('pathType', split({text: '%$path%', separator: '~!', part: 'last'})),
     Var('paramDef', studio.paramDef('%$actualPath%')),
@@ -162,14 +164,14 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
             type: studio.paramType('%$actualPath%'),
             index: '%$length%',
             mode: 'insert',
-            onClose: sourceEditor.refreshEditor('%$actualPath%~%$length%')
+            onClose: sourceEditor.refreshEditor('%$parentPath%~%$length%')
           })
       ),
       action.switchCase(and(equals('%$pathType%','separator'), studio.isArrayType('%$parentPath%')),
           studio.openNewProfileDialog({
             vars: [
               Var('index', (ctx,{actualPath}) => +actualPath.split('~').pop()+1),
-              Var('nextSiblingPath',pipeline(list('%$parentPath%','%$index%'),join())),
+              Var('nextSiblingPath',pipeline(list('%$parentPath%','%$index%'),join('~'))),
             ],            
             path: '%$parentPath%',
             type: studio.paramType('%$actualPath%'),
