@@ -368,12 +368,14 @@ jb.component('studio.open-component-in-jb-editor', { /* studio_openComponentInJb
 jb.component('studio.expand-and-select-first-child-in-jb-editor', { /* studio_expandAndSelectFirstChildInJbEditor */
   type: 'action',
   impl: ctx => {
-    var ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[document.querySelector('.jb-editor').getAttribute('jb-ctx')];
-    var tree = ctxOfTree.vars.$tree;
+    const jbEditorElem = document.querySelector('.jb-editor')
+    if (!jbEditorElem) return
+    const ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[jbEditorElem.getAttribute('jb-ctx')];
+    const tree = ctxOfTree.vars.$tree;
     if (!tree) return;
     tree.expanded[tree.selected] = true;
     jb.delay(100).then(()=>{
-      var firstChild = tree.nodeModel.children(tree.selected)[0];
+      const firstChild = tree.nodeModel.children(tree.selected)[0];
       if (firstChild) {
         tree.selectionEmitter.next(firstChild);
         tree.regainFocus && tree.regainFocus();

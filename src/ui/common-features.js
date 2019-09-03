@@ -341,15 +341,20 @@ jb.ui.checkKey = function(e, key) {
 
 jb.component('feature.onKey', {
   type: 'feature', category: 'events',
+  usageByValue: true,
   params: [
     { id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
-    { id: 'action', type: 'action', mandatory: true, dynamic: true }
+    { id: 'action', type: 'action', mandatory: true, dynamic: true },
+    { id: 'doNotWrapWithLauchingElement', as: 'boolean' }
   ],
   impl: (ctx,key,action) => ({
       onkeydown: true,
       afterViewInit: cmp =>
-        cmp.onkeydown.subscribe(e=>
-          jb.ui.checkKey(e,key) && jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
+        cmp.onkeydown.subscribe(e=> {
+          if (!jb.ui.checkKey(e,key)) return
+          ctx.params.doNotWrapWithLauchingElement ? action(cmp.ctx) :
+            jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)()
+        })
   })
 })
 

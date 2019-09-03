@@ -29,7 +29,8 @@ jb.component('editable-text.codemirror', {
 					const data_ref = cmp.state.databindRef;
 					cm_settings = cm_settings||{};
 					const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
-						e[0], _ => jb.ui.wrapWithLauchingElement(ctx2 => ctx2.run(e[1]), cmp.ctx, cmp.base)(cmp.ctx)
+						e[0], _ => jb.ui.wrapWithLauchingElement(ctx2 => ctx2.run(e[1]), cmp.ctx, cmp.base,
+						{launcherHeightFix: 1})(cmp.ctx)
 					]))
 					const effective_settings = Object.assign({},cm_settings, {
 						mode: mode || 'javascript',
@@ -47,18 +48,19 @@ jb.component('editable-text.codemirror', {
 					cmp.editor = {
 						data_ref,
 						cmp,
-						ctx: () => cmp.ctx.setVars({$launchingElement: { el : cmp.base }}),
+						ctx: () => cmp.ctx.setVars({$launchingElement: { el : cmp.base, launcherHeightFix: 1 }}),
 						getCursorPos: () => posFromCM(editor.getCursor()),
 						cursorCoords: editor => {
 							const coords = editor.cmEditor && editor.cmEditor.cursorCoords()
 							const offset = jb.ui.offset(cmp.base)
 							return coords && Object.assign(coords,{
-								top: coords.top - offset.top - jb.ui.outerHeight(cmp.base),
+								top: coords.top - offset.top,
 								left: coords.left - offset.left
 							})
 						},
 						refreshFromDataRef: () => editor.setValue(jb.tostring(data_ref)),
 						setValue: text => editor.setValue(text),
+						storeToRef: () => jb.writeValue(data_ref,editor.getValue()),
 						isDirty: () => editor.getValue() !== jb.tostring(data_ref),
 						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
 						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),

@@ -48,16 +48,17 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     const ctx = {path, line, col}
     const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
     const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
+    const arrayOrObj = isArray? 'array' : 'obj'
 
     const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) => 
       processList(acc,[
-        {prop: '!prefix', item: isArray ? '' : innerPath + ': '},
+        {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : innerPath + ': '},
         {prop: '!value', item: ctx => {
             const ctxWithPath = { ...ctx, path: [path,innerPath].join('~') }
             return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
           }
         },
-        {prop: '!separator', item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
+        {prop: `!${arrayOrObj}-separator-${index}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
       ])
     , {...openResult, unflat: false} )
     const _close = typeof close === 'string' ? [{prop: '!close', item: close}] : close
@@ -103,12 +104,16 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       .map(name => ({innerPath: `$vars~${name}`, val: {$: 'Var', name, val: profile.$vars[name]}}))
     const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
     const systemProps = vars.concat(remark)
-    const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open', item:'('}]
-    const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open', item:'({'}]
+    const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
+    const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
+    const openProfileSugarGroup = [{prop: '!profile', item: macro}, {prop:'!open-sugar', item:'('}]
+    const closeProfileSugarGroup = [{prop:'!close-sugar', item:')'}]
+    const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
+    const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
 
     if (params.length == 1 && firstParamIsArray) { // pipeline, or, and, plus
       const args = systemProps.concat(jb.asArray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + '~' + i, val})))
-      return joinVals(ctx, args, openProfileByValueGroup, ')', flat, true)
+      return joinVals(ctx, args, openProfileSugarGroup, closeProfileSugarGroup, flat, true)
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
     const oneFirstParam = keys.length === 1 && params[0] && params[0].id == keys[0] 
@@ -117,13 +122,13 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       const args = systemProps.concat(params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]})))
       for(let i=0;i<3;i++)
         if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
-      return joinVals(ctx, args, openProfileByValueGroup, ')', flat, true)
+      return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
     }
     const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
     const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
     const args = systemPropsInObj.concat(params.filter(param=>profile[param.id] !== undefined)
         .map(param=>({innerPath: param.id, val: profile[param.id]})))
-      return joinVals(ctx, args,openProfileGroup, '})', flat, false)
+      return joinVals(ctx, args,openProfileGroup, closeProfileGroup, flat, false)
   }
     
   function valueToMacro({path, line, col}, val, flat) {
@@ -141,12 +146,16 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       if (typeof val === 'function') return val.toString();
       if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
         return processList(ctx,[
-          {prop: '!value-start', item: "'"},
+          {prop: '!value-text-start', item: "'"},
           {prop: '!value-text', item: JSON.stringify(val).slice(1,-1)},
-          {prop: '!value-end', item: "'"},
+          {prop: '!value-text-end', item: "'"},
         ])
       else if (typeof val === 'string' && val.indexOf('\n') != -1)
-        return "`" + val.replace(/`/g,'\\`') + "`"
+        return processList(ctx,[
+          {prop: '!value-text-start', item: "`"},
+          {prop: '!value-text', item: val.replace(/`/g,'\\`')},
+          {prop: '!value-text-end', item: "`"},
+        ])
       else
         return JSON.stringify(val); // primitives
     }
@@ -155,7 +164,10 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
   function arrayToMacro({path, line, col}, array, flat) {
     const ctx = {path, line, col}
     const vals = array.map((val,i) => ({innerPath: i, val}))
-    return joinVals(ctx, vals, '[', ']', flat, true)
+    const openArray = [{prop:'!open-array', item:'['}]
+    const closeArray = [{prop:'!close-array', item:']'}]
+
+    return joinVals(ctx, vals, openArray, closeArray, flat, true)
   }
 
   function rawFormat() {

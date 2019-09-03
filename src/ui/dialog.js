@@ -119,7 +119,8 @@ jb.component('open-dialog',  /* openDialog */ {
 			},
 			afterViewInit: cmp => {
 				cmp.dialog.el = cmp.base;
-				cmp.dialog.el.style.zIndex = 100;
+				if (!cmp.dialog.el.style.zIndex)
+					cmp.dialog.el.style.zIndex = 100;
 			},
 		}).reactComp();
 
@@ -174,13 +175,14 @@ jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLaun
 				if (!context.vars.$launchingElement)
 					return console.log('no launcher for dialog');
 				const control = context.vars.$launchingElement.el;
+				const launcherHeightFix = context.vars.$launchingElement.launcherHeightFix || jb.ui.outerHeight(control)
 				const pos = jb.ui.offset(control);
 				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
 				offsetLeft += rightSide ? jb.ui.outerWidth(control) : 0;
 				const fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
 				jbDialog.style.display = 'block';
 				jbDialog.style.left = (fixedPosition ? fixedPosition.left : pos.left + offsetLeft) + 'px';
-				jbDialog.style.top = (fixedPosition ? fixedPosition.top : pos.top + jb.ui.outerHeight(control) + offsetTop) + 'px';
+				jbDialog.style.top = (fixedPosition ? fixedPosition.top : pos.top + launcherHeightFix + offsetTop) + 'px';
 			}
 		}
 
@@ -306,9 +308,9 @@ jb.component('dialog-feature.max-zIndex-on-click',  /* dialogFeature_maxZIndexOn
 		})
 
 		function setAsMaxZIndex() {
-			const maxIndex = jb.ui.dialogs.dialogs.reduce(function(max,d) {
-				return Math.max(max,(d.el && parseInt(d.el.style.zIndex || 100)+1))
-			}, minZIndex || 100)
+			const maxIndex = jb.ui.dialogs.dialogs.reduce((max,d) =>
+				Math.max(max,(d.el && parseInt(d.el.style.zIndex || 100)+1) || 100)
+			, minZIndex || 100)
 			dialog.el.style.zIndex = maxIndex;
 		}
 	}
