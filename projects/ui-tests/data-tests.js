@@ -547,3 +547,15 @@ jb.component('data-test.pretty-print-positions-inner-flat', {
     expectedResult: equals('3,41,3,51')
   })
 })
+
+jb.component('data-test.pretty-print-path-in-pipeline', {
+  impl: dataTest({
+    calculate: pipeline(
+      () => jb.prettyPrintWithPositions(
+        pipeline('main')
+      ),
+      '%map/~items~0~!value[0]%',
+    ),
+    expectedResult: equals(1)
+  })
+})

@@ -291,14 +291,14 @@ jb.component('ui-test.watchable-as-text', {
           features: [
             id('editor'),
             feature.onKey('Alt-P', textEditor.withCursorPath(writeValue('%$path%','%$cursorPath%'))),
-            textEditor.watchSourceChanges()
+            textEditor.init()
           ],
           style1: editableText.codemirror(),
           style: editableText.textarea({rows: 30,cols: 80})
         }),
         button({
           title: 'show path of cursor',
-          action: textEditor.withCursorPath(writeValue('%$path%','%$cursorPath%'),'editor'),
+          action: textEditor.withCursorPath(writeValue('%$path%','%$cursorPath%'),'#editor'),
           features: id('show-path')
         }),
         button({
@@ -316,10 +316,8 @@ jb.component('ui-test.watchable-as-text', {
     action: runActions(
       ctx => jb.ui.cmpOfSelector('#editor',ctx).editor.setSelectionRange({line: 2, col: 20}),
       uiAction.click('#show-path'),
-      uiAction.click('#change-name')
     ),
-    expectedCounters: {setState: 1},
-    expectedResult: contains(["name: 'mukki'",'watchable-people~0~name~!value'])
+    expectedResult: contains('watchable-people~0~name~!value')
   })
 })
 
