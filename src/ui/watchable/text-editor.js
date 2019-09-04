@@ -4,7 +4,7 @@ function getSinglePathChange(newVal, currentVal) {
     return pathAndValueOfSingleChange(jb.objectDiff(newVal,currentVal),'')
     
     function pathAndValueOfSingleChange(obj, pathSoFar) { 
-        if (typeof obj !== 'object')
+        if (typeof obj !== 'object' && obj !== undefined)
             return { innerPath: pathSoFar, innerValue: obj }
         const entries = jb.entries(obj)
         if (entries.length != 1) // if not single returns empty answer
@@ -52,6 +52,10 @@ jb.component('watchable-as-text', {
             const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath})
             this.locationMap = jb.textEditor.enrichMapWithOffsets(res.text, res.map)
             this.text = res.text
+        },
+        writeFullValue(newVal) {
+            jb.writeValue(this.getRef(),newVal,ctx)
+            this.prettyPrintWithPositions()
         },
         $jb_val(value) { try {
             if (value === undefined) {

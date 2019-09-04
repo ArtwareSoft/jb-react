@@ -165,9 +165,10 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
             data.case(equals('open-sugar','%$pathType%'), 0),
             data.case(equals('close-sugar','%$pathType%'), count(studio.val('%$sugarArrayPath%')))
           ]})),
-          Var('actualPathHere',data.if(endsWith('open-sugar','%$pathType%'), '%$sugarArrayPath%~%$index%','%$actualPath%')),
-          action.if(equals('open-sugar','%$pathType%'), studio.addArrayItem({path: '%$sugarArrayPath%', index: 0, toAdd: ''})),
-          action.if(equals('close-sugar','%$pathType%'), studio.addArrayItem({path: '%$sugarArrayPath%', toAdd: ''})),
+          Var('actualPathHere',data.if(endsWith('-sugar','%$pathType%'), '%$sugarArrayPath%~%$index%','%$actualPath%')),
+          action.if(endsWith('-sugar','%$pathType%'), studio.addArrayItem({path: '%$sugarArrayPath%', index: '%$index%', toAdd: ''})),
+          // action.if(equals('open-sugar','%$pathType%'), studio.addArrayItem({path: '%$sugarArrayPath%', index: 0, toAdd: ''})),
+          // action.if(equals('close-sugar','%$pathType%'), studio.addArrayItem({path: '%$sugarArrayPath%', toAdd: ''})),
           openDialog({
             style: dialog.studioJbEditorPopup(),
             content: studio.jbFloatingInput('%$actualPathHere%'),
@@ -194,23 +195,23 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
             onClose: sourceEditor.refreshEditor('%$actualPath%~0')
           })
       ),
-      action.switchCase(and(startsWith('close','%$pathType%'), studio.isArrayType('%$parentPath%')),
+      action.switchCase(and(startsWith('close','%$pathType%'), studio.isArrayType('%$actualPath%')),
           studio.openNewProfileDialog({
-            vars: Var('length', count(studio.val('%$parentPath%'))),
-            path: '%$parentPath%',
+            vars: Var('length', count(studio.val('%$actualPath%'))),
+            path: '%$actualPath%',
             type: studio.paramType('%$actualPath%'),
             index: '%$length%',
             mode: 'insert',
-            onClose: sourceEditor.refreshEditor('%$parentPath%~%$length%')
+            onClose: sourceEditor.refreshEditor('%$actualPath%~%$length%')
           })
       ),
-      action.switchCase(and(equals('%$pathType%','separator'), studio.isArrayType('%$parentPath%')),
+      action.switchCase(and(startsWith('array-separator','%$pathType%'), studio.isArrayType('%$actualPath%')),
           studio.openNewProfileDialog({
             vars: [
               Var('index', (ctx,{actualPath}) => +actualPath.split('~').pop()+1),
-              Var('nextSiblingPath',pipeline(list('%$parentPath%','%$index%'),join('~'))),
+              Var('nextSiblingPath',pipeline(list('%$actualPath%','%$index%'),join('~'))),
             ],            
-            path: '%$parentPath%',
+            path: '%$actualPath%',
             type: studio.paramType('%$actualPath%'),
             index: '%$index%',
             mode: 'insert',
