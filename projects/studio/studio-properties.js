@@ -5,7 +5,7 @@ jb.component('studio.property-toolbar', { /* studio.propertyToolbar */
   ],
   impl: button({
     title: 'more...',
-    action: {$: 'studio.open-property-menu', path: '%$path%', $recursive: true},
+    action: studio.openPropertyMenu('%$path%'),
     style: studio.propertyToolbarStyle()
   })
 })
@@ -40,7 +40,7 @@ jb.component('studio.open-source-dialog', { /* studio.openSourceDialog */
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel(),
-    content: {$: 'text', text: studio.compSource(), style: text.codemirror({})},
+    content: {'$': 'text', text: studio.compSource(), style: text.codemirror({})},
     title: 'Source',
     modal: true
   })
@@ -55,7 +55,7 @@ jb.component('studio.properties-in-tgp', { /* studio.propertiesInTgp */
     style: propertySheet.studioPropertiesInTgp(),
     controls: dynamicControls({
       controlItems: studio.nonControlChildren('%$path%', true),
-      genericControl: {$: 'studio.property-field', path: '%$controlItem%', $recursive: true}
+      genericControl: studio.propertyField('%$controlItem%')
     }),
     features: group.autoFocusOnFirstInput()
   })
@@ -69,7 +69,7 @@ jb.component('studio.property-script', { /* studio.propertyScript */
   impl: group({
     controls: button({
       title: (ctx,vars,{path}) => jb.prettyPrint(jb.studio.valOfPath(path)),
-      action: {$: 'studio.open-jb-editor', path: '%$path%', $recursive: true},
+      action: studio.openJbEditor({path: '%$path%'}),
       style: button.studioScript()
     }),
     features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
@@ -115,7 +115,8 @@ jb.component('studio.property-slider', { /* studio.propertySlider */
     step: firstSucceeding('%$paramDef/step%', 1),
     features: [
       css(
-        ">input-slider { width: 110px; }\n>.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }"
+        `>input-slider { width: 110px; }
+>.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }`
       ),
       studio.watchPath({path: '%$path%', includeChildren: 'yes'})
     ]
@@ -197,7 +198,7 @@ jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
           editableBoolean({
             databind: '%$expanded%',
             style: editableBoolean.expandCollapse(),
-            features: [css.padding('4')]
+            features: [css.padding({top: '4'})]
           }),
           label({
             title: pipeline(studio.compName('%$path%'), suffix('.', '%%')),
@@ -244,7 +245,11 @@ jb.component('studio.property-array', { /* studio.propertyArray */
     }),
     itemVariable: 'arrayItem',
     features: [
-      studio.watchPath({path: '%$path%', includeChildren: 'structure', allowSelfRefresh: true}),
+      studio.watchPath({
+        path: '%$path%',
+        includeChildren: 'structure',
+        allowSelfRefresh: true
+      }),
       itemlist.divider(),
       itemlist.dragAndDrop()
     ]
@@ -269,27 +274,39 @@ jb.component('studio.property-field', { /* studio.propertyField */
           studio.propertyScript('%$path%')
         ),
         controlWithCondition(
-          and(studio.isOfType('%$path%', 'action'), isOfType('array', studio.val('%$path%'))),
+          and(
+            studio.isOfType('%$path%', 'action'),
+            isOfType('array', studio.val('%$path%'))
+          ),
           studio.propertyScript('%$path%')
         ),
         controlWithCondition('%$paramDef/options%', studio.propertyEnum('%$path%')),
-        controlWithCondition('%$paramDef/as%==\"number\"', studio.propertySlider('%$path%')),
+        controlWithCondition(
+          '%$paramDef/as%==\"number\"',
+          studio.propertySlider('%$path%')
+        ),
         controlWithCondition(
           and(
             '%$paramDef/as%==\"boolean\"',
-            or(inGroup(list(true, false), studio.val('%$path%')), isEmpty(studio.val('%$path%'))),
+            or(
+                inGroup(list(true, false), studio.val('%$path%')),
+                isEmpty(studio.val('%$path%'))
+              ),
             not('%$paramDef/dynamic%')
           ),
           studio.propertyBoolean('%$path%')
         ),
-        controlWithCondition(studio.isOfType('%$path%', 'data,boolean'), studio.propertyPrimitive('%$path%')),
+        controlWithCondition(
+          studio.isOfType('%$path%', 'data,boolean'),
+          studio.propertyPrimitive('%$path%')
+        ),
         studio.propertyTgpOld('%$path%')
       ],
       features: firstSucceeding.watchRefreshOnCtrlChange(studio.ref('%$path%'), true)
     }),
     features: [
       studio.propertyToolbarFeature('%$path%'),
-      field.keyboardShortcut('Ctrl+I', {$: 'studio.open-jb-editor', path: '%$path%', $recursive: true})
+      field.keyboardShortcut('Ctrl+I', studio.openJbEditor({path: '%$path%'}))
     ]
   })
 })
@@ -327,7 +344,11 @@ jb.component('studio.properties', { /* studio.properties */
           h('td',{ class: 'property-toolbar'}, h(ctrl.jbComp.toolbar) ),
       ])
     )),
-              css: "\n      { width: 100% }\n      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px;  font-weight: bold;}\n      >.property>td { vertical-align: top; }\n    ",
+              css: `
+      { width: 100% }
+      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px;  font-weight: bold;}
+      >.property>td { vertical-align: top; }
+    `,
               features: group.initGroup()
             }),
             controls: [
@@ -372,7 +393,7 @@ jb.component('studio.properties', { /* studio.properties */
         features: css.margin({top: '20', left: '5'})
       })
     ],
-    features: variable({name: 'PropertiesDialog', value: {$: 'object'}, watchable: false})
+    features: variable({name: 'PropertiesDialog', value: {'$': 'object'}, watchable: false})
   })
 })
 
@@ -396,15 +417,15 @@ jb.component('studio.open-properties', { /* studio.openProperties */
     content: studio.properties(studio.currentProfilePath()),
     title: pipeline(
       {
-        $: 'object',
-        title: studio.shortTitle(studio.currentProfilePath()),
-        comp: studio.compName(studio.currentProfilePath())
-      },
+          '$': 'object',
+          title: studio.shortTitle(studio.currentProfilePath()),
+          comp: studio.compName(studio.currentProfilePath())
+        },
       'Properties of %comp% %title%'
     ),
     features: [
-      {$if: '%$focus%', then: dialogFeature.autoFocusOnFirstInput()},
-      feature.keyboardShortcut('Ctrl+Left', {$: 'studio.open-control-tree', $recursive: true}),
+      {'$if': '%$focus%', then: dialogFeature.autoFocusOnFirstInput()},
+      feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
       dialogFeature.resizer()
     ]
   })
