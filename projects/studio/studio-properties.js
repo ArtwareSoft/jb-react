@@ -226,7 +226,7 @@ jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
     features: [
       css.margin({left: '-100'}),
       variable({name: 'expanded', value: studio.isNew('%$path%'), watchable: true}),
-      studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+      studio.watchPath({path: '%$path%', includeChildren: 'structure'})
     ]
   })
 })
