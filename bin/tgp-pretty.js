@@ -31,8 +31,7 @@ function run() {
         .map(e=>({id:e[0], comp:e[1], file:e[1][location][0]}))
     entries.filter(({file}) => 
             filePattern.test(file) )
-        .forEach( ({id,comp}) =>
-            swapComp({id,comp}))
+        .forEach( args => swapComp(args))
 }
 
 run()
@@ -57,8 +56,8 @@ function swapComp({id,comp,file}) {
         return jb.logError(['can not find component', fn,id])
 
     const linesFromComp = lines.slice(lineOfComp)
-    const compLastLine = linesFromComp.findIndex(line => line.match(/^})\s*$/))
-    const nextjbComponent = linesFromComp.findIndex(line => line.match(/^jb.component$/))
+    const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+    const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
     if (nextjbComponent != -1 && nextjbComponent < compLastLine)
       return jb.logError(['can not find end of component', fn,id, linesFromComp])
     const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id}).split('\n')
