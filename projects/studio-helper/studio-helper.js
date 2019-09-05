@@ -533,10 +533,7 @@ jb.component('studio-helper-sample.component-header', {
   impl: ctx => ''
 })
 
-jb.component('studio-helper.component-header', {
-  type: 'control',
-  impl :{$: 'studio.component-header', component: 'studio-helper-sample.component-header' }
-})
+
 jb.component('studio-helper-sample.control', { /* studioHelperSample.control */ 
   type: 'control',
   impl: group({

@@ -25,10 +25,12 @@ jb.traceComponentFile = function(comp) {
 filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>x).filter(x=>!x.match(/material/)).filter(x=>!x.match(/.css$/))
     .map(fn=> require(JBART_DIR+fn))
 
+const filePattern = new RegExp(getProcessArgument('file') || '^nothing')
 function run() {
-    jb.entries(jb.comps) 
+    const entries = jb.entries(jb.comps) 
         .map(e=>({id:e[0], comp:e[1], file:e[1][location][0]}))
-        .filter(({file}) => new RegExp(getProcessArgument('file') || '^nothing').test(file) )
+    entries.filter(({file}) => 
+            filePattern.test(file) )
         .forEach( ({id,comp}) =>
             swapComp({id,comp}))
 }
