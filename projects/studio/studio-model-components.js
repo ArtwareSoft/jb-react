@@ -410,7 +410,7 @@ jb.component('studio.make-local', { /* studio_makeLocal */
   impl: (ctx,path) => st.makeLocal(path,ctx)
 })
 
-jb.component('studio.jb-editor.nodes', { /* studio_jbEditor_nodes */
+jb.component('studio.jbEditorNodes', { /* studio_jbEditorNodes */
   type: 'tree.nodeModel',
   params: [
     {id: 'path', as: 'string'}
