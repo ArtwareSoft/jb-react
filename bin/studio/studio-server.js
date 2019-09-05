@@ -334,39 +334,45 @@ function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
 
     let comp_found = '';
 //        console.log(original);
-    fs.readdirSync(projDir)
+    const files = fs.readdirSync(projDir)
       .filter(x=>x.match(/\.js$/) || x.match(/\.ts$/))
-      .forEach(srcFile=> {
-          const srcPath = projDir+'/'+srcFile;
-          const source = ('' + fs.readFileSync(srcPath)).replace(/\r/g,'').split('\n');
-          const toFind = original.replace(/\r/g,'').split('\n');
-          //toFind[0] = toFind[0].slice(0,toFind[0].indexOf('{')+1)
-          const replaceWith = toSave.replace(/\r/g,'').split('\n');
-          const found = findSection(source,toFind,srcFile);
-          if (found) {
-            //console.log('splice',source,found.index,found.length,replaceWith);
-            source.splice.apply(source, [found.index+1, found.length-1].concat(replaceWith.slice(1)));
-            const newContent = source.join(_iswin ? '\r\n' : '\n');
-            fs.writeFileSync(srcPath,newContent);
-            comp_found = `component ${comp} saved to ${srcPath} at ${JSON.stringify(found)}`;
-          }
-      })
+    for(let i=0;i<files.length && !comp_found;i++) {
+        const srcFile = files[i]
+        const srcPath = projDir+'/'+srcFile
+        const source = ('' + fs.readFileSync(srcPath)).replace(/\r/g,'').split('\n');
+        const toFind = original.replace(/\r/g,'').split('\n');
+        //toFind[0] = toFind[0].slice(0,toFind[0].indexOf('{')+1)
+        const replaceWith = toSave.replace(/\r/g,'').split('\n');
+        const found = findSection(source,toFind,srcFile);
+        if (found) {
+          //console.log('splice',source,found.index,found.length,replaceWith);
+          source.splice(found.index,found.length, ...replaceWith);
+          const newContent = source.join(_iswin ? '\r\n' : '\n');
+          fs.writeFileSync(srcPath,newContent);
+          comp_found = `component ${comp} saved to ${srcPath} at ${JSON.stringify(found)}`;
+        }
+    }
 
     if (comp_found)
       return comp_found
     else {
-      fs.appendFileSync(projDir+'/'+project+'.js', toSave + ' \n\n') 
+      fs.appendFileSync(projDir+'/'+project+'.js', '\n' + toSave + '\n') 
       return `component ${comp} added to ${project}.js`
     }
 
     function findSection(source,toFind,srcFile) {
-      const index = source.indexOf(toFind[0]);
+      const compShortHead = toFind[0].split(',')[0]
+      const index = source.findIndex(line => line.indexOf(compShortHead) == 0);
       // if (index == -1)
       //   index = source.indexOf(toFind[0].replace('jb_','jb.'));
       if (index != -1 && force) {// ignore content - just look for the end
-        for(end_index=index;end_index<source.length;end_index++)
-          if ((source[end_index]||'').match(/^}\)$/m))
+        for(end_index=index+1;end_index<source.length;end_index++) {
+          if ((source[end_index]||'').match(/jb\.component\(/m)) {
+            throw `${comp} found, but its closing "})" was not found at the begining of the line`;
+          }
+          else if ((source[end_index]||'').match(/^}\)$/m))
             return { index: index, length: end_index - index +1}
+        }
       } else if (index != -1 && compareArrays(source.slice(index,index+toFind.length),toFind)) {
           return { index: index, length: toFind.length }
       } else if (index == -1) {

@@ -89,7 +89,6 @@ jb.component('picklist.selection-list', {
   impl :{$: 'style-by-control', __innerImplementation: true,
     modelVar: 'picklistModel',
     control :{$: 'itemlist',
-      watchItems: false, 
       items: '%$picklistModel/options%',
       style :{ $: 'itemlist.ul-li' },
       controls :{$: 'label', 

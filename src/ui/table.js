@@ -5,7 +5,6 @@ jb.component('table', {
     { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, mandatory: true },
     { id: 'fields', type: 'table-field[]', mandatory: true, dynamic: true },
     { id: 'style', type: 'table.style', dynamic: true , defaultValue: { $: 'table.with-headers' } },
-    { id: 'watchItems', as: 'boolean' },
     { id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default table is limmited to 100 shown items' },
     { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
   ],
@@ -125,9 +124,6 @@ jb.component('table.init', {
 
         cmp.refresh = _ =>
             cmp.setState({items: calcItems()})
-
-        if (ctx.vars.$model.watchItems)
-          jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
 
         function calcItems() {
           cmp.items = jb.toarray(ctx.vars.$model.items(cmp.ctx));
