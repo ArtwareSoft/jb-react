@@ -917,6 +917,7 @@ Object.assign(jb,{
   writeValue: (ref,value,srcCtx) => jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
   splice: (ref,args,srcCtx) => jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
   move: (ref,toRef,srcCtx) => jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
+  push: (ref,toRef,srcCtx) => jb.safeRefCall(ref, h=>h.push(ref,toRef,srcCtx)),
   isRef: ref => jb.refHandler(ref),
   isWatchable: ref => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),

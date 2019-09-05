@@ -350,7 +350,7 @@ jb.component('ui-test.splice-should-not-fire-full-container-change',  {
       controls: label('%name%')
     }),
     action: addToArray('%$watchable-people%', obj(prop('name','mukki'))),
-    expectedCounters: {setState: undefined },
+    expectedCounters: {setState: 0 },
     expectedResult: not(contains('mukki'))
   })
 })

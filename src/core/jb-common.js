@@ -242,12 +242,9 @@ jb.component('add-to-array', {
 	type: 'action',
 	params: [
 		{ id: 'array', as: 'ref', mandatory: true },
-		{ id: 'itemsToAdd', as: 'array', mandatory: true },
+		{ id: 'toAdd', as: 'single', mandatory: true },
 	],
-	impl: (ctx,array,itemsToAdd) => {
-		const ar = jb.toarray(array);
-		jb.splice(array,[[ar.length,0,...itemsToAdd]],ctx)
-	}
+	impl: (ctx,array,toAdd) => jb.push(array,toAdd,ctx)
 });
 
 jb.component('splice', {
