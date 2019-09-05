@@ -1,6 +1,13 @@
 {
     "version": "0.2.0",
     "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "pretty",
+            "program": "${workspaceFolder}/bin/tgp-pretty",
+            "args": ["-file:studio-"],
+        },
 
         {
             "name": "Launch",
@@ -18,7 +25,7 @@
             "env": {
                 "NODE_ENV": "development"
             },
-            "externalConsole": false,
+            "console": false,
             "sourceMaps": false,
             "outDir": null
         },
