@@ -52,7 +52,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
 
     const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) => 
       processList(acc,[
-        {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : innerPath + ': '},
+        {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + ': '},
         {prop: '!value', item: ctx => {
             const ctxWithPath = { ...ctx, path: [path,innerPath].join('~') }
             return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
@@ -80,6 +80,9 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       const top = (path.match(/~/g)||'').length < 2
       const long = result.text.replace(/\n\s*/g,'').length > colWidth
       return result.unflat || customStyle || top || ctrls || long
+    }
+    function fixPropName(prop) {
+      return prop.match(/^[a-zA-Z0-9_]+$/) ? prop : `'${prop}'`
     }
   }
 
