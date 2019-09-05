@@ -38,7 +38,7 @@ st.initCompsRefHandler = function(previewjb,allowedTypes) {
 
 function writeValueToDataResource(path,value) {
 	if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
-		const dataPath = '%$' + [path[0], ...path.slice(2)].map(x=>+x ? `[${x}]` : x).join('/') + '%'
+		const dataPath = '%$' + [path[0], ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
 		return (new st.previewjb.jbCtx()).run(writeValue(dataPath,value))
 	}
 }
