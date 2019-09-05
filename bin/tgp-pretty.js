@@ -33,6 +33,8 @@ function run() {
             swapComp({id,comp}))
 }
 
+run()
+
         //    .filter(({file}) => !file.match(/[^-]menu.js/)) 
 //    .filter(({file}) => file.match(/studio-[a-z]*.js/))
 //    .filter(({id})=> id.indexOf('studio.') == 0) // || e[0].indexOf('dialog') == 0 || e[0].indexOf('menu') == 0)
