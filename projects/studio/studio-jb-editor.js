@@ -2,7 +2,7 @@
 const st = jb.studio
 jb.studio.probeResultCustomizers = []
 
-jb.component('studio.jb-editor-path-for-edit', { /* studio_jbEditorPathForEdit */
+jb.component('studio.jb-editor-path-for-edit', { /* studio.jbEditorPathForEdit */
   type: 'data',
   description: 'in case of array, use extra element path',
   params: [
@@ -16,19 +16,19 @@ jb.component('studio.jb-editor-path-for-edit', { /* studio_jbEditorPathForEdit *
   }
 })
 
-jb.component('studio.open-jb-editor-menu', { /* studio_openJbEditorMenu */
+jb.component('studio.open-jb-editor-menu', { /* studio.openJbEditorMenu */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
     {id: 'root', as: 'string'}
   ],
-  impl: menu_openContextMenu({
-    menu: {$: 'studio.jb-editor-menu', path: '%$path%', root: '%$root%', $recursive: true},
-    features: dialogFeature_onClose(tree_regainFocus())
+  impl: menu.openContextMenu({
+    menu: studio.jbEditorMenu('%$path%', '%$root%'),
+    features: dialogFeature.onClose(tree.regainFocus())
   })
 })
 
-jb.component('studio.prob-result-customization', { /* studio_probResultCustomization */
+jb.component('studio.prob-result-customization', { /* studio.probResultCustomization */
   type: 'data',
   params: [
     {id: 'probeResult', mandatory: true}
@@ -42,7 +42,7 @@ jb.component('studio.prob-result-customization', { /* studio_probResultCustomiza
   }
 })
 
-jb.component('studio.jb-editor-container', { /* studio_jbEditorContainer */
+jb.component('studio.jb-editor-container', { /* studio.jbEditorContainer */
   type: 'feature',
   params: [
     {id: 'id', as: 'string', mandatory: true},
@@ -55,14 +55,14 @@ jb.component('studio.jb-editor-container', { /* studio_jbEditorContainer */
   ],
   impl: list(
     variable({
-      name: 'jbEditorCntrData',
-      value: {$: 'object', selected: '%$initialSelection%', circuit: '%$circuit%'},
-      watchable: true
-    })
+        name: 'jbEditorCntrData',
+        value: {'$': 'object', selected: '%$initialSelection%', circuit: '%$circuit%'},
+        watchable: true
+      })
   )
 })
 
-jb.component('studio.probe-results', { /* studio_probeResults */
+jb.component('studio.probe-results', { /* studio.probeResults */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -73,7 +73,7 @@ jb.component('studio.probe-results', { /* studio_probeResults */
   })
 })
 
-jb.component('studio.data-browse', { /* studio_dataBrowse */
+jb.component('studio.data-browse', { /* studio.dataBrowse */
   type: 'control',
   params: [
     {id: 'obj', mandatory: true, as: 'value', defaultValue: '%%'},
@@ -84,22 +84,25 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
     title: '%$title%',
     controls: group({
       controls: [
-        control_firstSucceeding(
+        control.firstSucceeding(
           [
             controlWithCondition(
               inGroup(list('JbComponent', 'jbCtx'), className('%$obj%')),
               label({title: className('%$obj%')})
             ),
-            controlWithCondition(isOfType('string,boolean,number', '%$obj%'), label('%$obj%')),
+            controlWithCondition(
+              isOfType('string,boolean,number', '%$obj%'),
+              label('%$obj%')
+            ),
             controlWithCondition(
               isOfType('array', '%$obj%'),
               table({
                 items: pipeline('%$obj%', slice(undefined, '%$maxItems%')),
-                fields: field_control({
+                fields: field.control({
                   title: pipeline(count('%$obj%'), '%% items'),
-                  control: {$: 'studio.data-browse', a: 'label', obj: '%%', width: 200, $recursive: true}
+                  control: studio.dataBrowse({obj: '%%', width: 200})
                 }),
-                style: table_mdl(
+                style: table.mdl(
                   'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
                   'mdl-data-table__cell--non-numeric'
                 ),
@@ -108,13 +111,13 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
             ),
             controlWithCondition(isNull('%$obj%'), label('null')),
             tree({
-              nodeModel: tree_jsonReadOnly('%$obj%', '%$title%'),
-              style: tree_noHead(),
+              nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
+              style: tree.noHead(),
               features: [
-                css_class('jb-control-tree'),
-                tree_selection({}),
-                tree_keyboardSelection({}),
-                css_width({width: '%$width%', minMax: 'max'})
+                css.class('jb-control-tree'),
+                tree.selection({}),
+                tree.keyboardSelection({}),
+                css.width({width: '%$width%', minMax: 'max'})
               ]
             })
           ]
@@ -124,11 +127,11 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
           button({
             title: 'open (%$obj/length%)',
             action: openDialog({
-              style: dialog_popup(),
+              style: dialog.popup(),
               content: editableText({
                 title: '',
                 databind: '%$obj%',
-                style: editableText_codemirror({
+                style: editableText.codemirror({
                   enableFullScreen: true,
                   height: '200',
                   mode: 'text',
@@ -138,7 +141,7 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
                 })
               })
             }),
-            style: button_href()
+            style: button.href()
           }),
           'long text'
         ),
@@ -147,7 +150,7 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
           button({
             title: 'show (%$obj/length%)',
             action: writeValue('%$maxItems%', '100'),
-            style: button_href(),
+            style: button.href(),
             features: [watchRef('%$maxItems%'), hidden('%$maxItems% == 5')]
           }),
           'large array'
@@ -158,7 +161,7 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
   })
 })
 
-jb.component('studio.probe-data-view', { /* studio_probeDataView */
+jb.component('studio.probe-data-view', { /* studio.probeDataView */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -168,124 +171,132 @@ jb.component('studio.probe-data-view', { /* studio_probeDataView */
       table({
         items: '%$probeResult%',
         fields: [
-          field_control({title: 'last in', control: studio_dataBrowse('%in%'), width: '100'}),
-          field_control({title: 'out', control: studio_dataBrowse('%out%'), width: '100'})
+          field.control({
+            title: 'last in',
+            control: studio.dataBrowse('%in%'),
+            width: '100'
+          }),
+          field.control({title: 'out', control: studio.dataBrowse('%out%'), width: '100'})
         ],
-        style: table_mdl('mdl-data-table', 'mdl-data-table__cell--non-numeric'),
-        features: [css('{white-space: normal}')]
+        style: table.mdl('mdl-data-table', 'mdl-data-table__cell--non-numeric'),
+        features: css('{white-space: normal}')
       })
     ],
-    features: [
-      group_wait({
-        for: studio_probeResults('%$path%'),
+    features: group.wait({
+        for: studio.probeResults('%$path%'),
         loadingControl: label('...'),
         varName: 'probeResult'
       })
-    ]
   })
 })
 
-jb.component('studio.open-jb-edit-property', { /* studio_openJbEditProperty */
+jb.component('studio.open-jb-edit-property', { /* studio.openJbEditProperty */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: action_switch(
-    Var('actualPath', studio_jbEditorPathForEdit('%$path%')),
-    Var('paramDef', studio_paramDef('%$actualPath%')),
+  impl: action.switch(
+    Var('actualPath', studio.jbEditorPathForEdit('%$path%')),
+    Var('paramDef', studio.paramDef('%$actualPath%')),
     [
-      action_switchCase(endsWith('$vars', '%$path%')),
-      action_switchCase(
+      action.switchCase(endsWith('$vars', '%$path%')),
+      action.switchCase(
         '%$paramDef/options%',
         openDialog({
-          style: dialog_studioJbEditorPopup(),
+          style: dialog.studioJbEditorPopup(),
           content: group({
             controls: [
-              studio_jbFloatingInputRich('%$actualPath%')
+              studio.jbFloatingInputRich('%$actualPath%')
             ],
             features: [
-              feature_onEsc(dialog_closeContainingPopup(true)),
-              feature_onEnter(dialog_closeContainingPopup(true), tree_regainFocus())
+              feature.onEsc(dialog.closeContainingPopup(true)),
+              feature.onEnter(dialog.closeContainingPopup(true), tree.regainFocus())
             ]
           }),
-          features: [dialogFeature_autoFocusOnFirstInput(), dialogFeature_onClose(tree_regainFocus())]
+          features: [
+            dialogFeature.autoFocusOnFirstInput(),
+            dialogFeature.onClose(tree.regainFocus())
+          ]
         })
       ),
-      action_switchCase(
-        isOfType('function', studio_val('%$actualPath%')),
-        studio_editSource('%$actualPath%')
+      action.switchCase(
+        isOfType('function', studio.val('%$actualPath%')),
+        studio.editSource('%$actualPath%')
       ),
-      action_switchCase(
-        studio_isOfType('%$actualPath%', 'data,boolean'),
+      action.switchCase(
+        studio.isOfType('%$actualPath%', 'data,boolean'),
         openDialog({
-          style: dialog_studioJbEditorPopup(),
-          content: studio_jbFloatingInput('%$actualPath%'),
+          style: dialog.studioJbEditorPopup(),
+          content: studio.jbFloatingInput('%$actualPath%'),
           features: [
-            dialogFeature_autoFocusOnFirstInput(),
-            dialogFeature_onClose(
-              runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), tree_regainFocus())
+            dialogFeature.autoFocusOnFirstInput(),
+            dialogFeature.onClose(
+              runActions(
+                toggleBooleanValue('%$studio/jb_preview_result_counter%'),
+                tree.regainFocus()
+              )
             )
           ]
         })
       ),
-      action_switchCase(
-        Var('ptsOfType', studio_PTsOfType(studio_paramType('%$actualPath%'))),
+      action.switchCase(
+        Var('ptsOfType', studio.PTsOfType(studio.paramType('%$actualPath%'))),
         '%$ptsOfType/length% == 1',
-        studio_setComp('%$path%', '%$ptsOfType[0]%')
+        studio.setComp('%$path%', '%$ptsOfType[0]%')
       )
     ],
-    studio_openNewProfileDialog({
+    studio.openNewProfileDialog({
       path: '%$actualPath%',
-      type: studio_paramType('%$actualPath%'),
+      type: studio.paramType('%$actualPath%'),
       mode: 'update',
-      onClose: tree_regainFocus()
+      onClose: tree.regainFocus()
     })
   )
 })
 
-jb.component('studio.jb-editor-inteli-tree', { /* studio_jbEditorInteliTree */
+jb.component('studio.jb-editor-inteli-tree', { /* studio.jbEditorInteliTree */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: group({
     title: 'main',
-    style: layout_horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
+    style: layout.horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
     controls: [
       tree({
-        nodeModel: studio_jbEditor_nodes('%$path%'),
+        nodeModel: studio.jbEditorNodes('%$path%'),
         features: [
-          css_class('jb-editor jb-control-tree'),
-          tree_selection({
+          css.class('jb-editor jb-control-tree'),
+          tree.selection({
             databind: '%$jbEditorCntrData/selected%',
             autoSelectFirst: true,
-            onRightClick: studio_openJbEditorMenu('%%', '%$path%')
+            onRightClick: studio.openJbEditorMenu('%%', '%$path%')
           }),
-          tree_keyboardSelection({
+          tree.keyboardSelection({
             onEnter: studio.openJbEditProperty('%$jbEditorCntrData/selected%'),
-            onRightClickOfExpanded: studio_openJbEditorMenu('%%', '%$path%'),
+            onRightClickOfExpanded: studio.openJbEditorMenu('%%', '%$path%'),
             autoFocus: true,
-            applyMenuShortcuts: {$: 'studio.jb-editor-menu', path: '%%', root: '%$path%', $recursive: true}
+            applyMenuShortcuts: studio.jbEditorMenu('%%', '%$path%')
           }),
-          tree_dragAndDrop(),
-          css_width({width: '500', selector: 'jb-editor'}),
-          studio_watchScriptChanges()
+          tree.dragAndDrop(),
+          css.width({width: '500', selector: 'jb-editor'}),
+          studio.watchScriptChanges()
         ]
       })
     ]
   })
 })
 
-jb.component('studio.jb-editor', { /* studio_jbEditor */
+jb.component('studio.jb-editor', { /* studio.jbEditor */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: group({
     title: 'main',
-    style: layout_horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
+    style: layout.horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
     controls: [
-      studio_jbEditorInteliTree('%$path%'),
+      studio.jbEditorInteliTree('%$path%'),
       group({
         title: 'inteli preview',
         controls: [
@@ -294,21 +305,21 @@ jb.component('studio.jb-editor', { /* studio_jbEditor */
             controls: [
               group({
                 title: 'watch selection content',
-                controls: studio_probeDataView('%$jbEditorCntrData/selected%'),
+                controls: studio.probeDataView('%$jbEditorCntrData/selected%'),
                 features: watchRef('%$jbEditorCntrData/selected%')
               })
             ],
-            features: feature_if('%$jbEditorCntrData/selected%')
+            features: feature.if('%$jbEditorCntrData/selected%')
           })
         ],
-        features: [studio_watchScriptChanges()]
+        features: studio.watchScriptChanges()
       })
     ],
-    features: [css_padding('10'), css_height({height: '800', minMax: 'max'})]
+    features: [css.padding('10'), css.height({height: '800', minMax: 'max'})]
   })
 })
 
-jb.component('studio.open-jb-editor', { /* studio_openJbEditor */
+jb.component('studio.open-jb-editor', { /* studio.openJbEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -317,27 +328,22 @@ jb.component('studio.open-jb-editor', { /* studio_openJbEditor */
   ],
   impl: openDialog({
     vars: [
-      Var('dialogId', {$if: '%$newWindow%', then: '', else: 'jb-editor'}),
+      Var('dialogId', {'$if': '%$newWindow%', then: '', else: 'jb-editor'}),
       Var('fromPath', '%$fromPath%'),
-      Var('pickSelection', {$: 'object'})
+      Var('pickSelection', {'$': 'object'})
     ],
-    style: dialog_studioFloating({id: '%$dialogId%', width: '860', height: '400'}),
-    content: studio_jbEditor('%$path%'),
+    style: dialog.studioFloating({id: '%$dialogId%', width: '860', height: '400'}),
+    content: studio.jbEditor('%$path%'),
     menu: button({
-      action: studio_openJbEditorMenu('%$path%', '%$path%'),
-      style: button_mdlIcon('menu')
+      action: studio.openJbEditorMenu('%$path%', '%$path%'),
+      style: button.mdlIcon('menu')
     }),
-    title: {
-      $: 'studio.path-hyperlink',
-      path: '%$path%',
-      prefix: 'Inteliscript',
-      $recursive: true
-    },
-    features: [studio_jbEditorContainer('jb-editor'), dialogFeature_resizer()]
+    title: studio.pathHyperlink('%$path%', 'Inteliscript'),
+    features: [studio.jbEditorContainer('jb-editor'), dialogFeature.resizer()]
   })
 })
 
-jb.component('studio.open-component-in-jb-editor', { /* studio_openComponentInJbEditor */
+jb.component('studio.open-component-in-jb-editor', { /* studio.openComponentInJbEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -346,26 +352,21 @@ jb.component('studio.open-component-in-jb-editor', { /* studio_openComponentInJb
   impl: runActions(
     Var('compPath', split({separator: '~', text: '%$path%', part: 'first'})),
     Var('fromPath', '%$fromPath%'),
-    Var('pickSelection', {$: 'object'}),
+    Var('pickSelection', obj()),
     openDialog({
-      style: dialog_studioFloating({id: 'jb-editor', width: '860', height: '400'}),
-      content: studio_jbEditor('%$compPath%'),
-      menu: button({
-        action: studio_openJbEditorMenu('%$jbEditorCntrData/selected%', '%$path%'),
-        style: button_mdlIcon('menu')
-      }),
-      title: {
-        $: 'studio.path-hyperlink',
-        path: '%$compPath%',
-        prefix: 'Inteliscript',
-        $recursive: true
-      },
-      features: [studio_jbEditorContainer('comp-in-jb-editor'), dialogFeature_resizer()]
-    })
+        style: dialog.studioFloating({id: 'jb-editor', width: '860', height: '400'}),
+        content: studio.jbEditor('%$compPath%'),
+        menu: button({
+          action: studio.openJbEditorMenu('%$jbEditorCntrData/selected%', '%$path%'),
+          style: button.mdlIcon('menu')
+        }),
+        title: studio.pathHyperlink('%$compPath%', 'Inteliscript'),
+        features: [studio.jbEditorContainer('comp-in-jb-editor'), dialogFeature.resizer()]
+      })
   )
 })
 
-jb.component('studio.expand-and-select-first-child-in-jb-editor', { /* studio_expandAndSelectFirstChildInJbEditor */
+jb.component('studio.expand-and-select-first-child-in-jb-editor', { /* studio.expandAndSelectFirstChildInJbEditor */
   type: 'action',
   impl: ctx => {
     const jbEditorElem = document.querySelector('.jb-editor')
@@ -386,38 +387,42 @@ jb.component('studio.expand-and-select-first-child-in-jb-editor', { /* studio_ex
   }
 })
 
-jb.component('menu.studio-wrap-with',  /* menu_studioWrapWith */ {
+jb.component('menu.studio-wrap-with', { /* menu.studioWrapWith */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
     {id: 'type', as: 'string'},
     {id: 'components', as: 'array'}
   ],
-  impl: menu_dynamicOptions(
-    {$if: studio_isOfType('%$path%', '%$type%'), then: '%$components%', else: list()},
-    menu_action({
+  impl: menu.dynamicOptions(
+    {
+      '$if': studio.isOfType('%$path%', '%$type%'),
+      then: '%$components%',
+      else: list()
+    },
+    menu.action({
       title: 'Wrap with %%',
-      action: [studio_wrap('%$path%', '%%'), studio_expandAndSelectFirstChildInJbEditor()]
+      action: runActions(studio.wrap('%$path%', '%%'), studio.expandAndSelectFirstChildInJbEditor())
     })
   )
 })
 
-jb.component('menu.studio-wrap-with-array',  /* menu_studioWrapWithArray */ {
+jb.component('menu.studio-wrap-with-array', { /* menu.studioWrapWithArray */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: {
-    $if: studio_canWrapWithArray('%$path%'),
-    then: menu_action({
+    '$if': studio.canWrapWithArray('%$path%'),
+    then: menu.action({
       title: 'Wrap with array',
-      action: [studio_wrapWithArray('%$path%'), studio_expandAndSelectFirstChildInJbEditor()]
+      action: runActions(studio.wrapWithArray('%$path%'), studio.expandAndSelectFirstChildInJbEditor())
     }),
     else: []
   }
 })
 
-jb.component('studio.add-variable', { /* studio_addVariable */ 
+jb.component('studio.add-variable', { /* studio.addVariable */ 
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -425,32 +430,32 @@ jb.component('studio.add-variable', { /* studio_addVariable */
   impl: onNextTimer(
     openDialog({
       id: 'add variable',
-      style: dialog_popup(),
+      style: dialog.popup(),
       content: group({
         controls: [
           editableText({
             title: 'variable name',
             databind: '%$name%',
-            style: editableText_mdlInput(),
+            style: editableText.mdlInput(),
             features: [
-              feature_onEnter(
-                writeValue(studio_ref('%$path%~%$name%'), ''),
-                dialog_closeContainingPopup(true),
+              feature.onEnter(
+                writeValue(studio.ref('%$path%~%$name%'), ''),
+                dialog.closeContainingPopup(true),
                 writeValue('%$jbEditorCntrData/selected%', '%$path%~%$name%'),
-                tree_redraw(true),
-                tree_regainFocus()
+                tree.redraw(true),
+                tree.regainFocus()
               )
             ]
           })
         ],
-        features: css_padding({top: '9', left: '20', right: '20'})
+        features: css.padding({top: '9', left: '20', right: '20'})
       }),
       title: 'New variable',
       modal: 'true',
       features: [
-        variable({name: 'name', watchable: true}),
-        dialogFeature_nearLauncherPosition({}),
-        dialogFeature_autoFocusOnFirstInput()
+        variable({name: 'name'}),
+        dialogFeature.nearLauncherPosition({}),
+        dialogFeature.autoFocusOnFirstInput()
       ]
     })
   )
