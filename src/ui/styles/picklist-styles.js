@@ -13,11 +13,51 @@ jb.component('picklist.native', {
   }
 })
 
+jb.component('picklist.native-md-look-open', {
+  type: 'picklist.style',
+  impl :{$: 'custom-style', 
+      features :{$: 'field.databind' },
+      template: (cmp,state,h) => h('div',{},
+        h('input', { type: 'text', value: state.model, list: 'list_' + cmp.ctx.id,
+          onchange: e => cmp.jbModel(e.target.value),
+        }),
+        h('datalist', {id: 'list_' + cmp.ctx.id}, state.options.map(option=>h('option',{},option.text)))),
+    css: `>input {  appearance: none; -webkit-appearance: none; font-family: inherit;
+  background-color: transparent;
+  padding: 6px 0;
+  font-size: 14px;
+  width: 100%;
+  color: rgba(0,0,0, 0.82);
+  border: none;
+  border-bottom: 1px solid rgba(0,0,0, 0.12); }
+
+  {
+    font-family: 'Roboto','Helvetica','Arial',sans-serif;
+    position: relative;
+  }
+  >input:focus { border-color: #3F51B5; border-width: 2px}
+
+  :after { position: absolute;
+        top: 0.75em;
+        right: 0.5em;
+        /* Styling the down arrow */
+        width: 0;
+        height: 0;
+        padding: 0;
+        content: '';
+        border-left: .25em solid transparent;
+        border-right: .25em solid transparent;
+        border-top: .375em solid rgba(0,0,0, 0.12);
+        pointer-events: none; }`
+  }
+})
+
 jb.component('picklist.native-md-look', {
   type: 'picklist.style',
   impl :{$: 'custom-style', 
       features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('div',{},h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
+      template: (cmp,state,h) => h('div',{},h('select', 
+      { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
           state.options.map(option=>h('option',{value: option.code},option.text)))),
     css: `>select {  appearance: none; -webkit-appearance: none; font-family: inherit;
   background-color: transparent;
