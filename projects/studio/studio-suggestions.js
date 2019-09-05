@@ -85,12 +85,12 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
         onDoubleClick: studio.pasteSuggestion(),
         autoSelectFirst: true
       }),
-      itemlist.keyboardSelection({autoFocus: false}),
+      itemlist.keyboardSelection(false),
       css.height({height: '500', overflow: 'auto', minMax: 'max'}),
       css.width({width: '300', overflow: 'auto', minMax: 'min'}),
       css('{ position: absolute; z-index:1000; background: white }'),
       css.border({width: '1', color: '#cdcdcd'}),
-      css.padding({top: '2', left: '3', selector: 'li'}),
+      css.padding({top: '2', left: '3', selector: 'li'})
     ]
   })
 })
@@ -108,7 +108,11 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         features: [
           feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
           feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
-          studio.watchPath({path: '%$path%', includeChildren: 'no', allowSelfRefresh: false}),
+          studio.watchPath({
+            path: '%$path%',
+            includeChildren: 'no',
+            allowSelfRefresh: false
+          }),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
             popupId: 'suggestions',
@@ -119,7 +123,8 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
       })
     ],
     features: variable({
-      name: 'suggestionData', value: {$: 'object', selected: '', options: [], path: '%$path%'},
+      name: 'suggestionData',
+      value: {'$': 'object', selected: '', options: [], path: '%$path%'}
     })
   })
 })
@@ -157,7 +162,7 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
     features: [
       variable({
         name: 'suggestionData',
-        value: {$: 'object', selected: '', options: [], path: '%$path%'},
+        value: {'$': 'object', selected: '', options: [], path: '%$path%'}
       }),
       css.padding({left: '4', right: '4'}),
       css.margin({top: '-20', selector: '>*:last-child'})
@@ -225,7 +230,7 @@ st.suggestions = class {
 
     options = jb.unique(options,x=>x.toPaste)
         .filter(x=> x.toPaste.indexOf('$jb_') != 0)
-        
+
 //        .filter(x=> x.toPaste != this.tail)
         .filter(x=>
           this.tail == '' || typeof x.toPaste != 'string' || (x.description + x.toPaste).toLowerCase().indexOf(this.tail.toLowerCase()) != -1)
