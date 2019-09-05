@@ -2,10 +2,9 @@ jb.component('itemlist', {
   type: 'control', category: 'group:80,common:80',
   params: [
     { id: 'title', as: 'string' },
-    { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, mandatory: true },
+    { id: 'items', as: 'array' , dynamic: true, mandatory: true },
     { id: 'controls', type: 'control[]', mandatory: true, dynamic: true },
     { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
-    { id: 'watchItems', as: 'boolean' },
     { id: 'itemVariable', as: 'string', defaultValue: 'item' },
     { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
   ],
@@ -27,9 +26,6 @@ jb.component('itemlist.init', {
       beforeInit: cmp => {
         cmp.refresh = _ =>
             cmp.setState({ctrls: cmp.calcCtrls()})
-
-        if (ctx.vars.$model.watchItems && ctx.vars.$model.items)
-          jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
 
         cmp.calcCtrls = _ => {
             var _items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];

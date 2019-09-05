@@ -130,7 +130,6 @@ jb.component('menu-style.pulldown', {
 					innerMenuStyle: ctx => ctx.componentContext.params.innerMenuStyle,
 					leafOptionStyle: ctx => ctx.componentContext.params.leafOptionStyle,
 				},
-				watchItems: false,
 				style :{$call: 'layout' },
 				items: '%$menuModel/options%',
 			controls :{$: 'menu.control', menu: '%$item%', style :{$: 'menu-style.popup-thumb'} },
@@ -150,10 +149,9 @@ jb.component('menu-style.context-menu', {
 				optionsParentId: ctx => ctx.id,
 				leafOptionStyle: ctx => ctx.componentContext.params.leafOptionStyle,
 			},
-				watchItems: false,
-				items: '%$menuModel/options%',
-				controls :{$: 'menu.control', menu: '%$item%', style :{$: 'menu-style.apply-multi-level'} },
-				features :{$: 'menu.selection', autoSelectFirst: true},
+			items: '%$menuModel/options%',
+			controls :{$: 'menu.control', menu: '%$item%', style :{$: 'menu-style.apply-multi-level'} },
+			features :{$: 'menu.selection', autoSelectFirst: true},
 		}
 	}
 })

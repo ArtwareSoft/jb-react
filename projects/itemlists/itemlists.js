@@ -97,68 +97,57 @@ jb.component('itemlists.large-table', {
   }
 })
 
-jb.component('itemlists.editable-table', {
-  type: 'control', 
-  impl :{$: 'group', 
+jb.component('itemlists.editable-table', { /* itemlists.editableTable */ 
+  type: 'control',
+  impl: group({
     controls: [
-      {$: 'table', 
-        items: '%$people%', 
+      table({
+        title: '',
+        items: '%$people%',
         fields: [
-          {$: 'field.control', 
-            title: '', 
-            control :{$: 'material-icon', 
-              icon: 'person', 
-              style :{$: 'icon.material' }, 
-              features :{$: 'itemlist.drag-handle' }
-            }, 
+          field.control({
+            title: '',
+            control: materialIcon({
+              icon: 'person',
+              style: icon.material(),
+              features: itemlist.dragHandle()
+            }),
             width: '60'
-          }, 
-          {$: 'field.control', 
-            title: 'name', 
-            control :{$: 'editable-text', 
-              icon: 'person', 
-              title: 'name', 
-              databind: '%name%', 
-              style :{$: 'editable-text.mdl-input-no-floating-label', width: '200' }
-            }
-          }, 
-          {$: 'field.control', 
-            title: 'age', 
-            control :{$: 'editable-text', 
-              icon: 'person', 
-              title: 'age', 
-              databind: '%age%', 
-              style :{$: 'editable-text.mdl-input-no-floating-label', width: '50' }
-            }
-          }, 
-          {$: 'field.control', 
-            control :{$: 'button', 
-              icon: 'delete', 
-              action :{$: 'itemlist-container.delete', item: '%%' }, 
-              style :{$: 'button.x', size: '21' }, 
-              features :{$: 'itemlist.shown-only-on-item-hover' }
-            }, 
+          }),
+          field.control({
+            title: 'name',
+            control: editableText({
+              title: 'name',
+              databind: '%name%',
+              style: editableText.mdlInputNoFloatingLabel('200')
+            })
+          }),
+          field.control({
+            title: 'age',
+            control: editableText({
+              title: 'age',
+              databind: '%age%',
+              style: editableText.mdlInputNoFloatingLabel('50')
+            })
+          }),
+          field.control({
+            control: button({
+              action: itemlistContainer.delete('%%'),
+              style: button.x('21'),
+              features: itemlist.shownOnlyOnItemHover()
+            }),
             width: '60'
-          }
-        ], 
-        style :{$: 'table.mdl', 
-          classForTable: 'mdl-data-table mdl-shadow--2dp', 
-          classForTd: 'mdl-data-table__cell--non-numeric'
-        }, 
-        watchItems: 'true', 
-        features: [{$: 'itemlist.drag-and-drop' }]
-      }, 
-      {$: 'button', 
-        title: 'add', 
-        action :{$: 'itemlist-container.add' }, 
-        style :{$: 'button.mdl-raised' }
-      }
-    ], 
-    features :{$: 'group.itemlist-container', 
-      defaultItem :{$: 'object' }
-    }
-  }
+          })
+        ],
+        style: table.mdl('mdl-data-table mdl-shadow--2dp', 'mdl-data-table__cell--non-numeric'),
+        features: [watchRef({ref: '%$people%', allowSelfRefresh: true}), itemlist.dragAndDrop()]
+      }),
+      button({title: 'add', action: itemlistContainer.add(), style: button.mdlRaised()})
+    ],
+    features: group.itemlistContainer({defaultItem: {$: 'object'}})
+  })
 })
+
 
 jb.component('itemlists.table-with-search', {
   type: 'control', 
@@ -183,7 +172,6 @@ jb.component('itemlists.table-with-search', {
               {$: 'field', title: 'name', data: '%name%' }, 
               {$: 'field', title: 'age', data: '%age%' }
             ], 
-            watchItems: 'true', 
             features: [
               {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' }, 
               {$: 'itemlist.selection', autoSelectFirst: 'true' }, 
@@ -240,7 +228,6 @@ jb.component('itemlists.table-with-filters', {
               {$: 'field', title: 'name', data: '%name%', width: '200' }, 
               {$: 'field', title: 'age', data: '%age%' }
             ], 
-            watchItems: 'true', 
             features :{$: 'watch-ref', ref: '%$itemlistCntrData%', includeChildren: 'yes' }
           }
         ], 

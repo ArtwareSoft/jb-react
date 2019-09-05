@@ -74,9 +74,6 @@ jb.component('d3-scatter.init', {
         cmp.refresh = _ =>
             cmp.setState({items: calcItems()})
 
-        if (ctx.vars.$model.watchItems)
-          jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
-
         function calcItems() {
           cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
           if (cmp.ctx.vars.itemlistCntr)

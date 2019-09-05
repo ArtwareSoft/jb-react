@@ -402,16 +402,18 @@ jb.component('ui-test.itemlist-DD',  /* uiTest_itemlistDD */ {
       controls: [
         itemlist({
           items: '%$watchable-people%',
-          watchItems: true,
           controls: label({title: '%name%', features: css_class('drag-handle')}),
           features: [
             itemlist_selection({databind: '%$globals/selectedPerson%', autoSelectFirst: true}),
             itemlist_keyboardSelection(true),
             itemlist_dragAndDrop(),
+            watchRef('%$watchable-people%'),
             id('itemlist')
           ]
         }),
-        itemlist({items: '%$watchable-people%', controls: label('%name%'), watchItems: true })
+        itemlist({items: '%$watchable-people%', controls: label('%name%'),
+          features: watchRef('%$watchable-people%') 
+       })
       ]
     }),
     action: [
@@ -600,14 +602,14 @@ jb.component('ui-test.table-DD',  /* uiTest_tableDD */ {
             field({title: 'name', data: '%name%', width: 300, class: 'drag-handle'}),
             field({title: 'age', data: '%age%', width: 50}),
             field_control({
-              control: button({title: 'delete', action: removeFromArray({array: '%$people%'}), style: button_x()})
+              control: button({title: 'delete', action: removeFromArray({array: '%$watchable-people%'}), style: button_x()})
             })
           ],
-          watchItems: true,
           features: [
             itemlist_selection({databind: '%$globals/selectedPerson%', autoSelectFirst: true}),
             itemlist_keyboardSelection(true),
-            itemlist_dragAndDrop()
+            itemlist_dragAndDrop(),
+            watchRef('%$watchable-people%')
           ]
         }),
         label({title: pipeline('%$watchable-people/name%', join({})), features: watchRef('%$watchable-people%')})

@@ -151,7 +151,6 @@ jb.component('studio.select-profile', { /* studio_selectProfile */
                     features: [css_width('120'), css('{text-align: left}'), css_padding({left: '10'})]
                   }),
                   style: itemlist_ulLi(),
-                  watchItems: false,
                   features: [
                     itemlist_selection({
                       databind: '%$SelectedCategory%',
