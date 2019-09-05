@@ -108,7 +108,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         features: [
           feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
           feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
-          studio.watchPath({path: '%$path%', includeChildren: 'yes', allowSelfRefresh: false}),
+          studio.watchPath({path: '%$path%', includeChildren: 'no', allowSelfRefresh: false}),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
             popupId: 'suggestions',
@@ -135,17 +135,7 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
         title: studio.propName('%$path%'),
         databind: studio.profileValueAsText('%$path%'),
         updateOnBlur: true,
-        style: customStyle({
-          template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
-            h('input', { class: 'mdl-textfield__input', id1: 'jb_input_' + state.fieldId, type: 'text', autocomplete: 'nop',
-                value: state.model,
-                onchange: e => cmp.jbModel(e.target.value),
-            }),
-            h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
-      ]),
-          css: '{ margin-right: 13px; }',
-          features: [field.databindText(300, true), mdlStyle.initDynamic()]
-        }),
+        style: editableText.floatingInput(),
         features: [
           feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
           feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
