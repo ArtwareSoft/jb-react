@@ -4,15 +4,16 @@ jb.component('jb-editor-test.cmp1', {
 
 jb.component('jb-editor-test.cmp2', {
   impl: {$: 'itemlist-with-groups', 
-  title: 'itemlist', 
-  items :{$: 'list', items: ['a.1', 'b.2'] }, 
-  controls: [
-    {$: 'label', 
-      title: '%%', 
-      style :{$: 'label.span' },
-    }
-  ], 
-}})
+	title: 'itemlist', 
+	items :{$: 'list', items: ['a.1', 'b.2'] }, 
+	controls: [
+		{$: 'label', 
+		title: '%%', 
+		style :{$: 'label.span' },
+		}
+	]
+  }
+})
 
 jb.component('jb-editor-test.cmp3', {
   impl :{$: 'list', items: [] }, 
