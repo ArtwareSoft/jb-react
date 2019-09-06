@@ -6,6 +6,7 @@ jb.component('itemlist', {
     { id: 'controls', type: 'control[]', mandatory: true, dynamic: true },
     { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
     { id: 'itemVariable', as: 'string', defaultValue: 'item' },
+    { id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items' },
     { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
   ],
   impl: ctx =>
@@ -28,14 +29,11 @@ jb.component('itemlist.init', {
             cmp.setState({ctrls: cmp.calcCtrls()})
 
         cmp.calcCtrls = _ => {
-            var _items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
-            if (jb.compareArrays(_items,cmp.items))
-              return cmp.state.ctrls;
+            cmp.items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
             if (cmp.ctx.vars.itemlistCntr)
-              cmp.ctx.vars.itemlistCntr.items = _items;
-            cmp.items = _items;
-            return _items.slice(0,100).map(item=>
-              Object.assign(controlsOfItem(item),{item:item})).filter(x=>x.length > 0);
+              cmp.ctx.vars.itemlistCntr.items = cmp.items;
+            return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit || 100).map(item=>
+              Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
         }
 
         const controlsOfItem = jb.ui.cachedMap(item =>
@@ -43,9 +41,7 @@ jb.component('itemlist.init', {
             .filter(x=>x).map(c=>jb.ui.renderable(c)).filter(x=>x));
         
       },
-      init: cmp => {
-        cmp.state.ctrls = cmp.calcCtrls();
-      },
+      init: cmp => cmp.state.ctrls = cmp.calcCtrls(),
   })
 })
 

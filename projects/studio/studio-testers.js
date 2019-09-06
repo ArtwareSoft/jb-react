@@ -8,6 +8,10 @@ function compsRef(val,opEvent) {
   }
 }
 
+st.initTests = function() {
+  st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
+}
+
 jb.component('suggestions-test', { /* suggestionsTest */
   type: 'test',
   params: [
@@ -22,17 +26,15 @@ jb.component('suggestions-test', { /* suggestionsTest */
   ],
   impl: dataTest({
     calculate: ctx => {
-      st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
+      const params = ctx.componentContext.params;
+      const selectionStart = params.selectionStart == -1 ? params.expression.length : params.selectionStart;
 
-      var params = ctx.componentContext.params;
-      var selectionStart = params.selectionStart == -1 ? params.expression.length : params.selectionStart;
-
-      var circuit = params.path.split('~')[0];
-      var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: { $: circuit }, comp: circuit, path: '', data: null }))
+      const circuit = params.path.split('~')[0];
+      const probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: { $: circuit }, comp: circuit, path: '', data: null }))
         .runCircuit(params.path);
       return probeRes.then(res=>{
-        var probeCtx = res.result[0] && res.result[0].in;
-        var obj = new jb.studio.suggestions({ value: params.expression, selectionStart: selectionStart })
+        const probeCtx = res.result[0] && res.result[0].in;
+        const obj = new jb.studio.suggestions({ value: params.expression, selectionStart: selectionStart })
           .extendWithOptions(probeCtx.setVars({'people-array': ctx.exp('%$people-array%')}),probeCtx.path);
         return JSON.stringify(JSON.stringify(obj.options.map(x=>x.text)));
       })
@@ -50,11 +52,9 @@ jb.component('jb-editor-children-test', { /* jbEditorChildrenTest */
   ],
   impl: dataTest({
     calculate: ctx => {
-      st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
-
-      var params = ctx.componentContext.params;
-      var mdl = new jb.studio.jbEditorTree('');
-      var titles = mdl.children(params.path)
+      const params = ctx.componentContext.params;
+      const mdl = new jb.studio.jbEditorTree('');
+      const titles = mdl.children(params.path)
         .map(path=>
           mdl.title(path,true));
       return JSON.stringify(titles);
@@ -72,14 +72,14 @@ jb.component('studio-probe-test', { /* studioProbeTest */
     {id: 'expectedVisits', as: 'number', defaultValue: -1}
   ],
   impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits)=> {
-    st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
+    st.initTests();
 
-    var testId = ctx.vars.testID;
-    var failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
-    var success = _ => ({ id: testId, title: testId, success: true });
+    const testId = ctx.vars.testID;
+    const failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
+    const success = _ => ({ id: testId, title: testId, success: true });
 
-    var full_path = testId + '~impl~circuit~' + probePath;
-    var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
+    const full_path = testId + '~impl~circuit~' + probePath;
+    const probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
       .runCircuit(full_path);
     return probeRes.then(res=>{
           try {
@@ -109,13 +109,13 @@ jb.component('path-change-test', { /* pathChangeTest */
     {id: 'cleanUp', type: 'action', dynamic: true}
   ],
   impl: (ctx,path,action,expectedPathAfter,cleanUp)=> {
-    st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
+    st.initTests();
 
-    var testId = ctx.vars.testID;
-    var failure = (part,reason) => ({ id: testId, title: testId + '- ' + part, success:false, reason: reason });
-    var success = _ => ({ id: testId, title: testId, success: true });
+    const testId = ctx.vars.testID;
+    const failure = (part,reason) => ({ id: testId, title: testId + '- ' + part, success:false, reason: reason });
+    const success = _ => ({ id: testId, title: testId, success: true });
 
-    var pathRef = jb.studio.refOfPath(path);
+    const pathRef = jb.studio.refOfPath(path);
     action();
     
     const res_path = pathRef.path().join('~');

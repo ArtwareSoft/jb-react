@@ -11,19 +11,6 @@ const createItemlistCntr = (ctx,params) => ({
 		return (typeof selected != 'undefined') ?
 			jb.writeValue(this.selectedRef,selected,this.ctx) : jb.val(this.selectedRef)
 	},
-	add: function(item) {
-		const newItem = item || JSON.parse(JSON.stringify(this.defaultItem || {}));
-		if (this.items) {
-			jb.splice(jb.asRef(this.items),[[this.items.length,0,newItem]]);
-			this.selected(newItem);
-		}
-	},
-	delete: function(item) {
-		if (this.items && this.items.indexOf(item) != -1) {
-			this.changeSelectionBeforeDelete();
-			jb.splice(jb.asRef(this.items),[[this.items.indexOf(item),1]]);
-		}
-	},
 	reSelectAfterFilter: function(filteredItems) {
 		if (filteredItems.indexOf(this.selected()) == -1)
 			this.selected(filteredItems[0])
@@ -73,20 +60,6 @@ jb.component('itemlist.itemlist-selected', {
 			{$: 'group.data', data : '%$itemlistCntrData/selected%'},
 			{$: 'hidden', showCondition: {$notEmpty: '%$itemlistCntrData/selected%' } }
 	]}
-})
-
-jb.component('itemlist-container.add', {
-	type: 'action',
-	params: [{ id: 'toAdd', as: 'single' } ],
-	impl: (ctx,toAdd) =>
-		ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.add(toAdd)
-})
-
-jb.component('itemlist-container.delete', {
-	type: 'action',
-	params: [{ id: 'item', as: 'single', defaultValue: '%%'} ],
-	impl: (ctx,item) =>
-			ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.delete(item)
 })
 
 jb.component('itemlist-container.filter', {

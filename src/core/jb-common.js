@@ -242,7 +242,7 @@ jb.component('add-to-array', {
 	type: 'action',
 	params: [
 		{ id: 'array', as: 'ref', mandatory: true },
-		{ id: 'toAdd', as: 'single', mandatory: true },
+		{ id: 'toAdd', as: 'array', mandatory: true },
 	],
 	impl: (ctx,array,toAdd) => jb.push(array,toAdd,ctx)
 });
