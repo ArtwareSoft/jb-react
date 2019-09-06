@@ -590,8 +590,8 @@ jb.component('data-test.pretty-print-$contains', {
       () => jb.prettyPrintWithPositions(
         {$contains: 'hello'}
       ),
-      '%map/~text~0%',
+      '%text%',
     ),
-    expectedResult: equals('hello')
+    expectedResult: contains('hello')
   })
 })

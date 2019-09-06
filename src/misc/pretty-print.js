@@ -122,18 +122,23 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
     const oneFirstParam = keys.length === 1 && params[0] && params[0].id == keys[0] 
-        && (typeof profile[keys[0]] !== 'object' || Array.isArray(profile[keys[0]]))
+        && (typeof attOfProfile(keys[0]) !== 'object' || Array.isArray(attOfProfile(keys[0])))
     if ((params.length < 3 && comp.usageByValue !== false) || comp.usageByValue || oneFirstParam) {
-      const args = systemProps.concat(params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]})))
+      const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: attOfProfile(param.id)})))
       for(let i=0;i<5;i++)
         if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
     }
     const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
     const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
-    const args = systemPropsInObj.concat(params.filter(param=>profile[param.id] !== undefined)
-        .map(param=>({innerPath: param.id, val: profile[param.id]})))
+    const args = systemPropsInObj.concat(params.filter(param=>attOfProfile(param.id) !== undefined)
+        .map(param=>({innerPath: param.id, val: attOfProfile(param.id)})))
       return joinVals(ctx, args,openProfileGroup, closeProfileGroup, flat, false)
+
+    function attOfProfile(paramId) {
+      const isFirst = params[0] && params[0].id == paramId
+      return isFirst && profile['$'+id] || profile[paramId]
+    }
   }
     
   function valueToMacro({path, line, col}, val, flat) {
