@@ -1,19 +1,19 @@
-jb.component('button.href', {
+jb.component('button.href', { /* button.href */
   type: 'button.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
-        css: `{color: grey}`
-    }
+  impl: customStyle({
+    template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
+    css: '{color: grey}'
+  })
 })
 
-jb.component('button.x', {
+jb.component('button.x', { /* button.x */
   type: 'button.style',
   params: [
-    { id: 'size', as: 'number', defaultValue: '21'}
+    {id: 'size', as: 'number', defaultValue: '21'}
   ],
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{title: state.title, onclick: ev => cmp.clicked(ev)},'×'),
-      css: `{
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{title: state.title, onclick: ev => cmp.clicked(ev)},'×'),
+    css: `{
             padding: 0;
             cursor: pointer;
             font: %$size%px sans-serif;
@@ -25,94 +25,94 @@ jb.component('button.x', {
             opacity: .2;
         }
         :hover { opacity: .5 }`
-  }
+  })
 })
 
-jb.component('button.mdl-raised', {
+jb.component('button.mdl-raised', { /* button.mdlRaised */
   type: 'button.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{class: 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev)},state.title),
-      features :{$: 'mdl-style.init-dynamic'},
-  }
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{class: 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev)},state.title),
+    features: mdlStyle.initDynamic()
+  })
 })
 
-jb.component('button.mdl-flat-ripple', {
+jb.component('button.mdl-flat-ripple', { /* button.mdlFlatRipple */
   type: 'button.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
-      features :{$: 'mdl-style.init-dynamic'},
-      css: '{ text-transform: none }'
-  }
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
+    css: '{ text-transform: none }',
+    features: mdlStyle.initDynamic()
+  })
 })
 
-jb.component('button.mdl-icon', {
+jb.component('button.mdl-icon', { /* button.mdlIcon */
   type: 'button.style,icon-with-action.style',
   params: [
-    { id: 'icon', as: 'string', default: 'code' },
+    {id: 'icon', as: 'string', default: 'code'}
   ],
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{
           class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
           title: state.title, tabIndex: -1,
           onclick:  ev => cmp.clicked(ev) },
         h('i',{class: 'material-icons'},cmp.icon)
       ),
-      css: `{ border-radius: 2px}
+    css: `{ border-radius: 2px}
       >i {border-radius: 2px}`,
-      features :{$: 'mdl-style.init-dynamic'},
-  }
+    features: mdlStyle.initDynamic()
+  })
 })
 
-jb.component('button.mdl-round-icon', {
+jb.component('button.mdl-round-icon', { /* button.mdlRoundIcon */
   type: 'button.style,icon-with-action.style',
   params: [
-    { id: 'icon', as: 'string', default: 'code' },
+    {id: 'icon', as: 'string', default: 'code'}
   ],
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{
           class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
           title: state.title, tabIndex: -1,
           onclick:  ev => cmp.clicked(ev) },
         h('i',{class: 'material-icons'},cmp.icon)
       ),
-      features :{$: 'mdl-style.init-dynamic'},
-  }
+    features: mdlStyle.initDynamic()
+  })
 })
 
-jb.component('button.mdl-icon12-with-ripple', {
+jb.component('button.mdl-icon12-with-ripple', { /* button.mdlIcon12WithRipple */
   type: 'button.style,icon-with-action.style',
   params: [
-    { id: 'icon', as: 'string', default: 'code' },
+    {id: 'icon', as: 'string', default: 'code'}
   ],
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{
           class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
           title: state.title, tabIndex: -1,
           onclick: ev => cmp.clicked(ev) },
         h('i',{class: 'material-icons'},cmp.icon)
       ),
-      css: `>.material-icons { font-size:12px;  }`,
-      features:{$: 'mdl-style.init-dynamic'},
-  }
+    css: '>.material-icons { font-size:12px;  }',
+    features: mdlStyle.initDynamic()
+  })
 })
 
-jb.component('button.mdl-icon12', {
+jb.component('button.mdl-icon12', { /* button.mdlIcon12 */
   type: 'button.style,icon-with-action.style',
   params: [
-    { id: 'icon', as: 'string', default: 'code' },
+    {id: 'icon', as: 'string', default: 'code'}
   ],
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('i',{class: 'material-icons',
+  impl: customStyle({
+    template: (cmp,state,h) => h('i',{class: 'material-icons',
         onclick: ev => cmp.clicked(ev)
       },cmp.icon),
-      css: `{ font-size:12px; cursor: pointer }`,
-  }
+    css: '{ font-size:12px; cursor: pointer }'
+  })
 })
 
-jb.component('button.mdl-card-flat', {
+jb.component('button.mdl-card-flat', { /* button.mdlCardFlat */
   type: 'button.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('a',{class:'mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
-      features :{$: 'mdl-style.init-dynamic'},
-  }
+  impl: customStyle({
+    template: (cmp,state,h) => h('a',{class:'mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
+    features: mdlStyle.initDynamic()
+  })
 })

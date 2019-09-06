@@ -1,54 +1,50 @@
-jb.component('editable-boolean.checkbox', {
+jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
   type: 'editable-boolean.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('input', { type: 'checkbox',
-        checked: state.model, 
-        onchange: e => cmp.jbModel(e.target.checked), 
-        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  })
-    }
+  impl: customStyle({
+    template: (cmp,state,h) => h('input', { type: 'checkbox',
+        checked: state.model,
+        onchange: e => cmp.jbModel(e.target.checked),
+        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }),
+    features: field.databind()
+  })
 })
 
-jb.component('editable-boolean.checkbox-with-title', {
+jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkboxWithTitle */
   type: 'editable-boolean.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.model, 
-        onchange: e => cmp.jbModel(e.target.checked), 
-        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }), state.text])
-  }
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
+        checked: state.model,
+        onchange: e => cmp.jbModel(e.target.checked),
+        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }), state.text]),
+    features: field.databind()
+  })
 })
 
 
-jb.component('editable-boolean.expand-collapse', {
+jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandCollapse */
   type: 'editable-boolean.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('div',{},[
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{},[
           h('input', { type: 'checkbox',
-            checked: state.model, 
-            onchange: e => cmp.jbModel(e.target.checked), 
+            checked: state.model,
+            onchange: e => cmp.jbModel(e.target.checked),
             onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }, state.text),
           h('i',{class:'material-icons noselect', onclick: _=> cmp.toggle() }, state.model ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
       ]),
-      css: `>i { font-size:16px; cursor: pointer; }
-          >input { display: none }`
-  }
+    css: `>i { font-size:16px; cursor: pointer; }
+          >input { display: none }`,
+    features: field.databind()
+  })
 })
 
-jb.component('editable-boolean.mdl-slide-toggle', {
+jb.component('editable-boolean.mdl-slide-toggle', { /* editableBoolean.mdlSlideToggle */
   type: 'editable-boolean.style',
-  impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('label',{class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
+  impl: customStyle({
+    template: (cmp,state,h) => h('label',{class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
         h('input', { type: 'checkbox', class: 'mdl-switch__input', id: 'switch_' + state.fieldId,
           checked: state.model, onchange: e => cmp.jbModel(e.target.checked) }),
         h('span',{class:'mdl-switch__label'},state.text)
       ]),
-      features :[
-          {$: 'field.databind' },
-          {$: 'editable-boolean.keyboard-support' },
-          {$: 'mdl-style.init-dynamic'}
-      ],
-  }
+    features: [field.databind(), editableBoolean.keyboardSupport(), mdlStyle.initDynamic()]
+  })
 })
