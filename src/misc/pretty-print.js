@@ -91,6 +91,8 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
 
     const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
     const comp = jb.comps[id]
+    if (comp)
+      jb.fixByValue(profile,comp)
     if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
       const props = Object.keys(profile) 
       if (props.indexOf('$') > 0) { // make the $ first
@@ -123,7 +125,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
         && (typeof profile[keys[0]] !== 'object' || Array.isArray(profile[keys[0]]))
     if ((params.length < 3 && comp.usageByValue !== false) || comp.usageByValue || oneFirstParam) {
       const args = systemProps.concat(params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]})))
-      for(let i=0;i<3;i++)
+      for(let i=0;i<5;i++)
         if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
     }

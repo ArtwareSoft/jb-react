@@ -666,7 +666,7 @@ let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 return {
   run: jb_run,
   jbCtx, expression, bool_expression, profileType, compName, pathSummary, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame,
+  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame, fixByValue,
   ctxCounter: _ => ctxCounter, simpleValueByRefHandler
 }
 
