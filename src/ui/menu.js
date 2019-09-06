@@ -1,3 +1,7 @@
+jb.component('menu-style.forward-ns-declaration', {})
+jb.component('itemlist.forward-ns-declaration', {})
+jb.component('menu-separator.forward-ns-declaration', {})
+jb.component('mdl.forward-ns-declaration', {})
 
 jb.component('menu.menu', {
 	type: 'menu.option',
@@ -396,13 +400,6 @@ jb.component('menu-style.popup-thumb', {
 					{$: 'menu.init-popup-menu' },
 					{$: 'mdl.ripple-effect'}
 				],
-	}
-})
-
-jb.component('menu-style.toolbar', {
-	type: 'menu.style',
-	impl :{$: 'menu.multi-level',
-		leafOptionStyle :{$: 'menu.option-as-icon24' }
 	}
 })
 

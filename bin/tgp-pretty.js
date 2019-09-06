@@ -29,7 +29,7 @@ const filePattern = new RegExp(getProcessArgument('file') || '^nothing')
 function run() {
     const entries = jb.entries(jb.comps) 
         .map(e=>({id:e[0], comp:e[1], file:e[1][location][0]}))
-        .filter(({id}) => !id.match(/-json-format$/))
+        .filter(({id}) => !id.match(/-json-format$/) && !id.match(/forward-ns-declaration$/))
     entries.filter(({file}) => 
             filePattern.test(file) )
         .forEach( args => swapComp(args))
