@@ -3,16 +3,15 @@ jb.component('person', { watchableData: {
 	male: true,
 	isMale: 'yes',
 	age: 42
-}});
+}
+})
 
- jb.component('probe-test.single-control', {
-	impl :{$: 'studio-probe-test',
-		circuit: {$: 'group',
-			controls :{$: 'label', title: 'hello' }
-		},
-		probePath : 'controls',
-		expectedVisits: 1,
-	}
+jb.component('probe-test.single-control', { /* probeTest.singleControl */
+  impl: studioProbeTest({
+    circuit: group({controls: label('hello')}),
+    probePath: 'controls',
+    expectedVisits: 1
+  })
 })
 
 jb.component('probe-test.pt-by-example', { /* probeTest.ptByExample */
@@ -90,7 +89,7 @@ jb.component('probe-test.pipeline-no-sugar', { /* probeTest.pipelineNoSugar */
   })
 })
 
-jb.component('probe-test.pipeline-one-elem', { /* probeTest.pipelineOneElem */
+jb.component('probe-test.pipeline-one-elem-json-format', { /* probeTest.pipelineOneElem */
   impl: studioProbeTest({
     circuit: group({controls: label({title: {$: 'pipeline', items: 'hello' }})}),
     probePath: 'controls~title~items'
@@ -169,7 +168,7 @@ jb.component('probe-test.filter-no-sugar', { /* probeTest.filterNoSugar */
 jb.component('test.label1', { /* test.label1 */
   type: 'control',
   impl: label({
-
+    
   })
 })
 
@@ -211,7 +210,7 @@ jb.component('probe-test.pathSrc-through-$call', { /* probeTest.pathSrcThrough-$
   })
 })
 
-jb.component('probe-test.pathSrc-through-$call-2', { /* probeTest.pathSrcThrough-$call-2 */ 
+jb.component('probe-test.pathSrc-through-$call-2', { /* probeTest.pathSrcThrough-$call-2 */
   impl: dataTest({
     calculate: ctx => {
    	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrc-caller'}, comp: 'test.pathSrc-caller', path: '' } ),true)

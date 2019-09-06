@@ -59,7 +59,7 @@ jb.component('studio.open-new-resource', { /* studio.openNewResource */
   })
 })
 
-jb.component('studio.data-resource-menu', { /* studio.dataResourceMenu */ 
+jb.component('studio.data-resource-menu', { /* studio.dataResourceMenu */
   type: 'menu.option',
   impl: menu.menu({
     title: 'Data',

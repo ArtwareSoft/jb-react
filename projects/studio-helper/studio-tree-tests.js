@@ -18,7 +18,7 @@ jb.component('jb-editor-test.cmp2', { /* jbEditorTest.cmp2 */
 
 jb.component('jb-editor-test.cmp3', { /* jbEditorTest.cmp3 */
   impl: list(
-
+    
   )
 })
 
@@ -106,7 +106,7 @@ jb.component('jb-editor-test.actions-sugar2a', { /* jbEditorTest.actionsSugar2a 
   })
 })
 
-jb.component('jb-editor-test.actions-sugar2b', { /* jbEditorTest.actionsSugar2b */ 
+jb.component('jb-editor-test.actions-sugar2b', { /* jbEditorTest.actionsSugar2b */
   impl: jbEditorChildrenTest({
     path: 'jb-editor-test.actions-sugar-example2-json-format~impl~action~$runActions',
     childrenType: 'jb-editor',

@@ -108,7 +108,7 @@ jb.component('studio.h-to-jsx', { /* studio.hToJsx */
 })
 
 
-jb.component('studio.template-as-jsx', { /* studio.templateAsJsx */ 
+jb.component('studio.template-as-jsx', { /* studio.templateAsJsx */
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}

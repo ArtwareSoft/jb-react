@@ -78,7 +78,7 @@ jb.component('studio.search-list', { /* studio.searchList */
   })
 })
 
-jb.component('studio.search-component', { /* studio.searchComponent */ 
+jb.component('studio.search-component', { /* studio.searchComponent */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}

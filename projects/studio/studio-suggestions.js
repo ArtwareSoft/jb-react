@@ -108,11 +108,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         features: [
           feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
           feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
-          studio.watchPath({
-            path: '%$path%',
-            includeChildren: 'no',
-            allowSelfRefresh: false
-          }),
+          studio.watchPath('%$path%'),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
             popupId: 'suggestions',

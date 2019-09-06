@@ -109,7 +109,7 @@ jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studi
         return jb.resources.studio.page ? [{page}] : []
       });
 
-jb.component('studio.preview-widget', { /* studio.previewWidget */ 
+jb.component('studio.preview-widget', { /* studio.previewWidget */
   type: 'control',
   params: [
     {

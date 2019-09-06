@@ -202,7 +202,7 @@ jb.component('studio.highlight-in-preview', { /* studio.highlightInPreview */
   }
 })
 
-jb.component('studio.pick', { /* studio.pick */ 
+jb.component('studio.pick', { /* studio.pick */
   type: 'action',
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},

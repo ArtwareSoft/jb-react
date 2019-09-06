@@ -387,7 +387,7 @@ jb.component('dialog.studio-multiline-edit', { /* dialog.studioMultilineEdit */
 // 	}
 // })
 
-jb.component('studio.toolbar-style', { /* studio.toolbarStyle */ 
+jb.component('studio.toolbar-style', { /* studio.toolbarStyle */
   type: 'group.style',
   impl: customStyle({
     template: (cmp,state,h) => h('section',{class:'jb-group'},
