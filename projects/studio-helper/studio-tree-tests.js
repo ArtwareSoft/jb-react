@@ -28,7 +28,7 @@ jb.component('jb-editor-test.cmp4', { /* jbEditorTest.cmp4 */
   )
 })
 
-jb.component('jb-editor-test.cmp5', { /* jbEditorTest.cmp5 */
+jb.component('jb-editor-test.cmp5-json-format', { /* jbEditorTest.cmp5 */
   impl: label({
     title: {$pipeline: ['a','b'] }
   })
@@ -41,7 +41,7 @@ jb.component('jb-editor-test.actions-sugar-example1', { /* jbEditorTest.actionsS
   })
 })
 
-jb.component('jb-editor-test.actions-sugar-example2', { /* jbEditorTest.actionsSugarExample2 */
+jb.component('jb-editor-test.actions-sugar-example2-json-format', { /* jbEditorTest.actionsSugarExample2 */
   impl: button({
     title: 'hello',
     action: {$runActions: [ {$: 'goto-url', url: 'google' }] }
@@ -84,7 +84,7 @@ jb.component('jb-editor-test.empty-pipeline-bug', { /* jbEditorTest.emptyPipelin
 
 jb.component('jb-editor-test.$pipline', { /* jbEditorTest.$pipline */
   impl: jbEditorChildrenTest({
-    path: 'jb-editor-test.cmp5~impl~title',
+    path: 'jb-editor-test.cmp5-json-format~impl~title',
     childrenType: 'jb-editor',
     expectedResult: and(contains(['[0]', '[1]']), notContains('$pipeline'), notContains('items'))
   })
@@ -100,7 +100,7 @@ jb.component('jb-editor-test.actions-sugar1', { /* jbEditorTest.actionsSugar1 */
 
 jb.component('jb-editor-test.actions-sugar2a', { /* jbEditorTest.actionsSugar2a */
   impl: jbEditorChildrenTest({
-    path: 'jb-editor-test.actions-sugar-example2~impl~action',
+    path: 'jb-editor-test.actions-sugar-example2-json-format~impl~action',
     childrenType: 'jb-editor',
     expectedResult: contains('$runActions')
   })
@@ -108,7 +108,7 @@ jb.component('jb-editor-test.actions-sugar2a', { /* jbEditorTest.actionsSugar2a 
 
 jb.component('jb-editor-test.actions-sugar2b', { /* jbEditorTest.actionsSugar2b */ 
   impl: jbEditorChildrenTest({
-    path: 'jb-editor-test.actions-sugar-example2~impl~action~$runActions',
+    path: 'jb-editor-test.actions-sugar-example2-json-format~impl~action~$runActions',
     childrenType: 'jb-editor',
     expectedResult: and(contains(['runActions[0]', 'runActions[1]']), not(contains('actions')))
   })

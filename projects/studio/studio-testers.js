@@ -8,15 +8,19 @@ function compsRef(val,opEvent) {
   }
 }
 
-jb.component('suggestions-test', {
+jb.component('suggestions-test', { /* suggestionsTest */
   type: 'test',
   params: [
-    { id: 'expression', as: 'string' },
-    { id: 'selectionStart', as: 'number', defaultValue: -1 },
-    { id: 'path', as: 'string', defaultValue: 'suggestions-test.default-probe~impl~title' },
-    { id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean' },
+    {id: 'expression', as: 'string'},
+    {id: 'selectionStart', as: 'number', defaultValue: -1},
+    {
+      id: 'path',
+      as: 'string',
+      defaultValue: 'suggestions-test.default-probe~impl~title'
+    },
+    {id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean'}
   ],
-  impl :{$: 'data-test',
+  impl: dataTest({
     calculate: ctx => {
       st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
 
@@ -33,18 +37,18 @@ jb.component('suggestions-test', {
         return JSON.stringify(JSON.stringify(obj.options.map(x=>x.text)));
       })
     },
-    expectedResult :{$call: 'expectedResult' }
-  },
+    expectedResult: call('expectedResult')
+  })
 })
 
-jb.component('jb-editor-children-test', {
+jb.component('jb-editor-children-test', { /* jbEditorChildrenTest */
   type: 'test',
   params: [
-    { id: 'path', as: 'string' },
-    { id: 'childrenType', as: 'string', type: ',jb-editor' },
-    { id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean' }
+    {id: 'path', as: 'string'},
+    {id: 'childrenType', as: 'string', type: ',jb-editor'},
+    {id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean'}
   ],
-  impl :{$: 'data-test',
+  impl: dataTest({
     calculate: ctx => {
       st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
 
@@ -55,17 +59,17 @@ jb.component('jb-editor-children-test', {
           mdl.title(path,true));
       return JSON.stringify(titles);
     },
-    expectedResult :{$call: 'expectedResult' }
-  },
+    expectedResult: call('expectedResult')
+  })
 })
 
-jb.component('studio-probe-test', {
+jb.component('studio-probe-test', { /* studioProbeTest */
   type: 'test',
   params: [
-    { id: 'circuit', type: 'control', dynamic: true },
-    { id: 'probePath', as: 'string' },
-    { id: 'allowClosestPath', as: 'boolean' },
-    { id: 'expectedVisits', as: 'number', defaultValue : -1 },
+    {id: 'circuit', type: 'control', dynamic: true},
+    {id: 'probePath', as: 'string'},
+    {id: 'allowClosestPath', as: 'boolean', type: 'boolean'},
+    {id: 'expectedVisits', as: 'number', defaultValue: -1}
   ],
   impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits)=> {
     st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
@@ -96,13 +100,13 @@ jb.component('studio-probe-test', {
   }
 })
 
-jb.component('path-change-test', {
+jb.component('path-change-test', { /* pathChangeTest */ 
   type: 'test',
   params: [
-    { id: 'path', as: 'string' },
-    { id: 'action', type: 'action', dynamic: true },
-    { id: 'expectedPathAfter', as: 'string' },
-    { id: 'cleanUp', type: 'action', dynamic: true  },
+    {id: 'path', as: 'string'},
+    {id: 'action', type: 'action', dynamic: true},
+    {id: 'expectedPathAfter', as: 'string'},
+    {id: 'cleanUp', type: 'action', dynamic: true}
   ],
   impl: (ctx,path,action,expectedPathAfter,cleanUp)=> {
     st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);

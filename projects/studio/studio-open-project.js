@@ -1,46 +1,46 @@
-jb.component('studio.goto-project', { /* studio_gotoProject */
+jb.component('studio.goto-project', { /* studio.gotoProject */
   type: 'action',
   impl: runActions(
     gotoUrl('/project/studio/%%', 'new tab'),
-    dialog_closeContainingPopup()
+    dialog.closeContainingPopup()
   )
 })
 
-jb.component('studio.choose-project', { /* studio_chooseProject */
+jb.component('studio.choose-project', { /* studio.chooseProject */
   type: 'control',
   impl: group({
     title: 'itemlist-with-find',
     controls: [
-      itemlistContainer_search({features: css_width('250')}),
+      itemlistContainer.search({features: css.width('250')}),
       itemlist({
-        items: pipeline('%projects%', itemlistContainer_filter()),
+        items: pipeline('%projects%', itemlistContainer.filter()),
         controls: button({
           title: highlight('%%', '%$itemlistCntrData/search_pattern%'),
-          action: studio_gotoProject(),
-          style: button_mdlFlatRipple(),
+          action: studio.gotoProject(),
+          style: button.mdlFlatRipple(),
           features: css('{ text-align: left; width: 250px }')
         }),
         features: [
-          itemlist_selection({}),
-          itemlist_keyboardSelection({autoFocus: true, onEnter: studio_gotoProject()}),
+          itemlist.selection({}),
+          itemlist.keyboardSelection({autoFocus: true, onEnter: studio.gotoProject()}),
           watchRef('%$itemlistCntrData/search_pattern%'),
-          css_height({height: '400', overflow: 'scroll'})
+          css.height({height: '400', overflow: 'scroll'})
         ]
       })
     ],
     features: [
-      group_wait({for: http_get('/?op=projects', 'true')}),
-      css_padding({top: '15', left: '15'}),
-      group_itemlistContainer({})
+      group.wait({for: http.get('/?op=projects', 'true')}),
+      css.padding({top: '15', left: '15'}),
+      group.itemlistContainer({})
     ]
   })
 })
 
-jb.component('studio.open-project', { /* studio_openProject */ 
+jb.component('studio.open-project', { /* studio.openProject */ 
   type: 'action',
   impl: openDialog({
-    style: dialog_dialogOkCancel('OK', 'Cancel'),
-    content: studio_chooseProject(),
+    style: dialog.dialogOkCancel('OK', 'Cancel'),
+    content: studio.chooseProject(),
     title: 'Open project'
   })
 })

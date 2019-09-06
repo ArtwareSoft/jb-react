@@ -1,13 +1,10 @@
-jb.component('url-history.map-studio-url-to-resource', {
-    type: 'action',
-    // /project/studio/${project}/${page}/${profile_path}
-    // /studio/${entry_file}/${shown_comp}/${profile_path}
-    // http://localhost:8082/studio/projects%2Fhello-world%2Fhello-world.html/hello-world.main/hello-world.main~impl
-    params: [
-        { id: 'resource', as: 'string' , mandatory: true },
-        { id: 'onUrlChange', type: 'action', dynamic: true }
-    ],
-    impl: function(context,resource) {
+jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudioUrlToResource */ 
+  type: 'action',
+  params: [
+    {id: 'resource', as: 'string', mandatory: true},
+    {id: 'onUrlChange', type: 'action', dynamic: true}
+  ],
+  impl: function(context,resource) {
         if (jb.ui.location || typeof window == 'undefined') return;
         const base = 'studio'
         const isProject = location.pathname.indexOf('/project') == 0;

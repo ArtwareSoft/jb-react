@@ -1,5 +1,9 @@
-jb.component('studio', {
-  watchableData: { project:'', page:'', profile_path: ''}
+jb.component('studio', { /* studio */
+  watchableData: {
+    project: '',
+    page: '',
+    profile_path: ''
+  }
 })
 
 jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
@@ -42,13 +46,16 @@ jb.component('studio.pages', { /* studio.pages */
           itemlist.selection({
             databind: '%$studio/page%',
             onSelection: runActions(
-              writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
-              //studio.refreshPreview()
+              writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}')
             ),
             autoSelectFirst: true
           }),
           css(
-            "{ list-style: none; padding: 0;\n              margin: 0; margin-left: 20px; font-family: \"Arial\"}\n                  >* { list-style: none; display: inline-block; padding: 0 5px; font-size: 12px; border: 1px solid transparent; cursor: pointer;}\n                  >* label { cursor: inherit; }\n                  >*.selected { background: #fff;  border: 1px solid #ccc;  border-top: 1px solid transparent; color: inherit;  }"
+            `{ list-style: none; padding: 0;
+              margin: 0; margin-left: 20px; font-family: "Arial"}
+                  >* { list-style: none; display: inline-block; padding: 0 5px; font-size: 12px; border: 1px solid transparent; cursor: pointer;}
+                  >* label { cursor: inherit; }
+                  >*.selected { background: #fff;  border: 1px solid #ccc;  border-top: 1px solid transparent; color: inherit;  }`
           )
         ]
       })
@@ -84,9 +91,21 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
         options: [
           menu.action({title: 'New Project', action: studio.openNewProject(), icon: 'new'}),
           menu.action({title: 'Open Project ...', action: studio.openProject()}),
-          menu.action({title: 'Save', action: studio.saveComponents(), icon: 'save', shortcut: 'Ctrl+S'}),
-          menu.action({title: 'Force Save', action: studio.saveComponents(true), icon: 'save'}),
-          menu.action({title: 'Source ...', action: studio.editSource(studio.currentProfilePath())})
+          menu.action({
+            title: 'Save',
+            action: studio.saveComponents(),
+            icon: 'save',
+            shortcut: 'Ctrl+S'
+          }),
+          menu.action({
+            title: 'Force Save',
+            action: studio.saveComponents(true),
+            icon: 'save'
+          }),
+          menu.action({
+            title: 'Source ...',
+            action: studio.editSource(studio.currentProfilePath())
+          })
         ]
       }),
       menu.menu({
@@ -145,7 +164,11 @@ jb.component('studio.top-bar', { /* studio.topBar */
             title: 'menu and toolbar',
             style: layout.flex('space-between'),
             controls: [
-              menu.control({menu: studio.mainMenu(), style: menuStyle.pulldown({}), features: [ id('mainMenu'), css.height('30')] }),
+              menu.control({
+                menu: studio.mainMenu(),
+                style: menuStyle.pulldown({}),
+                features: [id('mainMenu'), css.height('30')]
+              }),
               studio.toolbar(),
               studio.searchComponent()
             ],

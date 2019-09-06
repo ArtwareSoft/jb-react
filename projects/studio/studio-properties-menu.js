@@ -6,9 +6,11 @@ jb.component('studio.goto-path', { /* studio.gotoPath */
   impl: runActions(
     dialog.closeContainingPopup(),
     writeValue('%$studio/profile_path%', '%$path%'),
-    action.if(studio.isOfType('%$path%', 'control,table-field'),
+    action.if(
+        studio.isOfType('%$path%', 'control,table-field'),
         studio.openControlTree(),
-        studio.openComponentInJbEditor('%$path%'))
+        studio.openComponentInJbEditor('%$path%')
+      )
   )
 })
 
@@ -52,7 +54,7 @@ jb.component('studio.open-property-menu', { /* studio.openPropertyMenu */
           shortcut: 'Delete'
         }),
         menu.action({
-          title: data.if(studio.disabled('%$path%'),'Enable','Disable'),
+          title: data.if(studio.disabled('%$path%'), 'Enable', 'Disable'),
           action: studio.toggleDisabled('%$path%'),
           icon: 'do_not_disturb',
           shortcut: 'Ctrl+X'

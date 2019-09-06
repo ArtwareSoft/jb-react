@@ -30,7 +30,7 @@ const compsNotToTouch = ['jb-editor-test.cmp5', 'jb-editor-test.actions-sugar-ex
 function run() {
     const entries = jb.entries(jb.comps) 
         .map(e=>({id:e[0], comp:e[1], file:e[1][location][0]}))
-        .filter(({id}) => compsNotToTouch.indexOf(id) == -1)
+        .filter(({id}) => !id.match(/-json-format$/))
     entries.filter(({file}) => 
             filePattern.test(file) )
         .forEach( args => swapComp(args))

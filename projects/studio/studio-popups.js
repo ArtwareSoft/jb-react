@@ -1,4 +1,4 @@
-jb.component('dialog.edit-source-style',  /* dialog_editSourceStyle */ {
+jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
   type: 'dialog.style',
   params: [
     {id: 'id', as: 'string'},
@@ -68,9 +68,9 @@ jb.component('dialog.edit-source-style',  /* dialog_editSourceStyle */ {
 	})
 })
 
-jb.component('studio-dialog-feature.studio-popup-location',{
-	type: 'dialog-feature',
-	impl: ctx => ({
+jb.component('studio-dialog-feature.studio-popup-location', { /* studioDialogFeature.studioPopupLocation */
+  type: 'dialog-feature',
+  impl: ctx => ({
 		afterViewInit: cmp => {
 			var dialog = cmp.dialog;
 			var id = (dialog.id||'').replace(/\s/g,'_');
@@ -82,9 +82,9 @@ jb.component('studio-dialog-feature.studio-popup-location',{
 	})
 })
 
-jb.component('studio-dialog-feature.refresh-title', {
-	type: 'dialog-feature',
-	impl: ctx => ({
+jb.component('studio-dialog-feature.refresh-title', { /* studioDialogFeature.refreshTitle */
+  type: 'dialog-feature',
+  impl: ctx => ({
 		afterViewInit: cmp =>
 			jb.studio.scriptChange.subscribe(e=>
 				cmp.recalcTitle && cmp.recalcTitle(e,ctx))
@@ -118,7 +118,7 @@ jb.component('studio.open-multiline-edit', { /* studio.openMultilineEdit */
   })
 })
 
-jb.component('dialog.studio-floating',  /* dialog_studioFloating */ {
+jb.component('dialog.studio-floating', { /* dialog.studioFloating */
   type: 'dialog.style',
   params: [
     {id: 'id', as: 'string'},
@@ -133,13 +133,49 @@ jb.component('dialog.studio-floating',  /* dialog_studioFloating */ {
 					_=> cmp.dialogClose() },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
 			]),
-    css: "{ position: fixed;\n\t\t\t\t\t\tbackground: #F9F9F9;\n\t\t\t\t\t\twidth: %$width%px;\n\t\t\t\t\t\tmax-width: 1200px;\n\t\t\t\t\t\tmin-height: %$height%px;\n\t\t\t\t\t\toverflow: auto;\n\t\t\t\t\t\tborder-radius: 4px;\n\t\t\t\t\t\tpadding: 0 12px 12px 12px;\n\t\t\t\t\t\tbox-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)\n\t\t\t\t}\n\t\t\t\t>.dialog-title { background: none; padding: 10px 5px; }\n\t\t\t\t>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }\n\t\t\t\t>.dialog-close {\n\t\t\t\t\t\tposition: absolute;\n\t\t\t\t\t\tcursor: pointer;\n\t\t\t\t\t\tright: 4px; top: 4px;\n\t\t\t\t\t\tfont: 21px sans-serif;\n\t\t\t\t\t\tborder: none;\n\t\t\t\t\t\tbackground: transparent;\n\t\t\t\t\t\tcolor: #000;\n\t\t\t\t\t\ttext-shadow: 0 1px 0 #fff;\n\t\t\t\t\t\tfont-weight: 700;\n\t\t\t\t\t\topacity: .2;\n\t\t\t\t}\n\t\t\t\t>.dialog-menu {\n\t\t\t\t\t\tposition: absolute;\n\t\t\t\t\t\tcursor: pointer;\n\t\t\t\t\t\tright: 24px; top: 0;\n\t\t\t\t\t\tfont: 21px sans-serif;\n\t\t\t\t\t\tborder: none;\n\t\t\t\t\t\tbackground: transparent;\n\t\t\t\t\t\tcolor: #000;\n\t\t\t\t\t\ttext-shadow: 0 1px 0 #fff;\n\t\t\t\t\t\tfont-weight: 700;\n\t\t\t\t\t\topacity: .2;\n\t\t\t\t}\n\t\t\t\t>.dialog-close:hover { opacity: .5 }",
+    css: `{ position: fixed;
+						background: #F9F9F9;
+						width: %$width%px;
+						max-width: 1200px;
+						min-height: %$height%px;
+						overflow: auto;
+						border-radius: 4px;
+						padding: 0 12px 12px 12px;
+						box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
+				}
+				>.dialog-title { background: none; padding: 10px 5px; }
+				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }
+				>.dialog-close {
+						position: absolute;
+						cursor: pointer;
+						right: 4px; top: 4px;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
+						opacity: .2;
+				}
+				>.dialog-menu {
+						position: absolute;
+						cursor: pointer;
+						right: 24px; top: 0;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
+						opacity: .2;
+				}
+				>.dialog-close:hover { opacity: .5 }`,
     features: [
-      dialogFeature_dragTitle('%$id%'),
-      dialogFeature_uniqueDialog('%$id%', true),
-      dialogFeature_maxZIndexOnClick(5000),
-      studioDialogFeature_refreshTitle(),
-      studioDialogFeature_studioPopupLocation()
+      dialogFeature.dragTitle('%$id%'),
+      dialogFeature.uniqueDialog('%$id%', true),
+      dialogFeature.maxZIndexOnClick(5000),
+      studioDialogFeature.refreshTitle(),
+      studioDialogFeature.studioPopupLocation()
     ]
   })
 })
