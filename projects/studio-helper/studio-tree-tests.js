@@ -54,7 +54,7 @@ jb.component('jb-editor-test.extra-elem-in-list', { /* jbEditorTest.extraElemInL
   impl: jbEditorChildrenTest({
     path: 'jb-editor-test.cmp1~impl~items',
     childrenType: 'jb-editor',
-    expectedResult: and(contains('items[2]'), not(contains({text: 'undefined'})))
+    expectedResult: and(contains('items[2]'), not(contains('undefined')))
   })
 })
 
@@ -62,7 +62,7 @@ jb.component('jb-editor-test.extra-elem-in-list-bug', { /* jbEditorTest.extraEle
   impl: jbEditorChildrenTest({
     path: 'jb-editor-test.cmp2~impl~items~items',
     childrenType: 'jb-editor',
-    expectedResult: and(contains('items[2]'), not(contains({text: 'undefined'})))
+    expectedResult: and(contains('items[2]'), not(contains('undefined')))
   })
 })
 
@@ -94,7 +94,7 @@ jb.component('jb-editor-test.actions-sugar1', { /* jbEditorTest.actionsSugar1 */
   impl: jbEditorChildrenTest({
     path: 'jb-editor-test.actions-sugar-example1~impl~action',
     childrenType: 'jb-editor',
-    expectedResult: and(contains(['action[0]', 'action[1]']), not(contains({text: 'actions'})))
+    expectedResult: and(contains(['action[0]', 'action[1]']), not(contains('actions')))
   })
 })
 
@@ -102,7 +102,7 @@ jb.component('jb-editor-test.actions-sugar2a', { /* jbEditorTest.actionsSugar2a 
   impl: jbEditorChildrenTest({
     path: 'jb-editor-test.actions-sugar-example2~impl~action',
     childrenType: 'jb-editor',
-    expectedResult: contains({text: '$runActions'})
+    expectedResult: contains('$runActions')
   })
 })
 
@@ -110,10 +110,7 @@ jb.component('jb-editor-test.actions-sugar2b', { /* jbEditorTest.actionsSugar2b 
   impl: jbEditorChildrenTest({
     path: 'jb-editor-test.actions-sugar-example2~impl~action~$runActions',
     childrenType: 'jb-editor',
-    expectedResult: and(
-      contains(['runActions[0]', 'runActions[1]']),
-      not(contains({text: 'actions'}))
-    )
+    expectedResult: and(contains(['runActions[0]', 'runActions[1]']), not(contains('actions')))
   })
 })
 
