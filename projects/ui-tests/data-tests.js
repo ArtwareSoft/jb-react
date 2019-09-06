@@ -571,3 +571,27 @@ jb.component('data-test.pretty-print-array', {
     expectedResult: equals(1)
   })
 })
+
+jb.component('data-test.pretty-print-array', {
+  impl: dataTest({
+    calculate: pipeline(
+      () => jb.prettyPrintWithPositions(
+        group({controls:[]})
+      ),
+      '%map/~controls~!value[0]%',
+    ),
+    expectedResult: equals(1)
+  })
+})
+
+jb.component('data-test.pretty-print-$contains', {
+  impl: dataTest({
+    calculate: pipeline(
+      () => jb.prettyPrintWithPositions(
+        {$contains: 'hello'}
+      ),
+      '%map/~text~0%',
+    ),
+    expectedResult: equals('hello')
+  })
+})

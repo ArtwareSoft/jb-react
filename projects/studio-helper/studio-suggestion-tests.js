@@ -2,8 +2,8 @@ jb.component('people-array', { watchableData: { "people": [
   { "name": "Homer Simpson" ,"age": 42 , "male": true},
   { "name": "Marge Simpson" ,"age": 38 , "male": false},
   { "name": "Bart Simpson"  ,"age": 12 , "male": true}
-  ]
-}})
+  ]}
+})
 
 jb.component('suggestions-test.default-probe', { /* suggestionsTest.defaultProbe */
   type: 'control',
@@ -22,7 +22,7 @@ jb.component('suggestions-test.simple-vars', { /* suggestionsTest.simpleVars */
 jb.component('suggestions-test.vars-filter', { /* suggestionsTest.varsFilter */
   impl: suggestionsTest({
     expression: '%$p',
-    expectedResult: and(contains('$people'), not(contains({})))
+    expectedResult: and(contains('$people'), not(contains('$win')))
   })
 })
 
@@ -36,7 +36,7 @@ jb.component('suggestions-test.component', { /* suggestionsTest.component */
 jb.component('suggestions-test.inside-array', { /* suggestionsTest.insideArray */
   impl: suggestionsTest({
     expression: '%$people-array/',
-    expectedResult: and(contains('people'), not(contains({})))
+    expectedResult: and(contains('people'), not(contains('$people')))
   })
 })
 
