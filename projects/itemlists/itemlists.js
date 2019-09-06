@@ -1,8 +1,9 @@
-jb.resource('people',[
+jb.component('people', { watchableData: [
   { "name": "Homer Simpson" ,age: 42 , male: true, children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ]},
   { "name": "Marge Simpson" ,age: 38 , male: false, children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ]},
   { "name": "Bart Simpson"  ,age: 12 , male: true, children: []}
-]);
+]
+})
 
 jb.component('itemlists.main', {
   type: 'control', 
@@ -97,7 +98,7 @@ jb.component('itemlists.large-table', {
   }
 })
 
-jb.component('itemlists.editable-table', { /* itemlists.editableTable */ 
+jb.component('itemlists.editable-table', { /* itemlists.editableTable */
   type: 'control',
   impl: group({
     controls: [
@@ -132,7 +133,7 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
           }),
           field.control({
             control: button({
-              action: itemlistContainer.delete('%%'),
+              action: {'$': 'itemlist-container.delete', '$byValue': ['%%']},
               style: button.x('21'),
               features: itemlist.shownOnlyOnItemHover()
             }),
@@ -140,11 +141,18 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
           })
         ],
         style: table.mdl('mdl-data-table mdl-shadow--2dp', 'mdl-data-table__cell--non-numeric'),
-        features: [watchRef({ref: '%$people%', allowSelfRefresh: true}), itemlist.dragAndDrop()]
+        features: [
+          watchRef({ref: '%$people%', includeChildren: 'structure', allowSelfRefresh: true}),
+          itemlist.dragAndDrop()
+        ]
       }),
-      button({title: 'add', action: itemlistContainer.add(), style: button.mdlRaised()})
+      button({
+        title: 'add',
+        action: addToArray('%$people%', obj()),
+        style: button.mdlRaised()
+      })
     ],
-    features: group.itemlistContainer({defaultItem: {$: 'object'}})
+    features: group.itemlistContainer({defaultItem: {'$': 'object'}})
   })
 })
 

@@ -210,8 +210,9 @@ if (typeof startTime === 'undefined')
 startTime = startTime || new Date().getTime();
 
 jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
-	var initial_resources = JSON.stringify(jb.resources).replace(/\"\$jb_id":[0-9]*,/g,'')
-	var tests = jb.entries(jb.comps)
+	jb.studio.initTests() && jb.studio.initTests()
+	const initial_resources = JSON.stringify(jb.resources).replace(/\"\$jb_id":[0-9]*,/g,'')
+	const tests = jb.entries(jb.comps)
 		.filter(e=>typeof e[1].impl == 'object')
 		.filter(e=>e[1].type != 'test') // exclude the testers
 		.filter(e=>isCompNameOfType(e[0],'test'))

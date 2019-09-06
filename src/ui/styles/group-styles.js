@@ -1,50 +1,59 @@
-jb.component('group.htmlTag', {
+jb.component('group.htmlTag', { /* group.htmlTag */
   type: 'group.style',
-	params: [
-		{ id: 'htmlTag', as: 'string', defaultValue: 'section', options:'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label,form' },
-		{ id: 'groupClass', as: 'string' },
-		{ id: 'itemClass', as: 'string' },
-	],
-  impl :{$: 'custom-style',
+  params: [
+    {
+      id: 'htmlTag',
+      as: 'string',
+      defaultValue: 'section',
+      options: 'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label,form'
+    },
+    {id: 'groupClass', as: 'string'},
+    {id: 'itemClass', as: 'string'}
+  ],
+  impl: customStyle({
     template: (cmp,state,h) => h(cmp.htmlTag,{ class: cmp.groupClass },
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl,{class: cmp.itemClass}),ctrl.ctx.data))),
-    features :{$: 'group.init-group'}
-  }
+    features: group.initGroup()
+  })
 })
 
-jb.component('group.div', {
-  impl :{$: 'group.htmlTag', htmlTag: 'div'}
+jb.component('group.div', { /* group.div */
+  impl: group.htmlTag(
+    'div'
+  )
 })
 
-jb.component('group.section', {
-  impl :{$: 'group.htmlTag', htmlTag: 'section'}
+jb.component('group.section', { /* group.section */
+  impl: group.htmlTag(
+    'section'
+  )
 })
 
-jb.component('first-succeeding.style', {
+jb.component('first-succeeding.style', { /* firstSucceeding.style */
   type: 'first-succeeding.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => {
       var ctrl = state.ctrls.filter(x=>x)[0];
       return ctrl && h(ctrl)
     },
-    features :{$: 'group.init-group'}
-  }
+    features: group.initGroup()
+  })
 })
 
-jb.component('group.ul-li', {
+jb.component('group.ul-li', { /* group.ulLi */
   type: 'group.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li', {class: 'jb-item'} ,h(ctrl)),ctrl.ctx.data))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
-    features :{$: 'group.init-group'}
-  },
+    features: group.initGroup()
+  })
 })
 
-jb.component('group.expandable', {
+jb.component('group.expandable', { /* group.expandable */
   type: 'group.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},[
         h('div',{ class: 'header'},[
           h('div',{ class: 'title'}, state.title),
@@ -58,15 +67,13 @@ jb.component('group.expandable', {
         >.header>button:hover { background: none }
         >.header>button { margin-left: auto }
         >.header.title { margin: 5px }`,
-    features :[
-        {$: 'group.init-group' },
-        {$: 'group.init-expandable' },
-      ]
-    },
+    features: [group.initGroup(), group.initExpandable()]
+  })
 })
 
-jb.component('group.init-expandable', {
-  type: 'feature', category: 'group:0',
+jb.component('group.init-expandable', { /* group.initExpandable */
+  type: 'feature',
+  category: 'group:0',
   impl: ctx => ({
         init: cmp => {
             cmp.state.show = true;
@@ -76,9 +83,9 @@ jb.component('group.init-expandable', {
   })
 })
 
-jb.component('group.accordion', {
+jb.component('group.accordion', { /* group.accordion */
   type: 'group.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
         state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
           h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
@@ -92,18 +99,16 @@ jb.component('group.accordion', {
         >.accordion-section>.header>button:hover { background: none }
         >.accordion-section>.header>button { margin-left: auto }
         >.accordion-section>.header>.title { margin: 5px }`,
-      features : [
-        {$: 'group.init-group' },
-        {$: 'group.init-accordion' },
-      ]
-    },
+    features: [group.initGroup(), group.initAccordion()]
+  })
 })
 
-jb.component('group.init-accordion', {
-  type: 'feature', category: 'group:0',
+jb.component('group.init-accordion', { /* group.initAccordion */
+  type: 'feature',
+  category: 'group:0',
   params: [
-    { id: 'keyboardSupport', as: 'boolean' },
-    { id: 'autoFocus', as: 'boolean' }
+    {id: 'keyboardSupport', as: 'boolean', type: 'boolean'},
+    {id: 'autoFocus', as: 'boolean', type: 'boolean'}
   ],
   impl: ctx => ({
     onkeydown: ctx.params.keyboardSupport,
@@ -135,39 +140,45 @@ jb.component('group.init-accordion', {
   })
 })
 
-jb.component('group.tabs', {
+jb.component('group.tabs', { /* group.tabs */
   type: 'group.style',
   params: [
-    { id: 'width', as : 'number' },
+    {id: 'width', as: 'number'}
   ],
-  impl :{$: 'style-by-control', __innerImplementation: true,
-    modelVar: 'tabsModel',
-    control :{$: 'group', controls: [
-      {$: 'group', title: 'thumbs',
-        features :{$: 'group.init-group'},
-        style :{$: 'layout.horizontal' },
-        controls :{$: 'dynamic-controls',
-          itemVariable: 'tab',
-          controlItems : '%$tabsModel/controls%',
-          genericControl: {$: 'button',
-            title: '%$tab/jb_title%',
-            action :{$: 'write-value', value: '%$tab%', to: '%$selectedTab%' },
-            style :{$: 'button.mdl-flat-ripple' },
-            features: [
-              {$: 'css.width', width: '%$width%' },
-              {$: 'css', css: '{text-align: left}' }
-            ]
-          },
-        },
-      },
-      ctx =>
-        jb.val(ctx.exp('%$selectedTab%')),
-    ],
-    features : [
-        {$: 'variable', name: 'selectedTab', value: '%$tabsModel/controls[0]%', watchable: true },
-        {$: 'group.init-group'},
-    ]
-  }}
+  impl: styleByControl(
+    group({
+      controls: [
+        group({
+          title: 'thumbs',
+          style: layout.horizontal(),
+          controls: dynamicControls({
+            controlItems: '%$tabsModel/controls%',
+            genericControl: button({
+              title: '%$tab/jb_title%',
+              action: runActions(
+                writeValue('%$selectedTab/ctrl%', '%$tab%'),
+                refreshControlById(ctx=> 'tab_' + ctx.componentContext.id)
+              ),
+              style: button.mdlFlatRipple(),
+              features: [css.width('%$width%'), css('{text-align: left}')]
+            }),
+            itemVariable: 'tab'
+          }),
+          features: group.initGroup()
+        }),
+        '%$selectedTab/ctrl%'
+      ],
+      features: [
+        id(ctx=> 'tab_' + ctx.componentContext.id),
+        variable({
+          name: 'selectedTab',
+          value: obj(prop('ctrl','%$tabsModel/controls[0]%','single')),
+        }),
+        group.initGroup()
+      ]
+    }),
+    'tabsModel'
+  )
 })
 
 // jb.component('toolbar.simple', {

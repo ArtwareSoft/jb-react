@@ -354,3 +354,45 @@ jb.component('ui-test.splice-should-not-fire-full-container-change',  {
     expectedResult: not(contains('mukki'))
   })
 })
+
+jb.component('ui-test.splice-and-watch-ref-strcture',  {
+  impl: uiTest({
+    control: itemlist({
+      items: '%$watchable-people%',
+      controls: label('%name%'),
+      features: watchRef({ref: '%$watchable-people%', includeChildren: 'structure'})
+    }),
+    action: addToArray('%$watchable-people%', obj(prop('name','mukki'))),
+    expectedCounters: {setState: 1 },
+    expectedResult: contains('mukki')
+  })
+})
+
+jb.component('ui-test.splice-and-watch-ref-without-include-children',  {
+  impl: uiTest({
+    control: itemlist({
+      items: '%$watchable-people%',
+      controls: label('%name%'),
+      features: watchRef({ref: '%$watchable-people%', includeChildren: 'no'})
+    }),
+    action: addToArray('%$watchable-people%', obj(prop('name','mukki'))),
+    expectedCounters: {setState: 0 },
+    expectedResult: not(contains('mukki'))
+  })
+})
+
+jb.component('ui-test.splice-and-watch-ref-add-twice',  {
+  impl: uiTest({
+    control: itemlist({
+      items: '%$watchable-people%',
+      controls: label('%name%'),
+      features: watchRef({ref: '%$watchable-people%', includeChildren: 'structure'})
+    }),
+    action: runActions(
+      addToArray('%$watchable-people%', obj(prop('name','mukki'))),
+      addToArray('%$watchable-people%', obj(prop('name','kukki')))
+    ),
+    expectedCounters: {setState: 2 },
+    expectedResult: contains('kukki')
+  })
+})

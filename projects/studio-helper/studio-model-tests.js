@@ -120,8 +120,7 @@ jb.component('studio-data-test.set-sugar-comp-simple', { /* studioDataTest.setSu
   impl: dataTest({
     calculate: studio.val('test.set-sugar-comp-simple~impl~title~$pipeline'),
     runBefore: studio.setComp('test.set-sugar-comp-simple~impl~title', 'pipeline'),
-    expectedResult: ctx =>
-			JSON.stringify(ctx.data) == '[]'
+    expectedResult: ctx => JSON.stringify(ctx.data) == '[]'
   })
 })
 

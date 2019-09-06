@@ -1276,21 +1276,14 @@ jb.component('menu-test.open-context-menu', { /* menuTest.openContextMenu */
 
 jb.component('ui-test.refresh-control-by-id', { /* uiTest.refreshControlById */
   impl: uiTest({
+    vars: Var('top',asIs({ items: [{title: 'i1'}, {title: 'i2'}]})),
     control: itemlist({
-      items: '%$items%',
+      items: '%$top/items%',
       controls: label('%title%'),
-      features: [
-        variable({
-          name: 'items',
-          value: asIs([{title: 'i1'}, {title: 'i2'}]),
-          watchable: true,
-          globalId: 'items'
-        }),
-        id('itemlist')
-      ]
+      features: id('itemlist')
     }),
     action: runActions(
-      addToArray('%$items%', asIs([{title: 'i2'}, {title: 'i3'}])),
+      addToArray('%$top/items%', asIs([{title: 'i2'}, {title: 'i3'}])),
       refreshControlById('itemlist'),
       delay(1)
     ),
