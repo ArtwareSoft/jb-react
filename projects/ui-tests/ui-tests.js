@@ -1,43 +1,48 @@
-jb.component('globals', { watchableData:  {}
-})
+jb.component('globals', { /* globals */
+  watchableData: {
 
-jb.component('watchable-people', { watchableData: [
-  { name: 'Homer Simpson - watchable', age: 42, male: true },
-  { name: 'Marge Simpson - watchable', age: 38, male: false },
-  { name: 'Bart Simpson - watchable', age: 12, male: true }
-]
-})
-
-jb.component('people', { passiveData: [
-  { name: 'Homer Simpson', age: 42, male: true },
-  { name: 'Marge Simpson', age: 38, male: false },
-  { name: 'Bart Simpson', age: 12, male: true }
-]
-})
-
-
-jb.component('person', { watchableData: {
-  name: 'Homer Simpson',
-  male: true,
-  isMale: 'yes',
-  age: 42
-}
-})
-
-jb.component('personWithAddress', { watchableData: {
-  name: 'Homer Simpson',
-  address: {
-    city: 'Springfield',
-    street: '742 Evergreen Terrace'
   }
-}
 })
 
-jb.component('personWithChildren', { watchableData: {
-  name: 'Homer Simpson',
-  children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' }],
-  friends: [{ name: 'Barnie' }],
-}
+jb.component('watchable-people', { /* watchablePeople */
+  watchableData: [
+    {name: 'Homer Simpson - watchable', age: 42, male: true},
+    {name: 'Marge Simpson - watchable', age: 38, male: false},
+    {name: 'Bart Simpson - watchable', age: 12, male: true}
+  ]
+})
+
+jb.component('people', { /* people */
+  passiveData: [
+    {name: 'Homer Simpson', age: 42, male: true},
+    {name: 'Marge Simpson', age: 38, male: false},
+    {name: 'Bart Simpson', age: 12, male: true}
+  ]
+})
+
+
+jb.component('person', { /* person */
+  watchableData: {
+    name: 'Homer Simpson',
+    male: true,
+    isMale: 'yes',
+    age: 42
+  }
+})
+
+jb.component('personWithAddress', { /* personWithAddress */
+  watchableData: {
+    name: 'Homer Simpson',
+    address: {city: 'Springfield', street: '742 Evergreen Terrace'}
+  }
+})
+
+jb.component('personWithChildren', { /* personWithChildren */
+  watchableData: {
+    name: 'Homer Simpson',
+    children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}],
+    friends: [{name: 'Barnie'}]
+  }
 })
 
 jb.component('ui-test.label', { /* uiTest.label */
@@ -1276,7 +1281,7 @@ jb.component('menu-test.open-context-menu', { /* menuTest.openContextMenu */
 
 jb.component('ui-test.refresh-control-by-id', { /* uiTest.refreshControlById */
   impl: uiTest({
-    vars: Var('top',asIs({ items: [{title: 'i1'}, {title: 'i2'}]})),
+    vars: [Var('top', asIs({items: [{title: 'i1'}, {title: 'i2'}]}))],
     control: itemlist({
       items: '%$top/items%',
       controls: label('%title%'),
