@@ -1,17 +1,35 @@
-jb.component('group', {
-  type: 'control', category: 'group:100,common:90',
+jb.ns('layout')
+jb.ns('tabs')
+
+jb.component('group', { /* group */
+  type: 'control',
+  category: 'group:100,common:90',
   params: [
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, mandatory: true , dynamic: true },
-    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
+    {id: 'title', as: 'string', dynamic: true},
+    {
+      id: 'style',
+      type: 'group.style',
+      defaultValue: layout.vertical(),
+      mandatory: true,
+      dynamic: true
+    },
+    {
+      id: 'controls',
+      type: 'control[]',
+      mandatory: true,
+      flattenArray: true,
+      dynamic: true,
+      composite: true
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx)
 })
 
-jb.component('group.init-group', {
-  type: 'feature', category: 'group:0',
+jb.component('group.init-group', { /* group.initGroup */
+  type: 'feature',
+  category: 'group:0',
   impl: ctx => ({
     init: cmp => {
       cmp.calcCtrls = cmp.calcCtrls || (_ =>
@@ -28,20 +46,27 @@ jb.component('group.init-group', {
   })
 })
 
-jb.component('inline-controls', {
+jb.component('inline-controls', { /* inlineControls */
   type: 'control',
   params: [
-    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
+    {
+      id: 'controls',
+      type: 'control[]',
+      mandatory: true,
+      flattenArray: true,
+      dynamic: true,
+      composite: true
+    }
   ],
   impl: ctx => ctx.params.controls().filter(x=>x)
 })
 
-jb.component('dynamic-controls', {
+jb.component('dynamic-controls', { /* dynamicControls */
   type: 'control',
   params: [
-    { id: 'controlItems', type: 'data', as: 'array', mandatory: true, dynamic: true },
-    { id: 'genericControl', type: 'control', mandatory: true, dynamic: true },
-    { id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
+    {id: 'controlItems', type: 'data', as: 'array', mandatory: true, dynamic: true},
+    {id: 'genericControl', type: 'control', mandatory: true, dynamic: true},
+    {id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
   ],
   impl: (context,controlItems,genericControl,itemVariable) =>
     controlItems()
@@ -50,8 +75,9 @@ jb.component('dynamic-controls', {
       ))
 })
 
-jb.component('group.dynamic-titles', {
-  type: 'feature', category: 'group:30',
+jb.component('group.dynamic-titles', { /* group.dynamicTitles */
+  type: 'feature',
+  category: 'group:30',
   description: 'dynamic titles for sub controls',
   impl: ctx => ({
     doCheck: cmp =>
@@ -60,13 +86,27 @@ jb.component('group.dynamic-titles', {
   })
 })
 
-jb.component('control.first-succeeding', {
-  type: 'control', category: 'common:30',
+jb.component('control.first-succeeding', { /* control.firstSucceeding */
+  type: 'control',
+  category: 'common:30',
   params: [
-    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, mandatory: true , dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
+    {
+      id: 'controls',
+      type: 'control[]',
+      mandatory: true,
+      flattenArray: true,
+      dynamic: true,
+      composite: true
+    },
+    {id: 'title', as: 'string', dynamic: true},
+    {
+      id: 'style',
+      type: 'first-succeeding.style',
+      defaultValue: firstSucceeding.style(),
+      mandatory: true,
+      dynamic: true
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(new jb.jbCtx(ctx,{params: Object.assign({},ctx.params,{
       originalControls: ctx.profile.controls,
@@ -87,11 +127,24 @@ jb.component('control.first-succeeding', {
     })}))
 })
 
-jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
-  type: 'feature', category: 'watch:30', description: 'relevant only for first-succeeding',
+jb.component('first-succeeding.watch-refresh-on-ctrl-change', { /* firstSucceeding.watchRefreshOnCtrlChange */
+  type: 'feature',
+  category: 'watch:30',
+  description: 'relevant only for first-succeeding',
   params: [
-    { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
-    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+    {
+      id: 'ref',
+      mandatory: true,
+      as: 'ref',
+      dynamic: true,
+      description: 'reference to data'
+    },
+    {
+      id: 'includeChildren',
+      as: 'boolean',
+      description: 'watch childern change as well',
+      type: 'boolean'
+    }
   ],
   impl: (ctx,refF,includeChildren) => ({
       init: cmp => {
@@ -100,7 +153,7 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
         .subscribe(e=>{
           if (ctx && ctx.profile && ctx.profile.$trace)
             console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
-          
+
           const originalControls = ctx.vars.$model.originalControls
           if (!originalControls) return
           for(let i=0;i<(originalControls ||[]).length;i++) {
@@ -118,13 +171,13 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
   })
 })
 
-jb.component('control-with-condition', {
+jb.component('control-with-condition', { /* controlWithCondition */
   type: 'control',
   usageByValue: true,
   params: [
-    { id: 'condition', type: 'boolean', dynamic: true, mandatory: true, as: 'boolean' },
-    { id: 'control', type: 'control', mandatory: true, dynamic: true },
-    { id: 'title', as: 'string' },
+    {id: 'condition', type: 'boolean', dynamic: true, mandatory: true, as: 'boolean'},
+    {id: 'control', type: 'control', mandatory: true, dynamic: true},
+    {id: 'title', as: 'string'}
   ],
   impl: (ctx,condition,ctrl) =>
     condition() && ctrl(ctx)

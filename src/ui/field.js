@@ -47,10 +47,10 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
     cmp.state.model = cmp.jbModel()
   })
   cmp.databindRefChanged.subscribe(()=>{}) // first activation
-  
+
 
   const srcCtx = cmp.ctxForPick || cmp.ctx;
-  if (!oneWay) 
+  if (!oneWay)
       jb.ui.databindObservable(cmp, {
             watchScript: ctx, onError: _ => cmp.setState({model: null}) })
       .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
@@ -59,7 +59,7 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
    cmp.databindRefChangedSub.next(ctx.vars.$model.databind());
 }
 
-jb.component('field.databind', {
+jb.component('field.databind', { /* field.databind */
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => databindField(cmp,ctx),
@@ -73,11 +73,11 @@ jb.component('field.databind', {
   })
 })
 
-jb.component('field.databind-text', {
+jb.component('field.databind-text', { /* field.databindText */
   type: 'feature',
   params: [
-    { id: 'debounceTime', as: 'number', defaultValue: 0 },
-    { id: 'oneWay', type: 'boolean', as: 'boolean'}
+    {id: 'debounceTime', as: 'number', defaultValue: 0},
+    {id: 'oneWay', type: 'boolean', as: 'boolean'}
   ],
   impl: (ctx,debounceTime,oneWay) => ({
       beforeInit: cmp => databindField(cmp,ctx,debounceTime,oneWay),
@@ -92,16 +92,16 @@ jb.component('field.databind-text', {
   })
 })
 
-jb.component('field.data', {
+jb.component('field.data', { /* field.data */
   type: 'data',
   impl: ctx =>
     ctx.vars.$model.databind()
 })
 
-jb.component('field.default', {
+jb.component('field.default', { /* field.default */
   type: 'feature',
   params: [
-    { id: 'value', type: 'data'},
+    {id: 'value', type: 'data'}
   ],
   impl: (ctx,defaultValue) => {
     var data_ref = ctx.vars.$model.databind();
@@ -110,21 +110,22 @@ jb.component('field.default', {
   }
 })
 
-jb.component('field.init-value', {
+jb.component('field.init-value', { /* field.initValue */
   type: 'feature',
   params: [
-    { id: 'value', type: 'data'},
+    {id: 'value', type: 'data'}
   ],
   impl: (ctx,value) =>
     ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind(), jb.val(value))
 })
 
-jb.component('field.keyboard-shortcut', {
-  type: 'feature', category: 'events',
-	description: 'listen to events at the document level even when the component is not active',
+jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
+  type: 'feature',
+  category: 'events',
+  description: 'listen to events at the document level even when the component is not active',
   params: [
-    { id: 'key', as: 'string', description: 'e.g. Alt+C' },
-    { id: 'action', type: 'action', dynamic: true },
+    {id: 'key', as: 'string', description: 'e.g. Alt+C'},
+    {id: 'action', type: 'action', dynamic: true}
   ],
   impl: (context,key,action) => ({
       afterViewInit: cmp => {
@@ -147,11 +148,11 @@ jb.component('field.keyboard-shortcut', {
   })
 })
 
-jb.component('field.subscribe', {
+jb.component('field.subscribe', { /* field.subscribe */
   type: 'feature',
   params: [
-    { id: 'action', type: 'action', mandatory: true, dynamic: true },
-    { id: 'includeFirst', type: 'boolean', as: 'boolean'},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'includeFirst', type: 'boolean', as: 'boolean'}
   ],
   impl: (context,action,includeFirst) => ({
     init: cmp => {
@@ -168,23 +169,30 @@ jb.component('field.subscribe', {
 
 jb.component('field.on-change', jb.comps['field.subscribe'])
 
-jb.component('field.toolbar', {
+jb.component('field.toolbar', { /* field.toolbar */
   type: 'feature',
   params: [
-    { id: 'toolbar', type: 'control', mandatory: true, dynamic: true },
+    {id: 'toolbar', type: 'control', mandatory: true, dynamic: true}
   ],
   impl: (context,toolbar) => ({
     toolbar: toolbar().reactComp()
   })
 })
 
-// ***** validation 
+// ***** validation
 
-jb.component('validation', {
-  type: 'feature', category: 'validation:100',
+jb.component('validation', { /* validation */
+  type: 'feature',
+  category: 'validation:100',
   params: [
-    { id: 'validCondition', mandatory: true, type: 'boolean', as: 'boolean', dynamic: true },
-    { id: 'errorMessage', mandatory: true, as: 'string', dynamic: true },
+    {
+      id: 'validCondition',
+      mandatory: true,
+      type: 'boolean',
+      as: 'boolean',
+      dynamic: true
+    },
+    {id: 'errorMessage', mandatory: true, as: 'string', dynamic: true}
   ],
   impl: (ctx,validCondition,errorMessage) => ({
       init: cmp =>
@@ -212,7 +220,7 @@ jb.ui.checkValidationError = cmp => {
     if (ctx.vars.formContainer)
       ctx.vars.formContainer.err = err;
     return err;
-  }  
+  }
 }
 
 })()

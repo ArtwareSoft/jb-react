@@ -1,4 +1,4 @@
-jb.component('dialog-feature.drag-title',  /* dialogFeature_dragTitle */ {
+jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
   type: 'dialog-feature',
   params: [
     {id: 'id', as: 'string'}
@@ -53,7 +53,7 @@ jb.component('dialog-feature.drag-title',  /* dialogFeature_dragTitle */ {
 	}
 })
 
-jb.component('dialog.default',  /* dialog_default */ {
+jb.component('dialog.default', { /* dialog.default */
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
@@ -62,15 +62,15 @@ jb.component('dialog.default',  /* dialog_default */ {
 				_=> cmp.dialogClose() },'×'),
 			h(state.contentComp),
 		]),
-    features: dialogFeature_dragTitle()
+    features: dialogFeature.dragTitle()
   })
 })
 
-jb.component('open-dialog',  /* openDialog */ {
+jb.component('open-dialog', { /* openDialog */
   type: 'action',
   params: [
     {id: 'id', as: 'string'},
-    {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog_default()},
+    {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog.default()},
     {
       id: 'content',
       type: 'control',
@@ -133,7 +133,7 @@ jb.component('open-dialog',  /* openDialog */ {
 	}
 })
 
-jb.component('dialog.close-containing-popup',  /* dialog_closeContainingPopup */ {
+jb.component('dialog.close-containing-popup', { /* dialog.closeContainingPopup */
   type: 'action',
   params: [
     {id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
@@ -142,7 +142,7 @@ jb.component('dialog.close-containing-popup',  /* dialog_closeContainingPopup */
 		context.vars.$dialog && context.vars.$dialog.close({OK:OK})
 })
 
-jb.component('dialog-feature.unique-dialog',  /* dialogFeature_uniqueDialog */ {
+jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
   type: 'dialog-feature',
   params: [
     {id: 'id', as: 'string'},
@@ -161,7 +161,7 @@ jb.component('dialog-feature.unique-dialog',  /* dialogFeature_uniqueDialog */ {
 	}
 })
 
-jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLauncherPosition */ {
+jb.component('dialog-feature.near-launcher-position', { /* dialogFeature.nearLauncherPosition */
   type: 'dialog-feature',
   params: [
     {id: 'offsetLeft', as: 'number', dynamic: true, defaultValue: 0},
@@ -199,7 +199,7 @@ jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLaun
 	}
 })
 
-jb.component('dialog-feature.onClose',  /* dialogFeature_onClose */ {
+jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
   type: 'dialog-feature',
   params: [
     {id: 'action', type: 'action', dynamic: true}
@@ -212,7 +212,7 @@ jb.component('dialog-feature.onClose',  /* dialogFeature_onClose */ {
 				action(ctx.setData(e.OK)))
 })
 
-jb.component('dialog-feature.close-when-clicking-outside',  /* dialogFeature_closeWhenClickingOutside */ {
+jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.closeWhenClickingOutside */
   type: 'dialog-feature',
   params: [
     {id: 'delay', as: 'number', defaultValue: 100}
@@ -234,7 +234,7 @@ jb.component('dialog-feature.close-when-clicking-outside',  /* dialogFeature_clo
 	}
 })
 
-jb.component('dialog.close-dialog',  /* dialog_closeDialog */ {
+jb.component('dialog.close-dialog', { /* dialog.closeDialog */
   type: 'action',
   params: [
     {id: 'id', as: 'string'},
@@ -245,20 +245,20 @@ jb.component('dialog.close-dialog',  /* dialog_closeDialog */ {
   			.forEach(d=>jb.delay(delay).then(d.close()))
 })
 
-jb.component('dialog.close-all-popups',  /* dialog_closeAllPopups */ {
+jb.component('dialog.close-all-popups', { /* dialog.closeAllPopups */
   type: 'action',
   impl: ctx =>
 		jb.ui.dialogs.dialogs.filter(d=>d.isPopup)
   			.forEach(d=>d.close())
 })
 
-jb.component('dialog.close-all',  /* dialog_closeAll */ {
+jb.component('dialog.close-all', { /* dialog.closeAll */
   type: 'action',
   impl: ctx =>
 		jb.ui.dialogs.dialogs.forEach(d=>d.close())
 })
 
-jb.component('dialog-feature.auto-focus-on-first-input',  /* dialogFeature_autoFocusOnFirstInput */ {
+jb.component('dialog-feature.auto-focus-on-first-input', { /* dialogFeature.autoFocusOnFirstInput */
   type: 'dialog-feature',
   params: [
     {id: 'selectText', as: 'boolean', type: 'boolean'}
@@ -276,7 +276,7 @@ jb.component('dialog-feature.auto-focus-on-first-input',  /* dialogFeature_autoF
 	})
 })
 
-jb.component('dialog-feature.css-class-on-launching-element',  /* dialogFeature_cssClassOnLaunchingElement */ {
+jb.component('dialog-feature.css-class-on-launching-element', { /* dialogFeature.cssClassOnLaunchingElement */
   type: 'dialog-feature',
   impl: context => ({
 		afterViewInit: cmp => {
@@ -292,7 +292,7 @@ jb.component('dialog-feature.css-class-on-launching-element',  /* dialogFeature_
 	})
 })
 
-jb.component('dialog-feature.max-zIndex-on-click',  /* dialogFeature_maxZIndexOnClick */ {
+jb.component('dialog-feature.max-zIndex-on-click', { /* dialogFeature.maxZIndexOnClick */
   type: 'dialog-feature',
   params: [
     {id: 'minZIndex', as: 'number'}
@@ -316,7 +316,7 @@ jb.component('dialog-feature.max-zIndex-on-click',  /* dialogFeature_maxZIndexOn
 	}
 })
 
-jb.component('dialog.dialog-ok-cancel',  /* dialog_dialogOkCancel */ {
+jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
   type: 'dialog.style',
   params: [
     {id: 'okLabel', as: 'string', defaultValue: 'OK'},
@@ -336,7 +336,7 @@ jb.component('dialog.dialog-ok-cancel',  /* dialog_dialogOkCancel */ {
   })
 })
 
-jb.component('dialog-feature.resizer',  /* dialogFeature_resizer */ {
+jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
   type: 'dialog-feature',
   params: [
     {
@@ -400,7 +400,7 @@ jb.component('dialog-feature.resizer',  /* dialogFeature_resizer */ {
 	})
 })
 
-jb.component('dialog.popup',  /* dialog_popup */ {
+jb.component('dialog.popup', { /* dialog.popup */
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
@@ -408,10 +408,10 @@ jb.component('dialog.popup',  /* dialog_popup */ {
 		  ]),
     css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }',
     features: [
-      dialogFeature_maxZIndexOnClick(),
-      dialogFeature_closeWhenClickingOutside(),
-      dialogFeature_cssClassOnLaunchingElement(),
-      dialogFeature_nearLauncherPosition({})
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.closeWhenClickingOutside(),
+      dialogFeature.cssClassOnLaunchingElement(),
+      dialogFeature.nearLauncherPosition({})
     ]
   })
 })

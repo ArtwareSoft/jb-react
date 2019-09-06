@@ -1,46 +1,43 @@
-jb.component('editable-number.slider-no-text', {
+jb.ns('slider')
+jb.ns('mdlStyle')
+
+jb.component('editable-number.slider-no-text', { /* editableNumber.sliderNoText */
   type: 'editable-number.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('input',{ type: 'range',
+  impl: customStyle({
+    template: (cmp,state,h) => h('input',{ type: 'range',
         min: state.min, max: state.max, step: state.step,
         value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: -1}),
-      features :[
-          {$: 'field.databind' },
-          {$: 'slider.init'},
-      ],
-  }
+    features: [field.databind(), slider.init()]
+  })
 })
 
-jb.component('editable-number.slider', {
+jb.component('editable-number.slider', { /* editableNumber.slider */
   type: 'editable-number.style',
-  impl :{$: 'style-by-control', __innerImplementation: true,
-    modelVar: 'editableNumberModel',
-    control :{$: 'group',
+  impl: styleByControl(
+    group({
       title: '%$editableNumberModel/title%',
-      controls :{$: 'group',
-        style: {$: 'layout.horizontal', spacing: 20},
+      controls: group({
+        style: layout.horizontal(20),
         controls: [
-          {$: 'editable-text',
-              databind: '%$editableNumberModel/databind%',
-              style: {$: 'editable-text.mdl-input-no-floating-label', width: 36 },
-              features: [
-                {$: 'slider-text.handleArrowKeys' },
-                { $: 'css.margin', top : -3}
-              ],
-          },
-          {$: 'editable-number',
-              databind: '%$editableNumberModel/databind%',
-              style :{$: 'editable-number.slider-no-text'},
-              features: {$: 'css.width', width: 80},
-          },
+          editableText({
+            databind: '%$editableNumberModel/databind%',
+            style: editableText.mdlInputNoFloatingLabel(36),
+            features: [slider.handleArrowKeys(), css.margin(-3)]
+          }),
+          editableNumber({
+            databind: '%$editableNumberModel/databind%',
+            style: editableNumber.sliderNoText(),
+            features: css.width(80)
+          })
         ],
-        features: {$: 'variable', name: 'sliderCtx', value: {$: 'object'}}
-      }
-    }
-  }
+        features: variable({name: 'sliderCtx', value: {'$': 'object'}})
+      })
+    }),
+    'editableNumberModel'
+  )
 })
 
-jb.component('slider.init', {
+jb.component('slider.init', { /* slider.init */
   type: 'feature',
   impl: ctx => ({
       onkeyup: true,
@@ -91,7 +88,7 @@ jb.component('slider.init', {
     })
 })
 
-jb.component('slider-text.handleArrowKeys', {
+jb.component('slider.handle-arrow-keys', { /* sliderText.handleArrowKeys */
   type: 'feature',
   impl: ctx => ({
       onkeyup: true,
@@ -107,50 +104,41 @@ jb.component('slider-text.handleArrowKeys', {
     })
 })
 
-jb.component('slider.edit-as-text-popup', {
+jb.component('slider.edit-as-text-popup', { /* slider.editAsTextPopup */
   type: 'feature',
-  impl :{$: 'open-dialog',
-    style :{$: 'dialog.popup' },
-    content :{$: 'group',
+  impl: openDialog({
+    style: dialog.popup(),
+    content: group({
       title: 'data-settings',
-      style :{$: 'layout.vertical', spacing: 3 },
+      style: layout.vertical(3),
       controls: [
-        {$: 'editable-text',
+        editableText({
           title: '%title%',
           databind: '%databind%',
-          style :{$: 'editable-text.mdl-input', width: '270' },
-          features :{$: 'feature.onEnter',
-            action :{$: 'dialog.close-containing-popup' }
-          },
-        },
+          style: editableText.mdlInput('270'),
+          features: feature.onEnter(dialog.closeContainingPopup())
+        })
       ],
-      features: [
-        {$: 'group.data', data: '%$editableNumber%' },
-        {$: 'css.padding', left: '10', right: '10' }
-      ]
-    },
+      features: [group.data('%$editableNumber%'), css.padding({left: '10', right: '10'})]
+    }),
     features: [
-        { $: 'dialog-feature.unique-dialog', id: 'slider', remeberLastLocation: false },
-        { $: 'dialog-feature.max-zIndex-on-click' },
-        { $: 'dialog-feature.close-when-clicking-outside' },
-        { $: 'dialog-feature.css-class-on-launching-element' },
-        { $: 'dialog-feature.near-launcher-position' },
-        {$: 'dialog-feature.auto-focus-on-first-input', selectText: true },
-      ]
-  },
+      dialogFeature.uniqueDialog('slider', false),
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.closeWhenClickingOutside(),
+      dialogFeature.cssClassOnLaunchingElement(),
+      dialogFeature.nearLauncherPosition({}),
+      dialogFeature.autoFocusOnFirstInput(true)
+    ]
+  })
 })
 
 
-jb.component('editable-number.mdl-slider', {
+jb.component('editable-number.mdl-slider', { /* editableNumber.mdlSlider */
   type: 'editable-number.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('input',{class:'mdl-slider mdl-js-slider', type: 'range',
+  impl: customStyle({
+    template: (cmp,state,h) => h('input',{class:'mdl-slider mdl-js-slider', type: 'range',
         min: state.min, max: state.max, step: state.step,
         value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: 0}),
-      features :[
-          {$: 'field.databind' },
-          {$: 'slider.init'},
-          {$: 'mdl-style.init-dynamic' }
-      ],
-  }
+    features: [field.databind(), slider.init(), mdlStyle.initDynamic()]
+  })
 })

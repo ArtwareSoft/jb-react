@@ -1,13 +1,13 @@
-jb.component('data-test', {
-	type: 'test',
-	params: [
-		{ id: 'calculate', dynamic: true },
-		{ id: 'runBefore', type: 'action', dynamic: true },
-		{ id: 'expectedResult', type: 'boolean', dynamic: true },
-		{ id: 'cleanUp', type: 'action', dynamic: true },
-		{ id: 'expectedCounters', as: 'single' }
-	],
-	impl: function(ctx,calculate,runBefore,expectedResult,cleanUp,expectedCounters) {
+jb.component('data-test', { /* dataTest */
+  type: 'test',
+  params: [
+    {id: 'calculate', dynamic: true},
+    {id: 'runBefore', type: 'action', dynamic: true},
+    {id: 'expectedResult', type: 'boolean', dynamic: true},
+    {id: 'cleanUp', type: 'action', dynamic: true},
+    {id: 'expectedCounters', as: 'single'}
+  ],
+  impl: function(ctx,calculate,runBefore,expectedResult,cleanUp,expectedCounters) {
 		console.log('starting ' + ctx.path )
 		var initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 		if (expectedCounters) {
@@ -48,17 +48,17 @@ jb.component('data-test', {
 	}
 })
 
-jb.component('ui-test', {
-	type: 'test',
-	params: [
-		{ id: 'control', type: 'control', dynamic: true },
-		{ id: 'runBefore', type: 'action', dynamic: true },
-		{ id: 'action', type: 'action', dynamic: true },
-		{ id: 'expectedResult', type: 'boolean', dynamic: true },
-		{ id: 'cleanUp', type: 'action', dynamic: true },
-		{ id: 'expectedCounters', as: 'single' },
-	],
-	impl: function(ctx,control,runBefore,action,expectedResult,cleanUp,expectedCounters) {
+jb.component('ui-test', { /* uiTest */
+  type: 'test',
+  params: [
+    {id: 'control', type: 'control', dynamic: true},
+    {id: 'runBefore', type: 'action', dynamic: true},
+    {id: 'action', type: 'action', dynamic: true},
+    {id: 'expectedResult', type: 'boolean', dynamic: true},
+    {id: 'cleanUp', type: 'action', dynamic: true},
+    {id: 'expectedCounters', as: 'single'}
+  ],
+  impl: function(ctx,control,runBefore,action,expectedResult,cleanUp,expectedCounters) {
 		console.log('starting ' + ctx.path )
 		const initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 		return Promise.resolve(runBefore())
@@ -120,13 +120,13 @@ function countersErrors(expectedCounters) {
 jb.ui.elemOfSelector = (selector,ctx) => ctx.vars.elemToTest.querySelector(selector)
 jb.ui.cmpOfSelector = (selector,ctx) => jb.path(jb.ui.elemOfSelector(selector,ctx),['_component'])
 
-jb.component('ui-action.click', {
-	type: 'ui-action',
-	params: [
-		{ id: 'selector', as: 'string' },
-		{ id: 'methodToActivate', as: 'string', defaultValue: 'clicked'}
-	],
-	impl: (ctx,selector,methodToActivate) => {
+jb.component('ui-action.click', { /* uiAction.click */
+  type: 'ui-action',
+  params: [
+    {id: 'selector', as: 'string'},
+    {id: 'methodToActivate', as: 'string', defaultValue: 'clicked'}
+  ],
+  impl: (ctx,selector,methodToActivate) => {
 		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=>
 			e._component && e._component[methodToActivate] && e._component[methodToActivate]())
@@ -135,15 +135,15 @@ jb.component('ui-action.click', {
 })
 
 
-jb.component('ui-action.keyboard-event', {
-	type: 'ui-action',
-	params: [
-		{ id: 'selector', as: 'string' },
-		{ id: 'type', as: 'string', options: ['keypress','keyup','keydown'] },
-		{ id: 'keyCode', as: 'number' },
-		{ id: 'ctrl', as: 'string', options: ['ctrl','alt'] },
-	],
-	impl: (ctx,selector,type,keyCode,ctrl) => {
+jb.component('ui-action.keyboard-event', { /* uiAction.keyboardEvent */
+  type: 'ui-action',
+  params: [
+    {id: 'selector', as: 'string'},
+    {id: 'type', as: 'string', options: ['keypress', 'keyup', 'keydown']},
+    {id: 'keyCode', as: 'number'},
+    {id: 'ctrl', as: 'string', options: ['ctrl', 'alt']}
+  ],
+  impl: (ctx,selector,type,keyCode,ctrl) => {
 		const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : ctx.vars.elemToTest;
 		if (!elem) return
 		const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt' });
@@ -153,15 +153,15 @@ jb.component('ui-action.keyboard-event', {
 	}
 })
 
-jb.component('ui-action.set-text', {
-	type: 'ui-action',
-	usageByValue: true,
-	params: [
-		{ id: 'value', as: 'string', mandatory: true },
-		{ id: 'selector', as: 'string', defaultValue: 'input,textarea' },
-		{ id: 'delay', as: 'number', defaultValue: 1}
-	],
-	impl: (ctx,value,selector,delay) => {
+jb.component('ui-action.set-text', { /* uiAction.setText */
+  type: 'ui-action',
+  usageByValue: true,
+  params: [
+    {id: 'value', as: 'string', mandatory: true},
+    {id: 'selector', as: 'string', defaultValue: 'input,textarea'},
+    {id: 'delay', as: 'number', defaultValue: 1}
+  ],
+  impl: (ctx,value,selector,delay) => {
 		const elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=> {
 			e._component.jbModel(value);
@@ -171,12 +171,12 @@ jb.component('ui-action.set-text', {
 	}
 })
 
-jb.component('test.dialog-content', {
-	type: 'data',
-	params: [
-		{ id: 'id', as: 'string' },
-	],
-	impl: (ctx,id) =>
+jb.component('test.dialog-content', { /* test.dialogContent */
+  type: 'data',
+  params: [
+    {id: 'id', as: 'string'}
+  ],
+  impl: (ctx,id) =>
 		jb.ui.dialogs.dialogs.filter(d=>d.id == id).map(d=>d.el)[0].outerHTML || ''
 })
 
@@ -204,7 +204,7 @@ jb.ui.addHTML = jb.ui.addHTML || ((el,html) => {
 	elem.innerHTML = html;
 	el.appendChild(elem.firstChild)
 })
-  
+
 if (typeof startTime === 'undefined')
 	startTime = new Date().getTime();
 startTime = startTime || new Date().getTime();
@@ -234,7 +234,7 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 						return { id: e[0], success: false, reason: 'empty result'}
 					if (res && res.success && jb.logs.error.length > 0) {
 						res.success = false;
-						res.reason = 'log errors: ' + JSON.stringify(jb.logs.error) 
+						res.reason = 'log errors: ' + JSON.stringify(jb.logs.error)
 					}
 					return res
 				})

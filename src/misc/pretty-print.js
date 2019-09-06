@@ -1,9 +1,9 @@
 
-jb.component('pretty-print', {
+jb.component('pretty-print', { /* prettyPrint */
   params: [
-    { id: 'profile', defaultValue: '%%' },
-    { id: 'colWidth', as: 'number', defaultValue: 140 },
-    { id: 'macro', as: 'boolean'},
+    {id: 'profile', defaultValue: '%%'},
+    {id: 'colWidth', as: 'number', defaultValue: 140},
+    {id: 'macro', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,profile) =>
     jb.prettyPrint(profile,ctx.params)
@@ -50,7 +50,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
     const arrayOrObj = isArray? 'array' : 'obj'
 
-    const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) => 
+    const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) =>
       processList(acc,[
         {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + ': '},
         {prop: '!value', item: ctx => {
@@ -94,7 +94,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     if (comp)
       jb.fixByValue(profile,comp)
     if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
-      const props = Object.keys(profile) 
+      const props = Object.keys(profile)
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);
         props.unshift('$');
@@ -102,7 +102,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
     }
     const macro = jb.macroName(id)
-  
+
     const params = comp.params || []
     const firstParamIsArray = (params[0] && params[0].type||'').indexOf('[]') != -1
     const vars = Object.keys(profile.$vars || {})
@@ -121,7 +121,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       return joinVals(ctx, args, openProfileSugarGroup, closeProfileSugarGroup, flat, true)
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
-    const oneFirstParam = keys.length === 1 && params[0] && params[0].id == keys[0] 
+    const oneFirstParam = keys.length === 1 && params[0] && params[0].id == keys[0]
         && (typeof attOfProfile(keys[0]) !== 'object' || Array.isArray(attOfProfile(keys[0])))
     if ((params.length < 3 && comp.usageByValue !== false) || comp.usageByValue || oneFirstParam) {
       const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: attOfProfile(param.id)})))
@@ -140,7 +140,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       return isFirst && profile['$'+id] || profile[paramId]
     }
   }
-    
+
   function valueToMacro({path, line, col}, val, flat) {
     const ctx = {path, line, col}
     let result = doValueToMacro()
@@ -170,7 +170,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
         return JSON.stringify(val); // primitives
     }
 }
-  
+
   function arrayToMacro({path, line, col}, array, flat) {
     const ctx = {path, line, col}
     const vals = array.map((val,i) => ({innerPath: i, val}))
@@ -188,13 +188,13 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     let positions = {};
     printValue(profile,initialPath || '');
     return { result, positions }
-  
+
     function sortedPropertyNames(obj) {
       let props = jb.entries(obj)
         .filter(p=>showNulls || p[1] != null)
         .map(x=>x[0]) // try to keep the order
         .filter(p=>p.indexOf('$jb') != 0)
-  
+
       const comp_name = jb.compName(obj);
       if (comp_name) { // tgp obj - sort by params def
         const params = jb.compParams(jb.comps[comp_name]).map(p=>p.id);
@@ -206,7 +206,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       }
       return props;
     }
-  
+
     function printValue(val,path) {
       positions[path] = lineNum;
       if (!val) return;
@@ -224,7 +224,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
         result += JSON.stringify(val);
       }
     }
-  
+
     function printObj(obj,path) {
         var obj_str = flat_obj(obj);
         if (!printInLine(obj_str)) { // object does not fit in parent line
@@ -255,9 +255,9 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     function printProp(obj,prop,path) {
       if (obj[prop] && obj[prop].$jb_arrayShortcut)
         obj = obj(prop,obj[prop].items);
-  
+
       if (printInLine(flat_property(obj,prop))) return;
-  
+
       if (prop == '$')
         result += '$: '
       else
@@ -293,7 +293,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       for (var i = 0; i < depth; i++) result += '               '.substr(0,tabSize);
       remainedInLine = colWidth - tabSize * depth;
     }
-  
+
     function flat_obj(obj) {
       var props = sortedPropertyNames(obj)
         .filter(p=>showNulls || obj[p] != null)
@@ -324,7 +324,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     function flat_array(array) {
       return '[' + array.map(item=>flat_val(item)).join(', ') + ']';
     }
-  
+
   }
- 
+
 }

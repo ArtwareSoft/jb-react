@@ -61,7 +61,7 @@ class JbComponent {
 				//console.log('render',jb.studio.shortTitle(this.ctx.path));
 				try {
 					let vdom = jbComp.template(this,state,ui.h);
-					jbComp.modifierFuncs.forEach(modifier=> 
+					jbComp.modifierFuncs.forEach(modifier=>
 						vdom = (vdom && typeof vdom === 'object') ? tryWrapper(() => modifier(vdom,this,state,ui.h) || vdom) : vdom
 					);
 					jb.log('renRes',[this.ctx, vdom, state,props,this]);
@@ -284,7 +284,7 @@ ui.renderWidget = function(profile,top) {
 				jb.resources = originalResources;
 				doRender();
 			}
-			st.reloadCompInPreviewWindow = (id,comp) => { 
+			st.reloadCompInPreviewWindow = (id,comp) => {
 				try {
 					jb.component(id,eval('('+comp+')'))
 					return jb.comps[id]
@@ -298,7 +298,7 @@ ui.renderWidget = function(profile,top) {
 	}
 
 	doRender()
-	
+
 	function doRender() {
 		if (formerReactElem)
 			ui.render(ui.h('div',{}),formerParentElem,formerReactElem)
@@ -425,7 +425,7 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 				const callerPathsUniqe = jb.unique(callerPaths)
 				if (callerPathsUniqe.length !== callerPaths.length)
 					return jb.logError('circular watchRef',callerPaths)
-						
+
 				if (!allowSelfRefresh) {
 					const callerPathsToCompare = callerPaths.map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
 					const ctxStylePath = ctx.path.replace(/~features~?[0-9]*$/,'')
@@ -510,14 +510,17 @@ ui.addHTML = (el,html) => {
 
 // ****************** components ****************
 
-jb.component('custom-style', {
-	typePattern: /.*-style/, category: 'advanced:10,all:10',
-	params: [
-		{ id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true },
-		{ id: 'css', as: 'string' },
-    	{ id: 'features', type: 'feature[]', dynamic: true },
-	],
-	impl: (context,css,features) => ({
+jb.component('custom-style', { /* customStyle */
+  typePattern: {
+
+  },
+  category: 'advanced:10,all:10',
+  params: [
+    {id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true},
+    {id: 'css', as: 'string'},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: (context,css,features) => ({
 		template: context.profile.template,
 		css: css,
 		featuresOptions: features(),
@@ -525,13 +528,16 @@ jb.component('custom-style', {
 	})
 })
 
-jb.component('style-by-control', {
-	typePattern: /.*-style/,category: 'advanced:10,all:20',
-	params: [
-		{ id: 'control', type: 'control', mandatory: true, dynamic: true },
-		{ id: 'modelVar', as: 'string', mandatory: true }
-	],
-	impl: (ctx,control,modelVar) =>
+jb.component('style-by-control', { /* styleByControl */
+  typePattern: {
+    
+  },
+  category: 'advanced:10,all:20',
+  params: [
+    {id: 'control', type: 'control', mandatory: true, dynamic: true},
+    {id: 'modelVar', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,control,modelVar) =>
 		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
 })
 
