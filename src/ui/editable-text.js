@@ -11,7 +11,7 @@ jb.component('editable-text', {
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx)
-});
+})
 
 jb.component('editable-text.x-button', {
   type: 'feature',

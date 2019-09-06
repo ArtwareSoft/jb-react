@@ -120,7 +120,7 @@ jb.component('itemlist-container.search', {
 				ctx.vars.itemlistCntr.keydown = keydown_src.takeUntil(cmp.destroyed);
 			}
 		})
-});
+})
 
 jb.component('itemlist-container.more-items-button', {
 	type: 'control', category: 'itemlist-filter:100',
@@ -152,7 +152,7 @@ jb.component('itemlist-container.more-items-button', {
 			}
 		})
 	}
-});
+})
 
 jb.ui.extractPropFromExpression = exp => { // performance for simple cases such as %prop1%
 	if (exp.match(/^%.*%$/) && !exp.match(/[./[]/))
@@ -185,7 +185,7 @@ jb.component('itemlist-container.filter-field', {
 				})
 		}
 	})
-});
+})
 
 jb.component('filter-type.text', {
 	type: 'filter-type',

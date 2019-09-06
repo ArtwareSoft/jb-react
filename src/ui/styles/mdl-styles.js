@@ -71,19 +71,8 @@ jb.component('label.mdl-ripple-effect', {
           {$: 'mdl-style.init-dynamic'}
         ],
     }
-});
-
-jb.component('label.mdl-button', { /* label.mdlButton */
-  type: 'label.style',
-  params: [
-    {id: 'width', as: 'number'}
-  ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button'},state.title),
-    css: '{? {width:%$width%px} ?}',
-    features: [label.bindTitle(), mdlStyle.initDynamic()]
-  })
 })
+
 jb.component('label.mdl-button', {
     type: 'label.style',
     params: [
@@ -97,4 +86,4 @@ jb.component('label.mdl-button', {
         ],
         css: '{? {width:%$width%px} ?}'
     }
-});
+})
