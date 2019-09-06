@@ -3,22 +3,27 @@
 const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
 const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
 
-jb.component('editable-text.codemirror', {
-	type: 'editable-text.style',
-	params: [
-		{ id: 'cm_settings', as: 'single' },
-		{ id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
-		{ id: 'resizer', type: 'boolean', as: 'boolean', description: 'resizer id or true (id is used to keep size in session storage)' },
-		{ id: 'height', as: 'number' },
-		{ id: 'mode', as: 'string' },
-		{ id: 'debounceTime', as: 'number', defaultValue: 300 },
-		{ id: 'lineWrapping', as: 'boolean' },
-		{ id: 'lineNumbers', as: 'boolean' },
-		{ id: 'readOnly', options: ',true,nocursor' },
-		{ id: 'onCtrlEnter', type: 'action', dynamic: true },
-		{ id: 'hint', as: 'boolean' }
-	],
-	impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
+jb.component('editable-text.codemirror', { /* editableText.codemirror */
+  type: 'editable-text.style',
+  params: [
+    {id: 'cm_settings', as: 'single'},
+    {id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
+    {
+      id: 'resizer',
+      type: 'boolean',
+      as: 'boolean',
+      description: 'resizer id or true (id is used to keep size in session storage)'
+    },
+    {id: 'height', as: 'number'},
+    {id: 'mode', as: 'string'},
+    {id: 'debounceTime', as: 'number', defaultValue: 300},
+    {id: 'lineWrapping', as: 'boolean', type: 'boolean'},
+    {id: 'lineNumbers', as: 'boolean', type: 'boolean'},
+    {id: 'readOnly', options: ',true,nocursor'},
+    {id: 'onCtrlEnter', type: 'action', dynamic: true},
+    {id: 'hint', as: 'boolean', type: 'boolean'}
+  ],
+  impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
 			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
@@ -104,7 +109,7 @@ jb.component('editable-text.codemirror', {
 						.distinctUntilChanged()
 						.subscribe(x=>
 							jb.writeValue(data_ref,x));
-				
+
 				} catch(e) {
 					jb.logException(e,'editable-text.codemirror',ctx);
 					return;
@@ -179,17 +184,22 @@ function enableFullScreen(editor,width,height) {
 	})
 }
 
-jb.component('text.codemirror', {
-    type: 'text.style',
-    params: [
-        { id: 'cm_settings', as: 'single' },
-        { id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
-        { id: 'resizer', type: 'boolean', as: 'boolean', description: 'resizer id or true (id is used to keep size in session storage)' },
-        { id: 'height', as: 'number' },
-        { id: 'mode', as: 'string', options: 'htmlmixed,javascript,css' },
-        { id: 'lineWrapping', as: 'boolean' },
-    ],
-    impl: function(ctx, cm_settings, _enableFullScreen, resizer,height, mode, lineWrapping) {
+jb.component('text.codemirror', { /* text.codemirror */
+  type: 'text.style',
+  params: [
+    {id: 'cm_settings', as: 'single'},
+    {id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
+    {
+      id: 'resizer',
+      type: 'boolean',
+      as: 'boolean',
+      description: 'resizer id or true (id is used to keep size in session storage)'
+    },
+    {id: 'height', as: 'number'},
+    {id: 'mode', as: 'string', options: 'htmlmixed,javascript,css'},
+    {id: 'lineWrapping', as: 'boolean', type: 'boolean'}
+  ],
+  impl: function(ctx, cm_settings, _enableFullScreen, resizer,height, mode, lineWrapping) {
         return {
 			template: (cmp,state,h) => h('textarea', {class: 'jb-codemirror'}),
 			afterViewInit: function(cmp) {
@@ -227,5 +237,5 @@ jb.component('text.codemirror', {
 })
 
 function tgpHint(CodeMirror) {}
-  
+
 })()

@@ -1,6 +1,6 @@
-jb.component('table.with-headers', {
+jb.component('table.with-headers', { /* table.withHeaders */
   type: 'table.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('table',{},[
         h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
@@ -10,21 +10,29 @@ jb.component('table.with-headers', {
         ),
         state.items.length == 0 ? 'no items' : ''
         ]),
-    features:{$: 'table.init'},
     css: `{border-spacing: 0; text-align: left}
     >tbody>tr>td { padding-right: 5px }
     {width: 100%}
-    `
-  }
+    `,
+    features: table.init()
+  })
 })
 
-jb.component('table.mdl', {
+jb.component('table.mdl', { /* table.mdl */
   type: 'table.style',
   params: [
-    { id: 'classForTable', as: 'string', defaultValue: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp'},
-    { id: 'classForTd', as: 'string', defaultValue: 'mdl-data-table__cell--non-numeric'},
+    {
+      id: 'classForTable',
+      as: 'string',
+      defaultValue: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp'
+    },
+    {
+      id: 'classForTd',
+      as: 'string',
+      defaultValue: 'mdl-data-table__cell--non-numeric'
+    }
   ],
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('table',{ class: cmp.classForTable },[
         h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{
           'jb-ctx': f.ctxId, 
@@ -44,10 +52,7 @@ jb.component('table.mdl', {
         ),
         state.items.length == 0 ? 'no items' : ''
         ]),
-    features: [
-      {$: 'table.init'},
-      {$: 'table.init-sort'}
-    ],
-    css: `{width: 100%}`
-  }
+    css: '{width: 100%}',
+    features: [table.init(), table.initSort()]
+  })
 })

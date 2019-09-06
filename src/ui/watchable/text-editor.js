@@ -2,8 +2,8 @@
 
 function getSinglePathChange(newVal, currentVal) {
     return pathAndValueOfSingleChange(jb.objectDiff(newVal,currentVal),'')
-    
-    function pathAndValueOfSingleChange(obj, pathSoFar) { 
+
+    function pathAndValueOfSingleChange(obj, pathSoFar) {
         if (typeof obj !== 'object' && obj !== undefined)
             return { innerPath: pathSoFar, innerValue: obj }
         const entries = jb.entries(obj)
@@ -24,18 +24,18 @@ function setStrValue(value, ref, ctx) {
         if (innerPath) {
             const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
             return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
-        } 
+        }
     }
     if (newVal !== undefined)
        jb.writeValue(ref,newVal,ctx)
 }
 
-jb.component('watchable-as-text', {
-    type: 'data',
-    params: [
-      {id: 'ref', as: 'ref', dynamic: true},
-    ],
-    impl: (ctx,refF) => ({
+jb.component('watchable-as-text', { /* watchableAsText */
+  type: 'data',
+  params: [
+    {id: 'ref', as: 'ref', dynamic: true}
+  ],
+  impl: (ctx,refF) => ({
         oneWay: true,
         getRef() {
             return this.ref || (this.ref = refF())
@@ -78,7 +78,7 @@ jb.component('watchable-as-text', {
         }
     })
 })
-  
+
 jb.evalStr = function(str,frame) {
     try {
       return (frame || jb.frame).eval('('+str+')')
@@ -86,14 +86,14 @@ jb.evalStr = function(str,frame) {
         jb.logException(e,'eval: '+str);
     }
 }
-  
+
 jb.objectDiff = function(newObj, orig) {
     if (orig === newObj) return {}
     if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
     const deletedValues = Object.keys(orig).reduce((acc, key) =>
         newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: undefined }
     , {})
-  
+
     return Object.keys(newObj).reduce((acc, key) => {
       if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
       const difference = jb.objectDiff(newObj[key], orig[key])
@@ -108,7 +108,7 @@ jb.textEditor = {
         const found = jb.entries(ref.locationMap)
             .find(e=> e[1].offset_from <= offset && offset < e[1].offset_to)
         console.log('found',found && found[0],_pos)
-        if (found) 
+        if (found)
             return {path: found[0], offset: offset - found[1].offset_from}
     },
     lineColToOffset(text,{line,col}) {
@@ -128,7 +128,7 @@ jb.textEditor = {
         }}), {})
     },
     offsetToLineCol(text,offset) {
-        return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0, 
+        return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0,
             col: offset - text.slice(0,offset).lastIndexOf('\n') }
     },
     refreshEditor(cmp,_path) {
@@ -146,13 +146,13 @@ jb.textEditor = {
     }
 }
 
-jb.component('text-editor.with-cursor-path', {
-    type: 'action',
-    params: [
-      {id: 'action', type: 'action', dynamic: true, mandatory: true},
-      {id: 'selector', as: 'string', defaultValue: '#editor' },
-    ],
-    impl: (ctx,action,selector) => {
+jb.component('text-editor.with-cursor-path', { /* textEditor.withCursorPath */
+  type: 'action',
+  params: [
+    {id: 'action', type: 'action', dynamic: true, mandatory: true},
+    {id: 'selector', as: 'string', defaultValue: '#editor'}
+  ],
+  impl: (ctx,action,selector) => {
         let editor = ctx.vars.editor && ctx.vars.editor()
         if (!editor) {
             try {
@@ -168,18 +168,20 @@ jb.component('text-editor.with-cursor-path', {
     }
 })
 
-jb.component('text-editor.is-dirty', {
-    impl: ctx => {
+jb.component('text-editor.is-dirty', { /* textEditor.isDirty */
+  impl: ctx => {
         try {
             return ctx.vars.editor().isDirty()
         } catch (e) {}
     }
 })
 
-jb.component('text-editor.watch-source-changes', {
-    type: 'feature',
-    params: [],
-    impl: ctx => ({ init: cmp => {
+jb.component('text-editor.watch-source-changes', { /* textEditor.watchSourceChanges */
+  type: 'feature',
+  params: [
+
+  ],
+  impl: ctx => ({ init: cmp => {
       try {
         const text_ref = cmp.state.databindRef
         const data_ref = text_ref.getRef()
@@ -200,10 +202,12 @@ jb.component('text-editor.watch-source-changes', {
     }})
 })
 
-jb.component('text-editor.init', {
-    type: 'feature',
-    params: [],
-    impl: ctx => ({
+jb.component('text-editor.init', { /* textEditor.init */
+  type: 'feature',
+  params: [
+
+  ],
+  impl: ctx => ({
     extendCtxOnce: (ctx,cmp) => ctx.setVars({
         editor: () => cmp.editor,
         refreshEditor: path => jb.textEditor.refreshEditor(cmp,path)
@@ -211,9 +215,9 @@ jb.component('text-editor.init', {
   })
 })
 
-jb.component('textarea.init-textarea-editor', {
-    type: 'feature',
-    impl: ctx => ({
+jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor */
+  type: 'feature',
+  impl: ctx => ({
         beforeInit: cmp => {
           if (!jb.textEditor) return
           cmp.editor = {
@@ -238,6 +242,6 @@ jb.component('textarea.init-textarea-editor', {
         }
     })
 })
-  
+
 
 })()

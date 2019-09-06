@@ -1,7 +1,7 @@
-jb.component('mdl-style.init-dynamic', {
+jb.component('mdl-style.init-dynamic', { /* mdlStyle.initDynamic */
   type: 'feature',
   params: [
-  	{id: 'query', as: 'string'}
+    {id: 'query', as: 'string'}
   ],
   impl: (ctx,query) =>
     ({
@@ -34,7 +34,7 @@ jb.component('mdl-style.init-dynamic', {
     })
 })
 
-jb.component('mdl.ripple-effect', {
+jb.component('mdl.ripple-effect', { /* mdl.rippleEffect */
   type: 'feature',
   description: 'add ripple effect to buttons',
   impl: ctx => ({
@@ -49,12 +49,19 @@ jb.component('mdl.ripple-effect', {
       },
       destroy: cmp =>
           jb.ui.inDocument(cmp.base) && componentHandler.downgradeElements(cmp.base)
-   }),
+   })
 })
 
 
 // ****** label styles
 
+jb.component('label.mdl-ripple-effect', { /* label.mdlRippleEffect */
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button mdl-js-ripple-effect'},state.title),
+    features: [label.bindTitle(), mdlStyle.initDynamic()]
+  })
+})
 jb.component('label.mdl-ripple-effect', {
     type: 'label.style',
     impl :{$: 'custom-style',
@@ -66,6 +73,17 @@ jb.component('label.mdl-ripple-effect', {
     }
 });
 
+jb.component('label.mdl-button', { /* label.mdlButton */
+  type: 'label.style',
+  params: [
+    {id: 'width', as: 'number'}
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button'},state.title),
+    css: '{? {width:%$width%px} ?}',
+    features: [label.bindTitle(), mdlStyle.initDynamic()]
+  })
+})
 jb.component('label.mdl-button', {
     type: 'label.style',
     params: [

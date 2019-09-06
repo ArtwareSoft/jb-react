@@ -291,6 +291,7 @@ jb.component('ui-test.watchable-as-text', {
           features: [
             id('editor'),
             feature.onKey('Alt-P', textEditor.withCursorPath(writeValue('%$path%','%$cursorPath%'))),
+            textarea.initTextareaEditor(),
             textEditor.init()
           ],
           style1: editableText.codemirror(),

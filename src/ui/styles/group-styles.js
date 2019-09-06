@@ -172,7 +172,7 @@ jb.component('group.tabs', { /* group.tabs */
         id(ctx=> 'tab_' + ctx.componentContext.id),
         variable({
           name: 'selectedTab',
-          value: obj(prop('ctrl','%$tabsModel/controls[0]%','single')),
+          value: obj(prop('ctrl', '%$tabsModel/controls[0]%', 'single'))
         }),
         group.initGroup()
       ]
