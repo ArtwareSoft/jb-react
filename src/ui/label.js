@@ -1,15 +1,18 @@
-jb.component('label', {
-    type: 'control', category: 'control:100,common:80',
-    params: [
-        { id: 'title', as: 'ref', mandatory: true, defaultValue: 'my label', dynamic: true },
-        { id: 'style', type: 'label.style', defaultValue :{$: 'label.span' }, dynamic: true },
-        { id: 'features', type: 'feature[]', dynamic: true },
-    ],
-    impl: ctx =>
+jb.ns('label')
+
+jb.component('label', { /* label */
+  type: 'control',
+  category: 'control:100,common:80',
+  params: [
+    {id: 'title', as: 'ref', mandatory: true, defaultValue: 'my label', dynamic: true},
+    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx =>
         jb.ui.ctrl(ctx)
 })
 
-jb.component('label.bind-title', {
+jb.component('label.bind-title', { /* label.bindTitle */
   type: 'feature',
   impl: ctx => ({
     init: cmp => {
@@ -31,50 +34,55 @@ jb.component('label.bind-title', {
   })
 })
 
-jb.component('label.htmlTag', {
+jb.component('label.htmlTag', { /* label.htmlTag */
   type: 'label.style',
-	params: [
-		{ id: 'htmlTag', as: 'string', defaultValue: 'p', options:'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label' },
-		{ id: 'cssClass', as: 'string' },
-	],
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h(cmp.htmlTag,{class: cmp.cssClass},state.title),
-      features :{$: 'label.bind-title' }
-  }
+  params: [
+    {
+      id: 'htmlTag',
+      as: 'string',
+      defaultValue: 'p',
+      options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'
+    },
+    {id: 'cssClass', as: 'string'}
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h(cmp.htmlTag,{class: cmp.cssClass},state.title),
+    features: label.bindTitle()
+  })
 })
 
-jb.component('label.span', {
-    type: 'label.style',
-    impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('span',{},state.title),
-      features :{$: 'label.bind-title' }
-  }
+jb.component('label.span', { /* label.span */
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('span',{},state.title),
+    features: label.bindTitle()
+  })
 })
 
-jb.component('label.card-title', {
-    type: 'label.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('div',{ class: 'mdl-card__title' },
+jb.component('label.card-title', { /* label.cardTitle */
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'mdl-card__title' },
     				h('h2',{ class: 'mdl-card__title-text' },	state.title)),
-        features :{$: 'label.bind-title' }
-    }
+    features: label.bindTitle()
+  })
 })
 
-jb.component('label.card-supporting-text', {
-    type: 'label.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('div',{ class: 'mdl-card__supporting-text' },	state.title),
-        features :{$: 'label.bind-title' }
-    }
+jb.component('label.card-supporting-text', { /* label.cardSupportingText */
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'mdl-card__supporting-text' },	state.title),
+    features: label.bindTitle()
+  })
 })
 
-jb.component('highlight', {
+jb.component('highlight', { /* highlight */
   type: 'data',
   usageByValue: true,
   params: [
-    { id: 'base', as: 'string', dynamic: true },
-    { id: 'highlight', as: 'string', dynamic: true },
-    { id: 'cssClass', as: 'string', defaultValue: 'mdl-color-text--indigo-A700'},
+    {id: 'base', as: 'string', dynamic: true},
+    {id: 'highlight', as: 'string', dynamic: true},
+    {id: 'cssClass', as: 'string', defaultValue: 'mdl-color-text--indigo-A700'}
   ],
   impl: (ctx,base,highlightF,cssClass) => {
     const h = highlightF(), b = base();

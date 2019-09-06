@@ -682,6 +682,9 @@ Object.assign(jb,{
   knownNSAndCompCases: ['field'],
   macroName: id =>
     id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
+  ns: nsId =>
+    jb.registerMacro(nsId+'.$dummyComp',{})
+  ,
   component: (id,comp) => {
     jb.comps[id] = comp
     try {

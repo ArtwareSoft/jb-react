@@ -1,4 +1,5 @@
 (function() {
+jb.ns('tree')
 
 class NodeLine extends jb.ui.Component {
 	constructor(props) {
@@ -57,14 +58,14 @@ class TreeNode extends jb.ui.Component {
 
  //********************* jBart Components
 
-jb.component('tree', {
-	type: 'control',
-	params: [
-		{ id: 'nodeModel', type: 'tree.nodeModel', dynamic: true, mandatory: true },
-		{ id: 'style', type: "tree.style", defaultValue: { $: "tree.ul-li" }, dynamic: true },
-		{ id: 'features', type: "feature[]", dynamic: true }
-	],
-	impl: ctx => {
+jb.component('tree', { /* tree */
+  type: 'control',
+  params: [
+    {id: 'nodeModel', type: 'tree.nodeModel', dynamic: true, mandatory: true},
+    {id: 'style', type: 'tree.style', defaultValue: tree.ulLi(), dynamic: true},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => {
 		var nodeModel = ctx.params.nodeModel();
 		if (!nodeModel)
 			return jb.logError('missing nodeModel in tree',ctx);
@@ -92,37 +93,37 @@ jb.component('tree', {
 	}
 })
 
-jb.component('tree.ul-li', {
-	type: 'tree.style',
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) => {
+jb.component('tree.ul-li', { /* tree.ulLi */
+  type: 'tree.style',
+  impl: customStyle(
+    (cmp,state,h) => {
 			var tree = cmp.tree;
 			return h('div',{},
 				state.empty ? h('span') : h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath,
 				class: 'jb-control-tree treenode' + (tree.selected == tree.nodeModel.rootPath ? ' selected': '') })
 			)
 		}
-	}
+  )
 })
 
-jb.component('tree.no-head', {
-	type: 'tree.style',
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) => {
+jb.component('tree.no-head', { /* tree.noHead */
+  type: 'tree.style',
+  impl: customStyle(
+    (cmp,state,h) => {
 		var tree = cmp.tree, path = tree.nodeModel.rootPath;
 		return h('div',{},tree.nodeModel.children(path).map(childPath=>
 				 h(TreeNode,{ tree: tree, path: childPath, class: 'treenode' + (tree.selected == childPath ? ' selected' : '') }))
 		)}
-	}
+  )
 })
 
-jb.component('tree.selection', {
+jb.component('tree.selection', { /* tree.selection */
   type: 'feature',
   params: [
-	  { id: 'databind', as: 'ref', dynamic: true },
-	  { id: 'autoSelectFirst', type: 'boolean' },
-	  { id: 'onSelection', type: 'action', dynamic: true },
-	  { id: 'onRightClick', type: 'action', dynamic: true },
+    {id: 'databind', as: 'ref', dynamic: true},
+    {id: 'autoSelectFirst', type: 'boolean'},
+    {id: 'onSelection', type: 'action', dynamic: true},
+    {id: 'onRightClick', type: 'action', dynamic: true}
   ],
   impl: (ctx,databind) => ({
 	    onclick: true,
@@ -179,16 +180,16 @@ jb.component('tree.selection', {
   	})
 })
 
-jb.component('tree.keyboard-selection', {
-	type: 'feature',
-	params: [
-		{ id: 'onKeyboardSelection', type: 'action', dynamic: true },
-		{ id: 'onEnter', type: 'action', dynamic: true },
-		{ id: 'onRightClickOfExpanded', type: 'action', dynamic: true },
-		{ id: 'autoFocus', type: 'boolean' },
-		{ id: 'applyMenuShortcuts', type: 'menu.option', dynamic: true },
-	],
-	impl: context => ({
+jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
+  type: 'feature',
+  params: [
+    {id: 'onKeyboardSelection', type: 'action', dynamic: true},
+    {id: 'onEnter', type: 'action', dynamic: true},
+    {id: 'onRightClickOfExpanded', type: 'action', dynamic: true},
+    {id: 'autoFocus', type: 'boolean'},
+    {id: 'applyMenuShortcuts', type: 'menu.option', dynamic: true}
+  ],
+  impl: context => ({
 			onkeydown: true,
 			afterViewInit: cmp=> {
 				var tree = cmp.tree;
@@ -249,27 +250,27 @@ jb.component('tree.keyboard-selection', {
 		})
 })
 
-jb.component('tree.regain-focus', {
-	type: 'action',
-	impl : ctx =>
+jb.component('tree.regain-focus', { /* tree.regainFocus */
+  type: 'action',
+  impl: ctx =>
 		ctx.vars.$tree && ctx.vars.$tree.regainFocus && ctx.vars.$tree.regainFocus()
 })
 
-jb.component('tree.redraw', {
-	type: 'action',
+jb.component('tree.redraw', { /* tree.redraw */
+  type: 'action',
   params: [
-    { id: 'strong', type: 'boolean', as: 'boolean' }
+    {id: 'strong', type: 'boolean', as: 'boolean'}
   ],
-	impl : (ctx,strong) => {
+  impl: (ctx,strong) => {
 		jb.log('tree',['redraw',ctx.path, ...arguments]);
 		return ctx.vars.$tree && ctx.vars.$tree.redraw && ctx.vars.$tree.redraw(strong)
 	}
 })
 
-jb.component('tree.drag-and-drop', {
+jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
   type: 'feature',
   params: [
-//	  { id: 'afterDrop', type: 'action', dynamic: true, mandatory: true },
+    
   ],
   impl: ctx => ({
   		onkeydown: true,

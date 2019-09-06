@@ -1,19 +1,41 @@
-jb.component('editable-number', {
-  type: 'control', category: 'input:30',
-  params: [
-    { id: 'databind', as: 'ref', mandaroy: true, dynamic: true },
-    { id: 'title', as: 'string', dynamic: true },
-    { id: 'style', type: 'editable-number.style', defaultValue: { $: 'editable-number.input' }, dynamic: true },
-    { id: 'symbol', as: 'string', description: 'leave empty to parse symbol from value' },
-    { id: 'min', as: 'number', defaultValue: 0 },
-    { id: 'max', as: 'number', defaultValue: 100 },
-    { id: 'displayString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%' },
-    { id: 'dataString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%' },
-    { id: 'autoScale', as: 'boolean', defaultValue: true, description: 'adjust its scale if at edges' },
+jb.ns('editableNumber')
 
-    { id: 'step', as: 'number', defaultValue: 1, description: 'used by slider' },
-    { id: 'initialPixelsPerUnit', as: 'number', description: 'used by slider' },
-    { id: 'features', type: 'feature[]', dynamic: true },
+jb.component('editable-number', { /* editableNumber */
+  type: 'control',
+  category: 'input:30',
+  params: [
+    {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
+    {id: 'title', as: 'string', dynamic: true},
+    {
+      id: 'style',
+      type: 'editable-number.style',
+      defaultValue: editableNumber.input(),
+      dynamic: true
+    },
+    {
+      id: 'symbol',
+      as: 'string',
+      description: 'leave empty to parse symbol from value'
+    },
+    {id: 'min', as: 'number', defaultValue: 0},
+    {id: 'max', as: 'number', defaultValue: 100},
+    {
+      id: 'displayString',
+      as: 'string',
+      dynamic: true,
+      defaultValue: '%$Value%%$Symbol%'
+    },
+    {id: 'dataString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%'},
+    {
+      id: 'autoScale',
+      as: 'boolean',
+      defaultValue: true,
+      description: 'adjust its scale if at edges',
+      type: 'boolean'
+    },
+    {id: 'step', as: 'number', defaultValue: 1, description: 'used by slider'},
+    {id: 'initialPixelsPerUnit', as: 'number', description: 'used by slider'},
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => {
       class editableNumber {
@@ -40,19 +62,19 @@ jb.component('editable-number', {
           return this.dataString(ctx.setVars({ Value: ''+number, Symbol: this.symbol }));
         }
       }
-      return jb.ui.ctrl(ctx.setVars({ editableNumber: new editableNumber(ctx.params) })) 
+      return jb.ui.ctrl(ctx.setVars({ editableNumber: new editableNumber(ctx.params) }))
   }
 })
 
-jb.component('editable-number.input',{
+jb.component('editable-number.input', { /* editableNumber.input */
   type: 'editable-number.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind-text' },
-      template: (cmp,state,h) => h('input', { 
+  impl: customStyle({
+    template: (cmp,state,h) => h('input', { 
         value: state.model, 
         onchange: e => cmp.jbModel(e.target.value), 
         onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-  }
+    features: field.databindText()
+  })
 })
 
 

@@ -1,10 +1,10 @@
-jb.component('tree.json-read-only',{
-	type: 'tree.nodeModel',
-	params: [
-		{ id: 'object', as: 'single' },
-		{ id: 'rootPath', as: 'string'}
-	],
-	impl: (ctx, json, rootPath) =>
+jb.component('tree.json-read-only', { /* tree.jsonReadOnly */
+  type: 'tree.nodeModel',
+  params: [
+    {id: 'object', as: 'single'},
+    {id: 'rootPath', as: 'string'}
+  ],
+  impl: (ctx, json, rootPath) =>
 		new ROjson(json,rootPath)
 })
 
@@ -27,14 +27,14 @@ class ROjson {
 		var val = this.val(path);
 		return typeof val == 'object' && val !== null;
 	}
-	icon() { 
-		return '' 
+	icon() {
+		return ''
 	}
 	title(path,collapsed) {
 		var val = this.val(path);
 		var prop = path.split('~').pop();
 		var h = jb.ui.h;
-		if (val == null) 
+		if (val == null)
 			return h('div',{},prop + ': null');
 		if (!collapsed && typeof val == 'object')
 			return h('div',{},prop);
@@ -48,13 +48,13 @@ class ROjson {
 	}
 }
 
-jb.component('tree.json',{
-	type: 'tree.nodeModel',
-	params: [
-		{ id: 'object'},
-		{ id: 'rootPath', as: 'string'}
-	],
-	impl: function(context, json, rootPath) {
+jb.component('tree.json', { /* tree.json */
+  type: 'tree.nodeModel',
+  params: [
+    {id: 'object'},
+    {id: 'rootPath', as: 'string'}
+  ],
+  impl: function(context, json, rootPath) {
 		return new Json(json,rootPath)
 	}
 })
@@ -78,14 +78,14 @@ class Json {
 		var val = this.val(path);
 		return typeof val == 'object' && val !== null;
 	}
-	icon() { 
-		return '' 
+	icon() {
+		return ''
 	}
 	title(path,collapsed) {
 		var val = this.val(path);
 		var prop = path.split('~').pop();
 		var h = jb.ui.h;
-		if (val == null) 
+		if (val == null)
 			return h(prop + ': null');
 		if (!collapsed && typeof val == 'object')
 			return h('div',{},prop);

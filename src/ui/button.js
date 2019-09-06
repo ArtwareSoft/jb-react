@@ -1,12 +1,18 @@
-jb.type('button.style')
+jb.ns('button')
 
-jb.component('button', {
-  type: 'control,clickable', category: 'control:100,common:100',
+jb.component('button', { /* button */
+  type: 'control,clickable',
+  category: 'control:100,common:100',
   params: [
-    { id: 'title', as: 'ref', mandatory: true, defaultTValue: 'click me', dynamic: true },
-    { id: 'action', type: 'action', mandatory: true, dynamic: true },
-    { id: 'style', type: 'button.style', defaultValue: { $: 'button.mdl-raised' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
+    {id: 'title', as: 'ref', mandatory: true, defaultTValue: 'click me', dynamic: true},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {
+      id: 'style',
+      type: 'button.style',
+      defaultValue: button.mdlRaised(),
+      dynamic: true
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx,{
@@ -29,11 +35,12 @@ jb.component('button', {
     })
 })
 
-jb.component('ctrl-action', {
-  type: 'feature', category: 'button:70',
+jb.component('ctrl-action', { /* ctrlAction */
+  type: 'feature',
+  category: 'button:70',
   description: 'action to perform on control+click',
   params: [
-    { id: 'action', type: 'action', mandatory: true, dynamic: true },
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: (ctx,action) => ({
       afterViewInit: cmp =>
@@ -41,11 +48,12 @@ jb.component('ctrl-action', {
   })
 })
 
-jb.component('alt-action', {
-  type: 'feature', category: 'button:70',
+jb.component('alt-action', { /* altAction */
+  type: 'feature',
+  category: 'button:70',
   description: 'action to perform on alt+click',
   params: [
-    { id: 'action', type: 'action', mandatory: true, dynamic: true },
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: (ctx,action) => ({
       afterViewInit: cmp =>
@@ -53,11 +61,12 @@ jb.component('alt-action', {
   })
 })
 
-jb.component('button-disabled', {
-  type: 'feature', category: 'button:70',
+jb.component('button-disabled', { /* buttonDisabled */
+  type: 'feature',
+  category: 'button:70',
   description: 'define condition when button is enabled',
   params: [
-    { id: 'enabledCondition', type: 'boolean', mandatory: true, dynamic: true },
+    {id: 'enabledCondition', type: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx,cond) => ({
       init: cmp =>
@@ -65,14 +74,20 @@ jb.component('button-disabled', {
   })
 })
 
-jb.component('icon-with-action', {
-  type: 'control,clickable', category: 'control:30',
+jb.component('icon-with-action', { /* iconWithAction */
+  type: 'control,clickable',
+  category: 'control:30',
   params: [
-		{ id: 'icon', as: 'string', mandatory: true },
-		{ id: 'title', as: 'string' },
-		{ id: 'action', type: 'action', mandatory: true, dynamic: true },
-		{ id: 'style', type: 'icon-with-action.style', dynamic: true, defaultValue :{$: 'button.mdl-icon' } },
-		{ id: 'features', type: 'feature[]', dynamic: true }
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string'},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {
+      id: 'style',
+      type: 'icon-with-action.style',
+      dynamic: true,
+      defaultValue: button.mdlIcon()
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx, {

@@ -1,26 +1,44 @@
-jb.component('table', {
-  type: 'control,table', category: 'group:80,common:70',
+jb.ns('table')
+
+jb.component('table', { /* table */
+  type: 'control,table',
+  category: 'group:80,common:70',
   params: [
-    { id: 'title', as: 'string' },
-    { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, mandatory: true },
-    { id: 'fields', type: 'table-field[]', mandatory: true, dynamic: true },
-    { id: 'style', type: 'table.style', dynamic: true , defaultValue: { $: 'table.with-headers' } },
-    { id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default table is limmited to 100 shown items' },
-    { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
+    {id: 'title', as: 'string'},
+    {id: 'items', as: 'ref', whenNotRefferable: 'array', dynamic: true, mandatory: true},
+    {id: 'fields', type: 'table-field[]', mandatory: true, dynamic: true},
+    {
+      id: 'style',
+      type: 'table.style',
+      dynamic: true,
+      defaultValue: table.withHeaders()
+    },
+    {
+      id: 'visualSizeLimit',
+      as: 'number',
+      defaultValue: 100,
+      description: 'by default table is limmited to 100 shown items'
+    },
+    {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx)
 })
 
-jb.component('field', {
+jb.component('field', { /* field */
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', mandatory: true },
-    { id: 'data', as: 'string', mandatory: true, dynamic: true },
-    { id: 'width', as: 'number' },
-    { id: 'numeric', as: 'boolean', type: 'boolean' },
-    { id: 'extendItems', as: 'boolean', type: 'boolean', description: 'extend the items with the calculated field using the title as field name' },
-    { id: 'class', as: 'string' },
+    {id: 'title', as: 'string', mandatory: true},
+    {id: 'data', as: 'string', mandatory: true, dynamic: true},
+    {id: 'width', as: 'number'},
+    {id: 'numeric', as: 'boolean', type: 'boolean'},
+    {
+      id: 'extendItems',
+      as: 'boolean',
+      type: 'boolean',
+      description: 'extend the items with the calculated field using the title as field name'
+    },
+    {id: 'class', as: 'string'}
   ],
   impl: (ctx,title,data,width,numeric,extendItems,_class) => ({
     title: title,
@@ -28,61 +46,70 @@ jb.component('field', {
     calcFieldData: row => data(ctx.setData(row)),
     class: _class,
     width: width,
-    numeric: numeric, 
+    numeric: numeric,
     extendItems: extendItems,
     ctxId: jb.ui.preserveCtx(ctx)
   })
 })
 
-jb.component('field.index', {
+jb.component('field.index', { /* field.index */
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', defaultValue: 'index' },
-    { id: 'width', as: 'number', defaultValue: 10 },
-    { id: 'class', as: 'string' },
+    {id: 'title', as: 'string', defaultValue: 'index'},
+    {id: 'width', as: 'number', defaultValue: 10},
+    {id: 'class', as: 'string'}
   ],
   impl: (ctx,title,propName,width_class) => ({
     title: title,
     fieldData: (row,index) => index,
     class: _class,
     width: width,
-    numeric: true, 
+    numeric: true,
     ctxId: jb.ui.preserveCtx(ctx)
   })
 })
 
-jb.component('field.control', {
+jb.component('field.control', { /* field.control */
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', mandatory: true },
-    { id: 'control', type: 'control' , dynamic: true, mandatory: true, defaultValue: {$: 'label', title: ''} },
-    { id: 'width', as: 'number' },
-    { id: 'dataForSort', dynamic: true },
-    { id: 'numeric', as: 'boolean', type: 'boolean' },
+    {id: 'title', as: 'string', mandatory: true},
+    {
+      id: 'control',
+      type: 'control',
+      dynamic: true,
+      mandatory: true,
+      defaultValue: label('')
+    },
+    {id: 'width', as: 'number'},
+    {id: 'dataForSort', dynamic: true},
+    {id: 'numeric', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,title,control,width,dataForSort,numeric) => ({
     title: title,
     control: row => control(ctx.setData(row)).reactComp(),
     width: width,
     fieldData: row => dataForSort(ctx.setData(row)),
-    numeric: numeric, 
+    numeric: numeric,
     ctxId: jb.ui.preserveCtx(ctx)
   })
 })
 
-jb.component('field.button', {
+jb.component('field.button', { /* field.button */
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', mandatory: true },
-    { id: 'buttonText', as: 'string', mandatory: true, dynamic: true },
-    { id: 'action', type: 'action', mandatory: true, dynamic: true },
-
-    { id: 'width', as: 'number' },
-    { id: 'dataForSort', dynamic: true },
-    { id: 'numeric', as: 'boolean', type: 'boolean' },
-
-    { id: 'style', type: 'table-button.style', defaultValue: { $: 'table-button.href' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
+    {id: 'title', as: 'string', mandatory: true},
+    {id: 'buttonText', as: 'string', mandatory: true, dynamic: true},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'width', as: 'number'},
+    {id: 'dataForSort', dynamic: true},
+    {id: 'numeric', as: 'boolean', type: 'boolean'},
+    {
+      id: 'style',
+      type: 'table-button.style',
+      defaultValue: button.tableCellHref(),
+      dynamic: true
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => {
     var ctrl = jb.ui.ctrl(ctx,{
@@ -98,7 +125,7 @@ jb.component('field.button', {
       control: _ => ctrl,
       width: ctx.params.width,
       fieldData: row => dataForSort(ctx.setData(row)),
-      numeric: ctx.params.numeric, 
+      numeric: ctx.params.numeric,
       ctxId: jb.ui.preserveCtx(ctx)
     }
   }
@@ -106,15 +133,15 @@ jb.component('field.button', {
 
 // todo - move to styles
 
-jb.component('table-button.href', {
+jb.component('button.table-cell-href', { /* tableButton.href */
   type: 'button.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
-        css: `{color: grey}`
-    }
+  impl: customStyle({
+    template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
+    css: '{color: grey}'
+  })
 })
 
-jb.component('table.init', {
+jb.component('table.init', { /* table.init */
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
@@ -143,7 +170,7 @@ jb.component('table.init', {
   })
 })
 
-jb.component('table.init-sort', {
+jb.component('table.init-sort', { /* table.initSort */
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {

@@ -1,27 +1,36 @@
-jb.component('itemlist', {
-  type: 'control', category: 'group:80,common:80',
+jb.ns('itemlist')
+
+jb.component('itemlist', { /* itemlist */
+  type: 'control',
+  category: 'group:80,common:80',
   params: [
-    { id: 'title', as: 'string' },
-    { id: 'items', as: 'array' , dynamic: true, mandatory: true },
-    { id: 'controls', type: 'control[]', mandatory: true, dynamic: true },
-    { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
-    { id: 'itemVariable', as: 'string', defaultValue: 'item' },
-    { id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items' },
-    { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
+    {id: 'title', as: 'string'},
+    {id: 'items', as: 'array', dynamic: true, mandatory: true},
+    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true},
+    {id: 'style', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
+    {id: 'itemVariable', as: 'string', defaultValue: 'item'},
+    {
+      id: 'visualSizeLimit',
+      as: 'number',
+      defaultValue: 100,
+      description: 'by default itemlist is limmited to 100 shown items'
+    },
+    {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx)
 })
 
-jb.component('itemlist.no-container', {
-  type: 'feature', category: 'group:20',
+jb.component('itemlist.no-container', { /* itemlist.noContainer */
+  type: 'feature',
+  category: 'group:20',
   impl: ctx => ({
     extendCtxOnce: (ctx,cmp) =>
       ctx.setVars({itemlistCntr: null})
     })
 })
 
-jb.component('itemlist.init', {
+jb.component('itemlist.init', { /* itemlist.init */
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
@@ -39,54 +48,62 @@ jb.component('itemlist.init', {
         const controlsOfItem = jb.ui.cachedMap(item =>
           ctx.vars.$model.controls(cmp.ctx.setData(item).setVars(jb.obj(ctx.vars.$model.itemVariable,item)))
             .filter(x=>x).map(c=>jb.ui.renderable(c)).filter(x=>x));
-        
+
       },
       init: cmp => cmp.state.ctrls = cmp.calcCtrls(),
   })
 })
 
-jb.component('itemlist.ul-li', {
+jb.component('itemlist.ul-li', { /* itemlist.ulLi */
   type: 'itemlist.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li',
           {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
           ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
-    features:{$: 'itemlist.init'},
-  },
+    features: itemlist.init()
+  })
 })
 
-jb.component('itemlist.horizontal', {
+jb.component('itemlist.horizontal', { /* itemlist.horizontal */
   type: 'itemlist.style',
-  params: [,
-    { id: 'spacing', as: 'number', defaultValue: 0 }
+  params: [
+    {id: 'spacing', as: 'number', defaultValue: 0}
   ],
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-drag-parent'},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h('div', {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
           ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
-
     css: `{display: flex}
         >* { margin-right: %$spacing%px }
         >*:last-child { margin-right:0 }`,
-    features:{$: 'itemlist.init'},
-  }
+    features: itemlist.init()
+  })
 })
 
 // ****************** Selection ******************
 
-jb.component('itemlist.selection', {
+jb.component('itemlist.selection', { /* itemlist.selection */
   type: 'feature',
   params: [
-    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%' , dynamic: true },
-    { id: 'selectedToDatabind', dynamic: true ,defaultValue: '%%' },
-    { id: 'databindToSelected', dynamic: true ,defaultValue: '%%' },
-    { id: 'onSelection', type: 'action', dynamic: true },
-    { id: 'onDoubleClick', type: 'action', dynamic: true },
-    { id: 'autoSelectFirst', type: 'boolean'},
-    { id: 'cssForSelected', as: 'string', defaultValue: 'background: #bbb !important; color: #fff !important' },
+    {
+      id: 'databind',
+      as: 'ref',
+      defaultValue: '%$itemlistCntrData/selected%',
+      dynamic: true
+    },
+    {id: 'selectedToDatabind', dynamic: true, defaultValue: '%%'},
+    {id: 'databindToSelected', dynamic: true, defaultValue: '%%'},
+    {id: 'onSelection', type: 'action', dynamic: true},
+    {id: 'onDoubleClick', type: 'action', dynamic: true},
+    {id: 'autoSelectFirst', type: 'boolean'},
+    {
+      id: 'cssForSelected',
+      as: 'string',
+      defaultValue: 'background: #bbb !important; color: #fff !important'
+    }
   ],
   impl: (ctx,databind) => ({
     onclick: true,
@@ -103,7 +120,7 @@ jb.component('itemlist.selection', {
               cmp.setState({selected: selected});
               ctx.params.onSelection(cmp.ctx.setData(selected));
           });
-        
+
         const selectedRef = databind()
         jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, watchScript: ctx})
           .catch(e=>jb.ui.setState(cmp,{selected: null }) || [])
@@ -145,12 +162,12 @@ jb.component('itemlist.selection', {
   })
 })
 
-jb.component('itemlist.keyboard-selection', {
+jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
   type: 'feature',
   usageByValue: false,
   params: [
-    { id: 'autoFocus', type: 'boolean' },
-    { id: 'onEnter', type: 'action', dynamic: true },
+    {id: 'autoFocus', type: 'boolean'},
+    {id: 'onEnter', type: 'action', dynamic: true}
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -183,9 +200,10 @@ jb.component('itemlist.keyboard-selection', {
     })
 })
 
-jb.component('itemlist.drag-and-drop', {
+jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
   type: 'feature',
   params: [
+
   ],
   impl: ctx => ({
       afterViewInit: function(cmp) {
@@ -231,14 +249,18 @@ jb.component('itemlist.drag-and-drop', {
     })
 })
 
-jb.component('itemlist.drag-handle', {
+jb.component('itemlist.drag-handle', { /* itemlist.dragHandle */
   description: 'put on the control inside the item which is used to drag the whole line',
   type: 'feature',
-  impl: {$list: [ {$: 'css.class', class: 'drag-handle' }, {$: 'css', css:'{cursor: pointer}'} ] }
+  impl: list(
+    css.class('drag-handle'),
+    css('{cursor: pointer}')
+  )
 })
 
-jb.component('itemlist.shown-only-on-item-hover', {
-  type: 'feature', category: 'itemlist:75',
+jb.component('itemlist.shown-only-on-item-hover', { /* itemlist.shownOnlyOnItemHover */
+  type: 'feature',
+  category: 'itemlist:75',
   description: 'put on the control inside the item which is shown when the mouse enters the line',
   impl: (ctx,cssClass,cond) => ({
     class: 'jb-shown-on-item-hover',
@@ -246,11 +268,11 @@ jb.component('itemlist.shown-only-on-item-hover', {
   })
 })
 
-jb.component('itemlist.divider', {
+jb.component('itemlist.divider', { /* itemlist.divider */
   type: 'feature',
   params: [
-    { id: 'space', as: 'number', defaultValue: 5}
+    {id: 'space', as: 'number', defaultValue: 5}
   ],
-  impl : (ctx,space) =>
+  impl: (ctx,space) =>
     ({css: `>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: ${space}px }`})
 })

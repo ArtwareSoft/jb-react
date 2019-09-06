@@ -67,7 +67,7 @@ class WatchableValueByRef {
           // TODO: make is more effecient in case of $merge, $splice
           this.removeObjFromMap(oldVal)
           this.addObjToMap(newVal,path)
-      } 
+      }
       opEvent.newVal = newVal;
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
@@ -118,7 +118,7 @@ class WatchableValueByRef {
     const path = this.objToPath.get(actualObj) || this.objToPath.get(actualObj[jbId])
     if (path)
         return { $jb_obj: this.valOfPath(path), handler: this, path: function() { return this.handler.pathOfRef(this)} }
-    if (!silent) 
+    if (!silent)
       jb.logError('asRef can not make a watchable ref of obj',obj)
     return null;
   }
@@ -131,7 +131,7 @@ class WatchableValueByRef {
       const parent = this.asRef(this.valOfPath(path.slice(0,-1)), true);
       if (path.length == 1)
         return {$jb_obj: this.resources(), $jb_childProp: path[0], handler: this, $jb_path: () => path }
-      if (parent && this.isRef(parent)) 
+      if (parent && this.isRef(parent))
         return Object.assign({},parent,{$jb_childProp: path.slice(-1)[0]})
       jb.logError('reOfPath can not find parent ref',path.join('~'))
     }
@@ -313,13 +313,20 @@ jb.ui.refObservable = (ref,cmp,settings={}) => {
 jb.ui.extraWatchableHandler = (resources,oldHandler) => jb.extraWatchableHandler(new WatchableValueByRef(resources),oldHandler);
 jb.ui.resourceChange = jb.mainWatchableHandler.resourceChange;
 
-jb.component('run-transaction', {
-	type: 'action',
-	params: [
-		{ id: 'actions', type:'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: [] },
-		{ id: 'disableNotifications', as: 'boolean', type: 'boolean' }
-	],
-	impl: (ctx,actions,disableNotifications) => {
+jb.component('run-transaction', { /* runTransaction */
+  type: 'action',
+  params: [
+    {
+      id: 'actions',
+      type: 'action[]',
+      dynamic: true,
+      composite: true,
+      mandatory: true,
+      defaultValue: []
+    },
+    {id: 'disableNotifications', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,actions,disableNotifications) => {
 		jb.mainWatchableHandler.startTransaction()
 		return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))

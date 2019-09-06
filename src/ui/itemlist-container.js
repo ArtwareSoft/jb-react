@@ -30,20 +30,32 @@ const createItemlistCntr = (ctx,params) => ({
 	}
 })
 
-jb.component('group.itemlist-container', {
-	description: 'itemlist writable container to support addition, deletion and selection',
-	type: 'feature', category: 'itemlist:80,group:70',
-	params: [
-		{ id: 'id', as: 'string', mandatory: true },
-		{ id: 'defaultItem', as: 'single' },
-		{ id: 'maxItems', as: 'number' , defaultValue: 100 },
-		{ id: 'initialSelection', as: 'single' },
-	],
-	impl :{$list : [
-		{$: 'variable', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , 
-				watchable: true, globalId1: '%$id%-cntr-data'},
-		{$: 'variable', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
-		ctx => ({
+jb.component('group.itemlist-container', { /* group.itemlistContainer */
+  description: 'itemlist writable container to support addition, deletion and selection',
+  type: 'feature',
+  category: 'itemlist:80,group:70',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'defaultItem', as: 'single'},
+    {id: 'maxItems', as: 'number', defaultValue: 100},
+    {id: 'initialSelection', as: 'single'}
+  ],
+  impl: list(
+    variable({
+        name: 'itemlistCntrData',
+        value: {
+          '$': 'object',
+          search_pattern: '',
+          selected: '%$initialSelection%',
+          maxItems: '%$maxItems%'
+        },
+        watchable: true
+      }),
+    variable({
+        name: 'itemlistCntr',
+        value: ctx => createItemlistCntr(ctx,ctx.componentContext.params)
+      }),
+    ctx => ({
 			init: cmp => {
 				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
 //        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
@@ -51,22 +63,26 @@ jb.component('group.itemlist-container', {
 					items.slice(0,jb.tonumber(maxItemsRef));
 			},
 		})
-	]}
+  )
 })
 
-jb.component('itemlist.itemlist-selected', {
-	type: 'feature',   category: 'itemlist:20,group:0',
-	impl :{ $list : [
-			{$: 'group.data', data : '%$itemlistCntrData/selected%'},
-			{$: 'hidden', showCondition: {$notEmpty: '%$itemlistCntrData/selected%' } }
-	]}
+jb.component('itemlist.itemlist-selected', { /* itemlist.itemlistSelected */
+  type: 'feature',
+  category: 'itemlist:20,group:0',
+  impl: list(
+    group.data('%$itemlistCntrData/selected%'),
+    hidden(notEmpty('%$itemlistCntrData/selected%'))
+  )
 })
 
-jb.component('itemlist-container.filter', {
-	type: 'aggregator', category: 'itemlist-filter:100',
-	requires: ctx => ctx.vars.itemlistCntr,
-	params: [{ id: 'updateCounters', as: 'boolean'} ],
-	impl: (ctx,updateCounters) => {
+jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
+  type: 'aggregator',
+  category: 'itemlist-filter:100',
+  requires: ctx => ctx.vars.itemlistCntr,
+  params: [
+    {id: 'updateCounters', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,updateCounters) => {
 			if (!ctx.vars.itemlistCntr) return;
 			const resBeforeMaxFilter = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
 									filter(items), ctx.data || []);
@@ -85,17 +101,33 @@ jb.component('itemlist-container.filter', {
 	}
 })
 
-jb.component('itemlist-container.search', {
-	type: 'control', category: 'itemlist-filter:100',
-	requires: ctx => ctx.vars.itemlistCntr,
-	params: [
-		{ id: 'title', as: 'string' , dynamic: true, defaultValue: 'Search' },
-		{ id: 'searchIn', as: 'string' , dynamic: true, defaultValue: {$: 'itemlist-container.search-in-all-properties'} },
-		{ id: 'databind', as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
-		{ id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-search' }, dynamic: true },
-		{ id: 'features', type: 'feature[]', dynamic: true },
-	],
-	impl: (ctx,title,searchIn,databind) =>
+jb.component('itemlist-container.search', { /* itemlistContainer.search */
+  type: 'control',
+  category: 'itemlist-filter:100',
+  requires: ctx => ctx.vars.itemlistCntr,
+  params: [
+    {id: 'title', as: 'string', dynamic: true, defaultValue: 'Search'},
+    {
+      id: 'searchIn',
+      as: 'string',
+      dynamic: true,
+      defaultValue: itemlistContainer.searchInAllProperties()
+    },
+    {
+      id: 'databind',
+      as: 'ref',
+      dynamic: true,
+      defaultValue: '%$itemlistCntrData/search_pattern%'
+    },
+    {
+      id: 'style',
+      type: 'editable-text.style',
+      defaultValue: editableText.mdlSearch(),
+      dynamic: true
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: (ctx,title,searchIn,databind) =>
 		jb.ui.ctrl(ctx,{
 			afterViewInit: cmp => {
 				if (!ctx.vars.itemlistCntr) return;
@@ -113,7 +145,7 @@ jb.component('itemlist-container.search', {
 				cmp.base.onkeydown = e => {
 					if ([38,40,13,27].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
 						keydown_src.next(e);
-						return false;  
+						return false;
 					}
 					return true;
 				}
@@ -122,16 +154,22 @@ jb.component('itemlist-container.search', {
 		})
 })
 
-jb.component('itemlist-container.more-items-button', {
-	type: 'control', category: 'itemlist-filter:100',
-	requires: ctx => ctx.vars.itemlistCntr,
-	params: [
-		{ id: 'title', as: 'string' , dynamic: true, defaultValue: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeMaxFilter%)' },
-		{ id: 'delta', as: 'number' , defaultValue: 200 },
-		{ id: 'style', type: 'button.style', defaultValue: { $: 'button.href' }, dynamic: true },
-		{ id: 'features', type: 'feature[]', dynamic: true },
-	],
-	impl: (ctx,title,delta) => {
+jb.component('itemlist-container.more-items-button', { /* itemlistContainer.moreItemsButton */
+  type: 'control',
+  category: 'itemlist-filter:100',
+  requires: ctx => ctx.vars.itemlistCntr,
+  params: [
+    {
+      id: 'title',
+      as: 'string',
+      dynamic: true,
+      defaultValue: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeMaxFilter%)'
+    },
+    {id: 'delta', as: 'number', defaultValue: 200},
+    {id: 'style', type: 'button.style', defaultValue: button.href(), dynamic: true},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: (ctx,title,delta) => {
 		return jb.ui.ctrl(ctx,{
 			beforeInit: cmp => {
 				if (!ctx.vars.itemlistCntr) return;
@@ -160,14 +198,15 @@ jb.ui.extractPropFromExpression = exp => { // performance for simple cases such 
 }
 
 // match fields in pattern itemlistCntrData/FLDNAME_filter to data
-jb.component('itemlist-container.filter-field', {
-	type: 'feature', category: 'itemlist-filter:80',
-	requires: ctx => ctx.vars.itemlistCntr,
-	params: [
-		{ id: 'fieldData', dynamic: true, mandatory: true },
-		{ id: 'filterType', type: 'filter-type' },
-	],
-	impl: (ctx,fieldData,filterType) => ({
+jb.component('itemlist-container.filter-field', { /* itemlistContainer.filterField */
+  type: 'feature',
+  category: 'itemlist-filter:80',
+  requires: ctx => ctx.vars.itemlistCntr,
+  params: [
+    {id: 'fieldData', dynamic: true, mandatory: true},
+    {id: 'filterType', type: 'filter-type'}
+  ],
+  impl: (ctx,fieldData,filterType) => ({
 			afterViewInit: cmp => {
 				const propToFilter = jb.ui.extractPropFromExpression(ctx.params.fieldData.profile);
 				if (propToFilter)
@@ -187,12 +226,12 @@ jb.component('itemlist-container.filter-field', {
 	})
 })
 
-jb.component('filter-type.text', {
-	type: 'filter-type',
-	params: [
-		{ id: 'ignoreCase', as: 'boolean', defaultValue: true }
-	],
-	impl: (ctx,ignoreCase) => ignoreCase ? ({
+jb.component('filter-type.text', { /* filterType.text */
+  type: 'filter-type',
+  params: [
+    {id: 'ignoreCase', as: 'boolean', defaultValue: true, type: 'boolean'}
+  ],
+  impl: (ctx,ignoreCase) => ignoreCase ? ({
 		filter: (filter,data) => (data||'').toLowerCase().indexOf((filter||'').toLowerCase()) != -1,
 		sort: (items,itemToData,filter) =>  {
 			const asWord = new RegExp('\\b' + filter + '\\b','i');
@@ -209,9 +248,9 @@ jb.component('filter-type.text', {
 	})
 })
 
-jb.component('filter-type.exact-match', {
-	type: 'filter-type',
-	impl: ctx => ({
+jb.component('filter-type.exact-match', { /* filterType.exactMatch */
+  type: 'filter-type',
+  impl: ctx => ({
 		filter: (filter,data) =>  {
 			const _filter = (filter||'').trim(), _data = (data||'').trim();
 			return _data.indexOf(_filter) == 0 && _data.length == _filter.length;
@@ -219,17 +258,18 @@ jb.component('filter-type.exact-match', {
 	})
 })
 
-jb.component('filter-type.numeric', {
-	type: 'filter-type',
-	impl: ctx => ({
+jb.component('filter-type.numeric', { /* filterType.numeric */
+  type: 'filter-type',
+  impl: ctx => ({
 		filter: (filter,data) => Number(data) >= Number(filter),
 		sort: (items,itemToData) => items.sort((item1,item2)=> Number(itemToData(item1)) - Number(itemToData(item2)))
 	})
 })
 
-jb.component('itemlist-container.search-in-all-properties', {
-	type: 'data', category: 'itemlist-filter:40',
-	impl: ctx => {
+jb.component('itemlist-container.search-in-all-properties', { /* itemlistContainer.searchInAllProperties */
+  type: 'data',
+  category: 'itemlist-filter:40',
+  impl: ctx => {
 		if (typeof ctx.data == 'string') return ctx.data;
 		if (typeof ctx.data != 'object') return '';
 		return jb.entries(ctx.data).map(e=>e[1]).filter(v=>typeof v == 'string').join('#');

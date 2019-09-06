@@ -1,11 +1,22 @@
-jb.component('group.wait', {
-  type: 'feature', category: 'group:70',
-	description: 'wait for asynch data before showing the control',
+jb.component('group.wait', { /* group.wait */
+  type: 'feature',
+  category: 'group:70',
+  description: 'wait for asynch data before showing the control',
   params: [
-    { id: 'for', mandatory: true, dynamic: true },
-    { id: 'loadingControl', type: 'control', defaultValue: { $:'label', title: 'loading ...'} , dynamic: true },
-    { id: 'error', type: 'control', defaultValue: { $:'label', title: 'error: %$error%', css: '{color: red; font-weight: bold}'} , dynamic: true },
-    { id: 'varName', as: 'string' },
+    {id: 'for', mandatory: true, dynamic: true},
+    {
+      id: 'loadingControl',
+      type: 'control',
+      defaultValue: label('loading ...'),
+      dynamic: true
+    },
+    {
+      id: 'error',
+      type: 'control',
+      defaultValue: label({title: 'error: %$error%'}),
+      dynamic: true
+    },
+    {id: 'varName', as: 'string'}
   ],
   impl: (context,waitFor,loading,error,varName) => ({
       beforeInit : cmp =>
@@ -14,7 +25,7 @@ jb.component('group.wait', {
       afterViewInit: cmp => {
         jb.rx.Observable.from(waitFor()).takeUntil(cmp.destroyed).take(1)
           .catch(e=> {
-              cmp.setState( { ctrls: [error(context.setVars({error:e}))].map(c=>c.reactComp()) }) 
+              cmp.setState( { ctrls: [error(context.setVars({error:e}))].map(c=>c.reactComp()) })
               return []
           })
           .subscribe(data => {
@@ -30,28 +41,51 @@ jb.component('group.wait', {
   })
 })
 
-jb.component('watch-ref', {
-  type: 'feature', category: 'watch:100',
-	description: 'subscribes to data changes to refresh component',
+jb.component('watch-ref', { /* watchRef */
+  type: 'feature',
+  category: 'watch:100',
+  description: 'subscribes to data changes to refresh component',
   params: [
-    { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
-    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
-    { id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
-    { id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children' },
+    {
+      id: 'ref',
+      mandatory: true,
+      as: 'ref',
+      dynamic: true,
+      description: 'reference to data'
+    },
+    {
+      id: 'includeChildren',
+      as: 'string',
+      options: 'yes,no,structure',
+      defaultValue: 'no',
+      description: 'watch childern change as well'
+    },
+    {
+      id: 'delay',
+      as: 'number',
+      description: 'delay in activation, can be used to set priority'
+    },
+    {
+      id: 'allowSelfRefresh',
+      as: 'boolean',
+      description: 'allow refresh originated from the components or its children',
+      type: 'boolean'
+    }
   ],
   impl: (ctx,ref,includeChildren,delay,allowSelfRefresh) => ({
-      beforeInit: cmp => 
+      beforeInit: cmp =>
         cmp.watchRefOn = true,
       init: cmp =>
         jb.ui.watchRef(cmp.ctx,cmp,ref(cmp.ctx),includeChildren,delay,allowSelfRefresh)
   })
 })
 
-jb.component('watch-observable', {
-  type: 'feature', category: 'watch',
-	description: 'subscribes to a custom rx.observable to refresh component',
+jb.component('watch-observable', { /* watchObservable */
+  type: 'feature',
+  category: 'watch',
+  description: 'subscribes to a custom rx.observable to refresh component',
   params: [
-    { id: 'toWatch', mandatory: true },
+    {id: 'toWatch', mandatory: true}
   ],
   impl: (ctx,toWatch) => ({
       init: cmp => {
@@ -65,13 +99,24 @@ jb.component('watch-observable', {
   })
 })
 
-jb.component('group.data', {
-  type: 'feature', category: 'general:100,watch:80',
+jb.component('group.data', { /* group.data */
+  type: 'feature',
+  category: 'general:100,watch:80',
   params: [
-    { id: 'data', mandatory: true, dynamic: true, as: 'ref' },
-    { id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable' },
-    { id: 'watch', as: 'boolean' },
-    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
+    {id: 'data', mandatory: true, dynamic: true, as: 'ref'},
+    {
+      id: 'itemVariable',
+      as: 'string',
+      description: 'optional. define data as a local variable'
+    },
+    {id: 'watch', as: 'boolean', type: 'boolean'},
+    {
+      id: 'includeChildren',
+      as: 'string',
+      options: 'yes,no,structure',
+      defaultValue: 'no',
+      description: 'watch childern change as well'
+    }
   ],
   impl: (ctx, data_ref, itemVariable,watch,includeChildren) => ({
       init: cmp => {
@@ -88,12 +133,12 @@ jb.component('group.data', {
   })
 })
 
-jb.component('html-attribute', {
+jb.component('html-attribute', { /* htmlAttribute */
   type: 'feature',
-	description: 'set attribute to html element and give it value',
+  description: 'set attribute to html element and give it value',
   params: [
-    { id: 'attribute', mandatory: true, as: 'string' },
-    { id: 'value', mandatory: true, as: 'string' }
+    {id: 'attribute', mandatory: true, as: 'string'},
+    {id: 'value', mandatory: true, as: 'string'}
   ],
   impl: (ctx,attribute,value) => ({
     templateModifier: vdom => {
@@ -104,20 +149,23 @@ jb.component('html-attribute', {
   })
 })
 
-jb.component('id', {
+jb.component('id', { /* id */
   type: 'feature',
-	description: 'adds id to html element',
+  description: 'adds id to html element',
   params: [
-    { id: 'id', mandatory: true, as: 'string' },
+    {id: 'id', mandatory: true, as: 'string'}
   ],
-  impl :{$: 'html-attribute', attribute: 'id', value: '%$id%'} 
+  impl: htmlAttribute(
+    'id',
+    '%$id%'
+  )
 })
 
-jb.component('feature.hover-title', {
+jb.component('feature.hover-title', { /* feature.hoverTitle */
   type: 'feature',
-	description: 'set element title, usually shown by browser on hover',
+  description: 'set element title, usually shown by browser on hover',
   params: [
-    { id: 'title', as: 'string', dynamic: true },
+    {id: 'title', as: 'string', dynamic: true}
   ],
   impl: (ctx, title) => ({
     templateModifier: (vdom,cmp,state) => {
@@ -128,14 +176,24 @@ jb.component('feature.hover-title', {
   })
 })
 
-jb.component('variable', {
-  type: 'feature', category: 'general:90',
-	description: 'define a variable. watchable or passive, local or global',
+jb.component('variable', { /* variable */
+  type: 'feature',
+  category: 'general:90',
+  description: 'define a variable. watchable or passive, local or global',
   params: [
-    { id: 'name', as: 'string', mandatory: true },
-    { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
-    { id: 'watchable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable' },
-    { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+    {
+      id: 'watchable',
+      as: 'boolean',
+      type: 'boolean',
+      description: 'E.g., selected item variable'
+    },
+    {
+      id: 'globalId',
+      as: 'string',
+      description: 'If specified, the var will be defined as global with this id'
+    }
   ],
   impl: (context, name, value, watchable, globalId) => ({
       extendCtxOnce: (ctx,cmp) => {
@@ -155,14 +213,21 @@ jb.component('variable', {
 // to delete soon
 jb.component('var', jb.comps.variable)
 
-jb.component('bind-refs', {
-  type: 'feature', category: 'watch',
+jb.component('bind-refs', { /* bindRefs */
+  type: 'feature',
+  category: 'watch',
   description: 'automatically updates a mutual variable when other value is changing',
   params: [
-    { id: 'watchRef', mandatory: true, as: 'ref' },
-    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
-    { id: 'updateRef', mandatory: true, as: 'ref' },
-    { id: 'value', mandatory: true, as: 'single', dynamic: true },
+    {id: 'watchRef', mandatory: true, as: 'ref'},
+    {
+      id: 'includeChildren',
+      as: 'string',
+      options: 'yes,no,structure',
+      defaultValue: 'no',
+      description: 'watch childern change as well'
+    },
+    {id: 'updateRef', mandatory: true, as: 'ref'},
+    {id: 'value', mandatory: true, as: 'single', dynamic: true}
   ],
   impl: (ctx,ref,includeChildren,updateRef,value) => ({
     afterViewInit: cmp =>
@@ -171,14 +236,26 @@ jb.component('bind-refs', {
   })
 })
 
-jb.component('calculated-var', {
-  type: 'feature', category: 'general:60',
-	description: 'defines a local variable that watches other variables with auto recalc',
+jb.component('calculated-var', { /* calculatedVar */
+  type: 'feature',
+  category: 'general:60',
+  description: 'defines a local variable that watches other variables with auto recalc',
   params: [
-    { id: 'name', as: 'string', mandatory: true },
-    { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
-    { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
-    { id: 'watchRefs', as: 'array', dynamic: true, mandatory: true, defaultValue: [], description: 'variable to watch. needs to be in array' },
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+    {
+      id: 'globalId',
+      as: 'string',
+      description: 'If specified, the var will be defined as global with this id'
+    },
+    {
+      id: 'watchRefs',
+      as: 'array',
+      dynamic: true,
+      mandatory: true,
+      defaultValue: [],
+      description: 'variable to watch. needs to be in array'
+    }
   ],
   impl: (context, name, value,globalId, watchRefs) => ({
       destroy: cmp => {
@@ -199,38 +276,41 @@ jb.component('calculated-var', {
   })
 })
 
-jb.component('features', {
+jb.component('features', { /* features */
   type: 'feature',
-	description: 'list of features',
+  description: 'list of features',
   params: [
-    { id: 'features', type: 'feature[]', flattenArray: true, dynamic: true },
+    {id: 'features', type: 'feature[]', flattenArray: true, dynamic: true}
   ],
   impl: (ctx,features) =>
     features()
 })
 
 
-jb.component('feature.init', {
-  type: 'feature', category: 'lifecycle',
+jb.component('feature.init', { /* feature.init */
+  type: 'feature',
+  category: 'lifecycle',
   params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
   impl: (ctx,action) => ({ init: cmp => action(cmp.ctx) })
 })
 
-jb.component('feature.after-load', {
-  type: 'feature', category: 'lifecycle',
+jb.component('feature.after-load', { /* feature.afterLoad */
+  type: 'feature',
+  category: 'lifecycle',
   params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
   impl: ctx => ({ afterViewInit: cmp => jb.delay(1).then(_ => ctx.params.action(cmp.ctx)) })
 })
 
-jb.component('feature.if', {
-  type: 'feature', category: 'feature:85',
-	description: 'adds element to dom by condition. no watch',
+jb.component('feature.if', { /* feature.if */
+  type: 'feature',
+  category: 'feature:85',
+  description: 'adds element to dom by condition. no watch',
   params: [
-    { id: 'showCondition', mandatory: true, dynamic: true },
+    {id: 'showCondition', mandatory: true, dynamic: true}
   ],
   impl: (ctx, condition,watch) => ({
     templateModifier: (vdom,cmp,state) =>
@@ -238,11 +318,12 @@ jb.component('feature.if', {
   })
 })
 
-jb.component('hidden', {
-  type: 'feature', category: 'feature:85',
-	description: 'adds display:none to element by condition. no watch',
+jb.component('hidden', { /* hidden */
+  type: 'feature',
+  category: 'feature:85',
+  description: 'adds display:none to element by condition. no watch',
   params: [
-    { id: 'showCondition', type: 'boolean', mandatory: true, dynamic: true },
+    {id: 'showCondition', type: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx,showCondition) => ({
     templateModifier: (vdom,cmp,state) => {
@@ -253,12 +334,12 @@ jb.component('hidden', {
   })
 })
 
-jb.component('conditional-class', {
+jb.component('conditional-class', { /* conditionalClass */
   type: 'feature',
-	description: 'toggle class by condition',
+  description: 'toggle class by condition',
   params: [
-    { id: 'cssClass', as: 'string', mandatory: true, dynamic: true },
-    { id: 'condition', type: 'boolean', mandatory: true, dynamic: true },
+    {id: 'cssClass', as: 'string', mandatory: true, dynamic: true},
+    {id: 'condition', type: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx,cssClass,cond) => ({
     templateModifier: (vdom,cmp,state) => {
@@ -268,12 +349,13 @@ jb.component('conditional-class', {
   })
 })
 
-jb.component('feature.keyboard-shortcut', {
-  type: 'feature', category: 'events',
-	description: 'listen to events at the document level even when the component is not active',
+jb.component('feature.keyboard-shortcut', { /* feature.keyboardShortcut */
+  type: 'feature',
+  category: 'events',
+  description: 'listen to events at the document level even when the component is not active',
   params: [
-    { id: 'key', as: 'string', description: 'e.g. Alt+C' },
-    { id: 'action', type: 'action', dynamic: true },
+    {id: 'key', as: 'string', description: 'e.g. Alt+C'},
+    {id: 'action', type: 'action', dynamic: true}
   ],
   impl: (context,key,action) => ({
       afterViewInit: cmp =>
@@ -293,12 +375,23 @@ jb.component('feature.keyboard-shortcut', {
       })
 })
 
-jb.component('feature.onEvent', {
-  type: 'feature', category: 'events',
+jb.component('feature.onEvent', { /* feature.onEvent */
+  type: 'feature',
+  category: 'events',
   params: [
-    { id: 'event', as: 'string', mandatory: true, options: 'blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover' },
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true },
-    { id: 'debounceTime', as: 'number', defaultValue: 0, description: 'used for mouse events such as mousemove' },
+    {
+      id: 'event',
+      as: 'string',
+      mandatory: true,
+      options: 'blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover'
+    },
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
+    {
+      id: 'debounceTime',
+      as: 'number',
+      defaultValue: 0,
+      description: 'used for mouse events such as mousemove'
+    }
   ],
   impl: (ctx,event,action,debounceTime) => ({
       [`on${event}`]: true,
@@ -309,10 +402,11 @@ jb.component('feature.onEvent', {
   })
 })
 
-jb.component('feature.onHover', {
-  type: 'feature', category: 'events',
+jb.component('feature.onHover', { /* feature.onHover */
+  type: 'feature',
+  category: 'events',
   params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
   impl: (ctx,action) => ({
       onmouseenter: true,
@@ -329,7 +423,7 @@ jb.ui.checkKey = function(e, key) {
   key = key.replace(/-/,'+');
   const keyWithoutPrefix = key.split('+').pop()
   let keyCode = dict[keyWithoutPrefix.toLowerCase()]
-  if (+keyWithoutPrefix) 
+  if (+keyWithoutPrefix)
     keyCode = +keyWithoutPrefix
   if (keyWithoutPrefix.length == 1)
     keyCode = keyWithoutPrefix.charCodeAt(0);
@@ -339,13 +433,14 @@ jb.ui.checkKey = function(e, key) {
 	return e.keyCode == keyCode
 }
 
-jb.component('feature.onKey', {
-  type: 'feature', category: 'events',
+jb.component('feature.onKey', { /* feature.onKey */
+  type: 'feature',
+  category: 'events',
   usageByValue: true,
   params: [
-    { id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
-    { id: 'action', type: 'action', mandatory: true, dynamic: true },
-    { id: 'doNotWrapWithLauchingElement', as: 'boolean' }
+    {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'doNotWrapWithLauchingElement', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,key,action) => ({
       onkeydown: true,
@@ -358,28 +453,36 @@ jb.component('feature.onKey', {
   })
 })
 
-jb.component('feature.onEnter', {
-  type: 'feature', category: 'events',
+jb.component('feature.onEnter', { /* feature.onEnter */
+  type: 'feature',
+  category: 'events',
   params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.onKey('Enter',call('action'))
+  impl: feature.onKey(
+    'Enter',
+    call('action')
+  )
 })
 
-jb.component('feature.onEsc', {
-  type: 'feature', category: 'events',
+jb.component('feature.onEsc', { /* feature.onEsc */
+  type: 'feature',
+  category: 'events',
   params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.onKey('Esc',call('action'))
+  impl: feature.onKey(
+    'Esc',
+    call('action')
+  )
 })
 
-jb.component('refresh-control-by-id', {
+jb.component('refresh-control-by-id', { /* refreshControlById */
   type: 'action',
   params: [
-    { id: 'id', as: 'string', mandatory: true }
+    {id: 'id', as: 'string', mandatory: true}
   ],
-  impl : (ctx,id) => {
+  impl: (ctx,id) => {
     const base = ctx.vars.elemToTest || typeof document !== 'undefined' && document
     const elem = base && base.querySelector('#'+id)
     if (!elem)
@@ -393,7 +496,7 @@ jb.component('refresh-control-by-id', {
 })
 
 
-jb.component('group.auto-focus-on-first-input', {
+jb.component('group.auto-focus-on-first-input', { /* group.autoFocusOnFirstInput */
   type: 'feature',
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -404,25 +507,25 @@ jb.component('group.auto-focus-on-first-input', {
   })
 })
 
-jb.component('focus-on-first-element', {
+jb.component('focus-on-first-element', { /* focusOnFirstElement */
   type: 'action',
   params: [
-    { id: 'selector', as: 'string', defaultValue: 'input' },
+    {id: 'selector', as: 'string', defaultValue: 'input'}
   ],
-  impl: (ctx, selector) => 
+  impl: (ctx, selector) =>
       jb.delay(50).then(() => {
         const elem = document.querySelector(selector)
         elem && jb.ui.focus(elem,'focus-on-first-element',ctx)
     })
 })
 
-jb.component('focus-on-sibling', {
-	type: 'action',
-	params: [
-	  {id: 'siblingSelector', as: 'string', mandatory: true},
-	  {id: 'delay', as: 'number', defaultValue: 0}
-	],
-	impl: (ctx,siblingSelector,delay) => {
+jb.component('focus-on-sibling', { /* focusOnSibling */
+  type: 'action',
+  params: [
+    {id: 'siblingSelector', as: 'string', mandatory: true},
+    {id: 'delay', as: 'number', defaultValue: 0}
+  ],
+  impl: (ctx,siblingSelector,delay) => {
 	  if (!ctx.vars.event) 
       return jb.error('no event for action focus-on-sibling',ctx)
     const path = event.path || (event.composedPath && event.composedPath())
