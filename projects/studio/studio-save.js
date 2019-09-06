@@ -5,12 +5,12 @@ const elec_remote = _window.require && _window.require('electron').remote;
 const fs = elec_remote && elec_remote.require('fs');
 const jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
 
-jb.component('studio.save-components', {
-	type: 'action,has-side-effects',
-	params: [
-		{ id: 'force',as: 'boolean', type: 'boolean' }
-	],
-	impl : (ctx,force) => {
+jb.component('studio.save-components', { /* studio.saveComponents */ 
+  type: 'action,has-side-effects',
+  params: [
+    {id: 'force', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,force) => {
     const messages = []
 		jb.rx.Observable.from(st.changedComps().map(e=>e[0]))
 			.concatMap(id=>{

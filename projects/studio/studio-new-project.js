@@ -1,5 +1,5 @@
 
-jb.component('studio.new-project', { /* studio_newProject */
+jb.component('studio.new-project', { /* studio.newProject */
   type: 'action,has-side-effects',
   params: [
     {id: 'name', as: 'string'},
@@ -53,29 +53,29 @@ jb.component('studio.new-project', { /* studio_newProject */
   }
 })
 
-jb.component('studio.open-new-project', { /* studio_openNewProject */ 
+jb.component('studio.open-new-project', { /* studio.openNewProject */ 
   type: 'action',
   impl: openDialog({
-    style: dialog_dialogOkCancel(),
+    style: dialog.dialogOkCancel(),
     content: group({
-      style: group_div(),
+      style: group.div(),
       controls: [
         editableText({
           title: 'project name',
           databind: '%$name%',
-          style: editableText_mdlInput(),
-          features: feature_onEnter(dialog_closeContainingPopup())
+          style: editableText.mdlInput(),
+          features: feature.onEnter(dialog.closeContainingPopup())
         })
       ],
-      features: css_padding({top: '14', left: '11'})
+      features: css.padding({top: '14', left: '11'})
     }),
     title: 'New Project',
-    onOK: studio_newProject('%$name%', gotoUrl('/project/studio/%$name%/')),
+    onOK: studio.newProject('%$name%', gotoUrl('/project/studio/%$name%/')),
     modal: true,
     features: [
       variable({name: 'name', watchable: true}),
-      dialogFeature_autoFocusOnFirstInput(),
-      dialogFeature_nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
+      dialogFeature.autoFocusOnFirstInput(),
+      dialogFeature.nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
     ]
   })
 })

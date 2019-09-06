@@ -26,7 +26,7 @@ st.initCompsRefHandler = function(previewjb,allowedTypes) {
 	st.compsRefHandler = jb.ui.extraWatchableHandler(compsRef, oldCompsRefHandler)
 	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes);
 	st.compsRefHandler.stopListening = new jb.rx.Subject()
-	
+
 	st.compsRefHandler.resourceChange.takeUntil(st.compsRefHandler.stopListening).subscribe(e=>{
 		jb.log('scriptChange',[e.srcCtx,e]);
 		st.scriptChange.next(e)
@@ -361,7 +361,13 @@ jb.component('studio.watch-path', { /* studio.watchPath */
   category: 'group:0',
   params: [
     {id: 'path', as: 'string', mandatory: true},
-    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
+    {
+      id: 'includeChildren',
+      as: 'string',
+      options: 'yes,no,structure',
+      defaultValue: 'no',
+      description: 'watch childern change as well'
+    },
     {
       id: 'delay',
       as: 'number',

@@ -69,7 +69,7 @@ jb.component('studio.property-script', { /* studio.propertyScript */
   impl: group({
     controls: button({
       title: (ctx,vars,{path}) => jb.prettyPrint(jb.studio.valOfPath(path)),
-      action: studio.openJbEditor({path: '%$path%'}),
+      action: studio.openJbEditor('%$path%'),
       style: button.studioScript()
     }),
     features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
@@ -198,7 +198,7 @@ jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
           editableBoolean({
             databind: '%$expanded%',
             style: editableBoolean.expandCollapse(),
-            features: [css.padding({top: '4'})]
+            features: [css.padding('4')]
           }),
           label({
             title: pipeline(studio.compName('%$path%'), suffix('.', '%%')),
@@ -306,7 +306,7 @@ jb.component('studio.property-field', { /* studio.propertyField */
     }),
     features: [
       studio.propertyToolbarFeature('%$path%'),
-      field.keyboardShortcut('Ctrl+I', studio.openJbEditor({path: '%$path%'}))
+      field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%'))
     ]
   })
 })

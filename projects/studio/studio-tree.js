@@ -28,10 +28,16 @@ jb.component('studio.tree-menu', { /* studio.treeMenu */
         title: 'Wrap with group',
         action: [
           studio.wrapWithGroup('%$path%'),
-          onNextTimer([writeValue('%$studio/profile_path%', '%$path%~controls~0'), tree.regainFocus()])
+          onNextTimer(
+            [writeValue('%$studio/profile_path%', '%$path%~controls~0'), tree.regainFocus()]
+          )
         ]
       }),
-      menu.action({title: 'Duplicate', action: studio.duplicateControl('%$path%'), shortcut: 'Ctrl+D'}),
+      menu.action({
+        title: 'Duplicate',
+        action: studio.duplicateControl('%$path%'),
+        shortcut: 'Ctrl+D'
+      }),
       menu.separator(),
       menu.action({
         title: 'Inteliscript editor',
@@ -40,7 +46,7 @@ jb.component('studio.tree-menu', { /* studio.treeMenu */
       }),
       menu.action({
         title: 'Context viewer',
-        action: {$: 'studio.open-context-viewer', path: '%$path%'}
+        action: {'$': 'studio.open-context-viewer', path: '%$path%'}
       }),
       menu.action({
         title: 'Javascript editor',
@@ -64,15 +70,35 @@ jb.component('studio.tree-menu', { /* studio.treeMenu */
         shortcut: 'Delete'
       }),
       menu.action({
-        title: {$if: studio.disabled('%$path%'), then: 'Enable', else: 'Disable'},
+        title: {'$if': studio.disabled('%$path%'), then: 'Enable', else: 'Disable'},
         action: studio.toggleDisabled('%$path%'),
         icon: 'do_not_disturb',
         shortcut: 'Ctrl+X'
       }),
-      menu.action({title: 'Copy', action: studio.copy('%$path%'), icon: 'copy', shortcut: 'Ctrl+C'}),
-      menu.action({title: 'Paste', action: studio.paste('%$path%'), icon: 'paste', shortcut: 'Ctrl+V'}),
-      menu.action({title: 'Undo', action: studio.undo(), icon: 'undo', shortcut: 'Ctrl+Z'}),
-      menu.action({title: 'Redo', action: studio.redo(), icon: 'redo', shortcut: 'Ctrl+Y'})
+      menu.action({
+        title: 'Copy',
+        action: studio.copy('%$path%'),
+        icon: 'copy',
+        shortcut: 'Ctrl+C'
+      }),
+      menu.action({
+        title: 'Paste',
+        action: studio.paste('%$path%'),
+        icon: 'paste',
+        shortcut: 'Ctrl+V'
+      }),
+      menu.action({
+        title: 'Undo',
+        action: studio.undo(),
+        icon: 'undo',
+        shortcut: 'Ctrl+Z'
+      }),
+      menu.action({
+        title: 'Redo',
+        action: studio.redo(),
+        icon: 'redo',
+        shortcut: 'Ctrl+Y'
+      })
     ]
   })
 })

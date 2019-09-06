@@ -1,7 +1,7 @@
 (function() {
 const st = jb.studio;
 
-jb.component('dialog-feature.studio-pick',  /* dialogFeature_studioPick */ {
+jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
   type: 'dialog-feature',
   params: [
     {id: 'from', as: 'string'}
@@ -48,7 +48,7 @@ jb.component('dialog-feature.studio-pick',  /* dialogFeature_studioPick */ {
     })
 })
 
-jb.component('dialog.studio-pick-dialog',  /* dialog_studioPickDialog */ {
+jb.component('dialog.studio-pick-dialog', { /* dialog.studioPickDialog */
   hidden: true,
   type: 'dialog.style',
   params: [
@@ -64,8 +64,27 @@ h('div',{ class: 'title' + (state.titleBelow ? ' bottom' : ''), style: { top: st
             h('div',{ class: 'text'},state.title),
             h('div',{ class: 'triangle'}),
     ])]),
-    css: "\n>.edge {\n    z-index: 6001;\n    position: absolute;\n    background: red;\n    box-shadow: 0 0 1px 1px gray;\n    width: 1px; height: 1px;\n    cursor: pointer;\n}\n>.title {\n    z-index: 6001;\n    position: absolute;\n    font: 14px arial; padding: 0; cursor: pointer;\n    transition:top 100ms, left 100ms;\n}\n>.title .triangle {\twidth:0;height:0; border-style: solid; \tborder-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}\n>.title .text {\tbackground: #e0e0e0; font: 14px arial; padding: 3px; }\n>.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}\n>.title.bottom .text { transform: translateY(6px);}\n                ",
-    features: [dialogFeature_studioPick('%$from%')]
+    css: `
+>.edge {
+    z-index: 6001;
+    position: absolute;
+    background: red;
+    box-shadow: 0 0 1px 1px gray;
+    width: 1px; height: 1px;
+    cursor: pointer;
+}
+>.title {
+    z-index: 6001;
+    position: absolute;
+    font: 14px arial; padding: 0; cursor: pointer;
+    transition:top 100ms, left 100ms;
+}
+>.title .triangle {	width:0;height:0; border-style: solid; 	border-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}
+>.title .text {	background: #e0e0e0; font: 14px arial; padding: 3px; }
+>.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}
+>.title.bottom .text { transform: translateY(6px);}
+                `,
+    features: [dialogFeature.studioPick('%$from%')]
   })
 })
 

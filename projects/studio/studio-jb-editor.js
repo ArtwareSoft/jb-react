@@ -183,10 +183,10 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
       })
     ],
     features: group.wait({
-        for: studio.probeResults('%$path%'),
-        loadingControl: label('...'),
-        varName: 'probeResult'
-      })
+      for: studio.probeResults('%$path%'),
+      loadingControl: label('...'),
+      varName: 'probeResult'
+    })
   })
 })
 
@@ -402,7 +402,10 @@ jb.component('menu.studio-wrap-with', { /* menu.studioWrapWith */
     },
     menu.action({
       title: 'Wrap with %%',
-      action: runActions(studio.wrap('%$path%', '%%'), studio.expandAndSelectFirstChildInJbEditor())
+      action: runActions(
+        studio.wrap('%$path%', '%%'),
+        studio.expandAndSelectFirstChildInJbEditor()
+      )
     })
   )
 })
@@ -416,7 +419,10 @@ jb.component('menu.studio-wrap-with-array', { /* menu.studioWrapWithArray */
     '$if': studio.canWrapWithArray('%$path%'),
     then: menu.action({
       title: 'Wrap with array',
-      action: runActions(studio.wrapWithArray('%$path%'), studio.expandAndSelectFirstChildInJbEditor())
+      action: runActions(
+        studio.wrapWithArray('%$path%'),
+        studio.expandAndSelectFirstChildInJbEditor()
+      )
     }),
     else: []
   }
@@ -453,7 +459,7 @@ jb.component('studio.add-variable', { /* studio.addVariable */
       title: 'New variable',
       modal: 'true',
       features: [
-        variable({name: 'name'}),
+        variable('name'),
         dialogFeature.nearLauncherPosition({}),
         dialogFeature.autoFocusOnFirstInput()
       ]

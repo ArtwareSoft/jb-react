@@ -16,14 +16,22 @@ jb.component('studio.search-list', { /* studio.searchList */
           field.control({
             control: materialIcon({
               icon: studio.iconOfType('%type%'),
-              features: [css.opacity('0.3'), css('{ font-size: 16px }'), css.padding({top: '5', left: '5'})]
+              features: [
+                css.opacity('0.3'),
+                css('{ font-size: 16px }'),
+                css.padding({top: '5', left: '5'})
+              ]
             })
           }),
           field.control({
             title: 'id',
             control: button({
               title: pipeline(
-                highlight('%id%', '%$itemlistCntrData/search_pattern%', 'mdl-color-text--indigo-A700')
+                highlight(
+                    '%id%',
+                    '%$itemlistCntrData/search_pattern%',
+                    'mdl-color-text--indigo-A700'
+                  )
               ),
               action: studio.gotoPath('%id%'),
               style: button.href()
@@ -35,7 +43,9 @@ jb.component('studio.search-list', { /* studio.searchList */
             control: button({
               title: '%refCount%',
               action: menu.openContextMenu({
-                menu: menu.menu({options: [studio.gotoReferencesOptions('%id%', studio.references('%id%'))]})
+                menu: menu.menu({
+                  options: [studio.gotoReferencesOptions('%id%', studio.references('%id%'))]
+                })
               }),
               style: button.href()
             })

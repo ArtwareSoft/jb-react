@@ -100,7 +100,7 @@ jb.component('studio.script-history', { /* studio.scriptHistory */
             title: 'changed',
             control: button({
               title: studio.nameOfRef('%opEvent/ref%'),
-              action: {$: 'studio.goto-path', path: studio.pathOfRef('%opEvent/ref%'), $recursive: true},
+              action: studio.gotoPath(studio.pathOfRef('%opEvent/ref%')),
               style: button.href(),
               features: feature.hoverTitle(studio.pathOfRef('%opEvent/ref%'))
             }),

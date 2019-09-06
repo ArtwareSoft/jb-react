@@ -1,20 +1,20 @@
-jb.component('editable-text.studio-primitive-text', {
+jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrimitiveText */
   type: 'editable-text.style',
-  impl :{$: 'custom-style',
-      features :{$: 'field.databind-text' },
-      template: (cmp,state,h) => h('input', {
+  impl: customStyle({
+    template: (cmp,state,h) => h('input', {
           class: 'mdl-textfield__input',
           value: state.model,
           onchange: e => cmp.jbModel(e.target.value),
           onkeyup: e => cmp.jbModel(e.target.value,'keyup')
       }),
-    css: `:focus { border-color: #3F51B5; border-width: 2px}`,
-	}
+    css: ':focus { border-color: #3F51B5; border-width: 2px}',
+    features: field.databindText()
+  })
 })
 
-jb.component('editable-text.floating-input', {
+jb.component('editable-text.floating-input', { /* editableText.floatingInput */
   type: 'editable-text.style',
-  impl :customStyle({
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
       h('input', { class: 'mdl-textfield__input', id1: 'jb_input_' + state.fieldId, type: 'text', autocomplete: 'nop',
           value: state.model,
@@ -42,10 +42,11 @@ jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
   }
 })
 
-jb.component('editable-text.studio-codemirror-tgp', {
+jb.component('editable-text.studio-codemirror-tgp', { /* editableText.studioCodemirrorTgp */
   type: 'editable-text.style',
-  impl :{$: 'editable-text.codemirror', mode: 'javascript',
-    cm_settings :{$: 'object',
+  impl: editableText.codemirror({
+    cm_settings: {
+      '$': 'object',
       extraKeys: {
         'Alt-Left': editor => {
           jb.studio.codeMirrorUtils.incNumberAtCursor(editor, {inc:-1})
@@ -60,22 +61,23 @@ jb.component('editable-text.studio-codemirror-tgp', {
           } catch (e) {}
         }
       }
-    }
-  }
+    },
+    mode: 'javascript'
+  })
 })
 
 
-jb.component('button.select-profile-style', {
+jb.component('button.select-profile-style', { /* button.selectProfileStyle */
   type: 'button.style',
-  impl :{$: 'custom-style',
-   template: (cmp,state,h) =>
+  impl: customStyle({
+    template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup:ev => cmp.clicked(ev),
             onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
         }),
-        css: `{ cursor: pointer;width1: 367px } :focus { border-color: #3F51B5; border-width: 2px}`
-  }
+    css: '{ cursor: pointer;width1: 367px } :focus { border-color: #3F51B5; border-width: 2px}'
+  })
 })
 
 jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle */
@@ -89,10 +91,10 @@ jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle *
 })
 
 
-jb.component('editable-text.jb-editor-floating-input', {
+jb.component('editable-text.jb-editor-floating-input', { /* editableText.jbEditorFloatingInput */
   type: 'editable-text.style',
-  impl :{$: 'custom-style',
-   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
         h('input', { class: 'mdl-textfield__input', id: 'jb_input_' + state.fieldId, type: 'text',
             value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
@@ -100,25 +102,22 @@ jb.component('editable-text.jb-editor-floating-input', {
         }),
         h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
       ]),
-      css: '{ margin-right: 13px; }', // for the x-button
-      features :[
-          {$: 'field.databind-text', debounceTime: 300, oneWay: true },
-          {$: 'mdl-style.init-dynamic'}
-      ],
-  }
+    css: '{ margin-right: 13px; }',
+    features: [field.databindText(300, true), mdlStyle.initDynamic()]
+  })
 })
 
-jb.component('button.studio-script', {
+jb.component('button.studio-script', { /* button.studioScript */
   type: 'button.style',
-  impl :{$: 'custom-style',
-   template: (cmp,state,h) =>
+  impl: customStyle({
+    template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup:ev => cmp.clicked(ev),
             onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
         }),
-        css: `{ cursor: pointer;width1: 367px; opacity: 0.8; font-style: italic; }`
-  }
+    css: '{ cursor: pointer;width1: 367px; opacity: 0.8; font-style: italic; }'
+  })
 })
 
 // jb.component('button.studio-script2', {
@@ -157,11 +156,10 @@ jb.component('button.studio-script', {
  //            </ul>
  //        </div>
 
-jb.component('picklist.studio-enum', {
+jb.component('picklist.studio-enum', { /* picklist.studioEnum */
   type: 'picklist.style',
-  impl :{$: 'custom-style',
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
+  impl: customStyle({
+    template: (cmp,state,h) => h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
@@ -174,15 +172,15 @@ jb.component('picklist.studio-enum', {
 :focus { border-color: #66afe9; outline: 0;
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
 ::placeholder { color: #999; opacity: 1; }
-    `
-  }
+    `,
+    features: field.databind()
+  })
 })
 
 
-jb.component('property-sheet.studio-properties', {
+jb.component('property-sheet.studio-properties', { /* propertySheet.studioProperties */
   type: 'group.style',
-  impl :{$: 'custom-style',
-    features :{$: 'group.init-group' },
+  impl: customStyle({
     template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
       h('tr',{ class: 'property' },[
           h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
@@ -195,13 +193,13 @@ jb.component('property-sheet.studio-properties', {
       >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px }
       >.property>td { vertical-align: top; }
     `,
-  }
+    features: group.initGroup()
+  })
 })
 
-jb.component('property-sheet.studio-properties-in-tgp', {
+jb.component('property-sheet.studio-properties-in-tgp', { /* propertySheet.studioPropertiesInTgp */
   type: 'group.style',
-  impl :{$: 'custom-style',
-    features :{$: 'group.init-group' },
+  impl: customStyle({
     template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
       h('tr',{ class: 'property' },[
           h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
@@ -215,30 +213,14 @@ jb.component('property-sheet.studio-properties-in-tgp', {
       >.property>.property-ctrl { }
       >.property>td { vertical-align: top; }
     `,
-
-    css2: `>.property { margin-bottom: 5px; display: flex }
-      >.property:last-child { margin-bottom:0px }
-      >.property>.input-and-toolbar { display: flex; }
-      >.property>.input-and-toolbar>.toolbar { height: 16px; margin-left: 10px; }
-      >.property>.property-title {
-        width: 75px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        margin-top:2px;
-        font-size:14px;
-        margin-right: 10px;
-        margin-left: 7px;
-      },
-      >.property>*:last-child { margin-right:0 }`
-  }
+    features: group.initGroup()
+  })
 })
 
 
-jb.component('property-sheet.studio-plain', {
+jb.component('property-sheet.studio-plain', { /* propertySheet.studioPlain */
   type: 'group.style',
-  impl :{$: 'custom-style',
-    features :{$: 'group.init-group' },
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property' },[
           h('label',{ class: 'property-title', title: ctrl.title}, ctrl.title),
@@ -262,38 +244,39 @@ jb.component('property-sheet.studio-plain', {
         margin-right: 10px;
         margin-left: 7px;
       },
-      >.property>*:last-child { margin-right:0 }`
-  }
+      >.property>*:last-child { margin-right:0 }`,
+    features: group.initGroup()
+  })
 })
 
-jb.component('editable-boolean.studio-expand-collapse-in-toolbar', {
+jb.component('editable-boolean.studio-expand-collapse-in-toolbar', { /* editableBoolean.studioExpandCollapseInToolbar */
   type: 'editable-boolean.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
           onclick: _=> cmp.toggle(),
           title: cmp.jbModel() ? 'collapse' : 'expand'},
             h('i',{class: 'material-icons'}, cmp.jbModel() ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
           ),
-      css: `{ width: 24px; height: 24px; padding: 0; margin-top: -3px;}
+    css: `{ width: 24px; height: 24px; padding: 0; margin-top: -3px;}
      	>i { font-size:12px;  }`
-   }
+  })
 })
 
-jb.component('editable-boolean.studio-expand-collapse-in-array', {
+jb.component('editable-boolean.studio-expand-collapse-in-array', { /* editableBoolean.studioExpandCollapseInArray */
   type: 'editable-boolean.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
           onclick: _=> cmp.toggle(),
           title: cmp.jbModel() ? 'collapse' : 'expand'},
             h('i',{class: 'material-icons'}, cmp.jbModel() ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
           ),
-      css: `{ width: 24px; height: 24px; padding: 0; }
+    css: `{ width: 24px; height: 24px; padding: 0; }
      	>i { font-size:12px;  }
       `
-   }
+  })
 })
 
-jb.component('dialog-feature.studio-position-under-property',  /* dialogFeature_studioPositionUnderProperty */ {
+jb.component('dialog-feature.studio-position-under-property', { /* dialogFeature.studioPositionUnderProperty */
   type: 'dialog-feature',
   impl: (context,offsetLeft,offsetTop) => ({
 			afterViewInit: function(cmp) {
@@ -311,9 +294,9 @@ jb.component('dialog-feature.studio-position-under-property',  /* dialogFeature_
 		})
 })
 
-jb.component('group.studio-properties-accordion', {
+jb.component('group.studio-properties-accordion', { /* group.studioPropertiesAccordion */
   type: 'group.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
         state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
           h('div',{ class: 'header' },[
@@ -330,20 +313,20 @@ jb.component('group.studio-properties-accordion', {
 >.accordion-section>.header>.title { margin: 5px }
 >.accordion-section:last-child() { padding-top: 2px }
 `,
-      features : [
-        {$: 'group.init-group' },
-        {$: 'group.init-accordion', keyboardSupport: true, autoFocus: true },
-        ctx =>({
+    features: [
+      group.initGroup(),
+      group.initAccordion(true, true),
+      ctx =>({
           afterViewInit: cmp =>
             ctx.vars.PropertiesDialog.openFeatureSection = _ => cmp.show(1)
         })
-      ]
-  }
+    ]
+  })
 })
 
-jb.component('label.studio-message', {
+jb.component('label.studio-message', { /* label.studioMessage */
   type: 'label.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.title),
     css: `{ position: absolute;
       z-index: 10000,
@@ -351,11 +334,11 @@ jb.component('label.studio-message', {
       width: 1000px;
       margin-top: -100px;
       }`,
-    features: {$: 'label.bind-title' }
-  }
+    features: label.bindTitle()
+  })
 })
 
-jb.component('dialog.studio-multiline-edit',  /* dialog_studioMultilineEdit */ {
+jb.component('dialog.studio-multiline-edit', { /* dialog.studioMultilineEdit */
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
@@ -363,12 +346,28 @@ jb.component('dialog.studio-multiline-edit',  /* dialog_studioMultilineEdit */ {
         _=> cmp.dialogClose() },'×'),
       h(state.contentComp),
     ]),
-    css: "{ background: #fff; position: absolute; min-width: 280px; min-height: 200px;\n\t\t\t\t\tbox-shadow: 2px 2px 3px #d5d5d5; padding: 3px; border: 1px solid rgb(213, 213, 213)\n\t\t\t\t  }\n\t\t\t\t>.dialog-close {\n\t\t\t\t\t\tposition: absolute;\n\t\t\t\t\t\tcursor: pointer;\n\t\t\t\t\t\tright: -7px; top: -22px;\n\t\t\t\t\t\tfont: 21px sans-serif;\n\t\t\t\t\t\tborder: none;\n\t\t\t\t\t\tbackground: transparent;\n\t\t\t\t\t\tcolor: #000;\n\t\t\t\t\t\ttext-shadow: 0 1px 0 #fff;\n\t\t\t\t\t\tfont-weight: 700;\n\t\t\t\t\t\topacity: .2;\n\t\t\t\t}\n\t\t\t\t>.dialog-close:hover { opacity: .5 }\n\t\t\t\t",
+    css: `{ background: #fff; position: absolute; min-width: 280px; min-height: 200px;
+					box-shadow: 2px 2px 3px #d5d5d5; padding: 3px; border: 1px solid rgb(213, 213, 213)
+				  }
+				>.dialog-close {
+						position: absolute;
+						cursor: pointer;
+						right: -7px; top: -22px;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
+						opacity: .2;
+				}
+				>.dialog-close:hover { opacity: .5 }
+				`,
     features: [
-      dialogFeature_maxZIndexOnClick(),
-      dialogFeature_closeWhenClickingOutside(),
-      dialogFeature_cssClassOnLaunchingElement(),
-      dialogFeature_studioPositionUnderProperty()
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.closeWhenClickingOutside(),
+      dialogFeature.cssClassOnLaunchingElement(),
+      dialogFeature.studioPositionUnderProperty()
     ]
   })
 })
@@ -393,7 +392,13 @@ jb.component('studio.toolbar-style', { /* studio.toolbarStyle */
   impl: customStyle({
     template: (cmp,state,h) => h('section',{class:'jb-group'},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx))),
-    css: "{\n            display: flex;\n            height: 33px;\n            width: 100%;\n        }\n        >*:not(:last-child) { padding-right: 8px }\n        >* { margin-right: 0 }",
+    css: `{
+            display: flex;
+            height: 33px;
+            width: 100%;
+        }
+        >*:not(:last-child) { padding-right: 8px }
+        >* { margin-right: 0 }`,
     features: group.initGroup()
   })
 })

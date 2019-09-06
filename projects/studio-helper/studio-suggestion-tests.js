@@ -1,8 +1,11 @@
-jb.component('people-array', { watchableData: { "people": [
-  { "name": "Homer Simpson" ,"age": 42 , "male": true},
-  { "name": "Marge Simpson" ,"age": 38 , "male": false},
-  { "name": "Bart Simpson"  ,"age": 12 , "male": true}
-  ]}
+jb.component('people-array', { /* peopleArray */
+  watchableData: {
+    people: [
+      {name: 'Homer Simpson', age: 42, male: true},
+      {name: 'Marge Simpson', age: 38, male: false},
+      {name: 'Bart Simpson', age: 12, male: true}
+    ]
+  }
 })
 
 jb.component('suggestions-test.default-probe', { /* suggestionsTest.defaultProbe */

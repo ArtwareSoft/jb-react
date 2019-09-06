@@ -83,7 +83,7 @@ jb.studio.hToJSX = hFunc => {
   }
 }
 
-jb.component('studio.pretty', { /* studio_pretty */
+jb.component('studio.pretty', { /* studio.pretty */
   type: 'data',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -91,7 +91,7 @@ jb.component('studio.pretty', { /* studio_pretty */
   impl: (ctx,text) => jb.studio.pretty(text)
 })
 
-jb.component('studio.jsx-to-h', { /* studio_jsxToH */
+jb.component('studio.jsx-to-h', { /* studio.jsxToH */
   type: 'data',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -99,7 +99,7 @@ jb.component('studio.jsx-to-h', { /* studio_jsxToH */
   impl: (ctx,text) => jb.studio.jsxToH(text)
 })
 
-jb.component('studio.h-to-jsx', { /* studio_hToJsx */
+jb.component('studio.h-to-jsx', { /* studio.hToJsx */
   type: 'data',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -108,7 +108,7 @@ jb.component('studio.h-to-jsx', { /* studio_hToJsx */
 })
 
 
-jb.component('studio.template-as-jsx', { /* studio_templateAsJsx */ 
+jb.component('studio.template-as-jsx', { /* studio.templateAsJsx */ 
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}

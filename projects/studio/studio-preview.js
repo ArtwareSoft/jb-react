@@ -4,7 +4,7 @@ const st = jb.studio;
 
 st.changedComps = function() {
   if (!st.compsHistory || !st.compsHistory.length) return []
-  
+
   const changedComps = jb.entries(st.compsHistory.slice(-1)[0].after).filter(e=>e[1] != st.serverComps[e[0]])
   if (changedComps.map(e=>e[0]).indexOf('call') != -1) {
     jb.logError('bug. servers comps differ from history')
