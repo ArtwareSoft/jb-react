@@ -1,4 +1,4 @@
-jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudioUrlToResource */ 
+jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudioUrlToResource */
   type: 'action',
   params: [
     {id: 'resource', as: 'string', mandatory: true},

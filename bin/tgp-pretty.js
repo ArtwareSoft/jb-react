@@ -10,7 +10,7 @@ const filesOfModules = modules => modules.split(',').map(m=>{
     if (m == 'studio')
         return resources[m].map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js')
     else if (m == 'studio-tests')
-        return resources[m].map(file => 'projects/studio-helper/studio-' + file + '-tests.js')
+        return resources[m].map(file => file.match(/\//) ? file : 'projects/studio-helper/studio-' + file + '-tests.js')
     else return resources[m] 
 }).flat()
 
@@ -26,7 +26,6 @@ filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>x).filter(x=>!x.match
     .map(fn=> require(JBART_DIR+fn))
 
 const filePattern = new RegExp(getProcessArgument('file') || '^nothing')
-const compsNotToTouch = ['jb-editor-test.cmp5', 'jb-editor-test.actions-sugar-example2']
 function run() {
     const entries = jb.entries(jb.comps) 
         .map(e=>({id:e[0], comp:e[1], file:e[1][location][0]}))
@@ -63,6 +62,8 @@ function swapComp({id,comp,file}) {
     if (nextjbComponent != -1 && nextjbComponent < compLastLine)
       return jb.logError(['can not find end of component', fn,id, linesFromComp])
     const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id}).split('\n')
+    if (JSON.stringify(linesFromComp.slice(0,compLastLine+1)) === JSON.stringify(newComp))
+        return
     lines.splice(lineOfComp,compLastLine+1,...newComp)
     console.log('replaced ' + id + ' at ' + file)
     fs.writeFileSync(fn,lines.join('\n'))

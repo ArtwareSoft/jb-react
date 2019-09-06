@@ -5,7 +5,7 @@ const elec_remote = _window.require && _window.require('electron').remote;
 const fs = elec_remote && elec_remote.require('fs');
 const jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
 
-jb.component('studio.save-components', { /* studio.saveComponents */ 
+jb.component('studio.save-components', { /* studio.saveComponents */
   type: 'action,has-side-effects',
   params: [
     {id: 'force', as: 'boolean', type: 'boolean'}

@@ -235,7 +235,7 @@ jb.component('studio.dynamic', { /* studio.dynamic */
   })
 })
 
-jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */ 
+jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
   type: 'control',
   params: [
     {id: 'path', as: 'string', mandatory: true},

@@ -407,7 +407,7 @@ jb.component('studio.watch-components', { /* studio.watchComponents */
 })
 
 
-jb.component('studio.watch-typeof-script', { /* studio.watchTypeofScript */ 
+jb.component('studio.watch-typeof-script', { /* studio.watchTypeofScript */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],

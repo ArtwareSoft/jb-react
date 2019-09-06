@@ -100,7 +100,7 @@ jb.component('studio-probe-test', { /* studioProbeTest */
   }
 })
 
-jb.component('path-change-test', { /* pathChangeTest */ 
+jb.component('path-change-test', { /* pathChangeTest */
   type: 'test',
   params: [
     {id: 'path', as: 'string'},

@@ -94,7 +94,7 @@ jb.component('studio-data-test.jb-editor-move', { /* studioDataTest.jbEditorMove
 
 jb.component('test.set-sugar-comp-simple', { /* test.setSugarCompSimple */
   impl: label({
-
+    
   })
 })
 
@@ -235,7 +235,7 @@ jb.component('studio-data-test.pathOfText-prop-top', { /* studioDataTest.pathOfT
 })
 
 
-jb.component('studio-data-test.pathOfText-prop-after-array', { /* studioDataTest.pathOfTextPropAfterArray */ 
+jb.component('studio-data-test.pathOfText-prop-after-array', { /* studioDataTest.pathOfTextPropAfterArray */
   impl: dataTest({
     calculate: ctx => jb.studio.completion.pathOfText("{ $:'group', controls :[{$: '' }, {$:'label'}], style :{$: 'layo"),
     expectedResult: ctx => ctx.data.join('~') == "style"
