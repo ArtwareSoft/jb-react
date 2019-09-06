@@ -1,16 +1,19 @@
-jb.component('globals', { watchableData:  {}});
+jb.component('globals', { watchableData:  {}
+})
 
 jb.component('watchable-people', { watchableData: [
   { name: 'Homer Simpson - watchable', age: 42, male: true },
   { name: 'Marge Simpson - watchable', age: 38, male: false },
   { name: 'Bart Simpson - watchable', age: 12, male: true }
-]})
+]
+})
 
 jb.component('people', { passiveData: [
   { name: 'Homer Simpson', age: 42, male: true },
   { name: 'Marge Simpson', age: 38, male: false },
   { name: 'Bart Simpson', age: 12, male: true }
-]})
+]
+})
 
 
 jb.component('person', { watchableData: {
@@ -18,7 +21,8 @@ jb.component('person', { watchableData: {
   male: true,
   isMale: 'yes',
   age: 42
-}})
+}
+})
 
 jb.component('personWithAddress', { watchableData: {
   name: 'Homer Simpson',
@@ -26,22 +30,24 @@ jb.component('personWithAddress', { watchableData: {
     city: 'Springfield',
     street: '742 Evergreen Terrace'
   }
-}})
+}
+})
 
 jb.component('personWithChildren', { watchableData: {
   name: 'Homer Simpson',
   children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' }],
   friends: [{ name: 'Barnie' }],
-}})
+}
+})
 
-jb.component('ui-test.label',  /* uiTest_label */ {
+jb.component('ui-test.label', { /* uiTest.label */
   impl: uiTest({
     control: label('hello world'),
     expectedResult: contains('hello world')
   })
 })
 
-jb.component('ui-test.group',  /* uiTest_group */ {
+jb.component('ui-test.group', { /* uiTest.group */
   impl: uiTest({
     control: group({
       controls: [
@@ -53,11 +59,11 @@ jb.component('ui-test.group',  /* uiTest_group */ {
   })
 })
 
-jb.component('ui-test.wait-for',  /* uiTest_waitFor */ {
+jb.component('ui-test.wait-for', { /* uiTest.waitFor */
   impl: uiTest({
     control: group({
       controls: label('%%'),
-      features: group_wait(ctx => jb.delay(10).then(_ => 'hello'))
+      features: group.wait(ctx => jb.delay(10).then(_ => 'hello'))
     }),
     action: ctx => jb.delay(40),
     expectedResult: contains('hello')
@@ -88,35 +94,35 @@ jb.component('ui-test.wait-for',  /* uiTest_waitFor */ {
 //   },
 // })
 
-jb.component('ui-test.wait-for-with-var',  /* uiTest_waitForWithVar */ {
+jb.component('ui-test.wait-for-with-var', { /* uiTest.waitForWithVar */
   impl: uiTest({
     control: group({
       controls: [
         label('%$txt%')
       ],
-      features: group_wait({for: ctx => jb.delay(10).then(_ => 'hello'), varName: 'txt'})
+      features: group.wait({for: ctx => jb.delay(10).then(_ => 'hello'), varName: 'txt'})
     }),
     action: ctx => jb.delay(40),
     expectedResult: contains('hello')
   })
 })
 
-jb.component('ui-test.button',  /* uiTest_button */ {
+jb.component('ui-test.button', { /* uiTest.button */
   impl: uiTest({
     control: button({title: 'btn1', action: ctx => alert(1)}),
     expectedResult: contains('btn1')
   })
 })
 
-jb.component('ui-test.button.mdl-icon',  /* uiTest_button_mdlIcon */ {
+jb.component('ui-test.button.mdl-icon', { /* uiTest.button.mdlIcon */
   impl: uiTest({
-    control: button({title: 'btn1', action: ctx => alert(1), style: button_mdlIcon('build')}),
+    control: button({title: 'btn1', action: ctx => alert(1), style: button.mdlIcon('build')}),
     expectedResult: contains('build')
   })
 })
 
 
-jb.component('ui-test.group2',  /* uiTest_group2 */ {
+jb.component('ui-test.group2', { /* uiTest.group2 */
   impl: uiTest({
     control: group({
       controls: [
@@ -128,28 +134,40 @@ jb.component('ui-test.group2',  /* uiTest_group2 */ {
   })
 })
 
-jb.component('ui-test.editable-text',  /* uiTest_editableText */ {
+jb.component('ui-test.editable-text', { /* uiTest.editableText */
   impl: uiTest({
-    control: editableText({title: 'name', databind: '%$person/name%', style: editableText_input()}),
+    control: editableText({
+      title: 'name',
+      databind: '%$person/name%',
+      style: editableText.input()
+    }),
     expectedResult: contains(['input', 'Homer Simpson'])
   })
 })
 
-jb.component('ui-test.editable-text-mdl',  /* uiTest_editableTextMdl */ {
+jb.component('ui-test.editable-text-mdl', { /* uiTest.editableTextMdl */
   impl: uiTest({
-    control: editableText({title: 'name', databind: '%$person/name%', style: editableText_mdlInput()}),
+    control: editableText({
+      title: 'name',
+      databind: '%$person/name%',
+      style: editableText.mdlInput()
+    }),
     expectedResult: contains(['input', 'Homer Simpson'])
   })
 })
 
-jb.component('ui-test.editable-text.x-button',  /* uiTest_editableText_xButton */ {
+jb.component('ui-test.editable-text.x-button', { /* uiTest.editableText.xButton */
   impl: uiTest({
-    control: editableText({title: 'name', databind: '%$person/name%', features: [editableText_xButton()]}),
+    control: editableText({
+      title: 'name',
+      databind: '%$person/name%',
+      features: [editableText.xButton()]
+    }),
     expectedResult: contains({text: ['×', 'input', 'Homer Simpson'], inOrder: false})
   })
 })
 
-jb.component('ui-test.two-way-binding',  /* uiTest_twoWayBinding */ {
+jb.component('ui-test.two-way-binding', { /* uiTest.twoWayBinding */
   impl: uiTest({
     control: group({
       controls: [
@@ -157,15 +175,15 @@ jb.component('ui-test.two-way-binding',  /* uiTest_twoWayBinding */ {
         label('%$person/name%')
       ]
     }),
-    action: uiAction_setText('hello', '#inp'),
+    action: uiAction.setText('hello', '#inp'),
     expectedResult: contains(['hello', 'hello'])
   })
 })
 
-jb.component('ui-test.group-horizontal',  /* uiTest_groupHorizontal */ {
+jb.component('ui-test.group-horizontal', { /* uiTest.groupHorizontal */
   impl: uiTest({
     control: group({
-      style: layout_horizontal(),
+      style: layout.horizontal(),
       controls: [
         button('button1'),
         label('label1')
@@ -175,36 +193,36 @@ jb.component('ui-test.group-horizontal',  /* uiTest_groupHorizontal */ {
   })
 })
 
-jb.component('ui-test.tree',  /* uiTest_tree */ {
+jb.component('ui-test.tree', { /* uiTest.tree */
   impl: uiTest({
     control: tree({
-      nodeModel: tree_jsonReadOnly('%$personWithAddress%', 'personWithAddress'),
-      features: [tree_selection({}), tree_keyboardSelection({})]
+      nodeModel: tree.jsonReadOnly('%$personWithAddress%', 'personWithAddress'),
+      features: [tree.selection({}), tree.keyboardSelection({})]
     }),
     expectedResult: contains(['address'])
   })
 })
 
-jb.component('ui-test.tree-rightClick',  /* uiTest_treeRightClick */ {
+jb.component('ui-test.tree-rightClick', { /* uiTest.treeRightClick */
   impl: uiTest({
     control: tree({
-      nodeModel: tree_jsonReadOnly('%$personWithAddress%', 'personWithAddress'),
+      nodeModel: tree.jsonReadOnly('%$personWithAddress%', 'personWithAddress'),
       features: [
-        tree_selection({
-          onRightClick: openDialog({title: 'hello', features: dialogFeature_nearLauncherPosition({})})
+        tree.selection({
+          onRightClick: openDialog({title: 'hello', features: dialogFeature.nearLauncherPosition({})})
         }),
-        tree_keyboardSelection({})
+        tree.keyboardSelection({})
       ]
     }),
     expectedResult: contains(['address'])
   })
 })
 
-jb.component('ui-test.tree-DD',  /* uiTest_treeDD */ {
+jb.component('ui-test.tree-DD', { /* uiTest.treeDD */
   impl: uiTest({
     control: tree({
-      nodeModel: tree_json('%$personWithChildren%', 'Homer'),
-      features: [tree_selection({}), tree_dragAndDrop(), tree_keyboardSelection({})]
+      nodeModel: tree.json('%$personWithChildren%', 'Homer'),
+      features: [tree.selection({}), tree.dragAndDrop(), tree.keyboardSelection({})]
     }),
     action: ctx =>
       jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
@@ -220,11 +238,11 @@ jb.component('ui-test.tree-DD',  /* uiTest_treeDD */ {
   })
 })
 
-jb.component('ui-test.tree-DD-after-last',  /* uiTest_treeDDAfterLast */ {
+jb.component('ui-test.tree-DD-after-last', { /* uiTest.treeDDAfterLast */
   impl: uiTest({
     control: tree({
-      nodeModel: tree_json('%$personWithChildren%', 'Homer'),
-      features: [tree_selection({}), tree_dragAndDrop(), tree_keyboardSelection({})]
+      nodeModel: tree.json('%$personWithChildren%', 'Homer'),
+      features: [tree.selection({}), tree.dragAndDrop(), tree.keyboardSelection({})]
     }),
     action: ctx =>
       jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
@@ -240,7 +258,7 @@ jb.component('ui-test.tree-DD-after-last',  /* uiTest_treeDDAfterLast */ {
   })
 })
 
-jb.component('ui-test.open-dialog',  /* uiTest_openDialog */ {
+jb.component('ui-test.open-dialog', { /* uiTest.openDialog */
   impl: uiTest({
     control: button({
       title: 'click me',
@@ -253,59 +271,67 @@ jb.component('ui-test.open-dialog',  /* uiTest_openDialog */ {
         }),
         title: 'hello',
         features: [
-          dialogFeature_nearLauncherPosition({offsetTop: ctx => Math.floor(Math.random() * 20 + 2) * 10}),
-          dialogFeature_resizer()
+          dialogFeature.nearLauncherPosition({
+            offsetTop: ctx => Math.floor(Math.random() * 20 + 2) * 10
+          }),
+          dialogFeature.resizer()
         ]
       })
     }),
-    action: uiAction_click('button'),
-    expectedResult: contains({text: ['hello', 'jbart'], allText: test_dialogContent('hello')})
+    action: uiAction.click('button'),
+    expectedResult: contains({text: ['hello', 'jbart'], allText: test.dialogContent('hello')})
   })
 })
 
-jb.component('ui-test.code-mirror-dialog-resizer',  /* uiTest_codeMirrorDialogResizer */ {
+jb.component('ui-test.code-mirror-dialog-resizer', { /* uiTest.codeMirrorDialogResizer */
   impl: uiTest({
     control: button({
       title: 'click me',
       action: openDialog({
-        content: editableText({databind: '%$person/name%', style: editableText_codemirror({mode: 'javascript'})}),
+        content: editableText({
+          databind: '%$person/name%',
+          style: editableText.codemirror({mode: 'javascript'})
+        }),
         title: 'resizer',
-        features: [dialogFeature_nearLauncherPosition({}), dialogFeature_resizer(true)]
+        features: [dialogFeature.nearLauncherPosition({}), dialogFeature.resizer(true)]
       })
     }),
     expectedResult: true
   })
 })
 
-jb.component('ui-test.code-mirror-dialog-resizer-ok-cancel',  /* uiTest_codeMirrorDialogResizerOkCancel */ {
+jb.component('ui-test.code-mirror-dialog-resizer-ok-cancel', { /* uiTest.codeMirrorDialogResizerOkCancel */
   impl: uiTest({
     control: button({
       title: 'click me',
       action: openDialog({
-        style: dialog_dialogOkCancel(),
-        content: editableText({databind: '%$person/name%', style: editableText_codemirror({mode: 'javascript'})}),
+        style: dialog.dialogOkCancel(),
+        content: editableText({
+          databind: '%$person/name%',
+          style: editableText.codemirror({mode: 'javascript'})
+        }),
         title: 'resizer',
-        features: [dialogFeature_nearLauncherPosition({}), dialogFeature_resizer(true)]
+        features: [dialogFeature.nearLauncherPosition({}), dialogFeature.resizer(true)]
       })
     }),
     expectedResult: true
   })
 })
 
-jb.component('ui-test.renderable',  /* uiTest_renderable */ {
+jb.component('ui-test.renderable', { /* uiTest.renderable */
   impl: uiTest({
     control: button({
       title: 'click me',
       action: openDialog({id: 'hello', content: label('jbart'), title: label('hello as label')})
     }),
-    action: uiAction_click('button'),
-    expectedResult: contains({text: 'hello as label', allText: test_dialogContent('hello')})
+    action: uiAction.click('button'),
+    expectedResult: contains({text: 'hello as label', allText: test.dialogContent('hello')})
   })
 })
 
 var ui_test_dialog_isAttached = false;
 
-jb.component('ui-test.dialog-cleanup',  /* uiTest_dialogCleanup */ {
+jb.component('ui-test.dialog-cleanup', { /* uiTest.dialogCleanup */
   impl: uiTest({
     control: button({
       title: 'click me',
@@ -319,28 +345,28 @@ jb.component('ui-test.dialog-cleanup',  /* uiTest_dialogCleanup */ {
         })
       })
     }),
-    action: [uiAction_click('button'), dialog_closeAll()],
+    action: [uiAction.click('button'), dialog.closeAll()],
     expectedResult: ctx =>
       !ui_test_dialog_isAttached
   })
 })
 
-jb.component('ui-test.dialog-cleanup-bug',  /* uiTest_dialogCleanupBug */ {
+jb.component('ui-test.dialog-cleanup-bug', { /* uiTest.dialogCleanupBug */
   impl: uiTest({
     control: button({
       title: 'click me',
       action: openDialog({id: 'hello', content: label('world'), title: 'hello'})
     }),
-    action: [uiAction_click('button'), dialog_closeAll()],
+    action: [uiAction.click('button'), dialog.closeAll()],
     expectedResult: ctx =>
       !jb.resources['jb_dialog_hello']
   })
 })
 
-jb.component('ui-test.group-flex',  /* uiTest_groupFlex */ {
+jb.component('ui-test.group-flex', { /* uiTest.groupFlex */
   impl: uiTest({
     control: group({
-      style: layout_flex({direction: 'row'}),
+      style: layout.flex({direction: 'row'}),
       controls: [
         button('button1'),
         label('label1')
@@ -350,81 +376,91 @@ jb.component('ui-test.group-flex',  /* uiTest_groupFlex */ {
   })
 })
 
-jb.component('ui-test.button-click',  /* uiTest_buttonClick */ {
+jb.component('ui-test.button-click', { /* uiTest.buttonClick */
   impl: uiTest({
     control: button({title: 'Click Me', action: () => alert(1)}),
     expectedResult: true
   })
 })
 
-jb.component('ui-test.button-x',  /* uiTest_buttonX */ {
+jb.component('ui-test.button-x', { /* uiTest.buttonX */
   impl: uiTest({
-    control: button({title: 'Click Me', action: () => alert(1), style: button_x()}),
+    control: button({title: 'Click Me', action: () => alert(1), style: button.x()}),
     expectedResult: true
   })
 })
 
-jb.component('ui-test.resource',  /* uiTest_resource */ {
+jb.component('ui-test.resource', { /* uiTest.resource */
   impl: uiTest({
     control: button('%$person.name%'),
     expectedResult: contains(['Homer'])
   })
 })
 
-jb.component('ui-test.features-css',  /* uiTest_featuresCss */ {
+jb.component('ui-test.features-css', { /* uiTest.featuresCss */
   impl: uiTest({
     control: label({title: 'Hello World2', features: css('{color: cyan; font-weight: bold}')}),
     expectedResult: contains(['Hello'])
   })
 })
 
-jb.component('ui-test.itemlist',  /* uiTest_itemlist */ {
+jb.component('ui-test.itemlist', { /* uiTest.itemlist */
   impl: uiTest({
     control: itemlist({items: '%$people%', controls: label('%$item.name% - %name%')}),
     expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
   })
 })
 
-jb.component('ui-test.itemlist-with-select',  /* uiTest_itemlistWithSelect */ {
+jb.component('ui-test.itemlist-with-select', { /* uiTest.itemlistWithSelect */
   impl: uiTest({
     control: itemlist({
       items: '%$people%',
       controls: label('%$item.name% - %name%'),
-      features: itemlist_selection({})
+      features: itemlist.selection({})
     }),
     expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
   })
 })
 
-jb.component('ui-test.itemlist-DD',  /* uiTest_itemlistDD */ {
+jb.component('ui-test.itemlist-DD', { /* uiTest.itemlistDD */
   impl: uiTest({
     control: group({
       controls: [
         itemlist({
           items: '%$watchable-people%',
-          controls: label({title: '%name%', features: css_class('drag-handle')}),
+          controls: label({title: '%name%', features: css.class('drag-handle')}),
           features: [
-            itemlist_selection({databind: '%$globals/selectedPerson%', autoSelectFirst: true}),
-            itemlist_keyboardSelection(true),
-            itemlist_dragAndDrop(),
+            itemlist.selection({
+              databind: '%$globals/selectedPerson%',
+              autoSelectFirst: true
+            }),
+            itemlist.keyboardSelection(true),
+            itemlist.dragAndDrop(),
             watchRef('%$watchable-people%'),
             id('itemlist')
           ]
         }),
-        itemlist({items: '%$watchable-people%', controls: label('%name%'),
-          features: watchRef('%$watchable-people%') 
-       })
+        itemlist({
+          items: '%$watchable-people%',
+          controls: label('%name%'),
+          features: watchRef('%$watchable-people%')
+        })
       ]
     }),
     action: [
       ctx => jb.delay(10),
-      uiAction_keyboardEvent({selector: '#itemlist', type: 'keydown', keyCode: 40, ctrl: 'ctrl'})
+      uiAction.keyboardEvent({
+        selector: '#itemlist',
+        type: 'keydown',
+        keyCode: 40,
+        ctrl: 'ctrl'
+      })
     ],
     expectedResult: contains(['Bart', 'Marge', 'Homer'])
   })
 })
 
-jb.component('ui-test.itemlist-basic',  /* uiTest_itemlistBasic */ {
+jb.component('ui-test.itemlist-basic', { /* uiTest.itemlistBasic */
   impl: uiTest({
     control: itemlist({items: '%$people%', controls: label('%name%')}),
     expectedResult: contains(['Homer Simpson', 'Bart Simpson'])
@@ -452,32 +488,38 @@ jb.component('ui-test.itemlist-basic',  /* uiTest_itemlistBasic */ {
 // })
 
 
-jb.component('ui-test.itemlist-add-button',  /* uiTest_itemlistAddButton */ {
+jb.component('ui-test.itemlist-add-button', { /* uiTest.itemlistAddButton */
   impl: uiTest({
     control: group({
       controls: [
         itemlist({items: '%$people%', controls: label('%$item.name% - %name%')}),
-        button({title: 'add', action: (ctx) => ctx.exp('%$people%').push({ name: "Magi" })})
+        button({
+          title: 'add',
+          action: (ctx) => ctx.exp('%$people%').push({ name: "Magi" })
+        })
       ]
     }),
     expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
   })
 })
 
-jb.component('ui-test.itemlist-selection',  /* uiTest_itemlistSelection */ {
+jb.component('ui-test.itemlist-selection', { /* uiTest.itemlistSelection */
   impl: uiTest({
     control: itemlist({
       items: '%$people%',
       controls: label('%$item.name%'),
       features: [
-        itemlist_selection({databind: '%$globals/selectedPerson%', autoSelectFirst: true})
+        itemlist.selection({
+          databind: '%$globals/selectedPerson%',
+          autoSelectFirst: true
+        })
       ]
     }),
     expectedResult: contains(['Homer Simpson'])
   })
 })
 
-jb.component('ui-test.itemlist-MD',  /* uiTest_itemlistMD */ {
+jb.component('ui-test.itemlist-MD', { /* uiTest.itemlistMD */
   impl: uiTest({
     control: group({
       controls: [
@@ -485,8 +527,11 @@ jb.component('ui-test.itemlist-MD',  /* uiTest_itemlistMD */ {
           items: '%$people%',
           controls: label('%$item.name%'),
           features: [
-            itemlist_selection({databind: '%$globals/selectedPerson%', autoSelectFirst: true}),
-            itemlist_keyboardSelection(true)
+            itemlist.selection({
+              databind: '%$globals/selectedPerson%',
+              autoSelectFirst: true
+            }),
+            itemlist.keyboardSelection(true)
           ]
         }),
         label({
@@ -500,53 +545,55 @@ jb.component('ui-test.itemlist-MD',  /* uiTest_itemlistMD */ {
   })
 })
 
-jb.component('ui-test.itemlist-container-search-ctrl',  /* uiTest_itemlistContainerSearchCtrl */ {
+jb.component('ui-test.itemlist-container-search-ctrl', { /* uiTest.itemlistContainerSearchCtrl */
   type: 'control',
   impl: group({
     controls: [
-      itemlistContainer_search({}),
+      itemlistContainer.search({}),
       itemlist({
-        items: pipeline('%$people%', itemlistContainer_filter()),
+        items: pipeline('%$people%', itemlistContainer.filter()),
         controls: label({
           title: highlight('%name%', '%$itemlistCntrData/search_pattern%'),
-          features: [
-            css_class('label1'),
-            watchRef('%$itemlistCntrData/search_pattern%')
-          ]
+          features: [css.class('label1'), watchRef('%$itemlistCntrData/search_pattern%')]
         }),
         features: [
-          itemlist_selection({autoSelectFirst: true}),
-          itemlist_keyboardSelection({autoFocus: true, onEnter: writeValue('%$person/selected%', '%name%')}),
+          itemlist.selection({autoSelectFirst: true}),
+          itemlist.keyboardSelection({
+            autoFocus: true,
+            onEnter: writeValue('%$person/selected%', '%name%')
+          }),
           watchRef('%$itemlistCntrData/search_pattern%')
         ]
       })
     ],
-    features: group_itemlistContainer({})
+    features: group.itemlistContainer({})
   })
 })
 
-jb.component('ui-test.itemlist-container-search',  /* uiTest_itemlistContainerSearch */ {
+jb.component('ui-test.itemlist-container-search', { /* uiTest.itemlistContainerSearch */
   impl: uiTest({
-    control: uiTest_itemlistContainerSearchCtrl(),
-    action: uiAction_setText('ho', '.mdl-textfield'),
+    control: uiTest.itemlistContainerSearchCtrl(),
+    action: uiAction.setText('ho', '.mdl-textfield'),
     expectedResult: and(contains(['Ho', 'mer']), not(contains('Marge')), not(contains('Homer')))
   })
 })
 
-jb.component('ui-test.itemlist-container-search-enter-on-li',  /* uiTest_itemlistContainerSearchEnterOnLi */ {
+jb.component('ui-test.itemlist-container-search-enter-on-li', { /* uiTest.itemlistContainerSearchEnterOnLi */
   impl: uiTest({
-    control: uiTest_itemlistContainerSearchCtrl(),
-    action: runActions(uiAction_keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13})),
+    control: uiTest.itemlistContainerSearchCtrl(),
+    action: runActions(
+      uiAction.keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13})
+    ),
     expectedResult: equals('%$person/selected%', 'Homer Simpson')
   })
 })
 
-jb.component('ui-test.secondaryLink-set-bug',  /* uiTest_secondaryLinkSetBug */ {
+jb.component('ui-test.secondaryLink-set-bug', { /* uiTest.secondaryLinkSetBug */
   impl: uiTest({
     control: itemlist({
       items: '%$people%',
       controls: label('%name%'),
-      features: itemlist_selection({databind: '%$globals/selected%', autoSelectFirst: true})
+      features: itemlist.selection({databind: '%$globals/selected%', autoSelectFirst: true})
     }),
     action: runActions(
       writeValue('%$globals/selected%', '%$people[1]%'),
@@ -556,43 +603,46 @@ jb.component('ui-test.secondaryLink-set-bug',  /* uiTest_secondaryLinkSetBug */ 
   })
 })
 
-jb.component('ui-test.search-doesnot-create-ReactClass',  /* uiTest_searchDoesnotCreateReactClass */ {
+jb.component('ui-test.search-doesnot-create-ReactClass', { /* uiTest.searchDoesnotCreateReactClass */
   impl: uiTest({
     control: group({
       controls: [
-        itemlistContainer_search({}),
+        itemlistContainer.search({}),
         itemlist({
-          items: pipeline('%$people%', itemlistContainer_filter()),
+          items: pipeline('%$people%', itemlistContainer.filter()),
           controls: label({title: highlight('%name%', '%$itemlistCntrData/search_pattern%')}),
           features: [
-            itemlist_selection({autoSelectFirst: true}),
-            itemlist_keyboardSelection(true),
+            itemlist.selection({autoSelectFirst: true}),
+            itemlist.keyboardSelection(true),
             watchRef('%$itemlistCntrData/search_pattern%')
           ]
         })
       ],
-      features: [group_itemlistContainer({})]
+      features: [group.itemlistContainer({})]
     }),
-    action: uiAction_setText('ho', '.mdl-textfield'),
+    action: uiAction.setText('ho', '.mdl-textfield'),
     expectedResult: ctx => true,
     expectedCounters: ctx => ({ createReactClass: 6 })
   })
 })
 
-jb.component('ui-test.table',  /* uiTest_table */ {
+jb.component('ui-test.table', { /* uiTest.table */
   impl: uiTest({
     control: table({
       items: '%$people%',
       fields: [field({title: 'name', data: '%name%'}), field({title: 'age', data: '%age%'})],
       features: [
-        itemlist_selection({databind: '%$globals/selectedPerson%', autoSelectFirst: true})
+        itemlist.selection({
+          databind: '%$globals/selectedPerson%',
+          autoSelectFirst: true
+        })
       ]
     }),
     expectedResult: contains(['age', 'Homer Simpson', '12'])
   })
 })
 
-jb.component('ui-test.table-DD',  /* uiTest_tableDD */ {
+jb.component('ui-test.table-DD', { /* uiTest.tableDD */
   impl: uiTest({
     control: group({
       controls: [
@@ -601,31 +651,41 @@ jb.component('ui-test.table-DD',  /* uiTest_tableDD */ {
           fields: [
             field({title: 'name', data: '%name%', width: 300, class: 'drag-handle'}),
             field({title: 'age', data: '%age%', width: 50}),
-            field_control({
-              control: button({title: 'delete', action: removeFromArray({array: '%$watchable-people%'}), style: button_x()})
+            field.control({
+              control: button({
+                title: 'delete',
+                action: removeFromArray('%$watchable-people%'),
+                style: button.x()
+              })
             })
           ],
           features: [
-            itemlist_selection({databind: '%$globals/selectedPerson%', autoSelectFirst: true}),
-            itemlist_keyboardSelection(true),
-            itemlist_dragAndDrop(),
+            itemlist.selection({
+              databind: '%$globals/selectedPerson%',
+              autoSelectFirst: true
+            }),
+            itemlist.keyboardSelection(true),
+            itemlist.dragAndDrop(),
             watchRef('%$watchable-people%')
           ]
         }),
-        label({title: pipeline('%$watchable-people/name%', join({})), features: watchRef('%$watchable-people%')})
+        label({
+          title: pipeline('%$watchable-people/name%', join({})),
+          features: watchRef('%$watchable-people%')
+        })
       ]
     }),
     expectedResult: contains(['age', 'Homer Simpson', '12'])
   })
 })
 
-jb.component('ui-test.table.button-field',  /* uiTest_table_buttonField */ {
+jb.component('ui-test.table.button-field', { /* uiTest.table.buttonField */
   impl: uiTest({
     control: table({
       items: '%$people%',
       fields: [
         field({title: 'name', data: '%name%'}),
-        field_button({title: 'age', buttonText: '%age%', action: ctx => alert(ctx.data)})
+        field.button({title: 'age', buttonText: '%age%', action: ctx => alert(ctx.data)})
       ]
     }),
     expectedResult: contains(['age', 'Homer Simpson', '12'])
@@ -674,7 +734,7 @@ jb.component('ui-test.table.button-field',  /* uiTest_table_buttonField */ {
 // },
 // })
 
-jb.component('ui-test.editable-text-in-group',  /* uiTest_editableTextInGroup */ {
+jb.component('ui-test.editable-text-in-group', { /* uiTest.editableTextInGroup */
   impl: uiTest({
     control: group({
       controls: [
@@ -687,9 +747,9 @@ jb.component('ui-test.editable-text-in-group',  /* uiTest_editableTextInGroup */
   })
 })
 
-jb.component('ui-test.editable-text-with-jb-val',  /* uiTest_editableTextWithJbVal */ {
+jb.component('ui-test.editable-text-with-jb-val', { /* uiTest.editableTextWithJbVal */
   impl: {
-    $: 'ui-test2',
+    '$': 'ui-test2',
     control: group({
       vars: [
         Var(
@@ -709,7 +769,11 @@ jb.component('ui-test.editable-text-with-jb-val',  /* uiTest_editableTextWithJbV
       controls: [
         editableText({title: 'name', databind: '%$a1%'}),
         editableText({title: 'name', databind: '%$a1%'}),
-        picklist({title: 'name', databind: '%$a1%', options: picklist_optionsByComma('Homer,Marge')}),
+        picklist({
+          title: 'name',
+          databind: '%$a1%',
+          options: picklist.optionsByComma('Homer,Marge')
+        }),
         label('%$a1%')
       ]
     }),
@@ -717,12 +781,12 @@ jb.component('ui-test.editable-text-with-jb-val',  /* uiTest_editableTextWithJbV
   }
 })
 
-jb.component('ui-test.property-sheet.titles-above',  /* uiTest_propertySheet_titlesAbove */ {
+jb.component('ui-test.property-sheet.titles-above', { /* uiTest.propertySheet.titlesAbove */
   impl: uiTest({
     control: group({
       controls: [
         group({
-          style: propertySheet_titlesAboveFloatLeft(),
+          style: propertySheet.titlesAboveFloatLeft(),
           controls: [
             editableText({title: 'name', databind: '%$person/name%'}),
             editableText({title: 'address', databind: '%$person/address%'})
@@ -735,15 +799,23 @@ jb.component('ui-test.property-sheet.titles-above',  /* uiTest_propertySheet_tit
   })
 })
 
-jb.component('ui-test.property-sheet.titles-left',  /* uiTest_propertySheet_titlesLeft */ {
+jb.component('ui-test.property-sheet.titles-left', { /* uiTest.propertySheet.titlesLeft */
   impl: uiTest({
     control: group({
       controls: [
         group({
-          style: propertySheet_titlesLeft({}),
+          style: propertySheet.titlesLeft({}),
           controls: [
-            editableText({title: 'name', databind: '%$person/name%', style: editableText_input()}),
-            editableText({title: 'address', databind: '%$person/address%', style: editableText_input()})
+            editableText({
+              title: 'name',
+              databind: '%$person/name%',
+              style: editableText.input()
+            }),
+            editableText({
+              title: 'address',
+              databind: '%$person/address%',
+              style: editableText.input()
+            })
           ]
         })
       ]
@@ -752,13 +824,21 @@ jb.component('ui-test.property-sheet.titles-left',  /* uiTest_propertySheet_titl
   })
 })
 
-jb.component('ui-test.editable-number',  /* uiTest_editableNumber */ {
+jb.component('ui-test.editable-number', { /* uiTest.editableNumber */
   impl: uiTest({
     control: group({
-      style: layout_vertical(),
+      style: layout.vertical(),
       controls: [
-        editableNumber({databind: '%$person/age%', title: 'age', style: editableNumber_sliderNoText()}),
-        editableNumber({databind: '%$person/age%', title: 'age', style: editableNumber_slider()}),
+        editableNumber({
+          databind: '%$person/age%',
+          title: 'age',
+          style: editableNumber.sliderNoText()
+        }),
+        editableNumber({
+          databind: '%$person/age%',
+          title: 'age',
+          style: editableNumber.slider()
+        }),
         editableNumber({databind: '%$person/age%', title: 'age'}),
         label('%$person/age%')
       ]
@@ -767,34 +847,54 @@ jb.component('ui-test.editable-number',  /* uiTest_editableNumber */ {
   })
 })
 
-jb.component('ui-test.editable-number-slider',  /* uiTest_editableNumberSlider */ {
+jb.component('ui-test.editable-number-slider', { /* uiTest.editableNumberSlider */
   impl: uiTest({
-    control: editableNumber({databind: '%$person/age%', title: 'age', style: editableNumber_slider()}),
+    control: editableNumber({
+      databind: '%$person/age%',
+      title: 'age',
+      style: editableNumber.slider()
+    }),
     expectedResult: contains('42')
   })
 })
 
-jb.component('ui-test.editable-number-slider-empty',  /* uiTest_editableNumberSliderEmpty */ {
+jb.component('ui-test.editable-number-slider-empty', { /* uiTest.editableNumberSliderEmpty */
   impl: uiTest({
-    control: editableNumber({databind: '%$person/age1%', title: 'age', style: editableNumber_slider()}),
+    control: editableNumber({
+      databind: '%$person/age1%',
+      title: 'age',
+      style: editableNumber.slider()
+    }),
     expectedResult: true
   })
 })
 
-jb.component('ui-test.editable-boolean.all-styles',  /* uiTest_editableBoolean_allStyles */ {
+jb.component('ui-test.editable-boolean.all-styles', { /* uiTest.editableBoolean.allStyles */
   impl: uiTest({
     control: group({
       controls: [
-        editableBoolean({databind: '%$person/male%', style: editableBoolean_checkbox(), title: 'male'}),
         editableBoolean({
           databind: '%$person/male%',
-          style: editableBoolean_checkboxWithTitle(),
+          style: editableBoolean.checkbox(),
+          title: 'male'
+        }),
+        editableBoolean({
+          databind: '%$person/male%',
+          style: editableBoolean.checkboxWithTitle(),
           title: 'gender',
           textForTrue: 'male',
           textForFalse: 'female'
         }),
-        editableBoolean({databind: '%$person/male%', style: editableBoolean_mdlSlideToggle(), title: 'male'}),
-        editableBoolean({databind: '%$person/male%', style: editableBoolean_expandCollapse(), title: 'male'}),
+        editableBoolean({
+          databind: '%$person/male%',
+          style: editableBoolean.mdlSlideToggle(),
+          title: 'male'
+        }),
+        editableBoolean({
+          databind: '%$person/male%',
+          style: editableBoolean.expandCollapse(),
+          title: 'male'
+        }),
         label('%$person/male%')
       ]
     }),
@@ -802,13 +902,13 @@ jb.component('ui-test.editable-boolean.all-styles',  /* uiTest_editableBoolean_a
   })
 })
 
-jb.component('ui-test.editable-boolean-settings',  /* uiTest_editableBooleanSettings */ {
+jb.component('ui-test.editable-boolean-settings', { /* uiTest.editableBooleanSettings */
   impl: uiTest({
     control: group({
       controls: [
         editableBoolean({
           databind: '%$person/male%',
-          style: editableBoolean_checkboxWithTitle(),
+          style: editableBoolean.checkboxWithTitle(),
           title: 'male',
           textForTrue: 'male',
           textForFalse: 'female'
@@ -819,43 +919,47 @@ jb.component('ui-test.editable-boolean-settings',  /* uiTest_editableBooleanSett
   })
 })
 
-jb.component('ui-test.editable-boolean.expand-collapse',  /* uiTest_editableBoolean_expandCollapse */ {
+jb.component('ui-test.editable-boolean.expand-collapse', { /* uiTest.editableBoolean.expandCollapse */
   impl: uiTest({
     control: group({
       controls: [
         editableBoolean({
           databind: '%$expanded%',
-          style: editableBoolean_expandCollapse(),
+          style: editableBoolean.expandCollapse(),
           features: id('toggle')
         }),
         label({
           title: 'inner text',
-          features: [feature_if('%$expanded%'), watchRef('%$expanded%')]
+          features: [feature.if('%$expanded%'), watchRef('%$expanded%')]
         })
       ],
       features: variable({name: 'expanded', value: false, watchable: true})
     }),
-    action: uiAction_click('#toggle', 'toggle'),
+    action: uiAction.click('#toggle', 'toggle'),
     expectedResult: contains('inner text')
   })
 })
 
-jb.component('ui-test.expand-collapse-with-default-collapse',  /* uiTest_expandCollapseWithDefaultCollapse */ {
+jb.component('ui-test.expand-collapse-with-default-collapse', { /* uiTest.expandCollapseWithDefaultCollapse */
   type: 'control',
   impl: group({
     controls: [
-      editableBoolean({databind: '%$default%', title: 'default', features: id('default')}),
+      editableBoolean({
+        databind: '%$default%',
+        title: 'default',
+        features: id('default')
+      }),
       group({
         controls: [
           editableBoolean({
             databind: '%$expanded%',
-            style: editableBoolean_expandCollapse(),
+            style: editableBoolean.expandCollapse(),
             title: 'expColl',
-            features: [id('expCollapse'), field_initValue('%$default%')]
+            features: [id('expCollapse'), field.initValue('%$default%')]
           }),
           label({
             title: 'inner text',
-            features: [feature_if('%$expanded%'), watchRef('%$expanded%')]
+            features: [feature.if('%$expanded%'), watchRef('%$expanded%')]
           })
         ],
         features: [watchRef('%$default%')]
@@ -868,41 +972,53 @@ jb.component('ui-test.expand-collapse-with-default-collapse',  /* uiTest_expandC
   })
 })
 
-jb.component('ui-test.editable-boolean.expand-collapse-with-default-val',  /* uiTest_editableBoolean_expandCollapseWithDefaultVal */ {
+jb.component('ui-test.editable-boolean.expand-collapse-with-default-val', { /* uiTest.editableBoolean.expandCollapseWithDefaultVal */
   impl: uiTest({
-    control: uiTest_expandCollapseWithDefaultCollapse(),
-    action: runActions(uiAction_click('#default', 'toggle')),
+    control: uiTest.expandCollapseWithDefaultCollapse(),
+    action: runActions(uiAction.click('#default', 'toggle')),
     expectedResult: contains('inner text')
   })
 })
 
-jb.component('ui-test.editable-boolean.expand-collapse-with-default-collapse',  /* uiTest_editableBoolean_expandCollapseWithDefaultCollapse */ {
+jb.component('ui-test.editable-boolean.expand-collapse-with-default-collapse', { /* uiTest.editableBoolean.expandCollapseWithDefaultCollapse */
   impl: uiTest({
-    control: uiTest_expandCollapseWithDefaultCollapse(),
-    action: runActions(uiAction_click('#default', 'toggle'), uiAction_click('#expCollapse', 'toggle')),
+    control: uiTest.expandCollapseWithDefaultCollapse(),
+    action: runActions(
+      uiAction.click('#default', 'toggle'),
+      uiAction.click('#expCollapse', 'toggle')
+    ),
     expectedResult: not(contains('inner text'))
   })
 })
 
-jb.component('ui-test.code-mirror',  /* uiTest_codeMirror */ {
+jb.component('ui-test.code-mirror', { /* uiTest.codeMirror */
   impl: uiTest({
     control: group({
       vars: [
-        Var('js', {$: 'object', text: 'function f1() { return 15 }'}),
-        Var('css', {$: 'object', text: '{ width: 15px; }'}),
-        Var('html', {$: 'object', text: '<div><span>hello</span></div>'})
+        Var('js', {'$': 'object', text: 'function f1() { return 15 }'}),
+        Var('css', {'$': 'object', text: '{ width: 15px; }'}),
+        Var('html', {'$': 'object', text: '<div><span>hello</span></div>'})
       ],
       controls: [
-        editableText({databind: '%$js/text%', style: editableText_codemirror({mode: 'javascript'})}),
-        editableText({databind: '%$css/text%', style: editableText_codemirror({mode: 'css'})}),
-        editableText({databind: '%$html/text%', style: editableText_codemirror({mode: 'htmlmixed'})})
+        editableText({
+          databind: '%$js/text%',
+          style: editableText.codemirror({mode: 'javascript'})
+        }),
+        editableText({
+          databind: '%$css/text%',
+          style: editableText.codemirror({mode: 'css'})
+        }),
+        editableText({
+          databind: '%$html/text%',
+          style: editableText.codemirror({mode: 'htmlmixed'})
+        })
       ]
     }),
     expectedResult: contains(['function', 'f1', '15'])
   })
 })
 
-jb.component('ui-test.inner-label1-tst',  /* uiTest_innerLabel1Tst */ {
+jb.component('ui-test.inner-label1-tst', { /* uiTest.innerLabel1Tst */
   params: [
     {id: 'title', mandatory: true, dynamic: true}
   ],
@@ -911,39 +1027,39 @@ jb.component('ui-test.inner-label1-tst',  /* uiTest_innerLabel1Tst */ {
   })
 })
 
-jb.component('ui-test.inner-label2-tst',  /* uiTest_innerLabel2Tst */ {
+jb.component('ui-test.inner-label2-tst', { /* uiTest.innerLabel2Tst */
   params: [
     {id: 'title', mandatory: true, dynamic: true}
   ],
-  impl: uiTest_innerLabel1Tst(
+  impl: uiTest.innerLabel1Tst(
     call('title')
   )
 })
 
-jb.component('ui-test.inner-label3-tst',  /* uiTest_innerLabel3Tst */ {
+jb.component('ui-test.inner-label3-tst', { /* uiTest.innerLabel3Tst */
   params: [
     {id: 'title', mandatory: true, dynamic: true}
   ],
-  impl: uiTest_innerLabel2Tst(
+  impl: uiTest.innerLabel2Tst(
     call('title')
   )
 })
 
-jb.component('ui-test.prettyPrintComp',  /* uiTest_prettyPrintComp */ {
+jb.component('ui-test.prettyPrintComp', { /* uiTest.prettyPrintComp */
   impl: {
-    $: 'ui-test2',
+    '$': 'ui-test2',
     waitForPromise: delay(50),
     control: group({
       controls: [
         {
-          $: 'text',
+          '$': 'text',
           text: ctx => jb_prettyPrintComp('ui-test.inner-label1-tst', jb.comps['ui-test.inner-label1-tst']),
-          style: {$: 'text.multi-line'}
+          style: {'$': 'text.multi-line'}
         },
         {
-          $: 'text',
+          '$': 'text',
           text: ctx => jb_prettyPrintComp('editable-text.codemirror', jb.comps['editable-text.codemirror']),
-          style: text_codemirror({})
+          style: text.codemirror({})
         }
       ]
     }),
@@ -951,16 +1067,16 @@ jb.component('ui-test.prettyPrintComp',  /* uiTest_prettyPrintComp */ {
   }
 })
 
-jb.component('ui-test.picklist',  /* uiTest_picklist */ {
+jb.component('ui-test.picklist', { /* uiTest.picklist */
   impl: uiTest({
     control: group({
       controls: [
         group({
-          style: propertySheet_titlesLeft({}),
+          style: propertySheet.titlesLeft({}),
           controls: picklist({
             title: 'city',
             databind: '%$personWithAddress/address/city%',
-            options: picklist_optionsByComma('Springfield,New York,Tel Aviv,London')
+            options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London')
           })
         }),
         label('%$personWithAddress/address/city%')
@@ -970,21 +1086,21 @@ jb.component('ui-test.picklist',  /* uiTest_picklist */ {
   })
 })
 
-jb.component('ui-test.picklist-sort',  /* uiTest_picklistSort */ {
+jb.component('ui-test.picklist-sort', { /* uiTest.picklistSort */
   impl: dataTest({
     calculate: pipeline(
-      picklist_sortedOptions(
-        picklist_optionsByComma('a,b,c,d'),
-        pipeline(
-          'c:100,d:50,b:0,a:20',
-          split(','),
-          {
-            $: 'object',
-            code: split({separator: ':', part: 'first'}),
-            mark: split({separator: ':', part: 'second'})
-          }
-        )
-      ),
+      picklist.sortedOptions(
+          picklist.optionsByComma('a,b,c,d'),
+          pipeline(
+            'c:100,d:50,b:0,a:20',
+            split(','),
+            {
+                '$': 'object',
+                code: split({separator: ':', part: 'first'}),
+                mark: split({separator: ':', part: 'second'})
+              }
+          )
+        ),
       '%text%',
       join({})
     ),
@@ -992,17 +1108,19 @@ jb.component('ui-test.picklist-sort',  /* uiTest_picklistSort */ {
   })
 })
 
-jb.component('ui-test.picklist-groups',  /* uiTest_picklistGroups */ {
+jb.component('ui-test.picklist-groups', { /* uiTest.picklistGroups */
   impl: uiTest({
     control: group({
       controls: [
         group({
-          style: propertySheet_titlesLeft({}),
+          style: propertySheet.titlesLeft({}),
           controls: picklist({
             title: 'city',
             databind: '%$personWithAddress/address/city%',
-            options: picklist_optionsByComma('US.Springfield,US.New York,Israel.Tel Aviv,UK.London,mooncity'),
-            style: picklist_groups()
+            options: picklist.optionsByComma(
+              'US.Springfield,US.New York,Israel.Tel Aviv,UK.London,mooncity'
+            ),
+            style: picklist.groups()
           })
         }),
         label('%$personWithAddress/address/city%')
@@ -1012,10 +1130,10 @@ jb.component('ui-test.picklist-groups',  /* uiTest_picklistGroups */ {
   })
 })
 
-jb.component('ui-test.dynamic-controls',  /* uiTest_dynamicControls */ {
+jb.component('ui-test.dynamic-controls', { /* uiTest.dynamicControls */
   impl: uiTest({
     control: group({
-      style: propertySheet_titlesLeft({}),
+      style: propertySheet.titlesLeft({}),
       controls: dynamicControls({
         controlItems: list('name', 'age'),
         genericControl: editableText({title: '%$controlItem%', databind: '%$person/{%$controlItem%}%'})
@@ -1025,7 +1143,7 @@ jb.component('ui-test.dynamic-controls',  /* uiTest_dynamicControls */ {
   })
 })
 
-jb.component('ui-test.inline-controls',  /* uiTest_inlineControls */ {
+jb.component('ui-test.inline-controls', { /* uiTest.inlineControls */
   impl: uiTest({
     control: group({
       controls: [
@@ -1037,10 +1155,10 @@ jb.component('ui-test.inline-controls',  /* uiTest_inlineControls */ {
   })
 })
 
-jb.component('ui-test.tabs',  /* uiTest_tabs */ {
+jb.component('ui-test.tabs', { /* uiTest.tabs */
   impl: uiTest({
     control: group({
-      style: group_tabs(),
+      style: group.tabs(),
       controls: [
         group({title: 'tab1', controls: label('in tab1')}),
         group({title: 'tab2', controls: label('in tab2')})
@@ -1050,10 +1168,10 @@ jb.component('ui-test.tabs',  /* uiTest_tabs */ {
   })
 })
 
-jb.component('ui-test.group.accordion',  /* uiTest_group_accordion */ {
+jb.component('ui-test.group.accordion', { /* uiTest.group.accordion */
   impl: uiTest({
     control: group({
-      style: group_accordion(),
+      style: group.accordion(),
       controls: [
         group({title: 'tab1', controls: label('in tab1')}),
         group({title: 'tab2', controls: label('in tab2')})
@@ -1064,25 +1182,28 @@ jb.component('ui-test.group.accordion',  /* uiTest_group_accordion */ {
   })
 })
 
-jb.component('ui-test.inner-label',  /* uiTest_innerLabel */ {
+jb.component('ui-test.inner-label', { /* uiTest.innerLabel */
   impl: uiTest({
-    control: uiTest_innerLabel3Tst('Hello World2'),
+    control: uiTest.innerLabel3Tst('Hello World2'),
     expectedResult: contains('Hello World2')
   })
 })
 
-jb.component('ui-test.markdown',  /* uiTest_markdown */ {
+jb.component('ui-test.markdown', { /* uiTest.markdown */
   impl: {
-    $: 'ui-test2',
+    '$': 'ui-test2',
     control: {
-      $: 'markdown',
-      markdown: "| Day     | Meal    | Price |\n| --------|---------|-------|\n| Monday  | pasta   | $6    |\n| Tuesday | chicken | $8    |    "
+      '$': 'markdown',
+      markdown: `| Day     | Meal    | Price |
+| --------|---------|-------|
+| Monday  | pasta   | $6    |
+| Tuesday | chicken | $8    |    `
     },
     expectedResult: contains('table')
   }
 })
 
-jb.component('ui-test.style-by-control',  /* uiTest_styleByControl */ {
+jb.component('ui-test.style-by-control', { /* uiTest.styleByControl */
   impl: uiTest({
     control: label({
       title: 'Hello World',
@@ -1092,14 +1213,14 @@ jb.component('ui-test.style-by-control',  /* uiTest_styleByControl */ {
   })
 })
 
-jb.component('ui-test.picklist-as-itemlist',  /* uiTest_picklistAsItemlist */ {
+jb.component('ui-test.picklist-as-itemlist', { /* uiTest.picklistAsItemlist */
   impl: uiTest({
     control: group({
       controls: [
         picklist({
           databind: '%$personWithAddress/address/city%',
-          options: picklist_optionsByComma('Springfield,New York,Tel Aviv,London'),
-          style: picklist_selectionList('300')
+          options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London'),
+          style: picklist.selectionList('300')
         }),
         label('%$personWithAddress/address/city%')
       ]
@@ -1108,49 +1229,52 @@ jb.component('ui-test.picklist-as-itemlist',  /* uiTest_picklistAsItemlist */ {
   })
 })
 
-jb.component('menu-test.menu1',  /* menuTest_menu1 */ {
-  impl: menu_menu({
+jb.component('menu-test.menu1', { /* menuTest.menu1 */
+  impl: menu.menu({
     title: 'main',
     options: [
-      menu_menu({
+      menu.menu({
         title: 'File',
         options: [
-          menu_action('New'),
-          menu_action('Open'),
-          menu_menu({title: 'Bookmarks', options: [menu_action('Google'), menu_action('Facebook')]}),
-          menu_menu({title: 'Friends', options: [menu_action('Dave'), menu_action('Dan')]})
+          menu.action('New'),
+          menu.action('Open'),
+          menu.menu({
+            title: 'Bookmarks',
+            options: [menu.action('Google'), menu.action('Facebook')]
+          }),
+          menu.menu({title: 'Friends', options: [menu.action('Dave'), menu.action('Dan')]})
         ]
       }),
-      menu_menu({title: 'Edit', options: [menu_action('Copy'), menu_action('Paste')]}),
-      menu_dynamicOptions(list(1, 2, 3), menu_action('dynamic-%%'))
+      menu.menu({title: 'Edit', options: [menu.action('Copy'), menu.action('Paste')]}),
+      menu.dynamicOptions(list(1, 2, 3), menu.action('dynamic-%%'))
     ]
   })
 })
 
-jb.component('menu-test.pulldown',  /* menuTest_pulldown */ {
+jb.component('menu-test.pulldown', { /* menuTest.pulldown */
   impl: uiTest({
-    control: menu_control({menu: menuTest_menu1(), style: menuStyle_pulldown({})}),
+    control: menu.control({menu: menuTest.menu1(), style: menuStyle.pulldown({})}),
     action: ctx => jb.delay(1),
     expectedResult: contains(['File', 'Edit', 'dynamic-1', 'dynamic-3'])
   })
 })
 
-jb.component('menu-test.context-menu',  /* menuTest_contextMenu */ {
+jb.component('menu-test.context-menu', { /* menuTest.contextMenu */
   impl: uiTest({
-    control: menu_control({menu: menuTest_menu1()}),
+    control: menu.control({menu: menuTest.menu1()}),
     action: ctx => jb.delay(1),
     expectedResult: contains(['File', 'Edit'])
   })
 })
 
-jb.component('menu-test.open-context-menu',  /* menuTest_openContextMenu */ {
+jb.component('menu-test.open-context-menu', { /* menuTest.openContextMenu */
   impl: uiTest({
-    control: button({title: 'open', action: menu_openContextMenu({menu: menuTest_menu1()})}),
+    control: button({title: 'open', action: menu.openContextMenu({menu: menuTest.menu1()})}),
     expectedResult: contains('open')
   })
 })
 
-jb.component('ui-test.refresh-control-by-id',  /* uiTest_refreshControlById */ {
+jb.component('ui-test.refresh-control-by-id', { /* uiTest.refreshControlById */
   impl: uiTest({
     control: itemlist({
       items: '%$items%',
@@ -1193,23 +1317,23 @@ jb.component('ui-test.refresh-control-by-id',  /* uiTest_refreshControlById */ {
 //   },
 // })
 
-jb.component('ui-test.control.first-succeeding',  /* uiTest_control_firstSucceeding */ {
+jb.component('ui-test.control.first-succeeding', { /* uiTest.control.firstSucceeding */
   impl: uiTest({
     control: group({
       controls: [
-        control_firstSucceeding(
+        control.firstSucceeding(
           [
             controlWithCondition('%$gender% == \"male\"', label('male'))
           ]
         ),
-        control_firstSucceeding(
+        control.firstSucceeding(
           [
             controlWithCondition('%$gender% == \"female\"', label('female')),
             controlWithCondition('%$gender% != \"female\"', label('male2')),
             controlWithCondition(true, label('second-succeeding'))
           ]
         ),
-        control_firstSucceeding(
+        control.firstSucceeding(
           [
             controlWithCondition('%$gender% == \"female\"', label('female')),
             controlWithCondition('%$gender% == \"lale\"', label('male2')),
@@ -1223,36 +1347,48 @@ jb.component('ui-test.control.first-succeeding',  /* uiTest_control_firstSucceed
   })
 })
 
-jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change',  /* uiTest_firstSucceeding_watchRefreshOnCtrlChange */ {
+jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change', { /* uiTest.firstSucceeding.watchRefreshOnCtrlChange */
   impl: uiTest({
     control: group({
       controls: [
         editableText({databind: '%$gender%'}),
-        button({title: 'female', action: writeValue('%$gender%', 'female'), features: id('female')}),
-        button({title: 'zee', action: writeValue('%$gender%', 'zee'), features: id('zee')}),
-        button({title: 'male', action: writeValue('%$gender%', 'male'), features: id('male')}),
-        control_firstSucceeding({
+        button({
+          title: 'female',
+          action: writeValue('%$gender%', 'female'),
+          features: id('female')
+        }),
+        button({
+          title: 'zee',
+          action: writeValue('%$gender%', 'zee'),
+          features: id('zee')
+        }),
+        button({
+          title: 'male',
+          action: writeValue('%$gender%', 'male'),
+          features: id('male')
+        }),
+        control.firstSucceeding({
           controls: [
             controlWithCondition('%$gender% == \"male\"', label('male')),
             label('not male')
           ],
-          features: firstSucceeding_watchRefreshOnCtrlChange('%$gender%')
+          features: firstSucceeding.watchRefreshOnCtrlChange('%$gender%')
         })
       ],
       features: variable({name: 'gender', value: 'male', watchable: true})
     }),
-    action: runActions(uiAction_click('#female'), uiAction_click('#zee')),
+    action: runActions(uiAction.click('#female'), uiAction.click('#zee')),
     expectedResult: contains('not male'),
     expectedCounters: {createReactClass: 8}
   })
 })
 
-jb.component('ui-test.focus-on-first-element',  /* uiTest_focusOnFirstElement */ {
+jb.component('ui-test.focus-on-first-element', { /* uiTest.focusOnFirstElement */
   impl: uiTest({
     control: group({
       controls: [
         editableBoolean('%$person/gender%'),
-        editableText({databind: '%$person/name%', style: editableText.textarea()})
+        editableText({databind: '%$person/name%', style: editableText.textarea({})})
       ]
     }),
     action: focusOnFirstElement('textarea'),
@@ -1260,13 +1396,13 @@ jb.component('ui-test.focus-on-first-element',  /* uiTest_focusOnFirstElement */
   })
 })
 
-jb.component('ui-test.check-box-with-text',  /* uiTest_checkBoxWithText */ {
+jb.component('ui-test.check-box-with-text', { /* uiTest.checkBoxWithText */
   impl: uiTest({
     control: group({
       controls: [
         editableBoolean({
           databind: '%$person/male%',
-          style: editableBoolean_checkboxWithTitle(),
+          style: editableBoolean.checkboxWithTitle(),
           textForTrue: 'male',
           textForFalse: 'female',
           features: id('male')
