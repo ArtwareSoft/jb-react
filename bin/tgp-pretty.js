@@ -26,9 +26,11 @@ filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>x).filter(x=>!x.match
     .map(fn=> require(JBART_DIR+fn))
 
 const filePattern = new RegExp(getProcessArgument('file') || '^nothing')
+const compsNotToTouch = ['jb-editor-test.cmp5', 'jb-editor-test.actions-sugar-example2']
 function run() {
     const entries = jb.entries(jb.comps) 
         .map(e=>({id:e[0], comp:e[1], file:e[1][location][0]}))
+        .filter(({id}) => compsNotToTouch.indexOf(id) == -1)
     entries.filter(({file}) => 
             filePattern.test(file) )
         .forEach( args => swapComp(args))
