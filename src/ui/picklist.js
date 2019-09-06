@@ -87,7 +87,7 @@ jb.component('picklist.optionsByComma',{
     var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
     return emptyValue.concat((options||'').split(',').map(code=> ({ code: code, text: code })));
   }
-});
+})
 
 jb.component('picklist.options',{
   type: 'picklist.options',
@@ -146,4 +146,4 @@ jb.component('picklist.promote',{
   ],
   impl: (context,groups,options) =>
     ({ groups: groups, options: options})
-});
+})

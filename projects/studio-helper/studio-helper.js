@@ -5,7 +5,7 @@ jb.resource('person',{
   male: true,
   isMale: 'yes',
   age: 42
-});
+})
 
 
 jb.resource('people-array', { "people": [

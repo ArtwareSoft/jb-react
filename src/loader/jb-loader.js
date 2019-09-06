@@ -140,7 +140,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       'parsing': [ 'src/misc/parsing.js' ],
       'spy': [ 'src/misc/spy.js' ],
       'dynamic-studio': [ 'src/misc/dynamic-studio.js' ],
-});
+})
 
 function jb_dynamicLoad(modules,prefix) {
   prefix = prefix || '';

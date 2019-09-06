@@ -250,7 +250,7 @@ jb.component('wrap-as-object-with-array', {
   ],
   impl: (ctx,prop,items) =>
       jb.obj(prop,items)
-});
+})
 
 jb.component('wrap-as-object', {
   description: 'put each item in a property',

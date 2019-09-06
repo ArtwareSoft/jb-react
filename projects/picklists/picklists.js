@@ -3,7 +3,7 @@ jb.resource('person',{
   male: true,
   isMale: 'yes', 
   age: 42 
-});
+})
 
 jb.resource('people',[
   { "name": "Homer Simpson" ,age: 42 , male: true},
