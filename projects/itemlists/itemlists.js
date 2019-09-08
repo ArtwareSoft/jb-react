@@ -5,18 +5,16 @@ jb.component('people', { watchableData: [
 ]
 })
 
-jb.component('itemlists.main', {
-  type: 'control', 
-  impl :{$: 'itemlist', 
-    items: '%$people%', 
-    controls :{$: 'group', 
-      style :{$: 'layout.horizontal', spacing: 3 }, 
-      controls: [
-        {$: 'label', title: '%name%' }, 
-        {$: 'label', title: '%age%' }
-      ]
-    }
-  }
+jb.component('itemlists.main', { /* itemlists.main */
+  type: 'control',
+  impl: itemlist({
+    items: '%$people%',
+    controls: [
+      text({title: 'name', text: '%name%', features: [field.columnWidth('250')]}),
+      text({title: 'age', text: '%age%'})
+    ],
+    style: table.withHeaders()
+  })
 })
 
 jb.component('itemlists.table', {

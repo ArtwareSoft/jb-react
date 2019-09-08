@@ -32,12 +32,7 @@ jb.component('field', { /* field */
     {id: 'data', as: 'string', mandatory: true, dynamic: true},
     {id: 'width', as: 'number'},
     {id: 'numeric', as: 'boolean', type: 'boolean'},
-    {
-      id: 'extendItems',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'extend the items with the calculated field using the title as field name'
-    },
+    {id: 'extendItems', as: 'boolean', type: 'boolean', description: 'extend the items with the calculated field using the title as field name' },
     {id: 'class', as: 'string'}
   ],
   impl: (ctx,title,data,width,numeric,extendItems,_class) => ({
@@ -141,8 +136,26 @@ jb.component('button.table-cell-href', { /* tableButton.href */
   })
 })
 
+jb.component('field.column-width', {
+  description: 'used in itemlist fields',
+  type: 'feature',
+  category: 'table:80',
+  params: [
+    {id: 'width', as: 'number' },
+  ],
+  impl: (ctx,width) => ({
+      enrichField: field => field.width = width
+  })
+})
+
+jb.component('table.init-table-or-itemlist', {
+  type: 'feature',
+  impl: ctx => ctx.run(ctx.vars.$model.fields ? table.init() : itemlist.initTable())
+})
+
 jb.component('table.init', { /* table.init */
   type: 'feature',
+  category: 'table:10',
   impl: ctx => ({
       beforeInit: cmp => {
 

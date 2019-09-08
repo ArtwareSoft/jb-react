@@ -18,18 +18,17 @@ jb.component('text', { /* text */
   params: [
     {id: 'title', as: 'string', mandatory: true, defaultValue: 'no title', dynamic: true},
     {id: 'text', as: 'ref', mandatory: true, defaultValue: 'my text', dynamic: true},
-    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
+    {id: 'style', type: 'label.style', defaultValue: label.noWrappingTag(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx =>
-        jb.ui.ctrl(ctx)
+  impl: ctx => jb.ui.ctrl(ctx)
 })
 
 jb.component('label.bind-text', { /* label.bindText */
   type: 'feature',
   impl: ctx => ({
     init: cmp => {
-      const textF = ctx.vars.$text || ctx.vars.$model.title 
+      const textF = ctx.vars.$model.text || ctx.vars.$model.title 
       const textRef = textF(cmp.ctx);
       cmp.state.text = fixTextVal(textRef);
       if (jb.isWatchable(textRef))
