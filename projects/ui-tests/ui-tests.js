@@ -631,6 +631,27 @@ jb.component('ui-test.search-doesnot-create-ReactClass', { /* uiTest.searchDoesn
   })
 })
 
+jb.component('ui-test.itemlist-with-table-style', {
+  impl: uiTest({
+    control: itemlist({
+      items: '%$people%',
+      style: table.withHeaders(),
+      controls: [
+        text({title: 'name', text: '%name%', features: field.columnWidth(300) }), 
+        text({title: 'age', text: '%age%'})
+      ],
+      features: [
+        itemlist.selection({
+          databind: '%$globals/selectedPerson%',
+          autoSelectFirst: true
+        })
+      ]
+    }),
+    expectedResult: contains(['300','age', 'Homer Simpson', '12'])
+  })
+})
+
+
 jb.component('ui-test.table', { /* uiTest.table */
   impl: uiTest({
     control: table({

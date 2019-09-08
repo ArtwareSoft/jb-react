@@ -9,12 +9,7 @@ jb.component('itemlist', { /* itemlist */
     {id: 'controls', type: 'control[]', mandatory: true, dynamic: true},
     {id: 'style', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
     {id: 'itemVariable', as: 'string', defaultValue: 'item'},
-    {
-      id: 'visualSizeLimit',
-      as: 'number',
-      defaultValue: 100,
-      description: 'by default itemlist is limmited to 100 shown items'
-    },
+    {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items'},
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
   impl: ctx =>
@@ -51,6 +46,35 @@ jb.component('itemlist.init', { /* itemlist.init */
 
       },
       init: cmp => cmp.state.ctrls = cmp.calcCtrls(),
+  })
+})
+
+jb.component('itemlist.init-table', { /* itemlist.init */
+  type: 'feature',
+  impl: ctx => ({
+      beforeInit: cmp => {
+        cmp.refresh = _ =>
+            cmp.setState({items: cmp.calcItems()})
+
+        cmp.calcItems = _ => {
+            cmp.items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
+            if (cmp.ctx.vars.itemlistCntr)
+              cmp.ctx.vars.itemlistCntr.items = cmp.items;
+            return cmp.items;
+        }
+        cmp.fields = jb.asArray(ctx.vars.$model.controls.profile)
+          .map(ctrlProfile => enrichWithFieldAspects(ctrlProfile, {
+            title: cmp.ctx.run(ctrlProfile.title), 
+            class: '', 
+            control: row => cmp.ctx.setData(row).run(ctrlProfile).reactComp() 
+          }))
+        
+        function enrichWithFieldAspects(ctrlProfile,field) {
+          cmp.ctx.run(ctrlProfile.features || '',{as: 'array'}).forEach(f=>f.enrichField && f.enrichField(field))
+          return field
+        }
+      },
+      init: cmp => cmp.state.items = cmp.calcItems(),
   })
 })
 

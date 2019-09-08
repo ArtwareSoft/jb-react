@@ -1,5 +1,5 @@
 jb.component('table.with-headers', { /* table.withHeaders */
-  type: 'table.style',
+  type: 'table.style,itemlist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('table',{},[
         h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
@@ -14,12 +14,12 @@ jb.component('table.with-headers', { /* table.withHeaders */
     >tbody>tr>td { padding-right: 5px }
     {width: 100%}
     `,
-    features: table.init()
+    features: table.initTableOrItemlist()
   })
 })
 
 jb.component('table.mdl', { /* table.mdl */
-  type: 'table.style',
+  type: 'table.style,itemlist.style',
   params: [
     {
       id: 'classForTable',
@@ -53,6 +53,6 @@ jb.component('table.mdl', { /* table.mdl */
         state.items.length == 0 ? 'no items' : ''
         ]),
     css: '{width: 100%}',
-    features: [table.init(), table.initSort()]
+    features: [table.initTableOrItemlist(), table.initSort()]
   })
 })
