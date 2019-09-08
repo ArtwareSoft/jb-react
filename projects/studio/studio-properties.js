@@ -347,6 +347,8 @@ jb.component('studio.properties', { /* studio.properties */
               css: `
       { width: 100% }
       >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px;  font-weight: bold;}
+      >.property>.property-toolbar { text-align: right}
+      >.property>.property-toolbar>i { margin-right: 5px } 
       >.property>td { vertical-align: top; }
     `,
               features: group.initGroup()
@@ -374,7 +376,10 @@ jb.component('studio.properties', { /* studio.properties */
         ]
       }),
       label({
-        title: studio.profileAsText('%$path%~features'),
+        title: pipeline(
+          studio.profileAsText('%$path%~features'),
+          If(inGroup(list('[]', "''"), '%%'), '', '%%')
+        ),
         style: label.span(),
         features: [
           css.width('400'),

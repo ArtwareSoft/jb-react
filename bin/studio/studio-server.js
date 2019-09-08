@@ -396,3 +396,5 @@ function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
 }
 
 http.createServer(serve).listen(settings.port);
+
+console.log(`hello-world url: http://localhost:${settings.port}/project/studio/hello-world`)

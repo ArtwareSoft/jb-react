@@ -50,7 +50,7 @@ jb.component('watchable-as-text', { /* watchableAsText */
             const ref = this.getRef()
             const initialPath = ref.handler.pathOfRef(ref).join('~')
             const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath})
-            this.locationMap = jb.textEditor.enrichMapWithOffsets(res.text, res.map)
+            this.locationMap = enrichMapWithOffsets(res.text, res.map)
             this.text = res.text
         },
         writeFullValue(newVal) {
@@ -102,50 +102,6 @@ jb.objectDiff = function(newObj, orig) {
     }, deletedValues)
 }
 
-jb.textEditor = {
-    pathOfPosition(ref,_pos) {
-        const offset = !Number(_pos) ? this.lineColToOffset(ref.text, _pos) : _pos
-        const found = jb.entries(ref.locationMap)
-            .find(e=> e[1].offset_from <= offset && offset < e[1].offset_to)
-        console.log('found',found && found[0],_pos)
-        if (found)
-            return {path: found[0], offset: offset - found[1].offset_from}
-    },
-    lineColToOffset(text,{line,col}) {
-        return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
-    },
-    enrichMapWithOffsets(text,locationMap) {
-        const lines = text.split('\n')
-        const accLines = []
-        lines.reduce((acc,line) => {
-            accLines.push(acc)
-            return acc + line.length+1;
-        }, 0)
-        return Object.keys(locationMap).reduce((acc,k) => Object.assign(acc, {[k] : {
-            positions: locationMap[k],
-            offset_from: accLines[locationMap[k][0]] + locationMap[k][1],
-            offset_to: accLines[locationMap[k][2]] + locationMap[k][3]
-        }}), {})
-    },
-    offsetToLineCol(text,offset) {
-        return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0,
-            col: offset - text.slice(0,offset).lastIndexOf('\n') }
-    },
-    refreshEditor(cmp,_path) {
-        const editor = cmp.editor
-        const text = jb.tostring(cmp.state.databindRef)
-        const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : this.pathOfPosition(cmp.state.databindRef, editor.getCursorPos())
-        editor.setValue(text)
-        if (pathWithOffset) {
-            const _pos = cmp.state.databindRef.locationMap[pathWithOffset.path]
-            const pos = _pos && _pos.positions
-            if (pos)
-                editor.setSelectionRange({line: pos[0], col: pos[1] + (pathWithOffset.offset || 0)})
-        }
-        editor.focus && jb.delay(10).then(()=>editor.focus())
-    }
-}
-
 jb.component('text-editor.with-cursor-path', { /* textEditor.withCursorPath */
   type: 'action',
   params: [
@@ -162,7 +118,7 @@ jb.component('text-editor.with-cursor-path', { /* textEditor.withCursorPath */
         }
         if (editor && editor.getCursorPos)
             action(editor.ctx().setVars({
-                cursorPath: jb.textEditor.pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
+                cursorPath: pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
                 cursorCoord: editor.cursorCoords(editor)
             }))
     }
@@ -210,7 +166,7 @@ jb.component('text-editor.init', { /* textEditor.init */
   impl: ctx => ({
     extendCtxOnce: (ctx,cmp) => ctx.setVars({
         editor: () => cmp.editor,
-        refreshEditor: path => jb.textEditor.refreshEditor(cmp,path)
+        refreshEditor: path => refreshEditor(cmp,path)
       })
   })
 })
@@ -219,21 +175,20 @@ jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor *
   type: 'feature',
   impl: ctx => ({
         beforeInit: cmp => {
-          if (!jb.textEditor) return
           cmp.editor = {
             ctx: () => cmp.ctx,
             data_ref: cmp.state.databindRef,
-            getCursorPos: () => jb.textEditor.offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
+            getCursorPos: () => offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
             cursorCoords: () => {},
             markText: () => {},
             replaceRange: (text, from, to) => {
-              const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-              const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
+              const _from = lineColToOffset(cmp.base.value,from)
+              const _to = lineColToOffset(cmp.base.value,to)
               cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
             },
             setSelectionRange: (from, to) => {
-              const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-              const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
+              const _from = lineColToOffset(cmp.base.value,from)
+              const _to = to && lineColToOffset(cmp.base.value,to) || _from
               cmp.base.setSelectionRange(_from,_to)
             },
           }
@@ -243,5 +198,64 @@ jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor *
     })
 })
 
+
+jb.textEditor = {
+    refreshEditor
+}
+
+function pathOfPosition(ref,_pos) {
+    const offset = !Number(_pos) ? this.lineColToOffset(ref.text, _pos) : _pos
+    const found = jb.entries(ref.locationMap)
+        .find(e=> e[1].offset_from <= offset && offset < e[1].offset_to)
+    console.log('found',found && found[0],_pos)
+    if (found)
+        return {path: found[0], offset: offset - found[1].offset_from}
+}
+
+function lineColToOffset(text,{line,col}) {
+    return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
+}
+
+function enrichMapWithOffsets(text,locationMap) {
+    const lines = text.split('\n')
+    const accLines = []
+    lines.reduce((acc,line) => {
+        accLines.push(acc)
+        return acc + line.length+1;
+    }, 0)
+    return Object.keys(locationMap).reduce((acc,k) => Object.assign(acc, {[k] : {
+        positions: locationMap[k],
+        offset_from: accLines[locationMap[k][0]] + locationMap[k][1],
+        offset_to: accLines[locationMap[k][2]] + locationMap[k][3]
+    }}), {})
+}
+
+function offsetToLineCol(text,offset) {
+    return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0,
+        col: offset - text.slice(0,offset).lastIndexOf('\n') }
+}
+
+function refreshEditor(cmp,_path) {
+    const editor = cmp.editor
+    const text = jb.tostring(cmp.state.databindRef)
+    const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : this.pathOfPosition(cmp.state.databindRef, editor.getCursorPos())
+    editor.setValue(text)
+    if (pathWithOffset) {
+        const _pos = cmp.state.databindRef.locationMap[pathWithOffset.path]
+        const pos = _pos && _pos.positions
+        if (pos)
+            editor.setSelectionRange({line: pos[0], col: pos[1] + (pathWithOffset.offset || 0)})
+    }
+    editor.focus && jb.delay(10).then(()=>editor.focus())
+}
+
+function getSuggestions(fileContent, pos, jbToUse = jb) {
+    const lines = fileContent.split('\n')
+    const componentHeaderIndex = lines.slice(0,pos.line).reverse().findIndex(line => line.match(/^jb.component\(/))
+    const compId = lines[componentHeaderIndex].match(/'([^']+)'/)[1]
+    const {text, map} = jb.prettyPrintComp(compId,jbToUse.comps[compId])
+    const path = pathOfPosition({text, locationMap: map}, {line: pos.line - componentHeaderIndex, col: line.col})
+    return new jbToUse.jbCtx().run(sourceEditor.suggestions(path))
+}
 
 })()

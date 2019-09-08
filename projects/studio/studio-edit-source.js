@@ -272,6 +272,27 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
   )
 })
 
+jb.component('source-editor.suggestions', {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: If(
+    Var('pathType', split({separator: '~!', text: '%$path%', part: 'last'})),
+    Var('actualPath', split({separator: '~!', text: '%$path%', part: 'first'})),
+    Var('paramDef', studio.paramDef('%$actualPath%')),
+    or(
+      startsWith('obj-separator', '%$pathType%'),
+      inGroup( list('close-profile', 'open-profile', 'open-by-value', 'close-by-value'), '%$pathType%')
+    ),
+      pipeline(studio.paramsOfPath('%$actualPath%'),'%id%'),
+      If(
+        '%$paramDef/options%',  
+        split({separator: ',', text: '%$paramDef/options%', part: 'all'}),
+        studio.PTsOfType('%$actualPath%')
+      )
+    )
+})
+
 jb.component('source-editor.add-prop', { /* sourceEditor.addProp */
   type: 'control',
   params: [
