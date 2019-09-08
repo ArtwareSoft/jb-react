@@ -181,7 +181,7 @@ jb.component('play-ground.cards', {
         title: 'Welcome', 
         style :{$: 'label.card-title', 
           template: (cmp,state,h) => h('span',{},state.title), 
-          features :{$: 'label.bind-title' }
+          features :{$: 'label.bind-text' }
         }, 
         features: [
           {$: 'css', css: '{ color: #fff }' }, 
@@ -192,7 +192,7 @@ jb.component('play-ground.cards', {
         title: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.     Mauris sagittis pellentesque lacus eleifend lacinia...', 
         style :{$: 'label.card-supporting-text', 
           template: (cmp,state,h) => h('span',{},state.title), 
-          features :{$: 'label.bind-title' }
+          features :{$: 'label.bind-text' }
         }
       }, 
       {$: 'group', 

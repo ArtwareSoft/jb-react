@@ -78,7 +78,7 @@ jb.component('letmesee.card', {
                     title: '%type%', 
                     style :{$: 'label.card-title', 
                       template: (cmp,state,h) => h('span',{},state.title), 
-                      features :{$: 'label.bind-title' }
+                      features :{$: 'label.bind-text' }
                     }, 
                     features: []
                   }, 
