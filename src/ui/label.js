@@ -12,23 +12,37 @@ jb.component('label', { /* label */
         jb.ui.ctrl(ctx)
 })
 
-jb.component('label.bind-title', { /* label.bindTitle */
+jb.component('text', { /* text */
+  type: 'control',
+  category: 'control:100,common:80',
+  params: [
+    {id: 'title', as: 'string', mandatory: true, defaultValue: 'no title', dynamic: true},
+    {id: 'text', as: 'ref', mandatory: true, defaultValue: 'my text', dynamic: true},
+    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx =>
+        jb.ui.ctrl(ctx)
+})
+
+jb.component('label.bind-text', { /* label.bindText */
   type: 'feature',
   impl: ctx => ({
     init: cmp => {
-      const ref = ctx.vars.$model.title(cmp.ctx);
-      cmp.state.title = fixTitleVal(ref);
-      if (jb.isWatchable(ref))
-        jb.ui.refObservable(ref,cmp,{watchScript: ctx})
-            .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,{title: fixTitleVal(ref)},e,ctx));
+      const textF = ctx.vars.$text || ctx.vars.$model.title 
+      const textRef = textF(cmp.ctx);
+      cmp.state.text = fixTextVal(textRef);
+      if (jb.isWatchable(textRef))
+        jb.ui.refObservable(textRef,cmp,{watchScript: ctx})
+            .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,{text: fixTextVal(textRef)},e,ctx));
 
       cmp.refresh = _ =>
-        cmp.setState({title: fixTitleVal(ctx.vars.$model.title(cmp.ctx))})
+        cmp.setState({text: fixTextVal(textF(cmp.ctx))})
 
-      function fixTitleVal(titleRef) {
-        if (titleRef == null || titleRef.$jb_invalid)
+      function fixTextVal(textRef) {
+        if (textRef == null || textRef.$jb_invalid)
             return 'ref error';
-        return jb.ui.toVdomOrStr(titleRef);
+        return jb.ui.toVdomOrStr(textRef);
       }
     }
   })
@@ -46,16 +60,24 @@ jb.component('label.htmlTag', { /* label.htmlTag */
     {id: 'cssClass', as: 'string'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h(cmp.htmlTag,{class: cmp.cssClass},state.title),
-    features: label.bindTitle()
+    template: (cmp,state,h) => h(cmp.htmlTag,{class: cmp.cssClass},state.text),
+    features: label.bindText()
+  })
+})
+
+jb.component('label.no-wrapping-tag', { /* label.noWrappingTag() */
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => state.text,
+    features: label.bindText()
   })
 })
 
 jb.component('label.span', { /* label.span */
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('span',{},state.title),
-    features: label.bindTitle()
+    template: (cmp,state,h) => h('span',{},state.text),
+    features: label.bindText()
   })
 })
 
@@ -63,16 +85,16 @@ jb.component('label.card-title', { /* label.cardTitle */
   type: 'label.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'mdl-card__title' },
-    				h('h2',{ class: 'mdl-card__title-text' },	state.title)),
-    features: label.bindTitle()
+    				h('h2',{ class: 'mdl-card__title-text' },	state.text)),
+    features: label.bindText()
   })
 })
 
 jb.component('label.card-supporting-text', { /* label.cardSupportingText */
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'mdl-card__supporting-text' },	state.title),
-    features: label.bindTitle()
+    template: (cmp,state,h) => h('div',{ class: 'mdl-card__supporting-text' },	state.text),
+    features: label.bindText()
   })
 })
 

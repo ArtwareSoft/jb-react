@@ -327,14 +327,14 @@ jb.component('group.studio-properties-accordion', { /* group.studioPropertiesAcc
 jb.component('label.studio-message', { /* label.studioMessage */
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.title),
+    template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.text),
     css: `{ position: absolute;
       z-index: 10000,
       color: white;  padding: 10px;  background: #327DC8;
       width: 1000px;
       margin-top: -100px;
       }`,
-    features: label.bindTitle()
+    features: label.bindText()
   })
 })
 

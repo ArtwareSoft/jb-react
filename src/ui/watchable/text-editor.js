@@ -204,7 +204,7 @@ jb.textEditor = {
 }
 
 function pathOfPosition(ref,_pos) {
-    const offset = !Number(_pos) ? this.lineColToOffset(ref.text, _pos) : _pos
+    const offset = !Number(_pos) ? lineColToOffset(ref.text, _pos) : _pos
     const found = jb.entries(ref.locationMap)
         .find(e=> e[1].offset_from <= offset && offset < e[1].offset_to)
     console.log('found',found && found[0],_pos)
@@ -251,11 +251,15 @@ function refreshEditor(cmp,_path) {
 
 function getSuggestions(fileContent, pos, jbToUse = jb) {
     const lines = fileContent.split('\n')
-    const componentHeaderIndex = lines.slice(0,pos.line).reverse().findIndex(line => line.match(/^jb.component\(/))
+    const componentHeaderIndex = pos.line - lines.slice(0,pos.line).reverse().findIndex(line => line.match(/^jb.component\(/))
     const compId = lines[componentHeaderIndex].match(/'([^']+)'/)[1]
     const {text, map} = jb.prettyPrintComp(compId,jbToUse.comps[compId])
     const path = pathOfPosition({text, locationMap: map}, {line: pos.line - componentHeaderIndex, col: line.col})
     return new jbToUse.jbCtx().run(sourceEditor.suggestions(path))
+}
+
+function adjustWhiteSpaces(map,original,formatted) {
+
 }
 
 })()

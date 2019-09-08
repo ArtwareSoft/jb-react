@@ -443,7 +443,7 @@ jb.component('studio-helper-sample.properties-params-prof', {
     style2 :{$: 'button.mdl-icon' }, 
     features: [
       {$: 'css.class', class: '' }, 
-      {$: 'label.bind-title' }, 
+      {$: 'label.bind-text' }, 
       {$: 'group.dynamic-titles' }
     ], 
     groupStyle :{$: 'layout.horizontal', spacing: '38' }
@@ -490,7 +490,7 @@ h('div',{ class: 'demo-card-wide mdl-card mdl-shadow--2dp' },
         'share'))))`,
       css: '',
       features: [
-        {$: 'label.bind-title' },
+        {$: 'label.bind-text' },
         {$: 'mdl-style.init-dynamic' }
       ]
     }
