@@ -29,7 +29,7 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
                 suggestionData && Object.assign(suggestionData,e)
                 if (suggestionData.options.indexOf(suggestionData.selected) == -1)
                   suggestionData.selected = null
-                suggestionData.selected = suggestionData.selected || suggestionData.options[0]
+                //suggestionData.selected = suggestionData.selected || suggestionData.options[0]
               })
               cmp.ctx.run(refreshControlById('suggestions-itemlist'))
           });
@@ -83,7 +83,7 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
       itemlist.selection({
         databind: '%$suggestionData/selected%',
         onDoubleClick: studio.pasteSuggestion(),
-        autoSelectFirst: true
+        //autoSelectFirst: true
       }),
       itemlist.keyboardSelection(false),
       css.height({height: '500', overflow: 'auto', minMax: 'max'}),
