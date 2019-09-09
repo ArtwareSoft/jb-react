@@ -637,6 +637,7 @@ jb.component('ui-test.itemlist-with-table-style', {
       items: '%$people%',
       style: table.withHeaders(),
       controls: [
+        text({title: 'index', text: '%$index%', features: field.columnWidth(40) }), 
         text({title: 'name', text: '%name%', features: field.columnWidth(300) }), 
         text({title: 'age', text: '%age%'})
       ],
@@ -647,7 +648,7 @@ jb.component('ui-test.itemlist-with-table-style', {
         })
       ]
     }),
-    expectedResult: contains(['300','age', 'Homer Simpson', '12'])
+    expectedResult: contains(['300','age', 'Homer Simpson', '38', '>3<', 'Bart'])
   })
 })
 

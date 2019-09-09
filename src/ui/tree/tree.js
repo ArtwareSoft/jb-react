@@ -5,9 +5,7 @@ class NodeLine extends jb.ui.Component {
 	constructor(props) {
 		super();
 		this.state.expanded = props.tree.expanded[props.path];
-		var tree = props.tree, path = props.path;
-		var model = tree.nodeModel;
-
+		const tree = props.tree, path = props.path;
 		this.state.flip = _ => {
 			tree.expanded[path] = !(tree.expanded[path]);
 			this.setState({expanded:tree.expanded[path]});
@@ -16,7 +14,7 @@ class NodeLine extends jb.ui.Component {
 	}
 
 	render(props,state) {
-		var h = jb.ui.h, tree= props.tree, model = props.tree.nodeModel;
+		const h = jb.ui.h, tree= props.tree, model = props.tree.nodeModel;
 
 		const path = props.path;
 		const collapsed = tree.expanded[path] ? '' : ' collapsed';
@@ -73,7 +71,9 @@ jb.component('tree', { /* tree */
 		var ctx = ctx.setVars({$tree: tree});
 		return jb.ui.ctrl(ctx, {
 			class: 'jb-tree', // define host element to keep the wrapper
-			beforeInit: (cmp,props) => {
+			beforeInit: cmp => {
+				cmp.refresh = () => cmp.tree.redraw(true)
+
 				cmp.tree = Object.assign( tree, {
 					redraw: strong => { // needed after dragula that changes the DOM
 						cmp.setState({empty: strong});
@@ -275,48 +275,50 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
   impl: ctx => ({
   		onkeydown: true,
   		afterViewInit: cmp => {
-  			var tree = cmp.tree;
-        var drake = tree.drake = dragula([], {
+  			const tree = cmp.tree;
+        	const drake = tree.drake = dragula([], {
 				      moves: el =>
 					         jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
-	      });
-        drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
+	    	})
+          	drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
           //jb.ui.findIncludeSelf(cmp.base,'.jb-array-node').map(el=>el.children()).filter('.treenode-children').get();
 
-	      drake.on('drag', function(el, source) {
-	          var path = tree.elemToPath(el.firstElementChild)
-	          el.dragged = { path: path, expanded: tree.expanded[path]}
-	          delete tree.expanded[path]; // collapse when dragging
-	        })
+			drake.on('drag', function(el, source) {
+				var path = tree.elemToPath(el.firstElementChild)
+				el.dragged = { path: path, expanded: tree.expanded[path]}
+				delete tree.expanded[path]; // collapse when dragging
+			})
 
-	      drake.on('drop', (dropElm, target, source,targetSibling) => {
-	            if (!dropElm.dragged) return;
-				      dropElm.parentNode.removeChild(dropElm);
-	            tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
-      				var state = treeStateAsVals(tree);
-      				var targetPath = targetSibling ? tree.elemToPath(targetSibling) : addOneToIndex(tree.elemToPath(target.lastElementChild));
-      				if (!targetPath)
-      					debugger;
-      				tree.nodeModel.move(dropElm.dragged.path,targetPath);
-      				restoreTreeStateFromVals(tree,state);
-      				dropElm.dragged = null;
-      				tree.redraw(true);
-	      });
+			drake.on('drop', (dropElm, target, source,targetSibling) => {
+				if (!dropElm.dragged) return;
+				dropElm.parentNode.removeChild(dropElm);
+				tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
+				const state = treeStateAsVals(tree);
+				let targetPath = targetSibling ? tree.elemToPath(targetSibling) : addToIndex(tree.elemToPath(target.lastElementChild),1);
+				// strange dragule behavior fix
+				const draggedIndex = Number(dropElm.dragged.path.split('~').pop());
+				const targetIndex = Number(targetPath.split('~').pop());
+				if (target === source && targetIndex > draggedIndex)
+					targetPath = addToIndex(targetPath,-1)
+				tree.nodeModel.move(dropElm.dragged.path,targetPath);
+				tree.nodeModel.refHandler && restoreTreeStateFromVals(tree,state);
+				dropElm.dragged = null;
+				tree.redraw(true);
+		    })
 
 	        // ctrl up and down
     		cmp.onkeydown.filter(e=>
     				e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
     				.subscribe(e=> {
-      					var diff = e.keyCode == 40 ? 2 : -1;
-      					var selectedIndex = Number(tree.selected.split('~').pop());
+      					const selectedIndex = Number(tree.selected.split('~').pop());
       					if (isNaN(selectedIndex)) return;
-      					var no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
-                //$($('.treenode.selected').parents('.treenode-children')[0]).children().length;
-      					var index = (selectedIndex + diff+ no_of_siblings+1) % (no_of_siblings + 1);
-      					var path = tree.selected.split('~').slice(0,-1).join('~');
-      					var state = treeStateAsVals(tree);
-      					tree.nodeModel.move(tree.selected, tree.selected.split('~').slice(0,-1).concat([index]).join('~'))
-      					restoreTreeStateFromVals(tree,state);
+      					const no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
+						const diff = e.keyCode == 40 ? 1 : -1;
+      					let target = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
+						const state = treeStateAsVals(tree);
+      					tree.nodeModel.move(tree.selected, tree.selected.split('~').slice(0,-1).concat([target]).join('~'))
+						  
+						tree.nodeModel.refHandler && restoreTreeStateFromVals(tree,state);
       			})
       		},
       		doCheck: function(cmp) {
@@ -341,16 +343,17 @@ restoreTreeStateFromVals = (tree,vals) => {
 }
 
 pathToVal = (model,path) =>
-	model.refHandler.val(model.refHandler.refOfPath(path.split('~')))
+	model.refHandler && model.refHandler.val(model.refHandler.refOfPath(path.split('~')))
 
 valToPath = (model,val) => {
-	var ref = model.refHandler.asRef(val);
+	if (!model.refHandler) return
+	const ref = model.refHandler.asRef(val);
 	return ref ? ref.path().join('~') : ''
 }
 
-addOneToIndex = path => {
+addToIndex = (path,toAdd) => {
 	if (!path) debugger;
-	var index = Number(path.slice(-1)) + 1;
+	const index = Number(path.slice(-1)) + toAdd;
 	return path.split('~').slice(0,-1).concat([index]).join('~')
 }
 

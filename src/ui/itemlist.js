@@ -62,11 +62,11 @@ jb.component('itemlist.init-table', { /* itemlist.init */
               cmp.ctx.vars.itemlistCntr.items = cmp.items;
             return cmp.items;
         }
-        cmp.fields = jb.asArray(ctx.vars.$model.controls.profile)
+        cmp.fields = jb.asArray(ctx.vars.$model.controls.profile).filter(x=>x)
           .map(ctrlProfile => enrichWithFieldAspects(ctrlProfile, {
-            title: cmp.ctx.run(ctrlProfile.title), 
+            title: cmp.ctx.run(ctrlProfile.title || ''), 
             class: '', 
-            control: row => cmp.ctx.setData(row).run(ctrlProfile).reactComp() 
+            control: (row,index) => cmp.ctx.setData(row).setVars({index: (index||0)+1}).run(ctrlProfile).reactComp() 
           }))
         
         function enrichWithFieldAspects(ctrlProfile,field) {
