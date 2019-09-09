@@ -51,7 +51,7 @@ class ROjson {
 jb.component('tree.json', { /* tree.json */
   type: 'tree.nodeModel',
   params: [
-    {id: 'object'},
+    {id: 'object', as: 'ref'},
     {id: 'rootPath', as: 'string'}
   ],
   impl: function(context, json, rootPath) {
@@ -60,9 +60,10 @@ jb.component('tree.json', { /* tree.json */
 })
 
 class Json {
-	constructor(json,rootPath) {
-		this.json = json;
+	constructor(jsonRef,rootPath) {
+		this.json = jsonRef;
 		this.rootPath = rootPath;
+		this.refHandler = jb.refHandler(jsonRef)
 	}
 	children(path) {
 		var val = this.val(path);
@@ -72,7 +73,7 @@ class Json {
 	val(path) {
 		if (path.indexOf('~') == -1)
 			return jb.val(this.json);
-		return jb.val(path.split('~').slice(1).reduce((o,p) =>o[p], this.json))
+		return jb.val(path.split('~').slice(1).reduce((o,p) =>o[p], jb.val(this.json)))
 	}
 	isArray(path) {
 		var val = this.val(path);
@@ -100,16 +101,20 @@ class Json {
 	modify(op,path,args,ctx) {
 		op.call(this,path,args);
 	}
-	move(path,args) { // drag & drop
-		var pathElems = args.dragged.split('~');
-		pathElems.shift();
-		var dragged = pathElems.reduce((o,p)=>o[p],this.json);
-		var arr = this.val(path);
-		if (Array.isArray(arr)) {
-			var draggedIndex = Number(args.dragged.split('~').pop());
-			arr.splice(draggedIndex,1);
-			var index = (args.index == -1) ? arr.length : args.index;
-			arr.splice(index,0,dragged);
-		}
+	move(dragged,target,ctx) { // drag & drop
+		const draggedArr = this.val(dragged.split('~').slice(0,-1).join('~'));
+		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
+		if (Array.isArray(draggedArr) && Array.isArray(targetArr))
+			jb.move(jb.asRef(this.val(dragged)), jb.asRef(this.val(target)))
+
+		// const draggedArr = this.val(dragged.split('~').slice(0,-1).join('~'));
+		// const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
+		// const draggedIndex = Number(dragged.split('~').pop());
+		// const targetIndex = Number(target.split('~').pop());
+		// const val = draggedArr[draggedIndex]
+		// if (draggedArr === targetArr) 
+		// 	jb.splice(jb.asRef(draggedArr),[[draggedIndex,1],[targetIndex,0,val]],ctx);
+		// else if (Array.isArray(draggedArr) && Array.isArray(targetArr))
+		// 	jb.move(jb.asRef(this.val(dragged)), jb.asRef(this.val(target)))
 	}
 }

@@ -214,7 +214,7 @@ class WatchableValueByRef {
 
     var valToMove = jb.val(fromRef);
     if (sameArray) {
-        if (fromIndex < toIndex) toIndex--; // the deletion changes the index
+        //if (fromIndex < toIndex) toIndex--; // the deletion changes the index
         return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
     }
     this.startTransaction()
