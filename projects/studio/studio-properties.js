@@ -118,7 +118,7 @@ jb.component('studio.property-slider', { /* studio.propertySlider */
         `>input-slider { width: 110px; }
 >.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }`
       ),
-      studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+//      studio.watchPath('%$path%')
     ]
   })
 })
