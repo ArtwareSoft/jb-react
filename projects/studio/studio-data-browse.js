@@ -11,18 +11,21 @@ jb.component('studio.open-resource', { /* studio.openResource */
     {id: 'path', as: 'string'},
     {id: 'name', as: 'string'}
   ],
-  impl: openDialog({
-    style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
-    content: editableText({
-      databind: studio.profileAsText('%$path%'),
-      style: editableText.studioCodemirrorTgp()
-    }),
-    title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
-    features: [
-      css('.jb-dialog-content-parent {overflow-y: hidden}'),
-      dialogFeature.resizer(true)
-    ]
-  })
+  impl: runActions(
+    writeValue(studio.profileAsText('%$path%'), 
+      (ctx,vars,{path}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+path.split('~')[0]+'%'))),
+    openDialog({
+      style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
+      content: editableText({
+        databind: studio.profileAsText('%$path%'),
+        style: editableText.studioCodemirrorTgp()
+      }),
+      title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
+      features: [
+        css('.jb-dialog-content-parent {overflow-y: hidden}'),
+        dialogFeature.resizer(true)
+      ]
+  }))
 })
 
 jb.component('studio.open-new-resource', { /* studio.openNewResource */
