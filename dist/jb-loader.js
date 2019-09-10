@@ -36,9 +36,9 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'src/ui/common-features.js',
         'src/ui/css-features.js',
         'src/ui/dialog.js',
-        'src/ui/menu.js',
         'src/ui/itemlist.js',
         'src/ui/itemlist-container.js',
+        'src/ui/menu.js',
 //        'src/ui/itemlist-with-groups.js',
         'src/ui/picklist.js',
         'src/ui/theme.js',
@@ -112,9 +112,10 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header',
-        'probe','testers', 
+        'probe'
       ],
       'studio-tests': [
+        'projects/studio/studio-testers.js',
         'probe','model','tree','suggestion'
       ],
       'css-files': [
@@ -139,15 +140,15 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       'parsing': [ 'src/misc/parsing.js' ],
       'spy': [ 'src/misc/spy.js' ],
       'dynamic-studio': [ 'src/misc/dynamic-studio.js' ],
-});
+})
 
 function jb_dynamicLoad(modules,prefix) {
   prefix = prefix || '';
   modules.split(',').forEach(m=>{
     (resources[m] || []).forEach(file=>{
-      if (m == 'studio')
-        file = file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js';
-      if (m == 'studio-tests')
+      if (m == 'studio' && !file.match(/\//))
+        file = 'projects/studio/studio-' + file + '.js';
+      if (m == 'studio-tests' && !file.match(/\//))
         file = 'projects/studio-helper/studio-' + file + '-tests.js';
       // if (m=='node_modules/jquery/dist/jquery.min.js' && electron)
       //   return document.write('<script src="../node_modules/jquery/dist/jquery.min.js" onload="global.$ = window.$ = window.jQuery = module.exports;"></script>');

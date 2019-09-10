@@ -644,6 +644,10 @@ const simpleValueByRefHandler = {
       to.$jb_parent[to.$jb_property] = this.val(value);
     return to;
   },
+  push(ref,toAdd) {
+    const arr = jb.asArray(jb.val(ref))
+    jb.toarray(toAdd).forEach(item => arr.push(item))
+  },
   asRef(value) {
     return value
     // if (value && (value.$jb_parent || value.$jb_val))
@@ -666,7 +670,7 @@ let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 return {
   run: jb_run,
   jbCtx, expression, bool_expression, profileType, compName, pathSummary, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame,
+  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame, fixByValue,
   ctxCounter: _ => ctxCounter, simpleValueByRefHandler
 }
 
@@ -678,6 +682,9 @@ Object.assign(jb,{
   knownNSAndCompCases: ['field'],
   macroName: id =>
     id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
+  ns: nsId =>
+    jb.registerMacro(nsId+'.$dummyComp',{})
+  ,
   component: (id,comp) => {
     jb.comps[id] = comp
     try {
@@ -917,6 +924,7 @@ Object.assign(jb,{
   writeValue: (ref,value,srcCtx) => jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
   splice: (ref,args,srcCtx) => jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
   move: (ref,toRef,srcCtx) => jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
+  push: (ref,toAdd,srcCtx) => jb.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
   isRef: ref => jb.refHandler(ref),
   isWatchable: ref => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
@@ -927,12 +935,12 @@ if (typeof self != 'undefined')
 if (typeof module != 'undefined')
   module.exports = jb;
 
-jb.component('call', {
- 	type: 'any',
- 	params: [
- 		{ id: 'param', as: 'string' }
- 	],
- 	impl: function(context,param) {
+jb.component('call', { /* call */
+  type: 'any',
+  params: [
+    {id: 'param', as: 'string'}
+  ],
+  impl: function(context,param) {
  	  const paramObj = context.componentContext && context.componentContext.params[param];
       if (typeof paramObj == 'function')
  		return paramObj(new jb.jbCtx(context, {
@@ -944,7 +952,7 @@ jb.component('call', {
       else
         return paramObj;
  	}
-});
+})
 
 jb.pipe = function(context,items,ptName) {
 	const start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
@@ -978,7 +986,7 @@ jb.pipe = function(context,items,ptName) {
 	}
 }
 
-jb.component('pipeline',  /* pipeline */ {
+jb.component('pipeline', { /* pipeline */
   type: 'data',
   description: 'map data arrays one after the other',
   params: [
@@ -993,7 +1001,7 @@ jb.component('pipeline',  /* pipeline */ {
   impl: (ctx,items) => jb.pipe(ctx,items,'$pipeline')
 })
 
-jb.component('pipe',  /* pipe */ {
+jb.component('pipe', { /* pipe */
   type: 'data',
   description: 'map asynch data arrays',
   params: [
@@ -1008,49 +1016,49 @@ jb.component('pipe',  /* pipe */ {
   impl: (ctx,items) => jb.pipe(ctx,items,'$pipe')
 })
 
-jb.component('data.if', {
-	type: 'data',
-	usageByValue: true,
- 	params: [
- 		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
- 		{ id: 'then', mandatory: true, dynamic: true },
- 		{ id: 'else', dynamic: true, defaultValue: '%%' },
- 	],
- 	impl: (ctx,cond,_then,_else) =>
+jb.component('data.if', { /* data.if */
+  type: 'data',
+  usageByValue: true,
+  params: [
+    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+    {id: 'then', mandatory: true, dynamic: true},
+    {id: 'else', dynamic: true, defaultValue: '%%'}
+  ],
+  impl: (ctx,cond,_then,_else) =>
  		cond ? _then() : _else()
-});
+})
 
-jb.component('action.if', {
- 	type: 'action',
- 	description: 'if then else',
-	usageByValue: true,
- 	params: [
- 		{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
- 		{ id: 'then', type: 'action', mandatory: true, dynamic: true },
- 		{ id: 'else', type: 'action', dynamic: true },
- 	],
- 	impl: (ctx,cond,_then,_else) =>
+jb.component('action.if', { /* action.if */
+  type: 'action',
+  description: 'if then else',
+  usageByValue: true,
+  params: [
+    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+    {id: 'then', type: 'action', mandatory: true, dynamic: true},
+    {id: 'else', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,cond,_then,_else) =>
  		cond ? _then() : _else()
-});
+})
 
-jb.component('jb-run', {
- 	type: 'action',
- 	params: [
- 		{ id: 'profile', as: 'string', mandatory: true, description: 'profile name'},
- 		{ id: 'params', as: 'single' },
- 	],
- 	impl: (ctx,profile,params) =>
+jb.component('jb-run', { /* jbRun */
+  type: 'action',
+  params: [
+    {id: 'profile', as: 'string', mandatory: true, description: 'profile name'},
+    {id: 'params', as: 'single'}
+  ],
+  impl: (ctx,profile,params) =>
  		ctx.run(Object.assign({$:profile},params || {}))
-});
+})
 
 
-jb.component('list', {
-	type: 'data',
-	description: 'also flatten arrays',
-	params: [
-		{ id: 'items', type: "data[]", as: 'array', composite: true }
-	],
-	impl: function(context,items) {
+jb.component('list', { /* list */
+  type: 'data',
+  description: 'also flatten arrays',
+  params: [
+    {id: 'items', type: 'data[]', as: 'array', composite: true}
+  ],
+  impl: function(context,items) {
 		let out = [];
 		items.forEach(item => {
 			if (Array.isArray(item))
@@ -1060,14 +1068,14 @@ jb.component('list', {
 		});
 		return out;
 	}
-});
+})
 
-jb.component('firstSucceeding', {
-	type: 'data',
-	params: [
-		{ id: 'items', type: "data[]", as: 'array', composite: true }
-	],
-	impl: function(context,items) {
+jb.component('firstSucceeding', { /* firstSucceeding */
+  type: 'data',
+  params: [
+    {id: 'items', type: 'data[]', as: 'array', composite: true}
+  ],
+  impl: function(context,items) {
 		for(let i=0;i<items.length;i++)
 			if (jb.val(items[i]))
 				return items[i];
@@ -1075,9 +1083,9 @@ jb.component('firstSucceeding', {
 		const last = items.slice(-1)[0];
 		return (last != null) && jb.val(last);
 	}
-});
+})
 
-jb.component('keys',  /* keys */ {
+jb.component('keys', { /* keys */
   type: 'data',
   description: 'Object.keys',
   params: [
@@ -1086,80 +1094,85 @@ jb.component('keys',  /* keys */ {
   impl: (ctx,obj) => Object.keys(obj)
 })
 
-jb.component('properties', {
-	type: 'data',
-	params: [
-		{ id: 'obj', defaultValue: '%%', as: 'single' }
-	],
-	impl: (context,obj) =>
+jb.component('properties', { /* properties */
+  type: 'data',
+  params: [
+    {id: 'obj', defaultValue: '%%', as: 'single'}
+  ],
+  impl: (context,obj) =>
 		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
 			({id: id, val: obj[id], index: index}))
-});
+})
 
-jb.component('prefix', {
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', mandatory: true },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-	],
-	impl: (context,separator,text) =>
+jb.component('prefix', { /* prefix */
+  type: 'data',
+  params: [
+    {id: 'separator', as: 'string', mandatory: true},
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (context,separator,text) =>
 		(text||'').substring(0,text.indexOf(separator))
-});
+})
 
-jb.component('suffix', {
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', mandatory: true },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-	],
-	impl: (context,separator,text) =>
+jb.component('suffix', { /* suffix */
+  type: 'data',
+  params: [
+    {id: 'separator', as: 'string', mandatory: true},
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (context,separator,text) =>
 		(text||'').substring(text.lastIndexOf(separator)+separator.length)
-});
+})
 
-jb.component('remove-prefix', {
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', mandatory: true },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-	],
-	impl: (context,separator,text) =>
+jb.component('remove-prefix', { /* removePrefix */
+  type: 'data',
+  params: [
+    {id: 'separator', as: 'string', mandatory: true},
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (context,separator,text) =>
 		text.indexOf(separator) == -1 ? text : text.substring(text.indexOf(separator)+separator.length)
-});
+})
 
-jb.component('remove-suffix',{
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', mandatory: true },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-	],
-	impl: (context,separator,text) =>
+jb.component('remove-suffix', { /* removeSuffix */
+  type: 'data',
+  params: [
+    {id: 'separator', as: 'string', mandatory: true},
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (context,separator,text) =>
 		text.lastIndexOf(separator) == -1 ? text : text.substring(0,text.lastIndexOf(separator))
-});
+})
 
-jb.component('remove-suffix-regex',{
-	type: 'data',
-	params: [
-		{ id: 'suffix', as: 'string', mandatory: true, description: 'regular expression. e.g [0-9]*' },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-	],
-	impl: function(context,suffix,text) {
+jb.component('remove-suffix-regex', { /* removeSuffixRegex */
+  type: 'data',
+  params: [
+    {
+      id: 'suffix',
+      as: 'string',
+      mandatory: true,
+      description: 'regular expression. e.g [0-9]*'
+    },
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: function(context,suffix,text) {
 		context.profile.prefixRegexp = context.profile.prefixRegexp || new RegExp(suffix+'$');
 		const m = (text||'').match(context.profile.prefixRegexp);
 		return (m && (text||'').substring(m.index+1)) || text;
 	}
-});
+})
 
-jb.component('write-value', {
-	type: 'action',
-	params: [
-		{ id: 'to', as: 'ref', mandatory: true },
-		{ id: 'value', mandatory: true}
-	],
-	impl: (ctx,to,value) =>
+jb.component('write-value', { /* writeValue */
+  type: 'action',
+  params: [
+    {id: 'to', as: 'ref', mandatory: true},
+    {id: 'value', mandatory: true}
+  ],
+  impl: (ctx,to,value) =>
 		jb.writeValue(to,jb.val(value),ctx)
-});
+})
 
-jb.component('index-of',  /* indexOf */ {
+jb.component('index-of', { /* indexOf */
   params: [
     {id: 'array', as: 'array', mandatory: true},
     {id: 'item', as: 'single', mandatory: true}
@@ -1167,77 +1180,85 @@ jb.component('index-of',  /* indexOf */ {
   impl: (ctx,array,item) => array.indexOf(item)
 })
 
-jb.component('add-to-array', {
-	type: 'action',
-	params: [
-		{ id: 'array', as: 'ref', mandatory: true },
-		{ id: 'itemsToAdd', as: 'array', mandatory: true },
-	],
-	impl: (ctx,array,itemsToAdd) => {
-		const ar = jb.toarray(array);
-		jb.splice(array,[[ar.length,0,...itemsToAdd]],ctx)
-	}
-});
+jb.component('add-to-array', { /* addToArray */
+  type: 'action',
+  params: [
+    {id: 'array', as: 'ref', mandatory: true},
+    {id: 'toAdd', as: 'array', mandatory: true}
+  ],
+  impl: (ctx,array,toAdd) => jb.push(array,toAdd,ctx)
+})
 
-jb.component('splice', {
-	type: 'action',
-	params: [
-		{ id: 'array', as: 'ref', mandatory: true },
-		{ id: 'fromIndex', as: 'number', mandatory: true },
-		{ id: 'noOfItemsToRemove', as: 'number', defaultValue: 0 },
-		{ id: 'itemsToAdd', as: 'array', defaultValue: [] },
-	],
-	impl: (ctx,array,fromIndex,noOfItemsToRemove,itemsToAdd) => {
+jb.component('splice', { /* splice */
+  type: 'action',
+  params: [
+    {id: 'array', as: 'ref', mandatory: true},
+    {id: 'fromIndex', as: 'number', mandatory: true},
+    {id: 'noOfItemsToRemove', as: 'number', defaultValue: 0},
+    {id: 'itemsToAdd', as: 'array', defaultValue: []}
+  ],
+  impl: (ctx,array,fromIndex,noOfItemsToRemove,itemsToAdd) => {
 		const ar = jb.toarray(array);
 		jb.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
 	}
-});
+})
 
-jb.component('remove-from-array', {
-	type: 'action',
-	params: [
-		{ id: 'array', as: 'ref', mandatory: true },
-		{ id: 'itemToRemove', as: 'single', description: 'choose item or index' },
-		{ id: 'index', as: 'number', description: 'choose item or index' },
-	],
-	impl: (ctx,array,itemToRemove,_index) => {
+jb.component('remove-from-array', { /* removeFromArray */
+  type: 'action',
+  params: [
+    {id: 'array', as: 'ref', mandatory: true},
+    {id: 'itemToRemove', as: 'single', description: 'choose item or index'},
+    {id: 'index', as: 'number', description: 'choose item or index'}
+  ],
+  impl: (ctx,array,itemToRemove,_index) => {
 		const ar = jb.toarray(array);
 		const index = itemToRemove ? ar.indexOf(item) : _index;
 		if (index != -1 && ar.length > index)
 			jb.splice(array,[[index,1]],ctx)
 	}
-});
+})
 
-jb.component('toggle-boolean-value',{
-	type: 'action',
-	params: [
-		{ id: 'of', as: 'ref' },
-	],
-	impl: (ctx,_of) =>
+jb.component('toggle-boolean-value', { /* toggleBooleanValue */
+  type: 'action',
+  params: [
+    {id: 'of', as: 'ref'}
+  ],
+  impl: (ctx,_of) =>
 		jb.writeValue(_of,jb.val(_of) ? false : true)
-});
+})
 
 
-jb.component('slice', {
-	type: 'aggregator',
-	params: [
-		{ id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true },
-		{ id: 'end', as: 'number', mandatory: true, description: '0-based index of where to end the selection (not including itself)' }
-	],
-	impl: function({data},start,end) {
+jb.component('slice', { /* slice */
+  type: 'aggregator',
+  params: [
+    {
+      id: 'start',
+      as: 'number',
+      defaultValue: 0,
+      description: '0-based index',
+      mandatory: true
+    },
+    {
+      id: 'end',
+      as: 'number',
+      mandatory: true,
+      description: '0-based index of where to end the selection (not including itself)'
+    }
+  ],
+  impl: function({data},start,end) {
 		if (!data || !data.slice) return null;
 		return end ? data.slice(start,end) : data.slice(start);
 	}
-});
+})
 
-jb.component('sort', {
-	type: 'aggregator',
-	params: [
-		{ id: 'propertyName', as: 'string', description: 'sort by property inside object' },
-		{ id: 'lexical', as: 'boolean', type: 'boolean' },
-		{ id: 'ascending', as: 'boolean', type: 'boolean' },
-	],
-	impl: ({data},prop,lexical,ascending) => {
+jb.component('sort', { /* sort */
+  type: 'aggregator',
+  params: [
+    {id: 'propertyName', as: 'string', description: 'sort by property inside object'},
+    {id: 'lexical', as: 'boolean', type: 'boolean'},
+    {id: 'ascending', as: 'boolean', type: 'boolean'}
+  ],
+  impl: ({data},prop,lexical,ascending) => {
 		if (!data || ! Array.isArray(data)) return null;
 		let sortFunc;
 		if (lexical)
@@ -1248,73 +1269,77 @@ jb.component('sort', {
 			return data.slice(0).sort((x,y)=>sortFunc(y,x));
 		return data.slice(0).sort((x,y)=>sortFunc(x,y));
 	}
-});
+})
 
-jb.component('first', {
-	type: 'aggregator',
-	impl: ({data}) => data[0]
-});
+jb.component('first', { /* first */
+  type: 'aggregator',
+  impl: ({data}) => data[0]
+})
 
-jb.component('last', {
-	type: 'aggregator',
-	impl: ctx => ctx.data.slice(-1)[0]
-});
+jb.component('last', { /* last */
+  type: 'aggregator',
+  impl: ctx => ctx.data.slice(-1)[0]
+})
 
-jb.component('count', {
-	type: 'aggregator',
-	description: 'length, size of array',
-	params: [{ id: 'items', as:'array', defaultValue: '%%'}],
-	impl: (ctx,items) =>
+jb.component('count', { /* count */
+  type: 'aggregator',
+  description: 'length, size of array',
+  params: [
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  impl: (ctx,items) =>
 		items.length
-});
+})
 
-jb.component('reverse', {
-	type: 'aggregator',
-	params: [{ id: 'items', as:'array', defaultValue: '%%'}],
-	impl: (ctx,items) =>
+jb.component('reverse', { /* reverse */
+  type: 'aggregator',
+  params: [
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  impl: (ctx,items) =>
 		items.reverse()
-});
+})
 
-jb.component('sample', {
-	type: 'aggregator',
-	params: [
-		{ id: 'size', as:'number', defaultValue: 300},
-		{ id: 'items', as:'array', defaultValue: '%%'}
-	],
-	impl: (ctx,size,items) =>
+jb.component('sample', { /* sample */
+  type: 'aggregator',
+  params: [
+    {id: 'size', as: 'number', defaultValue: 300},
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  impl: (ctx,size,items) =>
 		items.filter((x,i)=>i % (Math.floor(items.length/300) ||1) == 0)
-});
+})
 
-jb.component('obj', {
-	description: 'build object (dictionary) from props',
-	params: [
-		{ id: 'props', type: 'prop[]', mandatory: true, sugar: true },
-	],
-	impl: (ctx,properties) =>
+jb.component('obj', { /* obj */
+  description: 'build object (dictionary) from props',
+  params: [
+    {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
+  ],
+  impl: (ctx,properties) =>
 		Object.assign({}, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
-});
+})
 
-jb.component('assign', {
-	description: 'extend with calculated properties',
-	params: [
-		{ id: 'props', type: 'prop[]', mandatory: true, defaultValue: [] },
-	],
-	impl: (ctx,properties) =>
+jb.component('assign', { /* assign */
+  description: 'extend with calculated properties',
+  params: [
+    {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
+  ],
+  impl: (ctx,properties) =>
 		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
-});
+})
 
-jb.component('assign-with-index', {
-	type: 'aggregator',
-	description: 'extend with calculated properties. %$index% is available ',
-	params: [
-		{ id: 'props', type: 'prop[]', mandatory: true, defaultValue: [] },
-	],
-	impl: (ctx,properties) =>
+jb.component('assign-with-index', { /* assignWithIndex */
+  type: 'aggregator',
+  description: 'extend with calculated properties. %$index% is available ',
+  params: [
+    {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
+  ],
+  impl: (ctx,properties) =>
 		jb.toarray(ctx.data).map((item,i)=>
 			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
-});
+})
 
-jb.component('prop',  /* prop */ {
+jb.component('prop', { /* prop */
   type: 'prop',
   usageByValue: true,
   params: [
@@ -1330,7 +1355,7 @@ jb.component('prop',  /* prop */ {
   impl: ctx => ctx.params
 })
 
-jb.component('Var',  /* Var */ {
+jb.component('Var', { /* Var */
   type: 'var,system',
   isSystem: true,
   params: [
@@ -1341,7 +1366,7 @@ jb.component('Var',  /* Var */ {
 		Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
 })
 
-jb.component('remark',  /* remark */ {
+jb.component('remark', { /* remark */
   type: 'system',
   isSystem: true,
   params: [
@@ -1351,31 +1376,31 @@ jb.component('remark',  /* remark */ {
 		Object.assign(result,{ remark: self.remark })
 })
 
-jb.component('If', {
-	usageByValue: true,
-	params: [
-		{ id: 'condition', as: 'boolean', type: 'boolean', mandatory: true },
-		{ id: 'then' },
-		{ id: '$else' },
-	],
-	impl: (ctx,cond,_then,_else) =>
+jb.component('If', { /* If */
+  usageByValue: true,
+  params: [
+    {id: 'condition', as: 'boolean', type: 'boolean', mandatory: true},
+    {id: 'then'},
+    {id: 'Else'}
+  ],
+  impl: (ctx,cond,_then,_else) =>
 		cond ? _then : _else
-});
+})
 
-jb.component('not', {
-	type: 'boolean',
-	params: [
-		{ id: 'of', type: 'boolean', as: 'boolean', mandatory: true, composite: true}
-	],
-	impl: (context, of) => !of
-});
+jb.component('not', { /* not */
+  type: 'boolean',
+  params: [
+    {id: 'of', type: 'boolean', as: 'boolean', mandatory: true, composite: true}
+  ],
+  impl: (context, of) => !of
+})
 
-jb.component('and', {
-	type: 'boolean',
-	params: [
-		{ id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true }
-	],
-	impl: function(context) {
+jb.component('and', { /* and */
+  type: 'boolean',
+  params: [
+    {id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true}
+  ],
+  impl: function(context) {
 		const items = context.profile.$and || context.profile.items || [];
 		const innerPath =  context.profile.$and ? '$and~' : 'items~';
 		for(let i=0;i<items.length;i++) {
@@ -1384,14 +1409,14 @@ jb.component('and', {
 		}
 		return true;
 	}
-});
+})
 
-jb.component('or', {
-	type: 'boolean',
-	params: [
-		{ id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true }
-	],
-	impl: function(context) {
+jb.component('or', { /* or */
+  type: 'boolean',
+  params: [
+    {id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true}
+  ],
+  impl: function(context) {
 		const items = context.profile.$or || context.profile.items || [];
 		const innerPath =  context.profile.$or ? '$or~' : 'items~';
 		for(let i=0;i<items.length;i++) {
@@ -1400,20 +1425,20 @@ jb.component('or', {
 		}
 		return false;
 	}
-});
+})
 
-jb.component('between', {
-	type: 'boolean',
-	params: [
-		{ id: 'from', as: 'number', mandatory: true },
-		{ id: 'to', as: 'number', mandatory: true },
-		{ id: 'val', as: 'number', defaultValue: '%%' },
-	],
-	impl: (ctx,from,to,val) =>
+jb.component('between', { /* between */
+  type: 'boolean',
+  params: [
+    {id: 'from', as: 'number', mandatory: true},
+    {id: 'to', as: 'number', mandatory: true},
+    {id: 'val', as: 'number', defaultValue: '%%'}
+  ],
+  impl: (ctx,from,to,val) =>
 		val >= from && val <= to
-});
+})
 
-jb.component('contains',  /* contains */ {
+jb.component('contains', { /* contains */
   type: 'boolean',
   params: [
     {id: 'text', type: 'data[]', as: 'array', mandatory: true},
@@ -1431,7 +1456,7 @@ jb.component('contains',  /* contains */ {
 	}
 })
 
-jb.component('not-contains',  /* notContains */ {
+jb.component('not-contains', { /* notContains */
   type: 'boolean',
   params: [
     {id: 'text', type: 'data[]', as: 'array', mandatory: true},
@@ -1442,17 +1467,19 @@ jb.component('not-contains',  /* notContains */ {
   )
 })
 
-jb.component('starts-with',  /* startsWith */ {
+jb.component('starts-with', { /* startsWith */
+  description: 'begins with, includes, contains',
   type: 'boolean',
   params: [
     {id: 'startsWith', as: 'string', mandatory: true},
     {id: 'text', defaultValue: '%%', as: 'string'}
   ],
   impl: (context,startsWith,text) =>
-		text.lastIndexOf(startsWith,0) == 0
+		text.indexOf(startsWith) == 0
 })
 
-jb.component('ends-with',  /* endsWith */ {
+jb.component('ends-with', { /* endsWith */
+  description: 'includes, contains',
   type: 'boolean',
   params: [
     {id: 'endsWith', as: 'string', mandatory: true},
@@ -1463,17 +1490,17 @@ jb.component('ends-with',  /* endsWith */ {
 })
 
 
-jb.component('filter',{
-	type: 'aggregator',
-	params: [
-		{ id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, mandatory: true }
-	],
-	impl: (context,filter) =>
+jb.component('filter', { /* filter */
+  type: 'aggregator',
+  params: [
+    {id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, mandatory: true}
+  ],
+  impl: (context,filter) =>
 		jb.toarray(context.data).filter(item =>
 			filter(context,item))
-});
+})
 
-jb.component('match-regex',  /* matchRegex */ {
+jb.component('match-regex', { /* matchRegex */
   type: 'boolean',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
@@ -1490,66 +1517,66 @@ jb.component('match-regex',  /* matchRegex */ {
     text.match(new RegExp(fillText ? `^${regex}$` : regex))
 })
 
-jb.component('to-uppercase', {
-	params: [
-		{ id: 'text', as: 'string', defaultValue: '%%'}
-	],
-	impl: (ctx,text) =>
+jb.component('to-uppercase', { /* toUppercase */
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,text) =>
 		text.toUpperCase()
-});
+})
 
-jb.component('to-lowercase', {
-	params: [
-		{ id: 'text', as: 'string', defaultValue: '%%'}
-	],
-	impl: (ctx,text) =>
+jb.component('to-lowercase', { /* toLowercase */
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,text) =>
 		text.toLowerCase()
-});
+})
 
-jb.component('capitalize', {
-	params: [
-		{ id: 'text', as: 'string', defaultValue: '%%'}
-	],
-	impl: (ctx,text) =>
+jb.component('capitalize', { /* capitalize */
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,text) =>
 		text.charAt(0).toUpperCase() + text.slice(1)
-});
+})
 
-jb.component('join', {
-	params: [
-		{ id: 'separator', as: 'string', defaultValue:',', mandatory: true },
-		{ id: 'prefix', as: 'string' },
-		{ id: 'suffix', as: 'string' },
-		{ id: 'items', as: 'array', defaultValue: '%%'},
-		{ id: 'itemName', as: 'string', defaultValue: 'item'},
-		{ id: 'itemText', as: 'string', dynamic:true, defaultValue: '%%'}
-	],
-	type: 'aggregator',
-	impl: function(context,separator,prefix,suffix,items,itemName,itemText) {
+jb.component('join', { /* join */
+  params: [
+    {id: 'separator', as: 'string', defaultValue: ',', mandatory: true},
+    {id: 'prefix', as: 'string'},
+    {id: 'suffix', as: 'string'},
+    {id: 'items', as: 'array', defaultValue: '%%'},
+    {id: 'itemName', as: 'string', defaultValue: 'item'},
+    {id: 'itemText', as: 'string', dynamic: true, defaultValue: '%%'}
+  ],
+  type: 'aggregator',
+  impl: function(context,separator,prefix,suffix,items,itemName,itemText) {
 		const itemToText = (context.profile.itemText) ?
 			item => itemText(new jb.jbCtx(context, {data: item, vars: jb.obj(itemName,item) })) :
 			item => jb.tostring(item);	// performance
 
 		return prefix + items.map(itemToText).join(separator) + suffix;
 	}
-});
+})
 
-jb.component('unique', {
-	params: [
-		{ id: 'id', as: 'string', dynamic: true, defaultValue: '%%' },
-		{ id: 'items', as: 'array', defaultValue: '%%'}
-	],
-	type: 'aggregator',
-	impl: (ctx,idFunc,items) => {
+jb.component('unique', { /* unique */
+  params: [
+    {id: 'id', as: 'string', dynamic: true, defaultValue: '%%'},
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  type: 'aggregator',
+  impl: (ctx,idFunc,items) => {
 		const _idFunc = idFunc.profile == '%%' ? x=>x : x => idFunc(ctx.setData(x));
 		return jb.unique(items,_idFunc);
 	}
-});
+})
 
-jb.component('log', {
-	params: [
-		{ id: 'obj', as: 'single', defaultValue: '%%'}
-	],
-	impl: function(context,obj) {
+jb.component('log', { /* log */
+  params: [
+    {id: 'obj', as: 'single', defaultValue: '%%'}
+  ],
+  impl: function(context,obj) {
 		let out = obj;
 		if (typeof GLOBAL != 'undefined' && typeof(obj) == 'object')
 			out = JSON.stringify(obj,null," ");
@@ -1559,12 +1586,17 @@ jb.component('log', {
 			console.log(out);
 		return out;
 	}
-});
+})
 
-jb.component('asIs',{ params: [{id: '$asIs'}], impl: ctx => context.profile.$asIs });
+jb.component('asIs', { /* asIs */
+  params: [
+    {id: '$asIs'}
+  ],
+  impl: ctx => context.profile.$asIs
+})
 
-jb.component('object',{
-	impl: function(context) {
+jb.component('object', { /* object */
+  impl: function(context) {
 		let result = {};
 		const obj = context.profile.$object || context.profile;
 		if (Array.isArray(obj)) return obj;
@@ -1575,38 +1607,38 @@ jb.component('object',{
 		}
 		return result;
 	}
-});
+})
 
-jb.component('json.stringify', {
-	params: [
-		{ id: 'value', defaultValue: '%%' },
-		{ id: 'space', as: 'string', description: 'use space or tab to make pretty output' }
-	],
-	impl: (context,value,space) =>
+jb.component('json.stringify', { /* json.stringify */
+  params: [
+    {id: 'value', defaultValue: '%%'},
+    {id: 'space', as: 'string', description: 'use space or tab to make pretty output'}
+  ],
+  impl: (context,value,space) =>
 			JSON.stringify(jb.val(value),null,space)
-});
+})
 
-jb.component('json.parse', {
-	params: [
-		{ id: 'text', as: 'string' }
-	],
-	impl: (ctx,text) =>	{
+jb.component('json.parse', { /* json.parse */
+  params: [
+    {id: 'text', as: 'string'}
+  ],
+  impl: (ctx,text) =>	{
 		try {
 			return JSON.parse(text)
 		} catch (e) {
 			jb.logException(e,'json parse',ctx);
 		}
 	}
-});
+})
 
-jb.component('split', {
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', defaultValue: ',' },
-		{ id: 'text', as: 'string', defaultValue: '%%'},
-		{ id: 'part', options: ',first,second,last,but first,but last' }
-	],
-	impl: function(context,separator,text,part) {
+jb.component('split', { /* split */
+  type: 'data',
+  params: [
+    {id: 'separator', as: 'string', defaultValue: ','},
+    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'part', options: ',first,second,last,but first,but last'}
+  ],
+  impl: function(context,separator,text,part) {
 		const out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
 		switch (part) {
 			case 'first': return out[0];
@@ -1617,86 +1649,86 @@ jb.component('split', {
 			default: return out;
 		}
 	}
-});
+})
 
-jb.component('replace', {
-	type: 'data',
-	params: [
-		{ id: 'find', as: 'string', mandatory: true },
-		{ id: 'replace', as: 'string', mandatory: true  },
-		{ id: 'text', as: 'string', defaultValue: '%%' },
-		{ id: 'useRegex', type: 'boolean', as: 'boolean', defaultValue: true},
-		{ id: 'regexFlags', as: 'string', defaultValue: 'g', description: 'g,i,m' }
-	],
-	impl: function(context,find,replace,text,useRegex,regexFlags) {
+jb.component('replace', { /* replace */
+  type: 'data',
+  params: [
+    {id: 'find', as: 'string', mandatory: true},
+    {id: 'replace', as: 'string', mandatory: true},
+    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'useRegex', type: 'boolean', as: 'boolean', defaultValue: true},
+    {id: 'regexFlags', as: 'string', defaultValue: 'g', description: 'g,i,m'}
+  ],
+  impl: function(context,find,replace,text,useRegex,regexFlags) {
 		if (useRegex) {
 			return text.replace(new RegExp(find,regexFlags) ,replace);
 		} else
 			return text.replace(find,replace);
 	}
-});
+})
 
-jb.component('touch', {
-	type: 'action',
-	params: [
-		{ id: 'data', as: 'ref'},
-	],
-	impl: function(context,data_ref) {
+jb.component('touch', { /* touch */
+  type: 'action',
+  params: [
+    {id: 'data', as: 'ref'}
+  ],
+  impl: function(context,data_ref) {
 		const val = Number(jb.val(data_ref));
 		jb.writeValue(data_ref,val ? val + 1 : 1);
 	}
-});
+})
 
-jb.component('isNull', {
-	type: 'boolean',
-	params: [
-		{ id: 'obj', defaultValue: '%%'}
-	],
-	impl: (ctx, obj) => jb.val(obj) == null
-});
+jb.component('isNull', { /* isNull */
+  type: 'boolean',
+  params: [
+    {id: 'obj', defaultValue: '%%'}
+  ],
+  impl: (ctx, obj) => jb.val(obj) == null
+})
 
-jb.component('isEmpty', {
-	type: 'boolean',
-	params: [
-		{ id: 'item', as: 'single', defaultValue: '%%'}
-	],
-	impl: (ctx, item) =>
+jb.component('isEmpty', { /* isEmpty */
+  type: 'boolean',
+  params: [
+    {id: 'item', as: 'single', defaultValue: '%%'}
+  ],
+  impl: (ctx, item) =>
 		!item || (Array.isArray(item) && item.length == 0)
-});
+})
 
-jb.component('notEmpty', {
-	type: 'boolean',
-	params: [
-		{ id: 'item', as: 'single', defaultValue: '%%'}
-	],
-	impl: (ctx, item) =>
+jb.component('notEmpty', { /* notEmpty */
+  type: 'boolean',
+  params: [
+    {id: 'item', as: 'single', defaultValue: '%%'}
+  ],
+  impl: (ctx, item) =>
 		item && !(Array.isArray(item) && item.length == 0)
-});
+})
 
-jb.component('equals', {
-	type: 'boolean',
-	params: [
-		{ id: 'item1', as: 'single', mandatory: true },
-		{ id: 'item2', defaultValue: '%%', as: 'single' }
-	],
-	impl: (ctx, item1, item2) => item1 == item2
-});
+jb.component('equals', { /* equals */
+  type: 'boolean',
+  params: [
+    {id: 'item1', as: 'single', mandatory: true},
+    {id: 'item2', defaultValue: '%%', as: 'single'}
+  ],
+  impl: (ctx, item1, item2) => item1 == item2
+})
 
-jb.component('not-equals', {
-	type: 'boolean',
-	params: [
-		{ id: 'item1', as: 'single', mandatory: true },
-		{ id: 'item2', defaultValue: '%%', as: 'single' }
-	],
-	impl: (ctx, item1, item2) => item1 != item2
-});
+jb.component('not-equals', { /* notEquals */
+  type: 'boolean',
+  params: [
+    {id: 'item1', as: 'single', mandatory: true},
+    {id: 'item2', defaultValue: '%%', as: 'single'}
+  ],
+  impl: (ctx, item1, item2) => item1 != item2
+})
 
-jb.component('runActions', {
-	type: 'action',
-	params: [
-		{ id: 'actions', type:'action[]', ignore: true, composite: true, mandatory: true },
-	],
-	impl: ctx => {
+jb.component('runActions', { /* runActions */
+  type: 'action',
+  params: [
+    {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true}
+  ],
+  impl: ctx => {
 		if (!ctx.profile) debugger;
 		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']);
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
@@ -1705,9 +1737,9 @@ jb.component('runActions', {
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
 			,Promise.resolve())
 	}
-});
+})
 
-jb.component('run-action-on-items',  /* runActionOnItems */ {
+jb.component('run-action-on-items', { /* runActionOnItems */
   type: 'action',
   usageByValue: true,
   params: [
@@ -1728,14 +1760,14 @@ jb.component('run-action-on-items',  /* runActionOnItems */ {
 	}
 })
 
-jb.component('delay',  /* delay */ {
+jb.component('delay', { /* delay */
   params: [
     {id: 'mSec', type: 'number', defaultValue: 1}
   ],
   impl: (ctx,mSec) => jb.delay(mSec)
 })
 
-jb.component('on-next-timer',  /* onNextTimer */ {
+jb.component('on-next-timer', { /* onNextTimer */
   description: 'run action after delay',
   type: 'action',
   params: [
@@ -1747,15 +1779,19 @@ jb.component('on-next-timer',  /* onNextTimer */ {
 			action())
 })
 
-jb.component('extract-prefix',{
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
-		{ id: 'text', as: 'string', defaultValue: '%%'},
-		{ id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex' },
-		{ id: 'keepSeparator', type: 'boolean', as: 'boolean' }
-	],
-	impl: function(context,separator,text,regex,keepSeparator) {
+jb.component('extract-prefix', { /* extractPrefix */
+  type: 'data',
+  params: [
+    {
+      id: 'separator',
+      as: 'string',
+      description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'
+    },
+    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
+    {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
+  ],
+  impl: function(context,separator,text,regex,keepSeparator) {
 		if (!regex) {
 			return text.substring(0,text.indexOf(separator)) + (keepSeparator ? separator : '');
 		} else { // regex
@@ -1764,17 +1800,21 @@ jb.component('extract-prefix',{
 				return text.substring(0,match.index) + (keepSeparator ? match[0] : '');
 		}
 	}
-});
+})
 
-jb.component('extract-suffix',{
-	type: 'data',
-	params: [
-		{ id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
-		{ id: 'text', as: 'string', defaultValue: '%%'},
-		{ id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex' },
-		{ id: 'keepSeparator', type: 'boolean', as: 'boolean' }
-	],
-	impl: function(context,separator,text,regex,keepSeparator) {
+jb.component('extract-suffix', { /* extractSuffix */
+  type: 'data',
+  params: [
+    {
+      id: 'separator',
+      as: 'string',
+      description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'
+    },
+    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
+    {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
+  ],
+  impl: function(context,separator,text,regex,keepSeparator) {
 		if (!regex) {
 			return text.substring(text.lastIndexOf(separator) + (keepSeparator ? 0 : separator.length));
 		} else { // regex
@@ -1783,9 +1823,9 @@ jb.component('extract-suffix',{
 				return text.substring(match.index + (keepSeparator ? 0 : match[0].length));
 		}
 	}
-});
+})
 
-jb.component('range',  /* range */ {
+jb.component('range', { /* range */
   type: 'data',
   params: [
     {id: 'from', as: 'number', defaultValue: 1},
@@ -1795,7 +1835,7 @@ jb.component('range',  /* range */ {
     Array.from(Array(to-from+1).keys()).map(x=>x+from)
 })
 
-jb.component('type-of',  /* typeOf */ {
+jb.component('type-of', { /* typeOf */
   type: 'data',
   params: [
     {id: 'obj', defaultValue: '%%'}
@@ -1806,7 +1846,7 @@ jb.component('type-of',  /* typeOf */ {
 	}
 })
 
-jb.component('class-name',  /* className */ {
+jb.component('class-name', { /* className */
   type: 'data',
   params: [
     {id: 'obj', defaultValue: '%%'}
@@ -1817,7 +1857,7 @@ jb.component('class-name',  /* className */ {
 	}
 })
 
-jb.component('is-of-type',  /* isOfType */ {
+jb.component('is-of-type', { /* isOfType */
   type: 'boolean',
   params: [
     {id: 'type', as: 'string', mandatory: true, description: 'string,boolean'},
@@ -1830,23 +1870,23 @@ jb.component('is-of-type',  /* isOfType */ {
   }
 })
 
-jb.component('in-group', {
+jb.component('in-group', { /* inGroup */
   type: 'boolean',
   params: [
-  	{ id: 'group', as: 'array', mandatory: true },
-  	{ id: 'item', as: 'single', defaultValue: '%%' },
+    {id: 'group', as: 'array', mandatory: true},
+    {id: 'item', as: 'single', defaultValue: '%%'}
   ],
   impl: (ctx,group,item) =>
   	group.indexOf(item) != -1
 })
 
-jb.component('http.get', {
-	description: 'fetch data from external url',
-	params: [
-		{ id: 'url', as: 'string' },
-		{ id: 'json', as: 'boolean', description: 'convert result to json' }
-	],
-	impl: (ctx,url,_json) => {
+jb.component('http.get', { /* http.get */
+  description: 'fetch data from external url',
+  params: [
+    {id: 'url', as: 'string'},
+    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'}
+  ],
+  impl: (ctx,url,_json) => {
 		if (ctx.probe)
 			return jb.http_get_cache[url];
 		const json = _json || url.match(/json$/);
@@ -1856,16 +1896,21 @@ jb.component('http.get', {
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
 			  .catch(e => jb.logException(e,'',ctx) || [])
 	}
-});
+})
 
-jb.component('http.post', {
+jb.component('http.post', { /* http.post */
   type: 'action',
-	params: [
-		{ id: 'url', as: 'string' },
-    { id: 'postData', as: 'single' },
-		{ id: 'jsonResult', as: 'boolean', description: 'convert result to json' }
-	],
-	impl: (ctx,url,postData,json) => {
+  params: [
+    {id: 'url', as: 'string'},
+    {id: 'postData', as: 'single'},
+    {
+      id: 'jsonResult',
+      as: 'boolean',
+      description: 'convert result to json',
+      type: 'boolean'
+    }
+  ],
+  impl: (ctx,url,postData,json) => {
     const headers = new Headers();
     headers.append("Content-Type", "application/json; charset=UTF-8");
 		return fetch(url,{method: 'POST', headers: headers, body: JSON.stringify(postData) })
@@ -1873,29 +1918,35 @@ jb.component('http.post', {
 			  		json ? r.json() : r.text())
 			  .catch(e => jb.logException(e,'',ctx) || [])
 	}
-});
-
-jb.component('isRef', {
-	params: [
-		{ id: 'obj', mandatory: true }
-	],
-	impl: (ctx,obj) => jb.isRef(obj)
 })
 
-jb.component('asRef', {
-	params: [
-		{ id: 'obj', mandatory: true }
-	],
-	impl: (ctx,obj) => jb.asRef(obj)
+jb.component('isRef', { /* isRef */
+  params: [
+    {id: 'obj', mandatory: true}
+  ],
+  impl: (ctx,obj) => jb.isRef(obj)
 })
 
-jb.component('data.switch', {
-	usageByValue: false,
-	params: [
-  	{ id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
-  	{ id: 'default', dynamic: true },
-	],
-	impl: (ctx,cases,defaultValue) => {
+jb.component('asRef', { /* asRef */
+  params: [
+    {id: 'obj', mandatory: true}
+  ],
+  impl: (ctx,obj) => jb.asRef(obj)
+})
+
+jb.component('data.switch', { /* data.switch */
+  usageByValue: false,
+  params: [
+    {
+      id: 'cases',
+      type: 'data.switch-case[]',
+      as: 'array',
+      mandatory: true,
+      defaultValue: []
+    },
+    {id: 'default', dynamic: true}
+  ],
+  impl: (ctx,cases,defaultValue) => {
 		for(let i=0;i<cases.length;i++)
 			if (cases[i].condition(ctx))
 				return cases[i].value(ctx)
@@ -1903,21 +1954,27 @@ jb.component('data.switch', {
 	}
 })
 
-jb.component('data.case', {
+jb.component('data.case', { /* data.case */
   type: 'data.switch-case',
   singleInType: true,
   params: [
-  	{ id: 'condition', type: 'boolean', mandatory: true, dynamic: true },
-  	{ id: 'value', mandatory: true, dynamic: true },
+    {id: 'condition', type: 'boolean', mandatory: true, dynamic: true},
+    {id: 'value', mandatory: true, dynamic: true}
   ],
   impl: ctx => ctx.params
 })
 
-jb.component('action.switch', {
+jb.component('action.switch', { /* action.switch */
   type: 'action',
   params: [
-  	{ id: 'cases', type: 'action.switch-case[]', as: 'array', mandatory: true, defaultValue: [] },
-  	{ id: 'defaultAction', type: 'action', dynamic: true },
+    {
+      id: 'cases',
+      type: 'action.switch-case[]',
+      as: 'array',
+      mandatory: true,
+      defaultValue: []
+    },
+    {id: 'defaultAction', type: 'action', dynamic: true}
   ],
   impl: (ctx,cases,defaultAction) => {
   	for(let i=0;i<cases.length;i++)
@@ -1927,18 +1984,16 @@ jb.component('action.switch', {
   }
 })
 
-jb.component('action.switch-case', {
+jb.component('action.switch-case', { /* action.switchCase */
   type: 'action.switch-case',
   singleInType: true,
   params: [
-  	{ id: 'condition', type: 'boolean', as: 'boolean', mandatory: true, dynamic: true },
-  	{ id: 'action', type: 'action' ,mandatory: true, dynamic: true },
+    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: ctx => ctx.params
 })
-
-jb.component('newline', { passiveData: '\n' })
-jb.component('frame',   { passiveData: jb.frame });
+;
 
 (function() {
 'use strict'
@@ -8111,7 +8166,7 @@ class JbComponent {
 				//console.log('render',jb.studio.shortTitle(this.ctx.path));
 				try {
 					let vdom = jbComp.template(this,state,ui.h);
-					jbComp.modifierFuncs.forEach(modifier=> 
+					jbComp.modifierFuncs.forEach(modifier=>
 						vdom = (vdom && typeof vdom === 'object') ? tryWrapper(() => modifier(vdom,this,state,ui.h) || vdom) : vdom
 					);
 					jb.log('renRes',[this.ctx, vdom, state,props,this]);
@@ -8289,10 +8344,10 @@ ui.focus = function(elem,logTxt,srcCtx) {
   })
 }
 
-ui.wrapWithLauchingElement = (f,context,elem) =>
+ui.wrapWithLauchingElement = (f,context,elem,options={}) =>
 	ctx2 => {
 		if (!elem) debugger;
-		return f(context.extendVars(ctx2).setVars({ $launchingElement: { el : elem }}));
+		return f(context.extendVars(ctx2).setVars({ $launchingElement: { el : elem, ...options }}));
 	}
 
 
@@ -8334,7 +8389,7 @@ ui.renderWidget = function(profile,top) {
 				jb.resources = originalResources;
 				doRender();
 			}
-			st.reloadCompInPreviewWindow = (id,comp) => { 
+			st.reloadCompInPreviewWindow = (id,comp) => {
 				try {
 					jb.component(id,eval('('+comp+')'))
 					return jb.comps[id]
@@ -8348,7 +8403,7 @@ ui.renderWidget = function(profile,top) {
 	}
 
 	doRender()
-	
+
 	function doRender() {
 		if (formerReactElem)
 			ui.render(ui.h('div',{}),formerParentElem,formerReactElem)
@@ -8475,7 +8530,7 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 				const callerPathsUniqe = jb.unique(callerPaths)
 				if (callerPathsUniqe.length !== callerPaths.length)
 					return jb.logError('circular watchRef',callerPaths)
-						
+
 				if (!allowSelfRefresh) {
 					const callerPathsToCompare = callerPaths.map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
 					const ctxStylePath = ctx.path.replace(/~features~?[0-9]*$/,'')
@@ -8560,14 +8615,17 @@ ui.addHTML = (el,html) => {
 
 // ****************** components ****************
 
-jb.component('custom-style', {
-	typePattern: /.*-style/, category: 'advanced:10,all:10',
-	params: [
-		{ id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true },
-		{ id: 'css', as: 'string' },
-    	{ id: 'features', type: 'feature[]', dynamic: true },
-	],
-	impl: (context,css,features) => ({
+jb.component('custom-style', { /* customStyle */
+  typePattern: {
+
+  },
+  category: 'advanced:10,all:10',
+  params: [
+    {id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true},
+    {id: 'css', as: 'string'},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: (context,css,features) => ({
 		template: context.profile.template,
 		css: css,
 		featuresOptions: features(),
@@ -8575,13 +8633,16 @@ jb.component('custom-style', {
 	})
 })
 
-jb.component('style-by-control', {
-	typePattern: /.*-style/,category: 'advanced:10,all:20',
-	params: [
-		{ id: 'control', type: 'control', mandatory: true, dynamic: true },
-		{ id: 'modelVar', as: 'string', mandatory: true }
-	],
-	impl: (ctx,control,modelVar) =>
+jb.component('style-by-control', { /* styleByControl */
+  typePattern: {
+    
+  },
+  category: 'advanced:10,all:20',
+  params: [
+    {id: 'control', type: 'control', mandatory: true, dynamic: true},
+    {id: 'modelVar', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,control,modelVar) =>
 		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
 })
 
@@ -8629,6 +8690,8 @@ class WatchableValueByRef {
       const path = this.pathOfRef(ref), op = {}, oldVal = this.valOfPath(path);
       if (!path || ref.$jb_val) return;
       if (opOnRef.$set !== undefined && opOnRef.$set === oldVal) return;
+      if (opOnRef.$push) opOnRef.$push = jb.asArray(opOnRef.$push)
+
       path.forEach((p,i)=> { // hash ancestors with $jb_id because the objects will be re-generated by redux
           const innerPath = path.slice(0,i+1)
           const val = this.valOfPath(innerPath)
@@ -8643,7 +8706,10 @@ class WatchableValueByRef {
       this.resources(jb.ui.update(this.resources(),op),opEvent);
       const newVal = (opVal != null && opVal[isProxy]) ? opVal : this.valOfPath(path);
       if (opOnRef.$push) {
-          this.addObjToMap(opOnRef.$push,[...path,oldVal.length])
+        opOnRef.$push.forEach((toAdd,i)=>
+          this.addObjToMap(toAdd,[...path,oldVal.length+i]))
+          opEvent.path.push(oldVal.length)
+          opEvent.ref = this.refOfPath(opEvent.path)
       } else if (opOnRef.$set === null && typeof oldVal === 'object') { // delete object should return the path that was deleted
         this.removeObjFromMap(oldVal)
         this.addObjToMap(newVal,path)
@@ -8652,7 +8718,7 @@ class WatchableValueByRef {
           // TODO: make is more effecient in case of $merge, $splice
           this.removeObjFromMap(oldVal)
           this.addObjToMap(newVal,path)
-      } 
+      }
       opEvent.newVal = newVal;
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
@@ -8682,7 +8748,7 @@ class WatchableValueByRef {
     Object.keys(top).filter(key=>key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key],true))
   }
   refreshMapDown(top) {
-    const ref = this.asRef(top)
+    const ref = this.asRef(top, true)
     const path = ref && ref.path && ref.path()
     if (path)
       this.addObjToMap(top,path)
@@ -8695,13 +8761,17 @@ class WatchableValueByRef {
         return [...path, ref.$jb_childProp]
     return path
   }
-  asRef(obj) {
+  asRef(obj, silent) {
+    if (this.isRef(obj))
+      return obj
     if (!obj || typeof obj !== 'object') return obj;
     const actualObj = obj[isProxy] ? obj[targetVal] : obj
     const path = this.objToPath.get(actualObj) || this.objToPath.get(actualObj[jbId])
     if (path)
         return { $jb_obj: this.valOfPath(path), handler: this, path: function() { return this.handler.pathOfRef(this)} }
-    return actualObj;
+    if (!silent)
+      jb.logError('asRef can not make a watchable ref of obj',obj)
+    return null;
   }
   valOfPath(path) {
     return this.cleanVal(path.reduce((o,p)=>o && o[p],this.resources()))
@@ -8709,10 +8779,10 @@ class WatchableValueByRef {
   refOfPath(path) {
     const val = this.valOfPath(path);
     if (!val || typeof val !== 'object' && path.length > 0) {
-      const parent = this.asRef(this.valOfPath(path.slice(0,-1)));
+      const parent = this.asRef(this.valOfPath(path.slice(0,-1)), true);
       if (path.length == 1)
         return {$jb_obj: this.resources(), $jb_childProp: path[0], handler: this, $jb_path: () => path }
-      if (this.isRef(parent)) 
+      if (parent && this.isRef(parent))
         return Object.assign({},parent,{$jb_childProp: path.slice(-1)[0]})
       jb.logError('reOfPath can not find parent ref',path.join('~'))
     }
@@ -8769,8 +8839,8 @@ class WatchableValueByRef {
   }
   createSecondaryLink(val) {
     if (val && typeof val === 'object' && !val.$jb_secondaryLink) {
-      const ref = this.asRef(val);
-      if (ref.$jb_obj)
+      const ref = this.asRef(val,true);
+      if (ref && ref.$jb_obj)
         return new Proxy(val, {
           get: (o,p) => (p === targetVal) ? o : (p === isProxy) ? true : (p === '$jb_secondaryLink' ? {val} : (jb.val(this.asRef(val)))[p]),
           set: (o,p,v) => o[p] = v
@@ -8795,7 +8865,7 @@ class WatchableValueByRef {
 
     var valToMove = jb.val(fromRef);
     if (sameArray) {
-        if (fromIndex < toIndex) toIndex--; // the deletion changes the index
+        //if (fromIndex < toIndex) toIndex--; // the deletion changes the index
         return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
     }
     this.startTransaction()
@@ -8894,13 +8964,20 @@ jb.ui.refObservable = (ref,cmp,settings={}) => {
 jb.ui.extraWatchableHandler = (resources,oldHandler) => jb.extraWatchableHandler(new WatchableValueByRef(resources),oldHandler);
 jb.ui.resourceChange = jb.mainWatchableHandler.resourceChange;
 
-jb.component('run-transaction', {
-	type: 'action',
-	params: [
-		{ id: 'actions', type:'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: [] },
-		{ id: 'disableNotifications', as: 'boolean', type: 'boolean' }
-	],
-	impl: (ctx,actions,disableNotifications) => {
+jb.component('run-transaction', { /* runTransaction */
+  type: 'action',
+  params: [
+    {
+      id: 'actions',
+      type: 'action[]',
+      dynamic: true,
+      composite: true,
+      mandatory: true,
+      defaultValue: []
+    },
+    {id: 'disableNotifications', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,actions,disableNotifications) => {
 		jb.mainWatchableHandler.startTransaction()
 		return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
@@ -8913,20 +8990,38 @@ jb.component('run-transaction', {
 })()
 ;
 
-jb.component('group', {
-  type: 'control', category: 'group:100,common:90',
+jb.ns('layout')
+jb.ns('tabs')
+
+jb.component('group', { /* group */
+  type: 'control',
+  category: 'group:100,common:90',
   params: [
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'group.style', defaultValue: { $: 'layout.vertical' }, mandatory: true , dynamic: true },
-    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
+    {id: 'title', as: 'string', dynamic: true},
+    {
+      id: 'style',
+      type: 'group.style',
+      defaultValue: layout.vertical(),
+      mandatory: true,
+      dynamic: true
+    },
+    {
+      id: 'controls',
+      type: 'control[]',
+      mandatory: true,
+      flattenArray: true,
+      dynamic: true,
+      composite: true
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx)
 })
 
-jb.component('group.init-group', {
-  type: 'feature', category: 'group:0',
+jb.component('group.init-group', { /* group.initGroup */
+  type: 'feature',
+  category: 'group:0',
   impl: ctx => ({
     init: cmp => {
       cmp.calcCtrls = cmp.calcCtrls || (_ =>
@@ -8943,20 +9038,27 @@ jb.component('group.init-group', {
   })
 })
 
-jb.component('inline-controls', {
+jb.component('inline-controls', { /* inlineControls */
   type: 'control',
   params: [
-    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
+    {
+      id: 'controls',
+      type: 'control[]',
+      mandatory: true,
+      flattenArray: true,
+      dynamic: true,
+      composite: true
+    }
   ],
   impl: ctx => ctx.params.controls().filter(x=>x)
 })
 
-jb.component('dynamic-controls', {
+jb.component('dynamic-controls', { /* dynamicControls */
   type: 'control',
   params: [
-    { id: 'controlItems', type: 'data', as: 'array', mandatory: true, dynamic: true },
-    { id: 'genericControl', type: 'control', mandatory: true, dynamic: true },
-    { id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
+    {id: 'controlItems', type: 'data', as: 'array', mandatory: true, dynamic: true},
+    {id: 'genericControl', type: 'control', mandatory: true, dynamic: true},
+    {id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
   ],
   impl: (context,controlItems,genericControl,itemVariable) =>
     controlItems()
@@ -8965,8 +9067,9 @@ jb.component('dynamic-controls', {
       ))
 })
 
-jb.component('group.dynamic-titles', {
-  type: 'feature', category: 'group:30',
+jb.component('group.dynamic-titles', { /* group.dynamicTitles */
+  type: 'feature',
+  category: 'group:30',
   description: 'dynamic titles for sub controls',
   impl: ctx => ({
     doCheck: cmp =>
@@ -8975,13 +9078,27 @@ jb.component('group.dynamic-titles', {
   })
 })
 
-jb.component('control.first-succeeding', {
-  type: 'control', category: 'common:30',
+jb.component('control.first-succeeding', { /* control.firstSucceeding */
+  type: 'control',
+  category: 'common:30',
   params: [
-    { id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true },
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'style', type: 'first-succeeding.style', defaultValue :{$: 'first-succeeding.style' }, mandatory: true , dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
+    {
+      id: 'controls',
+      type: 'control[]',
+      mandatory: true,
+      flattenArray: true,
+      dynamic: true,
+      composite: true
+    },
+    {id: 'title', as: 'string', dynamic: true},
+    {
+      id: 'style',
+      type: 'first-succeeding.style',
+      defaultValue: firstSucceeding.style(),
+      mandatory: true,
+      dynamic: true
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(new jb.jbCtx(ctx,{params: Object.assign({},ctx.params,{
       originalControls: ctx.profile.controls,
@@ -9002,11 +9119,24 @@ jb.component('control.first-succeeding', {
     })}))
 })
 
-jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
-  type: 'feature', category: 'watch:30', description: 'relevant only for first-succeeding',
+jb.component('first-succeeding.watch-refresh-on-ctrl-change', { /* firstSucceeding.watchRefreshOnCtrlChange */
+  type: 'feature',
+  category: 'watch:30',
+  description: 'relevant only for first-succeeding',
   params: [
-    { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
-    { id: 'includeChildren', as: 'boolean', description: 'watch childern change as well' },
+    {
+      id: 'ref',
+      mandatory: true,
+      as: 'ref',
+      dynamic: true,
+      description: 'reference to data'
+    },
+    {
+      id: 'includeChildren',
+      as: 'boolean',
+      description: 'watch childern change as well',
+      type: 'boolean'
+    }
   ],
   impl: (ctx,refF,includeChildren) => ({
       init: cmp => {
@@ -9015,7 +9145,7 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
         .subscribe(e=>{
           if (ctx && ctx.profile && ctx.profile.$trace)
             console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
-          
+
           const originalControls = ctx.vars.$model.originalControls
           if (!originalControls) return
           for(let i=0;i<(originalControls ||[]).length;i++) {
@@ -9033,96 +9163,125 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', {
   })
 })
 
-jb.component('control-with-condition', {
+jb.component('control-with-condition', { /* controlWithCondition */
   type: 'control',
   usageByValue: true,
   params: [
-    { id: 'condition', type: 'boolean', dynamic: true, mandatory: true, as: 'boolean' },
-    { id: 'control', type: 'control', mandatory: true, dynamic: true },
-    { id: 'title', as: 'string' },
+    {id: 'condition', type: 'boolean', dynamic: true, mandatory: true, as: 'boolean'},
+    {id: 'control', type: 'control', mandatory: true, dynamic: true},
+    {id: 'title', as: 'string'}
   ],
   impl: (ctx,condition,ctrl) =>
     condition() && ctrl(ctx)
 })
 ;
 
-jb.component('label', {
-    type: 'control', category: 'control:100,common:80',
-    params: [
-        { id: 'title', as: 'ref', mandatory: true, defaultValue: 'my label', dynamic: true },
-        { id: 'style', type: 'label.style', defaultValue :{$: 'label.span' }, dynamic: true },
-        { id: 'features', type: 'feature[]', dynamic: true },
-    ],
-    impl: ctx =>
+jb.ns('label')
+
+jb.component('label', { /* label */
+  type: 'control',
+  category: 'control:100,common:80',
+  params: [
+    {id: 'title', as: 'ref', mandatory: true, defaultValue: 'my label', dynamic: true},
+    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx =>
         jb.ui.ctrl(ctx)
 })
 
-jb.component('label.bind-title', {
+jb.component('text', { /* text */
+  type: 'control',
+  category: 'control:100,common:80',
+  params: [
+    {id: 'title', as: 'string', mandatory: true, defaultValue: 'no title', dynamic: true},
+    {id: 'text', as: 'ref', mandatory: true, defaultValue: 'my text', dynamic: true},
+    {id: 'style', type: 'label.style', defaultValue: label.noWrappingTag(), dynamic: true},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('label.bind-text', { /* label.bindText */
   type: 'feature',
   impl: ctx => ({
     init: cmp => {
-      const ref = ctx.vars.$model.title(cmp.ctx);
-      cmp.state.title = fixTitleVal(ref);
-      if (jb.isWatchable(ref))
-        jb.ui.refObservable(ref,cmp,{watchScript: ctx})
-            .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,{title: fixTitleVal(ref)},e,ctx));
+      const textF = ctx.vars.$model.text || ctx.vars.$model.title 
+      const textRef = textF(cmp.ctx);
+      cmp.state.text = fixTextVal(textRef);
+      if (jb.isWatchable(textRef))
+        jb.ui.refObservable(textRef,cmp,{watchScript: ctx})
+            .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,{text: fixTextVal(textRef)},e,ctx));
 
       cmp.refresh = _ =>
-        cmp.setState({title: fixTitleVal(ctx.vars.$model.title(cmp.ctx))})
+        cmp.setState({text: fixTextVal(textF(cmp.ctx))})
 
-      function fixTitleVal(titleRef) {
-        if (titleRef == null || titleRef.$jb_invalid)
+      function fixTextVal(textRef) {
+        if (textRef == null || textRef.$jb_invalid)
             return 'ref error';
-        return jb.ui.toVdomOrStr(titleRef);
+        return jb.ui.toVdomOrStr(textRef);
       }
     }
   })
 })
 
-jb.component('label.htmlTag', {
+jb.component('label.htmlTag', { /* label.htmlTag */
   type: 'label.style',
-	params: [
-		{ id: 'htmlTag', as: 'string', defaultValue: 'p', options:'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label' },
-		{ id: 'cssClass', as: 'string' },
-	],
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h(cmp.htmlTag,{class: cmp.cssClass},state.title),
-      features :{$: 'label.bind-title' }
-  }
+  params: [
+    {
+      id: 'htmlTag',
+      as: 'string',
+      defaultValue: 'p',
+      options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'
+    },
+    {id: 'cssClass', as: 'string'}
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h(cmp.htmlTag,{class: cmp.cssClass},state.text),
+    features: label.bindText()
+  })
 })
 
-jb.component('label.span', {
-    type: 'label.style',
-    impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('span',{},state.title),
-      features :{$: 'label.bind-title' }
-  }
+jb.component('label.no-wrapping-tag', { /* label.noWrappingTag() */
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => state.text,
+    features: label.bindText()
+  })
 })
 
-jb.component('label.card-title', {
-    type: 'label.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('div',{ class: 'mdl-card__title' },
-    				h('h2',{ class: 'mdl-card__title-text' },	state.title)),
-        features :{$: 'label.bind-title' }
-    }
+jb.component('label.span', { /* label.span */
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('span',{},state.text),
+    features: label.bindText()
+  })
 })
 
-jb.component('label.card-supporting-text', {
-    type: 'label.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('div',{ class: 'mdl-card__supporting-text' },	state.title),
-        features :{$: 'label.bind-title' }
-    }
+jb.component('label.card-title', { /* label.cardTitle */
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'mdl-card__title' },
+    				h('h2',{ class: 'mdl-card__title-text' },	state.text)),
+    features: label.bindText()
+  })
 })
 
-jb.component('highlight', {
+jb.component('label.card-supporting-text', { /* label.cardSupportingText */
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'mdl-card__supporting-text' },	state.text),
+    features: label.bindText()
+  })
+})
+
+jb.component('highlight', { /* highlight */
   type: 'data',
   usageByValue: true,
   params: [
-    { id: 'base', as: 'string', dynamic: true },
-    { id: 'highlight', as: 'string', dynamic: true },
-    { id: 'cssClass', as: 'string', defaultValue: 'mdl-color-text--indigo-A700'},
+    {id: 'base', as: 'string', dynamic: true},
+    {id: 'highlight', as: 'string', dynamic: true},
+    {id: 'cssClass', as: 'string', defaultValue: 'mdl-color-text--indigo-A700'}
   ],
   impl: (ctx,base,highlightF,cssClass) => {
     const h = highlightF(), b = base();
@@ -9136,19 +9295,22 @@ jb.component('highlight', {
 })
 ;
 
-jb.component('image', {
-	type: 'control,image', category: 'control:50',
-	params: [
-		{ id: 'url', as: 'string', mandatory: true },
-		{ id: 'imageWidth', as: 'number' },
-		{ id: 'imageHeight', as: 'number' },
-		{ id: 'width', as: 'number' },
-		{ id: 'height', as: 'number' },
-		{ id: 'units', as: 'string', defaultValue : 'px'},
-		{ id: 'style', type: 'image.style', dynamic: true, defaultValue: { $: 'image.default' } },
-		{ id: 'features', type: 'feature[]', dynamic: true }
-	],
-	impl: ctx => {
+jb.ns('image')
+
+jb.component('image', { /* image */
+  type: 'control,image',
+  category: 'control:50',
+  params: [
+    {id: 'url', as: 'string', mandatory: true},
+    {id: 'imageWidth', as: 'number'},
+    {id: 'imageHeight', as: 'number'},
+    {id: 'width', as: 'number'},
+    {id: 'height', as: 'number'},
+    {id: 'units', as: 'string', defaultValue: 'px'},
+    {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.default()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => {
 			['imageWidth','imageHeight','width','height'].forEach(prop=>
 					ctx.params[prop] = ctx.params[prop] || null);
 			return jb.ui.ctrl(ctx, {
@@ -9158,27 +9320,32 @@ jb.component('image', {
 		}
 })
 
-jb.component('image.default', {
-	type: 'image.style',
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) =>
+jb.component('image.default', { /* image.default */
+  type: 'image.style',
+  impl: customStyle({
+    template: (cmp,state,h) =>
 			h('div',{}, h('img', {src: state.url})),
-
-		css: `{ {? width: %$$model/width%%$$model/units%; ?} {? height: %$$model/height%%$$model/units%; ?} }
+    css: `{ {? width: %$$model/width%%$$model/units%; ?} {? height: %$$model/height%%$$model/units%; ?} }
 			>img{ {? width: %$$model/imageWidth%%$$model/units%; ?} {? height: %$$model/imageHeight%%$$model/units%; ?} }`
-	}
+  })
 })
 ;
 
-jb.type('button.style')
+jb.ns('button')
 
-jb.component('button', {
-  type: 'control,clickable', category: 'control:100,common:100',
+jb.component('button', { /* button */
+  type: 'control,clickable',
+  category: 'control:100,common:100',
   params: [
-    { id: 'title', as: 'ref', mandatory: true, defaultTValue: 'click me', dynamic: true },
-    { id: 'action', type: 'action', mandatory: true, dynamic: true },
-    { id: 'style', type: 'button.style', defaultValue: { $: 'button.mdl-raised' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
+    {id: 'title', as: 'ref', mandatory: true, defaultTValue: 'click me', dynamic: true},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {
+      id: 'style',
+      type: 'button.style',
+      defaultValue: button.mdlRaised(),
+      dynamic: true
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx,{
@@ -9201,11 +9368,12 @@ jb.component('button', {
     })
 })
 
-jb.component('ctrl-action', {
-  type: 'feature', category: 'button:70',
+jb.component('ctrl-action', { /* ctrlAction */
+  type: 'feature',
+  category: 'button:70',
   description: 'action to perform on control+click',
   params: [
-    { id: 'action', type: 'action', mandatory: true, dynamic: true },
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: (ctx,action) => ({
       afterViewInit: cmp =>
@@ -9213,11 +9381,12 @@ jb.component('ctrl-action', {
   })
 })
 
-jb.component('alt-action', {
-  type: 'feature', category: 'button:70',
+jb.component('alt-action', { /* altAction */
+  type: 'feature',
+  category: 'button:70',
   description: 'action to perform on alt+click',
   params: [
-    { id: 'action', type: 'action', mandatory: true, dynamic: true },
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: (ctx,action) => ({
       afterViewInit: cmp =>
@@ -9225,11 +9394,12 @@ jb.component('alt-action', {
   })
 })
 
-jb.component('button-disabled', {
-  type: 'feature', category: 'button:70',
+jb.component('button-disabled', { /* buttonDisabled */
+  type: 'feature',
+  category: 'button:70',
   description: 'define condition when button is enabled',
   params: [
-    { id: 'enabledCondition', type: 'boolean', mandatory: true, dynamic: true },
+    {id: 'enabledCondition', type: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx,cond) => ({
       init: cmp =>
@@ -9237,14 +9407,20 @@ jb.component('button-disabled', {
   })
 })
 
-jb.component('icon-with-action', {
-  type: 'control,clickable', category: 'control:30',
+jb.component('icon-with-action', { /* iconWithAction */
+  type: 'control,clickable',
+  category: 'control:30',
   params: [
-		{ id: 'icon', as: 'string', mandatory: true },
-		{ id: 'title', as: 'string' },
-		{ id: 'action', type: 'action', mandatory: true, dynamic: true },
-		{ id: 'style', type: 'icon-with-action.style', dynamic: true, defaultValue :{$: 'button.mdl-icon' } },
-		{ id: 'features', type: 'feature[]', dynamic: true }
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string'},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {
+      id: 'style',
+      type: 'icon-with-action.style',
+      dynamic: true,
+      defaultValue: button.mdlIcon()
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx, {
@@ -9307,10 +9483,10 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
     cmp.state.model = cmp.jbModel()
   })
   cmp.databindRefChanged.subscribe(()=>{}) // first activation
-  
+
 
   const srcCtx = cmp.ctxForPick || cmp.ctx;
-  if (!oneWay) 
+  if (!oneWay)
       jb.ui.databindObservable(cmp, {
             watchScript: ctx, onError: _ => cmp.setState({model: null}) })
       .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
@@ -9319,7 +9495,7 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
    cmp.databindRefChangedSub.next(ctx.vars.$model.databind());
 }
 
-jb.component('field.databind', {
+jb.component('field.databind', { /* field.databind */
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => databindField(cmp,ctx),
@@ -9333,11 +9509,11 @@ jb.component('field.databind', {
   })
 })
 
-jb.component('field.databind-text', {
+jb.component('field.databind-text', { /* field.databindText */
   type: 'feature',
   params: [
-    { id: 'debounceTime', as: 'number', defaultValue: 0 },
-    { id: 'oneWay', type: 'boolean', as: 'boolean'}
+    {id: 'debounceTime', as: 'number', defaultValue: 0},
+    {id: 'oneWay', type: 'boolean', as: 'boolean'}
   ],
   impl: (ctx,debounceTime,oneWay) => ({
       beforeInit: cmp => databindField(cmp,ctx,debounceTime,oneWay),
@@ -9352,16 +9528,16 @@ jb.component('field.databind-text', {
   })
 })
 
-jb.component('field.data', {
+jb.component('field.data', { /* field.data */
   type: 'data',
   impl: ctx =>
     ctx.vars.$model.databind()
 })
 
-jb.component('field.default', {
+jb.component('field.default', { /* field.default */
   type: 'feature',
   params: [
-    { id: 'value', type: 'data'},
+    {id: 'value', type: 'data'}
   ],
   impl: (ctx,defaultValue) => {
     var data_ref = ctx.vars.$model.databind();
@@ -9370,21 +9546,22 @@ jb.component('field.default', {
   }
 })
 
-jb.component('field.init-value', {
+jb.component('field.init-value', { /* field.initValue */
   type: 'feature',
   params: [
-    { id: 'value', type: 'data'},
+    {id: 'value', type: 'data'}
   ],
   impl: (ctx,value) =>
     ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind(), jb.val(value))
 })
 
-jb.component('field.keyboard-shortcut', {
-  type: 'feature', category: 'events',
-	description: 'listen to events at the document level even when the component is not active',
+jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
+  type: 'feature',
+  category: 'events',
+  description: 'listen to events at the document level even when the component is not active',
   params: [
-    { id: 'key', as: 'string', description: 'e.g. Alt+C' },
-    { id: 'action', type: 'action', dynamic: true },
+    {id: 'key', as: 'string', description: 'e.g. Alt+C'},
+    {id: 'action', type: 'action', dynamic: true}
   ],
   impl: (context,key,action) => ({
       afterViewInit: cmp => {
@@ -9407,11 +9584,11 @@ jb.component('field.keyboard-shortcut', {
   })
 })
 
-jb.component('field.subscribe', {
+jb.component('field.subscribe', { /* field.subscribe */
   type: 'feature',
   params: [
-    { id: 'action', type: 'action', mandatory: true, dynamic: true },
-    { id: 'includeFirst', type: 'boolean', as: 'boolean'},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'includeFirst', type: 'boolean', as: 'boolean'}
   ],
   impl: (context,action,includeFirst) => ({
     init: cmp => {
@@ -9428,23 +9605,30 @@ jb.component('field.subscribe', {
 
 jb.component('field.on-change', jb.comps['field.subscribe'])
 
-jb.component('field.toolbar', {
+jb.component('field.toolbar', { /* field.toolbar */
   type: 'feature',
   params: [
-    { id: 'toolbar', type: 'control', mandatory: true, dynamic: true },
+    {id: 'toolbar', type: 'control', mandatory: true, dynamic: true}
   ],
   impl: (context,toolbar) => ({
     toolbar: toolbar().reactComp()
   })
 })
 
-// ***** validation 
+// ***** validation
 
-jb.component('validation', {
-  type: 'feature', category: 'validation:100',
+jb.component('validation', { /* validation */
+  type: 'feature',
+  category: 'validation:100',
   params: [
-    { id: 'validCondition', mandatory: true, type: 'boolean', as: 'boolean', dynamic: true },
-    { id: 'errorMessage', mandatory: true, as: 'string', dynamic: true },
+    {
+      id: 'validCondition',
+      mandatory: true,
+      type: 'boolean',
+      as: 'boolean',
+      dynamic: true
+    },
+    {id: 'errorMessage', mandatory: true, as: 'string', dynamic: true}
   ],
   impl: (ctx,validCondition,errorMessage) => ({
       init: cmp =>
@@ -9472,29 +9656,36 @@ jb.ui.checkValidationError = cmp => {
     if (ctx.vars.formContainer)
       ctx.vars.formContainer.err = err;
     return err;
-  }  
+  }
 }
 
 })();
 
-jb.type('editable-text.style');
+jb.ns('editableText')
+jb.ns('dialog')
 
-jb.component('editable-text', {
-  type: 'control', category: 'input:100,common:80',
+jb.component('editable-text', { /* editableText */
+  type: 'control',
+  category: 'input:100,common:80',
   params: [
-    { id: 'title', as: 'string' , dynamic: true },
-    { id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
-    { id: 'updateOnBlur', as: 'boolean', type: 'boolean' },
-    { id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-input' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
+    {id: 'updateOnBlur', as: 'boolean', type: 'boolean'},
+    {
+      id: 'style',
+      type: 'editable-text.style',
+      defaultValue: editableText.mdlInput(),
+      dynamic: true
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx)
-});
+})
 
-jb.component('editable-text.x-button', {
+jb.component('editable-text.x-button', { /* editableText.xButton */
   type: 'feature',
-  impl : ctx =>({
+  impl: ctx =>({
     templateModifier: (vdom,cmp,state) =>
       jb.ui.h('div', {},[vdom].concat(cmp.jbModel() ? [jb.ui.h('button', { class: 'delete', onclick: e => cmp.jbModel(null)} ,'×')]  : []) ),
     css: `>.delete {
@@ -9509,17 +9700,30 @@ jb.component('editable-text.x-button', {
   })
 })
 
-jb.component('editable-text.helper-popup', {
+jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
   type: 'feature',
   params: [
-    { id: 'control', type: 'control', dynamic: true, mandatory: true },
-    { id: 'popupId', as: 'string', mandatory: true },
-    { id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.popup' } },
-    { id: 'showHelper', as: 'boolean', dynamic: true, defaultValue :{$notEmpty: '%value%' }, description: 'show/hide helper according to input content' },
-    { id: 'onEnter', type: 'action', dynamic: true },
-    { id: 'onEsc', type: 'action', dynamic: true },
+    {id: 'control', type: 'control', dynamic: true, mandatory: true},
+    {id: 'popupId', as: 'string', mandatory: true},
+    {
+      id: 'popupStyle',
+      type: 'dialog.style',
+      dynamic: true,
+      defaultValue: dialog.popup()
+    },
+    {
+      id: 'showHelper',
+      as: 'boolean',
+      dynamic: true,
+      defaultValue: notEmpty('%value%'),
+      description: 'show/hide helper according to input content',
+      type: 'boolean'
+    },
+    {id: 'autoOpen', as: 'boolean', type: 'boolean'},
+    {id: 'onEnter', type: 'action', dynamic: true},
+    {id: 'onEsc', type: 'action', dynamic: true}
   ],
-  impl : ctx =>({
+  impl: ctx =>({
     onkeyup: true,
     onkeydown: true, // used for arrows
     extendCtxOnce: (ctx,cmp) =>
@@ -9530,16 +9734,17 @@ jb.component('editable-text.helper-popup', {
       if (!input) return;
 
       cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 =>
-            ctx2.run( {$: 'open-dialog',
+            ctx2.run( openDialog({
               id: ctx.params.popupId,
               style: _ctx => ctx.params.popupStyle(_ctx),
               content: _ctx => ctx.params.control(_ctx),
               features: [
+                dialogFeature.maxZIndexOnClick(),
                 dialogFeature.uniqueDialog(ctx.params.popupId),
-                css('{z-index: 10000 !important}'),
+//                css('{z-index: 10000 !important}'),
               ]
-            })
-          , cmp.ctx, cmp.base );
+            }))
+          ,cmp.ctx, cmp.base);
 
       cmp.popup = _ =>
         jb.ui.dialogs.dialogs.filter(d=>d.id == ctx.params.popupId)[0];
@@ -9577,6 +9782,8 @@ jb.component('editable-text.helper-popup', {
 
       keyup.filter(e=>e.keyCode == 27) // ESC
           .subscribe(_=>cmp.closePopup())
+      if (ctx.params.autoOpen)
+        cmp.refreshSuggestionPopupOpenClose()
     },
     destroy: cmp =>
         cmp.closePopup(),
@@ -9584,19 +9791,25 @@ jb.component('editable-text.helper-popup', {
 })
 ;
 
-jb.type('editable-boolean.style');
+jb.ns('editableBoolean')
 
-jb.component('editable-boolean',{
-	type: 'control', category: 'input:20',
-	params: [
-		{ id: 'databind', as: 'ref', type: 'boolean', mandaroy: true, dynamic: true, aa: 5 },
-		{ id: 'style', type: 'editable-boolean.style', defaultValue :{$: 'editable-boolean.checkbox' }, dynamic: true },
-		{ id: 'title', as: 'string', dynamic: true },
-		{ id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true },
-		{ id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true  },
-		{ id: 'features', type: 'feature[]', dynamic: true },
-	],
-	impl: ctx => jb.ui.ctrl(ctx,{
+jb.component('editable-boolean', { /* editableBoolean */
+  type: 'control',
+  category: 'input:20',
+  params: [
+    {id: 'databind', as: 'ref', type: 'boolean', mandaroy: true, dynamic: true, aa: 5},
+    {
+      id: 'style',
+      type: 'editable-boolean.style',
+      defaultValue: editableBoolean.checkbox(),
+      dynamic: true
+    },
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true},
+    {id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx,{
 			init: cmp => {
 				cmp.toggle = () =>
 					cmp.jbModel(!cmp.jbModel());
@@ -9607,44 +9820,66 @@ jb.component('editable-boolean',{
 				}
 				cmp.extendRefresh = _ =>
 					cmp.setState({text: cmp.text()})
-					
+
 				cmp.refresh();
 			},
 		})
 })
 
-jb.component('editable-boolean.keyboard-support', {
-	type: 'feature',
-	impl: ctx => ({
-			onkeydown: true,
-			afterViewInit: cmp => {
-				cmp.onkeydown.filter(e=> 
-						e.keyCode == 37 || e.keyCode == 39)
-					.subscribe(e=> {
-						cmp.toggle();
-						cmp.refreshMdl && cmp.refreshMdl();
-					})
-			},
-		})
+jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardSupport */
+  type: 'feature',
+  impl: ctx => ({
+		onkeydown: true,
+		afterViewInit: cmp => {
+			cmp.onkeydown.filter(e=> 
+					e.keyCode == 37 || e.keyCode == 39)
+				.subscribe(e=> {
+					cmp.toggle();
+					cmp.refreshMdl && cmp.refreshMdl();
+				})
+		},
+	})
 })
 ;
 
-jb.component('editable-number', {
-  type: 'control', category: 'input:30',
-  params: [
-    { id: 'databind', as: 'ref', mandaroy: true, dynamic: true },
-    { id: 'title', as: 'string', dynamic: true },
-    { id: 'style', type: 'editable-number.style', defaultValue: { $: 'editable-number.input' }, dynamic: true },
-    { id: 'symbol', as: 'string', description: 'leave empty to parse symbol from value' },
-    { id: 'min', as: 'number', defaultValue: 0 },
-    { id: 'max', as: 'number', defaultValue: 100 },
-    { id: 'displayString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%' },
-    { id: 'dataString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%' },
-    { id: 'autoScale', as: 'boolean', defaultValue: true, description: 'adjust its scale if at edges' },
+jb.ns('editableNumber')
 
-    { id: 'step', as: 'number', defaultValue: 1, description: 'used by slider' },
-    { id: 'initialPixelsPerUnit', as: 'number', description: 'used by slider' },
-    { id: 'features', type: 'feature[]', dynamic: true },
+jb.component('editable-number', { /* editableNumber */
+  type: 'control',
+  category: 'input:30',
+  params: [
+    {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
+    {id: 'title', as: 'string', dynamic: true},
+    {
+      id: 'style',
+      type: 'editable-number.style',
+      defaultValue: editableNumber.input(),
+      dynamic: true
+    },
+    {
+      id: 'symbol',
+      as: 'string',
+      description: 'leave empty to parse symbol from value'
+    },
+    {id: 'min', as: 'number', defaultValue: 0},
+    {id: 'max', as: 'number', defaultValue: 100},
+    {
+      id: 'displayString',
+      as: 'string',
+      dynamic: true,
+      defaultValue: '%$Value%%$Symbol%'
+    },
+    {id: 'dataString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%'},
+    {
+      id: 'autoScale',
+      as: 'boolean',
+      defaultValue: true,
+      description: 'adjust its scale if at edges',
+      type: 'boolean'
+    },
+    {id: 'step', as: 'number', defaultValue: 1, description: 'used by slider'},
+    {id: 'initialPixelsPerUnit', as: 'number', description: 'used by slider'},
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => {
       class editableNumber {
@@ -9671,32 +9906,43 @@ jb.component('editable-number', {
           return this.dataString(ctx.setVars({ Value: ''+number, Symbol: this.symbol }));
         }
       }
-      return jb.ui.ctrl(ctx.setVars({ editableNumber: new editableNumber(ctx.params) })) 
+      return jb.ui.ctrl(ctx.setVars({ editableNumber: new editableNumber(ctx.params) }))
   }
 })
 
-jb.component('editable-number.input',{
+jb.component('editable-number.input', { /* editableNumber.input */
   type: 'editable-number.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind-text' },
-      template: (cmp,state,h) => h('input', { 
+  impl: customStyle({
+    template: (cmp,state,h) => h('input', { 
         value: state.model, 
         onchange: e => cmp.jbModel(e.target.value), 
         onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-  }
+    features: field.databindText()
+  })
 })
 
 
 ;
 
-jb.component('group.wait', {
-  type: 'feature', category: 'group:70',
-	description: 'wait for asynch data before showing the control',
+jb.component('group.wait', { /* group.wait */
+  type: 'feature',
+  category: 'group:70',
+  description: 'wait for asynch data before showing the control',
   params: [
-    { id: 'for', mandatory: true, dynamic: true },
-    { id: 'loadingControl', type: 'control', defaultValue: { $:'label', title: 'loading ...'} , dynamic: true },
-    { id: 'error', type: 'control', defaultValue: { $:'label', title: 'error: %$error%', css: '{color: red; font-weight: bold}'} , dynamic: true },
-    { id: 'varName', as: 'string' },
+    {id: 'for', mandatory: true, dynamic: true},
+    {
+      id: 'loadingControl',
+      type: 'control',
+      defaultValue: label('loading ...'),
+      dynamic: true
+    },
+    {
+      id: 'error',
+      type: 'control',
+      defaultValue: label({title: 'error: %$error%'}),
+      dynamic: true
+    },
+    {id: 'varName', as: 'string'}
   ],
   impl: (context,waitFor,loading,error,varName) => ({
       beforeInit : cmp =>
@@ -9705,7 +9951,7 @@ jb.component('group.wait', {
       afterViewInit: cmp => {
         jb.rx.Observable.from(waitFor()).takeUntil(cmp.destroyed).take(1)
           .catch(e=> {
-              cmp.setState( { ctrls: [error(context.setVars({error:e}))].map(c=>c.reactComp()) }) 
+              cmp.setState( { ctrls: [error(context.setVars({error:e}))].map(c=>c.reactComp()) })
               return []
           })
           .subscribe(data => {
@@ -9721,28 +9967,51 @@ jb.component('group.wait', {
   })
 })
 
-jb.component('watch-ref', {
-  type: 'feature', category: 'watch:100',
-	description: 'subscribes to data changes to refresh component',
+jb.component('watch-ref', { /* watchRef */
+  type: 'feature',
+  category: 'watch:100',
+  description: 'subscribes to data changes to refresh component',
   params: [
-    { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
-    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
-    { id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
-    { id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children' },
+    {
+      id: 'ref',
+      mandatory: true,
+      as: 'ref',
+      dynamic: true,
+      description: 'reference to data'
+    },
+    {
+      id: 'includeChildren',
+      as: 'string',
+      options: 'yes,no,structure',
+      defaultValue: 'no',
+      description: 'watch childern change as well'
+    },
+    {
+      id: 'delay',
+      as: 'number',
+      description: 'delay in activation, can be used to set priority'
+    },
+    {
+      id: 'allowSelfRefresh',
+      as: 'boolean',
+      description: 'allow refresh originated from the components or its children',
+      type: 'boolean'
+    }
   ],
   impl: (ctx,ref,includeChildren,delay,allowSelfRefresh) => ({
-      beforeInit: cmp => 
+      beforeInit: cmp =>
         cmp.watchRefOn = true,
       init: cmp =>
         jb.ui.watchRef(cmp.ctx,cmp,ref(cmp.ctx),includeChildren,delay,allowSelfRefresh)
   })
 })
 
-jb.component('watch-observable', {
-  type: 'feature', category: 'watch',
-	description: 'subscribes to a custom rx.observable to refresh component',
+jb.component('watch-observable', { /* watchObservable */
+  type: 'feature',
+  category: 'watch',
+  description: 'subscribes to a custom rx.observable to refresh component',
   params: [
-    { id: 'toWatch', mandatory: true },
+    {id: 'toWatch', mandatory: true}
   ],
   impl: (ctx,toWatch) => ({
       init: cmp => {
@@ -9756,13 +10025,24 @@ jb.component('watch-observable', {
   })
 })
 
-jb.component('group.data', {
-  type: 'feature', category: 'general:100,watch:80',
+jb.component('group.data', { /* group.data */
+  type: 'feature',
+  category: 'general:100,watch:80',
   params: [
-    { id: 'data', mandatory: true, dynamic: true, as: 'ref' },
-    { id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable' },
-    { id: 'watch', as: 'boolean' },
-    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
+    {id: 'data', mandatory: true, dynamic: true, as: 'ref'},
+    {
+      id: 'itemVariable',
+      as: 'string',
+      description: 'optional. define data as a local variable'
+    },
+    {id: 'watch', as: 'boolean', type: 'boolean'},
+    {
+      id: 'includeChildren',
+      as: 'string',
+      options: 'yes,no,structure',
+      defaultValue: 'no',
+      description: 'watch childern change as well'
+    }
   ],
   impl: (ctx, data_ref, itemVariable,watch,includeChildren) => ({
       init: cmp => {
@@ -9779,12 +10059,12 @@ jb.component('group.data', {
   })
 })
 
-jb.component('html-attribute', {
+jb.component('html-attribute', { /* htmlAttribute */
   type: 'feature',
-	description: 'set attribute to html element and give it value',
+  description: 'set attribute to html element and give it value',
   params: [
-    { id: 'attribute', mandatory: true, as: 'string' },
-    { id: 'value', mandatory: true, as: 'string' }
+    {id: 'attribute', mandatory: true, as: 'string'},
+    {id: 'value', mandatory: true, as: 'string'}
   ],
   impl: (ctx,attribute,value) => ({
     templateModifier: vdom => {
@@ -9795,20 +10075,23 @@ jb.component('html-attribute', {
   })
 })
 
-jb.component('id', {
+jb.component('id', { /* id */
   type: 'feature',
-	description: 'adds id to html element',
+  description: 'adds id to html element',
   params: [
-    { id: 'id', mandatory: true, as: 'string' },
+    {id: 'id', mandatory: true, as: 'string'}
   ],
-  impl :{$: 'html-attribute', attribute: 'id', value: '%$id%'} 
+  impl: htmlAttribute(
+    'id',
+    '%$id%'
+  )
 })
 
-jb.component('feature.hover-title', {
+jb.component('feature.hover-title', { /* feature.hoverTitle */
   type: 'feature',
-	description: 'set element title, usually shown by browser on hover',
+  description: 'set element title, usually shown by browser on hover',
   params: [
-    { id: 'title', as: 'string', dynamic: true },
+    {id: 'title', as: 'string', dynamic: true}
   ],
   impl: (ctx, title) => ({
     templateModifier: (vdom,cmp,state) => {
@@ -9819,14 +10102,24 @@ jb.component('feature.hover-title', {
   })
 })
 
-jb.component('variable', {
-  type: 'feature', category: 'general:90',
-	description: 'define a variable. watchable or passive, local or global',
+jb.component('variable', { /* variable */
+  type: 'feature',
+  category: 'general:90',
+  description: 'define a variable. watchable or passive, local or global',
   params: [
-    { id: 'name', as: 'string', mandatory: true },
-    { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
-    { id: 'watchable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable' },
-    { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+    {
+      id: 'watchable',
+      as: 'boolean',
+      type: 'boolean',
+      description: 'E.g., selected item variable'
+    },
+    {
+      id: 'globalId',
+      as: 'string',
+      description: 'If specified, the var will be defined as global with this id'
+    }
   ],
   impl: (context, name, value, watchable, globalId) => ({
       extendCtxOnce: (ctx,cmp) => {
@@ -9846,14 +10139,21 @@ jb.component('variable', {
 // to delete soon
 jb.component('var', jb.comps.variable)
 
-jb.component('bind-refs', {
-  type: 'feature', category: 'watch',
+jb.component('bind-refs', { /* bindRefs */
+  type: 'feature',
+  category: 'watch',
   description: 'automatically updates a mutual variable when other value is changing',
   params: [
-    { id: 'watchRef', mandatory: true, as: 'ref' },
-    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
-    { id: 'updateRef', mandatory: true, as: 'ref' },
-    { id: 'value', mandatory: true, as: 'single', dynamic: true },
+    {id: 'watchRef', mandatory: true, as: 'ref'},
+    {
+      id: 'includeChildren',
+      as: 'string',
+      options: 'yes,no,structure',
+      defaultValue: 'no',
+      description: 'watch childern change as well'
+    },
+    {id: 'updateRef', mandatory: true, as: 'ref'},
+    {id: 'value', mandatory: true, as: 'single', dynamic: true}
   ],
   impl: (ctx,ref,includeChildren,updateRef,value) => ({
     afterViewInit: cmp =>
@@ -9862,14 +10162,26 @@ jb.component('bind-refs', {
   })
 })
 
-jb.component('calculated-var', {
-  type: 'feature', category: 'general:60',
-	description: 'defines a local variable that watches other variables with auto recalc',
+jb.component('calculated-var', { /* calculatedVar */
+  type: 'feature',
+  category: 'general:60',
+  description: 'defines a local variable that watches other variables with auto recalc',
   params: [
-    { id: 'name', as: 'string', mandatory: true },
-    { id: 'value', dynamic: true, defaultValue: '', mandatory: true },
-    { id: 'globalId', as: 'string', description: 'If specified, the var will be defined as global with this id' },
-    { id: 'watchRefs', as: 'array', dynamic: true, mandatory: true, defaultValue: [], description: 'variable to watch. needs to be in array' },
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+    {
+      id: 'globalId',
+      as: 'string',
+      description: 'If specified, the var will be defined as global with this id'
+    },
+    {
+      id: 'watchRefs',
+      as: 'array',
+      dynamic: true,
+      mandatory: true,
+      defaultValue: [],
+      description: 'variable to watch. needs to be in array'
+    }
   ],
   impl: (context, name, value,globalId, watchRefs) => ({
       destroy: cmp => {
@@ -9890,38 +10202,41 @@ jb.component('calculated-var', {
   })
 })
 
-jb.component('features', {
+jb.component('features', { /* features */
   type: 'feature',
-	description: 'list of features',
+  description: 'list of features',
   params: [
-    { id: 'features', type: 'feature[]', flattenArray: true, dynamic: true },
+    {id: 'features', type: 'feature[]', flattenArray: true, dynamic: true}
   ],
   impl: (ctx,features) =>
     features()
 })
 
 
-jb.component('feature.init', {
-  type: 'feature', category: 'lifecycle',
+jb.component('feature.init', { /* feature.init */
+  type: 'feature',
+  category: 'lifecycle',
   params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
   impl: (ctx,action) => ({ init: cmp => action(cmp.ctx) })
 })
 
-jb.component('feature.after-load', {
-  type: 'feature', category: 'lifecycle',
+jb.component('feature.after-load', { /* feature.afterLoad */
+  type: 'feature',
+  category: 'lifecycle',
   params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
   impl: ctx => ({ afterViewInit: cmp => jb.delay(1).then(_ => ctx.params.action(cmp.ctx)) })
 })
 
-jb.component('feature.if', {
-  type: 'feature', category: 'feature:85',
-	description: 'adds element to dom by condition. no watch',
+jb.component('feature.if', { /* feature.if */
+  type: 'feature',
+  category: 'feature:85',
+  description: 'adds element to dom by condition. no watch',
   params: [
-    { id: 'showCondition', mandatory: true, dynamic: true },
+    {id: 'showCondition', mandatory: true, dynamic: true}
   ],
   impl: (ctx, condition,watch) => ({
     templateModifier: (vdom,cmp,state) =>
@@ -9929,11 +10244,12 @@ jb.component('feature.if', {
   })
 })
 
-jb.component('hidden', {
-  type: 'feature', category: 'feature:85',
-	description: 'adds display:none to element by condition. no watch',
+jb.component('hidden', { /* hidden */
+  type: 'feature',
+  category: 'feature:85',
+  description: 'adds display:none to element by condition. no watch',
   params: [
-    { id: 'showCondition', type: 'boolean', mandatory: true, dynamic: true },
+    {id: 'showCondition', type: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx,showCondition) => ({
     templateModifier: (vdom,cmp,state) => {
@@ -9944,12 +10260,12 @@ jb.component('hidden', {
   })
 })
 
-jb.component('conditional-class', {
+jb.component('conditional-class', { /* conditionalClass */
   type: 'feature',
-	description: 'toggle class by condition',
+  description: 'toggle class by condition',
   params: [
-    { id: 'cssClass', as: 'string', mandatory: true, dynamic: true },
-    { id: 'condition', type: 'boolean', mandatory: true, dynamic: true },
+    {id: 'cssClass', as: 'string', mandatory: true, dynamic: true},
+    {id: 'condition', type: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx,cssClass,cond) => ({
     templateModifier: (vdom,cmp,state) => {
@@ -9959,12 +10275,13 @@ jb.component('conditional-class', {
   })
 })
 
-jb.component('feature.keyboard-shortcut', {
-  type: 'feature', category: 'events',
-	description: 'listen to events at the document level even when the component is not active',
+jb.component('feature.keyboard-shortcut', { /* feature.keyboardShortcut */
+  type: 'feature',
+  category: 'events',
+  description: 'listen to events at the document level even when the component is not active',
   params: [
-    { id: 'key', as: 'string', description: 'e.g. Alt+C' },
-    { id: 'action', type: 'action', dynamic: true },
+    {id: 'key', as: 'string', description: 'e.g. Alt+C'},
+    {id: 'action', type: 'action', dynamic: true}
   ],
   impl: (context,key,action) => ({
       afterViewInit: cmp =>
@@ -9984,12 +10301,23 @@ jb.component('feature.keyboard-shortcut', {
       })
 })
 
-jb.component('feature.onEvent', {
-  type: 'feature', category: 'events',
+jb.component('feature.onEvent', { /* feature.onEvent */
+  type: 'feature',
+  category: 'events',
   params: [
-    { id: 'event', as: 'string', mandatory: true, options: 'blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover' },
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true },
-    { id: 'debounceTime', as: 'number', defaultValue: 0, description: 'used for mouse events such as mousemove' },
+    {
+      id: 'event',
+      as: 'string',
+      mandatory: true,
+      options: 'blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover'
+    },
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
+    {
+      id: 'debounceTime',
+      as: 'number',
+      defaultValue: 0,
+      description: 'used for mouse events such as mousemove'
+    }
   ],
   impl: (ctx,event,action,debounceTime) => ({
       [`on${event}`]: true,
@@ -10000,10 +10328,11 @@ jb.component('feature.onEvent', {
   })
 })
 
-jb.component('feature.onHover', {
-  type: 'feature', category: 'events',
+jb.component('feature.onHover', { /* feature.onHover */
+  type: 'feature',
+  category: 'events',
   params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
   impl: (ctx,action) => ({
       onmouseenter: true,
@@ -10020,7 +10349,7 @@ jb.ui.checkKey = function(e, key) {
   key = key.replace(/-/,'+');
   const keyWithoutPrefix = key.split('+').pop()
   let keyCode = dict[keyWithoutPrefix.toLowerCase()]
-  if (+keyWithoutPrefix) 
+  if (+keyWithoutPrefix)
     keyCode = +keyWithoutPrefix
   if (keyWithoutPrefix.length == 1)
     keyCode = keyWithoutPrefix.charCodeAt(0);
@@ -10030,42 +10359,56 @@ jb.ui.checkKey = function(e, key) {
 	return e.keyCode == keyCode
 }
 
-jb.component('feature.onKey', {
-  type: 'feature', category: 'events',
+jb.component('feature.onKey', { /* feature.onKey */
+  type: 'feature',
+  category: 'events',
+  usageByValue: true,
   params: [
-    { id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
-    { id: 'action', type: 'action', mandatory: true, dynamic: true }
+    {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'doNotWrapWithLauchingElement', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,key,action) => ({
       onkeydown: true,
       afterViewInit: cmp =>
-        cmp.onkeydown.subscribe(e=>
-          jb.ui.checkKey(e,key) && jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
+        cmp.onkeydown.subscribe(e=> {
+          if (!jb.ui.checkKey(e,key)) return
+          ctx.params.doNotWrapWithLauchingElement ? action(cmp.ctx) :
+            jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)()
+        })
   })
 })
 
-jb.component('feature.onEnter', {
-  type: 'feature', category: 'events',
+jb.component('feature.onEnter', { /* feature.onEnter */
+  type: 'feature',
+  category: 'events',
   params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.onKey('Enter',call('action'))
+  impl: feature.onKey(
+    'Enter',
+    call('action')
+  )
 })
 
-jb.component('feature.onEsc', {
-  type: 'feature', category: 'events',
+jb.component('feature.onEsc', { /* feature.onEsc */
+  type: 'feature',
+  category: 'events',
   params: [
-    { id: 'action', type: 'action[]', mandatory: true, dynamic: true }
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.onKey('Esc',call('action'))
+  impl: feature.onKey(
+    'Esc',
+    call('action')
+  )
 })
 
-jb.component('refresh-control-by-id', {
+jb.component('refresh-control-by-id', { /* refreshControlById */
   type: 'action',
   params: [
-    { id: 'id', as: 'string', mandatory: true }
+    {id: 'id', as: 'string', mandatory: true}
   ],
-  impl : (ctx,id) => {
+  impl: (ctx,id) => {
     const base = ctx.vars.elemToTest || typeof document !== 'undefined' && document
     const elem = base && base.querySelector('#'+id)
     if (!elem)
@@ -10079,7 +10422,7 @@ jb.component('refresh-control-by-id', {
 })
 
 
-jb.component('group.auto-focus-on-first-input', {
+jb.component('group.auto-focus-on-first-input', { /* group.autoFocusOnFirstInput */
   type: 'feature',
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -10090,25 +10433,25 @@ jb.component('group.auto-focus-on-first-input', {
   })
 })
 
-jb.component('focus-on-first-element', {
+jb.component('focus-on-first-element', { /* focusOnFirstElement */
   type: 'action',
   params: [
-    { id: 'selector', as: 'string', defaultValue: 'input' },
+    {id: 'selector', as: 'string', defaultValue: 'input'}
   ],
-  impl: (ctx, selector) => 
+  impl: (ctx, selector) =>
       jb.delay(50).then(() => {
         const elem = document.querySelector(selector)
         elem && jb.ui.focus(elem,'focus-on-first-element',ctx)
     })
 })
 
-jb.component('focus-on-sibling', {
-	type: 'action',
-	params: [
-	  {id: 'siblingSelector', as: 'string', mandatory: true},
-	  {id: 'delay', as: 'number', defaultValue: 0}
-	],
-	impl: (ctx,siblingSelector,delay) => {
+jb.component('focus-on-sibling', { /* focusOnSibling */
+  type: 'action',
+  params: [
+    {id: 'siblingSelector', as: 'string', mandatory: true},
+    {id: 'delay', as: 'number', defaultValue: 0}
+  ],
+  impl: (ctx,siblingSelector,delay) => {
 	  if (!ctx.vars.event) 
       return jb.error('no event for action focus-on-sibling',ctx)
     const path = event.path || (event.composedPath && event.composedPath())
@@ -10121,66 +10464,66 @@ jb.component('focus-on-sibling', {
 })
 ;
 
-jb.component('css', {
+jb.component('css', { /* css */
   type: 'feature,dialog-feature',
   params: [
-    { id: 'css', mandatory: true, as: 'string' },
+    {id: 'css', mandatory: true, as: 'string'}
   ],
   impl: (context,css) =>
     ({css:css})
 })
 
-jb.component('css.class', {
+jb.component('css.class', { /* css.class */
   type: 'feature,dialog-feature',
   params: [
-    { id: 'class', mandatory: true, as: 'string' },
+    {id: 'class', mandatory: true, as: 'string'}
   ],
   impl: (context,clz) =>
     ({class :clz})
 })
 
-jb.component('css.width', {
+jb.component('css.width', { /* css.width */
   type: 'feature,dialog-feature',
   params: [
-    { id: 'width', mandatory: true, as: 'number' },
-    { id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
-    { id: 'minMax', as: 'string', options: ',min,max'},
-    { id: 'selector', as: 'string' },
-],
+    {id: 'width', mandatory: true, as: 'number'},
+    {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
+    {id: 'minMax', as: 'string', options: ',min,max'},
+    {id: 'selector', as: 'string'}
+  ],
   impl: (ctx,width,overflow,minMax) =>
     ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${width}px ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
 })
 
-jb.component('css.height', {
+jb.component('css.height', { /* css.height */
   type: 'feature,dialog-feature',
   params: [
-    { id: 'height', mandatory: true, as: 'number' },
-    { id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
-    { id: 'minMax', as: 'string', options: ',min,max'},
-    { id: 'selector', as: 'string' },
+    {id: 'height', mandatory: true, as: 'number'},
+    {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
+    {id: 'minMax', as: 'string', options: ',min,max'},
+    {id: 'selector', as: 'string'}
   ],
   impl: (ctx,height,overflow,minMax) =>
     ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${height}px ${overflow ? '; overflow-y:' + overflow : ''} }`})
 })
 
-jb.component('css.opacity', {
+jb.component('css.opacity', { /* css.opacity */
   type: 'feature',
   params: [
-    { id: 'opacity', mandatory: true, as: 'number', min:0, max:1, step: 0.1 },
-    { id: 'selector', as: 'string' },
+    {id: 'opacity', mandatory: true, as: 'number', min: 0, max: 1, step: 0.1},
+    {id: 'selector', as: 'string'}
   ],
   impl: (ctx,opacity) =>
     ({css: `${ctx.params.selector} { opacity: ${opacity} }`})
 })
 
-jb.component('css.padding', {
+jb.component('css.padding', { /* css.padding */
   type: 'feature,dialog-feature',
   params: [
-    { id: 'top', as: 'number' },
-    { id: 'left', as: 'number' },
-    { id: 'right', as: 'number' },
-    { id: 'bottom', as: 'number' },
-    { id: 'selector', as: 'string' },
+    {id: 'top', as: 'number'},
+    {id: 'left', as: 'number'},
+    {id: 'right', as: 'number'},
+    {id: 'bottom', as: 'number'},
+    {id: 'selector', as: 'string'}
   ],
   impl: (ctx) => {
     var css = ['top','left','right','bottom']
@@ -10191,14 +10534,14 @@ jb.component('css.padding', {
   }
 })
 
-jb.component('css.margin', {
+jb.component('css.margin', { /* css.margin */
   type: 'feature,dialog-feature',
   params: [
-    { id: 'top', as: 'number' },
-    { id: 'left', as: 'number' },
-    { id: 'right', as: 'number' },
-    { id: 'bottom', as: 'number' },
-    { id: 'selector', as: 'string' },
+    {id: 'top', as: 'number'},
+    {id: 'left', as: 'number'},
+    {id: 'right', as: 'number'},
+    {id: 'bottom', as: 'number'},
+    {id: 'selector', as: 'string'}
   ],
   impl: (ctx) => {
     var css = ['top','left','right','bottom']
@@ -10209,23 +10552,23 @@ jb.component('css.margin', {
   }
 })
 
-jb.component('css.transform-rotate', {
+jb.component('css.transform-rotate', { /* css.transformRotate */
   type: 'feature',
   params: [
-    { id: 'angle', as: 'number', defaultValue: 0, from: 0, to: 360 },
-    { id: 'selector', as: 'string' },
+    {id: 'angle', as: 'number', defaultValue: 0, from: 0, to: 360},
+    {id: 'selector', as: 'string'}
   ],
   impl: (ctx) => {
     return {css: `${ctx.params.selector} {transform:rotate(${ctx.params.angle}deg)}`};
   }
 })
 
-jb.component('css.color', {
+jb.component('css.color', { /* css.color */
   type: 'feature',
   params: [
-		{ id: 'color', as: 'string' },
-		{ id: 'background', as: 'string' },
-    { id: 'selector', as: 'string' },
+    {id: 'color', as: 'string'},
+    {id: 'background', as: 'string'},
+    {id: 'selector', as: 'string'}
   ],
   impl: (ctx,color) => {
 		var css = ['color','background']
@@ -10236,28 +10579,28 @@ jb.component('css.color', {
   }
 })
 
-jb.component('css.transform-scale', {
+jb.component('css.transform-scale', { /* css.transformScale */
   type: 'feature',
   params: [
-    { id: 'x', as: 'number', defaultValue: 100 },
-    { id: 'y', as: 'number', defaultValue: 100 },
-    { id: 'selector', as: 'string' },
+    {id: 'x', as: 'number', defaultValue: 100},
+    {id: 'y', as: 'number', defaultValue: 100},
+    {id: 'selector', as: 'string'}
   ],
   impl: (ctx) => {
     return {css: `${ctx.params.selector} {transform:scale(${ctx.params.x/100},${ctx.params.y/100})}`};
   }
 })
 
-jb.component('css.box-shadow', {
+jb.component('css.box-shadow', { /* css.boxShadow */
   type: 'feature,dialog-feature',
   params: [
-    { id: 'blurRadius', as: 'number', defaultValue: 5 },
-    { id: 'spreadRadius', as: 'number', defaultValue: 0 },
-    { id: 'shadowColor', as: 'string', defaultValue: '#000000'},
-    { id: 'opacity', as: 'number', min: 0, max: 1, defaultValue: 0.75, step: 0.01 },
-    { id: 'horizontal', as: 'number', defaultValue: 10},
-    { id: 'vertical', as: 'number', defaultValue: 10},
-    { id: 'selector', as: 'string' },
+    {id: 'blurRadius', as: 'number', defaultValue: 5},
+    {id: 'spreadRadius', as: 'number', defaultValue: 0},
+    {id: 'shadowColor', as: 'string', defaultValue: '#000000'},
+    {id: 'opacity', as: 'number', min: 0, max: 1, defaultValue: 0.75, step: 0.01},
+    {id: 'horizontal', as: 'number', defaultValue: 10},
+    {id: 'vertical', as: 'number', defaultValue: 10},
+    {id: 'selector', as: 'string'}
   ],
   impl: (context,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
     var color = [parseInt(shadowColor.slice(1,3),16) || 0, parseInt(shadowColor.slice(3,5),16) || 0, parseInt(shadowColor.slice(5,7),16) || 0]
@@ -10266,21 +10609,26 @@ jb.component('css.box-shadow', {
   }
 })
 
-jb.component('css.border', {
+jb.component('css.border', { /* css.border */
   type: 'feature,dialog-feature',
   params: [
-    { id: 'width',as: 'number', defaultValue: 1},
-    { id: 'side', as: 'string', options: 'top,left,bottom,right' },
-    { id: 'style', as: 'string', options: 'solid,dotted,dashed,double,groove,ridge,inset,outset', defaultValue: 'solid'},
-    { id: 'color', as: 'string', defaultValue: 'black' },
-    { id: 'selector', as: 'string' },
+    {id: 'width', as: 'number', defaultValue: 1},
+    {id: 'side', as: 'string', options: 'top,left,bottom,right'},
+    {
+      id: 'style',
+      as: 'string',
+      options: 'solid,dotted,dashed,double,groove,ridge,inset,outset',
+      defaultValue: 'solid'
+    },
+    {id: 'color', as: 'string', defaultValue: 'black'},
+    {id: 'selector', as: 'string'}
   ],
   impl: (context,width,side,style,color,selector) =>
     ({css: `${selector} { border${side?'-'+side:''}: ${width}px ${style} ${color} }`})
 })
 ;
 
-jb.component('dialog-feature.drag-title',  /* dialogFeature_dragTitle */ {
+jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
   type: 'dialog-feature',
   params: [
     {id: 'id', as: 'string'}
@@ -10335,7 +10683,7 @@ jb.component('dialog-feature.drag-title',  /* dialogFeature_dragTitle */ {
 	}
 })
 
-jb.component('dialog.default',  /* dialog_default */ {
+jb.component('dialog.default', { /* dialog.default */
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
@@ -10344,15 +10692,15 @@ jb.component('dialog.default',  /* dialog_default */ {
 				_=> cmp.dialogClose() },'×'),
 			h(state.contentComp),
 		]),
-    features: dialogFeature_dragTitle()
+    features: dialogFeature.dragTitle()
   })
 })
 
-jb.component('open-dialog',  /* openDialog */ {
+jb.component('open-dialog', { /* openDialog */
   type: 'action',
   params: [
     {id: 'id', as: 'string'},
-    {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog_default()},
+    {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog.default()},
     {
       id: 'content',
       type: 'control',
@@ -10401,7 +10749,8 @@ jb.component('open-dialog',  /* openDialog */ {
 			},
 			afterViewInit: cmp => {
 				cmp.dialog.el = cmp.base;
-				cmp.dialog.el.style.zIndex = 100;
+				if (!cmp.dialog.el.style.zIndex)
+					cmp.dialog.el.style.zIndex = 100;
 			},
 		}).reactComp();
 
@@ -10414,7 +10763,7 @@ jb.component('open-dialog',  /* openDialog */ {
 	}
 })
 
-jb.component('dialog.close-containing-popup',  /* dialog_closeContainingPopup */ {
+jb.component('dialog.close-containing-popup', { /* dialog.closeContainingPopup */
   type: 'action',
   params: [
     {id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
@@ -10423,7 +10772,7 @@ jb.component('dialog.close-containing-popup',  /* dialog_closeContainingPopup */
 		context.vars.$dialog && context.vars.$dialog.close({OK:OK})
 })
 
-jb.component('dialog-feature.unique-dialog',  /* dialogFeature_uniqueDialog */ {
+jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
   type: 'dialog-feature',
   params: [
     {id: 'id', as: 'string'},
@@ -10442,7 +10791,7 @@ jb.component('dialog-feature.unique-dialog',  /* dialogFeature_uniqueDialog */ {
 	}
 })
 
-jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLauncherPosition */ {
+jb.component('dialog-feature.near-launcher-position', { /* dialogFeature.nearLauncherPosition */
   type: 'dialog-feature',
   params: [
     {id: 'offsetLeft', as: 'number', dynamic: true, defaultValue: 0},
@@ -10456,13 +10805,14 @@ jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLaun
 				if (!context.vars.$launchingElement)
 					return console.log('no launcher for dialog');
 				const control = context.vars.$launchingElement.el;
+				const launcherHeightFix = context.vars.$launchingElement.launcherHeightFix || jb.ui.outerHeight(control)
 				const pos = jb.ui.offset(control);
 				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
 				offsetLeft += rightSide ? jb.ui.outerWidth(control) : 0;
 				const fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
 				jbDialog.style.display = 'block';
 				jbDialog.style.left = (fixedPosition ? fixedPosition.left : pos.left + offsetLeft) + 'px';
-				jbDialog.style.top = (fixedPosition ? fixedPosition.top : pos.top + jb.ui.outerHeight(control) + offsetTop) + 'px';
+				jbDialog.style.top = (fixedPosition ? fixedPosition.top : pos.top + launcherHeightFix + offsetTop) + 'px';
 			}
 		}
 
@@ -10479,7 +10829,7 @@ jb.component('dialog-feature.near-launcher-position',  /* dialogFeature_nearLaun
 	}
 })
 
-jb.component('dialog-feature.onClose',  /* dialogFeature_onClose */ {
+jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
   type: 'dialog-feature',
   params: [
     {id: 'action', type: 'action', dynamic: true}
@@ -10492,7 +10842,7 @@ jb.component('dialog-feature.onClose',  /* dialogFeature_onClose */ {
 				action(ctx.setData(e.OK)))
 })
 
-jb.component('dialog-feature.close-when-clicking-outside',  /* dialogFeature_closeWhenClickingOutside */ {
+jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.closeWhenClickingOutside */
   type: 'dialog-feature',
   params: [
     {id: 'delay', as: 'number', defaultValue: 100}
@@ -10514,7 +10864,7 @@ jb.component('dialog-feature.close-when-clicking-outside',  /* dialogFeature_clo
 	}
 })
 
-jb.component('dialog.close-dialog',  /* dialog_closeDialog */ {
+jb.component('dialog.close-dialog', { /* dialog.closeDialog */
   type: 'action',
   params: [
     {id: 'id', as: 'string'},
@@ -10525,20 +10875,20 @@ jb.component('dialog.close-dialog',  /* dialog_closeDialog */ {
   			.forEach(d=>jb.delay(delay).then(d.close()))
 })
 
-jb.component('dialog.close-all-popups',  /* dialog_closeAllPopups */ {
+jb.component('dialog.close-all-popups', { /* dialog.closeAllPopups */
   type: 'action',
   impl: ctx =>
 		jb.ui.dialogs.dialogs.filter(d=>d.isPopup)
   			.forEach(d=>d.close())
 })
 
-jb.component('dialog.close-all',  /* dialog_closeAll */ {
+jb.component('dialog.close-all', { /* dialog.closeAll */
   type: 'action',
   impl: ctx =>
 		jb.ui.dialogs.dialogs.forEach(d=>d.close())
 })
 
-jb.component('dialog-feature.auto-focus-on-first-input',  /* dialogFeature_autoFocusOnFirstInput */ {
+jb.component('dialog-feature.auto-focus-on-first-input', { /* dialogFeature.autoFocusOnFirstInput */
   type: 'dialog-feature',
   params: [
     {id: 'selectText', as: 'boolean', type: 'boolean'}
@@ -10556,7 +10906,7 @@ jb.component('dialog-feature.auto-focus-on-first-input',  /* dialogFeature_autoF
 	})
 })
 
-jb.component('dialog-feature.css-class-on-launching-element',  /* dialogFeature_cssClassOnLaunchingElement */ {
+jb.component('dialog-feature.css-class-on-launching-element', { /* dialogFeature.cssClassOnLaunchingElement */
   type: 'dialog-feature',
   impl: context => ({
 		afterViewInit: cmp => {
@@ -10572,7 +10922,7 @@ jb.component('dialog-feature.css-class-on-launching-element',  /* dialogFeature_
 	})
 })
 
-jb.component('dialog-feature.max-zIndex-on-click',  /* dialogFeature_maxZIndexOnClick */ {
+jb.component('dialog-feature.max-zIndex-on-click', { /* dialogFeature.maxZIndexOnClick */
   type: 'dialog-feature',
   params: [
     {id: 'minZIndex', as: 'number'}
@@ -10588,15 +10938,15 @@ jb.component('dialog-feature.max-zIndex-on-click',  /* dialogFeature_maxZIndexOn
 		})
 
 		function setAsMaxZIndex() {
-			const maxIndex = jb.ui.dialogs.dialogs.reduce(function(max,d) {
-				return Math.max(max,(d.el && parseInt(d.el.style.zIndex || 100)+1))
-			}, minZIndex || 100)
+			const maxIndex = jb.ui.dialogs.dialogs.reduce((max,d) =>
+				Math.max(max,(d.el && parseInt(d.el.style.zIndex || 100)+1) || 100)
+			, minZIndex || 100)
 			dialog.el.style.zIndex = maxIndex;
 		}
 	}
 })
 
-jb.component('dialog.dialog-ok-cancel',  /* dialog_dialogOkCancel */ {
+jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
   type: 'dialog.style',
   params: [
     {id: 'okLabel', as: 'string', defaultValue: 'OK'},
@@ -10616,7 +10966,7 @@ jb.component('dialog.dialog-ok-cancel',  /* dialog_dialogOkCancel */ {
   })
 })
 
-jb.component('dialog-feature.resizer',  /* dialogFeature_resizer */ {
+jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
   type: 'dialog-feature',
   params: [
     {
@@ -10680,7 +11030,7 @@ jb.component('dialog-feature.resizer',  /* dialogFeature_resizer */ {
 	})
 })
 
-jb.component('dialog.popup',  /* dialog_popup */ {
+jb.component('dialog.popup', { /* dialog.popup */
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
@@ -10688,10 +11038,10 @@ jb.component('dialog.popup',  /* dialog_popup */ {
 		  ]),
     css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }',
     features: [
-      dialogFeature_maxZIndexOnClick(),
-      dialogFeature_closeWhenClickingOutside(),
-      dialogFeature_cssClassOnLaunchingElement(),
-      dialogFeature_nearLauncherPosition({})
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.closeWhenClickingOutside(),
+      dialogFeature.cssClassOnLaunchingElement(),
+      dialogFeature.nearLauncherPosition({})
     ]
   })
 })
@@ -10756,15 +11106,611 @@ jb.ui.dialogs = {
 }
 ;
 
+jb.ns('itemlist')
 
-jb.component('menu.menu', {
-	type: 'menu.option',
-	params: [
-		{ id: 'title', as: 'string', dynamic: true, mandatory: true },
-		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true, defaultValue: [] },
-		{ id: 'optionsFilter', type: 'data', dynamic: true, defaultValue: '%%' },
-	],
-	impl: ctx => ({
+jb.component('itemlist', { /* itemlist */
+  type: 'control',
+  category: 'group:80,common:80',
+  params: [
+    {id: 'title', as: 'string'},
+    {id: 'items', as: 'array', dynamic: true, mandatory: true},
+    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true},
+    {id: 'style', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
+    {id: 'itemVariable', as: 'string', defaultValue: 'item'},
+    {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items'},
+    {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
+  ],
+  impl: ctx =>
+    jb.ui.ctrl(ctx)
+})
+
+jb.component('itemlist.no-container', { /* itemlist.noContainer */
+  type: 'feature',
+  category: 'group:20',
+  impl: ctx => ({
+    extendCtxOnce: (ctx,cmp) =>
+      ctx.setVars({itemlistCntr: null})
+    })
+})
+
+jb.component('itemlist.init', { /* itemlist.init */
+  type: 'feature',
+  impl: ctx => ({
+      beforeInit: cmp => {
+        cmp.refresh = _ =>
+            cmp.setState({ctrls: cmp.calcCtrls()})
+
+        cmp.calcCtrls = _ => {
+            cmp.items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
+            if (cmp.ctx.vars.itemlistCntr)
+              cmp.ctx.vars.itemlistCntr.items = cmp.items;
+            return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit || 100).map(item=>
+              Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
+        }
+
+        const controlsOfItem = jb.ui.cachedMap(item =>
+          ctx.vars.$model.controls(cmp.ctx.setData(item).setVars(jb.obj(ctx.vars.$model.itemVariable,item)))
+            .filter(x=>x).map(c=>jb.ui.renderable(c)).filter(x=>x));
+
+      },
+      init: cmp => cmp.state.ctrls = cmp.calcCtrls(),
+  })
+})
+
+jb.component('itemlist.init-table', { /* itemlist.init */
+  type: 'feature',
+  impl: ctx => ({
+      beforeInit: cmp => {
+        cmp.refresh = _ =>
+            cmp.setState({items: cmp.calcItems()})
+
+        cmp.calcItems = _ => {
+            cmp.items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
+            if (cmp.ctx.vars.itemlistCntr)
+              cmp.ctx.vars.itemlistCntr.items = cmp.items;
+            return cmp.items;
+        }
+        cmp.fields = jb.asArray(ctx.vars.$model.controls.profile).filter(x=>x)
+          .map(ctrlProfile => enrichWithFieldAspects(ctrlProfile, {
+            title: cmp.ctx.run(ctrlProfile.title || ''), 
+            class: '', 
+            control: (row,index) => cmp.ctx.setData(row).setVars({index: (index||0)+1}).run(ctrlProfile).reactComp() 
+          }))
+        
+        function enrichWithFieldAspects(ctrlProfile,field) {
+          cmp.ctx.run(ctrlProfile.features || '',{as: 'array'}).forEach(f=>f.enrichField && f.enrichField(field))
+          return field
+        }
+      },
+      init: cmp => cmp.state.items = cmp.calcItems(),
+  })
+})
+
+jb.component('itemlist.ul-li', { /* itemlist.ulLi */
+  type: 'itemlist.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li',
+          {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+          ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
+    css: `{ list-style: none; padding: 0; margin: 0;}
+    >li { list-style: none; padding: 0; margin: 0;}`,
+    features: itemlist.init()
+  })
+})
+
+jb.component('itemlist.horizontal', { /* itemlist.horizontal */
+  type: 'itemlist.style',
+  params: [
+    {id: 'spacing', as: 'number', defaultValue: 0}
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'jb-drag-parent'},
+        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('div', {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+          ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
+    css: `{display: flex}
+        >* { margin-right: %$spacing%px }
+        >*:last-child { margin-right:0 }`,
+    features: itemlist.init()
+  })
+})
+
+// ****************** Selection ******************
+
+jb.component('itemlist.selection', { /* itemlist.selection */
+  type: 'feature',
+  params: [
+    {
+      id: 'databind',
+      as: 'ref',
+      defaultValue: '%$itemlistCntrData/selected%',
+      dynamic: true
+    },
+    {id: 'selectedToDatabind', dynamic: true, defaultValue: '%%'},
+    {id: 'databindToSelected', dynamic: true, defaultValue: '%%'},
+    {id: 'onSelection', type: 'action', dynamic: true},
+    {id: 'onDoubleClick', type: 'action', dynamic: true},
+    {id: 'autoSelectFirst', type: 'boolean'},
+    {
+      id: 'cssForSelected',
+      as: 'string',
+      defaultValue: 'background: #bbb !important; color: #fff !important'
+    }
+  ],
+  impl: (ctx,databind) => ({
+    onclick: true,
+    afterViewInit: cmp => {
+        cmp.selectionEmitter = new jb.rx.Subject();
+        cmp.clickEmitter = new jb.rx.Subject();
+
+        cmp.selectionEmitter
+          .merge(cmp.clickEmitter)
+          .distinctUntilChanged()
+          .filter(x=>x)
+          .subscribe( selected => {
+              writeSelectedToDatabind(selected);
+              cmp.setState({selected: selected});
+              ctx.params.onSelection(cmp.ctx.setData(selected));
+          });
+
+        const selectedRef = databind()
+        jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, watchScript: ctx})
+          .catch(e=>jb.ui.setState(cmp,{selected: null }) || [])
+          .subscribe(e=>
+            jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
+
+        // double click
+        var clickEm = cmp.clickEmitter.takeUntil( cmp.destroyed );
+        clickEm.buffer(clickEm.debounceTime(250))
+          .filter(buff => buff.length === 2)
+          .subscribe(buff=>
+            ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
+
+        function autoSelectFirst() {
+          if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(selectedRef))
+              return cmp.selectionEmitter.next(cmp.items[0])
+        }
+        function writeSelectedToDatabind(selected) {
+          return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)))
+        }
+        function selectedOfDatabind() {
+          return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(selectedRef))))
+        }
+        jb.delay(1).then(_=>{
+           if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
+              cmp.state.selected = null;
+           if (selectedRef && jb.val(selectedRef))
+             cmp.setState({selected: selectedOfDatabind()});
+           if (!cmp.state.selected)
+              autoSelectFirst()
+        })
+    },
+    extendItem: (cmp,vdom,data) => {
+      jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == data);
+      vdom.attributes.onclick = _ =>
+        cmp.clickEmitter.next(data)
+    },
+    css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
+  })
+})
+
+jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
+  type: 'feature',
+  usageByValue: false,
+  params: [
+    {id: 'autoFocus', type: 'boolean'},
+    {id: 'onEnter', type: 'action', dynamic: true}
+  ],
+  impl: ctx => ({
+      afterViewInit: cmp => {
+        let onkeydown = (cmp.ctx.vars.itemlistCntr && cmp.ctx.vars.itemlistCntr.keydown) || (cmp.ctx.vars.selectionKeySource && cmp.ctx.vars.selectionKeySource.keydown);
+        cmp.base.setAttribute('tabIndex','0');
+        if (!onkeydown) {
+          onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
+          if (ctx.params.autoFocus)
+            jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus',ctx)
+        } else {
+          onkeydown = onkeydown.merge(jb.rx.Observable.fromEvent(cmp.base, 'keydown'))
+        }
+        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );
+
+        cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
+          .subscribe(x=>
+            ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
+
+        cmp.onkeydown.filter(e=> !e.ctrlKey &&
+              (e.keyCode == 38 || e.keyCode == 40))
+            .map(event => {
+              event.stopPropagation();
+              var diff = event.keyCode == 40 ? 1 : -1;
+              var items = cmp.items;
+              return items[(items.indexOf(cmp.state.selected) + diff + items.length) % items.length] || cmp.state.selected;
+        }).subscribe(x=>
+          cmp.selectionEmitter && cmp.selectionEmitter.next(x)
+        )
+      },
+    })
+})
+
+jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
+  type: 'feature',
+  params: [
+
+  ],
+  impl: ctx => ({
+      afterViewInit: function(cmp) {
+        var drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
+          moves: (el,source,handle) =>
+            jb.ui.hasClass(handle,'drag-handle')
+        });
+
+        drake.on('drag', function(el, source) {
+          var item = el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data;
+          if (!item) {
+            var item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
+            item = item_comp && item_comp.ctx.data;
+          }
+          el.dragged = {
+            item: item,
+            remove: item => cmp.items.splice(cmp.items.indexOf(item), 1)
+          }
+          cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.item);
+        });
+        drake.on('drop', (dropElm, target, source,sibling) => {
+            var draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
+            var targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
+            jb.splice(jb.asRef(cmp.items),[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
+
+            dropElm.dragged = null;
+        });
+
+        // ctrl + Up/Down
+//        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
+          if (!cmp.onkeydown) return;
+          cmp.onkeydown.filter(e=>
+            e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
+            .subscribe(e=> {
+              var diff = e.keyCode == 40 ? 1 : -1;
+              var selectedIndex = cmp.items.indexOf(cmp.state.selected);
+              if (selectedIndex == -1) return;
+              var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
+              jb.splice(jb.asRef(cmp.items),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
+          })
+//        })
+      }
+    })
+})
+
+jb.component('itemlist.drag-handle', { /* itemlist.dragHandle */
+  description: 'put on the control inside the item which is used to drag the whole line',
+  type: 'feature',
+  impl: list(
+    css.class('drag-handle'),
+    css('{cursor: pointer}')
+  )
+})
+
+jb.component('itemlist.shown-only-on-item-hover', { /* itemlist.shownOnlyOnItemHover */
+  type: 'feature',
+  category: 'itemlist:75',
+  description: 'put on the control inside the item which is shown when the mouse enters the line',
+  impl: (ctx,cssClass,cond) => ({
+    class: 'jb-shown-on-item-hover',
+    css: '{ display: none }'
+  })
+})
+
+jb.component('itemlist.divider', { /* itemlist.divider */
+  type: 'feature',
+  params: [
+    {id: 'space', as: 'number', defaultValue: 5}
+  ],
+  impl: (ctx,space) =>
+    ({css: `>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: ${space}px }`})
+})
+;
+
+(function() {
+
+const createItemlistCntr = (ctx,params) => ({
+	id: params.id,
+	defaultItem: params.defaultItem,
+	filter_data: {},
+	filters: [],
+	selectedRef: ctx.exp('%$itemlistCntrData/selected%','ref'),
+	selected: function(selected) {
+		if (!jb.isValid(this.selectedRef)) return;
+		return (typeof selected != 'undefined') ?
+			jb.writeValue(this.selectedRef,selected,this.ctx) : jb.val(this.selectedRef)
+	},
+	reSelectAfterFilter: function(filteredItems) {
+		if (filteredItems.indexOf(this.selected()) == -1)
+			this.selected(filteredItems[0])
+	},
+	changeSelectionBeforeDelete: function() {
+		if (this.items && this.selected) {
+			const curIndex = this.items.indexOf(this.selected);
+			if (curIndex == -1)
+				this.selected = null;
+			else if (curIndex == 0 && this.items.length > 0)
+				this.selected = this.items[1];
+			else if (this.items.length > 0)
+				this.selected = this.items[curIndex -1];
+			else
+				this.selected = null;
+		}
+	}
+})
+
+jb.component('group.itemlist-container', { /* group.itemlistContainer */
+  description: 'itemlist writable container to support addition, deletion and selection',
+  type: 'feature',
+  category: 'itemlist:80,group:70',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'defaultItem', as: 'single'},
+    {id: 'maxItems', as: 'number', defaultValue: 100},
+    {id: 'initialSelection', as: 'single'}
+  ],
+  impl: list(
+    variable({
+        name: 'itemlistCntrData',
+        value: {
+          '$': 'object',
+          search_pattern: '',
+          selected: '%$initialSelection%',
+          maxItems: '%$maxItems%'
+        },
+        watchable: true
+      }),
+    variable({
+        name: 'itemlistCntr',
+        value: ctx => createItemlistCntr(ctx,ctx.componentContext.params)
+      }),
+    ctx => ({
+			init: cmp => {
+				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
+//        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
+				cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>
+					items.slice(0,jb.tonumber(maxItemsRef));
+			},
+		})
+  )
+})
+
+jb.component('itemlist.itemlist-selected', { /* itemlist.itemlistSelected */
+  type: 'feature',
+  category: 'itemlist:20,group:0',
+  impl: list(
+    group.data('%$itemlistCntrData/selected%'),
+    hidden(notEmpty('%$itemlistCntrData/selected%'))
+  )
+})
+
+jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
+  type: 'aggregator',
+  category: 'itemlist-filter:100',
+  requires: ctx => ctx.vars.itemlistCntr,
+  params: [
+    {id: 'updateCounters', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,updateCounters) => {
+			if (!ctx.vars.itemlistCntr) return;
+			const resBeforeMaxFilter = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
+									filter(items), ctx.data || []);
+			const res = ctx.vars.itemlistCntr.maxItemsFilter(resBeforeMaxFilter);
+			if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
+				jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
+			if (updateCounters) {
+					jb.delay(1).then(_=>{
+					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length);
+					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length);
+					jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length);
+			}) } else {
+				ctx.vars.itemlistCntrData.countAfterFilter = res.length
+			}
+			return res;
+	}
+})
+
+jb.component('itemlist-container.search', { /* itemlistContainer.search */
+  type: 'control',
+  category: 'itemlist-filter:100',
+  requires: ctx => ctx.vars.itemlistCntr,
+  params: [
+    {id: 'title', as: 'string', dynamic: true, defaultValue: 'Search'},
+    {
+      id: 'searchIn',
+      as: 'string',
+      dynamic: true,
+      defaultValue: itemlistContainer.searchInAllProperties()
+    },
+    {
+      id: 'databind',
+      as: 'ref',
+      dynamic: true,
+      defaultValue: '%$itemlistCntrData/search_pattern%'
+    },
+    {
+      id: 'style',
+      type: 'editable-text.style',
+      defaultValue: editableText.mdlSearch(),
+      dynamic: true
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: (ctx,title,searchIn,databind) =>
+		jb.ui.ctrl(ctx,{
+			afterViewInit: cmp => {
+				if (!ctx.vars.itemlistCntr) return;
+				const databindRef = databind()
+
+				ctx.vars.itemlistCntr.filters.push( items => {
+					const toSearch = jb.val(databindRef) || '';
+					if (typeof searchIn.profile == 'function') { // improved performance
+						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+					}
+
+					return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+				});
+				const keydown_src = new jb.rx.Subject();
+				cmp.base.onkeydown = e => {
+					if ([38,40,13,27].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
+						keydown_src.next(e);
+						return false;
+					}
+					return true;
+				}
+				ctx.vars.itemlistCntr.keydown = keydown_src.takeUntil(cmp.destroyed);
+			}
+		})
+})
+
+jb.component('itemlist-container.more-items-button', { /* itemlistContainer.moreItemsButton */
+  type: 'control',
+  category: 'itemlist-filter:100',
+  requires: ctx => ctx.vars.itemlistCntr,
+  params: [
+    {
+      id: 'title',
+      as: 'string',
+      dynamic: true,
+      defaultValue: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeMaxFilter%)'
+    },
+    {id: 'delta', as: 'number', defaultValue: 200},
+    {id: 'style', type: 'button.style', defaultValue: button.href(), dynamic: true},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: (ctx,title,delta) => {
+		return jb.ui.ctrl(ctx,{
+			beforeInit: cmp => {
+				if (!ctx.vars.itemlistCntr) return;
+				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
+				cmp.clicked = _ =>
+					jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta);
+				cmp.refresh = _ =>
+					cmp.setState({title: jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta})))});
+				jb.ui.watchRef(ctx,cmp,maxItemsRef);
+			},
+			init: cmp =>
+				cmp.state.title = jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta}))),
+
+			templateModifier: (vdom,cmp,state) => { // hide the button when not needed
+				if (cmp.ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','number') == cmp.ctx.exp('%$itemlistCntrData/countAfterFilter%','number'))
+					return jb.ui.h('span');
+				return vdom;
+			}
+		})
+	}
+})
+
+jb.ui.extractPropFromExpression = exp => { // performance for simple cases such as %prop1%
+	if (exp.match(/^%.*%$/) && !exp.match(/[./[]/))
+		return exp.match(/^%(.*)%$/)[1]
+}
+
+// match fields in pattern itemlistCntrData/FLDNAME_filter to data
+jb.component('itemlist-container.filter-field', { /* itemlistContainer.filterField */
+  type: 'feature',
+  category: 'itemlist-filter:80',
+  requires: ctx => ctx.vars.itemlistCntr,
+  params: [
+    {id: 'fieldData', dynamic: true, mandatory: true},
+    {id: 'filterType', type: 'filter-type'}
+  ],
+  impl: (ctx,fieldData,filterType) => ({
+			afterViewInit: cmp => {
+				const propToFilter = jb.ui.extractPropFromExpression(ctx.params.fieldData.profile);
+				if (propToFilter)
+					cmp.itemToFilterData = item => item[propToFilter];
+				else
+					cmp.itemToFilterData = item => fieldData(ctx.setData(item));
+
+				ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.filters.push(items=>{
+						const filterValue = cmp.jbModel();
+						if (!filterValue) return items;
+						const res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
+						if (filterType.sort && (!cmp.state.sortOptions || cmp.state.sortOptions.length == 0) )
+							filterType.sort(res,cmp.itemToFilterData,filterValue);
+						return res;
+				})
+		}
+	})
+})
+
+jb.component('filter-type.text', { /* filterType.text */
+  type: 'filter-type',
+  params: [
+    {id: 'ignoreCase', as: 'boolean', defaultValue: true, type: 'boolean'}
+  ],
+  impl: (ctx,ignoreCase) => ignoreCase ? ({
+		filter: (filter,data) => (data||'').toLowerCase().indexOf((filter||'').toLowerCase()) != -1,
+		sort: (items,itemToData,filter) =>  {
+			const asWord = new RegExp('\\b' + filter + '\\b','i');
+			const score = txt => (asWord.test(txt) ? 5 : 0) + (txt.toLowerCase().indexOf(filter.toLowerCase()) == 0 ? 3 : 0); // higher score for wholeWord or beginsWith
+			items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
+		}
+	}) : ({
+		filter: (filter,data) => (data||'').indexOf(filter||'') != -1,
+		sort: (items,itemToData,filter) =>  {
+			const asWord = new RegExp('\\b' + filter + '\\b');
+			const score = txt => (asWord.test(txt) ? 5 : 0) + (txt.indexOf(filter) == 0 ? 3 : 0);
+			items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
+		}
+	})
+})
+
+jb.component('filter-type.exact-match', { /* filterType.exactMatch */
+  type: 'filter-type',
+  impl: ctx => ({
+		filter: (filter,data) =>  {
+			const _filter = (filter||'').trim(), _data = (data||'').trim();
+			return _data.indexOf(_filter) == 0 && _data.length == _filter.length;
+		}
+	})
+})
+
+jb.component('filter-type.numeric', { /* filterType.numeric */
+  type: 'filter-type',
+  impl: ctx => ({
+		filter: (filter,data) => Number(data) >= Number(filter),
+		sort: (items,itemToData) => items.sort((item1,item2)=> Number(itemToData(item1)) - Number(itemToData(item2)))
+	})
+})
+
+jb.component('itemlist-container.search-in-all-properties', { /* itemlistContainer.searchInAllProperties */
+  type: 'data',
+  category: 'itemlist-filter:40',
+  impl: ctx => {
+		if (typeof ctx.data == 'string') return ctx.data;
+		if (typeof ctx.data != 'object') return '';
+		return jb.entries(ctx.data).map(e=>e[1]).filter(v=>typeof v == 'string').join('#');
+	}
+})
+
+
+})()
+;
+
+jb.ns('menuStyle')
+jb.ns('menuSeparator')
+jb.ns('mdl')
+
+jb.component('menu.menu', { /* menu.menu */
+  type: 'menu.option',
+  params: [
+    {id: 'title', as: 'string', dynamic: true, mandatory: true},
+    {
+      id: 'options',
+      type: 'menu.option[]',
+      dynamic: true,
+      flattenArray: true,
+      mandatory: true,
+      defaultValue: []
+    },
+    {id: 'optionsFilter', type: 'data', dynamic: true, defaultValue: '%%'}
+  ],
+  impl: ctx => ({
 		options: ctx2 => ctx.params.optionsFilter(ctx.setData(ctx.params.options(ctx2))),
 		title: ctx.params.title(),
 		applyShortcut: function(e) {
@@ -10774,34 +11720,46 @@ jb.component('menu.menu', {
 	})
 })
 
-jb.component('menu.options-group', {
-	type: 'menu.option',
-	params: [
-		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true },
-	],
-	impl: (ctx,options) =>
+jb.component('menu.options-group', { /* menu.optionsGroup */
+  type: 'menu.option',
+  params: [
+    {
+      id: 'options',
+      type: 'menu.option[]',
+      dynamic: true,
+      flattenArray: true,
+      mandatory: true
+    }
+  ],
+  impl: (ctx,options) =>
 			options()
 })
 
-jb.component('menu.dynamic-options', {
-	type: 'menu.option',
-	params: [
-		{ id: 'items', type: 'data', as: 'array', mandatory: true, dynamic: true },
-		{ id: 'genericOption', type: 'menu.option', mandatory: true, dynamic: true },
-	],
-	impl: (ctx,items,generic) =>
+jb.component('menu.dynamic-options', { /* menu.dynamicOptions */
+  type: 'menu.option',
+  params: [
+    {id: 'items', type: 'data', as: 'array', mandatory: true, dynamic: true},
+    {id: 'genericOption', type: 'menu.option', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,items,generic) =>
 		items().map(item =>
 				generic(ctx.setVars({menuData: item}).setData(item)))
 })
 
-jb.component('menu.end-with-separator', {
-	type: 'menu.option',
-	params: [
-		{ id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true },
-		{ id: 'separator', type: 'menu.option', as: 'array', defaultValue :{$: 'menu.separator' } },
-		{ id: 'title', as: 'string' }
-	],
-	impl: (ctx) => {
+jb.component('menu.end-with-separator', { /* menu.endWithSeparator */
+  type: 'menu.option',
+  params: [
+    {
+      id: 'options',
+      type: 'menu.option[]',
+      dynamic: true,
+      flattenArray: true,
+      mandatory: true
+    },
+    {id: 'separator', type: 'menu.option', as: 'array', defaultValue: menu.separator()},
+    {id: 'title', as: 'string'}
+  ],
+  impl: (ctx) => {
 		const options = ctx.params.options();
 		if (options.length > 0)
 			return options.concat(ctx.params.separator)
@@ -10810,21 +11768,21 @@ jb.component('menu.end-with-separator', {
 })
 
 
-jb.component('menu.separator', {
-	type: 'menu.option',
-	impl: ctx => ({ separator: true })
+jb.component('menu.separator', { /* menu.separator */
+  type: 'menu.option',
+  impl: ctx => ({ separator: true })
 })
 
-jb.component('menu.action', {
-	type: 'menu.option',
-	params: [
-		{ id: 'title', as: 'string', dynamic: true, mandatory: true },
-		{ id: 'action', type: 'action', dynamic: true, mandatory: true },
-		{ id: 'icon', as: 'string' },
-		{ id: 'shortcut', as: 'string' },
-		{ id: 'showCondition', type:'boolean', as: 'boolean', defaultValue: true }
-	],
-	impl: ctx =>
+jb.component('menu.action', { /* menu.action */
+  type: 'menu.option',
+  params: [
+    {id: 'title', as: 'string', dynamic: true, mandatory: true},
+    {id: 'action', type: 'action', dynamic: true, mandatory: true},
+    {id: 'icon', as: 'string'},
+    {id: 'shortcut', as: 'string'},
+    {id: 'showCondition', type: 'boolean', as: 'boolean', defaultValue: true}
+  ],
+  impl: ctx =>
 		ctx.params.showCondition ? ({
 			leaf : ctx.params,
 			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
@@ -10842,14 +11800,19 @@ jb.component('menu.action', {
 
 // ********* actions / controls ************
 
-jb.component('menu.control', {
-	type: 'control,clickable,menu',
-	params: [
-		{id: 'menu', type: 'menu.option', dynamic: true, mandatory: true },
-		{id: 'style', type: 'menu.style', defaultValue :{$: 'menu-style.context-menu' }, dynamic: true },
-		{id: 'features', type: 'feature[]', dynamic: true },
-	],
-	impl: ctx => {
+jb.component('menu.control', { /* menu.control */
+  type: 'control,clickable,menu',
+  params: [
+    {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
+    {
+      id: 'style',
+      type: 'menu.style',
+      defaultValue: menuStyle.contextMenu(),
+      dynamic: true
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => {
 		const menuModel = ctx.params.menu() || { options: [], ctx: ctx, title: ''};
 		return jb.ui.ctrl(ctx.setVars({
 			topMenu: ctx.vars.topMenu || { popups: []},
@@ -10858,71 +11821,99 @@ jb.component('menu.control', {
 	}
 })
 
-jb.component('menu.open-context-menu', {
-	type: 'action',
-	params: [
-		{id: 'menu', type: 'menu.option', dynamic: true, mandatory: true },
-		{id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup'}  },
-		{id: 'features', type: 'dialog-feature[]', dynamic: true }
-	],
-	impl :{$: 'open-dialog',
-			style :{$call: 'popupStyle' },
-			content :{$: 'menu.control' , menu :{$call: 'menu'}, style :{$: 'menu-style.context-menu'} },
-			features :{$call: 'features' },
-	}
+jb.component('menu.open-context-menu', { /* menu.openContextMenu */
+  type: 'action',
+  params: [
+    {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
+    {
+      id: 'popupStyle',
+      type: 'dialog.style',
+      dynamic: true,
+      defaultValue: dialog.contextMenuPopup()
+    },
+    {id: 'features', type: 'dialog-feature[]', dynamic: true}
+  ],
+  impl: openDialog({
+    style: call('popupStyle'),
+    content: menu.control({menu: call('menu'), style: menuStyle.contextMenu()}),
+    features: call('features')
+  })
 })
 
 // ********* styles ************
 
-jb.component('menu-style.pulldown', {
-	type: 'menu.style',
-	params: [
-			{ id: 'innerMenuStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-style.popup-as-option'}},
-			{ id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: {$: 'menu-style.option-line'}},
-			{ id: 'layout', type: 'group.style', dynamic: true, defaultValue :{$: 'itemlist.horizontal'}},
-	],
-		impl :{$: 'style-by-control', __innerImplementation: true,
-			control :{$: 'itemlist',
-				$vars: {
-					optionsParentId: ctx => ctx.id,
-					innerMenuStyle: ctx => ctx.componentContext.params.innerMenuStyle,
-					leafOptionStyle: ctx => ctx.componentContext.params.leafOptionStyle,
-				},
-				watchItems: false,
-				style :{$call: 'layout' },
-				items: '%$menuModel/options%',
-			controls :{$: 'menu.control', menu: '%$item%', style :{$: 'menu-style.popup-thumb'} },
-				features :{$: 'menu.selection'},
-		}
-	}
+jb.component('menu-style.pulldown', { /* menuStyle.pulldown */
+  type: 'menu.style',
+  params: [
+    {
+      id: 'innerMenuStyle',
+      type: 'menu.style',
+      dynamic: true,
+      defaultValue: menuStyle.popupAsOption()
+    },
+    {
+      id: 'leafOptionStyle',
+      type: 'menu-option.style',
+      dynamic: true,
+      defaultValue: menuStyle.optionLine()
+    },
+    {
+      id: 'layout',
+      type: 'group.style',
+      dynamic: true,
+      defaultValue: itemlist.horizontal()
+    }
+  ],
+  impl: styleByControl(
+    itemlist({
+      vars: [
+        Var('optionsParentId', ctx => ctx.id),
+        Var('innerMenuStyle', ctx => ctx.componentContext.params.innerMenuStyle),
+        Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
+      ],
+      items: '%$menuModel/options%',
+      controls: menu.control({menu: '%$item%', style: menuStyle.popupThumb()}),
+      style: call('layout'),
+      features: menu.selection()
+    })
+  )
 })
 
-jb.component('menu-style.context-menu', {
-	type: 'menu.style',
-	params: [
-			{ id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: {$: 'menu-style.option-line'}},
-	],
-		impl :{$: 'style-by-control', __innerImplementation: true,
-			control :{$: 'itemlist',
-			$vars: {
-				optionsParentId: ctx => ctx.id,
-				leafOptionStyle: ctx => ctx.componentContext.params.leafOptionStyle,
-			},
-				watchItems: false,
-				items: '%$menuModel/options%',
-				controls :{$: 'menu.control', menu: '%$item%', style :{$: 'menu-style.apply-multi-level'} },
-				features :{$: 'menu.selection', autoSelectFirst: true},
-		}
-	}
+jb.component('menu-style.context-menu', { /* menuStyle.contextMenu */
+  type: 'menu.style',
+  params: [
+    {
+      id: 'leafOptionStyle',
+      type: 'menu-option.style',
+      dynamic: true,
+      defaultValue: menuStyle.optionLine()
+    }
+  ],
+  impl: styleByControl(
+    itemlist({
+      vars: [
+        Var('optionsParentId', ctx => ctx.id),
+        Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
+      ],
+      items: '%$menuModel/options%',
+      controls: menu.control({menu: '%$item%', style: menuStyle.applyMultiLevel({})}),
+      features: menu.selection(true)
+    })
+  )
 })
 
 
-jb.component('menu.init-popup-menu', {
-	type: 'feature',
-	params: [
-			{ id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue :{$: 'dialog.context-menu-popup' } },
-	],
-		impl: ctx =>
+jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
+  type: 'feature',
+  params: [
+    {
+      id: 'popupStyle',
+      type: 'dialog.style',
+      dynamic: true,
+      defaultValue: dialog.contextMenuPopup()
+    }
+  ],
+  impl: ctx =>
 		({
 			destroy: cmp =>
 				cmp.closePopup(),
@@ -10971,9 +11962,9 @@ jb.component('menu.init-popup-menu', {
 		})
 })
 
-jb.component('menu.init-menu-option', {
-	type: 'feature',
-		impl: ctx =>
+jb.component('menu.init-menu-option', { /* menu.initMenuOption */
+  type: 'feature',
+  impl: ctx =>
 		({
 		afterViewInit: cmp => {
 			const leafParams = ctx.vars.menuModel.leaf;
@@ -10997,14 +11988,29 @@ jb.component('menu.init-menu-option', {
 		})
 })
 
-jb.component('menu-style.apply-multi-level', {
-	type: 'menu.style',
-	params: [
-			{ id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-style.popup-as-option'}},
-			{ id: 'leafStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-style.option-line'}},
-			{ id: 'separatorStyle', type: 'menu.style', dynamic: true, defaultValue: {$: 'menu-separator.line'}},
-	],
-		impl: ctx => {
+jb.component('menu-style.apply-multi-level', { /* menuStyle.applyMultiLevel */
+  type: 'menu.style',
+  params: [
+    {
+      id: 'menuStyle',
+      type: 'menu.style',
+      dynamic: true,
+      defaultValue: menuStyle.popupAsOption()
+    },
+    {
+      id: 'leafStyle',
+      type: 'menu.style',
+      dynamic: true,
+      defaultValue: menuStyle.optionLine()
+    },
+    {
+      id: 'separatorStyle',
+      type: 'menu.style',
+      dynamic: true,
+      defaultValue: menuSeparator.line()
+    }
+  ],
+  impl: ctx => {
 			if (ctx.vars.menuModel.leaf)
 				return ctx.vars.leafOptionStyle ? ctx.vars.leafOptionStyle(ctx) : ctx.params.leafStyle();
 			else if (ctx.vars.menuModel.separator)
@@ -11032,12 +12038,12 @@ jb.component('menu-style.apply-multi-level', {
 //     })
 // })
 
-jb.component('menu.selection', {
-	type: 'feature',
-	params: [
-		{ id: 'autoSelectFirst', type: 'boolean'},
-	],
-	impl: ctx => ({
+jb.component('menu.selection', { /* menu.selection */
+  type: 'feature',
+  params: [
+    {id: 'autoSelectFirst', type: 'boolean'}
+  ],
+  impl: ctx => ({
 			onkeydown: true,
 			afterViewInit: cmp => {
 				cmp.base.setAttribute('tabIndex','0');
@@ -11089,655 +12095,124 @@ jb.component('menu.selection', {
 		})
 })
 
-jb.component('menu-style.option-line', {
-	type: 'menu-option.style',
-		impl :{$: 'custom-style',
-		template: (cmp,state,h) => h('div',{
+jb.component('menu-style.option-line', { /* menuStyle.optionLine */
+  type: 'menu-option.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{
 				class: 'line noselect', onmousedown: _ => cmp.action && cmp.action()
 			},[
 				h('i',{class:'material-icons'},state.icon),
 				h('span',{class:'title'},state.title),
 				h('span',{class:'shortcut'},state.shortcut),
 		]),
-		css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
+    css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				.selected { background: #d8d8d8 }
 				>i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }
 				>span { padding-top: 3px }
 						>.title { display: block; text-align: left; white-space: nowrap; }
 				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
-				features: [
-					{$: 'mdl.ripple-effect'},
-				{$: 'menu.init-menu-option'}
-				]
-	}
+    features: [mdl.rippleEffect(), menu.initMenuOption()]
+  })
 })
 
-jb.component('menu.option-as-icon24', {
-	type: 'menu-option.style',
-		impl :{$: 'custom-style',
-		template: (cmp,state,h) => h('div',{
+jb.component('menu.option-as-icon24', { /* menu.optionAsIcon24 */
+  type: 'menu-option.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{
 				class: 'line noselect', onclick: _ => cmp.clicked(), title: state.title
 			},[
 				h('i',{class:'material-icons'},state.icon),
 		]),
-		css: `{ display: flex; cursor: pointer; height: 24px}
+    css: `{ display: flex; cursor: pointer; height: 24px}
 				>i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }`
-	}
+  })
 })
 
-jb.component('menu-style.popup-as-option', {
-	type: 'menu.style',
-		impl :{$: 'custom-style',
-		template: (cmp,state,h) => h('div',{
+jb.component('menu-style.popup-as-option', { /* menuStyle.popupAsOption */
+  type: 'menu.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{
 				class: 'line noselect', onmousedown: _ => cmp.action()
 			},[
 				h('span',{class:'title'},state.title),
 				h('i',{class:'material-icons', onmouseenter: e => cmp.openPopup(e) },'play_arrow'),
 		]),
-		css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
+    css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
 						>.title { display: block; text-align: left; padding-top: 3px; padding-left: 26px; white-space: nowrap; }
 			`,
-				features :{$: 'menu.init-popup-menu', popupStyle :{$: 'dialog.context-menu-popup', rightSide: true, offsetTop: -24 } },
-		}
+    features: menu.initPopupMenu(dialog.contextMenuPopup(-24, true))
+  })
 })
 
-jb.component('menu-style.popup-thumb', {
-	type: 'menu.style',
-	description: 'used for pulldown',
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) => h('div',{
+jb.component('menu-style.popup-thumb', { /* menuStyle.popupThumb */
+  type: 'menu.style',
+  description: 'used for pulldown',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{
 				class: 'pulldown-top-menu-item',
 				onmouseenter: _ =>
 					cmp.mouseEnter(),
 				onclick: _ => cmp.openPopup()
 		},state.title),
-				features :[
-					{$: 'menu.init-popup-menu' },
-					{$: 'mdl.ripple-effect'}
-				],
-	}
+    features: [menu.initPopupMenu(), mdl.rippleEffect()]
+  })
 })
 
-jb.component('menu-style.toolbar', {
-	type: 'menu.style',
-	impl :{$: 'menu.multi-level',
-		leafOptionStyle :{$: 'menu.option-as-icon24' }
-	}
-})
-
-jb.component('dialog.context-menu-popup',{
-	type: 'dialog.style',
-	params: [
-		{ id: 'offsetTop', as: 'number' },
-		{ id: 'rightSide', as: 'boolean' },
-	],
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup context-menu-popup pulldown-mainmenu-popup'},
+jb.component('dialog.context-menu-popup', { /* dialog.contextMenuPopup */
+  type: 'dialog.style',
+  params: [
+    {id: 'offsetTop', as: 'number'},
+    {id: 'rightSide', as: 'boolean', type: 'boolean'}
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup context-menu-popup pulldown-mainmenu-popup'},
 				h(state.contentComp)),
-			features: [
-				{ $: 'dialog-feature.unique-dialog', id: '%$optionsParentId%', remeberLastLocation: false },
-				{ $: 'dialog-feature.max-zIndex-on-click' },
-				{ $: 'dialog-feature.close-when-clicking-outside' },
-				{ $: 'dialog-feature.css-class-on-launching-element' },
-				{ $: 'dialog-feature.near-launcher-position', rightSide: '%$rightSide%', offsetTop: '%$offsetTop%' }
-			]
-	}
-})
-
-jb.component('menu-separator.line', {
-	type: 'menu-separator.style',
-		impl :{$: 'custom-style',
-			template: (cmp,state,h) => h('div'),
-			css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}'
-	}
-})
-;
-
-jb.component('itemlist', {
-  type: 'control', category: 'group:80,common:80',
-  params: [
-    { id: 'title', as: 'string' },
-    { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, mandatory: true },
-    { id: 'controls', type: 'control[]', mandatory: true, dynamic: true },
-    { id: 'style', type: 'itemlist.style', dynamic: true , defaultValue: { $: 'itemlist.ul-li' } },
-    { id: 'watchItems', as: 'boolean' },
-    { id: 'itemVariable', as: 'string', defaultValue: 'item' },
-    { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
-})
-
-jb.component('itemlist.no-container', {
-  type: 'feature', category: 'group:20',
-  impl: ctx => ({
-    extendCtxOnce: (ctx,cmp) =>
-      ctx.setVars({itemlistCntr: null})
-    })
-})
-
-jb.component('itemlist.init', {
-  type: 'feature',
-  impl: ctx => ({
-      beforeInit: cmp => {
-        cmp.refresh = _ =>
-            cmp.setState({ctrls: cmp.calcCtrls()})
-
-        if (ctx.vars.$model.watchItems && ctx.vars.$model.items)
-          jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
-
-        cmp.calcCtrls = _ => {
-            var _items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
-            if (jb.compareArrays(_items,cmp.items))
-              return cmp.state.ctrls;
-            if (cmp.ctx.vars.itemlistCntr)
-              cmp.ctx.vars.itemlistCntr.items = _items;
-            cmp.items = _items;
-            return _items.slice(0,100).map(item=>
-              Object.assign(controlsOfItem(item),{item:item})).filter(x=>x.length > 0);
-        }
-
-        const controlsOfItem = jb.ui.cachedMap(item =>
-          ctx.vars.$model.controls(cmp.ctx.setData(item).setVars(jb.obj(ctx.vars.$model.itemVariable,item)))
-            .filter(x=>x).map(c=>jb.ui.renderable(c)).filter(x=>x));
-        
-      },
-      init: cmp => {
-        cmp.state.ctrls = cmp.calcCtrls();
-      },
+    features: [
+      dialogFeature.uniqueDialog('%$optionsParentId%', false),
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.closeWhenClickingOutside(),
+      dialogFeature.cssClassOnLaunchingElement(),
+      dialogFeature.nearLauncherPosition({
+        offsetTop: '%$offsetTop%',
+        rightSide: '%$rightSide%'
+      })
+    ]
   })
 })
 
-jb.component('itemlist.ul-li', {
-  type: 'itemlist.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li',
-          {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
-          ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
-    css: `{ list-style: none; padding: 0; margin: 0;}
-    >li { list-style: none; padding: 0; margin: 0;}`,
-    features:{$: 'itemlist.init'},
-  },
+jb.component('menu-separator.line', { /* menuSeparator.line */
+  type: 'menu-separator.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div'),
+    css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}'
+  })
 })
+;
 
-jb.component('itemlist.horizontal', {
-  type: 'itemlist.style',
-  params: [,
-    { id: 'spacing', as: 'number', defaultValue: 0 }
-  ],
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('div',{ class: 'jb-drag-parent'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('div', {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
-          ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
+jb.ns('picklist')
 
-    css: `{display: flex}
-        >* { margin-right: %$spacing%px }
-        >*:last-child { margin-right:0 }`,
-    features:{$: 'itemlist.init'},
-  }
-})
-
-// ****************** Selection ******************
-
-jb.component('itemlist.selection', {
-  type: 'feature',
+jb.component('picklist', { /* picklist */
+  type: 'control',
+  category: 'input:80',
   params: [
-    { id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%' , dynamic: true },
-    { id: 'selectedToDatabind', dynamic: true ,defaultValue: '%%' },
-    { id: 'databindToSelected', dynamic: true ,defaultValue: '%%' },
-    { id: 'onSelection', type: 'action', dynamic: true },
-    { id: 'onDoubleClick', type: 'action', dynamic: true },
-    { id: 'autoSelectFirst', type: 'boolean'},
-    { id: 'cssForSelected', as: 'string', defaultValue: 'background: #bbb !important; color: #fff !important' },
-  ],
-  impl: (ctx,databind) => ({
-    onclick: true,
-    afterViewInit: cmp => {
-        cmp.selectionEmitter = new jb.rx.Subject();
-        cmp.clickEmitter = new jb.rx.Subject();
-
-        cmp.selectionEmitter
-          .merge(cmp.clickEmitter)
-          .distinctUntilChanged()
-          .filter(x=>x)
-          .subscribe( selected => {
-              writeSelectedToDatabind(selected);
-              cmp.setState({selected: selected});
-              ctx.params.onSelection(cmp.ctx.setData(selected));
-          });
-        
-        const selectedRef = databind()
-        jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, watchScript: ctx})
-          .catch(e=>jb.ui.setState(cmp,{selected: null }) || [])
-          .subscribe(e=>
-            jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
-
-        // double click
-        var clickEm = cmp.clickEmitter.takeUntil( cmp.destroyed );
-        clickEm.buffer(clickEm.debounceTime(250))
-          .filter(buff => buff.length === 2)
-          .subscribe(buff=>
-            ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
-
-        function autoSelectFirst() {
-          if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(selectedRef))
-              return cmp.selectionEmitter.next(cmp.items[0])
-        }
-        function writeSelectedToDatabind(selected) {
-          return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)))
-        }
-        function selectedOfDatabind() {
-          return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(selectedRef))))
-        }
-        jb.delay(1).then(_=>{
-           if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
-              cmp.state.selected = null;
-           if (selectedRef && jb.val(selectedRef))
-             cmp.setState({selected: selectedOfDatabind()});
-           if (!cmp.state.selected)
-              autoSelectFirst()
-        })
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
+    {
+      id: 'options',
+      type: 'picklist.options',
+      dynamic: true,
+      mandatory: true,
+      defaultValue: picklist.optionsByComma()
     },
-    extendItem: (cmp,vdom,data) => {
-      jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == data);
-      vdom.attributes.onclick = _ =>
-        cmp.clickEmitter.next(data)
+    {id: 'promote', type: 'picklist.promote', dynamic: true},
+    {
+      id: 'style',
+      type: 'picklist.style',
+      defaultValue: picklist.native(),
+      dynamic: true
     },
-    css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
-  })
-})
-
-jb.component('itemlist.keyboard-selection', {
-  type: 'feature',
-  usageByValue: false,
-  params: [
-    { id: 'autoFocus', type: 'boolean' },
-    { id: 'onEnter', type: 'action', dynamic: true },
-  ],
-  impl: ctx => ({
-      afterViewInit: cmp => {
-        let onkeydown = (cmp.ctx.vars.itemlistCntr && cmp.ctx.vars.itemlistCntr.keydown) || (cmp.ctx.vars.selectionKeySource && cmp.ctx.vars.selectionKeySource.keydown);
-        cmp.base.setAttribute('tabIndex','0');
-        if (!onkeydown) {
-          onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
-          if (ctx.params.autoFocus)
-            jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus',ctx)
-        } else {
-          onkeydown = onkeydown.merge(jb.rx.Observable.fromEvent(cmp.base, 'keydown'))
-        }
-        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );
-
-        cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
-          .subscribe(x=>
-            ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
-
-        cmp.onkeydown.filter(e=> !e.ctrlKey &&
-              (e.keyCode == 38 || e.keyCode == 40))
-            .map(event => {
-              event.stopPropagation();
-              var diff = event.keyCode == 40 ? 1 : -1;
-              var items = cmp.items;
-              return items[(items.indexOf(cmp.state.selected) + diff + items.length) % items.length] || cmp.state.selected;
-        }).subscribe(x=>
-          cmp.selectionEmitter && cmp.selectionEmitter.next(x)
-        )
-      },
-    })
-})
-
-jb.component('itemlist.drag-and-drop', {
-  type: 'feature',
-  params: [
-  ],
-  impl: ctx => ({
-      afterViewInit: function(cmp) {
-        var drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
-          moves: (el,source,handle) =>
-            jb.ui.hasClass(handle,'drag-handle')
-        });
-
-        drake.on('drag', function(el, source) {
-          var item = el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data;
-          if (!item) {
-            var item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
-            item = item_comp && item_comp.ctx.data;
-          }
-          el.dragged = {
-            item: item,
-            remove: item => cmp.items.splice(cmp.items.indexOf(item), 1)
-          }
-          cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.item);
-        });
-        drake.on('drop', (dropElm, target, source,sibling) => {
-            var draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
-            var targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
-            jb.splice(jb.asRef(cmp.items),[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
-
-            dropElm.dragged = null;
-        });
-
-        // ctrl + Up/Down
-//        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
-          if (!cmp.onkeydown) return;
-          cmp.onkeydown.filter(e=>
-            e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
-            .subscribe(e=> {
-              var diff = e.keyCode == 40 ? 1 : -1;
-              var selectedIndex = cmp.items.indexOf(cmp.state.selected);
-              if (selectedIndex == -1) return;
-              var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-              jb.splice(jb.asRef(cmp.items),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
-          })
-//        })
-      }
-    })
-})
-
-jb.component('itemlist.drag-handle', {
-  description: 'put on the control inside the item which is used to drag the whole line',
-  type: 'feature',
-  impl: {$list: [ {$: 'css.class', class: 'drag-handle' }, {$: 'css', css:'{cursor: pointer}'} ] }
-})
-
-jb.component('itemlist.shown-only-on-item-hover', {
-  type: 'feature', category: 'itemlist:75',
-  description: 'put on the control inside the item which is shown when the mouse enters the line',
-  impl: (ctx,cssClass,cond) => ({
-    class: 'jb-shown-on-item-hover',
-    css: '{ display: none }'
-  })
-})
-
-jb.component('itemlist.divider', {
-  type: 'feature',
-  params: [
-    { id: 'space', as: 'number', defaultValue: 5}
-  ],
-  impl : (ctx,space) =>
-    ({css: `>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: ${space}px }`})
-})
-;
-
-(function() {
-
-const createItemlistCntr = (ctx,params) => ({
-	id: params.id,
-	defaultItem: params.defaultItem,
-	filter_data: {},
-	filters: [],
-	selectedRef: ctx.exp('%$itemlistCntrData/selected%','ref'),
-	selected: function(selected) {
-		if (!jb.isValid(this.selectedRef)) return;
-		return (typeof selected != 'undefined') ?
-			jb.writeValue(this.selectedRef,selected,this.ctx) : jb.val(this.selectedRef)
-	},
-	add: function(item) {
-		const newItem = item || JSON.parse(JSON.stringify(this.defaultItem || {}));
-		if (this.items) {
-			jb.splice(jb.asRef(this.items),[[this.items.length,0,newItem]]);
-			this.selected(newItem);
-		}
-	},
-	delete: function(item) {
-		if (this.items && this.items.indexOf(item) != -1) {
-			this.changeSelectionBeforeDelete();
-			jb.splice(jb.asRef(this.items),[[this.items.indexOf(item),1]]);
-		}
-	},
-	reSelectAfterFilter: function(filteredItems) {
-		if (filteredItems.indexOf(this.selected()) == -1)
-			this.selected(filteredItems[0])
-	},
-	changeSelectionBeforeDelete: function() {
-		if (this.items && this.selected) {
-			const curIndex = this.items.indexOf(this.selected);
-			if (curIndex == -1)
-				this.selected = null;
-			else if (curIndex == 0 && this.items.length > 0)
-				this.selected = this.items[1];
-			else if (this.items.length > 0)
-				this.selected = this.items[curIndex -1];
-			else
-				this.selected = null;
-		}
-	}
-})
-
-jb.component('group.itemlist-container', {
-	description: 'itemlist writable container to support addition, deletion and selection',
-	type: 'feature', category: 'itemlist:80,group:70',
-	params: [
-		{ id: 'id', as: 'string', mandatory: true },
-		{ id: 'defaultItem', as: 'single' },
-		{ id: 'maxItems', as: 'number' , defaultValue: 100 },
-		{ id: 'initialSelection', as: 'single' },
-	],
-	impl :{$list : [
-		{$: 'variable', name: 'itemlistCntrData', value: {$: 'object', search_pattern: '', selected: '%$initialSelection%', maxItems: '%$maxItems%' } , 
-				watchable: true, globalId1: '%$id%-cntr-data'},
-		{$: 'variable', name: 'itemlistCntr', value: ctx => createItemlistCntr(ctx,ctx.componentContext.params) },
-		ctx => ({
-			init: cmp => {
-				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
-//        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
-				cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>
-					items.slice(0,jb.tonumber(maxItemsRef));
-			},
-		})
-	]}
-})
-
-jb.component('itemlist.itemlist-selected', {
-	type: 'feature',   category: 'itemlist:20,group:0',
-	impl :{ $list : [
-			{$: 'group.data', data : '%$itemlistCntrData/selected%'},
-			{$: 'hidden', showCondition: {$notEmpty: '%$itemlistCntrData/selected%' } }
-	]}
-})
-
-jb.component('itemlist-container.add', {
-	type: 'action',
-	params: [{ id: 'toAdd', as: 'single' } ],
-	impl: (ctx,toAdd) =>
-		ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.add(toAdd)
-})
-
-jb.component('itemlist-container.delete', {
-	type: 'action',
-	params: [{ id: 'item', as: 'single', defaultValue: '%%'} ],
-	impl: (ctx,item) =>
-			ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.delete(item)
-})
-
-jb.component('itemlist-container.filter', {
-	type: 'aggregator', category: 'itemlist-filter:100',
-	requires: ctx => ctx.vars.itemlistCntr,
-	params: [{ id: 'updateCounters', as: 'boolean'} ],
-	impl: (ctx,updateCounters) => {
-			if (!ctx.vars.itemlistCntr) return;
-			const resBeforeMaxFilter = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
-									filter(items), ctx.data || []);
-			const res = ctx.vars.itemlistCntr.maxItemsFilter(resBeforeMaxFilter);
-			if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
-				jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
-			if (updateCounters) {
-					jb.delay(1).then(_=>{
-					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length);
-					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length);
-					jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length);
-			}) } else {
-				ctx.vars.itemlistCntrData.countAfterFilter = res.length
-			}
-			return res;
-	}
-})
-
-jb.component('itemlist-container.search', {
-	type: 'control', category: 'itemlist-filter:100',
-	requires: ctx => ctx.vars.itemlistCntr,
-	params: [
-		{ id: 'title', as: 'string' , dynamic: true, defaultValue: 'Search' },
-		{ id: 'searchIn', as: 'string' , dynamic: true, defaultValue: {$: 'itemlist-container.search-in-all-properties'} },
-		{ id: 'databind', as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
-		{ id: 'style', type: 'editable-text.style', defaultValue: { $: 'editable-text.mdl-search' }, dynamic: true },
-		{ id: 'features', type: 'feature[]', dynamic: true },
-	],
-	impl: (ctx,title,searchIn,databind) =>
-		jb.ui.ctrl(ctx,{
-			afterViewInit: cmp => {
-				if (!ctx.vars.itemlistCntr) return;
-				const databindRef = databind()
-
-				ctx.vars.itemlistCntr.filters.push( items => {
-					const toSearch = jb.val(databindRef) || '';
-					if (typeof searchIn.profile == 'function') { // improved performance
-						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-					}
-
-					return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-				});
-				const keydown_src = new jb.rx.Subject();
-				cmp.base.onkeydown = e => {
-					if ([38,40,13,27].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
-						keydown_src.next(e);
-						return false;  
-					}
-					return true;
-				}
-				ctx.vars.itemlistCntr.keydown = keydown_src.takeUntil(cmp.destroyed);
-			}
-		})
-});
-
-jb.component('itemlist-container.more-items-button', {
-	type: 'control', category: 'itemlist-filter:100',
-	requires: ctx => ctx.vars.itemlistCntr,
-	params: [
-		{ id: 'title', as: 'string' , dynamic: true, defaultValue: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeMaxFilter%)' },
-		{ id: 'delta', as: 'number' , defaultValue: 200 },
-		{ id: 'style', type: 'button.style', defaultValue: { $: 'button.href' }, dynamic: true },
-		{ id: 'features', type: 'feature[]', dynamic: true },
-	],
-	impl: (ctx,title,delta) => {
-		return jb.ui.ctrl(ctx,{
-			beforeInit: cmp => {
-				if (!ctx.vars.itemlistCntr) return;
-				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
-				cmp.clicked = _ =>
-					jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta);
-				cmp.refresh = _ =>
-					cmp.setState({title: jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta})))});
-				jb.ui.watchRef(ctx,cmp,maxItemsRef);
-			},
-			init: cmp =>
-				cmp.state.title = jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta}))),
-
-			templateModifier: (vdom,cmp,state) => { // hide the button when not needed
-				if (cmp.ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','number') == cmp.ctx.exp('%$itemlistCntrData/countAfterFilter%','number'))
-					return jb.ui.h('span');
-				return vdom;
-			}
-		})
-	}
-});
-
-jb.ui.extractPropFromExpression = exp => { // performance for simple cases such as %prop1%
-	if (exp.match(/^%.*%$/) && !exp.match(/[./[]/))
-		return exp.match(/^%(.*)%$/)[1]
-}
-
-// match fields in pattern itemlistCntrData/FLDNAME_filter to data
-jb.component('itemlist-container.filter-field', {
-	type: 'feature', category: 'itemlist-filter:80',
-	requires: ctx => ctx.vars.itemlistCntr,
-	params: [
-		{ id: 'fieldData', dynamic: true, mandatory: true },
-		{ id: 'filterType', type: 'filter-type' },
-	],
-	impl: (ctx,fieldData,filterType) => ({
-			afterViewInit: cmp => {
-				const propToFilter = jb.ui.extractPropFromExpression(ctx.params.fieldData.profile);
-				if (propToFilter)
-					cmp.itemToFilterData = item => item[propToFilter];
-				else
-					cmp.itemToFilterData = item => fieldData(ctx.setData(item));
-
-				ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.filters.push(items=>{
-						const filterValue = cmp.jbModel();
-						if (!filterValue) return items;
-						const res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
-						if (filterType.sort && (!cmp.state.sortOptions || cmp.state.sortOptions.length == 0) )
-							filterType.sort(res,cmp.itemToFilterData,filterValue);
-						return res;
-				})
-		}
-	})
-});
-
-jb.component('filter-type.text', {
-	type: 'filter-type',
-	params: [
-		{ id: 'ignoreCase', as: 'boolean', defaultValue: true }
-	],
-	impl: (ctx,ignoreCase) => ignoreCase ? ({
-		filter: (filter,data) => (data||'').toLowerCase().indexOf((filter||'').toLowerCase()) != -1,
-		sort: (items,itemToData,filter) =>  {
-			const asWord = new RegExp('\\b' + filter + '\\b','i');
-			const score = txt => (asWord.test(txt) ? 5 : 0) + (txt.toLowerCase().indexOf(filter.toLowerCase()) == 0 ? 3 : 0); // higher score for wholeWord or beginsWith
-			items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
-		}
-	}) : ({
-		filter: (filter,data) => (data||'').indexOf(filter||'') != -1,
-		sort: (items,itemToData,filter) =>  {
-			const asWord = new RegExp('\\b' + filter + '\\b');
-			const score = txt => (asWord.test(txt) ? 5 : 0) + (txt.indexOf(filter) == 0 ? 3 : 0);
-			items.sort((item1,item2)=> score(itemToData(item1) || '') - score(itemToData(item2) || ''))
-		}
-	})
-})
-
-jb.component('filter-type.exact-match', {
-	type: 'filter-type',
-	impl: ctx => ({
-		filter: (filter,data) =>  {
-			const _filter = (filter||'').trim(), _data = (data||'').trim();
-			return _data.indexOf(_filter) == 0 && _data.length == _filter.length;
-		}
-	})
-})
-
-jb.component('filter-type.numeric', {
-	type: 'filter-type',
-	impl: ctx => ({
-		filter: (filter,data) => Number(data) >= Number(filter),
-		sort: (items,itemToData) => items.sort((item1,item2)=> Number(itemToData(item1)) - Number(itemToData(item2)))
-	})
-})
-
-jb.component('itemlist-container.search-in-all-properties', {
-	type: 'data', category: 'itemlist-filter:40',
-	impl: ctx => {
-		if (typeof ctx.data == 'string') return ctx.data;
-		if (typeof ctx.data != 'object') return '';
-		return jb.entries(ctx.data).map(e=>e[1]).filter(v=>typeof v == 'string').join('#');
-	}
-})
-
-
-})()
-;
-
-jb.component('picklist', {
-  type: 'control', category: 'input:80',
-  params: [
-    { id: 'title', as: 'string', dynamic: true },
-    { id: 'databind', as: 'ref', mandaroy: true, dynamic: true },
-    { id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, defaultValue: {$ : 'picklist.optionsByComma'} },
-    { id: 'promote', type: 'picklist.promote', dynamic: true },
-    { id: 'style', type: 'picklist.style', defaultValue: { $: 'picklist.native' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx,{
@@ -11780,10 +12255,10 @@ function groupOfOpt(opt) {
   return opt.group || opt.text.split('.').shift();
 }
 
-jb.component('picklist.dynamic-options', {
+jb.component('picklist.dynamic-options', { /* picklist.dynamicOptions */
   type: 'feature',
   params: [
-    { id: 'recalcEm', as: 'single'}
+    {id: 'recalcEm', as: 'single'}
   ],
   impl: (ctx,recalcEm) => ({
     init: cmp =>
@@ -11794,11 +12269,11 @@ jb.component('picklist.dynamic-options', {
   })
 })
 
-jb.component('picklist.onChange', {
+jb.component('picklist.onChange', { /* picklist.onChange */
   type: 'feature',
   description: 'action on picklist selection',
   params: [
-    { id: 'action', type: 'action', dynamic: true}
+    {id: 'action', type: 'action', dynamic: true}
   ],
   impl: (ctx,action) => ({
     init: cmp =>
@@ -11808,23 +12283,23 @@ jb.component('picklist.onChange', {
 
 // ********* options
 
-jb.component('picklist.optionsByComma',{
+jb.component('picklist.optionsByComma', { /* picklist.optionsByComma */
   type: 'picklist.options',
   params: [
-    { id: 'options', as: 'string', mandatory: true},
-    { id: 'allowEmptyValue', type: 'boolean' },
+    {id: 'options', as: 'string', mandatory: true},
+    {id: 'allowEmptyValue', type: 'boolean'}
   ],
   impl: function(context,options,allowEmptyValue) {
     var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
     return emptyValue.concat((options||'').split(',').map(code=> ({ code: code, text: code })));
   }
-});
+})
 
-jb.component('picklist.options',{
+jb.component('picklist.options', { /* picklist.options */
   type: 'picklist.options',
   params: [
-    { id: 'options', type: 'data', as: 'array', mandatory: true},
-    { id: 'allowEmptyValue', type: 'boolean' },
+    {id: 'options', type: 'data', as: 'array', mandatory: true},
+    {id: 'allowEmptyValue', type: 'boolean'}
   ],
   impl: function(context,options,allowEmptyValue) {
     var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
@@ -11832,13 +12307,13 @@ jb.component('picklist.options',{
   }
 })
 
-jb.component('picklist.coded-options',{
+jb.component('picklist.coded-options', { /* picklist.codedOptions */
   type: 'picklist.options',
   params: [
-    { id: 'options', as: 'array',mandatory: true },
-    { id: 'code', as: 'string', dynamic:true , mandatory: true },
-    { id: 'text', as: 'string', dynamic:true, mandatory: true } ,
-    { id: 'allowEmptyValue', type: 'boolean' },
+    {id: 'options', as: 'array', mandatory: true},
+    {id: 'code', as: 'string', dynamic: true, mandatory: true},
+    {id: 'text', as: 'string', dynamic: true, mandatory: true},
+    {id: 'allowEmptyValue', type: 'boolean'}
   ],
   impl: function(context,options,code,text,allowEmptyValue) {
     var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
@@ -11850,11 +12325,21 @@ jb.component('picklist.coded-options',{
   }
 })
 
-jb.component('picklist.sorted-options', {
+jb.component('picklist.sorted-options', { /* picklist.sortedOptions */
   type: 'picklist.options',
   params: [
-    { id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, composite: true },
-    { id: 'marks', as: 'array', description: 'e.g input:80,group:90. 0 mark means hidden. no mark means 50' },
+    {
+      id: 'options',
+      type: 'picklist.options',
+      dynamic: true,
+      mandatory: true,
+      composite: true
+    },
+    {
+      id: 'marks',
+      as: 'array',
+      description: 'e.g input:80,group:90. 0 mark means hidden. no mark means 50'
+    }
   ],
   impl: (ctx,optionsFunc,marks) => {
     var options = optionsFunc() || [];
@@ -11869,31 +12354,31 @@ jb.component('picklist.sorted-options', {
   }
 })
 
-jb.component('picklist.promote',{
+jb.component('picklist.promote', { /* picklist.promote */
   type: 'picklist.promote',
   params: [
-    { id: 'groups', as: 'array'},
-    { id: 'options', as: 'array'},
+    {id: 'groups', as: 'array'},
+    {id: 'options', as: 'array'}
   ],
   impl: (context,groups,options) =>
     ({ groups: groups, options: options})
-});
+})
 ;
 
 jb.type('theme');
 
-jb.component('group.theme', {
+jb.component('group.theme', { /* group.theme */
   type: 'feature',
   params: [
-    { id: 'theme', type: 'theme' },
+    {id: 'theme', type: 'theme'}
   ],
   impl: (context,theme) => ({
-    extendCtxOnce: (ctx,cmp) => 
+    extendCtxOnce: (ctx,cmp) =>
       ctx.setVars(theme)
   })
 })
 
-jb.component('theme.material-design', {
+jb.component('theme.material-design', { /* theme.materialDesign */
   type: 'theme',
   impl: () => ({
   	'$theme.editable-text': 'editable-text.mdl-input'
@@ -11901,78 +12386,77 @@ jb.component('theme.material-design', {
 })
 ;
 
+jb.ns('icon')
 
-jb.component('material-icon', {
-	type: 'control', category: 'control:50',
-	params: [
-		{ id: 'icon', as: 'string', mandatory: true },
-		{ id: 'title', as: 'string' },
-		{ id: 'style', type: 'icon.style', dynamic: true, defaultValue :{$: 'icon.material' } },
-		{ id: 'features', type: 'feature[]', dynamic: true }
-	],
-	impl: ctx =>
+jb.component('material-icon', { /* materialIcon */
+  type: 'control',
+  category: 'control:50',
+  params: [
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string'},
+    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx =>
 		jb.ui.ctrl(ctx,{init: cmp=> cmp.state.icon = ctx.params.icon})
 })
 
-jb.component('icon.icon-in-button', {
-    type: 'icon-with-action.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('button',{ class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev) },
-		      h('i',{ class: 'material-icons' }, state.icon)),
-    }
+jb.component('icon.icon-in-button', { /* icon.iconInButton */
+  type: 'icon-with-action.style',
+  impl: customStyle(
+    (cmp,state,h) => h('button',{ class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev) },
+		      h('i',{ class: 'material-icons' }, state.icon))
+  )
 })
 
-jb.component('icon.material', {
-    type: 'icon-with-action.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('i',{ class: 'material-icons' }, state.icon),
-    }
+jb.component('icon.material', { /* icon.material */
+  type: 'icon-with-action.style',
+  impl: customStyle(
+    (cmp,state,h) => h('i',{ class: 'material-icons' }, state.icon)
+  )
 })
 ;
 
-jb.component('editable-number.slider-no-text', {
+jb.ns('slider')
+jb.ns('mdlStyle')
+
+jb.component('editable-number.slider-no-text', { /* editableNumber.sliderNoText */
   type: 'editable-number.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('input',{ type: 'range',
+  impl: customStyle({
+    template: (cmp,state,h) => h('input',{ type: 'range',
         min: state.min, max: state.max, step: state.step,
         value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: -1}),
-      features :[
-          {$: 'field.databind' },
-          {$: 'slider.init'},
-      ],
-  }
+    features: [field.databind(), slider.init()]
+  })
 })
 
-jb.component('editable-number.slider', {
+jb.component('editable-number.slider', { /* editableNumber.slider */
   type: 'editable-number.style',
-  impl :{$: 'style-by-control', __innerImplementation: true,
-    modelVar: 'editableNumberModel',
-    control :{$: 'group',
+  impl: styleByControl(
+    group({
       title: '%$editableNumberModel/title%',
-      controls :{$: 'group',
-        style: {$: 'layout.horizontal', spacing: 20},
+      controls: group({
+        style: layout.horizontal(20),
         controls: [
-          {$: 'editable-text',
-              databind: '%$editableNumberModel/databind%',
-              style: {$: 'editable-text.mdl-input-no-floating-label', width: 36 },
-              features: [
-                {$: 'slider-text.handleArrowKeys' },
-                { $: 'css.margin', top : -3}
-              ],
-          },
-          {$: 'editable-number',
-              databind: '%$editableNumberModel/databind%',
-              style :{$: 'editable-number.slider-no-text'},
-              features: {$: 'css.width', width: 80},
-          },
+          editableText({
+            databind: '%$editableNumberModel/databind%',
+            style: editableText.mdlInputNoFloatingLabel(36),
+            features: [slider.handleArrowKeys(), css.margin(-3)]
+          }),
+          editableNumber({
+            databind: '%$editableNumberModel/databind%',
+            style: editableNumber.sliderNoText(),
+            features: css.width(80)
+          })
         ],
-        features: {$: 'variable', name: 'sliderCtx', value: {$: 'object'}}
-      }
-    }
-  }
+        features: variable({name: 'sliderCtx', value: {'$': 'object'}})
+      })
+    }),
+    'editableNumberModel'
+  )
 })
 
-jb.component('slider.init', {
+jb.component('slider.init', { /* slider.init */
   type: 'feature',
   impl: ctx => ({
       onkeyup: true,
@@ -12023,7 +12507,7 @@ jb.component('slider.init', {
     })
 })
 
-jb.component('slider-text.handleArrowKeys', {
+jb.component('slider.handle-arrow-keys', { /* sliderText.handleArrowKeys */
   type: 'feature',
   impl: ctx => ({
       onkeyup: true,
@@ -12039,79 +12523,82 @@ jb.component('slider-text.handleArrowKeys', {
     })
 })
 
-jb.component('slider.edit-as-text-popup', {
+jb.component('slider.edit-as-text-popup', { /* slider.editAsTextPopup */
   type: 'feature',
-  impl :{$: 'open-dialog',
-    style :{$: 'dialog.popup' },
-    content :{$: 'group',
+  impl: openDialog({
+    style: dialog.popup(),
+    content: group({
       title: 'data-settings',
-      style :{$: 'layout.vertical', spacing: 3 },
+      style: layout.vertical(3),
       controls: [
-        {$: 'editable-text',
+        editableText({
           title: '%title%',
           databind: '%databind%',
-          style :{$: 'editable-text.mdl-input', width: '270' },
-          features :{$: 'feature.onEnter',
-            action :{$: 'dialog.close-containing-popup' }
-          },
-        },
+          style: editableText.mdlInput('270'),
+          features: feature.onEnter(dialog.closeContainingPopup())
+        })
       ],
-      features: [
-        {$: 'group.data', data: '%$editableNumber%' },
-        {$: 'css.padding', left: '10', right: '10' }
-      ]
-    },
+      features: [group.data('%$editableNumber%'), css.padding({left: '10', right: '10'})]
+    }),
     features: [
-        { $: 'dialog-feature.unique-dialog', id: 'slider', remeberLastLocation: false },
-        { $: 'dialog-feature.max-zIndex-on-click' },
-        { $: 'dialog-feature.close-when-clicking-outside' },
-        { $: 'dialog-feature.css-class-on-launching-element' },
-        { $: 'dialog-feature.near-launcher-position' },
-        {$: 'dialog-feature.auto-focus-on-first-input', selectText: true },
-      ]
-  },
+      dialogFeature.uniqueDialog('slider', false),
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.closeWhenClickingOutside(),
+      dialogFeature.cssClassOnLaunchingElement(),
+      dialogFeature.nearLauncherPosition({}),
+      dialogFeature.autoFocusOnFirstInput(true)
+    ]
+  })
 })
 
 
-jb.component('editable-number.mdl-slider', {
+jb.component('editable-number.mdl-slider', { /* editableNumber.mdlSlider */
   type: 'editable-number.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('input',{class:'mdl-slider mdl-js-slider', type: 'range',
+  impl: customStyle({
+    template: (cmp,state,h) => h('input',{class:'mdl-slider mdl-js-slider', type: 'range',
         min: state.min, max: state.max, step: state.step,
         value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: 0}),
-      features :[
-          {$: 'field.databind' },
-          {$: 'slider.init'},
-          {$: 'mdl-style.init-dynamic' }
-      ],
-  }
+    features: [field.databind(), slider.init(), mdlStyle.initDynamic()]
+  })
 })
 ;
 
-jb.component('table', {
-  type: 'control,table', category: 'group:80,common:70',
+jb.ns('table')
+
+jb.component('table', { /* table */
+  type: 'control,table',
+  category: 'group:80,common:70',
   params: [
-    { id: 'title', as: 'string' },
-    { id: 'items', as: 'ref', whenNotRefferable: 'array' , dynamic: true, mandatory: true },
-    { id: 'fields', type: 'table-field[]', mandatory: true, dynamic: true },
-    { id: 'style', type: 'table.style', dynamic: true , defaultValue: { $: 'table.with-headers' } },
-    { id: 'watchItems', as: 'boolean' },
-    { id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default table is limmited to 100 shown items' },
-    { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
+    {id: 'title', as: 'string'},
+    {id: 'items', as: 'ref', whenNotRefferable: 'array', dynamic: true, mandatory: true},
+    {id: 'fields', type: 'table-field[]', mandatory: true, dynamic: true},
+    {
+      id: 'style',
+      type: 'table.style',
+      dynamic: true,
+      defaultValue: table.withHeaders()
+    },
+    {
+      id: 'visualSizeLimit',
+      as: 'number',
+      defaultValue: 100,
+      description: 'by default table is limmited to 100 shown items'
+    },
+    {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx)
 })
 
-jb.component('field', {
+jb.component('field', { /* field */
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', mandatory: true },
-    { id: 'data', as: 'string', mandatory: true, dynamic: true },
-    { id: 'width', as: 'number' },
-    { id: 'numeric', as: 'boolean', type: 'boolean' },
-    { id: 'extendItems', as: 'boolean', type: 'boolean', description: 'extend the items with the calculated field using the title as field name' },
-    { id: 'class', as: 'string' },
+    {id: 'title', as: 'string', mandatory: true},
+    {id: 'data', as: 'string', mandatory: true, dynamic: true},
+    {id: 'width', as: 'number'},
+    {id: 'numeric', as: 'boolean', type: 'boolean'},
+    {id: 'extendItems', as: 'boolean', type: 'boolean', description: 'extend the items with the calculated field using the title as field name' },
+    {id: 'class', as: 'string'}
   ],
   impl: (ctx,title,data,width,numeric,extendItems,_class) => ({
     title: title,
@@ -12119,61 +12606,70 @@ jb.component('field', {
     calcFieldData: row => data(ctx.setData(row)),
     class: _class,
     width: width,
-    numeric: numeric, 
+    numeric: numeric,
     extendItems: extendItems,
     ctxId: jb.ui.preserveCtx(ctx)
   })
 })
 
-jb.component('field.index', {
+jb.component('field.index', { /* field.index */
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', defaultValue: 'index' },
-    { id: 'width', as: 'number', defaultValue: 10 },
-    { id: 'class', as: 'string' },
+    {id: 'title', as: 'string', defaultValue: 'index'},
+    {id: 'width', as: 'number', defaultValue: 10},
+    {id: 'class', as: 'string'}
   ],
   impl: (ctx,title,propName,width_class) => ({
     title: title,
     fieldData: (row,index) => index,
     class: _class,
     width: width,
-    numeric: true, 
+    numeric: true,
     ctxId: jb.ui.preserveCtx(ctx)
   })
 })
 
-jb.component('field.control', {
+jb.component('field.control', { /* field.control */
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', mandatory: true },
-    { id: 'control', type: 'control' , dynamic: true, mandatory: true, defaultValue: {$: 'label', title: ''} },
-    { id: 'width', as: 'number' },
-    { id: 'dataForSort', dynamic: true },
-    { id: 'numeric', as: 'boolean', type: 'boolean' },
+    {id: 'title', as: 'string', mandatory: true},
+    {
+      id: 'control',
+      type: 'control',
+      dynamic: true,
+      mandatory: true,
+      defaultValue: label('')
+    },
+    {id: 'width', as: 'number'},
+    {id: 'dataForSort', dynamic: true},
+    {id: 'numeric', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,title,control,width,dataForSort,numeric) => ({
     title: title,
     control: row => control(ctx.setData(row)).reactComp(),
     width: width,
     fieldData: row => dataForSort(ctx.setData(row)),
-    numeric: numeric, 
+    numeric: numeric,
     ctxId: jb.ui.preserveCtx(ctx)
   })
 })
 
-jb.component('field.button', {
+jb.component('field.button', { /* field.button */
   type: 'table-field',
   params: [
-    { id: 'title', as: 'string', mandatory: true },
-    { id: 'buttonText', as: 'string', mandatory: true, dynamic: true },
-    { id: 'action', type: 'action', mandatory: true, dynamic: true },
-
-    { id: 'width', as: 'number' },
-    { id: 'dataForSort', dynamic: true },
-    { id: 'numeric', as: 'boolean', type: 'boolean' },
-
-    { id: 'style', type: 'table-button.style', defaultValue: { $: 'table-button.href' }, dynamic: true },
-    { id: 'features', type: 'feature[]', dynamic: true },
+    {id: 'title', as: 'string', mandatory: true},
+    {id: 'buttonText', as: 'string', mandatory: true, dynamic: true},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'width', as: 'number'},
+    {id: 'dataForSort', dynamic: true},
+    {id: 'numeric', as: 'boolean', type: 'boolean'},
+    {
+      id: 'style',
+      type: 'table-button.style',
+      defaultValue: button.tableCellHref(),
+      dynamic: true
+    },
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => {
     var ctrl = jb.ui.ctrl(ctx,{
@@ -12189,7 +12685,7 @@ jb.component('field.button', {
       control: _ => ctrl,
       width: ctx.params.width,
       fieldData: row => dataForSort(ctx.setData(row)),
-      numeric: ctx.params.numeric, 
+      numeric: ctx.params.numeric,
       ctxId: jb.ui.preserveCtx(ctx)
     }
   }
@@ -12197,16 +12693,34 @@ jb.component('field.button', {
 
 // todo - move to styles
 
-jb.component('table-button.href', {
+jb.component('button.table-cell-href', { /* tableButton.href */
   type: 'button.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
-        css: `{color: grey}`
-    }
+  impl: customStyle({
+    template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
+    css: '{color: grey}'
+  })
 })
 
-jb.component('table.init', {
+jb.component('field.column-width', {
+  description: 'used in itemlist fields',
   type: 'feature',
+  category: 'table:80',
+  params: [
+    {id: 'width', as: 'number' },
+  ],
+  impl: (ctx,width) => ({
+      enrichField: field => field.width = width
+  })
+})
+
+jb.component('table.init-table-or-itemlist', {
+  type: 'feature',
+  impl: ctx => ctx.run(ctx.vars.$model.fields ? table.init() : itemlist.initTable())
+})
+
+jb.component('table.init', { /* table.init */
+  type: 'feature',
+  category: 'table:10',
   impl: ctx => ({
       beforeInit: cmp => {
 
@@ -12215,9 +12729,6 @@ jb.component('table.init', {
 
         cmp.refresh = _ =>
             cmp.setState({items: calcItems()})
-
-        if (ctx.vars.$model.watchItems)
-          jb.ui.watchRef(ctx,cmp,ctx.vars.$model.items(cmp.ctx))
 
         function calcItems() {
           cmp.items = jb.toarray(ctx.vars.$model.items(cmp.ctx));
@@ -12237,7 +12748,7 @@ jb.component('table.init', {
   })
 })
 
-jb.component('table.init-sort', {
+jb.component('table.init-sort', { /* table.initSort */
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
@@ -12286,22 +12797,24 @@ jb.component('table.init-sort', {
 })
 ;
 
-jb.component('tabs', {
-	type: 'control', category: 'group:80',
-	params: [
-		{ id: 'tabs', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true },
-		{ id: 'style', type: 'tabs.style', dynamic: true, defaultValue: { $: 'tabs.simple' } },
-		{ id: 'features', type: 'feature[]', dynamic: true },
-	],
+jb.component('tabs', { /* tabs */
+  type: 'control',
+  category: 'group:80',
+  params: [
+    {id: 'tabs', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true},
+    {id: 'style', type: 'tabs.style', dynamic: true, defaultValue: tabs.simple()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
   impl: ctx =>
     jb.ui.ctrl(ctx)
 })
 
-jb.component('group.init-tabs', {
-  type: 'feature', category: 'group:0',
+jb.component('group.init-tabs', { /* group.initTabs */
+  type: 'feature',
+  category: 'group:0',
   params: [
-    { id: 'keyboardSupport', as: 'boolean' },
-    { id: 'autoFocus', as: 'boolean' }
+    {id: 'keyboardSupport', as: 'boolean', type: 'boolean'},
+    {id: 'autoFocus', as: 'boolean', type: 'boolean'}
   ],
   impl: ctx => ({
     init: cmp => {
@@ -12318,43 +12831,49 @@ jb.component('group.init-tabs', {
   })
 })
 
-jb.component('tabs.simple', {
+jb.component('tabs.simple', { /* tabs.simple */
   type: 'group.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [
 			  h('div',{class: 'tabs-header'}, cmp.titles.map((title,index)=>
 					h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect' + (index == state.shown ? ' selected-tab': ''),
 						onclick: ev=>cmp.show(index)},title))),
 				h('div',{class: 'tabs-content'}, h(jb.ui.renderable(cmp.tabs[state.shown]) )) ,
 				]),
-		css : `>.tabs-header>.selected-tab { border-bottom: 2px solid #66afe9 }
+    css: `>.tabs-header>.selected-tab { border-bottom: 2px solid #66afe9 }
 		`,
-    features :[{$: 'group.init-tabs'}, {$: 'mdl-style.init-dynamic', query: '.mdl-js-button'}]
-  }
+    features: [group.initTabs(), mdlStyle.initDynamic('.mdl-js-button')]
+  })
 })
 ;
 
-jb.component('goto-url', {
-	type: 'action',
-	description: 'navigate/open a new web page, change href location',
-	params: [
-		{ id: 'url', as:'string', mandatory: true },
-		{ id: 'target', type:'enum', values: ['new tab','self'], defaultValue:'new tab', as:'string'}
-	],
-	impl: (ctx,url,target) => {
+jb.component('goto-url', { /* gotoUrl */
+  type: 'action',
+  description: 'navigate/open a new web page, change href location',
+  params: [
+    {id: 'url', as: 'string', mandatory: true},
+    {
+      id: 'target',
+      type: 'enum',
+      values: ['new tab', 'self'],
+      defaultValue: 'new tab',
+      as: 'string'
+    }
+  ],
+  impl: (ctx,url,target) => {
 		var _target = (target == 'new tab') ? '_blank' : '_self';
 		if (!ctx.probe)
 			window.open(url,_target);
 	}
 })
 
-jb.component('reset-wspy', {
-	type: 'action',
-	description: 'initalize logger',
-	params: [
-		{ id: 'param', as: 'string' },
-	],
-	impl: (ctx,param) => {
+jb.component('reset-wspy', { /* resetWspy */
+  type: 'action',
+  description: 'initalize logger',
+  params: [
+    {id: 'param', as: 'string'}
+  ],
+  impl: (ctx,param) => {
 		const wspy = jb.frame.initwSpy && frame.initwSpy()
 		if (wspy && wspy.enabled()) {
 			wspy.resetParam(param)
@@ -12364,10 +12883,10 @@ jb.component('reset-wspy', {
 })
 ;
 
-jb.component('mdl-style.init-dynamic', {
+jb.component('mdl-style.init-dynamic', { /* mdlStyle.initDynamic */
   type: 'feature',
   params: [
-  	{id: 'query', as: 'string'}
+    {id: 'query', as: 'string'}
   ],
   impl: (ctx,query) =>
     ({
@@ -12400,7 +12919,7 @@ jb.component('mdl-style.init-dynamic', {
     })
 })
 
-jb.component('mdl.ripple-effect', {
+jb.component('mdl.ripple-effect', { /* mdl.rippleEffect */
   type: 'feature',
   description: 'add ripple effect to buttons',
   impl: ctx => ({
@@ -12415,55 +12934,59 @@ jb.component('mdl.ripple-effect', {
       },
       destroy: cmp =>
           jb.ui.inDocument(cmp.base) && componentHandler.downgradeElements(cmp.base)
-   }),
+   })
 })
 
 
 // ****** label styles
 
+jb.component('label.mdl-ripple-effect', { /* label.mdlRippleEffect */
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button mdl-js-ripple-effect'},state.text),
+    features: [label.bindText(), mdlStyle.initDynamic()]
+  })
+})
 jb.component('label.mdl-ripple-effect', {
     type: 'label.style',
     impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button mdl-js-ripple-effect'},state.title),
+        template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button mdl-js-ripple-effect'},state.text),
         features :[
-          {$: 'label.bind-title' },
+          {$: 'label.bind-text' },
           {$: 'mdl-style.init-dynamic'}
         ],
-    }
-});
-
-jb.component('label.mdl-button', {
-    type: 'label.style',
-    params: [
-      {id: 'width', as: 'number' }
-    ],
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button'},state.title),
-        features :[
-          {$: 'label.bind-title' },
-          {$: 'mdl-style.init-dynamic'}
-        ],
-        css: '{? {width:%$width%px} ?}'
-    }
-});
-;
-
-jb.component('button.href', {
-  type: 'button.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
-        css: `{color: grey}`
     }
 })
 
-jb.component('button.x', {
+jb.component('label.mdl-button', { /* label.mdlButton */
+  type: 'label.style',
+  params: [
+    {id: 'width', as: 'number'}
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button'},state.text),
+    css: '{? {width:%$width%px} ?}',
+    features: [label.bindText(), mdlStyle.initDynamic()]
+  })
+})
+;
+
+jb.component('button.href', { /* button.href */
+  type: 'button.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
+    css: '{color: grey}'
+  })
+})
+
+jb.component('button.x', { /* button.x */
   type: 'button.style',
   params: [
-    { id: 'size', as: 'number', defaultValue: '21'}
+    {id: 'size', as: 'number', defaultValue: '21'}
   ],
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{title: state.title, onclick: ev => cmp.clicked(ev)},'×'),
-      css: `{
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{title: state.title, onclick: ev => cmp.clicked(ev)},'×'),
+    css: `{
             padding: 0;
             cursor: pointer;
             font: %$size%px sans-serif;
@@ -12475,133 +12998,132 @@ jb.component('button.x', {
             opacity: .2;
         }
         :hover { opacity: .5 }`
-  }
+  })
 })
 
-jb.component('button.mdl-raised', {
+jb.component('button.mdl-raised', { /* button.mdlRaised */
   type: 'button.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{class: 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev)},state.title),
-      features :{$: 'mdl-style.init-dynamic'},
-  }
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{class: 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev)},state.title),
+    features: mdlStyle.initDynamic()
+  })
 })
 
-jb.component('button.mdl-flat-ripple', {
+jb.component('button.mdl-flat-ripple', { /* button.mdlFlatRipple */
   type: 'button.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
-      features :{$: 'mdl-style.init-dynamic'},
-      css: '{ text-transform: none }'
-  }
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
+    css: '{ text-transform: none }',
+    features: mdlStyle.initDynamic()
+  })
 })
 
-jb.component('button.mdl-icon', {
+jb.component('button.mdl-icon', { /* button.mdlIcon */
   type: 'button.style,icon-with-action.style',
   params: [
-    { id: 'icon', as: 'string', default: 'code' },
+    {id: 'icon', as: 'string', default: 'code'}
   ],
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{
           class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
           title: state.title, tabIndex: -1,
           onclick:  ev => cmp.clicked(ev) },
         h('i',{class: 'material-icons'},cmp.icon)
       ),
-      css: `{ border-radius: 2px}
+    css: `{ border-radius: 2px}
       >i {border-radius: 2px}`,
-      features :{$: 'mdl-style.init-dynamic'},
-  }
+    features: mdlStyle.initDynamic()
+  })
 })
 
-jb.component('button.mdl-round-icon', {
+jb.component('button.mdl-round-icon', { /* button.mdlRoundIcon */
   type: 'button.style,icon-with-action.style',
   params: [
-    { id: 'icon', as: 'string', default: 'code' },
+    {id: 'icon', as: 'string', default: 'code'}
   ],
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{
           class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
           title: state.title, tabIndex: -1,
           onclick:  ev => cmp.clicked(ev) },
         h('i',{class: 'material-icons'},cmp.icon)
       ),
-      features :{$: 'mdl-style.init-dynamic'},
-  }
+    features: mdlStyle.initDynamic()
+  })
 })
 
-jb.component('button.mdl-icon12-with-ripple', {
+jb.component('button.mdl-icon12-with-ripple', { /* button.mdlIcon12WithRipple */
   type: 'button.style,icon-with-action.style',
   params: [
-    { id: 'icon', as: 'string', default: 'code' },
+    {id: 'icon', as: 'string', default: 'code'}
   ],
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{
           class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
           title: state.title, tabIndex: -1,
           onclick: ev => cmp.clicked(ev) },
         h('i',{class: 'material-icons'},cmp.icon)
       ),
-      css: `>.material-icons { font-size:12px;  }`,
-      features:{$: 'mdl-style.init-dynamic'},
-  }
+    css: '>.material-icons { font-size:12px;  }',
+    features: mdlStyle.initDynamic()
+  })
 })
 
-jb.component('button.mdl-icon12', {
+jb.component('button.mdl-icon12', { /* button.mdlIcon12 */
   type: 'button.style,icon-with-action.style',
   params: [
-    { id: 'icon', as: 'string', default: 'code' },
+    {id: 'icon', as: 'string', default: 'code'}
   ],
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('i',{class: 'material-icons',
+  impl: customStyle({
+    template: (cmp,state,h) => h('i',{class: 'material-icons',
         onclick: ev => cmp.clicked(ev)
       },cmp.icon),
-      css: `{ font-size:12px; cursor: pointer }`,
-  }
+    css: '{ font-size:12px; cursor: pointer }'
+  })
 })
 
-jb.component('button.mdl-card-flat', {
+jb.component('button.mdl-card-flat', { /* button.mdlCardFlat */
   type: 'button.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('a',{class:'mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
-      features :{$: 'mdl-style.init-dynamic'},
-  }
+  impl: customStyle({
+    template: (cmp,state,h) => h('a',{class:'mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
+    features: mdlStyle.initDynamic()
+  })
 })
 ;
 
-jb.component('editable-text.input', {
+jb.component('editable-text.input', { /* editableText.input */
   type: 'editable-text.style',
-  impl :{$: 'custom-style',
-      features :{$: 'field.databind-text' },
-      template: (cmp,state,h) => h('input', {
+  impl: customStyle({
+    template: (cmp,state,h) => h('input', {
         value: state.model,
         onchange: e => cmp.jbModel(e.target.value),
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  })
-   
-  }
+        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
+    features: field.databindText()
+  })
 })
 
-jb.component('editable-text.textarea', {
-	type: 'editable-text.style',
-  params: [
-    { id: 'rows', as: 'number', defaultValue: 4 },
-    { id: 'cols', as: 'number', defaultValue: 120 },
-    { id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
-  ],
-  impl :{$: 'custom-style',
-      features :[{$: 'field.databind-text', oneWay: '%$oneWay' }, {$: 'textarea.init-textarea-editor'}],
-      template: (cmp,state,h) => h('textarea', {
-        rows: cmp.rows, cols: cmp.cols,
-        value: state.model, onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-	}
-})
-
-jb.component('editable-text.mdl-input', {
+jb.component('editable-text.textarea', { /* editableText.textarea */
   type: 'editable-text.style',
   params: [
-    { id: 'width', as: 'number' },
+    {id: 'rows', as: 'number', defaultValue: 4},
+    {id: 'cols', as: 'number', defaultValue: 120},
+    {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
-  impl :{$: 'custom-style',
-   template: (cmp,state,h) => h('div',{class: ['mdl-textfield','mdl-js-textfield','mdl-textfield--floating-label',state.error ? 'is-invalid' : ''].join(' ') },[
+  impl: customStyle({
+    template: (cmp,state,h) => h('textarea', {
+        rows: cmp.rows, cols: cmp.cols,
+        value: state.model, onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
+    features: field.databindText(undefined, '%$oneWay')
+  })
+})
+
+jb.component('editable-text.mdl-input', { /* editableText.mdlInput */
+  type: 'editable-text.style',
+  params: [
+    {id: 'width', as: 'number'}
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{class: ['mdl-textfield','mdl-js-textfield','mdl-textfield--floating-label',state.error ? 'is-invalid' : ''].join(' ') },[
         h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
             value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
@@ -12610,42 +13132,39 @@ jb.component('editable-text.mdl-input', {
         h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title),
         h('span',{class: 'mdl-textfield__error' }, state.error || '')
       ]),
-      css: '{ {?width: %$width%px?} }',
-      features :[
-          {$: 'field.databind-text' },
-          {$: 'mdl-style.init-dynamic'},
-          ctx => ({
+    css: '{ {?width: %$width%px?} }',
+    features: [
+      field.databindText(),
+      mdlStyle.initDynamic(),
+      ctx => ({
             beforeInit: cmp => cmp.elemToInput = elem => elem.children[0]
           })
-      ],
-  }
+    ]
+  })
 })
 
-jb.component('editable-text.mdl-input-no-floating-label', {
+jb.component('editable-text.mdl-input-no-floating-label', { /* editableText.mdlInputNoFloatingLabel */
   type: 'editable-text.style',
   params: [
-    { id: 'width', as: 'number' },
+    {id: 'width', as: 'number'}
   ],
-  impl :{$: 'custom-style',
-   template: (cmp,state,h) =>
+  impl: customStyle({
+    template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text',
             value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
             onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
         }),
-      css: '{ {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
-      features :[
-          {$: 'field.databind-text' },
-          {$: 'mdl-style.init-dynamic'}
-      ],
-  }
+    css: '{ {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
+    features: [field.databindText(), mdlStyle.initDynamic()]
+  })
 })
 
-jb.component('editable-text.mdl-search', {
+jb.component('editable-text.mdl-search', { /* editableText.mdlSearch */
   description: 'debounced and one way binding',
   type: 'editable-text.style',
-  impl :{$: 'custom-style',
-      template: (cmp,{model, fieldId, title},h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[
+  impl: customStyle({
+    template: (cmp,{model, fieldId, title},h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[
         h('input', { class: 'mdl-textfield__input', id: 'search_' + fieldId, type: 'text',
             value: model,
             onchange: e => cmp.jbModel(e.target.value),
@@ -12653,124 +13172,137 @@ jb.component('editable-text.mdl-search', {
         }),
         h('label',{class: 'mdl-textfield__label', for: 'search_' + fieldId}, model ? '' : title)
       ]),
-      features: [
-          {$: 'field.databind-text' },
-          {$: 'mdl-style.init-dynamic'},
-      ],
-  }
+    features: [field.databindText(), mdlStyle.initDynamic()]
+  })
 })
 ;
 
-jb.component('layout.vertical', {
+jb.component('layout.vertical', { /* layout.vertical */
   type: 'group.style',
   params: [
-    { id: 'spacing', as: 'number', defaultValue: 3 }
+    {id: 'spacing', as: 'number', defaultValue: 3}
   ],
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h('div', {} ,h(ctrl)), ctrl.ctx.data) )),
     css: `>div { margin-bottom: %$spacing%px; display: block }
           >div:last-child { margin-bottom:0 }`,
-    features :{$: 'group.init-group'}
-  }
+    features: group.initGroup()
+  })
 })
 
-jb.component('layout.horizontal', {
+jb.component('layout.horizontal', { /* layout.horizontal */
   type: 'group.style',
-  params: [ { id: 'spacing', as: 'number', defaultValue: 3 } ],
-  impl :{$: 'custom-style',
+  params: [
+    {id: 'spacing', as: 'number', defaultValue: 3}
+  ],
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     css: `{display: flex}
         >* { margin-right: %$spacing%px }
         >*:last-child { margin-right:0 }`,
-    features :{$: 'group.init-group'}
-  }
+    features: group.initGroup()
+  })
 })
 
-jb.component('layout.horizontal-fixed-split', {
+jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit */
   type: 'group.style',
-  params: [,
-    { id: 'leftWidth', as: 'number', defaultValue: 200, mandatory: true },
-    { id: 'rightWidth', as: 'number', defaultValue: 200, mandatory: true },
-    { id: 'spacing', as: 'number', defaultValue: 3 },
+  params: [
+    {id: 'leftWidth', as: 'number', defaultValue: 200, mandatory: true},
+    {id: 'rightWidth', as: 'number', defaultValue: 200, mandatory: true},
+    {id: 'spacing', as: 'number', defaultValue: 3}
   ],
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     css: `{display: flex}
         >*:first-child { margin-right: %$spacing%px; flex: 0 0 %$leftWidth%px; width: %$leftWidth%px; }
         >*:last-child { margin-right:0; flex: 0 0 %$rightWidth%px; width: %$rightWidth%px; }`,
-    features :{$: 'group.init-group'}
-  }
+    features: group.initGroup()
+  })
 })
 
-jb.component('layout.horizontal-wrapped', {
+jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
   type: 'group.style',
-  params: [,
-    { id: 'spacing', as: 'number', defaultValue: 3 }
+  params: [
+    {id: 'spacing', as: 'number', defaultValue: 3}
   ],
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h('span', {} ,h(ctrl)),ctrl.ctx.data) )),
     css: `{display: flex}
         >* { margin-right: %$spacing%px }
         >*:last-child { margin-right:0 }`,
-    features :{$: 'group.init-group'}
-  }
+    features: group.initGroup()
+  })
 })
 
-jb.component('layout.flex', {
+jb.component('layout.flex', { /* layout.flex */
   type: 'group.style',
   params: [
-      { id: 'align', as: 'string', options: ',flex-start,flex-end,center,space-between,space-around' },
-      { id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse' },
-      { id: 'wrap', as: 'string', options:',wrap' },
+    {
+      id: 'align',
+      as: 'string',
+      options: ',flex-start,flex-end,center,space-between,space-around'
+    },
+    {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
+    {id: 'wrap', as: 'string', options: ',wrap'}
   ],
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     css: '{ display: flex; {?justify-content:%$align%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }',
-    features :{$: 'group.init-group'}
-  }
+    features: group.initGroup()
+  })
 })
 
-jb.component('flex-layout-container.align-main-axis', {
-    type: 'feature',
-    params: [
-      { id: 'align', as: 'string', options: 'flex-start,flex-end,center,space-between,space-around', defaultValue: 'flex-start' }
-    ],
-    impl : (ctx,factor) => ({
+jb.component('flex-layout-container.align-main-axis', { /* flexLayoutContainer.alignMainAxis */
+  type: 'feature',
+  params: [
+    {
+      id: 'align',
+      as: 'string',
+      options: 'flex-start,flex-end,center,space-between,space-around',
+      defaultValue: 'flex-start'
+    }
+  ],
+  impl: (ctx,factor) => ({
       css: `{ justify-content: ${align} }`
     })
 })
 
-jb.component('flex-item.grow', {
-    type: 'feature',
-    params: [
-      { id: 'factor', as: 'number', defaultValue: '1' }
-    ],
-    impl : (ctx,factor) => ({
+jb.component('flex-item.grow', { /* flexItem.grow */
+  type: 'feature',
+  params: [
+    {id: 'factor', as: 'number', defaultValue: '1'}
+  ],
+  impl: (ctx,factor) => ({
       css: `{ flex-grow: ${factor} }`
     })
 })
 
-jb.component('flex-item.basis', {
-    type: 'feature',
-    params: [
-      { id: 'factor', as: 'number', defaultValue: '1' }
-    ],
-    impl : (ctx,factor) => ({
+jb.component('flex-item.basis', { /* flexItem.basis */
+  type: 'feature',
+  params: [
+    {id: 'factor', as: 'number', defaultValue: '1'}
+  ],
+  impl: (ctx,factor) => ({
       css: `{ flex-basis: ${factor} }`
     })
 })
 
-jb.component('flex-item.align-self', {
-    type: 'feature',
-    params: [
-      { id: 'align', as: 'string', options: 'auto,flex-start,flex-end,center,baseline,stretch', defaultValue: 'auto' }
-    ],
-    impl : (ctx,align) => ({
+jb.component('flex-item.align-self', { /* flexItem.alignSelf */
+  type: 'feature',
+  params: [
+    {
+      id: 'align',
+      as: 'string',
+      options: 'auto,flex-start,flex-end,center,baseline,stretch',
+      defaultValue: 'auto'
+    }
+  ],
+  impl: (ctx,align) => ({
       css: `{ align-self: ${align} }`
     })
 })
@@ -12795,68 +13327,77 @@ jb.component('flex-item.align-self', {
 // })
 
 
-jb.component('responsive.only-for-phone', {
-    type: 'feature',
-    impl : () => ({
+jb.component('responsive.only-for-phone', { /* responsive.onlyForPhone */
+  type: 'feature',
+  impl: () => ({
       cssClass: 'only-for-phone'
     })
 })
 
-jb.component('responsive.not-for-phone', {
-    type: 'feature',
-    impl : () => ({
+jb.component('responsive.not-for-phone', { /* responsive.notForPhone */
+  type: 'feature',
+  impl: () => ({
       cssClass: 'not-for-phone'
     })
 })
 ;
 
-jb.component('group.htmlTag', {
+jb.component('group.htmlTag', { /* group.htmlTag */
   type: 'group.style',
-	params: [
-		{ id: 'htmlTag', as: 'string', defaultValue: 'section', options:'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label,form' },
-		{ id: 'groupClass', as: 'string' },
-		{ id: 'itemClass', as: 'string' },
-	],
-  impl :{$: 'custom-style',
+  params: [
+    {
+      id: 'htmlTag',
+      as: 'string',
+      defaultValue: 'section',
+      options: 'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label,form'
+    },
+    {id: 'groupClass', as: 'string'},
+    {id: 'itemClass', as: 'string'}
+  ],
+  impl: customStyle({
     template: (cmp,state,h) => h(cmp.htmlTag,{ class: cmp.groupClass },
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl,{class: cmp.itemClass}),ctrl.ctx.data))),
-    features :{$: 'group.init-group'}
-  }
+    features: group.initGroup()
+  })
 })
 
-jb.component('group.div', {
-  impl :{$: 'group.htmlTag', htmlTag: 'div'}
+jb.component('group.div', { /* group.div */
+  impl: group.htmlTag(
+    'div'
+  )
 })
 
-jb.component('group.section', {
-  impl :{$: 'group.htmlTag', htmlTag: 'section'}
+jb.component('group.section', { /* group.section */
+  impl: group.htmlTag(
+    'section'
+  )
 })
 
-jb.component('first-succeeding.style', {
+jb.component('first-succeeding.style', { /* firstSucceeding.style */
   type: 'first-succeeding.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => {
       var ctrl = state.ctrls.filter(x=>x)[0];
       return ctrl && h(ctrl)
     },
-    features :{$: 'group.init-group'}
-  }
+    features: group.initGroup()
+  })
 })
 
-jb.component('group.ul-li', {
+jb.component('group.ul-li', { /* group.ulLi */
   type: 'group.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li', {class: 'jb-item'} ,h(ctrl)),ctrl.ctx.data))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
-    features :{$: 'group.init-group'}
-  },
+    features: group.initGroup()
+  })
 })
 
-jb.component('group.expandable', {
+jb.component('group.expandable', { /* group.expandable */
   type: 'group.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},[
         h('div',{ class: 'header'},[
           h('div',{ class: 'title'}, state.title),
@@ -12870,15 +13411,13 @@ jb.component('group.expandable', {
         >.header>button:hover { background: none }
         >.header>button { margin-left: auto }
         >.header.title { margin: 5px }`,
-    features :[
-        {$: 'group.init-group' },
-        {$: 'group.init-expandable' },
-      ]
-    },
+    features: [group.initGroup(), group.initExpandable()]
+  })
 })
 
-jb.component('group.init-expandable', {
-  type: 'feature', category: 'group:0',
+jb.component('group.init-expandable', { /* group.initExpandable */
+  type: 'feature',
+  category: 'group:0',
   impl: ctx => ({
         init: cmp => {
             cmp.state.show = true;
@@ -12888,9 +13427,9 @@ jb.component('group.init-expandable', {
   })
 })
 
-jb.component('group.accordion', {
+jb.component('group.accordion', { /* group.accordion */
   type: 'group.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
         state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
           h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
@@ -12904,18 +13443,16 @@ jb.component('group.accordion', {
         >.accordion-section>.header>button:hover { background: none }
         >.accordion-section>.header>button { margin-left: auto }
         >.accordion-section>.header>.title { margin: 5px }`,
-      features : [
-        {$: 'group.init-group' },
-        {$: 'group.init-accordion' },
-      ]
-    },
+    features: [group.initGroup(), group.initAccordion()]
+  })
 })
 
-jb.component('group.init-accordion', {
-  type: 'feature', category: 'group:0',
+jb.component('group.init-accordion', { /* group.initAccordion */
+  type: 'feature',
+  category: 'group:0',
   params: [
-    { id: 'keyboardSupport', as: 'boolean' },
-    { id: 'autoFocus', as: 'boolean' }
+    {id: 'keyboardSupport', as: 'boolean', type: 'boolean'},
+    {id: 'autoFocus', as: 'boolean', type: 'boolean'}
   ],
   impl: ctx => ({
     onkeydown: ctx.params.keyboardSupport,
@@ -12947,87 +13484,103 @@ jb.component('group.init-accordion', {
   })
 })
 
-jb.component('group.tabs', {
+jb.component('tabs.simple', { /* tabs.simple */
   type: 'group.style',
-  params: [
-    { id: 'width', as : 'number' },
-  ],
-  impl :{$: 'style-by-control', __innerImplementation: true,
-    modelVar: 'tabsModel',
-    control :{$: 'group', controls: [
-      {$: 'group', title: 'thumbs',
-        features :{$: 'group.init-group'},
-        style :{$: 'layout.horizontal' },
-        controls :{$: 'dynamic-controls',
-          itemVariable: 'tab',
-          controlItems : '%$tabsModel/controls%',
-          genericControl: {$: 'button',
-            title: '%$tab/jb_title%',
-            action :{$: 'write-value', value: '%$tab%', to: '%$selectedTab%' },
-            style :{$: 'button.mdl-flat-ripple' },
-            features: [
-              {$: 'css.width', width: '%$width%' },
-              {$: 'css', css: '{text-align: left}' }
-            ]
-          },
-        },
-      },
-      ctx =>
-        jb.val(ctx.exp('%$selectedTab%')),
-    ],
-    features : [
-        {$: 'variable', name: 'selectedTab', value: '%$tabsModel/controls[0]%', watchable: true },
-        {$: 'group.init-group'},
-    ]
-  }}
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{}, [
+			  h('div',{class: 'tabs-header'}, cmp.titles.map((title,index)=>
+					h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect' + (index == state.shown ? ' selected-tab': ''),
+						onclick: ev=>cmp.show(index)},title))),
+				h('div',{class: 'tabs-content'}, h(jb.ui.renderable(cmp.tabs[state.shown]) )) ,
+				]),
+    css: `>.tabs-header>.selected-tab { border-bottom: 2px solid #66afe9 }
+		`,
+    features: [group.initTabs(), mdlStyle.initDynamic('.mdl-js-button')]
+  })
 })
 
-// jb.component('toolbar.simple', {
-//   type: 'group.style',
-//   impl :{$: 'custom-style',
-//     template: (cmp,state,h) => h('div',{class:'toolbar'},
-//         state.ctrls.map(ctrl=> h(ctrl))),
-//     css: `{
-//             display: flex;
-//             background: #F5F5F5;
-//             height: 33px;
-//             width: 100%;
-//             border-bottom: 1px solid #D9D9D9;
-//             border-top: 1px solid #fff;
-//         }
-//         >* { margin-right: 0 }`,
-//     features :{$: 'group.init-group'}
-//   }
-// })
+jb.component('group.tabs', { /* group.tabs */
+  type: 'group.style',
+  params: [
+    {id: 'width', as: 'number'}
+  ],
+  impl: styleByControl(
+    group({
+      controls: [
+        group({
+          title: 'thumbs',
+          style: layout.horizontal(),
+          controls: dynamicControls({
+            controlItems: '%$tabsModel/controls%',
+            genericControl: button({
+              title: '%$tab/jb_title%',
+              action: runActions(
+                writeValue('%$selectedTab/ctrl%', '%$tab%'),
+                refreshControlById(ctx=> 'tab_' + ctx.componentContext.id)
+              ),
+              style: button.mdlFlatRipple(),
+              features: [css.width('%$width%'), css('{text-align: left}')]
+            }),
+            itemVariable: 'tab'
+          }),
+          features: group.initGroup()
+        }),
+        '%$selectedTab/ctrl%'
+      ],
+      features: [
+        id(ctx=> 'tab_' + ctx.componentContext.id),
+        variable({
+          name: 'selectedTab',
+          value: obj(prop('ctrl', '%$tabsModel/controls[0]%', 'single'))
+        }),
+        group.initGroup()
+      ]
+    }),
+    'tabsModel'
+  )
+})
+
 ;
 
-jb.component('table.with-headers', {
-  type: 'table.style',
-  impl :{$: 'custom-style',
+jb.component('table.with-headers', { /* table.withHeaders */
+  params: [ 
+    { id: 'hideHeaders',  as: 'boolean' },
+  ],
+  type: 'table.style,itemlist.style',
+  impl: customStyle({
     template: (cmp,state,h) => h('table',{},[
-        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )),
+        ...(cmp.hideHeaders ? [] : [h('thead',{},h('tr',{},
+          cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) ))]),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item),{row:item, index: index}) : f.fieldData(item,index))))
+              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item,index),{row:item, index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
         ]),
-    features:{$: 'table.init'},
     css: `{border-spacing: 0; text-align: left}
     >tbody>tr>td { padding-right: 5px }
     {width: 100%}
-    `
-  }
+    `,
+    features: table.initTableOrItemlist()
+  })
 })
 
-jb.component('table.mdl', {
-  type: 'table.style',
+jb.component('table.mdl', { /* table.mdl */
+  type: 'table.style,itemlist.style',
   params: [
-    { id: 'classForTable', as: 'string', defaultValue: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp'},
-    { id: 'classForTd', as: 'string', defaultValue: 'mdl-data-table__cell--non-numeric'},
+    {
+      id: 'classForTable',
+      as: 'string',
+      defaultValue: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp'
+    },
+    {
+      id: 'classForTd',
+      as: 'string',
+      defaultValue: 'mdl-data-table__cell--non-numeric'
+    }
   ],
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('table',{ class: cmp.classForTable },[
         h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{
           'jb-ctx': f.ctxId, 
@@ -13042,40 +13595,76 @@ jb.component('table.mdl', {
           ,f.title)) )),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item),{row:item, index: index}) : f.fieldData(item,index))))
+              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item,index),{row:item, index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
         ]),
-    features: [
-      {$: 'table.init'},
-      {$: 'table.init-sort'}
-    ],
-    css: `{width: 100%}`
-  }
+    css: '{width: 100%}',
+    features: [table.initTableOrItemlist(), table.initSort()]
+  })
 })
 ;
 
 
-jb.component('picklist.native', {
+jb.component('picklist.native', { /* picklist.native */
   type: 'picklist.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
+  impl: customStyle({
+    template: (cmp,state,h) => h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
 { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; color: #555555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; }
 :focus { border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
-::-webkit-input-placeholder { color: #999; }`
-  }
+::-webkit-input-placeholder { color: #999; }`,
+    features: field.databind()
+  })
 })
 
-jb.component('picklist.native-md-look', {
+jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
   type: 'picklist.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('div',{},h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{},
+        h('input', { type: 'text', value: state.model, list: 'list_' + cmp.ctx.id,
+          onchange: e => cmp.jbModel(e.target.value),
+        }),
+        h('datalist', {id: 'list_' + cmp.ctx.id}, state.options.map(option=>h('option',{},option.text)))),
+    css: `>input {  appearance: none; -webkit-appearance: none; font-family: inherit;
+  background-color: transparent;
+  padding: 6px 0;
+  font-size: 14px;
+  width: 100%;
+  color: rgba(0,0,0, 0.82);
+  border: none;
+  border-bottom: 1px solid rgba(0,0,0, 0.12); }
+
+  {
+    font-family: 'Roboto','Helvetica','Arial',sans-serif;
+    position: relative;
+  }
+  >input:focus { border-color: #3F51B5; border-width: 2px}
+
+  :after { position: absolute;
+        top: 0.75em;
+        right: 0.5em;
+        /* Styling the down arrow */
+        width: 0;
+        height: 0;
+        padding: 0;
+        content: '';
+        border-left: .25em solid transparent;
+        border-right: .25em solid transparent;
+        border-top: .375em solid rgba(0,0,0, 0.12);
+        pointer-events: none; }`,
+    features: field.databind()
+  })
+})
+
+jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
+  type: 'picklist.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{},h('select',
+      { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
           state.options.map(option=>h('option',{value: option.code},option.text)))),
     css: `>select {  appearance: none; -webkit-appearance: none; font-family: inherit;
   background-color: transparent;
@@ -13103,18 +13692,19 @@ jb.component('picklist.native-md-look', {
         border-left: .25em solid transparent;
         border-right: .25em solid transparent;
         border-top: .375em solid rgba(0,0,0, 0.12);
-        pointer-events: none; }`
-  }
+        pointer-events: none; }`,
+    features: field.databind()
+  })
 })
 
 
-jb.component('picklist.mdl', {
+jb.component('picklist.mdl', { /* picklist.mdl */
   type: 'picklist.style',
   params: [
-    {id: 'noLabel', type: 'boolean', as: 'boolean'},
+    {id: 'noLabel', type: 'boolean', as: 'boolean'}
   ],
-  impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('div',{ class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fix-height'},[
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fix-height'},[
         h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
             value: state.model,
             readonly: true,
@@ -13131,45 +13721,37 @@ jb.component('picklist.mdl', {
           state.options.map(option=>h('li',{class: 'mdl-menu__item', code: option.code},option.text))
         )
       ]),
-      css: '>label>i {float: right; margin-top: -30px;}',
-      features : [ 
-        {$: 'field.databind' },
-        {$: 'mdl-style.init-dynamic'},
-      ],
-  }
+    css: '>label>i {float: right; margin-top: -30px;}',
+    features: [field.databind(), mdlStyle.initDynamic()]
+  })
 })
 
-jb.component('picklist.selection-list', {
+jb.component('picklist.selection-list', { /* picklist.selectionList */
   type: 'picklist.style',
   params: [
-    { id: 'width', as : 'number' },
+    {id: 'width', as: 'number'}
   ],
-  impl :{$: 'style-by-control', __innerImplementation: true,
-    modelVar: 'picklistModel',
-    control :{$: 'itemlist',
-      watchItems: false, 
+  impl: styleByControl(
+    itemlist({
       items: '%$picklistModel/options%',
-      style :{ $: 'itemlist.ul-li' },
-      controls :{$: 'label', 
-        title: '%text%', 
-        style :{$: 'label.mdl-ripple-effect' }, 
-        features: [
-          {$: 'css.width', width: '%$width%' }, 
-          {$: 'css', css: '{text-align: left}' }
-        ]
-      },
-      features :{$: 'itemlist.selection', 
-        onSelection :{$: 'write-value', value: '%code%', to: '%$picklistModel/databind%' } 
-      }
-    }
-  }
+      controls: label({
+        title: '%text%',
+        style: label.mdlRippleEffect(),
+        features: [css.width('%$width%'), css('{text-align: left}')]
+      }),
+      style: itemlist.ulLi(),
+      features: itemlist.selection({
+        onSelection: writeValue('%$picklistModel/databind%', '%code%')
+      })
+    }),
+    'picklistModel'
+  )
 })
 
-jb.component('picklist.groups', {
+jb.component('picklist.groups', { /* picklist.groups */
   type: 'picklist.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
+  impl: customStyle({
+    template: (cmp,state,h) => h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
           (state.hasEmptyOption ? [h('option',{value:''},'')] : []).concat(
             state.groups.map(group=>h('optgroup',{label: group.text},
               group.options.map(option=>h('option',{value: option.code},option.text))
@@ -13178,18 +13760,18 @@ jb.component('picklist.groups', {
     css: `
  { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; color: #555555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; }
 select:focus { border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
-select::-webkit-input-placeholder { color: #999; }`
-  }
+select::-webkit-input-placeholder { color: #999; }`,
+    features: field.databind()
+  })
 })
 ;
 
-jb.component('property-sheet.titles-above', {
+jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
   type: 'group.style',
   params: [
-    { id: 'spacing', as: 'number', defaultValue: 20 }
+    {id: 'spacing', as: 'number', defaultValue: 20}
   ],
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group'},
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property'},[
             h('label',{ class: 'property-title'},ctrl.title),
@@ -13205,24 +13787,24 @@ jb.component('property-sheet.titles-above', {
         margin-top:2px;
         font-size:14px;
       }
-      >.property>div { display:inline-block }`
-  }
+      >.property>div { display:inline-block }`,
+    features: group.initGroup()
+  })
 })
 
-jb.component('property-sheet.titles-above-float-left', {
+jb.component('property-sheet.titles-above-float-left', { /* propertySheet.titlesAboveFloatLeft */
   type: 'group.style',
   params: [
-    { id: 'spacing', as: 'number', defaultValue: 20 },
-    { id: 'fieldWidth', as: 'number', defaultValue: 200 },
+    {id: 'spacing', as: 'number', defaultValue: 20},
+    {id: 'fieldWidth', as: 'number', defaultValue: 200}
   ],
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group'},
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'clearfix'}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property clearfix'},[
           h('label',{ class: 'property-title'},ctrl.title),
           h(ctrl)
     ]))),
-    css: `>.property { 
+    css: `>.property {
           float: left;
           width: %$fieldWidth%px;
           margin-right: %$spacing%px;
@@ -13239,18 +13821,18 @@ jb.component('property-sheet.titles-above-float-left', {
         vertical-align:top;
         font-size:14px;
       }`,
-  }
+    features: group.initGroup()
+  })
 })
 
-jb.component('property-sheet.titles-left', {
+jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
   type: 'group.style',
   params: [
-    { id: 'vSpacing', as: 'number', defaultValue: 20 },
-    { id: 'hSpacing', as: 'number', defaultValue: 20 },
-    { id: 'titleWidth', as: 'number', defaultValue: 100 },
+    {id: 'vSpacing', as: 'number', defaultValue: 20},
+    {id: 'hSpacing', as: 'number', defaultValue: 20},
+    {id: 'titleWidth', as: 'number', defaultValue: 100}
   ],
-  impl :{$: 'custom-style', 
-    features :{$: 'group.init-group'},
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property'},[
           h('label',{ class: 'property-title'}, ctrl.title),
@@ -13267,106 +13849,108 @@ jb.component('property-sheet.titles-left', {
         font-size:14px;
         margin-right: %$hSpacing%px;
       }
-      >.property>*:last-child { margin-right:0 }`
-  }
+      >.property>*:last-child { margin-right:0 }`,
+    features: group.initGroup()
+  })
 })
 ;
 
-jb.component('editable-boolean.checkbox', {
+jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
   type: 'editable-boolean.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('input', { type: 'checkbox',
-        checked: state.model, 
-        onchange: e => cmp.jbModel(e.target.checked), 
-        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  })
-    }
+  impl: customStyle({
+    template: (cmp,state,h) => h('input', { type: 'checkbox',
+        checked: state.model,
+        onchange: e => cmp.jbModel(e.target.checked),
+        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }),
+    features: field.databind()
+  })
 })
 
-jb.component('editable-boolean.checkbox-with-title', {
+jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkboxWithTitle */
   type: 'editable-boolean.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.model, 
-        onchange: e => cmp.jbModel(e.target.checked), 
-        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }), state.text])
-  }
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
+        checked: state.model,
+        onchange: e => cmp.jbModel(e.target.checked),
+        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }), state.text]),
+    features: field.databind()
+  })
 })
 
 
-jb.component('editable-boolean.expand-collapse', {
+jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandCollapse */
   type: 'editable-boolean.style',
-  impl :{$: 'custom-style', 
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('div',{},[
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{},[
           h('input', { type: 'checkbox',
-            checked: state.model, 
-            onchange: e => cmp.jbModel(e.target.checked), 
+            checked: state.model,
+            onchange: e => cmp.jbModel(e.target.checked),
             onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  }, state.text),
           h('i',{class:'material-icons noselect', onclick: _=> cmp.toggle() }, state.model ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
       ]),
-      css: `>i { font-size:16px; cursor: pointer; }
-          >input { display: none }`
-  }
+    css: `>i { font-size:16px; cursor: pointer; }
+          >input { display: none }`,
+    features: field.databind()
+  })
 })
 
-jb.component('editable-boolean.mdl-slide-toggle', {
+jb.component('editable-boolean.mdl-slide-toggle', { /* editableBoolean.mdlSlideToggle */
   type: 'editable-boolean.style',
-  impl :{$: 'custom-style', 
-      template: (cmp,state,h) => h('label',{class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
+  impl: customStyle({
+    template: (cmp,state,h) => h('label',{class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
         h('input', { type: 'checkbox', class: 'mdl-switch__input', id: 'switch_' + state.fieldId,
           checked: state.model, onchange: e => cmp.jbModel(e.target.checked) }),
         h('span',{class:'mdl-switch__label'},state.text)
       ]),
-      features :[
-          {$: 'field.databind' },
-          {$: 'editable-boolean.keyboard-support' },
-          {$: 'mdl-style.init-dynamic'}
-      ],
-  }
+    features: [field.databind(), editableBoolean.keyboardSupport(), mdlStyle.initDynamic()]
+  })
 })
 ;
 
-jb.component('card.card', {
+jb.component('card.card', { /* card.card */
   type: 'group.style',
-	params: [
-    { id: 'width', as: 'number', defaultValue: 320 },
-		{ id: 'shadow', as: 'string', options: '2,3,4,6,8,16', defaultValue: '2' }
-	],
-	impl :{$: 'custom-style',
+  params: [
+    {id: 'width', as: 'number', defaultValue: 320},
+    {id: 'shadow', as: 'string', options: '2,3,4,6,8,16', defaultValue: '2'}
+  ],
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: `mdl-card mdl-shadow--${cmp.shadow}dp` },
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl,{class: cmp.itemClass}),ctrl.ctx.data))),
-    features :{$: 'group.init-group'},
-		css: '{ width: %$width%px }'
-  }
+    css: '{ width: %$width%px }',
+    features: group.initGroup()
+  })
 })
 
-jb.component('card.media-group', {
+jb.component('card.media-group', { /* card.mediaGroup */
   type: 'group.style',
-  impl :{$:'group.div', groupClass: 'mdl-card__media' },
+  impl: group.div(
+
+  )
 })
 
-jb.component('card.actions-group', {
+jb.component('card.actions-group', { /* card.actionsGroup */
   type: 'group.style',
-  impl :{$:'group.div', groupClass: 'mdl-card__actions mdl-card--border' },
+  impl: group.div(
+
+  )
 })
 
-jb.component('card.menu', {
+jb.component('card.menu', { /* card.menu */
   type: 'group.style',
-  impl :{$:'group.div', groupClass: 'mdl-card__menu' },
+  impl: group.div(
+    
+  )
 })
 ;
 
 (function() {
+jb.ns('tree')
 
 class NodeLine extends jb.ui.Component {
 	constructor(props) {
 		super();
 		this.state.expanded = props.tree.expanded[props.path];
-		var tree = props.tree, path = props.path;
-		var model = tree.nodeModel;
-
+		const tree = props.tree, path = props.path;
 		this.state.flip = _ => {
 			tree.expanded[path] = !(tree.expanded[path]);
 			this.setState({expanded:tree.expanded[path]});
@@ -13375,7 +13959,7 @@ class NodeLine extends jb.ui.Component {
 	}
 
 	render(props,state) {
-		var h = jb.ui.h, tree= props.tree, model = props.tree.nodeModel;
+		const h = jb.ui.h, tree= props.tree, model = props.tree.nodeModel;
 
 		const path = props.path;
 		const collapsed = tree.expanded[path] ? '' : ' collapsed';
@@ -13417,14 +14001,14 @@ class TreeNode extends jb.ui.Component {
 
  //********************* jBart Components
 
-jb.component('tree', {
-	type: 'control',
-	params: [
-		{ id: 'nodeModel', type: 'tree.nodeModel', dynamic: true, mandatory: true },
-		{ id: 'style', type: "tree.style", defaultValue: { $: "tree.ul-li" }, dynamic: true },
-		{ id: 'features', type: "feature[]", dynamic: true }
-	],
-	impl: ctx => {
+jb.component('tree', { /* tree */
+  type: 'control',
+  params: [
+    {id: 'nodeModel', type: 'tree.nodeModel', dynamic: true, mandatory: true},
+    {id: 'style', type: 'tree.style', defaultValue: tree.ulLi(), dynamic: true},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => {
 		var nodeModel = ctx.params.nodeModel();
 		if (!nodeModel)
 			return jb.logError('missing nodeModel in tree',ctx);
@@ -13432,7 +14016,9 @@ jb.component('tree', {
 		var ctx = ctx.setVars({$tree: tree});
 		return jb.ui.ctrl(ctx, {
 			class: 'jb-tree', // define host element to keep the wrapper
-			beforeInit: (cmp,props) => {
+			beforeInit: cmp => {
+				cmp.refresh = () => cmp.tree.redraw(true)
+
 				cmp.tree = Object.assign( tree, {
 					redraw: strong => { // needed after dragula that changes the DOM
 						cmp.setState({empty: strong});
@@ -13452,37 +14038,37 @@ jb.component('tree', {
 	}
 })
 
-jb.component('tree.ul-li', {
-	type: 'tree.style',
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) => {
+jb.component('tree.ul-li', { /* tree.ulLi */
+  type: 'tree.style',
+  impl: customStyle(
+    (cmp,state,h) => {
 			var tree = cmp.tree;
 			return h('div',{},
 				state.empty ? h('span') : h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath,
 				class: 'jb-control-tree treenode' + (tree.selected == tree.nodeModel.rootPath ? ' selected': '') })
 			)
 		}
-	}
+  )
 })
 
-jb.component('tree.no-head', {
-	type: 'tree.style',
-	impl :{$: 'custom-style',
-		template: (cmp,state,h) => {
+jb.component('tree.no-head', { /* tree.noHead */
+  type: 'tree.style',
+  impl: customStyle(
+    (cmp,state,h) => {
 		var tree = cmp.tree, path = tree.nodeModel.rootPath;
 		return h('div',{},tree.nodeModel.children(path).map(childPath=>
 				 h(TreeNode,{ tree: tree, path: childPath, class: 'treenode' + (tree.selected == childPath ? ' selected' : '') }))
 		)}
-	}
+  )
 })
 
-jb.component('tree.selection', {
+jb.component('tree.selection', { /* tree.selection */
   type: 'feature',
   params: [
-	  { id: 'databind', as: 'ref', dynamic: true },
-	  { id: 'autoSelectFirst', type: 'boolean' },
-	  { id: 'onSelection', type: 'action', dynamic: true },
-	  { id: 'onRightClick', type: 'action', dynamic: true },
+    {id: 'databind', as: 'ref', dynamic: true},
+    {id: 'autoSelectFirst', type: 'boolean'},
+    {id: 'onSelection', type: 'action', dynamic: true},
+    {id: 'onRightClick', type: 'action', dynamic: true}
   ],
   impl: (ctx,databind) => ({
 	    onclick: true,
@@ -13539,16 +14125,16 @@ jb.component('tree.selection', {
   	})
 })
 
-jb.component('tree.keyboard-selection', {
-	type: 'feature',
-	params: [
-		{ id: 'onKeyboardSelection', type: 'action', dynamic: true },
-		{ id: 'onEnter', type: 'action', dynamic: true },
-		{ id: 'onRightClickOfExpanded', type: 'action', dynamic: true },
-		{ id: 'autoFocus', type: 'boolean' },
-		{ id: 'applyMenuShortcuts', type: 'menu.option', dynamic: true },
-	],
-	impl: context => ({
+jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
+  type: 'feature',
+  params: [
+    {id: 'onKeyboardSelection', type: 'action', dynamic: true},
+    {id: 'onEnter', type: 'action', dynamic: true},
+    {id: 'onRightClickOfExpanded', type: 'action', dynamic: true},
+    {id: 'autoFocus', type: 'boolean'},
+    {id: 'applyMenuShortcuts', type: 'menu.option', dynamic: true}
+  ],
+  impl: context => ({
 			onkeydown: true,
 			afterViewInit: cmp=> {
 				var tree = cmp.tree;
@@ -13609,73 +14195,75 @@ jb.component('tree.keyboard-selection', {
 		})
 })
 
-jb.component('tree.regain-focus', {
-	type: 'action',
-	impl : ctx =>
+jb.component('tree.regain-focus', { /* tree.regainFocus */
+  type: 'action',
+  impl: ctx =>
 		ctx.vars.$tree && ctx.vars.$tree.regainFocus && ctx.vars.$tree.regainFocus()
 })
 
-jb.component('tree.redraw', {
-	type: 'action',
+jb.component('tree.redraw', { /* tree.redraw */
+  type: 'action',
   params: [
-    { id: 'strong', type: 'boolean', as: 'boolean' }
+    {id: 'strong', type: 'boolean', as: 'boolean'}
   ],
-	impl : (ctx,strong) => {
+  impl: (ctx,strong) => {
 		jb.log('tree',['redraw',ctx.path, ...arguments]);
 		return ctx.vars.$tree && ctx.vars.$tree.redraw && ctx.vars.$tree.redraw(strong)
 	}
 })
 
-jb.component('tree.drag-and-drop', {
+jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
   type: 'feature',
   params: [
-//	  { id: 'afterDrop', type: 'action', dynamic: true, mandatory: true },
+    
   ],
   impl: ctx => ({
   		onkeydown: true,
   		afterViewInit: cmp => {
-  			var tree = cmp.tree;
-        var drake = tree.drake = dragula([], {
+  			const tree = cmp.tree;
+        	const drake = tree.drake = dragula([], {
 				      moves: el =>
 					         jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
-	      });
-        drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
+	    	})
+          	drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
           //jb.ui.findIncludeSelf(cmp.base,'.jb-array-node').map(el=>el.children()).filter('.treenode-children').get();
 
-	      drake.on('drag', function(el, source) {
-	          var path = tree.elemToPath(el.firstElementChild)
-	          el.dragged = { path: path, expanded: tree.expanded[path]}
-	          delete tree.expanded[path]; // collapse when dragging
-	        })
+			drake.on('drag', function(el, source) {
+				var path = tree.elemToPath(el.firstElementChild)
+				el.dragged = { path: path, expanded: tree.expanded[path]}
+				delete tree.expanded[path]; // collapse when dragging
+			})
 
-	      drake.on('drop', (dropElm, target, source,targetSibling) => {
-	            if (!dropElm.dragged) return;
-				      dropElm.parentNode.removeChild(dropElm);
-	            tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
-      				var state = treeStateAsVals(tree);
-      				var targetPath = targetSibling ? tree.elemToPath(targetSibling) : addOneToIndex(tree.elemToPath(target.lastElementChild));
-      				if (!targetPath)
-      					debugger;
-      				tree.nodeModel.move(dropElm.dragged.path,targetPath);
-      				restoreTreeStateFromVals(tree,state);
-      				dropElm.dragged = null;
-      				tree.redraw(true);
-	      });
+			drake.on('drop', (dropElm, target, source,targetSibling) => {
+				if (!dropElm.dragged) return;
+				dropElm.parentNode.removeChild(dropElm);
+				tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
+				const state = treeStateAsVals(tree);
+				let targetPath = targetSibling ? tree.elemToPath(targetSibling) : addToIndex(tree.elemToPath(target.lastElementChild),1);
+				// strange dragule behavior fix
+				const draggedIndex = Number(dropElm.dragged.path.split('~').pop());
+				const targetIndex = Number(targetPath.split('~').pop());
+				if (target === source && targetIndex > draggedIndex)
+					targetPath = addToIndex(targetPath,-1)
+				tree.nodeModel.move(dropElm.dragged.path,targetPath);
+				tree.nodeModel.refHandler && restoreTreeStateFromVals(tree,state);
+				dropElm.dragged = null;
+				tree.redraw(true);
+		    })
 
 	        // ctrl up and down
     		cmp.onkeydown.filter(e=>
     				e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
     				.subscribe(e=> {
-      					var diff = e.keyCode == 40 ? 2 : -1;
-      					var selectedIndex = Number(tree.selected.split('~').pop());
+      					const selectedIndex = Number(tree.selected.split('~').pop());
       					if (isNaN(selectedIndex)) return;
-      					var no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
-                //$($('.treenode.selected').parents('.treenode-children')[0]).children().length;
-      					var index = (selectedIndex + diff+ no_of_siblings+1) % (no_of_siblings + 1);
-      					var path = tree.selected.split('~').slice(0,-1).join('~');
-      					var state = treeStateAsVals(tree);
-      					tree.nodeModel.move(tree.selected, tree.selected.split('~').slice(0,-1).concat([index]).join('~'))
-      					restoreTreeStateFromVals(tree,state);
+      					const no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
+						const diff = e.keyCode == 40 ? 1 : -1;
+      					let target = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
+						const state = treeStateAsVals(tree);
+      					tree.nodeModel.move(tree.selected, tree.selected.split('~').slice(0,-1).concat([target]).join('~'))
+						  
+						tree.nodeModel.refHandler && restoreTreeStateFromVals(tree,state);
       			})
       		},
       		doCheck: function(cmp) {
@@ -13700,16 +14288,17 @@ restoreTreeStateFromVals = (tree,vals) => {
 }
 
 pathToVal = (model,path) =>
-	model.refHandler.val(model.refHandler.refOfPath(path.split('~')))
+	model.refHandler && model.refHandler.val(model.refHandler.refOfPath(path.split('~')))
 
 valToPath = (model,val) => {
-	var ref = model.refHandler.asRef(val);
+	if (!model.refHandler) return
+	const ref = model.refHandler.asRef(val);
 	return ref ? ref.path().join('~') : ''
 }
 
-addOneToIndex = path => {
+addToIndex = (path,toAdd) => {
 	if (!path) debugger;
-	var index = Number(path.slice(-1)) + 1;
+	const index = Number(path.slice(-1)) + toAdd;
 	return path.split('~').slice(0,-1).concat([index]).join('~')
 }
 
@@ -13717,13 +14306,14 @@ addOneToIndex = path => {
 })()
 ;
 
-jb.component('tree.json-read-only',{
-	type: 'tree.nodeModel',
-	params: [
-		{ id: 'object', as: 'single' },
-		{ id: 'rootPath', as: 'string'}
-	],
-	impl: (ctx, json, rootPath) =>
+(function() {
+jb.component('tree.json-read-only', { /* tree.jsonReadOnly */
+  type: 'tree.nodeModel',
+  params: [
+    {id: 'object', as: 'single'},
+    {id: 'rootPath', as: 'string'}
+  ],
+  impl: (ctx, json, rootPath) =>
 		new ROjson(json,rootPath)
 })
 
@@ -13746,14 +14336,14 @@ class ROjson {
 		var val = this.val(path);
 		return typeof val == 'object' && val !== null;
 	}
-	icon() { 
-		return '' 
+	icon() {
+		return ''
 	}
 	title(path,collapsed) {
 		var val = this.val(path);
 		var prop = path.split('~').pop();
 		var h = jb.ui.h;
-		if (val == null) 
+		if (val == null)
 			return h('div',{},prop + ': null');
 		if (!collapsed && typeof val == 'object')
 			return h('div',{},prop);
@@ -13767,21 +14357,22 @@ class ROjson {
 	}
 }
 
-jb.component('tree.json',{
-	type: 'tree.nodeModel',
-	params: [
-		{ id: 'object'},
-		{ id: 'rootPath', as: 'string'}
-	],
-	impl: function(context, json, rootPath) {
+jb.component('tree.json', { /* tree.json */
+  type: 'tree.nodeModel',
+  params: [
+    {id: 'object', as: 'ref'},
+    {id: 'rootPath', as: 'string'}
+  ],
+  impl: function(context, json, rootPath) {
 		return new Json(json,rootPath)
 	}
 })
 
 class Json {
-	constructor(json,rootPath) {
-		this.json = json;
+	constructor(jsonRef,rootPath) {
+		this.json = jsonRef;
 		this.rootPath = rootPath;
+		this.refHandler = jb.refHandler(jsonRef)
 	}
 	children(path) {
 		var val = this.val(path);
@@ -13791,20 +14382,20 @@ class Json {
 	val(path) {
 		if (path.indexOf('~') == -1)
 			return jb.val(this.json);
-		return jb.val(path.split('~').slice(1).reduce((o,p) =>o[p], this.json))
+		return jb.val(path.split('~').slice(1).reduce((o,p) =>o[p], jb.val(this.json)))
 	}
 	isArray(path) {
 		var val = this.val(path);
 		return typeof val == 'object' && val !== null;
 	}
-	icon() { 
-		return '' 
+	icon() {
+		return ''
 	}
 	title(path,collapsed) {
 		var val = this.val(path);
 		var prop = path.split('~').pop();
 		var h = jb.ui.h;
-		if (val == null) 
+		if (val == null)
 			return h(prop + ': null');
 		if (!collapsed && typeof val == 'object')
 			return h('div',{},prop);
@@ -13819,20 +14410,15 @@ class Json {
 	modify(op,path,args,ctx) {
 		op.call(this,path,args);
 	}
-	move(path,args) { // drag & drop
-		var pathElems = args.dragged.split('~');
-		pathElems.shift();
-		var dragged = pathElems.reduce((o,p)=>o[p],this.json);
-		var arr = this.val(path);
-		if (Array.isArray(arr)) {
-			var draggedIndex = Number(args.dragged.split('~').pop());
-			arr.splice(draggedIndex,1);
-			var index = (args.index == -1) ? arr.length : args.index;
-			arr.splice(index,0,dragged);
-		}
+	move(dragged,target,ctx) { // drag & drop
+		const draggedArr = this.val(dragged.split('~').slice(0,-1).join('~'));
+		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
+		if (Array.isArray(draggedArr) && Array.isArray(targetArr))
+			jb.move(jb.asRef(this.val(dragged)), jb.asRef(this.val(target)))
 	}
 }
-;
+
+})();
 
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.dragula = f()}})(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
@@ -27191,11 +27777,11 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 ;
 
 
-jb.component('pretty-print', {
+jb.component('pretty-print', { /* prettyPrint */
   params: [
-    { id: 'profile', defaultValue: '%%' },
-    { id: 'colWidth', as: 'number', defaultValue: 140 },
-    { id: 'macro', as: 'boolean'},
+    {id: 'profile', defaultValue: '%%'},
+    {id: 'colWidth', as: 'number', defaultValue: 140},
+    {id: 'macro', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,profile) =>
     jb.prettyPrint(profile,ctx.params)
@@ -27203,7 +27789,7 @@ jb.component('pretty-print', {
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {
   if (comp) {
-    const macroRemark = ` /* ${jb.macroName(compId)} */ `
+    const macroRemark = ` /* ${jb.macroName(compId)} */`
     const res = "jb.component('" + compId + "', " + jb.prettyPrint(comp,settings) + ')'
     const withMacroName = res.replace(/\n/, macroRemark + '\n')
     return withMacroName
@@ -27225,54 +27811,68 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
   const advanceLineCol = jb.prettyPrint.advanceLineCol
   return valueToMacro({path: initialPath, line:0, col: 0}, profile)
 
-  function joinVals({path, line, col}, innerVals, open, close, flat, isArray) {
-    const openStr = open + newLine()
-    const afterOpenPos = advanceLineCol({line,col},openStr)
-    const mapWithOpen = { [path+'~!open']: [line,col,afterOpenPos.line,afterOpenPos.col]}
-    const result = innerVals.reduce((acc,{innerPath, val}, index) => {
-      const fullInnerPath = [path,innerPath].join('~')
-      const valPrefix = isArray ? '' : innerPath + ': '
-      const startAttValuePos = advanceLineCol(acc,'')
-      const startValuePos = advanceLineCol(startAttValuePos, valPrefix)
-      const result = valueToMacro({path: fullInnerPath, line: startValuePos.line, col: startValuePos.col}, val, flat)
-      const separator = index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())
-      const endValuePos = advanceLineCol(startValuePos, result.text)
-      const afterSeparatorPos = advanceLineCol(endValuePos, separator)
-      const map = Object.assign({},acc.map, result.map,{
-        [fullInnerPath+'~!prefix']:[startAttValuePos.line, startAttValuePos.col, startValuePos.line, startValuePos.col],
-        [fullInnerPath+'~!value']:[startValuePos.line, startValuePos.col,endValuePos.line, endValuePos.col],
-        [fullInnerPath+'~!separator']:[endValuePos.line, endValuePos.col,afterSeparatorPos.line, afterSeparatorPos.col],
-//        [fullInnerPath]:[startAttValuePos.line, startAttValuePos.col,endValuePos.line, endValuePos.col]
-      })
-      return Object.assign({ text: acc.text + valPrefix + result.text + separator, map, unflat: acc.unflat || result.unflat }, afterSeparatorPos)
-    }, {text: openStr, map: mapWithOpen, ...afterOpenPos, unflat: false} )
-    const beforeClosePos = advanceLineCol(result,'')
-    const closeStr = newLine(-1) + close
-    const afterClosePos = advanceLineCol(result,closeStr)
-    result.text += closeStr
-    Object.assign(result.map,{[path+'~!close']: [beforeClosePos.line,beforeClosePos.col,afterClosePos.line,afterClosePos.col]})
+  function processList(ctx,items) {
+    const res = items.reduce((acc,{prop, item}) => {
+      const toAdd = typeof item === 'function' ? item(acc) : item
+      const toAddStr = toAdd.text || toAdd, toAddMap = toAdd.map || {}, toAddPath = toAdd.path || ctx.path
+      const startPos = advanceLineCol(acc,''), endPos = advanceLineCol(acc,toAddStr)
+      const map = { ...acc.map, ...toAddMap, [[toAddPath,prop].join('~')]: [startPos.line, startPos.col, endPos.line, endPos.col] }
+      return { text: acc.text + toAddStr, map, unflat: acc.unflat || toAdd.unflat, ...endPos}
+    }, {text: '', map: {}, ...ctx})
+    return {...ctx, ...res}
+  }
 
-    //const arrayElem = path.match(/~[0-9]+$/)
-    const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
-    const customStyle = jb.studio.compNameOfPath(path) === 'customStyle'
-    const top = (path.match(/~/g)||'').length < 2
-    const long = result.text.replace(/\n\s*/g,'').length > colWidth
-    const unflat = result.unflat || customStyle || top || ctrls || long
+  function joinVals({path, line, col}, innerVals, open, close, flat, isArray) {
+    const ctx = {path, line, col}
+    const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
+    const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
+    const arrayOrObj = isArray? 'array' : 'obj'
+
+    const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) =>
+      processList(acc,[
+        {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + ': '},
+        {prop: '!value', item: ctx => {
+            const ctxWithPath = { ...ctx, path: [path,innerPath].join('~') }
+            return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
+          }
+        },
+        {prop: `!${arrayOrObj}-separator-${index}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
+      ])
+    , {...openResult, unflat: false} )
+    const _close = typeof close === 'string' ? [{prop: '!close', item: close}] : close
+    const result = processList(beforeClose, [{prop: '!close-newline', item: () => newLine(-1)}, ..._close])
+
+    const unflat = shouldNotFlat(result)
     if (!unflat && !flat)
-      return joinVals({path, line, col}, innerVals, open, close, true, isArray)
+      return joinVals(ctx, innerVals, open, close, true, isArray)
     return Object.assign(result,{unflat})
 
 
     function newLine(offset = 0) {
       return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
     }
+
+    function shouldNotFlat(result) {
+      const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
+      const customStyle = jb.studio.compNameOfPath(path) === 'customStyle'
+      const top = (path.match(/~/g)||'').length < 2
+      const long = result.text.replace(/\n\s*/g,'').length > colWidth
+      return result.unflat || customStyle || top || ctrls || long
+    }
+    function fixPropName(prop) {
+      return prop.match(/^[a-zA-Z0-9_]+$/) ? prop : `'${prop}'`
+    }
   }
 
-  function profileToMacro(ctx, profile,flat) {
+  function profileToMacro({path, line, col}, profile,flat) {
+    const ctx = {path, line, col}
+
     const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
     const comp = jb.comps[id]
-    if (!id || !comp || profile.$recursive || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
-      const props = Object.keys(profile) 
+    if (comp)
+      jb.fixByValue(profile,comp)
+    if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
+      const props = Object.keys(profile)
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);
         props.unshift('$');
@@ -27280,34 +27880,47 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
     }
     const macro = jb.macroName(id)
-  
+
     const params = comp.params || []
     const firstParamIsArray = (params[0] && params[0].type||'').indexOf('[]') != -1
     const vars = Object.keys(profile.$vars || {})
       .map(name => ({innerPath: `$vars~${name}`, val: {$: 'Var', name, val: profile.$vars[name]}}))
     const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
     const systemProps = vars.concat(remark)
+    const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
+    const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
+    const openProfileSugarGroup = [{prop: '!profile', item: macro}, {prop:'!open-sugar', item:'('}]
+    const closeProfileSugarGroup = [{prop:'!close-sugar', item:')'}]
+    const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
+    const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
+
     if (params.length == 1 && firstParamIsArray) { // pipeline, or, and, plus
-      const args = systemProps.concat(jb.asArray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + i, val})))
-      return joinVals(ctx, args, `${macro}(`, ')', flat, true)
+      const args = systemProps.concat(jb.asArray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + '~' + i, val})))
+      return joinVals(ctx, args, openProfileSugarGroup, closeProfileSugarGroup, flat, true)
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
-    const oneFirstParam = keys.length === 1 && params[0] && params[0].id == keys[0] 
-        && (typeof profile[keys[0]] !== 'object' || Array.isArray(profile[keys[0]]))
+    const oneFirstParam = keys.length === 1 && params[0] && params[0].id == keys[0]
+        && (typeof attOfProfile(keys[0]) !== 'object' || Array.isArray(attOfProfile(keys[0])))
     if ((params.length < 3 && comp.usageByValue !== false) || comp.usageByValue || oneFirstParam) {
-      const args = systemProps.concat(params.map((param,i)=>({innerPath: param.id, val: (i == 0 && profile['$'+id]) || profile[param.id]})))
-      for(let i=0;i<3;i++)
+      const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: attOfProfile(param.id)})))
+      for(let i=0;i<5;i++)
         if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
-      return joinVals(ctx, args, `${macro}(`, ')', flat, true)
+      return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
     }
     const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
     const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
-    const args = systemPropsInObj.concat(params.filter(param=>profile[param.id] !== undefined)
-        .map(param=>({innerPath: param.id, val: profile[param.id]})))
-      return joinVals(ctx, args, `${macro}({`, '})', flat, false)
+    const args = systemPropsInObj.concat(params.filter(param=>attOfProfile(param.id) !== undefined)
+        .map(param=>({innerPath: param.id, val: attOfProfile(param.id)})))
+      return joinVals(ctx, args,openProfileGroup, closeProfileGroup, flat, false)
+
+    function attOfProfile(paramId) {
+      const isFirst = params[0] && params[0].id == paramId
+      return isFirst && profile['$'+id] || profile[paramId]
+    }
   }
-    
-  function valueToMacro(ctx, val, flat) {
+
+  function valueToMacro({path, line, col}, val, flat) {
+    const ctx = {path, line, col}
     let result = doValueToMacro()
     if (typeof result === 'string')
       result = { text: result, map: {}}
@@ -27320,17 +27933,29 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       if (typeof val === 'object') return profileToMacro(ctx, val, flat);
       if (typeof val === 'function') return val.toString();
       if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-        return "'" + JSON.stringify(val).slice(1,-1) + "'";
+        return processList(ctx,[
+          {prop: '!value-text-start', item: "'"},
+          {prop: '!value-text', item: JSON.stringify(val).slice(1,-1)},
+          {prop: '!value-text-end', item: "'"},
+        ])
       else if (typeof val === 'string' && val.indexOf('\n') != -1)
-        return "`" + val.replace(/`/g,'\\`') + "`"
+        return processList(ctx,[
+          {prop: '!value-text-start', item: "`"},
+          {prop: '!value-text', item: val.replace(/`/g,'\\`')},
+          {prop: '!value-text-end', item: "`"},
+        ])
       else
         return JSON.stringify(val); // primitives
     }
 }
-  
-  function arrayToMacro(ctx, array, flat) {
+
+  function arrayToMacro({path, line, col}, array, flat) {
+    const ctx = {path, line, col}
     const vals = array.map((val,i) => ({innerPath: i, val}))
-    return joinVals(ctx, vals, '[', ']', flat, true)
+    const openArray = [{prop:'!open-array', item:'['}]
+    const closeArray = [{prop:'!close-array', item:']'}]
+
+    return joinVals(ctx, vals, openArray, closeArray, flat, true)
   }
 
   function rawFormat() {
@@ -27341,13 +27966,13 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     let positions = {};
     printValue(profile,initialPath || '');
     return { result, positions }
-  
+
     function sortedPropertyNames(obj) {
       let props = jb.entries(obj)
         .filter(p=>showNulls || p[1] != null)
         .map(x=>x[0]) // try to keep the order
         .filter(p=>p.indexOf('$jb') != 0)
-  
+
       const comp_name = jb.compName(obj);
       if (comp_name) { // tgp obj - sort by params def
         const params = jb.compParams(jb.comps[comp_name]).map(p=>p.id);
@@ -27359,7 +27984,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       }
       return props;
     }
-  
+
     function printValue(val,path) {
       positions[path] = lineNum;
       if (!val) return;
@@ -27377,7 +28002,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
         result += JSON.stringify(val);
       }
     }
-  
+
     function printObj(obj,path) {
         var obj_str = flat_obj(obj);
         if (!printInLine(obj_str)) { // object does not fit in parent line
@@ -27408,9 +28033,9 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     function printProp(obj,prop,path) {
       if (obj[prop] && obj[prop].$jb_arrayShortcut)
         obj = obj(prop,obj[prop].items);
-  
+
       if (printInLine(flat_property(obj,prop))) return;
-  
+
       if (prop == '$')
         result += '$: '
       else
@@ -27446,7 +28071,7 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
       for (var i = 0; i < depth; i++) result += '               '.substr(0,tabSize);
       remainedInLine = colWidth - tabSize * depth;
     }
-  
+
     function flat_obj(obj) {
       var props = sortedPropertyNames(obj)
         .filter(p=>showNulls || obj[p] != null)
@@ -27477,9 +28102,9 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
     function flat_array(array) {
       return '[' + array.map(item=>flat_val(item)).join(', ') + ']';
     }
-  
+
   }
- 
+
 };
 
 (function (global, factory) {
@@ -28549,9 +29174,9 @@ jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPat
 
 function getSinglePathChange(newVal, currentVal) {
     return pathAndValueOfSingleChange(jb.objectDiff(newVal,currentVal),'')
-    
-    function pathAndValueOfSingleChange(obj, pathSoFar) { 
-        if (typeof obj !== 'object')
+
+    function pathAndValueOfSingleChange(obj, pathSoFar) {
+        if (typeof obj !== 'object' && obj !== undefined)
             return { innerPath: pathSoFar, innerValue: obj }
         const entries = jb.entries(obj)
         if (entries.length != 1) // if not single returns empty answer
@@ -28571,18 +29196,18 @@ function setStrValue(value, ref, ctx) {
         if (innerPath) {
             const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
             return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
-        } 
+        }
     }
     if (newVal !== undefined)
        jb.writeValue(ref,newVal,ctx)
 }
 
-jb.component('watchable-as-text', {
-    type: 'data',
-    params: [
-      {id: 'ref', as: 'ref', dynamic: true},
-    ],
-    impl: (ctx,refF) => ({
+jb.component('watchable-as-text', { /* watchableAsText */
+  type: 'data',
+  params: [
+    {id: 'ref', as: 'ref', dynamic: true}
+  ],
+  impl: (ctx,refF) => ({
         oneWay: true,
         getRef() {
             return this.ref || (this.ref = refF())
@@ -28597,8 +29222,12 @@ jb.component('watchable-as-text', {
             const ref = this.getRef()
             const initialPath = ref.handler.pathOfRef(ref).join('~')
             const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath})
-            this.locationMap = res.map
-            return res
+            this.locationMap = enrichMapWithOffsets(res.text, res.map)
+            this.text = res.text
+        },
+        writeFullValue(newVal) {
+            jb.writeValue(this.getRef(),newVal,ctx)
+            this.prettyPrintWithPositions()
         },
         $jb_val(value) { try {
             if (value === undefined) {
@@ -28606,7 +29235,8 @@ jb.component('watchable-as-text', {
                 if (typeof val === 'function')
                     return val.toString();
 
-                return this.prettyPrintWithPositions().text
+                this.prettyPrintWithPositions()
+                return this.text
             } else {
                 setStrValue(value,this.getRef(),ctx)
                 this.prettyPrintWithPositions() // refreshing location map
@@ -28620,7 +29250,7 @@ jb.component('watchable-as-text', {
         }
     })
 })
-  
+
 jb.evalStr = function(str,frame) {
     try {
       return (frame || jb.frame).eval('('+str+')')
@@ -28628,14 +29258,14 @@ jb.evalStr = function(str,frame) {
         jb.logException(e,'eval: '+str);
     }
 }
-  
+
 jb.objectDiff = function(newObj, orig) {
     if (orig === newObj) return {}
     if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
     const deletedValues = Object.keys(orig).reduce((acc, key) =>
         newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: undefined }
     , {})
-  
+
     return Object.keys(newObj).reduce((acc, key) => {
       if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
       const difference = jb.objectDiff(newObj[key], orig[key])
@@ -28644,56 +29274,42 @@ jb.objectDiff = function(newObj, orig) {
     }, deletedValues)
 }
 
-jb.textEditor = {
-    pathOfPosition(locationMap,_pos) {
-        const pos = Number(_pos) ? this.offsetToLineCol(_pos) : _pos
-        const path = jb.entries(locationMap)
-            .find(e=>e[1][0] == pos.line && e[1][1] <= pos.col && (e[1][0] < e[1][2] || pos.col <= e[1][3]))
-        return path
-    },
-    lineColToOffset(text,{line,col}) {
-        return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
-    },
-    offsetToLineCol(text,offset) {
-        return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0, 
-            col: offset - text.slice(0,offset).lastIndexOf('\n') }
-    },
-    refreshEditor(cmp,path) {
-        const editor = cmp.editor
-        path = path || this.pathOfPosition(cmp.state.databindRef.locationMap, editor.getCursorPos())
-        const text = jb.tostring(jb.val(cmp.state.databindRef))
-        editor.setValue(text);
-        const pos = cmp.state.databindRef.locationMap[path.split('~!')[0]+'~!value']
-        if (pos)
-            editor.setSelectionRange({line: pos[0], col: pos[1]})
-    }
-}
-
-jb.component('text-editor.with-cursor-path', {
-    type: 'action',
-    params: [
-      {id: 'action', type: 'action', dynamic: true, mandatory: true},
-      {id: 'editorId', as: 'string', desscription: 'only needed if launched from button'},
-    ],
-    impl: (ctx,action,editorId) => {
-      try {
-          const base = ctx.vars.elemToTest || (typeof document !== 'undefined' && document)
-          const elem = editorId && base && base.querySelector('#'+editorId) || jb.path(ctx.vars.$launchingElement,'el')
-          const cmp = elem._component
-          const editor = cmp.editor
-          if (editor && editor.getCursorPos)
-                action(ctx.setVars({
-                    cursorPath: jb.textEditor.pathOfPosition(cmp.state.databindRef.locationMap, editor.getCursorPos()),
-                    cursorCoord: editor.cursorCoords(editor)
-                }))
-        } catch(e) {}
+jb.component('text-editor.with-cursor-path', { /* textEditor.withCursorPath */
+  type: 'action',
+  params: [
+    {id: 'action', type: 'action', dynamic: true, mandatory: true},
+    {id: 'selector', as: 'string', defaultValue: '#editor'}
+  ],
+  impl: (ctx,action,selector) => {
+        let editor = ctx.vars.editor && ctx.vars.editor()
+        if (!editor) {
+            try {
+                const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : ctx.vars.elemToTest;
+                editor = elem._component.ctx.vars.editor()
+            } catch(e) {}
+        }
+        if (editor && editor.getCursorPos)
+            action(editor.ctx().setVars({
+                cursorPath: pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
+                cursorCoord: editor.cursorCoords(editor)
+            }))
     }
 })
-  
-jb.component('text-editor.watch-source-changes', {
-    type: 'feature',
-    params: [],
-    impl: ctx => ({ init: cmp => {
+
+jb.component('text-editor.is-dirty', { /* textEditor.isDirty */
+  impl: ctx => {
+        try {
+            return ctx.vars.editor().isDirty()
+        } catch (e) {}
+    }
+})
+
+jb.component('text-editor.watch-source-changes', { /* textEditor.watchSourceChanges */
+  type: 'feature',
+  params: [
+
+  ],
+  impl: ctx => ({ init: cmp => {
       try {
         const text_ref = cmp.state.databindRef
         const data_ref = text_ref.getRef()
@@ -28714,41 +29330,109 @@ jb.component('text-editor.watch-source-changes', {
     }})
 })
 
-jb.component('text-editor.init', {
-    type: 'feature',
-    params: [],
-    impl: ctx => ({
+jb.component('text-editor.init', { /* textEditor.init */
+  type: 'feature',
+  params: [
+
+  ],
+  impl: ctx => ({
     extendCtxOnce: (ctx,cmp) => ctx.setVars({
-        editor: cmp.editor,
-        refreshEditor: path => jb.textEditor.refreshEditor(cmp,path)
+        editor: () => cmp.editor,
+        refreshEditor: path => refreshEditor(cmp,path)
       })
   })
 })
 
-jb.component('textarea.init-textarea-editor', {
-    type: 'feature',
-    impl: ctx => ({
+jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor */
+  type: 'feature',
+  impl: ctx => ({
         beforeInit: cmp => {
-          if (!jb.textEditor) return
           cmp.editor = {
-            getCursorPos: () => jb.textEditor.offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
+            ctx: () => cmp.ctx,
+            data_ref: cmp.state.databindRef,
+            getCursorPos: () => offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
             cursorCoords: () => {},
             markText: () => {},
             replaceRange: (text, from, to) => {
-              const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-              const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
+              const _from = lineColToOffset(cmp.base.value,from)
+              const _to = lineColToOffset(cmp.base.value,to)
               cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
             },
             setSelectionRange: (from, to) => {
-              const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-              const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
+              const _from = lineColToOffset(cmp.base.value,from)
+              const _to = to && lineColToOffset(cmp.base.value,to) || _from
               cmp.base.setSelectionRange(_from,_to)
             },
           }
+          if (cmp.ctx.vars.editorContainer)
+            cmp.ctx.vars.editorContainer.editorCmp = cmp
         }
     })
 })
-  
+
+
+jb.textEditor = {
+    refreshEditor
+}
+
+function pathOfPosition(ref,_pos) {
+    const offset = !Number(_pos) ? lineColToOffset(ref.text, _pos) : _pos
+    const found = jb.entries(ref.locationMap)
+        .find(e=> e[1].offset_from <= offset && offset < e[1].offset_to)
+    console.log('found',found && found[0],_pos)
+    if (found)
+        return {path: found[0], offset: offset - found[1].offset_from}
+}
+
+function lineColToOffset(text,{line,col}) {
+    return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
+}
+
+function enrichMapWithOffsets(text,locationMap) {
+    const lines = text.split('\n')
+    const accLines = []
+    lines.reduce((acc,line) => {
+        accLines.push(acc)
+        return acc + line.length+1;
+    }, 0)
+    return Object.keys(locationMap).reduce((acc,k) => Object.assign(acc, {[k] : {
+        positions: locationMap[k],
+        offset_from: accLines[locationMap[k][0]] + locationMap[k][1],
+        offset_to: accLines[locationMap[k][2]] + locationMap[k][3]
+    }}), {})
+}
+
+function offsetToLineCol(text,offset) {
+    return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0,
+        col: offset - text.slice(0,offset).lastIndexOf('\n') }
+}
+
+function refreshEditor(cmp,_path) {
+    const editor = cmp.editor
+    const text = jb.tostring(cmp.state.databindRef)
+    const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : this.pathOfPosition(cmp.state.databindRef, editor.getCursorPos())
+    editor.setValue(text)
+    if (pathWithOffset) {
+        const _pos = cmp.state.databindRef.locationMap[pathWithOffset.path]
+        const pos = _pos && _pos.positions
+        if (pos)
+            editor.setSelectionRange({line: pos[0], col: pos[1] + (pathWithOffset.offset || 0)})
+    }
+    editor.focus && jb.delay(10).then(()=>editor.focus())
+}
+
+function getSuggestions(fileContent, pos, jbToUse = jb) {
+    const lines = fileContent.split('\n')
+    const componentHeaderIndex = pos.line - lines.slice(0,pos.line).reverse().findIndex(line => line.match(/^jb.component\(/))
+    const compId = lines[componentHeaderIndex].match(/'([^']+)'/)[1]
+    const {text, map} = jb.prettyPrintComp(compId,jbToUse.comps[compId])
+    const path = pathOfPosition({text, locationMap: map}, {line: pos.line - componentHeaderIndex, col: line.col})
+    return new jbToUse.jbCtx().run(sourceEditor.suggestions(path))
+}
+
+function adjustWhiteSpaces(map,original,formatted) {
+
+}
 
 })();
 
@@ -28757,22 +29441,27 @@ jb.component('textarea.init-textarea-editor', {
 const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
 const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
 
-jb.component('editable-text.codemirror', {
-	type: 'editable-text.style',
-	params: [
-		{ id: 'cm_settings', as: 'single' },
-		{ id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
-		{ id: 'resizer', type: 'boolean', as: 'boolean', description: 'resizer id or true (id is used to keep size in session storage)' },
-		{ id: 'height', as: 'number' },
-		{ id: 'mode', as: 'string' },
-		{ id: 'debounceTime', as: 'number', defaultValue: 300 },
-		{ id: 'lineWrapping', as: 'boolean' },
-		{ id: 'lineNumbers', as: 'boolean' },
-		{ id: 'readOnly', options: ',true,nocursor' },
-		{ id: 'onCtrlEnter', type: 'action', dynamic: true },
-		{ id: 'hint', as: 'boolean' }
-	],
-	impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
+jb.component('editable-text.codemirror', { /* editableText.codemirror */
+  type: 'editable-text.style',
+  params: [
+    {id: 'cm_settings', as: 'single'},
+    {id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
+    {
+      id: 'resizer',
+      type: 'boolean',
+      as: 'boolean',
+      description: 'resizer id or true (id is used to keep size in session storage)'
+    },
+    {id: 'height', as: 'number'},
+    {id: 'mode', as: 'string'},
+    {id: 'debounceTime', as: 'number', defaultValue: 300},
+    {id: 'lineWrapping', as: 'boolean', type: 'boolean'},
+    {id: 'lineNumbers', as: 'boolean', type: 'boolean'},
+    {id: 'readOnly', options: ',true,nocursor'},
+    {id: 'onCtrlEnter', type: 'action', dynamic: true},
+    {id: 'hint', as: 'boolean', type: 'boolean'}
+  ],
+  impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
 			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
@@ -28782,6 +29471,10 @@ jb.component('editable-text.codemirror', {
 				try {
 					const data_ref = cmp.state.databindRef;
 					cm_settings = cm_settings||{};
+					const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
+						e[0], _ => jb.ui.wrapWithLauchingElement(ctx2 => ctx2.run(e[1]), cmp.ctx, cmp.base,
+						{launcherHeightFix: 1})(cmp.ctx)
+					]))
 					const effective_settings = Object.assign({},cm_settings, {
 						mode: mode || 'javascript',
 						lineWrapping: lineWrapping,
@@ -28791,21 +29484,31 @@ jb.component('editable-text.codemirror', {
 						extraKeys: Object.assign({
 							'Ctrl-Space': 'autocomplete',
 							'Ctrl-Enter': editor => ctx.params.onCtrlEnter(ctx.setVars({editor}))
-						}, cm_settings.extraKeys || {}),
+						}, adjustedExtraKeys),
 						readOnly: ctx.params.readOnly,
 					});
 					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
 					cmp.editor = {
+						data_ref,
+						cmp,
+						ctx: () => cmp.ctx.setVars({$launchingElement: { el : cmp.base, launcherHeightFix: 1 }}),
 						getCursorPos: () => posFromCM(editor.getCursor()),
 						cursorCoords: editor => {
 							const coords = editor.cmEditor && editor.cmEditor.cursorCoords()
-							return coords && Object.assign(coords,{top: coords.top - cmp.base.offsetHeight})
+							const offset = jb.ui.offset(cmp.base)
+							return coords && Object.assign(coords,{
+								top: coords.top - offset.top,
+								left: coords.left - offset.left
+							})
 						},
 						refreshFromDataRef: () => editor.setValue(jb.tostring(data_ref)),
 						setValue: text => editor.setValue(text),
+						storeToRef: () => jb.writeValue(data_ref,editor.getValue()),
+						isDirty: () => editor.getValue() !== jb.tostring(data_ref),
 						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
 						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
 						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
+						focus: () => editor.focus(),
 						cmEditor: editor
 					}
 					if (ctx.params.hint)
@@ -28844,7 +29547,7 @@ jb.component('editable-text.codemirror', {
 						.distinctUntilChanged()
 						.subscribe(x=>
 							jb.writeValue(data_ref,x));
-				
+
 				} catch(e) {
 					jb.logException(e,'editable-text.codemirror',ctx);
 					return;
@@ -28919,17 +29622,22 @@ function enableFullScreen(editor,width,height) {
 	})
 }
 
-jb.component('text.codemirror', {
-    type: 'text.style',
-    params: [
-        { id: 'cm_settings', as: 'single' },
-        { id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
-        { id: 'resizer', type: 'boolean', as: 'boolean', description: 'resizer id or true (id is used to keep size in session storage)' },
-        { id: 'height', as: 'number' },
-        { id: 'mode', as: 'string', options: 'htmlmixed,javascript,css' },
-        { id: 'lineWrapping', as: 'boolean' },
-    ],
-    impl: function(ctx, cm_settings, _enableFullScreen, resizer,height, mode, lineWrapping) {
+jb.component('text.codemirror', { /* text.codemirror */
+  type: 'text.style',
+  params: [
+    {id: 'cm_settings', as: 'single'},
+    {id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
+    {
+      id: 'resizer',
+      type: 'boolean',
+      as: 'boolean',
+      description: 'resizer id or true (id is used to keep size in session storage)'
+    },
+    {id: 'height', as: 'number'},
+    {id: 'mode', as: 'string', options: 'htmlmixed,javascript,css'},
+    {id: 'lineWrapping', as: 'boolean', type: 'boolean'}
+  ],
+  impl: function(ctx, cm_settings, _enableFullScreen, resizer,height, mode, lineWrapping) {
         return {
 			template: (cmp,state,h) => h('textarea', {class: 'jb-codemirror'}),
 			afterViewInit: function(cmp) {
@@ -28967,22 +29675,38 @@ jb.component('text.codemirror', {
 })
 
 function tgpHint(CodeMirror) {}
-  
+
 })();
 
-jb.component('editable-text.studio-primitive-text', {
+jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrimitiveText */
   type: 'editable-text.style',
-  impl :{$: 'custom-style',
-      features :{$: 'field.databind-text' },
-      template: (cmp,state,h) => h('input', {
+  impl: customStyle({
+    template: (cmp,state,h) => h('input', {
           class: 'mdl-textfield__input',
           value: state.model,
           onchange: e => cmp.jbModel(e.target.value),
           onkeyup: e => cmp.jbModel(e.target.value,'keyup')
       }),
-    css: `:focus { border-color: #3F51B5; border-width: 2px}`,
-	}
+    css: ':focus { border-color: #3F51B5; border-width: 2px}',
+    features: field.databindText()
+  })
 })
+
+jb.component('editable-text.floating-input', { /* editableText.floatingInput */
+  type: 'editable-text.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
+      h('input', { class: 'mdl-textfield__input', id1: 'jb_input_' + state.fieldId, type: 'text', autocomplete: 'nop',
+          value: state.model,
+          onchange: e => cmp.jbModel(e.target.value),
+      }),
+      h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
+  ]),
+    css: '{ margin-right: 13px; }',
+    features: [field.databindText(300, true), mdlStyle.initDynamic()]
+  })
+})
+
 
 jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
   incNumberAtCursor(editor, {inc}) {
@@ -28998,10 +29722,11 @@ jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
   }
 })
 
-jb.component('editable-text.studio-codemirror-tgp', {
+jb.component('editable-text.studio-codemirror-tgp', { /* editableText.studioCodemirrorTgp */
   type: 'editable-text.style',
-  impl :{$: 'editable-text.codemirror', mode: 'javascript',
-    cm_settings :{$: 'object',
+  impl: editableText.codemirror({
+    cm_settings: {
+      '$': 'object',
       extraKeys: {
         'Alt-Left': editor => {
           jb.studio.codeMirrorUtils.incNumberAtCursor(editor, {inc:-1})
@@ -29016,22 +29741,23 @@ jb.component('editable-text.studio-codemirror-tgp', {
           } catch (e) {}
         }
       }
-    }
-  }
+    },
+    mode: 'javascript'
+  })
 })
 
 
-jb.component('button.select-profile-style', {
+jb.component('button.select-profile-style', { /* button.selectProfileStyle */
   type: 'button.style',
-  impl :{$: 'custom-style',
-   template: (cmp,state,h) =>
+  impl: customStyle({
+    template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup:ev => cmp.clicked(ev),
             onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
         }),
-        css: `{ cursor: pointer;width1: 367px } :focus { border-color: #3F51B5; border-width: 2px}`
-  }
+    css: '{ cursor: pointer;width1: 367px } :focus { border-color: #3F51B5; border-width: 2px}'
+  })
 })
 
 jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle */
@@ -29045,10 +29771,10 @@ jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle *
 })
 
 
-jb.component('editable-text.jb-editor-floating-input', {
+jb.component('editable-text.jb-editor-floating-input', { /* editableText.jbEditorFloatingInput */
   type: 'editable-text.style',
-  impl :{$: 'custom-style',
-   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
         h('input', { class: 'mdl-textfield__input', id: 'jb_input_' + state.fieldId, type: 'text',
             value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
@@ -29056,25 +29782,22 @@ jb.component('editable-text.jb-editor-floating-input', {
         }),
         h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
       ]),
-      css: '{ margin-right: 13px; }', // for the x-button
-      features :[
-          {$: 'field.databind-text', debounceTime: 300, oneWay: true },
-          {$: 'mdl-style.init-dynamic'}
-      ],
-  }
+    css: '{ margin-right: 13px; }',
+    features: [field.databindText(300, true), mdlStyle.initDynamic()]
+  })
 })
 
-jb.component('button.studio-script', {
+jb.component('button.studio-script', { /* button.studioScript */
   type: 'button.style',
-  impl :{$: 'custom-style',
-   template: (cmp,state,h) =>
+  impl: customStyle({
+    template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup:ev => cmp.clicked(ev),
             onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
         }),
-        css: `{ cursor: pointer;width1: 367px; opacity: 0.8; font-style: italic; }`
-  }
+    css: '{ cursor: pointer;width1: 367px; opacity: 0.8; font-style: italic; }'
+  })
 })
 
 // jb.component('button.studio-script2', {
@@ -29113,11 +29836,10 @@ jb.component('button.studio-script', {
  //            </ul>
  //        </div>
 
-jb.component('picklist.studio-enum', {
+jb.component('picklist.studio-enum', { /* picklist.studioEnum */
   type: 'picklist.style',
-  impl :{$: 'custom-style',
-      features :{$: 'field.databind' },
-      template: (cmp,state,h) => h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
+  impl: customStyle({
+    template: (cmp,state,h) => h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
@@ -29130,15 +29852,15 @@ jb.component('picklist.studio-enum', {
 :focus { border-color: #66afe9; outline: 0;
 	box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
 ::placeholder { color: #999; opacity: 1; }
-    `
-  }
+    `,
+    features: field.databind()
+  })
 })
 
 
-jb.component('property-sheet.studio-properties', {
+jb.component('property-sheet.studio-properties', { /* propertySheet.studioProperties */
   type: 'group.style',
-  impl :{$: 'custom-style',
-    features :{$: 'group.init-group' },
+  impl: customStyle({
     template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
       h('tr',{ class: 'property' },[
           h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
@@ -29151,13 +29873,13 @@ jb.component('property-sheet.studio-properties', {
       >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px }
       >.property>td { vertical-align: top; }
     `,
-  }
+    features: group.initGroup()
+  })
 })
 
-jb.component('property-sheet.studio-properties-in-tgp', {
+jb.component('property-sheet.studio-properties-in-tgp', { /* propertySheet.studioPropertiesInTgp */
   type: 'group.style',
-  impl :{$: 'custom-style',
-    features :{$: 'group.init-group' },
+  impl: customStyle({
     template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
       h('tr',{ class: 'property' },[
           h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
@@ -29171,30 +29893,14 @@ jb.component('property-sheet.studio-properties-in-tgp', {
       >.property>.property-ctrl { }
       >.property>td { vertical-align: top; }
     `,
-
-    css2: `>.property { margin-bottom: 5px; display: flex }
-      >.property:last-child { margin-bottom:0px }
-      >.property>.input-and-toolbar { display: flex; }
-      >.property>.input-and-toolbar>.toolbar { height: 16px; margin-left: 10px; }
-      >.property>.property-title {
-        width: 75px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        margin-top:2px;
-        font-size:14px;
-        margin-right: 10px;
-        margin-left: 7px;
-      },
-      >.property>*:last-child { margin-right:0 }`
-  }
+    features: group.initGroup()
+  })
 })
 
 
-jb.component('property-sheet.studio-plain', {
+jb.component('property-sheet.studio-plain', { /* propertySheet.studioPlain */
   type: 'group.style',
-  impl :{$: 'custom-style',
-    features :{$: 'group.init-group' },
+  impl: customStyle({
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property' },[
           h('label',{ class: 'property-title', title: ctrl.title}, ctrl.title),
@@ -29218,38 +29924,39 @@ jb.component('property-sheet.studio-plain', {
         margin-right: 10px;
         margin-left: 7px;
       },
-      >.property>*:last-child { margin-right:0 }`
-  }
+      >.property>*:last-child { margin-right:0 }`,
+    features: group.initGroup()
+  })
 })
 
-jb.component('editable-boolean.studio-expand-collapse-in-toolbar', {
+jb.component('editable-boolean.studio-expand-collapse-in-toolbar', { /* editableBoolean.studioExpandCollapseInToolbar */
   type: 'editable-boolean.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
           onclick: _=> cmp.toggle(),
           title: cmp.jbModel() ? 'collapse' : 'expand'},
             h('i',{class: 'material-icons'}, cmp.jbModel() ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
           ),
-      css: `{ width: 24px; height: 24px; padding: 0; margin-top: -3px;}
+    css: `{ width: 24px; height: 24px; padding: 0; margin-top: -3px;}
      	>i { font-size:12px;  }`
-   }
+  })
 })
 
-jb.component('editable-boolean.studio-expand-collapse-in-array', {
+jb.component('editable-boolean.studio-expand-collapse-in-array', { /* editableBoolean.studioExpandCollapseInArray */
   type: 'editable-boolean.style',
-  impl :{$: 'custom-style',
-      template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
           onclick: _=> cmp.toggle(),
           title: cmp.jbModel() ? 'collapse' : 'expand'},
             h('i',{class: 'material-icons'}, cmp.jbModel() ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
           ),
-      css: `{ width: 24px; height: 24px; padding: 0; }
+    css: `{ width: 24px; height: 24px; padding: 0; }
      	>i { font-size:12px;  }
       `
-   }
+  })
 })
 
-jb.component('dialog-feature.studio-position-under-property',  /* dialogFeature_studioPositionUnderProperty */ {
+jb.component('dialog-feature.studio-position-under-property', { /* dialogFeature.studioPositionUnderProperty */
   type: 'dialog-feature',
   impl: (context,offsetLeft,offsetTop) => ({
 			afterViewInit: function(cmp) {
@@ -29267,9 +29974,9 @@ jb.component('dialog-feature.studio-position-under-property',  /* dialogFeature_
 		})
 })
 
-jb.component('group.studio-properties-accordion', {
+jb.component('group.studio-properties-accordion', { /* group.studioPropertiesAccordion */
   type: 'group.style',
-  impl :{$: 'custom-style',
+  impl: customStyle({
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
         state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
           h('div',{ class: 'header' },[
@@ -29286,32 +29993,32 @@ jb.component('group.studio-properties-accordion', {
 >.accordion-section>.header>.title { margin: 5px }
 >.accordion-section:last-child() { padding-top: 2px }
 `,
-      features : [
-        {$: 'group.init-group' },
-        {$: 'group.init-accordion', keyboardSupport: true, autoFocus: true },
-        ctx =>({
+    features: [
+      group.initGroup(),
+      group.initAccordion(true, true),
+      ctx =>({
           afterViewInit: cmp =>
             ctx.vars.PropertiesDialog.openFeatureSection = _ => cmp.show(1)
         })
-      ]
-  }
+    ]
+  })
 })
 
-jb.component('label.studio-message', {
+jb.component('label.studio-message', { /* label.studioMessage */
   type: 'label.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.title),
+  impl: customStyle({
+    template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.text),
     css: `{ position: absolute;
       z-index: 10000,
       color: white;  padding: 10px;  background: #327DC8;
       width: 1000px;
       margin-top: -100px;
       }`,
-    features: {$: 'label.bind-title' }
-  }
+    features: label.bindText()
+  })
 })
 
-jb.component('dialog.studio-multiline-edit',  /* dialog_studioMultilineEdit */ {
+jb.component('dialog.studio-multiline-edit', { /* dialog.studioMultilineEdit */
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
@@ -29319,12 +30026,28 @@ jb.component('dialog.studio-multiline-edit',  /* dialog_studioMultilineEdit */ {
         _=> cmp.dialogClose() },'×'),
       h(state.contentComp),
     ]),
-    css: "{ background: #fff; position: absolute; min-width: 280px; min-height: 200px;\n\t\t\t\t\tbox-shadow: 2px 2px 3px #d5d5d5; padding: 3px; border: 1px solid rgb(213, 213, 213)\n\t\t\t\t  }\n\t\t\t\t>.dialog-close {\n\t\t\t\t\t\tposition: absolute;\n\t\t\t\t\t\tcursor: pointer;\n\t\t\t\t\t\tright: -7px; top: -22px;\n\t\t\t\t\t\tfont: 21px sans-serif;\n\t\t\t\t\t\tborder: none;\n\t\t\t\t\t\tbackground: transparent;\n\t\t\t\t\t\tcolor: #000;\n\t\t\t\t\t\ttext-shadow: 0 1px 0 #fff;\n\t\t\t\t\t\tfont-weight: 700;\n\t\t\t\t\t\topacity: .2;\n\t\t\t\t}\n\t\t\t\t>.dialog-close:hover { opacity: .5 }\n\t\t\t\t",
+    css: `{ background: #fff; position: absolute; min-width: 280px; min-height: 200px;
+					box-shadow: 2px 2px 3px #d5d5d5; padding: 3px; border: 1px solid rgb(213, 213, 213)
+				  }
+				>.dialog-close {
+						position: absolute;
+						cursor: pointer;
+						right: -7px; top: -22px;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
+						opacity: .2;
+				}
+				>.dialog-close:hover { opacity: .5 }
+				`,
     features: [
-      dialogFeature_maxZIndexOnClick(),
-      dialogFeature_closeWhenClickingOutside(),
-      dialogFeature_cssClassOnLaunchingElement(),
-      dialogFeature_studioPositionUnderProperty()
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.closeWhenClickingOutside(),
+      dialogFeature.cssClassOnLaunchingElement(),
+      dialogFeature.studioPositionUnderProperty()
     ]
   })
 })
@@ -29344,12 +30067,18 @@ jb.component('dialog.studio-multiline-edit',  /* dialog_studioMultilineEdit */ {
 // 	}
 // })
 
-jb.component('studio.toolbar-style', { /* studio.toolbarStyle */ 
+jb.component('studio.toolbar-style', { /* studio.toolbarStyle */
   type: 'group.style',
   impl: customStyle({
     template: (cmp,state,h) => h('section',{class:'jb-group'},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx))),
-    css: "{\n            display: flex;\n            height: 33px;\n            width: 100%;\n        }\n        >*:not(:last-child) { padding-right: 8px }\n        >* { margin-right: 0 }",
+    css: `{
+            display: flex;
+            height: 33px;
+            width: 100%;
+        }
+        >*:not(:last-child) { padding-right: 8px }
+        >* { margin-right: 0 }`,
     features: group.initGroup()
   })
 })
@@ -29383,7 +30112,7 @@ st.initCompsRefHandler = function(previewjb,allowedTypes) {
 	st.compsRefHandler = jb.ui.extraWatchableHandler(compsRef, oldCompsRefHandler)
 	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes);
 	st.compsRefHandler.stopListening = new jb.rx.Subject()
-	
+
 	st.compsRefHandler.resourceChange.takeUntil(st.compsRefHandler.stopListening).subscribe(e=>{
 		jb.log('scriptChange',[e.srcCtx,e]);
 		st.scriptChange.next(e)
@@ -29395,8 +30124,8 @@ st.initCompsRefHandler = function(previewjb,allowedTypes) {
 
 function writeValueToDataResource(path,value) {
 	if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
-		const dataPath = '%$' + [path[0], ...path.slice(2)].map(x=>+x ? `[${x}]` : x).join('/') + '%'
-		return (new st.previewjb.jbCtx()).run(writeValue(dataPath,value))
+		const dataPath = '%$' + [path[0], ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
+		return (new st.previewjb.jbCtx()).run(writeValue(dataPath,_=>value))
 	}
 }
 
@@ -29588,7 +30317,7 @@ Object.assign(st, {
 
 	addArrayItem: (path,{toAdd,srcCtx, index} = {}) => {
 		const val = st.valOfPath(path);
-		toAdd = toAdd || {$:''};
+		toAdd = toAdd === undefined ? {$:''} : toAdd;
 		if (Array.isArray(val)) {
 			if (index === undefined)
 				st.push(st.refOfPath(path),[toAdd],srcCtx);
@@ -29718,7 +30447,13 @@ jb.component('studio.watch-path', { /* studio.watchPath */
   category: 'group:0',
   params: [
     {id: 'path', as: 'string', mandatory: true},
-    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
+    {
+      id: 'includeChildren',
+      as: 'string',
+      options: 'yes,no,structure',
+      defaultValue: 'no',
+      description: 'watch childern change as well'
+    },
     {
       id: 'delay',
       as: 'number',
@@ -29758,7 +30493,7 @@ jb.component('studio.watch-components', { /* studio.watchComponents */
 })
 
 
-jb.component('studio.watch-typeof-script', { /* studio.watchTypeofScript */ 
+jb.component('studio.watch-typeof-script', { /* studio.watchTypeofScript */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -29889,7 +30624,7 @@ const st = jb.studio;
 
 st.changedComps = function() {
   if (!st.compsHistory || !st.compsHistory.length) return []
-  
+
   const changedComps = jb.entries(st.compsHistory.slice(-1)[0].after).filter(e=>e[1] != st.serverComps[e[0]])
   if (changedComps.map(e=>e[0]).indexOf('call') != -1) {
     jb.logError('bug. servers comps differ from history')
@@ -29994,7 +30729,7 @@ jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studi
         return jb.resources.studio.page ? [{page}] : []
       });
 
-jb.component('studio.preview-widget', { /* studio.previewWidget */ 
+jb.component('studio.preview-widget', { /* studio.previewWidget */
   type: 'control',
   params: [
     {
@@ -30018,7 +30753,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
 
 })();
 
-jb.component('dialog.edit-source-style',  /* dialog_editSourceStyle */ {
+jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
   type: 'dialog.style',
   params: [
     {id: 'id', as: 'string'},
@@ -30088,9 +30823,9 @@ jb.component('dialog.edit-source-style',  /* dialog_editSourceStyle */ {
 	})
 })
 
-jb.component('studio-dialog-feature.studio-popup-location',{
-	type: 'dialog-feature',
-	impl: ctx => ({
+jb.component('studio-dialog-feature.studio-popup-location', { /* studioDialogFeature.studioPopupLocation */
+  type: 'dialog-feature',
+  impl: ctx => ({
 		afterViewInit: cmp => {
 			var dialog = cmp.dialog;
 			var id = (dialog.id||'').replace(/\s/g,'_');
@@ -30102,9 +30837,9 @@ jb.component('studio-dialog-feature.studio-popup-location',{
 	})
 })
 
-jb.component('studio-dialog-feature.refresh-title', {
-	type: 'dialog-feature',
-	impl: ctx => ({
+jb.component('studio-dialog-feature.refresh-title', { /* studioDialogFeature.refreshTitle */
+  type: 'dialog-feature',
+  impl: ctx => ({
 		afterViewInit: cmp =>
 			jb.studio.scriptChange.subscribe(e=>
 				cmp.recalcTitle && cmp.recalcTitle(e,ctx))
@@ -30138,7 +30873,7 @@ jb.component('studio.open-multiline-edit', { /* studio.openMultilineEdit */
   })
 })
 
-jb.component('dialog.studio-floating',  /* dialog_studioFloating */ {
+jb.component('dialog.studio-floating', { /* dialog.studioFloating */
   type: 'dialog.style',
   params: [
     {id: 'id', as: 'string'},
@@ -30153,13 +30888,49 @@ jb.component('dialog.studio-floating',  /* dialog_studioFloating */ {
 					_=> cmp.dialogClose() },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
 			]),
-    css: "{ position: fixed;\n\t\t\t\t\t\tbackground: #F9F9F9;\n\t\t\t\t\t\twidth: %$width%px;\n\t\t\t\t\t\tmax-width: 1200px;\n\t\t\t\t\t\tmin-height: %$height%px;\n\t\t\t\t\t\toverflow: auto;\n\t\t\t\t\t\tborder-radius: 4px;\n\t\t\t\t\t\tpadding: 0 12px 12px 12px;\n\t\t\t\t\t\tbox-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)\n\t\t\t\t}\n\t\t\t\t>.dialog-title { background: none; padding: 10px 5px; }\n\t\t\t\t>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }\n\t\t\t\t>.dialog-close {\n\t\t\t\t\t\tposition: absolute;\n\t\t\t\t\t\tcursor: pointer;\n\t\t\t\t\t\tright: 4px; top: 4px;\n\t\t\t\t\t\tfont: 21px sans-serif;\n\t\t\t\t\t\tborder: none;\n\t\t\t\t\t\tbackground: transparent;\n\t\t\t\t\t\tcolor: #000;\n\t\t\t\t\t\ttext-shadow: 0 1px 0 #fff;\n\t\t\t\t\t\tfont-weight: 700;\n\t\t\t\t\t\topacity: .2;\n\t\t\t\t}\n\t\t\t\t>.dialog-menu {\n\t\t\t\t\t\tposition: absolute;\n\t\t\t\t\t\tcursor: pointer;\n\t\t\t\t\t\tright: 24px; top: 0;\n\t\t\t\t\t\tfont: 21px sans-serif;\n\t\t\t\t\t\tborder: none;\n\t\t\t\t\t\tbackground: transparent;\n\t\t\t\t\t\tcolor: #000;\n\t\t\t\t\t\ttext-shadow: 0 1px 0 #fff;\n\t\t\t\t\t\tfont-weight: 700;\n\t\t\t\t\t\topacity: .2;\n\t\t\t\t}\n\t\t\t\t>.dialog-close:hover { opacity: .5 }",
+    css: `{ position: fixed;
+						background: #F9F9F9;
+						width: %$width%px;
+						max-width: 1200px;
+						min-height: %$height%px;
+						overflow: auto;
+						border-radius: 4px;
+						padding: 0 12px 12px 12px;
+						box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
+				}
+				>.dialog-title { background: none; padding: 10px 5px; }
+				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }
+				>.dialog-close {
+						position: absolute;
+						cursor: pointer;
+						right: 4px; top: 4px;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
+						opacity: .2;
+				}
+				>.dialog-menu {
+						position: absolute;
+						cursor: pointer;
+						right: 24px; top: 0;
+						font: 21px sans-serif;
+						border: none;
+						background: transparent;
+						color: #000;
+						text-shadow: 0 1px 0 #fff;
+						font-weight: 700;
+						opacity: .2;
+				}
+				>.dialog-close:hover { opacity: .5 }`,
     features: [
-      dialogFeature_dragTitle('%$id%'),
-      dialogFeature_uniqueDialog('%$id%', true),
-      dialogFeature_maxZIndexOnClick(5000),
-      studioDialogFeature_refreshTitle(),
-      studioDialogFeature_studioPopupLocation()
+      dialogFeature.dragTitle('%$id%'),
+      dialogFeature.uniqueDialog('%$id%', true),
+      dialogFeature.maxZIndexOnClick(5000),
+      studioDialogFeature.refreshTitle(),
+      studioDialogFeature.studioPopupLocation()
     ]
   })
 })
@@ -30229,16 +31000,13 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
 })
 ;
 
-jb.component('url-history.map-studio-url-to-resource', {
-    type: 'action',
-    // /project/studio/${project}/${page}/${profile_path}
-    // /studio/${entry_file}/${shown_comp}/${profile_path}
-    // http://localhost:8082/studio/projects%2Fhello-world%2Fhello-world.html/hello-world.main/hello-world.main~impl
-    params: [
-        { id: 'resource', as: 'string' , mandatory: true },
-        { id: 'onUrlChange', type: 'action', dynamic: true }
-    ],
-    impl: function(context,resource) {
+jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudioUrlToResource */
+  type: 'action',
+  params: [
+    {id: 'resource', as: 'string', mandatory: true},
+    {id: 'onUrlChange', type: 'action', dynamic: true}
+  ],
+  impl: function(context,resource) {
         if (jb.ui.location || typeof window == 'undefined') return;
         const base = 'studio'
         const isProject = location.pathname.indexOf('/project') == 0;
@@ -30295,7 +31063,7 @@ jb.component('url-history.map-studio-url-to-resource', {
 (function() {
 var st = jb.studio;
 
-jb.component('studio.val', { /* studio_val */
+jb.component('studio.val', { /* studio.val */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -30303,7 +31071,7 @@ jb.component('studio.val', { /* studio_val */
 		st.valOfPath(path)
 })
 
-jb.component('studio.is-primitive-value', { /* studio_isPrimitiveValue */
+jb.component('studio.is-primitive-value', { /* studio.isPrimitiveValue */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -30311,7 +31079,7 @@ jb.component('studio.is-primitive-value', { /* studio_isPrimitiveValue */
 		st.isPrimitiveValue(st.valOfPath(path))
 })
 
-jb.component('studio.is-of-type', { /* studio_isOfType */
+jb.component('studio.is-of-type', { /* studio.isOfType */
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {id: 'type', as: 'string', mandatory: true}
@@ -30319,42 +31087,42 @@ jb.component('studio.is-of-type', { /* studio_isOfType */
   impl: (ctx,path,_type) =>	st.isOfType(path,_type)
 })
 
-jb.component('studio.is-array-type', {
+jb.component('studio.is-array-type', { /* studio.isArrayType */
   params: [
-    {id: 'path', as: 'string', mandatory: true},
+    {id: 'path', as: 'string', mandatory: true}
   ],
   impl: (ctx,path) =>	st.isArrayType(path)
 })
 
-jb.component('studio.parent-path', { /* studio_parentPath */
+jb.component('studio.parent-path', { /* studio.parentPath */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
   impl: (ctx,path) => st.parentPath(path)
 })
 
-jb.component('studio.param-type', { /* studio_paramType */
+jb.component('studio.param-type', { /* studio.paramType */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
   impl: (ctx,path) =>	st.paramTypeOfPath(path)
 })
 
-jb.component('studio.PTs-of-type', { /* studio_PTsOfType */
+jb.component('studio.PTs-of-type', { /* studio.PTsOfType */
   params: [
     {id: 'type', as: 'string', mandatory: true}
   ],
   impl: (ctx,_type) => st.PTsOfType(_type)
 })
 
-jb.component('studio.profiles-of-PT', { /* studio_profilesOfPT */
+jb.component('studio.profiles-of-PT', { /* studio.profilesOfPT */
   params: [
     {id: 'PT', as: 'string', mandatory: true}
   ],
   impl: (ctx, pt) => st.profilesOfPT(pt)
 })
 
-jb.component('studio.categories-of-type', { /* studio_categoriesOfType */
+jb.component('studio.categories-of-type', { /* studio.categoriesOfType */
   params: [
     {id: 'type', as: 'string', mandatory: true},
     {id: 'path', as: 'string'}
@@ -30397,7 +31165,7 @@ jb.component('studio.categories-of-type', { /* studio_categoriesOfType */
 	}
 })
 
-jb.component('studio.short-title', { /* studio_shortTitle */
+jb.component('studio.short-title', { /* studio.shortTitle */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -30405,7 +31173,7 @@ jb.component('studio.short-title', { /* studio_shortTitle */
 		st.shortTitle(path)
 })
 
-jb.component('studio.summary', { /* studio_summary */
+jb.component('studio.summary', { /* studio.summary */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -30413,7 +31181,7 @@ jb.component('studio.summary', { /* studio_summary */
 		st.summary(path)
 })
 
-jb.component('studio.has-param', { /* studio_hasParam */
+jb.component('studio.has-param', { /* studio.hasParam */
   params: [
     {id: 'path', as: 'string'},
     {id: 'param', as: 'string'}
@@ -30422,7 +31190,7 @@ jb.component('studio.has-param', { /* studio_hasParam */
 		st.paramDef(path+'~'+param)
 })
 
-jb.component('studio.non-control-children', { /* studio_nonControlChildren */
+jb.component('studio.non-control-children', { /* studio.nonControlChildren */
   params: [
     {id: 'path', as: 'string'},
     {id: 'includeFeatures', as: 'boolean', type: 'boolean'}
@@ -30431,7 +31199,7 @@ jb.component('studio.non-control-children', { /* studio_nonControlChildren */
 		st.nonControlChildren(path,includeFeatures)
 })
 
-jb.component('studio.as-array-children', { /* studio_asArrayChildren */
+jb.component('studio.as-array-children', { /* studio.asArrayChildren */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -30439,21 +31207,21 @@ jb.component('studio.as-array-children', { /* studio_asArrayChildren */
 		st.asArrayChildren(path)
 })
 
-jb.component('studio.comp-name', { /* studio_compName */
+jb.component('studio.comp-name', { /* studio.compName */
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => st.compNameOfPath(path) || ''
 })
 
-jb.component('studio.param-def', { /* studio_paramDef */
+jb.component('studio.param-def', { /* studio.paramDef */
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => st.paramDef(path)
 })
 
-jb.component('studio.enum-options', { /* studio_enumOptions */
+jb.component('studio.enum-options', { /* studio.enumOptions */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -30461,7 +31229,7 @@ jb.component('studio.enum-options', { /* studio_enumOptions */
 		((st.paramDef(path) || {}).options ||'').split(',').map(x=>({code:x,text:x}))
 })
 
-jb.component('studio.prop-name', { /* studio_propName */
+jb.component('studio.prop-name', { /* studio.propName */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -30469,7 +31237,7 @@ jb.component('studio.prop-name', { /* studio_propName */
 		st.propName(path)
 })
 
-jb.component('studio.more-params', { /* studio_moreParams */
+jb.component('studio.more-params', { /* studio.moreParams */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -30478,7 +31246,7 @@ jb.component('studio.more-params', { /* studio_moreParams */
 })
 
 
-jb.component('studio.comp-name-ref', { /* studio_compNameRef */
+jb.component('studio.comp-name-ref', { /* studio.compNameRef */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -30495,15 +31263,17 @@ jb.component('studio.comp-name-ref', { /* studio_compNameRef */
 	})
 })
 
-jb.component('studio.profile-as-text', { /* studio_profileAsText */
+jb.component('studio.profile-as-text', { /* studio.profileAsText */
   type: 'data',
   params: [
-    {id: 'path', as: 'string' }
+    {id: 'path', as: 'string'}
   ],
-  impl: watchableAsText(studio.ref('%$path%'))
+  impl: watchableAsText(
+    studio.ref('%$path%')
+  )
 })
 
-jb.component('studio.profile-as-string-byref', { /* studio_profileAsStringByref */
+jb.component('studio.profile-as-string-byref', { /* studio.profileAsStringByref */
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}
@@ -30524,7 +31294,7 @@ jb.component('studio.profile-as-string-byref', { /* studio_profileAsStringByref 
 	})
 })
 
-jb.component('studio.profile-value-as-text', { /* studio_profileValueAsText */
+jb.component('studio.profile-value-as-text', { /* studio.profileValueAsText */
   type: 'data',
   params: [
     {id: 'path', as: 'string'}
@@ -30547,17 +31317,17 @@ jb.component('studio.profile-value-as-text', { /* studio_profileValueAsText */
 		})
 })
 
-jb.component('studio.insert-control', { /* studio_insertControl */
+jb.component('studio.insert-control', { /* studio.insertControl */
   type: 'action',
   params: [
-    {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()},
+    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
     {id: 'comp', as: 'string'}
   ],
   impl: (ctx,path,comp,type) =>
 		st.insertControl(path, comp,ctx)
 })
 
-jb.component('studio.wrap', { /* studio_wrap */
+jb.component('studio.wrap', { /* studio.wrap */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -30567,7 +31337,7 @@ jb.component('studio.wrap', { /* studio_wrap */
 		st.wrap(path,comp,ctx)
 })
 
-jb.component('studio.wrap-with-group', { /* studio_wrapWithGroup */
+jb.component('studio.wrap-with-group', { /* studio.wrapWithGroup */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -30576,7 +31346,7 @@ jb.component('studio.wrap-with-group', { /* studio_wrapWithGroup */
 		st.wrapWithGroup(path,ctx)
 })
 
-jb.component('studio.add-property', { /* studio_addProperty */
+jb.component('studio.add-property', { /* studio.addProperty */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -30585,7 +31355,7 @@ jb.component('studio.add-property', { /* studio_addProperty */
 		st.addProperty(path,ctx)
 })
 
-jb.component('studio.duplicate-control', { /* studio_duplicateControl */
+jb.component('studio.duplicate-control', { /* studio.duplicateControl */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -30594,7 +31364,7 @@ jb.component('studio.duplicate-control', { /* studio_duplicateControl */
 		st.duplicateControl(path,ctx)
 })
 
-jb.component('studio.duplicate-array-item', { /* studio_duplicateArrayItem */
+jb.component('studio.duplicate-array-item', { /* studio.duplicateArrayItem */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -30613,7 +31383,7 @@ jb.component('studio.duplicate-array-item', { /* studio_duplicateArrayItem */
 // 		st.moveInArray(path,moveUp)
 // })
 
-jb.component('studio.new-array-item', { /* studio_newArrayItem */
+jb.component('studio.new-array-item', { /* studio.newArrayItem */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -30622,19 +31392,19 @@ jb.component('studio.new-array-item', { /* studio_newArrayItem */
 		st.addArrayItem(path,{srcCtx: ctx})
 })
 
-jb.component('studio.add-array-item', { /* studio_addArrayItem */
+jb.component('studio.add-array-item', { /* studio.addArrayItem */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
     {id: 'toAdd', as: 'single'},
-    {id: 'index', as: 'number', defaultValue: -1},
+    {id: 'index', as: 'number', defaultValue: -1}
   ],
   impl: (ctx,path,toAdd,index) =>
-    index == -1 ? st.addArrayItem(path, {srcCtx: ctx, toAdd}) 
+    index == -1 ? st.addArrayItem(path, {srcCtx: ctx, toAdd})
       : st.addArrayItem(path, {srcCtx: ctx, toAdd, index})
 })
 
-jb.component('studio.wrap-with-array', { /* studio_wrapWithArray */
+jb.component('studio.wrap-with-array', { /* studio.wrapWithArray */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -30643,7 +31413,7 @@ jb.component('studio.wrap-with-array', { /* studio_wrapWithArray */
 		st.wrapWithArray(path,ctx)
 })
 
-jb.component('studio.can-wrap-with-array', { /* studio_canWrapWithArray */
+jb.component('studio.can-wrap-with-array', { /* studio.canWrapWithArray */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string'}
@@ -30652,7 +31422,7 @@ jb.component('studio.can-wrap-with-array', { /* studio_canWrapWithArray */
 			st.paramDef(path) && (st.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(st.valOfPath(path))
 })
 
-jb.component('studio.is-array-item', { /* studio_isArrayItem */
+jb.component('studio.is-array-item', { /* studio.isArrayItem */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string'}
@@ -30662,7 +31432,7 @@ jb.component('studio.is-array-item', { /* studio_isArrayItem */
 })
 
 
-jb.component('studio.set-comp', { /* studio_setComp */
+jb.component('studio.set-comp', { /* studio.setComp */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -30672,7 +31442,7 @@ jb.component('studio.set-comp', { /* studio_setComp */
 		st.setComp(path, comp,ctx)
 })
 
-jb.component('studio.delete', { /* studio_delete */
+jb.component('studio.delete', { /* studio.delete */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -30680,7 +31450,7 @@ jb.component('studio.delete', { /* studio_delete */
   impl: (ctx,path) => st._delete(path,ctx)
 })
 
-jb.component('studio.disabled', { /* studio_disabled */
+jb.component('studio.disabled', { /* studio.disabled */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string'}
@@ -30688,7 +31458,7 @@ jb.component('studio.disabled', { /* studio_disabled */
   impl: (ctx,path) => st.disabled(path,ctx)
 })
 
-jb.component('studio.toggle-disabled', { /* studio_toggleDisabled */
+jb.component('studio.toggle-disabled', { /* studio.toggleDisabled */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -30696,7 +31466,7 @@ jb.component('studio.toggle-disabled', { /* studio_toggleDisabled */
   impl: (ctx,path) => st.toggleDisabled(path,ctx)
 })
 
-jb.component('studio.make-local', { /* studio_makeLocal */
+jb.component('studio.make-local', { /* studio.makeLocal */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -30704,7 +31474,7 @@ jb.component('studio.make-local', { /* studio_makeLocal */
   impl: (ctx,path) => st.makeLocal(path,ctx)
 })
 
-jb.component('studio.jb-editor.nodes', { /* studio_jbEditor_nodes */
+jb.component('studio.jbEditorNodes', { /* studio.jbEditorNodes */
   type: 'tree.nodeModel',
   params: [
     {id: 'path', as: 'string'}
@@ -30713,7 +31483,7 @@ jb.component('studio.jb-editor.nodes', { /* studio_jbEditor_nodes */
 			new st.jbEditorTree(path,true)
 })
 
-jb.component('studio.icon-of-type', { /* studio_iconOfType */
+jb.component('studio.icon-of-type', { /* studio.iconOfType */
   type: 'data',
   params: [
     {id: 'type', as: 'string'}
@@ -30732,7 +31502,7 @@ jb.component('studio.icon-of-type', { /* studio_iconOfType */
 	}
 })
 
-jb.component('studio.is-disabled', { /* studio_isDisabled */
+jb.component('studio.is-disabled', { /* studio.isDisabled */
   type: 'boolean',
   params: [
     {id: 'path', as: 'string'}
@@ -30741,14 +31511,14 @@ jb.component('studio.is-disabled', { /* studio_isDisabled */
 			st.disabled(path)
 })
 
-jb.component('studio.disabled-support', { /* studio_disabledSupport */ 
+jb.component('studio.disabled-support', { /* studio.disabledSupport */ 
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
   type: 'feature',
   impl: conditionalClass(
     'jb-disabled',
-    studio_isDisabled('%$path%')
+    studio.isDisabled('%$path%')
   )
 })
 
@@ -30991,7 +31761,7 @@ jb.component('studio.script-history', { /* studio.scriptHistory */
             title: 'changed',
             control: button({
               title: studio.nameOfRef('%opEvent/ref%'),
-              action: {$: 'studio.goto-path', path: studio.pathOfRef('%opEvent/ref%'), $recursive: true},
+              action: studio.gotoPath(studio.pathOfRef('%opEvent/ref%')),
               style: button.href(),
               features: feature.hoverTitle(studio.pathOfRef('%opEvent/ref%'))
             }),
@@ -31375,65 +32145,65 @@ Object.assign(st,{
 })()
 ;
 
-jb.component('studio.categories-marks', { /* studio_categoriesMarks */
+jb.component('studio.categories-marks', { /* studio.categoriesMarks */
   params: [
     {id: 'type', as: 'string'},
     {id: 'path', as: 'string'}
   ],
   impl: pipeline(
     {
-      $: 'object',
-      control: pipeline(
-        list(
-          'common:100',
-          'control:95',
-          'input:90',
-          'group:85',
-          'studio-helper:0,suggestions-test:0,studio:0,test:0,basic:0,ui-tests:0,studio-helper-dummy:0,itemlist-container:0'
+        '$': 'object',
+        control: pipeline(
+          list(
+              'common:100',
+              'control:95',
+              'input:90',
+              'group:85',
+              'studio-helper:0,suggestions-test:0,studio:0,test:0,basic:0,ui-tests:0,studio-helper-dummy:0,itemlist-container:0'
+            ),
+          split(','),
+          {
+              '$': 'object',
+              code: split({separator: ':', part: 'first'}),
+              mark: split({separator: ':', part: 'second'})
+            }
         ),
-        split(','),
-        {
-          $: 'object',
-          code: split({separator: ':', part: 'first'}),
-          mark: split({separator: ':', part: 'second'})
-        }
-      ),
-      feature: pipeline(
-        list(
-          'css:100',
-          'watch:95',
-          'lifecycle:90',
-          'events:85',
-          'group:80',
-          'all:20',
-          'feature:0,tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0,itemlist-container:0,editable-text:0,editable-boolean:0',
-          'mdl-style:0'
+        feature: pipeline(
+          list(
+              'css:100',
+              'watch:95',
+              'lifecycle:90',
+              'events:85',
+              'group:80',
+              'all:20',
+              'feature:0,tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0,itemlist-container:0,editable-text:0,editable-boolean:0',
+              'mdl-style:0'
+            ),
+          split(','),
+          {
+              '$': 'object',
+              code: split({separator: ':', part: 'first'}),
+              mark: split({separator: ':', part: 'second'})
+            }
         ),
-        split(','),
-        {
-          $: 'object',
-          code: split({separator: ':', part: 'first'}),
-          mark: split({separator: ':', part: 'second'})
-        }
-      ),
-      'group.style': pipeline(
-        list('layout:100', 'group:90', 'tabs:0'),
-        split(','),
-        {
-          $: 'object',
-          code: split({separator: ':', part: 'first'}),
-          mark: split({separator: ':', part: 'second'})
-        }
-      )
-    },
+        'group.style': pipeline(
+          list('layout:100', 'group:90', 'tabs:0'),
+          split(','),
+          {
+              '$': 'object',
+              code: split({separator: ':', part: 'first'}),
+              mark: split({separator: ':', part: 'second'})
+            }
+        )
+      },
     firstSucceeding(
-      ctx => ctx.data[ctx.exp('%$type%','string')],
-      {$: 'object', code: 'all', mark: '100'}
-    )
+        ctx => ctx.data[ctx.exp('%$type%','string')],
+        {'$': 'object', code: 'all', mark: '100'}
+      )
   )
 })
 
-jb.component('studio.select-profile', { /* studio_selectProfile */
+jb.component('studio.select-profile', { /* studio.selectProfile */
   type: 'control',
   params: [
     {id: 'onSelect', type: 'action', dynamic: true},
@@ -31442,76 +32212,84 @@ jb.component('studio.select-profile', { /* studio_selectProfile */
   ],
   impl: group({
     title: 'itemlist-with-find',
-    style: layout_vertical(3),
+    style: layout.vertical(3),
     controls: [
       group({
-        style: layout_horizontal(3),
+        style: layout.horizontal(3),
         controls: [
-          itemlistContainer_search({
+          itemlistContainer.search({
             title: 'search',
-            searchIn: itemlistContainer_searchInAllProperties(),
+            searchIn: itemlistContainer.searchInAllProperties(),
             databind: '%$itemlistCntrData/search_pattern%',
-            style: editableText_mdlInput('200'),
-            features: feature_onEsc(dialog_closeContainingPopup(false))
+            style: editableText.mdlInput('200'),
+            features: feature.onEsc(dialog.closeContainingPopup(false))
           }),
           materialIcon({
             icon: 'search',
             title: 'search icon',
-            style: icon_material(),
-            features: css_margin({top: '20', left: '-25'})
+            style: icon.material(),
+            features: css.margin({top: '20', left: '-25'})
           })
         ]
       }),
       group({
         title: 'categories and items',
-        style: layout_horizontal('33'),
+        style: layout.horizontal('33'),
         controls: [
           itemlist({
             title: 'items',
             items: pipeline(
               '%$Categories%',
               filter(
-                or(
-                  equals('%code%', '%$SelectedCategory%'),
-                  notEmpty('%$itemlistCntrData/search_pattern%')
-                )
-              ),
+                  or(
+                    equals('%code%', '%$SelectedCategory%'),
+                    notEmpty('%$itemlistCntrData/search_pattern%')
+                  )
+                ),
               '%pts%',
-              itemlistContainer_filter(),
+              itemlistContainer.filter(),
               unique('%%', '%%')
             ),
             controls: [
               label({
                 title: highlight('%%', '%$itemlistCntrData/search_pattern%'),
-                style: label_span(),
+                style: label.span(),
                 features: [
                   css('{ text-align: left; }'),
-                  css_padding({top: '0', left: '4', right: '4', bottom: '0'}),
-                  css_width({width: '250', minMax: 'min'})
+                  css.padding({top: '0', left: '4', right: '4', bottom: '0'}),
+                  css.width({width: '250', minMax: 'min'})
                 ]
               })
             ],
             itemVariable: 'item',
             features: [
-              css_height({height: '300', overflow: 'auto', minMax: ''}),
-              itemlist_selection({
+              css.height({height: '300', overflow: 'auto', minMax: ''}),
+              itemlist.selection({
                 databind: '%$itemlistCntrData/selected%',
                 onSelection: runActions(
                   {
-                    $if: contains({text: ['control', 'style'], allText: '%$type%'}),
-                    then: call(Var('selectionPreview', true), 'onSelect')
-                  }
+                      '$if': contains({text: ['control', 'style'], allText: '%$type%'}),
+                      then: call(Var('selectionPreview', true), 'onSelect')
+                    }
                 ),
-                onDoubleClick: runActions(studio_cleanSelectionPreview(), call('onSelect'), dialog_closeContainingPopup()),
+                onDoubleClick: runActions(
+                  studio.cleanSelectionPreview(),
+                  call('onSelect'),
+                  dialog.closeContainingPopup()
+                ),
                 autoSelectFirst: true
               }),
-              itemlist_keyboardSelection({
-                onEnter: runActions(studio_cleanSelectionPreview(), call('onSelect'), dialog_closeContainingPopup())
+              itemlist.keyboardSelection({
+                onEnter: runActions(
+                  studio.cleanSelectionPreview(),
+                  call('onSelect'),
+                  dialog.closeContainingPopup()
+                )
               }),
               watchRef('%$SelectedCategory%'),
               watchRef('%$itemlistCntrData/search_pattern%'),
-              css_margin({top: '3', selector: '>li'}),
-              css_width('200')
+              css.margin({top: '3', selector: '>li'}),
+              css.width('200')
             ]
           }),
           picklist({
@@ -31524,118 +32302,135 @@ jb.component('studio.select-profile', { /* studio_selectProfile */
                   items: '%$picklistModel/options/code%',
                   controls: label({
                     title: pipeline('%$Categories%', filter('%code% == %$item%'), '%code% (%pts/length%)'),
-                    style: label_span(),
-                    features: [css_width('120'), css('{text-align: left}'), css_padding({left: '10'})]
+                    style: label.span(),
+                    features: [css.width('120'), css('{text-align: left}'), css.padding({left: '10'})]
                   }),
-                  style: itemlist_ulLi(),
-                  watchItems: false,
+                  style: itemlist.ulLi(),
                   features: [
-                    itemlist_selection({
+                    itemlist.selection({
                       databind: '%$SelectedCategory%',
                       cssForSelected: 'box-shadow: 3px 0px 0 0 #304ffe inset; color: black !important; background: none !important; !important'
                     })
                   ]
                 }),
-                features: group_itemlistContainer({})
+                features: group.itemlistContainer({})
               }),
               'picklistModel'
             ),
-            features: picklist_onChange(writeValue('%$itemlistCntrData/search_pattern%'))
+            features: picklist.onChange(writeValue('%$itemlistCntrData/search_pattern%'))
           })
         ]
       }),
       label({
-        title: pipeline('%$itemlistCntrData/selected%', studio_val('%%'), '%description%'),
-        style: label_span()
+        title: pipeline('%$itemlistCntrData/selected%', studio.val('%%'), '%description%'),
+        style: label.span()
       })
     ],
     features: [
-      css_margin({top: '10', left: '20'}),
-      variable({name: 'unsortedCategories', value: studio_categoriesOfType('%$type%', '%$path%')}),
+      css.margin({top: '10', left: '20'}),
+      variable({
+        name: 'unsortedCategories',
+        value: studio.categoriesOfType('%$type%', '%$path%')
+      }),
       variable({
         name: 'Categories',
-        value: picklist_sortedOptions('%$unsortedCategories%', studio_categoriesMarks('%$type%', '%$path%'))
+        value: picklist.sortedOptions(
+          '%$unsortedCategories%',
+          studio.categoriesMarks('%$type%', '%$path%')
+        )
       }),
       variable({
         name: 'SelectedCategory',
-        value: {$if: studio_val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
+        value: {'$if': studio.val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
         watchable: true
       }),
       variable({name: 'SearchPattern', value: '', watchable: true}),
-      group_itemlistContainer({initialSelection: studio_compName('%$path%'), id1: 'new-profile'})
+      group.itemlistContainer({initialSelection: studio.compName('%$path%')})
     ]
   })
 })
 
-jb.component('studio.open-new-profile-dialog', { /* studio_openNewProfileDialog */
+jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog */
   type: 'action',
   params: [
-    {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()},
+    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
     {id: 'type', as: 'string'},
     {id: 'index', as: 'number'},
     {id: 'mode', option: 'insert,insert-control,update', defaultValue: 'insert'},
     {id: 'onClose', type: 'action', dynamic: true}
   ],
   impl: openDialog({
-    style: dialog_studioFloating({}),
-    content: studio_selectProfile({
-      onSelect: action.switch([
-          action.switchCase('%$mode% == \"insert-control\"', studio.insertControl('%$path%', '%%')),
-          action.switchCase('%$mode% == \"insert\"', studio.addArrayItem({path: '%$path%', index: '%$index%', toAdd: {$object: {$: '%%'}} })),
+    style: dialog.studioFloating({}),
+    content: studio.selectProfile({
+      onSelect: action.switch(
+        [
+          action.switchCase(
+            '%$mode% == \"insert-control\"',
+            studio.insertControl('%$path%', '%%')
+          ),
+          action.switchCase(
+            '%$mode% == \"insert\"',
+            studio.addArrayItem({
+              path: '%$path%',
+              toAdd: {'$object': {'$': '%%'}},
+              index: '%$index%'
+            })
+          ),
           action.switchCase('%$mode% == \"update\"', studio.setComp('%$path%', '%%'))
-      ]),
+        ]
+      ),
       type: '%$type%',
       path: '%$path%'
     }),
     title: 'new %$type%',
     features: [
-      css_height({height: '430', overflow: 'hidden'}),
-      css_width({width: '450', overflow: 'hidden'}),
-      dialogFeature_dragTitle('new %$type%'),
+      css.height({height: '430', overflow: 'hidden'}),
+      css.width({width: '450', overflow: 'hidden'}),
+      dialogFeature.dragTitle('new %$type%'),
       studio.nearLauncherPosition(),
-      dialogFeature_autoFocusOnFirstInput(),
-      dialogFeature_onClose(call('onClose'))
+      dialogFeature.autoFocusOnFirstInput(),
+      dialogFeature.onClose(call('onClose'))
     ]
   })
 })
 
-jb.component('studio.pick-profile', { /* studio_pickProfile */
+jb.component('studio.pick-profile', { /* studio.pickProfile */
   description: 'picklist for picking a profile in a context',
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: button({
-    title: firstSucceeding(studio_compName('%$path%'), ''),
+    title: firstSucceeding(studio.compName('%$path%'), ''),
     action: openDialog({
-      style: dialog_popup(),
-      content: studio_selectProfile({
-        onSelect: studio_setComp('%$path%', '%%'),
-        type: studio_paramType('%$path%'),
+      style: dialog.popup(),
+      content: studio.selectProfile({
+        onSelect: studio.setComp('%$path%', '%%'),
+        type: studio.paramType('%$path%'),
         path: '%$path%'
       }),
-      features: [dialogFeature_autoFocusOnFirstInput(), css_padding({right: '20'})]
+      features: [dialogFeature.autoFocusOnFirstInput(), css.padding({right: '20'})]
     }),
-    style: button_selectProfileStyle(),
-    features: studio_watchPath('%$path%')
+    style: button.selectProfileStyle(),
+    features: studio.watchPath('%$path%')
   })
 })
 
-jb.component('studio.open-new-page', { /* studio_openNewPage */
+jb.component('studio.open-new-page', { /* studio.openNewPage */
   type: 'action',
   impl: openDialog({
-    style: dialog_dialogOkCancel(),
+    style: dialog.dialogOkCancel(),
     content: group({
-      style: group_div(),
+      style: group.div(),
       controls: [
         editableText({
           title: 'page name',
           databind: '%$name%',
-          style: editableText_mdlInput(),
-          features: feature_onEnter(dialog_closeContainingPopup())
+          style: editableText.mdlInput(),
+          features: feature.onEnter(dialog.closeContainingPopup())
         })
       ],
-      features: css_padding({top: '14', left: '11'})
+      features: css.padding({top: '14', left: '11'})
     }),
     title: 'New Page',
     onOK: [
@@ -31645,48 +32440,51 @@ jb.component('studio.open-new-page', { /* studio_openNewPage */
       }),
       writeValue('%$studio/profile_path%', '%$studio/project%.%$name%~impl'),
       writeValue('%$studio/page%', '%$name%'),
-      {$: 'studio.open-control-tree', $recursive: true },
-      tree_regainFocus(),
+      studio.openControlTree(),
+      tree.regainFocus(),
       refreshControlById('pages')
     ],
     modal: true,
-    features: [variable({name: 'name', watchable: true}), dialogFeature_autoFocusOnFirstInput()]
+    features: [
+      variable({name: 'name', watchable: true}),
+      dialogFeature.autoFocusOnFirstInput()
+    ]
   })
 })
 
-jb.component('studio.insert-comp-option', { /* studio_insertCompOption */
+jb.component('studio.insert-comp-option', { /* studio.insertCompOption */
   params: [
     {id: 'title', as: 'string'},
     {id: 'comp', as: 'string'}
   ],
-  impl: menu_action({
+  impl: menu.action({
     title: '%$title%',
-    action: studio_insertControl(studio_currentProfilePath(), '%$comp%')
+    action: studio.insertControl(studio.currentProfilePath(), '%$comp%')
   })
 })
 
-jb.component('studio.insert-control-menu', { /* studio_insertControlMenu */ 
-  impl: menu_menu({
+jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */ 
+  impl: menu.menu({
     title: 'Insert',
     options: [
-      menu_menu({
+      menu.menu({
         title: 'Control',
         options: [
-          studio_insertCompOption('Label', 'label'),
-          studio_insertCompOption('Button', 'button')
+          studio.insertCompOption('Label', 'label'),
+          studio.insertCompOption('Button', 'button')
         ]
       }),
-      menu_menu({
+      menu.menu({
         title: 'Input',
         options: [
-          studio_insertCompOption('Editable Text', 'editable-text'),
-          studio_insertCompOption('Editable Number', 'editable-number'),
-          studio_insertCompOption('Editable Boolean', 'editable-boolean')
+          studio.insertCompOption('Editable Text', 'editable-text'),
+          studio.insertCompOption('Editable Number', 'editable-number'),
+          studio.insertCompOption('Editable Boolean', 'editable-boolean')
         ]
       }),
-      menu_action({
+      menu.action({
         title: 'More...',
-        action: studio_openNewProfileDialog({type: 'control', mode: 'insert-control'})
+        action: studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})
       })
     ]
   })
@@ -31731,7 +32529,7 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
                 suggestionData && Object.assign(suggestionData,e)
                 if (suggestionData.options.indexOf(suggestionData.selected) == -1)
                   suggestionData.selected = null
-                suggestionData.selected = suggestionData.selected || suggestionData.options[0]
+                //suggestionData.selected = suggestionData.selected || suggestionData.options[0]
               })
               cmp.ctx.run(refreshControlById('suggestions-itemlist'))
           });
@@ -31785,14 +32583,14 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
       itemlist.selection({
         databind: '%$suggestionData/selected%',
         onDoubleClick: studio.pasteSuggestion(),
-        autoSelectFirst: true
+        //autoSelectFirst: true
       }),
-      itemlist.keyboardSelection({autoFocus: false}),
+      itemlist.keyboardSelection(false),
       css.height({height: '500', overflow: 'auto', minMax: 'max'}),
       css.width({width: '300', overflow: 'auto', minMax: 'min'}),
       css('{ position: absolute; z-index:1000; background: white }'),
       css.border({width: '1', color: '#cdcdcd'}),
-      css.padding({top: '2', left: '3', selector: 'li'}),
+      css.padding({top: '2', left: '3', selector: 'li'})
     ]
   })
 })
@@ -31810,7 +32608,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         features: [
           feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
           feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
-          studio.watchPath({path: '%$path%', includeChildren: 'yes', allowSelfRefresh: false}),
+          studio.watchPath('%$path%'),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
             popupId: 'suggestions',
@@ -31821,7 +32619,8 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
       })
     ],
     features: variable({
-      name: 'suggestionData', value: {$: 'object', selected: '', options: [], path: '%$path%'},
+      name: 'suggestionData',
+      value: {'$': 'object', selected: '', options: [], path: '%$path%'}
     })
   })
 })
@@ -31837,17 +32636,7 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
         title: studio.propName('%$path%'),
         databind: studio.profileValueAsText('%$path%'),
         updateOnBlur: true,
-        style: customStyle({
-          template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
-            h('input', { class: 'mdl-textfield__input', id1: 'jb_input_' + state.fieldId, type: 'text', autocomplete: 'nop',
-                value: state.model,
-                onchange: e => cmp.jbModel(e.target.value),
-            }),
-            h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
-      ]),
-          css: '{ margin-right: 13px; }',
-          features: [field.databindText(300, true), mdlStyle.initDynamic()]
-        }),
+        style: editableText.floatingInput(),
         features: [
           feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
           feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
@@ -31869,7 +32658,7 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
     features: [
       variable({
         name: 'suggestionData',
-        value: {$: 'object', selected: '', options: [], path: '%$path%'},
+        value: {'$': 'object', selected: '', options: [], path: '%$path%'}
       }),
       css.padding({left: '4', right: '4'}),
       css.margin({top: '-20', selector: '>*:last-child'})
@@ -31937,7 +32726,7 @@ st.suggestions = class {
 
     options = jb.unique(options,x=>x.toPaste)
         .filter(x=> x.toPaste.indexOf('$jb_') != 0)
-        
+
 //        .filter(x=> x.toPaste != this.tail)
         .filter(x=>
           this.tail == '' || typeof x.toPaste != 'string' || (x.description + x.toPaste).toLowerCase().indexOf(this.tail.toLowerCase()) != -1)
@@ -32016,7 +32805,7 @@ jb.component('studio.property-toolbar', { /* studio.propertyToolbar */
   ],
   impl: button({
     title: 'more...',
-    action: {$: 'studio.open-property-menu', path: '%$path%', $recursive: true},
+    action: studio.openPropertyMenu('%$path%'),
     style: studio.propertyToolbarStyle()
   })
 })
@@ -32051,7 +32840,7 @@ jb.component('studio.open-source-dialog', { /* studio.openSourceDialog */
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel(),
-    content: {$: 'text', text: studio.compSource(), style: text.codemirror({})},
+    content: {'$': 'text', text: studio.compSource(), style: text.codemirror({})},
     title: 'Source',
     modal: true
   })
@@ -32066,7 +32855,7 @@ jb.component('studio.properties-in-tgp', { /* studio.propertiesInTgp */
     style: propertySheet.studioPropertiesInTgp(),
     controls: dynamicControls({
       controlItems: studio.nonControlChildren('%$path%', true),
-      genericControl: {$: 'studio.property-field', path: '%$controlItem%', $recursive: true}
+      genericControl: studio.propertyField('%$controlItem%')
     }),
     features: group.autoFocusOnFirstInput()
   })
@@ -32080,7 +32869,7 @@ jb.component('studio.property-script', { /* studio.propertyScript */
   impl: group({
     controls: button({
       title: (ctx,vars,{path}) => jb.prettyPrint(jb.studio.valOfPath(path)),
-      action: {$: 'studio.open-jb-editor', path: '%$path%', $recursive: true},
+      action: studio.openJbEditor('%$path%'),
       style: button.studioScript()
     }),
     features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
@@ -32107,7 +32896,7 @@ jb.component('studio.property-enum', { /* studio.propertyEnum */
   impl: picklist({
     databind: studio.ref('%$path%'),
     options: studio.enumOptions('%$path%'),
-    style: picklist.nativeMdLook(),
+    style: picklist.nativeMdLookOpen(),
     features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
   })
 })
@@ -32126,9 +32915,10 @@ jb.component('studio.property-slider', { /* studio.propertySlider */
     step: firstSucceeding('%$paramDef/step%', 1),
     features: [
       css(
-        ">input-slider { width: 110px; }\n>.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }"
+        `>input-slider { width: 110px; }
+>.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }`
       ),
-      studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+//      studio.watchPath('%$path%')
     ]
   })
 })
@@ -32237,7 +33027,7 @@ jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
     features: [
       css.margin({left: '-100'}),
       variable({name: 'expanded', value: studio.isNew('%$path%'), watchable: true}),
-      studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+      studio.watchPath({path: '%$path%', includeChildren: 'structure'})
     ]
   })
 })
@@ -32255,7 +33045,11 @@ jb.component('studio.property-array', { /* studio.propertyArray */
     }),
     itemVariable: 'arrayItem',
     features: [
-      studio.watchPath({path: '%$path%', includeChildren: 'structure', allowSelfRefresh: true}),
+      studio.watchPath({
+        path: '%$path%',
+        includeChildren: 'structure',
+        allowSelfRefresh: true
+      }),
       itemlist.divider(),
       itemlist.dragAndDrop()
     ]
@@ -32280,27 +33074,39 @@ jb.component('studio.property-field', { /* studio.propertyField */
           studio.propertyScript('%$path%')
         ),
         controlWithCondition(
-          and(studio.isOfType('%$path%', 'action'), isOfType('array', studio.val('%$path%'))),
+          and(
+            studio.isOfType('%$path%', 'action'),
+            isOfType('array', studio.val('%$path%'))
+          ),
           studio.propertyScript('%$path%')
         ),
         controlWithCondition('%$paramDef/options%', studio.propertyEnum('%$path%')),
-        controlWithCondition('%$paramDef/as%==\"number\"', studio.propertySlider('%$path%')),
+        controlWithCondition(
+          '%$paramDef/as%==\"number\"',
+          studio.propertySlider('%$path%')
+        ),
         controlWithCondition(
           and(
             '%$paramDef/as%==\"boolean\"',
-            or(inGroup(list(true, false), studio.val('%$path%')), isEmpty(studio.val('%$path%'))),
+            or(
+                inGroup(list(true, false), studio.val('%$path%')),
+                isEmpty(studio.val('%$path%'))
+              ),
             not('%$paramDef/dynamic%')
           ),
           studio.propertyBoolean('%$path%')
         ),
-        controlWithCondition(studio.isOfType('%$path%', 'data,boolean'), studio.propertyPrimitive('%$path%')),
+        controlWithCondition(
+          studio.isOfType('%$path%', 'data,boolean'),
+          studio.propertyPrimitive('%$path%')
+        ),
         studio.propertyTgpOld('%$path%')
       ],
       features: firstSucceeding.watchRefreshOnCtrlChange(studio.ref('%$path%'), true)
     }),
     features: [
       studio.propertyToolbarFeature('%$path%'),
-      field.keyboardShortcut('Ctrl+I', {$: 'studio.open-jb-editor', path: '%$path%', $recursive: true})
+      field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%'))
     ]
   })
 })
@@ -32338,7 +33144,13 @@ jb.component('studio.properties', { /* studio.properties */
           h('td',{ class: 'property-toolbar'}, h(ctrl.jbComp.toolbar) ),
       ])
     )),
-              css: "\n      { width: 100% }\n      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px;  font-weight: bold;}\n      >.property>td { vertical-align: top; }\n    ",
+              css: `
+      { width: 100% }
+      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px;  font-weight: bold;}
+      >.property>.property-toolbar { text-align: right}
+      >.property>.property-toolbar>i { margin-right: 5px } 
+      >.property>td { vertical-align: top; }
+    `,
               features: group.initGroup()
             }),
             controls: [
@@ -32364,7 +33176,10 @@ jb.component('studio.properties', { /* studio.properties */
         ]
       }),
       label({
-        title: studio.profileAsText('%$path%~features'),
+        title: pipeline(
+          studio.profileAsText('%$path%~features'),
+          If(inGroup(list('[]', "''"), '%%'), '', '%%')
+        ),
         style: label.span(),
         features: [
           css.width('400'),
@@ -32383,7 +33198,7 @@ jb.component('studio.properties', { /* studio.properties */
         features: css.margin({top: '20', left: '5'})
       })
     ],
-    features: variable({name: 'PropertiesDialog', value: {$: 'object'}, watchable: false})
+    features: variable({name: 'PropertiesDialog', value: {'$': 'object'}, watchable: false})
   })
 })
 
@@ -32407,15 +33222,15 @@ jb.component('studio.open-properties', { /* studio.openProperties */
     content: studio.properties(studio.currentProfilePath()),
     title: pipeline(
       {
-        $: 'object',
-        title: studio.shortTitle(studio.currentProfilePath()),
-        comp: studio.compName(studio.currentProfilePath())
-      },
+          '$': 'object',
+          title: studio.shortTitle(studio.currentProfilePath()),
+          comp: studio.compName(studio.currentProfilePath())
+        },
       'Properties of %comp% %title%'
     ),
     features: [
-      {$if: '%$focus%', then: dialogFeature.autoFocusOnFirstInput()},
-      dialogFeature.keyboardShortcut('Ctrl+Left', {$: 'studio.open-control-tree', $recursive: true}),
+      {'$if': '%$focus%', then: dialogFeature.autoFocusOnFirstInput()},
+      feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
       dialogFeature.resizer()
     ]
   })
@@ -32423,20 +33238,34 @@ jb.component('studio.open-properties', { /* studio.openProperties */
 
 ;
 
-jb.component('dialog.studio-jb-editor-popup',  /* dialog_studioJbEditorPopup */ {
+jb.component('dialog.studio-jb-editor-popup', { /* dialog.studioJbEditorPopup */
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
         h('button',{class: 'dialog-close', onclick: _=> cmp.dialogClose() },'×'),
         h(state.contentComp),
       ]),
-    css: "{ background: #fff; position: absolute }\n        >.dialog-close {\n            position: absolute; \n            cursor: pointer; \n            right: 0;\n            font: 21px sans-serif; \n            border: none; \n            background: transparent; \n            color: #000; \n            text-shadow: 0 1px 0 #fff; \n            font-weight: 700; \n            opacity: .2;\n        }\n        >.dialog-close:hover { opacity: .5 }\n        ",
+    css: `{ background: #fff; position: absolute }
+        >.dialog-close {
+            position: absolute;
+            cursor: pointer;
+            right: 0;
+            font: 21px sans-serif;
+            border: none;
+            background: transparent;
+            color: #000;
+            text-shadow: 0 1px 0 #fff;
+            font-weight: 700;
+            opacity: .2;
+        }
+        >.dialog-close:hover { opacity: .5 }
+        `,
     features: [
-      dialogFeature_maxZIndexOnClick(),
-      dialogFeature_closeWhenClickingOutside(),
-      dialogFeature_nearLauncherPosition(),
-      dialogFeature_uniqueDialog('studio-jb-editor-popup'),
-      css_boxShadow({
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.closeWhenClickingOutside(),
+      dialogFeature.nearLauncherPosition({}),
+      dialogFeature.uniqueDialog('studio-jb-editor-popup'),
+      css.boxShadow({
         blurRadius: 5,
         spreadRadius: 0,
         shadowColor: '#000000',
@@ -32448,15 +33277,15 @@ jb.component('dialog.studio-jb-editor-popup',  /* dialog_studioJbEditorPopup */ 
   })
 })
 
-jb.component('studio.near-launcher-position',  /* studio.nearLauncherPosition */ {
+jb.component('studio.near-launcher-position', { /* studio.nearLauncherPosition */
   type: 'dialog-feature',
   impl: dialogFeature.nearLauncherPosition({
-    offsetLeft: (ctx,{cursorCoord}) => cursorCoord && cursorCoord.bottom || 0,
-    offsetTop: (ctx,{cursorCoord}) => cursorCoord && cursorCoord.top || 0,
+    offsetLeft: (ctx,{cursorCoord}) => cursorCoord && cursorCoord.left || 0,
+    offsetTop: (ctx,{cursorCoord}) => cursorCoord && cursorCoord.top || 0
   })
 })
 
-jb.component('dialog.studio-suggestions-popup',  /* dialog_studioSuggestionsPopup */ {
+jb.component('dialog.studio-suggestions-popup', { /* dialog.studioSuggestionsPopup */
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
@@ -32464,12 +33293,12 @@ jb.component('dialog.studio-suggestions-popup',  /* dialog_studioSuggestionsPopu
       ]),
     css: '{ background: #fff; position: absolute; padding: 3px 5px }',
     features: [
-      dialogFeature_maxZIndexOnClick(),
-      dialogFeature_closeWhenClickingOutside(),
-      dialogFeature_cssClassOnLaunchingElement(),
-      dialogFeature_nearLauncherPosition({}),
-      dialogFeature_uniqueDialog('studio-suggestions-popup'),
-      css_boxShadow({
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.closeWhenClickingOutside(),
+      dialogFeature.cssClassOnLaunchingElement(),
+      dialogFeature.nearLauncherPosition({}),
+      dialogFeature.uniqueDialog('studio-suggestions-popup'),
+      css.boxShadow({
         blurRadius: 5,
         spreadRadius: 0,
         shadowColor: '#000000',
@@ -32485,19 +33314,43 @@ jb.component('dialog.studio-suggestions-popup',  /* dialog_studioSuggestionsPopu
 (function() {
 const st = jb.studio;
 
-jb.component('source-editor.refresh-editor', {
+jb.component('source-editor.refresh-editor', { /* sourceEditor.refreshEditor */
   type: 'action',
-  params: [ {id: 'path', as: 'string'} ],
-  impl: (ctx,path) =>  ctx.vars.editor.refreshEditor && ctx.vars.editor.refreshEditor(path)
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>  ctx.vars.refreshEditor && ctx.vars.refreshEditor(path)
 })
 
-jb.component('source-editor.refresh-from-data-ref', {
-  type: 'action',
-  params: [ {id: 'path', as: 'string'} ],
-  impl: (ctx,path) =>  ctx.vars.editor && ctx.vars.editor.refreshFromDataRef()
+jb.component('source-editor.prop-options', { /* sourceEditor.propOptions */
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) =>  {
+    const val = st.val(path) || {}
+    return st.paramsOfPath(path).filter(p=> val[p.id] === undefined)
+      .map(param=> Object.assign(param,{ text: param.id }))
+  }
 })
 
-jb.component('studio.open-editor', { /* studio_openEditor */
+jb.component('source-editor.store-to-ref', { /* sourceEditor.storeToRef */
+  type: 'action',
+  impl: ctx => ctx.vars.editor && ctx.vars.editor() && ctx.vars.editor().storeToRef()
+})
+
+jb.component('source-editor.first-param-as-array-path', { /* sourceEditor.firstParamAsArrayPath */
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => {
+    const params = st.paramsOfPath(path)
+    const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+    return firstParamIsArray ? path + '~' + params[0].id : path
+  }
+})
+
+jb.component('studio.open-editor', { /* studio.openEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -32513,31 +33366,32 @@ jb.component('studio.editable-source', { /* studio.editableSource */
     {id: 'path', as: 'string'}
   ],
   impl: editableText({
-      databind: studio.profileAsText('%$path%'),
-      style: editableText.codemirror(),
-      features: [
-        feature.onKey('Enter', sourceEditor.refreshEditor()),
-        feature.onKey('Ctrl-Enter', textEditor.withCursorPath(studio.openEditProperty('%$cursorPath[0]%'))),
-        textEditor.init(),
-        ctx => ({
-            extendCtxOnce: (ctx,cmp) => ctx.setVars({
-                refreshEditor: path => jb.textEditor.refreshEditor(cmp,path)
-              })
-          }),
-      ]
+    databind: studio.profileAsText('%$path%'),
+    style: editableText.codemirror({
+      cm_settings: {
+        extraKeys: {
+          Enter: action.if(
+            textEditor.isDirty(),
+            runActions(sourceEditor.storeToRef(), sourceEditor.refreshEditor()),
+            textEditor.withCursorPath(studio.openEditProperty('%$cursorPath%'))
+          )
+        }
+      }
+    }),
+    features: [feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')), textEditor.init()]
   })
 })
 
 
-jb.component('studio.edit-source', { /* studio_editSource */
+jb.component('studio.edit-source', { /* studio.editSource */
   type: 'action',
   params: [
-    {id: 'path', as: 'string', defaultValue: studio_currentProfilePath()}
+    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: openDialog({
     style: dialog.editSourceStyle({id: 'edit-source', width: 600}),
     content: studio.editableSource('%$path%'),
-    title: studio_shortTitle('%$path%'),
+    title: studio.shortTitle('%$path%'),
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
       dialogFeature.resizer(true)
@@ -32545,39 +33399,39 @@ jb.component('studio.edit-source', { /* studio_editSource */
   })
 })
 
-jb.component('studio.goto-editor-secondary', { /* studio_gotoEditorSecondary */
+jb.component('studio.goto-editor-secondary', { /* studio.gotoEditorSecondary */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu_action({
+  impl: menu.action({
     vars: [Var('baseComp', split({separator: '~', text: '%$path%', part: 'first'}))],
     title: 'Goto editor: %$baseComp%',
-    action: studio_openEditor('%$baseComp%'),
-    showCondition: notEquals(studio_compName('%$path%'), '%$baseComp%')
+    action: studio.openEditor('%$baseComp%'),
+    showCondition: notEquals(studio.compName('%$path%'), '%$baseComp%')
   })
 })
 
-jb.component('studio.goto-editor-first', { /* studio_gotoEditorFirst */
+jb.component('studio.goto-editor-first', { /* studio.gotoEditorFirst */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu_action({
-    title: pipeline(studio_compName('%$path%'), 'Goto editor: %%'),
-    action: studio_openEditor(studio_compName('%$path%')),
+  impl: menu.action({
+    title: pipeline(studio.compName('%$path%'), 'Goto editor: %%'),
+    action: studio.openEditor(studio.compName('%$path%')),
     shortcut: 'Alt+E',
-    showCondition: notEmpty(studio_compName('%$path%'))
+    showCondition: notEmpty(studio.compName('%$path%'))
   })
 })
 
-jb.component('studio.goto-editor-options', { /* studio_gotoEditorOptions */ 
+jb.component('studio.goto-editor-options', { /* studio.gotoEditorOptions */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu_endWithSeparator(
-    [studio_gotoEditorFirst('%$path%'), studio_gotoEditorSecondary('%$path%')]
+  impl: menu.endWithSeparator(
+    [studio.gotoEditorFirst('%$path%'), studio.gotoEditorSecondary('%$path%')]
   )
 })
 
@@ -32587,13 +33441,32 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
     {id: 'path', as: 'string'}
   ],
   impl: action.switch(
-    Var('actualPath', split({text: '%$path%', separator: '~!', part: 'first'})),
+    Var('pathType', split({separator: '~!', text: '%$path%', part: 'last'})),
+    Var('actualPath', split({separator: '~!', text: '%$path%', part: 'first'})),
     Var('parentPath', studio.parentPath('%$actualPath%')),
-    Var('pathType', split({text: '%$path%', separator: '~!', part: 'last'})),
     Var('paramDef', studio.paramDef('%$actualPath%')),
     [
+      action.switchCase(
+        or(
+          startsWith('obj-separator', '%$pathType%'),
+          inGroup(
+              list('close-profile', 'open-profile', 'open-by-value', 'close-by-value'),
+              '%$pathType%'
+            )
+        ),
+        openDialog({
+          style: dialog.studioJbEditorPopup(),
+          content: sourceEditor.addProp('%$actualPath%'),
+          features: [
+            studio.nearLauncherPosition(),
+            dialogFeature.autoFocusOnFirstInput(),
+            dialogFeature.onClose(sourceEditor.refreshEditor())
+          ]
+        })
+      ),
       action.switchCase(endsWith('$vars', '%$path%')),
-      action.switchCase( '%$paramDef/options%',
+      action.switchCase(
+        '%$paramDef/options%',
         openDialog({
           style: dialog.studioJbEditorPopup(),
           content: group({
@@ -32607,61 +33480,101 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
           }),
           features: [
             studio.nearLauncherPosition(),
-            dialogFeature.autoFocusOnFirstInput(), 
+            dialogFeature.autoFocusOnFirstInput(),
             dialogFeature.onClose(sourceEditor.refreshEditor())
           ]
         })
       ),
-      action.switchCase(studio.isOfType('%$actualPath%', 'data,boolean'),
-        openDialog({
-          style: dialog.studioJbEditorPopup(),
-          content: studio.jbFloatingInput('%$actualPath%'),
-          features: [
-            dialogFeature.autoFocusOnFirstInput(),
-            studio.nearLauncherPosition(),
-            dialogFeature.onClose(
-              runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), sourceEditor.refreshEditor())
-            )
-          ]
-        })
+      action.switchCase(
+        studio.isOfType('%$actualPath%', 'data,boolean'),
+        runActions(
+          Var('sugarArrayPath', sourceEditor.firstParamAsArrayPath('%$actualPath%')),
+          Var(
+              'index',
+              data.switch(
+                [
+                  data.case(equals('open-sugar', '%$pathType%'), 0),
+                  data.case(
+                    equals('close-sugar', '%$pathType%'),
+                    count(studio.val('%$sugarArrayPath%'))
+                  )
+                ]
+              )
+            ),
+          Var(
+              'actualPathHere',
+              data.if(
+                endsWith('-sugar', '%$pathType%'),
+                '%$sugarArrayPath%~%$index%',
+                '%$actualPath%'
+              )
+            ),
+          action.if(
+              endsWith('-sugar', '%$pathType%'),
+              studio.addArrayItem({path: '%$sugarArrayPath%', toAdd: '', index: '%$index%'})
+            ),
+          openDialog({
+              style: dialog.studioJbEditorPopup(),
+              content: studio.jbFloatingInput('%$actualPathHere%'),
+              features: [
+                dialogFeature.autoFocusOnFirstInput(),
+                studio.nearLauncherPosition(),
+                dialogFeature.onClose(
+                  runActions(
+                    toggleBooleanValue('%$studio/jb_preview_result_counter%'),
+                    sourceEditor.refreshEditor()
+                  )
+                )
+              ]
+            })
+        )
       ),
       action.switchCase(
         Var('ptsOfType', studio.PTsOfType(studio.paramType('%$actualPath%'))),
         '%$ptsOfType/length% == 1',
-        runActions(studio.setComp('%$path%', '%$ptsOfType[0]%'),sourceEditor.refreshEditor())
+        runActions(
+          studio.setComp('%$path%', '%$ptsOfType[0]%'),
+          sourceEditor.refreshEditor()
+        )
       ),
-      action.switchCase(and(equals('%$pathType%','open'), studio.isArrayType('%$actualPath%')),
-          studio.openNewProfileDialog({
-            path: '%$actualPath%',
-            type: studio.paramType('%$actualPath%'),
-            index: 0,
-            mode: 'insert',
-            onClose: sourceEditor.refreshEditor('%$actualPath%~0')
-          })
+      action.switchCase(
+        and(startsWith('open', '%$pathType%'), studio.isArrayType('%$actualPath%')),
+        studio.openNewProfileDialog({
+          path: '%$actualPath%',
+          type: studio.paramType('%$actualPath%'),
+          index: 0,
+          mode: 'insert',
+          onClose: sourceEditor.refreshEditor('%$actualPath%~0')
+        })
       ),
-      action.switchCase(and(equals('%$pathType%','close'), studio.isArrayType('%$parentPath%')),
-          studio.openNewProfileDialog({
-            vars: Var('length', count(studio.val('%$parentPath%'))),
-            path: '%$parentPath%',
-            type: studio.paramType('%$actualPath%'),
-            index: '%$length%',
-            mode: 'insert',
-            onClose: sourceEditor.refreshEditor('%$actualPath%~%$length%')
-          })
+      action.switchCase(
+        and(startsWith('close', '%$pathType%'), studio.isArrayType('%$actualPath%')),
+        studio.openNewProfileDialog({
+          vars: [Var('length', count(studio.val('%$actualPath%')))],
+          path: '%$actualPath%',
+          type: studio.paramType('%$actualPath%'),
+          index: '%$length%',
+          mode: 'insert',
+          onClose: sourceEditor.refreshEditor('%$actualPath%~%$length%')
+        })
       ),
-      action.switchCase(and(equals('%$pathType%','separator'), studio.isArrayType('%$parentPath%')),
-          studio.openNewProfileDialog({
-            vars: [
-              Var('index', (ctx,{actualPath}) => +actualPath.split('~').pop()+1),
-              Var('nextSiblingPath',pipeline(list('%$parentPath%','%$index%'),join())),
-            ],            
-            path: '%$parentPath%',
-            type: studio.paramType('%$actualPath%'),
-            index: '%$index%',
-            mode: 'insert',
-            onClose: sourceEditor.refreshEditor('%$nextSiblingPath%')
-          })
-      ),
+      action.switchCase(
+        and(
+          startsWith('array-separator', '%$pathType%'),
+          studio.isArrayType('%$actualPath%')
+        ),
+        studio.openNewProfileDialog({
+          vars: [
+            Var('index', (ctx,{actualPath}) => +actualPath.split('~').pop()+1),
+            Var('nextSiblingPath', pipeline(list('%$actualPath%', '%$index%'), join('~')))
+          ],
+          path: '%$actualPath%',
+          type: studio.paramType('%$actualPath%'),
+          index: '%$index%',
+          mode: 'insert',
+          onClose: sourceEditor.refreshEditor('%$nextSiblingPath%')
+        })
+      )
     ],
     studio.openNewProfileDialog({
       path: '%$actualPath%',
@@ -32672,6 +33585,94 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
   )
 })
 
+jb.component('source-editor.suggestions', {
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: If(
+    Var('pathType', split({separator: '~!', text: '%$path%', part: 'last'})),
+    Var('actualPath', split({separator: '~!', text: '%$path%', part: 'first'})),
+    Var('paramDef', studio.paramDef('%$actualPath%')),
+    or(
+      startsWith('obj-separator', '%$pathType%'),
+      inGroup( list('close-profile', 'open-profile', 'open-by-value', 'close-by-value'), '%$pathType%')
+    ),
+      pipeline(studio.paramsOfPath('%$actualPath%'),'%id%'),
+      If(
+        '%$paramDef/options%',  
+        split({separator: ',', text: '%$paramDef/options%', part: 'all'}),
+        studio.PTsOfType('%$actualPath%')
+      )
+    )
+})
+
+jb.component('source-editor.add-prop', { /* sourceEditor.addProp */
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    controls: [
+      editableText({
+        title: pipeline(studio.compName('%$path%'), '%% properties'),
+        databind: '%$suggestionData/text%',
+        style: editableText.floatingInput(),
+        features: [
+          feature.onKey(
+            'Enter',
+            runActions(
+              dialog.closeDialog('studio-jb-editor-popup'),
+              studio.openEditProperty('%$path%~%$suggestionData/selected/id%'),
+              true
+            )
+          ),
+          editableText.helperPopup({
+            control: sourceEditor.suggestionsItemlist('%$path%'),
+            popupId: 'suggestions',
+            popupStyle: dialog.popup(),
+            showHelper: true,
+            autoOpen: true,
+            onEsc: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()]
+          })
+        ]
+      }),
+      label({title: '', features: css('{border: 1px solid white;}')})
+    ],
+    features: [
+      variable({
+        name: 'suggestionData',
+        value: {'$': 'object', selected: '', text: ''}
+      }),
+      css.padding({left: '4', right: '4'}),
+      css.margin({top: '-20', selector: '>*:last-child'})
+    ]
+  })
+})
+
+jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestionsItemlist */ 
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: itemlist({
+    items: sourceEditor.propOptions('%$path%'),
+    controls: label({title: '%text%', features: [css.padding({left: '3', right: '2'})]}),
+    features: [
+      id('suggestions-itemlist'),
+      itemlist.noContainer(),
+      itemlist.selection({
+        databind: '%$suggestionData/selected%',
+        autoSelectFirst: true
+      }),
+      itemlist.keyboardSelection(false),
+      css.height({height: '500', overflow: 'auto', minMax: 'max'}),
+      css.width({width: '300', overflow: 'auto', minMax: 'min'}),
+      css('{ position: absolute; z-index:1000; background: white }'),
+      css.border({width: '1', color: '#cdcdcd'}),
+      css.padding({top: '2', left: '3', selector: 'li'})
+    ]
+  })
+})
+
 
 })()
 ;
@@ -32680,7 +33681,7 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
 const st = jb.studio
 jb.studio.probeResultCustomizers = []
 
-jb.component('studio.jb-editor-path-for-edit', { /* studio_jbEditorPathForEdit */
+jb.component('studio.jb-editor-path-for-edit', { /* studio.jbEditorPathForEdit */
   type: 'data',
   description: 'in case of array, use extra element path',
   params: [
@@ -32694,19 +33695,19 @@ jb.component('studio.jb-editor-path-for-edit', { /* studio_jbEditorPathForEdit *
   }
 })
 
-jb.component('studio.open-jb-editor-menu', { /* studio_openJbEditorMenu */
+jb.component('studio.open-jb-editor-menu', { /* studio.openJbEditorMenu */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
     {id: 'root', as: 'string'}
   ],
-  impl: menu_openContextMenu({
-    menu: {$: 'studio.jb-editor-menu', path: '%$path%', root: '%$root%', $recursive: true},
-    features: dialogFeature_onClose(tree_regainFocus())
+  impl: menu.openContextMenu({
+    menu: studio.jbEditorMenu('%$path%', '%$root%'),
+    features: dialogFeature.onClose(tree.regainFocus())
   })
 })
 
-jb.component('studio.prob-result-customization', { /* studio_probResultCustomization */
+jb.component('studio.prob-result-customization', { /* studio.probResultCustomization */
   type: 'data',
   params: [
     {id: 'probeResult', mandatory: true}
@@ -32720,7 +33721,7 @@ jb.component('studio.prob-result-customization', { /* studio_probResultCustomiza
   }
 })
 
-jb.component('studio.jb-editor-container', { /* studio_jbEditorContainer */
+jb.component('studio.jb-editor-container', { /* studio.jbEditorContainer */
   type: 'feature',
   params: [
     {id: 'id', as: 'string', mandatory: true},
@@ -32733,14 +33734,14 @@ jb.component('studio.jb-editor-container', { /* studio_jbEditorContainer */
   ],
   impl: list(
     variable({
-      name: 'jbEditorCntrData',
-      value: {$: 'object', selected: '%$initialSelection%', circuit: '%$circuit%'},
-      watchable: true
-    })
+        name: 'jbEditorCntrData',
+        value: {'$': 'object', selected: '%$initialSelection%', circuit: '%$circuit%'},
+        watchable: true
+      })
   )
 })
 
-jb.component('studio.probe-results', { /* studio_probeResults */
+jb.component('studio.probe-results', { /* studio.probeResults */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32751,7 +33752,7 @@ jb.component('studio.probe-results', { /* studio_probeResults */
   })
 })
 
-jb.component('studio.data-browse', { /* studio_dataBrowse */
+jb.component('studio.data-browse', { /* studio.dataBrowse */
   type: 'control',
   params: [
     {id: 'obj', mandatory: true, as: 'value', defaultValue: '%%'},
@@ -32762,22 +33763,25 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
     title: '%$title%',
     controls: group({
       controls: [
-        control_firstSucceeding(
+        control.firstSucceeding(
           [
             controlWithCondition(
               inGroup(list('JbComponent', 'jbCtx'), className('%$obj%')),
               label({title: className('%$obj%')})
             ),
-            controlWithCondition(isOfType('string,boolean,number', '%$obj%'), label('%$obj%')),
+            controlWithCondition(
+              isOfType('string,boolean,number', '%$obj%'),
+              label('%$obj%')
+            ),
             controlWithCondition(
               isOfType('array', '%$obj%'),
               table({
                 items: pipeline('%$obj%', slice(undefined, '%$maxItems%')),
-                fields: field_control({
+                fields: field.control({
                   title: pipeline(count('%$obj%'), '%% items'),
-                  control: {$: 'studio.data-browse', a: 'label', obj: '%%', width: 200, $recursive: true}
+                  control: studio.dataBrowse({obj: '%%', width: 200})
                 }),
-                style: table_mdl(
+                style: table.mdl(
                   'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
                   'mdl-data-table__cell--non-numeric'
                 ),
@@ -32786,13 +33790,13 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
             ),
             controlWithCondition(isNull('%$obj%'), label('null')),
             tree({
-              nodeModel: tree_jsonReadOnly('%$obj%', '%$title%'),
-              style: tree_noHead(),
+              nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
+              style: tree.noHead(),
               features: [
-                css_class('jb-control-tree'),
-                tree_selection({}),
-                tree_keyboardSelection({}),
-                css_width({width: '%$width%', minMax: 'max'})
+                css.class('jb-control-tree'),
+                tree.selection({}),
+                tree.keyboardSelection({}),
+                css.width({width: '%$width%', minMax: 'max'})
               ]
             })
           ]
@@ -32802,11 +33806,11 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
           button({
             title: 'open (%$obj/length%)',
             action: openDialog({
-              style: dialog_popup(),
+              style: dialog.popup(),
               content: editableText({
                 title: '',
                 databind: '%$obj%',
-                style: editableText_codemirror({
+                style: editableText.codemirror({
                   enableFullScreen: true,
                   height: '200',
                   mode: 'text',
@@ -32816,7 +33820,7 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
                 })
               })
             }),
-            style: button_href()
+            style: button.href()
           }),
           'long text'
         ),
@@ -32825,7 +33829,7 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
           button({
             title: 'show (%$obj/length%)',
             action: writeValue('%$maxItems%', '100'),
-            style: button_href(),
+            style: button.href(),
             features: [watchRef('%$maxItems%'), hidden('%$maxItems% == 5')]
           }),
           'large array'
@@ -32836,7 +33840,7 @@ jb.component('studio.data-browse', { /* studio_dataBrowse */
   })
 })
 
-jb.component('studio.probe-data-view', { /* studio_probeDataView */
+jb.component('studio.probe-data-view', { /* studio.probeDataView */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -32846,124 +33850,132 @@ jb.component('studio.probe-data-view', { /* studio_probeDataView */
       table({
         items: '%$probeResult%',
         fields: [
-          field_control({title: 'last in', control: studio_dataBrowse('%in%'), width: '100'}),
-          field_control({title: 'out', control: studio_dataBrowse('%out%'), width: '100'})
+          field.control({
+            title: 'last in',
+            control: studio.dataBrowse('%in%'),
+            width: '100'
+          }),
+          field.control({title: 'out', control: studio.dataBrowse('%out%'), width: '100'})
         ],
-        style: table_mdl('mdl-data-table', 'mdl-data-table__cell--non-numeric'),
-        features: [css('{white-space: normal}')]
+        style: table.mdl('mdl-data-table', 'mdl-data-table__cell--non-numeric'),
+        features: css('{white-space: normal}')
       })
     ],
-    features: [
-      group_wait({
-        for: studio_probeResults('%$path%'),
-        loadingControl: label('...'),
-        varName: 'probeResult'
-      })
-    ]
+    features: group.wait({
+      for: studio.probeResults('%$path%'),
+      loadingControl: label('...'),
+      varName: 'probeResult'
+    })
   })
 })
 
-jb.component('studio.open-jb-edit-property', { /* studio_openJbEditProperty */
+jb.component('studio.open-jb-edit-property', { /* studio.openJbEditProperty */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: action_switch(
-    Var('actualPath', studio_jbEditorPathForEdit('%$path%')),
-    Var('paramDef', studio_paramDef('%$actualPath%')),
+  impl: action.switch(
+    Var('actualPath', studio.jbEditorPathForEdit('%$path%')),
+    Var('paramDef', studio.paramDef('%$actualPath%')),
     [
-      action_switchCase(endsWith('$vars', '%$path%')),
-      action_switchCase(
+      action.switchCase(endsWith('$vars', '%$path%')),
+      action.switchCase(
         '%$paramDef/options%',
         openDialog({
-          style: dialog_studioJbEditorPopup(),
+          style: dialog.studioJbEditorPopup(),
           content: group({
             controls: [
-              studio_jbFloatingInputRich('%$actualPath%')
+              studio.jbFloatingInputRich('%$actualPath%')
             ],
             features: [
-              feature_onEsc(dialog_closeContainingPopup(true)),
-              feature_onEnter(dialog_closeContainingPopup(true), tree_regainFocus())
+              feature.onEsc(dialog.closeContainingPopup(true)),
+              feature.onEnter(dialog.closeContainingPopup(true), tree.regainFocus())
             ]
           }),
-          features: [dialogFeature_autoFocusOnFirstInput(), dialogFeature_onClose(tree_regainFocus())]
+          features: [
+            dialogFeature.autoFocusOnFirstInput(),
+            dialogFeature.onClose(tree.regainFocus())
+          ]
         })
       ),
-      action_switchCase(
-        isOfType('function', studio_val('%$actualPath%')),
-        studio_editSource('%$actualPath%')
+      action.switchCase(
+        isOfType('function', studio.val('%$actualPath%')),
+        studio.editSource('%$actualPath%')
       ),
-      action_switchCase(
-        studio_isOfType('%$actualPath%', 'data,boolean'),
+      action.switchCase(
+        studio.isOfType('%$actualPath%', 'data,boolean'),
         openDialog({
-          style: dialog_studioJbEditorPopup(),
-          content: studio_jbFloatingInput('%$actualPath%'),
+          style: dialog.studioJbEditorPopup(),
+          content: studio.jbFloatingInput('%$actualPath%'),
           features: [
-            dialogFeature_autoFocusOnFirstInput(),
-            dialogFeature_onClose(
-              runActions(toggleBooleanValue('%$studio/jb_preview_result_counter%'), tree_regainFocus())
+            dialogFeature.autoFocusOnFirstInput(),
+            dialogFeature.onClose(
+              runActions(
+                toggleBooleanValue('%$studio/jb_preview_result_counter%'),
+                tree.regainFocus()
+              )
             )
           ]
         })
       ),
-      action_switchCase(
-        Var('ptsOfType', studio_PTsOfType(studio_paramType('%$actualPath%'))),
+      action.switchCase(
+        Var('ptsOfType', studio.PTsOfType(studio.paramType('%$actualPath%'))),
         '%$ptsOfType/length% == 1',
-        studio_setComp('%$path%', '%$ptsOfType[0]%')
+        studio.setComp('%$path%', '%$ptsOfType[0]%')
       )
     ],
-    studio_openNewProfileDialog({
+    studio.openNewProfileDialog({
       path: '%$actualPath%',
-      type: studio_paramType('%$actualPath%'),
+      type: studio.paramType('%$actualPath%'),
       mode: 'update',
-      onClose: tree_regainFocus()
+      onClose: tree.regainFocus()
     })
   )
 })
 
-jb.component('studio.jb-editor-inteli-tree', { /* studio_jbEditorInteliTree */
+jb.component('studio.jb-editor-inteli-tree', { /* studio.jbEditorInteliTree */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: group({
     title: 'main',
-    style: layout_horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
+    style: layout.horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
     controls: [
       tree({
-        nodeModel: studio_jbEditor_nodes('%$path%'),
+        nodeModel: studio.jbEditorNodes('%$path%'),
         features: [
-          css_class('jb-editor jb-control-tree'),
-          tree_selection({
+          css.class('jb-editor jb-control-tree'),
+          tree.selection({
             databind: '%$jbEditorCntrData/selected%',
             autoSelectFirst: true,
-            onRightClick: studio_openJbEditorMenu('%%', '%$path%')
+            onRightClick: studio.openJbEditorMenu('%%', '%$path%')
           }),
-          tree_keyboardSelection({
+          tree.keyboardSelection({
             onEnter: studio.openJbEditProperty('%$jbEditorCntrData/selected%'),
-            onRightClickOfExpanded: studio_openJbEditorMenu('%%', '%$path%'),
+            onRightClickOfExpanded: studio.openJbEditorMenu('%%', '%$path%'),
             autoFocus: true,
-            applyMenuShortcuts: {$: 'studio.jb-editor-menu', path: '%%', root: '%$path%', $recursive: true}
+            applyMenuShortcuts: studio.jbEditorMenu('%%', '%$path%')
           }),
-          tree_dragAndDrop(),
-          css_width({width: '500', selector: 'jb-editor'}),
-          studio_watchScriptChanges()
+          tree.dragAndDrop(),
+          css.width({width: '500', selector: 'jb-editor'}),
+          studio.watchScriptChanges()
         ]
       })
     ]
   })
 })
 
-jb.component('studio.jb-editor', { /* studio_jbEditor */
+jb.component('studio.jb-editor', { /* studio.jbEditor */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: group({
     title: 'main',
-    style: layout_horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
+    style: layout.horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
     controls: [
-      studio_jbEditorInteliTree('%$path%'),
+      studio.jbEditorInteliTree('%$path%'),
       group({
         title: 'inteli preview',
         controls: [
@@ -32972,21 +33984,21 @@ jb.component('studio.jb-editor', { /* studio_jbEditor */
             controls: [
               group({
                 title: 'watch selection content',
-                controls: studio_probeDataView('%$jbEditorCntrData/selected%'),
+                controls: studio.probeDataView('%$jbEditorCntrData/selected%'),
                 features: watchRef('%$jbEditorCntrData/selected%')
               })
             ],
-            features: feature_if('%$jbEditorCntrData/selected%')
+            features: feature.if('%$jbEditorCntrData/selected%')
           })
         ],
-        features: [studio_watchScriptChanges()]
+        features: studio.watchScriptChanges()
       })
     ],
-    features: [css_padding('10'), css_height({height: '800', minMax: 'max'})]
+    features: [css.padding('10'), css.height({height: '800', minMax: 'max'})]
   })
 })
 
-jb.component('studio.open-jb-editor', { /* studio_openJbEditor */
+jb.component('studio.open-jb-editor', { /* studio.openJbEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -32995,27 +34007,22 @@ jb.component('studio.open-jb-editor', { /* studio_openJbEditor */
   ],
   impl: openDialog({
     vars: [
-      Var('dialogId', {$if: '%$newWindow%', then: '', else: 'jb-editor'}),
+      Var('dialogId', {'$if': '%$newWindow%', then: '', else: 'jb-editor'}),
       Var('fromPath', '%$fromPath%'),
-      Var('pickSelection', {$: 'object'})
+      Var('pickSelection', {'$': 'object'})
     ],
-    style: dialog_studioFloating({id: '%$dialogId%', width: '860', height: '400'}),
-    content: studio_jbEditor('%$path%'),
+    style: dialog.studioFloating({id: '%$dialogId%', width: '860', height: '400'}),
+    content: studio.jbEditor('%$path%'),
     menu: button({
-      action: studio_openJbEditorMenu('%$path%', '%$path%'),
-      style: button_mdlIcon('menu')
+      action: studio.openJbEditorMenu('%$path%', '%$path%'),
+      style: button.mdlIcon('menu')
     }),
-    title: {
-      $: 'studio.path-hyperlink',
-      path: '%$path%',
-      prefix: 'Inteliscript',
-      $recursive: true
-    },
-    features: [studio_jbEditorContainer('jb-editor'), dialogFeature_resizer()]
+    title: studio.pathHyperlink('%$path%', 'Inteliscript'),
+    features: [studio.jbEditorContainer('jb-editor'), dialogFeature.resizer()]
   })
 })
 
-jb.component('studio.open-component-in-jb-editor', { /* studio_openComponentInJbEditor */
+jb.component('studio.open-component-in-jb-editor', { /* studio.openComponentInJbEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -33024,34 +34031,31 @@ jb.component('studio.open-component-in-jb-editor', { /* studio_openComponentInJb
   impl: runActions(
     Var('compPath', split({separator: '~', text: '%$path%', part: 'first'})),
     Var('fromPath', '%$fromPath%'),
-    Var('pickSelection', {$: 'object'}),
+    Var('pickSelection', obj()),
     openDialog({
-      style: dialog_studioFloating({id: 'jb-editor', width: '860', height: '400'}),
-      content: studio_jbEditor('%$compPath%'),
-      menu: button({
-        action: studio_openJbEditorMenu('%$jbEditorCntrData/selected%', '%$path%'),
-        style: button_mdlIcon('menu')
-      }),
-      title: {
-        $: 'studio.path-hyperlink',
-        path: '%$compPath%',
-        prefix: 'Inteliscript',
-        $recursive: true
-      },
-      features: [studio_jbEditorContainer('comp-in-jb-editor'), dialogFeature_resizer()]
-    })
+        style: dialog.studioFloating({id: 'jb-editor', width: '860', height: '400'}),
+        content: studio.jbEditor('%$compPath%'),
+        menu: button({
+          action: studio.openJbEditorMenu('%$jbEditorCntrData/selected%', '%$path%'),
+          style: button.mdlIcon('menu')
+        }),
+        title: studio.pathHyperlink('%$compPath%', 'Inteliscript'),
+        features: [studio.jbEditorContainer('comp-in-jb-editor'), dialogFeature.resizer()]
+      })
   )
 })
 
-jb.component('studio.expand-and-select-first-child-in-jb-editor', { /* studio_expandAndSelectFirstChildInJbEditor */
+jb.component('studio.expand-and-select-first-child-in-jb-editor', { /* studio.expandAndSelectFirstChildInJbEditor */
   type: 'action',
   impl: ctx => {
-    var ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[document.querySelector('.jb-editor').getAttribute('jb-ctx')];
-    var tree = ctxOfTree.vars.$tree;
+    const jbEditorElem = document.querySelector('.jb-editor')
+    if (!jbEditorElem) return
+    const ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[jbEditorElem.getAttribute('jb-ctx')];
+    const tree = ctxOfTree.vars.$tree;
     if (!tree) return;
     tree.expanded[tree.selected] = true;
     jb.delay(100).then(()=>{
-      var firstChild = tree.nodeModel.children(tree.selected)[0];
+      const firstChild = tree.nodeModel.children(tree.selected)[0];
       if (firstChild) {
         tree.selectionEmitter.next(firstChild);
         tree.regainFocus && tree.regainFocus();
@@ -33062,38 +34066,48 @@ jb.component('studio.expand-and-select-first-child-in-jb-editor', { /* studio_ex
   }
 })
 
-jb.component('menu.studio-wrap-with',  /* menu_studioWrapWith */ {
+jb.component('menu.studio-wrap-with', { /* menu.studioWrapWith */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
     {id: 'type', as: 'string'},
     {id: 'components', as: 'array'}
   ],
-  impl: menu_dynamicOptions(
-    {$if: studio_isOfType('%$path%', '%$type%'), then: '%$components%', else: list()},
-    menu_action({
+  impl: menu.dynamicOptions(
+    {
+      '$if': studio.isOfType('%$path%', '%$type%'),
+      then: '%$components%',
+      else: list()
+    },
+    menu.action({
       title: 'Wrap with %%',
-      action: [studio_wrap('%$path%', '%%'), studio_expandAndSelectFirstChildInJbEditor()]
+      action: runActions(
+        studio.wrap('%$path%', '%%'),
+        studio.expandAndSelectFirstChildInJbEditor()
+      )
     })
   )
 })
 
-jb.component('menu.studio-wrap-with-array',  /* menu_studioWrapWithArray */ {
+jb.component('menu.studio-wrap-with-array', { /* menu.studioWrapWithArray */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: {
-    $if: studio_canWrapWithArray('%$path%'),
-    then: menu_action({
+    '$if': studio.canWrapWithArray('%$path%'),
+    then: menu.action({
       title: 'Wrap with array',
-      action: [studio_wrapWithArray('%$path%'), studio_expandAndSelectFirstChildInJbEditor()]
+      action: runActions(
+        studio.wrapWithArray('%$path%'),
+        studio.expandAndSelectFirstChildInJbEditor()
+      )
     }),
     else: []
   }
 })
 
-jb.component('studio.add-variable', { /* studio_addVariable */ 
+jb.component('studio.add-variable', { /* studio.addVariable */ 
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -33101,32 +34115,32 @@ jb.component('studio.add-variable', { /* studio_addVariable */
   impl: onNextTimer(
     openDialog({
       id: 'add variable',
-      style: dialog_popup(),
+      style: dialog.popup(),
       content: group({
         controls: [
           editableText({
             title: 'variable name',
             databind: '%$name%',
-            style: editableText_mdlInput(),
+            style: editableText.mdlInput(),
             features: [
-              feature_onEnter(
-                writeValue(studio_ref('%$path%~%$name%'), ''),
-                dialog_closeContainingPopup(true),
+              feature.onEnter(
+                writeValue(studio.ref('%$path%~%$name%'), ''),
+                dialog.closeContainingPopup(true),
                 writeValue('%$jbEditorCntrData/selected%', '%$path%~%$name%'),
-                tree_redraw(true),
-                tree_regainFocus()
+                tree.redraw(true),
+                tree.regainFocus()
               )
             ]
           })
         ],
-        features: css_padding({top: '9', left: '20', right: '20'})
+        features: css.padding({top: '9', left: '20', right: '20'})
       }),
       title: 'New variable',
       modal: 'true',
       features: [
-        variable({name: 'name', watchable: true}),
-        dialogFeature_nearLauncherPosition({}),
-        dialogFeature_autoFocusOnFirstInput()
+        variable('name'),
+        dialogFeature.nearLauncherPosition({}),
+        dialogFeature.autoFocusOnFirstInput()
       ]
     })
   )
@@ -33137,7 +34151,7 @@ jb.component('studio.add-variable', { /* studio_addVariable */
 (function() {
 const st = jb.studio;
 
-jb.component('dialog-feature.studio-pick',  /* dialogFeature_studioPick */ {
+jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
   type: 'dialog-feature',
   params: [
     {id: 'from', as: 'string'}
@@ -33184,7 +34198,7 @@ jb.component('dialog-feature.studio-pick',  /* dialogFeature_studioPick */ {
     })
 })
 
-jb.component('dialog.studio-pick-dialog',  /* dialog_studioPickDialog */ {
+jb.component('dialog.studio-pick-dialog', { /* dialog.studioPickDialog */
   hidden: true,
   type: 'dialog.style',
   params: [
@@ -33200,8 +34214,27 @@ h('div',{ class: 'title' + (state.titleBelow ? ' bottom' : ''), style: { top: st
             h('div',{ class: 'text'},state.title),
             h('div',{ class: 'triangle'}),
     ])]),
-    css: "\n>.edge {\n    z-index: 6001;\n    position: absolute;\n    background: red;\n    box-shadow: 0 0 1px 1px gray;\n    width: 1px; height: 1px;\n    cursor: pointer;\n}\n>.title {\n    z-index: 6001;\n    position: absolute;\n    font: 14px arial; padding: 0; cursor: pointer;\n    transition:top 100ms, left 100ms;\n}\n>.title .triangle {\twidth:0;height:0; border-style: solid; \tborder-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}\n>.title .text {\tbackground: #e0e0e0; font: 14px arial; padding: 3px; }\n>.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}\n>.title.bottom .text { transform: translateY(6px);}\n                ",
-    features: [dialogFeature_studioPick('%$from%')]
+    css: `
+>.edge {
+    z-index: 6001;
+    position: absolute;
+    background: red;
+    box-shadow: 0 0 1px 1px gray;
+    width: 1px; height: 1px;
+    cursor: pointer;
+}
+>.title {
+    z-index: 6001;
+    position: absolute;
+    font: 14px arial; padding: 0; cursor: pointer;
+    transition:top 100ms, left 100ms;
+}
+>.title .triangle {	width:0;height:0; border-style: solid; 	border-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}
+>.title .text {	background: #e0e0e0; font: 14px arial; padding: 3px; }
+>.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}
+>.title.bottom .text { transform: translateY(6px);}
+                `,
+    features: [dialogFeature.studioPick('%$from%')]
   })
 })
 
@@ -33319,7 +34352,7 @@ jb.component('studio.highlight-in-preview', { /* studio.highlightInPreview */
   }
 })
 
-jb.component('studio.pick', { /* studio.pick */ 
+jb.component('studio.pick', { /* studio.pick */
   type: 'action',
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},
@@ -33458,7 +34491,7 @@ jb.studio.hToJSX = hFunc => {
   }
 }
 
-jb.component('studio.pretty', { /* studio_pretty */
+jb.component('studio.pretty', { /* studio.pretty */
   type: 'data',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -33466,7 +34499,7 @@ jb.component('studio.pretty', { /* studio_pretty */
   impl: (ctx,text) => jb.studio.pretty(text)
 })
 
-jb.component('studio.jsx-to-h', { /* studio_jsxToH */
+jb.component('studio.jsx-to-h', { /* studio.jsxToH */
   type: 'data',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -33474,7 +34507,7 @@ jb.component('studio.jsx-to-h', { /* studio_jsxToH */
   impl: (ctx,text) => jb.studio.jsxToH(text)
 })
 
-jb.component('studio.h-to-jsx', { /* studio_hToJsx */
+jb.component('studio.h-to-jsx', { /* studio.hToJsx */
   type: 'data',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -33483,7 +34516,7 @@ jb.component('studio.h-to-jsx', { /* studio_hToJsx */
 })
 
 
-jb.component('studio.template-as-jsx', { /* studio_templateAsJsx */ 
+jb.component('studio.template-as-jsx', { /* studio.templateAsJsx */
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}
@@ -33510,7 +34543,7 @@ jb.component('studio.template-as-jsx', { /* studio_templateAsJsx */
 ;
 
 
-jb.component('studio.format-css', { /* studio_formatCss */
+jb.component('studio.format-css', { /* studio.formatCss */
   params: [
     {id: 'css', as: 'string'}
   ],
@@ -33523,35 +34556,35 @@ jb.component('studio.format-css', { /* studio_formatCss */
   }
 })
 
-jb.component('studio.open-style-menu', { /* studio_openStyleMenu */
+jb.component('studio.open-style-menu', { /* studio.openStyleMenu */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu_openContextMenu({
-    menu: menu_menu({
+  impl: menu.openContextMenu({
+    menu: menu.menu({
       options: [
-        menu_action({
+        menu.action({
           title: 'Clone as local style',
           action: [
-            studio_makeLocal('%$path%'),
-            {$: 'studio.open-style-editor', path: '%$styleSource/innerPath%', $recursive: true},
-            studio_openProperties()
+            studio.makeLocal('%$path%'),
+            studio.openStyleEditor('%$styleSource/innerPath%'),
+            studio.openProperties()
           ],
           icon: 'build',
           showCondition: "%$styleSource/type% == 'global'"
         }),
-        menu_action({
+        menu.action({
           title: 'Extract style as a reusable component',
-          action: {$: 'studio.open-make-global-style', path: '%$path%'},
+          action: {'$': 'studio.open-make-global-style', path: '%$path%'},
           icon: 'build',
           showCondition: "%$styleSource/type% == 'inner'"
         }),
-        menu_action({
+        menu.action({
           title: 'Format css',
           action: writeValue(
-            studio_profileAsText('%$styleSource/path%~css'),
-            studio_formatCss(studio_profileAsText('%$styleSource/path%~css'))
+            studio.profileAsText('%$styleSource/path%~css'),
+            studio.formatCss(studio.profileAsText('%$styleSource/path%~css'))
           )
         })
       ]
@@ -33559,7 +34592,7 @@ jb.component('studio.open-style-menu', { /* studio_openStyleMenu */
   })
 })
 
-jb.component('studio.style-editor', { /* studio_styleEditor */
+jb.component('studio.style-editor', { /* studio.styleEditor */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -33570,25 +34603,30 @@ jb.component('studio.style-editor', { /* studio_styleEditor */
         tabs: [
           group({
             title: 'css',
-            style: layout_vertical(3),
+            style: layout.vertical(3),
             controls: [
               editableText({
                 title: 'css',
-                databind: studio_profileAsStringByref('%$path%~css'),
-                style: editableText_codemirror({
+                databind: studio.profileAsStringByref('%$path%~css'),
+                style: editableText.codemirror({
                   cm_settings: '',
                   enableFullScreen: false,
                   height: '300',
                   mode: 'css',
                   debounceTime: '2000',
-                  onCtrlEnter: studio_refreshPreview()
+                  onCtrlEnter: studio.refreshPreview()
                 })
               }),
-              label({title: 'jsx', style: label_htmlTag('h5')}),
+              label({title: 'jsx', style: label.htmlTag('h5')}),
               editableText({
                 title: 'template',
-                databind: pipeline(studio_templateAsJsx('%$path%~template'), studio_pretty('%%')),
-                style: editableText_codemirror({cm_settings: '', height: '200', mode: 'jsx', onCtrlEnter: studio_refreshPreview()})
+                databind: pipeline(studio.templateAsJsx('%$path%~template'), studio.pretty('%%')),
+                style: editableText.codemirror({
+                  cm_settings: '',
+                  height: '200',
+                  mode: 'jsx',
+                  onCtrlEnter: studio.refreshPreview()
+                })
               })
             ]
           }),
@@ -33597,50 +34635,50 @@ jb.component('studio.style-editor', { /* studio_styleEditor */
             controls: [
               editableText({
                 title: 'template',
-                databind: studio_profileAsText('%$path%~template'),
-                style: editableText_codemirror({
+                databind: studio.profileAsText('%$path%~template'),
+                style: editableText.codemirror({
                   cm_settings: '',
                   height: '400',
                   mode: 'javascript',
-                  onCtrlEnter: studio_refreshPreview()
+                  onCtrlEnter: studio.refreshPreview()
                 })
               }),
               button({
                 title: 'load from jsx/html',
                 action: openDialog({
-                  style: dialog_dialogOkCancel('OK', 'Cancel'),
+                  style: dialog.dialogOkCancel('OK', 'Cancel'),
                   content: group({
                     controls: [
                       editableText({
                         title: 'jsx',
                         databind: '%$jsx%',
-                        style: editableText_codemirror({enableFullScreen: true, debounceTime: 300})
+                        style: editableText.codemirror({enableFullScreen: true, debounceTime: 300})
                       })
                     ]
                   }),
                   title: 'Paste html / jsx',
-                  onOK: writeValue(studio_ref('%$path%~template'), studio_jsxToH('%$jsx%')),
+                  onOK: writeValue(studio.ref('%$path%~template'), studio.jsxToH('%$jsx%')),
                   features: [variable({name: 'jsx', value: 'paste your jsx here', watchable: 'true'})]
                 }),
-                style: button_mdlRaised()
+                style: button.mdlRaised()
               })
             ]
           }),
           group({
             title: 'Inteliscript editor',
-            style: layout_vertical(),
+            style: layout.vertical(),
             controls: [
-              studio_jbEditor('%$path%')
+              studio.jbEditor('%$path%')
             ]
           })
         ],
-        style: tabs_simple()
+        style: tabs.simple()
       })
     ]
   })
 })
 
-jb.component('studio.style-source', { /* studio_styleSource */
+jb.component('studio.style-source', { /* studio.styleSource */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -33656,42 +34694,42 @@ jb.component('studio.style-source', { /* studio_styleSource */
   }
 })
 
-jb.component('studio.open-style-editor', { /* studio_openStyleEditor */
+jb.component('studio.open-style-editor', { /* studio.openStyleEditor */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: openDialog({
-    vars: [Var('styleSource', studio_styleSource('%$path%'))],
-    style: dialog_studioFloating({id: 'style editor', width: '800'}),
-    content: studio_styleEditor('%$path%'),
+    vars: [Var('styleSource', studio.styleSource('%$path%'))],
+    style: dialog.studioFloating({id: 'style editor', width: '800'}),
+    content: studio.styleEditor('%$path%'),
     menu: button({
       title: 'style menu',
-      action: studio_openStyleMenu('%$path%'),
-      style: button_mdlIcon('menu'),
+      action: studio.openStyleMenu('%$path%'),
+      style: button.mdlIcon('menu'),
       features: css('button { background: transparent }')
     }),
     title: 'Style Editor - %$styleSource/path%',
-    features: dialogFeature_resizer()
+    features: dialogFeature.resizer()
   })
 })
 
-jb.component('studio.style-editor-options', { /* studio_styleEditorOptions */ 
+jb.component('studio.style-editor-options', { /* studio.styleEditorOptions */ 
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu_endWithSeparator({
-    vars: [Var('compName', studio_compName('%$path%'))],
+  impl: menu.endWithSeparator({
+    vars: [Var('compName', studio.compName('%$path%'))],
     options: [
-      menu_action({
+      menu.action({
         title: 'Style editor',
-        action: runActions(studio_makeLocal('%$path%'), studio_openStyleEditor('%$path%')),
+        action: runActions(studio.makeLocal('%$path%'), studio.openStyleEditor('%$path%')),
         showCondition: endsWith('~style', '%$path%')
       }),
-      menu_action({
+      menu.action({
         title: 'Style editor of %$compName%',
-        action: studio_openStyleEditor('%$compName%~impl'),
+        action: studio.openStyleEditor('%$compName%~impl'),
         showCondition: and(endsWith('~style', '%$path%'), notEmpty('%$compName%'))
       })
     ]
@@ -33772,12 +34810,15 @@ jb.component('studio.goto-references-options', { /* studio.gotoReferencesOptions
   impl: menu.dynamicOptions(
     '%$refs%',
     {
-      $if: '%refs/length% > 1',
+      '$if': '%refs/length% > 1',
       then: menu.menu({
         title: '%id% (%refs/length%)',
         options: menu.dynamicOptions(
           '%$menuData/refs%',
-          menu.action({title: '%%', action: studio.openComponentInJbEditor('%%', '%$path%')})
+          menu.action({
+            title: '%%',
+            action: studio.openComponentInJbEditor('%%', '%$path%')
+          })
         )
       }),
       else: menu.action({
@@ -33803,7 +34844,9 @@ jb.component('studio.goto-references-button', { /* studio.gotoReferencesButton *
     '%$refs/length%',
     button({
       title: '%$noOfReferences% references',
-      action: menu.openContextMenu({menu: menu.menu({options: studio.gotoReferencesOptions('%$path%', '%$refs%')})})
+      action: menu.openContextMenu({
+        menu: menu.menu({options: studio.gotoReferencesOptions('%$path%', '%$refs%')})
+      })
     })
   )
 })
@@ -33814,8 +34857,8 @@ jb.component('studio.goto-references-menu', { /* studio.gotoReferencesMenu */
     {id: 'path', as: 'string'}
   ],
   impl: {
-    $if: '%$noOfReferences% > 0',
-    $vars: {
+    '$if': '%$noOfReferences% > 0',
+    '$vars': {
       refs: studio.references('%$path%'),
       noOfReferences: ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0)
     },
@@ -33829,64 +34872,64 @@ jb.component('studio.goto-references-menu', { /* studio.gotoReferencesMenu */
 
 ;
 
-jb.component('studio.goto-path', { /* studio_gotoPath */
+jb.component('studio.goto-path', { /* studio.gotoPath */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: runActions(
-    dialog_closeContainingPopup(),
+    dialog.closeContainingPopup(),
     writeValue('%$studio/profile_path%', '%$path%'),
-    {
-      $if: studio_isOfType('%$path%', 'control,table-field'),
-      then: runActions({$: 'studio.open-control-tree', $recursive: true}),
-      else: studio_openComponentInJbEditor('%$path%')
-    }
+    action.if(
+        studio.isOfType('%$path%', 'control,table-field'),
+        studio.openControlTree(),
+        studio.openComponentInJbEditor('%$path%')
+      )
   )
 })
 
-jb.component('studio.open-property-menu', { /* studio_openPropertyMenu */
+jb.component('studio.open-property-menu', { /* studio.openPropertyMenu */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: menu_openContextMenu({
-    menu: menu_menu({
-      vars: [Var('compName', studio_compName('%$path%'))],
+  impl: menu.openContextMenu({
+    menu: menu.menu({
+      vars: [Var('compName', studio.compName('%$path%'))],
       options: [
-        studio_styleEditorOptions('%$path%'),
-        menu_action({
+        studio.styleEditorOptions('%$path%'),
+        menu.action({
           title: 'multiline edit',
-          action: studio_openMultilineEdit('%$path%'),
-          showCondition: equals(pipeline(studio_paramDef('%$path%'), '%as%'), 'string')
+          action: studio.openMultilineEdit('%$path%'),
+          showCondition: equals(pipeline(studio.paramDef('%$path%'), '%as%'), 'string')
         }),
-        menu_action({
+        menu.action({
           title: 'Goto %$compName%',
-          action: studio_gotoPath('%$compName%'),
+          action: studio.gotoPath('%$compName%'),
           showCondition: '%$compName%'
         }),
-        menu_action({
+        menu.action({
           title: 'Inteliscript editor',
-          action: studio_openJbEditor('%$path%'),
+          action: studio.openJbEditor('%$path%'),
           icon: 'code',
           shortcut: 'Ctrl+I'
         }),
-        menu_action({
+        menu.action({
           title: 'Javascript editor',
-          action: studio_editSource('%$path%'),
+          action: studio.editSource('%$path%'),
           icon: 'code',
           shortcut: 'Ctrl+J'
         }),
-        studio_gotoEditorOptions('%$path%'),
-        menu_action({
+        studio.gotoEditorOptions('%$path%'),
+        menu.action({
           title: 'Delete',
-          action: studio_delete('%$path%'),
+          action: studio.delete('%$path%'),
           icon: 'delete',
           shortcut: 'Delete'
         }),
-        menu_action({
-          title: {$if: studio_disabled('%$path%'), then: 'Enable', else: 'Disable'},
-          action: studio_toggleDisabled('%$path%'),
+        menu.action({
+          title: data.if(studio.disabled('%$path%'), 'Enable', 'Disable'),
+          action: studio.toggleDisabled('%$path%'),
           icon: 'do_not_disturb',
           shortcut: 'Ctrl+X'
         })
@@ -33895,181 +34938,210 @@ jb.component('studio.open-property-menu', { /* studio_openPropertyMenu */
   })
 })
 
-jb.component('studio.jb-editor-menu', { /* studio_jbEditorMenu */ 
+jb.component('studio.jb-editor-menu', { /* studio.jbEditorMenu */ 
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
     {id: 'root', as: 'string'}
   ],
-  impl: menu_menu({
+  impl: menu.menu({
     options: [
-      menu_action({
+      menu.action({
         title: 'Add property',
         action: openDialog({
           id: 'add property',
-          style: dialog_popup(),
+          style: dialog.popup(),
           content: group({
             controls: [
               editableText({
                 title: 'property name',
                 databind: '%$name%',
-                style: editableText_mdlInput(),
+                style: editableText.mdlInput(),
                 features: [
-                  feature_onEnter(
-                    writeValue(studio_ref('%$path%~%$name%'), ''),
-                    dialog_closeContainingPopup(true),
-                    tree_redraw(),
-                    tree_regainFocus()
+                  feature.onEnter(
+                    writeValue(studio.ref('%$path%~%$name%'), ''),
+                    dialog.closeContainingPopup(true),
+                    tree.redraw(),
+                    tree.regainFocus()
                   )
                 ]
               })
             ],
-            features: css_padding({top: '9', left: '20', right: '20'})
+            features: css.padding({top: '9', left: '20', right: '20'})
           }),
           title: 'Add Property',
           modal: 'true',
           features: [
             variable({name: 'name', watchable: true}),
-            dialogFeature_nearLauncherPosition({}),
-            dialogFeature_autoFocusOnFirstInput()
+            dialogFeature.nearLauncherPosition({}),
+            dialogFeature.autoFocusOnFirstInput()
           ]
         }),
-        showCondition: equals(studio_compName('%$path%'), 'object')
+        showCondition: equals(studio.compName('%$path%'), 'object')
       }),
-      menu_action({
+      menu.action({
         title: 'Add variable',
-        action: studio_addVariable('%$path%'),
+        action: studio.addVariable('%$path%'),
         showCondition: endsWith('~$vars', '%$path%')
       }),
-      menu_endWithSeparator({
-        options: menu_dynamicOptions(
-          studio_moreParams('%$path%'),
-          menu_action({
+      menu.endWithSeparator({
+        options: menu.dynamicOptions(
+          studio.moreParams('%$path%'),
+          menu.action({
             title: suffix('~'),
             action: runActions(
-              studio_addProperty('%%'),
-              tree_redraw(),
-              dialog_closeContainingPopup(),
+              studio.addProperty('%%'),
+              tree.redraw(),
+              dialog.closeContainingPopup(),
               writeValue('%$jbEditorCntrData/selected%', '%%'),
-              studio_openJbEditProperty('%%')
+              studio.openJbEditProperty('%%')
             )
           })
         )
       }),
-      menu_action({
+      menu.action({
         title: 'Variables',
         action: [
-          writeValue(studio_ref('%$path%~$vars'), {$: 'object'}),
+          writeValue(studio.ref('%$path%~$vars'), {'$': 'object'}),
           writeValue('%$jbEditorCntrData/selected%', '%$path%~$vars'),
-          tree_redraw(),
-          studio_addVariable('%$path%~$vars')
+          tree.redraw(),
+          studio.addVariable('%$path%~$vars')
         ],
-        showCondition: and(isEmpty(studio_val('%$path%~$vars')), isOfType('object', studio_val('%$path%')))
+        showCondition: and(
+          isEmpty(studio.val('%$path%~$vars')),
+          isOfType('object', studio.val('%$path%'))
+        )
       }),
-      studio_styleEditorOptions('%$path%'),
-      menu_endWithSeparator(
+      studio.styleEditorOptions('%$path%'),
+      menu.endWithSeparator(
         [
-          menu_action({
+          menu.action({
             vars: [Var('compName', split({separator: '~', text: '%$root%', part: 'first'}))],
             title: 'Goto parent',
-            action: studio_openComponentInJbEditor('%$path%', '%$fromPath%'),
+            action: studio.openComponentInJbEditor('%$path%', '%$fromPath%'),
             showCondition: contains({text: '~', allText: '%$root%'})
           }),
-          menu_action({
-            vars: [Var('compName', studio_compName('%$path%'))],
+          menu.action({
+            vars: [Var('compName', studio.compName('%$path%'))],
             title: 'Goto %$compName%',
-            action: studio_openJbEditor({path: '%$compName%', fromPath: '%$path%'}),
+            action: studio.openJbEditor({path: '%$compName%', fromPath: '%$path%'}),
             showCondition: '%$compName%'
           }),
-          menu_action({
+          menu.action({
             vars: [Var('compName', split({separator: '~', text: '%$fromPath%', part: 'first'}))],
             title: 'Back to %$compName%',
-            action: studio_openComponentInJbEditor('%$fromPath%', '%$path%'),
+            action: studio.openComponentInJbEditor('%$fromPath%', '%$path%'),
             showCondition: '%$fromPath%'
           })
         ]
       ),
-      studio_gotoEditorOptions('%$path%'),
-      menu_studioWrapWith({path: '%$path%', type: 'control', components: list('group')}),
-      menu_studioWrapWith({
+      studio.gotoEditorOptions('%$path%'),
+      menu.studioWrapWith({path: '%$path%', type: 'control', components: list('group')}),
+      menu.studioWrapWith({
         path: '%$path%',
         type: 'data',
         components: list('pipeline', 'list', 'firstSucceeding')
       }),
-      menu_studioWrapWith({path: '%$path%', type: 'boolean', components: list('and', 'or', 'not')}),
-      menu_studioWrapWith({
+      menu.studioWrapWith({
+        path: '%$path%',
+        type: 'boolean',
+        components: list('and', 'or', 'not')
+      }),
+      menu.studioWrapWith({
         path: '%$path%',
         type: 'action',
         components: list('runActions', 'runActionOnItems')
       }),
-      menu_studioWrapWithArray('%$path%'),
-      menu_action({
+      menu.studioWrapWithArray('%$path%'),
+      menu.action({
         title: 'Duplicate',
-        action: studio_duplicateArrayItem('%$path%'),
+        action: studio.duplicateArrayItem('%$path%'),
         shortcut: 'Ctrl+D',
-        showCondition: studio_isArrayItem('%$path%')
+        showCondition: studio.isArrayItem('%$path%')
       }),
-      menu_separator(),
-      menu_menu({
+      menu.separator(),
+      menu.menu({
         title: 'More',
         options: [
-          menu_action({title: 'Pick context', action: studio_pick()}),
-          studio_gotoReferencesMenu(split({separator: '~', text: '%$path%', part: 'first'})),
-          menu_action({
+          menu.action({title: 'Pick context', action: studio.pick()}),
+          studio.gotoReferencesMenu(
+            split({separator: '~', text: '%$path%', part: 'first'})
+          ),
+          menu.action({
             title: 'Remark',
             action: openDialog({
               id: 'add property',
-              style: dialog_popup(),
+              style: dialog.popup(),
               content: group({
                 controls: [
                   editableText({
                     title: 'remark',
                     databind: '%$remark%',
-                    style: editableText_mdlInput(),
+                    style: editableText.mdlInput(),
                     features: [
-                      feature_onEnter(
-                        writeValue(studio_ref('%$path%~remark'), '%$remark%'),
-                        dialog_closeContainingPopup(true),
-                        tree_redraw(),
-                        tree_regainFocus()
+                      feature.onEnter(
+                        writeValue(studio.ref('%$path%~remark'), '%$remark%'),
+                        dialog.closeContainingPopup(true),
+                        tree.redraw(),
+                        tree.regainFocus()
                       )
                     ]
                   })
                 ],
-                features: css_padding({top: '9', left: '20', right: '20'})
+                features: css.padding({top: '9', left: '20', right: '20'})
               }),
               title: 'Remark',
               modal: 'true',
               features: [
-                variable({name: 'remark', value: studio_val('%$path%~remark'), watchable: true}),
-                dialogFeature_nearLauncherPosition({}),
-                dialogFeature_autoFocusOnFirstInput()
+                variable({name: 'remark', value: studio.val('%$path%~remark'), watchable: true}),
+                dialogFeature.nearLauncherPosition({}),
+                dialogFeature.autoFocusOnFirstInput()
               ]
             }),
-            showCondition: isOfType('object', studio_val('%$path%'))
+            showCondition: isOfType('object', studio.val('%$path%'))
           }),
-          menu_action({
+          menu.action({
             title: 'Javascript',
-            action: studio_editSource('%$path%'),
+            action: studio.editSource('%$path%'),
             icon: 'code',
             shortcut: 'Ctrl+J'
           }),
-          menu_action({
+          menu.action({
             title: 'Delete',
-            action: studio_delete('%$path%'),
+            action: studio.delete('%$path%'),
             icon: 'delete',
             shortcut: 'Delete'
           }),
-          menu_action({
-            title: {$if: studio_disabled('%$path%'), then: 'Enable', else: 'Disable'},
-            action: studio_toggleDisabled('%$path%'),
+          menu.action({
+            title: {'$if': studio.disabled('%$path%'), then: 'Enable', else: 'Disable'},
+            action: studio.toggleDisabled('%$path%'),
             icon: 'do_not_disturb',
             shortcut: 'Ctrl+X'
           }),
-          menu_action({title: 'Copy', action: studio_copy('%$path%'), icon: 'copy', shortcut: 'Ctrl+C'}),
-          menu_action({title: 'Paste', action: studio_paste('%$path%'), icon: 'paste', shortcut: 'Ctrl+V'}),
-          menu_action({title: 'Undo', action: studio_undo(), icon: 'undo', shortcut: 'Ctrl+Z'}),
-          menu_action({title: 'Redo', action: studio_redo(), icon: 'redo', shortcut: 'Ctrl+Y'})
+          menu.action({
+            title: 'Copy',
+            action: studio.copy('%$path%'),
+            icon: 'copy',
+            shortcut: 'Ctrl+C'
+          }),
+          menu.action({
+            title: 'Paste',
+            action: studio.paste('%$path%'),
+            icon: 'paste',
+            shortcut: 'Ctrl+V'
+          }),
+          menu.action({
+            title: 'Undo',
+            action: studio.undo(),
+            icon: 'undo',
+            shortcut: 'Ctrl+Z'
+          }),
+          menu.action({
+            title: 'Redo',
+            action: studio.redo(),
+            icon: 'redo',
+            shortcut: 'Ctrl+Y'
+          })
         ],
         optionsFilter: '%%'
       })
@@ -34085,12 +35157,12 @@ const elec_remote = _window.require && _window.require('electron').remote;
 const fs = elec_remote && elec_remote.require('fs');
 const jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
 
-jb.component('studio.save-components', {
-	type: 'action,has-side-effects',
-	params: [
-		{ id: 'force',as: 'boolean', type: 'boolean' }
-	],
-	impl : (ctx,force) => {
+jb.component('studio.save-components', { /* studio.saveComponents */
+  type: 'action,has-side-effects',
+  params: [
+    {id: 'force', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,force) => {
     const messages = []
 		jb.rx.Observable.from(st.changedComps().map(e=>e[0]))
 			.concatMap(id=>{
@@ -34209,49 +35281,49 @@ function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
 })();
 ;
 
-jb.component('studio.goto-project', { /* studio_gotoProject */
+jb.component('studio.goto-project', { /* studio.gotoProject */
   type: 'action',
   impl: runActions(
     gotoUrl('/project/studio/%%', 'new tab'),
-    dialog_closeContainingPopup()
+    dialog.closeContainingPopup()
   )
 })
 
-jb.component('studio.choose-project', { /* studio_chooseProject */
+jb.component('studio.choose-project', { /* studio.chooseProject */
   type: 'control',
   impl: group({
     title: 'itemlist-with-find',
     controls: [
-      itemlistContainer_search({features: css_width('250')}),
+      itemlistContainer.search({features: css.width('250')}),
       itemlist({
-        items: pipeline('%projects%', itemlistContainer_filter()),
+        items: pipeline('%projects%', itemlistContainer.filter()),
         controls: button({
           title: highlight('%%', '%$itemlistCntrData/search_pattern%'),
-          action: studio_gotoProject(),
-          style: button_mdlFlatRipple(),
+          action: studio.gotoProject(),
+          style: button.mdlFlatRipple(),
           features: css('{ text-align: left; width: 250px }')
         }),
         features: [
-          itemlist_selection({}),
-          itemlist_keyboardSelection({autoFocus: true, onEnter: studio_gotoProject()}),
+          itemlist.selection({}),
+          itemlist.keyboardSelection({autoFocus: true, onEnter: studio.gotoProject()}),
           watchRef('%$itemlistCntrData/search_pattern%'),
-          css_height({height: '400', overflow: 'scroll'})
+          css.height({height: '400', overflow: 'scroll'})
         ]
       })
     ],
     features: [
-      group_wait({for: http_get('/?op=projects', 'true')}),
-      css_padding({top: '15', left: '15'}),
-      group_itemlistContainer({})
+      group.wait({for: http.get('/?op=projects', 'true')}),
+      css.padding({top: '15', left: '15'}),
+      group.itemlistContainer({})
     ]
   })
 })
 
-jb.component('studio.open-project', { /* studio_openProject */ 
+jb.component('studio.open-project', { /* studio.openProject */ 
   type: 'action',
   impl: openDialog({
-    style: dialog_dialogOkCancel('OK', 'Cancel'),
-    content: studio_chooseProject(),
+    style: dialog.dialogOkCancel('OK', 'Cancel'),
+    content: studio.chooseProject(),
     title: 'Open project'
   })
 });
@@ -34286,10 +35358,16 @@ jb.component('studio.tree-menu', { /* studio.treeMenu */
         title: 'Wrap with group',
         action: [
           studio.wrapWithGroup('%$path%'),
-          onNextTimer([writeValue('%$studio/profile_path%', '%$path%~controls~0'), tree.regainFocus()])
+          onNextTimer(
+            [writeValue('%$studio/profile_path%', '%$path%~controls~0'), tree.regainFocus()]
+          )
         ]
       }),
-      menu.action({title: 'Duplicate', action: studio.duplicateControl('%$path%'), shortcut: 'Ctrl+D'}),
+      menu.action({
+        title: 'Duplicate',
+        action: studio.duplicateControl('%$path%'),
+        shortcut: 'Ctrl+D'
+      }),
       menu.separator(),
       menu.action({
         title: 'Inteliscript editor',
@@ -34298,7 +35376,7 @@ jb.component('studio.tree-menu', { /* studio.treeMenu */
       }),
       menu.action({
         title: 'Context viewer',
-        action: {$: 'studio.open-context-viewer', path: '%$path%'}
+        action: {'$': 'studio.open-context-viewer', path: '%$path%'}
       }),
       menu.action({
         title: 'Javascript editor',
@@ -34322,15 +35400,35 @@ jb.component('studio.tree-menu', { /* studio.treeMenu */
         shortcut: 'Delete'
       }),
       menu.action({
-        title: {$if: studio.disabled('%$path%'), then: 'Enable', else: 'Disable'},
+        title: {'$if': studio.disabled('%$path%'), then: 'Enable', else: 'Disable'},
         action: studio.toggleDisabled('%$path%'),
         icon: 'do_not_disturb',
         shortcut: 'Ctrl+X'
       }),
-      menu.action({title: 'Copy', action: studio.copy('%$path%'), icon: 'copy', shortcut: 'Ctrl+C'}),
-      menu.action({title: 'Paste', action: studio.paste('%$path%'), icon: 'paste', shortcut: 'Ctrl+V'}),
-      menu.action({title: 'Undo', action: studio.undo(), icon: 'undo', shortcut: 'Ctrl+Z'}),
-      menu.action({title: 'Redo', action: studio.redo(), icon: 'redo', shortcut: 'Ctrl+Y'})
+      menu.action({
+        title: 'Copy',
+        action: studio.copy('%$path%'),
+        icon: 'copy',
+        shortcut: 'Ctrl+C'
+      }),
+      menu.action({
+        title: 'Paste',
+        action: studio.paste('%$path%'),
+        icon: 'paste',
+        shortcut: 'Ctrl+V'
+      }),
+      menu.action({
+        title: 'Undo',
+        action: studio.undo(),
+        icon: 'undo',
+        shortcut: 'Ctrl+Z'
+      }),
+      menu.action({
+        title: 'Redo',
+        action: studio.redo(),
+        icon: 'redo',
+        shortcut: 'Ctrl+Y'
+      })
     ]
   })
 })
@@ -34428,25 +35526,24 @@ jb.component('studio.open-control-tree', { /* studio.openControlTree */
 
 ;
 
-jb.component('studio.watchable-or-passive', { 
+jb.component('studio.watchable-or-passive', { /* studio.watchableOrPassive */
   params: [
-    {id: 'path', as: 'string' }
+    {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
 })
 
-jb.component('studio.open-resource', { /* studio_openResource */
+jb.component('studio.open-resource', { /* studio.openResource */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'name', as: 'string'},
+    {id: 'name', as: 'string'}
   ],
   impl: openDialog({
     style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
     content: editableText({
       databind: studio.profileAsText('%$path%'),
-      style: editableText.studioCodemirrorTgp(),
-      //features: textEditor.watchSourceChanges()
+      style: editableText.studioCodemirrorTgp()
     }),
     title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
     features: [
@@ -34456,43 +35553,46 @@ jb.component('studio.open-resource', { /* studio_openResource */
   })
 })
 
-jb.component('studio.open-new-resource', { 
+jb.component('studio.open-new-resource', { /* studio.openNewResource */
   params: [
-    {id: 'watchableOrPassive', as: 'string' }
+    {id: 'watchableOrPassive', as: 'string'}
   ],
   type: 'action',
   impl: openDialog({
-    style: dialog_dialogOkCancel(),
+    style: dialog.dialogOkCancel(),
     content: group({
-      style: group_div(),
+      style: group.div(),
       controls: [
         editableText({
           title: 'resource name',
           databind: '%$name%',
-          style: editableText_mdlInput(),
-          features: feature_onEnter(dialog_closeContainingPopup())
+          style: editableText.mdlInput(),
+          features: feature.onEnter(dialog.closeContainingPopup())
         })
       ],
-      features: css_padding({top: '14', left: '11'})
+      features: css.padding({top: '14', left: '11'})
     }),
     title: 'New %$watchableOrPassive% Data Source',
     onOK: [
-      (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component(jb.tostring(name), { 
+      (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component(jb.tostring(name), {
         [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
       }),
-      studio.openResource('%$name%~%$watchableOrPassive%Data','%$name%')
+      studio.openResource('%$name%~%$watchableOrPassive%Data', '%$name%')
     ],
     modal: true,
-    features: [variable({name: 'name', watchable: true}), dialogFeature_autoFocusOnFirstInput()]
+    features: [
+      variable({name: 'name', watchable: true}),
+      dialogFeature.autoFocusOnFirstInput()
+    ]
   })
 })
 
-jb.component('studio.data-resource-menu', { /* studio_dataResourceMenu */ 
+jb.component('studio.data-resource-menu', { /* studio.dataResourceMenu */
   type: 'menu.option',
-  impl: menu_menu({
+  impl: menu.menu({
     title: 'Data',
     options: [
-      menu_endWithSeparator({
+      menu.endWithSeparator({
         options: dynamicControls({
           controlItems: ctx => jb.entries(jb.studio.previewjb.comps)
           .filter(e=>! jb.comps[e[0]])
@@ -34508,12 +35608,15 @@ jb.component('studio.data-resource-menu', { /* studio_dataResourceMenu */
             ),
           genericControl: menu.action({
             title: '%$controlItem/name%',
-            action: studio.openResource('%$controlItem/path%','%$controlItem/name%')
+            action: studio.openResource('%$controlItem/path%', '%$controlItem/name%')
           })
         })
       }),
-      menu.action({title: 'New Watchable', action: studio.openNewResource('watchable')}),
-      menu.action({title: 'New Passive', action: studio.openNewResource('passive')}),
+      menu.action({
+        title: 'New Watchable',
+        action: studio.openNewResource('watchable')
+      }),
+      menu.action({title: 'New Passive', action: studio.openNewResource('passive')})
     ]
   })
 })
@@ -34523,7 +35626,7 @@ jb.component('studio.data-resource-menu', { /* studio_dataResourceMenu */
 ;
 
 
-jb.component('studio.new-project', { /* studio_newProject */
+jb.component('studio.new-project', { /* studio.newProject */
   type: 'action,has-side-effects',
   params: [
     {id: 'name', as: 'string'},
@@ -34577,29 +35680,29 @@ jb.component('studio.new-project', { /* studio_newProject */
   }
 })
 
-jb.component('studio.open-new-project', { /* studio_openNewProject */ 
+jb.component('studio.open-new-project', { /* studio.openNewProject */ 
   type: 'action',
   impl: openDialog({
-    style: dialog_dialogOkCancel(),
+    style: dialog.dialogOkCancel(),
     content: group({
-      style: group_div(),
+      style: group.div(),
       controls: [
         editableText({
           title: 'project name',
           databind: '%$name%',
-          style: editableText_mdlInput(),
-          features: feature_onEnter(dialog_closeContainingPopup())
+          style: editableText.mdlInput(),
+          features: feature.onEnter(dialog.closeContainingPopup())
         })
       ],
-      features: css_padding({top: '14', left: '11'})
+      features: css.padding({top: '14', left: '11'})
     }),
     title: 'New Project',
-    onOK: studio_newProject('%$name%', gotoUrl('/project/studio/%$name%/')),
+    onOK: studio.newProject('%$name%', gotoUrl('/project/studio/%$name%/')),
     modal: true,
     features: [
       variable({name: 'name', watchable: true}),
-      dialogFeature_autoFocusOnFirstInput(),
-      dialogFeature_nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
+      dialogFeature.autoFocusOnFirstInput(),
+      dialogFeature.nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
     ]
   })
 })
@@ -34628,7 +35731,7 @@ st.initEventTracker = _ => {
 //ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent})
 //({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources})
 
-jb.component('studio.event-title', { /* studio_eventTitle */
+jb.component('studio.event-title', { /* studio.eventTitle */
   type: 'data',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -34637,7 +35740,7 @@ jb.component('studio.event-title', { /* studio_eventTitle */
 		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
 })
 
-jb.component('studio.event-cmp', { /* studio_eventCmp */
+jb.component('studio.event-cmp', { /* studio.eventCmp */
   type: 'data',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -34646,7 +35749,7 @@ jb.component('studio.event-cmp', { /* studio_eventCmp */
 		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
 })
 
-jb.component('studio.event-cause', { /* studio_eventCause */
+jb.component('studio.event-cause', { /* studio.eventCause */
   type: 'data',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -34655,7 +35758,7 @@ jb.component('studio.event-cause', { /* studio_eventCause */
 		(event && event.opEvent) ? st.nameOfRef(event.opEvent.ref) + ' changed to "' + st.valSummary(event.opEvent.newVal) + '"' : ''
 })
 
-jb.component('studio.state-change-events', { /* studio_stateChangeEvents */
+jb.component('studio.state-change-events', { /* studio.stateChangeEvents */
   type: 'data',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}
@@ -34664,17 +35767,17 @@ jb.component('studio.state-change-events', { /* studio_stateChangeEvents */
 		(studio ? st.studioStateChangeEvents : st.stateChangeEvents) || []
 })
 
-jb.component('studio.highlight-event', { /* studio_highlightEvent */
+jb.component('studio.highlight-event', { /* studio.highlightEvent */
   type: 'action',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
   ],
-  impl: studio_highlightInPreview(
+  impl: studio.highlightInPreview(
     '%$event/cmp/ctx/path%'
   )
 })
 
-jb.component('studio.event-tracker', { /* studio_eventTracker */
+jb.component('studio.event-tracker', { /* studio.eventTracker */
   type: 'control',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}
@@ -34682,55 +35785,55 @@ jb.component('studio.event-tracker', { /* studio_eventTracker */
   impl: group({
     controls: [
       table({
-        items: studio_stateChangeEvents('%$studio%'),
+        items: studio.stateChangeEvents('%$studio%'),
         fields: [
-          field_control({
+          field.control({
             title: 'changed',
             control: button({
-              title: studio_nameOfRef('%opEvent/ref%'),
-              action: studio_gotoPath(studio_pathOfRef('%opEvent/ref%')),
-              style: button_href(),
-              features: feature_hoverTitle(studio_pathOfRef('%opEvent/ref%'))
+              title: studio.nameOfRef('%opEvent/ref%'),
+              action: studio.gotoPath(studio.pathOfRef('%opEvent/ref%')),
+              style: button.href(),
+              features: feature.hoverTitle(studio.pathOfRef('%opEvent/ref%'))
             }),
             width: '100'
           }),
           field({title: 'from', data: prettyPrint('%opEvent/oldVal%'), width: '200'}),
           field({title: 'to', data: prettyPrint('%opEvent/newVal%'), width: '200'}),
-          field_control({
+          field.control({
             title: 'action',
             control: button({
               title: '%opEvent/srcCtx/path%',
-              action: studio_gotoPath('%opEvent/srcCtx/path%'),
-              style: button_href()
+              action: studio.gotoPath('%opEvent/srcCtx/path%'),
+              style: button.href()
             }),
             width: '100'
           }),
-          field_control({
+          field.control({
             title: 'refreshing',
             control: button({
-              title: studio_eventCmp(),
-              action: studio_gotoPath('%cmp/ctxForPick/path%'),
-              style: button_href(),
-              features: [feature_onHover(studio_highlightEvent())]
+              title: studio.eventCmp(),
+              action: studio.gotoPath('%cmp/ctxForPick/path%'),
+              style: button.href(),
+              features: [feature.onHover(studio.highlightEvent())]
             }),
             width: '200'
           }),
-          field_control({
+          field.control({
             title: 'watched at',
             control: button({
               title: '%watchedAt/path%',
-              action: studio_gotoPath('%watchedAt/path%'),
-              style: button_href()
+              action: studio.gotoPath('%watchedAt/path%'),
+              style: button.href()
             }),
             width: '100'
           })
         ],
-        style: table_withHeaders()
+        style: table.withHeaders()
       })
     ],
     features: [
       {
-        $if: '%$studio%',
+        '$if': '%$studio%',
         then: watchObservable(ctx => jb.ui.stateChangeEm.debounceTime(500)),
         else: watchObservable(ctx => st.previewjb.ui.stateChangeEm.debounceTime(500))
       }
@@ -34739,16 +35842,16 @@ jb.component('studio.event-tracker', { /* studio_eventTracker */
 })
 
 
-jb.component('studio.open-event-tracker', { /* studio_openEventTracker */ 
+jb.component('studio.open-event-tracker', { /* studio.openEventTracker */ 
   type: 'action',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}
   ],
   impl: openDialog({
-    style: dialog_studioFloating({id: 'event-tracker', width: '700', height: '400'}),
-    content: studio_eventTracker('%$studio%'),
-    title: {$if: '%$studio%', then: 'Studio Event Tracking', else: 'Event Tracking'},
-    features: [dialogFeature_resizer()]
+    style: dialog.studioFloating({id: 'event-tracker', width: '700', height: '400'}),
+    content: studio.eventTracker('%$studio%'),
+    title: {'$if': '%$studio%', then: 'Studio Event Tracking', else: 'Event Tracking'},
+    features: [dialogFeature.resizer()]
   })
 })
 
@@ -34776,7 +35879,11 @@ jb.component('studio.toolbar', { /* studio.toolbar */
     style: studio.toolbarStyle(),
     controls: [
       label({title: '', features: css('{ width: 170px }')}),
-      button({title: 'Select', action: studio.pickAndOpen(), style: button.mdlIcon('call_made')}),
+      button({
+        title: 'Select',
+        action: studio.pickAndOpen(),
+        style: button.mdlIcon('call_made')
+      }),
       button({
         title: 'Save',
         action: studio.saveComponents(),
@@ -34788,7 +35895,11 @@ jb.component('studio.toolbar', { /* studio.toolbar */
         action: studio.refreshPreview(),
         style: button.mdlIcon('refresh')
       }),
-      button({title: 'Javascript', action: studio.editSource(), style: button.mdlIcon('code')}),
+      button({
+        title: 'Javascript',
+        action: studio.editSource(),
+        style: button.mdlIcon('code')
+      }),
       button({
         title: 'Outline',
         action: studio.openControlTree(),
@@ -34803,7 +35914,9 @@ jb.component('studio.toolbar', { /* studio.toolbar */
         title: 'jbEditor',
         action: studio.openComponentInJbEditor('%$studio/project%.%$studio/page%'),
         style: button.mdlIcon('build'),
-        features: ctrlAction(studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true}))
+        features: ctrlAction(
+          studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true})
+        )
       }),
       button({
         title: 'Event Tracker',
@@ -34818,12 +35931,16 @@ jb.component('studio.toolbar', { /* studio.toolbar */
       }),
       button({
         title: 'Show Data',
-        action: {$: 'studio.showProbeData'},
+        action: {'$': 'studio.showProbeData'},
         style: button.mdlIcon('input')
       }),
       button({
         title: 'Insert Control',
-        action: studio.openNewProfileDialog({type: 'control', mode: 'insert-control', onClose: studio.gotoLastEdit()}),
+        action: studio.openNewProfileDialog({
+          type: 'control',
+          mode: 'insert-control',
+          onClose: studio.gotoLastEdit()
+        }),
         style: button.mdlIcon('add')
       }),
       button({
@@ -34834,7 +35951,10 @@ jb.component('studio.toolbar', { /* studio.toolbar */
     ],
     features: [
       feature.keyboardShortcut('Alt+C', studio.pickAndOpen()),
-      feature.keyboardShortcut('Alt++', studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})),
+      feature.keyboardShortcut(
+        'Alt++',
+        studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})
+      ),
       feature.keyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
       feature.keyboardShortcut(
         'Alt+X',
@@ -34865,14 +35985,22 @@ jb.component('studio.search-list', { /* studio.searchList */
           field.control({
             control: materialIcon({
               icon: studio.iconOfType('%type%'),
-              features: [css.opacity('0.3'), css('{ font-size: 16px }'), css.padding({top: '5', left: '5'})]
+              features: [
+                css.opacity('0.3'),
+                css('{ font-size: 16px }'),
+                css.padding({top: '5', left: '5'})
+              ]
             })
           }),
           field.control({
             title: 'id',
             control: button({
               title: pipeline(
-                highlight('%id%', '%$itemlistCntrData/search_pattern%', 'mdl-color-text--indigo-A700')
+                highlight(
+                    '%id%',
+                    '%$itemlistCntrData/search_pattern%',
+                    'mdl-color-text--indigo-A700'
+                  )
               ),
               action: studio.gotoPath('%id%'),
               style: button.href()
@@ -34884,7 +36012,9 @@ jb.component('studio.search-list', { /* studio.searchList */
             control: button({
               title: '%refCount%',
               action: menu.openContextMenu({
-                menu: menu.menu({options: [studio.gotoReferencesOptions('%id%', studio.references('%id%'))]})
+                menu: menu.menu({
+                  options: [studio.gotoReferencesOptions('%id%', studio.references('%id%'))]
+                })
               }),
               style: button.href()
             })
@@ -34917,7 +36047,7 @@ jb.component('studio.search-list', { /* studio.searchList */
   })
 })
 
-jb.component('studio.search-component', { /* studio.searchComponent */ 
+jb.component('studio.search-component', { /* studio.searchComponent */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -34946,8 +36076,12 @@ jb.component('studio.search-component', { /* studio.searchComponent */
 })
 ;
 
-jb.component('studio', {
-  watchableData: { project:'', page:'', profile_path: ''}
+jb.component('studio', { /* studio */
+  watchableData: {
+    project: '',
+    page: '',
+    profile_path: ''
+  }
 })
 
 jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
@@ -34990,13 +36124,16 @@ jb.component('studio.pages', { /* studio.pages */
           itemlist.selection({
             databind: '%$studio/page%',
             onSelection: runActions(
-              writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
-              //studio.refreshPreview()
+              writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}')
             ),
             autoSelectFirst: true
           }),
           css(
-            "{ list-style: none; padding: 0;\n              margin: 0; margin-left: 20px; font-family: \"Arial\"}\n                  >* { list-style: none; display: inline-block; padding: 0 5px; font-size: 12px; border: 1px solid transparent; cursor: pointer;}\n                  >* label { cursor: inherit; }\n                  >*.selected { background: #fff;  border: 1px solid #ccc;  border-top: 1px solid transparent; color: inherit;  }"
+            `{ list-style: none; padding: 0;
+              margin: 0; margin-left: 20px; font-family: "Arial"}
+                  >* { list-style: none; display: inline-block; padding: 0 5px; font-size: 12px; border: 1px solid transparent; cursor: pointer;}
+                  >* label { cursor: inherit; }
+                  >*.selected { background: #fff;  border: 1px solid #ccc;  border-top: 1px solid transparent; color: inherit;  }`
           )
         ]
       })
@@ -35032,9 +36169,21 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
         options: [
           menu.action({title: 'New Project', action: studio.openNewProject(), icon: 'new'}),
           menu.action({title: 'Open Project ...', action: studio.openProject()}),
-          menu.action({title: 'Save', action: studio.saveComponents(), icon: 'save', shortcut: 'Ctrl+S'}),
-          menu.action({title: 'Force Save', action: studio.saveComponents(true), icon: 'save'}),
-          menu.action({title: 'Source ...', action: studio.editSource(studio.currentProfilePath())})
+          menu.action({
+            title: 'Save',
+            action: studio.saveComponents(),
+            icon: 'save',
+            shortcut: 'Ctrl+S'
+          }),
+          menu.action({
+            title: 'Force Save',
+            action: studio.saveComponents(true),
+            icon: 'save'
+          }),
+          menu.action({
+            title: 'Source ...',
+            action: studio.editSource(studio.currentProfilePath())
+          })
         ]
       }),
       menu.menu({
@@ -35093,7 +36242,11 @@ jb.component('studio.top-bar', { /* studio.topBar */
             title: 'menu and toolbar',
             style: layout.flex('space-between'),
             controls: [
-              menu.control({menu: studio.mainMenu(), style: menuStyle.pulldown({}), features: [ id('mainMenu'), css.height('30')] }),
+              menu.control({
+                menu: studio.mainMenu(),
+                style: menuStyle.pulldown({}),
+                features: [id('mainMenu'), css.height('30')]
+              }),
               studio.toolbar(),
               studio.searchComponent()
             ],
@@ -35160,7 +36313,7 @@ jb.component('studio.dynamic', { /* studio.dynamic */
   })
 })
 
-jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */ 
+jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
   type: 'control',
   params: [
     {id: 'path', as: 'string', mandatory: true},
@@ -35186,124 +36339,35 @@ jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
 
 ;
 
-jb.component('jb-component', {
+jb.component('jb-component', { /* jbComponent */
   type: 'any',
   params: [
-    { id: 'type', as: 'string', mandatory: true },
-    { id: 'category', as: 'string'},
-    { id: 'description', as: 'string'},
-    { id: 'params', type: 'jb-param[]'},
-    { id: 'impl', dynamicType: '%type%', mandatory: true  },
+    {id: 'type', as: 'string', mandatory: true},
+    {id: 'category', as: 'string'},
+    {id: 'description', as: 'string'},
+    {id: 'params', type: 'jb-param[]'},
+    {id: 'impl', dynamicType: '%type%', mandatory: true}
   ],
   impl: ctx => ctx.params
 })
 
-jb.component('jb-param', {
-  type: 'jb-param', singleInType: true,
+jb.component('jb-param', { /* jbParam */ 
+  type: 'jb-param',
+  singleInType: true,
   params: [
-    { id: 'id', as: 'string', mandatory: true },
-    { id: 'type', as: 'string'},
-    { id: 'description', as: 'string'},
-    { id: 'as', as: 'string', options: 'string,number,boolean,ref,single,array'},
-    { id: 'dynamic', type: 'boolean', as: 'boolean'},
-    { id: 'mandatory', type: 'boolean', as: 'boolean'},
-    { id: 'composite', type: 'boolean', as: 'boolean'},
-    { id: 'singleInType', type: 'boolean', as: 'boolean'},
-    { id: 'defaultValue', dynamicType: '%type%' },
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'type', as: 'string'},
+    {id: 'description', as: 'string'},
+    {id: 'as', as: 'string', options: 'string,number,boolean,ref,single,array'},
+    {id: 'dynamic', type: 'boolean', as: 'boolean'},
+    {id: 'mandatory', type: 'boolean', as: 'boolean'},
+    {id: 'composite', type: 'boolean', as: 'boolean'},
+    {id: 'singleInType', type: 'boolean', as: 'boolean'},
+    {id: 'defaultValue', dynamicType: '%type%'}
   ],
   impl: ctx => ctx.params
 })
 
-jb.component('studio.component-header', { /* studio_componentHeader */ 
-  type: 'control',
-  params: [
-    {id: 'component', as: 'string'}
-  ],
-  impl: group({
-    controls: [
-      label({title: '%$component%', style: label_htmlTag('h5')}),
-      group({
-        title: 'type',
-        style: layout_horizontal('20'),
-        controls: [
-          editableText({title: 'type', databind: '%type%', style: editableText_mdlInput('100')}),
-          editableText({title: 'category', databind: '%category%', style: editableText_mdlInput('250')})
-        ]
-      }),
-      group({
-        title: 'params',
-        controls: [
-          table({
-            items: '%params%',
-            fields: [
-              field_control({
-                title: '',
-                control: materialIcon({icon: 'home', style: icon_material(), features: itemlist_dragHandle()}),
-                width: '60'
-              }),
-              field_control({
-                title: 'id',
-                control: editableText({
-                  title: 'id',
-                  databind: studio_ref(
-                    pipeline(
-                      ctx => Number(ctx.vars.itemlistCntr.items.indexOf(ctx.data)).toString(),
-                      '%$component%~params~%%~id'
-                    )
-                  ),
-                  style: editableText_mdlInputNoFloatingLabel('101')
-                })
-              }),
-              field_control({
-                title: 'type',
-                control: editableText({
-                  title: 'type',
-                  databind: studio_ref(
-                    pipeline(
-                      ctx => Number(ctx.vars.itemlistCntr.items.indexOf(ctx.data)).toString(),
-                      '%$component%~params~%%~type'
-                    )
-                  ),
-                  style: editableText_mdlInputNoFloatingLabel('100')
-                })
-              }),
-              field_control({
-                title: 'as',
-                control: editableText({title: 'as', databind: '%as%', style: editableText_mdlInputNoFloatingLabel('100')})
-              }),
-              field_control({
-                title: 'dynamic',
-                control: editableBoolean({
-                  databind: '%dynamic%',
-                  style: editableBoolean_checkbox(),
-                  title: 'as',
-                  textForTrue: 'yes',
-                  textForFalse: 'no'
-                })
-              }),
-              field_control({
-                title: '',
-                control: button({
-                  title: 'delete',
-                  action: itemlistContainer_delete('%%'),
-                  style: button_x('21'),
-                  features: itemlist_shownOnlyOnItemHover()
-                }),
-                width: '60'
-              })
-            ],
-            style: table_mdl('mdl-data-table mdl-shadow--2dp', 'mdl-data-table__cell--non-numeric'),
-            watchItems: 'true',
-            features: [itemlist_dragAndDrop()]
-          }),
-          button({title: 'add', action: itemlistContainer_add(), style: button_mdlRaised()})
-        ],
-        features: group_itemlistContainer({defaultItem: {$: 'object'}})
-      })
-    ],
-    features: group_data({data: studio_ref('%$component%')})
-  })
-})
 ;
 
 (function() {
@@ -35507,133 +36571,4 @@ jb.component('studio.probe', { /* studio.probe */
 
 })()
 ;
-
-(function(){
-const st = jb.studio
-function compsRef(val,opEvent) {
-  if (typeof val == 'undefined')
-    return jb.comps;
-  else {
-    jb.comps = val;
-  }
-}
-
-jb.component('suggestions-test', {
-  type: 'test',
-  params: [
-    { id: 'expression', as: 'string' },
-    { id: 'selectionStart', as: 'number', defaultValue: -1 },
-    { id: 'path', as: 'string', defaultValue: 'suggestions-test.default-probe~impl~title' },
-    { id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean' },
-  ],
-  impl :{$: 'data-test',
-    calculate: ctx => {
-      st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
-
-      var params = ctx.componentContext.params;
-      var selectionStart = params.selectionStart == -1 ? params.expression.length : params.selectionStart;
-
-      var circuit = params.path.split('~')[0];
-      var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: { $: circuit }, comp: circuit, path: '', data: null }))
-        .runCircuit(params.path);
-      return probeRes.then(res=>{
-        var probeCtx = res.result[0] && res.result[0].in;
-        var obj = new jb.studio.suggestions({ value: params.expression, selectionStart: selectionStart })
-          .extendWithOptions(probeCtx.setVars({'people-array': ctx.exp('%$people-array%')}),probeCtx.path);
-        return JSON.stringify(JSON.stringify(obj.options.map(x=>x.text)));
-      })
-    },
-    expectedResult :{$call: 'expectedResult' }
-  },
-})
-
-jb.component('jb-editor-children-test', {
-  type: 'test',
-  params: [
-    { id: 'path', as: 'string' },
-    { id: 'childrenType', as: 'string', type: ',jb-editor' },
-    { id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean' }
-  ],
-  impl :{$: 'data-test',
-    calculate: ctx => {
-      st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
-
-      var params = ctx.componentContext.params;
-      var mdl = new jb.studio.jbEditorTree('');
-      var titles = mdl.children(params.path)
-        .map(path=>
-          mdl.title(path,true));
-      return JSON.stringify(titles);
-    },
-    expectedResult :{$call: 'expectedResult' }
-  },
-})
-
-jb.component('studio-probe-test', {
-  type: 'test',
-  params: [
-    { id: 'circuit', type: 'control', dynamic: true },
-    { id: 'probePath', as: 'string' },
-    { id: 'allowClosestPath', as: 'boolean' },
-    { id: 'expectedVisits', as: 'number', defaultValue : -1 },
-  ],
-  impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits)=> {
-    st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
-
-    var testId = ctx.vars.testID;
-    var failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
-    var success = _ => ({ id: testId, title: testId, success: true });
-
-    var full_path = testId + '~impl~circuit~' + probePath;
-    var probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
-      .runCircuit(full_path);
-    return probeRes.then(res=>{
-          try {
-						if (expectedVisits == 0 && res.closestPath)
-							return success();
-            if (!allowClosestPath && res.closestPath)
-              return failure('no probe results at path ' + probePath);
-            if (res.result.visits != expectedVisits && expectedVisits != -1)
-              return failure(`expected visits error actual/expected: ${res.result.visits}/${expectedVisits}`);
-            if (!res.result[0])
-                return failure('no probe results at path ' + probePath);
-          } catch(e) {
-            jb.logException(e,'jb-path-test',ctx);
-            return failure('exception');
-          }
-          return success();
-    })
-  }
-})
-
-jb.component('path-change-test', {
-  type: 'test',
-  params: [
-    { id: 'path', as: 'string' },
-    { id: 'action', type: 'action', dynamic: true },
-    { id: 'expectedPathAfter', as: 'string' },
-    { id: 'cleanUp', type: 'action', dynamic: true  },
-  ],
-  impl: (ctx,path,action,expectedPathAfter,cleanUp)=> {
-    st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
-
-    var testId = ctx.vars.testID;
-    var failure = (part,reason) => ({ id: testId, title: testId + '- ' + part, success:false, reason: reason });
-    var success = _ => ({ id: testId, title: testId, success: true });
-
-    var pathRef = jb.studio.refOfPath(path);
-    action();
-    
-    const res_path = pathRef.path().join('~');
-    if (res_path != expectedPathAfter)
-      var res = { id: testId, title: testId, success: false , reason: res_path + ' instead of ' + expectedPathAfter }
-    else
-      var res = { id: testId, title: testId, success: true };
-    cleanUp();
-
-    return res;
-  }
-})
-
-})();
 

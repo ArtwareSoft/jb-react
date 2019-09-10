@@ -644,6 +644,10 @@ const simpleValueByRefHandler = {
       to.$jb_parent[to.$jb_property] = this.val(value);
     return to;
   },
+  push(ref,toAdd) {
+    const arr = jb.asArray(jb.val(ref))
+    jb.toarray(toAdd).forEach(item => arr.push(item))
+  },
   asRef(value) {
     return value
     // if (value && (value.$jb_parent || value.$jb_val))
@@ -666,7 +670,7 @@ let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 return {
   run: jb_run,
   jbCtx, expression, bool_expression, profileType, compName, pathSummary, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame,
+  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame, fixByValue,
   ctxCounter: _ => ctxCounter, simpleValueByRefHandler
 }
 
@@ -678,6 +682,9 @@ Object.assign(jb,{
   knownNSAndCompCases: ['field'],
   macroName: id =>
     id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
+  ns: nsId =>
+    jb.registerMacro(nsId+'.$dummyComp',{})
+  ,
   component: (id,comp) => {
     jb.comps[id] = comp
     try {
@@ -917,6 +924,7 @@ Object.assign(jb,{
   writeValue: (ref,value,srcCtx) => jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
   splice: (ref,args,srcCtx) => jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
   move: (ref,toRef,srcCtx) => jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
+  push: (ref,toAdd,srcCtx) => jb.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
   isRef: ref => jb.refHandler(ref),
   isWatchable: ref => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
