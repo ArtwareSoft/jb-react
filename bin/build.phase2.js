@@ -14,7 +14,7 @@ function concatFiles(files,target) {
 
 const filesOfModules = modules => modules.split(',').map(m=>resources[m]).flat().filter(x=>typeof x == 'string')
 
-const jbReactFiles = filesOfModules('common','ui-common','ui-tree').filter(x=>!x.match(/.css$/));
+const jbReactFiles = filesOfModules('common,ui-common,pretty-print,ui-tree').filter(x=>!x.match(/.css$/));
 const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,pretty-print,history').filter(x=>!x.match(/.css$/))
     .concat(resources.studio.map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js'));
 const studioCssFiles = filesOfModules('common,ui-common,ui-tree,codemirror').filter(x=>x.match(/.css$/));

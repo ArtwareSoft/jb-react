@@ -1,3 +1,4 @@
+(function() {
 jb.component('tree.json-read-only', { /* tree.jsonReadOnly */
   type: 'tree.nodeModel',
   params: [
@@ -106,15 +107,7 @@ class Json {
 		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
 		if (Array.isArray(draggedArr) && Array.isArray(targetArr))
 			jb.move(jb.asRef(this.val(dragged)), jb.asRef(this.val(target)))
-
-		// const draggedArr = this.val(dragged.split('~').slice(0,-1).join('~'));
-		// const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
-		// const draggedIndex = Number(dragged.split('~').pop());
-		// const targetIndex = Number(target.split('~').pop());
-		// const val = draggedArr[draggedIndex]
-		// if (draggedArr === targetArr) 
-		// 	jb.splice(jb.asRef(draggedArr),[[draggedIndex,1],[targetIndex,0,val]],ctx);
-		// else if (Array.isArray(draggedArr) && Array.isArray(targetArr))
-		// 	jb.move(jb.asRef(this.val(dragged)), jb.asRef(this.val(target)))
 	}
 }
+
+})()
