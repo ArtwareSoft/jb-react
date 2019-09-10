@@ -276,8 +276,14 @@ ui.preserveCtx = ctx => {
 
 ui.renderWidget = function(profile,top) {
 	let formerReactElem, formerParentElem;
+	let blockedParentWin = false
 	try {
-		if (typeof window != 'undefined' && window.parent != window && window.parent.jb) {
+		x = typeof window != 'undefined' && window.parent.jb
+	} catch (e) {
+		blockedParentWin = true
+	}
+	try {
+		if (!blockedParentWin && typeof window != 'undefined' && window.parent != window && window.parent.jb) {
 			const st = window.parent.jb.studio
 			const originalResources = jb.resources
 			st.refreshPreviewWidget = _ => {
