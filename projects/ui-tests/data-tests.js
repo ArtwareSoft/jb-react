@@ -170,6 +170,17 @@ jb.component('data-test.runActionOnItems', { /* dataTest.runActionOnItems */
   })
 })
 
+jb.component('data-test.runActionOnItems-array-ref', {
+  impl: dataTest({
+    calculate: pipeline('%$personWithChildren/children/name%', join({})),
+    runBefore: runActionOnItems(
+      '%$personWithChildren/children/name%',
+      writeValue('%%', 'a%%')
+    ),
+    expectedResult: equals('aBart,aLisa,aMaggie')
+  })
+})
+
 jb.component('data-test.ref-api', { /* dataTest.refApi */
   impl: dataTest({
     calculate: '',
