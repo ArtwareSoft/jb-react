@@ -30,7 +30,7 @@ concatFiles(jbReactFiles,'jb-react-all.js');
 concatFiles(nodeFiles,'jb4node.js');
 concatFiles(coreFiles,'jbart-core.js');
 concatFiles(resources['pretty-print'],'pretty-print.js');
-concatFiles(studioCssFiles,'../bin/studio/studio-all.css');
+concatFiles(studioCssFiles,'../bin/studio/css/studio-all.css');
 concatFiles(studioFiles,'../bin/studio/studio-all.js');
 concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');

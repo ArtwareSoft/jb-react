@@ -32531,7 +32531,6 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
   params: [
     {id: 'path', as: 'string'},
     {id: 'source', as: 'string'},
-    {id: 'expressionOnly', as: 'boolean', type: 'boolean'}
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -32545,7 +32544,7 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
           .map(e=> input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
           .map(closestCtx)
           .map(probeCtx=>
-            new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,pathToTrace))
+            new st.suggestions(input, ctx.exp('%$suggestionData/expressionOnly%')).extendWithOptions(probeCtx,pathToTrace))
           .catch(e=> jb.logException(e,'suggestions',cmp.ctx) || [])
           .distinctUntilChanged((e1,e2)=> e1.key == e2.key) // compare options - if options are the same - leave it.
           .takeUntil( cmp.destroyed )
@@ -32575,7 +32574,7 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
 
 jb.component('studio.show-suggestions', { /* studio.showSuggestions */
   impl: ctx =>
-    new st.suggestions(ctx.data,false).suggestionsRelevant()
+    new st.suggestions(ctx.data,ctx.exp('%$suggestionData/expressionOnly%')).suggestionsRelevant()
 })
 
 jb.component('studio.paste-suggestion', { /* studio.pasteSuggestion */
@@ -32604,7 +32603,7 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
     features: [
       id('suggestions-itemlist'),
       itemlist.noContainer(),
-      studio.itemlistRefreshSuggestionsOptions({path: '%$path%', source: '%$source%'}),
+      studio.itemlistRefreshSuggestionsOptions('%$path%','%$source%'),
       itemlist.selection({
         databind: '%$suggestionData/selected%',
         onDoubleClick: studio.pasteSuggestion(),
@@ -32645,7 +32644,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
     ],
     features: variable({
       name: 'suggestionData',
-      value: {'$': 'object', selected: '', options: [], path: '%$path%'}
+      value: {'$': 'object', selected: '', options: [], path: '%$path%', expressionOnly: true}
     })
   })
 })
