@@ -114,7 +114,7 @@ jb.component('studio.open-tree-menu', { /* studio.openTreeMenu */
 })
 
 jb.component('studio.control-tree-nodes', { /* studio.controlTreeNodes */
-  type: 'tree.nodeModel',
+  type: 'tree.node-model',
   impl: function(context) {
 		var currentPath = context.run({ $: 'studio.currentProfilePath' });
 		var compPath = currentPath.split('~')[0] || '';

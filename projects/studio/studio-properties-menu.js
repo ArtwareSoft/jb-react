@@ -9,7 +9,7 @@ jb.component('studio.goto-path', { /* studio.gotoPath */
     action.if(
         studio.isOfType('%$path%', 'control,table-field'),
         studio.openControlTree(),
-        studio.openComponentInJbEditor('%$path%')
+       // runActions(studio.openControlTree(),studio.openProperties())
       )
   )
 })

@@ -56,10 +56,30 @@ class TreeNode extends jb.ui.Component {
 
  //********************* jBart Components
 
+ jb.component('tree.nodeModel', {
+    type: 'tree.node-model',
+    params: [
+      {id: 'rootPath', as: 'single', mandatory: true },
+      {id: 'children', dynamic: true, mandatory: true, description: 'from parent path to children paths' },
+      {id: 'pathToItem', dynamic: true, mandatory: true, description: 'value of path' },
+      {id: 'icon', dynamic: true, as: 'string', description: 'icon name from material icons' },
+      {id: 'title', dynamic: true, as: 'string', description: 'path as input, $collapsed as parameter' },
+      {id: 'isArray', dynamic: true, as: 'boolean', description: 'is expandable, path as input. children not empty is default' },
+    ],
+    impl: ctx => ({
+        rootPath: ctx.params.rootPath,
+        children: path => ctx.params.children(ctx.setData(path)),
+        val: path => ctx.params.pathToItem(ctx.setData(path)),
+        icon: path => ctx.params.icon(ctx.setData(path)),
+        title: (path,collapsed) => ctx.params.title(ctx.setData(path).setVars({collapsed})),
+        isArray: path => ctx.params.isArray.profile ? ctx.params.isArray(ctx.setData(path)) : ctx.params.children(ctx.setData(path)).length,
+    })
+})
+
 jb.component('tree', { /* tree */
   type: 'control',
   params: [
-    {id: 'nodeModel', type: 'tree.nodeModel', dynamic: true, mandatory: true},
+    {id: 'nodeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
     {id: 'style', type: 'tree.style', defaultValue: tree.ulLi(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],

@@ -1,6 +1,6 @@
 (function() {
 jb.component('tree.json-read-only', { /* tree.jsonReadOnly */
-  type: 'tree.nodeModel',
+  type: 'tree.node-model',
   params: [
     {id: 'object', as: 'single'},
     {id: 'rootPath', as: 'string'}
@@ -50,7 +50,7 @@ class ROjson {
 }
 
 jb.component('tree.json', { /* tree.json */
-  type: 'tree.nodeModel',
+  type: 'tree.node-model',
   params: [
     {id: 'object', as: 'ref'},
     {id: 'rootPath', as: 'string'}

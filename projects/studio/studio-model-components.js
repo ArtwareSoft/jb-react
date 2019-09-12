@@ -413,7 +413,7 @@ jb.component('studio.make-local', { /* studio.makeLocal */
 })
 
 jb.component('studio.jbEditorNodes', { /* studio.jbEditorNodes */
-  type: 'tree.nodeModel',
+  type: 'tree.node-model',
   params: [
     {id: 'path', as: 'string'}
   ],
