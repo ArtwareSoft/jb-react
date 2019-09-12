@@ -157,7 +157,7 @@ jb.component('studio.probe', { /* studio.probe */
     2. closest in preview
     3. the page shown in studio
 */
-        const circuitCtx = ctx.vars.pickSelection && ctx.vars.pickSelection.ctx
+        let circuitCtx = ctx.vars.pickSelection && ctx.vars.pickSelection.ctx
         if (circuitCtx && circuitCtx.path.indexOf('~fields~') != -1) {// fields are not good circuit. go up to the table
             const rowElem = ctx.vars.pickSelection.elem && ctx.vars.pickSelection.elem.closest('.jb-item')
             const rowCtx = rowElem && _jb.ctxDictionary[rowElem.getAttribute('jb-ctx')]

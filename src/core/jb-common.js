@@ -154,7 +154,7 @@ jb.component('keys', { /* keys */
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx,obj) => Object.keys(obj)
+  impl: (ctx,obj) => Object.keys(obj || {})
 })
 
 jb.component('properties', { /* properties */

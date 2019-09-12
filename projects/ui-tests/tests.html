@@ -9,6 +9,7 @@
 		modules="common,ui-common,material-css,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,parsing,object-encoder"></script>
 	<script type="text/javascript" src="data-tests.js"></script>
 	<script type="text/javascript" src="ui-tests.js"></script>
+	<script type="text/javascript" src="tree-tests.js"></script>
 	<script type="text/javascript" src="watchable-tests.js"></script>
 	<script type="text/javascript" src="parsing-tests.js"></script>
 	<script type="text/javascript" src="object-encoder-tests.js"></script>
@@ -29,7 +30,6 @@
 		rerun: urlQuery('rerun'),
 		pattern: urlQuery('pattern')
 	}
-
 	console.log(params)
 	jb.testers.runTests(params)
 </script>

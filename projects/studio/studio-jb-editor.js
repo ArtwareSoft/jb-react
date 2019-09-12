@@ -68,8 +68,12 @@ jb.component('studio.probe-results', { /* studio.probeResults */
     {id: 'path', as: 'string'}
   ],
   impl: (ctx, path) => jb.delay(300).then(_ => {
-    const inCtx = st.closestCtxByPath(path) || new jb.jbCtx()
-    return [{in: st.previewjb.val(inCtx.data), out: st.isOfType(path,'action') ? null : st.previewjb.val(inCtx.runItself())}]
+    if (ctx.exp('%$stduio/fastPreview%')) {
+      const inCtx = st.closestCtxByPath(path) || new jb.jbCtx()
+      return [{in: inCtx, out: st.isOfType(path,'action') ? null : 
+          st.previewjb.val(inCtx.runItself())}]
+    }
+    return ctx.run(pipe(studio.probe(path), '%result%'))
   })
 })
 
@@ -163,30 +167,29 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
 
 jb.component('studio.probe-data-view', { /* studio.probeDataView */
   type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
   impl: group({
-    controls: [
-      table({
+    controls: table({
         items: '%$probeResult%',
         fields: [
           field.control({
             title: 'last in',
-            control: studio.dataBrowse('%in%'),
+            control: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
             width: '100'
           }),
           field.control({title: 'out', control: studio.dataBrowse('%out%'), width: '100'})
         ],
         style: table.mdl('mdl-data-table', 'mdl-data-table__cell--non-numeric'),
-        features: css('{white-space: normal}')
-      })
-    ],
-    features: group.wait({
-      for: studio.probeResults('%$path%'),
-      loadingControl: label('...'),
-      varName: 'probeResult'
-    })
+        features: [
+          feature.if('%$jbEditorCntrData/selected%'),
+          group.wait({
+            for: studio.probeResults('%$jbEditorCntrData/selected%'),
+            loadingControl: label('...'),
+            varName: 'probeResult'
+          }),
+          css('{white-space: normal}')
+        ]
+      }),
+    features: watchRef('%$jbEditorCntrData/selected%'),
   })
 })
 
@@ -297,25 +300,9 @@ jb.component('studio.jb-editor', { /* studio.jbEditor */
     style: layout.horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
     controls: [
       studio.jbEditorInteliTree('%$path%'),
-      group({
-        title: 'inteli preview',
-        controls: [
-          group({
-            title: 'hide if selection empty',
-            controls: [
-              group({
-                title: 'watch selection content',
-                controls: studio.probeDataView('%$jbEditorCntrData/selected%'),
-                features: watchRef('%$jbEditorCntrData/selected%')
-              })
-            ],
-            features: feature.if('%$jbEditorCntrData/selected%')
-          })
-        ],
-        features: studio.watchScriptChanges()
-      })
+      studio.probeDataView('%$jbEditorCntrData/selected%')
     ],
-    features: [css.padding('10'), css.height({height: '800', minMax: 'max'})]
+    features: [id('jbEditor'), css.padding('10'), css.height({height: '800', minMax: 'max'})]
   })
 })
 
