@@ -50,20 +50,16 @@ jb.component('tree-demo.table-tree', { /* treeDemo.tableTree */
   impl: group({
     controls: [
       tableTree({
-        treeModel: tree.nodeModel({
-          rootPath: '',
-          children: pipeline(
-            Var('path', '%%'),
-            keys(json.pathSelector('%$personWithChildren%', '%%')),
-            '%$path%~%%'
-          ),
-          pathToItem: json.pathSelector('%$personWithChildren%', '%%'),
-          maxDepth: 3
-        }),
-        leafFields: [text({title: 'name', text: '%name%', style: label.noWrappingTag()})],
-        chapterHeadline: label('%$item/path%'),
+        treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
+        leafFields: [
+          text({title: 'name1', text: 'leaf1%val%', style: label.noWrappingTag()}),
+          text({title: 'name2', text: 'leaf2%val%', style: label.noWrappingTag()})
+        ],
+        commonFields: [text({title: 'name3', text: '%val/name%', style: label.noWrappingTag()})],
+        chapterHeadline: label({title: suffix('~', '%path%')}),
         style: tableTree.plain()
       })
-    ]
+    ],
+    features: css('{width: 300px}')
   })
 })
