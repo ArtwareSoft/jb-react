@@ -51,13 +51,11 @@ jb.component('tree-demo.table-tree', { /* treeDemo.tableTree */
     controls: [
       tableTree({
         treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
-        leafFields: [
-          text({title: 'name1', text: 'leaf1%val%', style: label.noWrappingTag()}),
-          text({title: 'name2', text: 'leaf2%val%', style: label.noWrappingTag()})
-        ],
-        commonFields: [text({title: 'name3', text: '%val/name%', style: label.noWrappingTag()})],
+        leafFields: text({title: 'name', text: '%val%'}),
+        commonFields: text({title: 'path', text: '%path%'}),
         chapterHeadline: label({title: suffix('~', '%path%')}),
-        style: tableTree.plain()
+        style: tableTree.plain(),
+        features: id('tableTree')
       })
     ],
     features: css('{width: 300px}')

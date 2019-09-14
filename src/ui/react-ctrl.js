@@ -7,9 +7,9 @@ ui.ctrl = function(context,options) {
 	var styleOptions = defaultStyle(ctx) || {};
 	if (styleOptions.jbExtend)  {// style by control
 		styleOptions.ctxForPick = ctx;
-		return styleOptions.jbExtend(options).applyFeatures(ctx);
+		return styleOptions.jbExtend(options).applyFeatures(ctx).initField();
 	}
-	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx);
+	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx).initField();
 
 	function defaultStyle(ctx) {
 		var profile = context.profile;
@@ -27,13 +27,26 @@ class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
 		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],
-			jbComponentDidUpdateFuncs: [], jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], extendItemFuncs: [] });
+			jbComponentDidUpdateFuncs: [], willUpdateFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], 
+			extendItemFuncs: [], enrichField: [] });
 		this.cssSelectors = [];
 
 		this.jb_profile = ctx.profile;
-		var title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => '');
-		this.jb_title = (typeof title == 'function') ? title : () => ''+title;
-//		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
+		//		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
+	}
+	initField() {
+		this.field = {
+			class: '',
+			ctxId: ui.preserveCtx(this.ctx),
+			control: (row,index) => this.ctx.setData(row).setVars({index: (index||0)+1}).runItself().reactComp() 
+		}
+		this.enrichField.forEach(enrichField=>enrichField(this.field))
+		let title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => '');
+		if (this.field.title !== undefined)
+			title = this.field.title
+		// make it always a function 
+		this.field.title = typeof title == 'function' ? title : () => ''+title;
+		return this
 	}
 
 	reactComp() {
@@ -49,7 +62,8 @@ class JbComponent {
 				this.ctxForPick = jbComp.ctxForPick || jbComp.ctx;
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				jbComp.extendCtxOnceFuncs.forEach(extendCtx =>
-					tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx');
+					tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx')
+			
 				Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
 				jbComp.jbBeforeInitFuncs.forEach(init=> tryWrapper(() => init(this,props)), 'beforeinit');
 				jbComp.jbInitFuncs.forEach(init=> tryWrapper(() => init(this,props)), 'init');
@@ -86,7 +100,8 @@ class JbComponent {
 		};
 		injectLifeCycleMethods(ReactComp,this);
 		ReactComp.ctx = this.ctx;
-		ReactComp.title = this.jb_title();
+		ReactComp.field = this.field;
+		ReactComp.title = this.field.title();
 		ReactComp.jbComp = jbComp;
 		return ReactComp;
 	}
@@ -122,22 +137,22 @@ class JbComponent {
 		}
 	}
 
-	applyFeatures(context) {
-		var features = (context.params.features && context.params.features(context) || []);
-		features.forEach(f => this.jbExtend(f,context));
-		if (context.params.style && context.params.style.profile && context.params.style.profile.features) {
-			jb.asArray(context.params.style.profile.features)
+	applyFeatures(ctx) {
+		var features = (ctx.params.features && ctx.params.features(ctx) || []);
+		features.forEach(f => this.jbExtend(f,ctx));
+		if (ctx.params.style && ctx.params.style.profile && ctx.params.style.profile.features) {
+			jb.asArray(ctx.params.style.profile.features)
 				.forEach((f,i)=>
-					this.jbExtend(context.runInner(f,{type:'feature'},context.path+'~features~'+i),context))
+					this.jbExtend(ctx.runInner(f,{type:'feature'},ctx.path+'~features~'+i),ctx))
 		}
 		return this;
 	}
 
-	jbExtend(options,context) {
+	jbExtend(options,ctx) {
     	if (!options) return this;
-    	context = context || this.ctx;
-    	if (!context)
-    		console.log('no context provided for jbExtend');
+    	ctx = ctx || this.ctx;
+    	if (!ctx)
+    		console.log('no ctx provided for jbExtend');
     	if (typeof options != 'object')
     		debugger;
 
@@ -146,16 +161,18 @@ class JbComponent {
 		if (options.beforeInit) this.jbBeforeInitFuncs.push(options.beforeInit);
 		if (options.init) this.jbInitFuncs.push(options.init);
 		if (options.afterViewInit) this.jbAfterViewInitFuncs.push(options.afterViewInit);
-		if (options.doCheck) this.jbCheckFuncs.push(options.doCheck);
+		if (options.componentWillUpdate) this.willUpdateFuncs.push(options.componentWillUpdate);
 		if (options.destroy) this.jbDestroyFuncs.push(options.destroy);
 		if (options.componentDidUpdate) this.jbComponentDidUpdateFuncs.push(options.componentDidUpdate);
 		if (options.templateModifier) this.modifierFuncs.push(options.templateModifier);
+		if (options.enrichField) this.enrichField.push(options.enrichField);
+		
 		if (typeof options.class == 'string')
 			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class));
 		if (typeof options.class == 'function')
 			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class()));
 		// events
-		var events = Object.getOwnPropertyNames(options).filter(op=>op.indexOf('on') == 0);
+		const events = Object.getOwnPropertyNames(options).filter(op=>op.indexOf('on') == 0);
 		events.forEach(op=>
 			this.jbRegisterEventsFuncs.push(cmp=>
 		       	  cmp[op] = cmp[op] || jb.rx.Observable.fromEvent(cmp.base, op.slice(2))
@@ -180,15 +197,15 @@ class JbComponent {
     			);
 
 		(options.featuresOptions || []).forEach(f =>
-			this.jbExtend(f, context))
+			this.jbExtend(f, ctx))
 		return this;
 	}
 }
 
 function injectLifeCycleMethods(Comp,jbComp) {
-	if (jbComp.jbCheckFuncs.length)
+	if (jbComp.willUpdateFuncs.length)
 	  Comp.prototype.componentWillUpdate = function() {
-		jbComp.jbCheckFuncs.forEach(f=>
+		jbComp.willUpdateFuncs.forEach(f=>
 			f(this));
 	}
 	if (jbComp.noUpdates)
@@ -274,6 +291,11 @@ ui.preserveCtx = ctx => {
   return ctx.id;
 }
 
+ui.preserveFieldCtxWithItem = (field,item) => {
+	const ctx = jb.ctxDictionary[field.ctxId]
+	return ctx && ui.preserveCtx(ctx.setData(item))
+}
+  
 ui.renderWidget = function(profile,top) {
 	let formerReactElem, formerParentElem;
 	let blockedParentWin = false
@@ -419,6 +441,13 @@ ui.toggleClassInVdom = function(vdom,clz,add) {
 ui.item = function(cmp,vdom,data) {
 	cmp.jbComp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
 	return vdom;
+}
+
+ui.fieldTitle = function(cmp,ctrl,h) {
+	const field = ctrl.field || ctrl
+	if (field.titleCtrl)
+		return h(field.titleCtrl(cmp.ctx).reactComp())
+	return field.title(cmp.ctx)
 }
 
 ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {

@@ -6,7 +6,7 @@ jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property'},[
-            h('label',{ class: 'property-title'},ctrl.title),
+            h('label',{ class: 'property-title'},jb.ui.fieldTitle(cmp,ctrl,h)),
             h(ctrl)
     ]))),
     css: `>.property { margin-bottom: %$spacing%px }
@@ -33,7 +33,7 @@ jb.component('property-sheet.titles-above-float-left', { /* propertySheet.titles
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'clearfix'}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property clearfix'},[
-          h('label',{ class: 'property-title'},ctrl.title),
+          h('label',{ class: 'property-title'},jb.ui.fieldTitle(cmp,ctrl,h)),
           h(ctrl)
     ]))),
     css: `>.property {
@@ -67,7 +67,7 @@ jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property'},[
-          h('label',{ class: 'property-title'}, ctrl.title),
+          h('label',{ class: 'property-title'}, jb.ui.fieldTitle(cmp,ctrl,h)),
           h(ctrl)
     ]))),
     css: `>.property { margin-bottom: %$vSpacing%px; display: flex }

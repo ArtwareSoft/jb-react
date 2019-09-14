@@ -63,3 +63,21 @@ jb.component('ui-test.tree-DD-after-last', { /* uiTest.treeDDAfterLast */
     })
 })
   
+jb.component('ui-test.table-tree', {
+  impl: uiTest({
+      control: tableTree({
+        treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
+        leafFields: text({title: 'name', text: '%val%'}),
+        commonFields: text({title: 'path', text: '%path%'}),
+        chapterHeadline: label({title: suffix('~', '%path%')}),
+        style: tableTree.plain(),
+        features: id('tableTree')
+    }),
+    action: ctx => {
+      const cmp = jb.ui.cmpOfSelector('#tableTree',ctx)
+      Object.assign(cmp.state.expanded,{'~friends':true, '~friends~0': true })
+      cmp.refresh()
+    },
+    expectedResult: contains(['name','path','Homer','friends','Barnie','~friends~0~name'])
+  })
+})

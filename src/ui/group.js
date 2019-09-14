@@ -80,9 +80,9 @@ jb.component('group.dynamic-titles', { /* group.dynamicTitles */
   category: 'group:30',
   description: 'dynamic titles for sub controls',
   impl: ctx => ({
-    doCheck: cmp =>
+    componentWillUpdate: cmp =>
       (cmp.state.ctrls || []).forEach(ctrl=>
-        ctrl.title = ctrl.jbComp.jb_title ? ctrl.jbComp.jb_title() : '')
+        ctrl.title = ctrl.jbComp.field.title ? ctrl.jbComp.field.title() : '')
   })
 })
 

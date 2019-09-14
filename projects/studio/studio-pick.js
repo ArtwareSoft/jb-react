@@ -36,8 +36,12 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
                 showBox(cmp,profElem,_window,previewOffset))
             .last() // esc or user pick
               .subscribe(profElem=> {
-                  ctx.vars.pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];
-                  ctx.vars.pickSelection.elem = profElem;
+                  const pickSelection = ctx.exp('%$pickSelection%')
+                  pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];
+                  pickSelection.elem = profElem;
+                  // inform watchers
+                  ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
+
                   ctx.vars.$dialog.close({OK: true});
                   // jb.delay(200).then(_=> {
             //         if (st.previewWindow && st.previewWindow.getSelection())
@@ -209,12 +213,9 @@ jb.component('studio.pick', { /* studio.pick */
     {id: 'onSelect', type: 'action', dynamic: true}
   ],
   impl: openDialog({
-    vars: [Var('pickSelection', ctx =>
-            ctx.vars.pickSelection || {})],
     style: dialog.studioPickDialog('%$from%'),
     content: label(''),
-    onOK: ctx =>
-            ctx.componentContext.params.onSelect(ctx.setData(ctx.vars.pickSelection.ctx))
+    onOK: ctx => ctx.componentContext.params.onSelect(ctx.setData(ctx.exp('%$pickSelection/ctx%')))
   })
 })
 

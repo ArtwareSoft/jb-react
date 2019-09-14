@@ -6,10 +6,10 @@ jb.component('table.with-headers', { /* table.withHeaders */
   impl: customStyle({
     template: (cmp,state,h) => h('table',{},[
         ...(cmp.hideHeaders ? [] : [h('thead',{},h('tr',{},
-          cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) ))]),
+          cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item,index),{row:item, index: index}) : f.fieldData(item,index))))
+              h('td', { 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: f.class }, f.control ? h(f.control(item,index),{index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
@@ -48,10 +48,10 @@ jb.component('table.mdl', { /* table.mdl */
           style: { width: f.width ? f.width + 'px' : ''},
           onclick: ev => cmp.toggleSort(f),
           }
-          ,f.title)) )),
+          ,jb.ui.fieldTitle(cmp,f,h))) )),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item,index),{row:item, index: index}) : f.fieldData(item,index))))
+              h('td', { 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item,index),{row:item, index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''

@@ -93,15 +93,11 @@ jb.component('studio-data-test.jb-editor-move', { /* studioDataTest.jbEditorMove
 })
 
 jb.component('test.set-sugar-comp-simple', { /* test.setSugarCompSimple */
-  impl: label({
-    
-  })
+  impl: label({})
 })
 
 jb.component('test.set-sugar-comp-wrap', { /* test.setSugarCompWrap */
-  impl: label(
-    'a'
-  )
+  impl: label('a')
 })
 
 jb.component('test.set-sugar-comp-override1', { /* test.setSugarCompOverride1 */

@@ -69,36 +69,16 @@ jb.component('table-tree.init', {
                 )
             }
             
-            function enrichWithFieldAspects(ctrlProfile,path,field) {
-                cmp.ctx.runInner(ctrlProfile.features || '',{as: 'array'},path).forEach(f=>f.enrichField && f.enrichField(field))
-                return field
-            }
-
-            function getOrCreateControl(path,ctrlProfile,createCtrl) {
-                cmp.ctrlCash = cmp.ctrlCash || {}
-                cmp.ctrlCash[path] = cmp.ctrlCash[path] || new Map()
-                cmp.ctrlCash[path][ctrlProfile] = cmp.ctrlCash[path][ctrlProfile] || createCtrl()
-                return cmp.ctrlCash[path][ctrlProfile]
-            }
-
             function calcItems(top, depth) {
                 if (cmp.state.expanded[top])
                     return treeModel.children(top).reduce((acc,child) => 
-                        depth >= treeModel.maxDepth ? acc : acc = acc.concat(calcItems(child, depth+1)),[{path: top, depth}])
-                return [{path: top, depth}]
+                        depth >= treeModel.maxDepth ? acc : acc = acc.concat(calcItems(child, depth+1)),[{path: top, depth, val: treeModel.val(top)}])
+                return [{path: top, depth, val: treeModel.val(top)}]
             }
             function calcFields(fieldsProp) {
-                return jb.asArray(ctx.vars.$model[fieldsProp].profile||[]).map((ctrlProfile,i) => {
-                    const ctrlCtx = new jb.jbCtx(cmp.ctx,{profile: ctrlProfile, path: fieldsProp+'~'+i})
-                    return enrichWithFieldAspects(ctrlProfile, fieldsProp+'~'+i+'~features', {
-                        title: ctrlCtx.runInner(ctrlProfile.title,{as: 'string'},'title'),
-                        ctxId: jb.ui.preserveCtx(ctrlCtx),
-                        class: '', 
-                        control: (path,index) => getOrCreateControl(fieldsProp+'~'+i+'~'+path,ctrlProfile,
-                            () => ctrlCtx.setData({path, val: treeModel.val(path)}).setVars({index: (index||0)+1})
-                                .runItself().reactComp()) 
-                } ) 
-              })
+                const fields = ctx.vars.$model[fieldsProp]().map(x=>x.field)
+                //fields.forEach(f=>f._control = (path,index) => f.control({path, val: treeModel.val(path)},index))
+                return fields
             }
         },
         init: cmp => cmp.state.items = cmp.calcItems(),
@@ -117,7 +97,7 @@ jb.component('table-tree.plain', {
           ...cmp.leafFields.concat(cmp.commonFields).map(f=>h('col',{width: f.width || '200px'})),
           ...(cmp.hideHeaders ? [] : [h('thead',{},h('tr',{},
           Array.from(new Array(cmp.treeModel.maxDepth+1)).map(f=>h('th',{class: 'th-expand-collapse'})).concat(
-                [...cmp.leafFields, ...cmp.commonFields].map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) )))]),
+                [...cmp.leafFields, ...cmp.commonFields].map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },jb.ui.fieldTitle(cmp,f,h))) )))]),
           h('tbody',{class: 'jb-drag-parent'},
               state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', path: item.path}, 
                 [...cmp.treeFieldsOfItem(item).map(f=>h('td', 
@@ -125,7 +105,8 @@ jb.component('table-tree.plain', {
                             f.empty ? '' : h('span',{}, [f.expandable ? h('i',{class:'material-icons noselect', onclick: _=> f.toggle() },
                                             f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right') : '', h(cmp.headline(item))])
                 )), h('td',{class: 'tree-expand-title'}), 
-                    ...cmp.fieldsForPath(item.path).map(f=>h('td', {'jb-ctx': f.ctxId, class: 'tree-field'}, h(f.control(item.path,index),{index: index}))) ]
+                    ...cmp.fieldsForPath(item.path).map(f=>h('td', {'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: 'tree-field'}, 
+                        h(f.control(item,index),{index: index}))) ]
               ), item ))
           ),
           state.items.length == 0 ? 'no items' : ''

@@ -89,7 +89,7 @@ jb.component('group.accordion', { /* group.accordion */
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
         state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
           h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
-            h('div',{ class: 'title'}, ctrl.title),
+            h('div',{ class: 'title'}, jb.ui.fieldTitle(cmp,ctrl,h)),
             h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) },
               h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
             )
@@ -169,7 +169,7 @@ jb.component('group.tabs', { /* group.tabs */
           controls: dynamicControls({
             controlItems: '%$tabsModel/controls%',
             genericControl: button({
-              title: '%$tab/jb_title%',
+              title: '%$tab/field/title%',
               action: runActions(
                 writeValue('%$selectedTab/ctrl%', '%$tab%'),
                 refreshControlById(ctx=> 'tab_' + ctx.componentContext.id)

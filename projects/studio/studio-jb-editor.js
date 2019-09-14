@@ -189,7 +189,10 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
           css('{white-space: normal}')
         ]
       }),
-    features: watchRef('%$jbEditorCntrData/selected%'),
+    features: [
+      watchRef('%$jbEditorCntrData/selected%'),
+      watchRef('%$studio/pickSelectionCtxId%')
+    ]
   })
 })
 
@@ -317,7 +320,6 @@ jb.component('studio.open-jb-editor', { /* studio.openJbEditor */
     vars: [
       Var('dialogId', {'$if': '%$newWindow%', then: '', else: 'jb-editor'}),
       Var('fromPath', '%$fromPath%'),
-      Var('pickSelection', {'$': 'object'})
     ],
     style: dialog.studioFloating({id: '%$dialogId%', width: '860', height: '400'}),
     content: studio.jbEditor('%$path%'),
@@ -339,7 +341,6 @@ jb.component('studio.open-component-in-jb-editor', { /* studio.openComponentInJb
   impl: runActions(
     Var('compPath', split({separator: '~', text: '%$path%', part: 'first'})),
     Var('fromPath', '%$fromPath%'),
-    Var('pickSelection', obj()),
     openDialog({
         style: dialog.studioFloating({id: 'jb-editor', width: '860', height: '400'}),
         content: studio.jbEditor('%$compPath%'),
