@@ -120,11 +120,11 @@ st.jbEditorTree = class {
 	}
 	innerProfiles(path,val) {
 		if (this.sugarChildren(path,val)) return [];
-    if (!this.includeCompHeader && path.indexOf('~') == -1)
-      path = path + '~impl';
+		if (!this.includeCompHeader && path.indexOf('~') == -1)
+			path = path + '~impl';
 		return st.paramsOfPath(path).map(p=> ({ path: path + '~' + p.id, param: p}))
-			.filter(e=>st.valOfPath(e.path) != null || e.param.mandatory)
-			.map(e=>e.path)
+				.filter(e=>st.valOfPath(e.path) !== undefined || e.param.mandatory)
+				.map(e=>e.path)
 	}
 	vars(path,val) {
 		return val && typeof val == 'object' && typeof val.$vars == 'object' && [path+'~$vars']

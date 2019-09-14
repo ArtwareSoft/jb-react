@@ -445,8 +445,11 @@ ui.item = function(cmp,vdom,data) {
 
 ui.fieldTitle = function(cmp,ctrl,h) {
 	const field = ctrl.field || ctrl
-	if (field.titleCtrl)
-		return h(field.titleCtrl(cmp.ctx).reactComp())
+	if (field.titleCtrl) {
+		const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
+		const jbComp = field.titleCtrl(ctx);
+		return jbComp && h(jbComp.reactComp(),{'jb-ctx': ui.preserveCtx(ctx) })
+	}
 	return field.title(cmp.ctx)
 }
 

@@ -11,7 +11,7 @@ jb.component('itemlists.main', { /* itemlists.main */
     items: '%$people%',
     controls: [
       text({title: 'name', text: '%name%', features: [field.columnWidth('250')]}),
-      text({title: 'age', text: '%age%'})
+      text({title: 'age', text: '%age%', features: null})
     ],
     style: table.withHeaders()
   })

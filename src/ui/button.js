@@ -4,7 +4,7 @@ jb.component('button', { /* button */
   type: 'control,clickable',
   category: 'control:100,common:100',
   params: [
-    {id: 'title', as: 'ref', mandatory: true, defaultTValue: 'click me', dynamic: true},
+    {id: 'title', as: 'ref', mandatory: true, templateValue: 'click me', dynamic: true},
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
     {
       id: 'style',

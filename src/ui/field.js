@@ -240,7 +240,9 @@ jb.component('field.title-ctrl', {
   type: 'feature',
   category: 'table:80',
   params: [
-    {id: 'titleCtrl', type: 'control', dynamic: true },
+    {id: 'titleCtrl', type: 'control', mandatory: true, dynamic: true, 
+      templateValue: button({title: '%title%', style: button.href()}) 
+    },
   ],
   impl: (ctx,titleCtrl) => ({
       enrichField: field => field.titleCtrl = ctx => titleCtrl(ctx)

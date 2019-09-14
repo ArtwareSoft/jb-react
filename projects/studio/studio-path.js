@@ -161,6 +161,16 @@ Object.assign(st, {
 		if (prof && typeof prof == 'object' && !Array.isArray(prof))
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
+	newComp: (comp,compName) => {
+		const result = comp.singleInType ? {} : { $: compName };
+		jb.compParams(comp).forEach(p=>{
+			if (p.composite)
+				result[p.id] = [];
+			if (p.templateValue)
+				result[p.id] = JSON.parse(JSON.stringify(p.templateValue))
+		})
+		return result
+	},
 	setComp: (path,compName,srcCtx) => {
 		const comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
@@ -168,15 +178,9 @@ Object.assign(st, {
 		if (params.length == 1 && (params[0]||{}).composite == true || (params[0]||{}).sugar)
 			return st.setSugarComp(path,compName,params[0],srcCtx);
 
-		const result = comp.singleInType ? {} : { $: compName };
+		const result = st.newComp(comp,compName)
 		const currentVal = st.valOfPath(path);
 		params.forEach(p=>{
-			if (p.composite)
-				result[p.id] = [];
-			if (p.defaultValue && typeof p.defaultValue != 'object')
-				result[p.id] = p.defaultValue;
-			if (p.defaultValue && typeof p.defaultValue == 'object' && (p.forceDefaultCreation || Array.isArray(p.defaultValue)))
-				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue));
 			if (currentVal && currentVal[p.id] !== undefined)
 				result[p.id] = currentVal[p.id]
 		})
@@ -199,14 +203,9 @@ Object.assign(st, {
 	},
 
 	insertControl: (path,compName,srcCtx) => {
-		var comp = compName && st.getComp(compName);
+		const comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
-		var newCtrl = { $: compName };
-		// copy default values
-		jb.compParams(comp).forEach(p=>{
-			if (p.defaultValue || p.defaultTValue)
-				newCtrl[p.id] = JSON.parse(JSON.stringify(p.defaultValue || p.defaultTValue))
-		})
+		let newCtrl = st.newComp(comp,compName)
 		if (st.controlParams(path)[0] == 'fields' && newCtrl.$ != 'field')
 			newCtrl = { $: 'field.control', control : newCtrl};
 		// find group parent that can insert the control
@@ -220,7 +219,7 @@ Object.assign(st, {
 			st.push(group_ref,[newCtrl],srcCtx);
 	},
     // if drop destination is not an array item, fix it
-   moveFixDestination(from,to,srcCtx) {
+   	moveFixDestination(from,to,srcCtx) {
 		if (isNaN(Number(to.split('~').slice(-1)))) {
             if (st.valOfPath(to) === undefined)
                 jb.writeValue(st.refOfPath(to),[],srcCtx);
@@ -257,27 +256,6 @@ Object.assign(st, {
 		var comp = st.compOfPath(path);
 		if (!comp || typeof comp.impl != 'object') return;
 		st.writeValueOfPath(path,st.evalProfile(jb.prettyPrint(comp.impl)),srcCtx);
-
-		// var res = JSON.stringify(comp.impl, (key, val) => typeof val === 'function' ? ''+val : val , 4);
-		//
-		// var profile = st.valOfPath(path);
-		// // inject conditional param values
-		// jb.compParams(comp).forEach(p=>{
-		// 		var pUsage = '%$'+p.id+'%';
-		// 		var pVal = '' + (profile[p.id] || p.defaultValue || '');
-		// 		res = res.replace(new RegExp('{\\?(.*?)\\?}','g'),(match,condition_exp)=>{ // conditional exp
-		// 				if (condition_exp.indexOf(pUsage) != -1)
-		// 					return pVal ? condition_exp : '';
-		// 				return match;
-		// 			})
-		// })
-		// // inject param values
-		// jb.compParams(comp).forEach(p=>{
-		// 		var pVal = '' + (profile[p.id] || p.defaultValue || ''); // only primitives
-		// 		res = res.replace(new RegExp(`%\\$${p.id}%`,'g') , pVal);
-		// })
-		//
-		// st.writeValueOfPath(path,st.evalProfile(res));
 	},
 	getOrCreateControlArrayRef: (path,srcCtx) => {
 		var val = st.valOfPath(path);

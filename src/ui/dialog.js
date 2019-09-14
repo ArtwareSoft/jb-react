@@ -75,8 +75,7 @@ jb.component('open-dialog', { /* openDialog */
       id: 'content',
       type: 'control',
       dynamic: true,
-      defaultValue: group({}),
-      forceDefaultCreation: true
+      templateValue: group({}),
     },
     {id: 'menu', type: 'control', dynamic: true},
     {id: 'title', as: 'renderable', dynamic: true},

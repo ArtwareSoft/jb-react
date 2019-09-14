@@ -81,3 +81,22 @@ jb.component('ui-test.table-tree', {
     expectedResult: contains(['name','path','Homer','friends','Barnie','~friends~0~name'])
   })
 })
+
+jb.component('ui-test.table-tree-with-title-ctrl', {
+  impl: uiTest({
+      control: tableTree({
+        treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
+        leafFields: text({
+          title: 'name', 
+          text: '%val%',
+          features: field.titleCtrl(button({
+              title: 'my %title%',
+              style: button.href()
+          }))        
+        }),
+        chapterHeadline: label({title: suffix('~', '%path%')}),
+    }),
+    expectedResult: contains(['my name','path','Homer'])
+  })
+})
+
