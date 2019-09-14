@@ -7,7 +7,6 @@ jBart suggests a revolutionary approach for visual development of complex apps t
 
 ![](https://storage.googleapis.com/jbartcommunity/jbart5-material.png)
 
-
 ## Visual Development Concepts
 - pick & edit (like in Chrome debugger)
 - work by example data
