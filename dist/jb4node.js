@@ -1091,7 +1091,7 @@ jb.component('keys', { /* keys */
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx,obj) => Object.keys(obj)
+  impl: (ctx,obj) => Object.keys(obj && typeof obj === 'object' ? obj : {})
 })
 
 jb.component('properties', { /* properties */
@@ -1826,6 +1826,7 @@ jb.component('extract-suffix', { /* extractSuffix */
 })
 
 jb.component('range', { /* range */
+  description: 'generator, numerator, numbers, index',
   type: 'data',
   params: [
     {id: 'from', as: 'number', defaultValue: 1},

@@ -1091,7 +1091,7 @@ jb.component('keys', { /* keys */
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx,obj) => Object.keys(obj)
+  impl: (ctx,obj) => Object.keys(obj && typeof obj === 'object' ? obj : {})
 })
 
 jb.component('properties', { /* properties */
@@ -1826,6 +1826,7 @@ jb.component('extract-suffix', { /* extractSuffix */
 })
 
 jb.component('range', { /* range */
+  description: 'generator, numerator, numbers, index',
   type: 'data',
   params: [
     {id: 'from', as: 'number', defaultValue: 1},
@@ -8112,9 +8113,9 @@ ui.ctrl = function(context,options) {
 	var styleOptions = defaultStyle(ctx) || {};
 	if (styleOptions.jbExtend)  {// style by control
 		styleOptions.ctxForPick = ctx;
-		return styleOptions.jbExtend(options).applyFeatures(ctx);
+		return styleOptions.jbExtend(options).applyFeatures(ctx).initField();
 	}
-	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx);
+	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx).initField();
 
 	function defaultStyle(ctx) {
 		var profile = context.profile;
@@ -8132,13 +8133,26 @@ class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
 		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],
-			jbComponentDidUpdateFuncs: [], jbCheckFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], extendItemFuncs: [] });
+			jbComponentDidUpdateFuncs: [], willUpdateFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], 
+			extendItemFuncs: [], enrichField: [] });
 		this.cssSelectors = [];
 
 		this.jb_profile = ctx.profile;
-		var title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => '');
-		this.jb_title = (typeof title == 'function') ? title : () => ''+title;
-//		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
+		//		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
+	}
+	initField() {
+		this.field = {
+			class: '',
+			ctxId: ui.preserveCtx(this.ctx),
+			control: (row,index) => this.ctx.setData(row).setVars({index: (index||0)+1}).runItself().reactComp() 
+		}
+		this.enrichField.forEach(enrichField=>enrichField(this.field))
+		let title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => '');
+		if (this.field.title !== undefined)
+			title = this.field.title
+		// make it always a function 
+		this.field.title = typeof title == 'function' ? title : () => ''+title;
+		return this
 	}
 
 	reactComp() {
@@ -8154,7 +8168,8 @@ class JbComponent {
 				this.ctxForPick = jbComp.ctxForPick || jbComp.ctx;
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				jbComp.extendCtxOnceFuncs.forEach(extendCtx =>
-					tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx');
+					tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx')
+			
 				Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
 				jbComp.jbBeforeInitFuncs.forEach(init=> tryWrapper(() => init(this,props)), 'beforeinit');
 				jbComp.jbInitFuncs.forEach(init=> tryWrapper(() => init(this,props)), 'init');
@@ -8191,7 +8206,8 @@ class JbComponent {
 		};
 		injectLifeCycleMethods(ReactComp,this);
 		ReactComp.ctx = this.ctx;
-		ReactComp.title = this.jb_title();
+		ReactComp.field = this.field;
+		ReactComp.title = this.field.title();
 		ReactComp.jbComp = jbComp;
 		return ReactComp;
 	}
@@ -8227,22 +8243,22 @@ class JbComponent {
 		}
 	}
 
-	applyFeatures(context) {
-		var features = (context.params.features && context.params.features(context) || []);
-		features.forEach(f => this.jbExtend(f,context));
-		if (context.params.style && context.params.style.profile && context.params.style.profile.features) {
-			jb.asArray(context.params.style.profile.features)
+	applyFeatures(ctx) {
+		var features = (ctx.params.features && ctx.params.features(ctx) || []);
+		features.forEach(f => this.jbExtend(f,ctx));
+		if (ctx.params.style && ctx.params.style.profile && ctx.params.style.profile.features) {
+			jb.asArray(ctx.params.style.profile.features)
 				.forEach((f,i)=>
-					this.jbExtend(context.runInner(f,{type:'feature'},context.path+'~features~'+i),context))
+					this.jbExtend(ctx.runInner(f,{type:'feature'},ctx.path+'~features~'+i),ctx))
 		}
 		return this;
 	}
 
-	jbExtend(options,context) {
+	jbExtend(options,ctx) {
     	if (!options) return this;
-    	context = context || this.ctx;
-    	if (!context)
-    		console.log('no context provided for jbExtend');
+    	ctx = ctx || this.ctx;
+    	if (!ctx)
+    		console.log('no ctx provided for jbExtend');
     	if (typeof options != 'object')
     		debugger;
 
@@ -8251,16 +8267,18 @@ class JbComponent {
 		if (options.beforeInit) this.jbBeforeInitFuncs.push(options.beforeInit);
 		if (options.init) this.jbInitFuncs.push(options.init);
 		if (options.afterViewInit) this.jbAfterViewInitFuncs.push(options.afterViewInit);
-		if (options.doCheck) this.jbCheckFuncs.push(options.doCheck);
+		if (options.componentWillUpdate) this.willUpdateFuncs.push(options.componentWillUpdate);
 		if (options.destroy) this.jbDestroyFuncs.push(options.destroy);
 		if (options.componentDidUpdate) this.jbComponentDidUpdateFuncs.push(options.componentDidUpdate);
 		if (options.templateModifier) this.modifierFuncs.push(options.templateModifier);
+		if (options.enrichField) this.enrichField.push(options.enrichField);
+		
 		if (typeof options.class == 'string')
 			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class));
 		if (typeof options.class == 'function')
 			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class()));
 		// events
-		var events = Object.getOwnPropertyNames(options).filter(op=>op.indexOf('on') == 0);
+		const events = Object.getOwnPropertyNames(options).filter(op=>op.indexOf('on') == 0);
 		events.forEach(op=>
 			this.jbRegisterEventsFuncs.push(cmp=>
 		       	  cmp[op] = cmp[op] || jb.rx.Observable.fromEvent(cmp.base, op.slice(2))
@@ -8285,15 +8303,15 @@ class JbComponent {
     			);
 
 		(options.featuresOptions || []).forEach(f =>
-			this.jbExtend(f, context))
+			this.jbExtend(f, ctx))
 		return this;
 	}
 }
 
 function injectLifeCycleMethods(Comp,jbComp) {
-	if (jbComp.jbCheckFuncs.length)
+	if (jbComp.willUpdateFuncs.length)
 	  Comp.prototype.componentWillUpdate = function() {
-		jbComp.jbCheckFuncs.forEach(f=>
+		jbComp.willUpdateFuncs.forEach(f=>
 			f(this));
 	}
 	if (jbComp.noUpdates)
@@ -8379,6 +8397,11 @@ ui.preserveCtx = ctx => {
   return ctx.id;
 }
 
+ui.preserveFieldCtxWithItem = (field,item) => {
+	const ctx = jb.ctxDictionary[field.ctxId]
+	return ctx && ui.preserveCtx(ctx.setData(item))
+}
+  
 ui.renderWidget = function(profile,top) {
 	let formerReactElem, formerParentElem;
 	let blockedParentWin = false
@@ -8524,6 +8547,13 @@ ui.toggleClassInVdom = function(vdom,clz,add) {
 ui.item = function(cmp,vdom,data) {
 	cmp.jbComp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
 	return vdom;
+}
+
+ui.fieldTitle = function(cmp,ctrl,h) {
+	const field = ctrl.field || ctrl
+	if (field.titleCtrl)
+		return h(field.titleCtrl(cmp.ctx).reactComp())
+	return field.title(cmp.ctx)
 }
 
 ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
@@ -9078,9 +9108,9 @@ jb.component('group.dynamic-titles', { /* group.dynamicTitles */
   category: 'group:30',
   description: 'dynamic titles for sub controls',
   impl: ctx => ({
-    doCheck: cmp =>
+    componentWillUpdate: cmp =>
       (cmp.state.ctrls || []).forEach(ctrl=>
-        ctrl.title = ctrl.jbComp.jb_title ? ctrl.jbComp.jb_title() : '')
+        ctrl.title = ctrl.jbComp.field.title ? ctrl.jbComp.field.title() : '')
   })
 })
 
@@ -9664,6 +9694,30 @@ jb.ui.checkValidationError = cmp => {
     return err;
   }
 }
+
+jb.component('field.title', {
+  description: 'used to set table title in button and label',
+  type: 'feature',
+  category: 'table:80',
+  params: [
+    {id: 'title', as: 'string', dynamic: true },
+  ],
+  impl: (ctx,title) => ({
+      enrichField: field => field.title = ctx => title(ctx)
+  })
+})
+
+jb.component('field.title-ctrl', {
+  description: 'title as control, buttons are usefull',
+  type: 'feature',
+  category: 'table:80',
+  params: [
+    {id: 'titleCtrl', type: 'control', dynamic: true },
+  ],
+  impl: (ctx,titleCtrl) => ({
+      enrichField: field => field.titleCtrl = ctx => titleCtrl(ctx)
+  })
+})
 
 })();
 
@@ -10985,8 +11039,8 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
   impl: (ctx,codeMirror) => ({
 		templateModifier: (vdom,cmp,state) => {
             if (vdom && vdom.nodeName != 'div') return vdom;
-						vdom.children.push(jb.ui.h('img', {src: '/css/resizer.gif', class: 'resizer'}));
-			      return vdom;
+				vdom.children.push(jb.ui.h('img', {src: '//unpkg.com/jbart5-react/bin/studio/css/resizer.gif', class: 'resizer'}));
+			return vdom;
 		},
 		css: '>.resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
 
@@ -11176,17 +11230,7 @@ jb.component('itemlist.init-table', { /* itemlist.init */
               cmp.ctx.vars.itemlistCntr.items = cmp.items;
             return cmp.items;
         }
-        cmp.fields = jb.asArray(ctx.vars.$model.controls.profile).filter(x=>x)
-          .map(ctrlProfile => enrichWithFieldAspects(ctrlProfile, {
-            title: cmp.ctx.run(ctrlProfile.title || ''), 
-            class: '', 
-            control: (row,index) => cmp.ctx.setData(row).setVars({index: (index||0)+1}).run(ctrlProfile).reactComp() 
-          }))
-        
-        function enrichWithFieldAspects(ctrlProfile,field) {
-          cmp.ctx.run(ctrlProfile.features || '',{as: 'array'}).forEach(f=>f.enrichField && f.enrichField(field))
-          return field
-        }
+        cmp.fields = ctx.vars.$model.controls().map(x=>x.field)
       },
       init: cmp => cmp.state.items = cmp.calcItems(),
   })
@@ -12607,7 +12651,7 @@ jb.component('field', { /* field */
     {id: 'class', as: 'string'}
   ],
   impl: (ctx,title,data,width,numeric,extendItems,_class) => ({
-    title: title,
+    title: () => title,
     fieldData: row => extendItems ? row[title] : data(ctx.setData(row)),
     calcFieldData: row => data(ctx.setData(row)),
     class: _class,
@@ -12626,7 +12670,7 @@ jb.component('field.index', { /* field.index */
     {id: 'class', as: 'string'}
   ],
   impl: (ctx,title,propName,width_class) => ({
-    title: title,
+    title: () => title,
     fieldData: (row,index) => index,
     class: _class,
     width: width,
@@ -12651,7 +12695,7 @@ jb.component('field.control', { /* field.control */
     {id: 'numeric', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,title,control,width,dataForSort,numeric) => ({
-    title: title,
+    title: () => title,
     control: row => control(ctx.setData(row)).reactComp(),
     width: width,
     fieldData: row => dataForSort(ctx.setData(row)),
@@ -12687,7 +12731,7 @@ jb.component('field.button', { /* field.button */
     }).reactComp();
 
     return {
-      title: ctx.params.title,
+      title: () => ctx.params.title,
       control: _ => ctrl,
       width: ctx.params.width,
       fieldData: row => dataForSort(ctx.setData(row)),
@@ -12748,7 +12792,7 @@ jb.component('table.init', { /* table.init */
         function extendItemsWithCalculatedFields() {
           if (!cmp.fields || !cmp.items) return;
           cmp.fields.filter(f=>f.extendItems).forEach(f=>
-            cmp.items.forEach(item=>item[f.title] = f.calcFieldData(item)))
+            cmp.items.forEach(item=>item[f.title()] = f.calcFieldData(item)))
         }
       },
   })
@@ -12825,7 +12869,7 @@ jb.component('group.init-tabs', { /* group.initTabs */
   impl: ctx => ({
     init: cmp => {
 			cmp.tabs = ctx.vars.$model.tabs();
-      cmp.titles = cmp.tabs.map(tab=>tab && tab.jb_title(ctx));
+      cmp.titles = cmp.tabs.map(tab=>tab && tab.field.title(ctx));
 			cmp.state.shown = 0;
 
       cmp.show = index =>
@@ -13439,7 +13483,7 @@ jb.component('group.accordion', { /* group.accordion */
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},
         state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
           h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
-            h('div',{ class: 'title'}, ctrl.title),
+            h('div',{ class: 'title'}, jb.ui.fieldTitle(cmp,ctrl,h)),
             h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) },
               h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
             )
@@ -13519,7 +13563,7 @@ jb.component('group.tabs', { /* group.tabs */
           controls: dynamicControls({
             controlItems: '%$tabsModel/controls%',
             genericControl: button({
-              title: '%$tab/jb_title%',
+              title: '%$tab/field/title%',
               action: runActions(
                 writeValue('%$selectedTab/ctrl%', '%$tab%'),
                 refreshControlById(ctx=> 'tab_' + ctx.componentContext.id)
@@ -13556,10 +13600,10 @@ jb.component('table.with-headers', { /* table.withHeaders */
   impl: customStyle({
     template: (cmp,state,h) => h('table',{},[
         ...(cmp.hideHeaders ? [] : [h('thead',{},h('tr',{},
-          cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },f.title)) ))]),
+          cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: f.class }, f.control ? h(f.control(item,index),{row:item, index: index}) : f.fieldData(item,index))))
+              h('td', { 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: f.class }, f.control ? h(f.control(item,index),{index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
@@ -13598,10 +13642,10 @@ jb.component('table.mdl', { /* table.mdl */
           style: { width: f.width ? f.width + 'px' : ''},
           onclick: ev => cmp.toggleSort(f),
           }
-          ,f.title)) )),
+          ,jb.ui.fieldTitle(cmp,f,h))) )),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': f.ctxId, class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item,index),{row:item, index: index}) : f.fieldData(item,index))))
+              h('td', { 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item,index),{row:item, index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
@@ -13780,7 +13824,7 @@ jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property'},[
-            h('label',{ class: 'property-title'},ctrl.title),
+            h('label',{ class: 'property-title'},jb.ui.fieldTitle(cmp,ctrl,h)),
             h(ctrl)
     ]))),
     css: `>.property { margin-bottom: %$spacing%px }
@@ -13807,7 +13851,7 @@ jb.component('property-sheet.titles-above-float-left', { /* propertySheet.titles
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'clearfix'}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property clearfix'},[
-          h('label',{ class: 'property-title'},ctrl.title),
+          h('label',{ class: 'property-title'},jb.ui.fieldTitle(cmp,ctrl,h)),
           h(ctrl)
     ]))),
     css: `>.property {
@@ -13841,7 +13885,7 @@ jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property'},[
-          h('label',{ class: 'property-title'}, ctrl.title),
+          h('label',{ class: 'property-title'}, jb.ui.fieldTitle(cmp,ctrl,h)),
           h(ctrl)
     ]))),
     css: `>.property { margin-bottom: %$vSpacing%px; display: flex }
@@ -14338,26 +14382,6 @@ class TreeNode extends jb.ui.Component {
 
  //********************* jBart Components
 
- jb.component('tree.nodeModel', {
-    type: 'tree.node-model',
-    params: [
-      {id: 'rootPath', as: 'single', mandatory: true },
-      {id: 'children', dynamic: true, mandatory: true, description: 'from parent path to children paths' },
-      {id: 'pathToItem', dynamic: true, mandatory: true, description: 'value of path' },
-      {id: 'icon', dynamic: true, as: 'string', description: 'icon name from material icons' },
-      {id: 'title', dynamic: true, as: 'string', description: 'path as input, $collapsed as parameter' },
-      {id: 'isArray', dynamic: true, as: 'boolean', description: 'is expandable, path as input. children not empty is default' },
-    ],
-    impl: ctx => ({
-        rootPath: ctx.params.rootPath,
-        children: path => ctx.params.children(ctx.setData(path)),
-        val: path => ctx.params.pathToItem(ctx.setData(path)),
-        icon: path => ctx.params.icon(ctx.setData(path)),
-        title: (path,collapsed) => ctx.params.title(ctx.setData(path).setVars({collapsed})),
-        isArray: path => ctx.params.isArray.profile ? ctx.params.isArray(ctx.setData(path)) : ctx.params.children(ctx.setData(path)).length,
-    })
-})
-
 jb.component('tree', { /* tree */
   type: 'control',
   params: [
@@ -14623,8 +14647,8 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 						tree.nodeModel.refHandler && restoreTreeStateFromVals(tree,state);
       			})
       		},
-      		doCheck: function(cmp) {
-      			var tree = cmp.tree;
+      		componentWillUpdate: function(cmp) {
+      			const tree = cmp.tree;
     		  	if (tree.drake)
     			     tree.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
     				       //$(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
@@ -14662,6 +14686,143 @@ addToIndex = (path,toAdd) => {
 
 })()
 ;
+
+jb.ns('table-tree')
+jb.ns('json')
+
+jb.component('table-tree', {
+    type: 'control',
+    params: [
+      {id: 'treeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
+      {id: 'leafFields', type: 'control[]', dynamic: true},
+      {id: 'commonFields', type: 'control[]', dynamic: true},
+      {id: 'chapterHeadline', type: 'control', dynamic: true, defaultValue: label(''), description: '$collapsed as parameter'},
+      {id: 'style', type: 'table-tree.style', defaultValue: tableTree.plain(), dynamic: true},
+      {id: 'features', type: 'feature[]', dynamic: true}
+    ],
+    impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('tree.node-model', {
+    description: 'tree model of paths with ~ as separator',
+    type: 'tree.node-model',
+    params: [
+      {id: 'rootPath', as: 'single', mandatory: true },
+      {id: 'children', dynamic: true, mandatory: true, description: 'from parent path to children paths' },
+      {id: 'pathToItem', dynamic: true, mandatory: true, description: 'value of path' },
+      {id: 'icon', dynamic: true, as: 'string', description: 'icon name from material icons' },
+      {id: 'isChapter', dynamic: true, as: 'boolean', description: 'path as input. children != [] is default' },
+      {id: 'maxDepth',  as: 'number', defaultValue: 3 },
+    ],
+    impl: ctx => ({
+        rootPath: ctx.params.rootPath,
+        children: path => ctx.params.children(ctx.setData(path)),
+        val: path => ctx.params.pathToItem(ctx.setData(path)),
+        icon: path => ctx.params.icon(ctx.setData(path)),
+        title: () => '',
+        isArray: path => ctx.params.isChapter.profile ? ctx.params.isChapter(ctx.setData(path)) : ctx.params.children(ctx.setData(path)).length,
+        maxDepth: ctx.params.maxDepth
+    })
+})
+  
+jb.component('table-tree.init', {
+    type: 'feature',
+    impl: ctx => ({
+        beforeInit: cmp => {
+            const treeModel = cmp.treeModel = cmp.ctx.vars.$model.treeModel()
+            treeModel.maxDepth = treeModel.maxDepth || 5
+            cmp.state.expanded = {[treeModel.rootPath]: true}
+            cmp.refresh = () => cmp.setState({items: cmp.calcItems()})
+            cmp.calcItems = () => calcItems(treeModel.rootPath,0)
+            cmp.leafFields = calcFields('leafFields')
+            cmp.commonFields = calcFields('commonFields')
+            cmp.fieldsForPath = path => treeModel.isArray(path) ? cmp.commonFields : cmp.leafFields.concat(cmp.commonFields)
+            cmp.headline = item => ctx.vars.$model.chapterHeadline(
+                cmp.ctx.setData({path: item.path, val: treeModel.val(item.path)})
+                    .setVars({item,collapsed: !cmp.state.expanded[item.path]})).reactComp()
+
+            cmp.treeFieldsOfItem = item => {
+                const maxDepthAr = Array.from(new Array(treeModel.maxDepth))
+                // return tds until depth and then the '>' sign with colSpan
+                return maxDepthAr.filter((e,i) => i <= (item.path.match(/~/g) || []).length)
+                    .map((e,i) => (item.path.match(/~/g) || []).length == i ? 
+                    {
+                        expandable: treeModel.isArray(item.path),
+                        expanded: cmp.state.expanded[item.path],
+                        toggle: () => { 
+                            cmp.state.expanded[item.path] = !cmp.state.expanded[item.path]
+                            cmp.refresh()
+                        },
+                        colSpan: treeModel.maxDepth-i + (treeModel.isArray(item.path) ? cmp.leafFields.length : 0)
+                    } : {empty: true}
+                )
+            }
+            
+            function calcItems(top, depth) {
+                if (cmp.state.expanded[top])
+                    return treeModel.children(top).reduce((acc,child) => 
+                        depth >= treeModel.maxDepth ? acc : acc = acc.concat(calcItems(child, depth+1)),[{path: top, depth, val: treeModel.val(top)}])
+                return [{path: top, depth, val: treeModel.val(top)}]
+            }
+            function calcFields(fieldsProp) {
+                const fields = ctx.vars.$model[fieldsProp]().map(x=>x.field)
+                //fields.forEach(f=>f._control = (path,index) => f.control({path, val: treeModel.val(path)},index))
+                return fields
+            }
+        },
+        init: cmp => cmp.state.items = cmp.calcItems(),
+    })
+})
+  
+jb.component('table-tree.plain', {
+    params: [ 
+      { id: 'hideHeaders',  as: 'boolean' },
+    ],
+    type: 'table.style,itemlist.style',
+    impl: customStyle({
+      template: (cmp,state,h) => h('table',{},[
+          ...Array.from(new Array(cmp.treeModel.maxDepth)).map(f=>h('col',{width: '16px'})),
+          h('col',{width: '200px'}),
+          ...cmp.leafFields.concat(cmp.commonFields).map(f=>h('col',{width: f.width || '200px'})),
+          ...(cmp.hideHeaders ? [] : [h('thead',{},h('tr',{},
+          Array.from(new Array(cmp.treeModel.maxDepth+1)).map(f=>h('th',{class: 'th-expand-collapse'})).concat(
+                [...cmp.leafFields, ...cmp.commonFields].map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },jb.ui.fieldTitle(cmp,f,h))) )))]),
+          h('tbody',{class: 'jb-drag-parent'},
+              state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', path: item.path}, 
+                [...cmp.treeFieldsOfItem(item).map(f=>h('td', 
+                            f.empty ? { class: 'empty-expand-collapse'} : {class: 'expandbox', colSpan: f.colSpan}, 
+                            f.empty ? '' : h('span',{}, [f.expandable ? h('i',{class:'material-icons noselect', onclick: _=> f.toggle() },
+                                            f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right') : '', h(cmp.headline(item))])
+                )), h('td',{class: 'tree-expand-title'}), 
+                    ...cmp.fieldsForPath(item.path).map(f=>h('td', {'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: 'tree-field'}, 
+                        h(f.control(item,index),{index: index}))) ]
+              ), item ))
+          ),
+          state.items.length == 0 ? 'no items' : ''
+          ]),
+      css: `{border-spacing: 0; text-align: left}
+      >tbody>tr>td>ctrl { padding-right: 5px }
+      >thead>.th-expand-collapse { width: 16px }
+      >tbody>tr>td>span { font-size:16px; cursor: pointer; display: flex;
+        align-items: center; width: 16px; border: 1px solid transparent }
+      {width: 100%; table-layout:fixed;}
+      `,
+      features: tableTree.init()
+    })
+})
+
+jb.component('json.path-selector', {
+    description: 'select, query, goto path',
+    params: [
+        {id: 'base', as: 'single', description: 'object to start with' },
+        {id: 'path', description: 'string with ~ separator or array' },
+    ],
+    impl: (ctx,base) => {
+        const path = jb.val(ctx.params.path)
+        const path_array = typeof path == 'string' ? path.split('~').filter(x=>x) : jb.asArray(path)
+        return path_array.reduce((o,p) => o && o[p], base)
+    }
+});
 
 (function() {
 jb.component('tree.json-read-only', { /* tree.jsonReadOnly */
