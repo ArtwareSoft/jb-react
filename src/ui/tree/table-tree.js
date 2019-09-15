@@ -22,7 +22,7 @@ jb.component('tree.node-model', {
       {id: 'children', dynamic: true, mandatory: true, description: 'from parent path to children paths' },
       {id: 'pathToItem', dynamic: true, mandatory: true, description: 'value of path' },
       {id: 'icon', dynamic: true, as: 'string', description: 'icon name from material icons' },
-      {id: 'isChapter', dynamic: true, as: 'boolean', description: 'path as input. children != [] is default' },
+      {id: 'isChapter', dynamic: true, as: 'boolean', description: 'path as input. differnt from children() == 0, as you can drop into empty array' },
       {id: 'maxDepth',  as: 'number', defaultValue: 3 },
     ],
     impl: ctx => ({

@@ -1,3 +1,32 @@
+jb.component('studio.properties-tree-nodes', {
+  type: 'tree.node-model',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => new jb.studio.PropertiesTree(path)
+})
+
+jb.component('studio.properties-table-tree', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: tableTree({
+    treeModel: studio.PropertiesTreeNodes,
+    commonFields: [
+      studio.propertyField('%path%'),
+      studio.propertyToolbar('%path%')
+    ],
+    chapterHeadline: label({title: ({data}) => {
+      const path = data.path
+      const prop = path.split('~').pop()
+      if (isNaN(Number(prop)))
+        return prop
+      return st.compNameOfPath(path)
+    }}),
+  })
+})
+
 jb.component('studio.property-toolbar', { /* studio.propertyToolbar */
   type: 'control',
   params: [
@@ -264,7 +293,7 @@ jb.component('studio.property-field', { /* studio.propertyField */
   impl: group({
     title: studio.propName('%$path%'),
     controls: control.firstSucceeding({
-      vars: [Var('paramDef', studio.paramDef('%$path%'))],
+      vars: Var('paramDef', studio.paramDef('%$path%')),
       controls: [
         controlWithCondition(
           and(
@@ -400,16 +429,6 @@ jb.component('studio.properties', { /* studio.properties */
     ],
     features: variable({name: 'PropertiesDialog', value: {'$': 'object'}, watchable: false})
   })
-})
-
-jb.component('studio.tgp-path-options', { /* studio.tgpPathOptions */
-  type: 'picklist.options',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (context,path) =>
-		[{code:'',text:''}]
-			.concat(jb.studio.PTsOfPath(path).map(op=> ({ code: op, text: op})))
 })
 
 jb.component('studio.open-properties', { /* studio.openProperties */ 

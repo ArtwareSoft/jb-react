@@ -19,6 +19,6 @@ jb.component('people', { /* people */
 jb.component('hello-world.main', { /* helloWorld.main */
   type: 'control',
   impl: group({
-    controls: label({title: pipeline('%$people%', '%name%')})
+    controls: label('hey')
   })
 })

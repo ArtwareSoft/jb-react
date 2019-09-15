@@ -1288,3 +1288,13 @@ jb.component('ui-test.check-box-with-text', { /* uiTest.checkBoxWithText */
     expectedResult: true
   })
 })
+
+jb.component('ui-test.hidden-ref-bug', { 
+  impl: uiTest({
+    control: group({
+    controls: label({title: 'hey', features: hidden('%$hidden%')}),
+    features: variable({name: 'hidden', watchable: true})
+    }),
+    expectedResult: contains('display: none'),
+  })
+})

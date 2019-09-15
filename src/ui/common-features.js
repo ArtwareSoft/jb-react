@@ -210,9 +210,6 @@ jb.component('variable', { /* variable */
   })
 })
 
-// to delete soon
-jb.component('var', jb.comps.variable)
-
 jb.component('bind-refs', { /* bindRefs */
   type: 'feature',
   category: 'watch',
@@ -308,7 +305,7 @@ jb.component('feature.after-load', { /* feature.afterLoad */
 jb.component('feature.if', { /* feature.if */
   type: 'feature',
   category: 'feature:85',
-  description: 'adds element to dom by condition. no watch',
+  description: 'adds/remove element to dom by condition. keywords: hidden/show',
   params: [
     {id: 'showCondition', mandatory: true, dynamic: true}
   ],
@@ -321,13 +318,13 @@ jb.component('feature.if', { /* feature.if */
 jb.component('hidden', { /* hidden */
   type: 'feature',
   category: 'feature:85',
-  description: 'adds display:none to element by condition. no watch',
+  description: 'display:none on element. keywords: show',
   params: [
     {id: 'showCondition', type: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx,showCondition) => ({
     templateModifier: (vdom,cmp,state) => {
-      if (!showCondition(cmp.ctx))
+      if (!jb.toboolean(showCondition(cmp.ctx)))
         jb.path(vdom,['attributes','style','display'],'none')
       return vdom;
     }
