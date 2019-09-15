@@ -685,15 +685,24 @@ Object.assign(jb,{
   ns: nsId =>
     jb.registerMacro(nsId+'.$dummyComp',{})
   ,
+  removeDataResourcePrefix: id =>
+    id.indexOf('data-resource.') == 0 ? id.slice('data-resource.'.length) : id,
+  addDataResourcePrefix: id =>
+    id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
-    jb.comps[id] = comp
     try {
       jb.traceComponentFile && jb.traceComponentFile(comp)
-      if (comp.watchableData !== undefined)
-        return jb.resource(id,comp.watchableData)
-      if (comp.passiveData !== undefined)
-        return jb.const(id,comp.passiveData)
+      if (comp.watchableData !== undefined) {
+        jb.comps[jb.addDataResourcePrefix(id)] = comp
+        return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
+      }
+      if (comp.passiveData !== undefined) {
+        jb.comps[jb.addDataResourcePrefix(id)] = comp
+        return jb.const(jb.removeDataResourcePrefix(id),comp.passiveData)
+      }
     } catch(e) {}
+
+    jb.comps[id] = comp;
 
     // fix as boolean params to have type: 'boolean'
     (comp.params || []).forEach(p=> {

@@ -22,3 +22,9 @@ jb.component('hello-world.main', { /* helloWorld.main */
     controls: label('hey')
   })
 })
+
+jb.component('data-resource.a', { /* dataResource.a */
+  watchableData: {
+    aa: 33
+  }
+})
