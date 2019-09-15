@@ -157,25 +157,25 @@ jb.component('studio.probe', { /* studio.probe */
     2. closest in preview
     3. the page shown in studio
 */
-        const circuitCtx = ctx.vars.pickSelection && ctx.vars.pickSelection.ctx
-        if (circuitCtx && circuitCtx.path.indexOf('~fields~') != -1) {// fields are not good circuit. go up to the table
-            const rowElem = ctx.vars.pickSelection.elem && ctx.vars.pickSelection.elem.closest('.jb-item')
-            const rowCtx = rowElem && _jb.ctxDictionary[rowElem.getAttribute('jb-ctx')]
-            const item = rowCtx && rowCtx.data
-            if (item) {
-                circuitCtx = circuitCtx.setVars({ $probe_item: item, $probe_index: Array.from(rowElem.parentElement.children).indexOf(rowElem) })
-                st.highlight([rowElem])
-            } else {
-                circuitCtx = null
-            }
-        }
-        else if (circuitCtx)
+        let circuitCtx = ctx.exp('%$pickSelection/ctx%')
+        // if (circuitCtx && circuitCtx.path.indexOf('~fields~') != -1) {// fields are not good circuit. go up to the table
+        //     const rowElem = ctx.vars.pickSelection.elem && ctx.vars.pickSelection.elem.closest('.jb-item')
+        //     const rowCtx = rowElem && _jb.ctxDictionary[rowElem.getAttribute('jb-ctx')]
+        //     const item = rowCtx && rowCtx.data
+        //     if (item) {
+        //         circuitCtx = circuitCtx.setVars({ $probe_item: item, $probe_index: Array.from(rowElem.parentElement.children).indexOf(rowElem) })
+        //         st.highlight([rowElem])
+        //     } else {
+        //         circuitCtx = null
+        //     }
+        // }
+        if (circuitCtx)
             jb.studio.highlightCtx(circuitCtx)
         if (!circuitCtx) {
             const circuitInPreview = st.closestCtxInPreview(path())
-            if (circuitInPreview.ctx) {
-            st.highlight([circuitInPreview.elem])
-            circuitCtx = circuitInPreview.ctx
+                if (circuitInPreview.ctx) {
+                st.highlight([circuitInPreview.elem])
+                circuitCtx = circuitInPreview.ctx
             }
         }
         if (!circuitCtx) {

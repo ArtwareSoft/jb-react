@@ -61,6 +61,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
       ],
       'ui-tree':[
         'src/ui/tree/tree.js',
+        'src/ui/tree/table-tree.js',
         'src/ui/tree/json-tree-model.js',
       ],
       'inner-html': [ // unsafe

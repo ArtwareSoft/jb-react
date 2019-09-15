@@ -8,8 +8,7 @@ jb.component('studio.goto-path', { /* studio.gotoPath */
     writeValue('%$studio/profile_path%', '%$path%'),
     action.if(
         studio.isOfType('%$path%', 'control,table-field'),
-        studio.openControlTree(),
-       // runActions(studio.openControlTree(),studio.openProperties())
+        studio.openControlTree()
       )
   )
 })

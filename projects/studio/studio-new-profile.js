@@ -225,7 +225,7 @@ jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog 
             '%$mode% == \"insert\"',
             studio.addArrayItem({
               path: '%$path%',
-              toAdd: {'$object': {'$': '%%'}},
+              toAdd: studio.newComp('%%'),
               index: '%$index%'
             })
           ),
@@ -343,9 +343,16 @@ jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */
   })
 })
 
+jb.component('studio.new-comp', {
+  params: [
+    {id: 'compName', as: 'string'}
+  ],
+  impl: (ctx,compName) => jb.studio.newComp(jb.studio.getComp(compName), compName)
+})
+
 jb.studio.newControl = path =>
   new jb.jbCtx().run({$: 'studio.open-new-profile-dialog',
           path: path,
           type: 'control',
           mode: 'insert-control'
-        });
+});

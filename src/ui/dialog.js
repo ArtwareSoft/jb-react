@@ -75,8 +75,7 @@ jb.component('open-dialog', { /* openDialog */
       id: 'content',
       type: 'control',
       dynamic: true,
-      defaultValue: group({}),
-      forceDefaultCreation: true
+      templateValue: group({}),
     },
     {id: 'menu', type: 'control', dynamic: true},
     {id: 'title', as: 'renderable', dynamic: true},
@@ -349,8 +348,8 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
   impl: (ctx,codeMirror) => ({
 		templateModifier: (vdom,cmp,state) => {
             if (vdom && vdom.nodeName != 'div') return vdom;
-						vdom.children.push(jb.ui.h('img', {src: '/css/resizer.gif', class: 'resizer'}));
-			      return vdom;
+				vdom.children.push(jb.ui.h('img', {src: '//unpkg.com/jbart5-react/bin/studio/css/resizer.gif', class: 'resizer'}));
+			return vdom;
 		},
 		css: '>.resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
 

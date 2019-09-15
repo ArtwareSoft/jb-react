@@ -2,8 +2,13 @@ jb.component('studio', { /* studio */
   watchableData: {
     project: '',
     page: '',
-    profile_path: ''
+    profile_path: '',
+    pickSelectionCtxId: ''
   }
+})
+
+jb.component('pickSelection', { // can not put rich objects as watchable, only pickSelectionCtxId is watchable
+  passiveData: {  ctx: null, elem: null }
 })
 
 jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */

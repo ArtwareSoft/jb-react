@@ -36,8 +36,12 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
                 showBox(cmp,profElem,_window,previewOffset))
             .last() // esc or user pick
               .subscribe(profElem=> {
-                  ctx.vars.pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];
-                  ctx.vars.pickSelection.elem = profElem;
+                  const pickSelection = ctx.exp('%$pickSelection%')
+                  pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];
+                  pickSelection.elem = profElem;
+                  // inform watchers
+                  ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
+
                   ctx.vars.$dialog.close({OK: true});
                   // jb.delay(200).then(_=> {
             //         if (st.previewWindow && st.previewWindow.getSelection())
@@ -209,12 +213,9 @@ jb.component('studio.pick', { /* studio.pick */
     {id: 'onSelect', type: 'action', dynamic: true}
   ],
   impl: openDialog({
-    vars: [Var('pickSelection', ctx =>
-            ctx.vars.pickSelection || {})],
     style: dialog.studioPickDialog('%$from%'),
     content: label(''),
-    onOK: ctx =>
-            ctx.componentContext.params.onSelect(ctx.setData(ctx.vars.pickSelection.ctx))
+    onOK: ctx => ctx.componentContext.params.onSelect(ctx.setData(ctx.exp('%$pickSelection/ctx%')))
   })
 })
 
@@ -224,16 +225,9 @@ st.closestCtxInPreview = _path => {
     if (!_window) return;
     let closest,closestElem;
     const elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
-    for(var i=0;i<elems.length;i++) {
-        const _ctx = _window.jb.ctxDictionary[elems[i].getAttribute('jb-ctx')];
-        if (!_ctx) continue; //  || !st.isOfType(_ctx.path,'control'))
-        if (_ctx.path == path)
-            return {ctx: _ctx, elem: elems[i]} ;
-        if (path.indexOf(_ctx.path) == 0 && (!closest || closest.path.length < _ctx.path.length)) {
-            closest = _ctx; closestElem = elems[i]
-        }
-    }
-    return {ctx: closest, elem: closestElem};
+    const candidates = elems.map(elem=>({ ctx: _window.jb.ctxDictionary[elem.getAttribute('jb-ctx')], elem }))
+        .filter(e=>e.ctx && path.indexOf(e.ctx.path) == 0)
+    return candidates.sort((e1,e2) => 1000* (e1.ctx.path.length - e2.ctx.path.length) + (e1.ctx.id - e2.ctx.id) )[0] || {ctx: null, elem: null}
 }
 
 // st.refreshPreviewOfPath = path => {

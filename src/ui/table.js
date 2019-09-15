@@ -36,7 +36,7 @@ jb.component('field', { /* field */
     {id: 'class', as: 'string'}
   ],
   impl: (ctx,title,data,width,numeric,extendItems,_class) => ({
-    title: title,
+    title: () => title,
     fieldData: row => extendItems ? row[title] : data(ctx.setData(row)),
     calcFieldData: row => data(ctx.setData(row)),
     class: _class,
@@ -55,7 +55,7 @@ jb.component('field.index', { /* field.index */
     {id: 'class', as: 'string'}
   ],
   impl: (ctx,title,propName,width_class) => ({
-    title: title,
+    title: () => title,
     fieldData: (row,index) => index,
     class: _class,
     width: width,
@@ -80,7 +80,7 @@ jb.component('field.control', { /* field.control */
     {id: 'numeric', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,title,control,width,dataForSort,numeric) => ({
-    title: title,
+    title: () => title,
     control: row => control(ctx.setData(row)).reactComp(),
     width: width,
     fieldData: row => dataForSort(ctx.setData(row)),
@@ -116,7 +116,7 @@ jb.component('field.button', { /* field.button */
     }).reactComp();
 
     return {
-      title: ctx.params.title,
+      title: () => ctx.params.title,
       control: _ => ctrl,
       width: ctx.params.width,
       fieldData: row => dataForSort(ctx.setData(row)),
@@ -177,7 +177,7 @@ jb.component('table.init', { /* table.init */
         function extendItemsWithCalculatedFields() {
           if (!cmp.fields || !cmp.items) return;
           cmp.fields.filter(f=>f.extendItems).forEach(f=>
-            cmp.items.forEach(item=>item[f.title] = f.calcFieldData(item)))
+            cmp.items.forEach(item=>item[f.title()] = f.calcFieldData(item)))
         }
       },
   })

@@ -20,7 +20,7 @@ jb.component('group.init-tabs', { /* group.initTabs */
   impl: ctx => ({
     init: cmp => {
 			cmp.tabs = ctx.vars.$model.tabs();
-      cmp.titles = cmp.tabs.map(tab=>tab && tab.jb_title(ctx));
+      cmp.titles = cmp.tabs.map(tab=>tab && tab.field.title(ctx));
 			cmp.state.shown = 0;
 
       cmp.show = index =>
