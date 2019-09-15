@@ -57,8 +57,9 @@ class WatchableValueByRef {
       if (opOnRef.$push) {
         opOnRef.$push.forEach((toAdd,i)=>
           this.addObjToMap(toAdd,[...path,oldVal.length+i]))
-          opEvent.path.push(oldVal.length)
-          opEvent.ref = this.refOfPath(opEvent.path)
+        newVal[jbId] = oldVal[jbId]
+        opEvent.path.push(oldVal.length)
+        opEvent.ref = this.refOfPath(opEvent.path)
       } else if (opOnRef.$set === null && typeof oldVal === 'object') { // delete object should return the path that was deleted
         this.removeObjFromMap(oldVal)
         this.addObjToMap(newVal,path)

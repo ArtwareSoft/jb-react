@@ -605,43 +605,6 @@ jb.component('ui-test.table', { /* uiTest.table */
   })
 })
 
-jb.component('ui-test.table-DD', { /* uiTest.tableDD */
-  impl: uiTest({
-    control: group({
-      controls: [
-        table({
-          items: '%$watchable-people%',
-          fields: [
-            field({title: 'name', data: '%name%', width: 300, class: 'drag-handle'}),
-            field({title: 'age', data: '%age%', width: 50}),
-            field.control({
-              control: button({
-                title: 'delete',
-                action: removeFromArray('%$watchable-people%'),
-                style: button.x()
-              })
-            })
-          ],
-          features: [
-            itemlist.selection({
-              databind: '%$globals/selectedPerson%',
-              autoSelectFirst: true
-            }),
-            itemlist.keyboardSelection(true),
-            itemlist.dragAndDrop(),
-            watchRef('%$watchable-people%')
-          ]
-        }),
-        label({
-          title: pipeline('%$watchable-people/name%', join({})),
-          features: watchRef('%$watchable-people%')
-        })
-      ]
-    }),
-    expectedResult: contains(['age', 'Homer Simpson', '12'])
-  })
-})
-
 jb.component('ui-test.table.button-field', { /* uiTest.table.buttonField */
   impl: uiTest({
     control: table({
@@ -654,48 +617,6 @@ jb.component('ui-test.table.button-field', { /* uiTest.table.buttonField */
     expectedResult: contains(['age', 'Homer Simpson', '12'])
   })
 })
-
-// jb.component('ui-test.ngShow-label', {
-// //   impl :{$: 'ui-test',
-//   control :{$: 'label',
-//         title: 'Dan',
-//         features :{$ngAtts: {'[hidden]': '12==12'} }
-//    },
-//     expectedResult: { $contains: ['hidden' , 'Dan'] }
-// },
-// })
-
-// jb.component('ui-test.ngShow-list', {
-// //   impl :{$: 'ui-test',
-//   control :{$: 'itemlist',
-//       items: '%$people%',
-//       controls :{$: 'label',
-//         title: '%$item.name% - %age%',
-//         features :{ $ngAtts: {'[hidden]': '%age%==12'} }
-//       },
-//     },
-//     expectedResult: { $contains: ['Homer','Marge', 'hidden' , 'Bart'] }
-// },
-// })
-
-// jb.component('ui-test.ngIf', {
-// type: 'test',
-//   impl :{$: 'ui-test',
-//   control :{$: 'itemlist',
-//       items: '%$people%',
-//       controls :{$: 'label',
-//         title: '%$item.name% - %age%',
-//         atts: {'*ngIf': '%age%>12'}
-//       },
-//     },
-//     expectedResult :{$and:
-//       [
-//         { $contains: ['Homer','Marge'] },
-// //        { $not: { $contains: 'Bart'}}
-//       ]
-//     }
-// },
-// })
 
 jb.component('ui-test.editable-text-in-group', { /* uiTest.editableTextInGroup */
   impl: uiTest({
@@ -1253,7 +1174,6 @@ jb.component('ui-test.refresh-control-by-id', { /* uiTest.refreshControlById */
     expectedResult: contains(['i1', 'i2', 'i3'])
   })
 })
-
 
 // jb.component('ui-test.raw-vdom', {
 //   impl :{$: 'ui-test',

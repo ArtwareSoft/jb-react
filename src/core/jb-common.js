@@ -275,7 +275,7 @@ jb.component('remove-from-array', { /* removeFromArray */
   ],
   impl: (ctx,array,itemToRemove,_index) => {
 		const ar = jb.toarray(array);
-		const index = itemToRemove ? ar.indexOf(item) : _index;
+		const index = itemToRemove ? ar.indexOf(itemToRemove) : _index;
 		if (index != -1 && ar.length > index)
 			jb.splice(array,[[index,1]],ctx)
 	}

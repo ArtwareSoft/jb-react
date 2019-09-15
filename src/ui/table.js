@@ -107,7 +107,7 @@ jb.component('field.button', { /* field.button */
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => {
-    var ctrl = jb.ui.ctrl(ctx,{
+    const ctrl = jb.ui.ctrl(ctx,{
       beforeInit: (cmp,props) => {
         cmp.state.title = ctx.params.buttonText(ctx.setData(props.row));
       },
@@ -133,18 +133,6 @@ jb.component('button.table-cell-href', { /* tableButton.href */
   impl: customStyle({
     template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
     css: '{color: grey}'
-  })
-})
-
-jb.component('field.column-width', {
-  description: 'used in itemlist fields',
-  type: 'feature',
-  category: 'table:80',
-  params: [
-    {id: 'width', as: 'number' },
-  ],
-  impl: (ctx,width) => ({
-      enrichField: field => field.width = width
   })
 })
 
