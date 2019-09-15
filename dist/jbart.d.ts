@@ -488,7 +488,7 @@ type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar
 type sidenavPT = {$: 'sidenav', controls: [controlType], title: dataType, style: sidenav_styleType, features: [featureType]}
 type textPT = {$: 'text', text: dataType, style: text_styleType, title: dataType, features: [featureType]}
 type rich_textPT = {$: 'rich-text', text: dataType, title: dataType, style: rich_text_styleType, features: [featureType]}
-type treePT = {$: 'tree', nodeModel: tree_nodeModelType, style: tree_styleType, features: [featureType]}
+type treePT = {$: 'tree', nodeModel: tree_node_modelType, style: tree_styleType, features: [featureType]}
 
 // type dialog-feature
 type dialog_featureType = cssPT | css_classPT | css_widthPT | css_heightPT | css_paddingPT | css_marginPT | css_box_shadowPT | css_borderPT | dialog_feature_drag_titlePT | dialog_feature_unique_dialogPT | dialog_feature_near_launcher_positionPT | dialog_feature_onClosePT | dialog_feature_close_when_clicking_outsidePT | dialog_feature_auto_focus_on_first_inputPT | dialog_feature_css_class_on_launching_elementPT | dialog_feature_max_zIndex_on_clickPT | dialog_feature_resizerPT | style_by_controlPT | ((ctx: ctx) => any)
@@ -795,17 +795,23 @@ type cmp_def_themeType = {
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 type theme_material_designPT = {$: 'theme.material-design', }
 
-// type tree.nodeModel
-type tree_nodeModelType = style_by_controlPT | tree_json_read_onlyPT | tree_jsonPT | ((ctx: ctx) => any)
-type cmp_def_tree_nodeModelType = {
-	type: 'tree_nodeModel',
+// type tree.node-model
+type tree_node_modelType = style_by_controlPT | tree_json_read_onlyPT | tree_jsonPT | tree_nodeModelPT | ((ctx: ctx) => any)
+type cmp_def_tree_node_modelType = {
+	type: 'tree_node_model',
 	params?: [param],
-	impl: tree_nodeModelType,
+	impl: tree_node_modelType,
 }
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 type tree_json_read_onlyPT = {$: 'tree.json-read-only', object: dataType, rootPath: dataType}
 type tree_jsonPT = {$: 'tree.json', object: dataType, rootPath: dataType}
-type cmpDef = cmp_def_anyType | cmp_def_dataType | cmp_def_aggregatorType | cmp_def_booleanType | cmp_def_actionType | cmp_def_propType | cmp_def_varType | cmp_def_systemType | cmp_def_data_switch_caseType | cmp_def_action_switch_caseType | cmp_def_jison_parserType | cmp_def_lexer_ruleType | cmp_def_bnf_expressionType | cmp_def_expression_optionType | cmp_def_testType | cmp_def_ui_actionType | cmp_def_featureType | cmp_def_controlType | cmp_def_dialog_featureType | cmp_def_d3_scatter_styleType | cmp_def_d3_frameType | cmp_def_d3_histogram_styleType | cmp_def_d3_featureType | cmp_def_d3_axesType | cmp_def_d3_pivotType | cmp_def_d3_scaleType | cmp_def_d3_rangeType | cmp_def_d3_domainType | cmp_def_divider_styleType | cmp_def_inner_html_styleType | cmp_def_filter_typeType | cmp_def_itemlist_group_byType | cmp_def_group_styleType | cmp_def_markdown_styleType | cmp_def_menu_optionType | cmp_def_picklist_optionsType | cmp_def_picklist_promoteType | cmp_def_editable_text_styleType | cmp_def_text_styleType | cmp_def_label_styleType | cmp_def_picklist_styleType | cmp_def_table_fieldType | cmp_def_rich_text_styleType | cmp_def_themeType | cmp_def_tree_nodeModelType
+type tree_nodeModelPT = {$: 'tree.nodeModel', rootPath: dataType, 
+/** from parent path to children paths */children: dataType, 
+/** value of path */pathToItem: dataType, 
+/** icon name from material icons */icon: dataType, 
+/** path as input, $collapsed as parameter */title: dataType, 
+/** is expandable, path as input. children not empty is default */isArray: booleanType}
+type cmpDef = cmp_def_anyType | cmp_def_dataType | cmp_def_aggregatorType | cmp_def_booleanType | cmp_def_actionType | cmp_def_propType | cmp_def_varType | cmp_def_systemType | cmp_def_data_switch_caseType | cmp_def_action_switch_caseType | cmp_def_jison_parserType | cmp_def_lexer_ruleType | cmp_def_bnf_expressionType | cmp_def_expression_optionType | cmp_def_testType | cmp_def_ui_actionType | cmp_def_featureType | cmp_def_controlType | cmp_def_dialog_featureType | cmp_def_d3_scatter_styleType | cmp_def_d3_frameType | cmp_def_d3_histogram_styleType | cmp_def_d3_featureType | cmp_def_d3_axesType | cmp_def_d3_pivotType | cmp_def_d3_scaleType | cmp_def_d3_rangeType | cmp_def_d3_domainType | cmp_def_divider_styleType | cmp_def_inner_html_styleType | cmp_def_filter_typeType | cmp_def_itemlist_group_byType | cmp_def_group_styleType | cmp_def_markdown_styleType | cmp_def_menu_optionType | cmp_def_picklist_optionsType | cmp_def_picklist_promoteType | cmp_def_editable_text_styleType | cmp_def_text_styleType | cmp_def_label_styleType | cmp_def_picklist_styleType | cmp_def_table_fieldType | cmp_def_rich_text_styleType | cmp_def_themeType | cmp_def_tree_node_modelType
 function call : anyType;
 function call(param: dataType) : anyType;
 function pipeline : dataType;
@@ -1604,15 +1610,23 @@ function group_theme : featureType;
 function group_theme(theme: themeType) : featureType;
 function theme_materialDesign : themeType;
 function theme_materialDesign() : themeType;
-function tree_jsonReadOnly : tree_nodeModelType;
-function tree_jsonReadOnly(object: dataType, rootPath: dataType) : tree_nodeModelType;
-function tree_jsonReadOnly(object: dataType) : tree_nodeModelType;
-function tree_json : tree_nodeModelType;
-function tree_json(object: dataType, rootPath: dataType) : tree_nodeModelType;
-function tree_json(object: dataType) : tree_nodeModelType;
+function tree_jsonReadOnly : tree_node_modelType;
+function tree_jsonReadOnly(object: dataType, rootPath: dataType) : tree_node_modelType;
+function tree_jsonReadOnly(object: dataType) : tree_node_modelType;
+function tree_json : tree_node_modelType;
+function tree_json(object: dataType, rootPath: dataType) : tree_node_modelType;
+function tree_json(object: dataType) : tree_node_modelType;
+function tree_nodeModel : tree_node_modelType;
+function tree_nodeModel(profile: { rootPath: dataType, 
+/** from parent path to children paths */children: dataType, 
+/** value of path */pathToItem: dataType, 
+/** icon name from material icons */icon: dataType, 
+/** path as input, $collapsed as parameter */title: dataType, 
+/** is expandable, path as input. children not empty is default */isArray: booleanType}) : tree_node_modelType;
+function tree_nodeModel(rootPath: dataType) : tree_node_modelType;
 function tree : controlType;
-function tree(profile: { nodeModel: tree_nodeModelType, style: tree_styleType, features: [featureType]}) : controlType;
-function tree(nodeModel: tree_nodeModelType) : controlType;
+function tree(profile: { nodeModel: tree_node_modelType, style: tree_styleType, features: [featureType]}) : controlType;
+function tree(nodeModel: tree_node_modelType) : controlType;
 function tree_selection : featureType;
 function tree_selection(profile: { databind: dataType, autoSelectFirst: booleanType, onSelection: actionType, onRightClick: actionType}) : featureType;
 function tree_selection(databind: dataType) : featureType;
@@ -2163,12 +2177,20 @@ materialDesign : themeType,
 materialDesign() : themeType,
 }
 declare var theme : theme;,type tree = {
-jsonReadOnly : tree_nodeModelType,
-jsonReadOnly(object: dataType, rootPath: dataType) : tree_nodeModelType,
-jsonReadOnly(object: dataType) : tree_nodeModelType,
-json : tree_nodeModelType,
-json(object: dataType, rootPath: dataType) : tree_nodeModelType,
-json(object: dataType) : tree_nodeModelType,
+jsonReadOnly : tree_node_modelType,
+jsonReadOnly(object: dataType, rootPath: dataType) : tree_node_modelType,
+jsonReadOnly(object: dataType) : tree_node_modelType,
+json : tree_node_modelType,
+json(object: dataType, rootPath: dataType) : tree_node_modelType,
+json(object: dataType) : tree_node_modelType,
+nodeModel : tree_node_modelType,
+nodeModel(profile: { rootPath: dataType, 
+/** from parent path to children paths */children: dataType, 
+/** value of path */pathToItem: dataType, 
+/** icon name from material icons */icon: dataType, 
+/** path as input, $collapsed as parameter */title: dataType, 
+/** is expandable, path as input. children not empty is default */isArray: booleanType}) : tree_node_modelType,
+nodeModel(rootPath: dataType) : tree_node_modelType,
 selection : featureType,
 selection(profile: { databind: dataType, autoSelectFirst: booleanType, onSelection: actionType, onRightClick: actionType}) : featureType,
 selection(databind: dataType) : featureType,

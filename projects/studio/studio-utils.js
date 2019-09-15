@@ -59,9 +59,8 @@ jb.component('studio.last-edit', { /* studio.lastEdit */
 			.filter(r=>
 				!justNow || now - r.timeStamp < 1000)[0];
 		const res = lastEvent && (lastEvent.insertedPath || lastEvent.path);
-		if (lastEvent.op.$push)
-			res.push(st.arrayChildren(lastEvent.path.join('~')).length-2)
-		return res.join('~');
+		if (res)
+			return res.join('~')
 	}
 })
 

@@ -1743,7 +1743,7 @@ jb.component('run-action-on-items', { /* runActionOnItems */
   type: 'action',
   usageByValue: true,
   params: [
-    {id: 'items', as: 'array', mandatory: true},
+    {id: 'items', as: 'ref', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
     {
       id: 'notifications',
@@ -1754,7 +1754,7 @@ jb.component('run-action-on-items', { /* runActionOnItems */
   ],
   impl: (ctx,items,action,notifications) => {
 		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
-		return items.reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
+		return jb.val(items).reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,ctx))
 			.then(() => notifications && jb.mainWatchableHandler && jb.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
@@ -14007,10 +14007,30 @@ class TreeNode extends jb.ui.Component {
 
  //********************* jBart Components
 
+ jb.component('tree.nodeModel', {
+    type: 'tree.node-model',
+    params: [
+      {id: 'rootPath', as: 'single', mandatory: true },
+      {id: 'children', dynamic: true, mandatory: true, description: 'from parent path to children paths' },
+      {id: 'pathToItem', dynamic: true, mandatory: true, description: 'value of path' },
+      {id: 'icon', dynamic: true, as: 'string', description: 'icon name from material icons' },
+      {id: 'title', dynamic: true, as: 'string', description: 'path as input, $collapsed as parameter' },
+      {id: 'isArray', dynamic: true, as: 'boolean', description: 'is expandable, path as input. children not empty is default' },
+    ],
+    impl: ctx => ({
+        rootPath: ctx.params.rootPath,
+        children: path => ctx.params.children(ctx.setData(path)),
+        val: path => ctx.params.pathToItem(ctx.setData(path)),
+        icon: path => ctx.params.icon(ctx.setData(path)),
+        title: (path,collapsed) => ctx.params.title(ctx.setData(path).setVars({collapsed})),
+        isArray: path => ctx.params.isArray.profile ? ctx.params.isArray(ctx.setData(path)) : ctx.params.children(ctx.setData(path)).length,
+    })
+})
+
 jb.component('tree', { /* tree */
   type: 'control',
   params: [
-    {id: 'nodeModel', type: 'tree.nodeModel', dynamic: true, mandatory: true},
+    {id: 'nodeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
     {id: 'style', type: 'tree.style', defaultValue: tree.ulLi(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
@@ -14314,7 +14334,7 @@ addToIndex = (path,toAdd) => {
 
 (function() {
 jb.component('tree.json-read-only', { /* tree.jsonReadOnly */
-  type: 'tree.nodeModel',
+  type: 'tree.node-model',
   params: [
     {id: 'object', as: 'single'},
     {id: 'rootPath', as: 'string'}
@@ -14364,7 +14384,7 @@ class ROjson {
 }
 
 jb.component('tree.json', { /* tree.json */
-  type: 'tree.nodeModel',
+  type: 'tree.node-model',
   params: [
     {id: 'object', as: 'ref'},
     {id: 'rootPath', as: 'string'}
@@ -30578,9 +30598,8 @@ jb.component('studio.last-edit', { /* studio.lastEdit */
 			.filter(r=>
 				!justNow || now - r.timeStamp < 1000)[0];
 		const res = lastEvent && (lastEvent.insertedPath || lastEvent.path);
-		if (lastEvent.op.$push)
-			res.push(st.arrayChildren(lastEvent.path.join('~')).length-2)
-		return res.join('~');
+		if (res)
+			return res.join('~')
 	}
 })
 
@@ -31481,7 +31500,7 @@ jb.component('studio.make-local', { /* studio.makeLocal */
 })
 
 jb.component('studio.jbEditorNodes', { /* studio.jbEditorNodes */
-  type: 'tree.nodeModel',
+  type: 'tree.node-model',
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -32512,7 +32531,6 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
   params: [
     {id: 'path', as: 'string'},
     {id: 'source', as: 'string'},
-    {id: 'expressionOnly', as: 'boolean', type: 'boolean'}
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -32526,7 +32544,7 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
           .map(e=> input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
           .map(closestCtx)
           .map(probeCtx=>
-            new st.suggestions(input,ctx.params.expressionOnly).extendWithOptions(probeCtx,pathToTrace))
+            new st.suggestions(input, ctx.exp('%$suggestionData/expressionOnly%')).extendWithOptions(probeCtx,pathToTrace))
           .catch(e=> jb.logException(e,'suggestions',cmp.ctx) || [])
           .distinctUntilChanged((e1,e2)=> e1.key == e2.key) // compare options - if options are the same - leave it.
           .takeUntil( cmp.destroyed )
@@ -32556,7 +32574,7 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
 
 jb.component('studio.show-suggestions', { /* studio.showSuggestions */
   impl: ctx =>
-    new st.suggestions(ctx.data,false).suggestionsRelevant()
+    new st.suggestions(ctx.data,ctx.exp('%$suggestionData/expressionOnly%')).suggestionsRelevant()
 })
 
 jb.component('studio.paste-suggestion', { /* studio.pasteSuggestion */
@@ -32585,7 +32603,7 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
     features: [
       id('suggestions-itemlist'),
       itemlist.noContainer(),
-      studio.itemlistRefreshSuggestionsOptions({path: '%$path%', source: '%$source%'}),
+      studio.itemlistRefreshSuggestionsOptions('%$path%','%$source%'),
       itemlist.selection({
         databind: '%$suggestionData/selected%',
         onDoubleClick: studio.pasteSuggestion(),
@@ -32626,7 +32644,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
     ],
     features: variable({
       name: 'suggestionData',
-      value: {'$': 'object', selected: '', options: [], path: '%$path%'}
+      value: {'$': 'object', selected: '', options: [], path: '%$path%', expressionOnly: true}
     })
   })
 })
@@ -34889,7 +34907,7 @@ jb.component('studio.goto-path', { /* studio.gotoPath */
     action.if(
         studio.isOfType('%$path%', 'control,table-field'),
         studio.openControlTree(),
-        studio.openComponentInJbEditor('%$path%')
+       // runActions(studio.openControlTree(),studio.openProperties())
       )
   )
 })
@@ -35450,7 +35468,7 @@ jb.component('studio.open-tree-menu', { /* studio.openTreeMenu */
 })
 
 jb.component('studio.control-tree-nodes', { /* studio.controlTreeNodes */
-  type: 'tree.nodeModel',
+  type: 'tree.node-model',
   impl: function(context) {
 		var currentPath = context.run({ $: 'studio.currentProfilePath' });
 		var compPath = currentPath.split('~')[0] || '';
@@ -35545,18 +35563,21 @@ jb.component('studio.open-resource', { /* studio.openResource */
     {id: 'path', as: 'string'},
     {id: 'name', as: 'string'}
   ],
-  impl: openDialog({
-    style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
-    content: editableText({
-      databind: studio.profileAsText('%$path%'),
-      style: editableText.studioCodemirrorTgp()
-    }),
-    title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
-    features: [
-      css('.jb-dialog-content-parent {overflow-y: hidden}'),
-      dialogFeature.resizer(true)
-    ]
-  })
+  impl: runActions(
+    writeValue(studio.profileAsText('%$path%'), 
+      (ctx,vars,{path}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+path.split('~')[0]+'%'))),
+    openDialog({
+      style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
+      content: editableText({
+        databind: studio.profileAsText('%$path%'),
+        style: editableText.studioCodemirrorTgp()
+      }),
+      title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
+      features: [
+        css('.jb-dialog-content-parent {overflow-y: hidden}'),
+        dialogFeature.resizer(true)
+      ]
+  }))
 })
 
 jb.component('studio.open-new-resource', { /* studio.openNewResource */
@@ -36228,7 +36249,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
     style: layout.horizontal('3'),
     controls: [
       image({
-        url: '/projects/studio/css/jbartlogo.png',
+        url: '//unpkg.com/jbart5-react/bin/studio/css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
         style: image.default(),
@@ -36292,7 +36313,7 @@ jb.component('studio.dynamic', { /* studio.dynamic */
     style: layout.horizontal('3'),
     controls: [
       image({
-        url: '/projects/studio/css/jbartlogo.png',
+        url: '//unpkg.com/jbart5-react/bin/studio/css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
         style: image.default(),

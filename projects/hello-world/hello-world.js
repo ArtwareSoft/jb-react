@@ -16,37 +16,9 @@ jb.component('people', { /* people */
   ]
 })
 
-jb.component('hello-world.main', { /* helloWorld.main */
+jb.component('hello-world.main', {
   type: 'control',
   impl: group({
-    controls: [
-      label('hello world'),
-      itemlist({
-        items: '%$people%',
-        controls: [
-          text({title: 'name', text: '%name%', style: label.noWrappingTag()}),
-          editableBoolean({
-            databind: '%male%',
-            style: editableBoolean.checkbox(),
-            title: 'male',
-            textForTrue: 'yes',
-            textForFalse: 'no'
-          }),
-          button({
-            title: 'toggle',
-            action: toggleBooleanValue('%male%'),
-            style: button.href()
-          })
-        ],
-        style: table.withHeaders(),
-        itemVariable: 'item',
-        visualSizeLimit: 100,
-        features: [css.width('300')]
-      }),
-      button({
-        title: 'toogle',
-        action: runActionOnItems('%$people%', toggleBooleanValue('%male%'))
-      })
-    ]
+    controls: label('hello world')
   })
 })
