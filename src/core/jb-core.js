@@ -848,7 +848,6 @@ Object.assign(jb,{
     }
     return true;
   },
-  cloneIfNeeded: (obj,doNotClone) => doNotClone ? obj : JSON.parse(JSON.stringify(obj)),
   range: (start, count) =>
     Array.apply(0, Array(count)).map((element, index) => index + start),
 
