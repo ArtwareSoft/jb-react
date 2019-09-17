@@ -98,13 +98,13 @@ Object.assign(st,{
 
 Object.assign(st, {
 	_delete: (path,srcCtx) => {
-		var prop = path.split('~').pop();
-		var parent = st.valOfPath(st.parentPath(path))
+		const prop = path.split('~').pop();
+		const parent = st.valOfPath(st.parentPath(path))
 		if (Array.isArray(parent)) {
-			var index = Number(prop);
+			const index = Number(prop);
 			st.splice(st.refOfPath(st.parentPath(path)),[[index, 1]],srcCtx)
 		} else {
-			st.writeValueOfPath(path,null,srcCtx);
+			st.writeValueOfPath(path,undefined,srcCtx);
 		}
 	},
 
