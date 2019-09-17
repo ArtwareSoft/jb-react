@@ -6,6 +6,13 @@ jb.component('button.href', { /* button.href */
   })
 })
 
+jb.component('button.native', {
+  type: 'button.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{title: state.title, onclick: ev => cmp.clicked(ev)}),
+  })
+})
+
 jb.component('button.x', { /* button.x */
   type: 'button.style',
   params: [

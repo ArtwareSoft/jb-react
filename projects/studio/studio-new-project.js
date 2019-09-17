@@ -18,12 +18,12 @@ jb.component('studio.new-project', { /* studio.newProject */
         { fileName: `${name}.html`, content: `
 <!DOCTYPE html>
 <head>
+  <meta charset="utf-8">
   <script type="text/javascript">
     startTime = new Date().getTime();
   </script>
   <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>
   <script type="text/javascript" src="/projects/${name}/${name}.js"></script>
-  <script1 type="text/javascript" src="/projects/${name}/samples.js"></script1>
 </head>
 <body>
 <div id="main"> </div>
