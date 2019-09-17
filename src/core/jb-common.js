@@ -247,9 +247,10 @@ jb.component('add-to-array', { /* addToArray */
   type: 'action',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
-    {id: 'toAdd', as: 'array', mandatory: true}
+    {id: 'toAdd', as: 'array', mandatory: true, description: 'if the value is watchable, it will be cloned'},
+    {id: 'asLink', as: 'boolean', description: 'if the value is watchable, add a link to the array'},
   ],
-  impl: (ctx,array,toAdd) => jb.push(array,toAdd,ctx)
+  impl: (ctx,array,toAdd,asLink) => jb.push(array,jb.cloneIfNeeded(toAdd,asLink),ctx)
 })
 
 jb.component('splice', { /* splice */
