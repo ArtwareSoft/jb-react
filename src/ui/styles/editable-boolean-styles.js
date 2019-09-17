@@ -20,6 +20,19 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
   })
 })
 
+jb.component('editable-boolean.checkbox-with-label', {
+  type: 'editable-boolean.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{},[
+      h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
+        checked: state.model,
+        onchange: e => cmp.jbModel(e.target.checked),
+        onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  },),
+      h('label',{for: "switch_"+state.fieldId },)
+  ]),
+    features: field.databind()
+  })
+})
 
 jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandCollapse */
   type: 'editable-boolean.style',
@@ -51,3 +64,4 @@ jb.component('editable-boolean.mdl-slide-toggle', { /* editableBoolean.mdlSlideT
     features: [field.databind(), editableBoolean.keyboardSupport(), mdlStyle.initDynamic()]
   })
 })
+
