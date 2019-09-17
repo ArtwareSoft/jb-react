@@ -15,15 +15,16 @@ st.PropertiesTree = class {
 	isArray(path) {
 		return this.children(path).length > 0;
 	}
-	children(path,nonRecursive) {
-		return [].concat.apply([],st.controlParams(path).map(prop=>path + '~' + prop)
-				.map(innerPath=> {
+	children(path) {
+		return st.paramsOfPath(path).filter(p=>!st.isControlType(p.type)).map(p=>p.id)
+			.map(prop=>path + '~' + prop)
+			.map(innerPath=> {
 					const val = st.valOfPath(innerPath);
 					if (Array.isArray(val) && val.length > 0)
 					 return st.arrayChildren(innerPath,true);
 					return [innerPath]
-				}))
-				.concat(nonRecursive ? [] : this.innerControlPaths(path));
+			})
+			.flat()
 	}
 	move(from,to) {
 		return st.moveFixDestination(from,to)
@@ -33,19 +34,6 @@ st.PropertiesTree = class {
 	}
 	icon(path) {
 		return st.icon(path)
-	}
-
-	// private
-	innerControlPaths(path) {
-		return ['action~content'] // add more inner paths here
-			.map(x=>path+'~'+x)
-			.filter(p=>
-				st.paramTypeOfPath(p) == 'control');
-	}
-	fixTitles(title,path) {
-		if (title == 'control-with-condition')
-			return jb.ui.h('div',{},[this.title(path+'~control'),jb.ui.h('span',{class:'treenode-val'},'conditional') ]);
-		return title;
 	}
 }
 

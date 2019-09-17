@@ -172,6 +172,17 @@ jb.component('ui-test.editable-text.x-button', { /* uiTest.editableText.xButton 
   })
 })
 
+jb.component('ui-test.editable-text-expandable', {
+  impl: uiTest({
+    control: editableText({
+      title: 'name',
+      databind: '%$person/name%',
+      style: editableText.expandable(),
+    }),
+    expectedResult: true
+  })
+})
+
 jb.component('ui-test.two-way-binding', { /* uiTest.twoWayBinding */
   impl: uiTest({
     control: group({

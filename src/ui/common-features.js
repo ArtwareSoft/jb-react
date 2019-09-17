@@ -155,10 +155,7 @@ jb.component('id', { /* id */
   params: [
     {id: 'id', mandatory: true, as: 'string'}
   ],
-  impl: htmlAttribute(
-    'id',
-    '%$id%'
-  )
+  impl: htmlAttribute('id','%$id%')
 })
 
 jb.component('feature.hover-title', { /* feature.hoverTitle */
@@ -524,7 +521,7 @@ jb.component('focus-on-sibling', { /* focusOnSibling */
   ],
   impl: (ctx,siblingSelector,delay) => {
 	  if (!ctx.vars.event) 
-      return jb.error('no event for action focus-on-sibling',ctx)
+      return jb.logError('no event for action focus-on-sibling',ctx)
     const path = event.path || (event.composedPath && event.composedPath())
 	  path && delayedFocus(path[1],{delay,siblingSelector})
 
