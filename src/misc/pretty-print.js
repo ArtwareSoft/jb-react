@@ -18,8 +18,8 @@ jb.prettyPrintComp = function(compId,comp,settings={}) {
   }
 }
 
-jb.prettyPrint = function(profile,settings = {}) {
-  return jb.prettyPrintWithPositions(profile,settings).text;
+jb.prettyPrint = function(val,settings = {}) {
+  return jb.prettyPrintWithPositions(val,settings).text;
 }
 
 jb.prettyPrint.advanceLineCol = function({line,col},text) {
@@ -29,9 +29,12 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 }
 
 const spaces = Array.from(new Array(200)).map(_=>' ').join('')
-jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
+jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
+  if (!val || typeof val !== 'object')
+    return { text: val.toString(), map: {} }
+
   const advanceLineCol = jb.prettyPrint.advanceLineCol
-  return valueToMacro({path: initialPath, line:0, col: 0}, profile)
+  return valueToMacro({path: initialPath, line:0, col: 0}, val)
 
   function processList(ctx,items) {
     const res = items.reduce((acc,{prop, item}) => {

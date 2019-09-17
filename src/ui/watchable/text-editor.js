@@ -59,10 +59,6 @@ jb.component('watchable-as-text', { /* watchableAsText */
         },
         $jb_val(value) { try {
             if (value === undefined) {
-                const val = this.getVal();
-                if (typeof val === 'function')
-                    return val.toString();
-
                 this.prettyPrintWithPositions()
                 return this.text
             } else {

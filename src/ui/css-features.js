@@ -1,4 +1,5 @@
 jb.component('css', { /* css */
+  description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
   type: 'feature,dialog-feature',
   params: [
     {id: 'css', mandatory: true, as: 'string'}
