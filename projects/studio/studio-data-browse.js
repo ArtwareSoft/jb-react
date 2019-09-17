@@ -73,7 +73,7 @@ jb.component('studio.data-resource-menu', { /* studio.dataResourceMenu */
           .filter(e=>! jb.comps[e[0]])
           .filter(e=>e[1].watchableData !== undefined || e[1].passiveData !== undefined)
             .map(e=> {
-              const watchableOrPassive = e[1].watchableData ? 'watchable' : 'passive'
+              const watchableOrPassive = e[1].watchableData !== undefined ? 'watchable' : 'passive'
               const upper = watchableOrPassive.charAt(0).toUpperCase() + watchableOrPassive.slice(1)
               const name = jb.removeDataResourcePrefix(e[0])
               return {

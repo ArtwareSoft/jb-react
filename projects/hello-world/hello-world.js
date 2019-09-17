@@ -19,12 +19,7 @@ jb.component('people', { /* people */
 jb.component('hello-world.main', { /* helloWorld.main */
   type: 'control',
   impl: group({
-    controls: label('hey')
+    controls: label('hello world')
   })
 })
 
-jb.component('data-resource.a', { /* dataResource.a */
-  watchableData: {
-    aa: 33
-  }
-})
