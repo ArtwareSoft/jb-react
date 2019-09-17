@@ -249,4 +249,17 @@ jb.component('field.title-ctrl', {
   })
 })
 
+jb.component('field.column-width', {
+  description: 'used in itemlist fields',
+  type: 'feature',
+  category: 'table:80',
+  params: [
+    {id: 'width', as: 'number' },
+  ],
+  impl: (ctx,width) => ({
+      enrichField: field => field.width = width
+  })
+})
+
+
 })()

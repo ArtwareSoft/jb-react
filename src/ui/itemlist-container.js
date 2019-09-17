@@ -200,7 +200,7 @@ jb.ui.extractPropFromExpression = exp => { // performance for simple cases such 
 // match fields in pattern itemlistCntrData/FLDNAME_filter to data
 jb.component('itemlist-container.filter-field', { /* itemlistContainer.filterField */
   type: 'feature',
-  category: 'itemlist-filter:80',
+  category: 'itemlist:80',
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
     {id: 'fieldData', dynamic: true, mandatory: true},
@@ -268,7 +268,7 @@ jb.component('filter-type.numeric', { /* filterType.numeric */
 
 jb.component('itemlist-container.search-in-all-properties', { /* itemlistContainer.searchInAllProperties */
   type: 'data',
-  category: 'itemlist-filter:40',
+  category: 'itemlist:40',
   impl: ctx => {
 		if (typeof ctx.data == 'string') return ctx.data;
 		if (typeof ctx.data != 'object') return '';

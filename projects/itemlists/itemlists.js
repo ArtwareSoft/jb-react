@@ -100,42 +100,29 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
   type: 'control',
   impl: group({
     controls: [
-      table({
-        title: '',
+      itemlist({
         items: '%$people%',
-        fields: [
-          field.control({
-            title: '',
-            control: materialIcon({
+        style: table.withHeaders(),
+        controls: [
+            materialIcon({
               icon: 'person',
               style: icon.material(),
-              features: itemlist.dragHandle()
-            }),
-            width: '60'
+              features: [ itemlist.dragHandle(), field.columnWidth(60) ]
           }),
-          field.control({
-            title: 'name',
-            control: editableText({
+          editableText({
               title: 'name',
               databind: '%name%',
               style: editableText.mdlInputNoFloatingLabel('200')
-            })
           }),
-          field.control({
-            title: 'age',
-            control: editableText({
+          editableText({
               title: 'age',
               databind: '%age%',
               style: editableText.mdlInputNoFloatingLabel('50')
-            })
           }),
-          field.control({
-            control: button({
-              action: {'$': 'itemlist-container.delete', '$byValue': ['%%']},
+          button({
+              action: removeFromArray({ array: '%$people%', itemToRemove: '%%' }),
               style: button.x('21'),
-              features: itemlist.shownOnlyOnItemHover()
-            }),
-            width: '60'
+              features: [itemlist.shownOnlyOnItemHover(), field.columnWidth(60)]
           })
         ],
         style: table.mdl('mdl-data-table mdl-shadow--2dp', 'mdl-data-table__cell--non-numeric'),
@@ -150,7 +137,6 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
         style: button.mdlRaised()
       })
     ],
-    features: group.itemlistContainer({defaultItem: {'$': 'object'}})
   })
 })
 

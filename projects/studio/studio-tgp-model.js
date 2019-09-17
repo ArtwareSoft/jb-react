@@ -1,6 +1,54 @@
 (function() {
 const st = jb.studio;
 
+st.PropertiesTree = class {
+	constructor(rootPath) {
+		this.rootPath = rootPath;
+		this.refHandler = st.compsRefHandler;
+	}
+	title(path) {
+		const prop = path.split('~').pop();
+		if (isNaN(Number(prop)))
+			return prop
+		return st.compNameOfPath(path)
+	}
+	isArray(path) {
+		return this.children(path).length > 0;
+	}
+	children(path,nonRecursive) {
+		return [].concat.apply([],st.controlParams(path).map(prop=>path + '~' + prop)
+				.map(innerPath=> {
+					const val = st.valOfPath(innerPath);
+					if (Array.isArray(val) && val.length > 0)
+					 return st.arrayChildren(innerPath,true);
+					return [innerPath]
+				}))
+				.concat(nonRecursive ? [] : this.innerControlPaths(path));
+	}
+	move(from,to) {
+		return st.moveFixDestination(from,to)
+	}
+	disabled(path) {
+		return st.disabled(path)
+	}
+	icon(path) {
+		return st.icon(path)
+	}
+
+	// private
+	innerControlPaths(path) {
+		return ['action~content'] // add more inner paths here
+			.map(x=>path+'~'+x)
+			.filter(p=>
+				st.paramTypeOfPath(p) == 'control');
+	}
+	fixTitles(title,path) {
+		if (title == 'control-with-condition')
+			return jb.ui.h('div',{},[this.title(path+'~control'),jb.ui.h('span',{class:'treenode-val'},'conditional') ]);
+		return title;
+	}
+}
+
 st.ControlTree = class {
 	constructor(rootPath) {
 		this.rootPath = rootPath;
@@ -38,9 +86,6 @@ st.ControlTree = class {
 
 	// private
 	innerControlPaths(path) {
-		// const nonControlChildren = [].concat.apply([],
-		//  	st.nonControlChildren(path,true).map(innerPath=>Array.isArray(st.valOfPath(innerPath)) ? st.arrayChildren(innerPath,true) : [innerPath] ))
-		// return [].concat.apply([],nonControlChildren.map(innerPath=>this.children(innerPath,true)))
 		return ['action~content'] // add more inner paths here
 			.map(x=>path+'~'+x)
 			.filter(p=>
@@ -57,15 +102,15 @@ st.jbEditorTree = class {
 	constructor(rootPath,includeCompHeader) {
 		this.rootPath = rootPath;
 		this.refHandler = st.compsRefHandler;
-    this.includeCompHeader= includeCompHeader;
+    	this.includeCompHeader= includeCompHeader;
 	}
 	title(path, collapsed) {
 		let val = st.valOfPath(path);
 		let compName = st.compNameOfPath(path);
-    if (path.indexOf('~') == -1)
-      compName = 'jb-component';
-    if (compName && compName.match(/case$/))
-      compName = 'case';
+		if (path.indexOf('~') == -1)
+			compName = 'jb-component';
+		if (compName && compName.match(/case$/))
+      		compName = 'case';
 		let prop = path.split('~').pop();
 		if (!isNaN(Number(prop))) // array value - title as a[i]
 			prop = path.split('~').slice(-2)
@@ -140,13 +185,6 @@ st.jbEditorTree = class {
 			return ['then','else']
 		return []
 	}
-  // compHeader(path,val) {
-	// 	if (path.indexOf('~impl') == -1 && !st.isPrimitiveValue(val) && !Array.isArray(val))
-  //     return Object.getOwnPropertyNames(val)
-  //       .filter(p=>p!='$' && p.indexOf('$jb_') != 0)
-  //       .map(p=>path+'~'+p);
-	// }
-
 }
 
 

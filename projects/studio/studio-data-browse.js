@@ -13,7 +13,7 @@ jb.component('studio.open-resource', { /* studio.openResource */
   ],
   impl: runActions(
     writeValue(studio.profileAsText('%$path%'), 
-      (ctx,vars,{path}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+path.split('~')[0]+'%'))),
+      (ctx,vars,{name}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+name+'%'))),
     openDialog({
       style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
       content: editableText({
@@ -49,10 +49,10 @@ jb.component('studio.open-new-resource', { /* studio.openNewResource */
     }),
     title: 'New %$watchableOrPassive% Data Source',
     onOK: [
-      (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component(jb.tostring(name), {
+      (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component('data-resource.' + jb.tostring(name), {
         [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
       }),
-      studio.openResource('%$name%~%$watchableOrPassive%Data', '%$name%')
+      studio.openResource('data-resource.%$name%~%$watchableOrPassive%Data', '%$name%')
     ],
     modal: true,
     features: [
@@ -75,14 +75,16 @@ jb.component('studio.data-resource-menu', { /* studio.dataResourceMenu */
             .map(e=> {
               const watchableOrPassive = e[1].watchableData ? 'watchable' : 'passive'
               const upper = watchableOrPassive.charAt(0).toUpperCase() + watchableOrPassive.slice(1)
+              const name = jb.removeDataResourcePrefix(e[0])
               return {
-                name: `${e[0]} (${upper})`,
+                name,
+                title: `${name} (${upper})`,
                 path: `${e[0]}~${watchableOrPassive}Data`
               }
             }
             ),
           genericControl: menu.action({
-            title: '%$controlItem/name%',
+            title: '%$controlItem/title%',
             action: studio.openResource('%$controlItem/path%', '%$controlItem/name%')
           })
         })
