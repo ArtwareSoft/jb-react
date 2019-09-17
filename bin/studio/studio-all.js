@@ -685,15 +685,24 @@ Object.assign(jb,{
   ns: nsId =>
     jb.registerMacro(nsId+'.$dummyComp',{})
   ,
+  removeDataResourcePrefix: id =>
+    id.indexOf('data-resource.') == 0 ? id.slice('data-resource.'.length) : id,
+  addDataResourcePrefix: id =>
+    id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
-    jb.comps[id] = comp
     try {
       jb.traceComponentFile && jb.traceComponentFile(comp)
-      if (comp.watchableData !== undefined)
-        return jb.resource(id,comp.watchableData)
-      if (comp.passiveData !== undefined)
-        return jb.const(id,comp.passiveData)
+      if (comp.watchableData !== undefined) {
+        jb.comps[jb.addDataResourcePrefix(id)] = comp
+        return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
+      }
+      if (comp.passiveData !== undefined) {
+        jb.comps[jb.addDataResourcePrefix(id)] = comp
+        return jb.const(jb.removeDataResourcePrefix(id),comp.passiveData)
+      }
     } catch(e) {}
+
+    jb.comps[id] = comp;
 
     // fix as boolean params to have type: 'boolean'
     (comp.params || []).forEach(p=> {
@@ -1212,7 +1221,7 @@ jb.component('remove-from-array', { /* removeFromArray */
   ],
   impl: (ctx,array,itemToRemove,_index) => {
 		const ar = jb.toarray(array);
-		const index = itemToRemove ? ar.indexOf(item) : _index;
+		const index = itemToRemove ? ar.indexOf(itemToRemove) : _index;
 		if (index != -1 && ar.length > index)
 			jb.splice(array,[[index,1]],ctx)
 	}
@@ -8126,16 +8135,16 @@ ui.ctrl = function(context,options) {
 	}
 }
 
-var cssId = 0;
-var cssSelectors_hash = {};
+let cssId = 0;
+const cssSelectors_hash = ui.cssSelectors_hash = {};
 
 class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
 		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],
 			jbComponentDidUpdateFuncs: [], willUpdateFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], 
-			extendItemFuncs: [], enrichField: [] });
-		this.cssSelectors = [];
+			extendItemFuncs: [], enrichField: [], dynamicCss: [] });
+		this.staticCssLines = [];
 
 		this.jb_profile = ctx.profile;
 		//		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
@@ -8183,7 +8192,9 @@ class JbComponent {
 					let vdom = jbComp.template(this,state,ui.h);
 					jbComp.modifierFuncs.forEach(modifier=>
 						vdom = (vdom && typeof vdom === 'object') ? tryWrapper(() => modifier(vdom,this,state,ui.h) || vdom) : vdom
-					);
+					)
+					if (typeof vdom === 'object')
+						ui.addClassToVdom(vdom, jbComp.jbCssClass(this,this.ctx))
 					jb.log('renRes',[this.ctx, vdom, state,props,this]);
 					return vdom;
 				} catch (e) {
@@ -8192,7 +8203,7 @@ class JbComponent {
 				}
 			}
     		componentDidMount() {
-				jbComp.injectCss(this);
+				jbComp.componentDidMount(this);
 				jbComp.jbRegisterEventsFuncs.forEach(init=> tryWrapper(() => init(this), 'init'));
 				jbComp.jbAfterViewInitFuncs.forEach(init=> tryWrapper(() => init(this), 'after view init'));
 			}
@@ -8212,35 +8223,41 @@ class JbComponent {
 		return ReactComp;
 	}
 
-	injectCss(cmp) {
-		var elem = cmp.base;
+	jbCssClass(cmp,ctx) {
+		if (this.cachedClass)
+			return this.cachedClass
+		const cssLines = (this.staticCssLines || []).concat(this.dynamicCss.map(dynCss=>dynCss(cmp.ctx))).filter(x=>x)
+		const cssKey = cssLines.join('\n')
+		if (!cssKey) return ''
+		if (!cssSelectors_hash[cssKey]) {
+			cssId++;
+			cssSelectors_hash[cssKey] = cssId;
+			const cssStyle = cssLines.map(selectorPlusExp=>{
+				const selector = selectorPlusExp.split('{')[0];
+				const fixed_selector = selector.split(',').map(x=>x.trim()).map(x=>`.jb-${cssId}${x}`);
+				return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
+			}).join('\n');
+			const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
+			const style_elem = document.createElement('style');
+			style_elem.innerHTML = remark + cssStyle;
+			document.head.appendChild(style_elem);
+		}
+		const jbClass = `jb-${cssSelectors_hash[cssKey]}`
+		if (!this.dynamicCss.length)
+			this.cachedClass = jbClass
+		return jbClass
+	}
+	componentDidMount(cmp) {
+		const elem = cmp.base;
 		if (!elem || !elem.setAttribute)
 			return;
-		var ctx = this.ctx;
+		let ctx = this.ctx;
 	  	while (ctx.profile.__innerImplementation)
 	  		ctx = ctx.componentContext._parent;
-	  	var attachedCtx = this.ctxForPick || ctx;
+	  	const attachedCtx = this.ctxForPick || ctx;
 	  	elem.setAttribute('jb-ctx',attachedCtx.id);
 		ui.garbageCollectCtxDictionary();
 		jb.ctxDictionary[attachedCtx.id] = attachedCtx;
-
-		if (this.cssSelectors && this.cssSelectors.length > 0) {
-			var cssKey = this.cssSelectors.join('\n');
-			if (!cssSelectors_hash[cssKey]) {
-				cssId++;
-				cssSelectors_hash[cssKey] = cssId;
-				var cssStyle = this.cssSelectors.map(selectorPlusExp=>{
-					var selector = selectorPlusExp.split('{')[0];
-					var fixed_selector = selector.split(',').map(x=>x.trim()).map(x=>`.jb-${cssId}${x}`);
-					return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
-				}).join('\n');
-				var remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-        var style_elem = document.createElement('style');
-        style_elem.innerHTML = remark + cssStyle;
-        document.head.appendChild(style_elem);
-			}
-			elem.classList.add(`jb-${cssSelectors_hash[cssKey]}`);
-		}
 	}
 
 	applyFeatures(ctx) {
@@ -8272,11 +8289,12 @@ class JbComponent {
 		if (options.componentDidUpdate) this.jbComponentDidUpdateFuncs.push(options.componentDidUpdate);
 		if (options.templateModifier) this.modifierFuncs.push(options.templateModifier);
 		if (options.enrichField) this.enrichField.push(options.enrichField);
+		if (options.dynamicCss) this.dynamicCss.push(options.dynamicCss);
 		
 		if (typeof options.class == 'string')
 			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class));
-		if (typeof options.class == 'function')
-			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class()));
+		// if (typeof options.class == 'function')
+		// 	this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class()));
 		// events
 		const events = Object.getOwnPropertyNames(options).filter(op=>op.indexOf('on') == 0);
 		events.forEach(op=>
@@ -8294,13 +8312,12 @@ class JbComponent {
 		this.noUpdates = this.noUpdates || options.noUpdates;
 
 	   	if (options.css)
-    		this.cssSelectors = (this.cssSelectors || [])
+    		this.staticCssLines = (this.staticCssLines || [])
     			.concat(options.css.split(/}\s*/m)
     				.map(x=>x.trim())
     				.filter(x=>x)
     				.map(x=>x+'}')
-    				.map(x=>x.replace(/^!/,' '))
-    			);
+    				.map(x=>x.replace(/^!/,' ')));
 
 		(options.featuresOptions || []).forEach(f =>
 			this.jbExtend(f, ctx))
@@ -8530,7 +8547,9 @@ ui.setState = function(cmp,state,opEvent,watchedAt) {
 
 ui.addClassToVdom = function(vdom,clz) {
 	vdom.attributes = vdom.attributes || {};
-	vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');
+	if (vdom.attributes.class === undefined) vdom.attributes.class = ''
+	if (clz && vdom.attributes.class.split(' ').indexOf(clz) == -1)
+		vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');
 	return vdom;
 }
 
@@ -8551,8 +8570,11 @@ ui.item = function(cmp,vdom,data) {
 
 ui.fieldTitle = function(cmp,ctrl,h) {
 	const field = ctrl.field || ctrl
-	if (field.titleCtrl)
-		return h(field.titleCtrl(cmp.ctx).reactComp())
+	if (field.titleCtrl) {
+		const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
+		const jbComp = field.titleCtrl(ctx);
+		return jbComp && h(jbComp.reactComp(),{'jb-ctx': ui.preserveCtx(ctx) })
+	}
 	return field.title(cmp.ctx)
 }
 
@@ -8744,8 +8766,9 @@ class WatchableValueByRef {
       if (opOnRef.$push) {
         opOnRef.$push.forEach((toAdd,i)=>
           this.addObjToMap(toAdd,[...path,oldVal.length+i]))
-          opEvent.path.push(oldVal.length)
-          opEvent.ref = this.refOfPath(opEvent.path)
+        newVal[jbId] = oldVal[jbId]
+        opEvent.path.push(oldVal.length)
+        opEvent.ref = this.refOfPath(opEvent.path)
       } else if (opOnRef.$set === null && typeof oldVal === 'object') { // delete object should return the path that was deleted
         this.removeObjFromMap(oldVal)
         this.addObjToMap(newVal,path)
@@ -9373,7 +9396,7 @@ jb.component('button', { /* button */
   type: 'control,clickable',
   category: 'control:100,common:100',
   params: [
-    {id: 'title', as: 'ref', mandatory: true, defaultTValue: 'click me', dynamic: true},
+    {id: 'title', as: 'ref', mandatory: true, templateValue: 'click me', dynamic: true},
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
     {
       id: 'style',
@@ -9712,12 +9735,27 @@ jb.component('field.title-ctrl', {
   type: 'feature',
   category: 'table:80',
   params: [
-    {id: 'titleCtrl', type: 'control', dynamic: true },
+    {id: 'titleCtrl', type: 'control', mandatory: true, dynamic: true, 
+      templateValue: button({title: '%title%', style: button.href()}) 
+    },
   ],
   impl: (ctx,titleCtrl) => ({
       enrichField: field => field.titleCtrl = ctx => titleCtrl(ctx)
   })
 })
+
+jb.component('field.column-width', {
+  description: 'used in itemlist fields',
+  type: 'feature',
+  category: 'table:80',
+  params: [
+    {id: 'width', as: 'number' },
+  ],
+  impl: (ctx,width) => ({
+      enrichField: field => field.width = width
+  })
+})
+
 
 })();
 
@@ -10196,9 +10234,6 @@ jb.component('variable', { /* variable */
   })
 })
 
-// to delete soon
-jb.component('var', jb.comps.variable)
-
 jb.component('bind-refs', { /* bindRefs */
   type: 'feature',
   category: 'watch',
@@ -10294,7 +10329,7 @@ jb.component('feature.after-load', { /* feature.afterLoad */
 jb.component('feature.if', { /* feature.if */
   type: 'feature',
   category: 'feature:85',
-  description: 'adds element to dom by condition. no watch',
+  description: 'adds/remove element to dom by condition. keywords: hidden/show',
   params: [
     {id: 'showCondition', mandatory: true, dynamic: true}
   ],
@@ -10307,13 +10342,13 @@ jb.component('feature.if', { /* feature.if */
 jb.component('hidden', { /* hidden */
   type: 'feature',
   category: 'feature:85',
-  description: 'adds display:none to element by condition. no watch',
+  description: 'display:none on element. keywords: show',
   params: [
     {id: 'showCondition', type: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx,showCondition) => ({
     templateModifier: (vdom,cmp,state) => {
-      if (!showCondition(cmp.ctx))
+      if (!jb.toboolean(showCondition(cmp.ctx)))
         jb.path(vdom,['attributes','style','display'],'none')
       return vdom;
     }
@@ -10525,12 +10560,31 @@ jb.component('focus-on-sibling', { /* focusOnSibling */
 ;
 
 jb.component('css', { /* css */
+  description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
   type: 'feature,dialog-feature',
   params: [
     {id: 'css', mandatory: true, as: 'string'}
   ],
-  impl: (context,css) =>
-    ({css:css})
+  impl: (ctx,css) => ({css})
+})
+
+jb.component('css.dynamic', {
+  description: 'recalc the css on refresh/watchRef. e.g. {color: %$color%}',
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'css', mandatory: true, as: 'string', dynamic: true}
+  ],
+  impl: (ctx,css) => ({dynamicCss: ctx2 => css(ctx2)})
+})
+
+jb.component('css.with-condition', {
+  description: 'css with dynamic condition. e.g. .myclz {color: red}',
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'css', mandatory: true, as: 'string', dynamic: true}
+  ],
+  impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? css(ctx2) : ''})
 })
 
 jb.component('css.class', { /* css.class */
@@ -10538,8 +10592,7 @@ jb.component('css.class', { /* css.class */
   params: [
     {id: 'class', mandatory: true, as: 'string'}
   ],
-  impl: (context,clz) =>
-    ({class :clz})
+  impl: (ctx,clz) => ({class: clz})
 })
 
 jb.component('css.width', { /* css.width */
@@ -10765,8 +10818,7 @@ jb.component('open-dialog', { /* openDialog */
       id: 'content',
       type: 'control',
       dynamic: true,
-      defaultValue: group({}),
-      forceDefaultCreation: true
+      templateValue: group({}),
     },
     {id: 'menu', type: 'control', dynamic: true},
     {id: 'title', as: 'renderable', dynamic: true},
@@ -11662,7 +11714,7 @@ jb.ui.extractPropFromExpression = exp => { // performance for simple cases such 
 // match fields in pattern itemlistCntrData/FLDNAME_filter to data
 jb.component('itemlist-container.filter-field', { /* itemlistContainer.filterField */
   type: 'feature',
-  category: 'itemlist-filter:80',
+  category: 'itemlist:80',
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
     {id: 'fieldData', dynamic: true, mandatory: true},
@@ -11730,7 +11782,7 @@ jb.component('filter-type.numeric', { /* filterType.numeric */
 
 jb.component('itemlist-container.search-in-all-properties', { /* itemlistContainer.searchInAllProperties */
   type: 'data',
-  category: 'itemlist-filter:40',
+  category: 'itemlist:40',
   impl: ctx => {
 		if (typeof ctx.data == 'string') return ctx.data;
 		if (typeof ctx.data != 'object') return '';
@@ -12722,7 +12774,7 @@ jb.component('field.button', { /* field.button */
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => {
-    var ctrl = jb.ui.ctrl(ctx,{
+    const ctrl = jb.ui.ctrl(ctx,{
       beforeInit: (cmp,props) => {
         cmp.state.title = ctx.params.buttonText(ctx.setData(props.row));
       },
@@ -12748,18 +12800,6 @@ jb.component('button.table-cell-href', { /* tableButton.href */
   impl: customStyle({
     template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
     css: '{color: grey}'
-  })
-})
-
-jb.component('field.column-width', {
-  description: 'used in itemlist fields',
-  type: 'feature',
-  category: 'table:80',
-  params: [
-    {id: 'width', as: 'number' },
-  ],
-  impl: (ctx,width) => ({
-      enrichField: field => field.width = width
   })
 })
 
@@ -13603,7 +13643,8 @@ jb.component('table.with-headers', { /* table.withHeaders */
           cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: f.class }, f.control ? h(f.control(item,index),{index: index}) : f.fieldData(item,index))))
+              h('td', { 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: f.class }, 
+                f.control ? h(f.control(item,index),{index, row: item}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
@@ -13946,11 +13987,14 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
 
 jb.component('editable-boolean.mdl-slide-toggle', { /* editableBoolean.mdlSlideToggle */
   type: 'editable-boolean.style',
+  params: [
+    { id: 'width', as: 'number', defaultValue: 80 }
+  ],
   impl: customStyle({
-    template: (cmp,state,h) => h('label',{class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
+    template: (cmp,state,h) => h('label',{style: { width: cmp.width+'px'}, class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
         h('input', { type: 'checkbox', class: 'mdl-switch__input', id: 'switch_' + state.fieldId,
           checked: state.model, onchange: e => cmp.jbModel(e.target.checked) }),
-        h('span',{class:'mdl-switch__label'},state.text)
+        h('span',{class:'mdl-switch__label' },state.text)
       ]),
     features: [field.databind(), editableBoolean.keyboardSupport(), mdlStyle.initDynamic()]
   })
@@ -14380,7 +14424,7 @@ jb.component('tree.node-model', {
       {id: 'children', dynamic: true, mandatory: true, description: 'from parent path to children paths' },
       {id: 'pathToItem', dynamic: true, mandatory: true, description: 'value of path' },
       {id: 'icon', dynamic: true, as: 'string', description: 'icon name from material icons' },
-      {id: 'isChapter', dynamic: true, as: 'boolean', description: 'path as input. children != [] is default' },
+      {id: 'isChapter', dynamic: true, as: 'boolean', description: 'path as input. differnt from children() == 0, as you can drop into empty array' },
       {id: 'maxDepth',  as: 'number', defaultValue: 3 },
     ],
     impl: ctx => ({
@@ -27983,8 +28027,8 @@ jb.prettyPrintComp = function(compId,comp,settings={}) {
   }
 }
 
-jb.prettyPrint = function(profile,settings = {}) {
-  return jb.prettyPrintWithPositions(profile,settings).text;
+jb.prettyPrint = function(val,settings = {}) {
+  return jb.prettyPrintWithPositions(val,settings).text;
 }
 
 jb.prettyPrint.advanceLineCol = function({line,col},text) {
@@ -27994,9 +28038,12 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 }
 
 const spaces = Array.from(new Array(200)).map(_=>' ').join('')
-jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
+jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
+  if (!val || typeof val !== 'object')
+    return { text: val.toString(), map: {} }
+
   const advanceLineCol = jb.prettyPrint.advanceLineCol
-  return valueToMacro({path: initialPath, line:0, col: 0}, profile)
+  return valueToMacro({path: initialPath, line:0, col: 0}, val)
 
   function processList(ctx,items) {
     const res = items.reduce((acc,{prop, item}) => {
@@ -29418,10 +29465,6 @@ jb.component('watchable-as-text', { /* watchableAsText */
         },
         $jb_val(value) { try {
             if (value === undefined) {
-                const val = this.getVal();
-                if (typeof val === 'function')
-                    return val.toString();
-
                 this.prettyPrintWithPositions()
                 return this.text
             } else {
@@ -30311,7 +30354,8 @@ st.initCompsRefHandler = function(previewjb,allowedTypes) {
 
 function writeValueToDataResource(path,value) {
 	if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
-		const dataPath = '%$' + [path[0], ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
+		const resource = jb.removeDataResourcePrefix(path[0])
+		const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
 		return (new st.previewjb.jbCtx()).run(writeValue(dataPath,_=>value))
 	}
 }
@@ -30434,6 +30478,16 @@ Object.assign(st, {
 		if (prof && typeof prof == 'object' && !Array.isArray(prof))
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
+	newComp: (comp,compName) => {
+		const result = comp.singleInType ? {} : { $: compName };
+		jb.compParams(comp).forEach(p=>{
+			if (p.composite)
+				result[p.id] = [];
+			if (p.templateValue)
+				result[p.id] = JSON.parse(JSON.stringify(p.templateValue))
+		})
+		return result
+	},
 	setComp: (path,compName,srcCtx) => {
 		const comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
@@ -30441,15 +30495,9 @@ Object.assign(st, {
 		if (params.length == 1 && (params[0]||{}).composite == true || (params[0]||{}).sugar)
 			return st.setSugarComp(path,compName,params[0],srcCtx);
 
-		const result = comp.singleInType ? {} : { $: compName };
+		const result = st.newComp(comp,compName)
 		const currentVal = st.valOfPath(path);
 		params.forEach(p=>{
-			if (p.composite)
-				result[p.id] = [];
-			if (p.defaultValue && typeof p.defaultValue != 'object')
-				result[p.id] = p.defaultValue;
-			if (p.defaultValue && typeof p.defaultValue == 'object' && (p.forceDefaultCreation || Array.isArray(p.defaultValue)))
-				result[p.id] = JSON.parse(JSON.stringify(p.defaultValue));
 			if (currentVal && currentVal[p.id] !== undefined)
 				result[p.id] = currentVal[p.id]
 		})
@@ -30472,14 +30520,9 @@ Object.assign(st, {
 	},
 
 	insertControl: (path,compName,srcCtx) => {
-		var comp = compName && st.getComp(compName);
+		const comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
-		var newCtrl = { $: compName };
-		// copy default values
-		jb.compParams(comp).forEach(p=>{
-			if (p.defaultValue || p.defaultTValue)
-				newCtrl[p.id] = JSON.parse(JSON.stringify(p.defaultValue || p.defaultTValue))
-		})
+		let newCtrl = st.newComp(comp,compName)
 		if (st.controlParams(path)[0] == 'fields' && newCtrl.$ != 'field')
 			newCtrl = { $: 'field.control', control : newCtrl};
 		// find group parent that can insert the control
@@ -30493,7 +30536,7 @@ Object.assign(st, {
 			st.push(group_ref,[newCtrl],srcCtx);
 	},
     // if drop destination is not an array item, fix it
-   moveFixDestination(from,to,srcCtx) {
+   	moveFixDestination(from,to,srcCtx) {
 		if (isNaN(Number(to.split('~').slice(-1)))) {
             if (st.valOfPath(to) === undefined)
                 jb.writeValue(st.refOfPath(to),[],srcCtx);
@@ -30530,27 +30573,6 @@ Object.assign(st, {
 		var comp = st.compOfPath(path);
 		if (!comp || typeof comp.impl != 'object') return;
 		st.writeValueOfPath(path,st.evalProfile(jb.prettyPrint(comp.impl)),srcCtx);
-
-		// var res = JSON.stringify(comp.impl, (key, val) => typeof val === 'function' ? ''+val : val , 4);
-		//
-		// var profile = st.valOfPath(path);
-		// // inject conditional param values
-		// jb.compParams(comp).forEach(p=>{
-		// 		var pUsage = '%$'+p.id+'%';
-		// 		var pVal = '' + (profile[p.id] || p.defaultValue || '');
-		// 		res = res.replace(new RegExp('{\\?(.*?)\\?}','g'),(match,condition_exp)=>{ // conditional exp
-		// 				if (condition_exp.indexOf(pUsage) != -1)
-		// 					return pVal ? condition_exp : '';
-		// 				return match;
-		// 			})
-		// })
-		// // inject param values
-		// jb.compParams(comp).forEach(p=>{
-		// 		var pVal = '' + (profile[p.id] || p.defaultValue || ''); // only primitives
-		// 		res = res.replace(new RegExp(`%\\$${p.id}%`,'g') , pVal);
-		// })
-		//
-		// st.writeValueOfPath(path,st.evalProfile(res));
 	},
 	getOrCreateControlArrayRef: (path,srcCtx) => {
 		var val = st.valOfPath(path);
@@ -31990,6 +32012,54 @@ jb.component('studio.open-script-history', { /* studio.openScriptHistory */
 (function() {
 const st = jb.studio;
 
+st.PropertiesTree = class {
+	constructor(rootPath) {
+		this.rootPath = rootPath;
+		this.refHandler = st.compsRefHandler;
+	}
+	title(path) {
+		const prop = path.split('~').pop();
+		if (isNaN(Number(prop)))
+			return prop
+		return st.compNameOfPath(path)
+	}
+	isArray(path) {
+		return this.children(path).length > 0;
+	}
+	children(path,nonRecursive) {
+		return [].concat.apply([],st.controlParams(path).map(prop=>path + '~' + prop)
+				.map(innerPath=> {
+					const val = st.valOfPath(innerPath);
+					if (Array.isArray(val) && val.length > 0)
+					 return st.arrayChildren(innerPath,true);
+					return [innerPath]
+				}))
+				.concat(nonRecursive ? [] : this.innerControlPaths(path));
+	}
+	move(from,to) {
+		return st.moveFixDestination(from,to)
+	}
+	disabled(path) {
+		return st.disabled(path)
+	}
+	icon(path) {
+		return st.icon(path)
+	}
+
+	// private
+	innerControlPaths(path) {
+		return ['action~content'] // add more inner paths here
+			.map(x=>path+'~'+x)
+			.filter(p=>
+				st.paramTypeOfPath(p) == 'control');
+	}
+	fixTitles(title,path) {
+		if (title == 'control-with-condition')
+			return jb.ui.h('div',{},[this.title(path+'~control'),jb.ui.h('span',{class:'treenode-val'},'conditional') ]);
+		return title;
+	}
+}
+
 st.ControlTree = class {
 	constructor(rootPath) {
 		this.rootPath = rootPath;
@@ -32027,9 +32097,6 @@ st.ControlTree = class {
 
 	// private
 	innerControlPaths(path) {
-		// const nonControlChildren = [].concat.apply([],
-		//  	st.nonControlChildren(path,true).map(innerPath=>Array.isArray(st.valOfPath(innerPath)) ? st.arrayChildren(innerPath,true) : [innerPath] ))
-		// return [].concat.apply([],nonControlChildren.map(innerPath=>this.children(innerPath,true)))
 		return ['action~content'] // add more inner paths here
 			.map(x=>path+'~'+x)
 			.filter(p=>
@@ -32046,15 +32113,15 @@ st.jbEditorTree = class {
 	constructor(rootPath,includeCompHeader) {
 		this.rootPath = rootPath;
 		this.refHandler = st.compsRefHandler;
-    this.includeCompHeader= includeCompHeader;
+    	this.includeCompHeader= includeCompHeader;
 	}
 	title(path, collapsed) {
 		let val = st.valOfPath(path);
 		let compName = st.compNameOfPath(path);
-    if (path.indexOf('~') == -1)
-      compName = 'jb-component';
-    if (compName && compName.match(/case$/))
-      compName = 'case';
+		if (path.indexOf('~') == -1)
+			compName = 'jb-component';
+		if (compName && compName.match(/case$/))
+      		compName = 'case';
 		let prop = path.split('~').pop();
 		if (!isNaN(Number(prop))) // array value - title as a[i]
 			prop = path.split('~').slice(-2)
@@ -32109,11 +32176,11 @@ st.jbEditorTree = class {
 	}
 	innerProfiles(path,val) {
 		if (this.sugarChildren(path,val)) return [];
-    if (!this.includeCompHeader && path.indexOf('~') == -1)
-      path = path + '~impl';
+		if (!this.includeCompHeader && path.indexOf('~') == -1)
+			path = path + '~impl';
 		return st.paramsOfPath(path).map(p=> ({ path: path + '~' + p.id, param: p}))
-			.filter(e=>st.valOfPath(e.path) != null || e.param.mandatory)
-			.map(e=>e.path)
+				.filter(e=>st.valOfPath(e.path) !== undefined || e.param.mandatory)
+				.map(e=>e.path)
 	}
 	vars(path,val) {
 		return val && typeof val == 'object' && typeof val.$vars == 'object' && [path+'~$vars']
@@ -32129,13 +32196,6 @@ st.jbEditorTree = class {
 			return ['then','else']
 		return []
 	}
-  // compHeader(path,val) {
-	// 	if (path.indexOf('~impl') == -1 && !st.isPrimitiveValue(val) && !Array.isArray(val))
-  //     return Object.getOwnPropertyNames(val)
-  //       .filter(p=>p!='$' && p.indexOf('$jb_') != 0)
-  //       .map(p=>path+'~'+p);
-	// }
-
 }
 
 
@@ -32362,7 +32422,7 @@ jb.component('studio.categories-marks', { /* studio.categoriesMarks */
               'events:85',
               'group:80',
               'all:20',
-              'feature:0,tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0,itemlist-container:0,editable-text:0,editable-boolean:0',
+              'feature:0,tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0,itemlist-container:0,editable-text:0,editable-boolean:0,first-succeeding:0,itemlist-filter:0',
               'mdl-style:0'
             ),
           split(','),
@@ -32558,7 +32618,7 @@ jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog 
             '%$mode% == \"insert\"',
             studio.addArrayItem({
               path: '%$path%',
-              toAdd: {'$object': {'$': '%%'}},
+              toAdd: studio.newComp('%%'),
               index: '%$index%'
             })
           ),
@@ -32676,12 +32736,19 @@ jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */
   })
 })
 
+jb.component('studio.new-comp', {
+  params: [
+    {id: 'compName', as: 'string'}
+  ],
+  impl: (ctx,compName) => jb.studio.newComp(jb.studio.getComp(compName), compName)
+})
+
 jb.studio.newControl = path =>
   new jb.jbCtx().run({$: 'studio.open-new-profile-dialog',
           path: path,
           type: 'control',
           mode: 'insert-control'
-        });
+});
 ;
 
 (function() {
@@ -32886,7 +32953,9 @@ st.suggestions = class {
     const resources = jb.entries(jb.studio.previewjb.comps)
           .filter(e=>! jb.comps[e[0]])
           .filter(e=>e[1].watchableData || e[1].passiveData)
-    const vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars)).concat(resources)
+          .map(e=>[jb.removeDataResourcePrefix(e[0]),e[1]])
+    const vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars))
+        .concat(resources)
         .map(x=>new ValueOption('$'+x[0],jb.studio.previewjb.val(x[1]),this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
         // .filter(x=> x.toPaste.indexOf(':') == -1)
@@ -32982,6 +33051,35 @@ class CompOption {
 
 })()
 ;
+
+jb.component('studio.properties-tree-nodes', {
+  type: 'tree.node-model',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => new jb.studio.PropertiesTree(path)
+})
+
+jb.component('studio.properties-table-tree', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: tableTree({
+    treeModel: studio.PropertiesTreeNodes,
+    commonFields: [
+      studio.propertyField('%path%'),
+      studio.propertyToolbar('%path%')
+    ],
+    chapterHeadline: label({title: ({data}) => {
+      const path = data.path
+      const prop = path.split('~').pop()
+      if (isNaN(Number(prop)))
+        return prop
+      return st.compNameOfPath(path)
+    }}),
+  })
+})
 
 jb.component('studio.property-toolbar', { /* studio.propertyToolbar */
   type: 'control',
@@ -33249,7 +33347,7 @@ jb.component('studio.property-field', { /* studio.propertyField */
   impl: group({
     title: studio.propName('%$path%'),
     controls: control.firstSucceeding({
-      vars: [Var('paramDef', studio.paramDef('%$path%'))],
+      vars: Var('paramDef', studio.paramDef('%$path%')),
       controls: [
         controlWithCondition(
           and(
@@ -33385,16 +33483,6 @@ jb.component('studio.properties', { /* studio.properties */
     ],
     features: variable({name: 'PropertiesDialog', value: {'$': 'object'}, watchable: false})
   })
-})
-
-jb.component('studio.tgp-path-options', { /* studio.tgpPathOptions */
-  type: 'picklist.options',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (context,path) =>
-		[{code:'',text:''}]
-			.concat(jb.studio.PTsOfPath(path).map(op=> ({ code: op, text: op})))
 })
 
 jb.component('studio.open-properties', { /* studio.openProperties */ 
@@ -35707,7 +35795,7 @@ jb.component('studio.open-resource', { /* studio.openResource */
   ],
   impl: runActions(
     writeValue(studio.profileAsText('%$path%'), 
-      (ctx,vars,{path}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+path.split('~')[0]+'%'))),
+      (ctx,vars,{name}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+name+'%'))),
     openDialog({
       style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
       content: editableText({
@@ -35743,10 +35831,10 @@ jb.component('studio.open-new-resource', { /* studio.openNewResource */
     }),
     title: 'New %$watchableOrPassive% Data Source',
     onOK: [
-      (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component(jb.tostring(name), {
+      (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component('data-resource.' + jb.tostring(name), {
         [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
       }),
-      studio.openResource('%$name%~%$watchableOrPassive%Data', '%$name%')
+      studio.openResource('data-resource.%$name%~%$watchableOrPassive%Data', '%$name%')
     ],
     modal: true,
     features: [
@@ -35767,16 +35855,18 @@ jb.component('studio.data-resource-menu', { /* studio.dataResourceMenu */
           .filter(e=>! jb.comps[e[0]])
           .filter(e=>e[1].watchableData !== undefined || e[1].passiveData !== undefined)
             .map(e=> {
-              const watchableOrPassive = e[1].watchableData ? 'watchable' : 'passive'
+              const watchableOrPassive = e[1].watchableData !== undefined ? 'watchable' : 'passive'
               const upper = watchableOrPassive.charAt(0).toUpperCase() + watchableOrPassive.slice(1)
+              const name = jb.removeDataResourcePrefix(e[0])
               return {
-                name: `${e[0]} (${upper})`,
+                name,
+                title: `${name} (${upper})`,
                 path: `${e[0]}~${watchableOrPassive}Data`
               }
             }
             ),
           genericControl: menu.action({
-            title: '%$controlItem/name%',
+            title: '%$controlItem/title%',
             action: studio.openResource('%$controlItem/path%', '%$controlItem/name%')
           })
         })

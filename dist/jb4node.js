@@ -685,15 +685,24 @@ Object.assign(jb,{
   ns: nsId =>
     jb.registerMacro(nsId+'.$dummyComp',{})
   ,
+  removeDataResourcePrefix: id =>
+    id.indexOf('data-resource.') == 0 ? id.slice('data-resource.'.length) : id,
+  addDataResourcePrefix: id =>
+    id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
-    jb.comps[id] = comp
     try {
       jb.traceComponentFile && jb.traceComponentFile(comp)
-      if (comp.watchableData !== undefined)
-        return jb.resource(id,comp.watchableData)
-      if (comp.passiveData !== undefined)
-        return jb.const(id,comp.passiveData)
+      if (comp.watchableData !== undefined) {
+        jb.comps[jb.addDataResourcePrefix(id)] = comp
+        return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
+      }
+      if (comp.passiveData !== undefined) {
+        jb.comps[jb.addDataResourcePrefix(id)] = comp
+        return jb.const(jb.removeDataResourcePrefix(id),comp.passiveData)
+      }
     } catch(e) {}
+
+    jb.comps[id] = comp;
 
     // fix as boolean params to have type: 'boolean'
     (comp.params || []).forEach(p=> {
@@ -1212,7 +1221,7 @@ jb.component('remove-from-array', { /* removeFromArray */
   ],
   impl: (ctx,array,itemToRemove,_index) => {
 		const ar = jb.toarray(array);
-		const index = itemToRemove ? ar.indexOf(item) : _index;
+		const index = itemToRemove ? ar.indexOf(itemToRemove) : _index;
 		if (index != -1 && ar.length > index)
 			jb.splice(array,[[index,1]],ctx)
 	}
@@ -2249,8 +2258,8 @@ jb.prettyPrintComp = function(compId,comp,settings={}) {
   }
 }
 
-jb.prettyPrint = function(profile,settings = {}) {
-  return jb.prettyPrintWithPositions(profile,settings).text;
+jb.prettyPrint = function(val,settings = {}) {
+  return jb.prettyPrintWithPositions(val,settings).text;
 }
 
 jb.prettyPrint.advanceLineCol = function({line,col},text) {
@@ -2260,9 +2269,12 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 }
 
 const spaces = Array.from(new Array(200)).map(_=>' ').join('')
-jb.prettyPrintWithPositions = function(profile,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
+jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
+  if (!val || typeof val !== 'object')
+    return { text: val.toString(), map: {} }
+
   const advanceLineCol = jb.prettyPrint.advanceLineCol
-  return valueToMacro({path: initialPath, line:0, col: 0}, profile)
+  return valueToMacro({path: initialPath, line:0, col: 0}, val)
 
   function processList(ctx,items) {
     const res = items.reduce((acc,{prop, item}) => {

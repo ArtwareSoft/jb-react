@@ -90,7 +90,7 @@ jb.component('ui-test', { /* uiTest */
 						jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`)
 				})
 				const countersErr = countersErrors(expectedCounters);
-				const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: elem.outerHTML })) && !countersErr);
+				const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: elem.outerHTML }).setVars({elemToTest: elem})) && !countersErr);
 				return { id: ctx.vars.testID, success, elem, reason: countersErr}
 			}).then(result=> { // default cleanup
 				if (new URL(location.href).searchParams.get('show') === null) {
@@ -119,6 +119,12 @@ function countersErrors(expectedCounters) {
 
 jb.ui.elemOfSelector = (selector,ctx) => ctx.vars.elemToTest.querySelector(selector)
 jb.ui.cmpOfSelector = (selector,ctx) => jb.path(jb.ui.elemOfSelector(selector,ctx),['_component'])
+
+jb.ui.cssOfSelector = (selector,ctx) => {
+	const jbClass = (jb.ui.elemOfSelector(selector,ctx).classList.value || '').split('-').pop()
+	return jb.entries(jb.ui.cssSelectors_hash).filter(e=>e[1] == jbClass)[0] || ''
+}
+
 
 jb.component('ui-action.click', { /* uiAction.click */
   type: 'ui-action',
