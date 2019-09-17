@@ -1334,20 +1334,3 @@ jb.component('ui-test.css-with-condition', {
   })
 })
 
-jb.component('ui-test.editable-boolean.mdlSlideToggle', { /* uiTest.editableBoolean.allStyles */
-  impl: uiTest({
-    control: group({
-      style: layout.horizontal(),
-      controls: [
-        editableBoolean({
-          databind: '%$person/male%',
-          style: editableBoolean.mdlSlideToggle(),
-          title: 'male',
-          features1: css(`{width: 80px !important}`)
-        }),
-        label('%$person/male%')
-      ]
-    }),
-    expectedResult: contains(['male'])
-  })
-})
