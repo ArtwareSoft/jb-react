@@ -142,14 +142,6 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           .subscribe(e=>
             jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
 
-        // double click
-        //cmp.ondblclick.subscribe(e=> ctx.params.onDoubleClick(cmp.ctx.setData()))
-        // const clickEm = cmp.clickEmitter.takeUntil( cmp.destroyed );
-        // clickEm.buffer(clickEm.debounceTime(cmp.dragAndDropActive ? 0 : 200))
-        //   .filter(buff => buff.length === 2)
-        //   .subscribe(buff=>
-        //     ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
-
         function autoSelectFirst() {
           if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(selectedRef))
               return cmp.selectionEmitter.next(cmp.items[0])

@@ -82,3 +82,4 @@ jb.component('editable-text.mdl-search', { /* editableText.mdlSearch */
     features: [field.databindText(), mdlStyle.initDynamic()]
   })
 })
+

@@ -28,6 +28,13 @@ jb.component('button.x', { /* button.x */
   })
 })
 
+jb.component('button.native', {
+  type: 'button.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('button',{title: state.title, onclick: ev => cmp.clicked(ev)}),
+  })
+})
+
 jb.component('button.mdl-raised', { /* button.mdlRaised */
   type: 'button.style',
   impl: customStyle({
