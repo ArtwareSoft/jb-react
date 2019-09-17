@@ -1298,3 +1298,38 @@ jb.component('ui-test.hidden-ref-bug', {
     expectedResult: contains('display: none'),
   })
 })
+
+jb.component('ui-test.css-dynamic', { 
+  impl: uiTest({
+    control: group({
+      controls: [
+        label({title: '%$color%', features: [css.dynamic('{ color: %$color% }'), id('label')] }),
+        button({title: 'green', action: writeValue('%$color%', 'green'), features: id('green')}),
+        button({title: 'blue', action: writeValue('%$color%', 'blue')})
+      ],
+      features: variable({name: 'color', value: 'blue', watchable: true})
+    }),
+    action: uiAction.click('#green'),
+    expectedResult: pipeline(ctx => jb.ui.cssOfSelector('#label',ctx), contains('color: green'))
+  })
+})
+
+jb.component('ui-test.css-with-condition', { 
+  impl: uiTest({
+    control: group({
+      controls: [
+        label({title: '%$color%', features: [
+          css.dynamic('{ color: %$color% }'),
+          css.withCondition('%$color%==blue', '{background: white}'), 
+          css.withCondition('%$color%==green', '{background: grey}'), 
+          id('label')
+        ]}),
+        button({title: 'green', action: writeValue('%$color%', 'green'), features: id('green')}),
+        button({title: 'blue', action: writeValue('%$color%', 'blue')})
+      ],
+      features: variable({name: 'color', value: 'blue', watchable: true})
+    }),
+    action: uiAction.click('#green'),
+    expectedResult: pipeline(ctx => jb.ui.cssOfSelector('#label',ctx), contains(['color: green','grey']))
+  })
+})

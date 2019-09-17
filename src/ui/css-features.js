@@ -4,8 +4,26 @@ jb.component('css', { /* css */
   params: [
     {id: 'css', mandatory: true, as: 'string'}
   ],
-  impl: (context,css) =>
-    ({css:css})
+  impl: (ctx,css) => ({css})
+})
+
+jb.component('css.dynamic', {
+  description: 'recalc the css on refresh/watchRef. e.g. {color: %$color%}',
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'css', mandatory: true, as: 'string', dynamic: true}
+  ],
+  impl: (ctx,css) => ({dynamicCss: ctx2 => css(ctx2)})
+})
+
+jb.component('css.with-condition', {
+  description: 'css with dynamic condition. e.g. .myclz {color: red}',
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'css', mandatory: true, as: 'string', dynamic: true}
+  ],
+  impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? css(ctx2) : ''})
 })
 
 jb.component('css.class', { /* css.class */
@@ -13,8 +31,7 @@ jb.component('css.class', { /* css.class */
   params: [
     {id: 'class', mandatory: true, as: 'string'}
   ],
-  impl: (context,clz) =>
-    ({class :clz})
+  impl: (ctx,clz) => ({class: clz})
 })
 
 jb.component('css.width', { /* css.width */

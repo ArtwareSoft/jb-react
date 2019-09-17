@@ -20,16 +20,16 @@ ui.ctrl = function(context,options) {
 	}
 }
 
-var cssId = 0;
-var cssSelectors_hash = {};
+let cssId = 0;
+const cssSelectors_hash = ui.cssSelectors_hash = {};
 
 class JbComponent {
 	constructor(ctx) {
 		this.ctx = ctx;
 		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbAfterViewInitFuncs: [],
 			jbComponentDidUpdateFuncs: [], willUpdateFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], 
-			extendItemFuncs: [], enrichField: [] });
-		this.cssSelectors = [];
+			extendItemFuncs: [], enrichField: [], dynamicCss: [] });
+		this.staticCssLines = [];
 
 		this.jb_profile = ctx.profile;
 		//		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
@@ -77,7 +77,9 @@ class JbComponent {
 					let vdom = jbComp.template(this,state,ui.h);
 					jbComp.modifierFuncs.forEach(modifier=>
 						vdom = (vdom && typeof vdom === 'object') ? tryWrapper(() => modifier(vdom,this,state,ui.h) || vdom) : vdom
-					);
+					)
+					if (typeof vdom === 'object')
+						ui.addClassToVdom(vdom, jbComp.jbCssClass(this,this.ctx))
 					jb.log('renRes',[this.ctx, vdom, state,props,this]);
 					return vdom;
 				} catch (e) {
@@ -86,7 +88,7 @@ class JbComponent {
 				}
 			}
     		componentDidMount() {
-				jbComp.injectCss(this);
+				jbComp.componentDidMount(this);
 				jbComp.jbRegisterEventsFuncs.forEach(init=> tryWrapper(() => init(this), 'init'));
 				jbComp.jbAfterViewInitFuncs.forEach(init=> tryWrapper(() => init(this), 'after view init'));
 			}
@@ -106,35 +108,41 @@ class JbComponent {
 		return ReactComp;
 	}
 
-	injectCss(cmp) {
-		var elem = cmp.base;
+	jbCssClass(cmp,ctx) {
+		if (this.cachedClass)
+			return this.cachedClass
+		const cssLines = (this.staticCssLines || []).concat(this.dynamicCss.map(dynCss=>dynCss(cmp.ctx))).filter(x=>x)
+		const cssKey = cssLines.join('\n')
+		if (!cssKey) return ''
+		if (!cssSelectors_hash[cssKey]) {
+			cssId++;
+			cssSelectors_hash[cssKey] = cssId;
+			const cssStyle = cssLines.map(selectorPlusExp=>{
+				const selector = selectorPlusExp.split('{')[0];
+				const fixed_selector = selector.split(',').map(x=>x.trim()).map(x=>`.jb-${cssId}${x}`);
+				return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
+			}).join('\n');
+			const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
+			const style_elem = document.createElement('style');
+			style_elem.innerHTML = remark + cssStyle;
+			document.head.appendChild(style_elem);
+		}
+		const jbClass = `jb-${cssSelectors_hash[cssKey]}`
+		if (!this.dynamicCss.length)
+			this.cachedClass = jbClass
+		return jbClass
+	}
+	componentDidMount(cmp) {
+		const elem = cmp.base;
 		if (!elem || !elem.setAttribute)
 			return;
-		var ctx = this.ctx;
+		let ctx = this.ctx;
 	  	while (ctx.profile.__innerImplementation)
 	  		ctx = ctx.componentContext._parent;
-	  	var attachedCtx = this.ctxForPick || ctx;
+	  	const attachedCtx = this.ctxForPick || ctx;
 	  	elem.setAttribute('jb-ctx',attachedCtx.id);
 		ui.garbageCollectCtxDictionary();
 		jb.ctxDictionary[attachedCtx.id] = attachedCtx;
-
-		if (this.cssSelectors && this.cssSelectors.length > 0) {
-			var cssKey = this.cssSelectors.join('\n');
-			if (!cssSelectors_hash[cssKey]) {
-				cssId++;
-				cssSelectors_hash[cssKey] = cssId;
-				var cssStyle = this.cssSelectors.map(selectorPlusExp=>{
-					var selector = selectorPlusExp.split('{')[0];
-					var fixed_selector = selector.split(',').map(x=>x.trim()).map(x=>`.jb-${cssId}${x}`);
-					return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
-				}).join('\n');
-				var remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-        var style_elem = document.createElement('style');
-        style_elem.innerHTML = remark + cssStyle;
-        document.head.appendChild(style_elem);
-			}
-			elem.classList.add(`jb-${cssSelectors_hash[cssKey]}`);
-		}
 	}
 
 	applyFeatures(ctx) {
@@ -166,11 +174,12 @@ class JbComponent {
 		if (options.componentDidUpdate) this.jbComponentDidUpdateFuncs.push(options.componentDidUpdate);
 		if (options.templateModifier) this.modifierFuncs.push(options.templateModifier);
 		if (options.enrichField) this.enrichField.push(options.enrichField);
+		if (options.dynamicCss) this.dynamicCss.push(options.dynamicCss);
 		
 		if (typeof options.class == 'string')
 			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class));
-		if (typeof options.class == 'function')
-			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class()));
+		// if (typeof options.class == 'function')
+		// 	this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class()));
 		// events
 		const events = Object.getOwnPropertyNames(options).filter(op=>op.indexOf('on') == 0);
 		events.forEach(op=>
@@ -188,13 +197,12 @@ class JbComponent {
 		this.noUpdates = this.noUpdates || options.noUpdates;
 
 	   	if (options.css)
-    		this.cssSelectors = (this.cssSelectors || [])
+    		this.staticCssLines = (this.staticCssLines || [])
     			.concat(options.css.split(/}\s*/m)
     				.map(x=>x.trim())
     				.filter(x=>x)
     				.map(x=>x+'}')
-    				.map(x=>x.replace(/^!/,' '))
-    			);
+    				.map(x=>x.replace(/^!/,' ')));
 
 		(options.featuresOptions || []).forEach(f =>
 			this.jbExtend(f, ctx))
@@ -424,7 +432,9 @@ ui.setState = function(cmp,state,opEvent,watchedAt) {
 
 ui.addClassToVdom = function(vdom,clz) {
 	vdom.attributes = vdom.attributes || {};
-	vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');
+	if (vdom.attributes.class === undefined) vdom.attributes.class = ''
+	if (clz && vdom.attributes.class.split(' ').indexOf(clz) == -1)
+		vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');
 	return vdom;
 }
 
