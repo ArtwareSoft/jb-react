@@ -157,16 +157,11 @@ body {
 	border-bottom: none;
 }
 
-
-
-
-
 .toggle {
 	text-align: center;
 	width: 40px;
 	/* auto, since non-WebKit browsers doesn't support input styling */
 	height: auto;
-	position: absolute;
 	top: 0;
 	bottom: 0;
 	margin: auto 0;
@@ -191,7 +186,7 @@ body {
 
 .todo-list li .editable-text .task{
 	word-break: break-all;
-	padding: 15px 15px 15px 60px;
+	padding: 15px 15px 15px 25px;
 	display: block;
 	line-height: 1.2;
 	transition: color 0.4s;
