@@ -564,44 +564,34 @@ jb.component('filter', { /* filter */
 })
 
 jb.component('match-regex', { /* matchRegex */
+  description: 'validation with regular expression',
   type: 'boolean',
   params: [
-    {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'regex', as: 'string', mandatory: true, description: 'e.g: [a-zA-Z]*'},
-    {
-      id: 'fillText',
-      as: 'boolean',
-      mandatory: true,
-      description: 'regex must match all text',
-      type: 'boolean'
-    }
+    {id: 'text', as: 'string', defaultValue: '%%'},
   ],
-  impl: (ctx,text,regex,fillText) =>
-    text.match(new RegExp(fillText ? `^${regex}$` : regex))
+  impl: (ctx,regex,text) => text.match(new RegExp(regex))
 })
 
 jb.component('to-uppercase', { /* toUppercase */
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>
-		text.toUpperCase()
+  impl: (ctx,text) =>	text.toUpperCase()
 })
 
 jb.component('to-lowercase', { /* toLowercase */
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>
-		text.toLowerCase()
+  impl: (ctx,text) =>	text.toLowerCase()
 })
 
 jb.component('capitalize', { /* capitalize */
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>
-		text.charAt(0).toUpperCase() + text.slice(1)
+  impl: (ctx,text) =>	text.charAt(0).toUpperCase() + text.slice(1)
 })
 
 jb.component('join', { /* join */

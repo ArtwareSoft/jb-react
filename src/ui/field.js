@@ -60,20 +60,20 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
 }
 
 jb.ui.checkValidationError = cmp => {
-  var err = validationError(cmp);
+  const err = validationError(cmp);
   if (cmp.state.error != err) {
-    jb.log('field',['setErrState',ctx,err])
+    jb.log('field',['setErrState',cmp,err])
     cmp.setState({valid: !err, error:err});
   }
 
   function validationError() {
     if (!cmp.validations) return;
-    var ctx = cmp.ctx.setData(cmp.state.model);
-    var err = (cmp.validations || [])
+    const ctx = cmp.ctx.setData(cmp.state.model);
+    const err = (cmp.validations || [])
       .filter(validator=>!validator.validCondition(ctx))
       .map(validator=>validator.errorMessage(ctx))[0];
-    if (ctx.vars.formContainer)
-      ctx.vars.formContainer.err = err;
+    if (ctx.exp('formContainer'))
+      ctx.run(writeValue('%$formContainer/err%',err));
     return err;
   }
 }
@@ -219,13 +219,7 @@ jb.component('validation', { /* validation */
   type: 'feature',
   category: 'validation:100',
   params: [
-    {
-      id: 'validCondition',
-      mandatory: true,
-      type: 'boolean',
-      as: 'boolean',
-      dynamic: true
-    },
+    {id: 'validCondition', mandatory: true, as: 'boolean', dynamic: true},
     {id: 'errorMessage', mandatory: true, as: 'string', dynamic: true}
   ],
   impl: (ctx,validCondition,errorMessage) => ({

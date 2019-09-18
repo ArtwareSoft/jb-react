@@ -10,7 +10,7 @@ jb.component('studio.new-project', { /* studio.newProject */
       project: name,
       files: [
         { fileName: `${name}.js`, content: `
-jb.component.('${name}.main', {
+jb.component('${name}.main', {
   type: 'control',
   impl :{$: 'group', controls: [ {$: 'button', title: 'my button'}] }
 })
@@ -66,7 +66,10 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
           title: 'project name',
           databind: '%$name%',
           style: editableText.mdlInput(),
-          features: feature.onEnter(dialog.closeContainingPopup())
+          features: [
+              feature.onEnter(dialog.closeContainingPopup()),
+              validation(matchRegex('^[a-zA-Z_0-9]+$'),'illegal project name')
+          ]
         })
       ],
       features: css.padding({top: '14', left: '11'})
