@@ -80,18 +80,16 @@ jb.component('itemlist-heading.group-by', {
     { id: 'promoteGroups', type: 'data[]', as: 'array' },
   ],
   impl: (ctx,itemToGroupID,promoteGroups) => {
-      var items = ctx.data.map(item=>({ item: item, groupId: itemToGroupID(ctx.setData(item)) }));
-      var groups = {};
+      const items = ctx.data.map(item=>({ item: item, groupId: itemToGroupID(ctx.setData(item)) }));
+      const groups = {};
       items.forEach(item=>{
         groups[item.groupId] = groups[item.groupId] || [];
         groups[item.groupId].push(item.item);
       })
-      var groups_ar = jb.entries(groups).map(x=>x[0]);
+      const groups_ar = jb.entries(groups).map(x=>x[0]);
       groups_ar.sort(); // lexical sort before to ensure constant order
       groups_ar.sort((x1,x2) => promoteGroups.indexOf(x1) - promoteGroups.indexOf(x2));
 
-      var result = [].concat.apply([],groups_ar.map(group => 
-        [{ title: group, heading: true }].concat(groups[group]) ));
-      return result;
+      return groups_ar.flatMap(group => [{ title: group, heading: true }, ...groups[group]])
     }
 })

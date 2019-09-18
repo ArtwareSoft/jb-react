@@ -242,8 +242,14 @@ ui.garbageCollectCtxDictionary = function(force) {
 	}
 	const ctxToPath = ctx => jb.entries(ctx.vars).map(e=>e[1]).filter(v=>jb.isWatchable(v)).map(v => jb.asRef(v)).map(ref=>jb.refHandler(ref).pathOfRef(ref)).flat()
 	const globalVarsUsed = jb.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
+	const iteratingOnVar = 
 	Object.keys(jb.resources).filter(id=>id.indexOf(':') != -1)
+		.sort().reverse() // get the latest usages (largest ctxId) as first item in each group
 		.forEach(id=>{
+			if (iteratingOnVar != id.split(':')[0]) {
+				iteratingOnVar = id.split(':')[0]
+				return // do not delete the latest usage of a variable. It may not be bound yet
+			}
 			if (globalVarsUsed.indexOf(id) == -1)
 				jb.resourcesToDelete.push(id)
 	})
@@ -257,12 +263,12 @@ ui.focus = function(elem,logTxt,srcCtx) {
 	const now = new Date().getTime();
 	const lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity']);
 	jb.log('focus',['request',srcCtx, logTxt, now - lastStudioActivity, elem,srcCtx]);
-  if (jb.studio.previewjb == jb && lastStudioActivity && now - lastStudioActivity < 1000)
+  	if (jb.studio.previewjb == jb && lastStudioActivity && now - lastStudioActivity < 1000)
     	return;
-  jb.delay(1).then(_=> {
-   	jb.log('focus',['apply',srcCtx,logTxt,elem,srcCtx]);
-    elem.focus()
-  })
+  	jb.delay(1).then(_=> {
+   		jb.log('focus',['apply',srcCtx,logTxt,elem,srcCtx]);
+    	elem.focus()
+  	})
 }
 
 ui.wrapWithLauchingElement = (f,context,elem,options={}) =>

@@ -5,17 +5,6 @@ jb.component('jb-editor-test.cmp1', { /* jbEditorTest.cmp1 */
   )
 })
 
-jb.component('jb-editor-test.cmp2', { /* jbEditorTest.cmp2 */
-  impl: {
-    '$': 'itemlist-with-groups',
-    title: 'itemlist',
-    items: list('a.1', 'b.2'),
-    controls: [
-      label({title: '%%', style: label.span()})
-    ]
-  }
-})
-
 jb.component('jb-editor-test.cmp3', { /* jbEditorTest.cmp3 */
   impl: list(
     
@@ -53,14 +42,6 @@ jb.component('jb-editor-test.actions-sugar-example2-json-format', { /* jbEditorT
 jb.component('jb-editor-test.extra-elem-in-list', { /* jbEditorTest.extraElemInList */
   impl: jbEditorChildrenTest({
     path: 'jb-editor-test.cmp1~impl~items',
-    childrenType: 'jb-editor',
-    expectedResult: and(contains('items[2]'), not(contains('undefined')))
-  })
-})
-
-jb.component('jb-editor-test.extra-elem-in-list-bug', { /* jbEditorTest.extraElemInListBug */
-  impl: jbEditorChildrenTest({
-    path: 'jb-editor-test.cmp2~impl~items~items',
     childrenType: 'jb-editor',
     expectedResult: and(contains('items[2]'), not(contains('undefined')))
   })

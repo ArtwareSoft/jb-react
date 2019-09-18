@@ -419,27 +419,6 @@ jb.component('ui-test.itemlist-basic', { /* uiTest.itemlistBasic */
   })
 })
 
-// jb.component('ui-test.itemlist-heading', {
-//   impl :{$: 'ui-test', control :{$: 'group', controls:
-//   [
-//     { $: 'itemlist-with-groups', items: '%$people%',
-//         controls :{$: 'label', title: '%name%' },
-//         groupBy :{$: 'itemlist-heading.group-by',
-//           itemToGroupID :{$if: '%male%', then: 'male', else: 'female'}
-//         },
-// //        headingCtrl :{$: 'label', title: '%title%' },
-//         features: [
-//             { $: 'itemlist.selection', databind: '%$globals/selectedPerson%', autoSelectFirst: true },
-//             { $: 'itemlist.keyboard-selection', autoFocus: true },
-//             {$: 'css', css: '.jb-item:not(.heading) { margin-left: 30px }' }
-//         ],
-//     },
-//   ]},
-//   expectedResult: { $: 'contains', text: ['female', 'Marge', 'male', 'Homer Simpson', 'Bart Simpson'] },
-// }
-// })
-
-
 jb.component('ui-test.itemlist-add-button', { /* uiTest.itemlistAddButton */
   impl: uiTest({
     control: group({
