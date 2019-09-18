@@ -197,7 +197,6 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
         value: {'$if': studio.val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
         watchable: true
       }),
-      variable({name: 'SearchPattern', value: '', watchable: true}),
       group.itemlistContainer({initialSelection: studio.compName('%$path%')})
     ]
   })

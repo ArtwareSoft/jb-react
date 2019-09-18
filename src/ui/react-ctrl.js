@@ -1,6 +1,5 @@
 (function(){
-
-var ui = jb.ui;
+const ui = jb.ui;
 
 ui.ctrl = function(context,options) {
 	var ctx = context.setVars({ $model: context.params });
@@ -250,6 +249,8 @@ ui.garbageCollectCtxDictionary = function(force) {
 	})
 }
 
+// ****************** generic utils ***************
+
 ui.focus = function(elem,logTxt,srcCtx) {
 	if (!elem) debugger;
 	// block the preview from stealing the studio focus
@@ -270,8 +271,6 @@ ui.wrapWithLauchingElement = (f,context,elem,options={}) =>
 		return f(context.extendVars(ctx2).setVars({ $launchingElement: { el : elem, ...options }}));
 	}
 
-
-// ****************** generic utils ***************
 
 if (typeof $ != 'undefined' && $.fn)
     $.fn.findIncludeSelf = function(selector) {
@@ -299,11 +298,6 @@ ui.preserveCtx = ctx => {
   return ctx.id;
 }
 
-ui.preserveFieldCtxWithItem = (field,item) => {
-	const ctx = jb.ctxDictionary[field.ctxId]
-	return ctx && ui.preserveCtx(ctx.setData(item))
-}
-  
 ui.renderWidget = function(profile,top) {
 	let formerReactElem, formerParentElem;
 	let blockedParentWin = false
@@ -385,39 +379,11 @@ ui.cachedMap = mapFunc => {
 	}
 }
 
-ui.applyAfter = function(promise,ctx) {
-	// should refresh all after promise
-}
-
-ui.waitFor = function(check,times,interval) {
-  if (check())
-    return Promise.resolve(1);
-
-  times = times || 300;
-  interval = interval || 50;
-
-  return new Promise((resolve,fail)=>{
-    function wait_and_check(counter) {
-      if (counter < 1)
-        return fail();
-      setTimeout(() => {
-      	var v = check();
-        if (v)
-          resolve(v);
-        else
-          wait_and_check(counter-1)
-      }, interval);
-    }
-    return wait_and_check(times);
-  })
-}
-
 ui.limitStringLength = function(str,maxLength) {
   if (typeof str == 'string' && str.length > maxLength-3)
     return str.substring(0,maxLength) + '...';
   return str;
 }
-// ****************** vdom utils ***************
 
 ui.stateChangeEm = new jb.rx.Subject();
 
@@ -428,39 +394,6 @@ ui.setState = function(cmp,state,opEvent,watchedAt) {
 	else
 		cmp.setState(state || {});
 	ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent, watchedAt: watchedAt });
-}
-
-ui.addClassToVdom = function(vdom,clz) {
-	vdom.attributes = vdom.attributes || {};
-	if (vdom.attributes.class === undefined) vdom.attributes.class = ''
-	if (clz && vdom.attributes.class.split(' ').indexOf(clz) == -1)
-		vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');
-	return vdom;
-}
-
-ui.toggleClassInVdom = function(vdom,clz,add) {
-  vdom.attributes = vdom.attributes || {};
-  var classes = (vdom.attributes.class || '').split(' ').map(x=>x.trim()).filter(x=>x);
-  if (add && classes.indexOf(clz) == -1)
-    vdom.attributes.class = classes.concat([clz]).join(' ');
-  if (!add)
-    vdom.attributes.class = classes.filter(x=>x==clz).join(' ');
-  return vdom;
-}
-
-ui.item = function(cmp,vdom,data) {
-	cmp.jbComp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
-	return vdom;
-}
-
-ui.fieldTitle = function(cmp,ctrl,h) {
-	const field = ctrl.field || ctrl
-	if (field.titleCtrl) {
-		const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
-		const jbComp = field.titleCtrl(ctx);
-		return jbComp && h(jbComp.reactComp(),{'jb-ctx': ui.preserveCtx(ctx) })
-	}
-	return field.title(cmp.ctx)
 }
 
 ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
@@ -495,40 +428,30 @@ ui.databindObservable = (cmp,settings) =>
 				.map(e=>Object.assign({ref},e)) ) || [])
 
 
-ui.toVdomOrStr = val => {
-	const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val;
-	let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1);
-	if (typeof res == 'boolean')
-		res = '' + res;
-	if (res && res.slice)
-		res = res.slice(0,1000);
-	return res;
-}
-
 ui.refreshComp = (ctx,el) => {
-	var nextElem = el.nextElementSibling;
-	var newElem = ui.render(ui.h(ctx.runItself().reactComp()),el.parentElement,el);
+	const nextElem = el.nextElementSibling;
+	const newElem = ui.render(ui.h(ctx.runItself().reactComp()),el.parentElement,el);
 	if (nextElem)
 		newElem.parentElement.insertBefore(newElem,nextElem);
 }
 
 ui.outerWidth  = el => {
-  var style = getComputedStyle(el);
+  const style = getComputedStyle(el);
   return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
 }
 ui.outerHeight = el => {
-  var style = getComputedStyle(el);
+  const style = getComputedStyle(el);
   return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
 }
 ui.offset = el => {
-  var rect = el.getBoundingClientRect();
+  const rect = el.getBoundingClientRect();
   return {
     top: rect.top + document.body.scrollTop,
     left: rect.left + document.body.scrollLeft
   }
 }
 ui.parents = el => {
-  var res = [];
+  const res = [];
   el = el.parentNode;
   while(el) {
     res.push(el);
@@ -551,9 +474,44 @@ ui.matches = (el,query) => el && el.matches && el.matches(query)
 ui.index = el => Array.from(el.parentNode.children).indexOf(el)
 ui.inDocument = el => el && (ui.parents(el).slice(-1)[0]||{}).nodeType == 9
 ui.addHTML = (el,html) => {
-  var elem = document.createElement('div');
+  const elem = document.createElement('div');
   elem.innerHTML = html;
   el.appendChild(elem.firstChild)
+}
+
+// ****************** vdom utils ***************
+
+ui.addClassToVdom = function(vdom,clz) {
+	vdom.attributes = vdom.attributes || {};
+	if (vdom.attributes.class === undefined) vdom.attributes.class = ''
+	if (clz && vdom.attributes.class.split(' ').indexOf(clz) == -1)
+		vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');
+	return vdom;
+}
+
+ui.toggleClassInVdom = function(vdom,clz,add) {
+  vdom.attributes = vdom.attributes || {};
+  const classes = (vdom.attributes.class || '').split(' ').map(x=>x.trim()).filter(x=>x);
+  if (add && classes.indexOf(clz) == -1)
+    vdom.attributes.class = classes.concat([clz]).join(' ');
+  if (!add)
+    vdom.attributes.class = classes.filter(x=>x==clz).join(' ');
+  return vdom;
+}
+
+ui.item = function(cmp,vdom,data) {
+	cmp.jbComp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
+	return vdom;
+}
+
+ui.toVdomOrStr = val => {
+	const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val;
+	let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1);
+	if (typeof res == 'boolean')
+		res = '' + res;
+	if (res && res.slice)
+		res = res.slice(0,1000);
+	return res;
 }
 
 // ****************** components ****************
