@@ -10,20 +10,22 @@ jb.component('studio.new-project', { /* studio.newProject */
       project: name,
       files: [
         { fileName: `${name}.js`, content: `
-  jb['component']('${name}.main', {
-    type: 'control',
-    impl :{$: 'group', controls: [ {$: 'button', title: 'my button'}] }
-  })`
+jb.component.('${name}.main', {
+  type: 'control',
+  impl :{$: 'group', controls: [ {$: 'button', title: 'my button'}] }
+})
+
+`
         },
         { fileName: `${name}.html`, content: `
 <!DOCTYPE html>
 <head>
+  <meta charset="utf-8">
   <script type="text/javascript">
     startTime = new Date().getTime();
   </script>
   <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>
   <script type="text/javascript" src="/projects/${name}/${name}.js"></script>
-  <script1 type="text/javascript" src="/projects/${name}/samples.js"></script1>
 </head>
 <body>
 <div id="main"> </div>

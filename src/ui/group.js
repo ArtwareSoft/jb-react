@@ -99,7 +99,7 @@ jb.component('control.first-succeeding', { /* control.firstSucceeding */
       composite: true
     },
     {id: 'title', as: 'string', dynamic: true},
-    {
+  {
       id: 'style',
       type: 'first-succeeding.style',
       defaultValue: firstSucceeding.style(),

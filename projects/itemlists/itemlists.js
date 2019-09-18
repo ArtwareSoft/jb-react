@@ -141,41 +141,36 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
 })
 
 
-jb.component('itemlists.table-with-search', {
-  type: 'control', 
-  impl :{$: 'group', 
+jb.component('itemlists.table-with-search', { /* itemlists.tableWithSearch */
+  type: 'control',
+  impl: group({
     controls: [
-      {$: 'group', 
+      group({
         controls: [
-          {$: 'itemlist-container.search', 
-            title: 'Search', 
-            searchIn :{$: 'itemlist-container.search-in-all-properties' }, 
-            databind: '%$itemlistCntrData/search_pattern%', 
-            style :{$: 'editable-text.mdl-search' }
-          }, 
-          {$: 'table', 
-            items :{$: 'pipeline', 
-              items: [
-                '%$people%', 
-                {$: 'itemlist-container.filter' }
-              ]
-            }, 
-            fields: [
-              {$: 'field', title: 'name', data: '%name%' }, 
-              {$: 'field', title: 'age', data: '%age%' }
-            ], 
+          itemlistContainer.search({
+            title: 'Search',
+            searchIn: itemlistContainer.searchInAllProperties(),
+            databind: '%$itemlistCntrData/search_pattern%',
+            style: editableText.mdlSearch()
+          }),
+          table({
+            items: pipeline('%$people%', itemlistContainer.filter()),
+            fields: [field({title: 'name', data: '%name%'}), field({title: 'age', data: '%age%'})],
             features: [
-              {$: 'watch-ref', ref: '%$itemlistCntrData/search_pattern%' }, 
-              {$: 'itemlist.selection', autoSelectFirst: 'true' }, 
-              {$: 'itemlist.keyboard-selection' }, 
-              {$: 'css.width', width: '300' }
+              watchRef('%$itemlistCntrData/search_pattern%'),
+              itemlist.selection({
+                onDoubleClick: openDialog({content: group({}), title: 'double click'}),
+                autoSelectFirst: 'true'
+              }),
+              itemlist.keyboardSelection({}),
+              css.width('300')
             ]
-          }
-        ], 
-        features :{$: 'group.itemlist-container' }
-      }
+          })
+        ],
+        features: group.itemlistContainer({})
+      })
     ]
-  }
+  })
 })
 
 jb.component('itemlists.table-with-filters', {

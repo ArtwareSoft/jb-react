@@ -121,6 +121,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
   ],
   impl: (ctx,databind) => ({
     onclick: true,
+    ondblclick: true,
     afterViewInit: cmp => {
         cmp.selectionEmitter = new jb.rx.Subject();
         cmp.clickEmitter = new jb.rx.Subject();
@@ -140,13 +141,6 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           .catch(e=>jb.ui.setState(cmp,{selected: null }) || [])
           .subscribe(e=>
             jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
-
-        // double click
-        var clickEm = cmp.clickEmitter.takeUntil( cmp.destroyed );
-        clickEm.buffer(clickEm.debounceTime(250))
-          .filter(buff => buff.length === 2)
-          .subscribe(buff=>
-            ctx.params.onDoubleClick(cmp.ctx.setData(buff[1])));
 
         function autoSelectFirst() {
           if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(selectedRef))
@@ -171,6 +165,10 @@ jb.component('itemlist.selection', { /* itemlist.selection */
       jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == data);
       vdom.attributes.onclick = _ =>
         cmp.clickEmitter.next(data)
+      vdom.attributes.ondblclick = _ => {
+        cmp.clickEmitter.next(data)
+        ctx.params.onDoubleClick(cmp.ctx.setData(data))
+      }
     },
     css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
   })
@@ -216,46 +214,44 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
 
 jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
   type: 'feature',
-  params: [
-
-  ],
   impl: ctx => ({
       afterViewInit: function(cmp) {
-        var drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
+        const drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
           moves: (el,source,handle) =>
             jb.ui.hasClass(handle,'drag-handle')
         });
 
         drake.on('drag', function(el, source) {
-          var item = el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data;
+          let item = el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data;
           if (!item) {
-            var item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
+            const item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
             item = item_comp && item_comp.ctx.data;
           }
           el.dragged = {
-            item: item,
+            item,
             remove: item => cmp.items.splice(cmp.items.indexOf(item), 1)
           }
           cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.item);
         });
         drake.on('drop', (dropElm, target, source,sibling) => {
-            var draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
-            var targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
+            const draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
+            const targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
             jb.splice(jb.asRef(cmp.items),[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
 
             dropElm.dragged = null;
-        });
+        })
+        cmp.dragAndDropActive = true
 
         // ctrl + Up/Down
 //        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
-          if (!cmp.onkeydown) return;
+        if (!cmp.onkeydown) return;
           cmp.onkeydown.filter(e=>
             e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
             .subscribe(e=> {
-              var diff = e.keyCode == 40 ? 1 : -1;
-              var selectedIndex = cmp.items.indexOf(cmp.state.selected);
+              const diff = e.keyCode == 40 ? 1 : -1;
+              const selectedIndex = cmp.items.indexOf(cmp.state.selected);
               if (selectedIndex == -1) return;
-              var index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
+              const index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
               jb.splice(jb.asRef(cmp.items),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
           })
 //        })

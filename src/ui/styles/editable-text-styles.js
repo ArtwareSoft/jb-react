@@ -82,3 +82,58 @@ jb.component('editable-text.mdl-search', { /* editableText.mdlSearch */
     features: [field.databindText(), mdlStyle.initDynamic()]
   })
 })
+
+jb.component('editable-text.expandable', {
+  description: 'label that changes to editable class on double click',
+  type: 'editable-text.style',
+  params: [
+    { id: 'buttonFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
+    { id: 'editableFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
+    { id: 'buttonStyle', type: 'button.style' , dynamic: true, defaultValue: button.href() },
+    { id: 'editableStyle', type: 'editable-text.style', dynamic: true , defaultValue: editableText.input() },
+    { id: 'onToggle', type: 'action' , dynamic: true  }
+  ], 
+  impl:  styleByControl(control.firstSucceeding({
+    controls: [
+      controlWithCondition('%$editable%',
+        editableText({
+          databind: '%$editableTextModel/databind%',
+          updateOnBlur: true,
+          style: call('editableStyle'),
+          features: [
+            ctx => ({
+              afterViewInit: cmp => { 
+                const elem = cmp.base.matches('input,textarea') ? cmp.base : querySelector('input,textarea')
+                if (elem) {
+                  elem.onblur = () => cmp.ctx.run(runActions(
+                      toggleBooleanValue('%$editable%'),
+                      (ctx,vars,{onToggle}) => onToggle(ctx)
+                   ))
+                }
+              }
+            }),
+            (ctx,vars,{editableFeatures}) => editableFeatures(ctx),
+          ]
+        })
+      ),
+      button({
+        title: '%$editableTextModel/databind%',
+        style: call('buttonStyle'),
+        action: runActions(
+          toggleBooleanValue('%$editable%'), 
+          focusOnSibling('input'),
+          (ctx,vars,{onToggle}) => onToggle(ctx)
+        ),
+        features: (ctx,vars,{buttonFeatures}) => buttonFeatures(ctx),
+      })
+    ],
+    style: firstSucceeding.style(),
+    features: [
+      variable({name: 'editable', watchable: true}),
+      firstSucceeding.watchRefreshOnCtrlChange('%$editable%')
+    ]
+  })
+  ,
+    'editableTextModel'
+  )
+})
