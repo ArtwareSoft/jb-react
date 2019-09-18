@@ -513,20 +513,3 @@ jb.component('focus-on-first-element', { /* focusOnFirstElement */
     })
 })
 
-jb.component('focus-on-sibling', { /* focusOnSibling */
-  type: 'action',
-  params: [
-    {id: 'siblingSelector', as: 'string', mandatory: true},
-    {id: 'delay', as: 'number', defaultValue: 0}
-  ],
-  impl: (ctx,siblingSelector,delay) => {
-	  if (!ctx.vars.event) 
-      return jb.logError('no event for action focus-on-sibling',ctx)
-    const path = event.path || (event.composedPath && event.composedPath())
-	  path && delayedFocus(path[1],{delay,siblingSelector})
-
- 	  function delayedFocus(parent, {delay, siblingSelector}) {
-		  jb.delay(delay).then(() => jb.ui.focus(parent.querySelector(siblingSelector), 'focus-on-sibling', ctx))
-	  }
-	}
-})

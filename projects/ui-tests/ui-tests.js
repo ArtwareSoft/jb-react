@@ -1169,7 +1169,7 @@ jb.component('ui-test.refresh-control-by-id', { /* uiTest.refreshControlById */
 //   impl :{$: 'ui-test',
 //     control: ctx =>
 //       jb.ui.h('div',{},'hello world'),
-//     expectedResult :{$: 'contains', text: 'hello world' },
+//     expectedResult: contains('hello world')
 //   },
 // })
 

@@ -93,44 +93,49 @@ jb.component('editable-text.expandable', {
     { id: 'editableStyle', type: 'editable-text.style', dynamic: true , defaultValue: editableText.input() },
     { id: 'onToggle', type: 'action' , dynamic: true  }
   ], 
-  impl:  styleByControl(control.firstSucceeding({
+  impl:  styleByControl(group({
     controls: [
-      controlWithCondition('%$editable%',
         editableText({
           databind: '%$editableTextModel/databind%',
           updateOnBlur: true,
           style: call('editableStyle'),
           features: [
-            ctx => ({
-              afterViewInit: cmp => { 
-                const elem = cmp.base.matches('input,textarea') ? cmp.base : querySelector('input,textarea')
+            watchRef('%$editable%'),
+            hidden('%$editable%'),
+            (ctx,{expandableContext}) => ({
+              afterViewInit: cmp => {
+                const elem = cmp.base.matches('input,textarea') ? cmp.base : cmp.base.querySelector('input,textarea')
                 if (elem) {
                   elem.onblur = () => cmp.ctx.run(runActions(
                       toggleBooleanValue('%$editable%'),
                       (ctx,vars,{onToggle}) => onToggle(ctx)
                    ))
                 }
+                expandableContext.regainFocus = () =>
+                  jb.delay(1).then(() => jb.ui.focus(elem, 'editable-text.expandable', ctx))
               }
             }),
             (ctx,vars,{editableFeatures}) => editableFeatures(ctx),
           ]
-        })
-      ),
+      }),
       button({
         title: '%$editableTextModel/databind%',
         style: call('buttonStyle'),
         action: runActions(
-          toggleBooleanValue('%$editable%'), 
-          focusOnSibling('input'),
+          toggleBooleanValue('%$editable%'),
+          (ctx,{expandableContext}) => expandableContext.regainFocus(),
           (ctx,vars,{onToggle}) => onToggle(ctx)
         ),
-        features: (ctx,vars,{buttonFeatures}) => buttonFeatures(ctx),
+        features: [
+          watchRef('%$editable%'),
+          hidden(not('%$editable%')),
+          (ctx,vars,{buttonFeatures}) => buttonFeatures(ctx)
+        ],
       })
     ],
-    style: firstSucceeding.style(),
     features: [
       variable({name: 'editable', watchable: true}),
-      firstSucceeding.watchRefreshOnCtrlChange('%$editable%')
+      variable({name: 'expandableContext', value: obj() }),
     ]
   })
   ,

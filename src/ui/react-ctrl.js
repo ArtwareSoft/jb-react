@@ -242,7 +242,7 @@ ui.garbageCollectCtxDictionary = function(force) {
 	}
 	const ctxToPath = ctx => jb.entries(ctx.vars).map(e=>e[1]).filter(v=>jb.isWatchable(v)).map(v => jb.asRef(v)).map(ref=>jb.refHandler(ref).pathOfRef(ref)).flat()
 	const globalVarsUsed = jb.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
-	const iteratingOnVar = 
+	let iteratingOnVar = ''
 	Object.keys(jb.resources).filter(id=>id.indexOf(':') != -1)
 		.sort().reverse() // get the latest usages (largest ctxId) as first item in each group
 		.forEach(id=>{

@@ -37,8 +37,6 @@ jb.component('jb-editor-test.actions-sugar-example2-json-format', { /* jbEditorT
   })
 })
 
-
-
 jb.component('jb-editor-test.extra-elem-in-list', { /* jbEditorTest.extraElemInList */
   impl: jbEditorChildrenTest({
     path: 'jb-editor-test.cmp1~impl~items',
