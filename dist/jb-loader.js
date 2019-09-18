@@ -39,7 +39,6 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'src/ui/itemlist.js',
         'src/ui/itemlist-container.js',
         'src/ui/menu.js',
-//        'src/ui/itemlist-with-groups.js',
         'src/ui/picklist.js',
         'src/ui/theme.js',
         'src/ui/icon.js',

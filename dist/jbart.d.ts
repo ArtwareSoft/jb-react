@@ -173,7 +173,7 @@ type in_groupPT = {$: 'in-group', group: dataType, item: dataType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
 // type action
-type actionType = action_ifPT | jb_runPT | write_valuePT | add_to_arrayPT | splicePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | run_action_on_itemsPT | on_next_timerPT | http_postPT | action_switchPT | refresh_control_by_idPT | focus_on_first_elementPT | focus_on_siblingPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | style_by_controlPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | text_editor_with_cursor_pathPT | run_transactionPT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
+type actionType = action_ifPT | jb_runPT | write_valuePT | add_to_arrayPT | splicePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | run_action_on_itemsPT | on_next_timerPT | http_postPT | action_switchPT | refresh_control_by_idPT | focus_on_first_elementPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | style_by_controlPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | text_editor_with_cursor_pathPT | run_transactionPT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
 type cmp_def_actionType = {
 	type: 'action',
 	params?: [param],
@@ -199,7 +199,6 @@ type http_postPT = {$: 'http.post', url: dataType, postData: dataType,
 type action_switchPT = {$: 'action.switch', cases: [action_switch_caseType], defaultAction: actionType}
 type refresh_control_by_idPT = {$: 'refresh-control-by-id', id: dataType}
 type focus_on_first_elementPT = {$: 'focus-on-first-element', selector: dataType}
-type focus_on_siblingPT = {$: 'focus-on-sibling', siblingSelector: dataType, delay: dataType}
 type dialog_close_containing_popupPT = {$: 'dialog.close-containing-popup', OK: booleanType}
 type dialog_close_dialogPT = {$: 'dialog.close-dialog', id: dataType, delay: dataType}
 type dialog_close_all_popupsPT = {$: 'dialog.close-all-popups', }
@@ -1217,9 +1216,6 @@ function group_autoFocusOnFirstInput : featureType;
 function group_autoFocusOnFirstInput() : featureType;
 function focusOnFirstElement : actionType;
 function focusOnFirstElement(selector: dataType) : actionType;
-function focusOnSibling : actionType;
-function focusOnSibling(siblingSelector: dataType, delay: dataType) : actionType;
-function focusOnSibling(siblingSelector: dataType) : actionType;
 function css : featureType | dialog_featureType;
 function css(css: dataType) : featureType | dialog_featureType;
 function css_dynamic : featureType | dialog_featureType;
