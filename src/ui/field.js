@@ -59,6 +59,40 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
    cmp.databindRefChangedSub.next(ctx.vars.$model.databind());
 }
 
+jb.ui.checkValidationError = cmp => {
+  var err = validationError(cmp);
+  if (cmp.state.error != err) {
+    jb.log('field',['setErrState',ctx,err])
+    cmp.setState({valid: !err, error:err});
+  }
+
+  function validationError() {
+    if (!cmp.validations) return;
+    var ctx = cmp.ctx.setData(cmp.state.model);
+    var err = (cmp.validations || [])
+      .filter(validator=>!validator.validCondition(ctx))
+      .map(validator=>validator.errorMessage(ctx))[0];
+    if (ctx.vars.formContainer)
+      ctx.vars.formContainer.err = err;
+    return err;
+  }
+}
+
+jb.ui.fieldTitle = function(cmp,ctrl,h) {
+	const field = ctrl.field || ctrl
+	if (field.titleCtrl) {
+		const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
+		const jbComp = field.titleCtrl(ctx);
+		return jbComp && h(jbComp.reactComp(),{'jb-ctx': jb.ui.preserveCtx(ctx) })
+	}
+	return field.title(cmp.ctx)
+}
+
+jb.ui.preserveFieldCtxWithItem = (field,item) => {
+	const ctx = jb.ctxDictionary[field.ctxId]
+	return ctx && jb.ui.preserveCtx(ctx.setData(item))
+}
+  
 jb.component('field.databind', { /* field.databind */
   type: 'feature',
   impl: ctx => ({
@@ -203,25 +237,6 @@ jb.component('validation', { /* validation */
       }
   })
 })
-
-jb.ui.checkValidationError = cmp => {
-  var err = validationError(cmp);
-  if (cmp.state.error != err) {
-    jb.log('field',['setErrState',ctx,err])
-    cmp.setState({valid: !err, error:err});
-  }
-
-  function validationError() {
-    if (!cmp.validations) return;
-    var ctx = cmp.ctx.setData(cmp.state.model);
-    var err = (cmp.validations || [])
-      .filter(validator=>!validator.validCondition(ctx))
-      .map(validator=>validator.errorMessage(ctx))[0];
-    if (ctx.vars.formContainer)
-      ctx.vars.formContainer.err = err;
-    return err;
-  }
-}
 
 jb.component('field.title', {
   description: 'used to set table title in button and label',

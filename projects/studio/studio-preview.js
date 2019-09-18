@@ -13,6 +13,29 @@ st.changedComps = function() {
   return changedComps
 }
 
+jb.ui.waitFor = function(check,times,interval) {
+  if (check())
+    return Promise.resolve(1);
+
+  times = times || 300;
+  interval = interval || 50;
+
+  return new Promise((resolve,fail)=>{
+    function wait_and_check(counter) {
+      if (counter < 1)
+        return fail();
+      setTimeout(() => {
+      	const v = check();
+        if (v)
+          resolve(v);
+        else
+          wait_and_check(counter-1)
+      }, interval);
+    }
+    return wait_and_check(times);
+  })
+}
+
 st.initPreview = function(preview_window,allowedTypes) {
       const changedComps = st.changedComps()
 

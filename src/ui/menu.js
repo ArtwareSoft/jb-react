@@ -278,8 +278,7 @@ jb.component('menu.init-menu-option', { /* menu.initMenuOption */
 					cmp.action = jb.ui.wrapWithLauchingElement( _ => {
 				jb.ui.dialogs.dialogs.filter(d=>d.isPopup)
 						.forEach(d=>d.close());
-					jb.delay(50).then(_=>
-							jb.ui.applyAfter(ctx.vars.menuModel.action(),ctx))
+					jb.delay(50).then(_=>	ctx.vars.menuModel.action())
 					}, ctx, cmp.base);
 
 				jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
