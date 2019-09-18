@@ -12,11 +12,42 @@ jb.component('todomvc.main', { /* todomvc.main */
   type: 'control',
   impl: group({
     controls: [
+      label({title: 'todos', style: label.htmlTag('h1', 'headline')}),
       group({
         title: 'header',
         style: layout.horizontal('3'),
         controls: [
-          label({title: 'todos', style: label.htmlTag('h1', 'headline')}),
+          editableBoolean({
+            databind: isEmpty({'$': 'todomvc-tutorial.filter-completed', filterby: 'false'}),
+            style: editableBoolean.checkboxWithLabel(),
+            title: 'toggle all',
+            textForTrue: '❯',
+            textForFalse: '❯',
+            features: [
+              css('{transform: rotate(90deg)}'),
+              css.class('toggle-all'),
+              hidden(notEmpty('%$todo%')),
+              watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true}),
+              feature.onEvent({
+                event: 'change',
+                action: action.switch(
+                  [
+                    {
+                      condition: isEmpty({'$': 'todomvc-tutorial.filter-completed', filterby: 'false'}),
+                      action: runActionOnItems('%$todo%', toggleBooleanValue('%completed%'))
+                    },
+                    {
+                      condition: 'true',
+                      action: runActionOnItems(
+                        {'$': 'todomvc-tutorial.filter-completed', filterby: 'false'},
+                        toggleBooleanValue('%completed%')
+                      )
+                    }
+                  ]
+                )
+              })
+            ]
+          }),
           editableText({
             title: 'input',
             databind: '%$input%',
@@ -43,36 +74,6 @@ jb.component('todomvc.main', { /* todomvc.main */
       group({
         title: 'main',
         controls: [
-          editableBoolean({
-            databind: isEmpty({'$': 'todomvc-tutorial.filter-completed', filterby: 'false'}),
-            style: editableBoolean.checkboxWithLabel(),
-            title: 'toggle all',
-            textForTrue: 'yes',
-            textForFalse: 'no',
-            features: [
-              css.class('toggle-all'),
-              hidden(notEmpty('%$todo%')),
-              watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true}),
-              feature.onEvent({
-                event: 'change',
-                action: action.switch(
-                  [
-                    {
-                      condition: isEmpty({'$': 'todomvc-tutorial.filter-completed', filterby: 'false'}),
-                      action: runActionOnItems('%$todo%', toggleBooleanValue('%completed%'))
-                    },
-                    {
-                      condition: 'true',
-                      action: runActionOnItems(
-                        {'$': 'todomvc-tutorial.filter-completed', filterby: 'false'},
-                        toggleBooleanValue('%completed%')
-                      )
-                    }
-                  ]
-                )
-              })
-            ]
-          }),
           itemlist({
             items: pipeline(
               '%$todo%',

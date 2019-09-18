@@ -60,7 +60,7 @@ jb.component('editable-boolean.checkbox-with-label', {
           checked: state.model,
           onchange: e => cmp.jbModel(e.target.checked),
           onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  },),
-        h('label',{for: "switch_"+state.fieldId },)
+        h('label',{for: "switch_"+state.fieldId },state.text)
     ]),
     features: field.databind()
   })
