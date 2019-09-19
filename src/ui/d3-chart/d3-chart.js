@@ -1,25 +1,35 @@
+jb.ns('d3Chart,d3Scatter,d3Histogram')
 
-jb.component('d3.chart-scatter', {
-  	type: 'control', category: 'group:80,common:70',
-	params: [
-	    { id: 'title', as: 'string' },
-		{ id: 'items', as: 'array', dynamic: true, mandatory: true },
-		{ id: 'frame', type: 'd3.frame', defaultValue :{$: 'd3.frame', width: 1400, height: 500, 
-				top: 30, right: 50, bottom: 40, left: 60 } },
-	    { id: 'pivots', type: 'd3.pivot[]', mandatory: true, dynamic: true },
-	    { id: 'itemTitle', as: 'string', dynamic: true },
-	    { id: 'visualSizeLimit', as: 'number' },
-	    { id: 'style', type: 'd3.scatter-style', dynamic: true , defaultValue: {$: 'd3-scatter.plain' } },
-	    { id: 'features', type: 'feature[]', dynamic: true, flattenArray: true },
-	],
- 	impl: ctx =>
+jb.component('d3-chart.chart-scatter', { /* d3Chart.chartScatter */
+  type: 'control',
+  category: 'group:80,common:70',
+  params: [
+    {id: 'title', as: 'string'},
+    {id: 'items', as: 'array', dynamic: true, mandatory: true},
+    {
+      id: 'frame',
+      type: 'd3-chart.frame',
+      defaultValue: d3Chart.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})
+    },
+    {id: 'pivots', type: 'd3-chart.pivot[]', mandatory: true, dynamic: true},
+    {id: 'itemTitle', as: 'string', dynamic: true},
+    {id: 'visualSizeLimit', as: 'number'},
+    {
+      id: 'style',
+      type: 'd3-chart.scatter-style',
+      dynamic: true,
+      defaultValue: d3Scatter.plain()
+    },
+    {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
+  ],
+  impl: ctx =>
     	jb.ui.ctrl(ctx)
 })
 
-jb.component('d3-scatter.plain', {
-	type: 'd3.scatter-style',
-  	impl :{$: 'custom-style',
-    	template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height},
+jb.component('d3-scatter.plain', { /* d3Scatter.plain */
+  type: 'd3-chart.scatter-style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height},
     	  h('g', { transform: 'translate(' + cmp.left + ',' + cmp.top + ')' },
     		[
     			h('g',{ class: 'x axis', transform: 'translate(0,' + cmp.innerHeight + ')'}),
@@ -28,16 +38,15 @@ jb.component('d3-scatter.plain', {
     			h('text', { class: 'label', x: cmp.innerWidth, y: cmp.innerHeight - 10, 'text-anchor': 'end'}, cmp.xPivot.title),
     			h('text', { class: 'note', x: cmp.innerWidth, y: cmp.height - cmp.top, 'text-anchor': 'end' }, '' + cmp.state.items.length + ' items'),
     		].concat(
-    		state.items.map((item,index)=> h('circle',{ 
-    			class: 'bubble', 
-    			cx: cmp.xPivot.scale(cmp.xPivot.valFunc(item)), 
-    			cy: cmp.yPivot.scale(cmp.yPivot.valFunc(item)), 
-    			r: cmp.rPivot.scale(cmp.rPivot.valFunc(item)), 
-    			fill: cmp.colorPivot.scale(cmp.colorPivot.valFunc(item)), 
+    		state.items.map((item,index)=> h('circle',{
+    			class: 'bubble',
+    			cx: cmp.xPivot.scale(cmp.xPivot.valFunc(item)),
+    			cy: cmp.yPivot.scale(cmp.yPivot.valFunc(item)),
+    			r: cmp.rPivot.scale(cmp.rPivot.valFunc(item)),
+    			fill: cmp.colorPivot.scale(cmp.colorPivot.valFunc(item)),
     		},h('title',{x: cmp.rPivot.scale(cmp.xPivot.valFunc(item))}, cmp.itemTitle(cmp.ctx.setData(item)) )
     	))))),
-    	features :{$: 'd3-scatter.init'},
-    	css: `>g>.label { font-size: 15px; text-transform: capitalize }
+    css: `>g>.label { font-size: 15px; text-transform: capitalize }
 >g>.note { font-size: 10px; }
 .legend text,
 .legend rect { fill-opacity: 0.75 }
@@ -49,11 +58,12 @@ jb.component('d3-scatter.plain', {
 >g>.bubble { opacity: 1;transition: opacity 0.3s }
 >g>.bubble:hover text {opacity: 1 }
 >g>.bubble:hover circle {	fill-opacity: 1 }
-`
-  }
+`,
+    features: d3Scatter.init()
+  })
 })
 
-jb.component('d3-scatter.init', {
+jb.component('d3-scatter.init', { /* d3Scatter.init */
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
@@ -90,17 +100,17 @@ jb.component('d3-scatter.init', {
   })
 })
 
-jb.component('d3.frame', {
-	type: 'd3.frame',
-	params: [
-		{id: 'width', as: 'number', defaultValue: 900 },
-		{id: 'height', as: 'number', defaultValue: 600 },
-		{id: 'top', as: 'number' , defaultValue: 20},
-		{id: 'right', as: 'number', defaultValue: 20 },
-		{id: 'bottom', as: 'number', defaultValue: 20 },
-		{id: 'left', as: 'number', defaultValue: 20 },
-	],
-	impl : ctx => Object.assign({},ctx.params,{
+jb.component('d3-chart.frame', { /* d3Chart.frame */
+  type: 'd3-chart.frame',
+  params: [
+    {id: 'width', as: 'number', defaultValue: 900},
+    {id: 'height', as: 'number', defaultValue: 600},
+    {id: 'top', as: 'number', defaultValue: 20},
+    {id: 'right', as: 'number', defaultValue: 20},
+    {id: 'bottom', as: 'number', defaultValue: 20},
+    {id: 'left', as: 'number', defaultValue: 20}
+  ],
+  impl: ctx => Object.assign({},ctx.params,{
 			innerWidth: ctx.params.width - ctx.params.left - ctx.params.right,
 			innerHeight: ctx.params.height - ctx.params.top - ctx.params.bottom,
 	})

@@ -682,8 +682,8 @@ Object.assign(jb,{
   knownNSAndCompCases: ['field'],
   macroName: id =>
     id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
-  ns: nsId =>
-    jb.registerMacro(nsId+'.$dummyComp',{})
+  ns: nsIds =>
+    nsIds.split(',').forEach(nsId=>jb.registerMacro(nsId+'.$dummyComp',{}))
   ,
   removeDataResourcePrefix: id =>
     id.indexOf('data-resource.') == 0 ? id.slice('data-resource.'.length) : id,
@@ -765,7 +765,7 @@ Object.assign(jb,{
         jb.logError(macroId +' is reserved by system or libs. please use a different name')
         return false
       }
-      if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId])
+      if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
         jb.logError(macroId + ' is defined more than once, using last definition ' + id)
       if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId] && jb.knownNSAndCompCases.indexOf[macroId] == -1)
         jb.logError(macroId + ' is already defined as ns, using last definition ' + id)

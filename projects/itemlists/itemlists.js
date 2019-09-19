@@ -1,3 +1,5 @@
+jb.ns('d3Chart,d3Scatter,d3Histogram')
+
 jb.component('people', { watchableData: [
   { "name": "Homer Simpson" ,age: 42 , male: true, children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ]},
   { "name": "Marge Simpson" ,age: 38 , male: false, children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ]},
@@ -200,60 +202,32 @@ jb.component('itemlists.table-with-filters', { /* itemlists.tableWithFilters */
   })
 })
 
-
 jb.component('itemlists.phones-chart', { /* itemlists.phonesChart */
   type: 'control',
   impl: group({
     controls: [
-      {
-        '$': 'd3.chart-scatter',
-        style: {'$': 'd3-scatter.plain'},
-        pivots: [
-          {'$': 'd3.pivot', title: 'performance', value: '%performance%'},
-          {'$': 'd3.pivot', title: 'size', value: '%size%'},
-          {'$': 'd3.pivot', title: 'hits', value: '%hits%', scale: {'$': 'd3.sqrt-scale'}},
-          {'$': 'd3.pivot', title: 'make', value: '%make%'},
-          {'$': 'd3.pivot', title: '$', value: '%price%'}
-        ],
+      d3Chart.chartScatter({
         title: 'phones',
-        frame: {
-          '$': 'd3.frame',
+        items: pipeline('%$phones%', filter(between({from: '4', to: '7', val: '%size%'}))),
+        frame: d3Chart.frame({
           width: '1200',
           height: '480',
           top: 20,
           right: 20,
           bottom: '40',
           left: '80'
-        },
-        visualSizeLimit: '3000',
+        }),
+        pivots: [
+          d3Chart.pivot({title: 'performance', value: '%performance%'}),
+          d3Chart.pivot({title: 'size', value: '%size%'}),
+          d3Chart.pivot({title: 'hits', value: '%hits%', scale: d3Chart.sqrtScale()}),
+          d3Chart.pivot({title: 'make', value: '%make%'}),
+          d3Chart.pivot({title: '$', value: '%price%'})
+        ],
         itemTitle: '%title% (%Announced%)',
-        items: '%$devices%'
-      }
-    ],
-    features: {
-      '$': 'global-var',
-      name: 'devices',
-      value: pipeline(
-        '%$global/phones%',
-        slice(undefined, '1000'),
-        sample(300, '%%'),
-        assign(),
-        filter(
-            and(
-              between({from: '4', to: '7', val: '%size%'}),
-              ctx => (ctx.data.year || 0) >= 2016
-            )
-          )
-      )
-    }
-  }),
-  features: variable({
-    name: 'devices',
-    value: pipeline(
-      '%$global/phones/products%',
-      slice('2000', '2100'),
-      assign(),
-      filter(between({from: '4', to: '7', val: '%size%'}))
-    )
+        visualSizeLimit: '3000',
+        style: d3Scatter.plain()
+      })
+    ]
   })
 })

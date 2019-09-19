@@ -9,7 +9,12 @@ jb.component('itemlist', { /* itemlist */
     {id: 'controls', type: 'control[]', mandatory: true, dynamic: true},
     {id: 'style', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
     {id: 'itemVariable', as: 'string', defaultValue: 'item'},
-    {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items'},
+    {
+      id: 'visualSizeLimit',
+      as: 'number',
+      defaultValue: 100,
+      description: 'by default itemlist is limmited to 100 shown items'
+    },
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
   impl: ctx =>
@@ -49,7 +54,7 @@ jb.component('itemlist.init', { /* itemlist.init */
   })
 })
 
-jb.component('itemlist.init-table', { /* itemlist.init */
+jb.component('itemlist.init-table', { /* itemlist.initTable */
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
