@@ -9717,7 +9717,7 @@ jb.component('field.column-width', {
   type: 'feature',
   category: 'table:80',
   params: [
-    {id: 'width', as: 'number' },
+    {id: 'width', as: 'number', mandatory: true },
   ],
   impl: (ctx,width) => ({
       enrichField: field => field.width = width
@@ -13648,6 +13648,7 @@ jb.component('table.with-headers', { /* table.withHeaders */
   })
 })
 
+
 jb.component('table.mdl', { /* table.mdl */
   type: 'table.style,itemlist.style',
   params: [
@@ -14076,8 +14077,7 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 const spaces = Array.from(new Array(200)).map(_=>' ').join('')
 jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
   if (!val || typeof val !== 'object')
-  
-    return { text: val.toString(), map: {} }
+    return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
   const advanceLineCol = jb.prettyPrint.advanceLineCol
   return valueToMacro({path: initialPath, line:0, col: 0}, val)
@@ -14816,7 +14816,7 @@ jb.component('table-tree.init', {
                         }
                         if (i == depthOfItem+1) return {
                             headline: true,
-                            colSpan: treeModel.maxDepth-i
+                            colSpan: treeModel.maxDepth-i+1
                         }
                     }
                 )
@@ -14829,14 +14829,21 @@ jb.component('table-tree.init', {
             }
 
             function doCalcItems(top, depth) {
+                const item = [{path: top, depth, val: treeModel.val(top), expanded: cmp.state.expanded[top]}]
                 if (cmp.state.expanded[top])
                     return treeModel.children(top).reduce((acc,child) => 
-                        depth >= treeModel.maxDepth ? acc : acc = acc.concat(doCalcItems(child, depth+1)),[{path: top, depth, val: treeModel.val(top)}])
-                return [{path: top, depth, val: treeModel.val(top)}]
+                        depth >= treeModel.maxDepth ? acc : acc = acc.concat(doCalcItems(child, depth+1)),item)
+                return item
+            }
+            function getOrCreateControl(field,item,index) {
+                cmp.ctrlCache = cmp.ctrlCache || {}
+                const key = item.path+'~!'+item.expanded + '~' +field.ctxId
+                cmp.ctrlCache[key] = cmp.ctrlCache[key] || field.control(item,index)
+                return cmp.ctrlCache[key]
             }
             function calcFields(fieldsProp) {
                 const fields = ctx.vars.$model[fieldsProp]().map(x=>x.field)
-                //fields.forEach(f=>f._control = (path,index) => f.control({path, val: treeModel.val(path)},index))
+                fields.forEach(f=>f.cachedControl = (item,index) => getOrCreateControl(f,item,index))
                 return fields
             }
         },
@@ -14847,8 +14854,8 @@ jb.component('table-tree.init', {
 jb.component('table-tree.plain', {
     params: [ 
       { id: 'hideHeaders',  as: 'boolean' },
-      { id: 'gapWidth', as: 'number', defaultValue: 100 },
-      { id: 'expColWidth', as: 'number', defaultValue: 10 },
+      { id: 'gapWidth', as: 'number', defaultValue: 30 },
+      { id: 'expColWidth', as: 'number', defaultValue: 16 },
     ],
     type: 'table.style,itemlist.style',
     impl: customStyle({
@@ -14865,9 +14872,9 @@ jb.component('table-tree.plain', {
                             f.empty ? { class: 'empty-expand-collapse'} : f.toggle ? {class: 'expandbox' } : {class: 'headline', colSpan: f.colSpan},
                             f.empty ? '' : f.toggle ? h('span',{}, h('i',{class:'material-icons noselect', onclick: _=> f.toggle() },
                                             f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right')) : h(cmp.headline(item))
-                )), h('td',{class: 'tree-expand-title'}), 
+                )), 
                     ...cmp.fieldsForPath(item.path).map(f=>h('td', {'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: 'tree-field'}, 
-                        h(f.control(item,index),{index: index}))) ]
+                        h(f.cachedControl(item,index),{index: index}))) ]
               ), item ))
           ),
           state.items.length == 0 ? 'no items' : ''
