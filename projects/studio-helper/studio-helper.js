@@ -342,7 +342,7 @@ jb.component('studio-helper.studio-properties-rich', { /* studioHelper.studioPro
   type: 'control',
   impl: group({
     vars: [Var('circuit', 'studio-helper-sample.properties-params-prof')],
-    controls: studio.propertiesTableTree('studio-helper-sample.properties-params-prof~impl')
+    controls: studio.properties('studio-helper-sample.properties-params-prof~impl')
   })
 })
 
@@ -350,7 +350,7 @@ jb.component('studio-helper.studio-properties', { /* studioHelper.studioProperti
   type: 'control',
   impl: group({
     vars: [Var('circuit', 'studio-helper-sample.properties-tgp')],
-    controls: studio.propertiesTableTree('studio-helper-sample.properties-tgp~impl')
+    controls: studio.properties('studio-helper-sample.properties-tgp~impl')
   })
 })
 
@@ -410,25 +410,25 @@ jb.component('studio-helper-sample.properties-params', { /* studioHelperSample.p
 jb.component('studio-helper-sample.properties-params-prof', { /* studioHelperSample.propertiesParamsProf */
   type: 'contsdfdswqeqweqwewqe',
   impl: studioHelperSample.propertiesParams({
-    // simpleStr: 'hello',
-    // strAsComp: pipeline(
-    //   remark('asad'),
-    //   split({separator: ',', text: '1,2,3,4,5,6,7,8'}),
-    //   '%%',
-    //   count('%%'),
-    //   count('%%'),
-    //   pipeline(pipeline(suffix(undefined, '%%')))
-    // ),
-    // strAsJs: ctx => ctx.vars.aa,
-    // enumStr: 'c',
-    // enumNum: '1',
-    // boolTrue: true,
-    // boolFalse: false,
-    // boolAsComp: pipeline('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '%%==\"a\"'),
-    // boolAsJs: ctx => ctx.vars.aa,
-    // boolAsExp: '%$person/male%',
-    // style: button.href(),
-    // groupStyle: layout.horizontal('38'),
+    simpleStr: 'hello',
+    strAsComp: pipeline(
+      remark('asad'),
+      split({separator: ',', text: '1,2,3,4,5,6,7,8'}),
+      '%%',
+      count('%%'),
+      count('%%'),
+      pipeline(pipeline(suffix(undefined, '%%')))
+    ),
+    strAsJs: ctx => ctx.vars.aa,
+    enumStr: 'c',
+    enumNum: '1',
+    boolTrue: true,
+    boolFalse: false,
+    boolAsComp: pipeline('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '%%==\"a\"'),
+    boolAsJs: ctx => ctx.vars.aa,
+    boolAsExp: '%$person/male%',
+    style: button.href(),
+    groupStyle: layout.horizontal('38'),
     features: [label.bindText(), mdlStyle.initDynamic()]
   }),
   '$vars': {

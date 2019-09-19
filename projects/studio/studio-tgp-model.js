@@ -6,12 +6,6 @@ st.PropertiesTree = class {
 		this.rootPath = rootPath;
 		this.refHandler = st.compsRefHandler;
 	}
-	title(path) {
-		const prop = path.split('~').pop();
-		if (isNaN(Number(prop)))
-			return prop
-		return st.compNameOfPath(path)
-	}
 	isArray(path) {
 		return this.children(path).length > 0;
 	}
@@ -19,7 +13,7 @@ st.PropertiesTree = class {
 		if (st.isOfType(path,'data'))
 			return []
 		if (Array.isArray(st.valOfPath(path)))
-			return st.arrayChildren(path,true)
+			return st.arrayChildren(path,false)
 		return st.paramsOfPath(path)
 			.filter(p=>!st.isControlType(p.type))
 			.map(prop=>path + '~' + prop.id)

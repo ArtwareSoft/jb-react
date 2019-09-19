@@ -23,6 +23,7 @@ jb.component('table.with-headers', { /* table.withHeaders */
   })
 })
 
+
 jb.component('table.mdl', { /* table.mdl */
   type: 'table.style,itemlist.style',
   params: [

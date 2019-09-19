@@ -6,30 +6,56 @@ jb.component('studio.properties-tree-nodes', { /* studio.propertiesTreeNodes */
   impl: (ctx,path) => new jb.studio.PropertiesTree(path)
 })
 
-jb.component('studio.properties', { /* studio.propertiesTableTree */
+jb.component('studio.properties', { /* studio.properties */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: tableTree({
-    treeModel: studio.propertiesTreeNodes('%$path%'),
-    commonFields: [group({controls: studio.propField('%path%')}), group({controls: studio.propertyToolbar('%path%')})],
-    chapterHeadline: label(
-      ({data}) => {
-      const path = data.path
-      const prop = path.split('~').pop()
-      if (isNaN(Number(prop)))
-        return prop
-      return Number(prop) + 1
-    }
-    )
+  impl: group({
+    controls: [
+      tableTree({
+        treeModel: studio.propertiesTreeNodes('%$path%'),
+        commonFields: [
+          group({
+            controls: studio.propField('%path%','%expanded%'),
+            features: [field.columnWidth('300')]
+          }),
+          group({
+            controls: studio.propertyToolbar('%path%'),
+            features: [field.columnWidth('20')]
+          })
+        ],
+        chapterHeadline: label(
+          ({data}) => {
+          const path = data.path
+          const prop = path.split('~').pop()
+          if (Array.isArray(jb.studio.valOfPath(path)))
+            return `${prop} (${jb.studio.valOfPath(path).length})`
+          if (isNaN(Number(prop)))
+            return prop
+          return Number(prop) + 1
+        }
+        ),
+        features: studio.watchPath({path: '%$path%', includeChildren: 'structure'})
+      }),
+      button({
+        title: 'new feature',
+        action: studio.openNewProfileDialog({
+          path: '%$path%~features',
+          type: 'feature',
+        }),
+        style: button.href(),
+        features: css.margin({top: '20', left: '5'})
+      })
+    ]
   })
 })
 
 jb.component('studio.prop-field', {
   type: 'control',
   params: [
-    {id: 'path', as: 'string'}
+    {id: 'path', as: 'string'},
+    {id: 'expanded', as: 'boolean'}
   ],
   impl: group({
     title: studio.propName('%$path%'),
@@ -70,7 +96,11 @@ jb.component('studio.prop-field', {
           studio.isOfType('%$path%', 'data,boolean'),
           studio.propertyPrimitive('%$path%')
         ),
-        studio.pickProfile('%$path%')
+        controlWithCondition(
+          '%$expanded%',
+          studio.pickProfile('%$path%')
+        ),
+        studio.propertyScript('%$path%')
       ],
       features: firstSucceeding.watchRefreshOnCtrlChange(studio.ref('%$path%'), true)
     }),

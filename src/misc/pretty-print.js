@@ -31,8 +31,7 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 const spaces = Array.from(new Array(200)).map(_=>' ').join('')
 jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
   if (!val || typeof val !== 'object')
-  
-    return { text: val.toString(), map: {} }
+    return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
   const advanceLineCol = jb.prettyPrint.advanceLineCol
   return valueToMacro({path: initialPath, line:0, col: 0}, val)

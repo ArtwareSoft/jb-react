@@ -236,7 +236,7 @@ Object.assign(st, {
 			if (index === undefined)
 				st.push(st.refOfPath(path),[toAdd],srcCtx);
 			else
-				st.splice(st.refOfPath(path),[[index,0,toAdd]],srcCtx);
+				st.splice(st.refOfPath(path),[[val.length,0,toAdd]],srcCtx);
 //			return { newPath: path + '~' + (val.length-1) }
 		}
 		else if (!val) {
