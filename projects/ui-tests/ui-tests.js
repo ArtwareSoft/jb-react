@@ -1324,3 +1324,21 @@ jb.component('ui-test.css-with-condition', {
   })
 })
 
+jb.component('ui-test.validator', { 
+  impl: uiTest({
+    control: group({
+      controls: [
+        editableText({
+          databind: '%$person/name%',
+          features: [
+            id('fld'),
+            validation(matchRegex('^[a-zA-Z_0-9]+$'),'illegal project name')
+          ]
+        }),
+      ],
+      features: variable({name: 'formContainer', value: obj(prop('err',''))})
+    }),
+    action: uiAction.setText('a b','#fld'),
+    expectedResult: contains('illegal project name')
+  })
+})
