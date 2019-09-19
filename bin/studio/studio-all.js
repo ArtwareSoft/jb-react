@@ -677,13 +677,13 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, //macros: {},
+  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, location: Symbol('location'), //macros: {},
   studio: { previewjb: jb },
   knownNSAndCompCases: ['field'],
   macroName: id =>
     id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
-  ns: nsId =>
-    jb.registerMacro(nsId+'.$dummyComp',{})
+  ns: nsIds =>
+    nsIds.split(',').forEach(nsId=>jb.registerMacro(nsId+'.$dummyComp',{}))
   ,
   removeDataResourcePrefix: id =>
     id.indexOf('data-resource.') == 0 ? id.slice('data-resource.'.length) : id,
@@ -691,7 +691,7 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      jb.traceComponentFile && jb.traceComponentFile(comp)
+      jb.frame.traceComponentFile && jb.frame.traceComponentFile(comp)
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
@@ -765,7 +765,7 @@ Object.assign(jb,{
         jb.logError(macroId +' is reserved by system or libs. please use a different name')
         return false
       }
-      if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId])
+      if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
         jb.logError(macroId + ' is defined more than once, using last definition ' + id)
       if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId] && jb.knownNSAndCompCases.indexOf[macroId] == -1)
         jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
@@ -1510,44 +1510,34 @@ jb.component('filter', { /* filter */
 })
 
 jb.component('match-regex', { /* matchRegex */
+  description: 'validation with regular expression',
   type: 'boolean',
   params: [
-    {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'regex', as: 'string', mandatory: true, description: 'e.g: [a-zA-Z]*'},
-    {
-      id: 'fillText',
-      as: 'boolean',
-      mandatory: true,
-      description: 'regex must match all text',
-      type: 'boolean'
-    }
+    {id: 'text', as: 'string', defaultValue: '%%'},
   ],
-  impl: (ctx,text,regex,fillText) =>
-    text.match(new RegExp(fillText ? `^${regex}$` : regex))
+  impl: (ctx,regex,text) => text.match(new RegExp(regex))
 })
 
 jb.component('to-uppercase', { /* toUppercase */
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>
-		text.toUpperCase()
+  impl: (ctx,text) =>	text.toUpperCase()
 })
 
 jb.component('to-lowercase', { /* toLowercase */
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>
-		text.toLowerCase()
+  impl: (ctx,text) =>	text.toLowerCase()
 })
 
 jb.component('capitalize', { /* capitalize */
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>
-		text.charAt(0).toUpperCase() + text.slice(1)
+  impl: (ctx,text) =>	text.charAt(0).toUpperCase() + text.slice(1)
 })
 
 jb.component('join', { /* join */
@@ -2014,6 +2004,11 @@ const spySettings = {
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
 }
 const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
+
+frame.traceComponentFile = function(comp) {
+    const line = new Error().stack.split(/\r|\n/)[3]
+    comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
+}
 
 function initSpy({Error, settings, wSpyParam, memoryUsage}) {
     const systemProps = ['index', 'time', '_time', 'mem', 'source']
@@ -9519,20 +9514,20 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
 }
 
 jb.ui.checkValidationError = cmp => {
-  var err = validationError(cmp);
+  const err = validationError(cmp);
   if (cmp.state.error != err) {
-    jb.log('field',['setErrState',ctx,err])
+    jb.log('field',['setErrState',cmp,err])
     cmp.setState({valid: !err, error:err});
   }
 
   function validationError() {
     if (!cmp.validations) return;
-    var ctx = cmp.ctx.setData(cmp.state.model);
-    var err = (cmp.validations || [])
+    const ctx = cmp.ctx.setData(cmp.state.model);
+    const err = (cmp.validations || [])
       .filter(validator=>!validator.validCondition(ctx))
       .map(validator=>validator.errorMessage(ctx))[0];
-    if (ctx.vars.formContainer)
-      ctx.vars.formContainer.err = err;
+    if (ctx.exp('formContainer'))
+      ctx.run(writeValue('%$formContainer/err%',err));
     return err;
   }
 }
@@ -9678,13 +9673,7 @@ jb.component('validation', { /* validation */
   type: 'feature',
   category: 'validation:100',
   params: [
-    {
-      id: 'validCondition',
-      mandatory: true,
-      type: 'boolean',
-      as: 'boolean',
-      dynamic: true
-    },
+    {id: 'validCondition', mandatory: true, as: 'boolean', dynamic: true},
     {id: 'errorMessage', mandatory: true, as: 'string', dynamic: true}
   ],
   impl: (ctx,validCondition,errorMessage) => ({
@@ -11188,7 +11177,12 @@ jb.component('itemlist', { /* itemlist */
     {id: 'controls', type: 'control[]', mandatory: true, dynamic: true},
     {id: 'style', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
     {id: 'itemVariable', as: 'string', defaultValue: 'item'},
-    {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items'},
+    {
+      id: 'visualSizeLimit',
+      as: 'number',
+      defaultValue: 100,
+      description: 'by default itemlist is limmited to 100 shown items'
+    },
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
   impl: ctx =>
@@ -11228,7 +11222,7 @@ jb.component('itemlist.init', { /* itemlist.init */
   })
 })
 
-jb.component('itemlist.init-table', { /* itemlist.init */
+jb.component('itemlist.init-table', { /* itemlist.initTable */
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
@@ -12875,20 +12869,6 @@ jb.component('group.init-tabs', { /* group.initTabs */
   })
 })
 
-jb.component('tabs.simple', { /* tabs.simple */
-  type: 'group.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{}, [
-			  h('div',{class: 'tabs-header'}, cmp.titles.map((title,index)=>
-					h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect' + (index == state.shown ? ' selected-tab': ''),
-						onclick: ev=>cmp.show(index)},title))),
-				h('div',{class: 'tabs-content'}, h(jb.ui.renderable(cmp.tabs[state.shown]) )) ,
-				]),
-    css: `>.tabs-header>.selected-tab { border-bottom: 2px solid #66afe9 }
-		`,
-    features: [group.initTabs(), mdlStyle.initDynamic('.mdl-js-button')]
-  })
-})
 ;
 
 jb.component('goto-url', { /* gotoUrl */
@@ -12990,16 +12970,6 @@ jb.component('label.mdl-ripple-effect', { /* label.mdlRippleEffect */
     template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button mdl-js-ripple-effect'},state.text),
     features: [label.bindText(), mdlStyle.initDynamic()]
   })
-})
-jb.component('label.mdl-ripple-effect', {
-    type: 'label.style',
-    impl :{$: 'custom-style',
-        template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button mdl-js-ripple-effect'},state.text),
-        features :[
-          {$: 'label.bind-text' },
-          {$: 'mdl-style.init-dynamic'}
-        ],
-    }
 })
 
 jb.component('label.mdl-button', { /* label.mdlButton */
@@ -14029,7 +13999,7 @@ jb.component('editable-boolean.checkbox-with-label', {
           checked: state.model,
           onchange: e => cmp.jbModel(e.target.checked),
           onkeyup: e => cmp.jbModel(e.target.checked,'keyup')  },),
-        h('label',{for: "switch_"+state.fieldId },)
+        h('label',{for: "switch_"+state.fieldId },state.text)
     ]),
     features: field.databind()
   })
@@ -14163,33 +14133,35 @@ jb.component('tree', { /* tree */
 				})
 			},
 			afterViewInit: cmp =>
-				tree.el = cmp.base
+				tree.el = cmp.base,
+			css: '{user-select: none}'
 		})
 	}
 })
 
 jb.component('tree.ul-li', { /* tree.ulLi */
   type: 'tree.style',
-  impl: customStyle(
-    (cmp,state,h) => {
-			var tree = cmp.tree;
+  impl: customStyle({
+    template: (cmp,state,h) => {
+			const tree = cmp.tree;
 			return h('div',{},
 				state.empty ? h('span') : h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath,
 				class: 'jb-control-tree treenode' + (tree.selected == tree.nodeModel.rootPath ? ' selected': '') })
 			)
 		}
-  )
+	})
 })
 
 jb.component('tree.no-head', { /* tree.noHead */
   type: 'tree.style',
-  impl: customStyle(
-    (cmp,state,h) => {
-		var tree = cmp.tree, path = tree.nodeModel.rootPath;
+  impl: customStyle({
+    template: (cmp,state,h) => {
+		const tree = cmp.tree, path = tree.nodeModel.rootPath;
 		return h('div',{},tree.nodeModel.children(path).map(childPath=>
 				 h(TreeNode,{ tree: tree, path: childPath, class: 'treenode' + (tree.selected == childPath ? ' selected' : '') }))
 		)}
-  )
+	}),
+	css: '{user-select: none}'
 })
 
 jb.component('tree.selection', { /* tree.selection */
@@ -14462,6 +14434,7 @@ jb.component('tree.node-model', {
       {id: 'icon', dynamic: true, as: 'string', description: 'icon name from material icons' },
       {id: 'isChapter', dynamic: true, as: 'boolean', description: 'path as input. differnt from children() == 0, as you can drop into empty array' },
       {id: 'maxDepth',  as: 'number', defaultValue: 3 },
+      {id: 'includeRoot',  as: 'boolean' },
     ],
     impl: ctx => ({
         rootPath: ctx.params.rootPath,
@@ -14470,7 +14443,8 @@ jb.component('tree.node-model', {
         icon: path => ctx.params.icon(ctx.setData(path)),
         title: () => '',
         isArray: path => ctx.params.isChapter.profile ? ctx.params.isChapter(ctx.setData(path)) : ctx.params.children(ctx.setData(path)).length,
-        maxDepth: ctx.params.maxDepth
+        maxDepth: ctx.params.maxDepth,
+        includeRoot: ctx.params.includeRoot
     })
 })
   
@@ -14490,27 +14464,39 @@ jb.component('table-tree.init', {
                 cmp.ctx.setData({path: item.path, val: treeModel.val(item.path)})
                     .setVars({item,collapsed: !cmp.state.expanded[item.path]})).reactComp()
 
-            cmp.treeFieldsOfItem = item => {
+            cmp.expandingFieldsOfItem = item => {
                 const maxDepthAr = Array.from(new Array(treeModel.maxDepth))
-                // return tds until depth and then the '>' sign with colSpan
-                return maxDepthAr.filter((e,i) => i <= (item.path.match(/~/g) || []).length)
-                    .map((e,i) => (item.path.match(/~/g) || []).length == i ? 
-                    {
-                        expandable: treeModel.isArray(item.path),
-                        expanded: cmp.state.expanded[item.path],
-                        toggle: () => { 
-                            cmp.state.expanded[item.path] = !cmp.state.expanded[item.path]
-                            cmp.refresh()
-                        },
-                        colSpan: treeModel.maxDepth-i + (treeModel.isArray(item.path) ? cmp.leafFields.length : 0)
-                    } : {empty: true}
+                const depthOfItem = (item.path.match(/~/g) || []).length - (treeModel.rootPath.match(/~/g) || []).length - 1
+                // return tds until depth and then the '>' sign, and then the headline
+                return maxDepthAr.filter((e,i) => i < depthOfItem+2)
+                    .map((e,i) => {
+                        if (i < depthOfItem || i == depthOfItem && !treeModel.isArray(item.path)) 
+                            return { empty: true }
+                        if (i == depthOfItem) return {
+                            expanded: cmp.state.expanded[item.path],
+                            toggle: () => { 
+                                cmp.state.expanded[item.path] = !cmp.state.expanded[item.path]
+                                cmp.refresh()
+                            }
+                        }
+                        if (i == depthOfItem+1) return {
+                            headline: true,
+                            colSpan: treeModel.maxDepth-i
+                        }
+                    }
                 )
             }
             
-            function calcItems(top, depth) {
+            function calcItems(top) {
+                if (cmp.ctx.vars.$model.includeRoot)
+                    return doCalcItems(top, 0)
+                return doCalcItems(top, -1).filter(x=>x.depth > -1)
+            }
+
+            function doCalcItems(top, depth) {
                 if (cmp.state.expanded[top])
                     return treeModel.children(top).reduce((acc,child) => 
-                        depth >= treeModel.maxDepth ? acc : acc = acc.concat(calcItems(child, depth+1)),[{path: top, depth, val: treeModel.val(top)}])
+                        depth >= treeModel.maxDepth ? acc : acc = acc.concat(doCalcItems(child, depth+1)),[{path: top, depth, val: treeModel.val(top)}])
                 return [{path: top, depth, val: treeModel.val(top)}]
             }
             function calcFields(fieldsProp) {
@@ -14526,22 +14512,24 @@ jb.component('table-tree.init', {
 jb.component('table-tree.plain', {
     params: [ 
       { id: 'hideHeaders',  as: 'boolean' },
+      { id: 'gapWidth', as: 'number', defaultValue: 100 },
+      { id: 'expColWidth', as: 'number', defaultValue: 10 },
     ],
     type: 'table.style,itemlist.style',
     impl: customStyle({
       template: (cmp,state,h) => h('table',{},[
-          ...Array.from(new Array(cmp.treeModel.maxDepth)).map(f=>h('col',{width: '16px'})),
-          h('col',{width: '200px'}),
+          ...Array.from(new Array(cmp.treeModel.maxDepth)).map(f=>h('col',{width: cmp.expColWidth + 'px'})),
+          h('col',{width: cmp.gapWidth + 'px'}),
           ...cmp.leafFields.concat(cmp.commonFields).map(f=>h('col',{width: f.width || '200px'})),
           ...(cmp.hideHeaders ? [] : [h('thead',{},h('tr',{},
           Array.from(new Array(cmp.treeModel.maxDepth+1)).map(f=>h('th',{class: 'th-expand-collapse'})).concat(
                 [...cmp.leafFields, ...cmp.commonFields].map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },jb.ui.fieldTitle(cmp,f,h))) )))]),
           h('tbody',{class: 'jb-drag-parent'},
               state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', path: item.path}, 
-                [...cmp.treeFieldsOfItem(item).map(f=>h('td', 
-                            f.empty ? { class: 'empty-expand-collapse'} : {class: 'expandbox', colSpan: f.colSpan}, 
-                            f.empty ? '' : h('span',{}, [f.expandable ? h('i',{class:'material-icons noselect', onclick: _=> f.toggle() },
-                                            f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right') : '', h(cmp.headline(item))])
+                [...cmp.expandingFieldsOfItem(item).map(f=>h('td',
+                            f.empty ? { class: 'empty-expand-collapse'} : f.toggle ? {class: 'expandbox' } : {class: 'headline', colSpan: f.colSpan},
+                            f.empty ? '' : f.toggle ? h('span',{}, h('i',{class:'material-icons noselect', onclick: _=> f.toggle() },
+                                            f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right')) : h(cmp.headline(item))
                 )), h('td',{class: 'tree-expand-title'}), 
                     ...cmp.fieldsForPath(item.path).map(f=>h('td', {'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: 'tree-field'}, 
                         h(f.control(item,index),{index: index}))) ]
@@ -14550,10 +14538,8 @@ jb.component('table-tree.plain', {
           state.items.length == 0 ? 'no items' : ''
           ]),
       css: `{border-spacing: 0; text-align: left}
-      >tbody>tr>td>ctrl { padding-right: 5px }
-      >thead>.th-expand-collapse { width: 16px }
-      >tbody>tr>td>span { font-size:16px; cursor: pointer; display: flex;
-        align-items: center; width: 16px; border: 1px solid transparent }
+      >tbody>tr>td>span { font-size:16px; cursor: pointer; display: flex; border: 1px solid transparent }
+      >tbody>tr>td>span>i { margin-left: -10px }
       {width: 100%; table-layout:fixed;}
       `,
       features: tableTree.init()
@@ -28076,6 +28062,7 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 const spaces = Array.from(new Array(200)).map(_=>' ').join('')
 jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
   if (!val || typeof val !== 'object')
+  
     return { text: val.toString(), map: {} }
 
   const advanceLineCol = jb.prettyPrint.advanceLineCol
@@ -32086,15 +32073,16 @@ st.PropertiesTree = class {
 		return this.children(path).length > 0;
 	}
 	children(path) {
-		return st.paramsOfPath(path).filter(p=>!st.isControlType(p.type)).map(p=>p.id)
-			.map(prop=>path + '~' + prop)
-			.map(innerPath=> {
-					const val = st.valOfPath(innerPath);
-					if (Array.isArray(val) && val.length > 0)
-					 return st.arrayChildren(innerPath,true);
-					return [innerPath]
-			})
-			.flat()
+		if (st.isOfType(path,'data'))
+			return []
+		if (Array.isArray(st.valOfPath(path)))
+			return st.arrayChildren(path,true)
+		return st.paramsOfPath(path)
+			.filter(p=>!st.isControlType(p.type))
+			.map(prop=>path + '~' + prop.id)
+	}
+	val(path) {
+		return st.valOfPath(path)
 	}
 	move(from,to) {
 		return st.moveFixDestination(from,to)
@@ -33098,7 +33086,7 @@ class CompOption {
 })()
 ;
 
-jb.component('studio.properties-tree-nodes', {
+jb.component('studio.properties-tree-nodes', { /* studio.propertiesTreeNodes */
   type: 'tree.node-model',
   params: [
     {id: 'path', as: 'string'}
@@ -33106,26 +33094,81 @@ jb.component('studio.properties-tree-nodes', {
   impl: (ctx,path) => new jb.studio.PropertiesTree(path)
 })
 
-jb.component('studio.properties-table-tree', {
+jb.component('studio.properties', { /* studio.propertiesTableTree */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: tableTree({
-    treeModel: studio.PropertiesTreeNodes,
-    commonFields: [
-      studio.propertyField('%path%'),
-      studio.propertyToolbar('%path%')
-    ],
-    chapterHeadline: label({title: ({data}) => {
+    treeModel: studio.propertiesTreeNodes('%$path%'),
+    commonFields: [group({controls: studio.propField('%path%')}), group({controls: studio.propertyToolbar('%path%')})],
+    chapterHeadline: label(
+      ({data}) => {
       const path = data.path
       const prop = path.split('~').pop()
       if (isNaN(Number(prop)))
         return prop
-      return st.compNameOfPath(path)
-    }}),
+      return Number(prop) + 1
+    }
+    )
   })
 })
+
+jb.component('studio.prop-field', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    title: studio.propName('%$path%'),
+    controls: control.firstSucceeding({
+      vars: [Var('paramDef', studio.paramDef('%$path%'))],
+      controls: [
+        controlWithCondition(
+          and(
+            studio.isOfType('%$path%', 'data,boolean'),
+            not(isOfType('string,number,boolean,undefined', studio.val('%$path%')))
+          ),
+          studio.propertyScript('%$path%')
+        ),
+        controlWithCondition(
+          and(
+            studio.isOfType('%$path%', 'action'),
+            isOfType('array', studio.val('%$path%'))
+          ),
+          studio.propertyScript('%$path%')
+        ),
+        controlWithCondition('%$paramDef/options%', studio.propertyEnum('%$path%')),
+        controlWithCondition(
+          '%$paramDef/as%==\"number\"',
+          studio.propertySlider('%$path%')
+        ),
+        controlWithCondition(
+          and(
+            '%$paramDef/as%==\"boolean\"',
+            or(
+                inGroup(list(true, false), studio.val('%$path%')),
+                isEmpty(studio.val('%$path%'))
+              ),
+            not('%$paramDef/dynamic%')
+          ),
+          studio.propertyBoolean('%$path%')
+        ),
+        controlWithCondition(
+          studio.isOfType('%$path%', 'data,boolean'),
+          studio.propertyPrimitive('%$path%')
+        ),
+        studio.pickProfile('%$path%')
+      ],
+      features: firstSucceeding.watchRefreshOnCtrlChange(studio.ref('%$path%'), true)
+    }),
+    features: [
+      studio.propertyToolbarFeature('%$path%'),
+      field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%'))
+    ]
+  })
+})
+
 
 jb.component('studio.property-toolbar', { /* studio.propertyToolbar */
   type: 'control',
@@ -33169,7 +33212,7 @@ jb.component('studio.open-source-dialog', { /* studio.openSourceDialog */
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel(),
-    content: {'$': 'text', text: studio.compSource(), style: text.codemirror({})},
+    content: text({text: studio.compSource(), style: text.codemirror({})}),
     title: 'Source',
     modal: true
   })
@@ -33246,8 +33289,7 @@ jb.component('studio.property-slider', { /* studio.propertySlider */
       css(
         `>input-slider { width: 110px; }
 >.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }`
-      ),
-//      studio.watchPath('%$path%')
+      )
     ]
   })
 })
@@ -33393,7 +33435,7 @@ jb.component('studio.property-field', { /* studio.propertyField */
   impl: group({
     title: studio.propName('%$path%'),
     controls: control.firstSucceeding({
-      vars: Var('paramDef', studio.paramDef('%$path%')),
+      vars: [Var('paramDef', studio.paramDef('%$path%'))],
       controls: [
         controlWithCondition(
           and(
@@ -33451,7 +33493,7 @@ jb.component('studio.jb-floating-input-rich', { /* studio.jbFloatingInputRich */
   })
 })
 
-jb.component('studio.properties', { /* studio.properties */
+jb.component('studio.properties-old', { /* studio.properties */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -33531,7 +33573,7 @@ jb.component('studio.properties', { /* studio.properties */
   })
 })
 
-jb.component('studio.open-properties', { /* studio.openProperties */ 
+jb.component('studio.open-properties', { /* studio.openProperties */
   type: 'action',
   params: [
     {id: 'focus', type: 'boolean', as: 'boolean'}
@@ -35942,7 +35984,7 @@ jb.component('studio.new-project', { /* studio.newProject */
       project: name,
       files: [
         { fileName: `${name}.js`, content: `
-jb.component.('${name}.main', {
+jb.component('${name}.main', {
   type: 'control',
   impl :{$: 'group', controls: [ {$: 'button', title: 'my button'}] }
 })
@@ -35998,7 +36040,10 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
           title: 'project name',
           databind: '%$name%',
           style: editableText.mdlInput(),
-          features: feature.onEnter(dialog.closeContainingPopup())
+          features: [
+              feature.onEnter(dialog.closeContainingPopup()),
+              validation(matchRegex('^[a-zA-Z_0-9]+$'),'illegal project name')
+          ]
         })
       ],
       features: css.padding({top: '14', left: '11'})
@@ -36658,7 +36703,7 @@ jb.component('jb-component', { /* jbComponent */
     {id: 'category', as: 'string'},
     {id: 'description', as: 'string'},
     {id: 'params', type: 'jb-param[]'},
-    {id: 'impl', dynamicType: '%type%', mandatory: true}
+    {id: 'impl', type: '*', dynamicType: '%type%', mandatory: true}
   ],
   impl: ctx => ctx.params
 })

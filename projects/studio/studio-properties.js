@@ -6,7 +6,7 @@ jb.component('studio.properties-tree-nodes', { /* studio.propertiesTreeNodes */
   impl: (ctx,path) => new jb.studio.PropertiesTree(path)
 })
 
-jb.component('studio.properties-table-tree', { /* studio.propertiesTableTree */
+jb.component('studio.properties', { /* studio.propertiesTableTree */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -405,7 +405,7 @@ jb.component('studio.jb-floating-input-rich', { /* studio.jbFloatingInputRich */
   })
 })
 
-jb.component('studio.properties', { /* studio.properties */
+jb.component('studio.properties-old', { /* studio.properties */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
