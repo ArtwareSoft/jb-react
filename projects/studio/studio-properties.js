@@ -1,4 +1,4 @@
-jb.component('studio.properties-tree-nodes', {
+jb.component('studio.properties-tree-nodes', { /* studio.propertiesTreeNodes */
   type: 'tree.node-model',
   params: [
     {id: 'path', as: 'string'}
@@ -6,24 +6,31 @@ jb.component('studio.properties-tree-nodes', {
   impl: (ctx,path) => new jb.studio.PropertiesTree(path)
 })
 
-jb.component('studio.properties-table-tree', {
+jb.component('studio.properties-table-tree', { /* studio.propertiesTableTree */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: tableTree({
-    treeModel: studio.PropertiesTreeNodes,
-    commonFields: [
-      studio.propertyField('%path%'),
-      studio.propertyToolbar('%path%')
-    ],
-    chapterHeadline: label({title: ({data}) => {
+    treeModel: (...allArgs) => {
+        const {args,system} = splitSystemArgs(allArgs)
+        const out = {$: unMacro(ns) +'.'+ unMacro(macroId)}
+        if (args.length == 1 && typeof args[0] == 'object' && !jb.compName(args[0]))
+          Object.assign(out,args[0])
+        else
+          Object.assign(out,{$byValue: args})
+        return Object.assign(out,system)
+      },
+    commonFields: [studio.propertyField('%path%'), studio.propertyToolbar('%path%')],
+    chapterHeadline: label(
+      ({data}) => {
       const path = data.path
       const prop = path.split('~').pop()
       if (isNaN(Number(prop)))
         return prop
       return st.compNameOfPath(path)
-    }}),
+    }
+    )
   })
 })
 
@@ -69,7 +76,7 @@ jb.component('studio.open-source-dialog', { /* studio.openSourceDialog */
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel(),
-    content: {'$': 'text', text: studio.compSource(), style: text.codemirror({})},
+    content: text({text: studio.compSource(), style: text.codemirror({})}),
     title: 'Source',
     modal: true
   })
@@ -146,8 +153,7 @@ jb.component('studio.property-slider', { /* studio.propertySlider */
       css(
         `>input-slider { width: 110px; }
 >.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }`
-      ),
-//      studio.watchPath('%$path%')
+      )
     ]
   })
 })
@@ -293,7 +299,7 @@ jb.component('studio.property-field', { /* studio.propertyField */
   impl: group({
     title: studio.propName('%$path%'),
     controls: control.firstSucceeding({
-      vars: Var('paramDef', studio.paramDef('%$path%')),
+      vars: [Var('paramDef', studio.paramDef('%$path%'))],
       controls: [
         controlWithCondition(
           and(
@@ -431,7 +437,7 @@ jb.component('studio.properties', { /* studio.properties */
   })
 })
 
-jb.component('studio.open-properties', { /* studio.openProperties */ 
+jb.component('studio.open-properties', { /* studio.openProperties */
   type: 'action',
   params: [
     {id: 'focus', type: 'boolean', as: 'boolean'}

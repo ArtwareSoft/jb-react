@@ -21,6 +21,9 @@ const testsFiles = ['data','ui','parsing','object-encoder'].map(x=>`projects/ui-
 filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>x).filter(x=>!x.match(/material/)).filter(x=>!x.match(/.css$/))
     .map(fn=> require(JBART_DIR+fn));
 
+(getProcessArgument('modules') || '').split(',').forEach(m=>
+    filesOfModules(m).filter(x=>x).filter(x=>!x.match(/.css$/)).map(fn=> require(JBART_DIR+fn)));
+
 (getProcessArgument('filesToLoad') || '').split(',').map(fn=> require(JBART_DIR+fn))
 
 const filePattern = new RegExp(getProcessArgument('file') || '^nothing')
