@@ -677,7 +677,7 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, //macros: {},
+  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, location: Symbol('location'), //macros: {},
   studio: { previewjb: jb },
   knownNSAndCompCases: ['field'],
   macroName: id =>
@@ -691,7 +691,7 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      jb.traceComponentFile && jb.traceComponentFile(comp)
+      jb.frame.traceComponentFile && jb.frame.traceComponentFile(comp)
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)

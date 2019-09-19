@@ -25,6 +25,7 @@
     "build": "node_modules/.bin/webpack & node bin/build.phase2 & npm run ts",
     "ts": "node bin/tgp2ts srcDir:bin/studio -out:dist/jbart",
     "pretty": "node bin/tgp-pretty -file:studio/.*",
+    "pretty-for-specific-files": "node bin/tgp-pretty -file:studio-helper -filesToLoad:projects/studio-helper/studio-helper.js",
     "studio": "npm run studio-server & npm run helloWorld",
     "studio-server": "node bin/studio/studio-server.js",
     "helloWorld": "start http://localhost:8082/project/studio/hello-world",
