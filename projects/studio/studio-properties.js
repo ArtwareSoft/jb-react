@@ -12,27 +12,75 @@ jb.component('studio.properties-table-tree', { /* studio.propertiesTableTree */
     {id: 'path', as: 'string'}
   ],
   impl: tableTree({
-    treeModel: (...allArgs) => {
-        const {args,system} = splitSystemArgs(allArgs)
-        const out = {$: unMacro(ns) +'.'+ unMacro(macroId)}
-        if (args.length == 1 && typeof args[0] == 'object' && !jb.compName(args[0]))
-          Object.assign(out,args[0])
-        else
-          Object.assign(out,{$byValue: args})
-        return Object.assign(out,system)
-      },
-    commonFields: [studio.propertyField('%path%'), studio.propertyToolbar('%path%')],
+    treeModel: studio.propertiesTreeNodes('%$path%'),
+    commonFields: [group({controls: studio.propField('%path%')}), group({controls: studio.propertyToolbar('%path%')})],
     chapterHeadline: label(
       ({data}) => {
       const path = data.path
       const prop = path.split('~').pop()
       if (isNaN(Number(prop)))
         return prop
-      return st.compNameOfPath(path)
+      return Number(prop) + 1
     }
     )
   })
 })
+
+jb.component('studio.prop-field', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    title: studio.propName('%$path%'),
+    controls: control.firstSucceeding({
+      vars: [Var('paramDef', studio.paramDef('%$path%'))],
+      controls: [
+        controlWithCondition(
+          and(
+            studio.isOfType('%$path%', 'data,boolean'),
+            not(isOfType('string,number,boolean,undefined', studio.val('%$path%')))
+          ),
+          studio.propertyScript('%$path%')
+        ),
+        controlWithCondition(
+          and(
+            studio.isOfType('%$path%', 'action'),
+            isOfType('array', studio.val('%$path%'))
+          ),
+          studio.propertyScript('%$path%')
+        ),
+        controlWithCondition('%$paramDef/options%', studio.propertyEnum('%$path%')),
+        controlWithCondition(
+          '%$paramDef/as%==\"number\"',
+          studio.propertySlider('%$path%')
+        ),
+        controlWithCondition(
+          and(
+            '%$paramDef/as%==\"boolean\"',
+            or(
+                inGroup(list(true, false), studio.val('%$path%')),
+                isEmpty(studio.val('%$path%'))
+              ),
+            not('%$paramDef/dynamic%')
+          ),
+          studio.propertyBoolean('%$path%')
+        ),
+        controlWithCondition(
+          studio.isOfType('%$path%', 'data,boolean'),
+          studio.propertyPrimitive('%$path%')
+        ),
+        studio.pickProfile('%$path%')
+      ],
+      features: firstSucceeding.watchRefreshOnCtrlChange(studio.ref('%$path%'), true)
+    }),
+    features: [
+      studio.propertyToolbarFeature('%$path%'),
+      field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%'))
+    ]
+  })
+})
+
 
 jb.component('studio.property-toolbar', { /* studio.propertyToolbar */
   type: 'control',

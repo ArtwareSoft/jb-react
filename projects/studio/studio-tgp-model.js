@@ -16,15 +16,16 @@ st.PropertiesTree = class {
 		return this.children(path).length > 0;
 	}
 	children(path) {
-		return st.paramsOfPath(path).filter(p=>!st.isControlType(p.type)).map(p=>p.id)
-			.map(prop=>path + '~' + prop)
-			.map(innerPath=> {
-					const val = st.valOfPath(innerPath);
-					if (Array.isArray(val) && val.length > 0)
-					 return st.arrayChildren(innerPath,true);
-					return [innerPath]
-			})
-			.flat()
+		if (st.isOfType(path,'data'))
+			return []
+		if (Array.isArray(st.valOfPath(path)))
+			return st.arrayChildren(path,true)
+		return st.paramsOfPath(path)
+			.filter(p=>!st.isControlType(p.type))
+			.map(prop=>path + '~' + prop.id)
+	}
+	val(path) {
+		return st.valOfPath(path)
 	}
 	move(from,to) {
 		return st.moveFixDestination(from,to)

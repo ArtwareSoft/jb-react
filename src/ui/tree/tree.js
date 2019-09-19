@@ -88,33 +88,35 @@ jb.component('tree', { /* tree */
 				})
 			},
 			afterViewInit: cmp =>
-				tree.el = cmp.base
+				tree.el = cmp.base,
+			css: '{user-select: none}'
 		})
 	}
 })
 
 jb.component('tree.ul-li', { /* tree.ulLi */
   type: 'tree.style',
-  impl: customStyle(
-    (cmp,state,h) => {
-			var tree = cmp.tree;
+  impl: customStyle({
+    template: (cmp,state,h) => {
+			const tree = cmp.tree;
 			return h('div',{},
 				state.empty ? h('span') : h(TreeNode,{ tree: tree, path: tree.nodeModel.rootPath,
 				class: 'jb-control-tree treenode' + (tree.selected == tree.nodeModel.rootPath ? ' selected': '') })
 			)
 		}
-  )
+	})
 })
 
 jb.component('tree.no-head', { /* tree.noHead */
   type: 'tree.style',
-  impl: customStyle(
-    (cmp,state,h) => {
-		var tree = cmp.tree, path = tree.nodeModel.rootPath;
+  impl: customStyle({
+    template: (cmp,state,h) => {
+		const tree = cmp.tree, path = tree.nodeModel.rootPath;
 		return h('div',{},tree.nodeModel.children(path).map(childPath=>
 				 h(TreeNode,{ tree: tree, path: childPath, class: 'treenode' + (tree.selected == childPath ? ' selected' : '') }))
 		)}
-  )
+	}),
+	css: '{user-select: none}'
 })
 
 jb.component('tree.selection', { /* tree.selection */
