@@ -5,6 +5,17 @@ jb.component('studio.watchable-or-passive', { /* studio.watchableOrPassive */
   impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
 })
 
+jb.component('studio.save-data-resource-to-comp',{
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'name', as: 'string'}
+  ],
+  impl: writeValue(studio.profileAsText('%$path%'), 
+    (ctx,vars,{name}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+name+'%'))
+  )
+})
+
 jb.component('studio.open-resource', { /* studio.openResource */
   type: 'action',
   params: [
@@ -12,13 +23,18 @@ jb.component('studio.open-resource', { /* studio.openResource */
     {id: 'name', as: 'string'}
   ],
   impl: runActions(
-    writeValue(studio.profileAsText('%$path%'), 
-      (ctx,vars,{name}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+name+'%'))),
+    studio.saveDataResourceToComp('%$path%','%$name%'),
     openDialog({
-      style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
+      style: dialog.editSourceStyle({id: 'editor', width: 600}),
       content: editableText({
         databind: studio.profileAsText('%$path%'),
-        style: editableText.studioCodemirrorTgp()
+        style: editableText.studioCodemirrorTgp(),
+        features: ctx => ({
+          init: cmp => ctx.vars.$dialog.refresh = () => {
+            ctx.run(studio.saveDataResourceToComp('%$path%','%$name%'))
+            cmp.refresh && cmp.refresh()
+          }
+        })
       }),
       title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
       features: [

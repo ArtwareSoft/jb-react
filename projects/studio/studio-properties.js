@@ -17,12 +17,12 @@ jb.component('studio.properties', { /* studio.properties */
         treeModel: studio.propertiesTreeNodes('%$path%'),
         commonFields: [
           group({
-            controls: studio.propField('%path%','%expanded%'),
+            controls: studio.propField('%path%', '%expanded%'),
             features: [field.columnWidth('300')]
           }),
           group({
             controls: studio.propertyToolbar('%path%'),
-            features: [field.columnWidth('20')]
+            features: [field.columnWidth('20'), css('{ text-align: right }')]
           })
         ],
         chapterHeadline: label(
@@ -36,14 +36,12 @@ jb.component('studio.properties', { /* studio.properties */
           return Number(prop) + 1
         }
         ),
+        style: tableTree.plain({hideHeaders: true, gapWidth: 100}),
         features: studio.watchPath({path: '%$path%', includeChildren: 'structure'})
       }),
       button({
         title: 'new feature',
-        action: studio.openNewProfileDialog({
-          path: '%$path%~features',
-          type: 'feature',
-        }),
+        action: studio.openNewProfileDialog({path: '%$path%~features', type: 'feature'}),
         style: button.href(),
         features: css.margin({top: '20', left: '5'})
       })
