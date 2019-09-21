@@ -13,7 +13,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'dist/material.indigo-pink.min.css',
       ],
       'ui-common': [
-//        'node_modules/jquery/dist/jquery.min.js',
         'dist/material.js',
         'css/font.css',
         'css/styles.css',

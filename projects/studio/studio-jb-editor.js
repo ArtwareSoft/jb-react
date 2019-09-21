@@ -81,12 +81,9 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
   type: 'control',
   params: [
     {id: 'obj', mandatory: true, as: 'value', defaultValue: '%%'},
-    {id: 'title', as: 'string'},
     {id: 'width', as: 'number', defaultValue: 200}
   ],
   impl: group({
-    title: '%$title%',
-    controls: group({
       controls: [
         control.firstSucceeding(
           [
@@ -101,7 +98,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
             controlWithCondition(
               isOfType('array', '%$obj%'),
               table({
-                items: pipeline('%$obj%', slice(undefined, '%$maxItems%')),
+                items: pipeline('%$obj%', slice(0, '%$maxItems%')),
                 fields: field.control({
                   title: pipeline(count('%$obj%'), '%% items'),
                   control: studio.dataBrowse({obj: '%%', width: 200})
@@ -162,21 +159,20 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
       ],
       features: [variable({name: 'maxItems', value: '5', watchable: 'true'})]
     })
-  })
 })
 
 jb.component('studio.probe-data-view', { /* studio.probeDataView */
   type: 'control',
   impl: group({
-    controls: table({
-        items: '%$probeResult%',
-        fields: [
-          field.control({
-            title: 'last in',
-            control: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
-            width: '100'
+    controls: [itemlist({
+        items: pipeline('%$probeResult%',slice(0,'%$maxItems%')),
+        controls: [
+          group({
+            title: 'in (%$probeResult/length%)',
+            controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
+            features: field.columnWidth(100)
           }),
-          field.control({title: 'out', control: studio.dataBrowse('%out%'), width: '100'})
+          group({title: 'out', controls: studio.dataBrowse('%out%'), features: field.columnWidth(100)})
         ],
         style: table.mdl('mdl-data-table', 'mdl-data-table__cell--non-numeric'),
         features: [
@@ -186,12 +182,21 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
             loadingControl: label('...'),
             varName: 'probeResult'
           }),
-          css('{white-space: normal}')
+          css('{white-space: normal}'),
         ]
       }),
+      button({
+        title: 'show (%$probeResult/length%)',
+        action: writeValue('%$maxItems%', '100'),
+        style: button.href(),
+        features: [watchRef('%$maxItems%'), ] // hidden('%$probeResult/length% > %$maxItems%')
+      }),
+     ],
     features: [
+      css.height({height: '600', overflow: 'auto', minMax: 'max'}),
       watchRef('%$jbEditorCntrData/selected%'),
-      watchRef('%$studio/pickSelectionCtxId%')
+      watchRef('%$studio/pickSelectionCtxId%'),
+      variable({name: 'maxItems', value: '5', watchable: 'true'})
     ]
   })
 })
