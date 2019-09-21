@@ -60,19 +60,22 @@ jb.component('studio.prop-field', {
   impl: group({
     title: studio.propName('%$path%'),
     controls: control.firstSucceeding({
-      vars: [Var('paramDef', studio.paramDef('%$path%'))],
+      vars: [
+        Var('paramDef', studio.paramDef('%$path%')),
+        Var('val', studio.val('%$path%'))
+      ],
       controls: [
         controlWithCondition(
           and(
             studio.isOfType('%$path%', 'data,boolean'),
-            not(isOfType('string,number,boolean,undefined', studio.val('%$path%')))
+            not(isOfType('string,number,boolean,undefined', '%$val%'))
           ),
           studio.propertyScript('%$path%')
         ),
         controlWithCondition(
           and(
             studio.isOfType('%$path%', 'action'),
-            isOfType('array', studio.val('%$path%'))
+            isOfType('array', '%$val%')
           ),
           studio.propertyScript('%$path%')
         ),
@@ -85,8 +88,8 @@ jb.component('studio.prop-field', {
           and(
             '%$paramDef/as%==\"boolean\"',
             or(
-                inGroup(list(true, false), studio.val('%$path%')),
-                isEmpty(studio.val('%$path%'))
+                inGroup(list(true, false), '%$val%'),
+                isEmpty('%$val%')
               ),
             not('%$paramDef/dynamic%')
           ),
@@ -97,7 +100,7 @@ jb.component('studio.prop-field', {
           studio.propertyPrimitive('%$path%')
         ),
         controlWithCondition(
-          '%$expanded%',
+          or('%$expanded%',isEmpty('%$val%')),
           studio.pickProfile('%$path%')
         ),
         studio.propertyScript('%$path%')
