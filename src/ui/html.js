@@ -17,7 +17,7 @@ jb.component('html.plain', {
     impl: customStyle({
         template: (cmp,state,h) => h('div'),
         features: ctx => ({
-        afterViewInit: cmp => cmp.base.innerHTML = cmp.ctx.vars.$model.html()
+            afterViewInit: cmp => cmp.base.innerHTML = cmp.ctx.vars.$model.html()
         })
     })
 })

@@ -129,18 +129,23 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
             title: 'open (%$obj/length%)',
             action: openDialog({
               style: dialog.popup(),
-              content: editableText({
-                title: '',
-                databind: '%$obj%',
-                style: editableText.codemirror({
-                  enableFullScreen: true,
-                  height: '200',
-                  mode: 'text',
-                  debounceTime: 300,
-                  lineNumbers: true,
-                  readOnly: true
-                })
-              })
+              content:  group({
+                style: group.tabs(),
+                controls: [
+                  editableText({
+                    title: 'text',
+                    databind: '%$obj%',
+                    style: editableText.codemirror({
+                      enableFullScreen: true,
+                      height: '200',
+                      mode: 'text',
+                      debounceTime: 300,
+                      lineNumbers: true,
+                      readOnly: true
+                    })
+                  }),
+                  html({title: 'html', html: '%$obj%'})
+                ]})
             }),
             style: button.href()
           }),
@@ -185,18 +190,18 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
           css('{white-space: normal}'),
         ]
       }),
-      button({
-        title: 'show (%$probeResult/length%)',
-        action: writeValue('%$maxItems%', '100'),
-        style: button.href(),
-        features: [watchRef('%$maxItems%'), ] // hidden('%$probeResult/length% > %$maxItems%')
-      }),
+      // button({
+      //   title: 'show (%$probeResult/length%)',
+      //   action: writeValue('%$maxItems%', '100'),
+      //   style: button.href(),
+      //   features: [watchRef('%$maxItems%'), ] // hidden('%$probeResult/length% > %$maxItems%')
+      // }),
      ],
     features: [
       css.height({height: '600', overflow: 'auto', minMax: 'max'}),
       watchRef('%$jbEditorCntrData/selected%'),
       watchRef('%$studio/pickSelectionCtxId%'),
-      variable({name: 'maxItems', value: '5', watchable: 'true'})
+      variable({name: 'maxItems', value: '5' })
     ]
   })
 })
