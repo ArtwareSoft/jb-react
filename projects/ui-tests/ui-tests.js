@@ -52,6 +52,13 @@ jb.component('ui-test.label', { /* uiTest.label */
   })
 })
 
+jb.component('ui-test.html', { 
+  impl: uiTest({
+    control: html({ html: '<p>hello world</p>'}),
+    expectedResult: contains('<p>hello world</p>')
+  })
+})
+
 jb.component('ui-test.group', { /* uiTest.group */
   impl: uiTest({
     control: group({

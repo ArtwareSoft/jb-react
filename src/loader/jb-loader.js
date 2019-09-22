@@ -26,6 +26,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
 
         'src/ui/group.js',
         'src/ui/label.js',
+        'src/ui/html.js',
         'src/ui/image.js',
         'src/ui/button.js',
         'src/ui/field.js',
@@ -123,9 +124,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
 
         'css/font.css',
         'css/styles.css',
-      ],
-      'deep-diff': [
-        'dist/deep-diff.js',
       ],
       babel: [
         'node_modules/babel-standalone/babel.js',
