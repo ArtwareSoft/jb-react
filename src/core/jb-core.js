@@ -691,7 +691,9 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      jb.frame.traceComponentFile && jb.frame.traceComponentFile(comp)
+      const line = new Error().stack.split(/\r|\n/).pop()
+      comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
+    
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
@@ -700,7 +702,9 @@ Object.assign(jb,{
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.const(jb.removeDataResourcePrefix(id),comp.passiveData)
       }
-    } catch(e) {}
+    } catch(e) {
+      console.log(e)
+    }
 
     jb.comps[id] = comp;
 

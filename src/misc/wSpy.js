@@ -8,11 +8,6 @@ const spySettings = {
 }
 const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 
-frame.traceComponentFile = function(comp) {
-    const line = new Error().stack.split(/\r|\n/)[3]
-    comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
-}
-
 function initSpy({Error, settings, wSpyParam, memoryUsage}) {
     const systemProps = ['index', 'time', '_time', 'mem', 'source']
 
