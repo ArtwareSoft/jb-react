@@ -175,12 +175,21 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
           group({
             title: 'in (%$probeResult/length%)',
             controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
-            features: field.columnWidth(100)
+            features:[
+              field.columnWidth(100),
+              field.titleCtrl(button({
+                    title: 'in (%$probeResult/length%)',
+                    action: writeValue('%$maxItems%', '100'),
+                    style: button.href(),
+                    features: [watchRef('%$maxItems%'), ] // hidden('%$probeResult/length% > %$maxItems%')
+              }))
+            ]
           }),
           group({title: 'out', controls: studio.dataBrowse('%out%'), features: field.columnWidth(100)})
         ],
         style: table.mdl('mdl-data-table', 'mdl-data-table__cell--non-numeric'),
         features: [
+          watchRef('%$maxItems%'),
           feature.if('%$jbEditorCntrData/selected%'),
           group.wait({
             for: studio.probeResults('%$jbEditorCntrData/selected%'),
@@ -190,18 +199,12 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
           css('{white-space: normal}'),
         ]
       }),
-      // button({
-      //   title: 'show (%$probeResult/length%)',
-      //   action: writeValue('%$maxItems%', '100'),
-      //   style: button.href(),
-      //   features: [watchRef('%$maxItems%'), ] // hidden('%$probeResult/length% > %$maxItems%')
-      // }),
      ],
     features: [
       css.height({height: '600', overflow: 'auto', minMax: 'max'}),
       watchRef('%$jbEditorCntrData/selected%'),
       watchRef('%$studio/pickSelectionCtxId%'),
-      variable({name: 'maxItems', value: '5' })
+      variable({name: 'maxItems', value: '5', watchable: true })
     ]
   })
 })

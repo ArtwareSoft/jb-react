@@ -19,7 +19,7 @@ jb.component('studio.save-components', { /* studio.saveComponents */
   impl: (ctx,force) => {
     const messages = []
     const location = (st.previewjb || jb).location
-    const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][location][0]))
+    const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][location] && e[1][location][0]).filter(x=>x))
       .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>e[1][location][0] == fn)}))
     jb.rx.Observable.from(filesToUpdate)
       .concatMap(e =>
