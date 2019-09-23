@@ -1,128 +1,71 @@
 (function() {
 const st = jb.studio;
-const _window = jb.frame.parent || jb.frame;
-const elec_remote = _window.require && _window.require('electron').remote;
-const fs = elec_remote && elec_remote.require('fs');
-const jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
+
+const jbDevHost = {
+  getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
+  locationToPath: path => path.split('/').slice(1).join('/'),
+  saveFile: (path, contents) => {
+    const headers = new Headers();
+    headers.append("Content-Type", "application/json; charset=UTF-8");
+    return fetch(`/?op=saveFile&path=${path}`,
+      {method: 'POST', headers: headers, body: JSON.stringify({ Path: path, Contents: contents }) })
+      .then(res=>res.json())
+  }
+}
+st.host = st.host || jbDevHost
 
 jb.component('studio.save-components', { /* studio.saveComponents */
   type: 'action,has-side-effects',
-  params: [
-    {id: 'force', as: 'boolean', type: 'boolean'}
-  ],
   impl: (ctx,force) => {
     const messages = []
-		jb.rx.Observable.from(st.changedComps().map(e=>e[0]))
-			.concatMap(id=>{
-        let original = st.serverComps[id] ? jb.prettyPrintComp(id,st.serverComps[id]) : '';
-				st.message('saving ' + id + '...');
-				if (force && !original)
-					original = `jb.component('${id}', {`;
-        const project = ctx.exp('%$studio/project%');
-
-        if (fs) {
-            return [{message: saveComp(st.compAsStr(id),original,id,project,force,jb_projectFolder && jb_projectFolder(project),''), type: 'success'}]
-        } else { // via http
-          var headers = new Headers();
-          headers.append("Content-Type", "application/json; charset=UTF-8");
-          return fetch(`/?op=saveComp&comp=${id}&project=${project}&force=${force}`,
-            {method: 'POST', headers: headers, body: JSON.stringify({ original: original, toSave: st.compAsStr(id) }) })
-          .then(res=>res.json())
-          .then(res=>({ res: res , id: id }))
+    const location = (st.previewjb || jb).location
+    const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][location][0]))
+      .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>e[1][location][0] == fn)}))
+    jb.rx.Observable.from(filesToUpdate)
+      .concatMap(e =>
+        st.host.getFile(e.path)
+          .then(fileContent=> Object.assign(e,{fileContent}))
+      )
+			.concatMap(e => {
+          const contents = newFileContent(e.fileContent, e.comps)
+          return st.host.saveFile(e.path,contents)
+            .then(saveResult => Object.assign(e,{saveResult, contents}))
         }
-			})
-			.catch(e=>{
-        messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.e), error: true })
+			)
+			.catch(e=> {
+        messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
 				st.showMultiMessages(messages)
 				return jb.logException(e,'error while saving ' + e.id,ctx) || []
 			})
-			.subscribe(entry=>{
-        const result = entry.res || entry;
-        const success = result.type === 'success'
-        messages.push({text: (result.type || '') + ': ' + (result.desc || '') + (result.message || ''), error: !success})
+			.subscribe(e=> {
+        messages.push({text: 'file ' + e.path + ' updated with components :' + e.comps.map(e=>e[0]).join(', ') })
 				st.showMultiMessages(messages)
-				if (success)
-					st.serverComps[entry.id] = st.previewjb.comps[entry.id];
+        e.comps.forEach(([id]) => st.serverComps[id] = st.previewjb.comps[id])
       })
     }
 })
 
-// directly saving the comp - duplicated in studio-server
-function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
-    var _iswin = /^win/.test(process.platform);
-    var projDir = projectDir;
-
-    if (comp.indexOf('studio.') == 0 && project == 'studio-helper')
-      projDir = 'projects/studio';
-
-    if (!original) { // new comp
-      var srcPath = `${projectDir}/${destFileName || (project+'.js')}`;
-      try {
-        var current = '' + fs.readFileSync(srcPath);
-        var toStore =  current + '\n\n' + toSave;
-        var cleanNL = toStore.replace(/\r/g,'');
-        if (_iswin)
-          cleanNL = cleanNL.replace(/\n/g,'\r\n');
-        fs.writeFileSync(srcPath,cleanNL);
-        return `component ${comp} added to ${srcPath}`;
-      } catch (e) {
-        throw `can not store component ${comp} in path ${srcPath}`
-      }
-    }
-
-    var comp_found = '';
-//        console.log(original);
-    fs.readdirSync(projDir)
-      .filter(x=>x.match(/\.js$/) || x.match(/\.ts$/))
-      .forEach(srcFile=> {
-          var srcPath = projDir+'/'+srcFile;
-          var source = ('' + fs.readFileSync(srcPath)).replace(/\r/g,'').split('\n');
-          var toFind = original.replace(/\r/g,'').split('\n');
-          var replaceWith = toSave.replace(/\r/g,'').split('\n');
-          var found = findSection(source,toFind,srcFile);
-          if (found) {
-            //console.log('splice',source,found.index,found.length,replaceWith);
-            source.splice.apply(source, [found.index+1, found.length-1].concat(replaceWith.slice(1)));
-            var newContent = source.join(_iswin ? '\r\n' : '\n');
-            fs.writeFileSync(srcPath,newContent);
-            comp_found = `component ${comp} saved to ${srcPath} at ${JSON.stringify(found)}`;
-          }
-      })
-
-    if (comp_found)
-      return comp_found
-    else
-      throw `Can not find component ${comp} in project`;
-
-    function findSection(source,toFind,srcFile) {
-      var index = source.indexOf(toFind[0]);
-      // if (index == -1)
-      //   index = source.indexOf(toFind[0].replace('jb_','jb.'));
-      if (index != -1 && force) {// ignore content - just look for the end
-        for(end_index=index;end_index<source.length;end_index++)
-          if ((source[end_index]||'').match(/^}\)$/m))
-            return { index: index, length: end_index - index +1}
-      } else if (index != -1 && compareArrays(source.slice(index,index+toFind.length),toFind)) {
-          return { index: index, length: toFind.length }
-      } else if (index == -1) {
-        return false;
-      } else {
-        // calc error message
-        var err = '';
-        var src = source.slice(index,index+toFind.length);
-        console.log('origin not found at file ' + srcFile);
-        src.forEach(l=>console.log(l));
-        toFind.forEach((line,index) => {
-          if (line != src[index])
-            console.log(index + '-' +line + '#versus source#' + src[index]);
-        })
-
-        throw `${comp} found with a different source, use "force save" to save. ${err}`;
-      }
-    }
-    function compareArrays(arr1,arr2) {
-      return arr1.join('\n') == arr2.join('\n')
-    }
+function newFileContent(fileContent, comps) {
+  const lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
+  const compsToUpdate = comps.filter(([id])=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) != -1)
+  const compsToAdd = comps.filter(([id])=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) == -1)
+  compsToUpdate.forEach(([id,comp])=>{
+    const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0)
+    const linesFromComp = lines.slice(lineOfComp)
+    const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+    const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
+    if (nextjbComponent != -1 && nextjbComponent < compLastLine)
+      return jb.logError(['can not find end of component', fn,id, linesFromComp])
+    const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id}).split('\n')
+    if (JSON.stringify(linesFromComp.slice(0,compLastLine+1)) === JSON.stringify(newComp))
+        return
+    lines.splice(lineOfComp,compLastLine+1,...newComp)
+  })
+  compsToAdd.forEach(([id,comp])=>{
+    const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id}).split('\n')
+    lines.concat(newComp)
+  })
+  return lines.join('\n')
 }
 
 

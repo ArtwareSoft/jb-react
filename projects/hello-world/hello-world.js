@@ -1,4 +1,14 @@
-jb.component('people', { /* people */
+jb.component('hello-world.main', { /* helloWorld.main */
+  type: 'control',
+  impl: group({
+    controls: [
+      label('hello world')
+    ]
+  })
+})
+
+
+jb.component('data-resource.people', { /* dataResource.people */
   watchableData: [
     {
       name: 'Homer Simpson',
@@ -15,11 +25,3 @@ jb.component('people', { /* people */
     {name: 'Bart Simpson', age: 12, male: false, children: []}
   ]
 })
-
-jb.component('hello-world.main', { /* helloWorld.main */
-  type: 'control',
-  impl: group({
-    controls: label('hello world')
-  })
-})
-

@@ -677,13 +677,13 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, //macros: {},
+  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, location: Symbol('location'), //macros: {},
   studio: { previewjb: jb },
   knownNSAndCompCases: ['field'],
   macroName: id =>
     id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
-  ns: nsId =>
-    jb.registerMacro(nsId+'.$dummyComp',{})
+  ns: nsIds =>
+    nsIds.split(',').forEach(nsId=>jb.registerMacro(nsId+'.$dummyComp',{}))
   ,
   removeDataResourcePrefix: id =>
     id.indexOf('data-resource.') == 0 ? id.slice('data-resource.'.length) : id,
@@ -691,7 +691,7 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      jb.traceComponentFile && jb.traceComponentFile(comp)
+      jb.frame.traceComponentFile && jb.frame.traceComponentFile(comp)
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
@@ -765,7 +765,7 @@ Object.assign(jb,{
         jb.logError(macroId +' is reserved by system or libs. please use a different name')
         return false
       }
-      if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId])
+      if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
         jb.logError(macroId + ' is defined more than once, using last definition ' + id)
       if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId] && jb.knownNSAndCompCases.indexOf[macroId] == -1)
         jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
@@ -1510,44 +1510,34 @@ jb.component('filter', { /* filter */
 })
 
 jb.component('match-regex', { /* matchRegex */
+  description: 'validation with regular expression',
   type: 'boolean',
   params: [
-    {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'regex', as: 'string', mandatory: true, description: 'e.g: [a-zA-Z]*'},
-    {
-      id: 'fillText',
-      as: 'boolean',
-      mandatory: true,
-      description: 'regex must match all text',
-      type: 'boolean'
-    }
+    {id: 'text', as: 'string', defaultValue: '%%'},
   ],
-  impl: (ctx,text,regex,fillText) =>
-    text.match(new RegExp(fillText ? `^${regex}$` : regex))
+  impl: (ctx,regex,text) => text.match(new RegExp(regex))
 })
 
 jb.component('to-uppercase', { /* toUppercase */
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>
-		text.toUpperCase()
+  impl: (ctx,text) =>	text.toUpperCase()
 })
 
 jb.component('to-lowercase', { /* toLowercase */
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>
-		text.toLowerCase()
+  impl: (ctx,text) =>	text.toLowerCase()
 })
 
 jb.component('capitalize', { /* capitalize */
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>
-		text.charAt(0).toUpperCase() + text.slice(1)
+  impl: (ctx,text) =>	text.charAt(0).toUpperCase() + text.slice(1)
 })
 
 jb.component('join', { /* join */
@@ -2015,6 +2005,11 @@ const spySettings = {
 }
 const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 
+frame.traceComponentFile = function(comp) {
+    const line = new Error().stack.split(/\r|\n/)[3]
+    comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
+}
+
 function initSpy({Error, settings, wSpyParam, memoryUsage}) {
     const systemProps = ['index', 'time', '_time', 'mem', 'source']
 
@@ -2271,7 +2266,7 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 const spaces = Array.from(new Array(200)).map(_=>' ').join('')
 jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
   if (!val || typeof val !== 'object')
-    return { text: val.toString(), map: {} }
+    return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
   const advanceLineCol = jb.prettyPrint.advanceLineCol
   return valueToMacro({path: initialPath, line:0, col: 0}, val)

@@ -65,7 +65,13 @@ jb.component('studio.editable-source', { /* studio.editableSource */
         }
       }
     }),
-    features: [feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')), textEditor.init()]
+    features: [
+      ctx => ({
+        init: cmp => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh()
+      }),
+      feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')), 
+      textEditor.init()
+    ]
   })
 })
 
@@ -76,7 +82,7 @@ jb.component('studio.edit-source', { /* studio.editSource */
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: openDialog({
-    style: dialog.editSourceStyle({id: 'edit-source', width: 600}),
+    style: dialog.editSourceStyle({id: 'editor', width: 600}),
     content: studio.editableSource('%$path%'),
     title: studio.shortTitle('%$path%'),
     features: [

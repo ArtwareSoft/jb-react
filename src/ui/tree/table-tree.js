@@ -24,6 +24,7 @@ jb.component('tree.node-model', {
       {id: 'icon', dynamic: true, as: 'string', description: 'icon name from material icons' },
       {id: 'isChapter', dynamic: true, as: 'boolean', description: 'path as input. differnt from children() == 0, as you can drop into empty array' },
       {id: 'maxDepth',  as: 'number', defaultValue: 3 },
+      {id: 'includeRoot',  as: 'boolean' },
     ],
     impl: ctx => ({
         rootPath: ctx.params.rootPath,
@@ -32,7 +33,8 @@ jb.component('tree.node-model', {
         icon: path => ctx.params.icon(ctx.setData(path)),
         title: () => '',
         isArray: path => ctx.params.isChapter.profile ? ctx.params.isChapter(ctx.setData(path)) : ctx.params.children(ctx.setData(path)).length,
-        maxDepth: ctx.params.maxDepth
+        maxDepth: ctx.params.maxDepth,
+        includeRoot: ctx.params.includeRoot
     })
 })
   
@@ -52,32 +54,51 @@ jb.component('table-tree.init', {
                 cmp.ctx.setData({path: item.path, val: treeModel.val(item.path)})
                     .setVars({item,collapsed: !cmp.state.expanded[item.path]})).reactComp()
 
-            cmp.treeFieldsOfItem = item => {
+            cmp.expandingFieldsOfItem = item => {
                 const maxDepthAr = Array.from(new Array(treeModel.maxDepth))
-                // return tds until depth and then the '>' sign with colSpan
-                return maxDepthAr.filter((e,i) => i <= (item.path.match(/~/g) || []).length)
-                    .map((e,i) => (item.path.match(/~/g) || []).length == i ? 
-                    {
-                        expandable: treeModel.isArray(item.path),
-                        expanded: cmp.state.expanded[item.path],
-                        toggle: () => { 
-                            cmp.state.expanded[item.path] = !cmp.state.expanded[item.path]
-                            cmp.refresh()
-                        },
-                        colSpan: treeModel.maxDepth-i + (treeModel.isArray(item.path) ? cmp.leafFields.length : 0)
-                    } : {empty: true}
+                const depthOfItem = (item.path.match(/~/g) || []).length - (treeModel.rootPath.match(/~/g) || []).length - 1
+                // return tds until depth and then the '>' sign, and then the headline
+                return maxDepthAr.filter((e,i) => i < depthOfItem+2)
+                    .map((e,i) => {
+                        if (i < depthOfItem || i == depthOfItem && !treeModel.isArray(item.path)) 
+                            return { empty: true }
+                        if (i == depthOfItem) return {
+                            expanded: cmp.state.expanded[item.path],
+                            toggle: () => { 
+                                cmp.state.expanded[item.path] = !cmp.state.expanded[item.path]
+                                cmp.refresh()
+                            }
+                        }
+                        if (i == depthOfItem+1) return {
+                            headline: true,
+                            colSpan: treeModel.maxDepth-i+1
+                        }
+                    }
                 )
             }
             
-            function calcItems(top, depth) {
+            function calcItems(top) {
+                if (cmp.ctx.vars.$model.includeRoot)
+                    return doCalcItems(top, 0)
+                return doCalcItems(top, -1).filter(x=>x.depth > -1)
+            }
+
+            function doCalcItems(top, depth) {
+                const item = [{path: top, depth, val: treeModel.val(top), expanded: cmp.state.expanded[top]}]
                 if (cmp.state.expanded[top])
                     return treeModel.children(top).reduce((acc,child) => 
-                        depth >= treeModel.maxDepth ? acc : acc = acc.concat(calcItems(child, depth+1)),[{path: top, depth, val: treeModel.val(top)}])
-                return [{path: top, depth, val: treeModel.val(top)}]
+                        depth >= treeModel.maxDepth ? acc : acc = acc.concat(doCalcItems(child, depth+1)),item)
+                return item
+            }
+            function getOrCreateControl(field,item,index) {
+                cmp.ctrlCache = cmp.ctrlCache || {}
+                const key = item.path+'~!'+item.expanded + '~' +field.ctxId
+                cmp.ctrlCache[key] = cmp.ctrlCache[key] || field.control(item,index)
+                return cmp.ctrlCache[key]
             }
             function calcFields(fieldsProp) {
                 const fields = ctx.vars.$model[fieldsProp]().map(x=>x.field)
-                //fields.forEach(f=>f._control = (path,index) => f.control({path, val: treeModel.val(path)},index))
+                fields.forEach(f=>f.cachedControl = (item,index) => getOrCreateControl(f,item,index))
                 return fields
             }
         },
@@ -88,34 +109,34 @@ jb.component('table-tree.init', {
 jb.component('table-tree.plain', {
     params: [ 
       { id: 'hideHeaders',  as: 'boolean' },
+      { id: 'gapWidth', as: 'number', defaultValue: 30 },
+      { id: 'expColWidth', as: 'number', defaultValue: 16 },
     ],
     type: 'table.style,itemlist.style',
     impl: customStyle({
       template: (cmp,state,h) => h('table',{},[
-          ...Array.from(new Array(cmp.treeModel.maxDepth)).map(f=>h('col',{width: '16px'})),
-          h('col',{width: '200px'}),
+          ...Array.from(new Array(cmp.treeModel.maxDepth)).map(f=>h('col',{width: cmp.expColWidth + 'px'})),
+          h('col',{width: cmp.gapWidth + 'px'}),
           ...cmp.leafFields.concat(cmp.commonFields).map(f=>h('col',{width: f.width || '200px'})),
           ...(cmp.hideHeaders ? [] : [h('thead',{},h('tr',{},
           Array.from(new Array(cmp.treeModel.maxDepth+1)).map(f=>h('th',{class: 'th-expand-collapse'})).concat(
                 [...cmp.leafFields, ...cmp.commonFields].map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },jb.ui.fieldTitle(cmp,f,h))) )))]),
           h('tbody',{class: 'jb-drag-parent'},
               state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', path: item.path}, 
-                [...cmp.treeFieldsOfItem(item).map(f=>h('td', 
-                            f.empty ? { class: 'empty-expand-collapse'} : {class: 'expandbox', colSpan: f.colSpan}, 
-                            f.empty ? '' : h('span',{}, [f.expandable ? h('i',{class:'material-icons noselect', onclick: _=> f.toggle() },
-                                            f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right') : '', h(cmp.headline(item))])
-                )), h('td',{class: 'tree-expand-title'}), 
+                [...cmp.expandingFieldsOfItem(item).map(f=>h('td',
+                            f.empty ? { class: 'empty-expand-collapse'} : f.toggle ? {class: 'expandbox' } : {class: 'headline', colSpan: f.colSpan},
+                            f.empty ? '' : f.toggle ? h('span',{}, h('i',{class:'material-icons noselect', onclick: _=> f.toggle() },
+                                            f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right')) : h(cmp.headline(item))
+                )), 
                     ...cmp.fieldsForPath(item.path).map(f=>h('td', {'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: 'tree-field'}, 
-                        h(f.control(item,index),{index: index}))) ]
+                        h(f.cachedControl(item,index),{index: index}))) ]
               ), item ))
           ),
           state.items.length == 0 ? 'no items' : ''
           ]),
       css: `{border-spacing: 0; text-align: left}
-      >tbody>tr>td>ctrl { padding-right: 5px }
-      >thead>.th-expand-collapse { width: 16px }
-      >tbody>tr>td>span { font-size:16px; cursor: pointer; display: flex;
-        align-items: center; width: 16px; border: 1px solid transparent }
+      >tbody>tr>td>span { font-size:16px; cursor: pointer; display: flex; border: 1px solid transparent }
+      >tbody>tr>td>span>i { margin-left: -10px }
       {width: 100%; table-layout:fixed;}
       `,
       features: tableTree.init()

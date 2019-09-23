@@ -62,22 +62,21 @@ jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
 jb.component('layout.flex', { /* layout.flex */
   type: 'group.style',
   params: [
-    {
-      id: 'align',
-      as: 'string',
-      options: ',flex-start,flex-end,center,space-between,space-around'
-    },
+    {id: 'alignItems', as: 'string', options: ',normal,stretch,center,start,end,flex-start,flex-end,baseline,first baseline,last baseline,safe center,unsafe center' },
+    {id: 'spacing', as: 'number', defaultValue: 3},
+    {id: 'justifyContent', as: 'string', options: ',flex-start,flex-end,center,space-between,space-around' },
     {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
-    {id: 'wrap', as: 'string', options: ',wrap'}
+    {id: 'wrap', as: 'string', options: ',wrap,wrap-reverse,nowrap'}
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
-    css: '{ display: flex; {?justify-content:%$align%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }',
+    css: `{ display: flex; {?align-items:%$alignItems%;?} {?justify-content:%$justifyContent%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }
+    >* { margin-right: %$spacing%px }
+    >*:last-child { margin-right:0 }`,
     features: group.initGroup()
   })
 })
-
 jb.component('flex-layout-container.align-main-axis', { /* flexLayoutContainer.alignMainAxis */
   type: 'feature',
   params: [

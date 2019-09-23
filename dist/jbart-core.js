@@ -677,13 +677,13 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, //macros: {},
+  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, location: Symbol('location'), //macros: {},
   studio: { previewjb: jb },
   knownNSAndCompCases: ['field'],
   macroName: id =>
     id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
-  ns: nsId =>
-    jb.registerMacro(nsId+'.$dummyComp',{})
+  ns: nsIds =>
+    nsIds.split(',').forEach(nsId=>jb.registerMacro(nsId+'.$dummyComp',{}))
   ,
   removeDataResourcePrefix: id =>
     id.indexOf('data-resource.') == 0 ? id.slice('data-resource.'.length) : id,
@@ -691,7 +691,7 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      jb.traceComponentFile && jb.traceComponentFile(comp)
+      jb.frame.traceComponentFile && jb.frame.traceComponentFile(comp)
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
@@ -765,7 +765,7 @@ Object.assign(jb,{
         jb.logError(macroId +' is reserved by system or libs. please use a different name')
         return false
       }
-      if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId])
+      if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
         jb.logError(macroId + ' is defined more than once, using last definition ' + id)
       if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId] && jb.knownNSAndCompCases.indexOf[macroId] == -1)
         jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
@@ -953,6 +953,11 @@ const spySettings = {
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
 }
 const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
+
+frame.traceComponentFile = function(comp) {
+    const line = new Error().stack.split(/\r|\n/)[3]
+    comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
+}
 
 function initSpy({Error, settings, wSpyParam, memoryUsage}) {
     const systemProps = ['index', 'time', '_time', 'mem', 'source']

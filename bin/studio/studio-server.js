@@ -140,18 +140,19 @@ const op_post_handlers = {
           endWithFailure(res,e)
         }
     },
-    saveFile: function(req, res,body,path) {
+    saveFile: function(req, res,body) {
         let clientReq;
         try {
           clientReq = JSON.parse(body);
         } catch(e) {}
         if (!clientReq)
            return endWithFailure(res,'Can not parse json request');
-        fs.writeFile(clientReq.Path || '', clientReq.Contents || '' , function (err) {
+        const path = _path(clientReq.Path)
+        fs.writeFile(path || '', clientReq.Contents || '' , function (err) {
           if (err)
-            endWithFailure(res,'Can not write to file ' + clientReq.Path);
+            endWithFailure(res,'Can not write to file ' + path);
           else
-            endWithSuccess(res,'File saved to ' + clientReq.Path);
+            endWithSuccess(res,'File saved to ' + path);
         });
     },
     createProject: function(req, res,body,path) {

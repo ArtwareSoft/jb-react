@@ -1,3 +1,4 @@
+require('../src/misc/wSpy.js')
 jb = require('../src/core/jb-core.js')
 const {getProcessArgument} = require('./utils.js')
 const fs = require('fs');
@@ -8,29 +9,28 @@ const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,testers,pretty
 
 const filesOfModules = modules => modules.split(',').map(m=>{
     if (m == 'studio')
-        return resources[m].map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js')
+        return jb_modules[m].map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js')
     else if (m == 'studio-tests')
-        return resources[m].map(file => file.match(/\//) ? file : 'projects/studio-helper/studio-' + file + '-tests.js')
-    else return resources[m] 
+        return jb_modules[m].map(file => file.match(/\//) ? file : 'projects/studio-helper/studio-' + file + '-tests.js')
+    else return jb_modules[m] 
 }).flat()
 
 const testsFiles = ['data','ui','parsing','object-encoder'].map(x=>`projects/ui-tests/${x}-tests.js`)
 
-const location = Symbol('location')
-jb.traceComponentFile = function(comp) {
-    const line = new Error().stack.split(/\r|\n/)[3]
-    comp[location] = line.match(/\\([^:]+):([^:]+):[^:]+$/).slice(1,3)
-}
 // load files
 filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>x).filter(x=>!x.match(/material/)).filter(x=>!x.match(/.css$/))
-    .map(fn=> require(JBART_DIR+fn))
+    .map(fn=> require(JBART_DIR+fn));
+
+filesOfModules((getProcessArgument('modules') || '')).filter(x=>x).filter(x=>!x.match(/.css$/)).map(fn=> require(JBART_DIR+fn));
+
+(getProcessArgument('filesToLoad') || '').split(',').map(fn=> require(JBART_DIR+fn))
 
 const filePattern = new RegExp(getProcessArgument('file') || '^nothing')
 function run() {
     const entries = jb.entries(jb.comps) 
-        .map(e=>({id:e[0], comp:e[1], file:e[1][location][0]}))
+        .map(e=>({id:e[0], comp:e[1], file:e[1][jb.location][0]}))
         .filter(({id}) => !id.match(/-json-format$/) && !id.match(/forward-ns-declaration$/))
-    entries.filter(({file}) => 
+        entries.filter(({file}) => 
             filePattern.test(file) )
         .forEach( args => swapComp(args))
 }

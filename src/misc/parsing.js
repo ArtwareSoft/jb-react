@@ -28,7 +28,7 @@ jb.component('extract-text', { /* extractText */
   description: 'text breaking according to begin/end markers',
   params: [
     {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
-    {id: 'startMarkers', as: 'array', mandatory: true},
+    {id: 'startMarkers', type: 'data[]' ,as: 'array', mandatory: true},
     {id: 'endMarker', as: 'string'},
     {
       id: 'includingStartMarker',
@@ -100,7 +100,7 @@ jb.component('extract-text', { /* extractText */
 
     let out = { match: [], unmatch: []},pos =0,start=null;
     while(start = findStartMarkers(pos)) {
-        const end = endMarker ? findMarker(endMarker,start.end) : findStartMarkers(start.end)
+        let end = endMarker ? findMarker(endMarker,start.end) : findStartMarkers(start.end)
         if (!end) // if end not found use end of text
           end = { pos : text.length, end: text.length }
         const start_match = includingStartMarker ? start.pos : start.end;

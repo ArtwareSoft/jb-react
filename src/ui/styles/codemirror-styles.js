@@ -73,6 +73,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						focus: () => editor.focus(),
 						cmEditor: editor
 					}
+					cmp.refresh = () => editor.setValue(jb.tostring(data_ref))
 					if (ctx.params.hint)
 						tgpHint(CodeMirror)
 					const wrapper = editor.getWrapperElement();

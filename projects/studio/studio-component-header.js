@@ -5,7 +5,7 @@ jb.component('jb-component', { /* jbComponent */
     {id: 'category', as: 'string'},
     {id: 'description', as: 'string'},
     {id: 'params', type: 'jb-param[]'},
-    {id: 'impl', dynamicType: '%type%', mandatory: true}
+    {id: 'impl', type: '*', dynamicType: '%type%', mandatory: true}
   ],
   impl: ctx => ctx.params
 })

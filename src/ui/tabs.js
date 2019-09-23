@@ -32,17 +32,3 @@ jb.component('group.init-tabs', { /* group.initTabs */
   })
 })
 
-jb.component('tabs.simple', { /* tabs.simple */
-  type: 'group.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{}, [
-			  h('div',{class: 'tabs-header'}, cmp.titles.map((title,index)=>
-					h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect' + (index == state.shown ? ' selected-tab': ''),
-						onclick: ev=>cmp.show(index)},title))),
-				h('div',{class: 'tabs-content'}, h(jb.ui.renderable(cmp.tabs[state.shown]) )) ,
-				]),
-    css: `>.tabs-header>.selected-tab { border-bottom: 2px solid #66afe9 }
-		`,
-    features: [group.initTabs(), mdlStyle.initDynamic('.mdl-js-button')]
-  })
-})

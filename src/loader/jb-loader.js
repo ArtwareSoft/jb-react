@@ -1,4 +1,4 @@
-var resources = Object.assign((typeof resources != 'undefined' ? resources : {}), {
+var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : {}), {
       'core': [
         'src/core/jb-core.js',
         'src/misc/wSpy.js'
@@ -13,7 +13,6 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'dist/material.indigo-pink.min.css',
       ],
       'ui-common': [
-//        'node_modules/jquery/dist/jquery.min.js',
         'dist/material.js',
         'css/font.css',
         'css/styles.css',
@@ -27,6 +26,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
 
         'src/ui/group.js',
         'src/ui/label.js',
+        'src/ui/html.js',
         'src/ui/image.js',
         'src/ui/button.js',
         'src/ui/field.js',
@@ -125,9 +125,6 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
         'css/font.css',
         'css/styles.css',
       ],
-      'deep-diff': [
-        'dist/deep-diff.js',
-      ],
       babel: [
         'node_modules/babel-standalone/babel.js',
         'dist/babel-ext.js'
@@ -145,7 +142,7 @@ var resources = Object.assign((typeof resources != 'undefined' ? resources : {})
 function jb_dynamicLoad(modules,prefix) {
   prefix = prefix || '';
   modules.split(',').forEach(m=>{
-    (resources[m] || []).forEach(file=>{
+    (jb_modules[m] || []).forEach(file=>{
       if (m == 'studio' && !file.match(/\//))
         file = 'projects/studio/studio-' + file + '.js';
       if (m == 'studio-tests' && !file.match(/\//))
@@ -175,4 +172,4 @@ if (typeof window != 'undefined')
     jb_dynamicLoad(document.currentScript.getAttribute('modules'),document.currentScript.getAttribute('prefix'));
 
 if (typeof global != 'undefined')
- global.resources = resources;
+ global.jb_modules = jb_modules;

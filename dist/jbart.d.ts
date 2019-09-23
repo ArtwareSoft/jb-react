@@ -118,7 +118,7 @@ type watchable_as_textPT = {$: 'watchable-as-text', ref: dataType}
 type text_editor_is_dirtyPT = {$: 'text-editor.is-dirty', }
 
 // type aggregator
-type aggregatorType = slicePT | sortPT | firstPT | lastPT | countPT | reversePT | samplePT | assign_with_indexPT | filterPT | joinPT | uniquePT | wrap_as_object_with_arrayPT | wrap_as_objectPT | d3_histogramPT | itemlist_container_filterPT | style_by_controlPT | ((ctx: ctx) => any)
+type aggregatorType = slicePT | sortPT | firstPT | lastPT | countPT | reversePT | samplePT | assign_with_indexPT | filterPT | joinPT | uniquePT | wrap_as_object_with_arrayPT | wrap_as_objectPT | itemlist_container_filterPT | style_by_controlPT | ((ctx: ctx) => any)
 type cmp_def_aggregatorType = {
 	type: 'aggregator',
 	params?: [param],
@@ -140,7 +140,6 @@ type joinPT = {$: 'join', separator: dataType, prefix: dataType, suffix: dataTyp
 type uniquePT = {$: 'unique', id: dataType, items: dataType}
 type wrap_as_object_with_arrayPT = {$: 'wrap-as-object-with-array', arrayProperty: dataType, items: dataType}
 type wrap_as_objectPT = {$: 'wrap-as-object', itemToPropName: dataType, items: dataType}
-type d3_histogramPT = {$: 'd3.histogram', bins: dataType, values: dataType}
 type itemlist_container_filterPT = {$: 'itemlist-container.filter', updateCounters: booleanType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
@@ -159,9 +158,8 @@ type containsPT = {$: 'contains', text: [dataType], allText: dataType, inOrder: 
 type not_containsPT = {$: 'not-contains', text: [dataType], allText: dataType}
 type starts_withPT = {$: 'starts-with', startsWith: dataType, text: dataType}
 type ends_withPT = {$: 'ends-with', endsWith: dataType, text: dataType}
-type match_regexPT = {$: 'match-regex', text: dataType, 
-/** e.g: [a-zA-Z]* */regex: dataType, 
-/** regex must match all text */fillText: booleanType}
+type match_regexPT = {$: 'match-regex', 
+/** e.g: [a-zA-Z]* */regex: dataType, text: dataType}
 type isNullPT = {$: 'isNull', obj: dataType}
 type isEmptyPT = {$: 'isEmpty', item: dataType}
 type notEmptyPT = {$: 'notEmpty', item: dataType}
@@ -463,14 +461,14 @@ type text_editor_initPT = {$: 'text-editor.init', }
 type textarea_init_textarea_editorPT = {$: 'textarea.init-textarea-editor', }
 
 // type control
-type controlType = cardPT | d3_chart_scatterPT | dividerPT | inline_controlsPT | dynamic_controlsPT | control_first_succeedingPT | control_with_conditionPT | inner_htmlPT | itemlist_container_searchPT | itemlist_with_groupsPT | itemlist_default_headingPT | itemlistPT | itemlogPT | markdownPT | style_by_controlPT | sidenavPT | treePT | ((ctx: ctx) => any)
+type controlType = cardPT | d3_chart_histogramPT | dividerPT | inline_controlsPT | dynamic_controlsPT | control_first_succeedingPT | control_with_conditionPT | inner_htmlPT | itemlist_container_searchPT | itemlist_with_groupsPT | itemlist_default_headingPT | itemlistPT | itemlogPT | markdownPT | style_by_controlPT | sidenavPT | treePT | ((ctx: ctx) => any)
 type cmp_def_controlType = {
 	type: 'control',
 	params?: [param],
 	impl: controlType,
 }
 type cardPT = {$: 'card', title: dataType, subTitle: dataType, text: dataType, image: dataType, topButton: clickableType, menu: menuType, style: card_styleType, features: [featureType]}
-type d3_chart_scatterPT = {$: 'd3.chart-scatter', title: dataType, items: dataType, frame: d3_frameType, pivots: [d3_pivotType], itemTitle: dataType, visualSizeLimit: dataType, style: d3_scatter_styleType, features: [featureType]}
+type d3_chart_histogramPT = {$: 'd3-chart.histogram', title: dataType, items: dataType, pivot: d3_chart_pivotType, frame: d3_chart_frameType, itemTitle: dataType, ticks: dataType, axes: d3_chart_axesType, style: d3_chart_histogram_styleType, features: [d3_featureType]}
 type dividerPT = {$: 'divider', style: divider_styleType, title: dataType, features: [featureType]}
 type inline_controlsPT = {$: 'inline-controls', controls: [controlType]}
 type dynamic_controlsPT = {$: 'dynamic-controls', controlItems: dataType, genericControl: controlType, itemVariable: dataType}
@@ -518,99 +516,79 @@ type dialog_feature_resizerPT = {$: 'dialog-feature.resizer',
 /** effective only for dialog with a single codemirror element */resizeInnerCodemirror: booleanType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
-// type d3.scatter-style
-type d3_scatter_styleType = d3_scatter_plainPT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_scatter_styleType = {
-	type: 'd3_scatter_style',
+// type d3-chart.frame
+type d3_chart_frameType = d3_chart_framePT | style_by_controlPT | ((ctx: ctx) => any)
+type cmp_def_d3_chart_frameType = {
+	type: 'd3_chart_frame',
 	params?: [param],
-	impl: d3_scatter_styleType,
+	impl: d3_chart_frameType,
 }
-type d3_scatter_plainPT = {$: 'd3-scatter.plain', }
-type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
-
-// type d3.frame
-type d3_frameType = d3_framePT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_frameType = {
-	type: 'd3_frame',
-	params?: [param],
-	impl: d3_frameType,
-}
-type d3_framePT = {$: 'd3.frame', width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}
-type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
-
-// type d3.histogram-style
-type d3_histogram_styleType = d3_histogram_plainPT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_histogram_styleType = {
-	type: 'd3_histogram_style',
-	params?: [param],
-	impl: d3_histogram_styleType,
-}
-type d3_histogram_plainPT = {$: 'd3-histogram.plain', }
+type d3_chart_framePT = {$: 'd3-chart.frame', width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
 // type d3-feature
-type d3_featureType = d3_histogram_initPT | d3_item_indicatorPT | style_by_controlPT | ((ctx: ctx) => any)
+type d3_featureType = d3_histogram_initPT | d3_chart_item_indicatorPT | style_by_controlPT | ((ctx: ctx) => any)
 type cmp_def_d3_featureType = {
 	type: 'd3_feature',
 	params?: [param],
 	impl: d3_featureType,
 }
 type d3_histogram_initPT = {$: 'd3-histogram.init', }
-type d3_item_indicatorPT = {$: 'd3.item-indicator', item: dataType}
+type d3_chart_item_indicatorPT = {$: 'd3-chart.item-indicator', item: dataType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
-// type d3.axes
-type d3_axesType = d3_buttom_and_left_axesPT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_axesType = {
-	type: 'd3_axes',
+// type d3-chart.axes
+type d3_chart_axesType = d3_chart_buttom_and_left_axesPT | style_by_controlPT | ((ctx: ctx) => any)
+type cmp_def_d3_chart_axesType = {
+	type: 'd3_chart_axes',
 	params?: [param],
-	impl: d3_axesType,
+	impl: d3_chart_axesType,
 }
-type d3_buttom_and_left_axesPT = {$: 'd3.buttom-and-left-axes', }
+type d3_chart_buttom_and_left_axesPT = {$: 'd3-chart.buttom-and-left-axes', }
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
-// type d3.pivot
-type d3_pivotType = d3_pivotPT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_pivotType = {
-	type: 'd3_pivot',
+// type d3-chart.pivot
+type d3_chart_pivotType = d3_chart_pivotPT | style_by_controlPT | ((ctx: ctx) => any)
+type cmp_def_d3_chart_pivotType = {
+	type: 'd3_chart_pivot',
 	params?: [param],
-	impl: d3_pivotType,
+	impl: d3_chart_pivotType,
 }
-type d3_pivotPT = {$: 'd3.pivot', title: dataType, value: dataType, scale: d3_scaleType, range: d3_rangeType, domain: d3_domainType}
+type d3_chart_pivotPT = {$: 'd3-chart.pivot', title: dataType, value: dataType, scale: d3_chart_scaleType, range: d3_chart_rangeType, domain: d3_chart_domainType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
-// type d3.scale
-type d3_scaleType = d3_linear_scalePT | d3_sqrt_scalePT | d3_ordinal_scalePT | d3_colorsPT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_scaleType = {
-	type: 'd3_scale',
+// type d3-chart.scale
+type d3_chart_scaleType = d3_chart_linear_scalePT | d3_chart_sqrt_scalePT | d3_chart_ordinal_scalePT | d3_chart_colorsPT | style_by_controlPT | ((ctx: ctx) => any)
+type cmp_def_d3_chart_scaleType = {
+	type: 'd3_chart_scale',
 	params?: [param],
-	impl: d3_scaleType,
+	impl: d3_chart_scaleType,
 }
-type d3_linear_scalePT = {$: 'd3.linear-scale', }
-type d3_sqrt_scalePT = {$: 'd3.sqrt-scale', }
-type d3_ordinal_scalePT = {$: 'd3.ordinal-scale', list: dataType}
-type d3_colorsPT = {$: 'd3.colors', }
+type d3_chart_linear_scalePT = {$: 'd3-chart.linear-scale', }
+type d3_chart_sqrt_scalePT = {$: 'd3-chart.sqrt-scale', }
+type d3_chart_ordinal_scalePT = {$: 'd3-chart.ordinal-scale', list: dataType}
+type d3_chart_colorsPT = {$: 'd3-chart.colors', }
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
-// type d3.range
-type d3_rangeType = d3_auto_rangePT | d3_from_toPT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_rangeType = {
-	type: 'd3_range',
+// type d3-chart.range
+type d3_chart_rangeType = d3_chart_auto_rangePT | d3_chart_from_toPT | style_by_controlPT | ((ctx: ctx) => any)
+type cmp_def_d3_chart_rangeType = {
+	type: 'd3_chart_range',
 	params?: [param],
-	impl: d3_rangeType,
+	impl: d3_chart_rangeType,
 }
-type d3_auto_rangePT = {$: 'd3.auto-range', }
-type d3_from_toPT = {$: 'd3.from-to', from: dataType, to: dataType}
+type d3_chart_auto_rangePT = {$: 'd3-chart.auto-range', }
+type d3_chart_from_toPT = {$: 'd3-chart.from-to', from: dataType, to: dataType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
-// type d3.domain
-type d3_domainType = d3_domain_by_valuesPT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_domainType = {
-	type: 'd3_domain',
+// type d3-chart.domain
+type d3_chart_domainType = d3_chart_domain_by_valuesPT | style_by_controlPT | ((ctx: ctx) => any)
+type cmp_def_d3_chart_domainType = {
+	type: 'd3_chart_domain',
 	params?: [param],
-	impl: d3_domainType,
+	impl: d3_chart_domainType,
 }
-type d3_domain_by_valuesPT = {$: 'd3.domain-by-values', }
+type d3_chart_domain_by_valuesPT = {$: 'd3-chart.domain-by-values', }
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
 // type divider.style
@@ -740,16 +718,6 @@ type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar
 type text_codemirrorPT = {$: 'text.codemirror', cm_settings: dataType, enableFullScreen: booleanType, 
 /** resizer id or true (id is used to keep size in session storage) */resizer: booleanType, height: dataType, mode: dataType, lineWrapping: booleanType}
 
-// type label.style
-type label_styleType = style_by_controlPT | label_mdl_ripple_effectPT | ((ctx: ctx) => any)
-type cmp_def_label_styleType = {
-	type: 'label_style',
-	params?: [param],
-	impl: label_styleType,
-}
-type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
-type label_mdl_ripple_effectPT = {$: 'label.mdl-ripple-effect', }
-
 // type picklist.style
 type picklist_styleType = style_by_controlPT | picklist_selection_listPT | ((ctx: ctx) => any)
 type cmp_def_picklist_styleType = {
@@ -797,8 +765,8 @@ type tree_node_modelPT = {$: 'tree.node-model', rootPath: dataType,
 /** from parent path to children paths */children: dataType, 
 /** value of path */pathToItem: dataType, 
 /** icon name from material icons */icon: dataType, 
-/** path as input. differnt from children() == 0, as you can drop into empty array */isChapter: booleanType, maxDepth: dataType}
-type cmpDef = cmp_def_anyType | cmp_def_dataType | cmp_def_aggregatorType | cmp_def_booleanType | cmp_def_actionType | cmp_def_propType | cmp_def_varType | cmp_def_systemType | cmp_def_data_switch_caseType | cmp_def_action_switch_caseType | cmp_def_jison_parserType | cmp_def_lexer_ruleType | cmp_def_bnf_expressionType | cmp_def_expression_optionType | cmp_def_testType | cmp_def_ui_actionType | cmp_def_featureType | cmp_def_controlType | cmp_def_dialog_featureType | cmp_def_d3_scatter_styleType | cmp_def_d3_frameType | cmp_def_d3_histogram_styleType | cmp_def_d3_featureType | cmp_def_d3_axesType | cmp_def_d3_pivotType | cmp_def_d3_scaleType | cmp_def_d3_rangeType | cmp_def_d3_domainType | cmp_def_divider_styleType | cmp_def_inner_html_styleType | cmp_def_filter_typeType | cmp_def_itemlist_group_byType | cmp_def_group_styleType | cmp_def_markdown_styleType | cmp_def_menu_optionType | cmp_def_picklist_optionsType | cmp_def_picklist_promoteType | cmp_def_editable_text_styleType | cmp_def_text_styleType | cmp_def_label_styleType | cmp_def_picklist_styleType | cmp_def_table_fieldType | cmp_def_themeType | cmp_def_tree_node_modelType
+/** path as input. differnt from children() == 0, as you can drop into empty array */isChapter: booleanType, maxDepth: dataType, includeRoot: booleanType}
+type cmpDef = cmp_def_anyType | cmp_def_dataType | cmp_def_aggregatorType | cmp_def_booleanType | cmp_def_actionType | cmp_def_propType | cmp_def_varType | cmp_def_systemType | cmp_def_data_switch_caseType | cmp_def_action_switch_caseType | cmp_def_jison_parserType | cmp_def_lexer_ruleType | cmp_def_bnf_expressionType | cmp_def_expression_optionType | cmp_def_testType | cmp_def_ui_actionType | cmp_def_featureType | cmp_def_controlType | cmp_def_dialog_featureType | cmp_def_d3_chart_frameType | cmp_def_d3_featureType | cmp_def_d3_chart_axesType | cmp_def_d3_chart_pivotType | cmp_def_d3_chart_scaleType | cmp_def_d3_chart_rangeType | cmp_def_d3_chart_domainType | cmp_def_divider_styleType | cmp_def_inner_html_styleType | cmp_def_filter_typeType | cmp_def_itemlist_group_byType | cmp_def_group_styleType | cmp_def_markdown_styleType | cmp_def_menu_optionType | cmp_def_picklist_optionsType | cmp_def_picklist_promoteType | cmp_def_editable_text_styleType | cmp_def_text_styleType | cmp_def_picklist_styleType | cmp_def_table_fieldType | cmp_def_themeType | cmp_def_tree_node_modelType
 function call : anyType;
 function call(param: dataType) : anyType;
 function pipeline : dataType;
@@ -921,10 +889,10 @@ function endsWith(endsWith: dataType) : booleanType;
 function filter : aggregatorType;
 function filter(filter: booleanType) : aggregatorType;
 function matchRegex : booleanType;
-function matchRegex(profile: { text: dataType, 
-/** e.g: [a-zA-Z]* */regex: dataType, 
-/** regex must match all text */fillText: booleanType}) : booleanType;
-function matchRegex(text: dataType) : booleanType;
+function matchRegex(
+/** e.g: [a-zA-Z]* */regex: dataType, text: dataType) : booleanType;
+function matchRegex(
+/** e.g: [a-zA-Z]* */regex: dataType) : booleanType;
 function toUppercase : dataType;
 function toUppercase(text: dataType) : dataType;
 function toLowercase : dataType;
@@ -1255,45 +1223,38 @@ function css_boxShadow(blurRadius: dataType) : featureType | dialog_featureType;
 function css_border : featureType | dialog_featureType;
 function css_border(profile: { width: dataType, side: dataType, style: dataType, color: dataType, selector: dataType}) : featureType | dialog_featureType;
 function css_border(width: dataType) : featureType | dialog_featureType;
-function d3_chartScatter : controlType;
-function d3_chartScatter(profile: { title: dataType, items: dataType, frame: d3_frameType, pivots: [d3_pivotType], itemTitle: dataType, visualSizeLimit: dataType, style: d3_scatter_styleType, features: [featureType]}) : controlType;
-function d3_chartScatter(title: dataType) : controlType;
-function d3Scatter_plain : d3_scatter_styleType;
-function d3Scatter_plain() : d3_scatter_styleType;
 function d3Scatter_init : featureType;
 function d3Scatter_init() : featureType;
-function d3_frame : d3_frameType;
-function d3_frame(profile: { width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}) : d3_frameType;
-function d3_frame(width: dataType) : d3_frameType;
-function d3_histogram : aggregatorType;
-function d3_histogram(bins: dataType, values: dataType) : aggregatorType;
-function d3_histogram(bins: dataType) : aggregatorType;
-function d3Histogram_plain : d3_histogram_styleType;
-function d3Histogram_plain() : d3_histogram_styleType;
+function d3Chart_frame : d3_chart_frameType;
+function d3Chart_frame(profile: { width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}) : d3_chart_frameType;
+function d3Chart_frame(width: dataType) : d3_chart_frameType;
+function d3Chart_histogram : controlType;
+function d3Chart_histogram(profile: { title: dataType, items: dataType, pivot: d3_chart_pivotType, frame: d3_chart_frameType, itemTitle: dataType, ticks: dataType, axes: d3_chart_axesType, style: d3_chart_histogram_styleType, features: [d3_featureType]}) : controlType;
+function d3Chart_histogram(title: dataType) : controlType;
 function d3Histogram_init : d3_featureType;
 function d3Histogram_init() : d3_featureType;
-function d3_buttomAndLeftAxes : d3_axesType;
-function d3_buttomAndLeftAxes() : d3_axesType;
-function d3_itemIndicator : d3_featureType;
-function d3_itemIndicator(item: dataType) : d3_featureType;
-function d3_pivot : d3_pivotType;
-function d3_pivot(profile: { title: dataType, value: dataType, scale: d3_scaleType, range: d3_rangeType, domain: d3_domainType}) : d3_pivotType;
-function d3_pivot(title: dataType) : d3_pivotType;
-function d3_linearScale : d3_scaleType;
-function d3_linearScale() : d3_scaleType;
-function d3_sqrtScale : d3_scaleType;
-function d3_sqrtScale() : d3_scaleType;
-function d3_ordinalScale : d3_scaleType;
-function d3_ordinalScale(list: dataType) : d3_scaleType;
-function d3_colors : d3_scaleType;
-function d3_colors() : d3_scaleType;
-function d3_autoRange : d3_rangeType;
-function d3_autoRange() : d3_rangeType;
-function d3_fromTo : d3_rangeType;
-function d3_fromTo(from: dataType, to: dataType) : d3_rangeType;
-function d3_fromTo(from: dataType) : d3_rangeType;
-function d3_domainByValues : d3_domainType;
-function d3_domainByValues() : d3_domainType;
+function d3Chart_buttomAndLeftAxes : d3_chart_axesType;
+function d3Chart_buttomAndLeftAxes() : d3_chart_axesType;
+function d3Chart_itemIndicator : d3_featureType;
+function d3Chart_itemIndicator(item: dataType) : d3_featureType;
+function d3Chart_pivot : d3_chart_pivotType;
+function d3Chart_pivot(profile: { title: dataType, value: dataType, scale: d3_chart_scaleType, range: d3_chart_rangeType, domain: d3_chart_domainType}) : d3_chart_pivotType;
+function d3Chart_pivot(title: dataType) : d3_chart_pivotType;
+function d3Chart_linearScale : d3_chart_scaleType;
+function d3Chart_linearScale() : d3_chart_scaleType;
+function d3Chart_sqrtScale : d3_chart_scaleType;
+function d3Chart_sqrtScale() : d3_chart_scaleType;
+function d3Chart_ordinalScale : d3_chart_scaleType;
+function d3Chart_ordinalScale(list: dataType) : d3_chart_scaleType;
+function d3Chart_colors : d3_chart_scaleType;
+function d3Chart_colors() : d3_chart_scaleType;
+function d3Chart_autoRange : d3_chart_rangeType;
+function d3Chart_autoRange() : d3_chart_rangeType;
+function d3Chart_fromTo : d3_chart_rangeType;
+function d3Chart_fromTo(from: dataType, to: dataType) : d3_chart_rangeType;
+function d3Chart_fromTo(from: dataType) : d3_chart_rangeType;
+function d3Chart_domainByValues : d3_chart_domainType;
+function d3Chart_domainByValues() : d3_chart_domainType;
 function dialogFeature_dragTitle : dialog_featureType;
 function dialogFeature_dragTitle(id: dataType) : dialog_featureType;
 function dialog_closeContainingPopup : actionType;
@@ -1552,8 +1513,6 @@ function mdlStyle_initDynamic : featureType;
 function mdlStyle_initDynamic(query: dataType) : featureType;
 function mdl_rippleEffect : featureType;
 function mdl_rippleEffect() : featureType;
-function label_mdlRippleEffect : label_styleType;
-function label_mdlRippleEffect() : label_styleType;
 function picklist_selectionList : picklist_styleType;
 function picklist_selectionList(width: dataType) : picklist_styleType;
 function field : table_fieldType;
@@ -1590,7 +1549,7 @@ function tree_nodeModel(profile: { rootPath: dataType,
 /** from parent path to children paths */children: dataType, 
 /** value of path */pathToItem: dataType, 
 /** icon name from material icons */icon: dataType, 
-/** path as input. differnt from children() == 0, as you can drop into empty array */isChapter: booleanType, maxDepth: dataType}) : tree_node_modelType;
+/** path as input. differnt from children() == 0, as you can drop into empty array */isChapter: booleanType, maxDepth: dataType, includeRoot: booleanType}) : tree_node_modelType;
 function tree_nodeModel(rootPath: dataType) : tree_node_modelType;
 function json_pathSelector : dataType;
 function json_pathSelector(
@@ -1838,48 +1797,41 @@ border : featureType | dialog_featureType,
 border(profile: { width: dataType, side: dataType, style: dataType, color: dataType, selector: dataType}) : featureType | dialog_featureType,
 border(width: dataType) : featureType | dialog_featureType,
 }
-declare var css : css;,type d3 = {
-chartScatter : controlType,
-chartScatter(profile: { title: dataType, items: dataType, frame: d3_frameType, pivots: [d3_pivotType], itemTitle: dataType, visualSizeLimit: dataType, style: d3_scatter_styleType, features: [featureType]}) : controlType,
-chartScatter(title: dataType) : controlType,
-frame : d3_frameType,
-frame(profile: { width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}) : d3_frameType,
-frame(width: dataType) : d3_frameType,
-histogram : aggregatorType,
-histogram(bins: dataType, values: dataType) : aggregatorType,
-histogram(bins: dataType) : aggregatorType,
-buttomAndLeftAxes : d3_axesType,
-buttomAndLeftAxes() : d3_axesType,
-itemIndicator : d3_featureType,
-itemIndicator(item: dataType) : d3_featureType,
-pivot : d3_pivotType,
-pivot(profile: { title: dataType, value: dataType, scale: d3_scaleType, range: d3_rangeType, domain: d3_domainType}) : d3_pivotType,
-pivot(title: dataType) : d3_pivotType,
-linearScale : d3_scaleType,
-linearScale() : d3_scaleType,
-sqrtScale : d3_scaleType,
-sqrtScale() : d3_scaleType,
-ordinalScale : d3_scaleType,
-ordinalScale(list: dataType) : d3_scaleType,
-colors : d3_scaleType,
-colors() : d3_scaleType,
-autoRange : d3_rangeType,
-autoRange() : d3_rangeType,
-fromTo : d3_rangeType,
-fromTo(from: dataType, to: dataType) : d3_rangeType,
-fromTo(from: dataType) : d3_rangeType,
-domainByValues : d3_domainType,
-domainByValues() : d3_domainType,
-}
-declare var d3 : d3;,type d3Scatter = {
-plain : d3_scatter_styleType,
-plain() : d3_scatter_styleType,
+declare var css : css;,type d3Scatter = {
 init : featureType,
 init() : featureType,
 }
-declare var d3Scatter : d3Scatter;,type d3Histogram = {
-plain : d3_histogram_styleType,
-plain() : d3_histogram_styleType,
+declare var d3Scatter : d3Scatter;,type d3Chart = {
+frame : d3_chart_frameType,
+frame(profile: { width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}) : d3_chart_frameType,
+frame(width: dataType) : d3_chart_frameType,
+histogram : controlType,
+histogram(profile: { title: dataType, items: dataType, pivot: d3_chart_pivotType, frame: d3_chart_frameType, itemTitle: dataType, ticks: dataType, axes: d3_chart_axesType, style: d3_chart_histogram_styleType, features: [d3_featureType]}) : controlType,
+histogram(title: dataType) : controlType,
+buttomAndLeftAxes : d3_chart_axesType,
+buttomAndLeftAxes() : d3_chart_axesType,
+itemIndicator : d3_featureType,
+itemIndicator(item: dataType) : d3_featureType,
+pivot : d3_chart_pivotType,
+pivot(profile: { title: dataType, value: dataType, scale: d3_chart_scaleType, range: d3_chart_rangeType, domain: d3_chart_domainType}) : d3_chart_pivotType,
+pivot(title: dataType) : d3_chart_pivotType,
+linearScale : d3_chart_scaleType,
+linearScale() : d3_chart_scaleType,
+sqrtScale : d3_chart_scaleType,
+sqrtScale() : d3_chart_scaleType,
+ordinalScale : d3_chart_scaleType,
+ordinalScale(list: dataType) : d3_chart_scaleType,
+colors : d3_chart_scaleType,
+colors() : d3_chart_scaleType,
+autoRange : d3_chart_rangeType,
+autoRange() : d3_chart_rangeType,
+fromTo : d3_chart_rangeType,
+fromTo(from: dataType, to: dataType) : d3_chart_rangeType,
+fromTo(from: dataType) : d3_chart_rangeType,
+domainByValues : d3_chart_domainType,
+domainByValues() : d3_chart_domainType,
+}
+declare var d3Chart : d3Chart;,type d3Histogram = {
 init : d3_featureType,
 init() : d3_featureType,
 }
@@ -2050,8 +2002,6 @@ div() : group_styleType,
 declare var itemlog : itemlog;,type label = {
 bindText : featureType,
 bindText() : featureType,
-mdlRippleEffect : label_styleType,
-mdlRippleEffect() : label_styleType,
 }
 declare var label : label;,type markdown = {
 showdown : markdown_styleType,
@@ -2162,7 +2112,7 @@ nodeModel(profile: { rootPath: dataType,
 /** from parent path to children paths */children: dataType, 
 /** value of path */pathToItem: dataType, 
 /** icon name from material icons */icon: dataType, 
-/** path as input. differnt from children() == 0, as you can drop into empty array */isChapter: booleanType, maxDepth: dataType}) : tree_node_modelType,
+/** path as input. differnt from children() == 0, as you can drop into empty array */isChapter: booleanType, maxDepth: dataType, includeRoot: booleanType}) : tree_node_modelType,
 nodeModel(rootPath: dataType) : tree_node_modelType,
 selection : featureType,
 selection(profile: { databind: dataType, autoSelectFirst: booleanType, onSelection: actionType, onRightClick: actionType}) : featureType,

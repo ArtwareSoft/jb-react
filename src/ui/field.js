@@ -263,7 +263,7 @@ jb.component('field.column-width', {
   type: 'feature',
   category: 'table:80',
   params: [
-    {id: 'width', as: 'number' },
+    {id: 'width', as: 'number', mandatory: true },
   ],
   impl: (ctx,width) => ({
       enrichField: field => field.width = width
