@@ -691,7 +691,9 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      jb.frame.traceComponentFile && jb.frame.traceComponentFile(comp)
+      const line = new Error().stack.split(/\r|\n/).pop()
+      comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
+    
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
@@ -700,7 +702,9 @@ Object.assign(jb,{
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.const(jb.removeDataResourcePrefix(id),comp.passiveData)
       }
-    } catch(e) {}
+    } catch(e) {
+      console.log(e)
+    }
 
     jb.comps[id] = comp;
 
@@ -2004,11 +2008,6 @@ const spySettings = {
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
 }
 const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-
-frame.traceComponentFile = function(comp) {
-    const line = new Error().stack.split(/\r|\n/)[3]
-    comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
-}
 
 function initSpy({Error, settings, wSpyParam, memoryUsage}) {
     const systemProps = ['index', 'time', '_time', 'mem', 'source']
@@ -9313,6 +9312,32 @@ jb.component('highlight', { /* highlight */
 })
 ;
 
+jb.ns('html')
+
+jb.component('html', { 
+    type: 'control',
+    category: 'control:100,common:80',
+    params: [
+      {id: 'title', as: 'string', mandatory: true, templateValue: 'html', dynamic: true},
+      {id: 'html', as: 'string', mandatory: true, templateValue: '<p>html here</p>', dynamic: true},
+      {id: 'style', type: 'html.style', defaultValue: html.plain(), dynamic: true},
+      {id: 'features', type: 'feature[]', dynamic: true}
+    ],
+    impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('html.plain', {
+    type: 'label.style',
+    impl: customStyle({
+        template: (cmp,state,h) => h('div'),
+        features: ctx => ({
+            afterViewInit: cmp => cmp.base.innerHTML = cmp.ctx.vars.$model.html()
+        })
+    })
+})
+
+;
+
 jb.ns('image')
 
 jb.component('image', { /* image */
@@ -13322,22 +13347,21 @@ jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
 jb.component('layout.flex', { /* layout.flex */
   type: 'group.style',
   params: [
-    {
-      id: 'align',
-      as: 'string',
-      options: ',flex-start,flex-end,center,space-between,space-around'
-    },
+    {id: 'alignItems', as: 'string', options: ',normal,stretch,center,start,end,flex-start,flex-end,baseline,first baseline,last baseline,safe center,unsafe center' },
+    {id: 'spacing', as: 'number', defaultValue: 3},
+    {id: 'justifyContent', as: 'string', options: ',flex-start,flex-end,center,space-between,space-around' },
     {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
-    {id: 'wrap', as: 'string', options: ',wrap'}
+    {id: 'wrap', as: 'string', options: ',wrap,wrap-reverse,nowrap'}
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
-    css: '{ display: flex; {?justify-content:%$align%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }',
+    css: `{ display: flex; {?align-items:%$alignItems%;?} {?justify-content:%$justifyContent%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }
+    >* { margin-right: %$spacing%px }
+    >*:last-child { margin-right:0 }`,
     features: group.initGroup()
   })
 })
-
 jb.component('flex-layout-container.align-main-axis', { /* flexLayoutContainer.alignMainAxis */
   type: 'feature',
   params: [

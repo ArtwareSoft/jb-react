@@ -691,7 +691,9 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      jb.frame.traceComponentFile && jb.frame.traceComponentFile(comp)
+      const line = new Error().stack.split(/\r|\n/).pop()
+      comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
+    
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
@@ -700,7 +702,9 @@ Object.assign(jb,{
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.const(jb.removeDataResourcePrefix(id),comp.passiveData)
       }
-    } catch(e) {}
+    } catch(e) {
+      console.log(e)
+    }
 
     jb.comps[id] = comp;
 
@@ -2005,11 +2009,6 @@ const spySettings = {
 }
 const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 
-frame.traceComponentFile = function(comp) {
-    const line = new Error().stack.split(/\r|\n/)[3]
-    comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
-}
-
 function initSpy({Error, settings, wSpyParam, memoryUsage}) {
     const systemProps = ['index', 'time', '_time', 'mem', 'source']
 
@@ -3119,7 +3118,7 @@ jb.component('extract-text', { /* extractText */
   description: 'text breaking according to begin/end markers',
   params: [
     {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
-    {id: 'startMarkers', as: 'array', mandatory: true},
+    {id: 'startMarkers', type: 'data[]' ,as: 'array', mandatory: true},
     {id: 'endMarker', as: 'string'},
     {
       id: 'includingStartMarker',
@@ -3191,7 +3190,7 @@ jb.component('extract-text', { /* extractText */
 
     let out = { match: [], unmatch: []},pos =0,start=null;
     while(start = findStartMarkers(pos)) {
-        const end = endMarker ? findMarker(endMarker,start.end) : findStartMarkers(start.end)
+        let end = endMarker ? findMarker(endMarker,start.end) : findStartMarkers(start.end)
         if (!end) // if end not found use end of text
           end = { pos : text.length, end: text.length }
         const start_match = includingStartMarker ? start.pos : start.end;

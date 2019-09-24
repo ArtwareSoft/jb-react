@@ -82,7 +82,7 @@ type isRefPT = {$: 'isRef', obj: dataType}
 type asRefPT = {$: 'asRef', obj: dataType}
 type data_switchPT = {$: 'data.switch', cases: [data_switch_caseType], default: dataType}
 type jison_parsePT = {$: 'jison.parse', parser: jison_parserType, goal: dataType, text: dataType, debug: booleanType}
-type extract_textPT = {$: 'extract-text', text: dataType, startMarkers: dataType, endMarker: dataType, 
+type extract_textPT = {$: 'extract-text', text: dataType, startMarkers: [dataType], endMarker: dataType, 
 /** include the marker at part of the result */includingStartMarker: booleanType, 
 /** include the marker at part of the result */includingEndMarker: booleanType, 
 /** apply the markers repeatingly */repeating: booleanType, noTrim: booleanType, 
@@ -1031,7 +1031,7 @@ function expressionOption(
 function expressionOption(
 /** e + e */syntax: dataType) : expression_optionType;
 function extractText : dataType;
-function extractText(profile: { text: dataType, startMarkers: dataType, endMarker: dataType, 
+function extractText(profile: { text: dataType, startMarkers: [dataType], endMarker: dataType, 
 /** include the marker at part of the result */includingStartMarker: booleanType, 
 /** include the marker at part of the result */includingEndMarker: booleanType, 
 /** apply the markers repeatingly */repeating: booleanType, noTrim: booleanType, 

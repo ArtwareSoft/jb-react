@@ -1,19 +1,6 @@
 (function() {
 const st = jb.studio;
 
-const jbDevHost = {
-  getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
-  locationToPath: path => path.split('/').slice(1).join('/'),
-  saveFile: (path, contents) => {
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-    return fetch(`/?op=saveFile&path=${path}`,
-      {method: 'POST', headers: headers, body: JSON.stringify({ Path: path, Contents: contents }) })
-      .then(res=>res.json())
-  }
-}
-st.host = st.host || jbDevHost
-
 jb.component('studio.save-components', { /* studio.saveComponents */
   type: 'action,has-side-effects',
   impl: (ctx,force) => {

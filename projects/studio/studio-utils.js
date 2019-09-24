@@ -19,7 +19,7 @@ st.showMultiMessages = function(messages) {
     el.appendChild(inner)
   })
   el.style.animation = '';
-	jb.delay(1).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+	jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
 }
 
 
