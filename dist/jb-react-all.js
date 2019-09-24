@@ -9551,7 +9551,7 @@ jb.ui.checkValidationError = cmp => {
     const err = (cmp.validations || [])
       .filter(validator=>!validator.validCondition(ctx))
       .map(validator=>validator.errorMessage(ctx))[0];
-    if (ctx.exp('formContainer'))
+    if (err && ctx.exp('formContainer'))
       ctx.run(writeValue('%$formContainer/err%',err));
     return err;
   }
