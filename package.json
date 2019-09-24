@@ -30,11 +30,10 @@
     "studio": "npm run studio-server & npm run helloWorld",
     "studio-server": "node bin/studio/studio-server.js",
     "helloWorld": "start http://localhost:8082/project/studio/hello-world",
-    "test": "start http://localhost:8082/projects/ui-tests/tests.html",
-    "tgp2ts": "node bin/tgp2ts"
+    "test": "start http://localhost:8082/projects/ui-tests/tests.html"
   },
   "bin": {
-    "tgp2ts": "bin/tgp2ts.js"
+    "studio": "bin/studio"
   },
   "dependencies": {},
   "devDependencies": {
