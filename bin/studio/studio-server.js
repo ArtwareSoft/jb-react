@@ -170,6 +170,22 @@ const op_post_handlers = {
         endWithFailure(res,e)
       }
       endWithSuccess(res,'Project Created');
+    },
+    createDirectoryWithFiles: function(req, res,body,path) {
+      let clientReq;
+      try {
+        clientReq = JSON.parse(body);
+        if (!clientReq)
+           return endWithFailure(res,'Can not parse json request');
+        const baseDir = clientReq.baseDir;
+        fs.mkdirSync(baseDir);
+        (clientReq.files || []).forEach(f=>
+          fs.writeFileSync(baseDir+ '/' + f.fileName,f.content)
+        )
+      } catch(e) {
+        endWithFailure(res,e)
+      }
+      endWithSuccess(res,'Directory Created');
     }
 };
 
