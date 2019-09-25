@@ -70,7 +70,7 @@ jb.component('studio.probe-results', { /* studio.probeResults */
   impl: (ctx, path) => jb.delay(300).then(_ => {
     if (ctx.exp('%$stduio/fastPreview%')) {
       const inCtx = st.closestCtxByPath(path) || new jb.jbCtx()
-      return [{in: inCtx, out: st.isOfType(path,'action') ? null : 
+      return [{in: inCtx, out: st.isOfType(path,'action') ? null :
           st.previewjb.val(inCtx.runItself())}]
     }
     return ctx.run(pipe(studio.probe(path), '%result%'))
@@ -313,10 +313,10 @@ jb.component('studio.jb-editor', { /* studio.jbEditor */
   ],
   impl: group({
     title: 'main',
-    style: layout.horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
+    style: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%', spacing: 3}),
     controls: [
       studio.jbEditorInteliTree('%$path%'),
-      studio.probeDataView('%$jbEditorCntrData/selected%')
+      studio.probeDataView()
     ],
     features: [id('jbEditor'), css.padding('10'), css.height({height: '800', minMax: 'max'})]
   })
@@ -429,7 +429,7 @@ jb.component('menu.studio-wrap-with-array', { /* menu.studioWrapWithArray */
   }
 })
 
-jb.component('studio.add-variable', { /* studio.addVariable */ 
+jb.component('studio.add-variable', { /* studio.addVariable */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}

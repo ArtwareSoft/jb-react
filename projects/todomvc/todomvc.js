@@ -33,8 +33,13 @@ jb.component('todomvc.main', { /* todomvc.main */
             title: 'todo-list',
             items: pipeline(
               '%$todo%',
-              filter(and('%completed% == true', '%$')),
-              pipeline('aa', 'bb')
+              filter(
+                  or(
+                    and('%completed% == true', '%$filterBy% == completed'),
+                    and('%completed% == false', '%$filterBy% == active'),
+                    '%$filterBy% == all'
+                  )
+                )
             ),
             controls: [
               group({
@@ -66,7 +71,8 @@ jb.component('todomvc.main', { /* todomvc.main */
             ],
             features: [
               watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true}),
-              css.class('todo-list')
+              css.class('todo-list'),
+              watchRef('%$filterBy%')
             ]
           })
         ],
@@ -74,7 +80,11 @@ jb.component('todomvc.main', { /* todomvc.main */
       }),
       group({
         title: 'toolbar',
-        style: layout.flex({spacing: '30', justifyContent: 'space-between'}),
+        style: layout.flex({
+          alignItems: 'center',
+          spacing: '30',
+          justifyContent: 'space-between'
+        }),
         controls: [
           text({
             title: 'items left',
@@ -95,12 +105,16 @@ jb.component('todomvc.main', { /* todomvc.main */
             style: styleByControl(
               itemlist({
                 items: '%$picklistModel/options%',
-                controls: button({title: '%text%', style: button.href(), features: []}),
-                style: itemlist.horizontal('30'),
+                controls: button({
+                  title: '%text%',
+                  style: button.href(),
+                  features: [css.width('%$width%'), css('{text-align: left}')]
+                }),
+                style: itemlist.horizontal('20'),
                 features: [
                   itemlist.selection({
                     onSelection: writeValue('%$picklistModel/databind%', '%code%'),
-                    cssForSelected: 'border-color: rgba(175, 47, 47, 0.2); color : red'
+                    cssForSelected: ' '
                   }),
                   css.class('filters')
                 ]
@@ -114,4 +128,8 @@ jb.component('todomvc.main', { /* todomvc.main */
     ],
     features: css.class('todoapp')
   })
+})
+
+jb.component('data-resource.filterBy', { /* dataResource.filterBy */
+  watchableData: 'active'
 })

@@ -159,7 +159,7 @@ body {
 
 .toggle {
 	text-align: center;
-	width: 40px;
+	width: 45px;
 	/* auto, since non-WebKit browsers doesn't support input styling */
 	height: auto;
 	top: 0;
@@ -237,6 +237,7 @@ body {
 }
 
 .footer:before {
+	z-index: 1;
 	content: '';
 	position: absolute;
 	right: 0;
@@ -261,20 +262,11 @@ body {
 }
 
 .filters {
-	/* margin: 0;
-	padding: 0;
-	float:left;
-	list-style: none;
-	position: absolute;
-	right: 0;
-	left: 0; */
+	z-index: 200;
 }
 
 .filters>* { 
 	display: inline;
-}
-
-.filters>* {
 	color: inherit;
 	margin: 3px;
 	padding: 3px 7px;
