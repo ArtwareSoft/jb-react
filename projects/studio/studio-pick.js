@@ -105,9 +105,8 @@ function eventToElem(e,_window) {
     const mousePos = {
         x: e.pageX - document.body.scrollLeft, y: e.pageY - - document.body.scrollTop
     };
-    const el = _window.document.elementFromPoint(mousePos.x, mousePos.y);
-    if (!el) return;
-    const results = [el].concat(jb.ui.parents(el))
+    const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
+    const results = elems.flatMap(el=>[el,...jb.ui.parents(el)])
         .filter(e =>
             e && e.getAttribute && e.getAttribute('jb-ctx') );
     if (results.length == 0) return [];

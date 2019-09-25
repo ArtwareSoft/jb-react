@@ -5,5 +5,6 @@
   "open_source_cmd": "code -r -g ",
   "port": 8082,
   "http_dir": "./",
+  "exclude": "node_modules",
   "allowCmd": false
 }

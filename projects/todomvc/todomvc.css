@@ -193,6 +193,9 @@ body {
 	transition: color 0.4s;
 }
 
+.editable-text{
+	width: 100%;
+}
 .todo-list li .completed .editable-text .task{
 	color: #d9d9d9;
 	text-decoration: line-through;
@@ -258,20 +261,20 @@ body {
 }
 
 .filters {
-	margin: 0;
+	/* margin: 0;
 	padding: 0;
 	float:left;
 	list-style: none;
 	position: absolute;
 	right: 0;
-	left: 0;
+	left: 0; */
 }
 
-.filters li { 
+.filters>* { 
 	display: inline;
 }
 
-.filters li a {
+.filters>* {
 	color: inherit;
 	margin: 3px;
 	padding: 3px 7px;
@@ -280,11 +283,15 @@ body {
 	border-radius: 3px;
 }
 
-.filters li a:hover {
+.filters a {
+	text-decoration: none;
+}
+
+.filters a:hover {
 	border-color: rgba(175, 47, 47, 0.1);
 }
 
-.filters li a.selected {
+.filters .selected {
 	border-color: rgba(175, 47, 47, 0.2);
 }
 

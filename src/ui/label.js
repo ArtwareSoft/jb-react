@@ -18,7 +18,7 @@ jb.component('text', { /* text */
   params: [
     {id: 'title', as: 'string', mandatory: true, defaultValue: 'no title', dynamic: true},
     {id: 'text', as: 'ref', mandatory: true, defaultValue: 'my text', dynamic: true},
-    {id: 'style', type: 'label.style', defaultValue: label.noWrappingTag(), dynamic: true},
+    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)

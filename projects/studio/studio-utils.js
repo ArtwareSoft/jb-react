@@ -6,7 +6,7 @@ st.message = function(message,error) {
 	el.textContent = message;
   el.style.background = error ? 'red' : '#327DC8';
   el.style.animation = '';
-	jb.delay(1).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+	jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
 }
 
 st.showMultiMessages = function(messages) {

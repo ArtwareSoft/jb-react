@@ -1,135 +1,68 @@
+jb.component('todo', { watchableData: [
+  {task: 'eat', completed: false},
+  {task: 'drink', completed: true},
+]
+})
+jb.component('new-task', { watchableData:
+  {task: '', completed: false},
+})
 
-jb.component('todo', { /* todo */ 
-  watchableData: [
-  ]
-}) 
-
-jb.component('filterBy', { /* filterBy */ 
-  watchableData: 'all'
-}) 
 
 jb.component('todomvc.main', { /* todomvc.main */
   type: 'control',
   impl: group({
     controls: [
-      label({title: 'todos', style: label.htmlTag('h1', 'headline')}),
-      group({
-        title: 'header',
-        style: layout.horizontal('3'),
-        controls: [
-          editableBoolean({
-            databind: isEmpty({'$': 'todomvc-tutorial.filter-completed', filterby: 'false'}),
-            style: editableBoolean.checkboxWithLabel(),
-            title: 'toggle all',
-            textForTrue: '❯',
-            textForFalse: '❯',
-            features: [
-              css('{transform: rotate(90deg)}'),
-              css.class('toggle-all'),
-              hidden(notEmpty('%$todo%')),
-              watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true}),
-              feature.onEvent({
-                event: 'change',
-                action: action.switch(
-                  [
-                    {
-                      condition: isEmpty({'$': 'todomvc-tutorial.filter-completed', filterby: 'false'}),
-                      action: runActionOnItems('%$todo%', toggleBooleanValue('%completed%'))
-                    },
-                    {
-                      condition: 'true',
-                      action: runActionOnItems(
-                        {'$': 'todomvc-tutorial.filter-completed', filterby: 'false'},
-                        toggleBooleanValue('%completed%')
-                      )
-                    }
-                  ]
-                )
-              })
-            ]
-          }),
-          editableText({
-            title: 'input',
-            databind: '%$input%',
-            style: editableText.input(),
-            features: [
-              css.class('new-todo'),
-              feature.onEnter(
-                action.if(
-                    '%$input%',
-                    runActions(
-                      addToArray(
-                          '%$todo%',
-                          obj(prop('task', '%$input%', 'string'), prop('completed', undefined, 'boolean'))
-                        ),
-                      writeValue('%$input%')
-                    )
-                  )
-              ),
-              htmlAttribute('placeholder', 'What needs to be done?')
-            ]
-          })
+      label({title: 'todos', style: label.htmlTag('h1')}),
+      editableText({
+        title: 'input',
+        databind: '%$new-task/task%',
+        style: editableText.input(),
+        features: [
+          feature.onEnter(
+            runActions(addToArray('%$todo%', '%$new-task%'), writeValue('%$new-task/task%'))
+          ),
+          css.class('new-tod'),
+          css.class('new-todo'),
+          htmlAttribute('placeholder', 'What needs to be done?')
         ]
       }),
       group({
         title: 'main',
         controls: [
           itemlist({
-            items: pipeline(
-              '%$todo%',
-              If(
-                  or(
-                    equals('%$filterBy%', 'all'),
-                    and(equals('%$filterBy%', 'completed'), '%completed%'),
-                    and(equals('%$filterBy%', 'active'), not('%completed%'))
-                  ),
-                  '%%',
-                  null
-                )
-            ),
+            title: 'todo-list',
+            items: pipeline('%$todo%', filter(and())),
             controls: [
               group({
-                style: layout.horizontal(3),
+                style: layout.flex({alignItems: 'center', spacing: '20'}),
                 controls: [
                   editableBoolean({
                     databind: '%completed%',
                     style: editableBoolean.checkbox(),
-                    textForTrue: 'yes',
-                    textForFalse: 'no',
-                    features: [css.class('toggle'), hidden(not('%$editableline%')), watchRef('%$editableline%')]
+                    features: css.class('toggle')
                   }),
                   editableText({
+                    title: '',
                     databind: '%task%',
                     style: editableText.expandable({
                       buttonFeatures: css.class('task'),
-                      editableFeatures: css.class('edit'),
-                      onToggle: toggleBooleanValue('%$editableline%')
+                      editableFeatures: css.class('edit')
                     }),
-                    features: [css('{width: 100%}'), css.class('editable-text')]
+                    features: css.class('editable-text')
                   }),
                   button({
-                    title: 'click me',
+                    title: 'delete',
                     action: removeFromArray({array: '%$todo%', itemToRemove: '%%'}),
                     style: button.native(),
-                    features: [
-                      css.class('destroy'),
-                      hidden(not('%$editableline%')),
-                      watchRef('%$editableline%')
-                    ]
+                    features: [itemlist.shownOnlyOnItemHover(), css.class('destroy')]
                   })
                 ],
-                features: [
-                  variable({name: 'editableline', watchable: true}),
-                  conditionalClass('completed', '%completed%')
-                ]
+                features: conditionalClass('completed', '%completed%')
               })
             ],
-            style: itemlist.ulLi(),
-            itemVariable: 'item',
             features: [
-              css.class('todo-list'),
-              watchRef({ref: '%$filterBy%', allowSelfRefresh: true}),
-              watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true})
+              watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true}),
+              css.class('todo-list')
             ]
           })
         ],
@@ -137,85 +70,44 @@ jb.component('todomvc.main', { /* todomvc.main */
       }),
       group({
         title: 'toolbar',
-        style: group.htmlTag('footer'),
+        style: layout.flex({spacing: '30', justifyContent: 'space-between'}),
         controls: [
-          label({
-            title: pipeline(
-              count({'$': 'todomvc-tutorial.filter-completed', filterby: 'false'}),
-              '%% item left'
+          text({
+            title: 'items left',
+            text: pipeline(
+              '%$todo%',
+              filter('%completed% == false'),
+              count(),
+              If('%% > 1', '%% items', '%% item'),
+              '%% left'
             ),
             style: label.span(),
-            features: [
-              field.title('items left'),
-              watchRef({ref: '%$todo%', includeChildren: 'yes'}),
-              css.class('todo-count')
-            ]
+            features: watchRef({ref: '%$todo%', includeChildren: 'yes', delay: ''})
           }),
-          group({
-            title: 'filters',
-            style: customStyle({
-              template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li', {class: 'jb-item'} ,h(ctrl)),ctrl.ctx.data))),
-              css: `{ list-style: none; padding: 0; margin: 0;}
-    >li { list-style: none; padding: 0; margin: 0; display: inline;}`,
-              features: group.initGroup()
-            }),
-            controls: [
-              button({
-                title: 'All',
-                action: writeValue('%$filterBy%', 'all'),
-                style: button.href(),
-                features: conditionalClass('selected', equals('all', '%$filterBy%'))
+          picklist({
+            title: 'filter by',
+            databind: '%$filterBy%',
+            options: picklist.optionsByComma('all,completed,active'),
+            style: styleByControl(
+              itemlist({
+                items: '%$picklistModel/options%',
+                controls: button({title: '%text%', style: button.href(), features: []}),
+                style: itemlist.horizontal('30'),
+                features: [
+                  itemlist.selection({
+                    onSelection: writeValue('%$picklistModel/databind%', '%code%'),
+                    cssForSelected: 'border-color: rgba(175, 47, 47, 0.2); color : red'
+                  }),
+                  css.class('filters')
+                ]
               }),
-              button({
-                title: 'Active',
-                action: writeValue('%$filterBy%', 'active'),
-                style: button.href(),
-                features: conditionalClass('selected', equals('active', '%$filterBy%'))
-              }),
-              button({
-                title: 'Completed',
-                action: writeValue('%$filterBy%', 'completed'),
-                style: button.href(),
-                features: conditionalClass('selected', equals('completed', '%$filterBy%'))
-              })
-            ],
-            features: css.class('filters')
-          }),
-          button({
-            title: 'Clear completed',
-            action: runActionOnItems(
-              {'$': 'todomvc-tutorial.filter-completed'},
-              splice({
-                array: '%$todo%',
-                fromIndex: indexOf('%$todo%', '%%'),
-                noOfItemsToRemove: '1',
-                itemsToAdd: []
-              })
-            ),
-            style: button.href(),
-            features: [
-              css.class('clear-completed'),
-              hidden(notEmpty({'$': 'todomvc-tutorial.filter-completed'})),
-              watchRef({ref: '%$todo%', includeChildren: 'yes', allowSelfRefresh: true})
-            ]
+              'picklistModel'
+            )
           })
         ],
         features: css.class('footer')
       })
     ],
-    features: [css.class('todoapp')]
+    features: css.class('todoapp')
   })
 })
-
-jb.component('todomvc-tutorial.filter-completed',{
-  params: [{ id: 'filterby', as: 'boolean', description: 'filter completed by true or false' ,defaultValue: true }],
-  impl: pipeline('%$todo%', filter(equals('%completed%','%$filterby%')))
-})
-
-
-
-jb.component('input', { /* input */ 
-  watchableData: ''
-}) 
-
