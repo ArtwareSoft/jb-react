@@ -65,9 +65,16 @@ jb.component('studio.open-new-resource', { /* studio.openNewResource */
     }),
     title: 'New %$watchableOrPassive% Data Source',
     onOK: [
-      (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component('data-resource.' + jb.tostring(name), {
-        [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
-      }),
+      studio.newComp('data-resource.%$name%',
+        obj(prop('%$watchableOrPassive%Data', `put your data here.
+E.g.
+hello world
+[1,2,3]
+{ x: 7, y: 3}`))
+      ),
+      // (ctx,{name},{watchableOrPassive}) => Object.assign(jb.studio.previewjb. component('data-resource.' + jb.tostring(name), {
+      //   [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
+      // }), {[jb.studio.previewjb.location]: ''}),
       studio.openResource('data-resource.%$name%~%$watchableOrPassive%Data', '%$name%')
     ],
     modal: true,

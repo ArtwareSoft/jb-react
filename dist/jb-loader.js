@@ -13,7 +13,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'dist/material.indigo-pink.min.css',
       ],
       'ui-common': [
-//        'node_modules/jquery/dist/jquery.min.js',
         'dist/material.js',
         'css/font.css',
         'css/styles.css',
@@ -27,6 +26,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
 
         'src/ui/group.js',
         'src/ui/label.js',
+        'src/ui/html.js',
         'src/ui/image.js',
         'src/ui/button.js',
         'src/ui/field.js',
@@ -111,8 +111,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
-        'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header',
-        'probe'
+        'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',
@@ -124,9 +123,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
 
         'css/font.css',
         'css/styles.css',
-      ],
-      'deep-diff': [
-        'dist/deep-diff.js',
       ],
       babel: [
         'node_modules/babel-standalone/babel.js',

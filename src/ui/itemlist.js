@@ -121,6 +121,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
     {
       id: 'cssForSelected',
       as: 'string',
+      description: 'e.g. background: red;color: blue',
       defaultValue: 'background: #bbb !important; color: #fff !important'
     }
   ],

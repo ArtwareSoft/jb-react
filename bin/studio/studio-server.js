@@ -6,9 +6,11 @@ file_type_handlers = {};
 
 _iswin = /^win/.test(process.platform);
 
-const settings = JSON.parse(fs.readFileSync(`${__dirname}/jbart.json`));
+const settings = JSON.parse(fs.readFileSync(`./jbart.json`));
 // define projects not under /jbart/projects directory
 let sites = null;
+const projecstDir = process.cwd().indexOf('jb-react') != -1 ? 'projects' : './'
+
 function projectDirectory(project) {
     // if (project == 'bin')
     //    return 'node_modules/jbart5-react/bin'
@@ -18,7 +20,7 @@ function projectDirectory(project) {
     return res;
 
     function externalSites() {
-      try { return JSON.parse(fs.readFileSync(`${__dirname}/sites.json`)) } catch (e) {}
+      try { return JSON.parse(fs.readFileSync(`./sites.json`)) } catch (e) {}
     }
 }
 
@@ -170,6 +172,22 @@ const op_post_handlers = {
         endWithFailure(res,e)
       }
       endWithSuccess(res,'Project Created');
+    },
+    createDirectoryWithFiles: function(req, res,body,path) {
+      let clientReq;
+      try {
+        clientReq = JSON.parse(body);
+        if (!clientReq)
+           return endWithFailure(res,'Can not parse json request');
+        const baseDir = clientReq.baseDir;
+        fs.mkdirSync(baseDir);
+        (clientReq.files || []).forEach(f=>
+          fs.writeFileSync(baseDir+ '/' + f.fileName,f.content)
+        )
+      } catch(e) {
+        endWithFailure(res,e)
+      }
+      endWithSuccess(res,'Directory Created');
     }
 };
 
@@ -246,7 +264,10 @@ const op_get_handlers = {
       res.end(getURLParam(req,'data'));
     },
     projects: function(req,res,path) {
-      res.end(JSON.stringify({projects: fs.readdirSync('projects')}));
+      const projects = fs.readdirSync(projecstDir)
+        .filter(dir=>fs.statSync(projecstDir + '/' + dir).isDirectory())
+        .filter(dir=>!dir.match(new RegExp(settings.exclude)))
+      res.end(JSON.stringify({projects}));
     },
     gotoSource: function(req,res,path) {
       const comp = getURLParam(req,'comp');
@@ -398,4 +419,7 @@ function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
 
 http.createServer(serve).listen(settings.port);
 
-console.log(`hello-world url: http://localhost:${settings.port}/project/studio/hello-world`)
+if (process.cwd().indexOf('jb-react') != -1)
+  console.log(`hello-world url: http://localhost:${settings.port}/project/studio/hello-world`)
+else
+  console.log(`studio url: http://localhost:${settings.port}/studio-bin`)

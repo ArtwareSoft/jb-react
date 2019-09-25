@@ -30,16 +30,16 @@ jb.component('layout.horizontal', { /* layout.horizontal */
 jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit */
   type: 'group.style',
   params: [
-    {id: 'leftWidth', as: 'number', defaultValue: 200, mandatory: true},
-    {id: 'rightWidth', as: 'number', defaultValue: 200, mandatory: true},
-    {id: 'spacing', as: 'number', defaultValue: 3}
+    {id: 'leftWidth', as: 'string', defaultValue: '200px', mandatory: true},
+    {id: 'rightWidth', as: 'string', defaultValue: '100%', mandatory: true},
+    {id: 'spacing', as: 'string', defaultValue: '3px'}
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     css: `{display: flex}
-        >*:first-child { margin-right: %$spacing%px; flex: 0 0 %$leftWidth%px; width: %$leftWidth%px; }
-        >*:last-child { margin-right:0; flex: 0 0 %$rightWidth%px; width: %$rightWidth%px; }`,
+        >*:first-child { margin-right: %$spacing%; width: %$leftWidth%; }
+        >*:last-child { margin-right:0; width: %$rightWidth%; }`,
     features: group.initGroup()
   })
 })

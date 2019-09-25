@@ -313,29 +313,31 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
   // if (expressionPart == "")
   //   return ctx.data;
 
-  const parts = expressionPart.split(/[./]/);
+  const parts = expressionPart.split(/[./[]/);
   return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),ctx.data)
 
-  function pipe(input,subExp,last,first,refHandlerArg) {
-      if (subExp == '')
-          return input;
+  function pipe(input,subExp,last,first) {
+    if (subExp == '')
+       return input;
+    if (subExp.match(/]$/))
+      subExp = subExp.slice(0,-1)
 
-      const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
-      if (arrayIndexMatch) {
-        const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
-        const index = arrayIndexMatch[2];
-        if (!Array.isArray(arr))
-            return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);
+    const refHandler = input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
+    //   const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
+    //   if (arrayIndexMatch) {
+    //     const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
+    //     const index = arrayIndexMatch[2];
+    //     if (!Array.isArray(arr))
+    //         return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);
 
-        if (last && (jstype == 'ref' || !primitiveJsType))
-           return refHandler.objectProperty(arr,index,ctx);
-        if (typeof arr[index] == 'undefined')
-           arr[index] = last ? null : implicitlyCreateInnerObject(arr,index,refHandler);
-        if (last && jstype)
-           return jstypes[jstype](arr[index]);
-        return arr[index];
-     }
+    //     if (last && (jstype == 'ref' || !primitiveJsType))
+    //        return refHandler.objectProperty(arr,index,ctx);
+    //     if (typeof arr[index] == 'undefined')
+    //        arr[index] = last ? null : implicitlyCreateInnerObject(arr,index,refHandler);
+    //     if (last && jstype)
+    //        return jstypes[jstype](arr[index]);
+    //     return arr[index];
+    //  }
 
       const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
       if (functionCallMatch && jb.functions[functionCallMatch[1]])
@@ -346,7 +348,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
       const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
-      if (Array.isArray(obj))
+      if (Array.isArray(obj) && isNaN(Number(subExp)))
         return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
 
       if (input != null && typeof input == 'object') {
@@ -632,8 +634,8 @@ function extend(obj,obj1,obj2,obj3) {
 
 const simpleValueByRefHandler = {
   val(v) {
-    if (v.$jb_val) return v.$jb_val();
-    return v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
+    if (v && v.$jb_val) return v.$jb_val();
+    return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
   },
   writeValue(to,value,srcCtx) {
     jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
@@ -691,7 +693,9 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      jb.frame.traceComponentFile && jb.frame.traceComponentFile(comp)
+      const line = new Error().stack.split(/\r|\n/).pop()
+      comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
+    
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
@@ -700,7 +704,9 @@ Object.assign(jb,{
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.const(jb.removeDataResourcePrefix(id),comp.passiveData)
       }
-    } catch(e) {}
+    } catch(e) {
+      console.log(e)
+    }
 
     jb.comps[id] = comp;
 
@@ -1911,9 +1917,7 @@ jb.component('http.post', { /* http.post */
     }
   ],
   impl: (ctx,url,postData,json) => {
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-		return fetch(url,{method: 'POST', headers: headers, body: JSON.stringify(postData) })
+		return fetch(url,{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(postData) })
 			  .then(r =>
 			  		json ? r.json() : r.text())
 			  .catch(e => jb.logException(e,'',ctx) || [])
@@ -2004,11 +2008,6 @@ const spySettings = {
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
 }
 const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-
-frame.traceComponentFile = function(comp) {
-    const line = new Error().stack.split(/\r|\n/)[3]
-    comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
-}
 
 function initSpy({Error, settings, wSpyParam, memoryUsage}) {
     const systemProps = ['index', 'time', '_time', 'mem', 'source']
@@ -3119,7 +3118,7 @@ jb.component('extract-text', { /* extractText */
   description: 'text breaking according to begin/end markers',
   params: [
     {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
-    {id: 'startMarkers', as: 'array', mandatory: true},
+    {id: 'startMarkers', type: 'data[]' ,as: 'array', mandatory: true},
     {id: 'endMarker', as: 'string'},
     {
       id: 'includingStartMarker',
@@ -3191,7 +3190,7 @@ jb.component('extract-text', { /* extractText */
 
     let out = { match: [], unmatch: []},pos =0,start=null;
     while(start = findStartMarkers(pos)) {
-        const end = endMarker ? findMarker(endMarker,start.end) : findStartMarkers(start.end)
+        let end = endMarker ? findMarker(endMarker,start.end) : findStartMarkers(start.end)
         if (!end) // if end not found use end of text
           end = { pos : text.length, end: text.length }
         const start_match = includingStartMarker ? start.pos : start.end;

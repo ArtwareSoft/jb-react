@@ -313,29 +313,31 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
   // if (expressionPart == "")
   //   return ctx.data;
 
-  const parts = expressionPart.split(/[./]/);
+  const parts = expressionPart.split(/[./[]/);
   return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),ctx.data)
 
-  function pipe(input,subExp,last,first,refHandlerArg) {
-      if (subExp == '')
-          return input;
+  function pipe(input,subExp,last,first) {
+    if (subExp == '')
+       return input;
+    if (subExp.match(/]$/))
+      subExp = subExp.slice(0,-1)
 
-      const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
-      if (arrayIndexMatch) {
-        const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
-        const index = arrayIndexMatch[2];
-        if (!Array.isArray(arr))
-            return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);
+    const refHandler = input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
+    //   const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
+    //   if (arrayIndexMatch) {
+    //     const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
+    //     const index = arrayIndexMatch[2];
+    //     if (!Array.isArray(arr))
+    //         return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);
 
-        if (last && (jstype == 'ref' || !primitiveJsType))
-           return refHandler.objectProperty(arr,index,ctx);
-        if (typeof arr[index] == 'undefined')
-           arr[index] = last ? null : implicitlyCreateInnerObject(arr,index,refHandler);
-        if (last && jstype)
-           return jstypes[jstype](arr[index]);
-        return arr[index];
-     }
+    //     if (last && (jstype == 'ref' || !primitiveJsType))
+    //        return refHandler.objectProperty(arr,index,ctx);
+    //     if (typeof arr[index] == 'undefined')
+    //        arr[index] = last ? null : implicitlyCreateInnerObject(arr,index,refHandler);
+    //     if (last && jstype)
+    //        return jstypes[jstype](arr[index]);
+    //     return arr[index];
+    //  }
 
       const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
       if (functionCallMatch && jb.functions[functionCallMatch[1]])
@@ -346,7 +348,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
       const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
-      if (Array.isArray(obj))
+      if (Array.isArray(obj) && isNaN(Number(subExp)))
         return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
 
       if (input != null && typeof input == 'object') {
@@ -632,8 +634,8 @@ function extend(obj,obj1,obj2,obj3) {
 
 const simpleValueByRefHandler = {
   val(v) {
-    if (v.$jb_val) return v.$jb_val();
-    return v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
+    if (v && v.$jb_val) return v.$jb_val();
+    return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
   },
   writeValue(to,value,srcCtx) {
     jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
@@ -691,7 +693,9 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      jb.frame.traceComponentFile && jb.frame.traceComponentFile(comp)
+      const line = new Error().stack.split(/\r|\n/).pop()
+      comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
+    
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
@@ -700,7 +704,9 @@ Object.assign(jb,{
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.const(jb.removeDataResourcePrefix(id),comp.passiveData)
       }
-    } catch(e) {}
+    } catch(e) {
+      console.log(e)
+    }
 
     jb.comps[id] = comp;
 
@@ -1911,9 +1917,7 @@ jb.component('http.post', { /* http.post */
     }
   ],
   impl: (ctx,url,postData,json) => {
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-		return fetch(url,{method: 'POST', headers: headers, body: JSON.stringify(postData) })
+		return fetch(url,{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(postData) })
 			  .then(r =>
 			  		json ? r.json() : r.text())
 			  .catch(e => jb.logException(e,'',ctx) || [])
@@ -2004,11 +2008,6 @@ const spySettings = {
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
 }
 const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-
-frame.traceComponentFile = function(comp) {
-    const line = new Error().stack.split(/\r|\n/)[3]
-    comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
-}
 
 function initSpy({Error, settings, wSpyParam, memoryUsage}) {
     const systemProps = ['index', 'time', '_time', 'mem', 'source']
@@ -9214,7 +9213,7 @@ jb.component('text', { /* text */
   params: [
     {id: 'title', as: 'string', mandatory: true, defaultValue: 'no title', dynamic: true},
     {id: 'text', as: 'ref', mandatory: true, defaultValue: 'my text', dynamic: true},
-    {id: 'style', type: 'label.style', defaultValue: label.noWrappingTag(), dynamic: true},
+    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -9311,6 +9310,32 @@ jb.component('highlight', { /* highlight */
               b.split(highlight).slice(1).join(highlight)]
   }
 })
+;
+
+jb.ns('html')
+
+jb.component('html', { 
+    type: 'control',
+    category: 'control:100,common:80',
+    params: [
+      {id: 'title', as: 'string', mandatory: true, templateValue: 'html', dynamic: true},
+      {id: 'html', as: 'string', mandatory: true, templateValue: '<p>html here</p>', dynamic: true},
+      {id: 'style', type: 'html.style', defaultValue: html.plain(), dynamic: true},
+      {id: 'features', type: 'feature[]', dynamic: true}
+    ],
+    impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('html.plain', {
+    type: 'label.style',
+    impl: customStyle({
+        template: (cmp,state,h) => h('div'),
+        features: ctx => ({
+            afterViewInit: cmp => cmp.base.innerHTML = cmp.ctx.vars.$model.html()
+        })
+    })
+})
+
 ;
 
 jb.ns('image')
@@ -9526,7 +9551,7 @@ jb.ui.checkValidationError = cmp => {
     const err = (cmp.validations || [])
       .filter(validator=>!validator.validCondition(ctx))
       .map(validator=>validator.errorMessage(ctx))[0];
-    if (ctx.exp('formContainer'))
+    if (err && ctx.exp('formContainer'))
       ctx.run(writeValue('%$formContainer/err%',err));
     return err;
   }
@@ -10052,18 +10077,18 @@ jb.component('watch-ref', { /* watchRef */
       defaultValue: 'no',
       description: 'watch childern change as well'
     },
+   {
+      id: 'allowSelfRefresh',
+      as: 'boolean',
+      description: 'allow refresh originated from the components or its children',
+      type: 'boolean'
+    },
     {
       id: 'delay',
       as: 'number',
       description: 'delay in activation, can be used to set priority'
     },
-    {
-      id: 'allowSelfRefresh',
-      as: 'boolean',
-      description: 'allow refresh originated from the components or its children',
-      type: 'boolean'
-    }
-  ],
+   ],
   impl: (ctx,ref,includeChildren,delay,allowSelfRefresh) => ({
       beforeInit: cmp =>
         cmp.watchRefOn = true,
@@ -11289,6 +11314,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
     {
       id: 'cssForSelected',
       as: 'string',
+      description: 'e.g. background: red;color: blue',
       defaultValue: 'background: #bbb !important; color: #fff !important'
     }
   ],
@@ -13290,16 +13316,16 @@ jb.component('layout.horizontal', { /* layout.horizontal */
 jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit */
   type: 'group.style',
   params: [
-    {id: 'leftWidth', as: 'number', defaultValue: 200, mandatory: true},
-    {id: 'rightWidth', as: 'number', defaultValue: 200, mandatory: true},
-    {id: 'spacing', as: 'number', defaultValue: 3}
+    {id: 'leftWidth', as: 'string', defaultValue: '200px', mandatory: true},
+    {id: 'rightWidth', as: 'string', defaultValue: '100%', mandatory: true},
+    {id: 'spacing', as: 'string', defaultValue: '3px'}
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     css: `{display: flex}
-        >*:first-child { margin-right: %$spacing%px; flex: 0 0 %$leftWidth%px; width: %$leftWidth%px; }
-        >*:last-child { margin-right:0; flex: 0 0 %$rightWidth%px; width: %$rightWidth%px; }`,
+        >*:first-child { margin-right: %$spacing%; width: %$leftWidth%; }
+        >*:last-child { margin-right:0; width: %$rightWidth%; }`,
     features: group.initGroup()
   })
 })
@@ -13322,22 +13348,21 @@ jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
 jb.component('layout.flex', { /* layout.flex */
   type: 'group.style',
   params: [
-    {
-      id: 'align',
-      as: 'string',
-      options: ',flex-start,flex-end,center,space-between,space-around'
-    },
+    {id: 'alignItems', as: 'string', options: ',normal,stretch,center,start,end,flex-start,flex-end,baseline,first baseline,last baseline,safe center,unsafe center' },
+    {id: 'spacing', as: 'number', defaultValue: 3},
+    {id: 'justifyContent', as: 'string', options: ',flex-start,flex-end,center,space-between,space-around' },
     {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
-    {id: 'wrap', as: 'string', options: ',wrap'}
+    {id: 'wrap', as: 'string', options: ',wrap,wrap-reverse,nowrap'}
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
-    css: '{ display: flex; {?justify-content:%$align%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }',
+    css: `{ display: flex; {?align-items:%$alignItems%;?} {?justify-content:%$justifyContent%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }
+    >* { margin-right: %$spacing%px }
+    >*:last-child { margin-right:0 }`,
     features: group.initGroup()
   })
 })
-
 jb.component('flex-layout-container.align-main-axis', { /* flexLayoutContainer.alignMainAxis */
   type: 'feature',
   params: [

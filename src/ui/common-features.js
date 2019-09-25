@@ -60,18 +60,18 @@ jb.component('watch-ref', { /* watchRef */
       defaultValue: 'no',
       description: 'watch childern change as well'
     },
+   {
+      id: 'allowSelfRefresh',
+      as: 'boolean',
+      description: 'allow refresh originated from the components or its children',
+      type: 'boolean'
+    },
     {
       id: 'delay',
       as: 'number',
       description: 'delay in activation, can be used to set priority'
     },
-    {
-      id: 'allowSelfRefresh',
-      as: 'boolean',
-      description: 'allow refresh originated from the components or its children',
-      type: 'boolean'
-    }
-  ],
+   ],
   impl: (ctx,ref,includeChildren,delay,allowSelfRefresh) => ({
       beforeInit: cmp =>
         cmp.watchRefOn = true,

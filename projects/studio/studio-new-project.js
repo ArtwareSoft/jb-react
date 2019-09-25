@@ -6,7 +6,7 @@ jb.component('studio.new-project', { /* studio.newProject */
     {id: 'onSuccess', type: 'action', dynamic: true}
   ],
   impl: (ctx,name) => {
-    var request = {
+    const request = {
       project: name,
       files: [
         { fileName: `${name}.js`, content: `
@@ -39,14 +39,11 @@ jb.component('${name}.main', {
 ` },
       ]
     };
-    var headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-    return fetch(`/?op=createProject`,{method: 'POST', headers: headers, body: JSON.stringify(request) })
-    .then(r =>
+    return jb.studio.host.createProject(request, {'Content-Type': 'application/json; charset=UTF-8' } ).then(r =>
         r.json())
     .then(res=>{
         if (res.type == 'error')
-            return jb.studio.message(`error creating project ${name}: ` + (e && e.desc));
+            return jb.studio.message(`error creating project ${name}: ` + (res && jb.prettyPrint(res.desc)));
         jb.studio.message(`project ${name} created`);
         return ctx.params.onSuccess();
     })

@@ -70,7 +70,7 @@ jb.component('studio.probe-results', { /* studio.probeResults */
   impl: (ctx, path) => jb.delay(300).then(_ => {
     if (ctx.exp('%$stduio/fastPreview%')) {
       const inCtx = st.closestCtxByPath(path) || new jb.jbCtx()
-      return [{in: inCtx, out: st.isOfType(path,'action') ? null : 
+      return [{in: inCtx, out: st.isOfType(path,'action') ? null :
           st.previewjb.val(inCtx.runItself())}]
     }
     return ctx.run(pipe(studio.probe(path), '%result%'))
@@ -175,12 +175,21 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
           group({
             title: 'in (%$probeResult/length%)',
             controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
-            features: field.columnWidth(100)
+            features:[
+              field.columnWidth(100),
+              field.titleCtrl(button({
+                    title: 'in (%$probeResult/length%)',
+                    action: writeValue('%$maxItems%', '100'),
+                    style: button.href(),
+                    features: [watchRef('%$maxItems%'), ] // hidden('%$probeResult/length% > %$maxItems%')
+              }))
+            ]
           }),
           group({title: 'out', controls: studio.dataBrowse('%out%'), features: field.columnWidth(100)})
         ],
         style: table.mdl('mdl-data-table', 'mdl-data-table__cell--non-numeric'),
         features: [
+          watchRef('%$maxItems%'),
           feature.if('%$jbEditorCntrData/selected%'),
           group.wait({
             for: studio.probeResults('%$jbEditorCntrData/selected%'),
@@ -190,18 +199,12 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
           css('{white-space: normal}'),
         ]
       }),
-      // button({
-      //   title: 'show (%$probeResult/length%)',
-      //   action: writeValue('%$maxItems%', '100'),
-      //   style: button.href(),
-      //   features: [watchRef('%$maxItems%'), ] // hidden('%$probeResult/length% > %$maxItems%')
-      // }),
      ],
     features: [
       css.height({height: '600', overflow: 'auto', minMax: 'max'}),
       watchRef('%$jbEditorCntrData/selected%'),
       watchRef('%$studio/pickSelectionCtxId%'),
-      variable({name: 'maxItems', value: '5' })
+      variable({name: 'maxItems', value: '5', watchable: true })
     ]
   })
 })
@@ -275,11 +278,7 @@ jb.component('studio.jb-editor-inteli-tree', { /* studio.jbEditorInteliTree */
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: group({
-    title: 'main',
-    style: layout.horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
-    controls: [
-      tree({
+  impl: tree({
         nodeModel: studio.jbEditorNodes('%$path%'),
         features: [
           css.class('jb-editor jb-control-tree'),
@@ -298,9 +297,7 @@ jb.component('studio.jb-editor-inteli-tree', { /* studio.jbEditorInteliTree */
           css.width({width: '500', selector: 'jb-editor'}),
           studio.watchScriptChanges()
         ]
-      })
-    ]
-  })
+   })
 })
 
 jb.component('studio.jb-editor', { /* studio.jbEditor */
@@ -310,10 +307,10 @@ jb.component('studio.jb-editor', { /* studio.jbEditor */
   ],
   impl: group({
     title: 'main',
-    style: layout.horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
+    style: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%'}),
     controls: [
       studio.jbEditorInteliTree('%$path%'),
-      studio.probeDataView('%$jbEditorCntrData/selected%')
+      studio.probeDataView()
     ],
     features: [id('jbEditor'), css.padding('10'), css.height({height: '800', minMax: 'max'})]
   })
@@ -426,7 +423,7 @@ jb.component('menu.studio-wrap-with-array', { /* menu.studioWrapWithArray */
   }
 })
 
-jb.component('studio.add-variable', { /* studio.addVariable */ 
+jb.component('studio.add-variable', { /* studio.addVariable */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}

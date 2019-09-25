@@ -82,7 +82,7 @@ type isRefPT = {$: 'isRef', obj: dataType}
 type asRefPT = {$: 'asRef', obj: dataType}
 type data_switchPT = {$: 'data.switch', cases: [data_switch_caseType], default: dataType}
 type jison_parsePT = {$: 'jison.parse', parser: jison_parserType, goal: dataType, text: dataType, debug: booleanType}
-type extract_textPT = {$: 'extract-text', text: dataType, startMarkers: dataType, endMarker: dataType, 
+type extract_textPT = {$: 'extract-text', text: dataType, startMarkers: [dataType], endMarker: dataType, 
 /** include the marker at part of the result */includingStartMarker: booleanType, 
 /** include the marker at part of the result */includingEndMarker: booleanType, 
 /** apply the markers repeatingly */repeating: booleanType, noTrim: booleanType, 
@@ -349,8 +349,8 @@ type card_initPT = {$: 'card.init', }
 type watch_refPT = {$: 'watch-ref', 
 /** reference to data */ref: dataType, 
 /** watch childern change as well */includeChildren: dataType, 
-/** delay in activation, can be used to set priority */delay: dataType, 
-/** allow refresh originated from the components or its children */allowSelfRefresh: booleanType}
+/** allow refresh originated from the components or its children */allowSelfRefresh: booleanType, 
+/** delay in activation, can be used to set priority */delay: dataType}
 type watch_observablePT = {$: 'watch-observable', toWatch: dataType}
 type group_dataPT = {$: 'group.data', data: dataType, 
 /** optional. define data as a local variable */itemVariable: dataType, watch: booleanType, 
@@ -425,7 +425,8 @@ type itemlist_watch_items_with_headingPT = {$: 'itemlist.watch-items-with-headin
 type itemlist_no_containerPT = {$: 'itemlist.no-container', }
 type itemlist_initPT = {$: 'itemlist.init', }
 type itemlist_init_tablePT = {$: 'itemlist.init-table', }
-type itemlist_selectionPT = {$: 'itemlist.selection', databind: dataType, selectedToDatabind: dataType, databindToSelected: dataType, onSelection: actionType, onDoubleClick: actionType, autoSelectFirst: booleanType, cssForSelected: dataType}
+type itemlist_selectionPT = {$: 'itemlist.selection', databind: dataType, selectedToDatabind: dataType, databindToSelected: dataType, onSelection: actionType, onDoubleClick: actionType, autoSelectFirst: booleanType, 
+/** e.g. background: red;color: blue */cssForSelected: dataType}
 type itemlist_keyboard_selectionPT = {$: 'itemlist.keyboard-selection', autoFocus: booleanType, onEnter: actionType}
 type itemlist_drag_and_dropPT = {$: 'itemlist.drag-and-drop', }
 type itemlist_drag_handlePT = {$: 'itemlist.drag-handle', }
@@ -1031,7 +1032,7 @@ function expressionOption(
 function expressionOption(
 /** e + e */syntax: dataType) : expression_optionType;
 function extractText : dataType;
-function extractText(profile: { text: dataType, startMarkers: dataType, endMarker: dataType, 
+function extractText(profile: { text: dataType, startMarkers: [dataType], endMarker: dataType, 
 /** include the marker at part of the result */includingStartMarker: booleanType, 
 /** include the marker at part of the result */includingEndMarker: booleanType, 
 /** apply the markers repeatingly */repeating: booleanType, noTrim: booleanType, 
@@ -1113,8 +1114,8 @@ function watchRef : featureType;
 function watchRef(profile: { 
 /** reference to data */ref: dataType, 
 /** watch childern change as well */includeChildren: dataType, 
-/** delay in activation, can be used to set priority */delay: dataType, 
-/** allow refresh originated from the components or its children */allowSelfRefresh: booleanType}) : featureType;
+/** allow refresh originated from the components or its children */allowSelfRefresh: booleanType, 
+/** delay in activation, can be used to set priority */delay: dataType}) : featureType;
 function watchRef(
 /** reference to data */ref: dataType) : featureType;
 function watchObservable : featureType;
@@ -1400,7 +1401,8 @@ function itemlist_init() : featureType;
 function itemlist_initTable : featureType;
 function itemlist_initTable() : featureType;
 function itemlist_selection : featureType;
-function itemlist_selection(profile: { databind: dataType, selectedToDatabind: dataType, databindToSelected: dataType, onSelection: actionType, onDoubleClick: actionType, autoSelectFirst: booleanType, cssForSelected: dataType}) : featureType;
+function itemlist_selection(profile: { databind: dataType, selectedToDatabind: dataType, databindToSelected: dataType, onSelection: actionType, onDoubleClick: actionType, autoSelectFirst: booleanType, 
+/** e.g. background: red;color: blue */cssForSelected: dataType}) : featureType;
 function itemlist_selection(databind: dataType) : featureType;
 function itemlist_keyboardSelection : featureType;
 function itemlist_keyboardSelection(profile: { autoFocus: booleanType, onEnter: actionType}) : featureType;
@@ -1956,7 +1958,8 @@ init() : featureType,
 initTable : featureType,
 initTable() : featureType,
 selection : featureType,
-selection(profile: { databind: dataType, selectedToDatabind: dataType, databindToSelected: dataType, onSelection: actionType, onDoubleClick: actionType, autoSelectFirst: booleanType, cssForSelected: dataType}) : featureType,
+selection(profile: { databind: dataType, selectedToDatabind: dataType, databindToSelected: dataType, onSelection: actionType, onDoubleClick: actionType, autoSelectFirst: booleanType, 
+/** e.g. background: red;color: blue */cssForSelected: dataType}) : featureType,
 selection(databind: dataType) : featureType,
 keyboardSelection : featureType,
 keyboardSelection(profile: { autoFocus: booleanType, onEnter: actionType}) : featureType,

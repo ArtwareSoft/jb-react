@@ -28,7 +28,6 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 			css: `{ position: fixed;
 						background: #F9F9F9;
 						width: %$width%px;
-						max-width: 1200px;
 						min-height: %$height%px;
 						overflow: auto;
 						border-radius: 4px;
@@ -135,7 +134,6 @@ jb.component('dialog.studio-floating', { /* dialog.studioFloating */
     css: `{ position: fixed;
 						background: #F9F9F9;
 						width: %$width%px;
-						max-width: 1200px;
 						min-height: %$height%px;
 						overflow: auto;
 						border-radius: 4px;

@@ -313,29 +313,31 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
   // if (expressionPart == "")
   //   return ctx.data;
 
-  const parts = expressionPart.split(/[./]/);
+  const parts = expressionPart.split(/[./[]/);
   return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),ctx.data)
 
-  function pipe(input,subExp,last,first,refHandlerArg) {
-      if (subExp == '')
-          return input;
+  function pipe(input,subExp,last,first) {
+    if (subExp == '')
+       return input;
+    if (subExp.match(/]$/))
+      subExp = subExp.slice(0,-1)
 
-      const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
-      if (arrayIndexMatch) {
-        const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
-        const index = arrayIndexMatch[2];
-        if (!Array.isArray(arr))
-            return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);
+    const refHandler = input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
+    //   const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
+    //   if (arrayIndexMatch) {
+    //     const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
+    //     const index = arrayIndexMatch[2];
+    //     if (!Array.isArray(arr))
+    //         return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);
 
-        if (last && (jstype == 'ref' || !primitiveJsType))
-           return refHandler.objectProperty(arr,index,ctx);
-        if (typeof arr[index] == 'undefined')
-           arr[index] = last ? null : implicitlyCreateInnerObject(arr,index,refHandler);
-        if (last && jstype)
-           return jstypes[jstype](arr[index]);
-        return arr[index];
-     }
+    //     if (last && (jstype == 'ref' || !primitiveJsType))
+    //        return refHandler.objectProperty(arr,index,ctx);
+    //     if (typeof arr[index] == 'undefined')
+    //        arr[index] = last ? null : implicitlyCreateInnerObject(arr,index,refHandler);
+    //     if (last && jstype)
+    //        return jstypes[jstype](arr[index]);
+    //     return arr[index];
+    //  }
 
       const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
       if (functionCallMatch && jb.functions[functionCallMatch[1]])
@@ -346,7 +348,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
       const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
-      if (Array.isArray(obj))
+      if (Array.isArray(obj) && isNaN(Number(subExp)))
         return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
 
       if (input != null && typeof input == 'object') {
@@ -632,8 +634,8 @@ function extend(obj,obj1,obj2,obj3) {
 
 const simpleValueByRefHandler = {
   val(v) {
-    if (v.$jb_val) return v.$jb_val();
-    return v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
+    if (v && v.$jb_val) return v.$jb_val();
+    return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
   },
   writeValue(to,value,srcCtx) {
     jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
@@ -691,7 +693,9 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      jb.frame.traceComponentFile && jb.frame.traceComponentFile(comp)
+      const line = new Error().stack.split(/\r|\n/).pop()
+      comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
+    
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
@@ -700,7 +704,9 @@ Object.assign(jb,{
         jb.comps[jb.addDataResourcePrefix(id)] = comp
         return jb.const(jb.removeDataResourcePrefix(id),comp.passiveData)
       }
-    } catch(e) {}
+    } catch(e) {
+      console.log(e)
+    }
 
     jb.comps[id] = comp;
 
@@ -1911,9 +1917,7 @@ jb.component('http.post', { /* http.post */
     }
   ],
   impl: (ctx,url,postData,json) => {
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-		return fetch(url,{method: 'POST', headers: headers, body: JSON.stringify(postData) })
+		return fetch(url,{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(postData) })
 			  .then(r =>
 			  		json ? r.json() : r.text())
 			  .catch(e => jb.logException(e,'',ctx) || [])
@@ -2004,11 +2008,6 @@ const spySettings = {
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
 }
 const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-
-frame.traceComponentFile = function(comp) {
-    const line = new Error().stack.split(/\r|\n/)[3]
-    comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
-}
 
 function initSpy({Error, settings, wSpyParam, memoryUsage}) {
     const systemProps = ['index', 'time', '_time', 'mem', 'source']
@@ -9214,7 +9213,7 @@ jb.component('text', { /* text */
   params: [
     {id: 'title', as: 'string', mandatory: true, defaultValue: 'no title', dynamic: true},
     {id: 'text', as: 'ref', mandatory: true, defaultValue: 'my text', dynamic: true},
-    {id: 'style', type: 'label.style', defaultValue: label.noWrappingTag(), dynamic: true},
+    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -9311,6 +9310,32 @@ jb.component('highlight', { /* highlight */
               b.split(highlight).slice(1).join(highlight)]
   }
 })
+;
+
+jb.ns('html')
+
+jb.component('html', { 
+    type: 'control',
+    category: 'control:100,common:80',
+    params: [
+      {id: 'title', as: 'string', mandatory: true, templateValue: 'html', dynamic: true},
+      {id: 'html', as: 'string', mandatory: true, templateValue: '<p>html here</p>', dynamic: true},
+      {id: 'style', type: 'html.style', defaultValue: html.plain(), dynamic: true},
+      {id: 'features', type: 'feature[]', dynamic: true}
+    ],
+    impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('html.plain', {
+    type: 'label.style',
+    impl: customStyle({
+        template: (cmp,state,h) => h('div'),
+        features: ctx => ({
+            afterViewInit: cmp => cmp.base.innerHTML = cmp.ctx.vars.$model.html()
+        })
+    })
+})
+
 ;
 
 jb.ns('image')
@@ -9526,7 +9551,7 @@ jb.ui.checkValidationError = cmp => {
     const err = (cmp.validations || [])
       .filter(validator=>!validator.validCondition(ctx))
       .map(validator=>validator.errorMessage(ctx))[0];
-    if (ctx.exp('formContainer'))
+    if (err && ctx.exp('formContainer'))
       ctx.run(writeValue('%$formContainer/err%',err));
     return err;
   }
@@ -10052,18 +10077,18 @@ jb.component('watch-ref', { /* watchRef */
       defaultValue: 'no',
       description: 'watch childern change as well'
     },
+   {
+      id: 'allowSelfRefresh',
+      as: 'boolean',
+      description: 'allow refresh originated from the components or its children',
+      type: 'boolean'
+    },
     {
       id: 'delay',
       as: 'number',
       description: 'delay in activation, can be used to set priority'
     },
-    {
-      id: 'allowSelfRefresh',
-      as: 'boolean',
-      description: 'allow refresh originated from the components or its children',
-      type: 'boolean'
-    }
-  ],
+   ],
   impl: (ctx,ref,includeChildren,delay,allowSelfRefresh) => ({
       beforeInit: cmp =>
         cmp.watchRefOn = true,
@@ -11289,6 +11314,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
     {
       id: 'cssForSelected',
       as: 'string',
+      description: 'e.g. background: red;color: blue',
       defaultValue: 'background: #bbb !important; color: #fff !important'
     }
   ],
@@ -13290,16 +13316,16 @@ jb.component('layout.horizontal', { /* layout.horizontal */
 jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit */
   type: 'group.style',
   params: [
-    {id: 'leftWidth', as: 'number', defaultValue: 200, mandatory: true},
-    {id: 'rightWidth', as: 'number', defaultValue: 200, mandatory: true},
-    {id: 'spacing', as: 'number', defaultValue: 3}
+    {id: 'leftWidth', as: 'string', defaultValue: '200px', mandatory: true},
+    {id: 'rightWidth', as: 'string', defaultValue: '100%', mandatory: true},
+    {id: 'spacing', as: 'string', defaultValue: '3px'}
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     css: `{display: flex}
-        >*:first-child { margin-right: %$spacing%px; flex: 0 0 %$leftWidth%px; width: %$leftWidth%px; }
-        >*:last-child { margin-right:0; flex: 0 0 %$rightWidth%px; width: %$rightWidth%px; }`,
+        >*:first-child { margin-right: %$spacing%; width: %$leftWidth%; }
+        >*:last-child { margin-right:0; width: %$rightWidth%; }`,
     features: group.initGroup()
   })
 })
@@ -13322,22 +13348,21 @@ jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
 jb.component('layout.flex', { /* layout.flex */
   type: 'group.style',
   params: [
-    {
-      id: 'align',
-      as: 'string',
-      options: ',flex-start,flex-end,center,space-between,space-around'
-    },
+    {id: 'alignItems', as: 'string', options: ',normal,stretch,center,start,end,flex-start,flex-end,baseline,first baseline,last baseline,safe center,unsafe center' },
+    {id: 'spacing', as: 'number', defaultValue: 3},
+    {id: 'justifyContent', as: 'string', options: ',flex-start,flex-end,center,space-between,space-around' },
     {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
-    {id: 'wrap', as: 'string', options: ',wrap'}
+    {id: 'wrap', as: 'string', options: ',wrap,wrap-reverse,nowrap'}
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
-    css: '{ display: flex; {?justify-content:%$align%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }',
+    css: `{ display: flex; {?align-items:%$alignItems%;?} {?justify-content:%$justifyContent%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }
+    >* { margin-right: %$spacing%px }
+    >*:last-child { margin-right:0 }`,
     features: group.initGroup()
   })
 })
-
 jb.component('flex-layout-container.align-main-axis', { /* flexLayoutContainer.alignMainAxis */
   type: 'feature',
   params: [
@@ -29771,6 +29796,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						focus: () => editor.focus(),
 						cmEditor: editor
 					}
+					cmp.refresh = () => editor.setValue(jb.tostring(data_ref))
 					if (ctx.params.hint)
 						tgpHint(CodeMirror)
 					const wrapper = editor.getWrapperElement();
@@ -30758,7 +30784,7 @@ st.message = function(message,error) {
 	el.textContent = message;
   el.style.background = error ? 'red' : '#327DC8';
   el.style.animation = '';
-	jb.delay(1).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+	jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
 }
 
 st.showMultiMessages = function(messages) {
@@ -30771,7 +30797,7 @@ st.showMultiMessages = function(messages) {
     el.appendChild(inner)
   })
   el.style.animation = '';
-	jb.delay(1).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+	jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
 }
 
 
@@ -31030,8 +31056,7 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 					_=> cmp.dialogClose() },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
 				h('div',{class: 'dialog-buttons'},[
-					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _ => ctx.params.onUpdate(cmp.ctx) },'update'),
-					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: false}) },'cancel'),
+					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.refresh() },'refresh'),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },'ok'),
 				]),
 			]),
@@ -31045,7 +31070,6 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 			css: `{ position: fixed;
 						background: #F9F9F9;
 						width: %$width%px;
-						max-width: 1200px;
 						min-height: %$height%px;
 						overflow: auto;
 						border-radius: 4px;
@@ -31152,7 +31176,6 @@ jb.component('dialog.studio-floating', { /* dialog.studioFloating */
     css: `{ position: fixed;
 						background: #F9F9F9;
 						width: %$width%px;
-						max-width: 1200px;
 						min-height: %$height%px;
 						overflow: auto;
 						border-radius: 4px;
@@ -32214,9 +32237,10 @@ st.jbEditorTree = class {
 		if (this.sugarChildren(path,val)) return [];
 		if (!this.includeCompHeader && path.indexOf('~') == -1)
 			path = path + '~impl';
+		
 		return st.paramsOfPath(path).map(p=> ({ path: path + '~' + p.id, param: p}))
 				.filter(e=>st.valOfPath(e.path) !== undefined || e.param.mandatory)
-				.map(e=>e.path)
+				.flatMap(({path})=> Array.isArray(st.valOfPath(path)) ? st.arrayChildren(path) : [path])
 	}
 	vars(path,val) {
 		return val && typeof val == 'object' && typeof val.$vars == 'object' && [path+'~$vars']
@@ -32653,7 +32677,7 @@ jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog 
             '%$mode% == \"insert\"',
             studio.addArrayItem({
               path: '%$path%',
-              toAdd: studio.newComp('%%'),
+              toAdd: studio.newProfile('%%'),
               index: '%$index%'
             })
           ),
@@ -32715,10 +32739,10 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
     }),
     title: 'New Page',
     onOK: [
-      ctx => jb.studio.previewjb. component(ctx.exp('%$studio/project%.%$name%'), {
+      studio.newComp('%$studio/project%.%$name%', {$asIs: {
           type: 'control',
-          impl :{$: 'group', title1: ctx.exp('%$name%'), contorls: []}
-      }),
+          impl :{$: 'group', contorls: []}
+      }}),
       writeValue('%$studio/profile_path%', '%$studio/project%.%$name%~impl'),
       writeValue('%$studio/page%', '%$name%'),
       studio.openControlTree(),
@@ -32771,11 +32795,24 @@ jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */
   })
 })
 
-jb.component('studio.new-comp', {
+jb.component('studio.new-profile', {
   params: [
     {id: 'compName', as: 'string'}
   ],
-  impl: (ctx,compName) => jb.studio.newComp(jb.studio.getComp(compName), compName)
+  impl: (ctx,compName) => jb.studio.newProfile(jb.studio.getComp(compName), compName)
+})
+
+jb.component('studio.new-comp', {
+  params: [
+    {id: 'compName', as: 'string'},
+    {id: 'compContent'}
+  ],
+  impl: (ctx,compName, compContent) => {
+    const _jb = jb.studio.previewjb
+    _jb. component(compName, compContent)
+    const projectFile = jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf('/' + ctx.exp('%$studio/project%') + '/') != -1)[0]
+    Object.assign(_jb.comps[compName], { [_jb.location]: [projectFile,''] })
+  }
 })
 
 jb.studio.newControl = path =>
@@ -33106,12 +33143,12 @@ jb.component('studio.properties', { /* studio.properties */
         treeModel: studio.propertiesTreeNodes('%$path%'),
         commonFields: [
           group({
-            controls: studio.propField('%path%','%expanded%'),
+            controls: studio.propField('%path%', '%expanded%'),
             features: [field.columnWidth('300')]
           }),
           group({
             controls: studio.propertyToolbar('%path%'),
-            features: [field.columnWidth('20')]
+            features: [field.columnWidth('20'), css('{ text-align: right }')]
           })
         ],
         chapterHeadline: label(
@@ -33125,14 +33162,12 @@ jb.component('studio.properties', { /* studio.properties */
           return Number(prop) + 1
         }
         ),
+        style: tableTree.plain({hideHeaders: true, gapWidth: 100}),
         features: studio.watchPath({path: '%$path%', includeChildren: 'structure'})
       }),
       button({
         title: 'new feature',
-        action: studio.openNewProfileDialog({
-          path: '%$path%~features',
-          type: 'feature',
-        }),
+        action: studio.openNewProfileDialog({path: '%$path%~features', type: 'feature'}),
         style: button.href(),
         features: css.margin({top: '20', left: '5'})
       })
@@ -33149,19 +33184,22 @@ jb.component('studio.prop-field', {
   impl: group({
     title: studio.propName('%$path%'),
     controls: control.firstSucceeding({
-      vars: [Var('paramDef', studio.paramDef('%$path%'))],
+      vars: [
+        Var('paramDef', studio.paramDef('%$path%')),
+        Var('val', studio.val('%$path%'))
+      ],
       controls: [
         controlWithCondition(
           and(
             studio.isOfType('%$path%', 'data,boolean'),
-            not(isOfType('string,number,boolean,undefined', studio.val('%$path%')))
+            not(isOfType('string,number,boolean,undefined', '%$val%'))
           ),
           studio.propertyScript('%$path%')
         ),
         controlWithCondition(
           and(
             studio.isOfType('%$path%', 'action'),
-            isOfType('array', studio.val('%$path%'))
+            isOfType('array', '%$val%')
           ),
           studio.propertyScript('%$path%')
         ),
@@ -33174,8 +33212,8 @@ jb.component('studio.prop-field', {
           and(
             '%$paramDef/as%==\"boolean\"',
             or(
-                inGroup(list(true, false), studio.val('%$path%')),
-                isEmpty(studio.val('%$path%'))
+                inGroup(list(true, false), '%$val%'),
+                isEmpty('%$val%')
               ),
             not('%$paramDef/dynamic%')
           ),
@@ -33186,7 +33224,7 @@ jb.component('studio.prop-field', {
           studio.propertyPrimitive('%$path%')
         ),
         controlWithCondition(
-          '%$expanded%',
+          or('%$expanded%',isEmpty('%$val%')),
           studio.pickProfile('%$path%')
         ),
         studio.propertyScript('%$path%')
@@ -33770,7 +33808,13 @@ jb.component('studio.editable-source', { /* studio.editableSource */
         }
       }
     }),
-    features: [feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')), textEditor.init()]
+    features: [
+      ctx => ({
+        init: cmp => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh()
+      }),
+      feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')), 
+      textEditor.init()
+    ]
   })
 })
 
@@ -33781,7 +33825,7 @@ jb.component('studio.edit-source', { /* studio.editSource */
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: openDialog({
-    style: dialog.editSourceStyle({id: 'edit-source', width: 600}),
+    style: dialog.editSourceStyle({id: 'editor', width: 600}),
     content: studio.editableSource('%$path%'),
     title: studio.shortTitle('%$path%'),
     features: [
@@ -34141,7 +34185,7 @@ jb.component('studio.probe-results', { /* studio.probeResults */
   impl: (ctx, path) => jb.delay(300).then(_ => {
     if (ctx.exp('%$stduio/fastPreview%')) {
       const inCtx = st.closestCtxByPath(path) || new jb.jbCtx()
-      return [{in: inCtx, out: st.isOfType(path,'action') ? null : 
+      return [{in: inCtx, out: st.isOfType(path,'action') ? null :
           st.previewjb.val(inCtx.runItself())}]
     }
     return ctx.run(pipe(studio.probe(path), '%result%'))
@@ -34152,12 +34196,9 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
   type: 'control',
   params: [
     {id: 'obj', mandatory: true, as: 'value', defaultValue: '%%'},
-    {id: 'title', as: 'string'},
     {id: 'width', as: 'number', defaultValue: 200}
   ],
   impl: group({
-    title: '%$title%',
-    controls: group({
       controls: [
         control.firstSucceeding(
           [
@@ -34172,7 +34213,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
             controlWithCondition(
               isOfType('array', '%$obj%'),
               table({
-                items: pipeline('%$obj%', slice(undefined, '%$maxItems%')),
+                items: pipeline('%$obj%', slice(0, '%$maxItems%')),
                 fields: field.control({
                   title: pipeline(count('%$obj%'), '%% items'),
                   control: studio.dataBrowse({obj: '%%', width: 200})
@@ -34203,18 +34244,23 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
             title: 'open (%$obj/length%)',
             action: openDialog({
               style: dialog.popup(),
-              content: editableText({
-                title: '',
-                databind: '%$obj%',
-                style: editableText.codemirror({
-                  enableFullScreen: true,
-                  height: '200',
-                  mode: 'text',
-                  debounceTime: 300,
-                  lineNumbers: true,
-                  readOnly: true
-                })
-              })
+              content:  group({
+                style: group.tabs(),
+                controls: [
+                  editableText({
+                    title: 'text',
+                    databind: '%$obj%',
+                    style: editableText.codemirror({
+                      enableFullScreen: true,
+                      height: '200',
+                      mode: 'text',
+                      debounceTime: 300,
+                      lineNumbers: true,
+                      readOnly: true
+                    })
+                  }),
+                  html({title: 'html', html: '%$obj%'})
+                ]})
             }),
             style: button.href()
           }),
@@ -34233,36 +34279,47 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
       ],
       features: [variable({name: 'maxItems', value: '5', watchable: 'true'})]
     })
-  })
 })
 
 jb.component('studio.probe-data-view', { /* studio.probeDataView */
   type: 'control',
   impl: group({
-    controls: table({
-        items: '%$probeResult%',
-        fields: [
-          field.control({
-            title: 'last in',
-            control: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
-            width: '100'
+    controls: [itemlist({
+        items: pipeline('%$probeResult%',slice(0,'%$maxItems%')),
+        controls: [
+          group({
+            title: 'in (%$probeResult/length%)',
+            controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
+            features:[
+              field.columnWidth(100),
+              field.titleCtrl(button({
+                    title: 'in (%$probeResult/length%)',
+                    action: writeValue('%$maxItems%', '100'),
+                    style: button.href(),
+                    features: [watchRef('%$maxItems%'), ] // hidden('%$probeResult/length% > %$maxItems%')
+              }))
+            ]
           }),
-          field.control({title: 'out', control: studio.dataBrowse('%out%'), width: '100'})
+          group({title: 'out', controls: studio.dataBrowse('%out%'), features: field.columnWidth(100)})
         ],
         style: table.mdl('mdl-data-table', 'mdl-data-table__cell--non-numeric'),
         features: [
+          watchRef('%$maxItems%'),
           feature.if('%$jbEditorCntrData/selected%'),
           group.wait({
             for: studio.probeResults('%$jbEditorCntrData/selected%'),
             loadingControl: label('...'),
             varName: 'probeResult'
           }),
-          css('{white-space: normal}')
+          css('{white-space: normal}'),
         ]
       }),
+     ],
     features: [
+      css.height({height: '600', overflow: 'auto', minMax: 'max'}),
       watchRef('%$jbEditorCntrData/selected%'),
-      watchRef('%$studio/pickSelectionCtxId%')
+      watchRef('%$studio/pickSelectionCtxId%'),
+      variable({name: 'maxItems', value: '5', watchable: true })
     ]
   })
 })
@@ -34336,11 +34393,7 @@ jb.component('studio.jb-editor-inteli-tree', { /* studio.jbEditorInteliTree */
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: group({
-    title: 'main',
-    style: layout.horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
-    controls: [
-      tree({
+  impl: tree({
         nodeModel: studio.jbEditorNodes('%$path%'),
         features: [
           css.class('jb-editor jb-control-tree'),
@@ -34359,9 +34412,7 @@ jb.component('studio.jb-editor-inteli-tree', { /* studio.jbEditorInteliTree */
           css.width({width: '500', selector: 'jb-editor'}),
           studio.watchScriptChanges()
         ]
-      })
-    ]
-  })
+   })
 })
 
 jb.component('studio.jb-editor', { /* studio.jbEditor */
@@ -34371,10 +34422,10 @@ jb.component('studio.jb-editor', { /* studio.jbEditor */
   ],
   impl: group({
     title: 'main',
-    style: layout.horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
+    style: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%'}),
     controls: [
       studio.jbEditorInteliTree('%$path%'),
-      studio.probeDataView('%$jbEditorCntrData/selected%')
+      studio.probeDataView()
     ],
     features: [id('jbEditor'), css.padding('10'), css.height({height: '800', minMax: 'max'})]
   })
@@ -34487,7 +34538,7 @@ jb.component('menu.studio-wrap-with-array', { /* menu.studioWrapWithArray */
   }
 })
 
-jb.component('studio.add-variable', { /* studio.addVariable */ 
+jb.component('studio.add-variable', { /* studio.addVariable */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -34635,9 +34686,8 @@ function eventToElem(e,_window) {
     const mousePos = {
         x: e.pageX - document.body.scrollLeft, y: e.pageY - - document.body.scrollTop
     };
-    const el = _window.document.elementFromPoint(mousePos.x, mousePos.y);
-    if (!el) return;
-    const results = [el].concat(jb.ui.parents(el))
+    const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
+    const results = elems.flatMap(el=>[el,...jb.ui.parents(el)])
         .filter(e =>
             e && e.getAttribute && e.getAttribute('jb-ctx') );
     if (results.length == 0) return [];
@@ -35525,129 +35575,59 @@ jb.component('studio.jb-editor-menu', { /* studio.jbEditorMenu */
 
 (function() {
 const st = jb.studio;
-const _window = jb.frame.parent || jb.frame;
-const elec_remote = _window.require && _window.require('electron').remote;
-const fs = elec_remote && elec_remote.require('fs');
-const jb_projectFolder = elec_remote && elec_remote.getCurrentWindow().jb_projectFolder;
 
 jb.component('studio.save-components', { /* studio.saveComponents */
   type: 'action,has-side-effects',
-  params: [
-    {id: 'force', as: 'boolean', type: 'boolean'}
-  ],
   impl: (ctx,force) => {
     const messages = []
-		jb.rx.Observable.from(st.changedComps().map(e=>e[0]))
-			.concatMap(id=>{
-        let original = st.serverComps[id] ? jb.prettyPrintComp(id,st.serverComps[id]) : '';
-				st.message('saving ' + id + '...');
-				if (force && !original)
-					original = `jb.component('${id}', {`;
-        const project = ctx.exp('%$studio/project%');
-
-        if (fs) {
-            return [{message: saveComp(st.compAsStr(id),original,id,project,force,jb_projectFolder && jb_projectFolder(project),''), type: 'success'}]
-        } else { // via http
-          var headers = new Headers();
-          headers.append("Content-Type", "application/json; charset=UTF-8");
-          return fetch(`/?op=saveComp&comp=${id}&project=${project}&force=${force}`,
-            {method: 'POST', headers: headers, body: JSON.stringify({ original: original, toSave: st.compAsStr(id) }) })
-          .then(res=>res.json())
-          .then(res=>({ res: res , id: id }))
+    const location = (st.previewjb || jb).location
+    const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][location] && e[1][location][0]).filter(x=>x))
+      .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>e[1][location][0] == fn)}))
+    jb.rx.Observable.from(filesToUpdate)
+      .concatMap(e =>
+        st.host.getFile(e.path)
+          .then(fileContent=> Object.assign(e,{fileContent}))
+      )
+			.concatMap(e => {
+          const contents = newFileContent(e.fileContent, e.comps)
+          return st.host.saveFile(e.path,contents)
+            .then(saveResult => Object.assign(e,{saveResult, contents}))
         }
-			})
-			.catch(e=>{
-        messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.e), error: true })
+			)
+			.catch(e=> {
+        messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
 				st.showMultiMessages(messages)
 				return jb.logException(e,'error while saving ' + e.id,ctx) || []
 			})
-			.subscribe(entry=>{
-        const result = entry.res || entry;
-        const success = result.type === 'success'
-        messages.push({text: (result.type || '') + ': ' + (result.desc || '') + (result.message || ''), error: !success})
+			.subscribe(e=> {
+        messages.push({text: 'file ' + e.path + ' updated with components :' + e.comps.map(e=>e[0]).join(', ') })
 				st.showMultiMessages(messages)
-				if (success)
-					st.serverComps[entry.id] = st.previewjb.comps[entry.id];
+        e.comps.forEach(([id]) => st.serverComps[id] = st.previewjb.comps[id])
       })
     }
 })
 
-// directly saving the comp - duplicated in studio-server
-function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
-    var _iswin = /^win/.test(process.platform);
-    var projDir = projectDir;
-
-    if (comp.indexOf('studio.') == 0 && project == 'studio-helper')
-      projDir = 'projects/studio';
-
-    if (!original) { // new comp
-      var srcPath = `${projectDir}/${destFileName || (project+'.js')}`;
-      try {
-        var current = '' + fs.readFileSync(srcPath);
-        var toStore =  current + '\n\n' + toSave;
-        var cleanNL = toStore.replace(/\r/g,'');
-        if (_iswin)
-          cleanNL = cleanNL.replace(/\n/g,'\r\n');
-        fs.writeFileSync(srcPath,cleanNL);
-        return `component ${comp} added to ${srcPath}`;
-      } catch (e) {
-        throw `can not store component ${comp} in path ${srcPath}`
-      }
-    }
-
-    var comp_found = '';
-//        console.log(original);
-    fs.readdirSync(projDir)
-      .filter(x=>x.match(/\.js$/) || x.match(/\.ts$/))
-      .forEach(srcFile=> {
-          var srcPath = projDir+'/'+srcFile;
-          var source = ('' + fs.readFileSync(srcPath)).replace(/\r/g,'').split('\n');
-          var toFind = original.replace(/\r/g,'').split('\n');
-          var replaceWith = toSave.replace(/\r/g,'').split('\n');
-          var found = findSection(source,toFind,srcFile);
-          if (found) {
-            //console.log('splice',source,found.index,found.length,replaceWith);
-            source.splice.apply(source, [found.index+1, found.length-1].concat(replaceWith.slice(1)));
-            var newContent = source.join(_iswin ? '\r\n' : '\n');
-            fs.writeFileSync(srcPath,newContent);
-            comp_found = `component ${comp} saved to ${srcPath} at ${JSON.stringify(found)}`;
-          }
-      })
-
-    if (comp_found)
-      return comp_found
-    else
-      throw `Can not find component ${comp} in project`;
-
-    function findSection(source,toFind,srcFile) {
-      var index = source.indexOf(toFind[0]);
-      // if (index == -1)
-      //   index = source.indexOf(toFind[0].replace('jb_','jb.'));
-      if (index != -1 && force) {// ignore content - just look for the end
-        for(end_index=index;end_index<source.length;end_index++)
-          if ((source[end_index]||'').match(/^}\)$/m))
-            return { index: index, length: end_index - index +1}
-      } else if (index != -1 && compareArrays(source.slice(index,index+toFind.length),toFind)) {
-          return { index: index, length: toFind.length }
-      } else if (index == -1) {
-        return false;
-      } else {
-        // calc error message
-        var err = '';
-        var src = source.slice(index,index+toFind.length);
-        console.log('origin not found at file ' + srcFile);
-        src.forEach(l=>console.log(l));
-        toFind.forEach((line,index) => {
-          if (line != src[index])
-            console.log(index + '-' +line + '#versus source#' + src[index]);
-        })
-
-        throw `${comp} found with a different source, use "force save" to save. ${err}`;
-      }
-    }
-    function compareArrays(arr1,arr2) {
-      return arr1.join('\n') == arr2.join('\n')
-    }
+function newFileContent(fileContent, comps) {
+  let lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
+  const compsToUpdate = comps.filter(([id])=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) != -1)
+  const compsToAdd = comps.filter(([id])=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) == -1)
+  compsToUpdate.forEach(([id,comp])=>{
+    const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0)
+    const linesFromComp = lines.slice(lineOfComp)
+    const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+    const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
+    if (nextjbComponent != -1 && nextjbComponent < compLastLine)
+      return jb.logError(['can not find end of component', fn,id, linesFromComp])
+    const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id}).split('\n')
+    if (JSON.stringify(linesFromComp.slice(0,compLastLine+1)) === JSON.stringify(newComp))
+        return
+    lines.splice(lineOfComp,compLastLine+1,...newComp)
+  })
+  compsToAdd.forEach(([id,comp])=>{
+    const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id}).split('\n')
+    lines = lines.concat(newComp).concat('')
+  })
+  return lines.join('\n')
 }
 
 
@@ -35906,6 +35886,17 @@ jb.component('studio.watchable-or-passive', { /* studio.watchableOrPassive */
   impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
 })
 
+jb.component('studio.save-data-resource-to-comp',{
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'name', as: 'string'}
+  ],
+  impl: writeValue(studio.profileAsText('%$path%'), 
+    (ctx,vars,{name}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+name+'%'))
+  )
+})
+
 jb.component('studio.open-resource', { /* studio.openResource */
   type: 'action',
   params: [
@@ -35913,13 +35904,18 @@ jb.component('studio.open-resource', { /* studio.openResource */
     {id: 'name', as: 'string'}
   ],
   impl: runActions(
-    writeValue(studio.profileAsText('%$path%'), 
-      (ctx,vars,{name}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+name+'%'))),
+    studio.saveDataResourceToComp('%$path%','%$name%'),
     openDialog({
-      style: dialog.editSourceStyle({id: 'edit-data', width: 600}),
+      style: dialog.editSourceStyle({id: 'editor', width: 600}),
       content: editableText({
         databind: studio.profileAsText('%$path%'),
-        style: editableText.studioCodemirrorTgp()
+        style: editableText.studioCodemirrorTgp(),
+        features: ctx => ({
+          init: cmp => ctx.vars.$dialog.refresh = () => {
+            ctx.run(studio.saveDataResourceToComp('%$path%','%$name%'))
+            cmp.refresh && cmp.refresh()
+          }
+        })
       }),
       title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
       features: [
@@ -35950,9 +35946,16 @@ jb.component('studio.open-new-resource', { /* studio.openNewResource */
     }),
     title: 'New %$watchableOrPassive% Data Source',
     onOK: [
-      (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component('data-resource.' + jb.tostring(name), {
-        [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
-      }),
+      studio.newComp('data-resource.%$name%',
+        obj(prop('%$watchableOrPassive%Data', `put your data here.
+E.g.
+hello world
+[1,2,3]
+{ x: 7, y: 3}`))
+      ),
+      // (ctx,{name},{watchableOrPassive}) => Object.assign(jb.studio.previewjb. component('data-resource.' + jb.tostring(name), {
+      //   [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
+      // }), {[jb.studio.previewjb.location]: ''}),
       studio.openResource('data-resource.%$name%~%$watchableOrPassive%Data', '%$name%')
     ],
     modal: true,
@@ -36011,13 +36014,15 @@ jb.component('studio.new-project', { /* studio.newProject */
     {id: 'onSuccess', type: 'action', dynamic: true}
   ],
   impl: (ctx,name) => {
-    var request = {
+    const request = {
       project: name,
       files: [
         { fileName: `${name}.js`, content: `
 jb.component('${name}.main', {
   type: 'control',
-  impl :{$: 'group', controls: [ {$: 'button', title: 'my button'}] }
+  impl: group({
+    controls: [button('my button')]
+  })
 })
 
 `
@@ -36042,14 +36047,11 @@ jb.component('${name}.main', {
 ` },
       ]
     };
-    var headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-    return fetch(`/?op=createProject`,{method: 'POST', headers: headers, body: JSON.stringify(request) })
-    .then(r =>
+    return jb.studio.host.createProject(request, {'Content-Type': 'application/json; charset=UTF-8' } ).then(r =>
         r.json())
     .then(res=>{
         if (res.type == 'error')
-            return jb.studio.message(`error creating project ${name}: ` + (e && e.desc));
+            return jb.studio.message(`error creating project ${name}: ` + (res && jb.prettyPrint(res.desc)));
         jb.studio.message(`project ${name} created`);
         return ctx.params.onSuccess();
     })
@@ -36725,6 +36727,13 @@ jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
   })
 })
 
+jb.component('studio.goto-project', { 
+  type: 'action',
+  params: [
+    {id: 'project', as: 'string', mandatory: true},
+  ],
+  impl: gotoUrl(ctx => jb.studio.host.projecstDir + '/' + ctx.exp('%$project%') )
+})
 ;
 
 jb.component('jb-component', { /* jbComponent */
@@ -36757,6 +36766,51 @@ jb.component('jb-param', { /* jbParam */
 })
 
 ;
+
+(function() {
+const st = jb.studio;
+
+const devHost = {
+    getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
+    locationToPath: path => path.split('/').slice(1).join('/'),
+    saveFile: (path, contents) => {
+        return fetch(`/?op=saveFile&path=${path}`,
+        {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
+        .then(res=>res.json())
+    },
+    createProjectOld: (request, headers) => fetch('/?op=createProject',{method: 'POST', headers, body: JSON.stringify(request) }),
+    createProject: (request, headers) => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers, body: JSON.stringify(
+        Object.assign(request,{baseDir: `projects/${request.project}` })) })
+}
+//     localhost:8082/hello-world/hello-world.html?studio=localhost =>  localhost:8082/bin/studio/studio-localhost.html?entry=localhost:8082/hello-world/hello-world.html
+//     localhost:8082/hello-world/hello-world.html?studio=jb-react@0.3.8 =>  //unpkg.com/jbart5-react@0.3.8/bin/studio/studio-cloud.html?entry=localhost:8082/hello-world/hello-world.html
+
+userLocalHost = Object.assign({},devHost,{
+    locationToPath: path => path.split('/').slice(1).join('/'),
+    createProject: (request, headers) => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers, body: JSON.stringify(
+        Object.assign(request,{baseDir: request.project })) })
+})
+
+//     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jbart5-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
+
+st.chooseHostByUrl = entryUrl => {
+    if (!entryUrl) return devHost // maybe testHost...
+    st.host = entryUrl.match(/localhost:[0-9]*\/project\/studio/) ?
+            devHost
+        : entryUrl.match(/localhost:[0-9]*\/studio-bin/) ?
+            userLocalHost
+        : entryUrl.match(/fiddle.jshell.net/) ? 
+            jsFiddler
+        : devHost
+}
+
+function getEntryUrl() {
+    const location = jb.frame.location
+    return location && new URLSearchParams(location.search).entryUrl || location.href
+}
+st.chooseHostByUrl(getEntryUrl())
+
+})();
 
 (function() {
 const st = jb.studio

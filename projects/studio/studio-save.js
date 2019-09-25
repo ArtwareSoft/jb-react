@@ -1,25 +1,12 @@
 (function() {
 const st = jb.studio;
 
-const jbDevHost = {
-  getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
-  locationToPath: path => path.split('/').slice(1).join('/'),
-  saveFile: (path, contents) => {
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-    return fetch(`/?op=saveFile&path=${path}`,
-      {method: 'POST', headers: headers, body: JSON.stringify({ Path: path, Contents: contents }) })
-      .then(res=>res.json())
-  }
-}
-st.host = st.host || jbDevHost
-
 jb.component('studio.save-components', { /* studio.saveComponents */
   type: 'action,has-side-effects',
   impl: (ctx,force) => {
     const messages = []
     const location = (st.previewjb || jb).location
-    const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][location][0]))
+    const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][location] && e[1][location][0]).filter(x=>x))
       .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>e[1][location][0] == fn)}))
     jb.rx.Observable.from(filesToUpdate)
       .concatMap(e =>
@@ -46,7 +33,7 @@ jb.component('studio.save-components', { /* studio.saveComponents */
 })
 
 function newFileContent(fileContent, comps) {
-  const lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
+  let lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const compsToUpdate = comps.filter(([id])=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) != -1)
   const compsToAdd = comps.filter(([id])=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) == -1)
   compsToUpdate.forEach(([id,comp])=>{
@@ -63,7 +50,7 @@ function newFileContent(fileContent, comps) {
   })
   compsToAdd.forEach(([id,comp])=>{
     const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id}).split('\n')
-    lines.concat(newComp)
+    lines = lines.concat(newComp).concat('')
   })
   return lines.join('\n')
 }
