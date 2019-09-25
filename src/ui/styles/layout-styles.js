@@ -32,13 +32,13 @@ jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit *
   params: [
     {id: 'leftWidth', as: 'string', defaultValue: '200px', mandatory: true},
     {id: 'rightWidth', as: 'string', defaultValue: '100%', mandatory: true},
-    {id: 'spacing', as: 'number', defaultValue: 3}
+    {id: 'spacing', as: 'string', defaultValue: '3px'}
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     css: `{display: flex}
-        >*:first-child { margin-right: %$spacing%px; width: %$leftWidth%; }
+        >*:first-child { margin-right: %$spacing%; width: %$leftWidth%; }
         >*:last-child { margin-right:0; width: %$rightWidth%; }`,
     features: group.initGroup()
   })

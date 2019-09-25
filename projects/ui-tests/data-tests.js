@@ -19,6 +19,8 @@ jb.component('personWithChildren', { watchableData: {
   friends: [{ name: 'Barnie' } ],
 }})
 
+jb.component('stringArray', { watchableData: ['a','b','c']})
+
 jb.component('test.getAsBool', { /* test.getAsBool */
   params: [
     {id: 'val', as: 'boolean', type: 'boolean'}
@@ -197,6 +199,20 @@ jb.component('data-test.ref-of-array-item', { /* dataTest.refOfArrayItem */
     calculate: '',
     expectedResult: ctx =>
         ctx.exp('%$personWithChildren/children[1]%','ref').path().join('/') == 'personWithChildren/children/1'
+  })
+})
+
+jb.component('data-test.ref-of-string-array-item-know-limit', {
+  impl: dataTest({
+    vars: Var('refs',obj()),
+    runBefore: ctx => {
+      ctx.vars.refs.refOfb = ctx.exp('%$stringArray[2]%','ref')
+      ctx.vars.refs.valBefore = jb.val(ctx.vars.refs.refOfb)
+      ctx.run(splice({array: '%$stringArray%', fromIndex: 0, noOfItemsToRemove: 1}))
+      ctx.vars.refs.valAfter = jb.val(ctx.vars.refs.refOfb)
+    },
+    calculate: '',
+    expectedResult: true // equals('%$refs/valBefore%','%$refs/valAfter%')
   })
 })
 

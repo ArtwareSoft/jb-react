@@ -425,7 +425,8 @@ type itemlist_watch_items_with_headingPT = {$: 'itemlist.watch-items-with-headin
 type itemlist_no_containerPT = {$: 'itemlist.no-container', }
 type itemlist_initPT = {$: 'itemlist.init', }
 type itemlist_init_tablePT = {$: 'itemlist.init-table', }
-type itemlist_selectionPT = {$: 'itemlist.selection', databind: dataType, selectedToDatabind: dataType, databindToSelected: dataType, onSelection: actionType, onDoubleClick: actionType, autoSelectFirst: booleanType, cssForSelected: dataType}
+type itemlist_selectionPT = {$: 'itemlist.selection', databind: dataType, selectedToDatabind: dataType, databindToSelected: dataType, onSelection: actionType, onDoubleClick: actionType, autoSelectFirst: booleanType, 
+/** e.g. background: red;color: blue */cssForSelected: dataType}
 type itemlist_keyboard_selectionPT = {$: 'itemlist.keyboard-selection', autoFocus: booleanType, onEnter: actionType}
 type itemlist_drag_and_dropPT = {$: 'itemlist.drag-and-drop', }
 type itemlist_drag_handlePT = {$: 'itemlist.drag-handle', }
@@ -1400,7 +1401,8 @@ function itemlist_init() : featureType;
 function itemlist_initTable : featureType;
 function itemlist_initTable() : featureType;
 function itemlist_selection : featureType;
-function itemlist_selection(profile: { databind: dataType, selectedToDatabind: dataType, databindToSelected: dataType, onSelection: actionType, onDoubleClick: actionType, autoSelectFirst: booleanType, cssForSelected: dataType}) : featureType;
+function itemlist_selection(profile: { databind: dataType, selectedToDatabind: dataType, databindToSelected: dataType, onSelection: actionType, onDoubleClick: actionType, autoSelectFirst: booleanType, 
+/** e.g. background: red;color: blue */cssForSelected: dataType}) : featureType;
 function itemlist_selection(databind: dataType) : featureType;
 function itemlist_keyboardSelection : featureType;
 function itemlist_keyboardSelection(profile: { autoFocus: booleanType, onEnter: actionType}) : featureType;
@@ -1956,7 +1958,8 @@ init() : featureType,
 initTable : featureType,
 initTable() : featureType,
 selection : featureType,
-selection(profile: { databind: dataType, selectedToDatabind: dataType, databindToSelected: dataType, onSelection: actionType, onDoubleClick: actionType, autoSelectFirst: booleanType, cssForSelected: dataType}) : featureType,
+selection(profile: { databind: dataType, selectedToDatabind: dataType, databindToSelected: dataType, onSelection: actionType, onDoubleClick: actionType, autoSelectFirst: booleanType, 
+/** e.g. background: red;color: blue */cssForSelected: dataType}) : featureType,
 selection(databind: dataType) : featureType,
 keyboardSelection : featureType,
 keyboardSelection(profile: { autoFocus: booleanType, onEnter: actionType}) : featureType,

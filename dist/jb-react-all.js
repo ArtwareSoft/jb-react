@@ -313,29 +313,31 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
   // if (expressionPart == "")
   //   return ctx.data;
 
-  const parts = expressionPart.split(/[./]/);
+  const parts = expressionPart.split(/[./[]/);
   return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),ctx.data)
 
-  function pipe(input,subExp,last,first,refHandlerArg) {
-      if (subExp == '')
-          return input;
+  function pipe(input,subExp,last,first) {
+    if (subExp == '')
+       return input;
+    if (subExp.match(/]$/))
+      subExp = subExp.slice(0,-1)
 
-      const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-      const refHandler = refHandlerArg || input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
-      if (arrayIndexMatch) {
-        const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
-        const index = arrayIndexMatch[2];
-        if (!Array.isArray(arr))
-            return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);
+    const refHandler = input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
+    //   const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
+    //   if (arrayIndexMatch) {
+    //     const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
+    //     const index = arrayIndexMatch[2];
+    //     if (!Array.isArray(arr))
+    //         return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);
 
-        if (last && (jstype == 'ref' || !primitiveJsType))
-           return refHandler.objectProperty(arr,index,ctx);
-        if (typeof arr[index] == 'undefined')
-           arr[index] = last ? null : implicitlyCreateInnerObject(arr,index,refHandler);
-        if (last && jstype)
-           return jstypes[jstype](arr[index]);
-        return arr[index];
-     }
+    //     if (last && (jstype == 'ref' || !primitiveJsType))
+    //        return refHandler.objectProperty(arr,index,ctx);
+    //     if (typeof arr[index] == 'undefined')
+    //        arr[index] = last ? null : implicitlyCreateInnerObject(arr,index,refHandler);
+    //     if (last && jstype)
+    //        return jstypes[jstype](arr[index]);
+    //     return arr[index];
+    //  }
 
       const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
       if (functionCallMatch && jb.functions[functionCallMatch[1]])
@@ -346,7 +348,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
       const obj = val(input);
       if (subExp == 'length' && obj && typeof obj.length != 'undefined')
         return obj.length;
-      if (Array.isArray(obj))
+      if (Array.isArray(obj) && isNaN(Number(subExp)))
         return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
 
       if (input != null && typeof input == 'object') {
@@ -11312,6 +11314,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
     {
       id: 'cssForSelected',
       as: 'string',
+      description: 'e.g. background: red;color: blue',
       defaultValue: 'background: #bbb !important; color: #fff !important'
     }
   ],
@@ -13313,16 +13316,16 @@ jb.component('layout.horizontal', { /* layout.horizontal */
 jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit */
   type: 'group.style',
   params: [
-    {id: 'leftWidth', as: 'number', defaultValue: 200, mandatory: true},
-    {id: 'rightWidth', as: 'number', defaultValue: 200, mandatory: true},
-    {id: 'spacing', as: 'number', defaultValue: 3}
+    {id: 'leftWidth', as: 'string', defaultValue: '200px', mandatory: true},
+    {id: 'rightWidth', as: 'string', defaultValue: '100%', mandatory: true},
+    {id: 'spacing', as: 'string', defaultValue: '3px'}
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     css: `{display: flex}
-        >*:first-child { margin-right: %$spacing%px; flex: 0 0 %$leftWidth%px; width: %$leftWidth%px; }
-        >*:last-child { margin-right:0; flex: 0 0 %$rightWidth%px; width: %$rightWidth%px; }`,
+        >*:first-child { margin-right: %$spacing%; width: %$leftWidth%; }
+        >*:last-child { margin-right:0; width: %$rightWidth%; }`,
     features: group.initGroup()
   })
 })

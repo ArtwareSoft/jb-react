@@ -110,6 +110,11 @@ jb.component('ui-test', { /* uiTest */
 })
 
 function countersErrors(expectedCounters) {
+	if ((jb.frame.wSpy.logs && jb.frame.wSpy.logs.exception || [])[0])
+		return (jb.frame.wSpy.logs.exception || [])[0][0]
+	if (jb.frame.wSpy.$counters && jb.frame.wSpy.$counters.exception)
+		return 'exception occured'
+
 	return Object.keys(expectedCounters || {}).map(
 		counter => expectedCounters[counter] !== (jb.frame.wSpy.logs.$counters[counter] || 0)
 			? `${counter}: ${jb.frame.wSpy.logs.$counters[counter]} instead of ${expectedCounters[counter]}` : '')

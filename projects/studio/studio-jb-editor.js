@@ -278,11 +278,7 @@ jb.component('studio.jb-editor-inteli-tree', { /* studio.jbEditorInteliTree */
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: group({
-    title: 'main',
-    style: layout.horizontalFixedSplit({leftWidth: '350', rightWidth: '500', spacing: 3}),
-    controls: [
-      tree({
+  impl: tree({
         nodeModel: studio.jbEditorNodes('%$path%'),
         features: [
           css.class('jb-editor jb-control-tree'),
@@ -301,9 +297,7 @@ jb.component('studio.jb-editor-inteli-tree', { /* studio.jbEditorInteliTree */
           css.width({width: '500', selector: 'jb-editor'}),
           studio.watchScriptChanges()
         ]
-      })
-    ]
-  })
+   })
 })
 
 jb.component('studio.jb-editor', { /* studio.jbEditor */
@@ -313,7 +307,7 @@ jb.component('studio.jb-editor', { /* studio.jbEditor */
   ],
   impl: group({
     title: 'main',
-    style: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%', spacing: 3}),
+    style: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%'}),
     controls: [
       studio.jbEditorInteliTree('%$path%'),
       studio.probeDataView()
