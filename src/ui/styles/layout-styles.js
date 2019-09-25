@@ -38,8 +38,8 @@ jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit *
     template: (cmp,state,h) => h('div',{},
         state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
     css: `{display: flex}
-        >*:first-child { margin-right: %$spacing%px; flex: 0 0 %$leftWidth%; width: %$leftWidth%; }
-        >*:last-child { margin-right:0; flex: 0 0 %$rightWidth%; width: %$rightWidth%; }`,
+        >*:first-child { margin-right: %$spacing%px; width: %$leftWidth%; }
+        >*:last-child { margin-right:0; width: %$rightWidth%; }`,
     features: group.initGroup()
   })
 })
