@@ -162,7 +162,7 @@ Object.assign(st, {
 		if (prof && typeof prof == 'object' && !Array.isArray(prof))
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
-	newComp: (comp,compName) => {
+	newProfile: (comp,compName) => {
 		const result = comp.singleInType ? {} : { $: compName };
 		jb.compParams(comp).forEach(p=>{
 			if (p.composite)
@@ -179,7 +179,7 @@ Object.assign(st, {
 		if (params.length == 1 && (params[0]||{}).composite == true || (params[0]||{}).sugar)
 			return st.setSugarComp(path,compName,params[0],srcCtx);
 
-		const result = st.newComp(comp,compName)
+		const result = st.newProfile(comp,compName)
 		const currentVal = st.valOfPath(path);
 		params.forEach(p=>{
 			if (currentVal && currentVal[p.id] !== undefined)
@@ -206,7 +206,7 @@ Object.assign(st, {
 	insertControl: (path,compName,srcCtx) => {
 		const comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
-		let newCtrl = st.newComp(comp,compName)
+		let newCtrl = st.newProfile(comp,compName)
 		if (st.controlParams(path)[0] == 'fields' && newCtrl.$ != 'field')
 			newCtrl = { $: 'field.control', control : newCtrl};
 		// find group parent that can insert the control

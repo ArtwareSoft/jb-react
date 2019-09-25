@@ -6,7 +6,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
   ],
   impl: function(context,resource) {
         if (jb.ui.location || typeof window == 'undefined') return;
-        const base = 'studio'
+        const base = window.location.pathname.indexOf('studio-bin') != -1 ? 'studio-bin' : 'studio'
         const isProject = location.pathname.indexOf('/project') == 0;
         const params = isProject ? ['project','page','profile_path'] : ['entry_file','shown_comp','profile_path']
 

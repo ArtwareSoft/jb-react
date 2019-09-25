@@ -30534,7 +30534,7 @@ Object.assign(st, {
 		if (prof && typeof prof == 'object' && !Array.isArray(prof))
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
-	newComp: (comp,compName) => {
+	newProfile: (comp,compName) => {
 		const result = comp.singleInType ? {} : { $: compName };
 		jb.compParams(comp).forEach(p=>{
 			if (p.composite)
@@ -30551,7 +30551,7 @@ Object.assign(st, {
 		if (params.length == 1 && (params[0]||{}).composite == true || (params[0]||{}).sugar)
 			return st.setSugarComp(path,compName,params[0],srcCtx);
 
-		const result = st.newComp(comp,compName)
+		const result = st.newProfile(comp,compName)
 		const currentVal = st.valOfPath(path);
 		params.forEach(p=>{
 			if (currentVal && currentVal[p.id] !== undefined)
@@ -30578,7 +30578,7 @@ Object.assign(st, {
 	insertControl: (path,compName,srcCtx) => {
 		const comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
-		let newCtrl = st.newComp(comp,compName)
+		let newCtrl = st.newProfile(comp,compName)
 		if (st.controlParams(path)[0] == 'fields' && newCtrl.$ != 'field')
 			newCtrl = { $: 'field.control', control : newCtrl};
 		// find group parent that can insert the control
@@ -30783,8 +30783,7 @@ st.message = function(message,error) {
   el.innerHTML = ''
 	el.textContent = message;
   el.style.background = error ? 'red' : '#327DC8';
-  el.style.animation = '';
-	jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+  st.animateMessage(el)
 }
 
 st.showMultiMessages = function(messages) {
@@ -30796,10 +30795,15 @@ st.showMultiMessages = function(messages) {
     inner.textContent = m.text;
     el.appendChild(inner)
   })
-  el.style.animation = '';
-	jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+  st.animateMessage(el)
 }
 
+st.animateMessage = function (el) {
+  el.style.marginTop = 0;
+  // el.style.animation = '';
+  // jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+  jb.delay(6000).then(()=> el.style.marginTop = '-50px')
+}
 
 // ********* Components ************
 
@@ -31292,7 +31296,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
   ],
   impl: function(context,resource) {
         if (jb.ui.location || typeof window == 'undefined') return;
-        const base = 'studio'
+        const base = window.location.pathname.indexOf('studio-bin') != -1 ? 'studio-bin' : 'studio'
         const isProject = location.pathname.indexOf('/project') == 0;
         const params = isProject ? ['project','page','profile_path'] : ['entry_file','shown_comp','profile_path']
 
@@ -35636,8 +35640,11 @@ function newFileContent(fileContent, comps) {
 
 jb.component('studio.goto-project', { /* studio.gotoProject */
   type: 'action',
+  params: [
+    {id: 'name', as: 'string'},
+  ],
   impl: runActions(
-    gotoUrl('/project/studio/%%', 'new tab'),
+    gotoUrl(ctx => jb.studio.host.projectUrlInStudio(ctx.exp('%$name%')), 'new tab'),
     dialog.closeContainingPopup()
   )
 })
@@ -35652,13 +35659,13 @@ jb.component('studio.choose-project', { /* studio.chooseProject */
         items: pipeline('%projects%', itemlistContainer.filter()),
         controls: button({
           title: highlight('%%', '%$itemlistCntrData/search_pattern%'),
-          action: studio.gotoProject(),
+          action: studio.gotoProject('%%'),
           style: button.mdlFlatRipple(),
           features: css('{ text-align: left; width: 250px }')
         }),
         features: [
           itemlist.selection({}),
-          itemlist.keyboardSelection({autoFocus: true, onEnter: studio.gotoProject()}),
+          itemlist.keyboardSelection({autoFocus: true, onEnter: studio.gotoProject('%%')}),
           watchRef('%$itemlistCntrData/search_pattern%'),
           css.height({height: '400', overflow: 'scroll'})
         ]
@@ -36014,6 +36021,7 @@ jb.component('studio.new-project', { /* studio.newProject */
     {id: 'onSuccess', type: 'action', dynamic: true}
   ],
   impl: (ctx,name) => {
+    
     const request = {
       project: name,
       files: [
@@ -36034,8 +36042,8 @@ jb.component('${name}.main', {
   <script type="text/javascript">
     startTime = new Date().getTime();
   </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>
-  <script type="text/javascript" src="/projects/${name}/${name}.js"></script>
+  ${jb.studio.host.scriptForLoadLibraries}
+  <script type="text/javascript" src="${jb.studio.host.pathToJsFile(name,name+'.js')}"></script>
 </head>
 <body>
 <div id="main"> </div>
@@ -36082,7 +36090,7 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
       features: css.padding({top: '14', left: '11'})
     }),
     title: 'New Project',
-    onOK: studio.newProject('%$name%', gotoUrl('/project/studio/%$name%/')),
+    onOK: studio.newProject('%$name%', studio.gotoProject('%$name%')),
     modal: true,
     features: [
       variable({name: 'name', watchable: true}),
@@ -36726,14 +36734,6 @@ jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
     ]
   })
 })
-
-jb.component('studio.goto-project', { 
-  type: 'action',
-  params: [
-    {id: 'project', as: 'string', mandatory: true},
-  ],
-  impl: gotoUrl(ctx => jb.studio.host.projecstDir + '/' + ctx.exp('%$project%') )
-})
 ;
 
 jb.component('jb-component', { /* jbComponent */
@@ -36780,7 +36780,10 @@ const devHost = {
     },
     createProjectOld: (request, headers) => fetch('/?op=createProject',{method: 'POST', headers, body: JSON.stringify(request) }),
     createProject: (request, headers) => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers, body: JSON.stringify(
-        Object.assign(request,{baseDir: `projects/${request.project}` })) })
+        Object.assign(request,{baseDir: `projects/${request.project}` })) }),
+    scriptForLoadLibraries: '<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>',
+    pathToJsFile: (project,fn) => `/${project}/${fn}`,
+    projectUrlInStudio: project => `/project/studio/${project}`
 }
 //     localhost:8082/hello-world/hello-world.html?studio=localhost =>  localhost:8082/bin/studio/studio-localhost.html?entry=localhost:8082/hello-world/hello-world.html
 //     localhost:8082/hello-world/hello-world.html?studio=jb-react@0.3.8 =>  //unpkg.com/jbart5-react@0.3.8/bin/studio/studio-cloud.html?entry=localhost:8082/hello-world/hello-world.html
@@ -36788,7 +36791,12 @@ const devHost = {
 userLocalHost = Object.assign({},devHost,{
     locationToPath: path => path.split('/').slice(1).join('/'),
     createProject: (request, headers) => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers, body: JSON.stringify(
-        Object.assign(request,{baseDir: request.project })) })
+        Object.assign(request,{baseDir: request.project })) }),
+    scriptForLoadLibraries: `  <script type="text/javascript" src="/dist/jb-react-all.js"></script>
+<script type="text/javascript" src="/dist/material.js"></script>
+<link rel="stylesheet" type="text/css" href="/dist/material.css"/>`,
+    pathToJsFile: (project,fn) => fn,
+    projectUrlInStudio: project => `/studio-bin/${project}%2F${project}.html`
 })
 
 //     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jbart5-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/

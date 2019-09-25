@@ -1,7 +1,10 @@
 jb.component('studio.goto-project', { /* studio.gotoProject */
   type: 'action',
+  params: [
+    {id: 'name', as: 'string'},
+  ],
   impl: runActions(
-    gotoUrl('/project/studio/%%', 'new tab'),
+    gotoUrl(ctx => jb.studio.host.projectUrlInStudio(ctx.exp('%$name%')), 'new tab'),
     dialog.closeContainingPopup()
   )
 })
@@ -16,13 +19,13 @@ jb.component('studio.choose-project', { /* studio.chooseProject */
         items: pipeline('%projects%', itemlistContainer.filter()),
         controls: button({
           title: highlight('%%', '%$itemlistCntrData/search_pattern%'),
-          action: studio.gotoProject(),
+          action: studio.gotoProject('%%'),
           style: button.mdlFlatRipple(),
           features: css('{ text-align: left; width: 250px }')
         }),
         features: [
           itemlist.selection({}),
-          itemlist.keyboardSelection({autoFocus: true, onEnter: studio.gotoProject()}),
+          itemlist.keyboardSelection({autoFocus: true, onEnter: studio.gotoProject('%%')}),
           watchRef('%$itemlistCntrData/search_pattern%'),
           css.height({height: '400', overflow: 'scroll'})
         ]

@@ -12,8 +12,6 @@ let sites = null;
 const projecstDir = process.cwd().indexOf('jb-react') != -1 ? 'projects' : './'
 
 function projectDirectory(project) {
-    // if (project == 'bin')
-    //    return 'node_modules/jbart5-react/bin'
     sites = sites || externalSites() || {};
     const site = Object.keys(sites).filter(site=>project.indexOf(site+'-') != -1)[0];
     const res = site ? `${sites[site]}/${project.substring(site.length+1)}` : `${settings.http_dir}projects/${project}`;
@@ -72,6 +70,9 @@ function calcFullPath(path) {
   const bin_match = path.match(/^bin\/(.*)/);
   if (bin_match)
       return `node_modules/jbart5-react/bin/${bin_match[1]}`
+  const dist_match = path.match(/^dist\/(.*)/);
+  if (dist_match)
+      return `node_modules/jbart5-react/dist/${dist_match[1]}`
   return settings.http_dir + path;
 }
 
