@@ -349,8 +349,8 @@ type card_initPT = {$: 'card.init', }
 type watch_refPT = {$: 'watch-ref', 
 /** reference to data */ref: dataType, 
 /** watch childern change as well */includeChildren: dataType, 
-/** delay in activation, can be used to set priority */delay: dataType, 
-/** allow refresh originated from the components or its children */allowSelfRefresh: booleanType}
+/** allow refresh originated from the components or its children */allowSelfRefresh: booleanType, 
+/** delay in activation, can be used to set priority */delay: dataType}
 type watch_observablePT = {$: 'watch-observable', toWatch: dataType}
 type group_dataPT = {$: 'group.data', data: dataType, 
 /** optional. define data as a local variable */itemVariable: dataType, watch: booleanType, 
@@ -1113,8 +1113,8 @@ function watchRef : featureType;
 function watchRef(profile: { 
 /** reference to data */ref: dataType, 
 /** watch childern change as well */includeChildren: dataType, 
-/** delay in activation, can be used to set priority */delay: dataType, 
-/** allow refresh originated from the components or its children */allowSelfRefresh: booleanType}) : featureType;
+/** allow refresh originated from the components or its children */allowSelfRefresh: booleanType, 
+/** delay in activation, can be used to set priority */delay: dataType}) : featureType;
 function watchRef(
 /** reference to data */ref: dataType) : featureType;
 function watchObservable : featureType;

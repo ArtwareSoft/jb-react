@@ -31,7 +31,11 @@ jb.component('todomvc.main', { /* todomvc.main */
         controls: [
           itemlist({
             title: 'todo-list',
-            items: pipeline('%$todo%', filter(and())),
+            items: pipeline(
+              '%$todo%',
+              filter(and('%completed% == true', '%$')),
+              pipeline('aa', 'bb')
+            ),
             controls: [
               group({
                 style: layout.flex({alignItems: 'center', spacing: '20'}),

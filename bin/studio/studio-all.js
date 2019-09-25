@@ -632,8 +632,8 @@ function extend(obj,obj1,obj2,obj3) {
 
 const simpleValueByRefHandler = {
   val(v) {
-    if (v.$jb_val) return v.$jb_val();
-    return v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
+    if (v && v.$jb_val) return v.$jb_val();
+    return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
   },
   writeValue(to,value,srcCtx) {
     jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
@@ -1915,9 +1915,7 @@ jb.component('http.post', { /* http.post */
     }
   ],
   impl: (ctx,url,postData,json) => {
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-		return fetch(url,{method: 'POST', headers: headers, body: JSON.stringify(postData) })
+		return fetch(url,{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(postData) })
 			  .then(r =>
 			  		json ? r.json() : r.text())
 			  .catch(e => jb.logException(e,'',ctx) || [])
@@ -9213,7 +9211,7 @@ jb.component('text', { /* text */
   params: [
     {id: 'title', as: 'string', mandatory: true, defaultValue: 'no title', dynamic: true},
     {id: 'text', as: 'ref', mandatory: true, defaultValue: 'my text', dynamic: true},
-    {id: 'style', type: 'label.style', defaultValue: label.noWrappingTag(), dynamic: true},
+    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -10077,18 +10075,18 @@ jb.component('watch-ref', { /* watchRef */
       defaultValue: 'no',
       description: 'watch childern change as well'
     },
+   {
+      id: 'allowSelfRefresh',
+      as: 'boolean',
+      description: 'allow refresh originated from the components or its children',
+      type: 'boolean'
+    },
     {
       id: 'delay',
       as: 'number',
       description: 'delay in activation, can be used to set priority'
     },
-    {
-      id: 'allowSelfRefresh',
-      as: 'boolean',
-      description: 'allow refresh originated from the components or its children',
-      type: 'boolean'
-    }
-  ],
+   ],
   impl: (ctx,ref,includeChildren,delay,allowSelfRefresh) => ({
       beforeInit: cmp =>
         cmp.watchRefOn = true,
@@ -32238,9 +32236,10 @@ st.jbEditorTree = class {
 		if (this.sugarChildren(path,val)) return [];
 		if (!this.includeCompHeader && path.indexOf('~') == -1)
 			path = path + '~impl';
+		
 		return st.paramsOfPath(path).map(p=> ({ path: path + '~' + p.id, param: p}))
 				.filter(e=>st.valOfPath(e.path) !== undefined || e.param.mandatory)
-				.map(e=>e.path)
+				.flatMap(({path})=> Array.isArray(st.valOfPath(path)) ? st.arrayChildren(path) : [path])
 	}
 	vars(path,val) {
 		return val && typeof val == 'object' && typeof val.$vars == 'object' && [path+'~$vars']
@@ -32677,7 +32676,7 @@ jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog 
             '%$mode% == \"insert\"',
             studio.addArrayItem({
               path: '%$path%',
-              toAdd: studio.newComp('%%'),
+              toAdd: studio.newProfile('%%'),
               index: '%$index%'
             })
           ),
@@ -32739,10 +32738,10 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
     }),
     title: 'New Page',
     onOK: [
-      ctx => jb.studio.previewjb. component(ctx.exp('%$studio/project%.%$name%'), {
+      studio.newComp('%$studio/project%.%$name%', {$asIs: {
           type: 'control',
-          impl :{$: 'group', title1: ctx.exp('%$name%'), contorls: []}
-      }),
+          impl :{$: 'group', contorls: []}
+      }}),
       writeValue('%$studio/profile_path%', '%$studio/project%.%$name%~impl'),
       writeValue('%$studio/page%', '%$name%'),
       studio.openControlTree(),
@@ -32795,11 +32794,24 @@ jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */
   })
 })
 
-jb.component('studio.new-comp', {
+jb.component('studio.new-profile', {
   params: [
     {id: 'compName', as: 'string'}
   ],
-  impl: (ctx,compName) => jb.studio.newComp(jb.studio.getComp(compName), compName)
+  impl: (ctx,compName) => jb.studio.newProfile(jb.studio.getComp(compName), compName)
+})
+
+jb.component('studio.new-comp', {
+  params: [
+    {id: 'compName', as: 'string'},
+    {id: 'compContent'}
+  ],
+  impl: (ctx,compName, compContent) => {
+    const _jb = jb.studio.previewjb
+    _jb. component(compName, compContent)
+    const projectFile = jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf('/' + ctx.exp('%$studio/project%') + '/') != -1)[0]
+    Object.assign(_jb.comps[compName], { [_jb.location]: [projectFile,''] })
+  }
 })
 
 jb.studio.newControl = path =>
@@ -34679,9 +34691,8 @@ function eventToElem(e,_window) {
     const mousePos = {
         x: e.pageX - document.body.scrollLeft, y: e.pageY - - document.body.scrollTop
     };
-    const el = _window.document.elementFromPoint(mousePos.x, mousePos.y);
-    if (!el) return;
-    const results = [el].concat(jb.ui.parents(el))
+    const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
+    const results = elems.flatMap(el=>[el,...jb.ui.parents(el)])
         .filter(e =>
             e && e.getAttribute && e.getAttribute('jb-ctx') );
     if (results.length == 0) return [];
@@ -35602,7 +35613,7 @@ jb.component('studio.save-components', { /* studio.saveComponents */
 })
 
 function newFileContent(fileContent, comps) {
-  const lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
+  let lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const compsToUpdate = comps.filter(([id])=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) != -1)
   const compsToAdd = comps.filter(([id])=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) == -1)
   compsToUpdate.forEach(([id,comp])=>{
@@ -35619,7 +35630,7 @@ function newFileContent(fileContent, comps) {
   })
   compsToAdd.forEach(([id,comp])=>{
     const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id}).split('\n')
-    lines.concat(newComp)
+    lines = lines.concat(newComp).concat('')
   })
   return lines.join('\n')
 }
@@ -35940,9 +35951,16 @@ jb.component('studio.open-new-resource', { /* studio.openNewResource */
     }),
     title: 'New %$watchableOrPassive% Data Source',
     onOK: [
-      (ctx,{name},{watchableOrPassive}) => jb.studio.previewjb. component('data-resource.' + jb.tostring(name), {
-        [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
-      }),
+      studio.newComp('data-resource.%$name%',
+        obj(prop('%$watchableOrPassive%Data', `put your data here.
+E.g.
+hello world
+[1,2,3]
+{ x: 7, y: 3}`))
+      ),
+      // (ctx,{name},{watchableOrPassive}) => Object.assign(jb.studio.previewjb. component('data-resource.' + jb.tostring(name), {
+      //   [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
+      // }), {[jb.studio.previewjb.location]: ''}),
       studio.openResource('data-resource.%$name%~%$watchableOrPassive%Data', '%$name%')
     ],
     modal: true,
@@ -36034,9 +36052,7 @@ jb.component('${name}.main', {
 ` },
       ]
     };
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-    return jb.studio.host.createProject(request,headers).then(r =>
+    return jb.studio.host.createProject(request, {'Content-Type': 'application/json; charset=UTF-8' } ).then(r =>
         r.json())
     .then(res=>{
         if (res.type == 'error')
@@ -36763,10 +36779,8 @@ const devHost = {
     getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
     locationToPath: path => path.split('/').slice(1).join('/'),
     saveFile: (path, contents) => {
-        const headers = new Headers();
-        headers.append("Content-Type", "application/json; charset=UTF-8");
         return fetch(`/?op=saveFile&path=${path}`,
-        {method: 'POST', headers: headers, body: JSON.stringify({ Path: path, Contents: contents }) })
+        {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
     createProjectOld: (request, headers) => fetch('/?op=createProject',{method: 'POST', headers, body: JSON.stringify(request) }),

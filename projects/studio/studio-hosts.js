@@ -5,10 +5,8 @@ const devHost = {
     getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
     locationToPath: path => path.split('/').slice(1).join('/'),
     saveFile: (path, contents) => {
-        const headers = new Headers();
-        headers.append("Content-Type", "application/json; charset=UTF-8");
         return fetch(`/?op=saveFile&path=${path}`,
-        {method: 'POST', headers: headers, body: JSON.stringify({ Path: path, Contents: contents }) })
+        {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
     createProjectOld: (request, headers) => fetch('/?op=createProject',{method: 'POST', headers, body: JSON.stringify(request) }),

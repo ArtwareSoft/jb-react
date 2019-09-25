@@ -224,7 +224,7 @@ jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog 
             '%$mode% == \"insert\"',
             studio.addArrayItem({
               path: '%$path%',
-              toAdd: studio.newComp('%%'),
+              toAdd: studio.newProfile('%%'),
               index: '%$index%'
             })
           ),
@@ -286,10 +286,10 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
     }),
     title: 'New Page',
     onOK: [
-      ctx => jb.studio.previewjb. component(ctx.exp('%$studio/project%.%$name%'), {
+      studio.newComp('%$studio/project%.%$name%', {$asIs: {
           type: 'control',
-          impl :{$: 'group', title1: ctx.exp('%$name%'), contorls: []}
-      }),
+          impl :{$: 'group', contorls: []}
+      }}),
       writeValue('%$studio/profile_path%', '%$studio/project%.%$name%~impl'),
       writeValue('%$studio/page%', '%$name%'),
       studio.openControlTree(),
@@ -342,11 +342,24 @@ jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */
   })
 })
 
-jb.component('studio.new-comp', {
+jb.component('studio.new-profile', {
   params: [
     {id: 'compName', as: 'string'}
   ],
-  impl: (ctx,compName) => jb.studio.newComp(jb.studio.getComp(compName), compName)
+  impl: (ctx,compName) => jb.studio.newProfile(jb.studio.getComp(compName), compName)
+})
+
+jb.component('studio.new-comp', {
+  params: [
+    {id: 'compName', as: 'string'},
+    {id: 'compContent'}
+  ],
+  impl: (ctx,compName, compContent) => {
+    const _jb = jb.studio.previewjb
+    _jb. component(compName, compContent)
+    const projectFile = jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf('/' + ctx.exp('%$studio/project%') + '/') != -1)[0]
+    Object.assign(_jb.comps[compName], { [_jb.location]: [projectFile,''] })
+  }
 })
 
 jb.studio.newControl = path =>

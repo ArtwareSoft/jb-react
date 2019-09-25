@@ -33,7 +33,7 @@ jb.component('studio.save-components', { /* studio.saveComponents */
 })
 
 function newFileContent(fileContent, comps) {
-  const lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
+  let lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const compsToUpdate = comps.filter(([id])=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) != -1)
   const compsToAdd = comps.filter(([id])=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) == -1)
   compsToUpdate.forEach(([id,comp])=>{
@@ -50,7 +50,7 @@ function newFileContent(fileContent, comps) {
   })
   compsToAdd.forEach(([id,comp])=>{
     const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id}).split('\n')
-    lines.concat(newComp)
+    lines = lines.concat(newComp).concat('')
   })
   return lines.join('\n')
 }

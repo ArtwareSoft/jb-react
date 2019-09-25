@@ -632,8 +632,8 @@ function extend(obj,obj1,obj2,obj3) {
 
 const simpleValueByRefHandler = {
   val(v) {
-    if (v.$jb_val) return v.$jb_val();
-    return v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
+    if (v && v.$jb_val) return v.$jb_val();
+    return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
   },
   writeValue(to,value,srcCtx) {
     jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
@@ -1915,9 +1915,7 @@ jb.component('http.post', { /* http.post */
     }
   ],
   impl: (ctx,url,postData,json) => {
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-		return fetch(url,{method: 'POST', headers: headers, body: JSON.stringify(postData) })
+		return fetch(url,{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(postData) })
 			  .then(r =>
 			  		json ? r.json() : r.text())
 			  .catch(e => jb.logException(e,'',ctx) || [])

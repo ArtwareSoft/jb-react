@@ -39,9 +39,7 @@ jb.component('${name}.main', {
 ` },
       ]
     };
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-    return jb.studio.host.createProject(request,headers).then(r =>
+    return jb.studio.host.createProject(request, {'Content-Type': 'application/json; charset=UTF-8' } ).then(r =>
         r.json())
     .then(res=>{
         if (res.type == 'error')

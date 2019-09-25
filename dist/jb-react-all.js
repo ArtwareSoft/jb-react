@@ -632,8 +632,8 @@ function extend(obj,obj1,obj2,obj3) {
 
 const simpleValueByRefHandler = {
   val(v) {
-    if (v.$jb_val) return v.$jb_val();
-    return v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
+    if (v && v.$jb_val) return v.$jb_val();
+    return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
   },
   writeValue(to,value,srcCtx) {
     jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
@@ -1915,9 +1915,7 @@ jb.component('http.post', { /* http.post */
     }
   ],
   impl: (ctx,url,postData,json) => {
-    const headers = new Headers();
-    headers.append("Content-Type", "application/json; charset=UTF-8");
-		return fetch(url,{method: 'POST', headers: headers, body: JSON.stringify(postData) })
+		return fetch(url,{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(postData) })
 			  .then(r =>
 			  		json ? r.json() : r.text())
 			  .catch(e => jb.logException(e,'',ctx) || [])
@@ -9213,7 +9211,7 @@ jb.component('text', { /* text */
   params: [
     {id: 'title', as: 'string', mandatory: true, defaultValue: 'no title', dynamic: true},
     {id: 'text', as: 'ref', mandatory: true, defaultValue: 'my text', dynamic: true},
-    {id: 'style', type: 'label.style', defaultValue: label.noWrappingTag(), dynamic: true},
+    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -10077,18 +10075,18 @@ jb.component('watch-ref', { /* watchRef */
       defaultValue: 'no',
       description: 'watch childern change as well'
     },
+   {
+      id: 'allowSelfRefresh',
+      as: 'boolean',
+      description: 'allow refresh originated from the components or its children',
+      type: 'boolean'
+    },
     {
       id: 'delay',
       as: 'number',
       description: 'delay in activation, can be used to set priority'
     },
-    {
-      id: 'allowSelfRefresh',
-      as: 'boolean',
-      description: 'allow refresh originated from the components or its children',
-      type: 'boolean'
-    }
-  ],
+   ],
   impl: (ctx,ref,includeChildren,delay,allowSelfRefresh) => ({
       beforeInit: cmp =>
         cmp.watchRefOn = true,
