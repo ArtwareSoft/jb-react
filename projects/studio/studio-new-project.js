@@ -10,7 +10,8 @@ jb.component('studio.new-project', { /* studio.newProject */
     const request = {
       project: name,
       files: [
-        { fileName: `${name}.js`, content: `
+        { fileName: `${name}.js`, content: `jb.ns('${name}')        
+
 jb.component('${name}.main', {
   type: 'control',
   impl: group({
