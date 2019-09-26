@@ -223,7 +223,10 @@ Object.assign(st, {
    	moveFixDestination(from,to,srcCtx) {
 		if (isNaN(Number(to.split('~').slice(-1)))) {
             if (st.valOfPath(to) === undefined)
-                jb.writeValue(st.refOfPath(to),[],srcCtx);
+				jb.writeValue(st.refOfPath(to),[],srcCtx);
+			if (!Array.isArray(st.valOfPath(to)))
+				jb.writeValue(st.refOfPath(to),[st.valOfPath(to)],srcCtx);
+				
             to += '~' + st.valOfPath(to).length;
 		}
 		return jb.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
