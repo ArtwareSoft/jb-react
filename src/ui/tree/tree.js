@@ -215,9 +215,9 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 
 				keyDownNoAlts.filter(e=> e.keyCode == 38 || e.keyCode == 40)
 					.map(event => {
-						var diff = event.keyCode == 40 ? 1 : -1;
-						var nodes = jb.ui.findIncludeSelf(tree.el,'.treenode');
-						var selected = jb.ui.findIncludeSelf(tree.el,'.treenode.selected')[0];
+						const diff = event.keyCode == 40 ? 1 : -1;
+						const nodes = jb.ui.findIncludeSelf(tree.el,'.treenode');
+						const selected = jb.ui.findIncludeSelf(tree.el,'.treenode.selected')[0];
 						return tree.elemToPath(nodes[nodes.indexOf(selected) + diff]) || tree.selected;
 					}).subscribe(x=>
 						tree.selectionEmitter.next(x))
@@ -225,7 +225,7 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 				keyDownNoAlts
 					.filter(e=> e.keyCode == 37 || e.keyCode == 39)
 					.subscribe(event => {
-						var isArray = tree.nodeModel.isArray(tree.selected);
+						const isArray = tree.nodeModel.isArray(tree.selected);
 						if (!isArray || (tree.expanded[tree.selected] && event.keyCode == 39))
 							runActionInTreeContext(context.params.onRightClickOfExpanded);
 						if (isArray && tree.selected) {
@@ -279,15 +279,14 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
   		afterViewInit: cmp => {
   			const tree = cmp.tree;
         	const drake = tree.drake = dragula([], {
-				      moves: el =>
-					         jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
+				      moves: el => jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
 	    	})
           	drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
           //jb.ui.findIncludeSelf(cmp.base,'.jb-array-node').map(el=>el.children()).filter('.treenode-children').get();
 
 			drake.on('drag', function(el, source) {
-				var path = tree.elemToPath(el.firstElementChild)
-				el.dragged = { path: path, expanded: tree.expanded[path]}
+				const path = tree.elemToPath(el.firstElementChild)
+				el.dragged = { path, expanded: tree.expanded[path]}
 				delete tree.expanded[path]; // collapse when dragging
 			})
 
@@ -295,7 +294,7 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 				if (!dropElm.dragged) return;
 				dropElm.parentNode.removeChild(dropElm);
 				tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
-				const state = treeStateAsVals(tree);
+				const state = treeStateAsRefs(tree);
 				let targetPath = targetSibling ? tree.elemToPath(targetSibling) : addToIndex(tree.elemToPath(target.lastElementChild),1);
 				// strange dragule behavior fix
 				const draggedIndex = Number(dropElm.dragged.path.split('~').pop());
@@ -303,9 +302,10 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 				if (target === source && targetIndex > draggedIndex)
 					targetPath = addToIndex(targetPath,-1)
 				tree.nodeModel.move(dropElm.dragged.path,targetPath);
-				tree.nodeModel.refHandler && restoreTreeStateFromVals(tree,state);
+				tree.selectionEmitter.next(targetPath)
+				restoreTreeStateFromRefs(tree,state);
 				dropElm.dragged = null;
-				tree.redraw(true);
+//				tree.redraw(true);
 		    })
 
 	        // ctrl up and down
@@ -317,10 +317,10 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
       					const no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
 						const diff = e.keyCode == 40 ? 1 : -1;
       					let target = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
-						const state = treeStateAsVals(tree);
+						const state = treeStateAsRefs(tree);
       					tree.nodeModel.move(tree.selected, tree.selected.split('~').slice(0,-1).concat([target]).join('~'))
 						  
-						tree.nodeModel.refHandler && restoreTreeStateFromVals(tree,state);
+						restoreTreeStateFromRefs(tree,state);
       			})
       		},
       		componentWillUpdate: function(cmp) {
@@ -333,25 +333,20 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 })
 
 
-treeStateAsVals = tree => ({
-	selected: pathToVal(tree.nodeModel,tree.selected),
-	expanded: jb.entries(tree.expanded).filter(e=>e[1]).map(e=>pathToVal(tree.nodeModel,e[0]))
+treeStateAsRefs = tree => ({
+	selected: pathToRef(tree.nodeModel,tree.selected),
+	expanded: jb.entries(tree.expanded).filter(e=>e[1]).map(e=>pathToRef(tree.nodeModel,e[0]))
 })
 
-restoreTreeStateFromVals = (tree,vals) => {
-	tree.selected = valToPath(tree.nodeModel,vals.selected);
+restoreTreeStateFromRefs = (tree,state) => {
+	if (!tree.nodeModel.refHandler) return
+	tree.selected = refToPath(state.selected);
 	tree.expanded = {};
-	vals.expanded.forEach(v=>tree.expanded[valToPath(tree.nodeModel,v)] = true)
+	state.expanded.forEach(ref=>tree.expanded[refToPath(ref)] = true)
 }
 
-pathToVal = (model,path) =>
-	model.refHandler && model.refHandler.val(model.refHandler.refOfPath(path.split('~')))
-
-valToPath = (model,val) => {
-	if (!model.refHandler) return
-	const ref = model.refHandler.asRef(val);
-	return ref ? ref.path().join('~') : ''
-}
+pathToRef = (model,path) => model.refHandler && model.refHandler.refOfPath(path.split('~'))
+refToPath = ref => ref && ref.path ? ref.path().join('~') : ''
 
 addToIndex = (path,toAdd) => {
 	if (!path) debugger;

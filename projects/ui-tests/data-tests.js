@@ -20,6 +20,8 @@ jb.component('personWithChildren', { watchableData: {
 }})
 
 jb.component('stringArray', { watchableData: ['a','b','c']})
+jb.component('stringTree', { watchableData: { node1: ['a','b','c'], node2: ['1','2','3']}})
+
 
 jb.component('test.getAsBool', { /* test.getAsBool */
   params: [
@@ -202,17 +204,50 @@ jb.component('data-test.ref-of-array-item', { /* dataTest.refOfArrayItem */
   })
 })
 
-jb.component('data-test.ref-of-string-array-item-know-limit', {
+jb.component('data-test.ref-of-string-array-item-splice', {
   impl: dataTest({
     vars: Var('refs',obj()),
     runBefore: ctx => {
-      ctx.vars.refs.refOfb = ctx.exp('%$stringArray[2]%','ref')
-      ctx.vars.refs.valBefore = jb.val(ctx.vars.refs.refOfb)
+      const refs = ctx.vars.refs
+      refs.refOfc = ctx.exp('%$stringArray[2]%','ref')
+      refs.valBefore = jb.val(refs.refOfc)
       ctx.run(splice({array: '%$stringArray%', fromIndex: 0, noOfItemsToRemove: 1}))
-      ctx.vars.refs.valAfter = jb.val(ctx.vars.refs.refOfb)
+      refs.valAfter = jb.val(refs.refOfc)
     },
     calculate: '',
-    expectedResult: true // equals('%$refs/valBefore%','%$refs/valAfter%')
+    expectedResult: equals('%$refs/valBefore%','%$refs/valAfter%')
+  })
+})
+
+jb.component('data-test.ref-of-string-array-item-move', {
+  impl: dataTest({
+    vars: Var('refs',obj()),
+    runBefore: ctx => {
+      const refs = ctx.vars.refs
+      refs.refOfb = ctx.exp('%$stringArray[1]%','ref')
+      refs.refOfc = ctx.exp('%$stringArray[2]%','ref')
+      refs.valBefore = jb.val(refs.refOfc)
+      jb.move(refs.refOfc, refs.refOfb, ctx)      
+      refs.valAfter = jb.val(refs.refOfc)
+    },
+    calculate: '',
+    expectedResult: equals('%$refs/valBefore%','%$refs/valAfter%')
+  })
+})
+
+jb.component('data-test.ref-of-string-tree-move', {
+  impl: dataTest({
+    vars: Var('refs',obj()),
+    runBefore: ctx => {
+      const refs = ctx.vars.refs
+      refs.refOfb = ctx.exp('%$stringTree/node1[1]%','ref')
+      refs.refOf2 = ctx.exp('%$stringTree/node2[2]%','ref')
+      refs.valBefore = jb.val(refs.refOfb)
+      jb.move(refs.refOfb, refs.refOf2, ctx)      
+      refs.valAfter = jb.val(refs.refOfb)
+    },
+    calculate: '',
+    expectedResult: equals('%$refs/valBefore%','%$refs/valAfter%')
   })
 })
 
