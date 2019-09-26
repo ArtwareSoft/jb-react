@@ -12587,7 +12587,6 @@ border: 1px solid rgb(213, 213, 213);}
 .jb-disabled { opacity: 0.3 }
 ;
 
-
 @keyframes slide_from_top {
     0%   {margin-top: -50px;}
     10%  {margin-top: 0;}

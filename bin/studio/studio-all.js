@@ -8684,6 +8684,7 @@ class WatchableValueByRef {
     this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])]
     this.resourceChange = new jb.rx.Subject()
     this.observables = []
+    this.primitiveArraysDeltas = {}
 
     jb.ui.originalResources = jb.resources
     const resourcesObj = resources()
@@ -8736,6 +8737,10 @@ class WatchableValueByRef {
           this.removeObjFromMap(oldVal)
           this.addObjToMap(newVal,path)
       }
+      if (opOnRef.$splice) {
+        this.primitiveArraysDeltas[ref.$jb_obj[jbId]] = this.primitiveArraysDeltas[ref.$jb_obj[jbId]] || []
+        this.primitiveArraysDeltas[ref.$jb_obj[jbId]].push(opOnRef.$splice)
+      }
       opEvent.newVal = newVal;
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
@@ -8774,8 +8779,10 @@ class WatchableValueByRef {
     if (ref.$jb_path)
       return ref.$jb_path()
     const path = this.isRef(ref) && (this.objToPath.get(ref.$jb_obj) || this.objToPath.get(ref.$jb_obj[jbId]))
-    if (path && ref.$jb_childProp)
+    if (path && ref.$jb_childProp !== undefined) {
+        this.refreshPrimitiveArrayRef(ref)
         return [...path, ref.$jb_childProp]
+    }
     return path
   }
   asRef(obj, silent) {
@@ -8799,9 +8806,7 @@ class WatchableValueByRef {
       const parent = this.asRef(this.valOfPath(path.slice(0,-1)), true);
       if (path.length == 1)
         return {$jb_obj: this.resources(), $jb_childProp: path[0], handler: this, $jb_path: () => path }
-      if (parent && this.isRef(parent))
-        return Object.assign({},parent,{$jb_childProp: path.slice(-1)[0]})
-      jb.logError('reOfPath can not find parent ref',path.join('~'))
+      return this.objectProperty(parent,path.slice(-1)[0])
     }
     return this.asRef(val)
   }
@@ -8820,6 +8825,7 @@ class WatchableValueByRef {
       if (typeof ref.handler.val != 'function') debugger
       return ref.handler.val(ref)
     }
+    this.refreshPrimitiveArrayRef(ref)
     const path = this.pathOfRef(ref);
     if (!path) {
       debugger
@@ -8839,7 +8845,12 @@ class WatchableValueByRef {
       return jb.logError('objectProperty: null obj',ctx);
     var ref = this.asRef(obj);
     if (ref && ref.$jb_obj) {
-      return {$jb_obj: ref.$jb_obj, $jb_childProp: prop, handler: this, path: function() { return this.handler.pathOfRef(this)}}
+      const ret = {$jb_obj: ref.$jb_obj, $jb_childProp: prop, handler: this, path: function() { return this.handler.pathOfRef(this)}}
+      if (this.isPrimitiveArray(ref.$jb_obj)) {
+        ret.$jb_delta_version = (this.primitiveArraysDeltas[ref.$jb_obj[jbId]] || []).length
+        ret.$jb_childProp = +prop
+      }
+      return ret
     } else {
       return obj[prop]; // not reffable
     }
@@ -8883,13 +8894,46 @@ class WatchableValueByRef {
     var valToMove = jb.val(fromRef);
     if (sameArray) {
         //if (fromIndex < toIndex) toIndex--; // the deletion changes the index
-        return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
+        const spliceParam = [[fromIndex,1],[toIndex,0,valToMove]]
+        spliceParam.fromIndex = fromIndex
+        spliceParam.toIndex = toIndex
+        return this.doOp(fromArray,{$splice: spliceParam },srcCtx)
     }
     this.startTransaction()
-    this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx),
+    const spliceParam = [[fromIndex,1]]
+    spliceParam.fromIndex = fromIndex
+    spliceParam.toIndex = toIndex
+    spliceParam.toArray = toArray
+    this.doOp(fromArray,{$splice: spliceParam },srcCtx),
     this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx),
     this.endTransaction()
   }
+  isPrimitiveArray(arr) {
+    return Array.isArray(arr) && arr.some(x=> x != null && typeof x != 'object')
+  }
+  refreshPrimitiveArrayRef(ref) {
+    if (!this.isPrimitiveArray(ref.$jb_obj)) return
+    const arrayId = ref.$jb_obj[jbId]
+    const deltas = this.primitiveArraysDeltas[arrayId] || []
+    deltas.slice(ref.$jb_delta_version).forEach(group => { 
+        if (group.fromIndex != undefined && group.fromIndex === ref.$jb_childProp) { // move
+          ref.$jb_childProp = group.toIndex
+          if (group.toArray)
+            ref.$jb_obj = group.toArray.$jb_obj
+          return
+        }
+        group.forEach(([from,toDelete,toAdd]) => { // splice
+          if (ref.$jb_childProp == -1) return
+          if (ref.$jb_childProp >= from && ref.$jb_childProp < from+toDelete) {
+            ref.$jb_childProp = -1
+          } else if (ref.$jb_childProp >= from) {
+            ref.$jb_childProp = ref.$jb_childProp - toDelete + (toAdd != null) ? 1 : 0
+          }
+        }) 
+    })
+    ref.$jb_delta_version = deltas.length
+  }
+
   startTransaction() {
     this.transactionEventsLog = []
   }
@@ -14286,9 +14330,9 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 
 				keyDownNoAlts.filter(e=> e.keyCode == 38 || e.keyCode == 40)
 					.map(event => {
-						var diff = event.keyCode == 40 ? 1 : -1;
-						var nodes = jb.ui.findIncludeSelf(tree.el,'.treenode');
-						var selected = jb.ui.findIncludeSelf(tree.el,'.treenode.selected')[0];
+						const diff = event.keyCode == 40 ? 1 : -1;
+						const nodes = jb.ui.findIncludeSelf(tree.el,'.treenode');
+						const selected = jb.ui.findIncludeSelf(tree.el,'.treenode.selected')[0];
 						return tree.elemToPath(nodes[nodes.indexOf(selected) + diff]) || tree.selected;
 					}).subscribe(x=>
 						tree.selectionEmitter.next(x))
@@ -14296,7 +14340,7 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 				keyDownNoAlts
 					.filter(e=> e.keyCode == 37 || e.keyCode == 39)
 					.subscribe(event => {
-						var isArray = tree.nodeModel.isArray(tree.selected);
+						const isArray = tree.nodeModel.isArray(tree.selected);
 						if (!isArray || (tree.expanded[tree.selected] && event.keyCode == 39))
 							runActionInTreeContext(context.params.onRightClickOfExpanded);
 						if (isArray && tree.selected) {
@@ -14350,15 +14394,14 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
   		afterViewInit: cmp => {
   			const tree = cmp.tree;
         	const drake = tree.drake = dragula([], {
-				      moves: el =>
-					         jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
+				      moves: el => jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
 	    	})
           	drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
           //jb.ui.findIncludeSelf(cmp.base,'.jb-array-node').map(el=>el.children()).filter('.treenode-children').get();
 
 			drake.on('drag', function(el, source) {
-				var path = tree.elemToPath(el.firstElementChild)
-				el.dragged = { path: path, expanded: tree.expanded[path]}
+				const path = tree.elemToPath(el.firstElementChild)
+				el.dragged = { path, expanded: tree.expanded[path]}
 				delete tree.expanded[path]; // collapse when dragging
 			})
 
@@ -14366,7 +14409,7 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 				if (!dropElm.dragged) return;
 				dropElm.parentNode.removeChild(dropElm);
 				tree.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
-				const state = treeStateAsVals(tree);
+				const state = treeStateAsRefs(tree);
 				let targetPath = targetSibling ? tree.elemToPath(targetSibling) : addToIndex(tree.elemToPath(target.lastElementChild),1);
 				// strange dragule behavior fix
 				const draggedIndex = Number(dropElm.dragged.path.split('~').pop());
@@ -14374,9 +14417,10 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 				if (target === source && targetIndex > draggedIndex)
 					targetPath = addToIndex(targetPath,-1)
 				tree.nodeModel.move(dropElm.dragged.path,targetPath);
-				tree.nodeModel.refHandler && restoreTreeStateFromVals(tree,state);
+				tree.selectionEmitter.next(targetPath)
+				restoreTreeStateFromRefs(tree,state);
 				dropElm.dragged = null;
-				tree.redraw(true);
+//				tree.redraw(true);
 		    })
 
 	        // ctrl up and down
@@ -14388,10 +14432,10 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
       					const no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
 						const diff = e.keyCode == 40 ? 1 : -1;
       					let target = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
-						const state = treeStateAsVals(tree);
+						const state = treeStateAsRefs(tree);
       					tree.nodeModel.move(tree.selected, tree.selected.split('~').slice(0,-1).concat([target]).join('~'))
 						  
-						tree.nodeModel.refHandler && restoreTreeStateFromVals(tree,state);
+						restoreTreeStateFromRefs(tree,state);
       			})
       		},
       		componentWillUpdate: function(cmp) {
@@ -14404,25 +14448,20 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 })
 
 
-treeStateAsVals = tree => ({
-	selected: pathToVal(tree.nodeModel,tree.selected),
-	expanded: jb.entries(tree.expanded).filter(e=>e[1]).map(e=>pathToVal(tree.nodeModel,e[0]))
+treeStateAsRefs = tree => ({
+	selected: pathToRef(tree.nodeModel,tree.selected),
+	expanded: jb.entries(tree.expanded).filter(e=>e[1]).map(e=>pathToRef(tree.nodeModel,e[0]))
 })
 
-restoreTreeStateFromVals = (tree,vals) => {
-	tree.selected = valToPath(tree.nodeModel,vals.selected);
+restoreTreeStateFromRefs = (tree,state) => {
+	if (!tree.nodeModel.refHandler) return
+	tree.selected = refToPath(state.selected);
 	tree.expanded = {};
-	vals.expanded.forEach(v=>tree.expanded[valToPath(tree.nodeModel,v)] = true)
+	state.expanded.forEach(ref=>tree.expanded[refToPath(ref)] = true)
 }
 
-pathToVal = (model,path) =>
-	model.refHandler && model.refHandler.val(model.refHandler.refOfPath(path.split('~')))
-
-valToPath = (model,val) => {
-	if (!model.refHandler) return
-	const ref = model.refHandler.asRef(val);
-	return ref ? ref.path().join('~') : ''
-}
+pathToRef = (model,path) => model.refHandler && model.refHandler.refOfPath(path.split('~'))
+refToPath = ref => ref && ref.path ? ref.path().join('~') : ''
 
 addToIndex = (path,toAdd) => {
 	if (!path) debugger;
@@ -28093,7 +28132,8 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 }
 
 const spaces = Array.from(new Array(200)).map(_=>' ').join('')
-jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
+jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls,comps} = {}) {
+  comps = comps || jb.comps
   if (!val || typeof val !== 'object')
     return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
@@ -28157,7 +28197,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     const ctx = {path, line, col}
 
     const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
-    const comp = jb.comps[id]
+    const comp = comps[id]
     if (comp)
       jb.fixByValue(profile,comp)
     if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
@@ -28264,7 +28304,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
 
       const comp_name = jb.compName(obj);
       if (comp_name) { // tgp obj - sort by params def
-        const params = jb.compParams(jb.comps[comp_name]).map(p=>p.id);
+        const params = jb.compParams(comps[comp_name]).map(p=>p.id);
         props.sort((p1,p2)=>params.indexOf(p1) - params.indexOf(p2));
       }
       if (props.indexOf('$') > 0) { // make the $ first
@@ -30595,7 +30635,10 @@ Object.assign(st, {
    	moveFixDestination(from,to,srcCtx) {
 		if (isNaN(Number(to.split('~').slice(-1)))) {
             if (st.valOfPath(to) === undefined)
-                jb.writeValue(st.refOfPath(to),[],srcCtx);
+				jb.writeValue(st.refOfPath(to),[],srcCtx);
+			if (!Array.isArray(st.valOfPath(to)))
+				jb.writeValue(st.refOfPath(to),[st.valOfPath(to)],srcCtx);
+				
             to += '~' + st.valOfPath(to).length;
 		}
 		return jb.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
@@ -32328,7 +32371,8 @@ Object.assign(st,{
 			return path.split('~')[0];
 
 		const val = st.valOfPath(path);
-		return (val && typeof val.title == 'string' && val.title) || (val && val.Name) || (val && val.remark) || (val && st.compNameOfPath(path)) || path.split('~').pop();
+		const fieldTitle = jb.asArray(val.features).filter(x=>x.$ == 'field.title').map(x=>x.title)[0]
+		return fieldTitle || (val && typeof val.title == 'string' && val.title) || (val && val.Name) || (val && val.remark) || (val && st.compNameOfPath(path)) || path.split('~').pop();
 	},
 	icon: path => {
 		if (st.parentPath(path)) {
@@ -35622,13 +35666,13 @@ function newFileContent(fileContent, comps) {
     const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
     if (nextjbComponent != -1 && nextjbComponent < compLastLine)
       return jb.logError(['can not find end of component', fn,id, linesFromComp])
-    const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id}).split('\n')
+    const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id, comps: st.previewjb.comps}).split('\n')
     if (JSON.stringify(linesFromComp.slice(0,compLastLine+1)) === JSON.stringify(newComp))
         return
     lines.splice(lineOfComp,compLastLine+1,...newComp)
   })
   compsToAdd.forEach(([id,comp])=>{
-    const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id}).split('\n')
+    const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id, comps: st.previewjb.comps}).split('\n')
     lines = lines.concat(newComp).concat('')
   })
   return lines.join('\n')
@@ -36025,7 +36069,8 @@ jb.component('studio.new-project', { /* studio.newProject */
     const request = {
       project: name,
       files: [
-        { fileName: `${name}.js`, content: `
+        { fileName: `${name}.js`, content: `jb.ns('${name}')        
+
 jb.component('${name}.main', {
   type: 'control',
   impl: group({
@@ -36782,7 +36827,7 @@ const devHost = {
     createProject: (request, headers) => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers, body: JSON.stringify(
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
     scriptForLoadLibraries: '<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>',
-    pathToJsFile: (project,fn) => `/${project}/${fn}`,
+    pathToJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`
 }
 //     localhost:8082/hello-world/hello-world.html?studio=localhost =>  localhost:8082/bin/studio/studio-localhost.html?entry=localhost:8082/hello-world/hello-world.html
