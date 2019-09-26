@@ -10576,13 +10576,17 @@ jb.component('focus-on-first-element', { /* focusOnFirstElement */
 
 ;
 
+(function() {
+const withUnits = v => (v||'').match(/[^0-9]$/) ? v : `${v}px`
+const fixCssLine = css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css
+
 jb.component('css', { /* css */
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
   type: 'feature,dialog-feature',
   params: [
     {id: 'css', mandatory: true, as: 'string'}
   ],
-  impl: (ctx,css) => ({css})
+  impl: (ctx,css) => ({css: fixCssLine(css)})
 })
 
 jb.component('css.dynamic', {
@@ -10601,7 +10605,7 @@ jb.component('css.with-condition', {
     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true, dynamic: true},
     {id: 'css', mandatory: true, as: 'string', dynamic: true}
   ],
-  impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? css(ctx2) : ''})
+  impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? fixCssLine(css(ctx2)) : ''})
 })
 
 jb.component('css.class', { /* css.class */
@@ -10615,31 +10619,31 @@ jb.component('css.class', { /* css.class */
 jb.component('css.width', { /* css.width */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'width', mandatory: true, as: 'number'},
+    {id: 'width', mandatory: true, as: 'string'},
     {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
     {id: 'minMax', as: 'string', options: ',min,max'},
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,width,overflow,minMax) =>
-    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${width}px ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
+    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${withUnits(width)} ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
 })
 
 jb.component('css.height', { /* css.height */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'height', mandatory: true, as: 'number'},
+    {id: 'height', mandatory: true, as: 'string'},
     {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
     {id: 'minMax', as: 'string', options: ',min,max'},
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,height,overflow,minMax) =>
-    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${height}px ${overflow ? '; overflow-y:' + overflow : ''} }`})
+    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${withUnits(height)} ${overflow ? '; overflow-y:' + overflow : ''} }`})
 })
 
 jb.component('css.opacity', { /* css.opacity */
   type: 'feature',
   params: [
-    {id: 'opacity', mandatory: true, as: 'number', min: 0, max: 1, step: 0.1},
+    {id: 'opacity', mandatory: true, as: 'string' , description: '0-1'},
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,opacity) =>
@@ -10649,16 +10653,16 @@ jb.component('css.opacity', { /* css.opacity */
 jb.component('css.padding', { /* css.padding */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'top', as: 'number'},
-    {id: 'left', as: 'number'},
-    {id: 'right', as: 'number'},
-    {id: 'bottom', as: 'number'},
+    {id: 'top', as: 'string'},
+    {id: 'left', as: 'string'},
+    {id: 'right', as: 'string'},
+    {id: 'bottom', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx) => {
     var css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != null)
-      .map(x=> `padding-${x}: ${ctx.params[x]}px`)
+      .map(x=> `padding-${x}: ${withUnits(ctx.params[x])}`)
       .join('; ');
     return {css: `${ctx.params.selector} {${css}}`};
   }
@@ -10667,16 +10671,16 @@ jb.component('css.padding', { /* css.padding */
 jb.component('css.margin', { /* css.margin */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'top', as: 'number'},
-    {id: 'left', as: 'number'},
-    {id: 'right', as: 'number'},
-    {id: 'bottom', as: 'number'},
+    {id: 'top', as: 'string'},
+    {id: 'left', as: 'string'},
+    {id: 'right', as: 'string'},
+    {id: 'bottom', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx) => {
     var css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != null)
-      .map(x=> `margin-${x}: ${ctx.params[x]}px`)
+      .map(x=> `margin-${x}: ${withUnits(ctx.params[x])}`)
       .join('; ');
     return {css: `${ctx.params.selector} {${css}}`};
   }
@@ -10685,7 +10689,7 @@ jb.component('css.margin', { /* css.margin */
 jb.component('css.transform-rotate', { /* css.transformRotate */
   type: 'feature',
   params: [
-    {id: 'angle', as: 'number', defaultValue: 0, from: 0, to: 360},
+    {id: 'angle', as: 'string', description: '0-360'},
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx) => {
@@ -10712,37 +10716,37 @@ jb.component('css.color', { /* css.color */
 jb.component('css.transform-scale', { /* css.transformScale */
   type: 'feature',
   params: [
-    {id: 'x', as: 'number', defaultValue: 100},
-    {id: 'y', as: 'number', defaultValue: 100},
+    {id: 'x', as: 'string', description: '0-1'},
+    {id: 'y', as: 'string', description: '0-1'},
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx) => {
-    return {css: `${ctx.params.selector} {transform:scale(${ctx.params.x/100},${ctx.params.y/100})}`};
+    return {css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`};
   }
 })
 
 jb.component('css.box-shadow', { /* css.boxShadow */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'blurRadius', as: 'number', defaultValue: 5},
-    {id: 'spreadRadius', as: 'number', defaultValue: 0},
+    {id: 'blurRadius', as: 'string', defaultValue: '5'},
+    {id: 'spreadRadius', as: 'string', defaultValue: '0'},
     {id: 'shadowColor', as: 'string', defaultValue: '#000000'},
-    {id: 'opacity', as: 'number', min: 0, max: 1, defaultValue: 0.75, step: 0.01},
-    {id: 'horizontal', as: 'number', defaultValue: 10},
-    {id: 'vertical', as: 'number', defaultValue: 10},
+    {id: 'opacity', as: 'string', description: '0-1'},
+    {id: 'horizontal', as: 'string', defaultValue: '10'},
+    {id: 'vertical', as: 'string', defaultValue: '10'},
     {id: 'selector', as: 'string'}
   ],
   impl: (context,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
     var color = [parseInt(shadowColor.slice(1,3),16) || 0, parseInt(shadowColor.slice(3,5),16) || 0, parseInt(shadowColor.slice(5,7),16) || 0]
       .join(',');
-    return ({css: `${selector} { box-shadow: ${horizontal}px ${vertical}px ${blurRadius}px ${spreadRadius}px rgba(${color},${opacity}) }`})
+    return ({css: `${selector} { box-shadow: ${withUnits(horizontal)} ${withUnits(vertical)} ${withUnits(blurRadius)} ${withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
   }
 })
 
 jb.component('css.border', { /* css.border */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'width', as: 'number', defaultValue: 1},
+    {id: 'width', as: 'string', defaultValue: '1'},
     {id: 'side', as: 'string', options: 'top,left,bottom,right'},
     {
       id: 'style',
@@ -10754,9 +10758,10 @@ jb.component('css.border', { /* css.border */
     {id: 'selector', as: 'string'}
   ],
   impl: (context,width,side,style,color,selector) =>
-    ({css: `${selector} { border${side?'-'+side:''}: ${width}px ${style} ${color} }`})
+    ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
 })
-;
+
+})();
 
 jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
   type: 'dialog-feature',
