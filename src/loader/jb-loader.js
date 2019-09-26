@@ -106,6 +106,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
           'dist/dragula.js',
           'dist/dragula.css',
       ],
+      'jb-d3': ['dist/jb-d3.js'],
       studio: [
         'src/ui/watchable/text-editor.js','src/ui/styles/codemirror-styles.js',
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
