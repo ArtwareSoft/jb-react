@@ -967,6 +967,16 @@ jb.component('ui-test.picklist', { /* uiTest.picklist */
   })
 })
 
+jb.component('ui-test.field-title-of-label', { 
+  impl: uiTest({
+    control: group({
+      style: propertySheet.titlesLeft({}),
+      controls: label({title: '%$personWithAddress/address/city%', features: field.title('City')})
+    }),
+    expectedResult: contains('City')
+  })
+})
+
 jb.component('ui-test.picklist-sort', { /* uiTest.picklistSort */
   impl: dataTest({
     calculate: pipeline(
