@@ -10577,7 +10577,7 @@ jb.component('focus-on-first-element', { /* focusOnFirstElement */
 ;
 
 (function() {
-const withUnits = v => (v||'').match(/[^0-9]$/) ? v : `${v}px`
+const withUnits = v => (''+v||'').match(/[^0-9]$/) ? v : `${v}px`
 const fixCssLine = css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css
 
 jb.component('css', { /* css */
@@ -13774,6 +13774,22 @@ jb.component('picklist.native', { /* picklist.native */
 { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; color: #555555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; }
 :focus { border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
 ::-webkit-input-placeholder { color: #999; }`,
+    features: field.databind()
+  })
+})
+
+jb.component('picklist.radio', {
+  type: 'picklist.style',
+  params:[
+    { id: 'radioCss', as: 'string', defaultValue: 'display: none' },
+    { id: 'label', type: 'control', defaultValue: button({title: '%text%', style: button.href()}), dynamic: true },
+  ],
+  impl: customStyle({
+    template: (cmp,{options, fieldId},h) => h('div', {},
+          options.flatMap(option=> [h('input', {
+              type: 'radio', name: fieldId, id: option.code, value: option.text, onchange: e => cmp.jbModel(option.code,e) 
+            }), h('label',{for: option.code}, h(jb.ui.renderable(cmp.label(cmp.ctx.setData(option)) ) ))] )),
+    css: `>input {%$radioCss%}`,
     features: field.databind()
   })
 })

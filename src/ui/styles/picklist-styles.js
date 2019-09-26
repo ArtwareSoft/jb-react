@@ -13,6 +13,22 @@ jb.component('picklist.native', { /* picklist.native */
   })
 })
 
+jb.component('picklist.radio', {
+  type: 'picklist.style',
+  params:[
+    { id: 'radioCss', as: 'string', defaultValue: 'display: none' },
+    { id: 'label', type: 'control', defaultValue: button({title: '%text%', style: button.href()}), dynamic: true },
+  ],
+  impl: customStyle({
+    template: (cmp,{options, fieldId},h) => h('div', {},
+          options.flatMap(option=> [h('input', {
+              type: 'radio', name: fieldId, id: option.code, value: option.text, onchange: e => cmp.jbModel(option.code,e) 
+            }), h('label',{for: option.code}, h(jb.ui.renderable(cmp.label(cmp.ctx.setData(option)) ) ))] )),
+    css: `>input {%$radioCss%}`,
+    features: field.databind()
+  })
+})
+
 jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
   type: 'picklist.style',
   impl: customStyle({
