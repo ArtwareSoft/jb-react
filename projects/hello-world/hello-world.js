@@ -1,16 +1,7 @@
 jb.component('hello-world.main', { /* helloWorld.main */
   type: 'control',
   impl: group({
-    controls: [
-      html({title: 'html', html: '<p>html here</p>'}),
-      text({}),
-      image({}),
-      group({
-        controls: [
-          label({title: pipeline('hello world', 'aa', 'bb')})
-        ]
-      })
-    ]
+    controls: label('hello world')
   })
 })
 
