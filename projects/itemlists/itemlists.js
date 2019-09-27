@@ -225,6 +225,23 @@ jb.component('itemlists.phones-chart', { /* itemlists.phonesChart */
           d3Chart.pivot({title: '$', value: '%price%'})
         ],
         itemTitle: '%title% (%Announced%)',
+        onSelect: openDialog({
+          style: dialog.popup(),
+          content: group({
+            controls: group({
+              controls: [
+                menu.control({
+                  menu: menu.menu({
+                    title: 'filter by',
+                    options: [menu.action('by maker %make%'), menu.action({})]
+                  })
+                })
+              ]
+            })
+          }),
+          title: 'asa',
+          features: [dialogFeature.nearLauncherPosition({offsetLeft: '5', offsetTop: '5'})]
+        }),
         visualSizeLimit: '3000',
         style: d3Scatter.plain()
       })

@@ -70,9 +70,9 @@ function calcFullPath(path) {
   const bin_match = path.match(/^bin\/(.*)/);
   if (bin_match)
       return `node_modules/jbart5-react/bin/${bin_match[1]}`
-  const dist_match = path.match(/^dist\/(.*)/);
-  if (dist_match)
-      return `node_modules/jbart5-react/dist/${dist_match[1]}`
+//  const dist_match = path.match(/^dist\/(.*)/);
+//  if (dist_match)
+//      return `node_modules/jbart5-react/dist/${dist_match[1]}`
   return settings.http_dir + path;
 }
 
