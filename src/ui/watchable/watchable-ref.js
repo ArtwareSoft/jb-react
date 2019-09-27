@@ -17,6 +17,7 @@ class WatchableValueByRef {
     this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])]
     this.resourceChange = new jb.rx.Subject()
     this.observables = []
+    this.primitiveArraysDeltas = {}
 
     jb.ui.originalResources = jb.resources
     const resourcesObj = resources()
@@ -69,6 +70,10 @@ class WatchableValueByRef {
           this.removeObjFromMap(oldVal)
           this.addObjToMap(newVal,path)
       }
+      if (opOnRef.$splice) {
+        this.primitiveArraysDeltas[ref.$jb_obj[jbId]] = this.primitiveArraysDeltas[ref.$jb_obj[jbId]] || []
+        this.primitiveArraysDeltas[ref.$jb_obj[jbId]].push(opOnRef.$splice)
+      }
       opEvent.newVal = newVal;
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
@@ -107,8 +112,10 @@ class WatchableValueByRef {
     if (ref.$jb_path)
       return ref.$jb_path()
     const path = this.isRef(ref) && (this.objToPath.get(ref.$jb_obj) || this.objToPath.get(ref.$jb_obj[jbId]))
-    if (path && ref.$jb_childProp)
+    if (path && ref.$jb_childProp !== undefined) {
+        this.refreshPrimitiveArrayRef(ref)
         return [...path, ref.$jb_childProp]
+    }
     return path
   }
   asRef(obj, silent) {
@@ -132,9 +139,7 @@ class WatchableValueByRef {
       const parent = this.asRef(this.valOfPath(path.slice(0,-1)), true);
       if (path.length == 1)
         return {$jb_obj: this.resources(), $jb_childProp: path[0], handler: this, $jb_path: () => path }
-      if (parent && this.isRef(parent))
-        return Object.assign({},parent,{$jb_childProp: path.slice(-1)[0]})
-      jb.logError('reOfPath can not find parent ref',path.join('~'))
+      return this.objectProperty(parent,path.slice(-1)[0])
     }
     return this.asRef(val)
   }
@@ -153,6 +158,7 @@ class WatchableValueByRef {
       if (typeof ref.handler.val != 'function') debugger
       return ref.handler.val(ref)
     }
+    this.refreshPrimitiveArrayRef(ref)
     const path = this.pathOfRef(ref);
     if (!path) {
       debugger
@@ -172,7 +178,12 @@ class WatchableValueByRef {
       return jb.logError('objectProperty: null obj',ctx);
     var ref = this.asRef(obj);
     if (ref && ref.$jb_obj) {
-      return {$jb_obj: ref.$jb_obj, $jb_childProp: prop, handler: this, path: function() { return this.handler.pathOfRef(this)}}
+      const ret = {$jb_obj: ref.$jb_obj, $jb_childProp: prop, handler: this, path: function() { return this.handler.pathOfRef(this)}}
+      if (this.isPrimitiveArray(ref.$jb_obj)) {
+        ret.$jb_delta_version = (this.primitiveArraysDeltas[ref.$jb_obj[jbId]] || []).length
+        ret.$jb_childProp = +prop
+      }
+      return ret
     } else {
       return obj[prop]; // not reffable
     }
@@ -216,13 +227,46 @@ class WatchableValueByRef {
     var valToMove = jb.val(fromRef);
     if (sameArray) {
         //if (fromIndex < toIndex) toIndex--; // the deletion changes the index
-        return this.doOp(fromArray,{$splice: [[fromIndex,1],[toIndex,0,valToMove]] },srcCtx)
+        const spliceParam = [[fromIndex,1],[toIndex,0,valToMove]]
+        spliceParam.fromIndex = fromIndex
+        spliceParam.toIndex = toIndex
+        return this.doOp(fromArray,{$splice: spliceParam },srcCtx)
     }
     this.startTransaction()
-    this.doOp(fromArray,{$splice: [[fromIndex,1]] },srcCtx),
+    const spliceParam = [[fromIndex,1]]
+    spliceParam.fromIndex = fromIndex
+    spliceParam.toIndex = toIndex
+    spliceParam.toArray = toArray
+    this.doOp(fromArray,{$splice: spliceParam },srcCtx),
     this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx),
     this.endTransaction()
   }
+  isPrimitiveArray(arr) {
+    return Array.isArray(arr) && arr.some(x=> x != null && typeof x != 'object')
+  }
+  refreshPrimitiveArrayRef(ref) {
+    if (!this.isPrimitiveArray(ref.$jb_obj)) return
+    const arrayId = ref.$jb_obj[jbId]
+    const deltas = this.primitiveArraysDeltas[arrayId] || []
+    deltas.slice(ref.$jb_delta_version).forEach(group => { 
+        if (group.fromIndex != undefined && group.fromIndex === ref.$jb_childProp) { // move
+          ref.$jb_childProp = group.toIndex
+          if (group.toArray)
+            ref.$jb_obj = group.toArray.$jb_obj
+          return
+        }
+        group.forEach(([from,toDelete,toAdd]) => { // splice
+          if (ref.$jb_childProp == -1) return
+          if (ref.$jb_childProp >= from && ref.$jb_childProp < from+toDelete) {
+            ref.$jb_childProp = -1
+          } else if (ref.$jb_childProp >= from) {
+            ref.$jb_childProp = ref.$jb_childProp - toDelete + (toAdd != null) ? 1 : 0
+          }
+        }) 
+    })
+    ref.$jb_delta_version = deltas.length
+  }
+
   startTransaction() {
     this.transactionEventsLog = []
   }

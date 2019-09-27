@@ -967,6 +967,28 @@ jb.component('ui-test.picklist', { /* uiTest.picklist */
   })
 })
 
+jb.component('ui-test.picklist-radio', {
+  impl: uiTest({
+    control: picklist({
+            title: 'city',
+            databind: '%$personWithAddress/address/city%',
+            options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London'),
+            style: picklist.radio(),
+    }),
+    expectedResult: contains(['Springfield', 'New York'])
+  })
+})
+
+jb.component('ui-test.field-title-of-label', { 
+  impl: uiTest({
+    control: group({
+      style: propertySheet.titlesLeft({}),
+      controls: label({title: '%$personWithAddress/address/city%', features: field.title('City')})
+    }),
+    expectedResult: contains('City')
+  })
+})
+
 jb.component('ui-test.picklist-sort', { /* uiTest.picklistSort */
   impl: dataTest({
     calculate: pipeline(

@@ -263,11 +263,3 @@ jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
     ]
   })
 })
-
-jb.component('studio.goto-project', { 
-  type: 'action',
-  params: [
-    {id: 'project', as: 'string', mandatory: true},
-  ],
-  impl: gotoUrl(ctx => jb.studio.host.projecstDir + '/' + ctx.exp('%$project%') )
-})

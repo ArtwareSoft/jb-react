@@ -6,10 +6,12 @@ jb.component('studio.new-project', { /* studio.newProject */
     {id: 'onSuccess', type: 'action', dynamic: true}
   ],
   impl: (ctx,name) => {
+    
     const request = {
       project: name,
       files: [
-        { fileName: `${name}.js`, content: `
+        { fileName: `${name}.js`, content: `jb.ns('${name}')        
+
 jb.component('${name}.main', {
   type: 'control',
   impl: group({
@@ -26,8 +28,8 @@ jb.component('${name}.main', {
   <script type="text/javascript">
     startTime = new Date().getTime();
   </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>
-  <script type="text/javascript" src="/projects/${name}/${name}.js"></script>
+  ${jb.studio.host.scriptForLoadLibraries}
+  <script type="text/javascript" src="${jb.studio.host.pathToJsFile(name,name+'.js')}"></script>
 </head>
 <body>
 <div id="main"> </div>
@@ -74,7 +76,7 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
       features: css.padding({top: '14', left: '11'})
     }),
     title: 'New Project',
-    onOK: studio.newProject('%$name%', gotoUrl('/project/studio/%$name%/')),
+    onOK: studio.newProject('%$name%', studio.gotoProject('%$name%')),
     modal: true,
     features: [
       variable({name: 'name', watchable: true}),

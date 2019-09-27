@@ -29,7 +29,8 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 }
 
 const spaces = Array.from(new Array(200)).map(_=>' ').join('')
-jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls} = {}) {
+jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls,comps} = {}) {
+  comps = comps || jb.comps
   if (!val || typeof val !== 'object')
     return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
@@ -93,7 +94,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     const ctx = {path, line, col}
 
     const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
-    const comp = jb.comps[id]
+    const comp = comps[id]
     if (comp)
       jb.fixByValue(profile,comp)
     if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
@@ -200,7 +201,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
 
       const comp_name = jb.compName(obj);
       if (comp_name) { // tgp obj - sort by params def
-        const params = jb.compParams(jb.comps[comp_name]).map(p=>p.id);
+        const params = jb.compParams(comps[comp_name]).map(p=>p.id);
         props.sort((p1,p2)=>params.indexOf(p1) - params.indexOf(p2));
       }
       if (props.indexOf('$') > 0) { // make the $ first

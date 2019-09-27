@@ -5,8 +5,7 @@ st.message = function(message,error) {
   el.innerHTML = ''
 	el.textContent = message;
   el.style.background = error ? 'red' : '#327DC8';
-  el.style.animation = '';
-	jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+  st.animateMessage(el)
 }
 
 st.showMultiMessages = function(messages) {
@@ -18,10 +17,15 @@ st.showMultiMessages = function(messages) {
     inner.textContent = m.text;
     el.appendChild(inner)
   })
-  el.style.animation = '';
-	jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+  st.animateMessage(el)
 }
 
+st.animateMessage = function (el) {
+  el.style.marginTop = 0;
+  // el.style.animation = '';
+  // jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+  jb.delay(6000).then(()=> el.style.marginTop = '-50px')
+}
 
 // ********* Components ************
 

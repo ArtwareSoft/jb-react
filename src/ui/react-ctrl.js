@@ -447,7 +447,8 @@ ui.outerWidth  = el => {
 }
 ui.outerHeight = el => {
   const style = getComputedStyle(el);
-  return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+  const ret = el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+  return ret || 0
 }
 ui.offset = el => {
   const rect = el.getBoundingClientRect();
