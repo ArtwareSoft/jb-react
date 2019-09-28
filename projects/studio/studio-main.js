@@ -149,7 +149,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
     style: layout.horizontal('3'),
     controls: [
       image({
-        url: '//unpkg.com/jbart5-react/bin/studio/css/jbartlogo.png',
+        url: '//unpkg.com/jb-react/bin/studio/css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
         style: image.default(),
@@ -213,7 +213,7 @@ jb.component('studio.dynamic', { /* studio.dynamic */
     style: layout.horizontal('3'),
     controls: [
       image({
-        url: '//unpkg.com/jbart5-react/bin/studio/css/jbartlogo.png',
+        url: '//unpkg.com/jb-react/bin/studio/css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
         style: image.default(),

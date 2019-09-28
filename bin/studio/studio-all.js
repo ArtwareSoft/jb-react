@@ -11119,7 +11119,7 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
   impl: (ctx,codeMirror) => ({
 		templateModifier: (vdom,cmp,state) => {
             if (vdom && vdom.nodeName != 'div') return vdom;
-				vdom.children.push(jb.ui.h('img', {src: '//unpkg.com/jbart5-react/bin/studio/css/resizer.gif', class: 'resizer'}));
+				vdom.children.push(jb.ui.h('img', {src: '//unpkg.com/jb-react/bin/studio/css/resizer.gif', class: 'resizer'}));
 			return vdom;
 		},
 		css: '>.resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
@@ -36704,7 +36704,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
     style: layout.horizontal('3'),
     controls: [
       image({
-        url: '//unpkg.com/jbart5-react/bin/studio/css/jbartlogo.png',
+        url: '//unpkg.com/jb-react/bin/studio/css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
         style: image.default(),
@@ -36768,7 +36768,7 @@ jb.component('studio.dynamic', { /* studio.dynamic */
     style: layout.horizontal('3'),
     controls: [
       image({
-        url: '//unpkg.com/jbart5-react/bin/studio/css/jbartlogo.png',
+        url: '//unpkg.com/jb-react/bin/studio/css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
         style: image.default(),
@@ -36869,7 +36869,7 @@ const devHost = {
     projectUrlInStudio: project => `/project/studio/${project}`
 }
 //     localhost:8082/hello-world/hello-world.html?studio=localhost =>  localhost:8082/bin/studio/studio-localhost.html?entry=localhost:8082/hello-world/hello-world.html
-//     localhost:8082/hello-world/hello-world.html?studio=jb-react@0.3.8 =>  //unpkg.com/jbart5-react@0.3.8/bin/studio/studio-cloud.html?entry=localhost:8082/hello-world/hello-world.html
+//     localhost:8082/hello-world/hello-world.html?studio=jb-react@0.3.8 =>  //unpkg.com/jb-react@0.3.8/bin/studio/studio-cloud.html?entry=localhost:8082/hello-world/hello-world.html
 
 const userLocalHost = Object.assign({},devHost,{
     locationToPath: path => path.split('/').slice(1).join('/'),
@@ -36882,7 +36882,7 @@ const userLocalHost = Object.assign({},devHost,{
     projectUrlInStudio: project => `/studio-bin/${project}%2F${project}.html`
 })
 
-//     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jbart5-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
+//     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
 
 st.chooseHostByUrl = entryUrl => {
     if (!entryUrl) return devHost // maybe testHost...
