@@ -7,7 +7,7 @@ jb.component('studio.search-list', { /* studio.searchList */
     controls: [
       table({
         items: pipeline(
-          studio.componentsCrossRef(),
+          studio.componentsStatistics(),
           itemlistContainer.filter(),
           sort('refCount'),
           slice('0', '50')

@@ -571,6 +571,12 @@ class jbCtx {
     })
   }
   runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
+  callStack() {
+    const ctxStack=[]; 
+    for(let innerCtx=this; innerCtx; innerCtx = innerCtx.componentContext) 
+      ctxStack = ctxStack.push(innerCtx)
+    return ctxStack.map(ctx=>ctx.callerPath)
+  }
 }
 
 const logs = {};
@@ -9447,7 +9453,7 @@ jb.component('button', { /* button */
           else if (ev && ev.altKey && cmp.altAction)
             cmp.altAction(ctx.setVars({event:ev}))
           else
-            cmp.action(ctx.setVars({event:ev}));
+            cmp.action && cmp.action(ctx.setVars({event:ev}));
         }
       },
       afterViewInit: cmp =>
@@ -32392,7 +32398,7 @@ Object.assign(st,{
 			return path.split('~')[0];
 
 		const val = st.valOfPath(path);
-		const fieldTitle = jb.asArray(val.features).filter(x=>x.$ == 'field.title').map(x=>x.title)[0]
+		const fieldTitle = jb.asArray(val && val.features).filter(x=>x.$ == 'field.title').map(x=>x.title)[0]
 		return fieldTitle || (val && typeof val.title == 'string' && val.title) || (val && val.Name) || (val && val.remark) || (val && st.compNameOfPath(path)) || path.split('~').pop();
 	},
 	icon: path => {
@@ -35230,7 +35236,7 @@ jb.component('studio.style-editor-options', { /* studio.styleEditorOptions */
 })
 ;
 
-jb.component('studio.components-cross-ref', { /* studio.componentsCrossRef */
+jb.component('studio.components-statistics', {
   type: 'data',
   impl: ctx => {
 	  var _jb = jb.studio.previewjb;
@@ -35239,33 +35245,36 @@ jb.component('studio.components-cross-ref', { /* studio.componentsCrossRef */
 
 	  var refs = {}, comps = _jb.comps;
 
-      Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
-      	refs[k] = {
-      		refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
-      		by: []
-      });
-      Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
-      	refs[k].refs.forEach(cross=>
-      		refs[cross] && refs[cross].by.push(k))
-      );
+    Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
+      refs[k] = {
+        refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
+        by: []
+    });
+    Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
+      refs[k].refs.forEach(cross=>
+        refs[cross] && refs[cross].by.push(k))
+    );
 
-      return _jb.statistics = jb.entries(comps).map(e=>({
-          	id: e[0],
-          	refs: refs[e[0]].refs,
-          	referredBy: refs[e[0]].by,
-          	type: e[1].type || 'data',
-          	implType: typeof e[1].impl,
-          	refCount: refs[e[0]].by.length
-          	//text: jb_prettyPrintComp(comps[k]),
-          	//size: jb_prettyPrintComp(e[0],e[1]).length
-          }));
+    return _jb.statistics = jb.entries(comps).map(e=>({
+          id: e[0],
+          file: e[1][_jb.location][0],
+          lineInFile: +e[1][_jb.location][1],
+          linesOfCode: (_jb.prettyPrint(e[1].impl || '').match(/\n/g)||[]).length,
+          refs: refs[e[0]].refs,
+          referredBy: refs[e[0]].by,
+          type: e[1].type || 'data',
+          implType: typeof e[1].impl,
+          refCount: refs[e[0]].by.length
+          //text: jb_prettyPrintComp(comps[k]),
+          //size: jb_prettyPrintComp(e[0],e[1]).length
+    }));
 
 
-      function calcRefs(profile) {
-      	if (profile == null || typeof profile != 'object') return [];
-      	return Object.getOwnPropertyNames(profile).reduce((res,prop)=>
-      		res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
-      }
+    function calcRefs(profile) {
+      if (profile == null || typeof profile != 'object') return [];
+      return Object.getOwnPropertyNames(profile).reduce((res,prop)=>
+        res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
+    }
 	}
 })
 
@@ -35719,7 +35728,12 @@ jb.component('studio.choose-project', { /* studio.chooseProject */
   impl: group({
     title: 'itemlist-with-find',
     controls: [
-      itemlistContainer.search({features: css.width('250')}),
+      group({
+        controls: [
+          itemlistContainer.search({features: css.width('250')})
+        ],
+        features: group.autoFocusOnFirstInput()
+      }),
       itemlist({
         items: pipeline('%projects%', itemlistContainer.filter()),
         controls: button({
@@ -35744,7 +35758,7 @@ jb.component('studio.choose-project', { /* studio.chooseProject */
   })
 })
 
-jb.component('studio.open-project', { /* studio.openProject */ 
+jb.component('studio.open-project', { /* studio.openProject */
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel('OK', 'Cancel'),
@@ -36435,7 +36449,7 @@ jb.component('studio.search-list', { /* studio.searchList */
     controls: [
       table({
         items: pipeline(
-          studio.componentsCrossRef(),
+          studio.componentsStatistics(),
           itemlistContainer.filter(),
           sort('refCount'),
           slice('0', '50')

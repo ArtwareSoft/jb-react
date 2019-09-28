@@ -1,17 +1,17 @@
-jb.ns('d3Chart,d3Scatter,d3Histogram')
+jb.ns('d3g,d3Scatter,d3Histogram')
 
-jb.component('d3-chart.histogram', {
+jb.component('d3g.histogram', {
   	type: 'control', category: 'group:80,common:70',
 	params: [
 	    { id: 'title', as: 'string' },
 		  { id: 'items', as: 'array', dynamic: true, mandatory: true },
-      { id: 'pivot', type: 'd3-chart.pivot', mandatory: true, dynamic: true },
-		  { id: 'frame', type: 'd3-chart.frame', defaultValue :{$: 'd3-chart.frame', width: 1400, height: 500,
+      { id: 'pivot', type: 'd3g.pivot', mandatory: true, dynamic: true },
+		  { id: 'frame', type: 'd3g.frame', defaultValue :{$: 'd3g.frame', width: 1400, height: 500,
 				top: 30, right: 50, bottom: 40, left: 60 } },
 	    { id: 'itemTitle', as: 'string', dynamic: true },
 	    { id: 'ticks', as: 'number', defaultValue: 5 },
-      { id: 'axes', type: 'd3-chart.axes', dynamic: true, as: 'array', defaultValue: {$: 'd3-chart.buttom-and-left-axes'} },
-	    { id: 'style', type: 'd3-chart.histogram-style', dynamic: true , defaultValue: {$: 'd3-histogram.plain' } },
+      { id: 'axes', type: 'd3g.axes', dynamic: true, as: 'array', defaultValue: {$: 'd3g.buttom-and-left-axes'} },
+	    { id: 'style', type: 'd3g.histogram-style', dynamic: true , defaultValue: {$: 'd3-histogram.plain' } },
 	    { id: 'features', type: 'd3-feature[]', dynamic: true, flattenArray: true },
 	],
  	impl: ctx => jb.ui.ctrl(ctx,{
@@ -20,7 +20,7 @@ jb.component('d3-chart.histogram', {
 })
 
 jb.component('d3-histogram.plain', { /* d3Histogram.plain */
-  type: 'd3-chart.histogram-style',
+  type: 'd3g.histogram-style',
   impl: customStyle({
     template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height},
     	  h('g', { transform: 'translate(' + cmp.left + ',' + cmp.top + ')' },
@@ -73,8 +73,8 @@ jb.component('d3-histogram.init', { /* d3Histogram.init */
   })
 })
 
-jb.component('d3-chart.buttom-and-left-axes', { /* d3Chart.buttomAndLeftAxes */
-  type: 'd3-chart.axes',
+jb.component('d3g.buttom-and-left-axes', { /* d3g.buttomAndLeftAxes */
+  type: 'd3g.axes',
   impl: ctx => ({
       afterViewInit: cmp => {
         cmp.xAxis && d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(cmp.xAxis).ticks(5).tickFormat(d3.format(".2s")));
@@ -83,7 +83,7 @@ jb.component('d3-chart.buttom-and-left-axes', { /* d3Chart.buttomAndLeftAxes */
   })
 })
 
-jb.component('d3-chart.item-indicator', { /* d3Chart.itemIndicator */
+jb.component('d3g.item-indicator', { /* d3g.itemIndicator */
   type: 'd3-feature',
   params: [
     {id: 'item', as: 'single'}

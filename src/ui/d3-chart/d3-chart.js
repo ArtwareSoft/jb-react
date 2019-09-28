@@ -1,6 +1,6 @@
-jb.ns('d3Chart,d3Scatter,d3Histogram')
+jb.ns('d3g,d3Scatter,d3Histogram')
 
-jb.component('d3-chart.chart-scatter', { /* d3Chart.chartScatter */
+jb.component('d3g.chart-scatter', { /* d3g.chartScatter */
   type: 'control',
   category: 'group:80,common:70',
   params: [
@@ -8,15 +8,15 @@ jb.component('d3-chart.chart-scatter', { /* d3Chart.chartScatter */
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {
       id: 'frame',
-      type: 'd3-chart.frame',
-      defaultValue: d3Chart.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})
+      type: 'd3g.frame',
+      defaultValue: d3g.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})
     },
-    {id: 'pivots', type: 'd3-chart.pivot[]', mandatory: true, dynamic: true},
+    {id: 'pivots', type: 'd3g.pivot[]', mandatory: true, dynamic: true},
     {id: 'itemTitle', as: 'string', dynamic: true},
     {id: 'visualSizeLimit', as: 'number'},
     {
       id: 'style',
-      type: 'd3-chart.scatter-style',
+      type: 'd3g.scatter-style',
       dynamic: true,
       defaultValue: d3Scatter.plain()
     },
@@ -27,7 +27,7 @@ jb.component('d3-chart.chart-scatter', { /* d3Chart.chartScatter */
 })
 
 jb.component('d3-scatter.plain', { /* d3Scatter.plain */
-  type: 'd3-chart.scatter-style',
+  type: 'd3g.scatter-style',
   impl: customStyle({
     template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height},
     	  h('g', { transform: 'translate(' + cmp.left + ',' + cmp.top + ')' },
@@ -79,7 +79,7 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
 			colorPivot: color.init(ctx2.setVars({colorAxis: true})),
 			itemTitle: ctx.vars.$model.itemTitle
 		}, ctx.vars.$model.frame );
-		cmp.colorPivot.scale = d3.scaleOrdinal(d3.schemeCategory20); //.domain(cmp.colorPivot.domain);
+		cmp.colorPivot.scale = d3.scaleOrdinal(d3.schemeAccent); //.domain(cmp.colorPivot.domain);
 
         cmp.refresh = _ =>
             cmp.setState({items: calcItems()})
@@ -100,8 +100,8 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
   })
 })
 
-jb.component('d3-chart.frame', { /* d3Chart.frame */
-  type: 'd3-chart.frame',
+jb.component('d3g.frame', { /* d3g.frame */
+  type: 'd3g.frame',
   params: [
     {id: 'width', as: 'number', defaultValue: 900},
     {id: 'height', as: 'number', defaultValue: 600},

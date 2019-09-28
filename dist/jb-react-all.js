@@ -571,6 +571,12 @@ class jbCtx {
     })
   }
   runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
+  callStack() {
+    const ctxStack=[]; 
+    for(let innerCtx=this; innerCtx; innerCtx = innerCtx.componentContext) 
+      ctxStack = ctxStack.push(innerCtx)
+    return ctxStack.map(ctx=>ctx.callerPath)
+  }
 }
 
 const logs = {};
@@ -9447,7 +9453,7 @@ jb.component('button', { /* button */
           else if (ev && ev.altKey && cmp.altAction)
             cmp.altAction(ctx.setVars({event:ev}))
           else
-            cmp.action(ctx.setVars({event:ev}));
+            cmp.action && cmp.action(ctx.setVars({event:ev}));
         }
       },
       afterViewInit: cmp =>

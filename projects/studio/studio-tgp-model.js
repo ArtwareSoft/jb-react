@@ -237,7 +237,7 @@ Object.assign(st,{
 			return path.split('~')[0];
 
 		const val = st.valOfPath(path);
-		const fieldTitle = jb.asArray(val.features).filter(x=>x.$ == 'field.title').map(x=>x.title)[0]
+		const fieldTitle = jb.asArray(val && val.features).filter(x=>x.$ == 'field.title').map(x=>x.title)[0]
 		return fieldTitle || (val && typeof val.title == 'string' && val.title) || (val && val.Name) || (val && val.remark) || (val && st.compNameOfPath(path)) || path.split('~').pop();
 	},
 	icon: path => {

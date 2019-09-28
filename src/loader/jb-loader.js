@@ -93,7 +93,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'node_modules/codemirror/addon/hint/show-hint.css',
       ],
       'd3': [
-        'node_modules/d3/build/d3.js',
+        'node_modules/d3/dist/d3.js',
         'src/ui/d3-chart/d3-math.js',
         'src/ui/d3-chart/d3-chart.js',
         'src/ui/d3-chart/d3-histogram.js',
