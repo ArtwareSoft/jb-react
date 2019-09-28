@@ -6,5 +6,6 @@
   "port": 8082,
   "http_dir": "./",
   "exclude": "node_modules",
+  "devHost": true,
   "allowCmd": false
 }
