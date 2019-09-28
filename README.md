@@ -10,15 +10,13 @@ jBart suggests a revolutionary approach for visual development of complex apps t
 ## Install
 - mkdir myProj
 - cd myProj
-- npm init (answer Enter to use defaults)
+- npm init (answer with Enter)
 - npm i --save jb-react
 - node ./node_modules/jb-react/bin/studio/studio-server.js
-- node ./node_modules/jb-react/bin/create-new-project hello-world
-- goto 'http://localhost:8083/studio-bin'
+- goto http://localhost:8083/studio-bin
 
 - create a new project
-- enjoy..
-
+- enjoy.. use the tutorial at http://jb-letmesee.appspot.com/LetMeSee/p80kd9kkn6.html?roomid=hd8mns
 
 ## Visual Development Concepts
 - pick & edit (like in Chrome debugger)
