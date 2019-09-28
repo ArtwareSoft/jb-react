@@ -31035,7 +31035,10 @@ st.initPreview = function(preview_window,allowedTypes) {
 jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
-    template: (cmp,state,h) => h('iframe', {
+    template: (cmp,state,h) => {
+      if (!state.entry_file && !state.project)
+        return 'No project.\n Please open or create a new project.'
+      return h('iframe', {
           id:'jb-preview',
           sandbox: 'allow-same-origin allow-forms allow-scripts',
           frameborder: 0,
@@ -31043,7 +31046,8 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           width: cmp.ctx.vars.$model.width,
           height: cmp.ctx.vars.$model.height,
           src: (state.entry_file ? `/${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
-      }),
+      })
+    },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
   })
 })
@@ -36858,7 +36862,6 @@ const devHost = {
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
-    createProjectOld: (request, headers) => fetch('/?op=createProject',{method: 'POST', headers, body: JSON.stringify(request) }),
     createProject: (request, headers) => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers, body: JSON.stringify(
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
     scriptForLoadLibraries: '<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>',
@@ -36868,7 +36871,7 @@ const devHost = {
 //     localhost:8082/hello-world/hello-world.html?studio=localhost =>  localhost:8082/bin/studio/studio-localhost.html?entry=localhost:8082/hello-world/hello-world.html
 //     localhost:8082/hello-world/hello-world.html?studio=jb-react@0.3.8 =>  //unpkg.com/jbart5-react@0.3.8/bin/studio/studio-cloud.html?entry=localhost:8082/hello-world/hello-world.html
 
-userLocalHost = Object.assign({},devHost,{
+const userLocalHost = Object.assign({},devHost,{
     locationToPath: path => path.split('/').slice(1).join('/'),
     createProject: (request, headers) => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers, body: JSON.stringify(
         Object.assign(request,{baseDir: request.project })) }),

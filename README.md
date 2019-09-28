@@ -5,7 +5,16 @@ The industry de-facto accepts the fact that complex web apps can **not** be deve
 
 jBart suggests a revolutionary approach for visual development of complex apps that actually works.
 
-![](https://storage.googleapis.com/jbartcommunity/jbart5-material.png)
+## Install
+- mkdir myProj
+- cd myProj
+- npm init (answer Enter to use defaults)
+- npm i --save artwaresoft/jb-react
+- node ./node_modules/jbart5-react/bin/studio/studio-server.js
+- goto 'http://localhost:8083/studio-bin'
+- create a new project
+- enjoy..
+
 
 ## Visual Development Concepts
 - pick & edit (like in Chrome debugger)
