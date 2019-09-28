@@ -18435,31 +18435,18 @@ jb.component('d3g.pivot', { /* d3g.pivot */
   params: [
     {id: 'title', as: 'string', mandatory: true},
     {id: 'value', as: 'string', mandatory: true, dynamic: true},
-    {
-      id: 'scale',
-      type: 'd3g.scale',
-      dynamic: true,
-      defaultValue: d3g.linearScale()
-    },
-    {
-      id: 'range',
-      type: 'd3g.range',
-      dynamic: true,
-      defaultValue: d3g.autoRange()
-    },
-    {
-      id: 'domain',
-      type: 'd3g.domain',
-      dynamic: true,
-      defaultValue: d3g.domainByValues()
-    }
+    {id: 'scale', type: 'd3g.scale', dynamic: true, defaultValue: d3g.linearScale()},
+    {id: 'range', type: 'd3g.range', dynamic: true, defaultValue: d3g.autoRange()},
+    {id: 'domain', type: 'd3g.domain', dynamic: true, defaultValue: d3g.domainByValues()},
+    {id: 'axisControl', type: 'control', dynamic: true, defaultValue: button('%title%')},
   ],
-  impl: (ctx,title,value,scaleFunc,range,domain) => ({
+  impl: (ctx,title,value,scaleFunc,range,domain,axisControl) => ({
 			init: function(ctx2) {
 				var scale = scaleFunc(ctx2);
 				this.range = range(ctx2);
 				this.domain = domain(ctx2.setVars({valFunc: this.valFunc}));
-				this.scale = scale.range(this.range).domain(this.domain);
+        this.scale = scale.range(this.range).domain(this.domain);
+        this.axisControl = axisControl;
 				return this;
 			},
 			title: title,
@@ -18494,7 +18481,7 @@ jb.component('d3g.ordinal-colors', {
   type: 'd3g.scale',
   params: [
     {id: 'scale', as: 'string', options: 'schemeCategory10,schemeAccent,schemePaired,schemeDark2,schemeSet3', defaultValue: 'schemeAccent'}
-  ],  
+  ], 
   impl: (ctx,scale) => d3.scaleOrdinal(d3[scale])
 })
 
@@ -18502,7 +18489,7 @@ jb.component('d3g.interpolate-colors', {
   type: 'd3g.scale',
   params: [
     {id: 'scale', as: 'string', options: 'Blues,Greens,Greys,Oranges,Reds,Turbo,Magma,Warm,Cool,Rainbow,BrBG,PRGn,PiYG,RdBu', defaultValue: 'Blues'}
-  ],  
+  ], 
   impl: (ctx,scale) => d3.scaleSequential(d3['interpolate'+scale])
 })
 
@@ -18555,7 +18542,9 @@ jb.component('d3g.chart-scatter', { /* d3g.chartScatter */
     },
     {id: 'pivots', type: 'd3g.pivot[]', mandatory: true, dynamic: true},
     {id: 'itemTitle', as: 'string', dynamic: true},
-    {id: 'visualSizeLimit', as: 'number'},
+    {id: 'onSelectItem', type: 'action', dynamic: true},
+    {id: 'onSelectAxisValue', type: 'action', dynamic: true},
+    {id: 'visualSizeLimit', as: 'number', defaultValue: 1000},
     {
       id: 'style',
       type: 'd3g.scatter-style',
@@ -18571,17 +18560,17 @@ jb.component('d3g.chart-scatter', { /* d3g.chartScatter */
 jb.component('d3-scatter.plain', { /* d3Scatter.plain */
   type: 'd3g.scatter-style',
   impl: customStyle({
-    template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height},
+    template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height, onclick: ev => cmp.clicked(ev)},
     	  h('g', { transform: 'translate(' + cmp.left + ',' + cmp.top + ')' },
     		[
-    			h('g',{ class: 'x axis', transform: 'translate(0,' + cmp.innerHeight + ')'}),
-    			h('g',{ class: 'y axis', transform: 'translate(0,0)'}),
+    			h('g',{ axisIndex: 0, class: 'x axis', transform: 'translate(0,' + cmp.innerHeight + ')'}),
+    			h('g',{ axisIndex: 1, class: 'y axis', transform: 'translate(0,0)'}),
     			h('text', { class: 'label', x: 10, y: 10}, cmp.yPivot.title),
     			h('text', { class: 'label', x: cmp.innerWidth, y: cmp.innerHeight - 10, 'text-anchor': 'end'}, cmp.xPivot.title),
     			h('text', { class: 'note', x: cmp.innerWidth, y: cmp.height - cmp.top, 'text-anchor': 'end' }, '' + cmp.state.items.length + ' items'),
     		].concat(
     		state.items.map((item,index)=> h('circle',{
-    			class: 'bubble',
+    			class: 'bubble', index,
     			cx: cmp.xPivot.scale(cmp.xPivot.valFunc(item)),
     			cy: cmp.yPivot.scale(cmp.yPivot.valFunc(item)),
     			r: cmp.rPivot.scale(cmp.rPivot.valFunc(item)),
@@ -18626,12 +18615,27 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
         cmp.refresh = _ =>
             cmp.setState({items: calcItems()})
 
+		cmp.clicked = ev => {
+			const elem = ev.target
+			const index = elem.getAttribute('index')
+			const parent = jb.path(elem, 'parentElement.parentElement')
+			const axisIndex = parent && parent.getAttribute('axisIndex')
+			if (axisIndex !== null) {
+				const action = jb.ui.wrapWithLauchingElement(ctx.vars.$model.onSelectAxisValue, cmp.ctx, elem)
+				action(ctx.setData({ pivot: cmp.pivots[axisIndex], value: elem.innerHTML}).setVars({event:ev}))
+			}
+			else if (index !== null) {
+				const action = jb.ui.wrapWithLauchingElement(ctx.vars.$model.onSelectItem, cmp.ctx, elem)
+				action(ctx.setData(cmp.items[index]).setVars({event:ev}))
+			}
+		}
+	  
         function calcItems() {
           cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
           if (cmp.ctx.vars.itemlistCntr)
               cmp.ctx.vars.itemlistCntr.items = cmp.items;
           cmp.sortItems && cmp.sortItems();
-          return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit || 100);
+          return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit);
         }
 
       },

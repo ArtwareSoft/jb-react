@@ -6,7 +6,11 @@ file_type_handlers = {};
 
 _iswin = /^win/.test(process.platform);
 
-const settings = JSON.parse(fs.readFileSync(`./jbart.json`));
+let settings = { port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './' }
+try {
+  settings = JSON.parse(fs.readFileSync('./jbart.json'))
+} catch(e) {}
+
 // define projects not under /jbart/projects directory
 let sites = null;
 const projecstDir = process.cwd().indexOf('jb-react') != -1 ? 'projects' : './'

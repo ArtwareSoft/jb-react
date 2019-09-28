@@ -553,6 +553,8 @@ jb.component('studio-helper.comps-chart', { /* studioHelper.compsChart */
           d3g.pivot({title: 'refs', value: '%refs%'})
         ],
         itemTitle: '%id%',
+        onSelectItem: openDialog({content: editableText({databind: prettyPrint('%%')})}),
+        onSelectAxisValue: openDialog({content: editableText({databind: prettyPrint('%%')})}),
         visualSizeLimit: '10000'
       })
     ]

@@ -5,31 +5,18 @@ jb.component('d3g.pivot', { /* d3g.pivot */
   params: [
     {id: 'title', as: 'string', mandatory: true},
     {id: 'value', as: 'string', mandatory: true, dynamic: true},
-    {
-      id: 'scale',
-      type: 'd3g.scale',
-      dynamic: true,
-      defaultValue: d3g.linearScale()
-    },
-    {
-      id: 'range',
-      type: 'd3g.range',
-      dynamic: true,
-      defaultValue: d3g.autoRange()
-    },
-    {
-      id: 'domain',
-      type: 'd3g.domain',
-      dynamic: true,
-      defaultValue: d3g.domainByValues()
-    }
+    {id: 'scale', type: 'd3g.scale', dynamic: true, defaultValue: d3g.linearScale()},
+    {id: 'range', type: 'd3g.range', dynamic: true, defaultValue: d3g.autoRange()},
+    {id: 'domain', type: 'd3g.domain', dynamic: true, defaultValue: d3g.domainByValues()},
+    {id: 'axisControl', type: 'control', dynamic: true, defaultValue: button('%title%')},
   ],
-  impl: (ctx,title,value,scaleFunc,range,domain) => ({
+  impl: (ctx,title,value,scaleFunc,range,domain,axisControl) => ({
 			init: function(ctx2) {
 				var scale = scaleFunc(ctx2);
 				this.range = range(ctx2);
 				this.domain = domain(ctx2.setVars({valFunc: this.valFunc}));
-				this.scale = scale.range(this.range).domain(this.domain);
+        this.scale = scale.range(this.range).domain(this.domain);
+        this.axisControl = axisControl;
 				return this;
 			},
 			title: title,
@@ -64,7 +51,7 @@ jb.component('d3g.ordinal-colors', {
   type: 'd3g.scale',
   params: [
     {id: 'scale', as: 'string', options: 'schemeCategory10,schemeAccent,schemePaired,schemeDark2,schemeSet3', defaultValue: 'schemeAccent'}
-  ],  
+  ], 
   impl: (ctx,scale) => d3.scaleOrdinal(d3[scale])
 })
 
@@ -72,7 +59,7 @@ jb.component('d3g.interpolate-colors', {
   type: 'd3g.scale',
   params: [
     {id: 'scale', as: 'string', options: 'Blues,Greens,Greys,Oranges,Reds,Turbo,Magma,Warm,Cool,Rainbow,BrBG,PRGn,PiYG,RdBu', defaultValue: 'Blues'}
-  ],  
+  ], 
   impl: (ctx,scale) => d3.scaleSequential(d3['interpolate'+scale])
 })
 

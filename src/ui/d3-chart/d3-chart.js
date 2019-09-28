@@ -13,7 +13,9 @@ jb.component('d3g.chart-scatter', { /* d3g.chartScatter */
     },
     {id: 'pivots', type: 'd3g.pivot[]', mandatory: true, dynamic: true},
     {id: 'itemTitle', as: 'string', dynamic: true},
-    {id: 'visualSizeLimit', as: 'number'},
+    {id: 'onSelectItem', type: 'action', dynamic: true},
+    {id: 'onSelectAxisValue', type: 'action', dynamic: true},
+    {id: 'visualSizeLimit', as: 'number', defaultValue: 1000},
     {
       id: 'style',
       type: 'd3g.scatter-style',
@@ -29,17 +31,17 @@ jb.component('d3g.chart-scatter', { /* d3g.chartScatter */
 jb.component('d3-scatter.plain', { /* d3Scatter.plain */
   type: 'd3g.scatter-style',
   impl: customStyle({
-    template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height},
+    template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height, onclick: ev => cmp.clicked(ev)},
     	  h('g', { transform: 'translate(' + cmp.left + ',' + cmp.top + ')' },
     		[
-    			h('g',{ class: 'x axis', transform: 'translate(0,' + cmp.innerHeight + ')'}),
-    			h('g',{ class: 'y axis', transform: 'translate(0,0)'}),
+    			h('g',{ axisIndex: 0, class: 'x axis', transform: 'translate(0,' + cmp.innerHeight + ')'}),
+    			h('g',{ axisIndex: 1, class: 'y axis', transform: 'translate(0,0)'}),
     			h('text', { class: 'label', x: 10, y: 10}, cmp.yPivot.title),
     			h('text', { class: 'label', x: cmp.innerWidth, y: cmp.innerHeight - 10, 'text-anchor': 'end'}, cmp.xPivot.title),
     			h('text', { class: 'note', x: cmp.innerWidth, y: cmp.height - cmp.top, 'text-anchor': 'end' }, '' + cmp.state.items.length + ' items'),
     		].concat(
     		state.items.map((item,index)=> h('circle',{
-    			class: 'bubble',
+    			class: 'bubble', index,
     			cx: cmp.xPivot.scale(cmp.xPivot.valFunc(item)),
     			cy: cmp.yPivot.scale(cmp.yPivot.valFunc(item)),
     			r: cmp.rPivot.scale(cmp.rPivot.valFunc(item)),
@@ -84,12 +86,27 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
         cmp.refresh = _ =>
             cmp.setState({items: calcItems()})
 
+		cmp.clicked = ev => {
+			const elem = ev.target
+			const index = elem.getAttribute('index')
+			const parent = jb.path(elem, 'parentElement.parentElement')
+			const axisIndex = parent && parent.getAttribute('axisIndex')
+			if (axisIndex !== null) {
+				const action = jb.ui.wrapWithLauchingElement(ctx.vars.$model.onSelectAxisValue, cmp.ctx, elem)
+				action(ctx.setData({ pivot: cmp.pivots[axisIndex], value: elem.innerHTML}).setVars({event:ev}))
+			}
+			else if (index !== null) {
+				const action = jb.ui.wrapWithLauchingElement(ctx.vars.$model.onSelectItem, cmp.ctx, elem)
+				action(ctx.setData(cmp.items[index]).setVars({event:ev}))
+			}
+		}
+	  
         function calcItems() {
           cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
           if (cmp.ctx.vars.itemlistCntr)
               cmp.ctx.vars.itemlistCntr.items = cmp.items;
           cmp.sortItems && cmp.sortItems();
-          return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit || 100);
+          return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit);
         }
 
       },
