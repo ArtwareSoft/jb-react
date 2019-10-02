@@ -77,7 +77,10 @@ st.initPreview = function(preview_window,allowedTypes) {
 jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
-    template: (cmp,state,h) => h('iframe', {
+    template: (cmp,state,h) => {
+      if (!state.entry_file && !state.project)
+        return 'No project.\n Please open or create a new project.'
+      return h('iframe', {
           id:'jb-preview',
           sandbox: 'allow-same-origin allow-forms allow-scripts',
           frameborder: 0,
@@ -85,7 +88,8 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           width: cmp.ctx.vars.$model.width,
           height: cmp.ctx.vars.$model.height,
           src: (state.entry_file ? `/${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
-      }),
+      })
+    },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
   })
 })

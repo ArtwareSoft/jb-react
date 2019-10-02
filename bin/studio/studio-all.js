@@ -571,6 +571,12 @@ class jbCtx {
     })
   }
   runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
+  callStack() {
+    const ctxStack=[]; 
+    for(let innerCtx=this; innerCtx; innerCtx = innerCtx.componentContext) 
+      ctxStack = ctxStack.push(innerCtx)
+    return ctxStack.map(ctx=>ctx.callerPath)
+  }
 }
 
 const logs = {};
@@ -9447,7 +9453,7 @@ jb.component('button', { /* button */
           else if (ev && ev.altKey && cmp.altAction)
             cmp.altAction(ctx.setVars({event:ev}))
           else
-            cmp.action(ctx.setVars({event:ev}));
+            cmp.action && cmp.action(ctx.setVars({event:ev}));
         }
       },
       afterViewInit: cmp =>
@@ -11113,7 +11119,7 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
   impl: (ctx,codeMirror) => ({
 		templateModifier: (vdom,cmp,state) => {
             if (vdom && vdom.nodeName != 'div') return vdom;
-				vdom.children.push(jb.ui.h('img', {src: '//unpkg.com/jbart5-react/bin/studio/css/resizer.gif', class: 'resizer'}));
+				vdom.children.push(jb.ui.h('img', {src: '//unpkg.com/jb-react/bin/studio/css/resizer.gif', class: 'resizer'}));
 			return vdom;
 		},
 		css: '>.resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
@@ -31029,7 +31035,10 @@ st.initPreview = function(preview_window,allowedTypes) {
 jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
-    template: (cmp,state,h) => h('iframe', {
+    template: (cmp,state,h) => {
+      if (!state.entry_file && !state.project)
+        return 'No project.\n Please open or create a new project.'
+      return h('iframe', {
           id:'jb-preview',
           sandbox: 'allow-same-origin allow-forms allow-scripts',
           frameborder: 0,
@@ -31037,7 +31046,8 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           width: cmp.ctx.vars.$model.width,
           height: cmp.ctx.vars.$model.height,
           src: (state.entry_file ? `/${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
-      }),
+      })
+    },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
   })
 })
@@ -32392,7 +32402,7 @@ Object.assign(st,{
 			return path.split('~')[0];
 
 		const val = st.valOfPath(path);
-		const fieldTitle = jb.asArray(val.features).filter(x=>x.$ == 'field.title').map(x=>x.title)[0]
+		const fieldTitle = jb.asArray(val && val.features).filter(x=>x.$ == 'field.title').map(x=>x.title)[0]
 		return fieldTitle || (val && typeof val.title == 'string' && val.title) || (val && val.Name) || (val && val.remark) || (val && st.compNameOfPath(path)) || path.split('~').pop();
 	},
 	icon: path => {
@@ -35230,7 +35240,7 @@ jb.component('studio.style-editor-options', { /* studio.styleEditorOptions */
 })
 ;
 
-jb.component('studio.components-cross-ref', { /* studio.componentsCrossRef */
+jb.component('studio.components-statistics', {
   type: 'data',
   impl: ctx => {
 	  var _jb = jb.studio.previewjb;
@@ -35239,33 +35249,36 @@ jb.component('studio.components-cross-ref', { /* studio.componentsCrossRef */
 
 	  var refs = {}, comps = _jb.comps;
 
-      Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
-      	refs[k] = {
-      		refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
-      		by: []
-      });
-      Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
-      	refs[k].refs.forEach(cross=>
-      		refs[cross] && refs[cross].by.push(k))
-      );
+    Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
+      refs[k] = {
+        refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
+        by: []
+    });
+    Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
+      refs[k].refs.forEach(cross=>
+        refs[cross] && refs[cross].by.push(k))
+    );
 
-      return _jb.statistics = jb.entries(comps).map(e=>({
-          	id: e[0],
-          	refs: refs[e[0]].refs,
-          	referredBy: refs[e[0]].by,
-          	type: e[1].type || 'data',
-          	implType: typeof e[1].impl,
-          	refCount: refs[e[0]].by.length
-          	//text: jb_prettyPrintComp(comps[k]),
-          	//size: jb_prettyPrintComp(e[0],e[1]).length
-          }));
+    return _jb.statistics = jb.entries(comps).map(e=>({
+          id: e[0],
+          file: e[1][_jb.location][0],
+          lineInFile: +e[1][_jb.location][1],
+          linesOfCode: (_jb.prettyPrint(e[1].impl || '').match(/\n/g)||[]).length,
+          refs: refs[e[0]].refs,
+          referredBy: refs[e[0]].by,
+          type: e[1].type || 'data',
+          implType: typeof e[1].impl,
+          refCount: refs[e[0]].by.length
+          //text: jb_prettyPrintComp(comps[k]),
+          //size: jb_prettyPrintComp(e[0],e[1]).length
+    }));
 
 
-      function calcRefs(profile) {
-      	if (profile == null || typeof profile != 'object') return [];
-      	return Object.getOwnPropertyNames(profile).reduce((res,prop)=>
-      		res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
-      }
+    function calcRefs(profile) {
+      if (profile == null || typeof profile != 'object') return [];
+      return Object.getOwnPropertyNames(profile).reduce((res,prop)=>
+        res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
+    }
 	}
 })
 
@@ -35719,7 +35732,12 @@ jb.component('studio.choose-project', { /* studio.chooseProject */
   impl: group({
     title: 'itemlist-with-find',
     controls: [
-      itemlistContainer.search({features: css.width('250')}),
+      group({
+        controls: [
+          itemlistContainer.search({features: css.width('250')})
+        ],
+        features: group.autoFocusOnFirstInput()
+      }),
       itemlist({
         items: pipeline('%projects%', itemlistContainer.filter()),
         controls: button({
@@ -35744,7 +35762,7 @@ jb.component('studio.choose-project', { /* studio.chooseProject */
   })
 })
 
-jb.component('studio.open-project', { /* studio.openProject */ 
+jb.component('studio.open-project', { /* studio.openProject */
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel('OK', 'Cancel'),
@@ -36435,7 +36453,7 @@ jb.component('studio.search-list', { /* studio.searchList */
     controls: [
       table({
         items: pipeline(
-          studio.componentsCrossRef(),
+          studio.componentsStatistics(),
           itemlistContainer.filter(),
           sort('refCount'),
           slice('0', '50')
@@ -36686,7 +36704,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
     style: layout.horizontal('3'),
     controls: [
       image({
-        url: '//unpkg.com/jbart5-react/bin/studio/css/jbartlogo.png',
+        url: '//unpkg.com/jb-react/bin/studio/css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
         style: image.default(),
@@ -36750,7 +36768,7 @@ jb.component('studio.dynamic', { /* studio.dynamic */
     style: layout.horizontal('3'),
     controls: [
       image({
-        url: '//unpkg.com/jbart5-react/bin/studio/css/jbartlogo.png',
+        url: '//unpkg.com/jb-react/bin/studio/css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
         style: image.default(),
@@ -36844,7 +36862,6 @@ const devHost = {
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
-    createProjectOld: (request, headers) => fetch('/?op=createProject',{method: 'POST', headers, body: JSON.stringify(request) }),
     createProject: (request, headers) => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers, body: JSON.stringify(
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
     scriptForLoadLibraries: '<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>',
@@ -36852,9 +36869,9 @@ const devHost = {
     projectUrlInStudio: project => `/project/studio/${project}`
 }
 //     localhost:8082/hello-world/hello-world.html?studio=localhost =>  localhost:8082/bin/studio/studio-localhost.html?entry=localhost:8082/hello-world/hello-world.html
-//     localhost:8082/hello-world/hello-world.html?studio=jb-react@0.3.8 =>  //unpkg.com/jbart5-react@0.3.8/bin/studio/studio-cloud.html?entry=localhost:8082/hello-world/hello-world.html
+//     localhost:8082/hello-world/hello-world.html?studio=jb-react@0.3.8 =>  //unpkg.com/jb-react@0.3.8/bin/studio/studio-cloud.html?entry=localhost:8082/hello-world/hello-world.html
 
-userLocalHost = Object.assign({},devHost,{
+const userLocalHost = Object.assign({},devHost,{
     locationToPath: path => path.split('/').slice(1).join('/'),
     createProject: (request, headers) => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers, body: JSON.stringify(
         Object.assign(request,{baseDir: request.project })) }),
@@ -36865,7 +36882,7 @@ userLocalHost = Object.assign({},devHost,{
     projectUrlInStudio: project => `/studio-bin/${project}%2F${project}.html`
 })
 
-//     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jbart5-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
+//     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
 
 st.chooseHostByUrl = entryUrl => {
     if (!entryUrl) return devHost // maybe testHost...

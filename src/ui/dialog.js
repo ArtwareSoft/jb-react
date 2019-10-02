@@ -348,7 +348,7 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
   impl: (ctx,codeMirror) => ({
 		templateModifier: (vdom,cmp,state) => {
             if (vdom && vdom.nodeName != 'div') return vdom;
-				vdom.children.push(jb.ui.h('img', {src: '//unpkg.com/jbart5-react/bin/studio/css/resizer.gif', class: 'resizer'}));
+				vdom.children.push(jb.ui.h('img', {src: '//unpkg.com/jb-react/bin/studio/css/resizer.gif', class: 'resizer'}));
 			return vdom;
 		},
 		css: '>.resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',

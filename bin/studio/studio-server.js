@@ -6,7 +6,11 @@ file_type_handlers = {};
 
 _iswin = /^win/.test(process.platform);
 
-const settings = JSON.parse(fs.readFileSync(`./jbart.json`));
+let settings = { port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './' }
+try {
+  settings = JSON.parse(fs.readFileSync('./jbart.json'))
+} catch(e) {}
+
 // define projects not under /jbart/projects directory
 let sites = null;
 const projecstDir = process.cwd().indexOf('jb-react') != -1 ? 'projects' : './'
@@ -67,12 +71,23 @@ function calcFullPath(path) {
   const project_match = path.match(/^projects\/([^/]*)(.*)/);
   if (project_match)
     return projectDirectory(project_match[1]) + project_match[2]
+<<<<<<< HEAD
   const bin_match = path.match(/^bin\/(.*)/);
   if (bin_match)
       return `node_modules/jbart5-react/bin/${bin_match[1]}`
 //  const dist_match = path.match(/^dist\/(.*)/);
 //  if (dist_match)
 //      return `node_modules/jbart5-react/dist/${dist_match[1]}`
+=======
+  if (!settings.devHost) {
+    const bin_match = path.match(/^bin\/(.*)/);
+    if (bin_match)
+        return `node_modules/jb-react/bin/${bin_match[1]}`
+    const dist_match = path.match(/^dist\/(.*)/);
+    if (dist_match)
+        return `node_modules/jb-react/dist/${dist_match[1]}`
+  }
+>>>>>>> 420338fb198e7c0188552fe692a277e12de20445
   return settings.http_dir + path;
 }
 
@@ -194,7 +209,7 @@ const op_post_handlers = {
 
 const base_get_handlers = {
   'studio-bin': (req,res) =>
-    file_type_handlers.html(req,res,'node_modules/jbart5-react/bin/studio/studio-bin.html'),
+    file_type_handlers.html(req,res,'node_modules/jb-react/bin/studio/studio-bin.html'),
   studio: (req,res) => 
     file_type_handlers.html(req,res,'projects/studio/studio.html'),
   project(req,res,path) {

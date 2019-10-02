@@ -5,11 +5,12 @@ const JBART_DIR = __dirname + '/../';
 
 function concatFiles(files,target) {
   const fn = JBART_DIR + 'dist/' + target;
+  const type = (target.match(/.css$/)) ? 'css' : 'js'
   try {
     fs.unlinkSync(fn);
   } catch (e) {}
   files.map(x=>JBART_DIR +x).forEach(f=>
-    fs.appendFileSync(fn,fs.readFileSync(f) + ';\n\n'));
+    fs.appendFileSync(fn,('' +fs.readFileSync(f)) + (type === 'css' ? '' : ';\n\n') ) );
 }
 
 const filesOfModules = modules => modules.split(',').map(m=>jb_modules[m]).flat().filter(x=>typeof x == 'string')
@@ -17,7 +18,7 @@ const filesOfModules = modules => modules.split(',').map(m=>jb_modules[m]).flat(
 const jbReactFiles = filesOfModules('common,ui-common,pretty-print,ui-tree').filter(x=>!x.match(/.css$/));
 const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,pretty-print,history').filter(x=>!x.match(/.css$/))
     .concat(jb_modules.studio.map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js'));
-const studioCssFiles = filesOfModules('common,ui-common,ui-tree,codemirror,material-css').concat(['/css/styles.css', '/projects/studio/css/studio.css']).filter(x=>x.match(/.css$/));
+const studioCssFiles = ['/css/styles.css', '/projects/studio/css/studio.css'].concat(filesOfModules('common,ui-common,ui-tree,codemirror,material-css')).filter(x=>x.match(/.css$/));
 const nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').filter(x=>!x.match(/.css$/));
 const coreFiles = jb_modules['core'];
 

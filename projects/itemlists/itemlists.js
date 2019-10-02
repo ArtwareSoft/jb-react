@@ -206,10 +206,10 @@ jb.component('itemlists.phones-chart', { /* itemlists.phonesChart */
   type: 'control',
   impl: group({
     controls: [
-      d3Chart.chartScatter({
+      d3g.chartScatter({
         title: 'phones',
         items: pipeline('%$phones%', filter(between({from: '4', to: '7', val: '%size%'}))),
-        frame: d3Chart.frame({
+        frame: d3g.frame({
           width: '1200',
           height: '480',
           top: 20,
@@ -218,11 +218,11 @@ jb.component('itemlists.phones-chart', { /* itemlists.phonesChart */
           left: '80'
         }),
         pivots: [
-          d3Chart.pivot({title: 'performance', value: '%performance%'}),
-          d3Chart.pivot({title: 'size', value: '%size%'}),
-          d3Chart.pivot({title: 'hits', value: '%hits%', scale: d3Chart.sqrtScale()}),
-          d3Chart.pivot({title: 'make', value: '%make%'}),
-          d3Chart.pivot({title: '$', value: '%price%'})
+          d3g.pivot({title: 'performance', value: '%performance%'}),
+          d3g.pivot({title: 'size', value: '%size%'}),
+          d3g.pivot({title: 'hits', value: '%hits%', scale: d3g.sqrtScale()}),
+          d3g.pivot({title: 'make', value: '%make%'}),
+          d3g.pivot({title: '$', value: '%price%'})
         ],
         itemTitle: '%title% (%Announced%)',
         onSelect: openDialog({

@@ -526,3 +526,37 @@ jb.component('studio-helper-sample.control', { /* studioHelperSample.control */
   })
 })
 
+
+jb.component('studio-helper.comps-chart', { /* studioHelper.compsChart */
+  type: 'control',
+  impl: group({
+    controls: [
+      d3g.chartScatter({
+        title: 'comps chart',
+        items: pipeline(
+          studio.componentsStatistics(),
+          filter(contains({text: 'projects/studio', allText: '%file%'}))
+        ),
+        frame: d3g.frame({width: '2400', height: 500, top: 30, right: 50, bottom: 40, left: 60}),
+        pivots: [
+          d3g.pivot({
+            title: 'file',
+            value: pipeline(
+              '%file%',
+              pipeline(split({separator: '-', part: 'but first'}), join('-')),
+              split({separator: '.js', part: 'first'})
+            ),
+            scale: d3g.bandScale({paddingInner: '1', align: '0.5'})
+          }),
+          d3g.pivot({title: 'line', value: '%lineInFile%', scale: d3g.linearScale()}),
+          d3g.pivot({title: 'size', value: '%linesOfCode%', scale: d3g.linearScale()}),
+          d3g.pivot({title: 'refs', value: '%refs%'})
+        ],
+        itemTitle: '%id%',
+        onSelectItem: openDialog({content: editableText({databind: prettyPrint('%%')})}),
+        onSelectAxisValue: openDialog({content: editableText({databind: prettyPrint('%%')})}),
+        visualSizeLimit: '10000'
+      })
+    ]
+  })
+})

@@ -5,7 +5,18 @@ The industry de-facto accepts the fact that complex web apps can **not** be deve
 
 jBart suggests a revolutionary approach for visual development of complex apps that actually works.
 
-![](https://storage.googleapis.com/jbartcommunity/jbart5-material.png)
+![jBart](http://storage.googleapis.com/letmesee1/p80kd9kkn6/files/a350b50375cf4e1a8b98d1d4137879e4_data_binding.gif)
+
+## Install
+- mkdir myProj
+- cd myProj
+- npm init (answer with Enter)
+- npm i --save jb-react
+- node ./node_modules/jb-react/bin/studio/studio-server.js
+- goto http://localhost:8083/studio-bin
+
+- create a new project
+- enjoy.. use the tutorial at http://jb-letmesee.appspot.com/LetMeSee/p80kd9kkn6.html?roomid=hd8mns
 
 ## Visual Development Concepts
 - pick & edit (like in Chrome debugger)
@@ -25,9 +36,5 @@ jBart suggests a revolutionary approach for visual development of complex apps t
 - core is written in react
 - studio is written by itself (like the C compiler written in C)
 
-## code completion - convert jBart components to typescript interfaces
-add the following line to your package json "scripts" section to generate typescript definition file that will allow you autocomplete.
-
 ## Learn jbart
-If you want to learn more about jBart visual development concepts, please start with [jbart4](https://github.com/ArtwareSoft/jbart4)
- and read the tutorial carefully.
+If you want to learn more about jBart visual development concepts, please start with [tutorial](http://jb-letmesee.appspot.com/LetMeSee/p80kd9kkn6.html?roomid=hd8mns)

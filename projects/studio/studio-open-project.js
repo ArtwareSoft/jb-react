@@ -14,7 +14,12 @@ jb.component('studio.choose-project', { /* studio.chooseProject */
   impl: group({
     title: 'itemlist-with-find',
     controls: [
-      itemlistContainer.search({features: css.width('250')}),
+      group({
+        controls: [
+          itemlistContainer.search({features: css.width('250')})
+        ],
+        features: group.autoFocusOnFirstInput()
+      }),
       itemlist({
         items: pipeline('%projects%', itemlistContainer.filter()),
         controls: button({
@@ -39,7 +44,7 @@ jb.component('studio.choose-project', { /* studio.chooseProject */
   })
 })
 
-jb.component('studio.open-project', { /* studio.openProject */ 
+jb.component('studio.open-project', { /* studio.openProject */
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel('OK', 'Cancel'),

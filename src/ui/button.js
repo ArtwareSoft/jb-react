@@ -27,7 +27,7 @@ jb.component('button', { /* button */
           else if (ev && ev.altKey && cmp.altAction)
             cmp.altAction(ctx.setVars({event:ev}))
           else
-            cmp.action(ctx.setVars({event:ev}));
+            cmp.action && cmp.action(ctx.setVars({event:ev}));
         }
       },
       afterViewInit: cmp =>

@@ -38,21 +38,21 @@ jb.component('cCommerce.scatter', {
   type: 'control', 
   impl :{$: 'group', 
     controls: [
-      {$: 'd3-chart.chart-scatter', 
+      {$: 'd3g.chart-scatter', 
         style :{$: 'd3-scatter.plain' }, 
         pivots: [
-          {$: 'd3-chart.pivot', title: 'size', value: '%size%' }, 
-          {$: 'd3-chart.pivot', title: '$', value: '%price%' }, 
-          {$: 'd3-chart.pivot', title: 'performance', value: '%performance%' }, 
-          {$: 'd3-chart.pivot', title: 'make', value: '%make%' }, 
-          {$: 'd3-chart.pivot', 
+          {$: 'd3g.pivot', title: 'size', value: '%size%' }, 
+          {$: 'd3g.pivot', title: '$', value: '%price%' }, 
+          {$: 'd3g.pivot', title: 'performance', value: '%performance%' }, 
+          {$: 'd3g.pivot', title: 'make', value: '%make%' }, 
+          {$: 'd3g.pivot', 
             title: 'hits', 
             value: '%hits%', 
-            scale :{$: 'd3-chart.sqrt-scale' }
+            scale :{$: 'd3g.sqrt-scale' }
           }
         ], 
         title: 'phones', 
-        frame :{$: 'd3-chart.frame', width: '1200', height: '480', top: 20, right: 20, bottom: 40, left: 80 }, 
+        frame :{$: 'd3g.frame', width: '1200', height: '480', top: 20, right: 20, bottom: 40, left: 80 }, 
         visualSizeLimit: '3000', 
         itemTitle: '%title% (%Announced%)', 
         items :{
@@ -186,10 +186,10 @@ jb.component('cCommerce.histogram', {
         title: '%$item/title%', 
         style :{$: 'label.htmlTag', htmlTag: 'h3' }
       }, 
-      {$: 'd3-chart.histogram', 
-        frame :{$: 'd3-chart.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
+      {$: 'd3g.histogram', 
+        frame :{$: 'd3g.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
         items: '%$global.phones%', 
-        pivot :{$: 'd3-chart.pivot', title: 'hits', value: '%size%' }, 
+        pivot :{$: 'd3g.pivot', title: 'hits', value: '%size%' }, 
         $disabled: true
       }, 
       {$: 'group', 
@@ -226,25 +226,25 @@ jb.component('cCommerce.histogram', {
           features :{$: 'group.init-group' }
         }, 
         controls: [
-          {$: 'd3-chart.histogram', 
-            frame :{$: 'd3-chart.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
+          {$: 'd3g.histogram', 
+            frame :{$: 'd3g.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
             items: '%$global.phones%', 
-            pivot :{$: 'd3-chart.pivot', title: 'perf', value: '%performance%' }, 
+            pivot :{$: 'd3g.pivot', title: 'perf', value: '%performance%' }, 
             title: 'performance %$item/performance%', 
-            features :{$: 'd3-chart.item-indicator', item: '%$item%' }
+            features :{$: 'd3g.item-indicator', item: '%$item%' }
           }, 
-          {$: 'd3-chart.histogram', 
-            frame :{$: 'd3-chart.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
+          {$: 'd3g.histogram', 
+            frame :{$: 'd3g.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
             items: '%$global.phones%', 
-            pivot :{$: 'd3-chart.pivot', title: 'hits', value: '%hits%' }, 
-            features :{$: 'd3-chart.item-indicator', item: '%$item%' }, 
+            pivot :{$: 'd3g.pivot', title: 'hits', value: '%hits%' }, 
+            features :{$: 'd3g.item-indicator', item: '%$item%' }, 
             title: 'hits: %$item/hits%'
           }, 
-          {$: 'd3-chart.histogram', 
-            frame :{$: 'd3-chart.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
+          {$: 'd3g.histogram', 
+            frame :{$: 'd3g.frame', width: '300', height: '100', top: 30, right: 50, bottom: 40, left: 60 }, 
             items: '%$global.phones%', 
-            pivot :{$: 'd3-chart.pivot', title: 'size', value: '%size%' }, 
-            features :{$: 'd3-chart.item-indicator', item: '%$item%' }, 
+            pivot :{$: 'd3g.pivot', title: 'size', value: '%size%' }, 
+            features :{$: 'd3g.item-indicator', item: '%$item%' }, 
             title: 'size: %$item/size%'
           }, 
           {$: 'image', 

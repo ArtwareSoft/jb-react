@@ -1,4 +1,4 @@
-jb.component('studio.components-cross-ref', { /* studio.componentsCrossRef */
+jb.component('studio.components-statistics', {
   type: 'data',
   impl: ctx => {
 	  var _jb = jb.studio.previewjb;
@@ -7,33 +7,36 @@ jb.component('studio.components-cross-ref', { /* studio.componentsCrossRef */
 
 	  var refs = {}, comps = _jb.comps;
 
-      Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
-      	refs[k] = {
-      		refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
-      		by: []
-      });
-      Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
-      	refs[k].refs.forEach(cross=>
-      		refs[cross] && refs[cross].by.push(k))
-      );
+    Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
+      refs[k] = {
+        refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
+        by: []
+    });
+    Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
+      refs[k].refs.forEach(cross=>
+        refs[cross] && refs[cross].by.push(k))
+    );
 
-      return _jb.statistics = jb.entries(comps).map(e=>({
-          	id: e[0],
-          	refs: refs[e[0]].refs,
-          	referredBy: refs[e[0]].by,
-          	type: e[1].type || 'data',
-          	implType: typeof e[1].impl,
-          	refCount: refs[e[0]].by.length
-          	//text: jb_prettyPrintComp(comps[k]),
-          	//size: jb_prettyPrintComp(e[0],e[1]).length
-          }));
+    return _jb.statistics = jb.entries(comps).map(e=>({
+          id: e[0],
+          file: e[1][_jb.location][0],
+          lineInFile: +e[1][_jb.location][1],
+          linesOfCode: (_jb.prettyPrint(e[1].impl || '').match(/\n/g)||[]).length,
+          refs: refs[e[0]].refs,
+          referredBy: refs[e[0]].by,
+          type: e[1].type || 'data',
+          implType: typeof e[1].impl,
+          refCount: refs[e[0]].by.length
+          //text: jb_prettyPrintComp(comps[k]),
+          //size: jb_prettyPrintComp(e[0],e[1]).length
+    }));
 
 
-      function calcRefs(profile) {
-      	if (profile == null || typeof profile != 'object') return [];
-      	return Object.getOwnPropertyNames(profile).reduce((res,prop)=>
-      		res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
-      }
+    function calcRefs(profile) {
+      if (profile == null || typeof profile != 'object') return [];
+      return Object.getOwnPropertyNames(profile).reduce((res,prop)=>
+        res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
+    }
 	}
 })
 
