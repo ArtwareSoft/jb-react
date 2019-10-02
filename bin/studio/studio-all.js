@@ -31037,7 +31037,7 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   impl: customStyle({
     template: (cmp,state,h) => {
       if (!state.entry_file && !state.project)
-        return 'No project.\n Please open or create a new project.'
+        state.entry_file = './hello-jbart-cloud.html'
       return h('iframe', {
           id:'jb-preview',
           sandbox: 'allow-same-origin allow-forms allow-scripts',
@@ -31045,7 +31045,7 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           class: 'preview-iframe',
           width: cmp.ctx.vars.$model.width,
           height: cmp.ctx.vars.$model.height,
-          src: (state.entry_file ? `/${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
+          src: (state.entry_file ? `${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
       })
     },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
@@ -31370,7 +31370,10 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
   ],
   impl: function(context,resource) {
         if (jb.ui.location || typeof window == 'undefined') return;
-        const base = window.location.pathname.indexOf('studio-bin') != -1 ? 'studio-bin' : 'studio'
+        const pathname = window.location.pathname
+        const base = pathname.indexOf('studio-bin') != -1 ? 'studio-bin' 
+            : pathname.indexOf('studio-cloud') != -1 ? 'studio-cloud' 
+            : 'studio'
         const isProject = location.pathname.indexOf('/project') == 0;
         const params = isProject ? ['project','page','profile_path'] : ['entry_file','shown_comp','profile_path']
 
@@ -36866,7 +36869,7 @@ const devHost = {
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
     scriptForLoadLibraries: '<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>',
     pathToJsFile: (project,fn) => `/projects/${project}/${fn}`,
-    projectUrlInStudio: project => `/project/studio/${project}`
+    projectUrlInStudio: project => `/project/studio/${project}`,
 }
 //     localhost:8082/hello-world/hello-world.html?studio=localhost =>  localhost:8082/bin/studio/studio-localhost.html?entry=localhost:8082/hello-world/hello-world.html
 //     localhost:8082/hello-world/hello-world.html?studio=jb-react@0.3.8 =>  //unpkg.com/jb-react@0.3.8/bin/studio/studio-cloud.html?entry=localhost:8082/hello-world/hello-world.html
@@ -36879,8 +36882,26 @@ const userLocalHost = Object.assign({},devHost,{
 <script type="text/javascript" src="/dist/material.js"></script>
 <link rel="stylesheet" type="text/css" href="/dist/material.css"/>`,
     pathToJsFile: (project,fn) => fn,
-    projectUrlInStudio: project => `/studio-bin/${project}%2F${project}.html`
+    projectUrlInStudio: project => `/studio-bin/${project}%2F${project}.html`,
 })
+
+const cloudHost = {
+    getFile: () => jb.delay(1).then(() => { throw 'Cloud mode - can not save files'}),
+    locationToPath: path => path.split('/').slice(1).join('/'),
+    createProject: (request, headers) => {
+        jb.studio.previewjb.component(`${request.project}.main`,{
+            type: 'control',
+            impl: group({
+                controls: [button('my button')]
+            })
+        })
+        new jb.jbCtx().run(writeValue('%$studio/project%',request.project))
+        new jb.jbCtx().run(writeValue('%$studio/page%','main'))
+    },
+    scriptForLoadLibraries: ``,
+    pathToJsFile: (project,fn) => fn,
+    projectUrlInStudio: project => `/studio-cloud/${project}%2F${project}.html`,
+}
 
 //     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
 
@@ -36888,6 +36909,8 @@ st.chooseHostByUrl = entryUrl => {
     if (!entryUrl) return devHost // maybe testHost...
     st.host = entryUrl.match(/localhost:[0-9]*\/project\/studio/) ?
             devHost
+        : entryUrl.match(/studio-cloud/) ?
+            cloudHost
         : entryUrl.match(/localhost:[0-9]*\/studio-bin/) ?
             userLocalHost
         : entryUrl.match(/fiddle.jshell.net/) ? 

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html title="hello world">
+<head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="//unpkg.com/jb-react/dist/material.css">
+    
+      <script type="text/javascript">
+        startTime = new Date().getTime();
+      </script>
+      <script type="text/javascript" src="//unpkg.com/jb-react/dist/jb-react-all.js"></script>
+      <script type="text/javascript" src="//unpkg.com/jb-react/dist/material.js"></script>
+    </head>
+<body>
+<div id="main"> </div>
+<script>
+jb.component('hello-jbart.main', { 
+  type: 'control',
+  impl: group({
+    controls: [button('my button')]
+  })
+})
+
+  jb.ui.renderWidget({$:'hello-jbart.main'},document.getElementById('main'))
+</script>
+</body>
+</html>
