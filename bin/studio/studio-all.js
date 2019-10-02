@@ -31036,8 +31036,10 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
     template: (cmp,state,h) => {
-      if (!state.entry_file && !state.project)
-        state.entry_file = './hello-jbart-cloud.html'
+      if (!state.entry_file && !state.project) {
+        cmp.ctx.run(writeValue('%$studio/project%','hello-jbart'))
+        Object.assign(state, {entry_file: 'bin/studio/hello-jbart-cloud.html', project: 'hello-jbart'})
+      }
       return h('iframe', {
           id:'jb-preview',
           sandbox: 'allow-same-origin allow-forms allow-scripts',
@@ -31045,7 +31047,7 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           class: 'preview-iframe',
           width: cmp.ctx.vars.$model.width,
           height: cmp.ctx.vars.$model.height,
-          src: (state.entry_file ? `${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
+          src: (state.entry_file ? `/${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
       })
     },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
@@ -31375,7 +31377,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             : pathname.indexOf('studio-cloud') != -1 ? 'studio-cloud' 
             : 'studio'
         const isProject = location.pathname.indexOf('/project') == 0;
-        const params = isProject ? ['project','page','profile_path'] : ['entry_file','shown_comp','profile_path']
+        const params = isProject ? ['project','page','profile_path'] : ['entry_file','project', 'page','profile_path']
 
         jb.ui.location = History.createBrowserHistory();
         jb.ui.location.path = _ => location.pathname;
@@ -31389,10 +31391,6 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             let res = {};
             params.forEach((p,i) =>
                 res[p] = (vals[i+1] || ''));
-            if (!isProject) {
-                res.project = res.shown_comp.split('.')[0]
-                res.page = res.shown_comp.split('.').pop()
-            }
             return res;
         }
         function objToUrl(obj) {
@@ -36882,7 +36880,7 @@ const userLocalHost = Object.assign({},devHost,{
 <script type="text/javascript" src="/dist/material.js"></script>
 <link rel="stylesheet" type="text/css" href="/dist/material.css"/>`,
     pathToJsFile: (project,fn) => fn,
-    projectUrlInStudio: project => `/studio-bin/${project}%2F${project}.html`,
+    projectUrlInStudio: project => `/studio-bin/${project}%2F${project}.html/${project}`,
 })
 
 const cloudHost = {
@@ -36900,7 +36898,7 @@ const cloudHost = {
     },
     scriptForLoadLibraries: ``,
     pathToJsFile: (project,fn) => fn,
-    projectUrlInStudio: project => `/studio-cloud/${project}%2F${project}.html`,
+    projectUrlInStudio: project => `/studio-cloud/${project}%2F${project}.html/${project}`,
 }
 
 //     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/

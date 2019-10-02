@@ -78,8 +78,10 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
     template: (cmp,state,h) => {
-      if (!state.entry_file && !state.project)
-        state.entry_file = './hello-jbart-cloud.html'
+      if (!state.entry_file && !state.project) {
+        cmp.ctx.run(writeValue('%$studio/project%','hello-jbart'))
+        Object.assign(state, {entry_file: 'bin/studio/hello-jbart-cloud.html', project: 'hello-jbart'})
+      }
       return h('iframe', {
           id:'jb-preview',
           sandbox: 'allow-same-origin allow-forms allow-scripts',
@@ -87,7 +89,7 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           class: 'preview-iframe',
           width: cmp.ctx.vars.$model.width,
           height: cmp.ctx.vars.$model.height,
-          src: (state.entry_file ? `${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
+          src: (state.entry_file ? `/${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
       })
     },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'

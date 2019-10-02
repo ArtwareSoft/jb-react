@@ -296,7 +296,7 @@ jb.component('wrap-as-object', { /* wrapAsObject */
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
   impl: (ctx,key,items) => {
-    const out = {}
+    let out = {}
     items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = item)
     return out;
   }

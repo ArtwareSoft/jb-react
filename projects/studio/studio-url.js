@@ -11,7 +11,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             : pathname.indexOf('studio-cloud') != -1 ? 'studio-cloud' 
             : 'studio'
         const isProject = location.pathname.indexOf('/project') == 0;
-        const params = isProject ? ['project','page','profile_path'] : ['entry_file','shown_comp','profile_path']
+        const params = isProject ? ['project','page','profile_path'] : ['entry_file','project', 'page','profile_path']
 
         jb.ui.location = History.createBrowserHistory();
         jb.ui.location.path = _ => location.pathname;
@@ -25,10 +25,6 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             let res = {};
             params.forEach((p,i) =>
                 res[p] = (vals[i+1] || ''));
-            if (!isProject) {
-                res.project = res.shown_comp.split('.')[0]
-                res.page = res.shown_comp.split('.').pop()
-            }
             return res;
         }
         function objToUrl(obj) {

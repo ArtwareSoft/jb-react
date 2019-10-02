@@ -6,14 +6,14 @@ file_type_handlers = {};
 
 _iswin = /^win/.test(process.platform);
 
-let settings = { port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './' }
+let settings = { port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './', exclude: 'node_modules' }
 try {
   settings = JSON.parse(fs.readFileSync('./jbart.json'))
 } catch(e) {}
 
 // define projects not under /jbart/projects directory
 let sites = null;
-const projecstDir = process.cwd().indexOf('jb-react') != -1 ? 'projects' : './'
+const projecstDir = settings.devHost ? 'projects' : './'
 
 function projectDirectory(project) {
     sites = sites || externalSites() || {};

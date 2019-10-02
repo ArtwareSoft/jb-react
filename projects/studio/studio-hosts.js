@@ -26,7 +26,7 @@ const userLocalHost = Object.assign({},devHost,{
 <script type="text/javascript" src="/dist/material.js"></script>
 <link rel="stylesheet" type="text/css" href="/dist/material.css"/>`,
     pathToJsFile: (project,fn) => fn,
-    projectUrlInStudio: project => `/studio-bin/${project}%2F${project}.html`,
+    projectUrlInStudio: project => `/studio-bin/${project}%2F${project}.html/${project}`,
 })
 
 const cloudHost = {
@@ -44,7 +44,7 @@ const cloudHost = {
     },
     scriptForLoadLibraries: ``,
     pathToJsFile: (project,fn) => fn,
-    projectUrlInStudio: project => `/studio-cloud/${project}%2F${project}.html`,
+    projectUrlInStudio: project => `/studio-cloud/${project}%2F${project}.html/${project}`,
 }
 
 //     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
