@@ -36889,11 +36889,13 @@ const cloudHost = {
     getFile: () => jb.delay(1).then(() => { throw 'Cloud mode - can not save files'}),
     locationToPath: path => path.split('/').slice(1).join('/'),
     createProject: (request, headers) => {
-        jb.studio.previewjb.component('sample.main',{
+        jb.studio.previewjb.component(`${request.project}.main`,{
             type: 'control',
-            impl: label('hello jBart')
+            impl: group({
+                controls: [button('my button')]
+            })
         })
-        new jb.jbCtx().run(writeValue('%$studio/project%','sample'))
+        new jb.jbCtx().run(writeValue('%$studio/project%',request.project))
         new jb.jbCtx().run(writeValue('%$studio/page%','main'))
     },
     scriptForLoadLibraries: ``,
