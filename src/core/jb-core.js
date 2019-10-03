@@ -101,11 +101,9 @@ function do_jb_run(ctx,parentParam,settings) {
       return [ctx].concat(preparedParams.map(param=>ctx.params[param.name]))
 
     return Observable.from(preparedParams)
-        .concatMap(param=>
-          ctx.params[param.name])
+        .concatMap(param=> ctx.params[param.name])
         .toArray()
-        .map(x=>
-          [ctx].concat(x))
+        .map(x=> [ctx].concat(x))
         .toPromise()
   }
 }
@@ -121,7 +119,7 @@ function extendWithVars(ctx,vars) {
 function compParams(comp) {
   if (!comp || !comp.params)
     return [];
-  return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>extend(x[1],jb.obj('id',x[0])));
+  return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>Object.assign(x[1],{id: x[0]}));
 }
 
 function prepareParams(comp,profile,ctx) {
@@ -218,9 +216,7 @@ function prepare(ctx,parentParam) {
   if (!comp.impl) { logError('component ' + comp_name + ' has no implementation', ctx); return { type:'null' } }
 
   fixByValue(profile,comp)
-  const resCtx = new jbCtx(ctx,{});
-  resCtx.parentParam = parentParam;
-  resCtx.params = {}; // TODO: try to delete this line
+  const resCtx = Object.assign(new jbCtx(ctx,{}), {parentParam, params: {}})
   const preparedParams = prepareParams(comp,profile,resCtx);
   if (typeof comp.impl === 'function') {
     Object.defineProperty(comp.impl, 'name', { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
@@ -254,9 +250,9 @@ function calcVar(ctx,varname,jstype) {
   return resolveFinishedPromise(res);
 }
 
-function expression(exp, ctx, parentParam) {
+function expression(_exp, ctx, parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
-  exp = '' + exp;
+  let exp = '' + _exp;
   if (jstype == 'boolean') return bool_expression(exp, ctx);
   if (exp.indexOf('$debugger:') == 0) {
     debugger;
@@ -276,18 +272,12 @@ function expression(exp, ctx, parentParam) {
   if (exp.lastIndexOf('{%') == 0 && exp.indexOf('%}') == exp.length-2) // just one exp filling all string
     return expPart(exp.substring(2,exp.length-2));
 
-  exp = exp.replace(/{%(.*?)%}/g, function(match,contents) {
-      return tostring(expPart(contents,{ as: 'string'}));
-  })
-  exp = exp.replace(/{\?(.*?)\?}/g, function(match,contents) {
-      return tostring(conditionalExp(contents));
-  })
+  exp = exp.replace(/{%(.*?)%}/g, (match,contents) => tostring(expPart(contents,{ as: 'string'})))
+  exp = exp.replace(/{\?(.*?)\?}/g, (match,contents) => tostring(conditionalExp(contents)))
   if (exp.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
     return expPart(exp.substring(1,exp.length-1),parentParam);
 
-  exp = exp.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
-      return tostring(expPart(contents,{as: 'string'}));
-  })
+  exp = exp.replace(/%([^%;{}\s><"']*)%/g, (match,contents) => tostring(expPart(contents,{as: 'string'})))
   return exp;
 
   function conditionalExp(exp) {
@@ -307,11 +297,6 @@ function expression(exp, ctx, parentParam) {
 function evalExpressionPart(expressionPart,ctx,parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   // example: %$person.name%.
-
-  const primitiveJsType = ['string','boolean','number'].indexOf(jstype) != -1;
-  // empty primitive expression - perfomance
-  // if (expressionPart == "")
-  //   return ctx.data;
 
   const parts = expressionPart.split(/[./[]/);
   return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),ctx.data)
@@ -614,13 +599,6 @@ function objFromEntries(entries) {
   entries.forEach(e => res[e[0]] = e[1]);
   return res;
 }
-function extend(obj,obj1,obj2,obj3) {
-  if (!obj) return;
-  obj1 && Object.assign(obj,obj1);
-  obj2 && Object.assign(obj,obj2);
-  obj3 && Object.assign(obj,obj3);
-  return obj;
-}
 
 const simpleValueByRefHandler = {
   val(v) {
@@ -662,7 +640,7 @@ let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 return {
   run: jb_run,
   jbCtx, expression, bool_expression, profileType, compName, pathSummary, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame, fixByValue,
+  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, frame, fixByValue,
   ctxCounter: _ => ctxCounter, simpleValueByRefHandler
 }
 
