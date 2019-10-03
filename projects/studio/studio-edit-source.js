@@ -69,7 +69,7 @@ jb.component('studio.editable-source', { /* studio.editableSource */
       ctx => ({
         init: cmp => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh()
       }),
-      feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')), 
+      feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')),
       textEditor.init()
     ]
   })
@@ -83,7 +83,58 @@ jb.component('studio.edit-source', { /* studio.editSource */
   ],
   impl: openDialog({
     style: dialog.editSourceStyle({id: 'editor', width: 600}),
-    content: studio.editableSource('%$path%'),
+    content: group({
+      controls: [
+        picklist({
+          databind: '%$file%',
+          options: picklist.codedOptions({
+            options: sourceEditor.filesOfProject(),
+            code: '%%',
+            text: suffix('/')
+          }),
+          style: styleByControl(
+            itemlist({
+              items: '%$picklistModel/options%',
+              controls: label({
+                title: '%text%',
+                style: label.mdlRippleEffect(),
+                features: [css.width('%$width%'), css('{text-align: left}')]
+              }),
+              style: itemlist.horizontal('5'),
+              features: itemlist.selection({
+                onSelection: writeValue('%$picklistModel/databind%', '%code%')
+              })
+            }),
+            'picklistModel'
+          )
+        }),
+        group({
+          controls: [
+            group({
+              controls: [
+                editableText({
+                  databind: '%$content%',
+                  style: editableText.studioCodemirrorTgp(),
+                  features: [watchRef('%$file%')]
+                })
+              ],
+              features: [
+                group.wait({
+                  for: ctx => { const host = jb.studio.host; return host.getFile(host.locationToPath(jb.tostring(ctx.exp('%$file%')))) },
+                  varName: 'content'
+                })
+              ]
+            })
+          ],
+          features: [watchRef('%$file%')]
+        })
+      ],
+      features: variable({
+        name: 'file',
+        value: pipeline(sourceEditor.filesOfProject(), first()),
+        watchable: true
+      })
+    }),
     title: studio.shortTitle('%$path%'),
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
@@ -292,7 +343,7 @@ jb.component('source-editor.suggestions', {
     ),
       pipeline(studio.paramsOfPath('%$actualPath%'),'%id%'),
       If(
-        '%$paramDef/options%',  
+        '%$paramDef/options%',
         split({separator: ',', text: '%$paramDef/options%', part: 'all'}),
         studio.PTsOfType('%$actualPath%')
       )
@@ -342,7 +393,7 @@ jb.component('source-editor.add-prop', { /* sourceEditor.addProp */
   })
 })
 
-jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestionsItemlist */ 
+jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestionsItemlist */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -366,5 +417,11 @@ jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestions
   })
 })
 
+jb.component('source-editor.files-of-project', {
+  impl: ctx => {
+    const _jb = jb.studio.previewjb
+    return jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf('/' + ctx.exp('%$studio/project%') + '/') != -1))
+  }
+})
 
 })()
