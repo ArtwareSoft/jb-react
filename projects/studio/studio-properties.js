@@ -25,8 +25,8 @@ jb.component('studio.properties', { /* studio.properties */
             features: [field.columnWidth('20'), css('{ text-align: right }')]
           })
         ],
-        chapterHeadline: label(
-          ({data}) => {
+        chapterHeadline: label({
+          title: ({data}) => {
           const path = data.path
           const prop = path.split('~').pop()
           if (Array.isArray(jb.studio.valOfPath(path)))
@@ -34,8 +34,9 @@ jb.component('studio.properties', { /* studio.properties */
           if (isNaN(Number(prop)))
             return prop
           return Number(prop) + 1
-        }
-        ),
+        },
+          features: feature.hoverTitle(pipeline(studio.paramDef('%path%'), '%description%'))
+        }),
         style: tableTree.plain({hideHeaders: true, gapWidth: 100}),
         features: studio.watchPath({path: '%$path%', includeChildren: 'structure'})
       }),
@@ -462,7 +463,7 @@ jb.component('studio.properties-old', { /* studio.properties */
       { width: 100% }
       >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px;  font-weight: bold;}
       >.property>.property-toolbar { text-align: right}
-      >.property>.property-toolbar>i { margin-right: 5px } 
+      >.property>.property-toolbar>i { margin-right: 5px }
       >.property>td { vertical-align: top; }
     `,
               features: group.initGroup()
