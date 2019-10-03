@@ -301,3 +301,13 @@ jb.component('wrap-as-object', { /* wrapAsObject */
     return out;
   }
 })
+
+jb.component('write-value-asynch', {
+  type: 'action',
+  params: [
+    {id: 'to', as: 'ref', mandatory: true},
+    {id: 'value', mandatory: true}
+  ],
+  impl: (ctx,to,value) =>
+		Promise.resolve(jb.val(value)).then(val=>jb.writeValue(to,val,ctx))
+})
