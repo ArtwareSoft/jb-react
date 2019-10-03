@@ -322,24 +322,8 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
     if (subExp.match(/]$/))
       subExp = subExp.slice(0,-1)
 
-    const refHandler = input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
-    //   const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-    //   if (arrayIndexMatch) {
-    //     const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
-    //     const index = arrayIndexMatch[2];
-    //     if (!Array.isArray(arr))
-    //         return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);
-
-    //     if (last && (jstype == 'ref' || !primitiveJsType))
-    //        return refHandler.objectProperty(arr,index,ctx);
-    //     if (typeof arr[index] == 'undefined')
-    //        arr[index] = last ? null : implicitlyCreateInnerObject(arr,index,refHandler);
-    //     if (last && jstype)
-    //        return jstypes[jstype](arr[index]);
-    //     return arr[index];
-    //  }
-
-      const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
+    const refHandler = jb.objHandler(input)
+    const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
       if (functionCallMatch && jb.functions[functionCallMatch[1]])
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
@@ -936,6 +920,7 @@ Object.assign(jb,{
       return jb.simpleValueByRefHandler
     return jb.watchableHandlers.find(handler => handler.isRef(ref))
   },
+  objHandler: obj => obj && jb.refHandler(obj) || jb.watchableHandlers.find(handler=> handler.watchable(obj)) || jb.simpleValueByRefHandler,
   asRef: obj => {
     const watchableHanlder = jb.watchableHandlers.find(handler => handler.watchable(obj) || handler.isRef(obj))
     if (watchableHanlder)
@@ -943,6 +928,7 @@ Object.assign(jb,{
     return jb.simpleValueByRefHandler.asRef(obj)
   },
   writeValue: (ref,value,srcCtx) => jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
+  objectProperty: (obj,prop,srcCtx) => jb.objHandler(obj).objectProperty(obj,prop,srcCtx),
   splice: (ref,args,srcCtx) => jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
   move: (ref,toRef,srcCtx) => jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
   push: (ref,toAdd,srcCtx) => jb.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
