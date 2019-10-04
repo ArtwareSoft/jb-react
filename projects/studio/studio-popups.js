@@ -4,7 +4,8 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
     {id: 'id', as: 'string'},
     {id: 'width', as: 'number', defaultValue: 300},
     {id: 'height', as: 'number', defaultValue: 100},
-    {id: 'onUpdate', type: 'action', dynamic: true}
+    {id: 'onUpdate', type: 'action', dynamic: true},
+    {id: 'editAllFiles', as: 'boolean'}
   ],
   impl: customStyle({
 			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
@@ -14,9 +15,11 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 					_=> cmp.dialogClose() },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
 				h('div',{class: 'dialog-buttons'},[
+					cmp.editAllFiles && h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.gotoEditor && cmp.dialog.gotoEditor() },'goto editor'),
+					cmp.editAllFiles && h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.saveAndReload && cmp.dialog.saveAndReload() },'save and reload'),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.refresh() },'refresh'),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },'ok'),
-				]),
+				].filter(x=>x) ),
 			]),
 			features: [
 					{$: 'dialog-feature.drag-title', id: '%$id%'},

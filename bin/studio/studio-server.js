@@ -276,7 +276,11 @@ const op_get_handlers = {
         .filter(dir=>!dir.match(new RegExp(settings.exclude)))
       res.end(JSON.stringify({projects}));
     },
-    gotoSource: function(req,res,path) {
+    gotoSource: function(req,res) {
+      const path = getURLParam(req,'path');
+      if (path)
+        return gotoFile(path.split(':')[0],path.split(':')[1])
+
       const comp = getURLParam(req,'comp');
       const files = walk('projects').concat(walk('src'));
       files.filter(x=>x.match(/\.(ts|js)$/))
@@ -284,13 +288,16 @@ const op_get_handlers = {
                 const source = ('' + fs.readFileSync(srcPath)).split('\n');
                 source.map((line,no)=> {
                   if (line.indexOf(`component('${comp}'`) != -1) {
-                    const cmd = settings.open_source_cmd + srcPath+':'+(no+1);
-                    console.log(cmd);
-                    child.exec(cmd,{});
-                    endWithSuccess(res,'open editor cmd: ' + cmd);
+                    gotoFile(srcPath,no)
                   }
                 })
         })
+      function gotoFile(srcPath,no) {
+        const cmd = settings.open_source_cmd + srcPath+':'+ ((+no)+1);
+        console.log(cmd);
+        child.exec(cmd,{});
+        endWithSuccess(res,'open editor cmd: ' + cmd);
+      }
     }
 };
 

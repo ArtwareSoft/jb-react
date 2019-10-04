@@ -98,7 +98,7 @@ jb.component('studio.edit-all-files', { /* studio.editAllFiles */
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: openDialog({
-    style: dialog.editSourceStyle({id: 'editor', width: 600}),
+    style: dialog.editSourceStyle({id: 'editor', width: 600, editAllFiles: true}),
     content: group({
       title: 'project files',
       controls: [
@@ -131,7 +131,17 @@ jb.component('studio.edit-all-files', { /* studio.editAllFiles */
             ,studio.fileAfterChanges('%$file%', '%%')),
           style: editableText.studioCodemirrorTgp(),
           features: [
-            ctx => ({ init: cmp => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh() }),
+            ctx => ({ 
+              beforeInit: cmp => {
+                const fileName = () => st.host.locationToPath(jb.tostring(ctx.vars.file))
+                ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh();
+                ctx.vars.$dialog.gotoEditor = () => fetch(`/?op=gotoSource&path=${fileName()}:${cmp.editor.getCursorPos().line}`);
+                ctx.vars.$dialog.saveAndReload = () =>
+                  ctx.run(studio.saveComponents())
+                    .then(() => st.host.saveFile(fileName()), cmp.editor.cmEditor.getValue())
+                    .then(saveResult => location.reload())
+                }
+            }),
             watchRef('%$file%')
           ]
         })

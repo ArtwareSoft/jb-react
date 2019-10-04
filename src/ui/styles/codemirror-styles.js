@@ -76,7 +76,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						cmEditor: editor
 					}
 					cmp.refresh = () => Promise.resolve(cmp.ctx.vars.$model.databind()).then(ref=>{
-						cmp.state.databindRef = cmp.editor = data_ref = ref;
+						cmp.state.databindRef = cmp.editor.data_ref = data_ref = ref;
 						editor.setValue(jb.tostring(data_ref))
 					})
 					if (ctx.params.hint)
