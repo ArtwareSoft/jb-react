@@ -5,7 +5,7 @@ const devHost = {
     getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
     locationToPath: path => path.split('/').slice(1).join('/'),
     saveFile: (path, contents) => {
-        return fetch(`/?op=saveFile&path=${path}`,
+        return fetch(`/?op=saveFile`,
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
@@ -57,8 +57,6 @@ st.chooseHostByUrl = entryUrl => {
             cloudHost
         : entryUrl.match(/localhost:[0-9]*\/studio-bin/) ?
             userLocalHost
-        : entryUrl.match(/fiddle.jshell.net/) ? 
-            jsFiddler
         : devHost
 }
 
@@ -67,5 +65,26 @@ function getEntryUrl() {
     return location && new URLSearchParams(location.search).entryUrl || location.href
 }
 st.chooseHostByUrl(getEntryUrl())
+
+function extractText(str,startMarker,endMarker) {
+    const pos1 = str.indexOf(startMarker), pos2 = str.indexOf(endMarker)
+    return str.slice(pos1 + startMarker.length ,pos2)
+}
+
+st.projectHosts = {
+    jsFiddle : {
+        projectFiles(jsFiddleid) {
+            return fetch(`http://fiddle.jshell.net/${jsFiddleid}/show/light`).then(r => r.text()).then(content=>{
+                const str = ''+content
+                return {
+                    html: extractText(str,'<html title="','</html>'),
+                    js: {
+                        main: '(function()' + extractText(str,' window.onload=function()','//]]></script>') + ')()'
+                    }
+                }
+            })
+        }
+    }
+}
 
 })()

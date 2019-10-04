@@ -6,34 +6,44 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
   ],
   impl: function(context,resource) {
         if (jb.ui.location || typeof window == 'undefined') return;
-        const pathname = window.location.pathname
-        const base = pathname.indexOf('studio-bin') != -1 ? 'studio-bin' 
-            : pathname.indexOf('studio-cloud') != -1 ? 'studio-cloud' 
-            : 'studio'
+        const base = location.pathname.indexOf('studio-bin') != -1 ? 'studio-bin' : 'studio'
+
+        const urlFormat = location.pathname.match(/\.html$/) ? {
+            urlToObj({search}) {
+                const _search = search.substring(1);
+                return JSON.parse('{"' + decodeURI(_search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}')
+            },
+            objToUrl(obj) {
+                const search = '?' + params.map(p=>({p,val: obj[p] !== undefined && jb.tostring(obj[p])}))
+                    .filter(e=>e.val)
+                    .map(({p,val})=>`${p}=${encodeURIComponent(val)}`)
+                    .join('&');
+                return {search} 
+            }
+        } : {
+            urlToObj({pathname}) {
+                const vals = pathname.substring(pathname.indexOf(base) + base.length).split('/')
+                        .map(x=>decodeURIComponent(x))
+                const res = {};
+                params.forEach((p,i) =>
+                    res[p] = (vals[i+1] || ''));
+                return res;
+            },
+            objToUrl(obj) {
+                const split_base = location.pathname.split(`/${base}`);
+                const pathname = split_base[0] + `/${base}/` +
+                    params.map(p=>encodeURIComponent(jb.tostring(obj[p])||''))
+                    .join('/').replace(/\/*$/,'');
+                return {pathname} 
+            }
+        }
+
         const isProject = location.pathname.indexOf('/project') == 0;
-        const params = isProject ? ['project','page','profile_path'] : ['entry_file','project', 'page','profile_path']
+        const params = isProject ? ['project','page','profile_path'] : ['entry_file','host','hostProjectId','project', 'page','profile_path']
 
         jb.ui.location = History.createBrowserHistory();
-        jb.ui.location.path = _ => location.pathname;
         const browserUrlEm = jb.rx.Observable.create(obs=>
-            jb.ui.location.listen(x=>
-                obs.next(x.pathname)));
-
-        function urlToObj(path) {
-            const vals = path.substring(path.indexOf(base) + base.length).split('/')
-                    .map(x=>decodeURIComponent(x))
-            let res = {};
-            params.forEach((p,i) =>
-                res[p] = (vals[i+1] || ''));
-            return res;
-        }
-        function objToUrl(obj) {
-            const split_base = jb.ui.location.path().split(`/${base}`);
-            const url = split_base[0] + `/${base}/` +
-                params.map(p=>encodeURIComponent(jb.tostring(obj[p])||''))
-                .join('/');
-            return url.replace(/\/*$/,'');
-        }
+            jb.ui.location.listen(x=> obs.next(x)));
 
         const databindEm = jb.ui.resourceChange
             .filter(e=> e.path[0] == resource)
@@ -41,17 +51,19 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             .filter(obj=>
                 obj[params[0]])
             .map(obj=>
-                objToUrl(obj));
+                urlFormat.objToUrl(obj));
 
-      browserUrlEm.merge(databindEm)
-            .startWith(jb.ui.location.path())
-            .distinctUntilChanged()
-            .subscribe(url => {
-                jb.ui.location.push(Object.assign({},jb.ui.location.location, {pathname: url}));
-                var obj = urlToObj(url);
+        browserUrlEm.merge(databindEm)
+            .startWith(location)
+            .subscribe(loc => {
+                const obj = urlFormat.urlToObj(loc);
                 params.forEach(p=>
                     jb.writeValue(context.exp(`%$${resource}/${p}%`,'ref'),jb.tostring(obj[p])));
-                context.params.onUrlChange(context.setData(url));
+                // change the url if needed
+                if (loc.pathname && loc.pathname === location.pathname) return
+                if (loc.search && loc.search === location.search) return
+                jb.ui.location.push(Object.assign({},jb.ui.location.location, loc));
+                context.params.onUrlChange(context.setData(loc));
             })
     }
 })

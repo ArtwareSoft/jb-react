@@ -300,5 +300,15 @@ jb.component('wrap-as-object', { /* wrapAsObject */
     items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = item)
     return out;
   }
+})
+
+jb.component('write-value-asynch', {
+  type: 'action',
+  params: [
+    {id: 'to', as: 'ref', mandatory: true},
+    {id: 'value', mandatory: true}
+  ],
+  impl: (ctx,to,value) =>
+		Promise.resolve(jb.val(value)).then(val=>jb.writeValue(to,val,ctx))
 });
 

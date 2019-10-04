@@ -55,5 +55,16 @@ function newFileContent(fileContent, comps) {
   return lines.join('\n')
 }
 
+jb.component('studio.file-after-changes', {
+  params: [
+    {id: 'fileName', as: 'string'},
+    {id: 'fileContent', as: 'string'},
+  ],
+  impl: (ctx, fileName, fileContent) => {
+    const location = (st.previewjb || jb).location
+    const comps = st.changedComps().filter(e=>e[1][location] && e[1][location][0].indexOf(fileName) != -1)
+    return newFileContent(fileContent, comps)
+  }
+})
 
 })();

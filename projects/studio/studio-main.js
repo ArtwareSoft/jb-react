@@ -109,7 +109,7 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
           }),
           menu.action({
             title: 'Source ...',
-            action: studio.editSource(studio.currentProfilePath())
+            action: studio.editAllFiles(studio.currentProfilePath())
           })
         ]
       }),

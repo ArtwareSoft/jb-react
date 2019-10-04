@@ -83,7 +83,24 @@ jb.component('studio.edit-source', { /* studio.editSource */
   ],
   impl: openDialog({
     style: dialog.editSourceStyle({id: 'editor', width: 600}),
+    content: studio.editableSource('%$path%'),
+    title: studio.shortTitle('%$path%'),
+    features: [
+      css('.jb-dialog-content-parent {overflow-y: hidden}'),
+      dialogFeature.resizer(true)
+    ]
+  })
+})
+
+jb.component('studio.edit-all-files', { /* studio.editAllFiles */
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
+  ],
+  impl: openDialog({
+    style: dialog.editSourceStyle({id: 'editor', width: 600}),
     content: group({
+      title: 'project files',
       controls: [
         picklist({
           databind: '%$file%',
@@ -108,25 +125,15 @@ jb.component('studio.edit-source', { /* studio.editSource */
             'picklistModel'
           )
         }),
-        group({
-          controls: [
-            group({
-              controls: [
-                editableText({
-                  databind: '%$content%',
-                  style: editableText.studioCodemirrorTgp(),
-                  features: [watchRef('%$file%')]
-                })
-              ],
-              features: [
-                group.wait({
-                  for: ctx => { const host = jb.studio.host; return host.getFile(host.locationToPath(jb.tostring(ctx.exp('%$file%')))) },
-                  varName: 'content'
-                })
-              ]
-            })
-          ],
-          features: [watchRef('%$file%')]
+        editableText({
+          databind: pipe(
+            ctx => { const host = jb.studio.host; return host.getFile(host.locationToPath(jb.tostring(ctx.exp('%$file%')))) }
+            ,studio.fileAfterChanges('%$file%', '%%')),
+          style: editableText.studioCodemirrorTgp(),
+          features: [
+            ctx => ({ init: cmp => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh() }),
+            watchRef('%$file%')
+          ]
         })
       ],
       features: variable({

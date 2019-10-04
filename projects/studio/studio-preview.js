@@ -74,29 +74,6 @@ st.initPreview = function(preview_window,allowedTypes) {
 			}
 }
 
-jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
-  type: 'preview-style',
-  impl: customStyle({
-    template: (cmp,state,h) => {
-      if (!state.entry_file && !state.project) {
-        cmp.ctx.run(writeValue('%$studio/project%','hello-jbart'))
-        const entryFolder = location.href.indexOf('studio-cloud.html') != -1 ? './' : '/bin/studio/'
-        Object.assign(state, {entry_file: `${entryFolder}hello-jbart-cloud.html`, project: 'hello-jbart'})
-      }
-      return h('iframe', {
-          id:'jb-preview',
-          sandbox: 'allow-same-origin allow-forms allow-scripts',
-          frameborder: 0,
-          class: 'preview-iframe',
-          width: cmp.ctx.vars.$model.width,
-          height: cmp.ctx.vars.$model.height,
-          src: (state.entry_file ? `${state.entry_file}` : `/project/${state.project}`) + `?${state.cacheKiller}&wspy=preview`
-      })
-    },
-    css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
-  })
-})
-
 jb.component('studio.refresh-preview', { /* studio.refreshPreview */
   type: 'action',
   impl: ctx => {
@@ -142,23 +119,63 @@ jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studi
 jb.component('studio.preview-widget', { /* studio.previewWidget */
   type: 'control',
   params: [
-    {
-      id: 'style',
-      type: 'preview-style',
-      dynamic: true,
-      defaultValue: studio.previewWidgetImpl()
-    },
+    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio.previewWidgetImpl()},
     {id: 'width', as: 'number'},
     {id: 'height', as: 'number'}
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx,{
       init: cmp => {
-        Object.assign(cmp.state,ctx.exp('%$studio%'));
-        cmp.state.cacheKiller = 'cacheKiller='+(''+Math.random()).slice(10);
-        document.title = cmp.state.project + ' with jBart';
+        const host = ctx.exp('%$studio/host%')
+        if (host && st.projectHosts[host]) {
+          cmp.state.loadingMessage = 'loading project from ' + host + '::' + ctx.exp('%$studio/hostProjectId%')
+          return st.projectHosts[host].projectFiles(ctx.exp('%$studio/hostProjectId%'))
+            .then(res => cmp.setState({projectHostResult: res}))
+        }
+        let entry_file = ctx.exp('%$studio/entry_file%'), project = ctx.exp('%$studio/project%')
+        if (!entry_file && !project) {
+          project = 'hello-jbart'
+          cmp.ctx.run(writeValue('%$studio/project%',project))
+          const entryFolder = location.href.indexOf('studio-cloud.html') != -1 ? './' : '/bin/studio/'
+          entry_file = `${entryFolder}hello-jbart-cloud.html`
+        }
+        const cacheKiller =  'cacheKiller='+(''+Math.random()).slice(10)
+        const src = (entry_file ? `${entry_file}` : `/project/${project}`) + `?${cacheKiller}&wspy=preview`
+        cmp.state.src = src
+        document.title = project + ' with jBart';
       },
     })
+})
+
+jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
+  type: 'preview-style',
+  impl: customStyle({
+    template: (cmp,{loadingMessage, src,projectHostResult},h) => {
+      if (loadingMessage)
+        return h('p',{class: 'loading-message'},loadingMessage)
+      if (projectHostResult) {
+        h('iframe', {
+          id:'jb-preview',
+          sandbox: 'allow-same-origin allow-forms allow-scripts',
+          frameborder: 0,
+          class: 'preview-iframe',
+          width: cmp.ctx.vars.$model.width,
+          height: cmp.ctx.vars.$model.height,
+          src: "javascript:'"+projectHostResult.html+"'"
+        })
+      }
+      return h('iframe', {
+          id:'jb-preview',
+          sandbox: 'allow-same-origin allow-forms allow-scripts',
+          frameborder: 0,
+          class: 'preview-iframe',
+          width: cmp.ctx.vars.$model.width,
+          height: cmp.ctx.vars.$model.height,
+          src
+    })
+  },
+    css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
+  })
 })
 
 })()

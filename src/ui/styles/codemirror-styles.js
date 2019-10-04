@@ -31,7 +31,9 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 				cmp.state.databindRef = cmp.ctx.vars.$model.databind(),
 			afterViewInit: cmp => {
 				try {
-					const data_ref = cmp.state.databindRef;
+					let data_ref = cmp.state.databindRef;
+					if (data_ref instanceof Promise)
+						jb.delay(1).then(() => cmp.refresh())
 					cm_settings = cm_settings||{};
 					const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
 						e[0], _ => jb.ui.wrapWithLauchingElement(ctx2 => ctx2.run(e[1]), cmp.ctx, cmp.base,
@@ -73,7 +75,10 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						focus: () => editor.focus(),
 						cmEditor: editor
 					}
-					cmp.refresh = () => editor.setValue(jb.tostring(data_ref))
+					cmp.refresh = () => Promise.resolve(cmp.ctx.vars.$model.databind()).then(ref=>{
+						cmp.state.databindRef = cmp.editor = data_ref = ref;
+						editor.setValue(jb.tostring(data_ref))
+					})
 					if (ctx.params.hint)
 						tgpHint(CodeMirror)
 					const wrapper = editor.getWrapperElement();

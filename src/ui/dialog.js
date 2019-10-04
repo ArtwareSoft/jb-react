@@ -369,14 +369,14 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
 		}
 
 		let codeMirrorElem,codeMirrorSizeDiff;
-		if (codeMirror) {
-			codeMirrorElem = cmp.base.querySelector('.CodeMirror');
-			if (codeMirrorElem)
-			codeMirrorSizeDiff = codeMirrorElem.getBoundingClientRect().top - cmp.base.getBoundingClientRect().top
-				+ (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
-		}
-
-		const mousedrag = cmp.mousedownEm
+		const mousedrag = cmp.mousedownEm.do(e=>{
+				if (codeMirror) {
+					codeMirrorElem = cmp.base.querySelector('.CodeMirror');
+					if (codeMirrorElem)
+					codeMirrorSizeDiff = codeMirrorElem.getBoundingClientRect().top - cmp.base.getBoundingClientRect().top
+						+ (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
+				}
+			})
 			.map(e =>  ({
 				left: cmp.base.getBoundingClientRect().left,
 				top:  cmp.base.getBoundingClientRect().top
