@@ -29841,7 +29841,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						cmEditor: editor
 					}
 					cmp.refresh = () => Promise.resolve(cmp.ctx.vars.$model.databind()).then(ref=>{
-						cmp.state.databindRef = cmp.editor = data_ref = ref;
+						cmp.state.databindRef = cmp.editor.data_ref = data_ref = ref;
 						editor.setValue(jb.tostring(data_ref))
 					})
 					if (ctx.params.hint)
@@ -31124,7 +31124,8 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
     {id: 'id', as: 'string'},
     {id: 'width', as: 'number', defaultValue: 300},
     {id: 'height', as: 'number', defaultValue: 100},
-    {id: 'onUpdate', type: 'action', dynamic: true}
+    {id: 'onUpdate', type: 'action', dynamic: true},
+    {id: 'editAllFiles', as: 'boolean'}
   ],
   impl: customStyle({
 			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
@@ -31134,9 +31135,11 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 					_=> cmp.dialogClose() },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
 				h('div',{class: 'dialog-buttons'},[
+					cmp.editAllFiles && h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.gotoEditor && cmp.dialog.gotoEditor() },'goto editor'),
+					cmp.editAllFiles && h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.saveAndReload && cmp.dialog.saveAndReload() },'save and reload'),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.refresh() },'refresh'),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },'ok'),
-				]),
+				].filter(x=>x) ),
 			]),
 			features: [
 					{$: 'dialog-feature.drag-title', id: '%$id%'},
@@ -33935,7 +33938,7 @@ jb.component('studio.edit-all-files', { /* studio.editAllFiles */
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: openDialog({
-    style: dialog.editSourceStyle({id: 'editor', width: 600}),
+    style: dialog.editSourceStyle({id: 'editor', width: 600, editAllFiles: true}),
     content: group({
       title: 'project files',
       controls: [
@@ -33968,7 +33971,17 @@ jb.component('studio.edit-all-files', { /* studio.editAllFiles */
             ,studio.fileAfterChanges('%$file%', '%%')),
           style: editableText.studioCodemirrorTgp(),
           features: [
-            ctx => ({ init: cmp => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh() }),
+            ctx => ({ 
+              beforeInit: cmp => {
+                const fileName = () => st.host.locationToPath(jb.tostring(ctx.vars.file))
+                ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh();
+                ctx.vars.$dialog.gotoEditor = () => fetch(`/?op=gotoSource&path=${fileName()}:${cmp.editor.getCursorPos().line}`);
+                ctx.vars.$dialog.saveAndReload = () =>
+                  ctx.run(studio.saveComponents())
+                    .then(() => st.host.saveFile(fileName()), cmp.editor.cmEditor.getValue())
+                    .then(saveResult => location.reload())
+                }
+            }),
             watchRef('%$file%')
           ]
         })
@@ -35744,7 +35757,7 @@ jb.component('studio.save-components', { /* studio.saveComponents */
     const location = (st.previewjb || jb).location
     const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][location] && e[1][location][0]).filter(x=>x))
       .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>e[1][location][0] == fn)}))
-    jb.rx.Observable.from(filesToUpdate)
+    return jb.rx.Observable.from(filesToUpdate)
       .concatMap(e =>
         st.host.getFile(e.path)
           .then(fileContent=> Object.assign(e,{fileContent}))
@@ -35759,12 +35772,14 @@ jb.component('studio.save-components', { /* studio.saveComponents */
         messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
 				st.showMultiMessages(messages)
 				return jb.logException(e,'error while saving ' + e.id,ctx) || []
-			})
-			.subscribe(e=> {
+      })
+      .toPromise().then(e=> {
+        if (!e) return;
         messages.push({text: 'file ' + e.path + ' updated with components :' + e.comps.map(e=>e[0]).join(', ') })
 				st.showMultiMessages(messages)
         e.comps.forEach(([id]) => st.serverComps[id] = st.previewjb.comps[id])
       })
+      
     }
 })
 
