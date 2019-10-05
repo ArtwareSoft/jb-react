@@ -31071,6 +31071,9 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
             .then(res => cmp.setState({projectHostResult: res}))
         }
         let entry_file = ctx.exp('%$studio/entry_file%'), project = ctx.exp('%$studio/project%')
+        const entryFolder = location.href.indexOf('studio-cloud.html') != -1 ? './' : '/'
+        if (entry_file)
+          entry_file = `${entryFolder}${entry_file}`
         if (!entry_file && !project) {
           project = 'hello-jbart'
           cmp.ctx.run(writeValue('%$studio/project%',project))
