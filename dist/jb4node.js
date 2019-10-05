@@ -1866,18 +1866,21 @@ jb.component('in-group', { /* inGroup */
   	group.indexOf(item) != -1
 })
 
+jb.urlProxy = 'http://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+
 jb.component('http.get', { /* http.get */
   type: 'data,action',
   description: 'fetch data from external url',
   params: [
     {id: 'url', as: 'string'},
-    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'}
+    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
+    {id: 'useProxy', as: 'boolean'},
   ],
-  impl: (ctx,url,_json) => {
+  impl: (ctx,url,_json,useProxy) => {
 		if (ctx.probe)
 			return jb.http_get_cache[url];
 		const json = _json || url.match(/json$/);
-		return fetch(url)
+		return fetch(useProxy ? jb.urlProxy : '' + url, {mode: 'no-cors'})
 			  .then(r =>
 			  		json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)

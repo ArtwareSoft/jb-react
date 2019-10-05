@@ -44,7 +44,7 @@ const cloudHost = {
     },
     scriptForLoadLibraries: ``,
     pathToJsFile: (project,fn) => fn,
-    projectUrlInStudio: project => `/studio-cloud/${project}%2F${project}.html/${project}`,
+    projectUrlInStudio: project => ``,
 }
 
 //     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
@@ -68,20 +68,27 @@ st.chooseHostByUrl(getEntryUrl())
 
 function extractText(str,startMarker,endMarker) {
     const pos1 = str.indexOf(startMarker), pos2 = str.indexOf(endMarker)
+    if (pos1 == -1 || pos2 == -1) return ''
     return str.slice(pos1 + startMarker.length ,pos2)
 }
 
 st.projectHosts = {
     jsFiddle : {
-        projectFiles(jsFiddleid) {
-            return fetch(`http://fiddle.jshell.net/${jsFiddleid}/show/light`).then(r => r.text()).then(content=>{
-                const str = ''+content
-                return {
-                    html: extractText(str,'<html title="','</html>'),
-                    js: {
-                        main: '(function()' + extractText(str,' window.onload=function()','//]]></script>') + ')()'
-                    }
-                }
+        fetchProject(jsFiddleid) {
+            // return fetch(`http://fiddle.jshell.net/${jsFiddleid}/show/light/`, {"credentials":"include","headers":{"accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3","accept-language":"en-US,en;q=0.9,he;q=0.8","if-none-match":"W/\"687187bf32e53d557fac8cc441202525\"","upgrade-insecure-requests":"1"},"referrer":`http://fiddle.jshell.net/${jsFiddleid}/show/light/`,
+            //     "referrerPolicy":"strict-origin-when-cross-origin","body":null,"method":"GET","mode":"no-cors"})
+            return fetch(jb.urlProxy + `http://jsfiddle.net/${jsFiddleid}`,)
+            .catch(e => console.log(e))
+            .then(r => r.text())
+            .then(content=>{
+                const str = (''+content).replace(/\\n/g,'\n').replace(/\\/g,'')
+                //const all = extractText(str,'var EditorConfig =','fiddle: {')
+                const json = extractText(str,'values: {','fiddle: {')
+                const html = extractText(json,'html: "','js:   "').trim().slice(0,-2)
+                const js = extractText(json,'js:   "','css:  "').trim().slice(0,-2)
+                //const js = '(function()' + extractText(str,' window.onload=function()','//]]></script>') + ')()'
+                if (html)
+                    st.projectFiles = { html, js: [js], css: [] }
             })
         }
     }

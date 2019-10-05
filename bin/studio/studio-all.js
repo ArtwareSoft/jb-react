@@ -1866,18 +1866,21 @@ jb.component('in-group', { /* inGroup */
   	group.indexOf(item) != -1
 })
 
+jb.urlProxy = 'http://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+
 jb.component('http.get', { /* http.get */
   type: 'data,action',
   description: 'fetch data from external url',
   params: [
     {id: 'url', as: 'string'},
-    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'}
+    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
+    {id: 'useProxy', as: 'boolean'},
   ],
-  impl: (ctx,url,_json) => {
+  impl: (ctx,url,_json,useProxy) => {
 		if (ctx.probe)
 			return jb.http_get_cache[url];
 		const json = _json || url.match(/json$/);
-		return fetch(url)
+		return fetch(useProxy ? jb.urlProxy : '' + url, {mode: 'no-cors'})
 			  .then(r =>
 			  		json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
@@ -31067,8 +31070,23 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
         const host = ctx.exp('%$studio/host%')
         if (host && st.projectHosts[host]) {
           cmp.state.loadingMessage = 'loading project from ' + host + '::' + ctx.exp('%$studio/hostProjectId%')
-          return st.projectHosts[host].projectFiles(ctx.exp('%$studio/hostProjectId%'))
-            .then(res => cmp.setState({projectHostResult: res}))
+          return st.projectHosts[host].fetchProject(ctx.exp('%$studio/hostProjectId%'))
+            .then(() => {
+              cmp.setState({loadingMessage: ''})
+              jb.ui.waitFor(() => cmp.base.contentWindow).then(() => {
+                cmp.base.contentWindow.document.write(st.projectFiles.html)
+                jb.ui.waitFor(() => cmp.base.contentWindow.jb).then(() => {
+                    st.projectFiles.js.forEach(js=>{
+                      try {
+                        if (cmp.base.contentWindow.jb)
+                          cmp.base.contentWindow.eval(js)
+                      } catch(e) {
+                        console.log(e)
+                      }
+                  })
+                })
+              })
+            })
         }
         let entry_file = ctx.exp('%$studio/entry_file%'), project = ctx.exp('%$studio/project%')
         const entryFolder = location.href.indexOf('studio-cloud.html') != -1 ? './' : '/'
@@ -31091,10 +31109,10 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
 jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
-    template: (cmp,{loadingMessage, src,projectHostResult},h) => {
+    template: (cmp,{loadingMessage, src,projectFiles},h) => {
       if (loadingMessage)
         return h('p',{class: 'loading-message'},loadingMessage)
-      if (projectHostResult) {
+      if (projectFiles) {
         h('iframe', {
           id:'jb-preview',
           sandbox: 'allow-same-origin allow-forms allow-scripts',
@@ -31102,7 +31120,7 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           class: 'preview-iframe',
           width: cmp.ctx.vars.$model.width,
           height: cmp.ctx.vars.$model.height,
-          src: "javascript:'"+projectHostResult.html+"'"
+          src: "javascript:''"
         })
       }
       return h('iframe', {
@@ -37005,7 +37023,7 @@ const cloudHost = {
     },
     scriptForLoadLibraries: ``,
     pathToJsFile: (project,fn) => fn,
-    projectUrlInStudio: project => `/studio-cloud/${project}%2F${project}.html/${project}`,
+    projectUrlInStudio: project => ``,
 }
 
 //     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
@@ -37029,20 +37047,27 @@ st.chooseHostByUrl(getEntryUrl())
 
 function extractText(str,startMarker,endMarker) {
     const pos1 = str.indexOf(startMarker), pos2 = str.indexOf(endMarker)
+    if (pos1 == -1 || pos2 == -1) return ''
     return str.slice(pos1 + startMarker.length ,pos2)
 }
 
 st.projectHosts = {
     jsFiddle : {
-        projectFiles(jsFiddleid) {
-            return fetch(`http://fiddle.jshell.net/${jsFiddleid}/show/light`).then(r => r.text()).then(content=>{
-                const str = ''+content
-                return {
-                    html: extractText(str,'<html title="','</html>'),
-                    js: {
-                        main: '(function()' + extractText(str,' window.onload=function()','//]]></script>') + ')()'
-                    }
-                }
+        fetchProject(jsFiddleid) {
+            // return fetch(`http://fiddle.jshell.net/${jsFiddleid}/show/light/`, {"credentials":"include","headers":{"accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3","accept-language":"en-US,en;q=0.9,he;q=0.8","if-none-match":"W/\"687187bf32e53d557fac8cc441202525\"","upgrade-insecure-requests":"1"},"referrer":`http://fiddle.jshell.net/${jsFiddleid}/show/light/`,
+            //     "referrerPolicy":"strict-origin-when-cross-origin","body":null,"method":"GET","mode":"no-cors"})
+            return fetch(jb.urlProxy + `http://jsfiddle.net/${jsFiddleid}`,)
+            .catch(e => console.log(e))
+            .then(r => r.text())
+            .then(content=>{
+                const str = (''+content).replace(/\\n/g,'\n').replace(/\\/g,'')
+                //const all = extractText(str,'var EditorConfig =','fiddle: {')
+                const json = extractText(str,'values: {','fiddle: {')
+                const html = extractText(json,'html: "','js:   "').trim().slice(0,-2)
+                const js = extractText(json,'js:   "','css:  "').trim().slice(0,-2)
+                //const js = '(function()' + extractText(str,' window.onload=function()','//]]></script>') + ')()'
+                if (html)
+                    st.projectFiles = { html, js: [js], css: [] }
             })
         }
     }

@@ -96,7 +96,7 @@ jb.component('html-parsing.makeToDevices', { /* htmlParsing.makeToDevices */
                 '%$devices/{%%}%',
                 pipe(
                   http.get(
-                      'http://jbartdb.appspot.com/jbart_db.js?op=proxy&url=https://www.gsmarena.com/%%.php'
+                      'https://www.gsmarena.com/%%.php'
                     ),
                   gsmArena.deviceParser()
                 )

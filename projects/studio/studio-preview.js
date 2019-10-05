@@ -129,8 +129,23 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
         const host = ctx.exp('%$studio/host%')
         if (host && st.projectHosts[host]) {
           cmp.state.loadingMessage = 'loading project from ' + host + '::' + ctx.exp('%$studio/hostProjectId%')
-          return st.projectHosts[host].projectFiles(ctx.exp('%$studio/hostProjectId%'))
-            .then(res => cmp.setState({projectHostResult: res}))
+          return st.projectHosts[host].fetchProject(ctx.exp('%$studio/hostProjectId%'))
+            .then(() => {
+              cmp.setState({loadingMessage: ''})
+              jb.ui.waitFor(() => cmp.base.contentWindow).then(() => {
+                cmp.base.contentWindow.document.write(st.projectFiles.html)
+                jb.ui.waitFor(() => cmp.base.contentWindow.jb).then(() => {
+                    st.projectFiles.js.forEach(js=>{
+                      try {
+                        if (cmp.base.contentWindow.jb)
+                          cmp.base.contentWindow.eval(js)
+                      } catch(e) {
+                        console.log(e)
+                      }
+                  })
+                })
+              })
+            })
         }
         let entry_file = ctx.exp('%$studio/entry_file%'), project = ctx.exp('%$studio/project%')
         const entryFolder = location.href.indexOf('studio-cloud.html') != -1 ? './' : '/'
@@ -153,10 +168,10 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
 jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
-    template: (cmp,{loadingMessage, src,projectHostResult},h) => {
+    template: (cmp,{loadingMessage, src,projectFiles},h) => {
       if (loadingMessage)
         return h('p',{class: 'loading-message'},loadingMessage)
-      if (projectHostResult) {
+      if (projectFiles) {
         h('iframe', {
           id:'jb-preview',
           sandbox: 'allow-same-origin allow-forms allow-scripts',
@@ -164,7 +179,7 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           class: 'preview-iframe',
           width: cmp.ctx.vars.$model.width,
           height: cmp.ctx.vars.$model.height,
-          src: "javascript:'"+projectHostResult.html+"'"
+          src: "javascript:''"
         })
       }
       return h('iframe', {
