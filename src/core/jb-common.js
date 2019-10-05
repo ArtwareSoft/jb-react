@@ -235,6 +235,16 @@ jb.component('write-value', { /* writeValue */
 		jb.writeValue(to,jb.val(value),ctx)
 })
 
+jb.component('property', {
+  description: 'navigate/select/path property of object',
+  params: [
+    {id: 'prop', as: 'string', mandatory: true},
+    {id: 'obj', defaultValue: '%%' },
+  ],
+  impl: (ctx,prop,obj) =>
+		jb.objectProperty(obj,prop,ctx)
+})
+
 jb.component('index-of', { /* indexOf */
   params: [
     {id: 'array', as: 'array', mandatory: true},
@@ -935,6 +945,7 @@ jb.component('in-group', { /* inGroup */
 })
 
 jb.component('http.get', { /* http.get */
+  type: 'data,action',
   description: 'fetch data from external url',
   params: [
     {id: 'url', as: 'string'},

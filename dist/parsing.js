@@ -310,4 +310,5 @@ jb.component('write-value-asynch', {
   ],
   impl: (ctx,to,value) =>
 		Promise.resolve(jb.val(value)).then(val=>jb.writeValue(to,val,ctx))
-})
+});
+

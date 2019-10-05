@@ -37,6 +37,21 @@ jb.component('data-test.get-ref-value-as-boolean', { /* dataTest.getRefValueAsBo
   })
 })
 
+jb.component('data-test.property-watchable', {
+  impl: dataTest({
+    calculate: property('name','%$person%'),
+    expectedResult: equals('Homer Simpson')
+  })
+})
+
+jb.component('data-test.property-passive', {
+  impl: dataTest({
+    vars: Var('person',obj(prop('name','homer'))),
+    calculate: property('name','%$person%'),
+    expectedResult: equals('homer')
+  })
+})
+
 jb.component('data-test.get-exp-value-as-boolean', { /* dataTest.getExpValueAsBoolean */
   impl: dataTest({
     calculate: test.getAsBool('%$person/name%==Homer Simpson'),

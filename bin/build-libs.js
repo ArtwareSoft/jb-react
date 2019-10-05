@@ -32,6 +32,8 @@ concatFiles(nodeFiles,'jb4node.js');
 concatFiles(coreFiles,'jbart-core.js');
 concatFiles(filesOfModules('d3'),'jb-d3.js');
 concatFiles(jb_modules['pretty-print'],'pretty-print.js');
+concatFiles(jb_modules['parsing'],'parsing.js');
+concatFiles(jb_modules['xml'],'xml.js');
 concatFiles(studioCssFiles,'../bin/studio/css/studio-all.css');
 
 concatFiles(studioFiles,'../bin/studio/studio-all.js');

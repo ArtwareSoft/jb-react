@@ -101,11 +101,9 @@ function do_jb_run(ctx,parentParam,settings) {
       return [ctx].concat(preparedParams.map(param=>ctx.params[param.name]))
 
     return Observable.from(preparedParams)
-        .concatMap(param=>
-          ctx.params[param.name])
+        .concatMap(param=> ctx.params[param.name])
         .toArray()
-        .map(x=>
-          [ctx].concat(x))
+        .map(x=> [ctx].concat(x))
         .toPromise()
   }
 }
@@ -121,7 +119,7 @@ function extendWithVars(ctx,vars) {
 function compParams(comp) {
   if (!comp || !comp.params)
     return [];
-  return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>extend(x[1],jb.obj('id',x[0])));
+  return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>Object.assign(x[1],{id: x[0]}));
 }
 
 function prepareParams(comp,profile,ctx) {
@@ -218,9 +216,7 @@ function prepare(ctx,parentParam) {
   if (!comp.impl) { logError('component ' + comp_name + ' has no implementation', ctx); return { type:'null' } }
 
   fixByValue(profile,comp)
-  const resCtx = new jbCtx(ctx,{});
-  resCtx.parentParam = parentParam;
-  resCtx.params = {}; // TODO: try to delete this line
+  const resCtx = Object.assign(new jbCtx(ctx,{}), {parentParam, params: {}})
   const preparedParams = prepareParams(comp,profile,resCtx);
   if (typeof comp.impl === 'function') {
     Object.defineProperty(comp.impl, 'name', { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
@@ -254,9 +250,9 @@ function calcVar(ctx,varname,jstype) {
   return resolveFinishedPromise(res);
 }
 
-function expression(exp, ctx, parentParam) {
+function expression(_exp, ctx, parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
-  exp = '' + exp;
+  let exp = '' + _exp;
   if (jstype == 'boolean') return bool_expression(exp, ctx);
   if (exp.indexOf('$debugger:') == 0) {
     debugger;
@@ -276,18 +272,12 @@ function expression(exp, ctx, parentParam) {
   if (exp.lastIndexOf('{%') == 0 && exp.indexOf('%}') == exp.length-2) // just one exp filling all string
     return expPart(exp.substring(2,exp.length-2));
 
-  exp = exp.replace(/{%(.*?)%}/g, function(match,contents) {
-      return tostring(expPart(contents,{ as: 'string'}));
-  })
-  exp = exp.replace(/{\?(.*?)\?}/g, function(match,contents) {
-      return tostring(conditionalExp(contents));
-  })
+  exp = exp.replace(/{%(.*?)%}/g, (match,contents) => tostring(expPart(contents,{ as: 'string'})))
+  exp = exp.replace(/{\?(.*?)\?}/g, (match,contents) => tostring(conditionalExp(contents)))
   if (exp.match(/^%[^%;{}\s><"']*%$/)) // must be after the {% replacer
     return expPart(exp.substring(1,exp.length-1),parentParam);
 
-  exp = exp.replace(/%([^%;{}\s><"']*)%/g, function(match,contents) {
-      return tostring(expPart(contents,{as: 'string'}));
-  })
+  exp = exp.replace(/%([^%;{}\s><"']*)%/g, (match,contents) => tostring(expPart(contents,{as: 'string'})))
   return exp;
 
   function conditionalExp(exp) {
@@ -308,11 +298,6 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   // example: %$person.name%.
 
-  const primitiveJsType = ['string','boolean','number'].indexOf(jstype) != -1;
-  // empty primitive expression - perfomance
-  // if (expressionPart == "")
-  //   return ctx.data;
-
   const parts = expressionPart.split(/[./[]/);
   return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),ctx.data)
 
@@ -322,24 +307,8 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
     if (subExp.match(/]$/))
       subExp = subExp.slice(0,-1)
 
-    const refHandler = input && jb.refHandler(input) || jb.watchableHandlers.find(handler=> handler.watchable(input)) || jb.simpleValueByRefHandler;
-    //   const arrayIndexMatch = subExp.match(/(.*)\[([0-9]+)\]/); // x[y]
-    //   if (arrayIndexMatch) {
-    //     const arr = arrayIndexMatch[1] == "" ? val(input) : val(pipe(val(input),arrayIndexMatch[1],false,first,refHandler));
-    //     const index = arrayIndexMatch[2];
-    //     if (!Array.isArray(arr))
-    //         return jb.logError('expecting array instead of ' + typeof arr, ctx, arr);
-
-    //     if (last && (jstype == 'ref' || !primitiveJsType))
-    //        return refHandler.objectProperty(arr,index,ctx);
-    //     if (typeof arr[index] == 'undefined')
-    //        arr[index] = last ? null : implicitlyCreateInnerObject(arr,index,refHandler);
-    //     if (last && jstype)
-    //        return jstypes[jstype](arr[index]);
-    //     return arr[index];
-    //  }
-
-      const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
+    const refHandler = jb.objHandler(input)
+    const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
       if (functionCallMatch && jb.functions[functionCallMatch[1]])
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
@@ -630,13 +599,6 @@ function objFromEntries(entries) {
   entries.forEach(e => res[e[0]] = e[1]);
   return res;
 }
-function extend(obj,obj1,obj2,obj3) {
-  if (!obj) return;
-  obj1 && Object.assign(obj,obj1);
-  obj2 && Object.assign(obj,obj2);
-  obj3 && Object.assign(obj,obj3);
-  return obj;
-}
 
 const simpleValueByRefHandler = {
   val(v) {
@@ -678,7 +640,7 @@ let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
 return {
   run: jb_run,
   jbCtx, expression, bool_expression, profileType, compName, pathSummary, logs, logError, log, logException, tojstype, jstypes, tostring, toarray, toboolean,tosingle,tonumber,
-  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, extend, frame, fixByValue,
+  types, ui, rx, ctxDictionary, testers, compParams, singleInType, val, entries, objFromEntries, frame, fixByValue,
   ctxCounter: _ => ctxCounter, simpleValueByRefHandler
 }
 
@@ -936,6 +898,7 @@ Object.assign(jb,{
       return jb.simpleValueByRefHandler
     return jb.watchableHandlers.find(handler => handler.isRef(ref))
   },
+  objHandler: obj => obj && jb.refHandler(obj) || jb.watchableHandlers.find(handler=> handler.watchable(obj)) || jb.simpleValueByRefHandler,
   asRef: obj => {
     const watchableHanlder = jb.watchableHandlers.find(handler => handler.watchable(obj) || handler.isRef(obj))
     if (watchableHanlder)
@@ -943,6 +906,7 @@ Object.assign(jb,{
     return jb.simpleValueByRefHandler.asRef(obj)
   },
   writeValue: (ref,value,srcCtx) => jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
+  objectProperty: (obj,prop,srcCtx) => jb.objHandler(obj).objectProperty(obj,prop,srcCtx),
   splice: (ref,args,srcCtx) => jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
   move: (ref,toRef,srcCtx) => jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
   push: (ref,toAdd,srcCtx) => jb.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
@@ -1191,6 +1155,16 @@ jb.component('write-value', { /* writeValue */
   ],
   impl: (ctx,to,value) =>
 		jb.writeValue(to,jb.val(value),ctx)
+})
+
+jb.component('property', {
+  description: 'navigate/select/path property of object',
+  params: [
+    {id: 'prop', as: 'string', mandatory: true},
+    {id: 'obj', defaultValue: '%%' },
+  ],
+  impl: (ctx,prop,obj) =>
+		jb.objectProperty(obj,prop,ctx)
 })
 
 jb.component('index-of', { /* indexOf */
@@ -1893,6 +1867,7 @@ jb.component('in-group', { /* inGroup */
 })
 
 jb.component('http.get', { /* http.get */
+  type: 'data,action',
   description: 'fetch data from external url',
   params: [
     {id: 'url', as: 'string'},
@@ -8523,7 +8498,7 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
     	ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
 			.subscribe(e=>{
 				let ctxStack=[]; for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
-				const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x)
+				const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x).filter(x=>x.indexOf('jb-editor') == -1)
 				const callerPathsUniqe = jb.unique(callerPaths)
 				if (callerPathsUniqe.length !== callerPaths.length)
 					return jb.logError('circular watchRef',callerPaths)
@@ -11140,14 +11115,14 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
 		}
 
 		let codeMirrorElem,codeMirrorSizeDiff;
-		if (codeMirror) {
-			codeMirrorElem = cmp.base.querySelector('.CodeMirror');
-			if (codeMirrorElem)
-			codeMirrorSizeDiff = codeMirrorElem.getBoundingClientRect().top - cmp.base.getBoundingClientRect().top
-				+ (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
-		}
-
-		const mousedrag = cmp.mousedownEm
+		const mousedrag = cmp.mousedownEm.do(e=>{
+				if (codeMirror) {
+					codeMirrorElem = cmp.base.querySelector('.CodeMirror');
+					if (codeMirrorElem)
+					codeMirrorSizeDiff = codeMirrorElem.getBoundingClientRect().top - cmp.base.getBoundingClientRect().top
+						+ (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
+				}
+			})
 			.map(e =>  ({
 				left: cmp.base.getBoundingClientRect().left,
 				top:  cmp.base.getBoundingClientRect().top
@@ -13793,7 +13768,7 @@ jb.component('picklist.radio', {
   impl: customStyle({
     template: (cmp,{options, fieldId},h) => h('div', {},
           options.flatMap(option=> [h('input', {
-              type: 'radio', name: fieldId, id: option.code, value: option.text, onchange: e => cmp.jbModel(option.code,e) 
+              type: 'radio', name: fieldId, id: option.code, value: option.text, onchange: e => cmp.jbModel(option.code,e)
             }), h('label',{for: option.code}, h(jb.ui.renderable(cmp.label(cmp.ctx.setData(option)) ) ))] )),
     css: `>input {%$radioCss%}`,
     features: field.databind()
@@ -13918,7 +13893,7 @@ jb.component('picklist.selection-list', { /* picklist.selectionList */
         style: label.mdlRippleEffect(),
         features: [css.width('%$width%'), css('{text-align: left}')]
       }),
-      style: itemlist.ulLi(),
+      style: itemlist.horizontal('5'),
       features: itemlist.selection({
         onSelection: writeValue('%$picklistModel/databind%', '%code%')
       })

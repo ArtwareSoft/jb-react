@@ -4,9 +4,10 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
     {id: 'id', as: 'string'},
     {id: 'width', as: 'number', defaultValue: 300},
     {id: 'height', as: 'number', defaultValue: 100},
-    {id: 'onUpdate', type: 'action', dynamic: true}
+    {id: 'onUpdate', type: 'action', dynamic: true},
+    {id: 'editAllFiles', as: 'boolean'}
   ],
-  impl: ctx => ctx.run({$: 'custom-style',
+  impl: customStyle({
 			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
 				h('div',{class: 'dialog-title noselect'},state.title),
 				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
@@ -14,9 +15,11 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 					_=> cmp.dialogClose() },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
 				h('div',{class: 'dialog-buttons'},[
+					cmp.editAllFiles && h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.gotoEditor && cmp.dialog.gotoEditor() },'goto editor'),
+					cmp.editAllFiles && h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.saveAndReload && cmp.dialog.saveAndReload() },'save and reload'),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.refresh() },'refresh'),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },'ok'),
-				]),
+				].filter(x=>x) ),
 			]),
 			features: [
 					{$: 'dialog-feature.drag-title', id: '%$id%'},
@@ -93,7 +96,7 @@ jb.component('studio.code-mirror-mode', { /* studio.codeMirrorMode */
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: function(ctx,path) {
+  impl: (ctx,path) => {
 		if (path.match(/css/))
 			return 'css';
 		if (path.match(/template/) || path.match(/html/))

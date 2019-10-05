@@ -6,14 +6,14 @@ file_type_handlers = {};
 
 _iswin = /^win/.test(process.platform);
 
-let settings = { port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './' }
+let settings = { port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './', exclude: 'node_modules' }
 try {
   settings = JSON.parse(fs.readFileSync('./jbart.json'))
 } catch(e) {}
 
 // define projects not under /jbart/projects directory
 let sites = null;
-const projecstDir = process.cwd().indexOf('jb-react') != -1 ? 'projects' : './'
+const projecstDir = settings.devHost ? 'projects' : './'
 
 function projectDirectory(project) {
     sites = sites || externalSites() || {};
@@ -285,7 +285,11 @@ const op_get_handlers = {
         .filter(dir=>!dir.match(new RegExp(settings.exclude)))
       res.end(JSON.stringify({projects}));
     },
-    gotoSource: function(req,res,path) {
+    gotoSource: function(req,res) {
+      const path = getURLParam(req,'path');
+      if (path)
+        return gotoFile(path.split(':')[0],path.split(':')[1])
+
       const comp = getURLParam(req,'comp');
       const files = walk('projects').concat(walk('src'));
       files.filter(x=>x.match(/\.(ts|js)$/))
@@ -293,13 +297,16 @@ const op_get_handlers = {
                 const source = ('' + fs.readFileSync(srcPath)).split('\n');
                 source.map((line,no)=> {
                   if (line.indexOf(`component('${comp}'`) != -1) {
-                    const cmd = settings.open_source_cmd + srcPath+':'+(no+1);
-                    console.log(cmd);
-                    child.exec(cmd,{});
-                    endWithSuccess(res,'open editor cmd: ' + cmd);
+                    gotoFile(srcPath,no)
                   }
                 })
         })
+      function gotoFile(srcPath,no) {
+        const cmd = settings.open_source_cmd + srcPath+':'+ ((+no)+1);
+        console.log(cmd);
+        child.exec(cmd,{});
+        endWithSuccess(res,'open editor cmd: ' + cmd);
+      }
     }
 };
 

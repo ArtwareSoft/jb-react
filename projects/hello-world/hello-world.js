@@ -2,16 +2,10 @@ jb.component('hello-world.main', { /* helloWorld.main */
   type: 'control',
   impl: group({
     controls: [
-      label({title: '%$people/age%', features: field.title('hello world')}),
-      group({
-        controls: [
-          
-        ]
-      })
+      label('hello world12213')
     ]
   })
 })
-
 
 jb.component('data-resource.people', { /* dataResource.people */
   watchableData: [

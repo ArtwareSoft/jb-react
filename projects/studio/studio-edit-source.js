@@ -69,7 +69,7 @@ jb.component('studio.editable-source', { /* studio.editableSource */
       ctx => ({
         init: cmp => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh()
       }),
-      feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')), 
+      feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')),
       textEditor.init()
     ]
   })
@@ -84,6 +84,74 @@ jb.component('studio.edit-source', { /* studio.editSource */
   impl: openDialog({
     style: dialog.editSourceStyle({id: 'editor', width: 600}),
     content: studio.editableSource('%$path%'),
+    title: studio.shortTitle('%$path%'),
+    features: [
+      css('.jb-dialog-content-parent {overflow-y: hidden}'),
+      dialogFeature.resizer(true)
+    ]
+  })
+})
+
+jb.component('studio.edit-all-files', { /* studio.editAllFiles */
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
+  ],
+  impl: openDialog({
+    style: dialog.editSourceStyle({id: 'editor', width: 600, editAllFiles: true}),
+    content: group({
+      title: 'project files',
+      controls: [
+        picklist({
+          databind: '%$file%',
+          options: picklist.codedOptions({
+            options: sourceEditor.filesOfProject(),
+            code: '%%',
+            text: suffix('/')
+          }),
+          style: styleByControl(
+            itemlist({
+              items: '%$picklistModel/options%',
+              controls: label({
+                title: '%text%',
+                style: label.mdlRippleEffect(),
+                features: [css.width('%$width%'), css('{text-align: left}')]
+              }),
+              style: itemlist.horizontal('5'),
+              features: itemlist.selection({
+                onSelection: writeValue('%$picklistModel/databind%', '%code%')
+              })
+            }),
+            'picklistModel'
+          )
+        }),
+        editableText({
+          databind: pipe(
+            ctx => { const host = jb.studio.host; return host.getFile(host.locationToPath(jb.tostring(ctx.exp('%$file%')))) }
+            ,studio.fileAfterChanges('%$file%', '%%')),
+          style: editableText.studioCodemirrorTgp(),
+          features: [
+            ctx => ({ 
+              beforeInit: cmp => {
+                const fileName = () => st.host.locationToPath(jb.tostring(ctx.vars.file))
+                ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh();
+                ctx.vars.$dialog.gotoEditor = () => fetch(`/?op=gotoSource&path=${fileName()}:${cmp.editor.getCursorPos().line}`);
+                ctx.vars.$dialog.saveAndReload = () =>
+                  ctx.run(studio.saveComponents())
+                    .then(() => st.host.saveFile(fileName()), cmp.editor.cmEditor.getValue())
+                    .then(saveResult => location.reload())
+                }
+            }),
+            watchRef('%$file%')
+          ]
+        })
+      ],
+      features: variable({
+        name: 'file',
+        value: pipeline(sourceEditor.filesOfProject(), first()),
+        watchable: true
+      })
+    }),
     title: studio.shortTitle('%$path%'),
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
@@ -292,7 +360,7 @@ jb.component('source-editor.suggestions', {
     ),
       pipeline(studio.paramsOfPath('%$actualPath%'),'%id%'),
       If(
-        '%$paramDef/options%',  
+        '%$paramDef/options%',
         split({separator: ',', text: '%$paramDef/options%', part: 'all'}),
         studio.PTsOfType('%$actualPath%')
       )
@@ -342,7 +410,7 @@ jb.component('source-editor.add-prop', { /* sourceEditor.addProp */
   })
 })
 
-jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestionsItemlist */ 
+jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestionsItemlist */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -366,5 +434,11 @@ jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestions
   })
 })
 
+jb.component('source-editor.files-of-project', {
+  impl: ctx => {
+    const _jb = jb.studio.previewjb
+    return jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf('/' + ctx.exp('%$studio/project%') + '/') != -1))
+  }
+})
 
 })()

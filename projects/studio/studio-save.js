@@ -8,7 +8,7 @@ jb.component('studio.save-components', { /* studio.saveComponents */
     const location = (st.previewjb || jb).location
     const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][location] && e[1][location][0]).filter(x=>x))
       .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>e[1][location][0] == fn)}))
-    jb.rx.Observable.from(filesToUpdate)
+    return jb.rx.Observable.from(filesToUpdate)
       .concatMap(e =>
         st.host.getFile(e.path)
           .then(fileContent=> Object.assign(e,{fileContent}))
@@ -23,12 +23,14 @@ jb.component('studio.save-components', { /* studio.saveComponents */
         messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
 				st.showMultiMessages(messages)
 				return jb.logException(e,'error while saving ' + e.id,ctx) || []
-			})
-			.subscribe(e=> {
+      })
+      .toPromise().then(e=> {
+        if (!e) return;
         messages.push({text: 'file ' + e.path + ' updated with components :' + e.comps.map(e=>e[0]).join(', ') })
 				st.showMultiMessages(messages)
         e.comps.forEach(([id]) => st.serverComps[id] = st.previewjb.comps[id])
       })
+      
     }
 })
 
@@ -55,5 +57,16 @@ function newFileContent(fileContent, comps) {
   return lines.join('\n')
 }
 
+jb.component('studio.file-after-changes', {
+  params: [
+    {id: 'fileName', as: 'string'},
+    {id: 'fileContent', as: 'string'},
+  ],
+  impl: (ctx, fileName, fileContent) => {
+    const location = (st.previewjb || jb).location
+    const comps = st.changedComps().filter(e=>e[1][location] && e[1][location][0].indexOf(fileName) != -1)
+    return newFileContent(fileContent, comps)
+  }
+})
 
 })();

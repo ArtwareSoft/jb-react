@@ -387,7 +387,7 @@ jb.component('studio-helper.editable-text-input', { /* studioHelper.editableText
 jb.component('studio-helper-sample.properties-params', { /* studioHelperSample.propertiesParams */
   type: 'control',
   params: [
-    {id: 'simpleStr', as: 'string'},
+    {id: 'simpleStr', as: 'string', description: 'simpler than str'},
     {id: 'strAsComp', as: 'string'},
     {id: 'strAsJs', as: 'string'},
     {id: 'enumStr', as: 'string', options: 'a,b,c'},

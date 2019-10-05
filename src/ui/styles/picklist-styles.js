@@ -22,7 +22,7 @@ jb.component('picklist.radio', {
   impl: customStyle({
     template: (cmp,{options, fieldId},h) => h('div', {},
           options.flatMap(option=> [h('input', {
-              type: 'radio', name: fieldId, id: option.code, value: option.text, onchange: e => cmp.jbModel(option.code,e) 
+              type: 'radio', name: fieldId, id: option.code, value: option.text, onchange: e => cmp.jbModel(option.code,e)
             }), h('label',{for: option.code}, h(jb.ui.renderable(cmp.label(cmp.ctx.setData(option)) ) ))] )),
     css: `>input {%$radioCss%}`,
     features: field.databind()
@@ -147,7 +147,7 @@ jb.component('picklist.selection-list', { /* picklist.selectionList */
         style: label.mdlRippleEffect(),
         features: [css.width('%$width%'), css('{text-align: left}')]
       }),
-      style: itemlist.ulLi(),
+      style: itemlist.horizontal('5'),
       features: itemlist.selection({
         onSelection: writeValue('%$picklistModel/databind%', '%code%')
       })

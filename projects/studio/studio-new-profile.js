@@ -110,7 +110,10 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
                 features: [
                   css('{ text-align: left; }'),
                   css.padding({top: '0', left: '4', right: '4', bottom: '0'}),
-                  css.width({width: '250', minMax: 'min'})
+                  css.width({width: '250', minMax: 'min'}),
+                  feature.hoverTitle(
+                    pipeline(ctx => jb.studio.previewjb.comps[ctx.data], '%description%')
+                  )
                 ]
               })
             ],
@@ -315,7 +318,7 @@ jb.component('studio.insert-comp-option', { /* studio.insertCompOption */
   })
 })
 
-jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */ 
+jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */
   impl: menu.menu({
     title: 'Insert',
     options: [
