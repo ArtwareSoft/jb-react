@@ -24,3 +24,21 @@ jb.component('data-resource.people', { /* dataResource.people */
     {name: 'Bart Simpson', age: 12, male: false, children: []}
   ]
 })
+
+jb.component('hello-world.check', { /* helloWorld.check */
+  type: 'control',
+  impl: group({
+    controls: [
+      button('click me')
+    ]
+  })
+})
+
+jb.component('hello-world.checker', { /* helloWorld.checker */
+  type: 'control',
+  impl: group({
+    controls: [
+      button('click me')
+    ]
+  })
+})

@@ -71,23 +71,20 @@ function calcFullPath(path) {
   const project_match = path.match(/^projects\/([^/]*)(.*)/);
   if (project_match)
     return projectDirectory(project_match[1]) + project_match[2]
-<<<<<<< HEAD
   const bin_match = path.match(/^bin\/(.*)/);
   if (bin_match)
       return `node_modules/jbart5-react/bin/${bin_match[1]}`
 //  const dist_match = path.match(/^dist\/(.*)/);
 //  if (dist_match)
 //      return `node_modules/jbart5-react/dist/${dist_match[1]}`
-=======
-  if (!settings.devHost) {
-    const bin_match = path.match(/^bin\/(.*)/);
-    if (bin_match)
-        return `node_modules/jb-react/bin/${bin_match[1]}`
-    const dist_match = path.match(/^dist\/(.*)/);
-    if (dist_match)
-        return `node_modules/jb-react/dist/${dist_match[1]}`
-  }
->>>>>>> 420338fb198e7c0188552fe692a277e12de20445
+if (!settings.devHost) {
+  const bin_match = path.match(/^bin\/(.*)/);
+  if (bin_match)
+      return `node_modules/jb-react/bin/${bin_match[1]}`
+  const dist_match = path.match(/^dist\/(.*)/);
+  if (dist_match)
+      return `node_modules/jb-react/dist/${dist_match[1]}`
+}
   return settings.http_dir + path;
 }
 
