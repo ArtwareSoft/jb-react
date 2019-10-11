@@ -1,9 +1,11 @@
 jb.component('studio.new-in-memory-project', { 
   params: [
-    {id: 'project', as: 'string'}
+    {id: 'project', as: 'string'},
+    {id: 'baseDir', as: 'string'}
   ],
   impl: obj(
     prop('project','%$project%'),
+    prop('baseDir','%$baseDir%'),
     prop('files', obj(prop('%$project%.html', `<!DOCTYPE html>
 <html title="hello world">
 <head>
@@ -26,7 +28,7 @@ jb.component('studio.new-in-memory-project', {
     controls: [button('my button')]
   })
 })
-//# sourceURL=%$project%/%$project%.js}`)), 'object'),
+//# sourceURL=%$project%.js}`)), 'object'),
   prop('libs',list('material'),'array')
 )
 })

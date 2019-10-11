@@ -2,6 +2,7 @@
 const st = jb.studio;
 
 const devHost = {
+    rootName: path => fetch(`/?op=rootName`).then(res=>res.text()),
     getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
     locationToPath: path => path.split('/').slice(1).join('/'),
     saveFile: (path, contents) => {
@@ -19,7 +20,7 @@ const devHost = {
 const userLocalHost = Object.assign({},devHost,{
     locationToPath: path => path.split('/').slice(1).join('/'),
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
-        Object.assign(request,{baseDir: request.project })) }),
+        Object.assign(request,{baseDir: request.baseDir || request.project })) }),
     scriptForLoadLibraries: libs => {
         const libScripts = libs.map(lib=>`<script type="text/javascript" src="/dist/${lib}.js"></script>`)
             + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="/dist/${lib}.css"/>`)

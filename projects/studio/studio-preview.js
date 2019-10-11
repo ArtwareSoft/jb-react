@@ -139,11 +139,12 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
         }
         let project = ctx.exp('%$studio/project%')
         if (!project) {
-          project = 'hello-jbart'
-          cmp.ctx.run(writeValue('%$studio/project%',project))
-          cmp.state.inMemoryProject = st.inMemoryProject = ctx.run(studio.newInMemoryProject(project))
-          if (st.host.canNotSave) return
-          return jb.delay(100).then(()=>ctx.run(studio.saveComponents()))
+          return st.hosts.rootName().then(project=>{
+            cmp.ctx.run(writeValue('%$studio/project%',project))
+            cmp.state.inMemoryProject = st.inMemoryProject = ctx.run(studio.newInMemoryProject(project,'./'))
+            if (st.host.canNotSave) return
+            return jb.delay(100).then(()=>ctx.run(studio.saveComponents()))
+          })
         }
         if (st.inMemoryProject) {
           cmp.state.inMemoryProject = st.inMemoryProject

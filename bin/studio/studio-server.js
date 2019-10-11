@@ -6,7 +6,7 @@ file_type_handlers = {};
 
 _iswin = /^win/.test(process.platform);
 
-let settings = { port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './', exclude: 'node_modules' }
+let settings = { port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './', exclude: 'node_modules|\.git' }
 try {
   settings = JSON.parse(fs.readFileSync('./jbart.json'))
 } catch(e) {}
@@ -246,6 +246,11 @@ const op_get_handlers = {
           res.end(JSON.stringify(out));
         }
       });
+    },
+    rootName: (req,res) => {
+      const root = process.cwd().split('/').pop().split('\\').pop()
+      res.setHeader('Content-Type', 'application/text;charset=utf8');
+      res.end(root);
     },
     ls: function(req,res) {
       const path = getURLParam(req,'path');
