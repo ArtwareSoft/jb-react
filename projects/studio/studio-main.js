@@ -203,6 +203,9 @@ jb.component('studio.all', { /* studio.all */
       studio.ctxCounters()
     ],
     features: [
+      group.wait({
+        for: ctx => jb.studio.host.rootName().then(rootName => ctx.run(writeValue('%$studio/rootName%',rootName))),
+        loadingControl: label('')}),
       group.data({data: '%$studio/project%', watch: true}),
       feature.init(urlHistory.mapStudioUrlToResource('studio'))
     ]

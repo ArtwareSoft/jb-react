@@ -138,12 +138,16 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
             })
         }
         let project = ctx.exp('%$studio/project%')
+        const rootName = ctx.exp('%$studio/rootName%')
         if (!project) {
-          return st.hosts.rootName().then(project=>{
-            cmp.ctx.run(writeValue('%$studio/project%',project))
-            cmp.state.inMemoryProject = st.inMemoryProject = ctx.run(studio.newInMemoryProject(project,'./'))
-            if (st.host.canNotSave) return
-            return jb.delay(100).then(()=>ctx.run(studio.saveComponents()))
+          project = rootName
+          cmp.ctx.run(writeValue('%$studio/project%',project))
+          return st.host.rootExists().then(exists=> {
+              if (exists)
+                location.reload()
+              cmp.state.inMemoryProject = st.inMemoryProject = ctx.run(studio.newInMemoryProject(project,'./'))
+              if (st.host.canNotSave) return
+              return jb.delay(100).then(()=>ctx.run(studio.saveComponents()))
           })
         }
         if (st.inMemoryProject) {

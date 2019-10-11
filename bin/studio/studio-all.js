@@ -31260,12 +31260,17 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
             })
         }
         let project = ctx.exp('%$studio/project%')
+        const rootName = ctx.exp('%$studio/rootName%')
         if (!project) {
-          project = 'hello-jbart'
+          project = rootName
           cmp.ctx.run(writeValue('%$studio/project%',project))
-          cmp.state.inMemoryProject = st.inMemoryProject = ctx.run(studio.newInMemoryProject(project))
-          if (st.host.canNotSave) return
-          return jb.delay(100).then(()=>ctx.run(studio.saveComponents()))
+          return st.host.rootExists().then(exists=> {
+              if (exists)
+                location.reload()
+              cmp.state.inMemoryProject = st.inMemoryProject = ctx.run(studio.newInMemoryProject(project,'./'))
+              if (st.host.canNotSave) return
+              return jb.delay(100).then(()=>ctx.run(studio.saveComponents()))
+          })
         }
         if (st.inMemoryProject) {
           cmp.state.inMemoryProject = st.inMemoryProject
@@ -35958,22 +35963,24 @@ jb.component('studio.save-components', { /* studio.saveComponents */
     const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][loc] && e[1][loc][0]).filter(x=>x))
       .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>e[1][loc][0] == fn)}))
     if (st.inMemoryProject) {
-      const project = st.inMemoryProject.project
+      const project = st.inMemoryProject.project, baseDir = st.inMemoryProject.baseDir
       const files = jb.objFromEntries(jb.entries(st.inMemoryProject.files)
         .map(file=>[file[0],newFileContent(file[1], 
             st.changedComps().filter(comp=>comp[1][loc][0].indexOf(file[0]) != -1))
         ]))
       
       const jsToInject = jb.entries(files).filter(e=>e[0].match(/js$/))
-        .map(e => `<script type="text/javascript" src="${st.host.pathToJsFile(project,e[0])}"></script>`).join('\n')
+        .map(e => `<script type="text/javascript" src="${st.host.pathToJsFile(project,e[0],baseDir)}"></script>`).join('\n')
       const cssToInject = jb.entries(files).filter(e=>e[0].match(/css$/))
-        .map(e => `<link rel="stylesheet" href="${st.host.pathToJsFile(project,e[0])}" charset="utf-8">`).join('\n')
+        .map(e => `<link rel="stylesheet" href="${st.host.pathToJsFile(project,e[0],baseDir)}" charset="utf-8">`).join('\n')
     
       jb.entries(files).forEach(e=>
         files[e[0]] = e[1].replace(/\/\/ load js files here/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
           .replace(/\/\/# sourceURL=.*/g,''))
+      if (!files['index.html'])
+        files['index.html'] = st.host.htmlAsCloud(jb.entries(files).filter(e=>e[0].match(/html$/))[0][1])
     
-      return jb.studio.host.createProject({project, files})
+      return jb.studio.host.createProject({project, files, baseDir})
         .then(r => r.json())
         .catch(e => {
           jb.studio.message(`error saving project ${project}: ` + (e && e.desc));
@@ -36432,10 +36439,12 @@ jb.component('studio.data-resource-menu', { /* studio.dataResourceMenu */
 
 jb.component('studio.new-in-memory-project', { 
   params: [
-    {id: 'project', as: 'string'}
+    {id: 'project', as: 'string'},
+    {id: 'baseDir', as: 'string'}
   ],
   impl: obj(
     prop('project','%$project%'),
+    prop('baseDir','%$baseDir%'),
     prop('files', obj(prop('%$project%.html', `<!DOCTYPE html>
 <html title="hello world">
 <head>
@@ -36458,7 +36467,7 @@ jb.component('studio.new-in-memory-project', {
     controls: [button('my button')]
   })
 })
-//# sourceURL=%$project%/%$project%.js}`)), 'object'),
+//# sourceURL=%$project%.js}`)), 'object'),
   prop('libs',list('material'),'array')
 )
 })
@@ -36489,7 +36498,7 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
       writeValue('%$studio/page%','main'),
       writeValue('%$studio/profile_path%','%$name%.main'),
       delay(100),
-      ctx => jb.studio.host.canNotSave || studio.saveComponents()
+      ctx => jb.studio.host.canNotSave || ctx.run(studio.saveComponents())
     ),
     modal: true,
     features: [
@@ -37074,6 +37083,9 @@ jb.component('studio.all', { /* studio.all */
       studio.ctxCounters()
     ],
     features: [
+      group.wait({
+        for: ctx => jb.studio.host.rootName().then(rootName => ctx.run(writeValue('%$studio/rootName%',rootName))),
+        loadingControl: label('')}),
       group.data({data: '%$studio/project%', watch: true}),
       feature.init(urlHistory.mapStudioUrlToResource('studio'))
     ]
@@ -37140,6 +37152,8 @@ jb.component('jb-param', { /* jbParam */
 const st = jb.studio;
 
 const devHost = {
+    rootName: () => fetch(`/?op=rootName`).then(res=>res.text()),
+    rootExists: () => fetch(`/?op=rootExists`).then(res=>res.text()).then(res=>res==='true'),
     getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
     locationToPath: path => path.split('/').slice(1).join('/'),
     saveFile: (path, contents) => {
@@ -37147,6 +37161,7 @@ const devHost = {
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
+    htmlAsCloud: html => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="'),
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
     scriptForLoadLibraries: libs => `<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,${libs.join(',')}"></script>`,
@@ -37157,13 +37172,13 @@ const devHost = {
 const userLocalHost = Object.assign({},devHost,{
     locationToPath: path => path.split('/').slice(1).join('/'),
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
-        Object.assign(request,{baseDir: request.project })) }),
+        Object.assign(request,{baseDir: request.baseDir || request.project })) }),
     scriptForLoadLibraries: libs => {
         const libScripts = libs.map(lib=>`<script type="text/javascript" src="/dist/${lib}.js"></script>`)
             + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="/dist/${lib}.css"/>`)
         return '<script type="text/javascript" src="/dist/jb-react-all.js"></script>\n' + libScripts
     },
-    pathToJsFile: (project,fn) => `/${project}/${fn}`,
+    pathToJsFile: (project,fn,baseDir) => baseDir == './' ? `../${fn}` : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
 })
 

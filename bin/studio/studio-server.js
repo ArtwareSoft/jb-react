@@ -14,11 +14,12 @@ try {
 // define projects not under /jbart/projects directory
 let sites = null;
 const projecstDir = settings.devHost ? 'projects' : './'
+const rootName = process.cwd().split('/').pop().split('\\').pop()
 
 function projectDirectory(project) {
     sites = sites || externalSites() || {};
     const site = Object.keys(sites).filter(site=>project.indexOf(site+'-') != -1)[0];
-    const res = site ? `${sites[site]}/${project.substring(site.length+1)}` : `${settings.http_dir}${projecstDir}/${project}`;
+    const res = site ? `${sites[site]}/${project.substring(site.length+1)}` : `${settings.http_dir}${projecstDir}/${rootName == project ? '' : project}`;
     return res;
 
     function externalSites() {
@@ -170,7 +171,7 @@ const op_post_handlers = {
         clientReq = JSON.parse(body);
         if (!clientReq)
            return endWithFailure(res,'Can not parse json request');
-        const projDir = projecstDir + clientReq.project;
+        const projDir = clientReq.baseDir || projectDirectory(clientReq.project)
         if (fs.existsSync(projDir))
           return endWithFailure(res,'Project already exists');
 
@@ -190,16 +191,21 @@ const op_post_handlers = {
         if (!clientReq)
            return endWithFailure(res,'Can not parse json request');
         const baseDir = clientReq.baseDir;
-        if (fs.existsSync(baseDir))
-          return endWithFailure(res,`Directory ${baseDir} already exists`);
-        fs.mkdirSync(baseDir);
+        if (baseDir != './') {
+          if (fs.existsSync(baseDir))
+            return endWithFailure(res,`directory ${baseDir} already exists`);
+          fs.mkdirSync(baseDir);
+        } else {
+          if (fs.existsSync(`./${rootName}.html`))
+            return endWithFailure(res,`${rootName}.html already exists`);
+        }
         Object.keys(clientReq.files).forEach(f=>
           fs.writeFileSync(baseDir+ '/' + f,clientReq.files[f])
         )
+        endWithSuccess(res,`directory ${baseDir} created with ${Object.keys(clientReq.files).legnth} files`);
       } catch(e) {
         return endWithFailure(res,e)
       }
-      endWithSuccess(res,'Directory Created');
     }
 };
 
@@ -213,7 +219,7 @@ const base_get_handlers = {
     const project = project_with_params.split('?')[0];
     // if (external_projects[project])
     //   return file_type_handlers.html(req,res, external_projects[project] + `/${project}/${project}.html`);
-    return file_type_handlers.html(req,res,`${projecstDir}/${project}/${project}.html`);
+    return file_type_handlers.html(req,res,`${projectDirectory(project)}/${project}.html`);
   }
 };
 
@@ -248,9 +254,12 @@ const op_get_handlers = {
       });
     },
     rootName: (req,res) => {
-      const root = process.cwd().split('/').pop().split('\\').pop()
       res.setHeader('Content-Type', 'application/text;charset=utf8');
-      res.end(root);
+      res.end(rootName);
+    },
+    rootExists: (req,res) => {
+      res.setHeader('Content-Type', 'application/text;charset=utf8');
+      res.end('' + fs.existsSync(`./${rootName}.html`));
     },
     ls: function(req,res) {
       const path = getURLParam(req,'path');
@@ -284,13 +293,13 @@ const op_get_handlers = {
       const projects = fs.readdirSync(projecstDir)
         .filter(dir=>fs.statSync(projecstDir + '/' + dir).isDirectory())
         .filter(dir=>!dir.match(new RegExp(settings.exclude)))
+        .concat(fs.existsSync(`./${rootName}.html`) ? [rootName] : [])
       res.end(JSON.stringify({projects}));
     },
     proxy: function(req,res) {
       const url = getURLParam(req,'url');
       if (url)
         return 
-
     },
     gotoSource: function(req,res) {
       const path = getURLParam(req,'path');

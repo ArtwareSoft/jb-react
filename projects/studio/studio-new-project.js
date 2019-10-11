@@ -59,7 +59,7 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
       writeValue('%$studio/page%','main'),
       writeValue('%$studio/profile_path%','%$name%.main'),
       delay(100),
-      ctx => jb.studio.host.canNotSave || studio.saveComponents()
+      ctx => jb.studio.host.canNotSave || ctx.run(studio.saveComponents())
     ),
     modal: true,
     features: [

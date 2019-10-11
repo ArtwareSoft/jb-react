@@ -9,22 +9,24 @@ jb.component('studio.save-components', { /* studio.saveComponents */
     const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][loc] && e[1][loc][0]).filter(x=>x))
       .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>e[1][loc][0] == fn)}))
     if (st.inMemoryProject) {
-      const project = st.inMemoryProject.project
+      const project = st.inMemoryProject.project, baseDir = st.inMemoryProject.baseDir
       const files = jb.objFromEntries(jb.entries(st.inMemoryProject.files)
         .map(file=>[file[0],newFileContent(file[1], 
             st.changedComps().filter(comp=>comp[1][loc][0].indexOf(file[0]) != -1))
         ]))
       
       const jsToInject = jb.entries(files).filter(e=>e[0].match(/js$/))
-        .map(e => `<script type="text/javascript" src="${st.host.pathToJsFile(project,e[0])}"></script>`).join('\n')
+        .map(e => `<script type="text/javascript" src="${st.host.pathToJsFile(project,e[0],baseDir)}"></script>`).join('\n')
       const cssToInject = jb.entries(files).filter(e=>e[0].match(/css$/))
-        .map(e => `<link rel="stylesheet" href="${st.host.pathToJsFile(project,e[0])}" charset="utf-8">`).join('\n')
+        .map(e => `<link rel="stylesheet" href="${st.host.pathToJsFile(project,e[0],baseDir)}" charset="utf-8">`).join('\n')
     
       jb.entries(files).forEach(e=>
         files[e[0]] = e[1].replace(/\/\/ load js files here/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
           .replace(/\/\/# sourceURL=.*/g,''))
+      if (!files['index.html'])
+        files['index.html'] = st.host.htmlAsCloud(jb.entries(files).filter(e=>e[0].match(/html$/))[0][1])
     
-      return jb.studio.host.createProject({project, files})
+      return jb.studio.host.createProject({project, files, baseDir})
         .then(r => r.json())
         .catch(e => {
           jb.studio.message(`error saving project ${project}: ` + (e && e.desc));

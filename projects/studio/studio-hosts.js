@@ -2,7 +2,8 @@
 const st = jb.studio;
 
 const devHost = {
-    rootName: path => fetch(`/?op=rootName`).then(res=>res.text()),
+    rootName: () => fetch(`/?op=rootName`).then(res=>res.text()),
+    rootExists: () => fetch(`/?op=rootExists`).then(res=>res.text()).then(res=>res==='true'),
     getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
     locationToPath: path => path.split('/').slice(1).join('/'),
     saveFile: (path, contents) => {
@@ -10,6 +11,7 @@ const devHost = {
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
+    htmlAsCloud: html => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="'),
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
     scriptForLoadLibraries: libs => `<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,${libs.join(',')}"></script>`,
@@ -26,7 +28,7 @@ const userLocalHost = Object.assign({},devHost,{
             + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="/dist/${lib}.css"/>`)
         return '<script type="text/javascript" src="/dist/jb-react-all.js"></script>\n' + libScripts
     },
-    pathToJsFile: (project,fn) => `/${project}/${fn}`,
+    pathToJsFile: (project,fn,baseDir) => baseDir == './' ? `../${fn}` : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
 })
 
