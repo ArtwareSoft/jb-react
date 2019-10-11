@@ -18,7 +18,7 @@ const projecstDir = settings.devHost ? 'projects' : './'
 function projectDirectory(project) {
     sites = sites || externalSites() || {};
     const site = Object.keys(sites).filter(site=>project.indexOf(site+'-') != -1)[0];
-    const res = site ? `${sites[site]}/${project.substring(site.length+1)}` : `${settings.http_dir}projects/${project}`;
+    const res = site ? `${sites[site]}/${project.substring(site.length+1)}` : `${settings.http_dir}${projecstDir}/${project}`;
     return res;
 
     function externalSites() {
@@ -170,13 +170,16 @@ const op_post_handlers = {
         clientReq = JSON.parse(body);
         if (!clientReq)
            return endWithFailure(res,'Can not parse json request');
-        const projDir = 'projects/' + clientReq.project;
+        const projDir = projecstDir + clientReq.project;
+        if (fs.existsSync(projDir))
+          return endWithFailure(res,'Project already exists');
+
         fs.mkdirSync(projDir);
-        (clientReq.files || []).forEach(f=>
-          fs.writeFileSync(projDir+ '/' + f.fileName,f.content)
+        Object.keys(clientReq.files).forEach(f=>
+          fs.writeFileSync(projDir+ '/' + f,clientReq.files[f])
         )
       } catch(e) {
-        endWithFailure(res,e)
+        return endWithFailure(res,e)
       }
       endWithSuccess(res,'Project Created');
     },
@@ -187,12 +190,14 @@ const op_post_handlers = {
         if (!clientReq)
            return endWithFailure(res,'Can not parse json request');
         const baseDir = clientReq.baseDir;
+        if (fs.existsSync(baseDir))
+          return endWithFailure(res,`Directory ${baseDir} already exists`);
         fs.mkdirSync(baseDir);
-        (clientReq.files || []).forEach(f=>
-          fs.writeFileSync(baseDir+ '/' + f.fileName,f.content)
+        Object.keys(clientReq.files).forEach(f=>
+          fs.writeFileSync(baseDir+ '/' + f,clientReq.files[f])
         )
       } catch(e) {
-        endWithFailure(res,e)
+        return endWithFailure(res,e)
       }
       endWithSuccess(res,'Directory Created');
     }
@@ -202,13 +207,13 @@ const base_get_handlers = {
   'studio-bin': (req,res) =>
     file_type_handlers.html(req,res,'node_modules/jb-react/bin/studio/studio-bin.html'),
   studio: (req,res) => 
-    file_type_handlers.html(req,res,'projects/studio/studio.html'),
+    file_type_handlers.html(req,res,`projects/studio/studio.html`),
   project(req,res,path) {
     const project_with_params = req.url.split('/')[2];
     const project = project_with_params.split('?')[0];
     // if (external_projects[project])
     //   return file_type_handlers.html(req,res, external_projects[project] + `/${project}/${project}.html`);
-    return file_type_handlers.html(req,res,`projects/${project}/${project}.html`);
+    return file_type_handlers.html(req,res,`${projecstDir}/${project}/${project}.html`);
   }
 };
 
@@ -275,6 +280,12 @@ const op_get_handlers = {
         .filter(dir=>fs.statSync(projecstDir + '/' + dir).isDirectory())
         .filter(dir=>!dir.match(new RegExp(settings.exclude)))
       res.end(JSON.stringify({projects}));
+    },
+    proxy: function(req,res) {
+      const url = getURLParam(req,'url');
+      if (url)
+        return 
+
     },
     gotoSource: function(req,res) {
       const path = getURLParam(req,'path');

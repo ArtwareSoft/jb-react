@@ -3,11 +3,40 @@ const st = jb.studio;
 
 jb.component('studio.save-components', { /* studio.saveComponents */
   type: 'action,has-side-effects',
-  impl: (ctx,force) => {
+  impl: ctx => {
     const messages = []
-    const location = (st.previewjb || jb).location
-    const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][location] && e[1][location][0]).filter(x=>x))
-      .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>e[1][location][0] == fn)}))
+    const loc = (st.previewjb || jb).location
+    const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][loc] && e[1][loc][0]).filter(x=>x))
+      .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>e[1][loc][0] == fn)}))
+    if (st.inMemoryProject) {
+      const project = st.inMemoryProject.project
+      const files = jb.objFromEntries(jb.entries(st.inMemoryProject.files)
+        .map(file=>[file[0],newFileContent(file[1], 
+            st.changedComps().filter(comp=>comp[1][loc][0].indexOf(file[0]) != -1))
+        ]))
+      
+      const jsToInject = jb.entries(files).filter(e=>e[0].match(/js$/))
+        .map(e => `<script type="text/javascript" src="${st.host.pathToJsFile(project,e[0])}"></script>`).join('\n')
+      const cssToInject = jb.entries(files).filter(e=>e[0].match(/css$/))
+        .map(e => `<link rel="stylesheet" href="${st.host.pathToJsFile(project,e[0])}" charset="utf-8">`).join('\n')
+    
+      jb.entries(files).forEach(e=>
+        files[e[0]] = e[1].replace(/\/\/ load js files here/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
+          .replace(/\/\/# sourceURL=.*/g,''))
+    
+      return jb.studio.host.createProject({project, files})
+        .then(r => r.json())
+        .catch(e => {
+          jb.studio.message(`error saving project ${project}: ` + (e && e.desc));
+          jb.logException(e,'',ctx)
+        })
+        .then(res=>{
+          if (res.type == 'error')
+              return jb.studio.message(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)));
+          location.reload()
+        })
+    }
+
     return jb.rx.Observable.from(filesToUpdate)
       .concatMap(e =>
         st.host.getFile(e.path)

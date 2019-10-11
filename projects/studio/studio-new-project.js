@@ -1,59 +1,34 @@
-
-jb.component('studio.new-project', { /* studio.newProject */
-  type: 'action,has-side-effects',
+jb.component('studio.new-in-memory-project', { 
   params: [
-    {id: 'name', as: 'string'},
-    {id: 'onSuccess', type: 'action', dynamic: true}
+    {id: 'project', as: 'string'}
   ],
-  impl: (ctx,name) => {
-    
-    const request = {
-      project: name,
-      files: [
-        { fileName: `${name}.js`, content: `jb.ns('${name}')        
-
-jb.component('${name}.main', {
+  impl: obj(
+    prop('project','%$project%'),
+    prop('files', obj(prop('%$project%.html', `<!DOCTYPE html>
+<html title="hello world">
+<head>
+      <meta charset="utf-8">
+      <script type="text/javascript">
+        startTime = new Date().getTime();
+      </script>
+      // load js files here
+    </head>
+<body>
+<div id="main"> </div>
+<script>
+  jb.ui.renderWidget({$:'%$project%.main'},document.getElementById('main'))
+</script>
+</body>
+</html>`),
+  prop('%$project%.js',`jb.component('%$project%.main', { 
   type: 'control',
   impl: group({
     controls: [button('my button')]
   })
 })
-
-`
-        },
-        { fileName: `${name}.html`, content: `
-<!DOCTYPE html>
-<head>
-  <meta charset="utf-8">
-  <script type="text/javascript">
-    startTime = new Date().getTime();
-  </script>
-  ${jb.studio.host.scriptForLoadLibraries}
-  <script type="text/javascript" src="${jb.studio.host.pathToJsFile(name,name+'.js')}"></script>
-</head>
-<body>
-<div id="main"> </div>
-<script>
-  jb.ui.renderWidget({$:'${name}.main'},document.getElementById('main'))
-</script>
-</body>
-</html>
-` },
-      ]
-    };
-    return jb.studio.host.createProject(request, {'Content-Type': 'application/json; charset=UTF-8' } ).then(r =>
-        r.json())
-    .then(res=>{
-        if (res.type == 'error')
-            return jb.studio.message(`error creating project ${name}: ` + (res && jb.prettyPrint(res.desc)));
-        jb.studio.message(`project ${name} created`);
-        return ctx.params.onSuccess();
-    })
-    .catch(e => {
-      jb.studio.message(`error creating project ${name}: ` + (e && e.desc));
-      jb.logException(e,'',ctx)
-    })
-  }
+//# sourceURL=%$project%/%$project%.js}`)), 'object'),
+  prop('libs',list('material'),'array')
+)
 })
 
 jb.component('studio.open-new-project', { /* studio.openNewProject */ 
@@ -76,7 +51,14 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
       features: css.padding({top: '14', left: '11'})
     }),
     title: 'New Project',
-    onOK: studio.newProject('%$name%', studio.gotoProject('%$name%')),
+    onOK: runActions(
+      ctx => jb.studio.inMemoryProject = ctx.run(studio.newInMemoryProject('%$name%')),
+      writeValue('%$studio/project%','%$name%'),
+      writeValue('%$studio/page%','main'),
+      writeValue('%$studio/profile_path%','%$name%.main'),
+      delay(100),
+      ctx => jb.studio.host.canNotSave || studio.saveComponents()
+    ),
     modal: true,
     features: [
       variable({name: 'name', watchable: true}),

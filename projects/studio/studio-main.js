@@ -3,7 +3,8 @@ jb.component('studio', { /* studio */
     project: '',
     page: '',
     profile_path: '',
-    pickSelectionCtxId: ''
+    pickSelectionCtxId: '',
+    baseLib: '//unpkg.com/jb-react/bin/studio/'
   }
 })
 
@@ -149,7 +150,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
     style: layout.horizontal('3'),
     controls: [
       image({
-        url: '//unpkg.com/jb-react/bin/studio/css/jbartlogo.png',
+        url: '%$studio/baseLib%css/jbartlogo.png',
         imageHeight: '60',
         units: 'px',
         style: image.default(),
@@ -162,8 +163,10 @@ jb.component('studio.top-bar', { /* studio.topBar */
           label({title: 'message', style: label.studioMessage()}),
           label({
             title: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
-            style: label.span(),
-            features: css('{ font: 20px Arial; margin-left: 6px; }')
+            features: [
+              css('{ font: 20px Arial; margin-left: 6px; }'),
+              watchRef('%$studio/project%')
+            ]
           }),
           group({
             title: 'menu and toolbar',
@@ -203,40 +206,6 @@ jb.component('studio.all', { /* studio.all */
       group.data({data: '%$studio/project%', watch: true}),
       feature.init(urlHistory.mapStudioUrlToResource('studio'))
     ]
-  })
-})
-
-jb.component('studio.dynamic', { /* studio.dynamic */
-  type: 'control',
-  impl: group({
-    title: 'top bar',
-    style: layout.horizontal('3'),
-    controls: [
-      image({
-        url: '//unpkg.com/jb-react/bin/studio/css/jbartlogo.png',
-        imageHeight: '60',
-        units: 'px',
-        style: image.default(),
-        features: css.margin({top: '15', left: '5'})
-      }),
-      group({
-        title: 'title and menu',
-        style: layout.vertical('17'),
-        controls: [
-          label({title: 'message', style: label.studioMessage()}),
-          group({
-            style: layout.flex('space-between'),
-            controls: [
-              studio.toolbar(),
-              studio.searchComponent()
-            ],
-            features: [css.width('1040')]
-          })
-        ],
-        features: css('{ padding-left: 18px; width: 100%; }')
-      })
-    ],
-    features: css('{ height: 90px; border-bottom: 1px #d9d9d9 solid}')
   })
 })
 

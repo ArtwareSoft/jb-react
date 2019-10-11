@@ -238,7 +238,10 @@ border: 1px solid rgb(213, 213, 213);}
 }
 
 .jb-disabled { opacity: 0.3 }
-@keyframes slide_from_top {
+
+.jb-resizer {
+  content:url("resizer.gif")
+}@keyframes slide_from_top {
     0%   {margin-top: -50px;}
     10%  {margin-top: 0;}
     90%  {margin-top: 0;}
@@ -557,7 +560,10 @@ border: 1px solid rgb(213, 213, 213);}
 }
 
 .jb-disabled { opacity: 0.3 }
-/* BASICS */
+
+.jb-resizer {
+  content:url("resizer.gif")
+}/* BASICS */
 
 .CodeMirror {
   /* Set height, width, borders, and global font properties here */

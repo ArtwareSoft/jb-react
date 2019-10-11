@@ -661,7 +661,7 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      const line = new Error().stack.split(/\r|\n/).pop()
+      const line = new Error().stack.split(/\r|\n/).filter(x=>!x.match(/<anonymous>|about:blank/)).pop()
       comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
     
       if (comp.watchableData !== undefined) {

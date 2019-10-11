@@ -9,42 +9,38 @@ const devHost = {
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
-    createProject: (request, headers) => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers, body: JSON.stringify(
+    createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
-    scriptForLoadLibraries: '<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css"></script>',
+    scriptForLoadLibraries: libs => `<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,${libs.join(',')}"></script>`,
     pathToJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
 }
-//     localhost:8082/hello-world/hello-world.html?studio=localhost =>  localhost:8082/bin/studio/studio-localhost.html?entry=localhost:8082/hello-world/hello-world.html
-//     localhost:8082/hello-world/hello-world.html?studio=jb-react@0.3.8 =>  //unpkg.com/jb-react@0.3.8/bin/studio/studio-cloud.html?entry=localhost:8082/hello-world/hello-world.html
 
 const userLocalHost = Object.assign({},devHost,{
     locationToPath: path => path.split('/').slice(1).join('/'),
-    createProject: (request, headers) => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers, body: JSON.stringify(
+    createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: request.project })) }),
-    scriptForLoadLibraries: `  <script type="text/javascript" src="/dist/jb-react-all.js"></script>
-<script type="text/javascript" src="/dist/material.js"></script>
-<link rel="stylesheet" type="text/css" href="/dist/material.css"/>`,
-    pathToJsFile: (project,fn) => fn,
-    projectUrlInStudio: project => `/studio-bin/${project}%2F${project}.html/${project}`,
+    scriptForLoadLibraries: libs => {
+        const libScripts = libs.map(lib=>`<script type="text/javascript" src="/dist/${lib}.js"></script>`)
+            + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="/dist/${lib}.css"/>`)
+        return '<script type="text/javascript" src="/dist/jb-react-all.js"></script>\n' + libScripts
+    },
+    pathToJsFile: (project,fn) => `/${project}/${fn}`,
+    projectUrlInStudio: project => `/studio-bin/${project}`,
 })
 
 const cloudHost = {
-    getFile: () => jb.delay(1).then(() => { throw 'Cloud mode - can not save files'}),
+    getFile: () => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
     locationToPath: path => path.split('/').slice(1).join('/'),
-    createProject: (request, headers) => {
-        jb.studio.previewjb.component(`${request.project}.main`,{
-            type: 'control',
-            impl: group({
-                controls: [button('my button')]
-            })
-        })
-        new jb.jbCtx().run(writeValue('%$studio/project%',request.project))
-        new jb.jbCtx().run(writeValue('%$studio/page%','main'))
+    createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
+    scriptForLoadLibraries: libs => {
+        const libScripts = libs.map(lib=>`<script type="text/javascript" src="//unpkg.com/jb-react/dist/${lib}.js"></script>`)
+            + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/${lib}.css"/>`)
+        return '<script type="text/javascript" src="//unpkg.com/jb-react/dist/jb-react-all.js"></script>\n' + libScripts
     },
-    scriptForLoadLibraries: ``,
     pathToJsFile: (project,fn) => fn,
     projectUrlInStudio: project => ``,
+    canNotSave: true
 }
 
 //     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
@@ -73,22 +69,18 @@ function extractText(str,startMarker,endMarker) {
 }
 
 st.projectHosts = {
-    jsFiddle : {
-        fetchProject(jsFiddleid) {
-            // return fetch(`http://fiddle.jshell.net/${jsFiddleid}/show/light/`, {"credentials":"include","headers":{"accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3","accept-language":"en-US,en;q=0.9,he;q=0.8","if-none-match":"W/\"687187bf32e53d557fac8cc441202525\"","upgrade-insecure-requests":"1"},"referrer":`http://fiddle.jshell.net/${jsFiddleid}/show/light/`,
-            //     "referrerPolicy":"strict-origin-when-cross-origin","body":null,"method":"GET","mode":"no-cors"})
+    jsFiddle: {
+        fetchProject(jsFiddleid,project) {
             return fetch(`https://jbartdb.appspot.com/jbart_db.js?op=proxy&url=` + `http://jsfiddle.net/${jsFiddleid}`,)
             .catch(e => console.log(e))
             .then(r => r.text())
             .then(content=>{
                 const str = (''+content).replace(/\\n/g,'\n').replace(/\\/g,'')
-                //const all = extractText(str,'var EditorConfig =','fiddle: {')
                 const json = extractText(str,'values: {','fiddle: {')
                 const html = extractText(json,'html: "','js:   "').trim().slice(0,-2)
                 const js = extractText(json,'js:   "','css:  "').trim().slice(0,-2)
-                //const js = '(function()' + extractText(str,' window.onload=function()','//]]></script>') + ')()'
                 if (html)
-                    st.projectFiles = { html, js: [js], css: [] }
+                    return {project, files: { [`${project}.html`]: html, [`${project}.js`]: js } }
             })
         }
     }

@@ -38,8 +38,8 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             }
         }
 
-        const isProject = location.pathname.indexOf('/project') == 0;
-        const params = isProject ? ['project','page','profile_path'] : ['entry_file','host','hostProjectId','project', 'page','profile_path']
+        const hasSearchUrl = location.pathname.match(/\.html$/);
+        const params = ['project','page','profile_path'].concat( hasSearchUrl ? ['host','hostProjectId'] : [])
 
         jb.ui.location = History.createBrowserHistory();
         const browserUrlEm = jb.rx.Observable.create(obs=>

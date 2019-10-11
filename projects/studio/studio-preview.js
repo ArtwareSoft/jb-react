@@ -128,60 +128,58 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
       init: cmp => {
         const host = ctx.exp('%$studio/host%')
         if (host && st.projectHosts[host]) {
+          const project = ctx.exp('%$studio/project%')
+          document.title = `${project} with jBart`;
           cmp.state.loadingMessage = 'loading project from ' + host + '::' + ctx.exp('%$studio/hostProjectId%')
-          return st.projectHosts[host].fetchProject(ctx.exp('%$studio/hostProjectId%'))
-            .then(() => {
-              cmp.setState({loadingMessage: ''})
-              jb.ui.waitFor(() => cmp.base.contentWindow).then(() => {
-                cmp.base.contentWindow.document.write(st.projectFiles.html)
-                jb.ui.waitFor(() => cmp.base.contentWindow.jb).then(() => {
-                    st.projectFiles.js.forEach(js=>{
-                      try {
-                        if (cmp.base.contentWindow.jb)
-                          cmp.base.contentWindow.eval(js)
-                      } catch(e) {
-                        console.log(e)
-                      }
-                  })
-                })
-              })
+          return st.projectHosts[host].fetchProject(ctx.exp('%$studio/hostProjectId%'),project)
+            .then(inMemoryProject => {
+              st.inMemoryProject = inMemoryProject
+              cmp.setState({loadingMessage: '', inMemoryProject}) 
             })
         }
-        let entry_file = ctx.exp('%$studio/entry_file%'), project = ctx.exp('%$studio/project%')
-        const entryFolder = location.href.indexOf('studio-cloud.html') != -1 ? './' : '/'
-        if (entry_file)
-          entry_file = `${entryFolder}${entry_file}`
-        if (!entry_file && !project) {
+        let project = ctx.exp('%$studio/project%')
+        if (!project) {
           project = 'hello-jbart'
           cmp.ctx.run(writeValue('%$studio/project%',project))
-          const entryFolder = location.href.indexOf('studio-cloud.html') != -1 ? './' : '/bin/studio/'
-          entry_file = `${entryFolder}hello-jbart-cloud.html`
+          cmp.state.inMemoryProject = st.inMemoryProject = ctx.run(studio.newInMemoryProject(project))
+          if (st.host.canNotSave) return
+          return jb.delay(100).then(()=>ctx.run(studio.saveComponents()))
+        }
+        if (st.inMemoryProject) {
+          cmp.state.inMemoryProject = st.inMemoryProject
+          document.title = project + ' with jBart';
+          return
         }
         const cacheKiller =  'cacheKiller='+(''+Math.random()).slice(10)
-        const src = (entry_file ? `${entry_file}` : `/project/${project}`) + `?${cacheKiller}&wspy=preview`
+        const src = `/project/${project}?${cacheKiller}&wspy=preview`
         cmp.state.src = src
         document.title = project + ' with jBart';
       },
     })
 })
 
+st.injectImMemoryProjectToPreview = function(previewWin) {
+  const jsToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/js$/))
+    .map(e => 'eval(' + '`'+ e[1].replace(/`/g,'\`') + '`)' ).join('\n')
+  const cssToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/css$/))
+    .map(e => `<style>${e[1]}</style>` ).join('\n')
+  let html = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/html$/))[0][1]
+  if (html.match(/\/\/ load js files here/))
+    html = html.replace(/\/\/ load js files here/,
+        [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),`<script>${jsToInject}</script>`,cssToInject].join('\n'))
+  else if (html.match(/<\/body>/))
+    html = html.replace(/<\/body>/,
+      [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),`<script>debugger;${jsToInject}</script>`,cssToInject,'<\/body>'].join('\n'))
+  
+  previewWin.document.write(html)
+}
+
 jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
-    template: (cmp,{loadingMessage, src,projectFiles},h) => {
+    template: (cmp,{loadingMessage, src, inMemoryProject},h) => {
       if (loadingMessage)
-        return h('p',{class: 'loading-message'},loadingMessage)
-      if (projectFiles) {
-        h('iframe', {
-          id:'jb-preview',
-          sandbox: 'allow-same-origin allow-forms allow-scripts',
-          frameborder: 0,
-          class: 'preview-iframe',
-          width: cmp.ctx.vars.$model.width,
-          height: cmp.ctx.vars.$model.height,
-          src: "javascript:''"
-        })
-      }
+        return h('p',{class: 'loading-message'}, loadingMessage)
       return h('iframe', {
           id:'jb-preview',
           sandbox: 'allow-same-origin allow-forms allow-scripts',
@@ -189,9 +187,9 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           class: 'preview-iframe',
           width: cmp.ctx.vars.$model.width,
           height: cmp.ctx.vars.$model.height,
-          src
-    })
-  },
+          src: inMemoryProject ? "javascript: parent.jb.studio.injectImMemoryProjectToPreview(this)" : src
+        })
+    },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
   })
 })

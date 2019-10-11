@@ -348,13 +348,13 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
   impl: (ctx,codeMirror) => ({
 		templateModifier: (vdom,cmp,state) => {
             if (vdom && vdom.nodeName != 'div') return vdom;
-				vdom.children.push(jb.ui.h('img', {src: '//unpkg.com/jb-react/bin/studio/css/resizer.gif', class: 'resizer'}));
+				vdom.children.push(jb.ui.h('img', {class: 'jb-resizer'}));
 			return vdom;
 		},
-		css: '>.resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
+		css: '>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
 
 		afterViewInit: function(cmp) {
-		const resizerElem = cmp.base.querySelector('.resizer');
+		const resizerElem = cmp.base.querySelector('.jb-resizer');
 		cmp.mousedownEm = jb.rx.Observable.fromEvent(resizerElem, 'mousedown')
 		.takeUntil( cmp.destroyed );
 
