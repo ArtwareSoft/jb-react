@@ -33,6 +33,8 @@ const userLocalHost = Object.assign({},devHost,{
 })
 
 const cloudHost = {
+    rootName: () => Promise.resolve(''),
+    rootExists: () => Promise.resolve('false'),
     getFile: () => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
     locationToPath: path => path.split('/').slice(1).join('/'),
     createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
@@ -71,10 +73,11 @@ function extractText(str,startMarker,endMarker) {
     return str.slice(pos1 + startMarker.length ,pos2)
 }
 
+const jbProxy = '//jbartdb.appspot.com/jbart_db.js?op=proxy&url='
 st.projectHosts = {
     jsFiddle: {
         fetchProject(jsFiddleid,project) {
-            return fetch(`https://jbartdb.appspot.com/jbart_db.js?op=proxy&url=` + `http://jsfiddle.net/${jsFiddleid}`,)
+            return fetch( jbProxy + `http://jsfiddle.net/${jsFiddleid}`,)
             .catch(e => console.log(e))
             .then(r => r.text())
             .then(content=>{
@@ -85,6 +88,30 @@ st.projectHosts = {
                 if (html)
                     return {project, files: { [`${project}.html`]: html, [`${project}.js`]: js } }
             })
+        }
+    },
+    // host=github&hostProjectId=https://artwaresoft.github.io/todomvc/
+    github: {
+        fetchProject(gitHubUrl) {
+            const project = gitHubUrl.split('/').filter(x=>x).pop() 
+            return fetch(jbProxy + gitHubUrl,{mode: 'cors', headers: { 'Access-Control-Allow-Origin':'*'}})
+            .catch(e => console.log(e))
+            .then(r => r.text())
+            .then(content=>{
+                const srcUrls = content.split('<script type="text/javascript" src="').slice(1)
+                    .map(x=>x.match(/^[^"]*/)[0])
+                const css = content.split('<link rel="stylesheet" href="').slice(1)
+                    .map(x=>x.match(/^[^"]*/)[0])
+                const js = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
+                const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)/)[1])
+                return css.concat(js).reduce((acc,file)=> 
+                    acc.then((files) => Object.assign(files, {[file]: getContent(file)}), Promise.resolve({})))
+                        .then(files => ({ project, files, libs}))
+            })
+
+            function getContent(fn) {
+                return fetch(jbProxy + gitHubUrl + fn).then(r=>r.text())
+            }
         }
     }
 }

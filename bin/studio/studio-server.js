@@ -1,6 +1,7 @@
 fs = require('fs');
 http = require('http');
 child = require('child_process');
+const fetch = require('node-fetch');
 
 file_type_handlers = {};
 
@@ -183,6 +184,17 @@ const op_post_handlers = {
         return endWithFailure(res,e)
       }
       endWithSuccess(res,'Project Created');
+    },
+    fetch: function(req, res,body,path) {
+      try {
+        clientReq = JSON.parse(body);
+        if (!clientReq)
+           return endWithFailure(res,'Can not parse json request');
+        return fetch(clientReq.url,clientReq.options).then(res=>res.text())
+          .then(result=>endWithSuccess(res,result))
+      } catch(e) {
+        return endWithFailure(res,e)
+      }
     },
     createDirectoryWithFiles: function(req, res,body,path) {
       let clientReq;

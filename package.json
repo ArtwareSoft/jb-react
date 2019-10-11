@@ -37,9 +37,10 @@
     "studio": "bin/studio"
   },
   "dependencies": {
-    "d3": "^5.12.0"
+    "node-fetch": "^2.6.0"
   },
   "devDependencies": {
+    "d3": "^5.12.0",
     "babel-core": "^6.24.1",
     "babel-loader": "^6.4.1",
     "babel-plugin-transform-preact-h-to-jsx": "^1.0.0",
