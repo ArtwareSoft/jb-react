@@ -7,7 +7,7 @@ jb.component('studio.new-in-memory-project', {
     prop('project','%$project%'),
     prop('baseDir','%$baseDir%'),
     prop('files', obj(prop('%$project%.html', `<!DOCTYPE html>
-<html title="hello world">
+<html>
 <head>
   <meta charset="utf-8">
   <script type="text/javascript">

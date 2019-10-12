@@ -36,6 +36,7 @@ const cloudHost = {
     rootName: () => Promise.resolve(''),
     rootExists: () => Promise.resolve('false'),
     getFile: () => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
+    htmlAsCloud: html => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="'),
     locationToPath: path => path.split('/').slice(1).join('/'),
     createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
     scriptForLoadLibraries: libs => {
