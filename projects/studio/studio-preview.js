@@ -126,12 +126,12 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
   impl: ctx =>
     jb.ui.ctrl(ctx,{
       init: cmp => {
-        const host = ctx.exp('%$studio/host%')
+        const host = ctx.exp('%$queryParams/host%')
         if (host && st.projectHosts[host]) {
           const project = ctx.exp('%$studio/project%')
           document.title = `${project} with jBart`;
-          cmp.state.loadingMessage = 'loading project from ' + host + '::' + ctx.exp('%$studio/hostProjectId%')
-          return st.projectHosts[host].fetchProject(ctx.exp('%$studio/hostProjectId%'),project)
+          cmp.state.loadingMessage = 'loading project from ' + host + '::' + ctx.exp('%$queryParams/hostProjectId%')
+          return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
             .then(inMemoryProject => {
               st.inMemoryProject = inMemoryProject
               cmp.setState({loadingMessage: '', inMemoryProject}) 
@@ -169,12 +169,9 @@ st.injectImMemoryProjectToPreview = function(previewWin) {
   const cssToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/css$/))
     .map(e => `<style>${e[1]}</style>` ).join('\n')
   let html = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/html$/))[0][1]
-  if (html.match(/\/\/ load js files here/))
-    html = html.replace(/\/\/ load js files here/,
+  if (html.match(/<!-- load-jb-scripts-here -->/))
+    html = html.replace(/<!-- load-jb-scripts-here -->/,
         [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),`<script>${jsToInject}</script>`,cssToInject].join('\n'))
-  else if (html.match(/<\/body>/))
-    html = html.replace(/<\/body>/,
-      [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),`<script>debugger;${jsToInject}</script>`,cssToInject,'<\/body>'].join('\n'))
   
   previewWin.document.write(html)
 }

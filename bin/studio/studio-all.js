@@ -31248,12 +31248,12 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
   impl: ctx =>
     jb.ui.ctrl(ctx,{
       init: cmp => {
-        const host = ctx.exp('%$studio/host%')
+        const host = ctx.exp('%$queryParams/host%')
         if (host && st.projectHosts[host]) {
           const project = ctx.exp('%$studio/project%')
           document.title = `${project} with jBart`;
-          cmp.state.loadingMessage = 'loading project from ' + host + '::' + ctx.exp('%$studio/hostProjectId%')
-          return st.projectHosts[host].fetchProject(ctx.exp('%$studio/hostProjectId%'),project)
+          cmp.state.loadingMessage = 'loading project from ' + host + '::' + ctx.exp('%$queryParams/hostProjectId%')
+          return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
             .then(inMemoryProject => {
               st.inMemoryProject = inMemoryProject
               cmp.setState({loadingMessage: '', inMemoryProject}) 
@@ -31291,12 +31291,9 @@ st.injectImMemoryProjectToPreview = function(previewWin) {
   const cssToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/css$/))
     .map(e => `<style>${e[1]}</style>` ).join('\n')
   let html = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/html$/))[0][1]
-  if (html.match(/\/\/ load js files here/))
-    html = html.replace(/\/\/ load js files here/,
+  if (html.match(/<!-- load-jb-scripts-here -->/))
+    html = html.replace(/<!-- load-jb-scripts-here -->/,
         [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),`<script>${jsToInject}</script>`,cssToInject].join('\n'))
-  else if (html.match(/<\/body>/))
-    html = html.replace(/<\/body>/,
-      [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),`<script>debugger;${jsToInject}</script>`,cssToInject,'<\/body>'].join('\n'))
   
   previewWin.document.write(html)
 }
@@ -31570,13 +31567,15 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
 })
 ;
 
+jb.component('queryParams', { passiveData: {} })
+
 jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudioUrlToResource */
   type: 'action',
   params: [
     {id: 'resource', as: 'string', mandatory: true},
     {id: 'onUrlChange', type: 'action', dynamic: true}
   ],
-  impl: function(context,resource) {
+  impl: function(ctx,resource) {
         if (jb.ui.location || typeof window == 'undefined') return;
         const base = location.pathname.indexOf('studio-bin') != -1 ? 'studio-bin' : 'studio'
 
@@ -31614,6 +31613,10 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
         const params = ['project','page','profile_path'].concat( hasSearchUrl ? ['host','hostProjectId'] : [])
 
         jb.ui.location = History.createBrowserHistory();
+        const _search = location.search.substring(1);
+        if (_search)
+            Object.assign(ctx.exp('%$queryParams%'),JSON.parse('{"' + decodeURI(_search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}'))
+
         const browserUrlEm = jb.rx.Observable.create(obs=>
             jb.ui.location.listen(x=> obs.next(x)));
 
@@ -31630,12 +31633,12 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             .subscribe(loc => {
                 const obj = urlFormat.urlToObj(loc);
                 params.forEach(p=>
-                    jb.writeValue(context.exp(`%$${resource}/${p}%`,'ref'),jb.tostring(obj[p])));
+                    jb.writeValue(ctx.exp(`%$${resource}/${p}%`,'ref'),jb.tostring(obj[p])));
                 // change the url if needed
                 if (loc.pathname && loc.pathname === location.pathname) return
                 if (loc.search && loc.search === location.search) return
                 jb.ui.location.push(Object.assign({},jb.ui.location.location, loc));
-                context.params.onUrlChange(context.setData(loc));
+                ctx.params.onUrlChange(ctx.setData(loc));
             })
     }
 })
@@ -35975,7 +35978,7 @@ jb.component('studio.save-components', { /* studio.saveComponents */
         .map(e => `<link rel="stylesheet" href="${st.host.pathToJsFile(project,e[0],baseDir)}" charset="utf-8">`).join('\n')
     
       jb.entries(files).forEach(e=>
-        files[e[0]] = e[1].replace(/\/\/ load js files here/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
+        files[e[0]] = e[1].replace(/<!-- load-jb-scripts-here -->/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
           .replace(/\/\/# sourceURL=.*/g,''))
       if (!files['index.html'])
         files['index.html'] = st.host.htmlAsCloud(jb.entries(files).filter(e=>e[0].match(/html$/))[0][1])
@@ -36448,17 +36451,19 @@ jb.component('studio.new-in-memory-project', {
     prop('files', obj(prop('%$project%.html', `<!DOCTYPE html>
 <html title="hello world">
 <head>
-      <meta charset="utf-8">
-      <script type="text/javascript">
-        startTime = new Date().getTime();
-      </script>
-      // load js files here
-    </head>
+  <meta charset="utf-8">
+  <script type="text/javascript">
+    startTime = new Date().getTime();
+  </script>
+<!-- start-jb-scripts -->
+<!-- load-jb-scripts-here -->
+<!-- end-jb-scripts -->
+</head>
 <body>
-<div id="main"> </div>
-<script>
-  jb.ui.renderWidget({$:'%$project%.main'},document.getElementById('main'))
-</script>
+  <div id="main"> </div>
+  <script>
+    jb.ui.renderWidget({$:'%$project%.main'},document.getElementById('main'))
+  </script>
 </body>
 </html>`),
   prop('%$project%.js',`jb.component('%$project%.main', { 
@@ -37217,21 +37222,29 @@ function getEntryUrl() {
 }
 st.chooseHostByUrl(getEntryUrl())
 
-function extractText(str,startMarker,endMarker) {
+function extractText(str,startMarker,endMarker,replaceWith) {
     const pos1 = str.indexOf(startMarker), pos2 = str.indexOf(endMarker)
     if (pos1 == -1 || pos2 == -1) return ''
+    if (replaceWith)
+        return str.slice(0,pos1+ startMarker.length) + replaceWith + str.slice(pos2)
     return str.slice(pos1 + startMarker.length ,pos2)
 }
 
-const jbProxy = '' //'//jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+window.aa_jsonp_callback = x => x
+const jbProxy = 'http://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+
+function getUrlContent(url) {
+    const proxy = jbProxy
+    return fetch(proxy + url).then(r=>r.text(), {mode: 'cors'})
+        .then(content=>content.match(/aa_jsonp_callback/) ? eval(content) : content)
+        .catch(e => console.log(e))
+}
+
 st.projectHosts = {
     jsFiddle: {
         fetchProject(jsFiddleid,project) {
-            return fetch( jbProxy + `http://jsfiddle.net/${jsFiddleid}`,)
-            .catch(e => console.log(e))
-            .then(r => r.text())
+            return getUrlContent(`http://jsfiddle.net/${jsFiddleid}`)
             .then(content=>{
-                const str = (''+content).replace(/\\n/g,'\n').replace(/\\/g,'')
                 const json = extractText(str,'values: {','fiddle: {')
                 const html = extractText(json,'html: "','js:   "').trim().slice(0,-2)
                 const js = extractText(json,'js:   "','css:  "').trim().slice(0,-2)
@@ -37244,23 +37257,22 @@ st.projectHosts = {
     github: {
         fetchProject(gitHubUrl) {
             const project = gitHubUrl.split('/').filter(x=>x).pop() 
-            return fetch(jbProxy + gitHubUrl,{mode: 'cors', headers: { 'Access-Control-Allow-Origin':'*'}})
-            .catch(e => console.log(e))
-            .then(r => r.text())
-            .then(content=>{
-                const srcUrls = content.split('<script type="text/javascript" src="').slice(1)
+            return getUrlContent(gitHubUrl).then(html =>{
+                const srcUrls = html.split('<script type="text/javascript" src="').slice(1)
                     .map(x=>x.match(/^[^"]*/)[0])
-                const css = content.split('<link rel="stylesheet" href="').slice(1)
+                const css = html.split('<link rel="stylesheet" href="').slice(1)
                     .map(x=>x.match(/^[^"]*/)[0])
                 const js = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
-                const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)/)[1])
+                const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)\.js$/)[1]).filter(x=>x!='jb-react-all')
                 return css.concat(js).reduce((acc,file)=> 
-                    acc.then((files) => Object.assign(files, {[file]: getContent(file)}), Promise.resolve({})))
-                        .then(files => ({ project, files, libs}))
+                    acc.then(files => getUrlContent(gitHubUrl + file).then(content => Object.assign(files, {[file]: content}))), Promise.resolve({
+                        [`${project}.html`]: fixHtml(html)
+                    }) )
+                        .then(files => ({project, files, libs}))
             })
 
-            function getContent(fn) {
-                return fetch(jbProxy + gitHubUrl + fn).then(r=>r.text())
+            function fixHtml(html) {
+                return extractText(html,'<!-- start-jb-scripts -->\n','<!-- end-jb-scripts -->','<!-- load-jb-scripts-here -->\n')
             }
         }
     }

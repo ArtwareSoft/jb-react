@@ -1,10 +1,12 @@
+jb.component('queryParams', { passiveData: {} })
+
 jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudioUrlToResource */
   type: 'action',
   params: [
     {id: 'resource', as: 'string', mandatory: true},
     {id: 'onUrlChange', type: 'action', dynamic: true}
   ],
-  impl: function(context,resource) {
+  impl: function(ctx,resource) {
         if (jb.ui.location || typeof window == 'undefined') return;
         const base = location.pathname.indexOf('studio-bin') != -1 ? 'studio-bin' : 'studio'
 
@@ -42,6 +44,10 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
         const params = ['project','page','profile_path'].concat( hasSearchUrl ? ['host','hostProjectId'] : [])
 
         jb.ui.location = History.createBrowserHistory();
+        const _search = location.search.substring(1);
+        if (_search)
+            Object.assign(ctx.exp('%$queryParams%'),JSON.parse('{"' + decodeURI(_search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}'))
+
         const browserUrlEm = jb.rx.Observable.create(obs=>
             jb.ui.location.listen(x=> obs.next(x)));
 
@@ -58,12 +64,12 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             .subscribe(loc => {
                 const obj = urlFormat.urlToObj(loc);
                 params.forEach(p=>
-                    jb.writeValue(context.exp(`%$${resource}/${p}%`,'ref'),jb.tostring(obj[p])));
+                    jb.writeValue(ctx.exp(`%$${resource}/${p}%`,'ref'),jb.tostring(obj[p])));
                 // change the url if needed
                 if (loc.pathname && loc.pathname === location.pathname) return
                 if (loc.search && loc.search === location.search) return
                 jb.ui.location.push(Object.assign({},jb.ui.location.location, loc));
-                context.params.onUrlChange(context.setData(loc));
+                ctx.params.onUrlChange(ctx.setData(loc));
             })
     }
 })

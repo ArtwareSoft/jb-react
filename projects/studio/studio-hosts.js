@@ -67,21 +67,29 @@ function getEntryUrl() {
 }
 st.chooseHostByUrl(getEntryUrl())
 
-function extractText(str,startMarker,endMarker) {
+function extractText(str,startMarker,endMarker,replaceWith) {
     const pos1 = str.indexOf(startMarker), pos2 = str.indexOf(endMarker)
     if (pos1 == -1 || pos2 == -1) return ''
+    if (replaceWith)
+        return str.slice(0,pos1+ startMarker.length) + replaceWith + str.slice(pos2)
     return str.slice(pos1 + startMarker.length ,pos2)
 }
 
-const jbProxy = '//jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+window.aa_jsonp_callback = x => x
+const jbProxy = 'http://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+
+function getUrlContent(url) {
+    const proxy = jbProxy
+    return fetch(proxy + url).then(r=>r.text(), {mode: 'cors'})
+        .then(content=>content.match(/aa_jsonp_callback/) ? eval(content) : content)
+        .catch(e => console.log(e))
+}
+
 st.projectHosts = {
     jsFiddle: {
         fetchProject(jsFiddleid,project) {
-            return fetch( jbProxy + `http://jsfiddle.net/${jsFiddleid}`,)
-            .catch(e => console.log(e))
-            .then(r => r.text())
+            return getUrlContent(`http://jsfiddle.net/${jsFiddleid}`)
             .then(content=>{
-                const str = (''+content).replace(/\\n/g,'\n').replace(/\\/g,'')
                 const json = extractText(str,'values: {','fiddle: {')
                 const html = extractText(json,'html: "','js:   "').trim().slice(0,-2)
                 const js = extractText(json,'js:   "','css:  "').trim().slice(0,-2)
@@ -94,23 +102,22 @@ st.projectHosts = {
     github: {
         fetchProject(gitHubUrl) {
             const project = gitHubUrl.split('/').filter(x=>x).pop() 
-            return fetch(jbProxy + gitHubUrl,{mode: 'cors', headers: { 'Access-Control-Allow-Origin':'*'}})
-            .catch(e => console.log(e))
-            .then(r => r.text())
-            .then(content=>{
-                const srcUrls = content.split('<script type="text/javascript" src="').slice(1)
+            return getUrlContent(gitHubUrl).then(html =>{
+                const srcUrls = html.split('<script type="text/javascript" src="').slice(1)
                     .map(x=>x.match(/^[^"]*/)[0])
-                const css = content.split('<link rel="stylesheet" href="').slice(1)
+                const css = html.split('<link rel="stylesheet" href="').slice(1)
                     .map(x=>x.match(/^[^"]*/)[0])
                 const js = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
-                const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)/)[1])
+                const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)\.js$/)[1]).filter(x=>x!='jb-react-all')
                 return css.concat(js).reduce((acc,file)=> 
-                    acc.then((files) => Object.assign(files, {[file]: getContent(file)}), Promise.resolve({})))
-                        .then(files => ({ project, files, libs}))
+                    acc.then(files => getUrlContent(gitHubUrl + file).then(content => Object.assign(files, {[file]: content}))), Promise.resolve({
+                        [`${project}.html`]: fixHtml(html)
+                    }) )
+                        .then(files => ({project, files, libs}))
             })
 
-            function getContent(fn) {
-                return fetch(jbProxy + gitHubUrl + fn).then(r=>r.text())
+            function fixHtml(html) {
+                return extractText(html,'<!-- start-jb-scripts -->\n','<!-- end-jb-scripts -->','<!-- load-jb-scripts-here -->\n')
             }
         }
     }
