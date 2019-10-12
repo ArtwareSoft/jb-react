@@ -4,8 +4,8 @@ const st = jb.studio;
 const devHost = {
     rootName: () => fetch(`/?op=rootName`).then(res=>res.text()),
     rootExists: () => fetch(`/?op=rootExists`).then(res=>res.text()).then(res=>res==='true'),
-    getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
-    locationToPath: path => path.split('/').slice(1).join('/'),
+    getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
+    locationToPath: path => path.replace(/^[0-9]*\//,''),
     saveFile: (path, contents) => {
         return fetch(`/?op=saveFile`,
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
@@ -20,7 +20,6 @@ const devHost = {
 }
 
 const userLocalHost = Object.assign({},devHost,{
-    locationToPath: path => path.split('/').slice(1).join('/'),
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: request.baseDir || request.project })) }),
     scriptForLoadLibraries: libs => {
@@ -34,10 +33,10 @@ const userLocalHost = Object.assign({},devHost,{
 
 const cloudHost = {
     rootName: () => Promise.resolve(''),
-    rootExists: () => Promise.resolve('false'),
-    getFile: () => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
+    rootExists: () => Promise.resolve(false),
+    getFile: () => st.inMemoryProject ? st.inMemoryProject.files[path] : jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
     htmlAsCloud: html => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="'),
-    locationToPath: path => path.split('/').slice(1).join('/'),
+    locationToPath: path => path.replace(/^[0-9]*\//,''),
     createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
     scriptForLoadLibraries: libs => {
         const libScripts = libs.map(lib=>`<script type="text/javascript" src="//unpkg.com/jb-react/dist/${lib}.js"></script>`)

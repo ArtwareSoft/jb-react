@@ -427,7 +427,7 @@ jb.ui.dialogs = {
 			jb.ui.addHTML(document.body,'<div class="modal-overlay"></div>');
 
 		dialog.close = function(args) {
-			if (dialog.context.vars.formContainer.err && args.OK) // not closing dialog with errors
+			if (dialog.context.vars.formContainer.err && args && args.OK) // not closing dialog with errors
 				return;
 			return Promise.resolve().then(_=>{
 				if (dialog.closing) return;

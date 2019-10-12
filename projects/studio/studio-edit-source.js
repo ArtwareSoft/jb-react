@@ -92,13 +92,13 @@ jb.component('studio.edit-source', { /* studio.editSource */
   })
 })
 
-jb.component('studio.edit-all-files', { /* studio.editAllFiles */
+jb.component('studio.view-all-files', { /* studio.viewAllFiles */
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: openDialog({
-    style: dialog.editSourceStyle({id: 'editor', width: 600, editAllFiles: true}),
+    style: dialog.editSourceStyle({id: 'editor', width: 600}),
     content: group({
       title: 'project files',
       controls: [
@@ -127,8 +127,8 @@ jb.component('studio.edit-all-files', { /* studio.editAllFiles */
         }),
         editableText({
           databind: pipe(
-            ctx => { const host = jb.studio.host; return host.getFile(host.locationToPath(jb.tostring(ctx.exp('%$file%')))) }
-            ,studio.fileAfterChanges('%$file%', '%%')),
+            ctx => Promise.resolve(jb.studio.host.getFile(jb.studio.host.locationToPath(jb.tostring(ctx.exp('%$file%'))))),
+              studio.fileAfterChanges('%$file%', '%%')),
           style: editableText.studioCodemirrorTgp(),
           features: [
             ctx => ({ 
@@ -136,11 +136,7 @@ jb.component('studio.edit-all-files', { /* studio.editAllFiles */
                 const fileName = () => st.host.locationToPath(jb.tostring(ctx.vars.file))
                 ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh();
                 ctx.vars.$dialog.gotoEditor = () => fetch(`/?op=gotoSource&path=${fileName()}:${cmp.editor.getCursorPos().line}`);
-                ctx.vars.$dialog.saveAndReload = () =>
-                  ctx.run(studio.saveComponents())
-                    .then(() => st.host.saveFile(fileName()), cmp.editor.cmEditor.getValue())
-                    .then(saveResult => location.reload())
-                }
+              }
             }),
             watchRef('%$file%')
           ]
@@ -152,7 +148,7 @@ jb.component('studio.edit-all-files', { /* studio.editAllFiles */
         watchable: true
       })
     }),
-    title: studio.shortTitle('%$path%'),
+    title: '%$studio/project% files',
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
       dialogFeature.resizer(true)
@@ -436,8 +432,12 @@ jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestions
 
 jb.component('source-editor.files-of-project', {
   impl: ctx => {
+    if (jb.studio.inMemoryProject)
+      return Object.keys(jb.studio.inMemoryProject.files)
     const _jb = jb.studio.previewjb
-    return jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf('/' + ctx.exp('%$studio/project%') + '/') != -1))
+    const project =  ctx.exp('%$studio/project%')
+    const files = jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf(`/${project}/`) != -1 || x.indexOf(`/${project}.`) != -1))
+    return files.filter(f=>f.indexOf(`${project}.js`) != -1).flatMap(x=>x.replace(/js$/,'html')).concat(files)
   }
 })
 

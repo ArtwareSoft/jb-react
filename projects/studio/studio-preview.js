@@ -146,7 +146,8 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
               if (exists)
                 location.reload()
               cmp.state.inMemoryProject = st.inMemoryProject = ctx.run(studio.newInMemoryProject(project,'./'))
-              if (st.host.canNotSave) return
+              if (st.host.canNotSave) 
+                return cmp.setState({})
               return jb.delay(100).then(()=>ctx.run(studio.saveComponents()))
           })
         }

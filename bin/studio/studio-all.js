@@ -5579,7 +5579,7 @@ jb.ui.checkValidationError = cmp => {
     const err = (cmp.validations || [])
       .filter(validator=>!validator.validCondition(ctx))
       .map(validator=>validator.errorMessage(ctx))[0];
-    if (err && ctx.exp('formContainer'))
+    if (ctx.exp('formContainer'))
       ctx.run(writeValue('%$formContainer/err%',err));
     return err;
   }
@@ -7176,7 +7176,7 @@ jb.ui.dialogs = {
 			jb.ui.addHTML(document.body,'<div class="modal-overlay"></div>');
 
 		dialog.close = function(args) {
-			if (dialog.context.vars.formContainer.err && args.OK) // not closing dialog with errors
+			if (dialog.context.vars.formContainer.err && args && args.OK) // not closing dialog with errors
 				return;
 			return Promise.resolve().then(_=>{
 				if (dialog.closing) return;
@@ -31268,7 +31268,8 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
               if (exists)
                 location.reload()
               cmp.state.inMemoryProject = st.inMemoryProject = ctx.run(studio.newInMemoryProject(project,'./'))
-              if (st.host.canNotSave) return
+              if (st.host.canNotSave) 
+                return cmp.setState({})
               return jb.delay(100).then(()=>ctx.run(studio.saveComponents()))
           })
         }
@@ -31327,7 +31328,6 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
     {id: 'width', as: 'number', defaultValue: 300},
     {id: 'height', as: 'number', defaultValue: 100},
     {id: 'onUpdate', type: 'action', dynamic: true},
-    {id: 'editAllFiles', as: 'boolean'}
   ],
   impl: customStyle({
 			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
@@ -31337,8 +31337,7 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 					_=> cmp.dialogClose() },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
 				h('div',{class: 'dialog-buttons'},[
-					cmp.editAllFiles && h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.gotoEditor && cmp.dialog.gotoEditor() },'goto editor'),
-					cmp.editAllFiles && h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.saveAndReload && cmp.dialog.saveAndReload() },'save and reload'),
+					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.gotoEditor && cmp.dialog.gotoEditor() },'goto editor'),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.refresh() },'refresh'),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },'ok'),
 				].filter(x=>x) ),
@@ -34140,13 +34139,13 @@ jb.component('studio.edit-source', { /* studio.editSource */
   })
 })
 
-jb.component('studio.edit-all-files', { /* studio.editAllFiles */
+jb.component('studio.view-all-files', { /* studio.viewAllFiles */
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: openDialog({
-    style: dialog.editSourceStyle({id: 'editor', width: 600, editAllFiles: true}),
+    style: dialog.editSourceStyle({id: 'editor', width: 600}),
     content: group({
       title: 'project files',
       controls: [
@@ -34175,8 +34174,8 @@ jb.component('studio.edit-all-files', { /* studio.editAllFiles */
         }),
         editableText({
           databind: pipe(
-            ctx => { const host = jb.studio.host; return host.getFile(host.locationToPath(jb.tostring(ctx.exp('%$file%')))) }
-            ,studio.fileAfterChanges('%$file%', '%%')),
+            ctx => Promise.resolve(jb.studio.host.getFile(jb.studio.host.locationToPath(jb.tostring(ctx.exp('%$file%'))))),
+              studio.fileAfterChanges('%$file%', '%%')),
           style: editableText.studioCodemirrorTgp(),
           features: [
             ctx => ({ 
@@ -34184,11 +34183,7 @@ jb.component('studio.edit-all-files', { /* studio.editAllFiles */
                 const fileName = () => st.host.locationToPath(jb.tostring(ctx.vars.file))
                 ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh();
                 ctx.vars.$dialog.gotoEditor = () => fetch(`/?op=gotoSource&path=${fileName()}:${cmp.editor.getCursorPos().line}`);
-                ctx.vars.$dialog.saveAndReload = () =>
-                  ctx.run(studio.saveComponents())
-                    .then(() => st.host.saveFile(fileName()), cmp.editor.cmEditor.getValue())
-                    .then(saveResult => location.reload())
-                }
+              }
             }),
             watchRef('%$file%')
           ]
@@ -34200,7 +34195,7 @@ jb.component('studio.edit-all-files', { /* studio.editAllFiles */
         watchable: true
       })
     }),
-    title: studio.shortTitle('%$path%'),
+    title: '%$studio/project% files',
     features: [
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
       dialogFeature.resizer(true)
@@ -34484,8 +34479,12 @@ jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestions
 
 jb.component('source-editor.files-of-project', {
   impl: ctx => {
+    if (jb.studio.inMemoryProject)
+      return Object.keys(jb.studio.inMemoryProject.files)
     const _jb = jb.studio.previewjb
-    return jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf('/' + ctx.exp('%$studio/project%') + '/') != -1))
+    const project =  ctx.exp('%$studio/project%')
+    const files = jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf(`/${project}/`) != -1 || x.indexOf(`/${project}.`) != -1))
+    return files.filter(f=>f.indexOf(`${project}.js`) != -1).flatMap(x=>x.replace(/js$/,'html')).concat(files)
   }
 })
 
@@ -36995,7 +36994,7 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
           }),
           menu.action({
             title: 'Source ...',
-            action: studio.editAllFiles(studio.currentProfilePath())
+            action: studio.viewAllFiles(studio.currentProfilePath())
           })
         ]
       }),
@@ -37159,8 +37158,8 @@ const st = jb.studio;
 const devHost = {
     rootName: () => fetch(`/?op=rootName`).then(res=>res.text()),
     rootExists: () => fetch(`/?op=rootExists`).then(res=>res.text()).then(res=>res==='true'),
-    getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
-    locationToPath: path => path.split('/').slice(1).join('/'),
+    getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
+    locationToPath: path => path.replace(/^[0-9]*\//,''),
     saveFile: (path, contents) => {
         return fetch(`/?op=saveFile`,
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
@@ -37175,7 +37174,6 @@ const devHost = {
 }
 
 const userLocalHost = Object.assign({},devHost,{
-    locationToPath: path => path.split('/').slice(1).join('/'),
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: request.baseDir || request.project })) }),
     scriptForLoadLibraries: libs => {
@@ -37189,10 +37187,10 @@ const userLocalHost = Object.assign({},devHost,{
 
 const cloudHost = {
     rootName: () => Promise.resolve(''),
-    rootExists: () => Promise.resolve('false'),
-    getFile: () => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
+    rootExists: () => Promise.resolve(false),
+    getFile: () => st.inMemoryProject ? st.inMemoryProject.files[path] : jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
     htmlAsCloud: html => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="'),
-    locationToPath: path => path.split('/').slice(1).join('/'),
+    locationToPath: path => path.replace(/^[0-9]*\//,''),
     createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
     scriptForLoadLibraries: libs => {
         const libScripts = libs.map(lib=>`<script type="text/javascript" src="//unpkg.com/jb-react/dist/${lib}.js"></script>`)

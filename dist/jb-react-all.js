@@ -5579,7 +5579,7 @@ jb.ui.checkValidationError = cmp => {
     const err = (cmp.validations || [])
       .filter(validator=>!validator.validCondition(ctx))
       .map(validator=>validator.errorMessage(ctx))[0];
-    if (err && ctx.exp('formContainer'))
+    if (ctx.exp('formContainer'))
       ctx.run(writeValue('%$formContainer/err%',err));
     return err;
   }
@@ -7176,7 +7176,7 @@ jb.ui.dialogs = {
 			jb.ui.addHTML(document.body,'<div class="modal-overlay"></div>');
 
 		dialog.close = function(args) {
-			if (dialog.context.vars.formContainer.err && args.OK) // not closing dialog with errors
+			if (dialog.context.vars.formContainer.err && args && args.OK) // not closing dialog with errors
 				return;
 			return Promise.resolve().then(_=>{
 				if (dialog.closing) return;
