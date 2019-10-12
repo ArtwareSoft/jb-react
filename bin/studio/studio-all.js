@@ -31582,7 +31582,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
         const urlFormat = location.pathname.match(/\.html$/) ? {
             urlToObj({search}) {
                 const _search = search.substring(1);
-                return JSON.parse('{"' + decodeURI(_search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}')
+                return _search ? JSON.parse('{"' + decodeURI(_search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}') : {}
             },
             objToUrl(obj) {
                 const search = '?' + params.map(p=>({p,val: obj[p] !== undefined && jb.tostring(obj[p])}))
@@ -37231,7 +37231,7 @@ function extractText(str,startMarker,endMarker,replaceWith) {
 }
 
 window.aa_jsonp_callback = x => x
-const jbProxy = 'http://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+const jbProxy = location.href.match(/^[^:]*/)[0] + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
 
 function getUrlContent(url) {
     const proxy = jbProxy

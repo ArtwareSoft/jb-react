@@ -76,7 +76,7 @@ function extractText(str,startMarker,endMarker,replaceWith) {
 }
 
 window.aa_jsonp_callback = x => x
-const jbProxy = 'http://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+const jbProxy = location.href.match(/^[^:]*/)[0] + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
 
 function getUrlContent(url) {
     const proxy = jbProxy
