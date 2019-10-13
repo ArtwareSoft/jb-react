@@ -30392,7 +30392,7 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId])
     const locationMap = enrichMapWithOffsets(text, map)
     const path = pathOfPosition({text, locationMap}, {line: pos.line - componentHeaderIndex, col: pos.col})
-    return new jbToUse.jbCtx().run(sourceEditor.suggestions(path))
+    return new jbToUse.jbCtx().run(sourceEditor.suggestions([compId,path].join('~')))
 }
 
 function adjustWhiteSpaces(map,original,formatted) {
@@ -35425,6 +35425,9 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
           const previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
           cmp.titleBelow = false;
 
+          const cover = _window.document.createElement('div')
+          cover.className = 'jb-cover'
+          _window.document.body.appendChild(cover);
           const mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
           let userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
           let keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
@@ -35456,6 +35459,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
                   ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
 
                   ctx.vars.$dialog.close({OK: true});
+                  _window.document.body.removeChild(cover);
                   // jb.delay(200).then(_=> {
             //         if (st.previewWindow && st.previewWindow.getSelection())
             //           st.previewWindow.getSelection().innerHTML = ''
