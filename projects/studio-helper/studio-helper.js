@@ -1,4 +1,14 @@
 jb.studio.initCompsRefHandler(jb)
+// fake current path
+jb.component('studio-helper.parser1', { /* studioHelper.parser1 */
+  type: 'data',
+  sampleInput: '%$sample-text1%',
+  impl: extractText({
+    text: '%%',
+    startMarkers: '#start',
+    endMarker: '#end'
+  })
+})
 
 jb.resource('person',{
   name: "Homer Simpson",
@@ -46,17 +56,6 @@ jb.resource('group-with-custom-style',
     {$: 'label', title: '1.0' },
   ]}
 )
-
-// fake current path
-jb.component('studio-helper.parser1', { /* studioHelper.parser1 */
-  type: 'data',
-  sampleInput: '%$sample-text1%',
-  impl: extractText({
-    text: '%%',
-    startMarkers: '#start',
-    endMarker: '#end'
-  })
-})
 
 jb.component('studio-helper.event-tracker', { /* studioHelper.eventTracker */
   type: 'control',
@@ -382,6 +381,40 @@ jb.component('studio-helper.editable-text-input', { /* studioHelper.editableText
     css: '{height: 16px}',
     features: field.databindText()
   })
+})
+
+jb.component('studio-helper.edit-file', {
+  type: 'control',
+  impl: editableText({
+          databind: ctx => jb.studio.host.getFile('/projects/studio-helper/studio-helper.js'),
+          style: editableText.codemirror({
+            cm_settings: {
+              extraKeys: {
+                'Enter': textEditor.withCursorPath(studio.getSuggestions('%$cursorPath%'))
+              }
+            }
+          }),
+          features: [
+            ctx => ({
+              afterViewInit: cmp => {
+                const cmEditor = cmp.editor.cmEditor
+                cmEditor.on('cursorActivity', () => {
+                  const options = {
+                    hint: () => {
+                      const cursor = cmEditor.getDoc().getCursor()
+                      return {
+                        from: cursor, to: cursor,
+                        list: jb.textEditor.getSuggestions(cmEditor.getValue(),cmp.editor.getCursorPos())
+                      }
+                    }
+                  };
+                  cmEditor.showHint(options);
+                })
+              }
+            }),
+            textEditor.init()
+          ]
+        })
 })
 
 jb.component('studio-helper-sample.properties-params', { /* studioHelperSample.propertiesParams */

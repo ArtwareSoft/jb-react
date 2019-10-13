@@ -196,7 +196,8 @@ jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor *
 
 
 jb.textEditor = {
-    refreshEditor
+    refreshEditor,
+    getSuggestions
 }
 
 function pathOfPosition(ref,_pos) {
@@ -247,10 +248,14 @@ function refreshEditor(cmp,_path) {
 
 function getSuggestions(fileContent, pos, jbToUse = jb) {
     const lines = fileContent.split('\n')
-    const componentHeaderIndex = pos.line - lines.slice(0,pos.line).reverse().findIndex(line => line.match(/^jb.component\(/))
-    const compId = lines[componentHeaderIndex].match(/'([^']+)'/)[1]
-    const {text, map} = jb.prettyPrintComp(compId,jbToUse.comps[compId])
-    const path = pathOfPosition({text, locationMap: map}, {line: pos.line - componentHeaderIndex, col: line.col})
+    const closestComp = lines.slice(0,pos.line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
+    if (closestComp == -1) return []
+    const componentHeaderIndex = pos.line - closestComp
+    const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
+    if (!compId) return []
+    const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId])
+    const locationMap = enrichMapWithOffsets(text, map)
+    const path = pathOfPosition({text, locationMap}, {line: pos.line - componentHeaderIndex, col: pos.col})
     return new jbToUse.jbCtx().run(sourceEditor.suggestions(path))
 }
 

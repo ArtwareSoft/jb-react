@@ -1181,7 +1181,7 @@ jb.component('add-to-array', { /* addToArray */
     {id: 'array', as: 'ref', mandatory: true},
     {id: 'toAdd', as: 'array', mandatory: true },
   ],
-  impl: (ctx,array,toAdd,asLink) => jb.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
+  impl: (ctx,array,toAdd) => jb.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
 })
 
 jb.component('splice', { /* splice */
@@ -1208,7 +1208,7 @@ jb.component('remove-from-array', { /* removeFromArray */
   impl: (ctx,array,itemToRemove,_index) => {
 		const ar = jb.toarray(array);
 		const index = itemToRemove ? ar.indexOf(itemToRemove) : _index;
-		if (index != -1 && ar.length > index)
+		if (index != -1)
 			jb.splice(array,[[index,1]],ctx)
 	}
 })
@@ -1221,7 +1221,6 @@ jb.component('toggle-boolean-value', { /* toggleBooleanValue */
   impl: (ctx,_of) =>
 		jb.writeValue(_of,jb.val(_of) ? false : true)
 })
-
 
 jb.component('slice', { /* slice */
   type: 'aggregator',
@@ -1866,7 +1865,7 @@ jb.component('in-group', { /* inGroup */
   	group.indexOf(item) != -1
 })
 
-jb.urlProxy = 'http://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+jb.urlProxy = (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
 
 jb.component('http.get', { /* http.get */
   type: 'data,action',
@@ -1880,7 +1879,7 @@ jb.component('http.get', { /* http.get */
 		if (ctx.probe)
 			return jb.http_get_cache[url];
 		const json = _json || url.match(/json$/);
-		return fetch(useProxy ? jb.urlProxy : '' + url, {mode: 'no-cors'})
+		return fetch(useProxy ? jb.urlProxy : '' + url, {mode: 'cors'})
 			  .then(r =>
 			  		json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
