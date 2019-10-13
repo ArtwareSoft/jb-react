@@ -1879,7 +1879,7 @@ jb.component('http.get', { /* http.get */
 		if (ctx.probe)
 			return jb.http_get_cache[url];
 		const json = _json || url.match(/json$/);
-		return fetch(useProxy ? jb.urlProxy : '' + url, {mode: 'cors'})
+		return fetch((useProxy ? jb.urlProxy : '') + url, {mode: 'cors'})
 			  .then(r =>
 			  		json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
