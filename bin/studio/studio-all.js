@@ -35429,6 +35429,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
 
           const cover = _window.document.createElement('div')
           cover.className = 'jb-cover'
+          cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
           _window.document.body.appendChild(cover);
           const mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
           let userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
