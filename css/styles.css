@@ -242,3 +242,8 @@ border: 1px solid rgb(213, 213, 213);}
 .jb-resizer {
   content:url("resizer.gif")
 }
+
+.jb-cover {
+  position: 'absolute'; width: '100%'; height: '100%'; background: 'white'; opacity: '0'; top: 0; left: 0;
+}
+

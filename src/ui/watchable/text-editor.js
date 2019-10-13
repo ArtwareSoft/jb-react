@@ -256,7 +256,7 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId])
     const locationMap = enrichMapWithOffsets(text, map)
     const path = pathOfPosition({text, locationMap}, {line: pos.line - componentHeaderIndex, col: pos.col})
-    return new jbToUse.jbCtx().run(sourceEditor.suggestions(path))
+    return new jbToUse.jbCtx().run(sourceEditor.suggestions([compId,path].join('~')))
 }
 
 function adjustWhiteSpaces(map,original,formatted) {
