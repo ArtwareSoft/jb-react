@@ -158,13 +158,32 @@ jb.component('keys', { /* keys */
 })
 
 jb.component('properties', { /* properties */
+  description: 'object entries as id,val',
   type: 'data',
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (context,obj) =>
+  impl: (ctx,obj) =>
 		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
 			({id: id, val: obj[id], index: index}))
+})
+
+jb.component('entries', {
+  description: 'object entries as array 0/1',
+  type: 'data',
+  params: [
+    {id: 'obj', defaultValue: '%%', as: 'single'}
+  ],
+  impl: (ctx,obj) => jb.entries(obj) 
+})
+
+jb.component('obj-from-entries', {
+  description: 'object from entries',
+  type: 'aggregator',
+  params: [
+    {id: 'entries', defaultValue: '%%', as: 'array'}
+  ],
+  impl: (ctx,entries) => jb.objFromEntries(entries) 
 })
 
 jb.component('prefix', { /* prefix */

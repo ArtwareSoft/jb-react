@@ -1080,13 +1080,32 @@ jb.component('keys', { /* keys */
 })
 
 jb.component('properties', { /* properties */
+  description: 'object entries as id,val',
   type: 'data',
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (context,obj) =>
+  impl: (ctx,obj) =>
 		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
 			({id: id, val: obj[id], index: index}))
+})
+
+jb.component('entries', {
+  description: 'object entries as array 0/1',
+  type: 'data',
+  params: [
+    {id: 'obj', defaultValue: '%%', as: 'single'}
+  ],
+  impl: (ctx,obj) => jb.entries(obj) 
+})
+
+jb.component('obj-from-entries', {
+  description: 'object from entries',
+  type: 'aggregator',
+  params: [
+    {id: 'entries', defaultValue: '%%', as: 'array'}
+  ],
+  impl: (ctx,entries) => jb.objFromEntries(entries) 
 })
 
 jb.component('prefix', { /* prefix */
@@ -3351,27 +3370,17 @@ jb.component('remove-prefix-regex', { /* removePrefixRegex */
     text.replace(new RegExp('^'+prefix) ,'')
 })
 
-jb.component('wrap-as-object-with-array', { /* wrapAsObjectWithArray */
-  type: 'aggregator',
-  description: 'put all items in an array, wrapped by an object',
-  params: [
-    {id: 'arrayProperty', as: 'string', defaultValue: 'items'},
-    {id: 'items', as: 'array', defaultValue: '%%'}
-  ],
-  impl: (ctx,prop,items) =>
-      jb.obj(prop,items)
-})
-
 jb.component('wrap-as-object', { /* wrapAsObject */
-  description: 'put each item in a property',
+  description: 'object from entries, map each item as a property',
   type: 'aggregator',
   params: [
-    {id: 'itemToPropName', as: 'string', dynamic: true, mandatory: true},
+    {id: 'propertyName', as: 'string', dynamic: true, mandatory: true},
+    {id: 'value', as: 'string', dynamic: true, defaultValue: '%%' },
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,key,items) => {
+  impl: (ctx,key,value,items) => {
     let out = {}
-    items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = item)
+    items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = value(ctx.setData(item)))
     return out;
   }
 })

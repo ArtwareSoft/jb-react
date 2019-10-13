@@ -277,27 +277,17 @@ jb.component('remove-prefix-regex', { /* removePrefixRegex */
     text.replace(new RegExp('^'+prefix) ,'')
 })
 
-jb.component('wrap-as-object-with-array', { /* wrapAsObjectWithArray */
-  type: 'aggregator',
-  description: 'put all items in an array, wrapped by an object',
-  params: [
-    {id: 'arrayProperty', as: 'string', defaultValue: 'items'},
-    {id: 'items', as: 'array', defaultValue: '%%'}
-  ],
-  impl: (ctx,prop,items) =>
-      jb.obj(prop,items)
-})
-
 jb.component('wrap-as-object', { /* wrapAsObject */
-  description: 'put each item in a property',
+  description: 'object from entries, map each item as a property',
   type: 'aggregator',
   params: [
-    {id: 'itemToPropName', as: 'string', dynamic: true, mandatory: true},
+    {id: 'propertyName', as: 'string', dynamic: true, mandatory: true},
+    {id: 'value', as: 'string', dynamic: true, defaultValue: '%%' },
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,key,items) => {
+  impl: (ctx,key,value,items) => {
     let out = {}
-    items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = item)
+    items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = value(ctx.setData(item)))
     return out;
   }
 })

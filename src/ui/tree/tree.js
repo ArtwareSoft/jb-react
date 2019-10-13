@@ -318,7 +318,7 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 						const diff = e.keyCode == 40 ? 1 : -1;
       					let target = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
 						const state = treeStateAsRefs(tree);
-      					tree.nodeModel.move(tree.selected, tree.selected.split('~').slice(0,-1).concat([target]).join('~'))
+      					tree.nodeModel.move(tree.selected, tree.selected.split('~').slice(0,-1).concat([target]).join('~'),ctx)
 						  
 						restoreTreeStateFromRefs(tree,state);
       			})
