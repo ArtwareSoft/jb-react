@@ -31,7 +31,7 @@ jb.component('ui-test.tree-DD', { /* uiTest.treeDD */
       }),
       action: ctx =>
         jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
-          ctx.exp('%$personWithChildren/friends[0]%', 'ref')),
+          ctx.exp('%$personWithChildren/friends[0]%', 'ref'),ctx),
       expectedResult: equals(
         pipeline(
           list('%$personWithChildren/children%', '%$personWithChildren/friends%'),
@@ -51,7 +51,7 @@ jb.component('ui-test.tree-DD-after-last', { /* uiTest.treeDDAfterLast */
         }),
         action: ctx =>
         jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
-            ctx.exp('%$personWithChildren/friends[1]%', 'ref')),
+            ctx.exp('%$personWithChildren/friends[1]%', 'ref'),ctx),
         expectedResult: equals(
         pipeline(
             list('%$personWithChildren/children%', '%$personWithChildren/friends%'),

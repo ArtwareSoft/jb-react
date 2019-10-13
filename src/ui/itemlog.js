@@ -19,7 +19,7 @@ jb.component('itemlog', {
               var ctrl = ctx.params.controls(itemCtx.setVars(jb.obj(ctx.params.itemVariable,itemCtx.data)))[0];
               cmp.ctrls.unshift(ctrl);
               if (ctx.params.counter)
-                jb.writeValue(ctx.params.counter,cmp.ctrls.length);
+                jb.writeValue(ctx.params.counter,cmp.ctrls.length, ctx);
               jb_ui.apply(ctx);
           })
       }

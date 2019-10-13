@@ -140,7 +140,7 @@ jb.component('field.default', { /* field.default */
   impl: (ctx,defaultValue) => {
     var data_ref = ctx.vars.$model.databind();
     if (data_ref && jb.val(data_ref) == null)
-      jb.writeValue(data_ref, jb.val(defaultValue))
+      jb.writeValue(data_ref, jb.val(defaultValue), ctx)
   }
 })
 
@@ -150,7 +150,7 @@ jb.component('field.init-value', { /* field.initValue */
     {id: 'value', type: 'data'}
   ],
   impl: (ctx,value) =>
-    ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind(), jb.val(value))
+    ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind(), jb.val(value), ctx)
 })
 
 jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */

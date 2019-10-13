@@ -21,8 +21,8 @@ st.PropertiesTree = class {
 	val(path) {
 		return st.valOfPath(path)
 	}
-	move(from,to) {
-		return st.moveFixDestination(from,to)
+	move(from,to,ctx) {
+		return st.moveFixDestination(from,to,ctx)
 	}
 	disabled(path) {
 		return st.disabled(path)
@@ -57,8 +57,8 @@ st.ControlTree = class {
 				}))
 				.concat(nonRecursive ? [] : this.innerControlPaths(path));
 	}
-	move(from,to) {
-		return st.moveFixDestination(from,to)
+	move(from,to,ctx) {
+		return st.moveFixDestination(from,to,ctx)
 	}
 	disabled(path) {
 		return st.disabled(path)
@@ -125,8 +125,8 @@ st.jbEditorTree = class {
 				.concat(this.specialCases(path,val) || [])
 				.concat(this.innerProfiles(path,val) || [])
 	}
-	move(from,to) {
-		return jb.move(st.refOfPath(from),st.refOfPath(to))
+	move(from,to,ctx) {
+		return jb.move(st.refOfPath(from),st.refOfPath(to),ctx)
 	}
 	disabled(path) {
 		return st.disabled(path)

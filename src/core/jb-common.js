@@ -297,7 +297,7 @@ jb.component('toggle-boolean-value', { /* toggleBooleanValue */
     {id: 'of', as: 'ref'}
   ],
   impl: (ctx,_of) =>
-		jb.writeValue(_of,jb.val(_of) ? false : true)
+		jb.writeValue(_of,jb.val(_of) ? false : true,ctx)
 })
 
 jb.component('slice', { /* slice */
@@ -737,7 +737,7 @@ jb.component('touch', { /* touch */
   ],
   impl: function(context,data_ref) {
 		const val = Number(jb.val(data_ref));
-		jb.writeValue(data_ref,val ? val + 1 : 1);
+		jb.writeValue(data_ref,val ? val + 1 : 1,ctx);
 	}
 })
 

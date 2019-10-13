@@ -153,7 +153,7 @@ jb.component('tree.selection', { /* tree.selection */
 				  return path;
 			  },'')
 			  if (selectedRef)
-				  jb.writeValue(selectedRef, selected);
+				  jb.writeValue(selectedRef, selected, ctx);
 			  ctx.params.onSelection(cmp.ctx.setData(selected));
 			  tree.redraw();
 		  });
@@ -301,7 +301,7 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 				const targetIndex = Number(targetPath.split('~').pop());
 				if (target === source && targetIndex > draggedIndex)
 					targetPath = addToIndex(targetPath,-1)
-				tree.nodeModel.move(dropElm.dragged.path,targetPath);
+				tree.nodeModel.move(dropElm.dragged.path,targetPath,ctx);
 				tree.selectionEmitter.next(targetPath)
 				restoreTreeStateFromRefs(tree,state);
 				dropElm.dragged = null;

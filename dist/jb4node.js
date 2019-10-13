@@ -905,11 +905,11 @@ Object.assign(jb,{
       return watchableHanlder.asRef(obj)
     return jb.simpleValueByRefHandler.asRef(obj)
   },
-  writeValue: (ref,value,srcCtx) => jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
+  writeValue: (ref,value,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
   objectProperty: (obj,prop,srcCtx) => jb.objHandler(obj).objectProperty(obj,prop,srcCtx),
-  splice: (ref,args,srcCtx) => jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
-  move: (ref,toRef,srcCtx) => jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
-  push: (ref,toAdd,srcCtx) => jb.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
+  splice: (ref,args,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
+  move: (ref,toRef,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
+  push: (ref,toAdd,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
   isRef: ref => jb.refHandler(ref),
   isWatchable: ref => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
@@ -1219,7 +1219,7 @@ jb.component('toggle-boolean-value', { /* toggleBooleanValue */
     {id: 'of', as: 'ref'}
   ],
   impl: (ctx,_of) =>
-		jb.writeValue(_of,jb.val(_of) ? false : true)
+		jb.writeValue(_of,jb.val(_of) ? false : true,ctx)
 })
 
 jb.component('slice', { /* slice */
@@ -1659,7 +1659,7 @@ jb.component('touch', { /* touch */
   ],
   impl: function(context,data_ref) {
 		const val = Number(jb.val(data_ref));
-		jb.writeValue(data_ref,val ? val + 1 : 1);
+		jb.writeValue(data_ref,val ? val + 1 : 1,ctx);
 	}
 })
 

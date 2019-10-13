@@ -64,7 +64,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             .subscribe(loc => {
                 const obj = urlFormat.urlToObj(loc);
                 params.forEach(p=>
-                    jb.writeValue(ctx.exp(`%$${resource}/${p}%`,'ref'),jb.tostring(obj[p])));
+                    jb.writeValue(ctx.exp(`%$${resource}/${p}%`,'ref'), jb.tostring(obj[p]) ,ctx) );
                 // change the url if needed
                 if (loc.pathname && loc.pathname === location.pathname) return
                 if (loc.search && loc.search === location.search) return

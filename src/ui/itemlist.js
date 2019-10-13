@@ -153,7 +153,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
               return cmp.selectionEmitter.next(cmp.items[0])
         }
         function writeSelectedToDatabind(selected) {
-          return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)))
+          return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)), ctx)
         }
         function selectedOfDatabind() {
           return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(selectedRef))))

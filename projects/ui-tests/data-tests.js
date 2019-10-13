@@ -407,9 +407,9 @@ jb.component('data-test.restoreArrayIds-bug', { /* dataTest.restoreArrayIdsBug *
     runBefore: ctx => {
       const ar_ref = ctx.run('%$ar-test/ar%',{as: 'ref'});
       const refWithBug = jb.refHandler(ar_ref).refOfPath(['ar-test','ar','0']);
-      jb.splice(ar_ref,[[1,0,'1']]);
+      jb.splice(ar_ref,[[1,0,'1']],ctx);
       const v = jb.val(refWithBug);
-      jb.writeValue(ctx.exp('%$ar-test/result%','ref'),v);
+      jb.writeValue(ctx.exp('%$ar-test/result%','ref'),v,ctx);
    },
     expectedResult: contains('0')
   })

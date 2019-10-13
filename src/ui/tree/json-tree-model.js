@@ -106,7 +106,7 @@ class Json {
 		const draggedArr = this.val(dragged.split('~').slice(0,-1).join('~'));
 		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
 		if (Array.isArray(draggedArr) && Array.isArray(targetArr))
-			jb.move(jb.asRef(this.val(dragged)), jb.asRef(this.val(target)))
+			jb.move(jb.asRef(this.val(dragged)), jb.asRef(this.val(target)),ctx)
 	}
 }
 

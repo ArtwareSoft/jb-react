@@ -67,7 +67,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						},
 						refreshFromDataRef: () => editor.setValue(jb.tostring(data_ref)),
 						setValue: text => editor.setValue(text),
-						storeToRef: () => jb.writeValue(data_ref,editor.getValue()),
+						storeToRef: () => jb.writeValue(data_ref,editor.getValue(), ctx),
 						isDirty: () => editor.getValue() !== jb.tostring(data_ref),
 						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
 						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
@@ -114,7 +114,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 							x != jb.tostring(data_ref))
 						.distinctUntilChanged()
 						.subscribe(x=>
-							jb.writeValue(data_ref,x));
+							jb.writeValue(data_ref,x, ctx));
 
 				} catch(e) {
 					jb.logException(e,'editable-text.codemirror',ctx);

@@ -905,11 +905,11 @@ Object.assign(jb,{
       return watchableHanlder.asRef(obj)
     return jb.simpleValueByRefHandler.asRef(obj)
   },
-  writeValue: (ref,value,srcCtx) => jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
+  writeValue: (ref,value,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
   objectProperty: (obj,prop,srcCtx) => jb.objHandler(obj).objectProperty(obj,prop,srcCtx),
-  splice: (ref,args,srcCtx) => jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
-  move: (ref,toRef,srcCtx) => jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
-  push: (ref,toAdd,srcCtx) => jb.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
+  splice: (ref,args,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
+  move: (ref,toRef,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
+  push: (ref,toAdd,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
   isRef: ref => jb.refHandler(ref),
   isWatchable: ref => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
@@ -1219,7 +1219,7 @@ jb.component('toggle-boolean-value', { /* toggleBooleanValue */
     {id: 'of', as: 'ref'}
   ],
   impl: (ctx,_of) =>
-		jb.writeValue(_of,jb.val(_of) ? false : true)
+		jb.writeValue(_of,jb.val(_of) ? false : true,ctx)
 })
 
 jb.component('slice', { /* slice */
@@ -1659,7 +1659,7 @@ jb.component('touch', { /* touch */
   ],
   impl: function(context,data_ref) {
 		const val = Number(jb.val(data_ref));
-		jb.writeValue(data_ref,val ? val + 1 : 1);
+		jb.writeValue(data_ref,val ? val + 1 : 1,ctx);
 	}
 })
 
@@ -5646,7 +5646,7 @@ jb.component('field.default', { /* field.default */
   impl: (ctx,defaultValue) => {
     var data_ref = ctx.vars.$model.databind();
     if (data_ref && jb.val(data_ref) == null)
-      jb.writeValue(data_ref, jb.val(defaultValue))
+      jb.writeValue(data_ref, jb.val(defaultValue), ctx)
   }
 })
 
@@ -5656,7 +5656,7 @@ jb.component('field.init-value', { /* field.initValue */
     {id: 'value', type: 'data'}
   ],
   impl: (ctx,value) =>
-    ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind(), jb.val(value))
+    ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind(), jb.val(value), ctx)
 })
 
 jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
@@ -7378,7 +7378,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
               return cmp.selectionEmitter.next(cmp.items[0])
         }
         function writeSelectedToDatabind(selected) {
-          return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)))
+          return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)), ctx)
         }
         function selectedOfDatabind() {
           return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(selectedRef))))
@@ -7530,7 +7530,7 @@ const createItemlistCntr = (ctx,params) => ({
 	selected: function(selected) {
 		if (!jb.isValid(this.selectedRef)) return;
 		return (typeof selected != 'undefined') ?
-			jb.writeValue(this.selectedRef,selected,this.ctx) : jb.val(this.selectedRef)
+			jb.writeValue(this.selectedRef,selected,ctx) : jb.val(this.selectedRef)
 	},
 	reSelectAfterFilter: function(filteredItems) {
 		if (filteredItems.indexOf(this.selected()) == -1)
@@ -7612,9 +7612,9 @@ jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
 				jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
 			if (updateCounters) {
 					jb.delay(1).then(_=>{
-					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length);
-					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length);
-					jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length);
+					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length, ctx);
+					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length, ctx);
+					jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length, ctx);
 			}) } else {
 				ctx.vars.itemlistCntrData.countAfterFilter = res.length
 			}
@@ -7696,7 +7696,7 @@ jb.component('itemlist-container.more-items-button', { /* itemlistContainer.more
 				if (!ctx.vars.itemlistCntr) return;
 				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
 				cmp.clicked = _ =>
-					jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta);
+					jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta, ctx);
 				cmp.refresh = _ =>
 					cmp.setState({title: jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta})))});
 				jb.ui.watchRef(ctx,cmp,maxItemsRef);
@@ -8591,7 +8591,7 @@ jb.component('slider.init', { /* slider.init */
           cmp.handleArrowKey = e => {
               var val = Number(cmp.jbModel()) || 0;
               if (e.keyCode == 46) // delete
-                jb.writeValue(cmp.state.databindRef || ctx.vars.$model.databind(),null);
+                jb.writeValue(cmp.state.databindRef || ctx.vars.$model.databind(),null, ctx);
               if ([37,39].indexOf(e.keyCode) != -1) {
                 var inc = e.shiftKey ? 9 : 1;
                 if (val !=null && e.keyCode == 39)
@@ -8973,6 +8973,7 @@ jb.component('mdl-style.init-dynamic', { /* mdlStyle.initDynamic */
   impl: (ctx,query) =>
     ({
       afterViewInit: cmp => {
+        if (typeof componentHandler === 'undefined') return
         var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
         cmp.refreshMdl = _ => {
           jb.delay(1).then(_ => elems.forEach(el=> {
@@ -8992,8 +8993,9 @@ jb.component('mdl-style.init-dynamic', { /* mdlStyle.initDynamic */
        input && input.dispatchEvent(new Event('input'));
       },
       destroy: cmp => {
+        if (typeof componentHandler === 'undefined') return
         try {
-      	 typeof $ !== 'undefined' && $.contains(document.documentElement, cmp.base) &&
+          typeof $ !== 'undefined' && $.contains(document.documentElement, cmp.base) &&
           (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
       	 	   jb.ui.inDocument(el) && componentHandler.downgradeElements(el))
         } catch(e) {}
@@ -10607,7 +10609,7 @@ jb.component('tree.selection', { /* tree.selection */
 				  return path;
 			  },'')
 			  if (selectedRef)
-				  jb.writeValue(selectedRef, selected);
+				  jb.writeValue(selectedRef, selected, ctx);
 			  ctx.params.onSelection(cmp.ctx.setData(selected));
 			  tree.redraw();
 		  });
@@ -10755,7 +10757,7 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 				const targetIndex = Number(targetPath.split('~').pop());
 				if (target === source && targetIndex > draggedIndex)
 					targetPath = addToIndex(targetPath,-1)
-				tree.nodeModel.move(dropElm.dragged.path,targetPath);
+				tree.nodeModel.move(dropElm.dragged.path,targetPath,ctx);
 				tree.selectionEmitter.next(targetPath)
 				restoreTreeStateFromRefs(tree,state);
 				dropElm.dragged = null;
@@ -11078,7 +11080,7 @@ class Json {
 		const draggedArr = this.val(dragged.split('~').slice(0,-1).join('~'));
 		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
 		if (Array.isArray(draggedArr) && Array.isArray(targetArr))
-			jb.move(jb.asRef(this.val(dragged)), jb.asRef(this.val(target)))
+			jb.move(jb.asRef(this.val(dragged)), jb.asRef(this.val(target)),ctx)
 	}
 }
 

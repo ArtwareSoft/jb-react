@@ -62,7 +62,7 @@ jb.component('studio-data-test.moveFixDestination-null-group', { /* studioDataTe
       join({})
     ),
     runBefore: ctx =>
-	 		jb.studio.moveFixDestination('test.move-in-tree~impl~controls~1', 'test.move-in-tree~impl~controls~3~controls'),
+	 		jb.studio.moveFixDestination('test.move-in-tree~impl~controls~1', 'test.move-in-tree~impl~controls~3~controls',ctx),
     expectedResult: equals('a,c,b')
   })
 })
@@ -78,7 +78,7 @@ jb.component('studio-data-test.moveFixDestination-empty-group', { /* studioDataT
       join({})
     ),
     runBefore: ctx =>
-	 		jb.studio.moveFixDestination('test.move-in-tree~impl~controls~1', 'test.move-in-tree~impl~controls~4~controls'),
+	 		jb.studio.moveFixDestination('test.move-in-tree~impl~controls~1', 'test.move-in-tree~impl~controls~4~controls',ctx),
     expectedResult: equals('a,c,b')
   })
 })
@@ -87,7 +87,7 @@ jb.component('studio-data-test.jb-editor-move', { /* studioDataTest.jbEditorMove
   impl: dataTest({
     calculate: pipeline(studio.val('test.move-in-tree~impl~controls'), '%title%', join({})),
     runBefore: ctx =>
-	 		jb.move(jb.studio.refOfPath('test.move-in-tree~impl~controls~1'), jb.studio.refOfPath('test.move-in-tree~impl~controls~0')),
+	 		jb.move(jb.studio.refOfPath('test.move-in-tree~impl~controls~1'), jb.studio.refOfPath('test.move-in-tree~impl~controls~0'),ctx),
     expectedResult: equals('b,a,c')
   })
 })

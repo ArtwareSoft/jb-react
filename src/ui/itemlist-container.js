@@ -9,7 +9,7 @@ const createItemlistCntr = (ctx,params) => ({
 	selected: function(selected) {
 		if (!jb.isValid(this.selectedRef)) return;
 		return (typeof selected != 'undefined') ?
-			jb.writeValue(this.selectedRef,selected,this.ctx) : jb.val(this.selectedRef)
+			jb.writeValue(this.selectedRef,selected,ctx) : jb.val(this.selectedRef)
 	},
 	reSelectAfterFilter: function(filteredItems) {
 		if (filteredItems.indexOf(this.selected()) == -1)
@@ -91,9 +91,9 @@ jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
 				jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
 			if (updateCounters) {
 					jb.delay(1).then(_=>{
-					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length);
-					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length);
-					jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length);
+					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length, ctx);
+					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length, ctx);
+					jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length, ctx);
 			}) } else {
 				ctx.vars.itemlistCntrData.countAfterFilter = res.length
 			}
@@ -175,7 +175,7 @@ jb.component('itemlist-container.more-items-button', { /* itemlistContainer.more
 				if (!ctx.vars.itemlistCntr) return;
 				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
 				cmp.clicked = _ =>
-					jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta);
+					jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta, ctx);
 				cmp.refresh = _ =>
 					cmp.setState({title: jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta})))});
 				jb.ui.watchRef(ctx,cmp,maxItemsRef);

@@ -6,6 +6,7 @@ jb.component('mdl-style.init-dynamic', { /* mdlStyle.initDynamic */
   impl: (ctx,query) =>
     ({
       afterViewInit: cmp => {
+        if (typeof componentHandler === 'undefined') return
         var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
         cmp.refreshMdl = _ => {
           jb.delay(1).then(_ => elems.forEach(el=> {
@@ -25,8 +26,9 @@ jb.component('mdl-style.init-dynamic', { /* mdlStyle.initDynamic */
        input && input.dispatchEvent(new Event('input'));
       },
       destroy: cmp => {
+        if (typeof componentHandler === 'undefined') return
         try {
-      	 typeof $ !== 'undefined' && $.contains(document.documentElement, cmp.base) &&
+          typeof $ !== 'undefined' && $.contains(document.documentElement, cmp.base) &&
           (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
       	 	   jb.ui.inDocument(el) && componentHandler.downgradeElements(el))
         } catch(e) {}
