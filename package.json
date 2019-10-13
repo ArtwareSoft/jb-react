@@ -1,6 +1,6 @@
 {
   "name": "jb-react",
-  "version": "0.4.23",
+  "version": "0.4.24",
   "description": "jBart - Visual Development with react",
   "homepage": "https://github.com/artwaresoft/jb-react",
   "bugs": {
@@ -32,7 +32,7 @@
     "studio-server": "node bin/studio/studio-server.js",
     "helloWorld": "start http://localhost:8082/project/studio/hello-world",
     "test": "start http://localhost:8082/projects/ui-tests/tests.html",
-    "pub": "yarn build-libs & git commit -am fixes & git push & npm publish"
+    "pub": "yarn build-libs && git commit -am fixes && git push && npm publish"
   },
   "bin": {
     "studio": "bin/studio"
