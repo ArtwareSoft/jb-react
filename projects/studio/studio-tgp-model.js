@@ -278,7 +278,7 @@ Object.assign(st,{
 		if (comp) {
 			while (_jb.comps[name] && !_jb.comps[name].type && _jb.compName(_jb.comps[name].impl))
 				name = _jb.compName(_jb.comps[name].impl);
-			return (_jb.comps[name] && _jb.comps[name].type || '').indexOf(type) == 0;
+			return (_jb.comps[name] && _jb.comps[name].type || 'data').indexOf(type) == 0;
 		}
 	},
 	paramDef: path => {
@@ -301,7 +301,7 @@ Object.assign(st,{
 		if (types.length > 1)
 			return types.some(t=>st.isOfType(path,t));
 		
-    if (path.indexOf('~') == -1)
+    	if (path.indexOf('~') == -1)
 		  return st.isCompNameOfType(path,type);
 		const paramDef = st.paramDef(path);
 		if (paramDef)

@@ -3,7 +3,6 @@ const jb = (function() {
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
   const res = do_jb_run(...arguments);
-  
   log('res', [ctx,res,parentParam,settings])
   return res;
 }
@@ -11,7 +10,7 @@ function jb_run(ctx,parentParam,settings) {
 function do_jb_run(ctx,parentParam,settings) {
   try {
     const profile = ctx.profile;
-    if (jb.ctxByPath)
+    if (jb.ctxByPath && ctx.path.match(/~impl$/))
       jb.ctxByPath[ctx.path] = ctx
     if (ctx.probe && (!settings || !settings.noprobe)) {
       if (ctx.probe.pathToTrace.indexOf(ctx.path) == 0)

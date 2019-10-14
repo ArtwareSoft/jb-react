@@ -152,48 +152,23 @@ jb.component('studio.probe', { /* studio.probe */
   ],
   impl: (ctx,path) => {
         const _jb = st.previewjb
-        /* Finding the best circuit
-    1. direct selection
-    2. closest in preview
-    3. the page shown in studio
-*/
         let circuitCtx = ctx.exp('%$pickSelection/ctx%')
-        // if (circuitCtx && circuitCtx.path.indexOf('~fields~') != -1) {// fields are not good circuit. go up to the table
-        //     const rowElem = ctx.vars.pickSelection.elem && ctx.vars.pickSelection.elem.closest('.jb-item')
-        //     const rowCtx = rowElem && _jb.ctxDictionary[rowElem.getAttribute('jb-ctx')]
-        //     const item = rowCtx && rowCtx.data
-        //     if (item) {
-        //         circuitCtx = circuitCtx.setVars({ $probe_item: item, $probe_index: Array.from(rowElem.parentElement.children).indexOf(rowElem) })
-        //         st.highlight([rowElem])
-        //     } else {
-        //         circuitCtx = null
-        //     }
-        // }
         if (circuitCtx)
             jb.studio.highlightCtx(circuitCtx)
         if (!circuitCtx) {
             const circuitInPreview = st.closestCtxInPreview(path())
                 if (circuitInPreview.ctx) {
-                st.highlight([circuitInPreview.elem])
-                circuitCtx = circuitInPreview.ctx
+                    st.highlight([circuitInPreview.elem])
+                    circuitCtx = circuitInPreview.ctx
             }
         }
+        if (!circuitCtx)
+            circuitCtx = st.closestCtxByPath(path())
         if (!circuitCtx) {
             const circuit = jb.tostring(ctx.exp('%$circuit%','string') || ctx.exp('%$studio/project%.%$studio/page%'))
             circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
         }
         return new (_jb.studio.Probe || st.Probe)(circuitCtx).runCircuit(path())
-
-        // const req = {path: path(), circuitCtx: circuitCtx };
-        // jb.delay(1).then(_=>probeEmitter.next(req));
-        // const probeQueue = probeEmitter.buffer(probeEmitter.debounceTime(500))
-        //     .map(x=>x && x[0]).filter(x=>x)
-        //     .flatMap(req=>
-        //       new (_jb.studio.Probe || st.Probe)(req.circuitCtx).runCircuit(req.path)
-        //     );
-
-        // return probeQueue.filter(x=>x.id == probeCounter).take(1).toPromise();
-        //      .race(jb.rx.Observable.fromPromise(jb.delay(1000).then(_=>({ result: [] }))))
     }
 })
 

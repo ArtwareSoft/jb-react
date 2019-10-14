@@ -1,4 +1,4 @@
-jb.ns('gsmArena','html-parsing')
+jb.ns('html-parsing')
 
 jb.component('html-parsing.main', { /* htmlParsing.main */
   type: 'control',
@@ -26,30 +26,16 @@ jb.component('html-parsing.main', { /* htmlParsing.main */
     ],
     features: variable({
       name: 'phone',
-      value: pipeline('%$samsung_galaxy_m30s-9818%', gsmArena.deviceParser())
+      value: pipeline('%$samsung_galaxy_m30s-9818%', htmlParsing.deviceParser())
     })
   })
 })
 
-jb.component('gsm-arena.device-parser', { /* gsmArena.deviceParser */
-  impl: obj(
-    prop(
-        'name',
-        extractText({
-          startMarkers: '<h1 class=\"specs-phone-name-title\" data-spec=\"modelname\">',
-          endMarker: '</h1>'
-        })
-      ),
-    prop(
-        'image',
-        extractText({
-          startMarkers: ['<div class=\"specs-photo-main\">', '<a href=\"', 'src=\"'],
-          endMarker: '\"'
-        })
-      ),
-    prop(
-        'spec-list',
-        pipeline(
+jb.component('html-parsing.device-parser', { /* htmlParsing.deviceParser */
+  impl: pipeline(
+    Var('input', '%%'),
+    dynamicObject({
+        items: pipeline(
           extractText({
               startMarkers: ['id=\"specs-list'],
               endMarker: 'class=\"note\"',
@@ -59,14 +45,30 @@ jb.component('gsm-arena.device-parser', { /* gsmArena.deviceParser */
               startMarkers: 'class=\"ttl\">',
               endMarker: '</tr>',
               repeating: 'true'
-            }),
-          obj(
-              prop('feature', extractText({startMarkers: '\">', endMarker: '<'})),
-              prop('val', extractText({startMarkers: ['data-spec=', '\">'], endMarker: '<'}))
-            )
+            })
         ),
-        'array'
-      )
+        propertyName: extractText({startMarkers: '\">', endMarker: '<'}),
+        value: extractText({startMarkers: ['data-spec=', '\">'], endMarker: '<'})
+      }),
+    assign(
+        prop(
+            'name',
+            extractText({
+              text: '%$input%',
+              startMarkers: '<h1 class=\"specs-phone-name-title\" data-spec=\"modelname\">',
+              endMarker: '</h1>'
+            })
+          ),
+        prop(
+            'image',
+            extractText({
+              text: '%$input%',
+              startMarkers: ['<div class=\"specs-photo-main\">', '<a href=\"', 'src=\"'],
+              endMarker: '\"'
+            })
+          )
+      ),
+    first()
   )
 })
 
@@ -90,16 +92,11 @@ jb.component('html-parsing.makeToDevices', { /* htmlParsing.makeToDevices */
       button({
         title: 'crawl - devices url - parse device - store in results',
         action: runActionOnItems(
-          pipeline('%$deviceUrls%', slice('0', '5')),
+          pipeline('%$deviceUrls%', slice('0', '1')),
           runActions(
             writeValueAsynch(
                 '%$devices/{%%}%',
-                pipe(
-                  http.get(
-                      'https://www.gsmarena.com/%%.php'
-                    ),
-                  gsmArena.deviceParser()
-                )
+                pipe(http.get('https://www.gsmarena.com/%%.php'), htmlParsing.deviceParser())
               ),
             writeValue('%$progress/{%%}%', 'done')
           )
