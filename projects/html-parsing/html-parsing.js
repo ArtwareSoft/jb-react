@@ -113,6 +113,7 @@ jb.component('html-parsing.makeToDevices', { /* htmlParsing.makeToDevices */
           })
         ],
         style: table.mdl(),
+        visualSizeLimit: '4',
         features: [css.width('600'), watchRef({ref: '%$progress%', includeChildren: 'yes'})]
       })
     ]

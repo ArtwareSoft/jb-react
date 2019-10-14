@@ -2321,7 +2321,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
       return result.unflat || customStyle || top || ctrls || long
     }
     function fixPropName(prop) {
-      return prop.match(/^[a-zA-Z0-9_]+$/) ? prop : `'${prop}'`
+      return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
     }
   }
 

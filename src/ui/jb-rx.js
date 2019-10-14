@@ -21,6 +21,7 @@ import 'rxjs/add/observable/of';
 import 'rxjs/add/observable/interval';
 import 'rxjs/add/operator/distinctUntilChanged';
 import 'rxjs/add/operator/debounceTime';
+import 'rxjs/add/operator/debounce';
 import 'rxjs/add/operator/buffer';
 import 'rxjs/add/operator/skip';
 import 'rxjs/add/operator/last';

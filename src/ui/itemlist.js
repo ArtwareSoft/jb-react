@@ -62,7 +62,8 @@ jb.component('itemlist.init-table', { /* itemlist.initTable */
             cmp.setState({items: cmp.calcItems()})
 
         cmp.calcItems = _ => {
-            cmp.items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
+            cmp.items = (ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [])
+              .slice(0,ctx.vars.$model.visualSizeLimit || 100);
             if (cmp.ctx.vars.itemlistCntr)
               cmp.ctx.vars.itemlistCntr.items = cmp.items;
             return cmp.items;

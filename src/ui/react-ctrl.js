@@ -347,6 +347,7 @@ ui.renderWidget = function(profile,top) {
 			constructor(props) {
 				super();
 				this.state.profile = profile;
+				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				if (jb.studio.studioWindow) {
 					const studioWin = jb.studio.studioWindow
 					const st = studioWin.jb.studio;
@@ -355,22 +356,32 @@ ui.renderWidget = function(profile,top) {
 					if (project && page)
 						this.state.profile = {$: `${project}.${page}`}
 
-					st.pageChange.debounceTime(200)
+					this.lastRenderTime = 0
+
+					st.pageChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + 200))
 						.filter(({page})=>page != this.state.profile.$)
 						.subscribe(({page})=>
 							this.setState({profile: {$: page }}));
-					st.scriptChange.debounceTime(200).subscribe(_=>
+					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + 200)).subscribe(_=>
 							this.setState(null));
 				}
 			}
 			render(pros,state) {
 				const profToRun = state.profile;
 				if (!jb.comps[profToRun.$]) return '';
+				this.start = new Date().getTime()
 				return ui.h(new jb.jbCtx().run(profToRun).reactComp())
 			}
+			componentDidUpdate() {
+				this.lastRenderTime = new Date().getTime() - this.start
+			}
+			componentWillUnmount() {
+				this.resolveDestroyed();
+			}
 		}
-
-		formerReactElem = ui.render(ui.h(R),innerElem);
+		jb.delay(10).then(()=>{
+			formerReactElem = ui.render(ui.h(R),innerElem);
+		})
 	}
 }
 

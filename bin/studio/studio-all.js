@@ -2788,6 +2788,18 @@ eval("\nvar Observable_1 = __webpack_require__(/*! ../../Observable */ \"./node_
 
 /***/ }),
 
+/***/ "./node_modules/rxjs/add/operator/debounce.js":
+/*!****************************************************!*\
+  !*** ./node_modules/rxjs/add/operator/debounce.js ***!
+  \****************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+eval("\nvar Observable_1 = __webpack_require__(/*! ../../Observable */ \"./node_modules/rxjs/Observable.js\");\nvar debounce_1 = __webpack_require__(/*! ../../operator/debounce */ \"./node_modules/rxjs/operator/debounce.js\");\nObservable_1.Observable.prototype.debounce = debounce_1.debounce;\n//# sourceMappingURL=debounce.js.map\n\n//# sourceURL=webpack:///./node_modules/rxjs/add/operator/debounce.js?");
+
+/***/ }),
+
 /***/ "./node_modules/rxjs/add/operator/debounceTime.js":
 /*!********************************************************!*\
   !*** ./node_modules/rxjs/add/operator/debounceTime.js ***!
@@ -3243,6 +3255,18 @@ eval("\nvar concatMap_1 = __webpack_require__(/*! ../operators/concatMap */ \"./
 
 /***/ }),
 
+/***/ "./node_modules/rxjs/operator/debounce.js":
+/*!************************************************!*\
+  !*** ./node_modules/rxjs/operator/debounce.js ***!
+  \************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+eval("\nvar debounce_1 = __webpack_require__(/*! ../operators/debounce */ \"./node_modules/rxjs/operators/debounce.js\");\n/**\n * Emits a value from the source Observable only after a particular time span\n * determined by another Observable has passed without another source emission.\n *\n * <span class=\"informal\">It's like {@link debounceTime}, but the time span of\n * emission silence is determined by a second Observable.</span>\n *\n * <img src=\"./img/debounce.png\" width=\"100%\">\n *\n * `debounce` delays values emitted by the source Observable, but drops previous\n * pending delayed emissions if a new value arrives on the source Observable.\n * This operator keeps track of the most recent value from the source\n * Observable, and spawns a duration Observable by calling the\n * `durationSelector` function. The value is emitted only when the duration\n * Observable emits a value or completes, and if no other value was emitted on\n * the source Observable since the duration Observable was spawned. If a new\n * value appears before the duration Observable emits, the previous value will\n * be dropped and will not be emitted on the output Observable.\n *\n * Like {@link debounceTime}, this is a rate-limiting operator, and also a\n * delay-like operator since output emissions do not necessarily occur at the\n * same time as they did on the source Observable.\n *\n * @example <caption>Emit the most recent click after a burst of clicks</caption>\n * var clicks = Rx.Observable.fromEvent(document, 'click');\n * var result = clicks.debounce(() => Rx.Observable.interval(1000));\n * result.subscribe(x => console.log(x));\n *\n * @see {@link audit}\n * @see {@link debounceTime}\n * @see {@link delayWhen}\n * @see {@link throttle}\n *\n * @param {function(value: T): SubscribableOrPromise} durationSelector A function\n * that receives a value from the source Observable, for computing the timeout\n * duration for each source value, returned as an Observable or a Promise.\n * @return {Observable} An Observable that delays the emissions of the source\n * Observable by the specified duration Observable returned by\n * `durationSelector`, and may drop some values if they occur too frequently.\n * @method debounce\n * @owner Observable\n */\nfunction debounce(durationSelector) {\n    return debounce_1.debounce(durationSelector)(this);\n}\nexports.debounce = debounce;\n//# sourceMappingURL=debounce.js.map\n\n//# sourceURL=webpack:///./node_modules/rxjs/operator/debounce.js?");
+
+/***/ }),
+
 /***/ "./node_modules/rxjs/operator/debounceTime.js":
 /*!****************************************************!*\
   !*** ./node_modules/rxjs/operator/debounceTime.js ***!
@@ -3492,6 +3516,18 @@ eval("\nvar mergeAll_1 = __webpack_require__(/*! ./mergeAll */ \"./node_modules/
 
 "use strict";
 eval("\nvar mergeMap_1 = __webpack_require__(/*! ./mergeMap */ \"./node_modules/rxjs/operators/mergeMap.js\");\n/* tslint:enable:max-line-length */\n/**\n * Projects each source value to an Observable which is merged in the output\n * Observable, in a serialized fashion waiting for each one to complete before\n * merging the next.\n *\n * <span class=\"informal\">Maps each value to an Observable, then flattens all of\n * these inner Observables using {@link concatAll}.</span>\n *\n * <img src=\"./img/concatMap.png\" width=\"100%\">\n *\n * Returns an Observable that emits items based on applying a function that you\n * supply to each item emitted by the source Observable, where that function\n * returns an (so-called \"inner\") Observable. Each new inner Observable is\n * concatenated with the previous inner Observable.\n *\n * __Warning:__ if source values arrive endlessly and faster than their\n * corresponding inner Observables can complete, it will result in memory issues\n * as inner Observables amass in an unbounded buffer waiting for their turn to\n * be subscribed to.\n *\n * Note: `concatMap` is equivalent to `mergeMap` with concurrency parameter set\n * to `1`.\n *\n * @example <caption>For each click event, tick every second from 0 to 3, with no concurrency</caption>\n * var clicks = Rx.Observable.fromEvent(document, 'click');\n * var result = clicks.concatMap(ev => Rx.Observable.interval(1000).take(4));\n * result.subscribe(x => console.log(x));\n *\n * // Results in the following:\n * // (results are not concurrent)\n * // For every click on the \"document\" it will emit values 0 to 3 spaced\n * // on a 1000ms interval\n * // one click = 1000ms-> 0 -1000ms-> 1 -1000ms-> 2 -1000ms-> 3\n *\n * @see {@link concat}\n * @see {@link concatAll}\n * @see {@link concatMapTo}\n * @see {@link exhaustMap}\n * @see {@link mergeMap}\n * @see {@link switchMap}\n *\n * @param {function(value: T, ?index: number): ObservableInput} project A function\n * that, when applied to an item emitted by the source Observable, returns an\n * Observable.\n * @param {function(outerValue: T, innerValue: I, outerIndex: number, innerIndex: number): any} [resultSelector]\n * A function to produce the value on the output Observable based on the values\n * and the indices of the source (outer) emission and the inner Observable\n * emission. The arguments passed to this function are:\n * - `outerValue`: the value that came from the source\n * - `innerValue`: the value that came from the projected Observable\n * - `outerIndex`: the \"index\" of the value that came from the source\n * - `innerIndex`: the \"index\" of the value from the projected Observable\n * @return {Observable} An Observable that emits the result of applying the\n * projection function (and the optional `resultSelector`) to each item emitted\n * by the source Observable and taking values from each projected inner\n * Observable sequentially.\n * @method concatMap\n * @owner Observable\n */\nfunction concatMap(project, resultSelector) {\n    return mergeMap_1.mergeMap(project, resultSelector, 1);\n}\nexports.concatMap = concatMap;\n//# sourceMappingURL=concatMap.js.map\n\n//# sourceURL=webpack:///./node_modules/rxjs/operators/concatMap.js?");
+
+/***/ }),
+
+/***/ "./node_modules/rxjs/operators/debounce.js":
+/*!*************************************************!*\
+  !*** ./node_modules/rxjs/operators/debounce.js ***!
+  \*************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+eval("\nvar __extends = (this && this.__extends) || function (d, b) {\n    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];\n    function __() { this.constructor = d; }\n    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());\n};\nvar OuterSubscriber_1 = __webpack_require__(/*! ../OuterSubscriber */ \"./node_modules/rxjs/OuterSubscriber.js\");\nvar subscribeToResult_1 = __webpack_require__(/*! ../util/subscribeToResult */ \"./node_modules/rxjs/util/subscribeToResult.js\");\n/**\n * Emits a value from the source Observable only after a particular time span\n * determined by another Observable has passed without another source emission.\n *\n * <span class=\"informal\">It's like {@link debounceTime}, but the time span of\n * emission silence is determined by a second Observable.</span>\n *\n * <img src=\"./img/debounce.png\" width=\"100%\">\n *\n * `debounce` delays values emitted by the source Observable, but drops previous\n * pending delayed emissions if a new value arrives on the source Observable.\n * This operator keeps track of the most recent value from the source\n * Observable, and spawns a duration Observable by calling the\n * `durationSelector` function. The value is emitted only when the duration\n * Observable emits a value or completes, and if no other value was emitted on\n * the source Observable since the duration Observable was spawned. If a new\n * value appears before the duration Observable emits, the previous value will\n * be dropped and will not be emitted on the output Observable.\n *\n * Like {@link debounceTime}, this is a rate-limiting operator, and also a\n * delay-like operator since output emissions do not necessarily occur at the\n * same time as they did on the source Observable.\n *\n * @example <caption>Emit the most recent click after a burst of clicks</caption>\n * var clicks = Rx.Observable.fromEvent(document, 'click');\n * var result = clicks.debounce(() => Rx.Observable.interval(1000));\n * result.subscribe(x => console.log(x));\n *\n * @see {@link audit}\n * @see {@link debounceTime}\n * @see {@link delayWhen}\n * @see {@link throttle}\n *\n * @param {function(value: T): SubscribableOrPromise} durationSelector A function\n * that receives a value from the source Observable, for computing the timeout\n * duration for each source value, returned as an Observable or a Promise.\n * @return {Observable} An Observable that delays the emissions of the source\n * Observable by the specified duration Observable returned by\n * `durationSelector`, and may drop some values if they occur too frequently.\n * @method debounce\n * @owner Observable\n */\nfunction debounce(durationSelector) {\n    return function (source) { return source.lift(new DebounceOperator(durationSelector)); };\n}\nexports.debounce = debounce;\nvar DebounceOperator = (function () {\n    function DebounceOperator(durationSelector) {\n        this.durationSelector = durationSelector;\n    }\n    DebounceOperator.prototype.call = function (subscriber, source) {\n        return source.subscribe(new DebounceSubscriber(subscriber, this.durationSelector));\n    };\n    return DebounceOperator;\n}());\n/**\n * We need this JSDoc comment for affecting ESDoc.\n * @ignore\n * @extends {Ignored}\n */\nvar DebounceSubscriber = (function (_super) {\n    __extends(DebounceSubscriber, _super);\n    function DebounceSubscriber(destination, durationSelector) {\n        _super.call(this, destination);\n        this.durationSelector = durationSelector;\n        this.hasValue = false;\n        this.durationSubscription = null;\n    }\n    DebounceSubscriber.prototype._next = function (value) {\n        try {\n            var result = this.durationSelector.call(this, value);\n            if (result) {\n                this._tryNext(value, result);\n            }\n        }\n        catch (err) {\n            this.destination.error(err);\n        }\n    };\n    DebounceSubscriber.prototype._complete = function () {\n        this.emitValue();\n        this.destination.complete();\n    };\n    DebounceSubscriber.prototype._tryNext = function (value, duration) {\n        var subscription = this.durationSubscription;\n        this.value = value;\n        this.hasValue = true;\n        if (subscription) {\n            subscription.unsubscribe();\n            this.remove(subscription);\n        }\n        subscription = subscribeToResult_1.subscribeToResult(this, duration);\n        if (!subscription.closed) {\n            this.add(this.durationSubscription = subscription);\n        }\n    };\n    DebounceSubscriber.prototype.notifyNext = function (outerValue, innerValue, outerIndex, innerIndex, innerSub) {\n        this.emitValue();\n    };\n    DebounceSubscriber.prototype.notifyComplete = function () {\n        this.emitValue();\n    };\n    DebounceSubscriber.prototype.emitValue = function () {\n        if (this.hasValue) {\n            var value = this.value;\n            var subscription = this.durationSubscription;\n            if (subscription) {\n                this.durationSubscription = null;\n                subscription.unsubscribe();\n                this.remove(subscription);\n            }\n            this.value = null;\n            this.hasValue = false;\n            _super.prototype._next.call(this, value);\n        }\n    };\n    return DebounceSubscriber;\n}(OuterSubscriber_1.OuterSubscriber));\n//# sourceMappingURL=debounce.js.map\n\n//# sourceURL=webpack:///./node_modules/rxjs/operators/debounce.js?");
 
 /***/ }),
 
@@ -4102,7 +4138,7 @@ eval("var g;\n\n// This works in non-strict mode\ng = (function() {\n\treturn th
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var rxjs_Subject__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! rxjs/Subject */ \"./node_modules/rxjs/Subject.js\");\n/* harmony import */ var rxjs_Subject__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(rxjs_Subject__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var rxjs_Observable__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rxjs/Observable */ \"./node_modules/rxjs/Observable.js\");\n/* harmony import */ var rxjs_Observable__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(rxjs_Observable__WEBPACK_IMPORTED_MODULE_1__);\n/* harmony import */ var rxjs_observable_FromObservable__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/observable/FromObservable */ \"./node_modules/rxjs/observable/FromObservable.js\");\n/* harmony import */ var rxjs_observable_FromObservable__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(rxjs_observable_FromObservable__WEBPACK_IMPORTED_MODULE_2__);\n/* harmony import */ var rxjs_add_operator_map__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs/add/operator/map */ \"./node_modules/rxjs/add/operator/map.js\");\n/* harmony import */ var rxjs_add_operator_map__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_map__WEBPACK_IMPORTED_MODULE_3__);\n/* harmony import */ var rxjs_add_operator_filter__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! rxjs/add/operator/filter */ \"./node_modules/rxjs/add/operator/filter.js\");\n/* harmony import */ var rxjs_add_operator_filter__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_filter__WEBPACK_IMPORTED_MODULE_4__);\n/* harmony import */ var rxjs_add_operator_catch__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! rxjs/add/operator/catch */ \"./node_modules/rxjs/add/operator/catch.js\");\n/* harmony import */ var rxjs_add_operator_catch__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_catch__WEBPACK_IMPORTED_MODULE_5__);\n/* harmony import */ var rxjs_add_operator_do__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! rxjs/add/operator/do */ \"./node_modules/rxjs/add/operator/do.js\");\n/* harmony import */ var rxjs_add_operator_do__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_do__WEBPACK_IMPORTED_MODULE_6__);\n/* harmony import */ var rxjs_add_operator_merge__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! rxjs/add/operator/merge */ \"./node_modules/rxjs/add/operator/merge.js\");\n/* harmony import */ var rxjs_add_operator_merge__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_merge__WEBPACK_IMPORTED_MODULE_7__);\n/* harmony import */ var rxjs_add_operator_concat__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! rxjs/add/operator/concat */ \"./node_modules/rxjs/add/operator/concat.js\");\n/* harmony import */ var rxjs_add_operator_concat__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_concat__WEBPACK_IMPORTED_MODULE_8__);\n/* harmony import */ var rxjs_add_operator_mergeMap__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! rxjs/add/operator/mergeMap */ \"./node_modules/rxjs/add/operator/mergeMap.js\");\n/* harmony import */ var rxjs_add_operator_mergeMap__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_mergeMap__WEBPACK_IMPORTED_MODULE_9__);\n/* harmony import */ var rxjs_add_operator_concatMap__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! rxjs/add/operator/concatMap */ \"./node_modules/rxjs/add/operator/concatMap.js\");\n/* harmony import */ var rxjs_add_operator_concatMap__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_concatMap__WEBPACK_IMPORTED_MODULE_10__);\n/* harmony import */ var rxjs_add_operator_startWith__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! rxjs/add/operator/startWith */ \"./node_modules/rxjs/add/operator/startWith.js\");\n/* harmony import */ var rxjs_add_operator_startWith__WEBPACK_IMPORTED_MODULE_11___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_startWith__WEBPACK_IMPORTED_MODULE_11__);\n/* harmony import */ var rxjs_add_operator_takeUntil__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! rxjs/add/operator/takeUntil */ \"./node_modules/rxjs/add/operator/takeUntil.js\");\n/* harmony import */ var rxjs_add_operator_takeUntil__WEBPACK_IMPORTED_MODULE_12___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_takeUntil__WEBPACK_IMPORTED_MODULE_12__);\n/* harmony import */ var rxjs_add_observable_fromPromise__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! rxjs/add/observable/fromPromise */ \"./node_modules/rxjs/add/observable/fromPromise.js\");\n/* harmony import */ var rxjs_add_observable_fromPromise__WEBPACK_IMPORTED_MODULE_13___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_fromPromise__WEBPACK_IMPORTED_MODULE_13__);\n/* harmony import */ var rxjs_add_observable_fromEvent__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! rxjs/add/observable/fromEvent */ \"./node_modules/rxjs/add/observable/fromEvent.js\");\n/* harmony import */ var rxjs_add_observable_fromEvent__WEBPACK_IMPORTED_MODULE_14___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_fromEvent__WEBPACK_IMPORTED_MODULE_14__);\n/* harmony import */ var rxjs_add_observable_from__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! rxjs/add/observable/from */ \"./node_modules/rxjs/add/observable/from.js\");\n/* harmony import */ var rxjs_add_observable_from__WEBPACK_IMPORTED_MODULE_15___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_from__WEBPACK_IMPORTED_MODULE_15__);\n/* harmony import */ var rxjs_add_observable_of__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! rxjs/add/observable/of */ \"./node_modules/rxjs/add/observable/of.js\");\n/* harmony import */ var rxjs_add_observable_of__WEBPACK_IMPORTED_MODULE_16___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_of__WEBPACK_IMPORTED_MODULE_16__);\n/* harmony import */ var rxjs_add_observable_interval__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! rxjs/add/observable/interval */ \"./node_modules/rxjs/add/observable/interval.js\");\n/* harmony import */ var rxjs_add_observable_interval__WEBPACK_IMPORTED_MODULE_17___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_interval__WEBPACK_IMPORTED_MODULE_17__);\n/* harmony import */ var rxjs_add_operator_distinctUntilChanged__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! rxjs/add/operator/distinctUntilChanged */ \"./node_modules/rxjs/add/operator/distinctUntilChanged.js\");\n/* harmony import */ var rxjs_add_operator_distinctUntilChanged__WEBPACK_IMPORTED_MODULE_18___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_distinctUntilChanged__WEBPACK_IMPORTED_MODULE_18__);\n/* harmony import */ var rxjs_add_operator_debounceTime__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! rxjs/add/operator/debounceTime */ \"./node_modules/rxjs/add/operator/debounceTime.js\");\n/* harmony import */ var rxjs_add_operator_debounceTime__WEBPACK_IMPORTED_MODULE_19___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_debounceTime__WEBPACK_IMPORTED_MODULE_19__);\n/* harmony import */ var rxjs_add_operator_buffer__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! rxjs/add/operator/buffer */ \"./node_modules/rxjs/add/operator/buffer.js\");\n/* harmony import */ var rxjs_add_operator_buffer__WEBPACK_IMPORTED_MODULE_20___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_buffer__WEBPACK_IMPORTED_MODULE_20__);\n/* harmony import */ var rxjs_add_operator_skip__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! rxjs/add/operator/skip */ \"./node_modules/rxjs/add/operator/skip.js\");\n/* harmony import */ var rxjs_add_operator_skip__WEBPACK_IMPORTED_MODULE_21___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_skip__WEBPACK_IMPORTED_MODULE_21__);\n/* harmony import */ var rxjs_add_operator_last__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! rxjs/add/operator/last */ \"./node_modules/rxjs/add/operator/last.js\");\n/* harmony import */ var rxjs_add_operator_last__WEBPACK_IMPORTED_MODULE_22___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_last__WEBPACK_IMPORTED_MODULE_22__);\n/* harmony import */ var rxjs_add_operator_delay__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! rxjs/add/operator/delay */ \"./node_modules/rxjs/add/operator/delay.js\");\n/* harmony import */ var rxjs_add_operator_delay__WEBPACK_IMPORTED_MODULE_23___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_delay__WEBPACK_IMPORTED_MODULE_23__);\n/* harmony import */ var rxjs_add_operator_take__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! rxjs/add/operator/take */ \"./node_modules/rxjs/add/operator/take.js\");\n/* harmony import */ var rxjs_add_operator_take__WEBPACK_IMPORTED_MODULE_24___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_take__WEBPACK_IMPORTED_MODULE_24__);\n/* harmony import */ var rxjs_add_operator_toArray__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! rxjs/add/operator/toArray */ \"./node_modules/rxjs/add/operator/toArray.js\");\n/* harmony import */ var rxjs_add_operator_toArray__WEBPACK_IMPORTED_MODULE_25___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_toArray__WEBPACK_IMPORTED_MODULE_25__);\n/* harmony import */ var rxjs_add_operator_toPromise__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! rxjs/add/operator/toPromise */ \"./node_modules/rxjs/add/operator/toPromise.js\");\n/* harmony import */ var rxjs_add_operator_toPromise__WEBPACK_IMPORTED_MODULE_26___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_toPromise__WEBPACK_IMPORTED_MODULE_26__);\n/* harmony import */ var rxjs_add_operator_race__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! rxjs/add/operator/race */ \"./node_modules/rxjs/add/operator/race.js\");\n/* harmony import */ var rxjs_add_operator_race__WEBPACK_IMPORTED_MODULE_27___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_race__WEBPACK_IMPORTED_MODULE_27__);\n/* harmony import */ var rxjs_add_operator_finally__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! rxjs/add/operator/finally */ \"./node_modules/rxjs/add/operator/finally.js\");\n/* harmony import */ var rxjs_add_operator_finally__WEBPACK_IMPORTED_MODULE_28___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_finally__WEBPACK_IMPORTED_MODULE_28__);\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\njb.rx.Observable = rxjs_Observable__WEBPACK_IMPORTED_MODULE_1__[\"Observable\"];\r\njb.rx.Subject = rxjs_Subject__WEBPACK_IMPORTED_MODULE_0__[\"Subject\"];\r\n\n\n//# sourceURL=webpack:///./src/ui/jb-rx.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var rxjs_Subject__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! rxjs/Subject */ \"./node_modules/rxjs/Subject.js\");\n/* harmony import */ var rxjs_Subject__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(rxjs_Subject__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var rxjs_Observable__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rxjs/Observable */ \"./node_modules/rxjs/Observable.js\");\n/* harmony import */ var rxjs_Observable__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(rxjs_Observable__WEBPACK_IMPORTED_MODULE_1__);\n/* harmony import */ var rxjs_observable_FromObservable__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/observable/FromObservable */ \"./node_modules/rxjs/observable/FromObservable.js\");\n/* harmony import */ var rxjs_observable_FromObservable__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(rxjs_observable_FromObservable__WEBPACK_IMPORTED_MODULE_2__);\n/* harmony import */ var rxjs_add_operator_map__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs/add/operator/map */ \"./node_modules/rxjs/add/operator/map.js\");\n/* harmony import */ var rxjs_add_operator_map__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_map__WEBPACK_IMPORTED_MODULE_3__);\n/* harmony import */ var rxjs_add_operator_filter__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! rxjs/add/operator/filter */ \"./node_modules/rxjs/add/operator/filter.js\");\n/* harmony import */ var rxjs_add_operator_filter__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_filter__WEBPACK_IMPORTED_MODULE_4__);\n/* harmony import */ var rxjs_add_operator_catch__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! rxjs/add/operator/catch */ \"./node_modules/rxjs/add/operator/catch.js\");\n/* harmony import */ var rxjs_add_operator_catch__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_catch__WEBPACK_IMPORTED_MODULE_5__);\n/* harmony import */ var rxjs_add_operator_do__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! rxjs/add/operator/do */ \"./node_modules/rxjs/add/operator/do.js\");\n/* harmony import */ var rxjs_add_operator_do__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_do__WEBPACK_IMPORTED_MODULE_6__);\n/* harmony import */ var rxjs_add_operator_merge__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! rxjs/add/operator/merge */ \"./node_modules/rxjs/add/operator/merge.js\");\n/* harmony import */ var rxjs_add_operator_merge__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_merge__WEBPACK_IMPORTED_MODULE_7__);\n/* harmony import */ var rxjs_add_operator_concat__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! rxjs/add/operator/concat */ \"./node_modules/rxjs/add/operator/concat.js\");\n/* harmony import */ var rxjs_add_operator_concat__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_concat__WEBPACK_IMPORTED_MODULE_8__);\n/* harmony import */ var rxjs_add_operator_mergeMap__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! rxjs/add/operator/mergeMap */ \"./node_modules/rxjs/add/operator/mergeMap.js\");\n/* harmony import */ var rxjs_add_operator_mergeMap__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_mergeMap__WEBPACK_IMPORTED_MODULE_9__);\n/* harmony import */ var rxjs_add_operator_concatMap__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! rxjs/add/operator/concatMap */ \"./node_modules/rxjs/add/operator/concatMap.js\");\n/* harmony import */ var rxjs_add_operator_concatMap__WEBPACK_IMPORTED_MODULE_10___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_concatMap__WEBPACK_IMPORTED_MODULE_10__);\n/* harmony import */ var rxjs_add_operator_startWith__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! rxjs/add/operator/startWith */ \"./node_modules/rxjs/add/operator/startWith.js\");\n/* harmony import */ var rxjs_add_operator_startWith__WEBPACK_IMPORTED_MODULE_11___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_startWith__WEBPACK_IMPORTED_MODULE_11__);\n/* harmony import */ var rxjs_add_operator_takeUntil__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! rxjs/add/operator/takeUntil */ \"./node_modules/rxjs/add/operator/takeUntil.js\");\n/* harmony import */ var rxjs_add_operator_takeUntil__WEBPACK_IMPORTED_MODULE_12___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_takeUntil__WEBPACK_IMPORTED_MODULE_12__);\n/* harmony import */ var rxjs_add_observable_fromPromise__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! rxjs/add/observable/fromPromise */ \"./node_modules/rxjs/add/observable/fromPromise.js\");\n/* harmony import */ var rxjs_add_observable_fromPromise__WEBPACK_IMPORTED_MODULE_13___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_fromPromise__WEBPACK_IMPORTED_MODULE_13__);\n/* harmony import */ var rxjs_add_observable_fromEvent__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! rxjs/add/observable/fromEvent */ \"./node_modules/rxjs/add/observable/fromEvent.js\");\n/* harmony import */ var rxjs_add_observable_fromEvent__WEBPACK_IMPORTED_MODULE_14___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_fromEvent__WEBPACK_IMPORTED_MODULE_14__);\n/* harmony import */ var rxjs_add_observable_from__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! rxjs/add/observable/from */ \"./node_modules/rxjs/add/observable/from.js\");\n/* harmony import */ var rxjs_add_observable_from__WEBPACK_IMPORTED_MODULE_15___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_from__WEBPACK_IMPORTED_MODULE_15__);\n/* harmony import */ var rxjs_add_observable_of__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! rxjs/add/observable/of */ \"./node_modules/rxjs/add/observable/of.js\");\n/* harmony import */ var rxjs_add_observable_of__WEBPACK_IMPORTED_MODULE_16___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_of__WEBPACK_IMPORTED_MODULE_16__);\n/* harmony import */ var rxjs_add_observable_interval__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! rxjs/add/observable/interval */ \"./node_modules/rxjs/add/observable/interval.js\");\n/* harmony import */ var rxjs_add_observable_interval__WEBPACK_IMPORTED_MODULE_17___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_observable_interval__WEBPACK_IMPORTED_MODULE_17__);\n/* harmony import */ var rxjs_add_operator_distinctUntilChanged__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! rxjs/add/operator/distinctUntilChanged */ \"./node_modules/rxjs/add/operator/distinctUntilChanged.js\");\n/* harmony import */ var rxjs_add_operator_distinctUntilChanged__WEBPACK_IMPORTED_MODULE_18___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_distinctUntilChanged__WEBPACK_IMPORTED_MODULE_18__);\n/* harmony import */ var rxjs_add_operator_debounceTime__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! rxjs/add/operator/debounceTime */ \"./node_modules/rxjs/add/operator/debounceTime.js\");\n/* harmony import */ var rxjs_add_operator_debounceTime__WEBPACK_IMPORTED_MODULE_19___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_debounceTime__WEBPACK_IMPORTED_MODULE_19__);\n/* harmony import */ var rxjs_add_operator_debounce__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! rxjs/add/operator/debounce */ \"./node_modules/rxjs/add/operator/debounce.js\");\n/* harmony import */ var rxjs_add_operator_debounce__WEBPACK_IMPORTED_MODULE_20___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_debounce__WEBPACK_IMPORTED_MODULE_20__);\n/* harmony import */ var rxjs_add_operator_buffer__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! rxjs/add/operator/buffer */ \"./node_modules/rxjs/add/operator/buffer.js\");\n/* harmony import */ var rxjs_add_operator_buffer__WEBPACK_IMPORTED_MODULE_21___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_buffer__WEBPACK_IMPORTED_MODULE_21__);\n/* harmony import */ var rxjs_add_operator_skip__WEBPACK_IMPORTED_MODULE_22__ = __webpack_require__(/*! rxjs/add/operator/skip */ \"./node_modules/rxjs/add/operator/skip.js\");\n/* harmony import */ var rxjs_add_operator_skip__WEBPACK_IMPORTED_MODULE_22___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_skip__WEBPACK_IMPORTED_MODULE_22__);\n/* harmony import */ var rxjs_add_operator_last__WEBPACK_IMPORTED_MODULE_23__ = __webpack_require__(/*! rxjs/add/operator/last */ \"./node_modules/rxjs/add/operator/last.js\");\n/* harmony import */ var rxjs_add_operator_last__WEBPACK_IMPORTED_MODULE_23___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_last__WEBPACK_IMPORTED_MODULE_23__);\n/* harmony import */ var rxjs_add_operator_delay__WEBPACK_IMPORTED_MODULE_24__ = __webpack_require__(/*! rxjs/add/operator/delay */ \"./node_modules/rxjs/add/operator/delay.js\");\n/* harmony import */ var rxjs_add_operator_delay__WEBPACK_IMPORTED_MODULE_24___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_delay__WEBPACK_IMPORTED_MODULE_24__);\n/* harmony import */ var rxjs_add_operator_take__WEBPACK_IMPORTED_MODULE_25__ = __webpack_require__(/*! rxjs/add/operator/take */ \"./node_modules/rxjs/add/operator/take.js\");\n/* harmony import */ var rxjs_add_operator_take__WEBPACK_IMPORTED_MODULE_25___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_take__WEBPACK_IMPORTED_MODULE_25__);\n/* harmony import */ var rxjs_add_operator_toArray__WEBPACK_IMPORTED_MODULE_26__ = __webpack_require__(/*! rxjs/add/operator/toArray */ \"./node_modules/rxjs/add/operator/toArray.js\");\n/* harmony import */ var rxjs_add_operator_toArray__WEBPACK_IMPORTED_MODULE_26___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_toArray__WEBPACK_IMPORTED_MODULE_26__);\n/* harmony import */ var rxjs_add_operator_toPromise__WEBPACK_IMPORTED_MODULE_27__ = __webpack_require__(/*! rxjs/add/operator/toPromise */ \"./node_modules/rxjs/add/operator/toPromise.js\");\n/* harmony import */ var rxjs_add_operator_toPromise__WEBPACK_IMPORTED_MODULE_27___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_toPromise__WEBPACK_IMPORTED_MODULE_27__);\n/* harmony import */ var rxjs_add_operator_race__WEBPACK_IMPORTED_MODULE_28__ = __webpack_require__(/*! rxjs/add/operator/race */ \"./node_modules/rxjs/add/operator/race.js\");\n/* harmony import */ var rxjs_add_operator_race__WEBPACK_IMPORTED_MODULE_28___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_race__WEBPACK_IMPORTED_MODULE_28__);\n/* harmony import */ var rxjs_add_operator_finally__WEBPACK_IMPORTED_MODULE_29__ = __webpack_require__(/*! rxjs/add/operator/finally */ \"./node_modules/rxjs/add/operator/finally.js\");\n/* harmony import */ var rxjs_add_operator_finally__WEBPACK_IMPORTED_MODULE_29___default = /*#__PURE__*/__webpack_require__.n(rxjs_add_operator_finally__WEBPACK_IMPORTED_MODULE_29__);\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\njb.rx.Observable = rxjs_Observable__WEBPACK_IMPORTED_MODULE_1__[\"Observable\"];\r\njb.rx.Subject = rxjs_Subject__WEBPACK_IMPORTED_MODULE_0__[\"Subject\"];\r\n\n\n//# sourceURL=webpack:///./src/ui/jb-rx.js?");
 
 /***/ })
 
@@ -4457,6 +4493,7 @@ ui.renderWidget = function(profile,top) {
 			constructor(props) {
 				super();
 				this.state.profile = profile;
+				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				if (jb.studio.studioWindow) {
 					const studioWin = jb.studio.studioWindow
 					const st = studioWin.jb.studio;
@@ -4465,22 +4502,32 @@ ui.renderWidget = function(profile,top) {
 					if (project && page)
 						this.state.profile = {$: `${project}.${page}`}
 
-					st.pageChange.debounceTime(200)
+					this.lastRenderTime = 0
+
+					st.pageChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + 200))
 						.filter(({page})=>page != this.state.profile.$)
 						.subscribe(({page})=>
 							this.setState({profile: {$: page }}));
-					st.scriptChange.debounceTime(200).subscribe(_=>
+					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + 200)).subscribe(_=>
 							this.setState(null));
 				}
 			}
 			render(pros,state) {
 				const profToRun = state.profile;
 				if (!jb.comps[profToRun.$]) return '';
+				this.start = new Date().getTime()
 				return ui.h(new jb.jbCtx().run(profToRun).reactComp())
 			}
+			componentDidUpdate() {
+				this.lastRenderTime = new Date().getTime() - this.start
+			}
+			componentWillUnmount() {
+				this.resolveDestroyed();
+			}
 		}
-
-		formerReactElem = ui.render(ui.h(R),innerElem);
+		jb.delay(10).then(()=>{
+			formerReactElem = ui.render(ui.h(R),innerElem);
+		})
 	}
 }
 
@@ -7305,7 +7352,8 @@ jb.component('itemlist.init-table', { /* itemlist.initTable */
             cmp.setState({items: cmp.calcItems()})
 
         cmp.calcItems = _ => {
-            cmp.items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
+            cmp.items = (ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [])
+              .slice(0,ctx.vars.$model.visualSizeLimit || 100);
             if (cmp.ctx.vars.itemlistCntr)
               cmp.ctx.vars.itemlistCntr.items = cmp.items;
             return cmp.items;
@@ -13967,7 +14015,7 @@ module.exports = tick;
   function paddingVert(display) {return display.mover.offsetHeight - display.lineSpace.offsetHeight}
   function paddingH(display) {
     if (display.cachedPaddingH) { return display.cachedPaddingH }
-    var e = removeChildrenAndAdd(display.measure, elt("pre", "x"));
+    var e = removeChildrenAndAdd(display.measure, elt("pre", "x", "CodeMirror-line-like"));
     var style = window.getComputedStyle ? window.getComputedStyle(e) : e.currentStyle;
     var data = {left: parseInt(style.paddingLeft), right: parseInt(style.paddingRight)};
     if (!isNaN(data.left) && !isNaN(data.right)) { display.cachedPaddingH = data; }
@@ -14361,7 +14409,7 @@ module.exports = tick;
   function PosWithInfo(line, ch, sticky, outside, xRel) {
     var pos = Pos(line, ch, sticky);
     pos.xRel = xRel;
-    if (outside) { pos.outside = true; }
+    if (outside) { pos.outside = outside; }
     return pos
   }
 
@@ -14370,16 +14418,16 @@ module.exports = tick;
   function coordsChar(cm, x, y) {
     var doc = cm.doc;
     y += cm.display.viewOffset;
-    if (y < 0) { return PosWithInfo(doc.first, 0, null, true, -1) }
+    if (y < 0) { return PosWithInfo(doc.first, 0, null, -1, -1) }
     var lineN = lineAtHeight(doc, y), last = doc.first + doc.size - 1;
     if (lineN > last)
-      { return PosWithInfo(doc.first + doc.size - 1, getLine(doc, last).text.length, null, true, 1) }
+      { return PosWithInfo(doc.first + doc.size - 1, getLine(doc, last).text.length, null, 1, 1) }
     if (x < 0) { x = 0; }
 
     var lineObj = getLine(doc, lineN);
     for (;;) {
       var found = coordsCharInner(cm, lineObj, lineN, x, y);
-      var collapsed = collapsedSpanAround(lineObj, found.ch + (found.xRel > 0 ? 1 : 0));
+      var collapsed = collapsedSpanAround(lineObj, found.ch + (found.xRel > 0 || found.outside > 0 ? 1 : 0));
       if (!collapsed) { return found }
       var rangeEnd = collapsed.find(1);
       if (rangeEnd.line == lineN) { return rangeEnd }
@@ -14467,7 +14515,7 @@ module.exports = tick;
       // base X position
       var coords = cursorCoords(cm, Pos(lineNo$$1, ch, sticky), "line", lineObj, preparedMeasure);
       baseX = coords.left;
-      outside = y < coords.top || y >= coords.bottom;
+      outside = y < coords.top ? -1 : y >= coords.bottom ? 1 : 0;
     }
 
     ch = skipExtendingChars(lineObj.text, ch, 1);
@@ -14536,7 +14584,7 @@ module.exports = tick;
   function textHeight(display) {
     if (display.cachedTextHeight != null) { return display.cachedTextHeight }
     if (measureText == null) {
-      measureText = elt("pre");
+      measureText = elt("pre", null, "CodeMirror-line-like");
       // Measure a bunch of lines, for browsers that compute
       // fractional heights.
       for (var i = 0; i < 49; ++i) {
@@ -14556,7 +14604,7 @@ module.exports = tick;
   function charWidth(display) {
     if (display.cachedCharWidth != null) { return display.cachedCharWidth }
     var anchor = elt("span", "xxxxxxxxxx");
-    var pre = elt("pre", [anchor]);
+    var pre = elt("pre", [anchor], "CodeMirror-line-like");
     removeChildrenAndAdd(display.measure, pre);
     var rect = anchor.getBoundingClientRect(), width = (rect.right - rect.left) / 10;
     if (width > 2) { display.cachedCharWidth = width; }
@@ -16830,8 +16878,15 @@ module.exports = tick;
     var line = getLine(doc, pos.line);
     if (line.markedSpans) { for (var i = 0; i < line.markedSpans.length; ++i) {
       var sp = line.markedSpans[i], m = sp.marker;
-      if ((sp.from == null || (m.inclusiveLeft ? sp.from <= pos.ch : sp.from < pos.ch)) &&
-          (sp.to == null || (m.inclusiveRight ? sp.to >= pos.ch : sp.to > pos.ch))) {
+
+      // Determine if we should prevent the cursor being placed to the left/right of an atomic marker
+      // Historically this was determined using the inclusiveLeft/Right option, but the new way to control it
+      // is with selectLeft/Right
+      var preventCursorLeft = ("selectLeft" in m) ? !m.selectLeft : m.inclusiveLeft;
+      var preventCursorRight = ("selectRight" in m) ? !m.selectRight : m.inclusiveRight;
+
+      if ((sp.from == null || (preventCursorLeft ? sp.from <= pos.ch : sp.from < pos.ch)) &&
+          (sp.to == null || (preventCursorRight ? sp.to >= pos.ch : sp.to > pos.ch))) {
         if (mayClear) {
           signal(m, "beforeCursorEnter");
           if (m.explicitlyCleared) {
@@ -16843,14 +16898,14 @@ module.exports = tick;
 
         if (oldPos) {
           var near = m.find(dir < 0 ? 1 : -1), diff = (void 0);
-          if (dir < 0 ? m.inclusiveRight : m.inclusiveLeft)
+          if (dir < 0 ? preventCursorRight : preventCursorLeft)
             { near = movePos(doc, near, -dir, near && near.line == pos.line ? line : null); }
           if (near && near.line == pos.line && (diff = cmp(near, oldPos)) && (dir < 0 ? diff < 0 : diff > 0))
             { return skipAtomicInner(doc, near, pos, dir, mayClear) }
         }
 
         var far = m.find(dir < 0 ? -1 : 1);
-        if (dir < 0 ? m.inclusiveLeft : m.inclusiveRight)
+        if (dir < 0 ? preventCursorLeft : preventCursorRight)
           { far = movePos(doc, far, dir, far.line == pos.line ? line : null); }
         return far ? skipAtomicInner(doc, far, pos, dir, mayClear) : null
       }
@@ -17079,6 +17134,9 @@ module.exports = tick;
     if (doc.cm) { makeChangeSingleDocInEditor(doc.cm, change, spans); }
     else { updateDoc(doc, change, spans); }
     setSelectionNoUndo(doc, selAfter, sel_dontScroll);
+
+    if (doc.cantEdit && skipAtomic(doc, Pos(doc.firstLine(), 0)))
+      { doc.cantEdit = false; }
   }
 
   // Handle the interaction of a change to a document with the editor
@@ -19383,7 +19441,7 @@ module.exports = tick;
       for (var i = newBreaks.length - 1; i >= 0; i--)
         { replaceRange(cm.doc, val, newBreaks[i], Pos(newBreaks[i].line, newBreaks[i].ch + val.length)); }
     });
-    option("specialChars", /[\u0000-\u001f\u007f-\u009f\u00ad\u061c\u200b-\u200f\u2028\u2029\ufeff]/g, function (cm, val, old) {
+    option("specialChars", /[\u0000-\u001f\u007f-\u009f\u00ad\u061c\u200b-\u200f\u2028\u2029\ufeff\ufff9-\ufffc]/g, function (cm, val, old) {
       cm.state.specialChars = new RegExp(val.source + (val.test("\t") ? "" : "|\t"), "g");
       if (old != Init) { cm.refresh(); }
     });
@@ -21332,7 +21390,7 @@ module.exports = tick;
         textarea.style.display = "";
         if (textarea.form) {
           off(textarea.form, "submit", save);
-          if (typeof textarea.form.submit == "function")
+          if (!options.leaveSubmitMethodAlone && typeof textarea.form.submit == "function")
             { textarea.form.submit = realSubmit; }
         }
       };
@@ -21431,7 +21489,7 @@ module.exports = tick;
 
   addLegacyProps(CodeMirror);
 
-  CodeMirror.version = "5.46.0";
+  CodeMirror.version = "5.49.0";
 
   return CodeMirror;
 
@@ -21830,6 +21888,17 @@ CodeMirror.defineMode("xml", function(editorConf, config_) {
     skipAttribute: function(state) {
       if (state.state == attrValueState)
         state.state = attrState
+    },
+
+    xmlCurrentTag: function(state) {
+      return state.tagName ? {name: state.tagName, close: state.type == "closeTag"} : null
+    },
+
+    xmlCurrentContext: function(state) {
+      var context = []
+      for (var cx = state.context; cx; cx = cx.prev)
+        if (cx.tagName) context.push(cx.tagName)
+      return context.reverse()
     }
   };
 });
@@ -21911,7 +21980,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     if (ch == '"' || ch == "'") {
       state.tokenize = tokenString(ch);
       return state.tokenize(stream, state);
-    } else if (ch == "." && stream.match(/^\d+(?:[eE][+\-]?\d+)?/)) {
+    } else if (ch == "." && stream.match(/^\d[\d_]*(?:[eE][+\-]?[\d_]+)?/)) {
       return ret("number", "number");
     } else if (ch == "." && stream.match("..")) {
       return ret("spread", "meta");
@@ -21919,10 +21988,10 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       return ret(ch);
     } else if (ch == "=" && stream.eat(">")) {
       return ret("=>", "operator");
-    } else if (ch == "0" && stream.match(/^(?:x[\da-f]+|o[0-7]+|b[01]+)n?/i)) {
+    } else if (ch == "0" && stream.match(/^(?:x[\dA-Fa-f_]+|o[0-7_]+|b[01_]+)n?/)) {
       return ret("number", "number");
     } else if (/\d/.test(ch)) {
-      stream.match(/^\d*(?:n|(?:\.\d*)?(?:[eE][+\-]?\d+)?)?/);
+      stream.match(/^[\d_]*(?:n|(?:\.[\d_]*)?(?:[eE][+\-]?[\d_]+)?)?/);
       return ret("number", "number");
     } else if (ch == "/") {
       if (stream.eat("*")) {
@@ -21945,6 +22014,9 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     } else if (ch == "#") {
       stream.skipToEnd();
       return ret("error", "error");
+    } else if (ch == "<" && stream.match("!--") || ch == "-" && stream.match("->")) {
+      stream.skipToEnd()
+      return ret("comment", "comment")
     } else if (isOperatorChar.test(ch)) {
       if (ch != ">" || !state.lexical || state.lexical.type != ">") {
         if (stream.eat("=")) {
@@ -22039,8 +22111,12 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
         ++depth;
       } else if (wordRE.test(ch)) {
         sawSomething = true;
-      } else if (/["'\/]/.test(ch)) {
-        return;
+      } else if (/["'\/`]/.test(ch)) {
+        for (;; --pos) {
+          if (pos == 0) return
+          var next = stream.string.charAt(pos - 1)
+          if (next == ch && stream.string.charAt(pos - 2) != "\\") { pos--; break }
+        }
       } else if (sawSomething && !depth) {
         ++pos;
         break;
@@ -22418,9 +22494,12 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
   }
   function maybetype(type, value) {
     if (isTS) {
-      if (type == ":" || value == "in") return cont(typeexpr);
+      if (type == ":") return cont(typeexpr);
       if (value == "?") return cont(maybetype);
     }
+  }
+  function maybetypeOrIn(type, value) {
+    if (isTS && (type == ":" || value == "in")) return cont(typeexpr)
   }
   function mayberettype(type) {
     if (isTS && type == ":") {
@@ -22462,7 +22541,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     } else if (type == ":") {
       return cont(typeexpr)
     } else if (type == "[") {
-      return cont(expect("variable"), maybetype, expect("]"), typeprop)
+      return cont(expect("variable"), maybetypeOrIn, expect("]"), typeprop)
     } else if (type == "(") {
       return pass(functiondecl, typeprop)
     }
@@ -24132,14 +24211,26 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
       elt.hintId = i;
     }
 
+    var container = completion.options.container || ownerDocument.body;
     var pos = cm.cursorCoords(completion.options.alignWithWord ? data.from : null);
     var left = pos.left, top = pos.bottom, below = true;
-    hints.style.left = left + "px";
-    hints.style.top = top + "px";
+    var offsetLeft = 0, offsetTop = 0;
+    if (container !== ownerDocument.body) {
+      // We offset the cursor position because left and top are relative to the offsetParent's top left corner.
+      var isContainerPositioned = ['absolute', 'relative', 'fixed'].indexOf(parentWindow.getComputedStyle(container).position) !== -1;
+      var offsetParent = isContainerPositioned ? container : container.offsetParent;
+      var offsetParentPosition = offsetParent.getBoundingClientRect();
+      var bodyPosition = ownerDocument.body.getBoundingClientRect();
+      offsetLeft = (offsetParentPosition.left - bodyPosition.left - offsetParent.scrollLeft);
+      offsetTop = (offsetParentPosition.top - bodyPosition.top - offsetParent.scrollTop);
+    }
+    hints.style.left = (left - offsetLeft) + "px";
+    hints.style.top = (top - offsetTop) + "px";
+
     // If we're at the edge of the screen, then we want the menu to appear on the left of the cursor.
     var winW = parentWindow.innerWidth || Math.max(ownerDocument.body.offsetWidth, ownerDocument.documentElement.offsetWidth);
     var winH = parentWindow.innerHeight || Math.max(ownerDocument.body.offsetHeight, ownerDocument.documentElement.offsetHeight);
-    (completion.options.container || ownerDocument.body).appendChild(hints);
+    container.appendChild(hints);
     var box = hints.getBoundingClientRect(), overlapY = box.bottom - winH;
     var scrolls = hints.scrollHeight > hints.clientHeight + 1
     var startScroll = cm.getScrollInfo();
@@ -24147,15 +24238,15 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
     if (overlapY > 0) {
       var height = box.bottom - box.top, curTop = pos.top - (pos.bottom - box.top);
       if (curTop - height > 0) { // Fits above cursor
-        hints.style.top = (top = pos.top - height) + "px";
+        hints.style.top = (top = pos.top - height - offsetTop) + "px";
         below = false;
       } else if (height > winH) {
         hints.style.height = (winH - 5) + "px";
-        hints.style.top = (top = pos.bottom - box.top) + "px";
+        hints.style.top = (top = pos.bottom - box.top - offsetTop) + "px";
         var cursor = cm.getCursor();
         if (data.from.ch != cursor.ch) {
           pos = cm.cursorCoords(cursor);
-          hints.style.left = (left = pos.left) + "px";
+          hints.style.left = (left = pos.left - offsetLeft) + "px";
           box = hints.getBoundingClientRect();
         }
       }
@@ -24166,7 +24257,7 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
         hints.style.width = (winW - 5) + "px";
         overlapX -= (box.right - box.left) - winW;
       }
-      hints.style.left = (left = pos.left - overlapX) + "px";
+      hints.style.left = (left = pos.left - overlapX - offsetLeft) + "px";
     }
     if (scrolls) for (var node = hints.firstChild; node; node = node.nextSibling)
       node.style.paddingRight = cm.display.nativeBarWidth + "px"
@@ -24369,7 +24460,7 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
       cm.clearGutter(cm.state.foldGutter.options.gutter);
       cm.state.foldGutter = null;
       cm.off("gutterClick", onGutterClick);
-      cm.off("change", onChange);
+      cm.off("changes", onChange);
       cm.off("viewportChange", onViewportChange);
       cm.off("fold", onFold);
       cm.off("unfold", onFold);
@@ -24379,7 +24470,7 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
       cm.state.foldGutter = new State(parseOptions(val));
       updateInViewport(cm);
       cm.on("gutterClick", onGutterClick);
-      cm.on("change", onChange);
+      cm.on("changes", onChange);
       cm.on("viewportChange", onViewportChange);
       cm.on("fold", onFold);
       cm.on("unfold", onFold);
@@ -24404,8 +24495,13 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 
   function isFolded(cm, line) {
     var marks = cm.findMarks(Pos(line, 0), Pos(line + 1, 0));
-    for (var i = 0; i < marks.length; ++i)
-      if (marks[i].__isFold && marks[i].find().from.line == line) return marks[i];
+    for (var i = 0; i < marks.length; ++i) {
+      if (marks[i].__isFold) {
+        var fromPos = marks[i].find(-1);
+        if (fromPos && fromPos.line === line)
+          return marks[i];
+      }
+    }
   }
 
   function marker(spec) {
@@ -24453,7 +24549,7 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
     if (gutter != opts.gutter) return;
     var folded = isFolded(cm, line);
     if (folded) folded.clear();
-    else cm.foldCode(Pos(line, 0), opts.rangeFinder);
+    else cm.foldCode(Pos(line, 0), opts);
   }
 
   function onChange(cm) {
@@ -24663,7 +24759,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
       return result.unflat || customStyle || top || ctrls || long
     }
     function fixPropName(prop) {
-      return prop.match(/^[a-zA-Z0-9_]+$/) ? prop : `'${prop}'`
+      return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
     }
   }
 
@@ -24934,27 +25030,6 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     return _extends.apply(this, arguments);
   }
 
-  function warning(condition, message) {
-    {
-      if (condition) {
-        return;
-      }
-
-      console.warn(message);
-    }
-  }
-
-  var prefix = 'Invariant failed';
-  function invariant(condition, message) {
-    if (condition) {
-      return;
-    }
-
-    {
-      throw new Error(prefix + ": " + (message || ''));
-    }
-  }
-
   function isAbsolute(pathname) {
     return pathname.charAt(0) === '/';
   }
@@ -24969,11 +25044,11 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
   }
 
   // This implementation is based heavily on node's url.parse
-  function resolvePathname(to) {
-    var from = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
+  function resolvePathname(to, from) {
+    if (from === undefined) from = '';
 
-    var toParts = to && to.split('/') || [];
-    var fromParts = from && from.split('/') || [];
+    var toParts = (to && to.split('/')) || [];
+    var fromParts = (from && from.split('/')) || [];
 
     var isToAbs = to && isAbsolute(to);
     var isFromAbs = from && isAbsolute(from);
@@ -24990,7 +25065,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
 
     if (!fromParts.length) return '/';
 
-    var hasTrailingSlash = void 0;
+    var hasTrailingSlash;
     if (fromParts.length) {
       var last = fromParts[fromParts.length - 1];
       hasTrailingSlash = last === '.' || last === '..' || last === '';
@@ -25013,9 +25088,14 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
       }
     }
 
-    if (!mustEndAbs) for (; up--; up) {
-      fromParts.unshift('..');
-    }if (mustEndAbs && fromParts[0] !== '' && (!fromParts[0] || !isAbsolute(fromParts[0]))) fromParts.unshift('');
+    if (!mustEndAbs) for (; up--; up) fromParts.unshift('..');
+
+    if (
+      mustEndAbs &&
+      fromParts[0] !== '' &&
+      (!fromParts[0] || !isAbsolute(fromParts[0]))
+    )
+      fromParts.unshift('');
 
     var result = fromParts.join('/');
 
@@ -25024,36 +25104,34 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     return result;
   }
 
-  var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+  function valueOf(obj) {
+    return obj.valueOf ? obj.valueOf() : Object.prototype.valueOf.call(obj);
+  }
 
   function valueEqual(a, b) {
+    // Test for strict equality first.
     if (a === b) return true;
 
+    // Otherwise, if either of them == null they are not equal.
     if (a == null || b == null) return false;
 
     if (Array.isArray(a)) {
-      return Array.isArray(b) && a.length === b.length && a.every(function (item, index) {
-        return valueEqual(item, b[index]);
-      });
+      return (
+        Array.isArray(b) &&
+        a.length === b.length &&
+        a.every(function(item, index) {
+          return valueEqual(item, b[index]);
+        })
+      );
     }
 
-    var aType = typeof a === 'undefined' ? 'undefined' : _typeof(a);
-    var bType = typeof b === 'undefined' ? 'undefined' : _typeof(b);
-
-    if (aType !== bType) return false;
-
-    if (aType === 'object') {
-      var aValue = a.valueOf();
-      var bValue = b.valueOf();
+    if (typeof a === 'object' || typeof b === 'object') {
+      var aValue = valueOf(a);
+      var bValue = valueOf(b);
 
       if (aValue !== a || bValue !== b) return valueEqual(aValue, bValue);
 
-      var aKeys = Object.keys(a);
-      var bKeys = Object.keys(b);
-
-      if (aKeys.length !== bKeys.length) return false;
-
-      return aKeys.every(function (key) {
+      return Object.keys(Object.assign({}, a, b)).every(function(key) {
         return valueEqual(a[key], b[key]);
       });
     }
@@ -25068,7 +25146,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     return path.charAt(0) === '/' ? path.substr(1) : path;
   }
   function hasBasename(path, prefix) {
-    return new RegExp('^' + prefix + '(\\/|\\?|#|$)', 'i').test(path);
+    return path.toLowerCase().indexOf(prefix.toLowerCase()) === 0 && '/?#'.indexOf(path.charAt(prefix.length)) !== -1;
   }
   function stripBasename(path, prefix) {
     return hasBasename(path, prefix) ? path.substr(prefix.length) : path;
@@ -25167,6 +25245,24 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
   }
   function locationsAreEqual(a, b) {
     return a.pathname === b.pathname && a.search === b.search && a.hash === b.hash && a.key === b.key && valueEqual(a.state, b.state);
+  }
+
+  function warning(condition, message) {
+    {
+      if (condition) {
+        return;
+      }
+
+      var text = "Warning: " + message;
+
+      if (typeof console !== 'undefined') {
+        console.warn(text);
+      }
+
+      try {
+        throw Error(text);
+      } catch (x) {}
+    }
   }
 
   function createTransitionManager() {
@@ -25278,7 +25374,18 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
    */
 
   function isExtraneousPopstateEvent(event) {
-    event.state === undefined && navigator.userAgent.indexOf('CriOS') === -1;
+    return event.state === undefined && navigator.userAgent.indexOf('CriOS') === -1;
+  }
+
+  var prefix = 'Invariant failed';
+  function invariant(condition, message) {
+    if (condition) {
+      return;
+    }
+
+    {
+      throw new Error(prefix + ": " + (message || ''));
+    }
   }
 
   var PopStateEvent = 'popstate';
@@ -25420,7 +25527,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
             window.location.href = href;
           } else {
             var prevIndex = allKeys.indexOf(history.location.key);
-            var nextKeys = allKeys.slice(0, prevIndex === -1 ? 0 : prevIndex + 1);
+            var nextKeys = allKeys.slice(0, prevIndex + 1);
             nextKeys.push(location.key);
             allKeys = nextKeys;
             setState({
@@ -25563,6 +25670,11 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     }
   };
 
+  function stripHash(url) {
+    var hashIndex = url.indexOf('#');
+    return hashIndex === -1 ? url : url.slice(0, hashIndex);
+  }
+
   function getHashPath() {
     // We can't use window.location.hash here because it's not
     // consistent across browsers - Firefox will pre-decode it!
@@ -25576,8 +25688,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
   }
 
   function replaceHashPath(path) {
-    var hashIndex = window.location.href.indexOf('#');
-    window.location.replace(window.location.href.slice(0, hashIndex >= 0 ? hashIndex : 0) + '#' + path);
+    window.location.replace(stripHash(window.location.href) + '#' + path);
   }
 
   function createHashHistory(props) {
@@ -25617,6 +25728,10 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     var forceNextPop = false;
     var ignorePath = null;
 
+    function locationsAreEqual$$1(a, b) {
+      return a.pathname === b.pathname && a.search === b.search && a.hash === b.hash;
+    }
+
     function handleHashChange() {
       var path = getHashPath();
       var encodedPath = encodePath(path);
@@ -25627,7 +25742,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
       } else {
         var location = getDOMLocation();
         var prevLocation = history.location;
-        if (!forceNextPop && locationsAreEqual(prevLocation, location)) return; // A hashchange doesn't always == location change.
+        if (!forceNextPop && locationsAreEqual$$1(prevLocation, location)) return; // A hashchange doesn't always == location change.
 
         if (ignorePath === createPath(location)) return; // Ignore this change; we already setState in push/replace.
 
@@ -25680,7 +25795,14 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     var allPaths = [createPath(initialLocation)]; // Public interface
 
     function createHref(location) {
-      return '#' + encodePath(basename + createPath(location));
+      var baseTag = document.querySelector('base');
+      var href = '';
+
+      if (baseTag && baseTag.getAttribute('href')) {
+        href = stripHash(window.location.href);
+      }
+
+      return href + '#' + encodePath(basename + createPath(location));
     }
 
     function push(path, state) {
@@ -25700,7 +25822,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
           ignorePath = path;
           pushHashPath(encodedPath);
           var prevIndex = allPaths.lastIndexOf(createPath(history.location));
-          var nextPaths = allPaths.slice(0, prevIndex === -1 ? 0 : prevIndex + 1);
+          var nextPaths = allPaths.slice(0, prevIndex + 1);
           nextPaths.push(path);
           allPaths = nextPaths;
           setState({

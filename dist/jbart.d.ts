@@ -31,7 +31,7 @@ type cmp_def_anyType = {
 type callPT = {$: 'call', param: dataType}
 
 // type data
-type dataType = pipelinePT | pipePT | data_ifPT | listPT | firstSucceedingPT | keysPT | propertiesPT | prefixPT | suffixPT | remove_prefixPT | remove_suffixPT | remove_suffix_regexPT | index_ofPT | objPT | assignPT | IfPT | to_uppercasePT | to_lowercasePT | capitalizePT | logPT | asIsPT | objectPT | json_stringifyPT | json_parsePT | splitPT | replacePT | delayPT | extract_prefixPT | extract_suffixPT | rangePT | type_ofPT | class_namePT | http_getPT | isRefPT | asRefPT | data_switchPT | jison_parsePT | extract_textPT | break_textPT | zip_arraysPT | remove_sectionsPT | mergePT | dynamic_objectPT | filter_empty_propertiesPT | trimPT | remove_prefix_regexPT | pretty_printPT | fs_readFilePT | fs_statPT | fs_readdirPT | fs_directory_contentPT | test_dialog_contentPT | field_dataPT | itemlist_container_search_in_all_propertiesPT | highlightPT | style_by_controlPT | group_divPT | group_sectionPT | json_path_selectorPT | watchable_as_textPT | text_editor_is_dirtyPT | ((ctx: ctx) => any)
+type dataType = pipelinePT | pipePT | data_ifPT | listPT | firstSucceedingPT | keysPT | propertiesPT | entriesPT | prefixPT | suffixPT | remove_prefixPT | remove_suffixPT | remove_suffix_regexPT | propertyPT | index_ofPT | objPT | assignPT | IfPT | to_uppercasePT | to_lowercasePT | capitalizePT | logPT | asIsPT | objectPT | json_stringifyPT | json_parsePT | splitPT | replacePT | delayPT | extract_prefixPT | extract_suffixPT | rangePT | type_ofPT | class_namePT | http_getPT | isRefPT | asRefPT | data_switchPT | jison_parsePT | extract_textPT | break_textPT | zip_arraysPT | remove_sectionsPT | mergePT | dynamic_objectPT | filter_empty_propertiesPT | trimPT | remove_prefix_regexPT | pretty_printPT | fs_readFilePT | fs_statPT | fs_readdirPT | fs_directory_contentPT | test_dialog_contentPT | field_dataPT | itemlist_container_search_in_all_propertiesPT | highlightPT | style_by_controlPT | group_divPT | group_sectionPT | json_path_selectorPT | watchable_as_textPT | text_editor_is_dirtyPT | ((ctx: ctx) => any)
 type cmp_def_dataType = {
 	type: 'data',
 	params?: [param],
@@ -44,12 +44,14 @@ type listPT = {$: 'list', items: [dataType]}
 type firstSucceedingPT = {$: 'firstSucceeding', items: [dataType]}
 type keysPT = {$: 'keys', obj: dataType}
 type propertiesPT = {$: 'properties', obj: dataType}
+type entriesPT = {$: 'entries', obj: dataType}
 type prefixPT = {$: 'prefix', separator: dataType, text: dataType}
 type suffixPT = {$: 'suffix', separator: dataType, text: dataType}
 type remove_prefixPT = {$: 'remove-prefix', separator: dataType, text: dataType}
 type remove_suffixPT = {$: 'remove-suffix', separator: dataType, text: dataType}
 type remove_suffix_regexPT = {$: 'remove-suffix-regex', 
 /** regular expression. e.g [0-9]* */suffix: dataType, text: dataType}
+type propertyPT = {$: 'property', prop: dataType, obj: dataType}
 type index_ofPT = {$: 'index-of', array: dataType, item: dataType}
 type objPT = {$: 'obj', props: [propType]}
 type assignPT = {$: 'assign', props: [propType]}
@@ -77,7 +79,7 @@ type rangePT = {$: 'range', from: dataType, to: dataType}
 type type_ofPT = {$: 'type-of', obj: dataType}
 type class_namePT = {$: 'class-name', obj: dataType}
 type http_getPT = {$: 'http.get', url: dataType, 
-/** convert result to json */json: booleanType}
+/** convert result to json */json: booleanType, useProxy: booleanType}
 type isRefPT = {$: 'isRef', obj: dataType}
 type asRefPT = {$: 'asRef', obj: dataType}
 type data_switchPT = {$: 'data.switch', cases: [data_switch_caseType], default: dataType}
@@ -118,12 +120,13 @@ type watchable_as_textPT = {$: 'watchable-as-text', ref: dataType}
 type text_editor_is_dirtyPT = {$: 'text-editor.is-dirty', }
 
 // type aggregator
-type aggregatorType = slicePT | sortPT | firstPT | lastPT | countPT | reversePT | samplePT | assign_with_indexPT | filterPT | joinPT | uniquePT | wrap_as_object_with_arrayPT | wrap_as_objectPT | itemlist_container_filterPT | style_by_controlPT | ((ctx: ctx) => any)
+type aggregatorType = obj_from_entriesPT | slicePT | sortPT | firstPT | lastPT | countPT | reversePT | samplePT | assign_with_indexPT | filterPT | joinPT | uniquePT | wrap_as_objectPT | itemlist_container_filterPT | style_by_controlPT | ((ctx: ctx) => any)
 type cmp_def_aggregatorType = {
 	type: 'aggregator',
 	params?: [param],
 	impl: aggregatorType,
 }
+type obj_from_entriesPT = {$: 'obj-from-entries', entries: dataType}
 type slicePT = {$: 'slice', 
 /** 0-based index */start: dataType, 
 /** 0-based index of where to end the selection (not including itself) */end: dataType}
@@ -138,8 +141,7 @@ type assign_with_indexPT = {$: 'assign-with-index', props: [propType]}
 type filterPT = {$: 'filter', filter: booleanType}
 type joinPT = {$: 'join', separator: dataType, prefix: dataType, suffix: dataType, items: dataType, itemName: dataType, itemText: dataType}
 type uniquePT = {$: 'unique', id: dataType, items: dataType}
-type wrap_as_object_with_arrayPT = {$: 'wrap-as-object-with-array', arrayProperty: dataType, items: dataType}
-type wrap_as_objectPT = {$: 'wrap-as-object', itemToPropName: dataType, items: dataType}
+type wrap_as_objectPT = {$: 'wrap-as-object', propertyName: dataType, value: dataType, items: dataType}
 type itemlist_container_filterPT = {$: 'itemlist-container.filter', updateCounters: booleanType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
@@ -171,7 +173,7 @@ type in_groupPT = {$: 'in-group', group: dataType, item: dataType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
 // type action
-type actionType = action_ifPT | jb_runPT | write_valuePT | add_to_arrayPT | splicePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | run_action_on_itemsPT | on_next_timerPT | http_postPT | action_switchPT | refresh_control_by_idPT | focus_on_first_elementPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | style_by_controlPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | text_editor_with_cursor_pathPT | run_transactionPT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
+type actionType = action_ifPT | jb_runPT | write_valuePT | add_to_arrayPT | splicePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | run_action_on_itemsPT | on_next_timerPT | http_getPT | http_postPT | action_switchPT | write_value_asynchPT | refresh_control_by_idPT | focus_on_first_elementPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | style_by_controlPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | text_editor_with_cursor_pathPT | run_transactionPT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
 type cmp_def_actionType = {
 	type: 'action',
 	params?: [param],
@@ -192,9 +194,12 @@ type runActionsPT = {$: 'runActions', actions: [actionType]}
 type run_action_on_itemsPT = {$: 'run-action-on-items', items: dataType, action: actionType, 
 /** notification for watch-ref, defualt behavior is after each action */notifications: dataType}
 type on_next_timerPT = {$: 'on-next-timer', action: actionType, delay: numberType}
+type http_getPT = {$: 'http.get', url: dataType, 
+/** convert result to json */json: booleanType, useProxy: booleanType}
 type http_postPT = {$: 'http.post', url: dataType, postData: dataType, 
 /** convert result to json */jsonResult: booleanType}
 type action_switchPT = {$: 'action.switch', cases: [action_switch_caseType], defaultAction: actionType}
+type write_value_asynchPT = {$: 'write-value-asynch', to: dataType, value: dataType}
 type refresh_control_by_idPT = {$: 'refresh-control-by-id', id: dataType}
 type focus_on_first_elementPT = {$: 'focus-on-first-element', selector: dataType}
 type dialog_close_containing_popupPT = {$: 'dialog.close-containing-popup', OK: booleanType}
@@ -388,13 +393,18 @@ type css_with_conditionPT = {$: 'css.with-condition', condition: booleanType, cs
 type css_classPT = {$: 'css.class', class: dataType}
 type css_widthPT = {$: 'css.width', width: dataType, overflow: dataType, minMax: dataType, selector: dataType}
 type css_heightPT = {$: 'css.height', height: dataType, overflow: dataType, minMax: dataType, selector: dataType}
-type css_opacityPT = {$: 'css.opacity', opacity: dataType, selector: dataType}
+type css_opacityPT = {$: 'css.opacity', 
+/** 0-1 */opacity: dataType, selector: dataType}
 type css_paddingPT = {$: 'css.padding', top: dataType, left: dataType, right: dataType, bottom: dataType, selector: dataType}
 type css_marginPT = {$: 'css.margin', top: dataType, left: dataType, right: dataType, bottom: dataType, selector: dataType}
-type css_transform_rotatePT = {$: 'css.transform-rotate', angle: dataType, selector: dataType}
+type css_transform_rotatePT = {$: 'css.transform-rotate', 
+/** 0-360 */angle: dataType, selector: dataType}
 type css_colorPT = {$: 'css.color', color: dataType, background: dataType, selector: dataType}
-type css_transform_scalePT = {$: 'css.transform-scale', x: dataType, y: dataType, selector: dataType}
-type css_box_shadowPT = {$: 'css.box-shadow', blurRadius: dataType, spreadRadius: dataType, shadowColor: dataType, opacity: dataType, horizontal: dataType, vertical: dataType, selector: dataType}
+type css_transform_scalePT = {$: 'css.transform-scale', 
+/** 0-1 */x: dataType, 
+/** 0-1 */y: dataType, selector: dataType}
+type css_box_shadowPT = {$: 'css.box-shadow', blurRadius: dataType, spreadRadius: dataType, shadowColor: dataType, 
+/** 0-1 */opacity: dataType, horizontal: dataType, vertical: dataType, selector: dataType}
 type css_borderPT = {$: 'css.border', width: dataType, side: dataType, style: dataType, color: dataType, selector: dataType}
 type d3_scatter_initPT = {$: 'd3-scatter.init', }
 type editable_boolean_keyboard_supportPT = {$: 'editable-boolean.keyboard-support', }
@@ -462,14 +472,14 @@ type text_editor_initPT = {$: 'text-editor.init', }
 type textarea_init_textarea_editorPT = {$: 'textarea.init-textarea-editor', }
 
 // type control
-type controlType = cardPT | d3_chart_histogramPT | dividerPT | inline_controlsPT | dynamic_controlsPT | control_first_succeedingPT | control_with_conditionPT | inner_htmlPT | itemlist_container_searchPT | itemlist_with_groupsPT | itemlist_default_headingPT | itemlistPT | itemlogPT | markdownPT | style_by_controlPT | sidenavPT | treePT | ((ctx: ctx) => any)
+type controlType = cardPT | d3g_histogramPT | dividerPT | inline_controlsPT | dynamic_controlsPT | control_first_succeedingPT | control_with_conditionPT | inner_htmlPT | itemlist_container_searchPT | itemlist_with_groupsPT | itemlist_default_headingPT | itemlistPT | itemlogPT | markdownPT | style_by_controlPT | sidenavPT | treePT | ((ctx: ctx) => any)
 type cmp_def_controlType = {
 	type: 'control',
 	params?: [param],
 	impl: controlType,
 }
 type cardPT = {$: 'card', title: dataType, subTitle: dataType, text: dataType, image: dataType, topButton: clickableType, menu: menuType, style: card_styleType, features: [featureType]}
-type d3_chart_histogramPT = {$: 'd3-chart.histogram', title: dataType, items: dataType, pivot: d3_chart_pivotType, frame: d3_chart_frameType, itemTitle: dataType, ticks: dataType, axes: d3_chart_axesType, style: d3_chart_histogram_styleType, features: [d3_featureType]}
+type d3g_histogramPT = {$: 'd3g.histogram', title: dataType, items: dataType, pivot: d3g_pivotType, frame: d3g_frameType, itemTitle: dataType, ticks: dataType, axes: d3g_axesType, style: d3g_histogram_styleType, features: [d3_featureType]}
 type dividerPT = {$: 'divider', style: divider_styleType, title: dataType, features: [featureType]}
 type inline_controlsPT = {$: 'inline-controls', controls: [controlType]}
 type dynamic_controlsPT = {$: 'dynamic-controls', controlItems: dataType, genericControl: controlType, itemVariable: dataType}
@@ -503,7 +513,8 @@ type css_widthPT = {$: 'css.width', width: dataType, overflow: dataType, minMax:
 type css_heightPT = {$: 'css.height', height: dataType, overflow: dataType, minMax: dataType, selector: dataType}
 type css_paddingPT = {$: 'css.padding', top: dataType, left: dataType, right: dataType, bottom: dataType, selector: dataType}
 type css_marginPT = {$: 'css.margin', top: dataType, left: dataType, right: dataType, bottom: dataType, selector: dataType}
-type css_box_shadowPT = {$: 'css.box-shadow', blurRadius: dataType, spreadRadius: dataType, shadowColor: dataType, opacity: dataType, horizontal: dataType, vertical: dataType, selector: dataType}
+type css_box_shadowPT = {$: 'css.box-shadow', blurRadius: dataType, spreadRadius: dataType, shadowColor: dataType, 
+/** 0-1 */opacity: dataType, horizontal: dataType, vertical: dataType, selector: dataType}
 type css_borderPT = {$: 'css.border', width: dataType, side: dataType, style: dataType, color: dataType, selector: dataType}
 type dialog_feature_drag_titlePT = {$: 'dialog-feature.drag-title', id: dataType}
 type dialog_feature_unique_dialogPT = {$: 'dialog-feature.unique-dialog', id: dataType, remeberLastLocation: booleanType}
@@ -517,79 +528,73 @@ type dialog_feature_resizerPT = {$: 'dialog-feature.resizer',
 /** effective only for dialog with a single codemirror element */resizeInnerCodemirror: booleanType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
-// type d3-chart.frame
-type d3_chart_frameType = d3_chart_framePT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_chart_frameType = {
-	type: 'd3_chart_frame',
+// type d3g.frame
+type d3g_frameType = d3g_framePT | style_by_controlPT | ((ctx: ctx) => any)
+type cmp_def_d3g_frameType = {
+	type: 'd3g_frame',
 	params?: [param],
-	impl: d3_chart_frameType,
+	impl: d3g_frameType,
 }
-type d3_chart_framePT = {$: 'd3-chart.frame', width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}
+type d3g_framePT = {$: 'd3g.frame', width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
 // type d3-feature
-type d3_featureType = d3_histogram_initPT | d3_chart_item_indicatorPT | style_by_controlPT | ((ctx: ctx) => any)
+type d3_featureType = d3_histogram_initPT | d3g_item_indicatorPT | style_by_controlPT | ((ctx: ctx) => any)
 type cmp_def_d3_featureType = {
 	type: 'd3_feature',
 	params?: [param],
 	impl: d3_featureType,
 }
 type d3_histogram_initPT = {$: 'd3-histogram.init', }
-type d3_chart_item_indicatorPT = {$: 'd3-chart.item-indicator', item: dataType}
+type d3g_item_indicatorPT = {$: 'd3g.item-indicator', item: dataType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
-// type d3-chart.axes
-type d3_chart_axesType = d3_chart_buttom_and_left_axesPT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_chart_axesType = {
-	type: 'd3_chart_axes',
+// type d3g.axes
+type d3g_axesType = d3g_buttom_and_left_axesPT | style_by_controlPT | ((ctx: ctx) => any)
+type cmp_def_d3g_axesType = {
+	type: 'd3g_axes',
 	params?: [param],
-	impl: d3_chart_axesType,
+	impl: d3g_axesType,
 }
-type d3_chart_buttom_and_left_axesPT = {$: 'd3-chart.buttom-and-left-axes', }
+type d3g_buttom_and_left_axesPT = {$: 'd3g.buttom-and-left-axes', }
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
-// type d3-chart.pivot
-type d3_chart_pivotType = d3_chart_pivotPT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_chart_pivotType = {
-	type: 'd3_chart_pivot',
+// type d3g.scale
+type d3g_scaleType = d3g_linear_scalePT | d3g_sqrt_scalePT | d3g_band_scalePT | d3g_ordinal_colorsPT | d3g_interpolate_colorsPT | style_by_controlPT | ((ctx: ctx) => any)
+type cmp_def_d3g_scaleType = {
+	type: 'd3g_scale',
 	params?: [param],
-	impl: d3_chart_pivotType,
+	impl: d3g_scaleType,
 }
-type d3_chart_pivotPT = {$: 'd3-chart.pivot', title: dataType, value: dataType, scale: d3_chart_scaleType, range: d3_chart_rangeType, domain: d3_chart_domainType}
+type d3g_linear_scalePT = {$: 'd3g.linear-scale', }
+type d3g_sqrt_scalePT = {$: 'd3g.sqrt-scale', }
+type d3g_band_scalePT = {$: 'd3g.band-scale', 
+/** range [0,1] */paddingInner: dataType, 
+/** range [0,1] */paddingOuter: dataType, 
+/** 0 - aligned left, 0.5 - centered, 1 - aligned right */align: dataType}
+type d3g_ordinal_colorsPT = {$: 'd3g.ordinal-colors', scale: dataType}
+type d3g_interpolate_colorsPT = {$: 'd3g.interpolate-colors', scale: dataType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
-// type d3-chart.scale
-type d3_chart_scaleType = d3_chart_linear_scalePT | d3_chart_sqrt_scalePT | d3_chart_ordinal_scalePT | d3_chart_colorsPT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_chart_scaleType = {
-	type: 'd3_chart_scale',
+// type d3g.range
+type d3g_rangeType = d3g_auto_rangePT | d3g_from_toPT | style_by_controlPT | ((ctx: ctx) => any)
+type cmp_def_d3g_rangeType = {
+	type: 'd3g_range',
 	params?: [param],
-	impl: d3_chart_scaleType,
+	impl: d3g_rangeType,
 }
-type d3_chart_linear_scalePT = {$: 'd3-chart.linear-scale', }
-type d3_chart_sqrt_scalePT = {$: 'd3-chart.sqrt-scale', }
-type d3_chart_ordinal_scalePT = {$: 'd3-chart.ordinal-scale', list: dataType}
-type d3_chart_colorsPT = {$: 'd3-chart.colors', }
+type d3g_auto_rangePT = {$: 'd3g.auto-range', }
+type d3g_from_toPT = {$: 'd3g.from-to', from: dataType, to: dataType}
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
-// type d3-chart.range
-type d3_chart_rangeType = d3_chart_auto_rangePT | d3_chart_from_toPT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_chart_rangeType = {
-	type: 'd3_chart_range',
+// type d3g.domain
+type d3g_domainType = d3g_domain_by_valuesPT | style_by_controlPT | ((ctx: ctx) => any)
+type cmp_def_d3g_domainType = {
+	type: 'd3g_domain',
 	params?: [param],
-	impl: d3_chart_rangeType,
+	impl: d3g_domainType,
 }
-type d3_chart_auto_rangePT = {$: 'd3-chart.auto-range', }
-type d3_chart_from_toPT = {$: 'd3-chart.from-to', from: dataType, to: dataType}
-type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
-
-// type d3-chart.domain
-type d3_chart_domainType = d3_chart_domain_by_valuesPT | style_by_controlPT | ((ctx: ctx) => any)
-type cmp_def_d3_chart_domainType = {
-	type: 'd3_chart_domain',
-	params?: [param],
-	impl: d3_chart_domainType,
-}
-type d3_chart_domain_by_valuesPT = {$: 'd3-chart.domain-by-values', }
+type d3g_domain_by_valuesPT = {$: 'd3g.domain-by-values', }
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 
 // type divider.style
@@ -767,7 +772,7 @@ type tree_node_modelPT = {$: 'tree.node-model', rootPath: dataType,
 /** value of path */pathToItem: dataType, 
 /** icon name from material icons */icon: dataType, 
 /** path as input. differnt from children() == 0, as you can drop into empty array */isChapter: booleanType, maxDepth: dataType, includeRoot: booleanType}
-type cmpDef = cmp_def_anyType | cmp_def_dataType | cmp_def_aggregatorType | cmp_def_booleanType | cmp_def_actionType | cmp_def_propType | cmp_def_varType | cmp_def_systemType | cmp_def_data_switch_caseType | cmp_def_action_switch_caseType | cmp_def_jison_parserType | cmp_def_lexer_ruleType | cmp_def_bnf_expressionType | cmp_def_expression_optionType | cmp_def_testType | cmp_def_ui_actionType | cmp_def_featureType | cmp_def_controlType | cmp_def_dialog_featureType | cmp_def_d3_chart_frameType | cmp_def_d3_featureType | cmp_def_d3_chart_axesType | cmp_def_d3_chart_pivotType | cmp_def_d3_chart_scaleType | cmp_def_d3_chart_rangeType | cmp_def_d3_chart_domainType | cmp_def_divider_styleType | cmp_def_inner_html_styleType | cmp_def_filter_typeType | cmp_def_itemlist_group_byType | cmp_def_group_styleType | cmp_def_markdown_styleType | cmp_def_menu_optionType | cmp_def_picklist_optionsType | cmp_def_picklist_promoteType | cmp_def_editable_text_styleType | cmp_def_text_styleType | cmp_def_picklist_styleType | cmp_def_table_fieldType | cmp_def_themeType | cmp_def_tree_node_modelType
+type cmpDef = cmp_def_anyType | cmp_def_dataType | cmp_def_aggregatorType | cmp_def_booleanType | cmp_def_actionType | cmp_def_propType | cmp_def_varType | cmp_def_systemType | cmp_def_data_switch_caseType | cmp_def_action_switch_caseType | cmp_def_jison_parserType | cmp_def_lexer_ruleType | cmp_def_bnf_expressionType | cmp_def_expression_optionType | cmp_def_testType | cmp_def_ui_actionType | cmp_def_featureType | cmp_def_controlType | cmp_def_dialog_featureType | cmp_def_d3g_frameType | cmp_def_d3_featureType | cmp_def_d3g_axesType | cmp_def_d3g_scaleType | cmp_def_d3g_rangeType | cmp_def_d3g_domainType | cmp_def_divider_styleType | cmp_def_inner_html_styleType | cmp_def_filter_typeType | cmp_def_itemlist_group_byType | cmp_def_group_styleType | cmp_def_markdown_styleType | cmp_def_menu_optionType | cmp_def_picklist_optionsType | cmp_def_picklist_promoteType | cmp_def_editable_text_styleType | cmp_def_text_styleType | cmp_def_picklist_styleType | cmp_def_table_fieldType | cmp_def_themeType | cmp_def_tree_node_modelType
 function call : anyType;
 function call(param: dataType) : anyType;
 function pipeline : dataType;
@@ -793,6 +798,10 @@ function keys : dataType;
 function keys(obj: dataType) : dataType;
 function properties : dataType;
 function properties(obj: dataType) : dataType;
+function entries : dataType;
+function entries(obj: dataType) : dataType;
+function objFromEntries : aggregatorType;
+function objFromEntries(entries: dataType) : aggregatorType;
 function prefix : dataType;
 function prefix(separator: dataType, text: dataType) : dataType;
 function prefix(separator: dataType) : dataType;
@@ -813,6 +822,9 @@ function removeSuffixRegex(
 function writeValue : actionType;
 function writeValue(to: dataType, value: dataType) : actionType;
 function writeValue(to: dataType) : actionType;
+function property : dataType;
+function property(prop: dataType, obj: dataType) : dataType;
+function property(prop: dataType) : dataType;
 function indexOf : dataType;
 function indexOf(array: dataType, item: dataType) : dataType;
 function indexOf(array: dataType) : dataType;
@@ -977,10 +989,10 @@ function isOfType(
 function inGroup : booleanType;
 function inGroup(group: dataType, item: dataType) : booleanType;
 function inGroup(group: dataType) : booleanType;
-function http_get : dataType;
-function http_get(url: dataType, 
-/** convert result to json */json: booleanType) : dataType;
-function http_get(url: dataType) : dataType;
+function http_get : dataType | actionType;
+function http_get(profile: { url: dataType, 
+/** convert result to json */json: booleanType, useProxy: booleanType}) : dataType | actionType;
+function http_get(url: dataType) : dataType | actionType;
 function http_post : actionType;
 function http_post(profile: { url: dataType, postData: dataType, 
 /** convert result to json */jsonResult: booleanType}) : actionType;
@@ -1062,12 +1074,12 @@ function trim(text: dataType) : dataType;
 function removePrefixRegex : dataType;
 function removePrefixRegex(prefix: dataType, text: dataType) : dataType;
 function removePrefixRegex(prefix: dataType) : dataType;
-function wrapAsObjectWithArray : aggregatorType;
-function wrapAsObjectWithArray(arrayProperty: dataType, items: dataType) : aggregatorType;
-function wrapAsObjectWithArray(arrayProperty: dataType) : aggregatorType;
 function wrapAsObject : aggregatorType;
-function wrapAsObject(itemToPropName: dataType, items: dataType) : aggregatorType;
-function wrapAsObject(itemToPropName: dataType) : aggregatorType;
+function wrapAsObject(profile: { propertyName: dataType, value: dataType, items: dataType}) : aggregatorType;
+function wrapAsObject(propertyName: dataType) : aggregatorType;
+function writeValueAsynch : actionType;
+function writeValueAsynch(to: dataType, value: dataType) : actionType;
+function writeValueAsynch(to: dataType) : actionType;
 function prettyPrint : dataType;
 function prettyPrint(profile: { profile: dataType, colWidth: dataType, macro: booleanType}) : dataType;
 function prettyPrint(profile: dataType) : dataType;
@@ -1201,8 +1213,10 @@ function css_height : featureType | dialog_featureType;
 function css_height(profile: { height: dataType, overflow: dataType, minMax: dataType, selector: dataType}) : featureType | dialog_featureType;
 function css_height(height: dataType) : featureType | dialog_featureType;
 function css_opacity : featureType;
-function css_opacity(opacity: dataType, selector: dataType) : featureType;
-function css_opacity(opacity: dataType) : featureType;
+function css_opacity(
+/** 0-1 */opacity: dataType, selector: dataType) : featureType;
+function css_opacity(
+/** 0-1 */opacity: dataType) : featureType;
 function css_padding : featureType | dialog_featureType;
 function css_padding(profile: { top: dataType, left: dataType, right: dataType, bottom: dataType, selector: dataType}) : featureType | dialog_featureType;
 function css_padding(top: dataType) : featureType | dialog_featureType;
@@ -1210,52 +1224,62 @@ function css_margin : featureType | dialog_featureType;
 function css_margin(profile: { top: dataType, left: dataType, right: dataType, bottom: dataType, selector: dataType}) : featureType | dialog_featureType;
 function css_margin(top: dataType) : featureType | dialog_featureType;
 function css_transformRotate : featureType;
-function css_transformRotate(angle: dataType, selector: dataType) : featureType;
-function css_transformRotate(angle: dataType) : featureType;
+function css_transformRotate(
+/** 0-360 */angle: dataType, selector: dataType) : featureType;
+function css_transformRotate(
+/** 0-360 */angle: dataType) : featureType;
 function css_color : featureType;
 function css_color(profile: { color: dataType, background: dataType, selector: dataType}) : featureType;
 function css_color(color: dataType) : featureType;
 function css_transformScale : featureType;
-function css_transformScale(profile: { x: dataType, y: dataType, selector: dataType}) : featureType;
-function css_transformScale(x: dataType) : featureType;
+function css_transformScale(profile: { 
+/** 0-1 */x: dataType, 
+/** 0-1 */y: dataType, selector: dataType}) : featureType;
+function css_transformScale(
+/** 0-1 */x: dataType) : featureType;
 function css_boxShadow : featureType | dialog_featureType;
-function css_boxShadow(profile: { blurRadius: dataType, spreadRadius: dataType, shadowColor: dataType, opacity: dataType, horizontal: dataType, vertical: dataType, selector: dataType}) : featureType | dialog_featureType;
+function css_boxShadow(profile: { blurRadius: dataType, spreadRadius: dataType, shadowColor: dataType, 
+/** 0-1 */opacity: dataType, horizontal: dataType, vertical: dataType, selector: dataType}) : featureType | dialog_featureType;
 function css_boxShadow(blurRadius: dataType) : featureType | dialog_featureType;
 function css_border : featureType | dialog_featureType;
 function css_border(profile: { width: dataType, side: dataType, style: dataType, color: dataType, selector: dataType}) : featureType | dialog_featureType;
 function css_border(width: dataType) : featureType | dialog_featureType;
 function d3Scatter_init : featureType;
 function d3Scatter_init() : featureType;
-function d3Chart_frame : d3_chart_frameType;
-function d3Chart_frame(profile: { width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}) : d3_chart_frameType;
-function d3Chart_frame(width: dataType) : d3_chart_frameType;
-function d3Chart_histogram : controlType;
-function d3Chart_histogram(profile: { title: dataType, items: dataType, pivot: d3_chart_pivotType, frame: d3_chart_frameType, itemTitle: dataType, ticks: dataType, axes: d3_chart_axesType, style: d3_chart_histogram_styleType, features: [d3_featureType]}) : controlType;
-function d3Chart_histogram(title: dataType) : controlType;
+function d3g_frame : d3g_frameType;
+function d3g_frame(profile: { width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}) : d3g_frameType;
+function d3g_frame(width: dataType) : d3g_frameType;
+function d3g_histogram : controlType;
+function d3g_histogram(profile: { title: dataType, items: dataType, pivot: d3g_pivotType, frame: d3g_frameType, itemTitle: dataType, ticks: dataType, axes: d3g_axesType, style: d3g_histogram_styleType, features: [d3_featureType]}) : controlType;
+function d3g_histogram(title: dataType) : controlType;
 function d3Histogram_init : d3_featureType;
 function d3Histogram_init() : d3_featureType;
-function d3Chart_buttomAndLeftAxes : d3_chart_axesType;
-function d3Chart_buttomAndLeftAxes() : d3_chart_axesType;
-function d3Chart_itemIndicator : d3_featureType;
-function d3Chart_itemIndicator(item: dataType) : d3_featureType;
-function d3Chart_pivot : d3_chart_pivotType;
-function d3Chart_pivot(profile: { title: dataType, value: dataType, scale: d3_chart_scaleType, range: d3_chart_rangeType, domain: d3_chart_domainType}) : d3_chart_pivotType;
-function d3Chart_pivot(title: dataType) : d3_chart_pivotType;
-function d3Chart_linearScale : d3_chart_scaleType;
-function d3Chart_linearScale() : d3_chart_scaleType;
-function d3Chart_sqrtScale : d3_chart_scaleType;
-function d3Chart_sqrtScale() : d3_chart_scaleType;
-function d3Chart_ordinalScale : d3_chart_scaleType;
-function d3Chart_ordinalScale(list: dataType) : d3_chart_scaleType;
-function d3Chart_colors : d3_chart_scaleType;
-function d3Chart_colors() : d3_chart_scaleType;
-function d3Chart_autoRange : d3_chart_rangeType;
-function d3Chart_autoRange() : d3_chart_rangeType;
-function d3Chart_fromTo : d3_chart_rangeType;
-function d3Chart_fromTo(from: dataType, to: dataType) : d3_chart_rangeType;
-function d3Chart_fromTo(from: dataType) : d3_chart_rangeType;
-function d3Chart_domainByValues : d3_chart_domainType;
-function d3Chart_domainByValues() : d3_chart_domainType;
+function d3g_buttomAndLeftAxes : d3g_axesType;
+function d3g_buttomAndLeftAxes() : d3g_axesType;
+function d3g_itemIndicator : d3_featureType;
+function d3g_itemIndicator(item: dataType) : d3_featureType;
+function d3g_linearScale : d3g_scaleType;
+function d3g_linearScale() : d3g_scaleType;
+function d3g_sqrtScale : d3g_scaleType;
+function d3g_sqrtScale() : d3g_scaleType;
+function d3g_bandScale : d3g_scaleType;
+function d3g_bandScale(profile: { 
+/** range [0,1] */paddingInner: dataType, 
+/** range [0,1] */paddingOuter: dataType, 
+/** 0 - aligned left, 0.5 - centered, 1 - aligned right */align: dataType}) : d3g_scaleType;
+function d3g_bandScale(
+/** range [0,1] */paddingInner: dataType) : d3g_scaleType;
+function d3g_ordinalColors : d3g_scaleType;
+function d3g_ordinalColors(scale: dataType) : d3g_scaleType;
+function d3g_interpolateColors : d3g_scaleType;
+function d3g_interpolateColors(scale: dataType) : d3g_scaleType;
+function d3g_autoRange : d3g_rangeType;
+function d3g_autoRange() : d3g_rangeType;
+function d3g_fromTo : d3g_rangeType;
+function d3g_fromTo(from: dataType, to: dataType) : d3g_rangeType;
+function d3g_fromTo(from: dataType) : d3g_rangeType;
+function d3g_domainByValues : d3g_domainType;
+function d3g_domainByValues() : d3g_domainType;
 function dialogFeature_dragTitle : dialog_featureType;
 function dialogFeature_dragTitle(id: dataType) : dialog_featureType;
 function dialog_closeContainingPopup : actionType;
@@ -1632,10 +1656,10 @@ pathSelector(
 /** object to start with */base: dataType) : dataType,
 }
 declare var json : json;,type http = {
-get : dataType,
-get(url: dataType, 
-/** convert result to json */json: booleanType) : dataType,
-get(url: dataType) : dataType,
+get : dataType | actionType,
+get(profile: { url: dataType, 
+/** convert result to json */json: booleanType, useProxy: booleanType}) : dataType | actionType,
+get(url: dataType) : dataType | actionType,
 post : actionType,
 post(profile: { url: dataType, postData: dataType, 
 /** convert result to json */jsonResult: booleanType}) : actionType,
@@ -1775,8 +1799,10 @@ height : featureType | dialog_featureType,
 height(profile: { height: dataType, overflow: dataType, minMax: dataType, selector: dataType}) : featureType | dialog_featureType,
 height(height: dataType) : featureType | dialog_featureType,
 opacity : featureType,
-opacity(opacity: dataType, selector: dataType) : featureType,
-opacity(opacity: dataType) : featureType,
+opacity(
+/** 0-1 */opacity: dataType, selector: dataType) : featureType,
+opacity(
+/** 0-1 */opacity: dataType) : featureType,
 padding : featureType | dialog_featureType,
 padding(profile: { top: dataType, left: dataType, right: dataType, bottom: dataType, selector: dataType}) : featureType | dialog_featureType,
 padding(top: dataType) : featureType | dialog_featureType,
@@ -1784,16 +1810,22 @@ margin : featureType | dialog_featureType,
 margin(profile: { top: dataType, left: dataType, right: dataType, bottom: dataType, selector: dataType}) : featureType | dialog_featureType,
 margin(top: dataType) : featureType | dialog_featureType,
 transformRotate : featureType,
-transformRotate(angle: dataType, selector: dataType) : featureType,
-transformRotate(angle: dataType) : featureType,
+transformRotate(
+/** 0-360 */angle: dataType, selector: dataType) : featureType,
+transformRotate(
+/** 0-360 */angle: dataType) : featureType,
 color : featureType,
 color(profile: { color: dataType, background: dataType, selector: dataType}) : featureType,
 color(color: dataType) : featureType,
 transformScale : featureType,
-transformScale(profile: { x: dataType, y: dataType, selector: dataType}) : featureType,
-transformScale(x: dataType) : featureType,
+transformScale(profile: { 
+/** 0-1 */x: dataType, 
+/** 0-1 */y: dataType, selector: dataType}) : featureType,
+transformScale(
+/** 0-1 */x: dataType) : featureType,
 boxShadow : featureType | dialog_featureType,
-boxShadow(profile: { blurRadius: dataType, spreadRadius: dataType, shadowColor: dataType, opacity: dataType, horizontal: dataType, vertical: dataType, selector: dataType}) : featureType | dialog_featureType,
+boxShadow(profile: { blurRadius: dataType, spreadRadius: dataType, shadowColor: dataType, 
+/** 0-1 */opacity: dataType, horizontal: dataType, vertical: dataType, selector: dataType}) : featureType | dialog_featureType,
 boxShadow(blurRadius: dataType) : featureType | dialog_featureType,
 border : featureType | dialog_featureType,
 border(profile: { width: dataType, side: dataType, style: dataType, color: dataType, selector: dataType}) : featureType | dialog_featureType,
@@ -1803,37 +1835,41 @@ declare var css : css;,type d3Scatter = {
 init : featureType,
 init() : featureType,
 }
-declare var d3Scatter : d3Scatter;,type d3Chart = {
-frame : d3_chart_frameType,
-frame(profile: { width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}) : d3_chart_frameType,
-frame(width: dataType) : d3_chart_frameType,
+declare var d3Scatter : d3Scatter;,type d3g = {
+frame : d3g_frameType,
+frame(profile: { width: dataType, height: dataType, top: dataType, right: dataType, bottom: dataType, left: dataType}) : d3g_frameType,
+frame(width: dataType) : d3g_frameType,
 histogram : controlType,
-histogram(profile: { title: dataType, items: dataType, pivot: d3_chart_pivotType, frame: d3_chart_frameType, itemTitle: dataType, ticks: dataType, axes: d3_chart_axesType, style: d3_chart_histogram_styleType, features: [d3_featureType]}) : controlType,
+histogram(profile: { title: dataType, items: dataType, pivot: d3g_pivotType, frame: d3g_frameType, itemTitle: dataType, ticks: dataType, axes: d3g_axesType, style: d3g_histogram_styleType, features: [d3_featureType]}) : controlType,
 histogram(title: dataType) : controlType,
-buttomAndLeftAxes : d3_chart_axesType,
-buttomAndLeftAxes() : d3_chart_axesType,
+buttomAndLeftAxes : d3g_axesType,
+buttomAndLeftAxes() : d3g_axesType,
 itemIndicator : d3_featureType,
 itemIndicator(item: dataType) : d3_featureType,
-pivot : d3_chart_pivotType,
-pivot(profile: { title: dataType, value: dataType, scale: d3_chart_scaleType, range: d3_chart_rangeType, domain: d3_chart_domainType}) : d3_chart_pivotType,
-pivot(title: dataType) : d3_chart_pivotType,
-linearScale : d3_chart_scaleType,
-linearScale() : d3_chart_scaleType,
-sqrtScale : d3_chart_scaleType,
-sqrtScale() : d3_chart_scaleType,
-ordinalScale : d3_chart_scaleType,
-ordinalScale(list: dataType) : d3_chart_scaleType,
-colors : d3_chart_scaleType,
-colors() : d3_chart_scaleType,
-autoRange : d3_chart_rangeType,
-autoRange() : d3_chart_rangeType,
-fromTo : d3_chart_rangeType,
-fromTo(from: dataType, to: dataType) : d3_chart_rangeType,
-fromTo(from: dataType) : d3_chart_rangeType,
-domainByValues : d3_chart_domainType,
-domainByValues() : d3_chart_domainType,
+linearScale : d3g_scaleType,
+linearScale() : d3g_scaleType,
+sqrtScale : d3g_scaleType,
+sqrtScale() : d3g_scaleType,
+bandScale : d3g_scaleType,
+bandScale(profile: { 
+/** range [0,1] */paddingInner: dataType, 
+/** range [0,1] */paddingOuter: dataType, 
+/** 0 - aligned left, 0.5 - centered, 1 - aligned right */align: dataType}) : d3g_scaleType,
+bandScale(
+/** range [0,1] */paddingInner: dataType) : d3g_scaleType,
+ordinalColors : d3g_scaleType,
+ordinalColors(scale: dataType) : d3g_scaleType,
+interpolateColors : d3g_scaleType,
+interpolateColors(scale: dataType) : d3g_scaleType,
+autoRange : d3g_rangeType,
+autoRange() : d3g_rangeType,
+fromTo : d3g_rangeType,
+fromTo(from: dataType, to: dataType) : d3g_rangeType,
+fromTo(from: dataType) : d3g_rangeType,
+domainByValues : d3g_domainType,
+domainByValues() : d3g_domainType,
 }
-declare var d3Chart : d3Chart;,type d3Histogram = {
+declare var d3g : d3g;,type d3Histogram = {
 init : d3_featureType,
 init() : d3_featureType,
 }
