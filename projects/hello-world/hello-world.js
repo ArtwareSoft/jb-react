@@ -3,13 +3,9 @@ jb.component('hello-world.main', { /* helloWorld.main */
   type: 'control',
   impl: group({
     controls: [
-      text({title: 'hello', text: pipeline('aaa', helloWorld.c1())})
+      text({text: 'hello world'})
     ]
   })
-})
-
-jb.component('hello-world.c1',{
-  impl: pipeline('hello world')
 })
 
 jb.component('data-resource.people', { /* dataResource.people */

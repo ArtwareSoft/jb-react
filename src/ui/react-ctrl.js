@@ -37,7 +37,7 @@ class JbComponent {
 		this.field = {
 			class: '',
 			ctxId: ui.preserveCtx(this.ctx),
-			control: (row,index) => this.ctx.setData(row).setVars({index: (index||0)+1}).runItself().reactComp() 
+			control: (item,index) => this.getOrCreateItemField(item, () => this.ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp())
 		}
 		this.enrichField.forEach(enrichField=>enrichField(this.field))
 		let title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => '');
@@ -45,7 +45,13 @@ class JbComponent {
 			title = this.field.title
 		// make it always a function 
 		this.field.title = typeof title == 'function' ? title : () => ''+title;
+		this.itemfieldCache = new Map()
 		return this
+	}
+	getOrCreateItemField(item, factory) {
+		if (!this.itemfieldCache.get(item))
+			this.itemfieldCache.set(item,factory())
+		return this.itemfieldCache.get(item)
 	}
 
 	reactComp() {

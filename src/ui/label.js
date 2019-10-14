@@ -33,7 +33,7 @@ jb.component('label.bind-text', { /* label.bindText */
       cmp.state.text = fixTextVal(textRef);
       if (jb.isWatchable(textRef))
         jb.ui.refObservable(textRef,cmp,{watchScript: ctx})
-            .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,{text: fixTextVal(textRef)},e,ctx));
+            .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,{text: fixTextVal(textF(cmp.ctx))},e,ctx));
 
       cmp.refresh = _ =>
         cmp.setState({text: fixTextVal(textF(cmp.ctx))})
