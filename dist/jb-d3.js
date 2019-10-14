@@ -18531,7 +18531,8 @@ jb.ns('d3g,d3Scatter,d3Histogram')
 
 jb.component('d3g.chart-scatter', { /* d3g.chartScatter */
   type: 'control',
-  category: 'group:80,common:70',
+  description: 'chart, graph, diagram by d3',
+  category: 'chart:80',
   params: [
     {id: 'title', as: 'string'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
@@ -18540,7 +18541,7 @@ jb.component('d3g.chart-scatter', { /* d3g.chartScatter */
       type: 'd3g.frame',
       defaultValue: d3g.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})
     },
-    {id: 'pivots', type: 'd3g.pivot[]', mandatory: true, dynamic: true},
+    {id: 'pivots', type: 'd3g.pivot[]', templateValue: [], mandatory: true, dynamic: true, description: 'potential axis of the chart'},
     {id: 'itemTitle', as: 'string', dynamic: true},
     {id: 'onSelectItem', type: 'action', dynamic: true},
     {id: 'onSelectAxisValue', type: 'action', dynamic: true},
@@ -18600,35 +18601,35 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
       beforeInit: cmp => {
         cmp.state.items = calcItems();
         cmp.pivots = ctx.vars.$model.pivots();
-        var x = cmp.pivots[0],y = cmp.pivots[1],radius = cmp.pivots[2],color = cmp.pivots[3];
+        const x = cmp.pivots[0],y = cmp.pivots[1],radius = cmp.pivots[2],color = cmp.pivots[3];
 
-		var ctx2 = ctx.setVars({items: cmp.state.items, frame: ctx.vars.$model.frame});
-		Object.assign(cmp, {
-			xPivot: x.init(ctx2.setVars({xAxis: true})),
-			yPivot: y.init(ctx2.setVars({yAxis: true})),
-			rPivot: radius.init(ctx2.setVars({rAxis: true})),
-			colorPivot: color.init(ctx2.setVars({colorAxis: true})),
-			itemTitle: ctx.vars.$model.itemTitle
-		}, ctx.vars.$model.frame );
-		cmp.colorPivot.scale = d3.scaleOrdinal(d3.schemeAccent); //.domain(cmp.colorPivot.domain);
+        const ctx2 = ctx.setVars({items: cmp.state.items, frame: ctx.vars.$model.frame});
+        Object.assign(cmp, {
+          xPivot: x.init(ctx2.setVars({xAxis: true})),
+          yPivot: y.init(ctx2.setVars({yAxis: true})),
+          rPivot: radius.init(ctx2.setVars({rAxis: true})),
+          colorPivot: color.init(ctx2.setVars({colorAxis: true})),
+          itemTitle: ctx.vars.$model.itemTitle
+        }, ctx.vars.$model.frame );
+        cmp.colorPivot.scale = d3.scaleOrdinal(d3.schemeAccent); //.domain(cmp.colorPivot.domain);
 
         cmp.refresh = _ =>
             cmp.setState({items: calcItems()})
 
-		cmp.clicked = ev => {
-			const elem = ev.target
-			const index = elem.getAttribute('index')
-			const parent = jb.path(elem, 'parentElement.parentElement')
-			const axisIndex = parent && parent.getAttribute('axisIndex')
-			if (axisIndex !== null) {
-				const action = jb.ui.wrapWithLauchingElement(ctx.vars.$model.onSelectAxisValue, cmp.ctx, elem)
-				action(ctx.setData({ pivot: cmp.pivots[axisIndex], value: elem.innerHTML}).setVars({event:ev}))
-			}
-			else if (index !== null) {
-				const action = jb.ui.wrapWithLauchingElement(ctx.vars.$model.onSelectItem, cmp.ctx, elem)
-				action(ctx.setData(cmp.items[index]).setVars({event:ev}))
-			}
-		}
+        cmp.clicked = ev => {
+          const elem = ev.target
+          const index = elem.getAttribute('index')
+          const parent = jb.path(elem, 'parentElement.parentElement')
+          const axisIndex = parent && parent.getAttribute('axisIndex')
+          if (axisIndex !== null) {
+            const action = jb.ui.wrapWithLauchingElement(ctx.vars.$model.onSelectAxisValue, cmp.ctx, elem)
+            action(ctx.setData({ pivot: cmp.pivots[axisIndex], value: elem.innerHTML}).setVars({event:ev}))
+          }
+          else if (index !== null) {
+            const action = jb.ui.wrapWithLauchingElement(ctx.vars.$model.onSelectItem, cmp.ctx, elem)
+            action(ctx.setData(cmp.items[index]).setVars({event:ev}))
+          }
+        }
 	  
         function calcItems() {
           cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
@@ -18637,12 +18638,11 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
           cmp.sortItems && cmp.sortItems();
           return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit);
         }
-
-      },
-      afterViewInit: cmp => {
-      	d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(cmp.xPivot.scale));
-      	d3.select(cmp.base.querySelector('.y.axis')).call(d3.axisLeft().scale(cmp.yPivot.scale));
-      }
+    },
+    afterViewInit: cmp => {
+      d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(cmp.xPivot.scale));
+      d3.select(cmp.base.querySelector('.y.axis')).call(d3.axisLeft().scale(cmp.yPivot.scale));
+    }
   })
 })
 

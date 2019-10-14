@@ -37386,15 +37386,6 @@ jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
               .filter(id=>id.split('.')[0] == prj) : []
 })
 
-jb.component('studio.project-pages', { /* studio.projectPages */
-  type: 'data',
-  impl: pipeline(
-    studio.cmpsOfProject('%$studio/project%'),
-    filter(studio.isOfType('%%', 'control')),
-    suffix('.')
-  )
-})
-
 jb.component('studio.pages', { /* studio.pages */
   type: 'control',
   impl: group({
@@ -37408,32 +37399,31 @@ jb.component('studio.pages', { /* studio.pages */
         features: css('{margin: 5px}')
       }),
       itemlist({
-        items: studio.projectPages(),
+        items: pipeline(studio.cmpsOfProject('%$studio/project%'),filter(studio.isOfType('%%', 'control')),suffix('.')),
         controls: label({title: extractSuffix('.'), features: css.class('studio-page')}),
         style: itemlist.horizontal(),
         features: [
           id('pages'),
           itemlist.selection({
             databind: '%$studio/page%',
-            onSelection: runActions(
-              writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}')
-            ),
+            onSelection: writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
             autoSelectFirst: true
           }),
-          css(
-            `{ list-style: none; padding: 0;
-              margin: 0; margin-left: 20px; font-family: "Arial"}
-                  >* { list-style: none; display: inline-block; padding: 0 5px; font-size: 12px; border: 1px solid transparent; cursor: pointer;}
-                  >* label { cursor: inherit; }
-                  >*.selected { background: #fff;  border: 1px solid #ccc;  border-top: 1px solid transparent; color: inherit;  }`
-          )
+          css.class('studio-pages-items'),
         ]
+      }),
+      label('|'),
+      itemlist({
+        items: pipeline(studio.cmpsOfProject('%$studio/project%'),filter(studio.isOfType('%%', 'data')),suffix('.')),
+        controls: label({title: extractSuffix('.'), features: [
+          feature.onEvent('click',studio.openJbEditor('%$studio/project%.%%')),
+        ]}),
+        style: itemlist.horizontal(),
+        features: css.class('studio-pages-items'),
       })
     ],
     features: [
-      css(
-        '{ background: #F5F5F5; position: absolute; bottom: 0; left: 0; width: 100%; border-top: 1px solid #aaa}'
-      ),
+      css.class('studio-pages'),
       group.wait({for: studio.waitForPreviewIframe(), loadingControl: label({})}),
       studio.watchComponents()
     ]

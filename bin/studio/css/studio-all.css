@@ -272,7 +272,12 @@ border: 1px solid rgb(213, 213, 213);}
 .CodeMirror-hints {
   z-index: 10000;
 }
-@font-face {
+
+.studio-pages { background: #F5F5F5; position: absolute; bottom: 0; left: 0; width: 100%; border-top: 1px solid #aaa}
+.studio-pages-items { list-style: none; padding: 0; margin: 0; margin-left: 20px; font-family: "Arial" }
+.studio-pages-items>* { list-style: none; display: inline-block; padding: 0 5px; font-size: 12px; border: 1px solid transparent; cursor: pointer;}
+.studio-pages-items>* label { cursor: inherit; }
+.studio-pages-items>*.selected { background: #fff;  border: 1px solid #ccc;  border-top: 1px solid transparent; color: inherit;  }@font-face {
   font-family: 'Material Icons';
   font-style: normal;
   font-weight: 400;

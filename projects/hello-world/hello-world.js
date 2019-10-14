@@ -1,10 +1,15 @@
+jb.ns('helloWorld')
 jb.component('hello-world.main', { /* helloWorld.main */
   type: 'control',
   impl: group({
     controls: [
-      label('hello world12213qwew')
+      text({title: 'hello', text: pipeline('aaa', helloWorld.c1())})
     ]
   })
+})
+
+jb.component('hello-world.c1',{
+  impl: pipeline('hello world')
 })
 
 jb.component('data-resource.people', { /* dataResource.people */
