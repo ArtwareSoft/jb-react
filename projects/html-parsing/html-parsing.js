@@ -153,9 +153,9 @@ jb.component('html-parsing.parseDevice', { /* htmlParsing.parseDevice */
               text({title: 'price', text: pipeline('%Price%', matchRegex('[0-9]+'))})
             ],
             style: table.withHeaders(),
-            visualSizeLimit: '10',
+            visualSizeLimit: '12',
             features: [
-              itemlist.selection({databind: '%$sel%'}),
+              itemlist.selection('%$sel%', undefined),
               itemlist.keyboardSelection({}),
               css.width('600')
             ]

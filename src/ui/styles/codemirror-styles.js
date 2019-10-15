@@ -21,15 +21,20 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
     {id: 'lineNumbers', as: 'boolean', type: 'boolean'},
     {id: 'readOnly', options: ',true,nocursor'},
     {id: 'onCtrlEnter', type: 'action', dynamic: true},
-    {id: 'hint', as: 'boolean', type: 'boolean'}
+    {id: 'hint', as: 'boolean', type: 'boolean'},
+    {id: 'maxLength', as: 'number', defaultValue: 50000},
   ],
   impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
-			template: (cmp,state,h) => h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
+			template: (cmp,state,h) => h('div',{},h('textarea', {class: cmp.textAreaAlternative ? 'jb-textarea-alternative-for-codemirror' : 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
 			css: '{width: 100%}',
-			beforeInit: cmp =>
-				cmp.state.databindRef = cmp.ctx.vars.$model.databind(),
+			beforeInit: cmp => {
+				cmp.state.databindRef = cmp.ctx.vars.$model.databind()
+				if (jb.tostring(cmp.state.databindRef).length > ctx.params.maxLength)
+					cmp.textAreaAlternative = true
+			},
 			afterViewInit: cmp => {
+				if (cmp.textAreaAlternative) return
 				try {
 					let data_ref = cmp.state.databindRef;
 					if (data_ref instanceof Promise)
@@ -79,8 +84,6 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						cmp.state.databindRef = cmp.editor.data_ref = data_ref = ref;
 						editor.setValue(jb.tostring(data_ref))
 					})
-					if (ctx.params.hint)
-						tgpHint(CodeMirror)
 					const wrapper = editor.getWrapperElement();
 					if (height)
 						wrapper.style.height = height + 'px';

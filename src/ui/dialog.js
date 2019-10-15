@@ -371,7 +371,7 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
 		let codeMirrorElem,codeMirrorSizeDiff;
 		const mousedrag = cmp.mousedownEm.do(e=>{
 				if (codeMirror) {
-					codeMirrorElem = cmp.base.querySelector('.CodeMirror');
+					codeMirrorElem = cmp.base.querySelector('.CodeMirror,.jb-textarea-alternative-for-codemirror');
 					if (codeMirrorElem)
 					codeMirrorSizeDiff = codeMirrorElem.getBoundingClientRect().top - cmp.base.getBoundingClientRect().top
 						+ (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
