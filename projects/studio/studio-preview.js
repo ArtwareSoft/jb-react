@@ -50,9 +50,9 @@ st.initPreview = function(preview_window,allowedTypes) {
       // reload the changed components and rebuild the history
       st.initCompsRefHandler(st.previewjb, allowedTypes)
       changedComps.forEach(e=>{
-        //st.reloadCompInPreviewWindow && st.reloadCompInPreviewWindow(e[0],jb.prettyPrint(e[1]))
         st.compsRefHandler.resourceReferred(e[0])
         st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1])})`)) // update the history for future save
+        jb.val(st.compsRefHandler.refOfPath([e[0]]))[jb.location] = e[1][jb.location]
       })
 
       st.previewjb.http_get_cache = {}

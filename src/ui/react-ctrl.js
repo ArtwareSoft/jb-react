@@ -314,26 +314,13 @@ ui.renderWidget = function(profile,top) {
 	let formerReactElem, formerParentElem;
 	let blockedParentWin = false
 	try {
-		x = typeof window != 'undefined' && window.parent.jb
+		const x = typeof window != 'undefined' && window.parent.jb
 	} catch (e) {
 		blockedParentWin = true
 	}
 	try {
-		if (!blockedParentWin && typeof window != 'undefined' && window.parent != window && window.parent.jb) {
-			const st = window.parent.jb.studio
-			const originalResources = jb.resources
-			st.refreshPreviewWidget = _ => {
-				jb.resources = originalResources;
-				doRender();
-			}
-			st.reloadCompInPreviewWindow = (id,comp) => {
-				try {
-					jb.component(id,eval('('+comp+')'))
-					return jb.comps[id]
-				} catch(e) { jb.logException(e)	}
-			}
-			st.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
-		}
+		if (!blockedParentWin && typeof window != 'undefined' && window.parent != window && window.parent.jb)
+			window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
 	} catch(e) {
 		jb.logException(e)
 		return
