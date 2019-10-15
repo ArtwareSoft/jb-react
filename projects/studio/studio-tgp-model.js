@@ -355,10 +355,17 @@ Object.assign(st,{
 		return path.split('~').pop();
 	},
 
-	closestCtxByPath: pathToTrace => {
+	closestCtxOfLastRun: pathToTrace => {
 		let path = pathToTrace.split('~')
 		for (;path.length > 0 && !st.previewjb.ctxByPath[path.join('~')];path.pop());
 		return st.previewjb.ctxByPath[path.join('~')]
+	},
+
+	closestCtxOfSampleInput: pathToTrace => {
+		const compId = pathToTrace.split('~')[0]
+		const input = (new st.previewjb.jbCtx()).exp(`${compId}-sample-input`)
+		if (input)
+			return (new st.previewjb.jbCtx()).setData(input)
 	},
 })
 

@@ -107,7 +107,8 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'jb-d3': ['dist/jb-d3.js'],
       studio: [
-        'dist/material.js','src/loader/jb-loader.js', 'src/ui/watchable/text-editor.js','src/ui/styles/codemirror-styles.js',
+        'dist/material.js','src/loader/jb-loader.js', 'src/ui/watchable/text-editor.js',
+        'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js',
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',

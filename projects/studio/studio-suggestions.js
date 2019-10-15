@@ -37,11 +37,11 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
           if (pathToTrace.match(/pipeline~[1-9][0-9]*$/) && st.isExtraElem(pathToTrace)) {
             const formerIndex = Number(pathToTrace.match(/pipeline~([1-9][0-9]*)$/)[1])-1
             const formerPath = pathToTrace.replace(/[0-9]+$/,formerIndex)
-            const baseCtx = st.closestCtxByPath(formerPath)
+            const baseCtx = st.closestCtxOfLastRun(formerPath)
             if (baseCtx)
               return baseCtx.setData(baseCtx.runItself())
           }
-          return st.closestCtxByPath(pathToTrace)
+          return st.closestCtxOfLastRun(pathToTrace)
         }
       }
   })

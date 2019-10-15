@@ -150,25 +150,27 @@ jb.component('studio.probe', { /* studio.probe */
   params: [
     {id: 'path', as: 'string', dynamic: true}
   ],
-  impl: (ctx,path) => {
-        const _jb = st.previewjb
+  impl: (ctx,pathF) => {
+        const _jb = st.previewjb, path = pathF()
         let circuitCtx = ctx.exp('%$pickSelection/ctx%')
         if (circuitCtx)
             jb.studio.highlightCtx(circuitCtx)
         if (!circuitCtx) {
-            const circuitInPreview = st.closestCtxInPreview(path())
+            const circuitInPreview = st.closestCtxInPreview(path)
                 if (circuitInPreview.ctx) {
                     st.highlight([circuitInPreview.elem])
                     circuitCtx = circuitInPreview.ctx
             }
         }
         if (!circuitCtx)
-            circuitCtx = st.closestCtxByPath(path())
+            circuitCtx = st.closestCtxOfLastRun(path)
+        if (!circuitCtx)
+            circuitCtx = st.closestCtxOfSampleInput(path)
         if (!circuitCtx) {
             const circuit = jb.tostring(ctx.exp('%$circuit%','string') || ctx.exp('%$studio/project%.%$studio/page%'))
             circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
         }
-        return new (_jb.studio.Probe || st.Probe)(circuitCtx).runCircuit(path())
+        return new (_jb.studio.Probe || st.Probe)(circuitCtx).runCircuit(path)
     }
 })
 
