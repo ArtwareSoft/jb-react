@@ -49,9 +49,9 @@ jb.component('picklist', { /* picklist */
         cmp.recalcOptions();
       },
       afterViewInit: cmp => {
-        if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{watchScript: ctx})
+        if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{srcCtx: ctx})
           .subscribe(e=>cmp.onChange && cmp.onChange(jb.val(e.ref)))
-        else jb.ui.refObservable(ctx.params.databind(),cmp,{watchScript: ctx}).subscribe(e=>
+        else jb.ui.refObservable(ctx.params.databind(),cmp,{srcCtx: ctx}).subscribe(e=>
           cmp.onChange && cmp.onChange(jb.val(e.ref)))
       },
     })

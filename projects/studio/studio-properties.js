@@ -108,7 +108,9 @@ jb.component('studio.prop-field', {
     }),
     features: [
       studio.propertyToolbarFeature('%$path%'),
-      field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%'))
+      field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%')),
+      If(not(isOfType('string,number,boolean,undefined', studio.val('%$path%'))),
+        studio.watchPath({path: '%$path%', includeChildren: 'structure', allowSelfRefresh: true}))
     ]
   })
 })
@@ -437,85 +439,6 @@ jb.component('studio.jb-floating-input-rich', { /* studio.jbFloatingInputRich */
   })
 })
 
-jb.component('studio.properties-old', { /* studio.properties */
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: group({
-    controls: [
-      group({
-        title: 'accordion',
-        style: group.studioPropertiesAccordion(),
-        controls: [
-          group({
-            remark: 'properties',
-            title: pipeline(count(studio.nonControlChildren('%$path%')), 'Properties (%%)'),
-            style: customStyle({
-              template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
-      h('tr',{ class: 'property' },[
-          h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
-          h('td',{ class: 'property-ctrl'},h(ctrl)),
-          h('td',{ class: 'property-toolbar'}, h(ctrl.jbComp.toolbar) ),
-      ])
-    )),
-              css: `
-      { width: 100% }
-      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px;  font-weight: bold;}
-      >.property>.property-toolbar { text-align: right}
-      >.property>.property-toolbar>i { margin-right: 5px }
-      >.property>td { vertical-align: top; }
-    `,
-              features: group.initGroup()
-            }),
-            controls: [
-              dynamicControls({
-                controlItems: studio.nonControlChildren('%$path%'),
-                genericControl: studio.propertyField('%$controlItem%')
-              })
-            ]
-          }),
-          group({
-            remark: 'features',
-            title: pipeline(count(studio.val('%$path%~features')), 'Features (%%)'),
-            controls: studio.propertyArray('%$path%~features')
-          })
-        ],
-        features: [
-          group.dynamicTitles(),
-          studio.watchPath({path: '%$path%~features', allowSelfRefresh: true}),
-          hidden(
-            remark('not a control'),
-            studio.hasParam(remark('not a control'), '%$path%', 'features')
-          )
-        ]
-      }),
-      label({
-        title: pipeline(
-          studio.profileAsText('%$path%~features'),
-          If(inGroup(list('[]', "''"), '%%'), '', '%%')
-        ),
-        style: label.span(),
-        features: [
-          css.width('400'),
-          css('{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis}'),
-          feature.hoverTitle('%%')
-        ]
-      }),
-      button({
-        title: 'new feature',
-        action: studio.openNewProfileDialog({
-          path: '%$path%~features',
-          type: 'feature',
-          onClose: runActions(ctx => ctx.vars.PropertiesDialog.openFeatureSection())
-        }),
-        style: button.href(),
-        features: css.margin({top: '20', left: '5'})
-      })
-    ],
-    features: variable({name: 'PropertiesDialog', value: {'$': 'object'}, watchable: false})
-  })
-})
 
 jb.component('studio.open-properties', { /* studio.openProperties */
   type: 'action',

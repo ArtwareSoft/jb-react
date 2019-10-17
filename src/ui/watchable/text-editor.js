@@ -137,7 +137,7 @@ jb.component('text-editor.watch-source-changes', { /* textEditor.watchSourceChan
       try {
         const text_ref = cmp.state.databindRef
         const data_ref = text_ref.getRef()
-        jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: cmp.ctx, includeChildren: 'yes'})
+        jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{srcCtx: cmp.ctx, includeChildren: 'yes'})
             .subscribe(e => {
             const path = e.path
             const editor = cmp.editor

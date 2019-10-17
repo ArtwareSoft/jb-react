@@ -144,7 +144,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           });
 
         const selectedRef = databind()
-        jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, watchScript: ctx})
+        jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, srcCtx: ctx})
           .catch(e=>jb.ui.setState(cmp,{selected: null }) || [])
           .subscribe(e=>
             jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))

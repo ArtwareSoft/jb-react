@@ -178,12 +178,6 @@ Object.assign(st,{
 			.filter(p=>st.valOfPath(path+'~'+p.id) == null && !p.mandatory)
 			.map(p=> path + '~' + p.id),
 
-  // compHeaderParams: path => {
-  //   if (path.indexOf('~') == -1)
-  //     return [
-  //   if (path.indexOf('~impl~') == -1 && path.match(/~params~[0-9]*$/))
-  //     return ['id','type','as','mandatory']
-  // }
 	nonControlChildren: (path,includeFeatures) =>
 		st.paramsOfPath(path).filter(p=>!st.isControlType(p.type))
 			.filter(p=>includeFeatures || p.id != 'features')
@@ -218,15 +212,15 @@ Object.assign(st,{
 
 	summary: path => {
 		const val = st.valOfPath(path);
-    if (path.match(/~cases~[0-9]*$/))
-      return st.summary(path+'~condition');
-		if (val == null || typeof val != 'object') return '';
-		return st.paramsOfPath(path).map(x=>x.id)
-			.filter(p=> p != '$')
-			.filter(p=> p.indexOf('$jb_') != 0)
-			.map(p=>val[p])
-			.filter(v=>typeof v != 'object')
-			.join(', ');
+		if (path.match(/~cases~[0-9]*$/))
+		return st.summary(path+'~condition');
+			if (val == null || typeof val != 'object') return '';
+			return st.paramsOfPath(path).map(x=>x.id)
+				.filter(p=> p != '$')
+				.filter(p=> p.indexOf('$jb_') != 0)
+				.map(p=>val[p])
+				.filter(v=>typeof v != 'object')
+				.join(', ');
 	},
 
 	shortTitle: path => {
@@ -272,15 +266,6 @@ Object.assign(st,{
 	},
 
 	// queries
-	isCompNameOfType: (name,type) => {
-		const _jb = st.previewjb;
-		const comp = name && _jb.comps[name];
-		if (comp) {
-			while (_jb.comps[name] && !_jb.comps[name].type && _jb.compName(_jb.comps[name].impl))
-				name = _jb.compName(_jb.comps[name].impl);
-			return (_jb.comps[name] && _jb.comps[name].type || 'data').indexOf(type) == 0;
-		}
-	},
 	paramDef: path => {
 		if (!st.parentPath(path)) // no param def for root
 			return;
@@ -308,16 +293,6 @@ Object.assign(st,{
 			return (paramDef.type || 'data').split(',')
 				.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length;
 	},
-	// single first param type
-	paramTypeOfPath: path => {
-		const res = ((st.paramDef(path) || {}).type || 'data').split(',')[0].split('[')[0];
-		if (res == '*')
-			return st.paramTypeOfPath(st.parentPath(path));
-		return res;
-	},
-	PTsOfPath: path =>
-		st.PTsOfType(st.paramTypeOfPath(path)),
-
 	PTsOfType: type => {
 		const single = /([^\[]*)(\[\])?/;
 		const types = [].concat.apply([],(type||'').split(',')
@@ -327,17 +302,33 @@ Object.assign(st,{
 				x=='data' ? ['data','aggregator','boolean'] : [x]));
 		const comp_arr = types.map(t=>
 			jb.entries(st.previewjb.comps)
-				.filter(c=>
-					(c[1].type||'data').split(',').indexOf(t) != -1
-					|| (c[1].typePattern && t.match(c[1].typePattern))
-				)
+				.filter(c=> st.isCompObjOfType(c[1],t))
 				.map(c=>c[0]));
 		return comp_arr.reduce((all,ar)=>all.concat(ar),[]);
 	},
+	isCompNameOfType: (name,type) => {
+		const _jb = st.previewjb;
+		const comp = name && _jb.comps[name];
+		if (comp) {
+			while (_jb.comps[name] && !(_jb.comps[name].type || _jb.comps[name].typePattern) && _jb.compName(_jb.comps[name].impl))
+				name = _jb.compName(_jb.comps[name].impl);
+			return _jb.comps[name] && st.isCompObjOfType(_jb.comps[name],type);
+		}
+	},
+	isCompObjOfType: (compObj,type) => (compObj.type||'data').split(',').indexOf(type) != -1
+		|| (compObj.typePattern && compObj.typePattern.test(type)),
+
+	// single first param type
+	paramTypeOfPath: path => {
+		const res = ((st.paramDef(path) || {}).type || 'data').split(',')[0].split('[')[0];
+		if (res == '*')
+			return st.paramTypeOfPath(st.parentPath(path));
+		return res;
+	},
+	PTsOfPath: path => st.PTsOfType(st.paramTypeOfPath(path)),
 
 	profilesOfPT: pt => // in project
-		jb.entries(jb.comps).filter(c=> c[1].impl.$ == pt).map(c=>c[0])
-	,
+		jb.entries(jb.comps).filter(c=> c[1].impl.$ == pt).map(c=>c[0]),
 
 	propName: path =>{
 		if (!isNaN(Number(path.split('~').pop()))) // array elements
@@ -361,11 +352,13 @@ Object.assign(st,{
 		return st.previewjb.ctxByPath[path.join('~')]
 	},
 
-	closestCtxOfSampleInput: pathToTrace => {
+	closestTestCtx: pathToTrace => {
 		const compId = pathToTrace.split('~')[0]
-		const input = (new st.previewjb.jbCtx()).exp(`${compId}-sample-input`)
-		if (input)
-			return (new st.previewjb.jbCtx()).setData(input)
+		const statistics = new jb.jbCtx().run(studio.componentsStatistics())
+		const test = statistics.filter(c=>c.id == compId).flatMap(c=>c.referredBy)
+			.filter(refferer=>st.isOfType(refferer,'test') )[0]
+		if (test)
+			return new st.previewjb.jbCtx().ctx({ profile: {$: test}, comp: test, path: ''})
 	},
 })
 

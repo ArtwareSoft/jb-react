@@ -436,12 +436,7 @@ jb.component('prop', { /* prop */
   params: [
     {id: 'title', as: 'string', mandatory: true},
     {id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: ''},
-    {
-      id: 'type',
-      as: 'string',
-      options: 'string,number,boolean,object,array',
-      defaultValue: 'string'
-    }
+    {id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string' }
   ],
   impl: ctx => ctx.params
 })
@@ -1076,100 +1071,4 @@ jb.component('action.switch-case', { /* action.switchCase */
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: ctx => ctx.params
-})
-
-jb.component('extract-text', { /* extractText */
-  description: 'text breaking according to begin/end markers',
-  params: [
-    {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
-    {id: 'startMarkers', type: 'data[]' ,as: 'array', mandatory: true},
-    {id: 'endMarker', as: 'string'},
-    {
-      id: 'includingStartMarker',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'include the marker at part of the result'
-    },
-    {
-      id: 'includingEndMarker',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'include the marker at part of the result'
-    },
-    {
-      id: 'repeating',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'apply the markers repeatingly'
-    },
-    {id: 'noTrim', as: 'boolean', type: 'boolean'},
-    {
-      id: 'useRegex',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'use regular expression in markers'
-    },
-    {
-      id: 'exclude',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'return the inverse result. E.g. exclude remarks'
-    }
-  ],
-  impl: (ctx,textRef,startMarkers,endMarker,includingStartMarker,includingEndMarker,repeating,noTrim,regex,exclude) => {
-    const text = jb.tostring(textRef);
-	  let findMarker = (marker, startpos) => {
-      const pos = text.indexOf(marker,startpos);
-      if (pos != -1)
-        return { pos: pos, end: pos + marker.length}
-    }
-	  if (regex)
-		  findMarker = (marker, startpos) => {
-	  		let len = 0, pos = -1;
-	  		try {
-		  		startpos = startpos || 0;
-		  		const str = text.substring(startpos);
-		  		const marker_regex = new RegExp(marker,'m');
-          pos = str.search(marker_regex);
-		    	if (pos > -1) {
-		    		const match = str.match(marker_regex)[0];
-            len = match ? match.length : 0;
-            if (len)
-              return { pos: pos+startpos, end: pos+ startpos+len };
-		    	}
-	  		} catch(e) {} // probably regex exception
-	  }
-
-    function findStartMarkers(startpos) {
-      let firstMarkerPos,markerPos;
-      for(let i=0; i<startMarkers.length; i++) {
-        const marker = startMarkers[i];
-        markerPos = findMarker(marker,markerPos ? markerPos.end : startpos);
-        if (!markerPos) return;
-        if (i==0)
-          firstMarkerPos = markerPos;
-      }
-      return firstMarkerPos && { pos: firstMarkerPos.pos, end: markerPos.end }
-    }
-
-    let out = { match: [], unmatch: []},pos =0,start=null;
-    while(start = findStartMarkers(pos)) {
-        let end = endMarker ? findMarker(endMarker,start.end) : findStartMarkers(start.end)
-        if (!end) // if end not found use end of text
-          end = { pos : text.length, end: text.length }
-        const start_match = includingStartMarker ? start.pos : start.end;
-        const end_match = includingEndMarker ? end.end : end.pos;
-        if (pos != start_match) out.unmatch.push(textRef.substring(pos,start_match));
-        out.match.push(textRef.substring(start_match,end_match));
-        if (end_match != end.end) out.unmatch.push(textRef.substring(end_match,end.end));
-        pos = endMarker ? end.end : end.pos;
-    }
-    out.unmatch.push(textRef.substring(pos));
-    if (!noTrim) {
-      out.match = out.match.map(x=>x.trim());
-      out.unmatch = out.unmatch.map(x=>x.trim());
-    }
-    const res = exclude ? out.unmatch : out.match;
-    return repeating ? res : res[0];
-  }
 })

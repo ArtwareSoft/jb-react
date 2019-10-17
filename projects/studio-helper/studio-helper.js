@@ -1,5 +1,14 @@
+jb.ns('studio-helper')
 jb.studio.initCompsRefHandler(jb)
 // fake current path
+
+jb.component('data-test.parse-project-html', {
+  impl: dataTest({
+    calculate: pipeline(
+      list('%$html-dev%', '%$html-user%', '%$html-cloud%'), studio.parseProjectHtml(), prettyPrint()),
+    expectedResult: true
+  })
+})
 
 jb.component('studio-helper.event-tracker', { /* studioHelper.eventTracker */
   type: 'control',
@@ -536,4 +545,38 @@ jb.component('studio-helper.comps-chart', { /* studioHelper.compsChart */
       })
     ]
   })
+})
+
+jb.component('studio-helper.parse-project-html', { /* studioHelper.parseProjectHtml */
+  type: 'data',
+  impl: obj(
+    prop(
+        'files',
+        pipeline(
+          extractText({
+              startMarkers: ['<script', 'src=\"'],
+              endMarker: '\"',
+              repeating: 'true'
+            }),
+          filter(and(notContains(['/loader/']), notContains(['/dist/']))),
+          extractSuffix('/')
+        )
+      ),
+    prop(
+        'libs',
+        list(
+          pipeline(
+              extractText({startMarkers: ['modules=\"'], endMarker: '\"', repeating: 'true'}),
+              split(','),
+              filter(and(notEquals('common'), notEquals('ui-common'))),
+              '%%.js'
+            ),
+          pipeline(
+              extractText({startMarkers: ['/dist/'], endMarker: '\"', repeating: 'true'}),
+              filter(notEquals('jb-react-all.js')),
+              filter(notEquals('material.css'))
+            )
+        )
+      )
+  )
 })

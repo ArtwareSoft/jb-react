@@ -104,17 +104,13 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
       controls: [
         picklist({
           databind: '%$file%',
-          options: picklist.codedOptions({
-            options: sourceEditor.filesOfProject(),
-            code: '%%',
-            text: suffix('/')
-          }),
+          options: picklist.options(keys('%$content/files%')),
           style: styleByControl(
             itemlist({
               items: '%$picklistModel/options%',
               controls: label({
                 title: '%text%',
-                style: label.mdlRippleEffect(),
+                style: label.mdlButton(),
                 features: [css.width('%$width%'), css('{text-align: left}')]
               }),
               style: itemlist.horizontal('5'),
@@ -126,27 +122,24 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
           )
         }),
         editableText({
-          databind: pipe(
-            ctx => Promise.resolve(jb.studio.host.getFile(jb.studio.host.locationToPath(jb.tostring(ctx.exp('%$file%'))))),
-              studio.fileAfterChanges('%$file%', '%%')),
+          title: '',
+          databind: pipeline('%$content/files%', '%$file%'),
           style: editableText.studioCodemirrorTgp(),
-          features: [
-            ctx => ({ 
-              beforeInit: cmp => {
-                const fileName = () => st.host.locationToPath(jb.tostring(ctx.vars.file))
-                ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh();
-                ctx.vars.$dialog.gotoEditor = () => fetch(`/?op=gotoSource&path=${fileName()}:${cmp.editor.getCursorPos().line}`);
-              }
-            }),
-            watchRef('%$file%')
-          ]
-        })
+          features: watchRef('%$file%')
+        }),
+        text({text: pipeline('%$content/files%', property('%$file%'), '%%aa')})
       ],
-      features: variable({
-        name: 'file',
-        value: pipeline(sourceEditor.filesOfProject(), first()),
-        watchable: true
-      })
+      features: [
+        variable({
+          name: 'file',
+          value: pipeline(keys('%$content/files%'), first()),
+          watchable: true
+        }),
+        group.wait({
+          for: ctx => jb.studio.projectUtils.projectContent(ctx),
+          varName: 'content'
+        })
+      ]
     }),
     title: '%$studio/project% files',
     features: [
@@ -434,10 +427,11 @@ jb.component('source-editor.files-of-project', {
   impl: ctx => {
     if (jb.studio.inMemoryProject)
       return Object.keys(jb.studio.inMemoryProject.files)
-    const _jb = jb.studio.previewjb
-    const project =  ctx.exp('%$studio/project%')
-    const files = jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf(`/${project}/`) != -1 || x.indexOf(`/${project}.`) != -1))
-    return files.filter(f=>f.indexOf(`${project}.js`) != -1).flatMap(x=>x.replace(/js$/,'html')).concat(files)
+    return st.projectUtils.projectContent(ctx)
+    // const _jb = jb.studio.previewjb
+    // const project =  ctx.exp('%$studio/project%')
+    // const files = jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf(`/${project}/`) != -1 || x.indexOf(`/${project}.`) != -1))
+    // return files.filter(f=>f.indexOf(`${project}.js`) != -1).flatMap(x=>x.replace(/js$/,'html')).concat(files)
   }
 })
 

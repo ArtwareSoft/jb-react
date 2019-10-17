@@ -95,7 +95,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 					editor.setValue(jb.tostring(data_ref));
 				//cmp.lastEdit = new Date().getTime();
 					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-					!data_ref.oneWay && jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
+					!data_ref.oneWay && jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{srcCtx: ctx})
 						.map(e=>jb.tostring(data_ref))
 						.filter(x => x != editor.getValue())
 						.subscribe(x=>{

@@ -231,3 +231,53 @@ jb.component('itemlists.phones-chart', { /* itemlists.phonesChart */
     ]
   })
 })
+
+jb.component('itemlists.master-details-with-container', { /* itemlists.masterDetails */
+  type: 'control',
+  impl: group({
+    controls: [
+      itemlist({
+        items: '%$people%',
+        controls: [
+          text({title: 'name', text: '%name%'})
+        ],
+        features: itemlist.selection({autoSelectFirst: 'true'})
+      }),
+      group({
+        title: 'person',
+        style: propertySheet.titlesLeft({}),
+        controls: [
+          text({title: 'name', text: '%name%'}),
+          text({title: 'age', text: '%age%'})
+        ],
+        features: group.data({data: '%$itemlistCntrData/selected%', watch: true})
+      })
+    ],
+    features: group.itemlistContainer({})
+  })
+})
+
+jb.component('itemlists.master-details', { /* itemlists.masterDetails */
+  type: 'control',
+  impl: group({
+    controls: [
+      itemlist({
+        items: '%$people%',
+        controls: [
+          text({title: 'name', text: '%name%'})
+        ],
+        features: itemlist.selection({databind: '%$selected%', autoSelectFirst: 'true'})
+      }),
+      group({
+        title: 'person',
+        style: propertySheet.titlesLeft({}),
+        controls: [
+          text({title: 'name', text: '%name%'}),
+          text({title: 'age', text: '%age%'})
+        ],
+        features: group.data({data: '%$selected%', watch: true})
+      })
+    ],
+    features: variable({name: 'selected', value: '%$people/0%', watchable: true})
+  })
+})

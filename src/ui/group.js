@@ -149,7 +149,7 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', { /* firstSucceedi
   impl: (ctx,refF,includeChildren) => ({
       init: cmp => {
         const ref = refF(cmp.ctx)
-        ref && jb.ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
+        ref && jb.ui.refObservable(ref,cmp,{includeChildren, srcCtx: ctx})
         .subscribe(e=>{
           if (ctx && ctx.profile && ctx.profile.$trace)
             console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);

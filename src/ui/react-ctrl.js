@@ -68,6 +68,7 @@ class JbComponent {
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				jbComp.extendCtxOnceFuncs.forEach(extendCtx =>
 					tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx')
+				this.state = {}
 			
 				Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
 				jbComp.jbBeforeInitFuncs.forEach(init=> tryWrapper(() => init(this,props)), 'beforeinit');
@@ -101,6 +102,7 @@ class JbComponent {
 				jbComp.jbComponentDidUpdateFuncs.forEach(f=> tryWrapper(() => f(this), 'componentDidUpdate'));
 			}
 	  		componentWillUnmount() {
+				this._destroyed = true
 				jbComp.jbDestroyFuncs.forEach(f=> tryWrapper(() => f(this), 'destroy'));
 				this.resolveDestroyed();
 			}
@@ -409,7 +411,7 @@ ui.setState = function(cmp,state,opEvent,watchedAt) {
 ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 		if (!ref)
 			jb.logError('null ref for watch ref',...arguments);
-    	ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
+    	ui.refObservable(ref,cmp,{includeChildren, srcCtx: ctx})
 			.subscribe(e=>{
 				let ctxStack=[]; for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
 				const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x).filter(x=>x.indexOf('jb-editor') == -1)
@@ -527,9 +529,7 @@ ui.toVdomOrStr = val => {
 // ****************** components ****************
 
 jb.component('custom-style', { /* customStyle */
-  typePattern: {
-
-  },
+  typePattern: /\.style$/,
   category: 'advanced:10,all:10',
   params: [
     {id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true},
@@ -545,9 +545,7 @@ jb.component('custom-style', { /* customStyle */
 })
 
 jb.component('style-by-control', { /* styleByControl */
-  typePattern: {
-    
-  },
+  typePattern: /\.style$/,
   category: 'advanced:10,all:20',
   params: [
     {id: 'control', type: 'control', mandatory: true, dynamic: true},

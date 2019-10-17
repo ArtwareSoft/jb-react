@@ -1,5 +1,3 @@
-import { h, render, Component } from 'preact';
+import * as preact from 'preact';
 
-jb.ui.render = render;
-jb.ui.h = h;
-jb.ui.Component = Component;
+Object.assign(jb.ui, { preact, h: preact.h, render: preact.render, Component: preact.Component })

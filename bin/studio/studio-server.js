@@ -16,6 +16,7 @@ try {
 let sites = null;
 const projecstDir = settings.devHost ? 'projects' : './'
 const rootName = process.cwd().split('/').pop().split('\\').pop()
+const jbReactDir = fs.existsSync('node_modules/jb-react/') ? 'node_modules/jb-react/' : './'
 
 function projectDirectory(project) {
     sites = sites || externalSites() || {};
@@ -76,10 +77,10 @@ function calcFullPath(path) {
   if (!settings.devHost) {
     const bin_match = path.match(/^bin\/(.*)/);
     if (bin_match)
-        return `node_modules/jb-react/bin/${bin_match[1]}`
+        return `${jbReactDir}bin/${bin_match[1]}`
     const dist_match = path.match(/^dist\/(.*)/);
     if (dist_match)
-        return `node_modules/jb-react/dist/${dist_match[1]}`
+        return `${jbReactDir}dist/${dist_match[1]}`
   }
   return settings.http_dir + path;
 }
@@ -223,7 +224,7 @@ const op_post_handlers = {
 
 const base_get_handlers = {
   'studio-bin': (req,res) =>
-    file_type_handlers.html(req,res,'node_modules/jb-react/bin/studio/studio-bin.html'),
+    file_type_handlers.html(req,res,`${jbReactDir}bin/studio/studio-bin.html`),
   studio: (req,res) => 
     file_type_handlers.html(req,res,`projects/studio/studio.html`),
   project(req,res,path) {

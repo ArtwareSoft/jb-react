@@ -67,7 +67,7 @@ function getEntryUrl() {
 }
 st.chooseHostByUrl(getEntryUrl())
 
-function extractText(str,startMarker,endMarker,replaceWith) {
+function _extractText(str,startMarker,endMarker,replaceWith) {
     const pos1 = str.indexOf(startMarker), pos2 = str.indexOf(endMarker)
     if (pos1 == -1 || pos2 == -1) return ''
     if (replaceWith)
@@ -90,9 +90,9 @@ st.projectHosts = {
         fetchProject(jsFiddleid,project) {
             return getUrlContent(`http://jsfiddle.net/${jsFiddleid}`)
             .then(content=>{
-                const json = extractText(str,'values: {','fiddle: {')
-                const html = extractText(json,'html: "','js:   "').trim().slice(0,-2)
-                const js = extractText(json,'js:   "','css:  "').trim().slice(0,-2)
+                const json = _extractText(str,'values: {','fiddle: {')
+                const html = _extractText(json,'html: "','js:   "').trim().slice(0,-2)
+                const js = _extractText(json,'js:   "','css:  "').trim().slice(0,-2)
                 if (html)
                     return {project, files: { [`${project}.html`]: html, [`${project}.js`]: js } }
             })
@@ -123,4 +123,53 @@ st.projectHosts = {
     }
 }
 
+st.projectUtils = {
+    projectContent: ctx => {
+        const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/rootName%')
+        const baseDir = rootName == project ? './' : ''
+        const htmlPath = st.host.pathToJsFile(project,project+'.html',baseDir)
+        return st.host.getFile(htmlPath).then(html=> {
+            const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
+            return fileNames.reduce((acc,file)=> 
+                acc.then(res => st.host.getFile(file).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
+                    [`${project}.html`]: html
+            }) ).then(files => ({project, files, libs}))
+        })
+    }
+}
+
+jb.component('studio.parse-project-html', { /* studio.parseProjectHtml */
+    type: 'data',
+    impl: obj(
+          prop(
+              'fileNames',
+              pipeline(
+                extractText({
+                    startMarkers: ['<script', 'src=\"'],
+                    endMarker: '\"',
+                    repeating: 'true'
+                  }),
+                filter(and(notContains(['/loader/']), notContains(['/dist/']))),
+                extractSuffix('/')
+              ), 'array'
+            ),
+          prop(
+              'libs',
+              list(
+                pipeline(
+                    extractText({startMarkers: ['modules=\"'], endMarker: '\"', repeating: 'true'}),
+                    split(','),
+                    filter(and(notEquals('common'), notEquals('ui-common'))),
+                    '%%.js'
+                  ),
+                pipeline(
+                    extractText({startMarkers: ['/dist/'], endMarker: '\"', repeating: 'true'}),
+                    filter(notEquals('jb-react-all.js')),
+                    filter(notEquals('material.css'))
+                  )
+              ), 'array'
+            )
+        )
+  })
+  
 })()

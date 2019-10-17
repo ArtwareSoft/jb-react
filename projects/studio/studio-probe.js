@@ -165,7 +165,7 @@ jb.component('studio.probe', { /* studio.probe */
         if (!circuitCtx)
             circuitCtx = st.closestCtxOfLastRun(path)
         if (!circuitCtx)
-            circuitCtx = st.closestCtxOfSampleInput(path)
+            circuitCtx = st.closestTestCtx(path)
         if (!circuitCtx) {
             const circuit = jb.tostring(ctx.exp('%$circuit%','string') || ctx.exp('%$studio/project%.%$studio/page%'))
             circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )

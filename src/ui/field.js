@@ -52,7 +52,7 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
   const srcCtx = cmp.ctxForPick || cmp.ctx;
   if (!oneWay)
       jb.ui.databindObservable(cmp, {
-            watchScript: ctx, onError: _ => cmp.setState({model: null}) })
+            srcCtx: ctx, onError: _ => cmp.setState({model: null}) })
       .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
       .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,null,e,ctx))
 
@@ -191,7 +191,7 @@ jb.component('field.subscribe', { /* field.subscribe */
   impl: (context,action,includeFirst) => ({
     init: cmp => {
       const includeFirstEm = includeFirst ? jb.rx.Observable.of({ref: cmp.state.databindRef}) : jb.rx.Observable.of();
-      jb.ui.databindObservable(cmp,{watchScript: context})
+      jb.ui.databindObservable(cmp,{srcCtx: context})
             .merge(includeFirstEm)
             .map(e=>jb.val(e.ref))
             .filter(x=>x)

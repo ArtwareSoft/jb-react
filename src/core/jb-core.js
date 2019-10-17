@@ -10,7 +10,7 @@ function jb_run(ctx,parentParam,settings) {
 function do_jb_run(ctx,parentParam,settings) {
   try {
     const profile = ctx.profile;
-    if (jb.ctxByPath && ctx.path.match(/~impl$/))
+    if (jb.ctxByPath && !ctx.probe)
       jb.ctxByPath[ctx.path] = ctx
     if (ctx.probe && (!settings || !settings.noprobe)) {
       if (ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
@@ -325,7 +325,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
             return obj[subExp](ctx);
         if (jstype == 'ref') {
           if (last)
-            return refHandler.objectProperty(obj,subExp);
+            return refHandler.objectProperty(obj,subExp,ctx);
           if (obj[subExp] === undefined)
             obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
         }
@@ -416,7 +416,13 @@ const tonumber = value => tojstype(value,'number');
 
 const jstypes = {
     asIs: x => x,
-    object: x => x,
+    object(value) {
+      if (Array.isArray(value))
+        value = value[0];
+      if (value && typeof value === 'object')
+        return val(value);
+      return {}
+    },
     string(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null) return '';

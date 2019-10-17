@@ -231,7 +231,7 @@ st.closestCtxInPreview = _path => {
     const elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
     const candidates = elems.map(elem=>({ ctx: _window.jb.ctxDictionary[elem.getAttribute('jb-ctx')], elem }))
         .filter(e=>e.ctx && path.indexOf(e.ctx.path) == 0)
-    return candidates.sort((e1,e2) => 1000* (e1.ctx.path.length - e2.ctx.path.length) + (e1.ctx.id - e2.ctx.id) )[0] || {ctx: null, elem: null}
+    return candidates.sort((e2,e1) => 1000* (e1.ctx.path.length - e2.ctx.path.length) + (e1.ctx.id - e2.ctx.id) )[0] || {ctx: null, elem: null}
 }
 
 // st.refreshPreviewOfPath = path => {

@@ -239,7 +239,7 @@ jb.component('ui-test.group-watching-with-includeChildren', {
         feature_afterLoad(writeValue('%$text1/text%', 'changed'))
       ]
     }),
-    expectedCounters: {setState: 2}, // a kind of bug fixed with includeChildren: 'structure'
+    expectedCounters: {setState: 1}, // a kind of bug fixed with includeChildren: 'structure'
     expectedResult: contains('changed')
   })
 })

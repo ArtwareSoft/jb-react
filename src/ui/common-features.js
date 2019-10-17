@@ -190,17 +190,20 @@ jb.component('variable', { /* variable */
       id: 'globalId',
       as: 'string',
       description: 'If specified, the var will be defined as global with this id'
-    }
+    },
+    {id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string' }
   ],
-  impl: (context, name, value, watchable, globalId) => ({
+  impl: (context, name, value, watchable, globalId,type) => ({
       extendCtxOnce: (ctx,cmp) => {
+        const rawVal = jb.val(value(ctx))
+        const val = value.profile === '' ? jb.tojstype(rawVal,type) : rawVal
         if (!watchable)
-          return ctx.setVars(jb.obj(name, value(ctx)))
+          return ctx.setVars({[name]: val })
 
         cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
         const fullName = globalId || (name + ':' + cmp.resourceId);
         jb.log('var',['new-watchable',ctx,fullName])
-        jb.resource(fullName, jb.val(value(ctx)));
+        jb.resource(fullName, val);
         const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
         return ctx.setVars(jb.obj(name, refToResource));
       }
@@ -225,7 +228,7 @@ jb.component('bind-refs', { /* bindRefs */
   ],
   impl: (ctx,ref,includeChildren,updateRef,value) => ({
     afterViewInit: cmp =>
-        jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren, watchScript: ctx}).subscribe(e=>
+        jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren, srcCtx: ctx}).subscribe(e=>
           jb.writeValue(updateRef,value(cmp.ctx),ctx))
   })
 })
@@ -262,7 +265,7 @@ jb.component('calculated-var', { /* calculatedVar */
         jb.resource(fullName, jb.val(value(ctx)));
         const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
         (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
-            jb.ui.refObservable(ref,cmp,{includeChildren: 'yes', watchScript: context}).subscribe(e=>
+            jb.ui.refObservable(ref,cmp,{includeChildren: 'yes', srcCtx: context}).subscribe(e=>
               jb.writeValue(refToResource,value(cmp.ctx),context))
           )
         return ctx.setVars(jb.obj(name, refToResource));

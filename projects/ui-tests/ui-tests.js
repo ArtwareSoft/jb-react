@@ -843,7 +843,7 @@ jb.component('ui-test.expand-collapse-with-default-collapse', { /* uiTest.expand
             features: [feature.if('%$expanded%'), watchRef('%$expanded%')]
           })
         ],
-        features: [watchRef('%$default%')]
+        features: watchRef('%$default%')
       })
     ],
     features: [
@@ -1369,5 +1369,75 @@ jb.component('ui-test.validator', {
     }),
     action: uiAction.setText('a b','#fld'),
     expectedResult: contains('illegal project name')
+  })
+})
+
+jb.component('ui-test.watchable-link-write-original-watch-link', { 
+  impl: uiTest({
+    control: group({
+      controls: [
+        text({text: '%$person/name%' }),
+        text({text: '%$link/name%' }),
+      ],
+      features: variable({name: 'link', value: '%$person%', watchable: true})
+    }),
+    action: writeValue('%$person/name%','hello'),
+    expectedResult: contains(['hello','hello'])
+  })
+})
+
+jb.component('ui-test.watchable-write-via-link', { 
+  impl: uiTest({
+    control: group({
+      controls: [
+        text({text: '%$person/name%' }),
+        text({text: '%$link/name%' }),
+        button({title: 'set', action: writeValue('%$link/name%','hello'), features: id('set')})
+      ],
+      features: variable({name: 'link', value: '%$person%', watchable: true})
+    }),
+    action: uiAction.click('#set'),
+    expectedResult: contains(['hello','hello'])
+  })
+})
+
+jb.component('ui-test.watchable-override-link-val', { 
+  impl: uiTest({
+    control: group({
+      controls: [
+        text({text: '%$person/name%' }),
+        text({text: '%$link/name%' }),
+        button({title: 'set', action: writeValue('%$link%',obj(prop('name','hello'))), features: id('set')})
+      ],
+      features: variable({name: 'link', value: '%$person%', watchable: true})
+    }),
+    action: uiAction.click('#set'),
+    expectedResult: contains(['hello','hello'])
+  })
+})
+
+jb.component('ui-test.watchable-parent-refresh-mask-children', { 
+  impl: uiTest({
+    control: group({
+      controls: text({text: '%$person/name%' }),
+      features: watchRef('%$person/name%')
+    }),
+    action: writeValue('%$person/name%','hello'),
+    expectedResult: contains('hello'),
+    expectedCounters: ctx => ({ notifyCmpObservable: 1 })
+  })
+})
+
+jb.component('ui-test.watchable-ref-to-inner-elements-when-value-is-empty', { 
+  impl: uiTest({
+    control: group({
+      controls: [
+        text({text: '%$selected/name%' }), // initialized when selected is empty
+        button({title: 'set', action: writeValue('%$selected%',obj(prop('name','hello'))), features: id('set')})
+      ],
+      features: variable({name: 'selected', watchable: true})
+    }),
+    action: uiAction.click('#set'),
+    expectedResult: true //contains('hello'),
   })
 })

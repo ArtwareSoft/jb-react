@@ -10,7 +10,7 @@ function jb_run(ctx,parentParam,settings) {
 function do_jb_run(ctx,parentParam,settings) {
   try {
     const profile = ctx.profile;
-    if (jb.ctxByPath && ctx.path.match(/~impl$/))
+    if (jb.ctxByPath && !ctx.probe)
       jb.ctxByPath[ctx.path] = ctx
     if (ctx.probe && (!settings || !settings.noprobe)) {
       if (ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
@@ -325,7 +325,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
             return obj[subExp](ctx);
         if (jstype == 'ref') {
           if (last)
-            return refHandler.objectProperty(obj,subExp);
+            return refHandler.objectProperty(obj,subExp,ctx);
           if (obj[subExp] === undefined)
             obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
         }
@@ -416,7 +416,13 @@ const tonumber = value => tojstype(value,'number');
 
 const jstypes = {
     asIs: x => x,
-    object: x => x,
+    object(value) {
+      if (Array.isArray(value))
+        value = value[0];
+      if (value && typeof value === 'object')
+        return val(value);
+      return {}
+    },
     string(value) {
       if (Array.isArray(value)) value = value[0];
       if (value == null) return '';
@@ -646,7 +652,7 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, location: Symbol('location'), //macros: {},
+  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, location: Symbol.for('location'),
   studio: { previewjb: jb },
   knownNSAndCompCases: ['field'],
   macroName: id =>
@@ -1357,12 +1363,7 @@ jb.component('prop', { /* prop */
   params: [
     {id: 'title', as: 'string', mandatory: true},
     {id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: ''},
-    {
-      id: 'type',
-      as: 'string',
-      options: 'string,number,boolean,object,array',
-      defaultValue: 'string'
-    }
+    {id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string' }
   ],
   impl: ctx => ctx.params
 })
@@ -2321,15 +2322,14 @@ if (typeof window == 'object') {
 /************************************************************************/
 /******/ ({
 
-/***/ "./node_modules/preact/dist/preact.mjs":
-/*!*********************************************!*\
-  !*** ./node_modules/preact/dist/preact.mjs ***!
-  \*********************************************/
-/*! exports provided: default, h, createElement, cloneElement, createRef, Component, render, rerender, options */
-/***/ (function(__webpack_module__, __webpack_exports__, __webpack_require__) {
+/***/ "./node_modules/preact/dist/preact.umd.js":
+/*!************************************************!*\
+  !*** ./node_modules/preact/dist/preact.umd.js ***!
+  \************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"h\", function() { return h; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"createElement\", function() { return h; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cloneElement\", function() { return cloneElement; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"createRef\", function() { return createRef; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"Component\", function() { return Component; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"render\", function() { return render; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"rerender\", function() { return rerender; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"options\", function() { return options; });\nvar VNode = function VNode() {};\n\nvar options = {};\n\nvar stack = [];\n\nvar EMPTY_CHILDREN = [];\n\nfunction h(nodeName, attributes) {\n\tvar children = EMPTY_CHILDREN,\n\t    lastSimple,\n\t    child,\n\t    simple,\n\t    i;\n\tfor (i = arguments.length; i-- > 2;) {\n\t\tstack.push(arguments[i]);\n\t}\n\tif (attributes && attributes.children != null) {\n\t\tif (!stack.length) stack.push(attributes.children);\n\t\tdelete attributes.children;\n\t}\n\twhile (stack.length) {\n\t\tif ((child = stack.pop()) && child.pop !== undefined) {\n\t\t\tfor (i = child.length; i--;) {\n\t\t\t\tstack.push(child[i]);\n\t\t\t}\n\t\t} else {\n\t\t\tif (typeof child === 'boolean') child = null;\n\n\t\t\tif (simple = typeof nodeName !== 'function') {\n\t\t\t\tif (child == null) child = '';else if (typeof child === 'number') child = String(child);else if (typeof child !== 'string') simple = false;\n\t\t\t}\n\n\t\t\tif (simple && lastSimple) {\n\t\t\t\tchildren[children.length - 1] += child;\n\t\t\t} else if (children === EMPTY_CHILDREN) {\n\t\t\t\tchildren = [child];\n\t\t\t} else {\n\t\t\t\tchildren.push(child);\n\t\t\t}\n\n\t\t\tlastSimple = simple;\n\t\t}\n\t}\n\n\tvar p = new VNode();\n\tp.nodeName = nodeName;\n\tp.children = children;\n\tp.attributes = attributes == null ? undefined : attributes;\n\tp.key = attributes == null ? undefined : attributes.key;\n\n\tif (options.vnode !== undefined) options.vnode(p);\n\n\treturn p;\n}\n\nfunction extend(obj, props) {\n  for (var i in props) {\n    obj[i] = props[i];\n  }return obj;\n}\n\nfunction applyRef(ref, value) {\n  if (ref != null) {\n    if (typeof ref == 'function') ref(value);else ref.current = value;\n  }\n}\n\nvar defer = typeof Promise == 'function' ? Promise.resolve().then.bind(Promise.resolve()) : setTimeout;\n\nfunction cloneElement(vnode, props) {\n  return h(vnode.nodeName, extend(extend({}, vnode.attributes), props), arguments.length > 2 ? [].slice.call(arguments, 2) : vnode.children);\n}\n\nvar IS_NON_DIMENSIONAL = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i;\n\nvar items = [];\n\nfunction enqueueRender(component) {\n\tif (!component._dirty && (component._dirty = true) && items.push(component) == 1) {\n\t\t(options.debounceRendering || defer)(rerender);\n\t}\n}\n\nfunction rerender() {\n\tvar p;\n\twhile (p = items.pop()) {\n\t\tif (p._dirty) renderComponent(p);\n\t}\n}\n\nfunction isSameNodeType(node, vnode, hydrating) {\n\tif (typeof vnode === 'string' || typeof vnode === 'number') {\n\t\treturn node.splitText !== undefined;\n\t}\n\tif (typeof vnode.nodeName === 'string') {\n\t\treturn !node._componentConstructor && isNamedNode(node, vnode.nodeName);\n\t}\n\treturn hydrating || node._componentConstructor === vnode.nodeName;\n}\n\nfunction isNamedNode(node, nodeName) {\n\treturn node.normalizedNodeName === nodeName || node.nodeName.toLowerCase() === nodeName.toLowerCase();\n}\n\nfunction getNodeProps(vnode) {\n\tvar props = extend({}, vnode.attributes);\n\tprops.children = vnode.children;\n\n\tvar defaultProps = vnode.nodeName.defaultProps;\n\tif (defaultProps !== undefined) {\n\t\tfor (var i in defaultProps) {\n\t\t\tif (props[i] === undefined) {\n\t\t\t\tprops[i] = defaultProps[i];\n\t\t\t}\n\t\t}\n\t}\n\n\treturn props;\n}\n\nfunction createNode(nodeName, isSvg) {\n\tvar node = isSvg ? document.createElementNS('http://www.w3.org/2000/svg', nodeName) : document.createElement(nodeName);\n\tnode.normalizedNodeName = nodeName;\n\treturn node;\n}\n\nfunction removeNode(node) {\n\tvar parentNode = node.parentNode;\n\tif (parentNode) parentNode.removeChild(node);\n}\n\nfunction setAccessor(node, name, old, value, isSvg) {\n\tif (name === 'className') name = 'class';\n\n\tif (name === 'key') {} else if (name === 'ref') {\n\t\tapplyRef(old, null);\n\t\tapplyRef(value, node);\n\t} else if (name === 'class' && !isSvg) {\n\t\tnode.className = value || '';\n\t} else if (name === 'style') {\n\t\tif (!value || typeof value === 'string' || typeof old === 'string') {\n\t\t\tnode.style.cssText = value || '';\n\t\t}\n\t\tif (value && typeof value === 'object') {\n\t\t\tif (typeof old !== 'string') {\n\t\t\t\tfor (var i in old) {\n\t\t\t\t\tif (!(i in value)) node.style[i] = '';\n\t\t\t\t}\n\t\t\t}\n\t\t\tfor (var i in value) {\n\t\t\t\tnode.style[i] = typeof value[i] === 'number' && IS_NON_DIMENSIONAL.test(i) === false ? value[i] + 'px' : value[i];\n\t\t\t}\n\t\t}\n\t} else if (name === 'dangerouslySetInnerHTML') {\n\t\tif (value) node.innerHTML = value.__html || '';\n\t} else if (name[0] == 'o' && name[1] == 'n') {\n\t\tvar useCapture = name !== (name = name.replace(/Capture$/, ''));\n\t\tname = name.toLowerCase().substring(2);\n\t\tif (value) {\n\t\t\tif (!old) node.addEventListener(name, eventProxy, useCapture);\n\t\t} else {\n\t\t\tnode.removeEventListener(name, eventProxy, useCapture);\n\t\t}\n\t\t(node._listeners || (node._listeners = {}))[name] = value;\n\t} else if (name !== 'list' && name !== 'type' && !isSvg && name in node) {\n\t\ttry {\n\t\t\tnode[name] = value == null ? '' : value;\n\t\t} catch (e) {}\n\t\tif ((value == null || value === false) && name != 'spellcheck') node.removeAttribute(name);\n\t} else {\n\t\tvar ns = isSvg && name !== (name = name.replace(/^xlink:?/, ''));\n\n\t\tif (value == null || value === false) {\n\t\t\tif (ns) node.removeAttributeNS('http://www.w3.org/1999/xlink', name.toLowerCase());else node.removeAttribute(name);\n\t\t} else if (typeof value !== 'function') {\n\t\t\tif (ns) node.setAttributeNS('http://www.w3.org/1999/xlink', name.toLowerCase(), value);else node.setAttribute(name, value);\n\t\t}\n\t}\n}\n\nfunction eventProxy(e) {\n\treturn this._listeners[e.type](options.event && options.event(e) || e);\n}\n\nvar mounts = [];\n\nvar diffLevel = 0;\n\nvar isSvgMode = false;\n\nvar hydrating = false;\n\nfunction flushMounts() {\n\tvar c;\n\twhile (c = mounts.shift()) {\n\t\tif (options.afterMount) options.afterMount(c);\n\t\tif (c.componentDidMount) c.componentDidMount();\n\t}\n}\n\nfunction diff(dom, vnode, context, mountAll, parent, componentRoot) {\n\tif (!diffLevel++) {\n\t\tisSvgMode = parent != null && parent.ownerSVGElement !== undefined;\n\n\t\thydrating = dom != null && !('__preactattr_' in dom);\n\t}\n\n\tvar ret = idiff(dom, vnode, context, mountAll, componentRoot);\n\n\tif (parent && ret.parentNode !== parent) parent.appendChild(ret);\n\n\tif (! --diffLevel) {\n\t\thydrating = false;\n\n\t\tif (!componentRoot) flushMounts();\n\t}\n\n\treturn ret;\n}\n\nfunction idiff(dom, vnode, context, mountAll, componentRoot) {\n\tvar out = dom,\n\t    prevSvgMode = isSvgMode;\n\n\tif (vnode == null || typeof vnode === 'boolean') vnode = '';\n\n\tif (typeof vnode === 'string' || typeof vnode === 'number') {\n\t\tif (dom && dom.splitText !== undefined && dom.parentNode && (!dom._component || componentRoot)) {\n\t\t\tif (dom.nodeValue != vnode) {\n\t\t\t\tdom.nodeValue = vnode;\n\t\t\t}\n\t\t} else {\n\t\t\tout = document.createTextNode(vnode);\n\t\t\tif (dom) {\n\t\t\t\tif (dom.parentNode) dom.parentNode.replaceChild(out, dom);\n\t\t\t\trecollectNodeTree(dom, true);\n\t\t\t}\n\t\t}\n\n\t\tout['__preactattr_'] = true;\n\n\t\treturn out;\n\t}\n\n\tvar vnodeName = vnode.nodeName;\n\tif (typeof vnodeName === 'function') {\n\t\treturn buildComponentFromVNode(dom, vnode, context, mountAll);\n\t}\n\n\tisSvgMode = vnodeName === 'svg' ? true : vnodeName === 'foreignObject' ? false : isSvgMode;\n\n\tvnodeName = String(vnodeName);\n\tif (!dom || !isNamedNode(dom, vnodeName)) {\n\t\tout = createNode(vnodeName, isSvgMode);\n\n\t\tif (dom) {\n\t\t\twhile (dom.firstChild) {\n\t\t\t\tout.appendChild(dom.firstChild);\n\t\t\t}\n\t\t\tif (dom.parentNode) dom.parentNode.replaceChild(out, dom);\n\n\t\t\trecollectNodeTree(dom, true);\n\t\t}\n\t}\n\n\tvar fc = out.firstChild,\n\t    props = out['__preactattr_'],\n\t    vchildren = vnode.children;\n\n\tif (props == null) {\n\t\tprops = out['__preactattr_'] = {};\n\t\tfor (var a = out.attributes, i = a.length; i--;) {\n\t\t\tprops[a[i].name] = a[i].value;\n\t\t}\n\t}\n\n\tif (!hydrating && vchildren && vchildren.length === 1 && typeof vchildren[0] === 'string' && fc != null && fc.splitText !== undefined && fc.nextSibling == null) {\n\t\tif (fc.nodeValue != vchildren[0]) {\n\t\t\tfc.nodeValue = vchildren[0];\n\t\t}\n\t} else if (vchildren && vchildren.length || fc != null) {\n\t\t\tinnerDiffNode(out, vchildren, context, mountAll, hydrating || props.dangerouslySetInnerHTML != null);\n\t\t}\n\n\tdiffAttributes(out, vnode.attributes, props);\n\n\tisSvgMode = prevSvgMode;\n\n\treturn out;\n}\n\nfunction innerDiffNode(dom, vchildren, context, mountAll, isHydrating) {\n\tvar originalChildren = dom.childNodes,\n\t    children = [],\n\t    keyed = {},\n\t    keyedLen = 0,\n\t    min = 0,\n\t    len = originalChildren.length,\n\t    childrenLen = 0,\n\t    vlen = vchildren ? vchildren.length : 0,\n\t    j,\n\t    c,\n\t    f,\n\t    vchild,\n\t    child;\n\n\tif (len !== 0) {\n\t\tfor (var i = 0; i < len; i++) {\n\t\t\tvar _child = originalChildren[i],\n\t\t\t    props = _child['__preactattr_'],\n\t\t\t    key = vlen && props ? _child._component ? _child._component.__key : props.key : null;\n\t\t\tif (key != null) {\n\t\t\t\tkeyedLen++;\n\t\t\t\tkeyed[key] = _child;\n\t\t\t} else if (props || (_child.splitText !== undefined ? isHydrating ? _child.nodeValue.trim() : true : isHydrating)) {\n\t\t\t\tchildren[childrenLen++] = _child;\n\t\t\t}\n\t\t}\n\t}\n\n\tif (vlen !== 0) {\n\t\tfor (var i = 0; i < vlen; i++) {\n\t\t\tvchild = vchildren[i];\n\t\t\tchild = null;\n\n\t\t\tvar key = vchild.key;\n\t\t\tif (key != null) {\n\t\t\t\tif (keyedLen && keyed[key] !== undefined) {\n\t\t\t\t\tchild = keyed[key];\n\t\t\t\t\tkeyed[key] = undefined;\n\t\t\t\t\tkeyedLen--;\n\t\t\t\t}\n\t\t\t} else if (min < childrenLen) {\n\t\t\t\t\tfor (j = min; j < childrenLen; j++) {\n\t\t\t\t\t\tif (children[j] !== undefined && isSameNodeType(c = children[j], vchild, isHydrating)) {\n\t\t\t\t\t\t\tchild = c;\n\t\t\t\t\t\t\tchildren[j] = undefined;\n\t\t\t\t\t\t\tif (j === childrenLen - 1) childrenLen--;\n\t\t\t\t\t\t\tif (j === min) min++;\n\t\t\t\t\t\t\tbreak;\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\tchild = idiff(child, vchild, context, mountAll);\n\n\t\t\tf = originalChildren[i];\n\t\t\tif (child && child !== dom && child !== f) {\n\t\t\t\tif (f == null) {\n\t\t\t\t\tdom.appendChild(child);\n\t\t\t\t} else if (child === f.nextSibling) {\n\t\t\t\t\tremoveNode(f);\n\t\t\t\t} else {\n\t\t\t\t\tdom.insertBefore(child, f);\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n\n\tif (keyedLen) {\n\t\tfor (var i in keyed) {\n\t\t\tif (keyed[i] !== undefined) recollectNodeTree(keyed[i], false);\n\t\t}\n\t}\n\n\twhile (min <= childrenLen) {\n\t\tif ((child = children[childrenLen--]) !== undefined) recollectNodeTree(child, false);\n\t}\n}\n\nfunction recollectNodeTree(node, unmountOnly) {\n\tvar component = node._component;\n\tif (component) {\n\t\tunmountComponent(component);\n\t} else {\n\t\tif (node['__preactattr_'] != null) applyRef(node['__preactattr_'].ref, null);\n\n\t\tif (unmountOnly === false || node['__preactattr_'] == null) {\n\t\t\tremoveNode(node);\n\t\t}\n\n\t\tremoveChildren(node);\n\t}\n}\n\nfunction removeChildren(node) {\n\tnode = node.lastChild;\n\twhile (node) {\n\t\tvar next = node.previousSibling;\n\t\trecollectNodeTree(node, true);\n\t\tnode = next;\n\t}\n}\n\nfunction diffAttributes(dom, attrs, old) {\n\tvar name;\n\n\tfor (name in old) {\n\t\tif (!(attrs && attrs[name] != null) && old[name] != null) {\n\t\t\tsetAccessor(dom, name, old[name], old[name] = undefined, isSvgMode);\n\t\t}\n\t}\n\n\tfor (name in attrs) {\n\t\tif (name !== 'children' && name !== 'innerHTML' && (!(name in old) || attrs[name] !== (name === 'value' || name === 'checked' ? dom[name] : old[name]))) {\n\t\t\tsetAccessor(dom, name, old[name], old[name] = attrs[name], isSvgMode);\n\t\t}\n\t}\n}\n\nvar recyclerComponents = [];\n\nfunction createComponent(Ctor, props, context) {\n\tvar inst,\n\t    i = recyclerComponents.length;\n\n\tif (Ctor.prototype && Ctor.prototype.render) {\n\t\tinst = new Ctor(props, context);\n\t\tComponent.call(inst, props, context);\n\t} else {\n\t\tinst = new Component(props, context);\n\t\tinst.constructor = Ctor;\n\t\tinst.render = doRender;\n\t}\n\n\twhile (i--) {\n\t\tif (recyclerComponents[i].constructor === Ctor) {\n\t\t\tinst.nextBase = recyclerComponents[i].nextBase;\n\t\t\trecyclerComponents.splice(i, 1);\n\t\t\treturn inst;\n\t\t}\n\t}\n\n\treturn inst;\n}\n\nfunction doRender(props, state, context) {\n\treturn this.constructor(props, context);\n}\n\nfunction setComponentProps(component, props, renderMode, context, mountAll) {\n\tif (component._disable) return;\n\tcomponent._disable = true;\n\n\tcomponent.__ref = props.ref;\n\tcomponent.__key = props.key;\n\tdelete props.ref;\n\tdelete props.key;\n\n\tif (typeof component.constructor.getDerivedStateFromProps === 'undefined') {\n\t\tif (!component.base || mountAll) {\n\t\t\tif (component.componentWillMount) component.componentWillMount();\n\t\t} else if (component.componentWillReceiveProps) {\n\t\t\tcomponent.componentWillReceiveProps(props, context);\n\t\t}\n\t}\n\n\tif (context && context !== component.context) {\n\t\tif (!component.prevContext) component.prevContext = component.context;\n\t\tcomponent.context = context;\n\t}\n\n\tif (!component.prevProps) component.prevProps = component.props;\n\tcomponent.props = props;\n\n\tcomponent._disable = false;\n\n\tif (renderMode !== 0) {\n\t\tif (renderMode === 1 || options.syncComponentUpdates !== false || !component.base) {\n\t\t\trenderComponent(component, 1, mountAll);\n\t\t} else {\n\t\t\tenqueueRender(component);\n\t\t}\n\t}\n\n\tapplyRef(component.__ref, component);\n}\n\nfunction renderComponent(component, renderMode, mountAll, isChild) {\n\tif (component._disable) return;\n\n\tvar props = component.props,\n\t    state = component.state,\n\t    context = component.context,\n\t    previousProps = component.prevProps || props,\n\t    previousState = component.prevState || state,\n\t    previousContext = component.prevContext || context,\n\t    isUpdate = component.base,\n\t    nextBase = component.nextBase,\n\t    initialBase = isUpdate || nextBase,\n\t    initialChildComponent = component._component,\n\t    skip = false,\n\t    snapshot = previousContext,\n\t    rendered,\n\t    inst,\n\t    cbase;\n\n\tif (component.constructor.getDerivedStateFromProps) {\n\t\tstate = extend(extend({}, state), component.constructor.getDerivedStateFromProps(props, state));\n\t\tcomponent.state = state;\n\t}\n\n\tif (isUpdate) {\n\t\tcomponent.props = previousProps;\n\t\tcomponent.state = previousState;\n\t\tcomponent.context = previousContext;\n\t\tif (renderMode !== 2 && component.shouldComponentUpdate && component.shouldComponentUpdate(props, state, context) === false) {\n\t\t\tskip = true;\n\t\t} else if (component.componentWillUpdate) {\n\t\t\tcomponent.componentWillUpdate(props, state, context);\n\t\t}\n\t\tcomponent.props = props;\n\t\tcomponent.state = state;\n\t\tcomponent.context = context;\n\t}\n\n\tcomponent.prevProps = component.prevState = component.prevContext = component.nextBase = null;\n\tcomponent._dirty = false;\n\n\tif (!skip) {\n\t\trendered = component.render(props, state, context);\n\n\t\tif (component.getChildContext) {\n\t\t\tcontext = extend(extend({}, context), component.getChildContext());\n\t\t}\n\n\t\tif (isUpdate && component.getSnapshotBeforeUpdate) {\n\t\t\tsnapshot = component.getSnapshotBeforeUpdate(previousProps, previousState);\n\t\t}\n\n\t\tvar childComponent = rendered && rendered.nodeName,\n\t\t    toUnmount,\n\t\t    base;\n\n\t\tif (typeof childComponent === 'function') {\n\n\t\t\tvar childProps = getNodeProps(rendered);\n\t\t\tinst = initialChildComponent;\n\n\t\t\tif (inst && inst.constructor === childComponent && childProps.key == inst.__key) {\n\t\t\t\tsetComponentProps(inst, childProps, 1, context, false);\n\t\t\t} else {\n\t\t\t\ttoUnmount = inst;\n\n\t\t\t\tcomponent._component = inst = createComponent(childComponent, childProps, context);\n\t\t\t\tinst.nextBase = inst.nextBase || nextBase;\n\t\t\t\tinst._parentComponent = component;\n\t\t\t\tsetComponentProps(inst, childProps, 0, context, false);\n\t\t\t\trenderComponent(inst, 1, mountAll, true);\n\t\t\t}\n\n\t\t\tbase = inst.base;\n\t\t} else {\n\t\t\tcbase = initialBase;\n\n\t\t\ttoUnmount = initialChildComponent;\n\t\t\tif (toUnmount) {\n\t\t\t\tcbase = component._component = null;\n\t\t\t}\n\n\t\t\tif (initialBase || renderMode === 1) {\n\t\t\t\tif (cbase) cbase._component = null;\n\t\t\t\tbase = diff(cbase, rendered, context, mountAll || !isUpdate, initialBase && initialBase.parentNode, true);\n\t\t\t}\n\t\t}\n\n\t\tif (initialBase && base !== initialBase && inst !== initialChildComponent) {\n\t\t\tvar baseParent = initialBase.parentNode;\n\t\t\tif (baseParent && base !== baseParent) {\n\t\t\t\tbaseParent.replaceChild(base, initialBase);\n\n\t\t\t\tif (!toUnmount) {\n\t\t\t\t\tinitialBase._component = null;\n\t\t\t\t\trecollectNodeTree(initialBase, false);\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\tif (toUnmount) {\n\t\t\tunmountComponent(toUnmount);\n\t\t}\n\n\t\tcomponent.base = base;\n\t\tif (base && !isChild) {\n\t\t\tvar componentRef = component,\n\t\t\t    t = component;\n\t\t\twhile (t = t._parentComponent) {\n\t\t\t\t(componentRef = t).base = base;\n\t\t\t}\n\t\t\tbase._component = componentRef;\n\t\t\tbase._componentConstructor = componentRef.constructor;\n\t\t}\n\t}\n\n\tif (!isUpdate || mountAll) {\n\t\tmounts.push(component);\n\t} else if (!skip) {\n\n\t\tif (component.componentDidUpdate) {\n\t\t\tcomponent.componentDidUpdate(previousProps, previousState, snapshot);\n\t\t}\n\t\tif (options.afterUpdate) options.afterUpdate(component);\n\t}\n\n\twhile (component._renderCallbacks.length) {\n\t\tcomponent._renderCallbacks.pop().call(component);\n\t}if (!diffLevel && !isChild) flushMounts();\n}\n\nfunction buildComponentFromVNode(dom, vnode, context, mountAll) {\n\tvar c = dom && dom._component,\n\t    originalComponent = c,\n\t    oldDom = dom,\n\t    isDirectOwner = c && dom._componentConstructor === vnode.nodeName,\n\t    isOwner = isDirectOwner,\n\t    props = getNodeProps(vnode);\n\twhile (c && !isOwner && (c = c._parentComponent)) {\n\t\tisOwner = c.constructor === vnode.nodeName;\n\t}\n\n\tif (c && isOwner && (!mountAll || c._component)) {\n\t\tsetComponentProps(c, props, 3, context, mountAll);\n\t\tdom = c.base;\n\t} else {\n\t\tif (originalComponent && !isDirectOwner) {\n\t\t\tunmountComponent(originalComponent);\n\t\t\tdom = oldDom = null;\n\t\t}\n\n\t\tc = createComponent(vnode.nodeName, props, context);\n\t\tif (dom && !c.nextBase) {\n\t\t\tc.nextBase = dom;\n\n\t\t\toldDom = null;\n\t\t}\n\t\tsetComponentProps(c, props, 1, context, mountAll);\n\t\tdom = c.base;\n\n\t\tif (oldDom && dom !== oldDom) {\n\t\t\toldDom._component = null;\n\t\t\trecollectNodeTree(oldDom, false);\n\t\t}\n\t}\n\n\treturn dom;\n}\n\nfunction unmountComponent(component) {\n\tif (options.beforeUnmount) options.beforeUnmount(component);\n\n\tvar base = component.base;\n\n\tcomponent._disable = true;\n\n\tif (component.componentWillUnmount) component.componentWillUnmount();\n\n\tcomponent.base = null;\n\n\tvar inner = component._component;\n\tif (inner) {\n\t\tunmountComponent(inner);\n\t} else if (base) {\n\t\tif (base['__preactattr_'] != null) applyRef(base['__preactattr_'].ref, null);\n\n\t\tcomponent.nextBase = base;\n\n\t\tremoveNode(base);\n\t\trecyclerComponents.push(component);\n\n\t\tremoveChildren(base);\n\t}\n\n\tapplyRef(component.__ref, null);\n}\n\nfunction Component(props, context) {\n\tthis._dirty = true;\n\n\tthis.context = context;\n\n\tthis.props = props;\n\n\tthis.state = this.state || {};\n\n\tthis._renderCallbacks = [];\n}\n\nextend(Component.prototype, {\n\tsetState: function setState(state, callback) {\n\t\tif (!this.prevState) this.prevState = this.state;\n\t\tthis.state = extend(extend({}, this.state), typeof state === 'function' ? state(this.state, this.props) : state);\n\t\tif (callback) this._renderCallbacks.push(callback);\n\t\tenqueueRender(this);\n\t},\n\tforceUpdate: function forceUpdate(callback) {\n\t\tif (callback) this._renderCallbacks.push(callback);\n\t\trenderComponent(this, 2);\n\t},\n\trender: function render() {}\n});\n\nfunction render(vnode, parent, merge) {\n  return diff(merge, vnode, {}, false, parent, false);\n}\n\nfunction createRef() {\n\treturn {};\n}\n\nvar preact = {\n\th: h,\n\tcreateElement: h,\n\tcloneElement: cloneElement,\n\tcreateRef: createRef,\n\tComponent: Component,\n\trender: render,\n\trerender: rerender,\n\toptions: options\n};\n\n/* harmony default export */ __webpack_exports__[\"default\"] = (preact);\n\n//# sourceMappingURL=preact.mjs.map\n\n\n//# sourceURL=webpack:///./node_modules/preact/dist/preact.mjs?");
+eval("(function (global, factory) {\n\t true ? factory(exports) :\n\tundefined;\n}(this, (function (exports) { 'use strict';\n\n\tvar VNode = function VNode() {};\n\n\tvar options = {};\n\n\tvar stack = [];\n\n\tvar EMPTY_CHILDREN = [];\n\n\tfunction h(nodeName, attributes) {\n\t\tvar children = EMPTY_CHILDREN,\n\t\t    lastSimple = void 0,\n\t\t    child = void 0,\n\t\t    simple = void 0,\n\t\t    i = void 0;\n\t\tfor (i = arguments.length; i-- > 2;) {\n\t\t\tstack.push(arguments[i]);\n\t\t}\n\t\tif (attributes && attributes.children != null) {\n\t\t\tif (!stack.length) stack.push(attributes.children);\n\t\t\tdelete attributes.children;\n\t\t}\n\t\twhile (stack.length) {\n\t\t\tif ((child = stack.pop()) && child.pop !== undefined) {\n\t\t\t\tfor (i = child.length; i--;) {\n\t\t\t\t\tstack.push(child[i]);\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tif (typeof child === 'boolean') child = null;\n\n\t\t\t\tif (simple = typeof nodeName !== 'function') {\n\t\t\t\t\tif (child == null) child = '';else if (typeof child === 'number') child = String(child);else if (typeof child !== 'string') simple = false;\n\t\t\t\t}\n\n\t\t\t\tif (simple && lastSimple) {\n\t\t\t\t\tchildren[children.length - 1] += child;\n\t\t\t\t} else if (children === EMPTY_CHILDREN) {\n\t\t\t\t\tchildren = [child];\n\t\t\t\t} else {\n\t\t\t\t\tchildren.push(child);\n\t\t\t\t}\n\n\t\t\t\tlastSimple = simple;\n\t\t\t}\n\t\t}\n\n\t\tvar p = new VNode();\n\t\tp.nodeName = nodeName;\n\t\tp.children = children;\n\t\tp.attributes = attributes == null ? undefined : attributes;\n\t\tp.key = attributes == null ? undefined : attributes.key;\n\n\t\tif (options.vnode !== undefined) options.vnode(p);\n\n\t\treturn p;\n\t}\n\n\tfunction extend(obj, props) {\n\t  for (var i in props) {\n\t    obj[i] = props[i];\n\t  }return obj;\n\t}\n\n\tfunction applyRef(ref, value) {\n\t  if (ref) {\n\t    if (typeof ref == 'function') ref(value);else ref.current = value;\n\t  }\n\t}\n\n\tvar defer = typeof Promise == 'function' ? Promise.resolve().then.bind(Promise.resolve()) : setTimeout;\n\n\tfunction cloneElement(vnode, props) {\n\t  return h(vnode.nodeName, extend(extend({}, vnode.attributes), props), arguments.length > 2 ? [].slice.call(arguments, 2) : vnode.children);\n\t}\n\n\tvar NO_RENDER = 0;\n\n\tvar SYNC_RENDER = 1;\n\n\tvar FORCE_RENDER = 2;\n\n\tvar ASYNC_RENDER = 3;\n\n\tvar ATTR_KEY = '__preactattr_';\n\n\tvar IS_NON_DIMENSIONAL = /acit|ex(?:s|g|n|p|$)|rph|ows|mnc|ntw|ine[ch]|zoo|^ord/i;\n\n\tvar items = [];\n\n\tfunction enqueueRender(component) {\n\t\tif (!component._dirty && (component._dirty = true) && items.push(component) == 1) {\n\t\t\t(options.debounceRendering || defer)(rerender);\n\t\t}\n\t}\n\n\tfunction rerender() {\n\t\tvar p = void 0;\n\t\twhile (p = items.pop()) {\n\t\t\tif (p._dirty) renderComponent(p);\n\t\t}\n\t}\n\n\tfunction isSameNodeType(node, vnode, hydrating) {\n\t\tif (typeof vnode === 'string' || typeof vnode === 'number') {\n\t\t\treturn node.splitText !== undefined;\n\t\t}\n\t\tif (typeof vnode.nodeName === 'string') {\n\t\t\treturn !node._componentConstructor && isNamedNode(node, vnode.nodeName);\n\t\t}\n\t\treturn hydrating || node._componentConstructor === vnode.nodeName;\n\t}\n\n\tfunction isNamedNode(node, nodeName) {\n\t\treturn node.normalizedNodeName === nodeName || node.nodeName.toLowerCase() === nodeName.toLowerCase();\n\t}\n\n\tfunction getNodeProps(vnode) {\n\t\tvar props = extend({}, vnode.attributes);\n\t\tprops.children = vnode.children;\n\n\t\tvar defaultProps = vnode.nodeName.defaultProps;\n\t\tif (defaultProps !== undefined) {\n\t\t\tfor (var i in defaultProps) {\n\t\t\t\tif (props[i] === undefined) {\n\t\t\t\t\tprops[i] = defaultProps[i];\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\treturn props;\n\t}\n\n\tfunction createNode(nodeName, isSvg) {\n\t\tvar node = isSvg ? document.createElementNS('http://www.w3.org/2000/svg', nodeName) : document.createElement(nodeName);\n\t\tnode.normalizedNodeName = nodeName;\n\t\treturn node;\n\t}\n\n\tfunction removeNode(node) {\n\t\tvar parentNode = node.parentNode;\n\t\tif (parentNode) parentNode.removeChild(node);\n\t}\n\n\tfunction setAccessor(node, name, old, value, isSvg) {\n\t\tif (name === 'className') name = 'class';\n\n\t\tif (name === 'key') {} else if (name === 'ref') {\n\t\t\tapplyRef(old, null);\n\t\t\tapplyRef(value, node);\n\t\t} else if (name === 'class' && !isSvg) {\n\t\t\tnode.className = value || '';\n\t\t} else if (name === 'style') {\n\t\t\tif (!value || typeof value === 'string' || typeof old === 'string') {\n\t\t\t\tnode.style.cssText = value || '';\n\t\t\t}\n\t\t\tif (value && typeof value === 'object') {\n\t\t\t\tif (typeof old !== 'string') {\n\t\t\t\t\tfor (var i in old) {\n\t\t\t\t\t\tif (!(i in value)) node.style[i] = '';\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tfor (var _i in value) {\n\t\t\t\t\tnode.style[_i] = typeof value[_i] === 'number' && IS_NON_DIMENSIONAL.test(_i) === false ? value[_i] + 'px' : value[_i];\n\t\t\t\t}\n\t\t\t}\n\t\t} else if (name === 'dangerouslySetInnerHTML') {\n\t\t\tif (value) node.innerHTML = value.__html || '';\n\t\t} else if (name[0] == 'o' && name[1] == 'n') {\n\t\t\tvar useCapture = name !== (name = name.replace(/Capture$/, ''));\n\t\t\tname = name.toLowerCase().substring(2);\n\t\t\tif (value) {\n\t\t\t\tif (!old) node.addEventListener(name, eventProxy, useCapture);\n\t\t\t} else {\n\t\t\t\tnode.removeEventListener(name, eventProxy, useCapture);\n\t\t\t}\n\t\t\t(node._listeners || (node._listeners = {}))[name] = value;\n\t\t} else if (name !== 'list' && name !== 'type' && !isSvg && name in node) {\n\t\t\ttry {\n\t\t\t\tnode[name] = value == null ? '' : value;\n\t\t\t} catch (e) {}\n\t\t\tif ((value == null || value === false) && name != 'spellcheck') node.removeAttribute(name);\n\t\t} else {\n\t\t\tvar ns = isSvg && name !== (name = name.replace(/^xlink:?/, ''));\n\n\t\t\tif (value == null || value === false) {\n\t\t\t\tif (ns) node.removeAttributeNS('http://www.w3.org/1999/xlink', name.toLowerCase());else node.removeAttribute(name);\n\t\t\t} else if (typeof value !== 'function') {\n\t\t\t\tif (ns) node.setAttributeNS('http://www.w3.org/1999/xlink', name.toLowerCase(), value);else node.setAttribute(name, value);\n\t\t\t}\n\t\t}\n\t}\n\n\tfunction eventProxy(e) {\n\t\treturn this._listeners[e.type](options.event && options.event(e) || e);\n\t}\n\n\tvar mounts = [];\n\n\tvar diffLevel = 0;\n\n\tvar isSvgMode = false;\n\n\tvar hydrating = false;\n\n\tfunction flushMounts() {\n\t\tvar c = void 0;\n\t\twhile (c = mounts.shift()) {\n\t\t\tif (options.afterMount) options.afterMount(c);\n\t\t\tif (c.componentDidMount) c.componentDidMount();\n\t\t}\n\t}\n\n\tfunction diff(dom, vnode, context, mountAll, parent, componentRoot) {\n\t\tif (!diffLevel++) {\n\t\t\tisSvgMode = parent != null && parent.ownerSVGElement !== undefined;\n\n\t\t\thydrating = dom != null && !(ATTR_KEY in dom);\n\t\t}\n\n\t\tvar ret = idiff(dom, vnode, context, mountAll, componentRoot);\n\n\t\tif (parent && ret.parentNode !== parent) parent.appendChild(ret);\n\n\t\tif (! --diffLevel) {\n\t\t\thydrating = false;\n\n\t\t\tif (!componentRoot) flushMounts();\n\t\t}\n\n\t\treturn ret;\n\t}\n\n\tfunction idiff(dom, vnode, context, mountAll, componentRoot) {\n\t\tvar out = dom,\n\t\t    prevSvgMode = isSvgMode;\n\n\t\tif (vnode == null || typeof vnode === 'boolean') vnode = '';\n\n\t\tif (typeof vnode === 'string' || typeof vnode === 'number') {\n\t\t\tif (dom && dom.splitText !== undefined && dom.parentNode && (!dom._component || componentRoot)) {\n\t\t\t\tif (dom.nodeValue != vnode) {\n\t\t\t\t\tdom.nodeValue = vnode;\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tout = document.createTextNode(vnode);\n\t\t\t\tif (dom) {\n\t\t\t\t\tif (dom.parentNode) dom.parentNode.replaceChild(out, dom);\n\t\t\t\t\trecollectNodeTree(dom, true);\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tout[ATTR_KEY] = true;\n\n\t\t\treturn out;\n\t\t}\n\n\t\tvar vnodeName = vnode.nodeName;\n\t\tif (typeof vnodeName === 'function') {\n\t\t\treturn buildComponentFromVNode(dom, vnode, context, mountAll);\n\t\t}\n\n\t\tisSvgMode = vnodeName === 'svg' ? true : vnodeName === 'foreignObject' ? false : isSvgMode;\n\n\t\tvnodeName = String(vnodeName);\n\t\tif (!dom || !isNamedNode(dom, vnodeName)) {\n\t\t\tout = createNode(vnodeName, isSvgMode);\n\n\t\t\tif (dom) {\n\t\t\t\twhile (dom.firstChild) {\n\t\t\t\t\tout.appendChild(dom.firstChild);\n\t\t\t\t}\n\t\t\t\tif (dom.parentNode) dom.parentNode.replaceChild(out, dom);\n\n\t\t\t\trecollectNodeTree(dom, true);\n\t\t\t}\n\t\t}\n\n\t\tvar fc = out.firstChild,\n\t\t    props = out[ATTR_KEY],\n\t\t    vchildren = vnode.children;\n\n\t\tif (props == null) {\n\t\t\tprops = out[ATTR_KEY] = {};\n\t\t\tfor (var a = out.attributes, i = a.length; i--;) {\n\t\t\t\tprops[a[i].name] = a[i].value;\n\t\t\t}\n\t\t}\n\n\t\tif (!hydrating && vchildren && vchildren.length === 1 && typeof vchildren[0] === 'string' && fc != null && fc.splitText !== undefined && fc.nextSibling == null) {\n\t\t\tif (fc.nodeValue != vchildren[0]) {\n\t\t\t\tfc.nodeValue = vchildren[0];\n\t\t\t}\n\t\t} else if (vchildren && vchildren.length || fc != null) {\n\t\t\t\tinnerDiffNode(out, vchildren, context, mountAll, hydrating || props.dangerouslySetInnerHTML != null);\n\t\t\t}\n\n\t\tdiffAttributes(out, vnode.attributes, props);\n\n\t\tisSvgMode = prevSvgMode;\n\n\t\treturn out;\n\t}\n\n\tfunction innerDiffNode(dom, vchildren, context, mountAll, isHydrating) {\n\t\tvar originalChildren = dom.childNodes,\n\t\t    children = [],\n\t\t    keyed = {},\n\t\t    keyedLen = 0,\n\t\t    min = 0,\n\t\t    len = originalChildren.length,\n\t\t    childrenLen = 0,\n\t\t    vlen = vchildren ? vchildren.length : 0,\n\t\t    j = void 0,\n\t\t    c = void 0,\n\t\t    f = void 0,\n\t\t    vchild = void 0,\n\t\t    child = void 0;\n\n\t\tif (len !== 0) {\n\t\t\tfor (var i = 0; i < len; i++) {\n\t\t\t\tvar _child = originalChildren[i],\n\t\t\t\t    props = _child[ATTR_KEY],\n\t\t\t\t    key = vlen && props ? _child._component ? _child._component.__key : props.key : null;\n\t\t\t\tif (key != null) {\n\t\t\t\t\tkeyedLen++;\n\t\t\t\t\tkeyed[key] = _child;\n\t\t\t\t} else if (props || (_child.splitText !== undefined ? isHydrating ? _child.nodeValue.trim() : true : isHydrating)) {\n\t\t\t\t\tchildren[childrenLen++] = _child;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\tif (vlen !== 0) {\n\t\t\tfor (var _i = 0; _i < vlen; _i++) {\n\t\t\t\tvchild = vchildren[_i];\n\t\t\t\tchild = null;\n\n\t\t\t\tvar _key = vchild.key;\n\t\t\t\tif (_key != null) {\n\t\t\t\t\tif (keyedLen && keyed[_key] !== undefined) {\n\t\t\t\t\t\tchild = keyed[_key];\n\t\t\t\t\t\tkeyed[_key] = undefined;\n\t\t\t\t\t\tkeyedLen--;\n\t\t\t\t\t}\n\t\t\t\t} else if (min < childrenLen) {\n\t\t\t\t\t\tfor (j = min; j < childrenLen; j++) {\n\t\t\t\t\t\t\tif (children[j] !== undefined && isSameNodeType(c = children[j], vchild, isHydrating)) {\n\t\t\t\t\t\t\t\tchild = c;\n\t\t\t\t\t\t\t\tchildren[j] = undefined;\n\t\t\t\t\t\t\t\tif (j === childrenLen - 1) childrenLen--;\n\t\t\t\t\t\t\t\tif (j === min) min++;\n\t\t\t\t\t\t\t\tbreak;\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\n\t\t\t\tchild = idiff(child, vchild, context, mountAll);\n\n\t\t\t\tf = originalChildren[_i];\n\t\t\t\tif (child && child !== dom && child !== f) {\n\t\t\t\t\tif (f == null) {\n\t\t\t\t\t\tdom.appendChild(child);\n\t\t\t\t\t} else if (child === f.nextSibling) {\n\t\t\t\t\t\tremoveNode(f);\n\t\t\t\t\t} else {\n\t\t\t\t\t\tdom.insertBefore(child, f);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\tif (keyedLen) {\n\t\t\tfor (var _i2 in keyed) {\n\t\t\t\tif (keyed[_i2] !== undefined) recollectNodeTree(keyed[_i2], false);\n\t\t\t}\n\t\t}\n\n\t\twhile (min <= childrenLen) {\n\t\t\tif ((child = children[childrenLen--]) !== undefined) recollectNodeTree(child, false);\n\t\t}\n\t}\n\n\tfunction recollectNodeTree(node, unmountOnly) {\n\t\tvar component = node._component;\n\t\tif (component) {\n\t\t\tunmountComponent(component);\n\t\t} else {\n\t\t\tif (node[ATTR_KEY] != null) applyRef(node[ATTR_KEY].ref, null);\n\n\t\t\tif (unmountOnly === false || node[ATTR_KEY] == null) {\n\t\t\t\tremoveNode(node);\n\t\t\t}\n\n\t\t\tremoveChildren(node);\n\t\t}\n\t}\n\n\tfunction removeChildren(node) {\n\t\tnode = node.lastChild;\n\t\twhile (node) {\n\t\t\tvar next = node.previousSibling;\n\t\t\trecollectNodeTree(node, true);\n\t\t\tnode = next;\n\t\t}\n\t}\n\n\tfunction diffAttributes(dom, attrs, old) {\n\t\tvar name = void 0;\n\n\t\tfor (name in old) {\n\t\t\tif (!(attrs && attrs[name] != null) && old[name] != null) {\n\t\t\t\tsetAccessor(dom, name, old[name], old[name] = undefined, isSvgMode);\n\t\t\t}\n\t\t}\n\n\t\tfor (name in attrs) {\n\t\t\tif (name !== 'children' && name !== 'innerHTML' && (!(name in old) || attrs[name] !== (name === 'value' || name === 'checked' ? dom[name] : old[name]))) {\n\t\t\t\tsetAccessor(dom, name, old[name], old[name] = attrs[name], isSvgMode);\n\t\t\t}\n\t\t}\n\t}\n\n\tvar recyclerComponents = [];\n\n\tfunction createComponent(Ctor, props, context) {\n\t\tvar inst = void 0,\n\t\t    i = recyclerComponents.length;\n\n\t\tif (Ctor.prototype && Ctor.prototype.render) {\n\t\t\tinst = new Ctor(props, context);\n\t\t\tComponent.call(inst, props, context);\n\t\t} else {\n\t\t\tinst = new Component(props, context);\n\t\t\tinst.constructor = Ctor;\n\t\t\tinst.render = doRender;\n\t\t}\n\n\t\twhile (i--) {\n\t\t\tif (recyclerComponents[i].constructor === Ctor) {\n\t\t\t\tinst.nextBase = recyclerComponents[i].nextBase;\n\t\t\t\trecyclerComponents.splice(i, 1);\n\t\t\t\treturn inst;\n\t\t\t}\n\t\t}\n\n\t\treturn inst;\n\t}\n\n\tfunction doRender(props, state, context) {\n\t\treturn this.constructor(props, context);\n\t}\n\n\tfunction setComponentProps(component, props, renderMode, context, mountAll) {\n\t\tif (component._disable) return;\n\t\tcomponent._disable = true;\n\n\t\tcomponent.__ref = props.ref;\n\t\tcomponent.__key = props.key;\n\t\tdelete props.ref;\n\t\tdelete props.key;\n\n\t\tif (typeof component.constructor.getDerivedStateFromProps === 'undefined') {\n\t\t\tif (!component.base || mountAll) {\n\t\t\t\tif (component.componentWillMount) component.componentWillMount();\n\t\t\t} else if (component.componentWillReceiveProps) {\n\t\t\t\tcomponent.componentWillReceiveProps(props, context);\n\t\t\t}\n\t\t}\n\n\t\tif (context && context !== component.context) {\n\t\t\tif (!component.prevContext) component.prevContext = component.context;\n\t\t\tcomponent.context = context;\n\t\t}\n\n\t\tif (!component.prevProps) component.prevProps = component.props;\n\t\tcomponent.props = props;\n\n\t\tcomponent._disable = false;\n\n\t\tif (renderMode !== NO_RENDER) {\n\t\t\tif (renderMode === SYNC_RENDER || options.syncComponentUpdates !== false || !component.base) {\n\t\t\t\trenderComponent(component, SYNC_RENDER, mountAll);\n\t\t\t} else {\n\t\t\t\tenqueueRender(component);\n\t\t\t}\n\t\t}\n\n\t\tapplyRef(component.__ref, component);\n\t}\n\n\tfunction renderComponent(component, renderMode, mountAll, isChild) {\n\t\tif (component._disable) return;\n\n\t\tvar props = component.props,\n\t\t    state = component.state,\n\t\t    context = component.context,\n\t\t    previousProps = component.prevProps || props,\n\t\t    previousState = component.prevState || state,\n\t\t    previousContext = component.prevContext || context,\n\t\t    isUpdate = component.base,\n\t\t    nextBase = component.nextBase,\n\t\t    initialBase = isUpdate || nextBase,\n\t\t    initialChildComponent = component._component,\n\t\t    skip = false,\n\t\t    snapshot = previousContext,\n\t\t    rendered = void 0,\n\t\t    inst = void 0,\n\t\t    cbase = void 0;\n\n\t\tif (component.constructor.getDerivedStateFromProps) {\n\t\t\tstate = extend(extend({}, state), component.constructor.getDerivedStateFromProps(props, state));\n\t\t\tcomponent.state = state;\n\t\t}\n\n\t\tif (isUpdate) {\n\t\t\tcomponent.props = previousProps;\n\t\t\tcomponent.state = previousState;\n\t\t\tcomponent.context = previousContext;\n\t\t\tif (renderMode !== FORCE_RENDER && component.shouldComponentUpdate && component.shouldComponentUpdate(props, state, context) === false) {\n\t\t\t\tskip = true;\n\t\t\t} else if (component.componentWillUpdate) {\n\t\t\t\tcomponent.componentWillUpdate(props, state, context);\n\t\t\t}\n\t\t\tcomponent.props = props;\n\t\t\tcomponent.state = state;\n\t\t\tcomponent.context = context;\n\t\t}\n\n\t\tcomponent.prevProps = component.prevState = component.prevContext = component.nextBase = null;\n\t\tcomponent._dirty = false;\n\n\t\tif (!skip) {\n\t\t\trendered = component.render(props, state, context);\n\n\t\t\tif (component.getChildContext) {\n\t\t\t\tcontext = extend(extend({}, context), component.getChildContext());\n\t\t\t}\n\n\t\t\tif (isUpdate && component.getSnapshotBeforeUpdate) {\n\t\t\t\tsnapshot = component.getSnapshotBeforeUpdate(previousProps, previousState);\n\t\t\t}\n\n\t\t\tvar childComponent = rendered && rendered.nodeName,\n\t\t\t    toUnmount = void 0,\n\t\t\t    base = void 0;\n\n\t\t\tif (typeof childComponent === 'function') {\n\n\t\t\t\tvar childProps = getNodeProps(rendered);\n\t\t\t\tinst = initialChildComponent;\n\n\t\t\t\tif (inst && inst.constructor === childComponent && childProps.key == inst.__key) {\n\t\t\t\t\tsetComponentProps(inst, childProps, SYNC_RENDER, context, false);\n\t\t\t\t} else {\n\t\t\t\t\ttoUnmount = inst;\n\n\t\t\t\t\tcomponent._component = inst = createComponent(childComponent, childProps, context);\n\t\t\t\t\tinst.nextBase = inst.nextBase || nextBase;\n\t\t\t\t\tinst._parentComponent = component;\n\t\t\t\t\tsetComponentProps(inst, childProps, NO_RENDER, context, false);\n\t\t\t\t\trenderComponent(inst, SYNC_RENDER, mountAll, true);\n\t\t\t\t}\n\n\t\t\t\tbase = inst.base;\n\t\t\t} else {\n\t\t\t\tcbase = initialBase;\n\n\t\t\t\ttoUnmount = initialChildComponent;\n\t\t\t\tif (toUnmount) {\n\t\t\t\t\tcbase = component._component = null;\n\t\t\t\t}\n\n\t\t\t\tif (initialBase || renderMode === SYNC_RENDER) {\n\t\t\t\t\tif (cbase) cbase._component = null;\n\t\t\t\t\tbase = diff(cbase, rendered, context, mountAll || !isUpdate, initialBase && initialBase.parentNode, true);\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tif (initialBase && base !== initialBase && inst !== initialChildComponent) {\n\t\t\t\tvar baseParent = initialBase.parentNode;\n\t\t\t\tif (baseParent && base !== baseParent) {\n\t\t\t\t\tbaseParent.replaceChild(base, initialBase);\n\n\t\t\t\t\tif (!toUnmount) {\n\t\t\t\t\t\tinitialBase._component = null;\n\t\t\t\t\t\trecollectNodeTree(initialBase, false);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tif (toUnmount) {\n\t\t\t\tunmountComponent(toUnmount);\n\t\t\t}\n\n\t\t\tcomponent.base = base;\n\t\t\tif (base && !isChild) {\n\t\t\t\tvar componentRef = component,\n\t\t\t\t    t = component;\n\t\t\t\twhile (t = t._parentComponent) {\n\t\t\t\t\t(componentRef = t).base = base;\n\t\t\t\t}\n\t\t\t\tbase._component = componentRef;\n\t\t\t\tbase._componentConstructor = componentRef.constructor;\n\t\t\t}\n\t\t}\n\n\t\tif (!isUpdate || mountAll) {\n\t\t\tmounts.push(component);\n\t\t} else if (!skip) {\n\n\t\t\tif (component.componentDidUpdate) {\n\t\t\t\tcomponent.componentDidUpdate(previousProps, previousState, snapshot);\n\t\t\t}\n\t\t\tif (options.afterUpdate) options.afterUpdate(component);\n\t\t}\n\n\t\twhile (component._renderCallbacks.length) {\n\t\t\tcomponent._renderCallbacks.pop().call(component);\n\t\t}if (!diffLevel && !isChild) flushMounts();\n\t}\n\n\tfunction buildComponentFromVNode(dom, vnode, context, mountAll) {\n\t\tvar c = dom && dom._component,\n\t\t    originalComponent = c,\n\t\t    oldDom = dom,\n\t\t    isDirectOwner = c && dom._componentConstructor === vnode.nodeName,\n\t\t    isOwner = isDirectOwner,\n\t\t    props = getNodeProps(vnode);\n\t\twhile (c && !isOwner && (c = c._parentComponent)) {\n\t\t\tisOwner = c.constructor === vnode.nodeName;\n\t\t}\n\n\t\tif (c && isOwner && (!mountAll || c._component)) {\n\t\t\tsetComponentProps(c, props, ASYNC_RENDER, context, mountAll);\n\t\t\tdom = c.base;\n\t\t} else {\n\t\t\tif (originalComponent && !isDirectOwner) {\n\t\t\t\tunmountComponent(originalComponent);\n\t\t\t\tdom = oldDom = null;\n\t\t\t}\n\n\t\t\tc = createComponent(vnode.nodeName, props, context);\n\t\t\tif (dom && !c.nextBase) {\n\t\t\t\tc.nextBase = dom;\n\n\t\t\t\toldDom = null;\n\t\t\t}\n\t\t\tsetComponentProps(c, props, SYNC_RENDER, context, mountAll);\n\t\t\tdom = c.base;\n\n\t\t\tif (oldDom && dom !== oldDom) {\n\t\t\t\toldDom._component = null;\n\t\t\t\trecollectNodeTree(oldDom, false);\n\t\t\t}\n\t\t}\n\n\t\treturn dom;\n\t}\n\n\tfunction unmountComponent(component) {\n\t\tif (options.beforeUnmount) options.beforeUnmount(component);\n\n\t\tvar base = component.base;\n\n\t\tcomponent._disable = true;\n\n\t\tif (component.componentWillUnmount) component.componentWillUnmount();\n\n\t\tcomponent.base = null;\n\n\t\tvar inner = component._component;\n\t\tif (inner) {\n\t\t\tunmountComponent(inner);\n\t\t} else if (base) {\n\t\t\tif (base[ATTR_KEY] != null) applyRef(base[ATTR_KEY].ref, null);\n\n\t\t\tcomponent.nextBase = base;\n\n\t\t\tremoveNode(base);\n\t\t\trecyclerComponents.push(component);\n\n\t\t\tremoveChildren(base);\n\t\t}\n\n\t\tapplyRef(component.__ref, null);\n\t}\n\n\tfunction Component(props, context) {\n\t\tthis._dirty = true;\n\n\t\tthis.context = context;\n\n\t\tthis.props = props;\n\n\t\tthis.state = this.state || {};\n\n\t\tthis._renderCallbacks = [];\n\t}\n\n\textend(Component.prototype, {\n\t\tsetState: function setState(state, callback) {\n\t\t\tif (!this.prevState) this.prevState = this.state;\n\t\t\tthis.state = extend(extend({}, this.state), typeof state === 'function' ? state(this.state, this.props) : state);\n\t\t\tif (callback) this._renderCallbacks.push(callback);\n\t\t\tenqueueRender(this);\n\t\t},\n\t\tforceUpdate: function forceUpdate(callback) {\n\t\t\tif (callback) this._renderCallbacks.push(callback);\n\t\t\trenderComponent(this, FORCE_RENDER);\n\t\t},\n\t\trender: function render() {}\n\t});\n\n\tfunction render(vnode, parent, merge) {\n\t  return diff(merge, vnode, {}, false, parent, false);\n\t}\n\n\tfunction createRef() {\n\t\treturn {};\n\t}\n\n\tvar preact = {\n\t\th: h,\n\t\tcreateElement: h,\n\t\tcloneElement: cloneElement,\n\t\tcreateRef: createRef,\n\t\tComponent: Component,\n\t\trender: render,\n\t\trerender: rerender,\n\t\toptions: options\n\t};\n\n\texports.default = preact;\n\texports.h = h;\n\texports.createElement = h;\n\texports.cloneElement = cloneElement;\n\texports.createRef = createRef;\n\texports.Component = Component;\n\texports.render = render;\n\texports.rerender = rerender;\n\texports.options = options;\n\n\tObject.defineProperty(exports, '__esModule', { value: true });\n\n})));\n//# sourceMappingURL=preact.umd.js.map\n\n\n//# sourceURL=webpack:///./node_modules/preact/dist/preact.umd.js?");
 
 /***/ }),
 
@@ -2341,7 +2341,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! preact */ \"./node_modules/preact/dist/preact.mjs\");\n\r\n\r\njb.ui.render = preact__WEBPACK_IMPORTED_MODULE_0__[\"render\"];\r\njb.ui.h = preact__WEBPACK_IMPORTED_MODULE_0__[\"h\"];\r\njb.ui.Component = preact__WEBPACK_IMPORTED_MODULE_0__[\"Component\"];\r\n\n\n//# sourceURL=webpack:///./src/ui/jb-preact.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! preact */ \"./node_modules/preact/dist/preact.umd.js\");\n/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(preact__WEBPACK_IMPORTED_MODULE_0__);\n\r\n\r\nObject.assign(jb.ui, { preact: preact__WEBPACK_IMPORTED_MODULE_0__, h: preact__WEBPACK_IMPORTED_MODULE_0__[\"h\"], render: preact__WEBPACK_IMPORTED_MODULE_0__[\"render\"], Component: preact__WEBPACK_IMPORTED_MODULE_0__[\"Component\"] })\r\n\n\n//# sourceURL=webpack:///./src/ui/jb-preact.js?");
 
 /***/ })
 
@@ -4214,6 +4214,7 @@ class JbComponent {
 				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
 				jbComp.extendCtxOnceFuncs.forEach(extendCtx =>
 					tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx')
+				this.state = {}
 			
 				Object.assign(this,(jbComp.styleCtx || {}).params); // assign style params to cmp
 				jbComp.jbBeforeInitFuncs.forEach(init=> tryWrapper(() => init(this,props)), 'beforeinit');
@@ -4247,6 +4248,7 @@ class JbComponent {
 				jbComp.jbComponentDidUpdateFuncs.forEach(f=> tryWrapper(() => f(this), 'componentDidUpdate'));
 			}
 	  		componentWillUnmount() {
+				this._destroyed = true
 				jbComp.jbDestroyFuncs.forEach(f=> tryWrapper(() => f(this), 'destroy'));
 				this.resolveDestroyed();
 			}
@@ -4460,26 +4462,13 @@ ui.renderWidget = function(profile,top) {
 	let formerReactElem, formerParentElem;
 	let blockedParentWin = false
 	try {
-		x = typeof window != 'undefined' && window.parent.jb
+		const x = typeof window != 'undefined' && window.parent.jb
 	} catch (e) {
 		blockedParentWin = true
 	}
 	try {
-		if (!blockedParentWin && typeof window != 'undefined' && window.parent != window && window.parent.jb) {
-			const st = window.parent.jb.studio
-			const originalResources = jb.resources
-			st.refreshPreviewWidget = _ => {
-				jb.resources = originalResources;
-				doRender();
-			}
-			st.reloadCompInPreviewWindow = (id,comp) => {
-				try {
-					jb.component(id,eval('('+comp+')'))
-					return jb.comps[id]
-				} catch(e) { jb.logException(e)	}
-			}
-			st.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
-		}
+		if (!blockedParentWin && typeof window != 'undefined' && window.parent != window && window.parent.jb)
+			window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
 	} catch(e) {
 		jb.logException(e)
 		return
@@ -4568,7 +4557,7 @@ ui.setState = function(cmp,state,opEvent,watchedAt) {
 ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 		if (!ref)
 			jb.logError('null ref for watch ref',...arguments);
-    	ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
+    	ui.refObservable(ref,cmp,{includeChildren, srcCtx: ctx})
 			.subscribe(e=>{
 				let ctxStack=[]; for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
 				const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x).filter(x=>x.indexOf('jb-editor') == -1)
@@ -4686,9 +4675,7 @@ ui.toVdomOrStr = val => {
 // ****************** components ****************
 
 jb.component('custom-style', { /* customStyle */
-  typePattern: {
-
-  },
+  typePattern: /\.style$/,
   category: 'advanced:10,all:10',
   params: [
     {id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true},
@@ -4704,9 +4691,7 @@ jb.component('custom-style', { /* customStyle */
 })
 
 jb.component('style-by-control', { /* styleByControl */
-  typePattern: {
-    
-  },
+  typePattern: /\.style$/,
   category: 'advanced:10,all:20',
   params: [
     {id: 'control', type: 'control', mandatory: true, dynamic: true},
@@ -4726,9 +4711,10 @@ jb.component('style-by-control', { /* styleByControl */
 //     $jb_childProp: 'title', // used for primitive props
 // }
 
-const isProxy = Symbol("isProxy")
-const targetVal = Symbol("targetVal")
-const jbId = Symbol("jbId")
+const isProxy = Symbol.for("isProxy")
+const originalVal = Symbol.for("originalVal")
+const targetVal = Symbol.for("targetVal")
+const jbId = Symbol.for("jbId")
 
 class WatchableValueByRef {
   constructor(resources) {
@@ -4758,20 +4744,20 @@ class WatchableValueByRef {
         ref = this.asRef(ref);
       jb.log('doOp',[this.asStr(ref),opVal,...arguments]);
 
-      const path = this.pathOfRef(ref), op = {}, oldVal = this.valOfPath(path);
+      const path = this.removeLinksFromPath(this.pathOfRef(ref)), op = {}, oldVal = this.valOfPath(path);
       if (!path || ref.$jb_val) return;
       if (opOnRef.$set !== undefined && opOnRef.$set === oldVal) return;
       if (opOnRef.$push) opOnRef.$push = jb.asArray(opOnRef.$push)
 
-      path.forEach((p,i)=> { // hash ancestors with $jb_id because the objects will be re-generated by redux
-          const innerPath = path.slice(0,i+1)
-          const val = this.valOfPath(innerPath)
-          if (val && typeof val === 'object' && !val[jbId]) {
-              val[jbId] = this.idCounter++
-              this.objToPath.delete(val)
-              this.objToPath.set(val[jbId],innerPath)
-          }
-      })
+      for(let i=0;i<path.length;i++) { // hash ancestors with jbId because the objects will be re-generated by redux
+        const innerPath = path.slice(0,i+1)
+        const val = this.valOfPath(innerPath,true)
+        if (val && typeof val === 'object' && !val[jbId]) {
+            val[jbId] = this.idCounter++
+            this.addObjToMap(val,innerPath)
+        }
+      }
+
       jb.path(op,path,opOnRef); // create op as nested object
       const opEvent = {op: opOnRef, path, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime()};
       this.resources(jb.ui.update(this.resources(),op),opEvent);
@@ -4852,7 +4838,28 @@ class WatchableValueByRef {
     return null;
   }
   valOfPath(path) {
-    return this.cleanVal(path.reduce((o,p)=>o && o[p],this.resources()))
+    return path.reduce((o,p)=>this.noProxy(o && o[p]),this.resources())
+  }
+  noProxy(val) {
+    return (val && val[isProxy] && val[originalVal]) || val
+  }
+  hasLinksInPath(path) {
+    let val = this.resources()
+    for(let i=0;i<path.length;i++) {
+      if (val && val[isProxy])
+        return true
+      val = val && val[path[i]]
+    }
+  }
+  removeLinksFromPath(path) {
+    if (!this.hasLinksInPath(path))
+      return path
+    return path.reduce(({val,path} ,p) => {
+      const proxy = (val && val[isProxy])
+      const inner =  proxy ? val[originalVal] : val
+      const newPath = proxy ? (this.objToPath.get(inner) || this.objToPath.get(inner[jbId])) : path
+      return { val: inner && inner[p], path: [newPath,p].join('~') }
+    }, {val: this.resources(), path: ''}).path
   }
   refOfPath(path) {
     const val = this.valOfPath(path);
@@ -4920,18 +4927,15 @@ class WatchableValueByRef {
     return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
   }
   createSecondaryLink(val) {
-    if (val && typeof val === 'object' && !val.$jb_secondaryLink) {
+    if (val && typeof val === 'object' && !val[isProxy]) {
       const ref = this.asRef(val,true);
       if (ref && ref.$jb_obj)
         return new Proxy(val, {
-          get: (o,p) => (p === targetVal) ? o : (p === isProxy) ? true : (p === '$jb_secondaryLink' ? {val} : (jb.val(this.asRef(val)))[p]),
+          get: (o,p) => (p === targetVal) ? o : (p === isProxy) ? true : (p === originalVal ? val : (jb.val(this.asRef(val)))[p]),
           set: (o,p,v) => o[p] = v
         })
     }
     return val;
-  }
-  cleanVal(val) {
-    return (val && val.$jb_secondaryLink && val.$jb_secondaryLink.val) || val
   }
   splice(ref,args,srcCtx) {
     return this.doOp(ref,{$splice: args },srcCtx)
@@ -5004,10 +5008,12 @@ class WatchableValueByRef {
   }
   getOrCreateObservable(req) {
       const subject = new jb.rx.Subject()
-      const key = req.srcCtx && this.pathOfRef(req.ref).join('~') + ' : ' + req.srcCtx.path
-      const entry = { ...req, subject, key}
+      req.srcCtx = req.srcCtx || { path: ''}
+      const key = this.pathOfRef(req.ref).join('~') + ' : ' + req.cmp.ctx.path
+      const entry = { ...req, subject, key }
       if (key && this.observables.find(e=>e.key === key))
-        return jb.logError('observable already exists', entry)
+        jb.logError('observable already exists', entry)
+      
       this.observables.push(entry);
       this.observables.sort((e1,e2) => comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
       req.cmp.destroyed.then(_=> {
@@ -5023,24 +5029,34 @@ class WatchableValueByRef {
 
   propagateResourceChangeToObservables() {
       this.resourceChange.subscribe(e=>{
-          const changed_path = this.pathOfRef(e.ref);
+          const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref));
           this.observables = this.observables.filter(obs=>jb.refHandler(obs.ref))
+          const notifiedPaths = []
+
           if (changed_path)
             this.observables.forEach(obs=>{
-                const obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
-                if (!obsPath)
-                  return jb.logError('observer ref path is empty',obs,e)
-                const diff = comparePaths(changed_path, obsPath)
-                const isChildOfChange = diff == 1
-                const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
-                const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
-                if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
-                    jb.log('notifyCmpObservable',['notify change',e.srcCtx,obs,e])
-                    obs.subject.next(e)
-                }
+              if (notifiedPaths.some(path => obs.cmp.ctx.path.indexOf(path+'~') == 0)) // parent was notified
+                jb.delay(1).then(() => !obs.cmp._destroyed && this.notifyOneObserver(e,obs,changed_path,notifiedPaths))
+              else
+                this.notifyOneObserver(e,obs,changed_path,notifiedPaths)
             })
       })
-    }
+  }
+  notifyOneObserver(e,obs,changed_path,notifiedPaths) {
+      const obsPath = this.removeLinksFromPath(jb.refHandler(obs.ref).pathOfRef(obs.ref))
+      if (!obsPath)
+        return jb.logError('observer ref path is empty',obs,e)
+      const diff = comparePaths(changed_path, obsPath)
+      const isChildOfChange = diff == 1
+      const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
+      const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
+      if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
+          jb.log('notifyCmpObservable',['notify change',e.srcCtx,obs,e])
+          notifiedPaths.push(obs.cmp.ctx.path)
+          obs.subject.next(e)
+      }
+  }
+
 }
 
 // 0- equals, -1,1 means contains -2,2 lexical
@@ -5054,6 +5070,12 @@ function comparePaths(path1,path2) {
     if (i == path2.length && i < path1.length) return 1;
     return path1[i] < path2[i] ? -2 : 2
 }
+
+// function isPathInsideStyle(path) {
+//     const cmpId = path.split('~')[0]
+//     const cmp = jb.comps[cmpId]
+//     return cmp && (cmp.type||'').match(/style$/)
+// }
 
 function resourcesRef(val) {
   if (typeof val == 'undefined')
@@ -5256,7 +5278,7 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', { /* firstSucceedi
   impl: (ctx,refF,includeChildren) => ({
       init: cmp => {
         const ref = refF(cmp.ctx)
-        ref && jb.ui.refObservable(ref,cmp,{includeChildren, watchScript: ctx})
+        ref && jb.ui.refObservable(ref,cmp,{includeChildren, srcCtx: ctx})
         .subscribe(e=>{
           if (ctx && ctx.profile && ctx.profile.$trace)
             console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
@@ -5325,7 +5347,7 @@ jb.component('label.bind-text', { /* label.bindText */
       const textRef = textF(cmp.ctx);
       cmp.state.text = fixTextVal(textRef);
       if (jb.isWatchable(textRef))
-        jb.ui.refObservable(textRef,cmp,{watchScript: ctx})
+        jb.ui.refObservable(textRef,cmp,{srcCtx: ctx})
             .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,{text: fixTextVal(textF(cmp.ctx))},e,ctx));
 
       cmp.refresh = _ =>
@@ -5629,7 +5651,7 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
   const srcCtx = cmp.ctxForPick || cmp.ctx;
   if (!oneWay)
       jb.ui.databindObservable(cmp, {
-            watchScript: ctx, onError: _ => cmp.setState({model: null}) })
+            srcCtx: ctx, onError: _ => cmp.setState({model: null}) })
       .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
       .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,null,e,ctx))
 
@@ -5768,7 +5790,7 @@ jb.component('field.subscribe', { /* field.subscribe */
   impl: (context,action,includeFirst) => ({
     init: cmp => {
       const includeFirstEm = includeFirst ? jb.rx.Observable.of({ref: cmp.state.databindRef}) : jb.rx.Observable.of();
-      jb.ui.databindObservable(cmp,{watchScript: context})
+      jb.ui.databindObservable(cmp,{srcCtx: context})
             .merge(includeFirstEm)
             .map(e=>jb.val(e.ref))
             .filter(x=>x)
@@ -6305,17 +6327,20 @@ jb.component('variable', { /* variable */
       id: 'globalId',
       as: 'string',
       description: 'If specified, the var will be defined as global with this id'
-    }
+    },
+    {id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string' }
   ],
-  impl: (context, name, value, watchable, globalId) => ({
+  impl: (context, name, value, watchable, globalId,type) => ({
       extendCtxOnce: (ctx,cmp) => {
+        const rawVal = jb.val(value(ctx))
+        const val = value.profile === '' ? jb.tojstype(rawVal,type) : rawVal
         if (!watchable)
-          return ctx.setVars(jb.obj(name, value(ctx)))
+          return ctx.setVars({[name]: val })
 
         cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
         const fullName = globalId || (name + ':' + cmp.resourceId);
         jb.log('var',['new-watchable',ctx,fullName])
-        jb.resource(fullName, jb.val(value(ctx)));
+        jb.resource(fullName, val);
         const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
         return ctx.setVars(jb.obj(name, refToResource));
       }
@@ -6340,7 +6365,7 @@ jb.component('bind-refs', { /* bindRefs */
   ],
   impl: (ctx,ref,includeChildren,updateRef,value) => ({
     afterViewInit: cmp =>
-        jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren, watchScript: ctx}).subscribe(e=>
+        jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren, srcCtx: ctx}).subscribe(e=>
           jb.writeValue(updateRef,value(cmp.ctx),ctx))
   })
 })
@@ -6377,7 +6402,7 @@ jb.component('calculated-var', { /* calculatedVar */
         jb.resource(fullName, jb.val(value(ctx)));
         const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
         (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
-            jb.ui.refObservable(ref,cmp,{includeChildren: 'yes', watchScript: context}).subscribe(e=>
+            jb.ui.refObservable(ref,cmp,{includeChildren: 'yes', srcCtx: context}).subscribe(e=>
               jb.writeValue(refToResource,value(cmp.ctx),context))
           )
         return ctx.setVars(jb.obj(name, refToResource));
@@ -7440,7 +7465,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           });
 
         const selectedRef = databind()
-        jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, watchScript: ctx})
+        jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, srcCtx: ctx})
           .catch(e=>jb.ui.setState(cmp,{selected: null }) || [])
           .subscribe(e=>
             jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
@@ -8421,9 +8446,9 @@ jb.component('picklist', { /* picklist */
         cmp.recalcOptions();
       },
       afterViewInit: cmp => {
-        if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{watchScript: ctx})
+        if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{srcCtx: ctx})
           .subscribe(e=>cmp.onChange && cmp.onChange(jb.val(e.ref)))
-        else jb.ui.refObservable(ctx.params.databind(),cmp,{watchScript: ctx}).subscribe(e=>
+        else jb.ui.refObservable(ctx.params.databind(),cmp,{srcCtx: ctx}).subscribe(e=>
           cmp.onChange && cmp.onChange(jb.val(e.ref)))
       },
     })
@@ -10326,7 +10351,7 @@ jb.component('tree.selection', { /* tree.selection */
 		  const tree = cmp.tree;
 		  const selectedRef = databind()
 
-  		  const databindObs = jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{watchScript: ctx}).map(e=>jb.val(e.ref));
+  		  const databindObs = jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}).map(e=>jb.val(e.ref));
 
 		  tree.selectionEmitter
 		  	.merge(databindObs || [])
@@ -30210,7 +30235,8 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'jb-d3': ['dist/jb-d3.js'],
       studio: [
-        'dist/material.js','src/loader/jb-loader.js', 'src/ui/watchable/text-editor.js','src/ui/styles/codemirror-styles.js',
+        'dist/material.js','src/loader/jb-loader.js', 'src/ui/watchable/text-editor.js',
+        'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js',
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
@@ -30421,7 +30447,7 @@ jb.component('text-editor.watch-source-changes', { /* textEditor.watchSourceChan
       try {
         const text_ref = cmp.state.databindRef
         const data_ref = text_ref.getRef()
-        jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: cmp.ctx, includeChildren: 'yes'})
+        jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{srcCtx: cmp.ctx, includeChildren: 'yes'})
             .subscribe(e => {
             const path = e.path
             const editor = cmp.editor
@@ -30549,6 +30575,310 @@ function adjustWhiteSpaces(map,original,formatted) {
 
 })();
 
+
+//used mostley for deubgging
+jb.stringWithSourceRef = function(ctx,pathToConstStr,offset,to) {
+  this.ctx = ctx;this.pathToConstStr = pathToConstStr;
+  this.offset = offset;this.to = to;
+  this.val = ctx.exp(`%$${pathToConstStr}%`,'string').substring(offset,to);
+  jb.debugInfo = jb.debugInfo || { in: [], out: []};
+  jb.debugInfo.in.push(this);
+}
+jb.stringWithSourceRef.prototype.$jb_val = function() {
+  return this.val;
+}
+jb.stringWithSourceRef.prototype.substring = function(from,new_to) {
+  const to = typeof new_to == 'undefined' ? this.to : this.offset + new_to;
+  return new jb.stringWithSourceRef(this.ctx,this.pathToConstStr,this.offset+from,to)
+}
+jb.stringWithSourceRef.prototype.trim = function() {
+  if (this.val == this.val.trim()) return this;
+  const left = (this.val.match(/^\s+/)||[''])[0].length;
+  const right = (this.val.match(/\s+$/)||[''])[0].length;
+
+  return new jb.stringWithSourceRef(this.ctx,this.pathToConstStr,this.offset+left,this.to-right)
+}
+
+jb.jstypes['string-with-source-ref'] = v => v;
+
+jb.component('extract-text', { /* extractText */
+  description: 'text breaking according to begin/end markers',
+  params: [
+    {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
+    {id: 'startMarkers', type: 'data[]' ,as: 'array', mandatory: true},
+    {id: 'endMarker', as: 'string'},
+    {
+      id: 'includingStartMarker',
+      as: 'boolean',
+      type: 'boolean',
+      description: 'include the marker at part of the result'
+    },
+    {
+      id: 'includingEndMarker',
+      as: 'boolean',
+      type: 'boolean',
+      description: 'include the marker at part of the result'
+    },
+    {
+      id: 'repeating',
+      as: 'boolean',
+      type: 'boolean',
+      description: 'apply the markers repeatingly'
+    },
+    {id: 'noTrim', as: 'boolean', type: 'boolean'},
+    {
+      id: 'useRegex',
+      as: 'boolean',
+      type: 'boolean',
+      description: 'use regular expression in markers'
+    },
+    {
+      id: 'exclude',
+      as: 'boolean',
+      type: 'boolean',
+      description: 'return the inverse result. E.g. exclude remarks'
+    }
+  ],
+  impl: (ctx,textRef,startMarkers,endMarker,includingStartMarker,includingEndMarker,repeating,noTrim,regex,exclude) => {
+    const text = jb.tostring(textRef);
+	  let findMarker = (marker, startpos) => {
+      const pos = text.indexOf(marker,startpos);
+      if (pos != -1)
+        return { pos: pos, end: pos + marker.length}
+    }
+	  if (regex)
+		  findMarker = (marker, startpos) => {
+	  		let len = 0, pos = -1;
+	  		try {
+		  		startpos = startpos || 0;
+		  		const str = text.substring(startpos);
+		  		const marker_regex = new RegExp(marker,'m');
+          pos = str.search(marker_regex);
+		    	if (pos > -1) {
+		    		const match = str.match(marker_regex)[0];
+            len = match ? match.length : 0;
+            if (len)
+              return { pos: pos+startpos, end: pos+ startpos+len };
+		    	}
+	  		} catch(e) {} // probably regex exception
+	  }
+
+    function findStartMarkers(startpos) {
+      let firstMarkerPos,markerPos;
+      for(let i=0; i<startMarkers.length; i++) {
+        const marker = startMarkers[i];
+        markerPos = findMarker(marker,markerPos ? markerPos.end : startpos);
+        if (!markerPos) return;
+        if (i==0)
+          firstMarkerPos = markerPos;
+      }
+      return firstMarkerPos && { pos: firstMarkerPos.pos, end: markerPos.end }
+    }
+
+    let out = { match: [], unmatch: []},pos =0,start=null;
+    while(start = findStartMarkers(pos)) {
+        let end = endMarker ? findMarker(endMarker,start.end) : findStartMarkers(start.end)
+        if (!end) // if end not found use end of text
+          end = { pos : text.length, end: text.length }
+        const start_match = includingStartMarker ? start.pos : start.end;
+        const end_match = includingEndMarker ? end.end : end.pos;
+        if (pos != start_match) out.unmatch.push(textRef.substring(pos,start_match));
+        out.match.push(textRef.substring(start_match,end_match));
+        if (end_match != end.end) out.unmatch.push(textRef.substring(end_match,end.end));
+        pos = endMarker ? end.end : end.pos;
+    }
+    out.unmatch.push(textRef.substring(pos));
+    if (!noTrim) {
+      out.match = out.match.map(x=>x.trim());
+      out.unmatch = out.unmatch.map(x=>x.trim());
+    }
+    const res = exclude ? out.unmatch : out.match;
+    return repeating ? res : res[0];
+  }
+})
+
+jb.component('break-text', { /* breakText */
+  description: 'recursive text breaking according to multi level separators',
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'},
+    {
+      id: 'separators',
+      as: 'array',
+      mandatory: true,
+      defaultValue: [],
+      description: 'multi level separators'
+    },
+    {
+      id: 'useRegex',
+      as: 'boolean',
+      type: 'boolean',
+      description: 'use regular expression in separators'
+    }
+  ],
+  impl: (ctx,text,separators,regex) => {
+	  let findMarker = (text,marker, startpos) => {
+      const pos = text.indexOf(marker,startpos);
+      if (pos != -1)
+        return { pos: pos, end: pos + marker.length}
+    }
+	  if (regex)
+		  findMarker = (text,marker, startpos) => {
+	  		let len = 0, pos = -1;
+	  		try {
+		  		startpos = startpos || 0;
+		  		const str = text.substring(startpos);
+		  		const marker_regex = new RegExp(marker,'m');
+          pos = str.search(marker_regex);
+		    	if (pos > -1) {
+		    		const match = str.match(marker_regex)[0];
+            len = match ? match.length : 0;
+            if (len)
+              return { pos: pos+startpos, end: pos+ startpos+len };
+		    	}
+	  		} catch(e) {} // probably regex exception
+    }
+
+    var result = [text];
+    separators.forEach(sep=> result = recursiveSplit(result,sep));
+    return result[0];
+
+    function recursiveSplit(input,separator) {
+      if (Array.isArray(input))
+        return input.map(item=>recursiveSplit(item,separator))
+      if (typeof input == 'string')
+        return doSplit(input,separator)
+    }
+
+    function doSplit(text,separator) {
+      let out = [],pos =0,found=null;
+      while(found = findMarker(text,separator,pos)) {
+        out.push(text.substring(pos,found.pos));
+        pos = found.end;
+      }
+      out.push(text.substring(pos));
+      return out;
+    }
+  }
+})
+
+
+jb.component('zip-arrays', { /* zipArrays */
+  description: '[[1,2],[10,20],[100,200]] => [[1,10,100],[2,20,200]]',
+  params: [
+    {id: 'value', description: 'array of arrays', as: 'array', mandatory: true}
+  ],
+  impl: (ctx,value) =>
+    value[0].map((x,i)=>
+      value.map(line=>line[i]))
+})
+
+jb.component('remove-sections', { /* removeSections */
+  description: 'remove sections between markers',
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'startMarker', as: 'string', mandatory: true},
+    {id: 'endMarker', as: 'string', mandatory: true},
+    {id: 'keepEndMarker', as: 'boolean', type: 'boolean'}
+  ],
+  impl: (ctx,text,startMarker,endMarker,keepEndMarker) => {
+    let out = text,range = null;
+    if (!startMarker || !endMarker) return out;
+    do {
+      range = findRange(out);
+      if (range)
+        out = out.substring(0,range.from) + out.substring(range.to || out.length)
+    } while (range && out);
+    return out;
+
+    function findRange(txt) {
+      const start = txt.indexOf(startMarker);
+      if (start == -1) return;
+      const end = txt.indexOf(endMarker,start) + (keepEndMarker ? 0 : endMarker.length);
+      if (end == -1) return;
+      return { from: start, to: end}
+    }
+  }
+})
+
+jb.component('merge', { /* merge */
+  type: 'data',
+  description: 'assign, merge object properties',
+  params: [
+    {id: 'objects', as: 'array', mandatory: true}
+  ],
+  impl: (ctx,objects) =>
+		Object.assign.apply({},objects)
+})
+
+jb.component('dynamic-object', { /* dynamicObject */
+  type: 'data',
+  description: 'process items into object properties',
+  params: [
+    {id: 'items', mandatory: true, as: 'array'},
+    {id: 'propertyName', mandatory: true, as: 'string', dynamic: true},
+    {id: 'value', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,items,name,value) =>
+    items.reduce((obj,item)=>Object.assign(obj,jb.obj(name(ctx.setData(item)),value(ctx.setData(item)))),{})
+})
+
+jb.component('filter-empty-properties', { /* filterEmptyProperties */
+  type: 'data',
+  description: 'remove null or empty string properties',
+  params: [
+    {id: 'obj', defaultValue: '%%'}
+  ],
+  impl: (ctx,obj) => {
+    if (typeof obj != 'object') return obj;
+    const propsToKeep = Object.getOwnPropertyNames(obj)
+      .filter(p=>obj[p] != null && obj[p] != '' && (!Array.isArray(obj[p]) || obj[p].length > 0));
+    let res = {};
+    propsToKeep.forEach(p=>res[p]=obj[p]);
+    return res;
+  }
+})
+
+jb.component('trim', { /* trim */
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,text) => text.trim()
+})
+
+jb.component('remove-prefix-regex', { /* removePrefixRegex */
+  params: [
+    {id: 'prefix', as: 'string', mandatory: true},
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,prefix,text) =>
+    text.replace(new RegExp('^'+prefix) ,'')
+})
+
+jb.component('wrap-as-object', { /* wrapAsObject */
+  description: 'object from entries, map each item as a property',
+  type: 'aggregator',
+  params: [
+    {id: 'propertyName', as: 'string', dynamic: true, mandatory: true},
+    {id: 'value', as: 'string', dynamic: true, defaultValue: '%%' },
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  impl: (ctx,key,value,items) => {
+    let out = {}
+    items.forEach(item=>out[jb.tostring(key(ctx.setData(item)))] = value(ctx.setData(item)))
+    return out;
+  }
+})
+
+jb.component('write-value-asynch', {
+  type: 'action',
+  params: [
+    {id: 'to', as: 'ref', mandatory: true},
+    {id: 'value', mandatory: true}
+  ],
+  impl: (ctx,to,value) =>
+		Promise.resolve(jb.val(value)).then(val=>jb.writeValue(to,val,ctx))
+});
+
 (function() {
 
 const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
@@ -30646,7 +30976,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 					editor.setValue(jb.tostring(data_ref));
 				//cmp.lastEdit = new Date().getTime();
 					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-					!data_ref.oneWay && jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{watchScript: ctx})
+					!data_ref.oneWay && jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{srcCtx: ctx})
 						.map(e=>jb.tostring(data_ref))
 						.filter(x => x != editor.getValue())
 						.subscribe(x=>{
@@ -31604,7 +31934,7 @@ jb.component('studio.watch-typeof-script', { /* studio.watchTypeofScript */
   type: 'feature',
   impl: (ctx,path) => ({
       init: cmp =>
-    	jb.ui.refObservable(st.refOfPath(path),cmp,{ includeChildren: 'yes', watchScript: ctx})
+    	jb.ui.refObservable(st.refOfPath(path),cmp,{ includeChildren: 'yes', srcCtx: ctx})
     		.filter(e=>
     			(typeof e.oldVal == 'object') != (typeof e.newVal == 'object'))
     		.subscribe(e=>
@@ -31777,9 +32107,9 @@ st.initPreview = function(preview_window,allowedTypes) {
       // reload the changed components and rebuild the history
       st.initCompsRefHandler(st.previewjb, allowedTypes)
       changedComps.forEach(e=>{
-        //st.reloadCompInPreviewWindow && st.reloadCompInPreviewWindow(e[0],jb.prettyPrint(e[1]))
         st.compsRefHandler.resourceReferred(e[0])
         st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1])})`)) // update the history for future save
+        jb.val(st.compsRefHandler.refOfPath([e[0]]))[jb.location] = e[1][jb.location]
       })
 
       st.previewjb.http_get_cache = {}
@@ -33170,12 +33500,6 @@ Object.assign(st,{
 			.filter(p=>st.valOfPath(path+'~'+p.id) == null && !p.mandatory)
 			.map(p=> path + '~' + p.id),
 
-  // compHeaderParams: path => {
-  //   if (path.indexOf('~') == -1)
-  //     return [
-  //   if (path.indexOf('~impl~') == -1 && path.match(/~params~[0-9]*$/))
-  //     return ['id','type','as','mandatory']
-  // }
 	nonControlChildren: (path,includeFeatures) =>
 		st.paramsOfPath(path).filter(p=>!st.isControlType(p.type))
 			.filter(p=>includeFeatures || p.id != 'features')
@@ -33210,15 +33534,15 @@ Object.assign(st,{
 
 	summary: path => {
 		const val = st.valOfPath(path);
-    if (path.match(/~cases~[0-9]*$/))
-      return st.summary(path+'~condition');
-		if (val == null || typeof val != 'object') return '';
-		return st.paramsOfPath(path).map(x=>x.id)
-			.filter(p=> p != '$')
-			.filter(p=> p.indexOf('$jb_') != 0)
-			.map(p=>val[p])
-			.filter(v=>typeof v != 'object')
-			.join(', ');
+		if (path.match(/~cases~[0-9]*$/))
+		return st.summary(path+'~condition');
+			if (val == null || typeof val != 'object') return '';
+			return st.paramsOfPath(path).map(x=>x.id)
+				.filter(p=> p != '$')
+				.filter(p=> p.indexOf('$jb_') != 0)
+				.map(p=>val[p])
+				.filter(v=>typeof v != 'object')
+				.join(', ');
 	},
 
 	shortTitle: path => {
@@ -33264,15 +33588,6 @@ Object.assign(st,{
 	},
 
 	// queries
-	isCompNameOfType: (name,type) => {
-		const _jb = st.previewjb;
-		const comp = name && _jb.comps[name];
-		if (comp) {
-			while (_jb.comps[name] && !_jb.comps[name].type && _jb.compName(_jb.comps[name].impl))
-				name = _jb.compName(_jb.comps[name].impl);
-			return (_jb.comps[name] && _jb.comps[name].type || 'data').indexOf(type) == 0;
-		}
-	},
 	paramDef: path => {
 		if (!st.parentPath(path)) // no param def for root
 			return;
@@ -33300,16 +33615,6 @@ Object.assign(st,{
 			return (paramDef.type || 'data').split(',')
 				.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length;
 	},
-	// single first param type
-	paramTypeOfPath: path => {
-		const res = ((st.paramDef(path) || {}).type || 'data').split(',')[0].split('[')[0];
-		if (res == '*')
-			return st.paramTypeOfPath(st.parentPath(path));
-		return res;
-	},
-	PTsOfPath: path =>
-		st.PTsOfType(st.paramTypeOfPath(path)),
-
 	PTsOfType: type => {
 		const single = /([^\[]*)(\[\])?/;
 		const types = [].concat.apply([],(type||'').split(',')
@@ -33319,17 +33624,33 @@ Object.assign(st,{
 				x=='data' ? ['data','aggregator','boolean'] : [x]));
 		const comp_arr = types.map(t=>
 			jb.entries(st.previewjb.comps)
-				.filter(c=>
-					(c[1].type||'data').split(',').indexOf(t) != -1
-					|| (c[1].typePattern && t.match(c[1].typePattern))
-				)
+				.filter(c=> st.isCompObjOfType(c[1],t))
 				.map(c=>c[0]));
 		return comp_arr.reduce((all,ar)=>all.concat(ar),[]);
 	},
+	isCompNameOfType: (name,type) => {
+		const _jb = st.previewjb;
+		const comp = name && _jb.comps[name];
+		if (comp) {
+			while (_jb.comps[name] && !(_jb.comps[name].type || _jb.comps[name].typePattern) && _jb.compName(_jb.comps[name].impl))
+				name = _jb.compName(_jb.comps[name].impl);
+			return _jb.comps[name] && st.isCompObjOfType(_jb.comps[name],type);
+		}
+	},
+	isCompObjOfType: (compObj,type) => (compObj.type||'data').split(',').indexOf(type) != -1
+		|| (compObj.typePattern && compObj.typePattern.test(type)),
+
+	// single first param type
+	paramTypeOfPath: path => {
+		const res = ((st.paramDef(path) || {}).type || 'data').split(',')[0].split('[')[0];
+		if (res == '*')
+			return st.paramTypeOfPath(st.parentPath(path));
+		return res;
+	},
+	PTsOfPath: path => st.PTsOfType(st.paramTypeOfPath(path)),
 
 	profilesOfPT: pt => // in project
-		jb.entries(jb.comps).filter(c=> c[1].impl.$ == pt).map(c=>c[0])
-	,
+		jb.entries(jb.comps).filter(c=> c[1].impl.$ == pt).map(c=>c[0]),
 
 	propName: path =>{
 		if (!isNaN(Number(path.split('~').pop()))) // array elements
@@ -33347,10 +33668,19 @@ Object.assign(st,{
 		return path.split('~').pop();
 	},
 
-	closestCtxByPath: pathToTrace => {
+	closestCtxOfLastRun: pathToTrace => {
 		let path = pathToTrace.split('~')
 		for (;path.length > 0 && !st.previewjb.ctxByPath[path.join('~')];path.pop());
 		return st.previewjb.ctxByPath[path.join('~')]
+	},
+
+	closestTestCtx: pathToTrace => {
+		const compId = pathToTrace.split('~')[0]
+		const statistics = new jb.jbCtx().run(studio.componentsStatistics())
+		const test = statistics.filter(c=>c.id == compId).flatMap(c=>c.referredBy)
+			.filter(refferer=>st.isOfType(refferer,'test') )[0]
+		if (test)
+			return new st.previewjb.jbCtx().ctx({ profile: {$: test}, comp: test, path: ''})
 	},
 })
 
@@ -33771,11 +34101,11 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
           if (pathToTrace.match(/pipeline~[1-9][0-9]*$/) && st.isExtraElem(pathToTrace)) {
             const formerIndex = Number(pathToTrace.match(/pipeline~([1-9][0-9]*)$/)[1])-1
             const formerPath = pathToTrace.replace(/[0-9]+$/,formerIndex)
-            const baseCtx = st.closestCtxByPath(formerPath)
+            const baseCtx = st.closestCtxOfLastRun(formerPath)
             if (baseCtx)
               return baseCtx.setData(baseCtx.runItself())
           }
-          return st.closestCtxByPath(pathToTrace)
+          return st.closestCtxOfLastRun(pathToTrace)
         }
       }
   })
@@ -34143,7 +34473,9 @@ jb.component('studio.prop-field', {
     }),
     features: [
       studio.propertyToolbarFeature('%$path%'),
-      field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%'))
+      field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%')),
+      If(not(isOfType('string,number,boolean,undefined', studio.val('%$path%'))),
+        studio.watchPath({path: '%$path%', includeChildren: 'structure', allowSelfRefresh: true}))
     ]
   })
 })
@@ -34472,85 +34804,6 @@ jb.component('studio.jb-floating-input-rich', { /* studio.jbFloatingInputRich */
   })
 })
 
-jb.component('studio.properties-old', { /* studio.properties */
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: group({
-    controls: [
-      group({
-        title: 'accordion',
-        style: group.studioPropertiesAccordion(),
-        controls: [
-          group({
-            remark: 'properties',
-            title: pipeline(count(studio.nonControlChildren('%$path%')), 'Properties (%%)'),
-            style: customStyle({
-              template: (cmp,state,h) => h('table',{}, state.ctrls.map(ctrl=>
-      h('tr',{ class: 'property' },[
-          h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
-          h('td',{ class: 'property-ctrl'},h(ctrl)),
-          h('td',{ class: 'property-toolbar'}, h(ctrl.jbComp.toolbar) ),
-      ])
-    )),
-              css: `
-      { width: 100% }
-      >.property>.property-title { width: 90px; padding-right: 5px; padding-top: 5px;  font-weight: bold;}
-      >.property>.property-toolbar { text-align: right}
-      >.property>.property-toolbar>i { margin-right: 5px }
-      >.property>td { vertical-align: top; }
-    `,
-              features: group.initGroup()
-            }),
-            controls: [
-              dynamicControls({
-                controlItems: studio.nonControlChildren('%$path%'),
-                genericControl: studio.propertyField('%$controlItem%')
-              })
-            ]
-          }),
-          group({
-            remark: 'features',
-            title: pipeline(count(studio.val('%$path%~features')), 'Features (%%)'),
-            controls: studio.propertyArray('%$path%~features')
-          })
-        ],
-        features: [
-          group.dynamicTitles(),
-          studio.watchPath({path: '%$path%~features', allowSelfRefresh: true}),
-          hidden(
-            remark('not a control'),
-            studio.hasParam(remark('not a control'), '%$path%', 'features')
-          )
-        ]
-      }),
-      label({
-        title: pipeline(
-          studio.profileAsText('%$path%~features'),
-          If(inGroup(list('[]', "''"), '%%'), '', '%%')
-        ),
-        style: label.span(),
-        features: [
-          css.width('400'),
-          css('{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis}'),
-          feature.hoverTitle('%%')
-        ]
-      }),
-      button({
-        title: 'new feature',
-        action: studio.openNewProfileDialog({
-          path: '%$path%~features',
-          type: 'feature',
-          onClose: runActions(ctx => ctx.vars.PropertiesDialog.openFeatureSection())
-        }),
-        style: button.href(),
-        features: css.margin({top: '20', left: '5'})
-      })
-    ],
-    features: variable({name: 'PropertiesDialog', value: {'$': 'object'}, watchable: false})
-  })
-})
 
 jb.component('studio.open-properties', { /* studio.openProperties */
   type: 'action',
@@ -34757,17 +35010,13 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
       controls: [
         picklist({
           databind: '%$file%',
-          options: picklist.codedOptions({
-            options: sourceEditor.filesOfProject(),
-            code: '%%',
-            text: suffix('/')
-          }),
+          options: picklist.options(keys('%$content/files%')),
           style: styleByControl(
             itemlist({
               items: '%$picklistModel/options%',
               controls: label({
                 title: '%text%',
-                style: label.mdlRippleEffect(),
+                style: label.mdlButton(),
                 features: [css.width('%$width%'), css('{text-align: left}')]
               }),
               style: itemlist.horizontal('5'),
@@ -34779,27 +35028,24 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
           )
         }),
         editableText({
-          databind: pipe(
-            ctx => Promise.resolve(jb.studio.host.getFile(jb.studio.host.locationToPath(jb.tostring(ctx.exp('%$file%'))))),
-              studio.fileAfterChanges('%$file%', '%%')),
+          title: '',
+          databind: pipeline('%$content/files%', '%$file%'),
           style: editableText.studioCodemirrorTgp(),
-          features: [
-            ctx => ({ 
-              beforeInit: cmp => {
-                const fileName = () => st.host.locationToPath(jb.tostring(ctx.vars.file))
-                ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh();
-                ctx.vars.$dialog.gotoEditor = () => fetch(`/?op=gotoSource&path=${fileName()}:${cmp.editor.getCursorPos().line}`);
-              }
-            }),
-            watchRef('%$file%')
-          ]
-        })
+          features: watchRef('%$file%')
+        }),
+        text({text: pipeline('%$content/files%', property('%$file%'), '%%aa')})
       ],
-      features: variable({
-        name: 'file',
-        value: pipeline(sourceEditor.filesOfProject(), first()),
-        watchable: true
-      })
+      features: [
+        variable({
+          name: 'file',
+          value: pipeline(keys('%$content/files%'), first()),
+          watchable: true
+        }),
+        group.wait({
+          for: ctx => jb.studio.projectUtils.projectContent(ctx),
+          varName: 'content'
+        })
+      ]
     }),
     title: '%$studio/project% files',
     features: [
@@ -35087,10 +35333,11 @@ jb.component('source-editor.files-of-project', {
   impl: ctx => {
     if (jb.studio.inMemoryProject)
       return Object.keys(jb.studio.inMemoryProject.files)
-    const _jb = jb.studio.previewjb
-    const project =  ctx.exp('%$studio/project%')
-    const files = jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf(`/${project}/`) != -1 || x.indexOf(`/${project}.`) != -1))
-    return files.filter(f=>f.indexOf(`${project}.js`) != -1).flatMap(x=>x.replace(/js$/,'html')).concat(files)
+    return st.projectUtils.projectContent(ctx)
+    // const _jb = jb.studio.previewjb
+    // const project =  ctx.exp('%$studio/project%')
+    // const files = jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf(`/${project}/`) != -1 || x.indexOf(`/${project}.`) != -1))
+    // return files.filter(f=>f.indexOf(`${project}.js`) != -1).flatMap(x=>x.replace(/js$/,'html')).concat(files)
   }
 })
 
@@ -35168,7 +35415,7 @@ jb.component('studio.probe-results', { /* studio.probeResults */
   ],
   impl: (ctx, path) => jb.delay(300).then(_ => {
     if (ctx.exp('%$stduio/fastPreview%')) {
-      const inCtx = st.closestCtxByPath(path) || new jb.jbCtx()
+      const inCtx = st.closestCtxOfLastRun(path) || new jb.jbCtx()
       return [{in: inCtx, out: st.isOfType(path,'action') ? null :
           st.previewjb.val(inCtx.runItself())}]
     }
@@ -35796,7 +36043,7 @@ st.closestCtxInPreview = _path => {
     const elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
     const candidates = elems.map(elem=>({ ctx: _window.jb.ctxDictionary[elem.getAttribute('jb-ctx')], elem }))
         .filter(e=>e.ctx && path.indexOf(e.ctx.path) == 0)
-    return candidates.sort((e1,e2) => 1000* (e1.ctx.path.length - e2.ctx.path.length) + (e1.ctx.id - e2.ctx.id) )[0] || {ctx: null, elem: null}
+    return candidates.sort((e2,e1) => 1000* (e1.ctx.path.length - e2.ctx.path.length) + (e1.ctx.id - e2.ctx.id) )[0] || {ctx: null, elem: null}
 }
 
 // st.refreshPreviewOfPath = path => {
@@ -37822,7 +38069,7 @@ function getEntryUrl() {
 }
 st.chooseHostByUrl(getEntryUrl())
 
-function extractText(str,startMarker,endMarker,replaceWith) {
+function _extractText(str,startMarker,endMarker,replaceWith) {
     const pos1 = str.indexOf(startMarker), pos2 = str.indexOf(endMarker)
     if (pos1 == -1 || pos2 == -1) return ''
     if (replaceWith)
@@ -37845,9 +38092,9 @@ st.projectHosts = {
         fetchProject(jsFiddleid,project) {
             return getUrlContent(`http://jsfiddle.net/${jsFiddleid}`)
             .then(content=>{
-                const json = extractText(str,'values: {','fiddle: {')
-                const html = extractText(json,'html: "','js:   "').trim().slice(0,-2)
-                const js = extractText(json,'js:   "','css:  "').trim().slice(0,-2)
+                const json = _extractText(str,'values: {','fiddle: {')
+                const html = _extractText(json,'html: "','js:   "').trim().slice(0,-2)
+                const js = _extractText(json,'js:   "','css:  "').trim().slice(0,-2)
                 if (html)
                     return {project, files: { [`${project}.html`]: html, [`${project}.js`]: js } }
             })
@@ -37878,6 +38125,55 @@ st.projectHosts = {
     }
 }
 
+st.projectUtils = {
+    projectContent: ctx => {
+        const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/rootName%')
+        const baseDir = rootName == project ? './' : ''
+        const htmlPath = st.host.pathToJsFile(project,project+'.html',baseDir)
+        return st.host.getFile(htmlPath).then(html=> {
+            const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
+            return fileNames.reduce((acc,file)=> 
+                acc.then(res => st.host.getFile(file).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
+                    [`${project}.html`]: html
+            }) ).then(files => ({project, files, libs}))
+        })
+    }
+}
+
+jb.component('studio.parse-project-html', { /* studio.parseProjectHtml */
+    type: 'data',
+    impl: obj(
+          prop(
+              'fileNames',
+              pipeline(
+                extractText({
+                    startMarkers: ['<script', 'src=\"'],
+                    endMarker: '\"',
+                    repeating: 'true'
+                  }),
+                filter(and(notContains(['/loader/']), notContains(['/dist/']))),
+                extractSuffix('/')
+              ), 'array'
+            ),
+          prop(
+              'libs',
+              list(
+                pipeline(
+                    extractText({startMarkers: ['modules=\"'], endMarker: '\"', repeating: 'true'}),
+                    split(','),
+                    filter(and(notEquals('common'), notEquals('ui-common'))),
+                    '%%.js'
+                  ),
+                pipeline(
+                    extractText({startMarkers: ['/dist/'], endMarker: '\"', repeating: 'true'}),
+                    filter(notEquals('jb-react-all.js')),
+                    filter(notEquals('material.css'))
+                  )
+              ), 'array'
+            )
+        )
+  })
+  
 })();
 
 (function() {
@@ -38032,25 +38328,27 @@ jb.component('studio.probe', { /* studio.probe */
   params: [
     {id: 'path', as: 'string', dynamic: true}
   ],
-  impl: (ctx,path) => {
-        const _jb = st.previewjb
+  impl: (ctx,pathF) => {
+        const _jb = st.previewjb, path = pathF()
         let circuitCtx = ctx.exp('%$pickSelection/ctx%')
         if (circuitCtx)
             jb.studio.highlightCtx(circuitCtx)
         if (!circuitCtx) {
-            const circuitInPreview = st.closestCtxInPreview(path())
+            const circuitInPreview = st.closestCtxInPreview(path)
                 if (circuitInPreview.ctx) {
                     st.highlight([circuitInPreview.elem])
                     circuitCtx = circuitInPreview.ctx
             }
         }
         if (!circuitCtx)
-            circuitCtx = st.closestCtxByPath(path())
+            circuitCtx = st.closestCtxOfLastRun(path)
+        if (!circuitCtx)
+            circuitCtx = st.closestTestCtx(path)
         if (!circuitCtx) {
             const circuit = jb.tostring(ctx.exp('%$circuit%','string') || ctx.exp('%$studio/project%.%$studio/page%'))
             circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
         }
-        return new (_jb.studio.Probe || st.Probe)(circuitCtx).runCircuit(path())
+        return new (_jb.studio.Probe || st.Probe)(circuitCtx).runCircuit(path)
     }
 })
 
