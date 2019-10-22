@@ -6327,20 +6327,17 @@ jb.component('variable', { /* variable */
       id: 'globalId',
       as: 'string',
       description: 'If specified, the var will be defined as global with this id'
-    },
-    {id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string' }
+    }
   ],
   impl: (context, name, value, watchable, globalId,type) => ({
       extendCtxOnce: (ctx,cmp) => {
-        const rawVal = jb.val(value(ctx))
-        const val = value.profile === '' ? jb.tojstype(rawVal,type) : rawVal
         if (!watchable)
-          return ctx.setVars({[name]: val })
+          return ctx.setVars({[name]: jb.val(value(ctx)) })
 
         cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
         const fullName = globalId || (name + ':' + cmp.resourceId);
         jb.log('var',['new-watchable',ctx,fullName])
-        jb.resource(fullName, val);
+        jb.resource(fullName, value(ctx));
         const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
         return ctx.setVars(jb.obj(name, refToResource));
       }

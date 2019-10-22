@@ -18601,7 +18601,10 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
       beforeInit: cmp => {
         cmp.state.items = calcItems();
         cmp.pivots = ctx.vars.$model.pivots();
-        const x = cmp.pivots[0],y = cmp.pivots[1],radius = cmp.pivots[2],color = cmp.pivots[3];
+        const x = cmp.pivots[0] || emptyPivot(),
+              y = cmp.pivots[1] || emptyPivot(),
+              radius = cmp.pivots[2] || emptyPivot(),
+              color = cmp.pivots[3] || emptyPivot();
 
         const ctx2 = ctx.setVars({items: cmp.state.items, frame: ctx.vars.$model.frame});
         Object.assign(cmp, {
@@ -18638,6 +18641,7 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
           cmp.sortItems && cmp.sortItems();
           return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit);
         }
+        function emptyPivot() { return cmp.ctx.run(d3g.pivot({title: 'empty', value: list('0', '1')})) }
     },
     afterViewInit: cmp => {
       d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(cmp.xPivot.scale));
