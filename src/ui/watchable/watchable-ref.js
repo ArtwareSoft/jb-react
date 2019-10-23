@@ -338,7 +338,8 @@ class WatchableValueByRef {
       })
   }
   notifyOneObserver(e,obs,changed_path,notifiedPaths) {
-      const obsPath = this.removeLinksFromPath(jb.refHandler(obs.ref).pathOfRef(obs.ref))
+      let obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
+      obsPath = obsPath && this.removeLinksFromPath(obsPath)
       if (!obsPath)
         return jb.logError('observer ref path is empty',obs,e)
       const diff = comparePaths(changed_path, obsPath)
