@@ -336,6 +336,7 @@ jb.component('studio-helper.editable-text-input', { /* studioHelper.editableText
   })
 })
 
+
 jb.component('studio-helper.edit-file', {
   type: 'control',
   impl: editableText({
@@ -343,30 +344,14 @@ jb.component('studio-helper.edit-file', {
           style: editableText.codemirror({
             cm_settings: {
               extraKeys: {
-                'Enter': textEditor.withCursorPath(studio.getSuggestions('%$cursorPath%'))
+                'Enter': ctx => {
+                  const cmEditor = ctx.vars.editor().cmEditor
+                  cmEditor.showHint({ hint: jb.textEditor.cm_hint })
+                }
               }
             }
           }),
-          features: [
-            ctx => ({
-              afterViewInit: cmp => {
-                const cmEditor = cmp.editor.cmEditor
-                cmEditor.on('cursorActivity', () => {
-                  const options = {
-                    hint: () => {
-                      const cursor = cmEditor.getDoc().getCursor()
-                      return {
-                        from: cursor, to: cursor,
-                        list: jb.textEditor.getSuggestions(cmEditor.getValue(),cmp.editor.getCursorPos())
-                      }
-                    }
-                  };
-                  cmEditor.showHint(options);
-                })
-              }
-            }),
-            textEditor.init()
-          ]
+          features: textEditor.init()
         })
 })
 

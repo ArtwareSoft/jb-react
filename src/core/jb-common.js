@@ -708,9 +708,10 @@ jb.component('json.parse', { /* json.parse */
 })
 
 jb.component('split', { /* split */
+  description: 'breaks using separator',
   type: 'data',
   params: [
-    {id: 'separator', as: 'string', defaultValue: ','},
+    {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., "," or "<a>"' },
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'part', options: ',first,second,last,but first,but last'}
   ],

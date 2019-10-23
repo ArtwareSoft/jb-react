@@ -311,16 +311,6 @@ jb.component('studio.duplicate-array-item', { /* studio.duplicateArrayItem */
 		st.duplicateArrayItem(path,ctx)
 })
 
-// jb.component('studio.move-in-array',{
-// 	type: 'action',
-// 	params: [
-// 		{ id: 'path', as: 'string' },
-// 		{ id: 'moveUp', type: 'boolean', as: 'boolean'}
-// 	],
-// 	impl: (ctx,path,moveUp) =>
-// 		st.moveInArray(path,moveUp)
-// })
-
 jb.component('studio.new-array-item', { /* studio.newArrayItem */
   type: 'action',
   params: [
@@ -460,5 +450,12 @@ jb.component('studio.disabled-support', { /* studio.disabledSupport */
   )
 })
 
+jb.component('studio.params-of-path', {
+  type: 'tree.node-model',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => st.paramsOfPath(path)
+})
 
 })();

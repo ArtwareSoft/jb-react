@@ -335,7 +335,7 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
   )
 })
 
-jb.component('source-editor.suggestions', {
+jb.component('source-editor.suggestions', { /* sourceEditor.suggestions */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -345,15 +345,18 @@ jb.component('source-editor.suggestions', {
     Var('paramDef', studio.paramDef('%$actualPath%')),
     or(
       startsWith('obj-separator', '%$pathType%'),
-      inGroup( list('close-profile', 'open-profile', 'open-by-value', 'close-by-value'), '%$pathType%')
+      inGroup(
+          list('close-profile', 'open-profile', 'open-by-value', 'close-by-value'),
+          '%$pathType%'
+        )
     ),
-      pipeline(studio.paramsOfPath('%$actualPath%'),'%id%'),
-      If(
-        '%$paramDef/options%',
-        split({separator: ',', text: '%$paramDef/options%', part: 'all'}),
-        studio.PTsOfType('%$actualPath%')
-      )
+    pipeline(studio.paramsOfPath('%$actualPath%'), '%id%'),
+    If(
+      '%$paramDef/options%',
+      split({separator: ',', text: '%$paramDef/options%', part: 'all'}),
+      studio.PTsOfType(firstSucceeding('%$paramDef/type%', 'data'))
     )
+  )
 })
 
 jb.component('source-editor.add-prop', { /* sourceEditor.addProp */

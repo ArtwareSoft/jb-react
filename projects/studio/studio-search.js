@@ -33,7 +33,7 @@ jb.component('studio.search-list', { /* studio.searchList */
                     'mdl-color-text--indigo-A700'
                   )
               ),
-              action: studio.gotoPath('%id%'),
+              action: studio.openJbEditor('%id%'),
               style: button.href()
             }),
             width: '200'

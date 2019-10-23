@@ -475,8 +475,8 @@ jb.component('data-test.obj', { /* dataTest.obj */
 
 jb.component('data-test.pretty-print-macro', { /* dataTest.prettyPrintMacro */
   impl: dataTest({
-    calculate: prettyPrint({profile: () => jb.comps['data-test.obj'].impl, macro: true}),
-    expectedResult: contains(["prop('a', 1)", () => "res: '%%'"])
+    calculate: prettyPrint(ctx => jb.comps['data-test.obj'].impl),
+    expectedResult: contains(["prop('a', 1)", ctx => "res: '%%'"])
   })
 })
 
@@ -502,7 +502,7 @@ jb.component('data-test.pretty-print-macro-vars', { /* dataTest.prettyPrintMacro
   impl: dataTest({
     calculate: ctx => { try {
       const testToTest = 'data-test.vars-cases'
-      const compTxt = jb.prettyPrintComp(testToTest, jb.comps[testToTest], {macro: true, depth: 1, initialPath: testToTest})
+      const compTxt = jb.prettyPrintComp(testToTest, jb.comps[testToTest], {initialPath: testToTest})
       eval(compTxt)
       return ctx.run(dataTest_asArrayBug())
         .then(({success}) => success)

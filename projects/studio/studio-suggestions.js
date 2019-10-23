@@ -74,15 +74,22 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
   ],
   impl: itemlist({
     items: '%$suggestionData/options%',
-    controls: label({title: '%text%', features: [css.padding({left: '3', right: '2'})]}),
+    controls: label({
+      title: '%text%',
+      features: [
+        css.padding({left: '3', right: '2'}),
+        feature.hoverTitle(
+          pipeline(ctx => jb.studio.previewjb.comps[ctx.data.toPaste], '%description%')
+        )
+      ]
+    }),
     features: [
       id('suggestions-itemlist'),
       itemlist.noContainer(),
-      studio.itemlistRefreshSuggestionsOptions('%$path%','%$source%'),
+      studio.itemlistRefreshSuggestionsOptions('%$path%', '%$source%'),
       itemlist.selection({
         databind: '%$suggestionData/selected%',
-        onDoubleClick: studio.pasteSuggestion(),
-        //autoSelectFirst: true
+        onDoubleClick: studio.pasteSuggestion()
       }),
       itemlist.keyboardSelection(false),
       css.height({height: '500', overflow: 'auto', minMax: 'max'}),
@@ -124,7 +131,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
   })
 })
 
-jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */ 
+jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}

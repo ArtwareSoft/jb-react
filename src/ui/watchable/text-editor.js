@@ -197,7 +197,8 @@ jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor *
 
 jb.textEditor = {
     refreshEditor,
-    getSuggestions
+    getSuggestions,
+    cm_hint
 }
 
 function pathOfPosition(ref,_pos) {
@@ -253,14 +254,24 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     const componentHeaderIndex = pos.line - closestComp
     const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
     if (!compId) return []
-    const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId])
+    const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     const locationMap = enrichMapWithOffsets(text, map)
     const path = pathOfPosition({text, locationMap}, {line: pos.line - componentHeaderIndex, col: pos.col})
-    return new jbToUse.jbCtx().run(sourceEditor.suggestions([compId,path].join('~')))
+    return new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path))
 }
 
 function adjustWhiteSpaces(map,original,formatted) {
+    const spaceAndText = /(\s+)([^\s]+)/g
 
+}
+
+const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
+function cm_hint(cmEditor) {
+    const cursor = cmEditor.getDoc().getCursor()
+    return {
+        from: cursor, to: cursor,
+        list: jb.textEditor.getSuggestions(cmEditor.getValue(),posFromCM(cursor))
+    }
 }
 
 })()

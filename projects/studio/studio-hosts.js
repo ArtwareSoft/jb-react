@@ -117,7 +117,7 @@ st.projectHosts = {
             })
 
             function fixHtml(html) {
-                return extractText(html,'<!-- start-jb-scripts -->\n','<!-- end-jb-scripts -->','<!-- load-jb-scripts-here -->\n')
+                return _extractText(html,'<!-- start-jb-scripts -->\n','<!-- end-jb-scripts -->','<!-- load-jb-scripts-here -->\n')
             }
         }
     }
