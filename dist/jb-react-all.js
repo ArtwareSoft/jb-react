@@ -4853,6 +4853,7 @@ class WatchableValueByRef {
     }
   }
   removeLinksFromPath(path) {
+    if (!Array.isArray(path)) debugger
     if (!this.hasLinksInPath(path))
       return path
     return path.reduce(({val,path} ,p) => {

@@ -4853,6 +4853,7 @@ class WatchableValueByRef {
     }
   }
   removeLinksFromPath(path) {
+    if (!Array.isArray(path)) debugger
     if (!this.hasLinksInPath(path))
       return path
     return path.reduce(({val,path} ,p) => {
@@ -30325,8 +30326,9 @@ function setStrValue(value, ref, ctx) {
     // do not save in editing ',' at the end of line means editing
     if (typeof newVal === 'object' && value.match(/,\s*}/m))
         return
-    if (newVal && typeof newVal === 'object') {
-        const {innerPath, innerValue} = getSinglePathChange(newVal,jb.val(ref))
+    const currentVal = jb.val(ref)
+    if (newVal && typeof newVal === 'object' && typeof currentVal === 'object') {
+        const {innerPath, innerValue} = getSinglePathChange(newVal,currentVal)
         if (innerPath) {
             const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
             return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
@@ -30385,7 +30387,7 @@ jb.evalStr = function(str,frame) {
     try {
       return (frame || jb.frame).eval('('+str+')')
     } catch (e) {
-        jb.logException(e,'eval: '+str);
+        //jb.logException(e,'eval: '+str);
     }
 }
 
@@ -30567,7 +30569,12 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
 }
 
 function adjustWhiteSpaces(map,original,formatted) {
-    const spaceAndText = /(\s+)([^\s]+)/g
+    const textAndSpaceOriginal = /([^\s]+)(\s+)/g
+    const textAndSpaceFormated = /([^\s]+)(\s+)/g
+    while (textAndSpaceOriginal.exec(original) != null && textAndSpaceFormated.exec(formatted) != null) {
+
+    }
+
 
 }
 
