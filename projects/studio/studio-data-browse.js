@@ -72,9 +72,9 @@ hello world
 [1,2,3]
 { x: 7, y: 3}`))
       ),
-      // (ctx,{name},{watchableOrPassive}) => Object.assign(jb.studio.previewjb. component('data-resource.' + jb.tostring(name), {
-      //   [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
-      // }), {[jb.studio.previewjb.location]: ''}),
+      (ctx,{name},{watchableOrPassive}) => Object.assign(jb.studio.previewjb. component('data-resource.' + jb.tostring(name), {
+        [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
+      }), {[jb.studio.previewjb.location]: ''}),
       studio.openResource('data-resource.%$name%~%$watchableOrPassive%Data', '%$name%')
     ],
     modal: true,

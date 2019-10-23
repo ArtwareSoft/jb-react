@@ -360,7 +360,8 @@ jb.component('studio.new-comp', {
   impl: (ctx,compName, compContent) => {
     const _jb = jb.studio.previewjb
     _jb. component(compName, compContent)
-    const projectFile = jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf('/' + ctx.exp('%$studio/project%') + '/') != -1)[0]
+    const filePattern = '/' + ctx.exp('%$studio/project%')
+    const projectFile = jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
     Object.assign(_jb.comps[compName], { [_jb.location]: [projectFile,''] })
   }
 })

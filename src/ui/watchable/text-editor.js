@@ -265,10 +265,7 @@ function adjustWhiteSpaces(map,original,formatted) {
     const textAndSpaceOriginal = /([^\s]+)(\s+)/g
     const textAndSpaceFormated = /([^\s]+)(\s+)/g
     while (textAndSpaceOriginal.exec(original) != null && textAndSpaceFormated.exec(formatted) != null) {
-
     }
-
-
 }
 
 const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
