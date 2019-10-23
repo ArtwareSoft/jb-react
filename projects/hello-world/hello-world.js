@@ -3,7 +3,7 @@ jb.component('hello-world.main', { /* helloWorld.main */
   type: 'control',
   impl: group({
     controls: [
-      button('click me')
+      label('click me')
     ]
   })
 })
@@ -24,10 +24,4 @@ jb.component('data-resource.people', { /* dataResource.people */
     },
     {name: 'Bart Simpson', age: 12, male: false, children: []}
   ]
-})
-
-jb.component('data-resource.aa', { /* dataResource.aa */
-  watchableData: {
-    a: 31
-  }
 })

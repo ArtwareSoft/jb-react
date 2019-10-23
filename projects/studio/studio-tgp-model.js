@@ -349,7 +349,8 @@ Object.assign(st,{
 	closestCtxOfLastRun: pathToTrace => {
 		let path = pathToTrace.split('~')
 		for (;path.length > 0 && !st.previewjb.ctxByPath[path.join('~')];path.pop());
-		return st.previewjb.ctxByPath[path.join('~')]
+		if (path.length)
+			return st.previewjb.ctxByPath[path.join('~')]
 	},
 
 	closestTestCtx: pathToTrace => {
@@ -357,8 +358,12 @@ Object.assign(st,{
 		const statistics = new jb.jbCtx().run(studio.componentsStatistics())
 		const test = statistics.filter(c=>c.id == compId).flatMap(c=>c.referredBy)
 			.filter(refferer=>st.isOfType(refferer,'test') )[0]
+		const _ctx = new st.previewjb.jbCtx()
 		if (test)
-			return new st.previewjb.jbCtx().ctx({ profile: {$: test}, comp: test, path: ''})
+			return _ctx.ctx({ profile: {$: test}, comp: test, path: ''})
+		const testData = st.previewjb.comps[compId].testData
+		if (testData)
+			return _ctx.ctx({ data: _ctx.run(testData),	profile: {$: compId}, comp: compId, path: ''})
 	},
 })
 

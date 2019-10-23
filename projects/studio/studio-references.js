@@ -21,7 +21,7 @@ jb.component('studio.components-statistics', {
           id: e[0],
           file: e[1][_jb.location][0],
           lineInFile: +e[1][_jb.location][1],
-          linesOfCode: (_jb.prettyPrint(e[1].impl || '').match(/\n/g)||[]).length,
+          linesOfCode: (jb.prettyPrint(e[1].impl || '',{comps: _jb.comps}).match(/\n/g)||[]).length,
           refs: refs[e[0]].refs,
           referredBy: refs[e[0]].by,
           type: e[1].type || 'data',

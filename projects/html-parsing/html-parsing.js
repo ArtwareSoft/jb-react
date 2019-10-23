@@ -69,7 +69,8 @@ jb.component('html-parsing.device-parser', { /* htmlParsing.deviceParser */
           )
       ),
     first()
-  )
+  ),
+  testData: '%$samsung_galaxy_m30s-9818%'
 })
 
 

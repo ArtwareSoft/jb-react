@@ -22,7 +22,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
     {id: 'readOnly', options: ',true,nocursor'},
     {id: 'onCtrlEnter', type: 'action', dynamic: true},
     {id: 'hint', as: 'boolean', type: 'boolean'},
-    {id: 'maxLength', as: 'number', defaultValue: 50000},
+    {id: 'maxLength', as: 'number', defaultValue: 5000},
   ],
   impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
