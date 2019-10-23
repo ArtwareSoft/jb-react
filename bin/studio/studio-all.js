@@ -30424,10 +30424,7 @@ function adjustWhiteSpaces(map,original,formatted) {
     const textAndSpaceOriginal = /([^\s]+)(\s+)/g
     const textAndSpaceFormated = /([^\s]+)(\s+)/g
     while (textAndSpaceOriginal.exec(original) != null && textAndSpaceFormated.exec(formatted) != null) {
-
     }
-
-
 }
 
 const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
@@ -33912,7 +33909,8 @@ jb.component('studio.new-comp', {
   impl: (ctx,compName, compContent) => {
     const _jb = jb.studio.previewjb
     _jb. component(compName, compContent)
-    const projectFile = jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf('/' + ctx.exp('%$studio/project%') + '/') != -1)[0]
+    const filePattern = '/' + ctx.exp('%$studio/project%')
+    const projectFile = jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
     Object.assign(_jb.comps[compName], { [_jb.location]: [projectFile,''] })
   }
 })
@@ -37117,9 +37115,9 @@ hello world
 [1,2,3]
 { x: 7, y: 3}`))
       ),
-      // (ctx,{name},{watchableOrPassive}) => Object.assign(jb.studio.previewjb. component('data-resource.' + jb.tostring(name), {
-      //   [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
-      // }), {[jb.studio.previewjb.location]: ''}),
+      (ctx,{name},{watchableOrPassive}) => Object.assign(jb.studio.previewjb. component('data-resource.' + jb.tostring(name), {
+        [watchableOrPassive+'Data'] : (new jb.studio.previewjb.jbCtx).run({$:'object'})
+      }), {[jb.studio.previewjb.location]: ''}),
       studio.openResource('data-resource.%$name%~%$watchableOrPassive%Data', '%$name%')
     ],
     modal: true,
@@ -37182,6 +37180,7 @@ jb.component('studio.new-in-memory-project', {
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
     startTime = new Date().getTime();
   </script>
