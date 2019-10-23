@@ -1635,9 +1635,10 @@ jb.component('json.parse', { /* json.parse */
 })
 
 jb.component('split', { /* split */
+  description: 'breaks using separator',
   type: 'data',
   params: [
-    {id: 'separator', as: 'string', defaultValue: ','},
+    {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., "," or "<a>"' },
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'part', options: ',first,second,last,but first,but last'}
   ],
@@ -24703,11 +24704,9 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 jb.component('pretty-print', { /* prettyPrint */
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'colWidth', as: 'number', defaultValue: 140},
-    {id: 'macro', as: 'boolean', type: 'boolean'}
+    {id: 'colWidth', as: 'number', defaultValue: 140}
   ],
-  impl: (ctx,profile) =>
-    jb.prettyPrint(profile,ctx.params)
+  impl: (ctx,profile) => jb.prettyPrint(profile,ctx.params)
 })
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {
@@ -24728,8 +24727,8 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
   const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
   return { line: line + noOfLines, col: newCol }
 }
+jb.prettyPrint.spaces = Array.from(new Array(200)).map(_=>' ').join('')
 
-const spaces = Array.from(new Array(200)).map(_=>' ').join('')
 jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls,comps} = {}) {
   comps = comps || jb.comps
   if (!val || typeof val !== 'object')
@@ -24774,9 +24773,8 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
       return joinVals(ctx, innerVals, open, close, true, isArray)
     return Object.assign(result,{unflat})
 
-
     function newLine(offset = 0) {
-      return flat ? '' : '\n' + spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
+      return flat ? '' : '\n' + jb.prettyPrint.spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
     }
 
     function shouldNotFlat(result) {
@@ -24884,155 +24882,156 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
 
     return joinVals(ctx, vals, openArray, closeArray, flat, true)
   }
+}
 
-  function rawFormat() {
-    let remainedInLine = colWidth;
-    let result = '';
-    let depth = 0;
-    let lineNum = 0;
-    let positions = {};
-    printValue(profile,initialPath || '');
-    return { result, positions }
+//   function rawFormat() {
+//     let remainedInLine = colWidth;
+//     let result = '';
+//     let depth = 0;
+//     let lineNum = 0;
+//     let positions = {};
+//     printValue(profile,initialPath || '');
+//     return { result, positions }
 
-    function sortedPropertyNames(obj) {
-      let props = jb.entries(obj)
-        .filter(p=>showNulls || p[1] != null)
-        .map(x=>x[0]) // try to keep the order
-        .filter(p=>p.indexOf('$jb') != 0)
+//     function sortedPropertyNames(obj) {
+//       let props = jb.entries(obj)
+//         .filter(p=>showNulls || p[1] != null)
+//         .map(x=>x[0]) // try to keep the order
+//         .filter(p=>p.indexOf('$jb') != 0)
 
-      const comp_name = jb.compName(obj);
-      if (comp_name) { // tgp obj - sort by params def
-        const params = jb.compParams(comps[comp_name]).map(p=>p.id);
-        props.sort((p1,p2)=>params.indexOf(p1) - params.indexOf(p2));
-      }
-      if (props.indexOf('$') > 0) { // make the $ first
-        props.splice(props.indexOf('$'),1);
-        props.unshift('$');
-      }
-      return props;
-    }
+//       const comp_name = jb.compName(obj);
+//       if (comp_name) { // tgp obj - sort by params def
+//         const params = jb.compParams(comps[comp_name]).map(p=>p.id);
+//         props.sort((p1,p2)=>params.indexOf(p1) - params.indexOf(p2));
+//       }
+//       if (props.indexOf('$') > 0) { // make the $ first
+//         props.splice(props.indexOf('$'),1);
+//         props.unshift('$');
+//       }
+//       return props;
+//     }
 
-    function printValue(val,path) {
-      positions[path] = lineNum;
-      if (!val) return;
-      if (val.$jb_arrayShortcut)
-        val = val.items;
-      if (Array.isArray(val)) return printArray(val,path);
-      if (typeof val === 'object') return printObj(val,path);
-      if (typeof val === 'function')
-        result += val.toString();
-      else if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-        result += "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
-      else if (typeof val === 'string' && val.indexOf('\n') != -1) {
-        result += "`" + val.replace(/`/g,'\\`') + "`"
-      } else {
-        result += JSON.stringify(val);
-      }
-    }
+//     function printValue(val,path) {
+//       positions[path] = lineNum;
+//       if (!val) return;
+//       if (val.$jb_arrayShortcut)
+//         val = val.items;
+//       if (Array.isArray(val)) return printArray(val,path);
+//       if (typeof val === 'object') return printObj(val,path);
+//       if (typeof val === 'function')
+//         result += val.toString();
+//       else if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
+//         result += "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
+//       else if (typeof val === 'string' && val.indexOf('\n') != -1) {
+//         result += "`" + val.replace(/`/g,'\\`') + "`"
+//       } else {
+//         result += JSON.stringify(val);
+//       }
+//     }
 
-    function printObj(obj,path) {
-        var obj_str = flat_obj(obj);
-        if (!printInLine(obj_str)) { // object does not fit in parent line
-          depth++;
-          result += '{';
-          if (!printInLine(obj_str)) { // object does not fit in its own line
-            sortedPropertyNames(obj).forEach(function(prop,index,array) {
-                if (prop != '$')
-                  newLine();
-                if (showNulls || obj[prop] != null) {
-                  printProp(obj,prop,path);
-                  if (index < array.length -1)
-                    result += ', ';//newLine();
-                }
-            });
-          }
-          depth--;
-          newLine();
-          result += '}';
-        }
-    }
-    function quotePropName(p) {
-      if (p.match(/^[$a-zA-Z_][$a-zA-Z0-9_]*$/))
-        return p;
-      else
-        return `"${p}"`
-    }
-    function printProp(obj,prop,path) {
-      if (obj[prop] && obj[prop].$jb_arrayShortcut)
-        obj = obj(prop,obj[prop].items);
+//     function printObj(obj,path) {
+//         var obj_str = flat_obj(obj);
+//         if (!printInLine(obj_str)) { // object does not fit in parent line
+//           depth++;
+//           result += '{';
+//           if (!printInLine(obj_str)) { // object does not fit in its own line
+//             sortedPropertyNames(obj).forEach(function(prop,index,array) {
+//                 if (prop != '$')
+//                   newLine();
+//                 if (showNulls || obj[prop] != null) {
+//                   printProp(obj,prop,path);
+//                   if (index < array.length -1)
+//                     result += ', ';//newLine();
+//                 }
+//             });
+//           }
+//           depth--;
+//           newLine();
+//           result += '}';
+//         }
+//     }
+//     function quotePropName(p) {
+//       if (p.match(/^[$a-zA-Z_][$a-zA-Z0-9_]*$/))
+//         return p;
+//       else
+//         return `"${p}"`
+//     }
+//     function printProp(obj,prop,path) {
+//       if (obj[prop] && obj[prop].$jb_arrayShortcut)
+//         obj = obj(prop,obj[prop].items);
 
-      if (printInLine(flat_property(obj,prop))) return;
+//       if (printInLine(flat_property(obj,prop))) return;
 
-      if (prop == '$')
-        result += '$: '
-      else
-        result += quotePropName(prop) + (jb.compName(obj[prop]) ? ' :' : ': ');
-      //depth++;
-      printValue(obj[prop],path+'~'+prop);
-      //depth--;
-    }
-    function printArray(array,path) {
-      if (printInLine(flat_array(array))) return;
-      result += '[';
-      depth++;
-      newLine();
-      array.forEach(function(val,index) {
-        printValue(val,path+'~'+index);
-        if (index < array.length -1) {
-          result += ', ';
-          newLine();
-        }
-      })
-      depth--;newLine();
-      result += ']';
-    }
-    function printInLine(text) {
-      if (remainedInLine < text.length || text.match(/:\s?{/) || text.match(/, {\$/)) return false;
-      result += text;
-      remainedInLine -= text.length;
-      return true;
-    }
-    function newLine() {
-      result += '\n';
-      lineNum++;
-      for (var i = 0; i < depth; i++) result += '               '.substr(0,tabSize);
-      remainedInLine = colWidth - tabSize * depth;
-    }
+//       if (prop == '$')
+//         result += '$: '
+//       else
+//         result += quotePropName(prop) + (jb.compName(obj[prop]) ? ' :' : ': ');
+//       //depth++;
+//       printValue(obj[prop],path+'~'+prop);
+//       //depth--;
+//     }
+//     function printArray(array,path) {
+//       if (printInLine(flat_array(array))) return;
+//       result += '[';
+//       depth++;
+//       newLine();
+//       array.forEach(function(val,index) {
+//         printValue(val,path+'~'+index);
+//         if (index < array.length -1) {
+//           result += ', ';
+//           newLine();
+//         }
+//       })
+//       depth--;newLine();
+//       result += ']';
+//     }
+//     function printInLine(text) {
+//       if (remainedInLine < text.length || text.match(/:\s?{/) || text.match(/, {\$/)) return false;
+//       result += text;
+//       remainedInLine -= text.length;
+//       return true;
+//     }
+//     function newLine() {
+//       result += '\n';
+//       lineNum++;
+//       for (var i = 0; i < depth; i++) result += '               '.substr(0,tabSize);
+//       remainedInLine = colWidth - tabSize * depth;
+//     }
 
-    function flat_obj(obj) {
-      var props = sortedPropertyNames(obj)
-        .filter(p=>showNulls || obj[p] != null)
-        .filter(x=>x!='$')
-        .map(prop =>
-        quotePropName(prop) + ': ' + flat_val(obj[prop]));
-      if (obj && obj.$) {
-        props.unshift("$: '" + obj.$+ "'");
-        return '{' + props.join(', ') + ' }'
-      }
-      return '{ ' + props.join(', ') + ' }'
-    }
-    function flat_property(obj,prop) {
-      if (jb.compName(obj[prop]))
-        return quotePropName(prop) + ' :' + flat_val(obj[prop]);
-      else
-        return quotePropName(prop) + ': ' + flat_val(obj[prop]);
-    }
-    function flat_val(val) {
-      if (Array.isArray(val)) return flat_array(val);
-      if (typeof val === 'object') return flat_obj(val);
-      if (typeof val === 'function') return val.toString();
-      if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-        return "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
-      else
-        return JSON.stringify(val); // primitives
-    }
-    function flat_array(array) {
-      return '[' + array.map(item=>flat_val(item)).join(', ') + ']';
-    }
+//     function flat_obj(obj) {
+//       var props = sortedPropertyNames(obj)
+//         .filter(p=>showNulls || obj[p] != null)
+//         .filter(x=>x!='$')
+//         .map(prop =>
+//         quotePropName(prop) + ': ' + flat_val(obj[prop]));
+//       if (obj && obj.$) {
+//         props.unshift("$: '" + obj.$+ "'");
+//         return '{' + props.join(', ') + ' }'
+//       }
+//       return '{ ' + props.join(', ') + ' }'
+//     }
+//     function flat_property(obj,prop) {
+//       if (jb.compName(obj[prop]))
+//         return quotePropName(prop) + ' :' + flat_val(obj[prop]);
+//       else
+//         return quotePropName(prop) + ': ' + flat_val(obj[prop]);
+//     }
+//     function flat_val(val) {
+//       if (Array.isArray(val)) return flat_array(val);
+//       if (typeof val === 'object') return flat_obj(val);
+//       if (typeof val === 'function') return val.toString();
+//       if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
+//         return "'" + JSON.stringify(val).replace(/^"/,'').replace(/"$/,'') + "'";
+//       else
+//         return JSON.stringify(val); // primitives
+//     }
+//     function flat_array(array) {
+//       return '[' + array.map(item=>flat_val(item)).join(', ') + ']';
+//     }
 
-  }
+//   }
 
-};
+// };
 
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
@@ -30504,7 +30503,8 @@ jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor *
 
 jb.textEditor = {
     refreshEditor,
-    getSuggestions
+    getSuggestions,
+    cm_hint
 }
 
 function pathOfPosition(ref,_pos) {
@@ -30560,14 +30560,24 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     const componentHeaderIndex = pos.line - closestComp
     const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
     if (!compId) return []
-    const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId])
+    const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     const locationMap = enrichMapWithOffsets(text, map)
     const path = pathOfPosition({text, locationMap}, {line: pos.line - componentHeaderIndex, col: pos.col})
-    return new jbToUse.jbCtx().run(sourceEditor.suggestions([compId,path].join('~')))
+    return new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path))
 }
 
 function adjustWhiteSpaces(map,original,formatted) {
+    const spaceAndText = /(\s+)([^\s]+)/g
 
+}
+
+const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
+function cm_hint(cmEditor) {
+    const cursor = cmEditor.getDoc().getCursor()
+    return {
+        from: cursor, to: cursor,
+        list: jb.textEditor.getSuggestions(cmEditor.getValue(),posFromCM(cursor))
+    }
 }
 
 })();
@@ -32889,16 +32899,6 @@ jb.component('studio.duplicate-array-item', { /* studio.duplicateArrayItem */
 		st.duplicateArrayItem(path,ctx)
 })
 
-// jb.component('studio.move-in-array',{
-// 	type: 'action',
-// 	params: [
-// 		{ id: 'path', as: 'string' },
-// 		{ id: 'moveUp', type: 'boolean', as: 'boolean'}
-// 	],
-// 	impl: (ctx,path,moveUp) =>
-// 		st.moveInArray(path,moveUp)
-// })
-
 jb.component('studio.new-array-item', { /* studio.newArrayItem */
   type: 'action',
   params: [
@@ -33038,6 +33038,13 @@ jb.component('studio.disabled-support', { /* studio.disabledSupport */
   )
 })
 
+jb.component('studio.params-of-path', {
+  type: 'tree.node-model',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => st.paramsOfPath(path)
+})
 
 })();
 ;
@@ -34135,15 +34142,22 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
   ],
   impl: itemlist({
     items: '%$suggestionData/options%',
-    controls: label({title: '%text%', features: [css.padding({left: '3', right: '2'})]}),
+    controls: label({
+      title: '%text%',
+      features: [
+        css.padding({left: '3', right: '2'}),
+        feature.hoverTitle(
+          pipeline(ctx => jb.studio.previewjb.comps[ctx.data.toPaste], '%description%')
+        )
+      ]
+    }),
     features: [
       id('suggestions-itemlist'),
       itemlist.noContainer(),
-      studio.itemlistRefreshSuggestionsOptions('%$path%','%$source%'),
+      studio.itemlistRefreshSuggestionsOptions('%$path%', '%$source%'),
       itemlist.selection({
         databind: '%$suggestionData/selected%',
-        onDoubleClick: studio.pasteSuggestion(),
-        //autoSelectFirst: true
+        onDoubleClick: studio.pasteSuggestion()
       }),
       itemlist.keyboardSelection(false),
       css.height({height: '500', overflow: 'auto', minMax: 'max'}),
@@ -34185,7 +34199,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
   })
 })
 
-jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */ 
+jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -35238,7 +35252,7 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
   )
 })
 
-jb.component('source-editor.suggestions', {
+jb.component('source-editor.suggestions', { /* sourceEditor.suggestions */
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -35248,15 +35262,18 @@ jb.component('source-editor.suggestions', {
     Var('paramDef', studio.paramDef('%$actualPath%')),
     or(
       startsWith('obj-separator', '%$pathType%'),
-      inGroup( list('close-profile', 'open-profile', 'open-by-value', 'close-by-value'), '%$pathType%')
+      inGroup(
+          list('close-profile', 'open-profile', 'open-by-value', 'close-by-value'),
+          '%$pathType%'
+        )
     ),
-      pipeline(studio.paramsOfPath('%$actualPath%'),'%id%'),
-      If(
-        '%$paramDef/options%',
-        split({separator: ',', text: '%$paramDef/options%', part: 'all'}),
-        studio.PTsOfType('%$actualPath%')
-      )
+    pipeline(studio.paramsOfPath('%$actualPath%'), '%id%'),
+    If(
+      '%$paramDef/options%',
+      split({separator: ',', text: '%$paramDef/options%', part: 'all'}),
+      studio.PTsOfType(firstSucceeding('%$paramDef/type%', 'data'))
     )
+  )
 })
 
 jb.component('source-editor.add-prop', { /* sourceEditor.addProp */
@@ -36887,13 +36904,13 @@ function newFileContent(fileContent, comps) {
     const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
     if (nextjbComponent != -1 && nextjbComponent < compLastLine)
       return jb.logError(['can not find end of component', fn,id, linesFromComp])
-    const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id, comps: st.previewjb.comps}).split('\n')
+    const newComp = jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n')
     if (JSON.stringify(linesFromComp.slice(0,compLastLine+1)) === JSON.stringify(newComp))
         return
     lines.splice(lineOfComp,compLastLine+1,...newComp)
   })
   compsToAdd.forEach(([id,comp])=>{
-    const newComp = jb.prettyPrintComp(id,comp,{depth: 1, initialPath: id, comps: st.previewjb.comps}).split('\n')
+    const newComp = jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n')
     lines = lines.concat(newComp).concat('')
   })
   return lines.join('\n')
@@ -37663,7 +37680,7 @@ jb.component('studio.search-list', { /* studio.searchList */
                     'mdl-color-text--indigo-A700'
                   )
               ),
-              action: studio.gotoPath('%id%'),
+              action: studio.openJbEditor('%id%'),
               style: button.href()
             }),
             width: '200'
@@ -38116,7 +38133,7 @@ st.projectHosts = {
             })
 
             function fixHtml(html) {
-                return extractText(html,'<!-- start-jb-scripts -->\n','<!-- end-jb-scripts -->','<!-- load-jb-scripts-here -->\n')
+                return _extractText(html,'<!-- start-jb-scripts -->\n','<!-- end-jb-scripts -->','<!-- load-jb-scripts-here -->\n')
             }
         }
     }
