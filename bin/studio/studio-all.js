@@ -30767,7 +30767,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
     {id: 'readOnly', options: ',true,nocursor'},
     {id: 'onCtrlEnter', type: 'action', dynamic: true},
     {id: 'hint', as: 'boolean', type: 'boolean'},
-    {id: 'maxLength', as: 'number', defaultValue: 50000},
+    {id: 'maxLength', as: 'number', defaultValue: 5000},
   ],
   impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
@@ -33532,7 +33532,8 @@ Object.assign(st,{
 	closestCtxOfLastRun: pathToTrace => {
 		let path = pathToTrace.split('~')
 		for (;path.length > 0 && !st.previewjb.ctxByPath[path.join('~')];path.pop());
-		return st.previewjb.ctxByPath[path.join('~')]
+		if (path.length)
+			return st.previewjb.ctxByPath[path.join('~')]
 	},
 
 	closestTestCtx: pathToTrace => {
@@ -33540,8 +33541,12 @@ Object.assign(st,{
 		const statistics = new jb.jbCtx().run(studio.componentsStatistics())
 		const test = statistics.filter(c=>c.id == compId).flatMap(c=>c.referredBy)
 			.filter(refferer=>st.isOfType(refferer,'test') )[0]
+		const _ctx = new st.previewjb.jbCtx()
 		if (test)
-			return new st.previewjb.jbCtx().ctx({ profile: {$: test}, comp: test, path: ''})
+			return _ctx.ctx({ profile: {$: test}, comp: test, path: ''})
+		const testData = st.previewjb.comps[compId].testData
+		if (testData)
+			return _ctx.ctx({ data: _ctx.run(testData),	profile: {$: compId}, comp: compId, path: ''})
 	},
 })
 
@@ -36292,7 +36297,7 @@ jb.component('studio.components-statistics', {
           id: e[0],
           file: e[1][_jb.location][0],
           lineInFile: +e[1][_jb.location][1],
-          linesOfCode: (_jb.prettyPrint(e[1].impl || '').match(/\n/g)||[]).length,
+          linesOfCode: (jb.prettyPrint(e[1].impl || '',{comps: _jb.comps}).match(/\n/g)||[]).length,
           refs: refs[e[0]].refs,
           referredBy: refs[e[0]].by,
           type: e[1].type || 'data',
@@ -37846,7 +37851,8 @@ jb.component('jb-component', { /* jbComponent */
     {id: 'category', as: 'string'},
     {id: 'description', as: 'string'},
     {id: 'params', type: 'jb-param[]'},
-    {id: 'impl', type: '*', dynamicType: '%type%', mandatory: true}
+    {id: 'impl', type: '*', dynamicType: '%type%', mandatory: true},
+    {id: 'testData', description: 'used as input in inteliscript'}
   ],
   impl: ctx => ctx.params
 })
