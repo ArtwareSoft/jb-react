@@ -1101,7 +1101,7 @@ jb.component('entries', {
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx,obj) => jb.entries(obj) 
+  impl: (ctx,obj) => jb.entries(obj)
 })
 
 jb.component('obj-from-entries', {
@@ -1110,7 +1110,7 @@ jb.component('obj-from-entries', {
   params: [
     {id: 'entries', defaultValue: '%%', as: 'array'}
   ],
-  impl: (ctx,entries) => jb.objFromEntries(entries) 
+  impl: (ctx,entries) => jb.objFromEntries(entries)
 })
 
 jb.component('prefix', { /* prefix */
@@ -1999,6 +1999,13 @@ jb.component('action.switch-case', { /* action.switchCase */
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: ctx => ctx.params
+})
+
+jb.component('.', { /* . */
+  type: 'data',
+  impl: pipeline(
+    
+  )
 })
 ;
 
@@ -33922,6 +33929,41 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
   })
 })
 
+jb.component('studio.open-new-function', {
+  type: 'action',
+  impl: openDialog({
+    style: dialog.dialogOkCancel(),
+    content: group({
+      style: group.div(),
+      controls: [
+        editableText({
+          title: 'function/parser name',
+          databind: '%$name%',
+          style: editableText.mdlInput(),
+          features: feature.onEnter(dialog.closeContainingPopup())
+        })
+      ],
+      features: css.padding({top: '14', left: '11'})
+    }),
+    title: 'New Function/Parser',
+    onOK: [
+      studio.newComp('%$studio/project%.%$name%', {$asIs: {
+          type: 'data',
+          impl: {$: 'pipeline', items: []},
+          testData: 'sampleData'
+      }}),
+      writeValue('%$studio/profile_path%', '%$studio/project%.%$name%'),
+      studio.openJbEditor('%$studio/project%.%$name%'),
+      refreshControlById('functions')
+    ],
+    modal: true,
+    features: [
+      variable({name: 'name', watchable: true}),
+      dialogFeature.autoFocusOnFirstInput()
+    ]
+  })
+})
+
 jb.component('studio.insert-comp-option', { /* studio.insertCompOption */
   params: [
     {id: 'title', as: 'string'},
@@ -37695,7 +37737,7 @@ jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
     {id: 'project', as: 'string'}
   ],
   impl: (ctx,prj) =>
-      jb.studio.previewjb ? Object.getOwnPropertyNames(jb.studio.previewjb.comps)
+      jb.studio.previewjb ? Object.keys(jb.studio.previewjb.comps)
               .filter(id=>id.split('.')[0] == prj) : []
 })
 
@@ -37709,10 +37751,14 @@ jb.component('studio.pages', { /* studio.pages */
         title: 'new page',
         action: studio.openNewPage(),
         style: button.mdlIcon12('add'),
-        features: css('{margin: 5px}')
+        features: [css('{margin: 5px}'), feature.hoverTitle('new page')]
       }),
       itemlist({
-        items: pipeline(studio.cmpsOfProject('%$studio/project%'),filter(studio.isOfType('%%', 'control')),suffix('.')),
+        items: pipeline(
+          studio.cmpsOfProject('%$studio/project%'),
+          filter(studio.isOfType('%%', 'control')),
+          suffix('.')
+        ),
         controls: label({title: extractSuffix('.'), features: css.class('studio-page')}),
         style: itemlist.horizontal(),
         features: [
@@ -37722,17 +37768,33 @@ jb.component('studio.pages', { /* studio.pages */
             onSelection: writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
             autoSelectFirst: true
           }),
-          css.class('studio-pages-items'),
+          css.class('studio-pages-items')
         ]
       }),
       label('|'),
+      button({
+        title: 'new function',
+        action: studio.openNewFunction(),
+        style: button.mdlIcon12('add'),
+        features: [css('{margin: 5px}'), feature.hoverTitle('new function/parser')]
+      }),
       itemlist({
-        items: pipeline(studio.cmpsOfProject('%$studio/project%'),filter(studio.isOfType('%%', 'data')),suffix('.')),
-        controls: label({title: extractSuffix('.'), features: [
-          feature.onEvent('click',studio.openJbEditor('%$studio/project%.%%')),
-        ]}),
+        items: pipeline(
+          studio.cmpsOfProject('%$studio/project%'),
+          filter(studio.isOfType('%%', 'data')),
+          suffix('.')
+        ),
+        controls: label({
+          title: extractSuffix('.'),
+          features: [
+            feature.onEvent({
+              event: 'click',
+              action: studio.openJbEditor('%$studio/project%.%%')
+            })
+          ]
+        }),
         style: itemlist.horizontal(),
-        features: css.class('studio-pages-items'),
+        features: [ id('functions'), css.class('studio-pages-items')]
       })
     ],
     features: [
@@ -38266,6 +38328,7 @@ jb.component('studio.probe', { /* studio.probe */
   ],
   impl: (ctx,pathF) => {
         const _jb = st.previewjb, path = pathF()
+        if (!path) return
         let circuitCtx = ctx.exp('%$pickSelection/ctx%')
         if (circuitCtx)
             jb.studio.highlightCtx(circuitCtx)
