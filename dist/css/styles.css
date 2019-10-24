@@ -90,7 +90,7 @@
 .jb-itemlist>li { list-style: none; padding: 0; margin: 0;}
 .jb-itemlist>li.selected { background: #bbb; color: #fff }
 
-.jb-item:hover .jb-shown-on-item-hover { display: block !important}
+.jb-item:hover .jb-shown-on-item-hover { display: block }
 
 /* section: .jb-btn-default */
 .jb-btn-default { margin-top: 5px; margin-bottom: 5px; color: #fff; background-color: #337ab7; border-color: #2e6da4;
@@ -227,6 +227,7 @@ border: 1px solid rgb(213, 213, 213);}
   visibility: hidden;
   opacity: 0;
   transition: visibility 0s ease-in-out 3s, opacity 3s;
+//  -webkit-transition: opacity 3s ease-in-out;
 }
 
 .jb-fade-3s {
@@ -238,11 +239,3 @@ border: 1px solid rgb(213, 213, 213);}
 }
 
 .jb-disabled { opacity: 0.3 }
-
-.jb-resizer {
-  content:url("resizer.gif")
-}
-
-.jb-cover { position: 'absolute'; width: '100%'; height: '100%'; background: 'white'; opacity: '0'; top: 0; left: 0; }
-
-.jb-textarea-alternative-for-codemirror { width: 100%; padding-right: 0; resize: none; height: 200px }

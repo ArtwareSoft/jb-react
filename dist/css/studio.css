@@ -1,0 +1,21 @@
+@keyframes slide_from_top {
+    0%   {margin-top: -50px;}
+    10%  {margin-top: 0;}
+    90%  {margin-top: 0;}
+    100% {margin-top: -50px;}
+}
+
+.default-location.studio-outline {
+  top: 110px;
+  left: 380px;
+}
+
+.default-location.studio-properties {
+  top: 110px;
+  left: 760px;
+}
+
+.default-location.jb-editor {
+  top: 290px;
+  left: 410px;
+}
