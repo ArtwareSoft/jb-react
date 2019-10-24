@@ -174,7 +174,7 @@ jb.component('entries', {
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx,obj) => jb.entries(obj) 
+  impl: (ctx,obj) => jb.entries(obj)
 })
 
 jb.component('obj-from-entries', {
@@ -183,7 +183,7 @@ jb.component('obj-from-entries', {
   params: [
     {id: 'entries', defaultValue: '%%', as: 'array'}
   ],
-  impl: (ctx,entries) => jb.objFromEntries(entries) 
+  impl: (ctx,entries) => jb.objFromEntries(entries)
 })
 
 jb.component('prefix', { /* prefix */
@@ -1072,4 +1072,11 @@ jb.component('action.switch-case', { /* action.switchCase */
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: ctx => ctx.params
+})
+
+jb.component('.', { /* . */
+  type: 'data',
+  impl: pipeline(
+    
+  )
 })

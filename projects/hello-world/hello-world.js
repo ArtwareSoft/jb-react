@@ -3,7 +3,7 @@ jb.component('hello-world.main', { /* helloWorld.main */
   type: 'control',
   impl: group({
     controls: [
-      label('click me')
+      label('hello world')
     ]
   })
 })
@@ -25,3 +25,4 @@ jb.component('data-resource.people', { /* dataResource.people */
     {name: 'Bart Simpson', age: 12, male: false, children: []}
   ]
 })
+

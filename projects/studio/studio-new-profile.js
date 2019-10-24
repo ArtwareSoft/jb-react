@@ -307,6 +307,41 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
   })
 })
 
+jb.component('studio.open-new-function', {
+  type: 'action',
+  impl: openDialog({
+    style: dialog.dialogOkCancel(),
+    content: group({
+      style: group.div(),
+      controls: [
+        editableText({
+          title: 'function/parser name',
+          databind: '%$name%',
+          style: editableText.mdlInput(),
+          features: feature.onEnter(dialog.closeContainingPopup())
+        })
+      ],
+      features: css.padding({top: '14', left: '11'})
+    }),
+    title: 'New Function/Parser',
+    onOK: [
+      studio.newComp('%$studio/project%.%$name%', {$asIs: {
+          type: 'data',
+          impl: {$: 'pipeline', items: []},
+          testData: 'sampleData'
+      }}),
+      writeValue('%$studio/profile_path%', '%$studio/project%.%$name%'),
+      studio.openJbEditor('%$studio/project%.%$name%'),
+      refreshControlById('functions')
+    ],
+    modal: true,
+    features: [
+      variable({name: 'name', watchable: true}),
+      dialogFeature.autoFocusOnFirstInput()
+    ]
+  })
+})
+
 jb.component('studio.insert-comp-option', { /* studio.insertCompOption */
   params: [
     {id: 'title', as: 'string'},

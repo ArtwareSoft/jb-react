@@ -152,6 +152,7 @@ jb.component('studio.probe', { /* studio.probe */
   ],
   impl: (ctx,pathF) => {
         const _jb = st.previewjb, path = pathF()
+        if (!path) return
         let circuitCtx = ctx.exp('%$pickSelection/ctx%')
         if (circuitCtx)
             jb.studio.highlightCtx(circuitCtx)

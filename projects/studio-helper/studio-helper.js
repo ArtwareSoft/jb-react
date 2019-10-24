@@ -1,5 +1,6 @@
 jb.ns('studio-helper')
 jb.studio.initCompsRefHandler(jb)
+jb.studio.previewWindow = window
 // fake current path
 
 jb.component('data-test.parse-project-html', {
@@ -45,9 +46,7 @@ jb.component('studio-helper.editable-source', { /* studioHelper.editableSource *
 
 jb.component('studio-helper.pages', { /* studioHelper.pages */
   type: 'control',
-  impl: studio.pages(
-
-  )
+  impl: studio.pages()
 })
 
 jb.component('studio-helper.control-tree', { /* studioHelper.controlTree */

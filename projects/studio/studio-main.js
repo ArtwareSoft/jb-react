@@ -18,7 +18,7 @@ jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
     {id: 'project', as: 'string'}
   ],
   impl: (ctx,prj) =>
-      jb.studio.previewjb ? Object.getOwnPropertyNames(jb.studio.previewjb.comps)
+      jb.studio.previewjb ? Object.keys(jb.studio.previewjb.comps)
               .filter(id=>id.split('.')[0] == prj) : []
 })
 
@@ -32,10 +32,14 @@ jb.component('studio.pages', { /* studio.pages */
         title: 'new page',
         action: studio.openNewPage(),
         style: button.mdlIcon12('add'),
-        features: css('{margin: 5px}')
+        features: [css('{margin: 5px}'), feature.hoverTitle('new page')]
       }),
       itemlist({
-        items: pipeline(studio.cmpsOfProject('%$studio/project%'),filter(studio.isOfType('%%', 'control')),suffix('.')),
+        items: pipeline(
+          studio.cmpsOfProject('%$studio/project%'),
+          filter(studio.isOfType('%%', 'control')),
+          suffix('.')
+        ),
         controls: label({title: extractSuffix('.'), features: css.class('studio-page')}),
         style: itemlist.horizontal(),
         features: [
@@ -45,17 +49,33 @@ jb.component('studio.pages', { /* studio.pages */
             onSelection: writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
             autoSelectFirst: true
           }),
-          css.class('studio-pages-items'),
+          css.class('studio-pages-items')
         ]
       }),
       label('|'),
+      button({
+        title: 'new function',
+        action: studio.openNewFunction(),
+        style: button.mdlIcon12('add'),
+        features: [css('{margin: 5px}'), feature.hoverTitle('new function/parser')]
+      }),
       itemlist({
-        items: pipeline(studio.cmpsOfProject('%$studio/project%'),filter(studio.isOfType('%%', 'data')),suffix('.')),
-        controls: label({title: extractSuffix('.'), features: [
-          feature.onEvent('click',studio.openJbEditor('%$studio/project%.%%')),
-        ]}),
+        items: pipeline(
+          studio.cmpsOfProject('%$studio/project%'),
+          filter(studio.isOfType('%%', 'data')),
+          suffix('.')
+        ),
+        controls: label({
+          title: extractSuffix('.'),
+          features: [
+            feature.onEvent({
+              event: 'click',
+              action: studio.openJbEditor('%$studio/project%.%%')
+            })
+          ]
+        }),
         style: itemlist.horizontal(),
-        features: css.class('studio-pages-items'),
+        features: [ id('functions'), css.class('studio-pages-items')]
       })
     ],
     features: [
