@@ -90,7 +90,7 @@
 .jb-itemlist>li { list-style: none; padding: 0; margin: 0;}
 .jb-itemlist>li.selected { background: #bbb; color: #fff }
 
-.jb-item:hover .jb-shown-on-item-hover { display: block }
+.jb-item:hover .jb-shown-on-item-hover { display: block !important}
 
 /* section: .jb-btn-default */
 .jb-btn-default { margin-top: 5px; margin-bottom: 5px; color: #fff; background-color: #337ab7; border-color: #2e6da4;
@@ -422,7 +422,7 @@ border: 1px solid rgb(213, 213, 213);}
 .jb-itemlist>li { list-style: none; padding: 0; margin: 0;}
 .jb-itemlist>li.selected { background: #bbb; color: #fff }
 
-.jb-item:hover .jb-shown-on-item-hover { display: block }
+.jb-item:hover .jb-shown-on-item-hover { display: block !important}
 
 /* section: .jb-btn-default */
 .jb-btn-default { margin-top: 5px; margin-bottom: 5px; color: #fff; background-color: #337ab7; border-color: #2e6da4;

@@ -30176,6 +30176,8 @@ function getSinglePathChange(newVal, currentVal) {
 function setStrValue(value, ref, ctx) {
     const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
     const newVal = notPrimitive ? jb.evalStr(value,ref.handler.frame()) : value;
+    if (newVal === Symbol.for('parseError'))
+        return
     // do not save in editing ',' at the end of line means editing
     if (typeof newVal === 'object' && value.match(/,\s*}/m))
         return
@@ -30240,6 +30242,7 @@ jb.evalStr = function(str,frame) {
     try {
       return (frame || jb.frame).eval('('+str+')')
     } catch (e) {
+        return Symbol.for('parseError')
         //jb.logException(e,'eval: '+str);
     }
 }
@@ -30415,16 +30418,73 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     const componentHeaderIndex = pos.line - closestComp
     const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
     if (!compId) return []
+    const linesFromComp = lines.slice(componentHeaderIndex)
+    const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+    const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
+    if (nextjbComponent != -1 && nextjbComponent < compLastLine)
+      return jb.logError(['can not find end of component', compId, linesFromComp])
+    const linesOfComp = linesFromComp.slice(0,compLastLine+1)
+    const compSrc = linesOfComp.join('\n')
+    if (jb.evalStr(compSrc,jbToUse.frame) === Symbol.for('parseError'))
+        return []
     const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     const locationMap = enrichMapWithOffsets(text, map)
+    const srcForImpl = '{\n'+compSrc.slice((/^  /m.exec(compSrc) || {}).index)
+    adjustOffsets(locationMap,srcForImpl,text)
     const path = pathOfPosition({text, locationMap}, {line: pos.line - componentHeaderIndex, col: pos.col})
     return new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path))
 }
 
-function adjustWhiteSpaces(map,original,formatted) {
+function adjustOffsets(map,original,formatted) {
     const textAndSpaceOriginal = /([^\s]+)(\s+)/g
     const textAndSpaceFormated = /([^\s]+)(\s+)/g
-    while (textAndSpaceOriginal.exec(original) != null && textAndSpaceFormated.exec(formatted) != null) {
+    const offsetFixes = []
+    while ((orig = textAndSpaceOriginal.exec(original)) != null && (form = textAndSpaceFormated.exec(formatted)) != null) {
+        if (orig[1] != form[1])
+            return jb.logError('adjustOffsets','different strings',orig,form)
+        const delta = orig[2].length - form[2].length
+        if (delta)
+            offsetFixes.push({from: orig.index+orig[1].length,delta})
+    }
+    offsetFixes.reduce((acc,fix) => {
+        acc += fix.delta
+        return fix.accDelta = acc
+    },0)
+
+    Object.keys(map).forEach(k=>{
+        const fix = offsetFixes.find(f=> map[k].offset_from >= f.from)
+        if (fix) {
+            map[k].offset_from += fix.accDelta;
+            map[k].offset_to += fix.accDelta;
+        }
+    })
+
+    function tokenize(str1,str2) {
+        const str1Regex = /([^\s]+)(\s+)/g
+        const str2Regex = /([^\s]+)(\s+)/g
+        let token1 = null, token2 = null
+        const res = { 1: [], 2: []}
+        while ((token1 = str1Regex.exec(str1)) != null && (token2 = str2Regex.exec(str2)) != null) {
+            token1.str = token1[1]; token1.ws = token1[2]; token2.str = token2[1]; token2.ws = token2[2]; 
+            if (token1.str != token2.str && token1.str.indexOf(token2.str) == 0) {
+                const sharedStr = token2.str
+                if (sharedStr) {
+                    res.tokens1.push({str: sharedStr, ws: '', index: token1.index})
+                    res.tokens2.push(token2)
+                    const nextTokens = tokenize(str1.slice(token1.index + sharedStr.length), 
+                        str2.slice(token2.index + token2.str.length + token2.ws.length))
+                    
+                    res.tokens1 = res.tokens1.concat(nextTokens.tokens1.map(t=>t.index += token1.index + sharedStr.length))
+                    res.tokens2 = res.tokens2.concat(nextTokens.tokens2.map(t=>t.index += token2.index + sharedStr.length))
+                    return res
+                } else {
+                    return jb.logError('tokenize','different strings',token1,token2)
+                }
+            } else {
+              res.tokens1.push(token1)
+              res.tokens2.push(token2)
+            }
+        }
     }
 }
 
