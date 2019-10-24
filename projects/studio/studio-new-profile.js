@@ -280,7 +280,7 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
       controls: [
         editableText({
           title: 'page name',
-          databind: '%$name%',
+          databind: '%$dialogData/name%',
           style: editableText.mdlInput(),
           features: feature.onEnter(dialog.closeContainingPopup())
         })
@@ -289,19 +289,18 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
     }),
     title: 'New Page',
     onOK: [
-      studio.newComp('%$studio/project%.%$name%', {$asIs: {
+      studio.newComp('%$studio/project%.%$dialogData/name%', {$asIs: {
           type: 'control',
           impl :{$: 'group', contorls: []}
       }}),
-      writeValue('%$studio/profile_path%', '%$studio/project%.%$name%~impl'),
-      writeValue('%$studio/page%', '%$name%'),
+      writeValue('%$studio/profile_path%', '%$studio/project%.%$dialogData/name%~impl'),
+      writeValue('%$studio/page%', '%$dialogData/name%'),
       studio.openControlTree(),
       tree.regainFocus(),
       refreshControlById('pages')
     ],
     modal: true,
     features: [
-      variable({name: 'name', watchable: true}),
       dialogFeature.autoFocusOnFirstInput()
     ]
   })
@@ -316,7 +315,7 @@ jb.component('studio.open-new-function', {
       controls: [
         editableText({
           title: 'function/parser name',
-          databind: '%$name%',
+          databind: '%$dialogData/name%',
           style: editableText.mdlInput(),
           features: feature.onEnter(dialog.closeContainingPopup())
         })
@@ -325,18 +324,17 @@ jb.component('studio.open-new-function', {
     }),
     title: 'New Function/Parser',
     onOK: [
-      studio.newComp('%$studio/project%.%$name%', {$asIs: {
+      studio.newComp('%$studio/project%.%$dialogData/name%', {$asIs: {
           type: 'data',
           impl: {$: 'pipeline', items: []},
           testData: 'sampleData'
       }}),
-      writeValue('%$studio/profile_path%', '%$studio/project%.%$name%'),
-      studio.openJbEditor('%$studio/project%.%$name%'),
+      writeValue('%$studio/profile_path%', '%$studio/project%.%$dialogData/name%'),
+      studio.openJbEditor('%$studio/project%.%$dialogData/name%'),
       refreshControlById('functions')
     ],
     modal: true,
     features: [
-      variable({name: 'name', watchable: true}),
       dialogFeature.autoFocusOnFirstInput()
     ]
   })

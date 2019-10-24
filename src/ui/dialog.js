@@ -94,6 +94,7 @@ jb.component('open-dialog', { /* openDialog */
 
 		const ctx = context.setVars({
 			$dialog: dialog,
+			dialogData: {},
 			formContainer: { err: ''}
 		})
 		dialog.comp = jb.ui.ctrl(ctx,{

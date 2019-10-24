@@ -4,8 +4,6 @@ const st = jb.studio
 let probeCounter = 0
 st.Probe = class {
     constructor(ctx, noGaps) {
-        if (ctx.probe)
-            debugger
         this.noGaps = noGaps
 
         this.context = ctx.ctx({})
@@ -91,7 +89,7 @@ st.Probe = class {
         if (!breakingProp) return
 
         // check if parent ctx returns object with method name of breakprop as in dialog.onOK
-        const parentCtx = this.probe[_path][0].ctx, breakingPath = _path+'~'+breakingProp
+        const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
         const obj = this.probe[_path][0].out
         if (obj[breakingProp] && typeof obj[breakingProp] == 'function')
             return Promise.resolve(obj[breakingProp]())
@@ -109,36 +107,29 @@ st.Probe = class {
     }
 
     // called from jb_run
-    record(context,parentParam) {
+    record(ctx,out) {
         if (this.id < probeCounter) {
             this.stopped = true
             return
         }
         const now = new Date().getTime()
-        if (!this.outOfTime && now - this.startTime > this.maxTime && !context.vars.testID) {
-            jb.log('probe',['out of time',context.path, context,this,now])
+        if (!this.outOfTime && now - this.startTime > this.maxTime && !ctx.vars.testID) {
+            jb.log('probe',['out of time',ctx.path, ctx,this,now])
             this.outOfTime = true
             //throw 'out of time';
         }
-        const path = context.path
-        const input = context.ctx({probe: null})
-        const out = input.runItself(parentParam,{noprobe: true})
-
+        const path = ctx.path
         if (!this.probe[path]) {
             this.probe[path] = []
             this.probe[path].visits = 0
         }
         this.probe[path].visits++
-        let found = null
-        this.probe[path].forEach(x=>{
-            found = jb.compareArrays(x.in.data,input.data) ? x : found
-        })
+        const found = this.probe[path].find(x=>jb.compareArrays(x.in.data,ctx.data))
         if (found)
             found.counter++
-        else {
-            const rec = {in: input, out: out, counter: 0, ctx: context}
-            this.probe[path].push(rec)
-        }
+        else
+            this.probe[path].push({in: ctx, out, counter: 0})
+
         return out
     }
 }

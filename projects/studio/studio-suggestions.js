@@ -17,7 +17,7 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
         keyup.debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
           .map(e=> input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
-          .map(closestCtx)
+          .map(e => st.closestCtxOfLastRun(pathToTrace))
           .map(probeCtx=>
             new st.suggestions(input, ctx.exp('%$suggestionData/expressionOnly%')).extendWithOptions(probeCtx,pathToTrace))
           .catch(e=> jb.logException(e,'suggestions',cmp.ctx) || [])
@@ -32,17 +32,6 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
               })
               cmp.ctx.run(refreshControlById('suggestions-itemlist'))
           });
-
-        function closestCtx() {
-          if (pathToTrace.match(/pipeline~[1-9][0-9]*$/) && st.isExtraElem(pathToTrace)) {
-            const formerIndex = Number(pathToTrace.match(/pipeline~([1-9][0-9]*)$/)[1])-1
-            const formerPath = pathToTrace.replace(/[0-9]+$/,formerIndex)
-            const baseCtx = st.closestCtxOfLastRun(formerPath)
-            if (baseCtx)
-              return baseCtx.setData(baseCtx.runItself())
-          }
-          return st.closestCtxOfLastRun(pathToTrace)
-        }
       }
   })
 })

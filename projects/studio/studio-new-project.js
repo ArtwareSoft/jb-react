@@ -45,7 +45,7 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
       controls: [
         editableText({
           title: 'project name',
-          databind: '%$name%',
+          databind: '%$dialogData/name%',
           style: editableText.mdlInput(),
           features: [
               feature.onEnter(dialog.closeContainingPopup()),
@@ -57,16 +57,15 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
     }),
     title: 'New Project',
     onOK: runActions(
-      ctx => jb.studio.inMemoryProject = ctx.run(studio.newInMemoryProject('%$name%')),
-      writeValue('%$studio/project%','%$name%'),
+      ctx => jb.studio.inMemoryProject = ctx.run(studio.newInMemoryProject('%$dialogData/name%')),
+      writeValue('%$studio/project%','%$dialogData/name%'),
       writeValue('%$studio/page%','main'),
-      writeValue('%$studio/profile_path%','%$name%.main'),
+      writeValue('%$studio/profile_path%','%$dialogData/name%.main'),
       delay(100),
       ctx => jb.studio.host.canNotSave || ctx.run(studio.saveComponents())
     ),
     modal: true,
     features: [
-      variable({name: 'name', watchable: true}),
       dialogFeature.autoFocusOnFirstInput(),
       dialogFeature.nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
     ]

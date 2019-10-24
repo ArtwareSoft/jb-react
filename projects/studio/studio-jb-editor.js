@@ -204,6 +204,7 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
       css.height({height: '600', overflow: 'auto', minMax: 'max'}),
       watchRef('%$jbEditorCntrData/selected%'),
       watchRef('%$studio/pickSelectionCtxId%'),
+      watchRef('%$studio/refreshProbe%'),
       variable({name: 'maxItems', value: '5', watchable: true })
     ]
   })
@@ -229,7 +230,7 @@ jb.component('studio.open-jb-edit-property', { /* studio.openJbEditProperty */
             ],
             features: [
               feature.onEsc(dialog.closeContainingPopup(true)),
-              feature.onEnter(dialog.closeContainingPopup(true), tree.regainFocus())
+              feature.onEnter(dialog.closeContainingPopup(true), tree.regainFocus(), toggleBooleanValue('%$studio/refreshProbe%'))
             ]
           }),
           features: [
@@ -250,10 +251,8 @@ jb.component('studio.open-jb-edit-property', { /* studio.openJbEditProperty */
           features: [
             dialogFeature.autoFocusOnFirstInput(),
             dialogFeature.onClose(
-              runActions(
-                toggleBooleanValue('%$studio/jb_preview_result_counter%'),
+                toggleBooleanValue('%$studio/refreshProbe%'),
                 tree.regainFocus()
-              )
             )
           ]
         })
@@ -436,13 +435,13 @@ jb.component('studio.add-variable', { /* studio.addVariable */
         controls: [
           editableText({
             title: 'variable name',
-            databind: '%$name%',
+            databind: '%$dialogData/name%',
             style: editableText.mdlInput(),
             features: [
               feature.onEnter(
-                writeValue(studio.ref('%$path%~%$name%'), ''),
+                writeValue(studio.ref('%$path%~%$dialogData/name%'), ''),
                 dialog.closeContainingPopup(true),
-                writeValue('%$jbEditorCntrData/selected%', '%$path%~%$name%'),
+                writeValue('%$jbEditorCntrData/selected%', '%$path%~%$dialogData/name%'),
                 tree.redraw(true),
                 tree.regainFocus()
               )
@@ -454,7 +453,6 @@ jb.component('studio.add-variable', { /* studio.addVariable */
       title: 'New variable',
       modal: 'true',
       features: [
-        variable('name'),
         dialogFeature.nearLauncherPosition({}),
         dialogFeature.autoFocusOnFirstInput()
       ]

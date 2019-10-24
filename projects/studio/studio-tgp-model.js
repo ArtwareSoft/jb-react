@@ -348,6 +348,16 @@ Object.assign(st,{
 
 	closestCtxOfLastRun: pathToTrace => {
 		let path = pathToTrace.split('~')
+		if (pathToTrace.match(/items~0$/) && st.isExtraElem(pathToTrace)) {
+				const pipelineCtx = st.previewjb.ctxByPath[path.slice(0,-2).join('~')]
+				if (pipelineCtx)
+					return pipelineCtx.setVars(pipelineCtx.profile.$vars || {})
+			}
+		if (pathToTrace.match(/items~[1-9][0-9]*$/) && st.isExtraElem(pathToTrace)) {
+            const formerIndex = Number(pathToTrace.match(/items~([1-9][0-9]*)$/)[1])-1
+			path[path.length-1] = formerIndex
+        }
+
 		for (;path.length > 0 && !st.previewjb.ctxByPath[path.join('~')];path.pop());
 		if (path.length)
 			return st.previewjb.ctxByPath[path.join('~')]
