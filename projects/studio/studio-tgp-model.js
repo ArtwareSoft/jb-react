@@ -278,7 +278,7 @@ Object.assign(st,{
 		const paramName = path.split('~').pop();
 		if (paramName.indexOf('$') == 0) // sugar
 			return params[0];
-		return params.filter(p=>p.id==paramName)[0] || {};
+		return params.filter(p=>p.id==paramName)[0];
 	},
 	isArrayType: path => ((st.paramDef(path)||{}).type||'').indexOf('[]') != -1,
 	isOfType: (path,type) => {

@@ -1,7 +1,5 @@
 jb.component('studio-data-test.list-for-tests', { /* studioDataTest.listForTests */
-  impl: list(
-
-  )
+  impl: list()
 })
 
 jb.component('studio-data-test.categories-of-type', { /* studioDataTest.categoriesOfType */
@@ -13,7 +11,7 @@ jb.component('studio-data-test.categories-of-type', { /* studioDataTest.categori
 
 jb.component('studio-data-test.is-of-type-array', { /* studioDataTest.isOfTypeArray */
   impl: dataTest({
-    calculate: studio.isOfType('studio-data-test.list-for-tests~items~0', 'data'),
+    calculate: studio.isOfType('studio-data-test.list-for-tests~impl~items~0', 'data'),
     expectedResult: '%%'
   })
 })

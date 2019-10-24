@@ -50,19 +50,16 @@ jb.component('studio.properties', { /* studio.properties */
   })
 })
 
-jb.component('studio.prop-field', {
+jb.component('studio.prop-field', { /* studio.propField */
   type: 'control',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'expanded', as: 'boolean'}
+    {id: 'expanded', as: 'boolean', type: 'boolean'}
   ],
   impl: group({
     title: studio.propName('%$path%'),
     controls: control.firstSucceeding({
-      vars: [
-        Var('paramDef', studio.paramDef('%$path%')),
-        Var('val', studio.val('%$path%'))
-      ],
+      vars: [Var('paramDef', studio.paramDef('%$path%')), Var('val', studio.val('%$path%'))],
       controls: [
         controlWithCondition(
           and(
@@ -72,10 +69,7 @@ jb.component('studio.prop-field', {
           studio.propertyScript('%$path%')
         ),
         controlWithCondition(
-          and(
-            studio.isOfType('%$path%', 'action'),
-            isOfType('array', '%$val%')
-          ),
+          and(studio.isOfType('%$path%', 'action'), isOfType('array', '%$val%')),
           studio.propertyScript('%$path%')
         ),
         controlWithCondition('%$paramDef/options%', studio.propertyEnum('%$path%')),
@@ -86,10 +80,7 @@ jb.component('studio.prop-field', {
         controlWithCondition(
           and(
             '%$paramDef/as%==\"boolean\"',
-            or(
-                inGroup(list(true, false), '%$val%'),
-                isEmpty('%$val%')
-              ),
+            or(inGroup(list(true, false), '%$val%'), isEmpty('%$val%')),
             not('%$paramDef/dynamic%')
           ),
           studio.propertyBoolean('%$path%')
@@ -99,7 +90,7 @@ jb.component('studio.prop-field', {
           studio.propertyPrimitive('%$path%')
         ),
         controlWithCondition(
-          or('%$expanded%',isEmpty('%$val%')),
+          or('%$expanded%', isEmpty('%$val%'), endsWith('.style', '%$paramDef/type%')),
           studio.pickProfile('%$path%')
         ),
         studio.propertyScript('%$path%')
@@ -109,8 +100,14 @@ jb.component('studio.prop-field', {
     features: [
       studio.propertyToolbarFeature('%$path%'),
       field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%')),
-      If(not(isOfType('string,number,boolean,undefined', studio.val('%$path%'))),
-        studio.watchPath({path: '%$path%', includeChildren: 'structure', allowSelfRefresh: true}))
+      If(
+        not(isOfType('string,number,boolean,undefined', studio.val('%$path%'))),
+        studio.watchPath({
+          path: '%$path%',
+          includeChildren: 'structure',
+          allowSelfRefresh: true
+        })
+      )
     ]
   })
 })
