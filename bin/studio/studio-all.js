@@ -38025,7 +38025,7 @@ const userLocalHost = Object.assign({},devHost,{
     scriptForLoadLibraries: libs => {
         const libScripts = libs.map(lib=>`<script type="text/javascript" src="/dist/${lib}.js"></script>`)
             + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="/dist/${lib}.css"/>`)
-        return '<script type="text/javascript" src="/dist/jb-react-all.js"></script>\n' + libScripts
+        return '<link rel="stylesheet" type="text/css" href="/dist/css/styles.css"/>\n<script type="text/javascript" src="/dist/jb-react-all.js"></script>\n' + libScripts
     },
     pathToJsFile: (project,fn,baseDir) => baseDir == './' ? `../${fn}` : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
@@ -38041,7 +38041,7 @@ const cloudHost = {
     scriptForLoadLibraries: libs => {
         const libScripts = libs.map(lib=>`<script type="text/javascript" src="//unpkg.com/jb-react/dist/${lib}.js"></script>`)
             + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/${lib}.css"/>`)
-        return '<script type="text/javascript" src="//unpkg.com/jb-react/dist/jb-react-all.js"></script>\n' + libScripts
+        return '<link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/css/styles.css"/>\n<script type="text/javascript" src="//unpkg.com/jb-react/dist/jb-react-all.js"></script>\n' + libScripts
     },
     pathToJsFile: (project,fn) => fn,
     projectUrlInStudio: project => ``,
