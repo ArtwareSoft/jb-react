@@ -2,7 +2,12 @@ const frame = typeof self === 'object' ? self : typeof global === 'object' ? glo
 const jb = (function() {
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
+  if (ctx.probe && ctx.probe.outOfTime)
+    return
+  if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
   const res = do_jb_run(...arguments);
+  if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
+      ctx.probe.record(ctx,res)
   log('res', [ctx,res,parentParam,settings])
   return res;
 }
@@ -10,12 +15,6 @@ function jb_run(ctx,parentParam,settings) {
 function do_jb_run(ctx,parentParam,settings) {
   try {
     const profile = ctx.profile;
-    if (jb.ctxByPath && !ctx.probe)
-      jb.ctxByPath[ctx.path] = ctx
-    if (ctx.probe && (!settings || !settings.noprobe)) {
-      if (ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
-        return ctx.probe.record(ctx,parentParam)
-    }
     if (profile == null || (typeof profile == 'object' && profile.$disabled))
       return castToParam(null,parentParam);
 
@@ -6945,6 +6944,7 @@ jb.component('open-dialog', { /* openDialog */
 
 		const ctx = context.setVars({
 			$dialog: dialog,
+			dialogData: {},
 			formContainer: { err: ''}
 		})
 		dialog.comp = jb.ui.ctrl(ctx,{
@@ -33598,6 +33598,16 @@ Object.assign(st,{
 
 	closestCtxOfLastRun: pathToTrace => {
 		let path = pathToTrace.split('~')
+		if (pathToTrace.match(/items~0$/) && st.isExtraElem(pathToTrace)) {
+				const pipelineCtx = st.previewjb.ctxByPath[path.slice(0,-2).join('~')]
+				if (pipelineCtx)
+					return pipelineCtx.setVars(pipelineCtx.profile.$vars || {})
+			}
+		if (pathToTrace.match(/items~[1-9][0-9]*$/) && st.isExtraElem(pathToTrace)) {
+            const formerIndex = Number(pathToTrace.match(/items~([1-9][0-9]*)$/)[1])-1
+			path[path.length-1] = formerIndex
+        }
+
 		for (;path.length > 0 && !st.previewjb.ctxByPath[path.join('~')];path.pop());
 		if (path.length)
 			return st.previewjb.ctxByPath[path.join('~')]
@@ -33902,7 +33912,7 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
       controls: [
         editableText({
           title: 'page name',
-          databind: '%$name%',
+          databind: '%$dialogData/name%',
           style: editableText.mdlInput(),
           features: feature.onEnter(dialog.closeContainingPopup())
         })
@@ -33911,19 +33921,18 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
     }),
     title: 'New Page',
     onOK: [
-      studio.newComp('%$studio/project%.%$name%', {$asIs: {
+      studio.newComp('%$studio/project%.%$dialogData/name%', {$asIs: {
           type: 'control',
           impl :{$: 'group', contorls: []}
       }}),
-      writeValue('%$studio/profile_path%', '%$studio/project%.%$name%~impl'),
-      writeValue('%$studio/page%', '%$name%'),
+      writeValue('%$studio/profile_path%', '%$studio/project%.%$dialogData/name%~impl'),
+      writeValue('%$studio/page%', '%$dialogData/name%'),
       studio.openControlTree(),
       tree.regainFocus(),
       refreshControlById('pages')
     ],
     modal: true,
     features: [
-      variable({name: 'name', watchable: true}),
       dialogFeature.autoFocusOnFirstInput()
     ]
   })
@@ -33938,7 +33947,7 @@ jb.component('studio.open-new-function', {
       controls: [
         editableText({
           title: 'function/parser name',
-          databind: '%$name%',
+          databind: '%$dialogData/name%',
           style: editableText.mdlInput(),
           features: feature.onEnter(dialog.closeContainingPopup())
         })
@@ -33947,18 +33956,17 @@ jb.component('studio.open-new-function', {
     }),
     title: 'New Function/Parser',
     onOK: [
-      studio.newComp('%$studio/project%.%$name%', {$asIs: {
+      studio.newComp('%$studio/project%.%$dialogData/name%', {$asIs: {
           type: 'data',
           impl: {$: 'pipeline', items: []},
           testData: 'sampleData'
       }}),
-      writeValue('%$studio/profile_path%', '%$studio/project%.%$name%'),
-      studio.openJbEditor('%$studio/project%.%$name%'),
+      writeValue('%$studio/profile_path%', '%$studio/project%.%$dialogData/name%'),
+      studio.openJbEditor('%$studio/project%.%$dialogData/name%'),
       refreshControlById('functions')
     ],
     modal: true,
     features: [
-      variable({name: 'name', watchable: true}),
       dialogFeature.autoFocusOnFirstInput()
     ]
   })
@@ -34050,7 +34058,7 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
         keyup.debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
           .map(e=> input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
-          .map(closestCtx)
+          .map(e => st.closestCtxOfLastRun(pathToTrace))
           .map(probeCtx=>
             new st.suggestions(input, ctx.exp('%$suggestionData/expressionOnly%')).extendWithOptions(probeCtx,pathToTrace))
           .catch(e=> jb.logException(e,'suggestions',cmp.ctx) || [])
@@ -34065,17 +34073,6 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
               })
               cmp.ctx.run(refreshControlById('suggestions-itemlist'))
           });
-
-        function closestCtx() {
-          if (pathToTrace.match(/pipeline~[1-9][0-9]*$/) && st.isExtraElem(pathToTrace)) {
-            const formerIndex = Number(pathToTrace.match(/pipeline~([1-9][0-9]*)$/)[1])-1
-            const formerPath = pathToTrace.replace(/[0-9]+$/,formerIndex)
-            const baseCtx = st.closestCtxOfLastRun(formerPath)
-            if (baseCtx)
-              return baseCtx.setData(baseCtx.runItself())
-          }
-          return st.closestCtxOfLastRun(pathToTrace)
-        }
       }
   })
 })
@@ -35529,6 +35526,7 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
       css.height({height: '600', overflow: 'auto', minMax: 'max'}),
       watchRef('%$jbEditorCntrData/selected%'),
       watchRef('%$studio/pickSelectionCtxId%'),
+      watchRef('%$studio/refreshProbe%'),
       variable({name: 'maxItems', value: '5', watchable: true })
     ]
   })
@@ -35554,7 +35552,7 @@ jb.component('studio.open-jb-edit-property', { /* studio.openJbEditProperty */
             ],
             features: [
               feature.onEsc(dialog.closeContainingPopup(true)),
-              feature.onEnter(dialog.closeContainingPopup(true), tree.regainFocus())
+              feature.onEnter(dialog.closeContainingPopup(true), tree.regainFocus(), toggleBooleanValue('%$studio/refreshProbe%'))
             ]
           }),
           features: [
@@ -35575,10 +35573,8 @@ jb.component('studio.open-jb-edit-property', { /* studio.openJbEditProperty */
           features: [
             dialogFeature.autoFocusOnFirstInput(),
             dialogFeature.onClose(
-              runActions(
-                toggleBooleanValue('%$studio/jb_preview_result_counter%'),
+                toggleBooleanValue('%$studio/refreshProbe%'),
                 tree.regainFocus()
-              )
             )
           ]
         })
@@ -35761,13 +35757,13 @@ jb.component('studio.add-variable', { /* studio.addVariable */
         controls: [
           editableText({
             title: 'variable name',
-            databind: '%$name%',
+            databind: '%$dialogData/name%',
             style: editableText.mdlInput(),
             features: [
               feature.onEnter(
-                writeValue(studio.ref('%$path%~%$name%'), ''),
+                writeValue(studio.ref('%$path%~%$dialogData/name%'), ''),
                 dialog.closeContainingPopup(true),
-                writeValue('%$jbEditorCntrData/selected%', '%$path%~%$name%'),
+                writeValue('%$jbEditorCntrData/selected%', '%$path%~%$dialogData/name%'),
                 tree.redraw(true),
                 tree.regainFocus()
               )
@@ -35779,7 +35775,6 @@ jb.component('studio.add-variable', { /* studio.addVariable */
       title: 'New variable',
       modal: 'true',
       features: [
-        variable('name'),
         dialogFeature.nearLauncherPosition({}),
         dialogFeature.autoFocusOnFirstInput()
       ]
@@ -37320,7 +37315,7 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
       controls: [
         editableText({
           title: 'project name',
-          databind: '%$name%',
+          databind: '%$dialogData/name%',
           style: editableText.mdlInput(),
           features: [
               feature.onEnter(dialog.closeContainingPopup()),
@@ -37332,16 +37327,15 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
     }),
     title: 'New Project',
     onOK: runActions(
-      ctx => jb.studio.inMemoryProject = ctx.run(studio.newInMemoryProject('%$name%')),
-      writeValue('%$studio/project%','%$name%'),
+      ctx => jb.studio.inMemoryProject = ctx.run(studio.newInMemoryProject('%$dialogData/name%')),
+      writeValue('%$studio/project%','%$dialogData/name%'),
       writeValue('%$studio/page%','main'),
-      writeValue('%$studio/profile_path%','%$name%.main'),
+      writeValue('%$studio/profile_path%','%$dialogData/name%.main'),
       delay(100),
       ctx => jb.studio.host.canNotSave || ctx.run(studio.saveComponents())
     ),
     modal: true,
     features: [
-      variable({name: 'name', watchable: true}),
       dialogFeature.autoFocusOnFirstInput(),
       dialogFeature.nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
     ]
@@ -38180,8 +38174,6 @@ const st = jb.studio
 let probeCounter = 0
 st.Probe = class {
     constructor(ctx, noGaps) {
-        if (ctx.probe)
-            debugger
         this.noGaps = noGaps
 
         this.context = ctx.ctx({})
@@ -38267,7 +38259,7 @@ st.Probe = class {
         if (!breakingProp) return
 
         // check if parent ctx returns object with method name of breakprop as in dialog.onOK
-        const parentCtx = this.probe[_path][0].ctx, breakingPath = _path+'~'+breakingProp
+        const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
         const obj = this.probe[_path][0].out
         if (obj[breakingProp] && typeof obj[breakingProp] == 'function')
             return Promise.resolve(obj[breakingProp]())
@@ -38285,36 +38277,29 @@ st.Probe = class {
     }
 
     // called from jb_run
-    record(context,parentParam) {
+    record(ctx,out) {
         if (this.id < probeCounter) {
             this.stopped = true
             return
         }
         const now = new Date().getTime()
-        if (!this.outOfTime && now - this.startTime > this.maxTime && !context.vars.testID) {
-            jb.log('probe',['out of time',context.path, context,this,now])
+        if (!this.outOfTime && now - this.startTime > this.maxTime && !ctx.vars.testID) {
+            jb.log('probe',['out of time',ctx.path, ctx,this,now])
             this.outOfTime = true
             //throw 'out of time';
         }
-        const path = context.path
-        const input = context.ctx({probe: null})
-        const out = input.runItself(parentParam,{noprobe: true})
-
+        const path = ctx.path
         if (!this.probe[path]) {
             this.probe[path] = []
             this.probe[path].visits = 0
         }
         this.probe[path].visits++
-        let found = null
-        this.probe[path].forEach(x=>{
-            found = jb.compareArrays(x.in.data,input.data) ? x : found
-        })
+        const found = this.probe[path].find(x=>jb.compareArrays(x.in.data,ctx.data))
         if (found)
             found.counter++
-        else {
-            const rec = {in: input, out: out, counter: 0, ctx: context}
-            this.probe[path].push(rec)
-        }
+        else
+            this.probe[path].push({in: ctx, out, counter: 0})
+
         return out
     }
 }

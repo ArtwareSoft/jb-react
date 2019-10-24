@@ -2,7 +2,12 @@ const frame = typeof self === 'object' ? self : typeof global === 'object' ? glo
 const jb = (function() {
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
+  if (ctx.probe && ctx.probe.outOfTime)
+    return
+  if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
   const res = do_jb_run(...arguments);
+  if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
+      ctx.probe.record(ctx,res)
   log('res', [ctx,res,parentParam,settings])
   return res;
 }
@@ -10,12 +15,6 @@ function jb_run(ctx,parentParam,settings) {
 function do_jb_run(ctx,parentParam,settings) {
   try {
     const profile = ctx.profile;
-    if (jb.ctxByPath && !ctx.probe)
-      jb.ctxByPath[ctx.path] = ctx
-    if (ctx.probe && (!settings || !settings.noprobe)) {
-      if (ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
-        return ctx.probe.record(ctx,parentParam)
-    }
     if (profile == null || (typeof profile == 'object' && profile.$disabled))
       return castToParam(null,parentParam);
 
@@ -6945,6 +6944,7 @@ jb.component('open-dialog', { /* openDialog */
 
 		const ctx = context.setVars({
 			$dialog: dialog,
+			dialogData: {},
 			formContainer: { err: ''}
 		})
 		dialog.comp = jb.ui.ctrl(ctx,{
