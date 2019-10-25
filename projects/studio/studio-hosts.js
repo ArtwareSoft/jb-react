@@ -131,7 +131,7 @@ st.projectUtils = {
         return st.host.getFile(htmlPath).then(html=> {
             const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
             return fileNames.reduce((acc,file)=> 
-                acc.then(res => st.host.getFile(file).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
+                acc.then(res => st.host.getFile(st.host.pathToJsFile(project,file)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
                     [`${project}.html`]: html
             }) ).then(files => ({project, files, libs}))
         })

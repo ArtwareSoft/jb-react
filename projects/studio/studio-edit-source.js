@@ -123,18 +123,13 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
         }),
         editableText({
           title: '',
-          databind: pipeline('%$content/files%', '%$file%'),
+          databind: property('%$file%', '%$content/files%'),
           style: editableText.studioCodemirrorTgp(),
           features: watchRef('%$file%')
-        }),
-        text({text: pipeline('%$content/files%', property('%$file%'), '%%aa')})
+        })
       ],
       features: [
-        variable({
-          name: 'file',
-          value: pipeline(keys('%$content/files%'), first()),
-          watchable: true
-        }),
+        variable({name: 'file', value: '%$studio/project%.html', watchable: true}),
         group.wait({
           for: ctx => jb.studio.projectUtils.projectContent(ctx),
           varName: 'content'
