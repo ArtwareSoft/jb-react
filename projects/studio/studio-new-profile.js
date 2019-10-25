@@ -60,6 +60,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
   type: 'control',
   params: [
     {id: 'onSelect', type: 'action', dynamic: true},
+    {id: 'onBrowse', type: 'action', dynamic: true},
     {id: 'type', as: 'string'},
     {id: 'path', as: 'string'}
   ],
@@ -122,12 +123,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
               css.height({height: '300', overflow: 'auto', minMax: ''}),
               itemlist.selection({
                 databind: '%$itemlistCntrData/selected%',
-                onSelection: runActions(
-                  {
-                      '$if': contains({text: ['control', 'style'], allText: '%$type%'}),
-                      then: call(Var('selectionPreview', true), 'onSelect')
-                    }
-                ),
+                onSelection: call('onBrowse'),
                 onDoubleClick: runActions(
                   studio.cleanSelectionPreview(),
                   call('onSelect'),
@@ -261,10 +257,16 @@ jb.component('studio.pick-profile', { /* studio.pickProfile */
       style: dialog.popup(),
       content: studio.selectProfile({
         onSelect: studio.setComp('%$path%', '%%'),
+        onBrowse: action.if(endsWith('.style',studio.paramType('%$path%')), studio.setComp('%$path%', '%%')),
         type: studio.paramType('%$path%'),
         path: '%$path%'
       }),
-      features: [dialogFeature.autoFocusOnFirstInput(), css.padding({right: '20'})]
+      features: [
+        dialogFeature.autoFocusOnFirstInput(), 
+        css.padding({right: '20'}),
+        feature.init(writeValue('%$dialogData/originalVal%', studio.val('%$path%'))),
+        dialogFeature.onClose(action.if(not('%%'),studio.setComp('%$path%', '%$dialogData/originalVal%')))
+      ]
     }),
     style: button.selectProfileStyle(),
     features: studio.watchPath('%$path%')

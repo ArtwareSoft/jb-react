@@ -202,6 +202,8 @@ jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor *
 jb.textEditor = {
     refreshEditor,
     getSuggestions,
+    offsetToLineCol,
+    lineColToOffset,
     cm_hint
 }
 
@@ -269,61 +271,49 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
         return []
     const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     const locationMap = enrichMapWithOffsets(text, map)
-    const srcForImpl = '{\n'+compSrc.slice((/^  /m.exec(compSrc) || {}).index)
+    const srcForImpl = '{\n'+compSrc.slice((/^  /m.exec(compSrc) || {}).index,-1)
     adjustOffsets(locationMap,srcForImpl,text)
-    const path = pathOfPosition({text, locationMap}, {line: pos.line - componentHeaderIndex, col: pos.col})
-    return new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path))
+    const cursorOffset = lineColToOffset(srcForImpl, {line: pos.line - componentHeaderIndex, col: pos.col})
+    const path = pathOfPosition({text, locationMap}, cursorOffset)
+    return { path, suggestions: new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path)) }
 }
 
 function adjustOffsets(map,original,formatted) {
-    const textAndSpaceOriginal = /([^\s]+)(\s+)/g
-    const textAndSpaceFormated = /([^\s]+)(\s+)/g
     const offsetFixes = []
-    while ((orig = textAndSpaceOriginal.exec(original)) != null && (form = textAndSpaceFormated.exec(formatted)) != null) {
-        if (orig[1] != form[1])
-            return jb.logError('adjustOffsets','different strings',orig,form)
-        const delta = orig[2].length - form[2].length
-        if (delta)
-            offsetFixes.push({from: orig.index+orig[1].length,delta})
-    }
+    calcFixes(0,formatted,original)
     offsetFixes.reduce((acc,fix) => {
         acc += fix.delta
         return fix.accDelta = acc
     },0)
+    const rFixes = offsetFixes.reverse()
 
     Object.keys(map).forEach(k=>{
-        const fix = offsetFixes.find(f=> map[k].offset_from >= f.from)
-        if (fix) {
-            map[k].offset_from += fix.accDelta;
-            map[k].offset_to += fix.accDelta;
-        }
+        const fixFrom = rFixes.find(f=> map[k].offset_from >= f.from)
+        if (fixFrom)
+            map[k].offset_from += fixFrom.accDelta;
+        const fixTo = rFixes.find(f=> map[k].offset_to >= f.from)
+        if (fixTo)
+            map[k].offset_to += fixTo.accDelta;
     })
 
-    function tokenize(str1,str2) {
-        const str1Regex = /([^\s]+)(\s+)/g
-        const str2Regex = /([^\s]+)(\s+)/g
-        let token1 = null, token2 = null
-        const res = { 1: [], 2: []}
-        while ((token1 = str1Regex.exec(str1)) != null && (token2 = str2Regex.exec(str2)) != null) {
-            token1.str = token1[1]; token1.ws = token1[2]; token2.str = token2[1]; token2.ws = token2[2]; 
-            if (token1.str != token2.str && token1.str.indexOf(token2.str) == 0) {
-                const sharedStr = token2.str
-                if (sharedStr) {
-                    res.tokens1.push({str: sharedStr, ws: '', index: token1.index})
-                    res.tokens2.push(token2)
-                    const nextTokens = tokenize(str1.slice(token1.index + sharedStr.length), 
-                        str2.slice(token2.index + token2.str.length + token2.ws.length))
-                    
-                    res.tokens1 = res.tokens1.concat(nextTokens.tokens1.map(t=>t.index += token1.index + sharedStr.length))
-                    res.tokens2 = res.tokens2.concat(nextTokens.tokens2.map(t=>t.index += token2.index + sharedStr.length))
-                    return res
-                } else {
-                    return jb.logError('tokenize','different strings',token1,token2)
-                }
-            } else {
-              res.tokens1.push(token1)
-              res.tokens2.push(token2)
-            }
+    function calcFixes(start,txt1,txt2) {
+        if (!txt1 && !txt2) return
+        const nonSpace1 = txt1.match(/^[^\s]+/), nonSpace2 = txt2.match(/^[^\s]+/), ws1 = txt1.match(/^[^\s]+([\s]*)/), ws2 = txt2.match(/^[^\s]+([\s]*)/)
+        if (!txt1 || !txt2 || !nonSpace1 || !nonSpace2 || !ws1 || !ws2) 
+            return jb.logError('calcFixes','unexpected input',txt1,txt2)
+        const delta = ws2[1].length - ws1[1].length
+        if (nonSpace1[0] == nonSpace2[0]) {
+            if (delta)
+                offsetFixes.push({from: start + ws1[0].length, delta})
+            calcFixes(start + ws1[0].length, txt1.slice(ws1[0].length), txt2.slice(ws2[0].length))
+        } else if (nonSpace1[0].indexOf(nonSpace2[0]) == 0) {
+            const length = nonSpace2[0].length
+            offsetFixes.push({from: start + length, delta: ws2[1].length})
+            calcFixes(start + length, txt1.slice(length), txt2.slice(length))
+        } else if (nonSpace2[0].indexOf(nonSpace1[0]) == 0) {
+            const length = nonSpace1[0].length
+            offsetFixes.push({from: start + ws1[0].length, delta: 0-ws1[1].length})
+            calcFixes(start + ws1[0].length, txt1.slice(ws1[0].length), txt2.slice(length))
         }
     }
 }

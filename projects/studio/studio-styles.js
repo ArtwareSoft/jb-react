@@ -76,7 +76,7 @@ jb.component('button.select-profile-style', { /* button.selectProfileStyle */
             onmouseup:ev => cmp.clicked(ev),
             onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
         }),
-    css: '{ cursor: pointer;width1: 367px } :focus { border-color: #3F51B5; border-width: 2px}'
+    css: '{ cursor: pointer; } :focus { border-color: #3F51B5; border-width: 2px}'
   })
 })
 

@@ -343,7 +343,7 @@ jb.component('studio-helper.edit-file', {
           style: editableText.codemirror({
             cm_settings: {
               extraKeys: {
-                'Enter': ctx => {
+                'Ctrl-Enter': ctx => {
                   const cmEditor = ctx.vars.editor().cmEditor
                   cmEditor.showHint({ hint: jb.textEditor.cm_hint })
                 }

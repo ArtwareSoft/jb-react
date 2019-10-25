@@ -20,7 +20,8 @@ function setToVersion(versionIndex, ctx, after) {
     st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsBefore;
   }
 
-  st.scriptChange.next(opEvent);
+  st.compsRefHandler.resourceChange.next(opEvent)
+  //st.scriptChange.next(opEvent);
 }
 
 jb.component('studio.undo', { /* studio.undo */
