@@ -30872,10 +30872,10 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 								left: coords.left - offset.left
 							})
 						},
-						refreshFromDataRef: () => editor.setValue(jb.tostring(data_ref)),
+						refreshFromDataRef: () => editor.setValue(jb.tostring(jb.val(data_ref))),
 						setValue: text => editor.setValue(text),
 						storeToRef: () => jb.writeValue(data_ref,editor.getValue(), ctx),
-						isDirty: () => editor.getValue() !== jb.tostring(data_ref),
+						isDirty: () => editor.getValue() !== jb.tostring(jb.val(data_ref)),
 						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
 						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
 						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
@@ -30884,7 +30884,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 					}
 					cmp.refresh = () => Promise.resolve(cmp.ctx.vars.$model.databind()).then(ref=>{
 						cmp.state.databindRef = cmp.editor.data_ref = data_ref = ref;
-						editor.setValue(jb.tostring(data_ref))
+						editor.setValue(jb.tostring(jb.val(data_ref)))
 					})
 					const wrapper = editor.getWrapperElement();
 					if (height)
@@ -30894,11 +30894,11 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
 						editor.refresh(); // ????
 					});
-					editor.setValue(jb.tostring(data_ref));
+					editor.setValue(jb.tostring(jb.val(data_ref)));
 				//cmp.lastEdit = new Date().getTime();
 					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
 					!data_ref.oneWay && jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{srcCtx: ctx})
-						.map(e=>jb.tostring(data_ref))
+						.map(e=>jb.tostring(jb.val(data_ref)))
 						.filter(x => x != editor.getValue())
 						.subscribe(x=>{
 							const cur = editor.getCursor()
@@ -30916,7 +30916,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 					editorTextChange.takeUntil( cmp.destroyed )
 						.debounceTime(debounceTime)
 						.filter(x =>
-							x != jb.tostring(data_ref))
+							x != jb.tostring(jb.val(data_ref)))
 						.distinctUntilChanged()
 						.subscribe(x=>
 							jb.writeValue(data_ref,x, ctx));
@@ -34992,18 +34992,13 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
         }),
         editableText({
           title: '',
-          databind: pipeline('%$content/files%', '%$file%'),
+          databind: property('%$file%', '%$content/files%'),
           style: editableText.studioCodemirrorTgp(),
           features: watchRef('%$file%')
-        }),
-        text({text: pipeline('%$content/files%', property('%$file%'), '%%aa')})
+        })
       ],
       features: [
-        variable({
-          name: 'file',
-          value: pipeline(keys('%$content/files%'), first()),
-          watchable: true
-        }),
+        variable({name: 'file', value: '%$studio/project%.html', watchable: true}),
         group.wait({
           for: ctx => jb.studio.projectUtils.projectContent(ctx),
           varName: 'content'
@@ -38115,7 +38110,7 @@ st.projectUtils = {
         return st.host.getFile(htmlPath).then(html=> {
             const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
             return fileNames.reduce((acc,file)=> 
-                acc.then(res => st.host.getFile(file).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
+                acc.then(res => st.host.getFile(st.host.pathToJsFile(project,file)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
                     [`${project}.html`]: html
             }) ).then(files => ({project, files, libs}))
         })
