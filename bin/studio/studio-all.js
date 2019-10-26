@@ -4466,8 +4466,7 @@ ui.preserveCtx = ctx => {
 }
 
 ui.renderWidget = function(profile,top) {
-	let formerReactElem, formerParentElem;
-	let blockedParentWin = false
+	let blockedParentWin = false // catch security execption from the browser if parent is not accessible
 	try {
 		const x = typeof window != 'undefined' && window.parent.jb
 	} catch (e) {
@@ -4477,20 +4476,12 @@ ui.renderWidget = function(profile,top) {
 		if (!blockedParentWin && typeof window != 'undefined' && window.parent != window && window.parent.jb)
 			window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
 	} catch(e) {
-		jb.logException(e)
-		return
+		return jb.logException(e)
 	}
 
 	doRender()
 
 	function doRender() {
-		if (formerReactElem)
-			ui.render(ui.h('div',{}),formerParentElem,formerReactElem)
-
-		top.innerHTML = '';
-		const innerElem = formerParentElem = document.createElement('div');
-		top.appendChild(innerElem);
-
 		class R extends jb.ui.Component {
 			constructor(props) {
 				super();
@@ -4510,8 +4501,11 @@ ui.renderWidget = function(profile,top) {
 						.filter(({page})=>page != this.state.profile.$)
 						.subscribe(({page})=>
 							this.setState({profile: {$: page }}));
-					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + 200)).subscribe(_=>
-							this.setState(null));
+					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + 200))
+						.subscribe(e=>{
+							this.setState(null)
+							jb.ui.dialogs.reRenderAll()
+						});
 				}
 			}
 			render(pros,state) {
@@ -4527,9 +4521,7 @@ ui.renderWidget = function(profile,top) {
 				this.resolveDestroyed();
 			}
 		}
-		jb.delay(10).then(()=>{
-			formerReactElem = ui.render(ui.h(R),innerElem);
-		})
+		jb.delay(10).then(()=>ui.render(ui.h(R),top))
 	}
 }
 
@@ -4567,7 +4559,9 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
     	ui.refObservable(ref,cmp,{includeChildren, srcCtx: ctx})
 			.subscribe(e=>{
 				let ctxStack=[]; for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
-				const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x).filter(x=>x.indexOf('jb-editor') == -1)
+				const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x)
+					.filter(x=>x.indexOf('jb-editor') == -1)
+					.filter(x=>!x.match(/^studio-helper/))
 				const callerPathsUniqe = jb.unique(callerPaths)
 				if (callerPathsUniqe.length !== callerPaths.length)
 					return jb.logError('circular watchRef',callerPaths)
@@ -4658,9 +4652,9 @@ ui.toggleClassInVdom = function(vdom,clz,add) {
   vdom.attributes = vdom.attributes || {};
   const classes = (vdom.attributes.class || '').split(' ').map(x=>x.trim()).filter(x=>x);
   if (add && classes.indexOf(clz) == -1)
-    vdom.attributes.class = classes.concat([clz]).join(' ');
+    vdom.attributes.class = [...classes,clz].join(' ');
   if (!add)
-    vdom.attributes.class = classes.filter(x=>x==clz).join(' ');
+    vdom.attributes.class = classes.filter(x=>x != clz).join(' ');
   return vdom;
 }
 
@@ -6848,74 +6842,6 @@ jb.component('css.border', { /* css.border */
 
 })();
 
-jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
-  type: 'dialog-feature',
-  params: [
-    {id: 'id', as: 'string'}
-  ],
-  impl: function(context, id) {
-		const dialog = context.vars.$dialog;
-		return {
-		       css: '>.dialog-title { cursor: pointer }',
-		       afterViewInit: function(cmp) {
-		       	  const titleElem = cmp.base.querySelector('.dialog-title');
-		       	  cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
-		       	  	.takeUntil( cmp.destroyed );
-
-				  if (id && sessionStorage.getItem(id)) {
-						const pos = JSON.parse(sessionStorage.getItem(id));
-					    dialog.el.style.top  = pos.top  + 'px';
-					    dialog.el.style.left = pos.left + 'px';
-				  }
-
-				  let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
-				  let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
-
-				  if (jb.studio.previewWindow) {
-				  	mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
-				  		.takeUntil( cmp.destroyed );
-				  	mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
-				  		.takeUntil( cmp.destroyed );
-				  }
-
-				  const mousedrag = cmp.mousedownEm
-				  		.do(e =>
-				  			e.preventDefault())
-				  		.map(e =>  ({
-				          left: e.clientX - dialog.el.getBoundingClientRect().left,
-				          top:  e.clientY - dialog.el.getBoundingClientRect().top
-				        }))
-				      	.flatMap(imageOffset =>
-			      			 mouseMoveEm.takeUntil(mouseUpEm)
-			      			 .map(pos => ({
-						        top:  Math.max(0,pos.clientY - imageOffset.top),
-						        left: Math.max(0,pos.clientX - imageOffset.left)
-						     }))
-				      	);
-
-				  mousedrag.distinctUntilChanged().subscribe(pos => {
-			        dialog.el.style.top  = pos.top  + 'px';
-			        dialog.el.style.left = pos.left + 'px';
-			        if (id) sessionStorage.setItem(id, JSON.stringify(pos))
-			      })
-			  }
-	       }
-	}
-})
-
-jb.component('dialog.default', { /* dialog.default */
-  type: 'dialog.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
-			h('div',{class: 'dialog-title'},state.title),
-			h('button',{class: 'dialog-close', onclick:
-				_=> cmp.dialogClose() },'×'),
-			h(state.contentComp),
-		]),
-    features: dialogFeature.dragTitle()
-  })
-})
-
 jb.component('open-dialog', { /* openDialog */
   type: 'action',
   params: [
@@ -7010,6 +6936,74 @@ jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
 		})
 	}
 })
+
+jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
+	type: 'dialog-feature',
+	params: [
+	  {id: 'id', as: 'string'}
+	],
+	impl: function(context, id) {
+		  const dialog = context.vars.$dialog;
+		  return {
+				 css: '>.dialog-title { cursor: pointer }',
+				 afterViewInit: function(cmp) {
+					   const titleElem = cmp.base.querySelector('.dialog-title');
+					   cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
+						   .takeUntil( cmp.destroyed );
+  
+					if (id && sessionStorage.getItem(id)) {
+						  const pos = JSON.parse(sessionStorage.getItem(id));
+						  dialog.el.style.top  = pos.top  + 'px';
+						  dialog.el.style.left = pos.left + 'px';
+					}
+  
+					let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
+					let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
+  
+					if (jb.studio.previewWindow) {
+						mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
+							.takeUntil( cmp.destroyed );
+						mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
+							.takeUntil( cmp.destroyed );
+					}
+  
+					const mousedrag = cmp.mousedownEm
+							.do(e =>
+								e.preventDefault())
+							.map(e =>  ({
+							left: e.clientX - dialog.el.getBoundingClientRect().left,
+							top:  e.clientY - dialog.el.getBoundingClientRect().top
+						  }))
+							.flatMap(imageOffset =>
+								 mouseMoveEm.takeUntil(mouseUpEm)
+								 .map(pos => ({
+								  top:  Math.max(0,pos.clientY - imageOffset.top),
+								  left: Math.max(0,pos.clientX - imageOffset.left)
+							   }))
+							);
+  
+					mousedrag.distinctUntilChanged().subscribe(pos => {
+					  dialog.el.style.top  = pos.top  + 'px';
+					  dialog.el.style.left = pos.left + 'px';
+					  if (id) sessionStorage.setItem(id, JSON.stringify(pos))
+					})
+				}
+			 }
+	  }
+  })
+  
+  jb.component('dialog.default', { /* dialog.default */
+	type: 'dialog.style',
+	impl: customStyle({
+	  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
+			  h('div',{class: 'dialog-title'},state.title),
+			  h('button',{class: 'dialog-close', onclick:
+				  _=> cmp.dialogClose() },'×'),
+			  h(state.contentComp),
+		  ]),
+	  features: dialogFeature.dragTitle()
+	})
+  })
 
 jb.component('dialog-feature.near-launcher-position', { /* dialogFeature.nearLauncherPosition */
   type: 'dialog-feature',
@@ -7268,7 +7262,7 @@ jb.component('dialog.popup', { /* dialog.popup */
 
 jb.ui.dialogs = {
  	dialogs: [],
-	addDialog: function(dialog,context) {
+	addDialog(dialog,context) {
 		const self = this;
 		dialog.context = context;
 		this.dialogs.forEach(d=>
@@ -7302,27 +7296,33 @@ jb.ui.dialogs = {
 
 		this.render(dialog);
 	},
-	closeAll: function() {
-		this.dialogs.forEach(d=>
-			d.close());
+	closeAll() {
+		this.dialogs.forEach(d=>d.close());
 	},
-  getOrCreateDialogsElem() {
-    if (!document.querySelector('.jb-dialogs'))
-      jb.ui.addHTML(document.body,'<div class="jb-dialogs"/>');
-    return document.querySelector('.jb-dialogs');
-  },
-  render(dialog) {
-    jb.ui.addHTML(this.getOrCreateDialogsElem(),`<div id="${dialog.instanceId}"/>`);
-    const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
-    jb.ui.render(jb.ui.h(dialog.comp),elem);
-  },
-  remove(dialog) {
-    const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
-    if (!elem) return; // already closed due to asynch request handling and multiple requests to close
-    jb.ui.render('', elem, elem.firstElementChild);// react - remove
-    // jb.ui.unmountComponent(elem.firstElementChild._component);
-    this.getOrCreateDialogsElem().removeChild(elem);
-  }
+	getOrCreateDialogsElem() {
+		if (!document.querySelector('.jb-dialogs'))
+		jb.ui.addHTML(document.body,'<div class="jb-dialogs"/>');
+		return document.querySelector('.jb-dialogs');
+	},
+    render(dialog) {
+		jb.ui.addHTML(this.getOrCreateDialogsElem(),`<div id="${dialog.instanceId}"/>`);
+		const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
+		jb.ui.render(jb.ui.h(dialog.comp),elem);
+	},
+	remove(dialog) {
+		const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
+		if (!elem) return; // already closed due to asynch request handling and multiple requests to close
+		jb.ui.render('', elem, elem.firstElementChild);// react - remove
+		// jb.ui.unmountComponent(elem.firstElementChild._component);
+		this.getOrCreateDialogsElem().removeChild(elem);
+	},
+	reRenderAll() {
+		return this.dialogs.reduce((p,dialog) => p.then(()=>
+			Promise.resolve(dialog.close()).then(()=> {
+				const openDialogAction = dialog.comp.ctx.path.split('~').reduce((obj,p)=>obj[p],jb.comps)
+				dialog.comp.ctx.ctx({profile: openDialogAction, path: ''}).runItself()
+			})), Promise.resolve())
+	}
 }
 ;
 
@@ -7485,7 +7485,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)), ctx)
         }
         function selectedOfDatabind() {
-          return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(selectedRef))))
+          return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setVars({items: cmp.items}).setData(jb.val(selectedRef))))
         }
         jb.delay(1).then(_=>{
            if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
@@ -9852,7 +9852,6 @@ jb.component('table.mdl', { /* table.mdl */
 })
 ;
 
-
 jb.component('picklist.native', { /* picklist.native */
   type: 'picklist.style',
   impl: customStyle({
@@ -10003,7 +10002,33 @@ jb.component('picklist.selection-list', { /* picklist.selectionList */
       }),
       style: itemlist.horizontal('5'),
       features: itemlist.selection({
-        onSelection: writeValue('%$picklistModel/databind%', '%code%')
+        databind: '%$picklistModel/databind%',
+        selectedToDatabind: '%code%',
+        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0]
+      })
+    }),
+    'picklistModel'
+  )
+})
+
+jb.component('picklist.horizontal-buttons', {
+  type: 'picklist.style',
+  params: [
+    {id: 'width', as: 'number', defaultValue: '200'}
+  ],
+  impl: styleByControl(
+    itemlist({
+      items: '%$picklistModel/options%',
+      controls: label({
+        title: '%text%',
+        style: label.mdlButton(),
+        features: [css.width('%$width%'), css('{text-align: left}')]
+      }),
+      style: itemlist.horizontal('5'),
+      features: itemlist.selection({
+        databind: '%$picklistModel/databind%',
+        selectedToDatabind: '%code%',
+        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0]
       })
     }),
     'picklistModel'
@@ -30828,10 +30853,10 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
   ],
   impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
-			template: (cmp,state,h) => h('div',{},h('textarea', {class: cmp.textAreaAlternative ? 'jb-textarea-alternative-for-codemirror' : 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
+			template: (cmp,state,h) => h('div',{},h('textarea', {class: cmp.textAreaAlternative ? 'jb-textarea-alternative-for-codemirror' : 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind(cmp.ctx)) })),
 			css: '{width: 100%}',
 			beforeInit: cmp => {
-				cmp.state.databindRef = cmp.ctx.vars.$model.databind()
+				cmp.state.databindRef = cmp.ctx.vars.$model.databind(cmp.ctx)
 				if (jb.tostring(cmp.state.databindRef).length > ctx.params.maxLength)
 					cmp.textAreaAlternative = true
 			},
@@ -30882,7 +30907,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						focus: () => editor.focus(),
 						cmEditor: editor
 					}
-					cmp.refresh = () => Promise.resolve(cmp.ctx.vars.$model.databind()).then(ref=>{
+					cmp.refresh = () => Promise.resolve(cmp.ctx.vars.$model.databind(cmp.ctx)).then(ref=>{
 						cmp.state.databindRef = cmp.editor.data_ref = data_ref = ref;
 						editor.setValue(jb.tostring(jb.val(data_ref)))
 					})
@@ -34974,21 +34999,7 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
         picklist({
           databind: '%$file%',
           options: picklist.options(keys('%$content/files%')),
-          style: styleByControl(
-            itemlist({
-              items: '%$picklistModel/options%',
-              controls: label({
-                title: '%text%',
-                style: label.mdlButton(),
-                features: [css.width('%$width%'), css('{text-align: left}')]
-              }),
-              style: itemlist.horizontal('5'),
-              features: itemlist.selection({
-                onSelection: writeValue('%$picklistModel/databind%', '%code%')
-              })
-            }),
-            'picklistModel'
-          )
+          style: picklist.horizontalButtons()
         }),
         editableText({
           title: '',
@@ -35300,6 +35311,97 @@ jb.component('source-editor.files-of-project', {
     // const files = jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf(`/${project}/`) != -1 || x.indexOf(`/${project}.`) != -1))
     // return files.filter(f=>f.indexOf(`${project}.js`) != -1).flatMap(x=>x.replace(/js$/,'html')).concat(files)
   }
+})
+
+jb.component('studio.github-helper', { /* studio.githubHelper */
+  type: 'action',
+  impl: openDialog({
+    style: dialog.studioFloating({id: 'github-helper', width: 600}),
+    content: group({
+      controls: [
+        group({
+          title: 'properties',
+          style: layout.flex({spacing: '100'}),
+          controls: [
+            editableText({
+              title: 'github username',
+              databind: '%$properties/username%',
+              updateOnBlur: false
+            }),
+            editableText({
+              title: 'github repository',
+              databind: '%$properties/repository%',
+              updateOnBlur: false
+            })
+          ]
+        }),
+        group({
+          title: 'options',
+          controls: [
+            picklist({
+              databind: '%$item%',
+              options: picklist.options(keys('%$content%')),
+              style: picklist.horizontalButtons()
+            }),
+            editableText({
+              databind: pipeline(
+                property('%$item%', '%$content%'),
+                replace({find: 'USERNAME', replace: '%$properties/username%'}),
+                replace({find: 'REPOSITORY', replace: '%$properties/repository%'})
+              ),
+              style: editableText.studioCodemirrorTgp(),
+              features: [
+                watchRef('%$item%'),
+                watchRef({ref: '%$properties%', includeChildren: 'yes', allowSelfRefresh: false})
+              ]
+            })
+          ],
+          features: [
+            variable({name: 'item', value: 'new project', watchable: true}),
+            variable({
+              name: 'content',
+              value: obj(
+                prop(
+                    'new project',
+                    `1) Create a new github repository 
+2) Open cmd at your project directory and run the following commands
+
+
+git init
+echo mode_modules > .gitignore 
+git add .  
+git config --global user.name "FIRST_NAME LAST_NAME" 
+git config --global user.email "MY_NAME@example.com" 
+git commit -am first-commit 
+git remote add origin https://github.com/USERNAME/REPOSITORY.git
+git push origin master`
+                  ),
+                prop(
+                    'commit',
+                    `Open cmd at your project directory and run the following commands
+
+git commit -am COMMIT_REMARK
+git push origin master`
+                  )
+              )
+            })
+          ]
+        })
+      ],
+      features: [
+        variable({
+          name: 'properties',
+          value: obj(prop('username', 'user1'), prop('repository', 'repo1')),
+          watchable: true
+        })
+      ]
+    }),
+    title: 'github helper',
+    features: [
+      css('.jb-dialog-content-parent {overflow-y: hidden}'),
+      dialogFeature.resizer(true)
+    ]
+  })
 })
 
 })()
@@ -37811,15 +37913,12 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
             icon: 'save',
             shortcut: 'Ctrl+S'
           }),
-          menu.action({
-            title: 'Force Save',
-            action: studio.saveComponents(true),
-            icon: 'save'
-          }),
+          menu.action({title: 'Force Save', action: studio.saveComponents(), icon: 'save'}),
           menu.action({
             title: 'Source ...',
             action: studio.viewAllFiles(studio.currentProfilePath())
-          })
+          }),
+          menu.action({title: 'Github helper...', action: studio.githubHelper()})
         ]
       }),
       menu.menu({
@@ -38110,7 +38209,7 @@ st.projectUtils = {
         return st.host.getFile(htmlPath).then(html=> {
             const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
             return fileNames.reduce((acc,file)=> 
-                acc.then(res => st.host.getFile(st.host.pathToJsFile(project,file)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
+                acc.then(res => st.host.getFile(st.host.pathToJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
                     [`${project}.html`]: html
             }) ).then(files => ({project, files, libs}))
         })
