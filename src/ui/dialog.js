@@ -1,71 +1,3 @@
-jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
-  type: 'dialog-feature',
-  params: [
-    {id: 'id', as: 'string'}
-  ],
-  impl: function(context, id) {
-		const dialog = context.vars.$dialog;
-		return {
-		       css: '>.dialog-title { cursor: pointer }',
-		       afterViewInit: function(cmp) {
-		       	  const titleElem = cmp.base.querySelector('.dialog-title');
-		       	  cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
-		       	  	.takeUntil( cmp.destroyed );
-
-				  if (id && sessionStorage.getItem(id)) {
-						const pos = JSON.parse(sessionStorage.getItem(id));
-					    dialog.el.style.top  = pos.top  + 'px';
-					    dialog.el.style.left = pos.left + 'px';
-				  }
-
-				  let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
-				  let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
-
-				  if (jb.studio.previewWindow) {
-				  	mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
-				  		.takeUntil( cmp.destroyed );
-				  	mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
-				  		.takeUntil( cmp.destroyed );
-				  }
-
-				  const mousedrag = cmp.mousedownEm
-				  		.do(e =>
-				  			e.preventDefault())
-				  		.map(e =>  ({
-				          left: e.clientX - dialog.el.getBoundingClientRect().left,
-				          top:  e.clientY - dialog.el.getBoundingClientRect().top
-				        }))
-				      	.flatMap(imageOffset =>
-			      			 mouseMoveEm.takeUntil(mouseUpEm)
-			      			 .map(pos => ({
-						        top:  Math.max(0,pos.clientY - imageOffset.top),
-						        left: Math.max(0,pos.clientX - imageOffset.left)
-						     }))
-				      	);
-
-				  mousedrag.distinctUntilChanged().subscribe(pos => {
-			        dialog.el.style.top  = pos.top  + 'px';
-			        dialog.el.style.left = pos.left + 'px';
-			        if (id) sessionStorage.setItem(id, JSON.stringify(pos))
-			      })
-			  }
-	       }
-	}
-})
-
-jb.component('dialog.default', { /* dialog.default */
-  type: 'dialog.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
-			h('div',{class: 'dialog-title'},state.title),
-			h('button',{class: 'dialog-close', onclick:
-				_=> cmp.dialogClose() },'×'),
-			h(state.contentComp),
-		]),
-    features: dialogFeature.dragTitle()
-  })
-})
-
 jb.component('open-dialog', { /* openDialog */
   type: 'action',
   params: [
@@ -160,6 +92,74 @@ jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
 		})
 	}
 })
+
+jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
+	type: 'dialog-feature',
+	params: [
+	  {id: 'id', as: 'string'}
+	],
+	impl: function(context, id) {
+		  const dialog = context.vars.$dialog;
+		  return {
+				 css: '>.dialog-title { cursor: pointer }',
+				 afterViewInit: function(cmp) {
+					   const titleElem = cmp.base.querySelector('.dialog-title');
+					   cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
+						   .takeUntil( cmp.destroyed );
+  
+					if (id && sessionStorage.getItem(id)) {
+						  const pos = JSON.parse(sessionStorage.getItem(id));
+						  dialog.el.style.top  = pos.top  + 'px';
+						  dialog.el.style.left = pos.left + 'px';
+					}
+  
+					let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
+					let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
+  
+					if (jb.studio.previewWindow) {
+						mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
+							.takeUntil( cmp.destroyed );
+						mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
+							.takeUntil( cmp.destroyed );
+					}
+  
+					const mousedrag = cmp.mousedownEm
+							.do(e =>
+								e.preventDefault())
+							.map(e =>  ({
+							left: e.clientX - dialog.el.getBoundingClientRect().left,
+							top:  e.clientY - dialog.el.getBoundingClientRect().top
+						  }))
+							.flatMap(imageOffset =>
+								 mouseMoveEm.takeUntil(mouseUpEm)
+								 .map(pos => ({
+								  top:  Math.max(0,pos.clientY - imageOffset.top),
+								  left: Math.max(0,pos.clientX - imageOffset.left)
+							   }))
+							);
+  
+					mousedrag.distinctUntilChanged().subscribe(pos => {
+					  dialog.el.style.top  = pos.top  + 'px';
+					  dialog.el.style.left = pos.left + 'px';
+					  if (id) sessionStorage.setItem(id, JSON.stringify(pos))
+					})
+				}
+			 }
+	  }
+  })
+  
+  jb.component('dialog.default', { /* dialog.default */
+	type: 'dialog.style',
+	impl: customStyle({
+	  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
+			  h('div',{class: 'dialog-title'},state.title),
+			  h('button',{class: 'dialog-close', onclick:
+				  _=> cmp.dialogClose() },'×'),
+			  h(state.contentComp),
+		  ]),
+	  features: dialogFeature.dragTitle()
+	})
+  })
 
 jb.component('dialog-feature.near-launcher-position', { /* dialogFeature.nearLauncherPosition */
   type: 'dialog-feature',
@@ -418,7 +418,7 @@ jb.component('dialog.popup', { /* dialog.popup */
 
 jb.ui.dialogs = {
  	dialogs: [],
-	addDialog: function(dialog,context) {
+	addDialog(dialog,context) {
 		const self = this;
 		dialog.context = context;
 		this.dialogs.forEach(d=>
@@ -452,25 +452,31 @@ jb.ui.dialogs = {
 
 		this.render(dialog);
 	},
-	closeAll: function() {
-		this.dialogs.forEach(d=>
-			d.close());
+	closeAll() {
+		this.dialogs.forEach(d=>d.close());
 	},
-  getOrCreateDialogsElem() {
-    if (!document.querySelector('.jb-dialogs'))
-      jb.ui.addHTML(document.body,'<div class="jb-dialogs"/>');
-    return document.querySelector('.jb-dialogs');
-  },
-  render(dialog) {
-    jb.ui.addHTML(this.getOrCreateDialogsElem(),`<div id="${dialog.instanceId}"/>`);
-    const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
-    jb.ui.render(jb.ui.h(dialog.comp),elem);
-  },
-  remove(dialog) {
-    const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
-    if (!elem) return; // already closed due to asynch request handling and multiple requests to close
-    jb.ui.render('', elem, elem.firstElementChild);// react - remove
-    // jb.ui.unmountComponent(elem.firstElementChild._component);
-    this.getOrCreateDialogsElem().removeChild(elem);
-  }
+	getOrCreateDialogsElem() {
+		if (!document.querySelector('.jb-dialogs'))
+		jb.ui.addHTML(document.body,'<div class="jb-dialogs"/>');
+		return document.querySelector('.jb-dialogs');
+	},
+    render(dialog) {
+		jb.ui.addHTML(this.getOrCreateDialogsElem(),`<div id="${dialog.instanceId}"/>`);
+		const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
+		jb.ui.render(jb.ui.h(dialog.comp),elem);
+	},
+	remove(dialog) {
+		const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
+		if (!elem) return; // already closed due to asynch request handling and multiple requests to close
+		jb.ui.render('', elem, elem.firstElementChild);// react - remove
+		// jb.ui.unmountComponent(elem.firstElementChild._component);
+		this.getOrCreateDialogsElem().removeChild(elem);
+	},
+	reRenderAll() {
+		return this.dialogs.reduce((p,dialog) => p.then(()=>
+			Promise.resolve(dialog.close()).then(()=> {
+				const openDialogAction = dialog.comp.ctx.path.split('~').reduce((obj,p)=>obj[p],jb.comps)
+				dialog.comp.ctx.ctx({profile: openDialogAction, path: ''}).runItself()
+			})), Promise.resolve())
+	}
 }

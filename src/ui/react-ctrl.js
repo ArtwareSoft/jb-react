@@ -313,8 +313,7 @@ ui.preserveCtx = ctx => {
 }
 
 ui.renderWidget = function(profile,top) {
-	let formerReactElem, formerParentElem;
-	let blockedParentWin = false
+	let blockedParentWin = false // catch security execption from the browser if parent is not accessible
 	try {
 		const x = typeof window != 'undefined' && window.parent.jb
 	} catch (e) {
@@ -324,20 +323,12 @@ ui.renderWidget = function(profile,top) {
 		if (!blockedParentWin && typeof window != 'undefined' && window.parent != window && window.parent.jb)
 			window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
 	} catch(e) {
-		jb.logException(e)
-		return
+		return jb.logException(e)
 	}
 
 	doRender()
 
 	function doRender() {
-		if (formerReactElem)
-			ui.render(ui.h('div',{}),formerParentElem,formerReactElem)
-
-		top.innerHTML = '';
-		const innerElem = formerParentElem = document.createElement('div');
-		top.appendChild(innerElem);
-
 		class R extends jb.ui.Component {
 			constructor(props) {
 				super();
@@ -357,8 +348,11 @@ ui.renderWidget = function(profile,top) {
 						.filter(({page})=>page != this.state.profile.$)
 						.subscribe(({page})=>
 							this.setState({profile: {$: page }}));
-					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + 200)).subscribe(_=>
-							this.setState(null));
+					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + 200))
+						.subscribe(e=>{
+							this.setState(null)
+							jb.ui.dialogs.reRenderAll()
+						});
 				}
 			}
 			render(pros,state) {
@@ -374,9 +368,7 @@ ui.renderWidget = function(profile,top) {
 				this.resolveDestroyed();
 			}
 		}
-		jb.delay(10).then(()=>{
-			formerReactElem = ui.render(ui.h(R),innerElem);
-		})
+		jb.delay(10).then(()=>ui.render(ui.h(R),top))
 	}
 }
 

@@ -105,21 +105,7 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
         picklist({
           databind: '%$file%',
           options: picklist.options(keys('%$content/files%')),
-          style: styleByControl(
-            itemlist({
-              items: '%$picklistModel/options%',
-              controls: label({
-                title: '%text%',
-                style: label.mdlButton(),
-                features: [css.width('%$width%'), css('{text-align: left}')]
-              }),
-              style: itemlist.horizontal('5'),
-              features: itemlist.selection({
-                onSelection: writeValue('%$picklistModel/databind%', '%code%')
-              })
-            }),
-            'picklistModel'
-          )
+          style: picklist.horizontalButtons()
         }),
         editableText({
           title: '',
@@ -431,6 +417,78 @@ jb.component('source-editor.files-of-project', {
     // const files = jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf(`/${project}/`) != -1 || x.indexOf(`/${project}.`) != -1))
     // return files.filter(f=>f.indexOf(`${project}.js`) != -1).flatMap(x=>x.replace(/js$/,'html')).concat(files)
   }
+})
+
+jb.component('studio.github-helper', { /* studio.githubHelper */
+  type: 'action',
+  impl: openDialog({
+    style: dialog.editSourceStyle({id: 'github-helper', width: 600}),
+    content: group({
+      controls: [
+        group({
+          title: 'properties',
+          style: layout.flex({spacing: '100'}),
+          controls: [
+            editableText({
+              title: 'github username',
+              databind: '%$preoperties/username%',
+              updateOnBlur: false
+            }),
+            editableText({
+              title: 'github repository',
+              databind: '%$preoperties/repository%',
+              updateOnBlur: false
+            })
+          ]
+        }),
+        group({
+          title: 'options',
+          controls: [
+            picklist({
+              databind: '%$item%',
+              options: picklist.options(keys('%$content%')),
+              style: picklist.horizontalButtons()
+            }),
+            editableText({
+              databind: property('%$item%', '%$content%'),
+              style: editableText.studioCodemirrorTgp(),
+              features: [watchRef('%$item%'), watchRef({ref: '%$properties%', includeChildren: 'yes'})]
+            })
+          ],
+          features: [
+            variable({name: 'item', value: 'new project', watchable: true}),
+            variable({
+              name: 'content',
+              value: obj(
+                prop(
+                    'new project',
+                    `1) Create a new github repository 
+2) Open cmd at your project directory and run the following commands
+
+
+git init
+echo mode_modules > .gitignore 
+git add .  
+git config --global user.name "FIRST_NAME LAST_NAME" 
+git config --global user.email "MY_NAME@example.com" 
+git commit -am first-commit 
+git remote add origin https://github.com/%$preoperties/username%/%$preoperties/repository%.git
+git push origin master`
+                  ),
+                prop('commit', '')
+              )
+            })
+          ]
+        })
+      ],
+      features: variable({name: 'properties', value: obj(), watchable: true})
+    }),
+    title: 'github helper',
+    features: [
+      css('.jb-dialog-content-parent {overflow-y: hidden}'),
+      dialogFeature.resizer(true)
+    ]
+  })
 })
 
 })()

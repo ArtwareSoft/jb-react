@@ -113,15 +113,12 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
             icon: 'save',
             shortcut: 'Ctrl+S'
           }),
-          menu.action({
-            title: 'Force Save',
-            action: studio.saveComponents(true),
-            icon: 'save'
-          }),
+          menu.action({title: 'Force Save', action: studio.saveComponents(), icon: 'save'}),
           menu.action({
             title: 'Source ...',
             action: studio.viewAllFiles(studio.currentProfilePath())
-          })
+          }),
+          menu.action({title: 'Github helper...', action: studio.githubHelper()})
         ]
       }),
       menu.menu({

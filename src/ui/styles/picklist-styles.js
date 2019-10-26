@@ -156,6 +156,28 @@ jb.component('picklist.selection-list', { /* picklist.selectionList */
   )
 })
 
+jb.component('picklist.horizontal-buttons', {
+  type: 'picklist.style',
+  params: [
+    {id: 'width', as: 'number', defaultValue: '200'}
+  ],
+  impl: styleByControl(
+    itemlist({
+      items: '%$picklistModel/options%',
+      controls: label({
+        title: '%text%',
+        style: label.mdlButton(),
+        features: [css.width('%$width%'), css('{text-align: left}')]
+      }),
+      style: itemlist.horizontal('5'),
+      features: itemlist.selection({
+        onSelection: writeValue('%$picklistModel/databind%', '%code%')
+      })
+    }),
+    'picklistModel'
+  )
+})
+
 jb.component('picklist.groups', { /* picklist.groups */
   type: 'picklist.style',
   impl: customStyle({
