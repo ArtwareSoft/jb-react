@@ -422,7 +422,7 @@ jb.component('source-editor.files-of-project', {
 jb.component('studio.github-helper', { /* studio.githubHelper */
   type: 'action',
   impl: openDialog({
-    style: dialog.editSourceStyle({id: 'github-helper', width: 600}),
+    style: dialog.studioFloating({id: 'github-helper', width: 600}),
     content: group({
       controls: [
         group({
@@ -431,12 +431,12 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
           controls: [
             editableText({
               title: 'github username',
-              databind: '%$preoperties/username%',
+              databind: '%$properties/username%',
               updateOnBlur: false
             }),
             editableText({
               title: 'github repository',
-              databind: '%$preoperties/repository%',
+              databind: '%$properties/repository%',
               updateOnBlur: false
             })
           ]
@@ -450,9 +450,16 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
               style: picklist.horizontalButtons()
             }),
             editableText({
-              databind: property('%$item%', '%$content%'),
+              databind: pipeline(
+                property('%$item%', '%$content%'),
+                replace({find: 'USERNAME', replace: '%$properties/username%'}),
+                replace({find: 'REPOSITORY', replace: '%$properties/repository%'})
+              ),
               style: editableText.studioCodemirrorTgp(),
-              features: [watchRef('%$item%'), watchRef({ref: '%$properties%', includeChildren: 'yes'})]
+              features: [
+                watchRef('%$item%'),
+                watchRef({ref: '%$properties%', includeChildren: 'yes', allowSelfRefresh: false})
+              ]
             })
           ],
           features: [
@@ -472,16 +479,28 @@ git add .
 git config --global user.name "FIRST_NAME LAST_NAME" 
 git config --global user.email "MY_NAME@example.com" 
 git commit -am first-commit 
-git remote add origin https://github.com/%$preoperties/username%/%$preoperties/repository%.git
+git remote add origin https://github.com/USERNAME/REPOSITORY.git
 git push origin master`
                   ),
-                prop('commit', '')
+                prop(
+                    'commit',
+                    `Open cmd at your project directory and run the following commands
+
+git commit -am COMMIT_REMARK
+git push origin master`
+                  )
               )
             })
           ]
         })
       ],
-      features: variable({name: 'properties', value: obj(), watchable: true})
+      features: [
+        variable({
+          name: 'properties',
+          value: obj(prop('username', 'user1'), prop('repository', 'repo1')),
+          watchable: true
+        })
+      ]
     }),
     title: 'github helper',
     features: [

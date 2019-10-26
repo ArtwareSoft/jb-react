@@ -157,7 +157,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)), ctx)
         }
         function selectedOfDatabind() {
-          return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setData(jb.val(selectedRef))))
+          return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setVars({items: cmp.items}).setData(jb.val(selectedRef))))
         }
         jb.delay(1).then(_=>{
            if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)

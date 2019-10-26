@@ -1,4 +1,3 @@
-
 jb.component('picklist.native', { /* picklist.native */
   type: 'picklist.style',
   impl: customStyle({
@@ -149,7 +148,9 @@ jb.component('picklist.selection-list', { /* picklist.selectionList */
       }),
       style: itemlist.horizontal('5'),
       features: itemlist.selection({
-        onSelection: writeValue('%$picklistModel/databind%', '%code%')
+        databind: '%$picklistModel/databind%',
+        selectedToDatabind: '%code%',
+        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0]
       })
     }),
     'picklistModel'
@@ -171,7 +172,9 @@ jb.component('picklist.horizontal-buttons', {
       }),
       style: itemlist.horizontal('5'),
       features: itemlist.selection({
-        onSelection: writeValue('%$picklistModel/databind%', '%code%')
+        databind: '%$picklistModel/databind%',
+        selectedToDatabind: '%code%',
+        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0]
       })
     }),
     'picklistModel'

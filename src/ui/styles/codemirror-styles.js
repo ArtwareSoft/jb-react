@@ -26,10 +26,10 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
   ],
   impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
-			template: (cmp,state,h) => h('div',{},h('textarea', {class: cmp.textAreaAlternative ? 'jb-textarea-alternative-for-codemirror' : 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind()) })),
+			template: (cmp,state,h) => h('div',{},h('textarea', {class: cmp.textAreaAlternative ? 'jb-textarea-alternative-for-codemirror' : 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind(cmp.ctx)) })),
 			css: '{width: 100%}',
 			beforeInit: cmp => {
-				cmp.state.databindRef = cmp.ctx.vars.$model.databind()
+				cmp.state.databindRef = cmp.ctx.vars.$model.databind(cmp.ctx)
 				if (jb.tostring(cmp.state.databindRef).length > ctx.params.maxLength)
 					cmp.textAreaAlternative = true
 			},
@@ -80,7 +80,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						focus: () => editor.focus(),
 						cmEditor: editor
 					}
-					cmp.refresh = () => Promise.resolve(cmp.ctx.vars.$model.databind()).then(ref=>{
+					cmp.refresh = () => Promise.resolve(cmp.ctx.vars.$model.databind(cmp.ctx)).then(ref=>{
 						cmp.state.databindRef = cmp.editor.data_ref = data_ref = ref;
 						editor.setValue(jb.tostring(jb.val(data_ref)))
 					})

@@ -406,7 +406,9 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
     	ui.refObservable(ref,cmp,{includeChildren, srcCtx: ctx})
 			.subscribe(e=>{
 				let ctxStack=[]; for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
-				const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x).filter(x=>x.indexOf('jb-editor') == -1)
+				const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x)
+					.filter(x=>x.indexOf('jb-editor') == -1)
+					.filter(x=>!x.match(/^studio-helper/))
 				const callerPathsUniqe = jb.unique(callerPaths)
 				if (callerPathsUniqe.length !== callerPaths.length)
 					return jb.logError('circular watchRef',callerPaths)
@@ -497,9 +499,9 @@ ui.toggleClassInVdom = function(vdom,clz,add) {
   vdom.attributes = vdom.attributes || {};
   const classes = (vdom.attributes.class || '').split(' ').map(x=>x.trim()).filter(x=>x);
   if (add && classes.indexOf(clz) == -1)
-    vdom.attributes.class = classes.concat([clz]).join(' ');
+    vdom.attributes.class = [...classes,clz].join(' ');
   if (!add)
-    vdom.attributes.class = classes.filter(x=>x==clz).join(' ');
+    vdom.attributes.class = classes.filter(x=>x != clz).join(' ');
   return vdom;
 }
 
