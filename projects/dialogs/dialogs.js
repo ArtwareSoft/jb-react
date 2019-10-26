@@ -5,11 +5,16 @@ jb.component('dialogs.main', { /* dialogs.main */
       button({
         title: 'ok-Cancel dialog',
         action: openDialog({
+          style: dialog.dialogOkCancel(),
           content: group({
+            style: layout.vertical(),
             controls: [
-              text({title: 'xxx', text: 'hello thereaaaaa'})
-            ]
-          })
+              editableText({title: 'name', databind: '%$dialogData/name%', updateOnBlur: false}),
+              editableText({title: 'phone', databind: '%$dialogData/phone%'})
+            ],
+            features: css.padding({left: '30', right: '30'})
+          }),
+          title: 'person'
         })
       })
     ]
