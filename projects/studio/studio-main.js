@@ -57,7 +57,7 @@ jb.component('studio.pages', { /* studio.pages */
         title: 'new function',
         action: studio.openNewFunction(),
         style: button.mdlIcon12('add'),
-        features: [css('{margin: 5px}'), feature.hoverTitle('new function/parser')]
+        features: [css('{margin: 5px}'), feature.hoverTitle('new function')]
       }),
       itemlist({
         items: pipeline(

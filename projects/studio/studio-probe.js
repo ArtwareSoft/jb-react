@@ -144,9 +144,11 @@ jb.component('studio.probe', { /* studio.probe */
   impl: (ctx,pathF) => {
         const _jb = st.previewjb, path = pathF()
         if (!path) return
-        let circuitCtx = ctx.exp('%$pickSelection/ctx%')
-        if (circuitCtx)
-            jb.studio.highlightCtx(circuitCtx)
+        let circuitCtx = null
+        if (jb.path(_jb.comps,[path.split('~')[0],'testData']))
+            circuitCtx = st.closestTestCtx(path)
+        if (!circuitCtx)
+            circuitCtx = ctx.exp('%$pickSelection/ctx%')
         if (!circuitCtx) {
             const circuitInPreview = st.closestCtxInPreview(path)
                 if (circuitInPreview.ctx) {
@@ -162,6 +164,8 @@ jb.component('studio.probe', { /* studio.probe */
             const circuit = jb.tostring(ctx.exp('%$circuit%','string') || ctx.exp('%$studio/project%.%$studio/page%'))
             circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
         }
+        if (circuitCtx)
+            jb.studio.highlightCtx(circuitCtx)
         return new (_jb.studio.Probe || st.Probe)(circuitCtx).runCircuit(path)
     }
 })

@@ -98,7 +98,7 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: openDialog({
-    style: dialog.editSourceStyle({id: 'editor', width: 600}),
+    style: dialog.studioFloating({id: 'editor', width: 600}),
     content: group({
       title: 'project files',
       controls: [
@@ -469,16 +469,16 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
               value: obj(
                 prop(
                     'new project',
-                    `1) Create a new github repository 
+                    `1) Create a new github repository
 2) Open cmd at your project directory and run the following commands
 
 
 git init
-echo mode_modules > .gitignore 
-git add .  
-git config --global user.name "FIRST_NAME LAST_NAME" 
-git config --global user.email "MY_NAME@example.com" 
-git commit -am first-commit 
+echo mode_modules > .gitignore
+git add .
+git config --global user.name "FIRST_NAME LAST_NAME"
+git config --global user.email "MY_NAME@example.com"
+git commit -am first-commit
 git remote add origin https://github.com/USERNAME/REPOSITORY.git
 git push origin master`
                   ),

@@ -316,7 +316,7 @@ jb.component('studio.open-new-function', {
       style: group.div(),
       controls: [
         editableText({
-          title: 'function/parser name',
+          title: 'function name',
           databind: '%$dialogData/name%',
           style: editableText.mdlInput(),
           features: feature.onEnter(dialog.closeContainingPopup())
@@ -324,7 +324,7 @@ jb.component('studio.open-new-function', {
       ],
       features: css.padding({top: '14', left: '11'})
     }),
-    title: 'New Function/Parser',
+    title: 'New Function',
     onOK: [
       studio.newComp('%$studio/project%.%$dialogData/name%', {$asIs: {
           type: 'data',
