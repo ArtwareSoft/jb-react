@@ -33964,7 +33964,7 @@ jb.component('studio.open-new-function', {
       style: group.div(),
       controls: [
         editableText({
-          title: 'function/parser name',
+          title: 'function name',
           databind: '%$dialogData/name%',
           style: editableText.mdlInput(),
           features: feature.onEnter(dialog.closeContainingPopup())
@@ -33972,7 +33972,7 @@ jb.component('studio.open-new-function', {
       ],
       features: css.padding({top: '14', left: '11'})
     }),
-    title: 'New Function/Parser',
+    title: 'New Function',
     onOK: [
       studio.newComp('%$studio/project%.%$dialogData/name%', {$asIs: {
           type: 'data',
@@ -34992,7 +34992,7 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: openDialog({
-    style: dialog.editSourceStyle({id: 'editor', width: 600}),
+    style: dialog.studioFloating({id: 'editor', width: 600}),
     content: group({
       title: 'project files',
       controls: [
@@ -35363,16 +35363,16 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
               value: obj(
                 prop(
                     'new project',
-                    `1) Create a new github repository 
+                    `1) Create a new github repository
 2) Open cmd at your project directory and run the following commands
 
 
 git init
-echo mode_modules > .gitignore 
-git add .  
-git config --global user.name "FIRST_NAME LAST_NAME" 
-git config --global user.email "MY_NAME@example.com" 
-git commit -am first-commit 
+echo mode_modules > .gitignore
+git add .
+git config --global user.name "FIRST_NAME LAST_NAME"
+git config --global user.email "MY_NAME@example.com"
+git commit -am first-commit
 git remote add origin https://github.com/USERNAME/REPOSITORY.git
 git push origin master`
                   ),
@@ -37857,7 +37857,7 @@ jb.component('studio.pages', { /* studio.pages */
         title: 'new function',
         action: studio.openNewFunction(),
         style: button.mdlIcon12('add'),
-        features: [css('{margin: 5px}'), feature.hoverTitle('new function/parser')]
+        features: [css('{margin: 5px}'), feature.hoverTitle('new function')]
       }),
       itemlist({
         items: pipeline(
@@ -38398,9 +38398,11 @@ jb.component('studio.probe', { /* studio.probe */
   impl: (ctx,pathF) => {
         const _jb = st.previewjb, path = pathF()
         if (!path) return
-        let circuitCtx = ctx.exp('%$pickSelection/ctx%')
-        if (circuitCtx)
-            jb.studio.highlightCtx(circuitCtx)
+        let circuitCtx = null
+        if (jb.path(_jb.comps,[path.split('~')[0],'testData']))
+            circuitCtx = st.closestTestCtx(path)
+        if (!circuitCtx)
+            circuitCtx = ctx.exp('%$pickSelection/ctx%')
         if (!circuitCtx) {
             const circuitInPreview = st.closestCtxInPreview(path)
                 if (circuitInPreview.ctx) {
@@ -38416,6 +38418,8 @@ jb.component('studio.probe', { /* studio.probe */
             const circuit = jb.tostring(ctx.exp('%$circuit%','string') || ctx.exp('%$studio/project%.%$studio/page%'))
             circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
         }
+        if (circuitCtx)
+            jb.studio.highlightCtx(circuitCtx)
         return new (_jb.studio.Probe || st.Probe)(circuitCtx).runCircuit(path)
     }
 })
