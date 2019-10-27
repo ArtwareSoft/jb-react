@@ -195,7 +195,7 @@ st.suggestions = class {
     probeCtx = probeCtx || new st.previewjb.jbCtx();
     const resources = jb.entries(jb.studio.previewjb.comps)
           .filter(e=>! jb.comps[e[0]])
-          .filter(e=>e[1].watchableData || e[1].passiveData)
+          .filter(e=>e[1].watchableData  !== undefined || e[1].passiveData  !== undefined)
           .map(e=>[jb.removeDataResourcePrefix(e[0]),e[1]])
     const vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars))
         .concat(resources)

@@ -245,4 +245,4 @@ border: 1px solid rgb(213, 213, 213);}
 
 .jb-cover { position: 'absolute'; width: '100%'; height: '100%'; background: 'white'; opacity: '0'; top: 0; left: 0; }
 
-.jb-textarea-alternative-for-codemirror { width: 100%; padding-right: 0; resize: none; height: 200px }
+.jb-textarea-alternative-for-codemirror { width: 100%; padding-right: 0; height: 100% }

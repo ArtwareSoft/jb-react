@@ -415,11 +415,11 @@ jb.component('data-test.restoreArrayIds-bug', { /* dataTest.restoreArrayIdsBug *
   })
 })
 
-jb.component('data-test.assignWithIndex', { /* dataTest.assignWithIndex */
+jb.component('data-test.extendWithIndex', { /* dataTest.extendWithIndex */
   impl: dataTest({
     calculate: pipeline(
       '%$personWithChildren/children%',
-      assignWithIndex(prop('nameTwice', '%name%-%name%'), prop('index', '%$index%')),
+      extendWithIndex(prop('nameTwice', '%name%-%name%'), prop('index', '%$index%')),
       join({itemText: '%index%.%nameTwice%'})
     ),
     expectedResult: contains('0.Bart-Bart,1.Lisa-Lisa,2.Maggie-Maggie')

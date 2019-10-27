@@ -177,6 +177,15 @@ jb.component('entries', {
   impl: (ctx,obj) => jb.entries(obj)
 })
 
+jb.component('aggregate', {
+  type: 'aggregator',
+  description: 'calc function on all items, rather then one by one',
+  params: [
+    {id: 'aggregator', type: 'aggregator', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,aggregator) => aggregator()
+})
+
 jb.component('obj-from-entries', {
   description: 'object from entries',
   type: 'aggregator',
@@ -410,8 +419,8 @@ jb.component('obj', { /* obj */
 		Object.assign({}, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
 })
 
-jb.component('assign', { /* assign */
-  description: 'extend with calculated properties',
+jb.component('extend', { /* extend */
+  description: 'assign extend with calculated properties',
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
   ],
@@ -419,7 +428,7 @@ jb.component('assign', { /* assign */
 		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
 })
 
-jb.component('assign-with-index', { /* assignWithIndex */
+jb.component('extend-with-index', { /* extendWithIndex */
   type: 'aggregator',
   description: 'extend with calculated properties. %$index% is available ',
   params: [
