@@ -186,6 +186,29 @@ jb.component('aggregate', {
   impl: (ctx,aggregator) => aggregator()
 })
 
+jb.ns('Math')
+
+jb.component('Math.max', {
+  type: 'aggregator',
+  impl: ctx => Math.max.apply(0,ctx.data)
+})
+
+jb.component('Math.min', {
+  type: 'aggregator',
+  impl: ctx => Math.max.apply(0,ctx.data)
+})
+
+jb.component('Math.sum', {
+  type: 'aggregator',
+  impl: ctx => ctx.data.reduce((acc,item) => +item +acc, 0)
+})
+
+'abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
+  .split(',').forEach(f=>jb.component(`Math.${f}`, {
+    impl: ctx => Math[f](ctx.data)
+  })
+)
+
 jb.component('obj-from-entries', {
   description: 'object from entries',
   type: 'aggregator',
