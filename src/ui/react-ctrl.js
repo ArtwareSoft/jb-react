@@ -485,6 +485,8 @@ ui.addHTML = (el,html) => {
   el.appendChild(elem.firstChild)
 }
 
+ui.withUnits = v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`
+
 // ****************** vdom utils ***************
 
 ui.addClassToVdom = function(vdom,clz) {

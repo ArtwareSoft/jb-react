@@ -200,7 +200,7 @@ jb.component('Math.min', {
 
 jb.component('Math.sum', {
   type: 'aggregator',
-  impl: ctx => ctx.data.reduce((acc,item) => +item +acc, 0)
+  impl: ctx => ctx.data.reduce((acc,item) => +item+acc, 0)
 })
 
 'abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'

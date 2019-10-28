@@ -4,7 +4,7 @@ jb.component('studio', { /* studio */
     page: '',
     profile_path: '',
     pickSelectionCtxId: '',
-    baseLib: '//unpkg.com/jb-react/bin/studio/'
+    baseStudioUrl: '//unpkg.com/jb-react/bin/studio/'
   }
 })
 
@@ -157,9 +157,9 @@ jb.component('studio.top-bar', { /* studio.topBar */
     style: layout.horizontal('3'),
     controls: [
       image({
-        url: '%$studio/baseLib%css/jbartlogo.png',
+        url: '%$studio/baseStudioUrl%css/jbartlogo.png',
         imageHeight: '60',
-        units: 'px',
+        width: '88',
         style: image.default(),
         features: css.margin({top: '15', left: '5'})
       }),

@@ -1,5 +1,5 @@
 (function() {
-const withUnits = v => (''+v||'').match(/[^0-9]$/) ? v : `${v}px`
+const withUnits = jb.ui.withUnits
 const fixCssLine = css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css
 
 jb.component('css', { /* css */
