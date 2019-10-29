@@ -664,7 +664,14 @@ jb.component('data-test.eval-expression', {
 
 jb.component('data-test.first-succeeding', {
   impl: dataTest({
-    calculate: firstSucceeding(evalExpression('1/0'),2),
+    calculate: firstSucceeding(evalExpression('1/0'),2,1),
     expectedResult: equals(2)
+  })
+})
+
+jb.component('data-test.first-succeeding.with-empty-string', {
+  impl: dataTest({
+    calculate: firstSucceeding('','a','b'),
+    expectedResult: equals('a')
   })
 })

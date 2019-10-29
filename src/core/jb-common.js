@@ -142,7 +142,9 @@ jb.component('first-succeeding', { /* firstSucceeding */
   impl: function(ctx,items,acceptEmptyString) {
     for(let i=0;i<items.length;i++) {
       const val = jb.val(items[i])
-      if ((acceptEmptyString || val !== '') && val != null && !isNaN(val) && val !== Infinity && val !== -Infinity)
+      const isNumber = typeof val === 'number'
+      if ((acceptEmptyString || val !== '') && val != null 
+          && (!isNumber || (!isNaN(val)) && val !== Infinity && val !== -Infinity))
         return items[i]
     }
 		// return last one even if zero or empty string
