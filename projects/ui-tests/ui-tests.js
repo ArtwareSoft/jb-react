@@ -59,6 +59,13 @@ jb.component('ui-test.html', {
   })
 })
 
+jb.component('ui-test.html.in-iframe', { 
+  impl: uiTest({
+    control: html({ html: '<p>hello world</p>', style: html.inIframe()}),
+    expectedResult: contains('iframe')
+  })
+})
+
 jb.component('ui-test.group', { /* uiTest.group */
   impl: uiTest({
     control: group({

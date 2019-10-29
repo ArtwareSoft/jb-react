@@ -25,7 +25,7 @@ jb.component('editable-text.textarea', { /* editableText.textarea */
 })
 
 jb.component('editable-text.mdl-input', { /* editableText.mdlInput */
-  type: 'editable-text.style',
+  type: 'editable-text.style,editable-number.style',
   params: [
     {id: 'width', as: 'number'}
   ],

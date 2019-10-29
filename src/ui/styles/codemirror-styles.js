@@ -26,7 +26,9 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
   ],
   impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
 		return {
-			template: (cmp,state,h) => h('div',{},h('textarea', {class: cmp.textAreaAlternative ? 'jb-textarea-alternative-for-codemirror' : 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind(cmp.ctx)) })),
+			template: (cmp,state,h) => 
+				cmp.textAreaAlternative ? h('textarea', {class: 'jb-textarea-alternative-for-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind(cmp.ctx)) })
+					: h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind(cmp.ctx)) })),
 			css: '{width: 100%}',
 			beforeInit: cmp => {
 				cmp.state.databindRef = cmp.ctx.vars.$model.databind(cmp.ctx)

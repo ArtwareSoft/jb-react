@@ -74,10 +74,6 @@ jb.component('studio.prop-field', { /* studio.propField */
         ),
         controlWithCondition('%$paramDef/options%', studio.propertyEnum('%$path%')),
         controlWithCondition(
-          '%$paramDef/as%==\"number\"',
-          studio.propertySlider('%$path%')
-        ),
-        controlWithCondition(
           and(
             '%$paramDef/as%==\"boolean\"',
             or(inGroup(list(true, false), '%$val%'), isEmpty('%$val%')),
@@ -199,7 +195,6 @@ jb.component('studio.property-boolean', { /* studio.propertyBoolean */
   impl: editableBoolean({
     databind: studio.ref('%$path%'),
     style: editableBoolean.mdlSlideToggle(),
-    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
   })
 })
 
@@ -212,28 +207,6 @@ jb.component('studio.property-enum', { /* studio.propertyEnum */
     databind: studio.ref('%$path%'),
     options: studio.enumOptions('%$path%'),
     style: picklist.nativeMdLookOpen(),
-    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
-  })
-})
-
-jb.component('studio.property-slider', { /* studio.propertySlider */
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: editableNumber({
-    vars: [Var('paramDef', studio.paramDef('%$path%'))],
-    databind: studio.ref('%$path%'),
-    style: editableNumber.slider(),
-    min: firstSucceeding('%$paramDef/min%', 0),
-    max: firstSucceeding('%$paramDef/max%', 100),
-    step: firstSucceeding('%$paramDef/step%', 1),
-    features: [
-      css(
-        `>input-slider { width: 110px; }
->.input-text { width: 20px; padding-right: 15px; margin-top: 2px; }`
-      )
-    ]
   })
 })
 
@@ -395,10 +368,6 @@ jb.component('studio.property-field', { /* studio.propertyField */
           studio.propertyScript('%$path%')
         ),
         controlWithCondition('%$paramDef/options%', studio.propertyEnum('%$path%')),
-        controlWithCondition(
-          '%$paramDef/as%==\"number\"',
-          studio.propertySlider('%$path%')
-        ),
         controlWithCondition(
           and(
             '%$paramDef/as%==\"boolean\"',

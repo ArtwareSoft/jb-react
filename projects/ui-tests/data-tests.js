@@ -654,3 +654,17 @@ jb.component('data-test.pretty-print-$contains', { /* dataTest.prettyPrint-$cont
     expectedResult: contains('hello')
   })
 })
+
+jb.component('data-test.eval-expression', {
+  impl: dataTest({
+    calculate: evalExpression('1+1'),
+    expectedResult: equals(2)
+  })
+})
+
+jb.component('data-test.first-succeeding', {
+  impl: dataTest({
+    calculate: firstSucceeding(evalExpression('1/0'),2),
+    expectedResult: equals(2)
+  })
+})

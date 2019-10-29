@@ -401,8 +401,7 @@ ui.setState = function(cmp,state,opEvent,watchedAt) {
 }
 
 ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
-		if (!ref)
-			jb.logError('null ref for watch ref',...arguments);
+		if (!ref) return
     	ui.refObservable(ref,cmp,{includeChildren, srcCtx: ctx})
 			.subscribe(e=>{
 				let ctxStack=[]; for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)

@@ -9,7 +9,7 @@ st.Probe = class {
         this.context = ctx.ctx({})
         this.probe = {}
         this.context.probe = this
-        this.context.profile = st.valOfPath(this.context.path) // recalc latest version of profile
+        this.context.profile = st.valOfPath(this.context.path) || this.context.profile // recalc latest version of profile
         this.circuit = this.context.profile
         this.id = ++probeCounter
     }

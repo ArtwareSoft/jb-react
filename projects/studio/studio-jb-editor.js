@@ -128,8 +128,9 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
           button({
             title: 'open (%$obj/length%)',
             action: openDialog({
-              style: dialog.popup(),
+              style: dialog.showSourceStyle({id:'show-data'}),
               content:  group({
+                features: css('{height: 100%} >div:last-child {height: 100%}'),
                 style: group.tabs(),
                 controls: [
                   editableText({
@@ -144,7 +145,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
                       readOnly: true
                     })
                   }),
-                  html({title: 'html', html: '%$obj%'})
+                  html({title: 'html', html: '%$obj%', style: html.inIframe()})
                 ]})
             }),
             style: button.href()

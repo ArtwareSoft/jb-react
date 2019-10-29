@@ -373,7 +373,7 @@ Object.assign(st,{
 			return _ctx.ctx({ profile: {$: test}, comp: test, path: ''})
 		const testData = st.previewjb.comps[compId].testData
 		if (testData)
-			return _ctx.ctx({ data: _ctx.run(testData),	profile: {$: compId}, comp: compId, path: ''})
+			return _ctx.ctx({profile: pipeline(testData, {$: compId}), path: '' })
 	},
 })
 

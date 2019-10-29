@@ -13,7 +13,7 @@ jb.component('html', {
 })
 
 jb.component('html.plain', {
-    type: 'label.style',
+    type: 'html.style',
     impl: customStyle({
         template: (cmp,state,h) => h('div'),
         features: ctx => ({
@@ -22,3 +22,20 @@ jb.component('html.plain', {
     })
 })
 
+jb.component('html.in-iframe', {
+    type: 'html.style',
+    params: [
+        {id: 'width', as: 'string', defaultValue: '100%'},
+        {id: 'height', as: 'string', defaultValue: '100%'}
+    ],
+    impl: customStyle({
+        template: (cmp,state,h) => h('iframe', {
+            sandbox: 'allow-same-origin allow-forms allow-scripts',
+            frameborder: 0, width: cmp.width, height: cmp.height,
+            src: 'javascript: document.write(parent.contentForIframe)'
+          }),
+          features: ctx => ({
+            afterViewInit: cmp => window.contentForIframe = cmp.ctx.vars.$model.html()
+        })
+    })
+})

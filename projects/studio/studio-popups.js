@@ -67,6 +67,53 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 	})
 })
 
+jb.component('dialog.show-source-style', {
+	type: 'dialog.style',
+	params: [
+	  {id: 'id', as: 'string'},
+	  {id: 'width', as: 'number', defaultValue: 600},
+	  {id: 'height', as: 'number', defaultValue: 600},
+	],
+	impl: customStyle({
+			  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
+				  h('div',{class: 'dialog-title noselect'},state.title),
+				  h('button',{class: 'dialog-close', onclick:  _=> cmp.dialogClose() },'×'),
+				  h('div',{class: 'jb-dialog-content-parent stretchedToMargin'},h(state.contentComp)),
+			  ]),
+			  features: [
+					  {$: 'dialog-feature.drag-title', id: '%$id%'},
+					  {$: 'dialog-feature.unique-dialog', id: '%$id%', remeberLastLocation: true },
+					  {$: 'dialog-feature.max-zIndex-on-click', minZIndex: 5000 },
+					  {$: 'studio-dialog-feature.studio-popup-location' },
+					  dialogFeature.resizer(true)
+			 ],
+			  css: `{ position: fixed;
+						  background: #F9F9F9;
+						  width: %$width%px;
+						  height: %$height%px;
+						  overflow: auto;
+						  border-radius: 4px;
+						  padding: 0 12px 12px 12px;
+						  box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
+				  }
+				  >.dialog-title { background: none; padding: 10px 5px; }
+				  >.jb-dialog-content-parent { padding: 0; overflow-y: hidden; overflow-x: hidden; top: 40px}
+				  >.dialog-close {
+						  position: absolute;
+						  cursor: pointer;
+						  right: 4px; top: 4px;
+						  font: 21px sans-serif;
+						  border: none;
+						  background: transparent;
+						  color: #000;
+						  text-shadow: 0 1px 0 #fff;
+						  font-weight: 700;
+						  opacity: .2;
+				  }
+				  >.dialog-close:hover { opacity: .5 }`
+	  })
+})
+
 jb.component('studio-dialog-feature.studio-popup-location', { /* studioDialogFeature.studioPopupLocation */
   type: 'dialog-feature',
   impl: ctx => ({

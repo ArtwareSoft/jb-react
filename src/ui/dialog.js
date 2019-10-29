@@ -347,48 +347,42 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
     }
   ],
   impl: (ctx,codeMirror) => ({
-		templateModifier: (vdom,cmp,state) => {
+	templateModifier: (vdom,cmp,state) => {
             if (vdom && vdom.nodeName != 'div') return vdom;
 				vdom.children.push(jb.ui.h('img', {class: 'jb-resizer'}));
 			return vdom;
-		},
-		css: '>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
+	},
+	css: '>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
 
-		afterViewInit: function(cmp) {
+	afterViewInit: function(cmp) {
 		const resizerElem = cmp.base.querySelector('.jb-resizer');
-		cmp.mousedownEm = jb.rx.Observable.fromEvent(resizerElem, 'mousedown')
-		.takeUntil( cmp.destroyed );
+		cmp.mousedownEm = jb.rx.Observable.fromEvent(resizerElem, 'mousedown').takeUntil( cmp.destroyed );
 
 		let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
 		let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
 
 		if (jb.studio.previewWindow) {
-		mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
-			.takeUntil( cmp.destroyed );
-		mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
-			.takeUntil( cmp.destroyed );
+			mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
+				.takeUntil( cmp.destroyed );
+			mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
+				.takeUntil( cmp.destroyed );
 		}
 
 		let codeMirrorElem,codeMirrorSizeDiff;
 		const mousedrag = cmp.mousedownEm.do(e=>{
-				if (codeMirror) {
+			if (codeMirror) {
 					codeMirrorElem = cmp.base.querySelector('.CodeMirror,.jb-textarea-alternative-for-codemirror');
 					if (codeMirrorElem)
 					codeMirrorSizeDiff = codeMirrorElem.getBoundingClientRect().top - cmp.base.getBoundingClientRect().top
 						+ (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
-				}
-			})
-			.map(e =>  ({
+			}
+			}).map(e =>  ({
 				left: cmp.base.getBoundingClientRect().left,
 				top:  cmp.base.getBoundingClientRect().top
-			}))
-			.flatMap(imageOffset =>
+			})).flatMap(imageOffset =>
 					mouseMoveEm.takeUntil(mouseUpEm)
-					.map(pos => ({
-					top:  pos.clientY - imageOffset.top,
-					left: pos.clientX - imageOffset.left
-					}))
-		);
+					.map(pos => ({ top:  pos.clientY - imageOffset.top, left: pos.clientX - imageOffset.left }))
+			)
 
 		mousedrag.distinctUntilChanged().subscribe(pos => {
 			cmp.base.style.height  = pos.top  + 'px';
