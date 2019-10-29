@@ -11,7 +11,7 @@ const devHost = {
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
-    htmlAsCloud: html => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="'),
+    htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
     scriptForLoadLibraries: libs => `<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,${libs.join(',')}"></script>`,
@@ -35,7 +35,7 @@ const cloudHost = {
     rootName: () => Promise.resolve(''),
     rootExists: () => Promise.resolve(false),
     getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
-    htmlAsCloud: html => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="'),
+    htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
     createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
     scriptForLoadLibraries: libs => {
@@ -101,6 +101,7 @@ st.projectHosts = {
     // host=github&hostProjectId=https://artwaresoft.github.io/todomvc/
     github: {
         fetchProject(gitHubUrl) {
+            gitHubUrl = gitHubUrl.match(/\/$/) ? gitHubUrl : gitHubUrl + '/'
             const project = gitHubUrl.split('/').filter(x=>x).pop() 
             return getUrlContent(gitHubUrl).then(html =>{
                 const srcUrls = html.split('<script type="text/javascript" src="').slice(1)

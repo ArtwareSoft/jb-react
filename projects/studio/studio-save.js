@@ -24,7 +24,7 @@ jb.component('studio.save-components', { /* studio.saveComponents */
         files[e[0]] = e[1].replace(/<!-- load-jb-scripts-here -->/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
           .replace(/\/\/# sourceURL=.*/g,''))
       if (!files['index.html'])
-        files['index.html'] = st.host.htmlAsCloud(jb.entries(files).filter(e=>e[0].match(/html$/))[0][1])
+        files['index.html'] = st.host.htmlAsCloud(jb.entries(files).filter(e=>e[0].match(/html$/))[0][1],project)
     
       return jb.studio.host.createProject({project, files, baseDir})
         .then(r => r.json())
