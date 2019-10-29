@@ -24,6 +24,7 @@ jb.component('tree.node-model', {
       {id: 'icon', dynamic: true, as: 'string', description: 'icon name from material icons' },
       {id: 'isChapter', dynamic: true, as: 'boolean', description: 'path as input. differnt from children() == 0, as you can drop into empty array' },
       {id: 'maxDepth',  as: 'number', defaultValue: 3 },
+      {id: 'fieldCache', as: 'boolean' },
       {id: 'includeRoot',  as: 'boolean' },
     ],
     impl: ctx => ({
@@ -34,6 +35,7 @@ jb.component('tree.node-model', {
         title: () => '',
         isArray: path => ctx.params.isChapter.profile ? ctx.params.isChapter(ctx.setData(path)) : ctx.params.children(ctx.setData(path)).length,
         maxDepth: ctx.params.maxDepth,
+        fieldCache: ctx.params.fieldCache,
         includeRoot: ctx.params.includeRoot
     })
 })
@@ -45,7 +47,7 @@ jb.component('table-tree.init', {
             const treeModel = cmp.treeModel = cmp.ctx.vars.$model.treeModel()
             treeModel.maxDepth = treeModel.maxDepth || 5
             cmp.state.expanded = {[treeModel.rootPath]: true}
-            cmp.refresh = () => cmp.setState({items: cmp.calcItems()})
+            cmp.refresh = () => cmp.setState({items:cmp.calcItems()})
             cmp.calcItems = () => calcItems(treeModel.rootPath,0)
             cmp.leafFields = calcFields('leafFields')
             cmp.commonFields = calcFields('commonFields')
@@ -91,6 +93,8 @@ jb.component('table-tree.init', {
                 return item
             }
             function getOrCreateControl(field,item,index) {
+                if (!treeModel.FieldCache)
+                    return field.control(item,index)
                 cmp.ctrlCache = cmp.ctrlCache || {}
                 const key = item.path+'~!'+item.expanded + '~' +field.ctxId
                 cmp.ctrlCache[key] = cmp.ctrlCache[key] || field.control(item,index)

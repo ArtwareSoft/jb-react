@@ -37,7 +37,7 @@ class JbComponent {
 		this.field = {
 			class: '',
 			ctxId: ui.preserveCtx(this.ctx),
-			control: (item,index) => this.getOrCreateItemField(item, () => this.ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp())
+			control: (item,index,noCache) => this.getOrCreateItemField(item, () => this.ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp(),noCache)
 		}
 		this.enrichField.forEach(enrichField=>enrichField(this.field))
 		let title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => '');
@@ -48,7 +48,9 @@ class JbComponent {
 		this.itemfieldCache = new Map()
 		return this
 	}
-	getOrCreateItemField(item, factory) {
+	getOrCreateItemField(item,factory,noCache) {
+		if (noCache)
+			return factory()
 		if (!this.itemfieldCache.get(item))
 			this.itemfieldCache.set(item,factory())
 		return this.itemfieldCache.get(item)
@@ -343,19 +345,20 @@ ui.renderWidget = function(profile,top) {
 						this.state.profile = {$: `${project}.${page}`}
 
 					this.lastRenderTime = 0
+					this.fixedDebounce = 500
 
-					st.pageChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + 200))
+					st.pageChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + this.fixedDebounce))
 						.filter(({page})=>page != this.state.profile.$)
 						.subscribe(({page})=>
 							this.setState({profile: {$: page }}));
-					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + 200))
+					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + this.fixedDebounce))
 						.subscribe(e=>{
 							this.setState(null)
 							jb.ui.dialogs.reRenderAll()
 						});
 				}
 			}
-			render(pros,state) {
+			render(props,state) {
 				const profToRun = state.profile;
 				if (!jb.comps[profToRun.$]) return '';
 				this.start = new Date().getTime()
