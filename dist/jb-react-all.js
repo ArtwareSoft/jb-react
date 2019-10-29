@@ -4237,7 +4237,7 @@ class JbComponent {
 		this.field = {
 			class: '',
 			ctxId: ui.preserveCtx(this.ctx),
-			control: (item,index) => this.getOrCreateItemField(item, () => this.ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp())
+			control: (item,index,noCache) => this.getOrCreateItemField(item, () => this.ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp(),noCache)
 		}
 		this.enrichField.forEach(enrichField=>enrichField(this.field))
 		let title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => '');
@@ -4248,7 +4248,9 @@ class JbComponent {
 		this.itemfieldCache = new Map()
 		return this
 	}
-	getOrCreateItemField(item, factory) {
+	getOrCreateItemField(item,factory,noCache) {
+		if (noCache)
+			return factory()
 		if (!this.itemfieldCache.get(item))
 			this.itemfieldCache.set(item,factory())
 		return this.itemfieldCache.get(item)
@@ -4543,19 +4545,20 @@ ui.renderWidget = function(profile,top) {
 						this.state.profile = {$: `${project}.${page}`}
 
 					this.lastRenderTime = 0
+					this.fixedDebounce = 500
 
-					st.pageChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + 200))
+					st.pageChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + this.fixedDebounce))
 						.filter(({page})=>page != this.state.profile.$)
 						.subscribe(({page})=>
 							this.setState({profile: {$: page }}));
-					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + 200))
+					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + this.fixedDebounce))
 						.subscribe(e=>{
 							this.setState(null)
 							jb.ui.dialogs.reRenderAll()
 						});
 				}
 			}
-			render(pros,state) {
+			render(props,state) {
 				const profToRun = state.profile;
 				if (!jb.comps[profToRun.$]) return '';
 				this.start = new Date().getTime()
@@ -5083,19 +5086,19 @@ class WatchableValueByRef {
   propagateResourceChangeToObservables() {
       this.resourceChange.subscribe(e=>{
           const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref));
-          this.observables = this.observables.filter(obs=>jb.refHandler(obs.ref))
-          const notifiedPaths = []
+          this.observables = this.observables.filter(obs=>jb.refHandler(obs.ref) && jb.refHandler(obs.ref).pathOfRef(obs.ref))
+          const notifiedElems = []
 
           if (changed_path)
             this.observables.forEach(obs=>{
-              if (notifiedPaths.some(path => obs.cmp.ctx.path.indexOf(path+'~') == 0)) // parent was notified
-                jb.delay(1).then(() => !obs.cmp._destroyed && this.notifyOneObserver(e,obs,changed_path,notifiedPaths))
-              else
-                this.notifyOneObserver(e,obs,changed_path,notifiedPaths)
+              if (notifiedElems.some(elem => elem.contains(obs.cmp.base) && elem !== obs.cmp.base)) { // parent was notified 
+                jb.delay(1).then(() => !obs.cmp._destroyed && this.notifyOneObserver(e,obs,changed_path,notifiedElems))
+              } else
+                this.notifyOneObserver(e,obs,changed_path,notifiedElems)
             })
       })
   }
-  notifyOneObserver(e,obs,changed_path,notifiedPaths) {
+  notifyOneObserver(e,obs,changed_path,notifiedElems) {
       let obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
       obsPath = obsPath && this.removeLinksFromPath(obsPath)
       if (!obsPath)
@@ -5106,7 +5109,7 @@ class WatchableValueByRef {
       const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
       if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
           jb.log('notifyCmpObservable',['notify change',e.srcCtx,obs,e])
-          notifiedPaths.push(obs.cmp.ctx.path)
+          notifiedElems.push(obs.cmp.base)
           obs.subject.next(e)
       }
   }
@@ -10877,6 +10880,7 @@ jb.component('tree.node-model', {
       {id: 'icon', dynamic: true, as: 'string', description: 'icon name from material icons' },
       {id: 'isChapter', dynamic: true, as: 'boolean', description: 'path as input. differnt from children() == 0, as you can drop into empty array' },
       {id: 'maxDepth',  as: 'number', defaultValue: 3 },
+      {id: 'fieldCache', as: 'boolean' },
       {id: 'includeRoot',  as: 'boolean' },
     ],
     impl: ctx => ({
@@ -10887,6 +10891,7 @@ jb.component('tree.node-model', {
         title: () => '',
         isArray: path => ctx.params.isChapter.profile ? ctx.params.isChapter(ctx.setData(path)) : ctx.params.children(ctx.setData(path)).length,
         maxDepth: ctx.params.maxDepth,
+        fieldCache: ctx.params.fieldCache,
         includeRoot: ctx.params.includeRoot
     })
 })
@@ -10898,7 +10903,7 @@ jb.component('table-tree.init', {
             const treeModel = cmp.treeModel = cmp.ctx.vars.$model.treeModel()
             treeModel.maxDepth = treeModel.maxDepth || 5
             cmp.state.expanded = {[treeModel.rootPath]: true}
-            cmp.refresh = () => cmp.setState({items: cmp.calcItems()})
+            cmp.refresh = () => cmp.setState({items:cmp.calcItems()})
             cmp.calcItems = () => calcItems(treeModel.rootPath,0)
             cmp.leafFields = calcFields('leafFields')
             cmp.commonFields = calcFields('commonFields')
@@ -10944,6 +10949,8 @@ jb.component('table-tree.init', {
                 return item
             }
             function getOrCreateControl(field,item,index) {
+                if (!treeModel.FieldCache)
+                    return field.control(item,index)
                 cmp.ctrlCache = cmp.ctrlCache || {}
                 const key = item.path+'~!'+item.expanded + '~' +field.ctxId
                 cmp.ctrlCache[key] = cmp.ctrlCache[key] || field.control(item,index)
