@@ -35411,34 +35411,64 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
           ]
         }),
         group({
-          title: 'options',
           controls: [
-            picklist({
-              databind: '%$item%',
-              options: picklist.options(keys('%$content%')),
-              style: picklist.horizontalButtons()
-            }),
-            editableText({
-              databind: pipeline(
-                property('%$item%', '%$content%'),
-                replace({find: 'USERNAME', replace: '%$properties/username%'}),
-                replace({find: 'REPOSITORY', replace: '%$properties/repository%'})
-              ),
-              style: editableText.studioCodemirrorTgp(),
+            group({
+              title: 'share urls',
+              style: layout.flex({spacing: '', justifyContent: 'flex-start'}),
+              controls: [
+                html({
+                  title: 'share link',
+                  html: '<a href=\"%$projectLink%\" target=\"_blank\" style=\"color:rgb(63,81,181)\">share link: %$projectLink%</a>',
+                  features: css.width('350')
+                }),
+                html({
+                  title: 'share with studio link',
+                  html: '<a href=\"https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=%$projectLink%\" target=\"_blank\"  style=\"color:rgb(63,81,181)\">share with studio link</a>'
+                })
+              ],
               features: [
-                watchRef('%$item%'),
-                watchRef({ref: '%$properties%', includeChildren: 'yes', allowSelfRefresh: false})
+                variable({
+                  name: 'projectLink',
+                  value: pipeline(
+                    'https://%$properties/username%.github.io',
+                    '%%/%$properties/repository%',
+                    data.if(
+                        equals('%$properties/repository%', '%$studio/project%'),
+                        '%%',
+                        '%%/%$studio/project%'
+                      )
+                  )
+                }),
+                css('>a { color:rgb(63,81,181) }')
               ]
-            })
-          ],
-          features: [
-            variable({name: 'item', value: 'new project', watchable: true}),
-            variable({
-              name: 'content',
-              value: obj(
-                prop(
-                    'new project',
-                    `1) Create a new github repository
+            }),
+            html({title: 'html', html: '<hr>'}),
+            group({
+              title: 'options',
+              controls: [
+                picklist({
+                  databind: '%$item%',
+                  options: picklist.options(keys('%$content%')),
+                  style: picklist.horizontalButtons()
+                }),
+                editableText({
+                  databind: pipeline(
+                    property('%$item%', '%$content%'),
+                    replace({find: 'USERNAME', replace: '%$properties/username%'}),
+                    replace({find: 'REPOSITORY', replace: '%$properties/repository%'})
+                  ),
+                  style: editableText.studioCodemirrorTgp(),
+                  features: [watchRef('%$item%')]
+                })
+              ],
+              features: [
+                variable({name: 'item', value: 'new project', watchable: true}),
+                variable({
+                  name: 'content',
+                  value: obj(
+                    prop(
+                        'new project',
+                        `1) Create a new github repository
 2) Open cmd at your project directory and run the following commands
 
 
@@ -35450,17 +35480,20 @@ git config --global user.email "MY_NAME@example.com"
 git commit -am first-commit
 git remote add origin https://github.com/USERNAME/REPOSITORY.git
 git push origin master`
-                  ),
-                prop(
-                    'commit',
-                    `Open cmd at your project directory and run the following commands
+                      ),
+                    prop(
+                        'commit',
+                        `Open cmd at your project directory and run the following commands
 
 git commit -am COMMIT_REMARK
 git push origin master`
+                      )
                   )
-              )
+                })
+              ]
             })
-          ]
+          ],
+          features: watchRef({ref: '%$properties%', includeChildren: 'yes'})
         })
       ],
       features: [
@@ -36975,7 +37008,7 @@ jb.component('studio.save-components', { /* studio.saveComponents */
         files[e[0]] = e[1].replace(/<!-- load-jb-scripts-here -->/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
           .replace(/\/\/# sourceURL=.*/g,''))
       if (!files['index.html'])
-        files['index.html'] = st.host.htmlAsCloud(jb.entries(files).filter(e=>e[0].match(/html$/))[0][1])
+        files['index.html'] = st.host.htmlAsCloud(jb.entries(files).filter(e=>e[0].match(/html$/))[0][1],project)
     
       return jb.studio.host.createProject({project, files, baseDir})
         .then(r => r.json())
@@ -38167,7 +38200,7 @@ const devHost = {
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
-    htmlAsCloud: html => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="'),
+    htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
     scriptForLoadLibraries: libs => `<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,${libs.join(',')}"></script>`,
@@ -38191,7 +38224,7 @@ const cloudHost = {
     rootName: () => Promise.resolve(''),
     rootExists: () => Promise.resolve(false),
     getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
-    htmlAsCloud: html => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="'),
+    htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
     createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
     scriptForLoadLibraries: libs => {
@@ -38257,6 +38290,7 @@ st.projectHosts = {
     // host=github&hostProjectId=https://artwaresoft.github.io/todomvc/
     github: {
         fetchProject(gitHubUrl) {
+            gitHubUrl = gitHubUrl.match(/\/$/) ? gitHubUrl : gitHubUrl + '/'
             const project = gitHubUrl.split('/').filter(x=>x).pop() 
             return getUrlContent(gitHubUrl).then(html =>{
                 const srcUrls = html.split('<script type="text/javascript" src="').slice(1)
