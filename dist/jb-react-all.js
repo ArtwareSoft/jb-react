@@ -1059,16 +1059,19 @@ jb.component('list', { /* list */
 	}
 })
 
-jb.component('firstSucceeding', { /* firstSucceeding */
+jb.component('first-succeeding', { /* firstSucceeding */
   type: 'data',
   params: [
-    {id: 'items', type: 'data[]', as: 'array', composite: true}
+    {id: 'items', type: 'data[]', as: 'array', composite: true},
+//    {id: 'acceptEmptyString', as: 'boolean'}
   ],
-  impl: function(context,items) {
-		for(let i=0;i<items.length;i++)
-			if (jb.val(items[i]))
-				return items[i];
-		// return last one if zero or empty string
+  impl: function(ctx,items,acceptEmptyString) {
+    for(let i=0;i<items.length;i++) {
+      const val = jb.val(items[i])
+      if ((acceptEmptyString || val !== '') && val != null && !isNaN(val) && val !== Infinity && val !== -Infinity)
+        return items[i]
+    }
+		// return last one even if zero or empty string
 		const last = items.slice(-1)[0];
 		return (last != null) && jb.val(last);
 	}
@@ -1112,6 +1115,29 @@ jb.component('aggregate', {
   impl: (ctx,aggregator) => aggregator()
 })
 
+jb.ns('math')
+
+jb.component('math.max', {
+  type: 'aggregator',
+  impl: ctx => Math.max.apply(0,ctx.data)
+})
+
+jb.component('math.min', {
+  type: 'aggregator',
+  impl: ctx => Math.max.apply(0,ctx.data)
+})
+
+jb.component('math.sum', {
+  type: 'aggregator',
+  impl: ctx => ctx.data.reduce((acc,item) => +item+acc, 0)
+})
+
+'abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
+  .split(',').forEach(f=>jb.component(`math.${f}`, {
+    impl: ctx => Math[f](ctx.data)
+  })
+)
+
 jb.component('obj-from-entries', {
   description: 'object from entries',
   type: 'aggregator',
@@ -1121,13 +1147,26 @@ jb.component('obj-from-entries', {
   impl: (ctx,entries) => jb.objFromEntries(entries)
 })
 
+jb.component('eval-expression', {
+  description: 'evaluate javascript expression',
+  type: 'data',
+  params: [
+    {id: 'expression', as: 'string', defaultValue: '%%', expression: 'e.g. 1+2'}
+  ],
+  impl: (ctx,expression) => {
+    try {
+      return eval('('+expression+')')
+    } catch(e) {}
+  }
+})
+
 jb.component('prefix', { /* prefix */
   type: 'data',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (context,separator,text) =>
+  impl: (ctx,separator,text) =>
 		(text||'').substring(0,text.indexOf(separator))
 })
 
@@ -1313,8 +1352,7 @@ jb.component('count', { /* count */
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,items) =>
-		items.length
+  impl: (ctx,items) => items.length
 })
 
 jb.component('reverse', { /* reverse */
@@ -1322,8 +1360,7 @@ jb.component('reverse', { /* reverse */
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,items) =>
-		items.reverse()
+  impl: (ctx,items) => items.reverse()
 })
 
 jb.component('sample', { /* sample */
@@ -1333,7 +1370,7 @@ jb.component('sample', { /* sample */
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
   impl: (ctx,size,items) =>
-		items.filter((x,i)=>i % (Math.floor(items.length/300) ||1) == 0)
+		items.filter((x,i)=>i % (Math.floor(items.length/size) ||1) == 0)
 })
 
 jb.component('obj', { /* obj */
@@ -1346,13 +1383,14 @@ jb.component('obj', { /* obj */
 })
 
 jb.component('extend', { /* extend */
-  description: 'assign extend with calculated properties',
+  description: 'assign and extend with calculated properties',
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
   ],
   impl: (ctx,properties) =>
 		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
 })
+jb.component('assign', jb.comps.extend)
 
 jb.component('extend-with-index', { /* extendWithIndex */
   type: 'aggregator',
@@ -1417,6 +1455,7 @@ jb.component('not', { /* not */
 })
 
 jb.component('and', { /* and */
+  description: 'logical and',
   type: 'boolean',
   params: [
     {id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true}
@@ -1433,6 +1472,7 @@ jb.component('and', { /* and */
 })
 
 jb.component('or', { /* or */
+  description: 'logical or',
   type: 'boolean',
   params: [
     {id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true}
@@ -1449,6 +1489,7 @@ jb.component('or', { /* or */
 })
 
 jb.component('between', { /* between */
+  description: 'checks if number is in range',
   type: 'boolean',
   params: [
     {id: 'from', as: 'number', mandatory: true},
@@ -1601,7 +1642,7 @@ jb.component('log', { /* log */
 
 jb.component('asIs', { /* asIs */
   params: [
-    {id: '$asIs'}
+    {id: '$asIs', ignore: true}
   ],
   impl: ctx => context.profile.$asIs
 })
@@ -1643,7 +1684,7 @@ jb.component('json.parse', { /* json.parse */
 })
 
 jb.component('split', { /* split */
-  description: 'breaks using separator',
+  description: 'breaks string using separator',
   type: 'data',
   params: [
     {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., "," or "<a>"' },
@@ -1681,6 +1722,7 @@ jb.component('replace', { /* replace */
 })
 
 jb.component('touch', { /* touch */
+  description: 'change the value of a watchable variable to acticate its watchers',
   type: 'action',
   params: [
     {id: 'data', as: 'ref'}
@@ -1692,6 +1734,7 @@ jb.component('touch', { /* touch */
 })
 
 jb.component('isNull', { /* isNull */
+  description: 'is null or undefined',
   type: 'boolean',
   params: [
     {id: 'obj', defaultValue: '%%'}
@@ -1838,7 +1881,7 @@ jb.component('extract-suffix', { /* extractSuffix */
 })
 
 jb.component('range', { /* range */
-  description: 'generator, numerator, numbers, index',
+  description: 'returns a range of number, generator, numerator, numbers, index',
   type: 'data',
   params: [
     {id: 'from', as: 'number', defaultValue: 1},
@@ -1873,7 +1916,7 @@ jb.component('class-name', { /* className */
 jb.component('is-of-type', { /* isOfType */
   type: 'boolean',
   params: [
-    {id: 'type', as: 'string', mandatory: true, description: 'string,boolean'},
+    {id: 'type', as: 'string', mandatory: true, description: 'e.g., string,boolean,array'},
     {id: 'obj', defaultValue: '%%'}
   ],
   impl: (ctx,_type,_obj) => {
@@ -2007,13 +2050,6 @@ jb.component('action.switch-case', { /* action.switchCase */
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: ctx => ctx.params
-})
-
-jb.component('.', { /* . */
-  type: 'data',
-  impl: pipeline(
-    
-  )
 })
 ;
 
@@ -4563,8 +4599,7 @@ ui.setState = function(cmp,state,opEvent,watchedAt) {
 }
 
 ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
-		if (!ref)
-			jb.logError('null ref for watch ref',...arguments);
+		if (!ref) return
     	ui.refObservable(ref,cmp,{includeChildren, srcCtx: ctx})
 			.subscribe(e=>{
 				let ctxStack=[]; for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
@@ -4646,6 +4681,8 @@ ui.addHTML = (el,html) => {
   elem.innerHTML = html;
   el.appendChild(elem.firstChild)
 }
+
+ui.withUnits = v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`
 
 // ****************** vdom utils ***************
 
@@ -4862,7 +4899,7 @@ class WatchableValueByRef {
     }
   }
   removeLinksFromPath(path) {
-    if (!Array.isArray(path)) debugger
+    if (!Array.isArray(path)) return
     if (!this.hasLinksInPath(path))
       return path
     return path.reduce(({val,path} ,p) => {
@@ -5022,8 +5059,11 @@ class WatchableValueByRef {
       req.srcCtx = req.srcCtx || { path: ''}
       const key = this.pathOfRef(req.ref).join('~') + ' : ' + req.cmp.ctx.path
       const entry = { ...req, subject, key }
-      if (key && this.observables.find(e=>e.key === key))
+      const found = key && this.observables.find(e=>e.key === key && e.cmp === entry.cmp)
+      if (found) {
         jb.logError('observable already exists', entry)
+        return found.subject
+      }
       
       this.observables.push(entry);
       this.observables.sort((e1,e2) => comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
@@ -5459,7 +5499,7 @@ jb.component('html', {
 })
 
 jb.component('html.plain', {
-    type: 'label.style',
+    type: 'html.style',
     impl: customStyle({
         template: (cmp,state,h) => h('div'),
         features: ctx => ({
@@ -5468,6 +5508,23 @@ jb.component('html.plain', {
     })
 })
 
+jb.component('html.in-iframe', {
+    type: 'html.style',
+    params: [
+        {id: 'width', as: 'string', defaultValue: '100%'},
+        {id: 'height', as: 'string', defaultValue: '100%'}
+    ],
+    impl: customStyle({
+        template: (cmp,state,h) => h('iframe', {
+            sandbox: 'allow-same-origin allow-forms allow-scripts',
+            frameborder: 0, width: cmp.width, height: cmp.height,
+            src: 'javascript: document.write(parent.contentForIframe)'
+          }),
+          features: ctx => ({
+            afterViewInit: cmp => window.contentForIframe = cmp.ctx.vars.$model.html()
+        })
+    })
+})
 ;
 
 jb.ns('image')
@@ -5477,31 +5534,27 @@ jb.component('image', { /* image */
   category: 'control:50',
   params: [
     {id: 'url', as: 'string', mandatory: true},
-    {id: 'imageWidth', as: 'number'},
-    {id: 'imageHeight', as: 'number'},
-    {id: 'width', as: 'number'},
-    {id: 'height', as: 'number'},
-    {id: 'units', as: 'string', defaultValue: 'px'},
+    {id: 'imageWidth', as: 'string'},
+    {id: 'imageHeight', as: 'string'},
+    {id: 'width', as: 'string'},
+    {id: 'height', as: 'string'},
     {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.default()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => {
-			['imageWidth','imageHeight','width','height'].forEach(prop=>
-					ctx.params[prop] = ctx.params[prop] || null);
-			return jb.ui.ctrl(ctx, {
-				init: cmp =>
-					cmp.state.url = ctx.params.url
-			})
-		}
+  impl: ctx => jb.ui.ctrl(ctx, {
+    init: cmp => {
+      ['imageWidth','imageHeight','width','height'].map(k=>
+          cmp.state[k] = jb.ui.withUnits(ctx.params[k])) 
+      cmp.state.url = ctx.params.url
+  }})
 })
 
 jb.component('image.default', { /* image.default */
   type: 'image.style',
   impl: customStyle({
     template: (cmp,state,h) =>
-			h('div',{}, h('img', {src: state.url})),
-    css: `{ {? width: %$$model/width%%$$model/units%; ?} {? height: %$$model/height%%$$model/units%; ?} }
-			>img{ {? width: %$$model/imageWidth%%$$model/units%; ?} {? height: %$$model/imageHeight%%$$model/units%; ?} }`
+      h('div',{ style: { width: state.width, height: state.height }}, 
+        h('img', {src: state.url, style: {width: state.imageWidth, height: state.imageHeight}})),
   })
 })
 ;
@@ -6665,7 +6718,7 @@ jb.component('focus-on-first-element', { /* focusOnFirstElement */
 ;
 
 (function() {
-const withUnits = v => (''+v||'').match(/[^0-9]$/) ? v : `${v}px`
+const withUnits = jb.ui.withUnits
 const fixCssLine = css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css
 
 jb.component('css', { /* css */
@@ -7200,48 +7253,42 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
     }
   ],
   impl: (ctx,codeMirror) => ({
-		templateModifier: (vdom,cmp,state) => {
+	templateModifier: (vdom,cmp,state) => {
             if (vdom && vdom.nodeName != 'div') return vdom;
 				vdom.children.push(jb.ui.h('img', {class: 'jb-resizer'}));
 			return vdom;
-		},
-		css: '>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
+	},
+	css: '>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
 
-		afterViewInit: function(cmp) {
+	afterViewInit: function(cmp) {
 		const resizerElem = cmp.base.querySelector('.jb-resizer');
-		cmp.mousedownEm = jb.rx.Observable.fromEvent(resizerElem, 'mousedown')
-		.takeUntil( cmp.destroyed );
+		cmp.mousedownEm = jb.rx.Observable.fromEvent(resizerElem, 'mousedown').takeUntil( cmp.destroyed );
 
 		let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
 		let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
 
 		if (jb.studio.previewWindow) {
-		mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
-			.takeUntil( cmp.destroyed );
-		mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
-			.takeUntil( cmp.destroyed );
+			mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
+				.takeUntil( cmp.destroyed );
+			mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
+				.takeUntil( cmp.destroyed );
 		}
 
 		let codeMirrorElem,codeMirrorSizeDiff;
 		const mousedrag = cmp.mousedownEm.do(e=>{
-				if (codeMirror) {
+			if (codeMirror) {
 					codeMirrorElem = cmp.base.querySelector('.CodeMirror,.jb-textarea-alternative-for-codemirror');
 					if (codeMirrorElem)
 					codeMirrorSizeDiff = codeMirrorElem.getBoundingClientRect().top - cmp.base.getBoundingClientRect().top
 						+ (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
-				}
-			})
-			.map(e =>  ({
+			}
+			}).map(e =>  ({
 				left: cmp.base.getBoundingClientRect().left,
 				top:  cmp.base.getBoundingClientRect().top
-			}))
-			.flatMap(imageOffset =>
+			})).flatMap(imageOffset =>
 					mouseMoveEm.takeUntil(mouseUpEm)
-					.map(pos => ({
-					top:  pos.clientY - imageOffset.top,
-					left: pos.clientX - imageOffset.left
-					}))
-		);
+					.map(pos => ({ top:  pos.clientY - imageOffset.top, left: pos.clientX - imageOffset.left }))
+			)
 
 		mousedrag.distinctUntilChanged().subscribe(pos => {
 			cmp.base.style.height  = pos.top  + 'px';
@@ -9312,7 +9359,7 @@ jb.component('editable-text.textarea', { /* editableText.textarea */
 })
 
 jb.component('editable-text.mdl-input', { /* editableText.mdlInput */
-  type: 'editable-text.style',
+  type: 'editable-text.style,editable-number.style',
   params: [
     {id: 'width', as: 'number'}
   ],

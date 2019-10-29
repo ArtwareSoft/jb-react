@@ -1059,16 +1059,19 @@ jb.component('list', { /* list */
 	}
 })
 
-jb.component('firstSucceeding', { /* firstSucceeding */
+jb.component('first-succeeding', { /* firstSucceeding */
   type: 'data',
   params: [
-    {id: 'items', type: 'data[]', as: 'array', composite: true}
+    {id: 'items', type: 'data[]', as: 'array', composite: true},
+//    {id: 'acceptEmptyString', as: 'boolean'}
   ],
-  impl: function(context,items) {
-		for(let i=0;i<items.length;i++)
-			if (jb.val(items[i]))
-				return items[i];
-		// return last one if zero or empty string
+  impl: function(ctx,items,acceptEmptyString) {
+    for(let i=0;i<items.length;i++) {
+      const val = jb.val(items[i])
+      if ((acceptEmptyString || val !== '') && val != null && !isNaN(val) && val !== Infinity && val !== -Infinity)
+        return items[i]
+    }
+		// return last one even if zero or empty string
 		const last = items.slice(-1)[0];
 		return (last != null) && jb.val(last);
 	}
@@ -1112,6 +1115,29 @@ jb.component('aggregate', {
   impl: (ctx,aggregator) => aggregator()
 })
 
+jb.ns('math')
+
+jb.component('math.max', {
+  type: 'aggregator',
+  impl: ctx => Math.max.apply(0,ctx.data)
+})
+
+jb.component('math.min', {
+  type: 'aggregator',
+  impl: ctx => Math.max.apply(0,ctx.data)
+})
+
+jb.component('math.sum', {
+  type: 'aggregator',
+  impl: ctx => ctx.data.reduce((acc,item) => +item+acc, 0)
+})
+
+'abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
+  .split(',').forEach(f=>jb.component(`math.${f}`, {
+    impl: ctx => Math[f](ctx.data)
+  })
+)
+
 jb.component('obj-from-entries', {
   description: 'object from entries',
   type: 'aggregator',
@@ -1121,13 +1147,26 @@ jb.component('obj-from-entries', {
   impl: (ctx,entries) => jb.objFromEntries(entries)
 })
 
+jb.component('eval-expression', {
+  description: 'evaluate javascript expression',
+  type: 'data',
+  params: [
+    {id: 'expression', as: 'string', defaultValue: '%%', expression: 'e.g. 1+2'}
+  ],
+  impl: (ctx,expression) => {
+    try {
+      return eval('('+expression+')')
+    } catch(e) {}
+  }
+})
+
 jb.component('prefix', { /* prefix */
   type: 'data',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (context,separator,text) =>
+  impl: (ctx,separator,text) =>
 		(text||'').substring(0,text.indexOf(separator))
 })
 
@@ -1313,8 +1352,7 @@ jb.component('count', { /* count */
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,items) =>
-		items.length
+  impl: (ctx,items) => items.length
 })
 
 jb.component('reverse', { /* reverse */
@@ -1322,8 +1360,7 @@ jb.component('reverse', { /* reverse */
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,items) =>
-		items.reverse()
+  impl: (ctx,items) => items.reverse()
 })
 
 jb.component('sample', { /* sample */
@@ -1333,7 +1370,7 @@ jb.component('sample', { /* sample */
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
   impl: (ctx,size,items) =>
-		items.filter((x,i)=>i % (Math.floor(items.length/300) ||1) == 0)
+		items.filter((x,i)=>i % (Math.floor(items.length/size) ||1) == 0)
 })
 
 jb.component('obj', { /* obj */
@@ -1346,13 +1383,14 @@ jb.component('obj', { /* obj */
 })
 
 jb.component('extend', { /* extend */
-  description: 'assign extend with calculated properties',
+  description: 'assign and extend with calculated properties',
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
   ],
   impl: (ctx,properties) =>
 		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
 })
+jb.component('assign', jb.comps.extend)
 
 jb.component('extend-with-index', { /* extendWithIndex */
   type: 'aggregator',
@@ -1417,6 +1455,7 @@ jb.component('not', { /* not */
 })
 
 jb.component('and', { /* and */
+  description: 'logical and',
   type: 'boolean',
   params: [
     {id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true}
@@ -1433,6 +1472,7 @@ jb.component('and', { /* and */
 })
 
 jb.component('or', { /* or */
+  description: 'logical or',
   type: 'boolean',
   params: [
     {id: 'items', type: 'boolean[]', ignore: true, mandatory: true, composite: true}
@@ -1449,6 +1489,7 @@ jb.component('or', { /* or */
 })
 
 jb.component('between', { /* between */
+  description: 'checks if number is in range',
   type: 'boolean',
   params: [
     {id: 'from', as: 'number', mandatory: true},
@@ -1601,7 +1642,7 @@ jb.component('log', { /* log */
 
 jb.component('asIs', { /* asIs */
   params: [
-    {id: '$asIs'}
+    {id: '$asIs', ignore: true}
   ],
   impl: ctx => context.profile.$asIs
 })
@@ -1643,7 +1684,7 @@ jb.component('json.parse', { /* json.parse */
 })
 
 jb.component('split', { /* split */
-  description: 'breaks using separator',
+  description: 'breaks string using separator',
   type: 'data',
   params: [
     {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., "," or "<a>"' },
@@ -1681,6 +1722,7 @@ jb.component('replace', { /* replace */
 })
 
 jb.component('touch', { /* touch */
+  description: 'change the value of a watchable variable to acticate its watchers',
   type: 'action',
   params: [
     {id: 'data', as: 'ref'}
@@ -1692,6 +1734,7 @@ jb.component('touch', { /* touch */
 })
 
 jb.component('isNull', { /* isNull */
+  description: 'is null or undefined',
   type: 'boolean',
   params: [
     {id: 'obj', defaultValue: '%%'}
@@ -1838,7 +1881,7 @@ jb.component('extract-suffix', { /* extractSuffix */
 })
 
 jb.component('range', { /* range */
-  description: 'generator, numerator, numbers, index',
+  description: 'returns a range of number, generator, numerator, numbers, index',
   type: 'data',
   params: [
     {id: 'from', as: 'number', defaultValue: 1},
@@ -1873,7 +1916,7 @@ jb.component('class-name', { /* className */
 jb.component('is-of-type', { /* isOfType */
   type: 'boolean',
   params: [
-    {id: 'type', as: 'string', mandatory: true, description: 'string,boolean'},
+    {id: 'type', as: 'string', mandatory: true, description: 'e.g., string,boolean,array'},
     {id: 'obj', defaultValue: '%%'}
   ],
   impl: (ctx,_type,_obj) => {
@@ -2007,13 +2050,6 @@ jb.component('action.switch-case', { /* action.switchCase */
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: ctx => ctx.params
-})
-
-jb.component('.', { /* . */
-  type: 'data',
-  impl: pipeline(
-    
-  )
 })
 ;
 

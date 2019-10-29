@@ -245,8 +245,17 @@ border: 1px solid rgb(213, 213, 213);}
 
 .jb-cover { position: 'absolute'; width: '100%'; height: '100%'; background: 'white'; opacity: '0'; top: 0; left: 0; }
 
-.jb-textarea-alternative-for-codemirror { width: 100%; padding-right: 0; height: 100% }
-@keyframes slide_from_top {
+.jb-textarea-alternative-for-codemirror { width: 100%; padding-right: 0; resize: none; height: 100% }
+
+.stretchedToMargin {
+  display: block;
+  position:absolute;
+  height:auto;
+  bottom:0;
+  top:0;
+  left:0;
+  right:0;
+}@keyframes slide_from_top {
     0%   {margin-top: -50px;}
     10%  {margin-top: 0;}
     90%  {margin-top: 0;}
@@ -577,8 +586,17 @@ border: 1px solid rgb(213, 213, 213);}
 
 .jb-cover { position: 'absolute'; width: '100%'; height: '100%'; background: 'white'; opacity: '0'; top: 0; left: 0; }
 
-.jb-textarea-alternative-for-codemirror { width: 100%; padding-right: 0; height: 100% }
-/* BASICS */
+.jb-textarea-alternative-for-codemirror { width: 100%; padding-right: 0; resize: none; height: 100% }
+
+.stretchedToMargin {
+  display: block;
+  position:absolute;
+  height:auto;
+  bottom:0;
+  top:0;
+  left:0;
+  right:0;
+}/* BASICS */
 
 .CodeMirror {
   /* Set height, width, borders, and global font properties here */
