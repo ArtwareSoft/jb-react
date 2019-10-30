@@ -1327,14 +1327,15 @@ jb.component('sort', { /* sort */
   ],
   impl: ({data},prop,lexical,ascending) => {
 		if (!data || ! Array.isArray(data)) return null;
-		let sortFunc;
-		if (lexical)
+    let sortFunc;
+    const firstData = jb.entries(data[0]||{})[0][1]
+		if (lexical || isNaN(firstData))
 			sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
 		else
 			sortFunc = prop ? (x,y) => (x[prop]-y[prop]) : (x,y) => (x-y);
 		if (ascending)
-			return data.slice(0).sort((x,y)=>sortFunc(y,x));
-		return data.slice(0).sort((x,y)=>sortFunc(x,y));
+  		return data.slice(0).sort((x,y)=>sortFunc(x,y));
+		return data.slice(0).sort((x,y)=>sortFunc(y,x));
 	}
 })
 
@@ -5671,11 +5672,14 @@ jb.component('icon-with-action', { /* iconWithAction */
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 
 function databindField(cmp,ctx,debounceTime,oneWay) {
+  debounceTime = debounceTime || 300
   if (debounceTime) {
     cmp.debouncer = new jb.rx.Subject();
     cmp.debouncer.takeUntil( cmp.destroyed )
       .distinctUntilChanged()
-      .debounceTime(debounceTime)
+      .buffer(cmp.debouncer.debounceTime(debounceTime))
+      .filter(buf=>buf.length)
+      .map(buf=>buf.pop())
       .subscribe(val=>cmp.jbModel(val))
   }
 
@@ -5780,7 +5784,7 @@ jb.component('field.databind-text', { /* field.databindText */
   type: 'feature',
   params: [
     {id: 'debounceTime', as: 'number', defaultValue: 0},
-    {id: 'oneWay', type: 'boolean', as: 'boolean'}
+    {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
   impl: (ctx,debounceTime,oneWay) => ({
       beforeInit: cmp => databindField(cmp,ctx,debounceTime,oneWay),

@@ -1327,14 +1327,15 @@ jb.component('sort', { /* sort */
   ],
   impl: ({data},prop,lexical,ascending) => {
 		if (!data || ! Array.isArray(data)) return null;
-		let sortFunc;
-		if (lexical)
+    let sortFunc;
+    const firstData = jb.entries(data[0]||{})[0][1]
+		if (lexical || isNaN(firstData))
 			sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
 		else
 			sortFunc = prop ? (x,y) => (x[prop]-y[prop]) : (x,y) => (x-y);
 		if (ascending)
-			return data.slice(0).sort((x,y)=>sortFunc(y,x));
-		return data.slice(0).sort((x,y)=>sortFunc(x,y));
+  		return data.slice(0).sort((x,y)=>sortFunc(x,y));
+		return data.slice(0).sort((x,y)=>sortFunc(y,x));
 	}
 })
 
@@ -5671,11 +5672,14 @@ jb.component('icon-with-action', { /* iconWithAction */
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 
 function databindField(cmp,ctx,debounceTime,oneWay) {
+  debounceTime = debounceTime || 300
   if (debounceTime) {
     cmp.debouncer = new jb.rx.Subject();
     cmp.debouncer.takeUntil( cmp.destroyed )
       .distinctUntilChanged()
-      .debounceTime(debounceTime)
+      .buffer(cmp.debouncer.debounceTime(debounceTime))
+      .filter(buf=>buf.length)
+      .map(buf=>buf.pop())
       .subscribe(val=>cmp.jbModel(val))
   }
 
@@ -5780,7 +5784,7 @@ jb.component('field.databind-text', { /* field.databindText */
   type: 'feature',
   params: [
     {id: 'debounceTime', as: 'number', defaultValue: 0},
-    {id: 'oneWay', type: 'boolean', as: 'boolean'}
+    {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
   impl: (ctx,debounceTime,oneWay) => ({
       beforeInit: cmp => databindField(cmp,ctx,debounceTime,oneWay),
@@ -31153,7 +31157,7 @@ jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrim
           onkeyup: e => cmp.jbModel(e.target.value,'keyup')
       }),
     css: ':focus { border-color: #3F51B5; border-width: 2px}',
-    features: field.databindText()
+    features: field.databindText(500,false)
   })
 })
 
@@ -35464,7 +35468,7 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
                     replace({find: 'USERNAME', replace: '%$properties/username%'}),
                     replace({find: 'REPOSITORY', replace: '%$properties/repository%'})
                   ),
-                  style: editableText.studioCodemirrorTgp(),
+                  style: editableText.codemirror({mode: 'text'}),
                   features: [watchRef('%$item%')]
                 })
               ],
@@ -35492,10 +35496,18 @@ git push origin master`
                         'commit',
                         `Open cmd at your project directory and run the following commands
 
+git add . 
 git commit -am COMMIT_REMARK
-git push origin master`
+git push origin master
+
+#explanation
+git add -  mark all files to be handled by the local repository. 
+Needed only if you added new files
+git commit - adds the changes to your local git repository
+git push - copy the local repostiry to github's cloud repository`
                       )
-                  )
+                  ),
+                  watchable: false
                 })
               ]
             })
@@ -38023,6 +38035,32 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
       menu.menu({
         title: 'File',
         options: [
+          menu.menu({
+            title: 'Sample Projects',
+            options: [
+              menu.action({
+                title: 'itemlists',
+                action: gotoUrl(
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/itemlists',
+                  'new tab'
+                )
+              }),
+              menu.action({
+                title: 'todos',
+                action: gotoUrl(
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/todomvc',
+                  'new tab'
+                )
+              }),
+              menu.action({
+                title: 'html parser',
+                action: gotoUrl(
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/html-parser',
+                  'new tab'
+                )
+              })
+            ]
+          }),
           menu.action({title: 'New Project', action: studio.openNewProject(), icon: 'new'}),
           menu.action({title: 'Open Project ...', action: studio.openProject()}),
           menu.action({
