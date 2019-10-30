@@ -171,9 +171,13 @@ st.injectImMemoryProjectToPreview = function(previewWin) {
   const cssToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/css$/))
     .map(e => `<style>${e[1]}</style>` ).join('\n')
   let html = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/html$/))[0][1]
-  if (html.match(/<!-- load-jb-scripts-here -->/))
-    html = html.replace(/<!-- load-jb-scripts-here -->/,
-        [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),`<script>${jsToInject}</script>`,cssToInject].join('\n'))
+  if (html.match(/<!-- load-jb-scripts-here -->/)) {
+    // replace did not work here beacuse of '$'
+    const pos = html.indexOf('<!-- load-jb-scripts-here -->'), len = '<!-- load-jb-scripts-here -->'.length
+    html = html.slice(0,pos) 
+     + [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),`<script>${jsToInject}</script>`,cssToInject].join('\n')
+     + html.slice(pos+len)
+  }
   
   previewWin.document.write(html)
 }

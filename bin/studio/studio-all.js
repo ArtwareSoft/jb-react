@@ -32245,9 +32245,13 @@ st.injectImMemoryProjectToPreview = function(previewWin) {
   const cssToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/css$/))
     .map(e => `<style>${e[1]}</style>` ).join('\n')
   let html = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/html$/))[0][1]
-  if (html.match(/<!-- load-jb-scripts-here -->/))
-    html = html.replace(/<!-- load-jb-scripts-here -->/,
-        [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),`<script>${jsToInject}</script>`,cssToInject].join('\n'))
+  if (html.match(/<!-- load-jb-scripts-here -->/)) {
+    // replace did not work here beacuse of '$'
+    const pos = html.indexOf('<!-- load-jb-scripts-here -->'), len = '<!-- load-jb-scripts-here -->'.length
+    html = html.slice(0,pos) 
+     + [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),`<script>${jsToInject}</script>`,cssToInject].join('\n')
+     + html.slice(pos+len)
+  }
   
   previewWin.document.write(html)
 }
@@ -38041,7 +38045,7 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
               menu.action({
                 title: 'itemlists',
                 action: gotoUrl(
-                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/itemlists',
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/itemlists&project=itemlists',
                   'new tab'
                 )
               }),
@@ -38053,9 +38057,9 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
                 )
               }),
               menu.action({
-                title: 'html parser',
+                title: 'html parsing',
                 action: gotoUrl(
-                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/html-parser',
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/html-parsing&project=html-parsing',
                   'new tab'
                 )
               })

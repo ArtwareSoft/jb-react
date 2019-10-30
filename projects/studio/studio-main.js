@@ -111,7 +111,7 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
               menu.action({
                 title: 'itemlists',
                 action: gotoUrl(
-                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/itemlists',
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/itemlists&project=itemlists',
                   'new tab'
                 )
               }),
@@ -123,9 +123,9 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
                 )
               }),
               menu.action({
-                title: 'html parser',
+                title: 'html parsing',
                 action: gotoUrl(
-                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/html-parser',
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/html-parsing&project=html-parsing',
                   'new tab'
                 )
               })
