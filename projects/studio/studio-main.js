@@ -105,6 +105,32 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
       menu.menu({
         title: 'File',
         options: [
+          menu.menu({
+            title: 'Sample Projects',
+            options: [
+              menu.action({
+                title: 'itemlists',
+                action: gotoUrl(
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/itemlists',
+                  'new tab'
+                )
+              }),
+              menu.action({
+                title: 'todos',
+                action: gotoUrl(
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/todomvc',
+                  'new tab'
+                )
+              }),
+              menu.action({
+                title: 'html parser',
+                action: gotoUrl(
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/html-parser',
+                  'new tab'
+                )
+              })
+            ]
+          }),
           menu.action({title: 'New Project', action: studio.openNewProject(), icon: 'new'}),
           menu.action({title: 'Open Project ...', action: studio.openProject()}),
           menu.action({

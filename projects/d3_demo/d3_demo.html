@@ -7,15 +7,16 @@
     startTime = new Date().getTime();
   </script>
 <!-- start-jb-scripts -->
-<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material"></script>
-<script type="text/javascript" src="/projects/itemlists/itemlists.js"></script>
+<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material,d3"></script>
+<script type="text/javascript" src="/projects/d3_demo/phones.js"></script>
+<script type="text/javascript" src="/projects/d3_demo/d3_demo.js"></script>
 
 <!-- end-jb-scripts -->
 </head>
 <body>
   <div id="main"> </div>
   <script>
-    jb.ui.renderWidget({$:'itemlists.main'},document.getElementById('main'))
+    jb.ui.renderWidget({$:'d3_demo.main'},document.getElementById('main'))
   </script>
 </body>
 </html>

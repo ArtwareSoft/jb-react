@@ -2,11 +2,14 @@
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 
 function databindField(cmp,ctx,debounceTime,oneWay) {
+  debounceTime = debounceTime || 300
   if (debounceTime) {
     cmp.debouncer = new jb.rx.Subject();
     cmp.debouncer.takeUntil( cmp.destroyed )
       .distinctUntilChanged()
-      .debounceTime(debounceTime)
+      .buffer(cmp.debouncer.debounceTime(debounceTime))
+      .filter(buf=>buf.length)
+      .map(buf=>buf.pop())
       .subscribe(val=>cmp.jbModel(val))
   }
 
@@ -111,7 +114,7 @@ jb.component('field.databind-text', { /* field.databindText */
   type: 'feature',
   params: [
     {id: 'debounceTime', as: 'number', defaultValue: 0},
-    {id: 'oneWay', type: 'boolean', as: 'boolean'}
+    {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
   impl: (ctx,debounceTime,oneWay) => ({
       beforeInit: cmp => databindField(cmp,ctx,debounceTime,oneWay),

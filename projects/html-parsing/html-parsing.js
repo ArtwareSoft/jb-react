@@ -80,7 +80,7 @@ jb.component('html-parsing.makeToDevices', { /* htmlParsing.makeToDevices */
   impl: group({
     controls: [
       button({
-        title: 'parse make',
+        title: 'parse products page into urls',
         action: writeValue(
           '%$deviceUrls%',
           pipeline(
@@ -91,7 +91,7 @@ jb.component('html-parsing.makeToDevices', { /* htmlParsing.makeToDevices */
         )
       }),
       button({
-        title: 'crawl - devices url - parse device - store in results',
+        title: 'crawl devices urls - parse device - store in results',
         action: runActionOnItems(
           pipeline('%$deviceUrls%', slice('0', '5')),
           runActions(
@@ -243,4 +243,13 @@ jb.component('data-resource.sel', { /* dataResource.sel */
     name: 'Acer Liquid Z6 Plus',
     image: 'https://www.gravatar.com/avatar/2900b88d10e585a546c9ff5140591320?r=g&s=50'
   }
+})
+
+jb.component('html-parsing.products-parser', { /* htmlParsing.productsParser */
+  type: 'data',
+  impl: pipeline(
+    extractText({startMarkers: 'class=\"makers\"', endMarker: '</ul>'}),
+    extractText({startMarkers: '<a href=\"', endMarker: '.php', repeating: 'true'})
+  ),
+  testData: '%$sampleMakePage%'
 })

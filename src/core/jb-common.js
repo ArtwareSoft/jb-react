@@ -401,14 +401,15 @@ jb.component('sort', { /* sort */
   ],
   impl: ({data},prop,lexical,ascending) => {
 		if (!data || ! Array.isArray(data)) return null;
-		let sortFunc;
-		if (lexical)
+    let sortFunc;
+    const firstData = jb.entries(data[0]||{})[0][1]
+		if (lexical || isNaN(firstData))
 			sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
 		else
 			sortFunc = prop ? (x,y) => (x[prop]-y[prop]) : (x,y) => (x-y);
 		if (ascending)
-			return data.slice(0).sort((x,y)=>sortFunc(y,x));
-		return data.slice(0).sort((x,y)=>sortFunc(x,y));
+  		return data.slice(0).sort((x,y)=>sortFunc(x,y));
+		return data.slice(0).sort((x,y)=>sortFunc(y,x));
 	}
 })
 

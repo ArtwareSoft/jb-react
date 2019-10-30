@@ -8,7 +8,7 @@ jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrim
           onkeyup: e => cmp.jbModel(e.target.value,'keyup')
       }),
     css: ':focus { border-color: #3F51B5; border-width: 2px}',
-    features: field.databindText()
+    features: field.databindText(500,false)
   })
 })
 

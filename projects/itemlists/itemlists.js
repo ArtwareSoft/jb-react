@@ -1,5 +1,3 @@
-jb.ns('d3Chart,d3Scatter,d3Histogram')
-
 jb.component('people', { watchableData: [
   { "name": "Homer Simpson" ,age: 42 , male: true, children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ]},
   { "name": "Marge Simpson" ,age: 38 , male: false, children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ]},
@@ -12,8 +10,8 @@ jb.component('itemlists.main', { /* itemlists.main */
   impl: itemlist({
     items: '%$people%',
     controls: [
-      text({title: 'name', text: '%name%', features: [field.columnWidth('250')]}),
-      text({title: 'age', text: '%age%', features: null})
+      text({title: 'name', text: '%name%', features: field.columnWidth('250')}),
+      text({title: 'age', text: '%age%'})
     ],
     style: table.withHeaders()
   })
@@ -202,53 +200,32 @@ jb.component('itemlists.table-with-filters', { /* itemlists.tableWithFilters */
   })
 })
 
-jb.component('itemlists.phones-chart', { /* itemlists.phonesChart */
+jb.component('itemlists.master-details-with-container', { /* itemlists.masterDetailsWithContainer */
   type: 'control',
   impl: group({
-    controls: [
-      d3g.chartScatter({
-        title: 'phones',
-        items: pipeline('%$phones%', filter(between({from: '4', to: '7', val: '%size%'}))),
-        frame: d3g.frame({
-          width: '1200',
-          height: '480',
-          top: 20,
-          right: 20,
-          bottom: '40',
-          left: '80'
-        }),
-        pivots: [
-          d3g.pivot({title: 'performance', value: '%performance%'}),
-          d3g.pivot({title: 'size', value: '%size%'}),
-          d3g.pivot({title: 'hits', value: '%hits%', scale: d3g.sqrtScale()}),
-          d3g.pivot({title: 'make', value: '%make%'}),
-          d3g.pivot({title: '$', value: '%price%'})
-        ],
-        itemTitle: '%title% (%Announced%)',
-        visualSizeLimit: '3000',
-        style: d3Scatter.plain()
-      })
-    ]
-  })
-})
-
-jb.component('itemlists.master-details-with-container', { /* itemlists.masterDetails */
-  type: 'control',
-  impl: group({
+    style: layout.horizontal(),
     controls: [
       itemlist({
         items: '%$people%',
         controls: [
           text({title: 'name', text: '%name%'})
         ],
-        features: itemlist.selection({autoSelectFirst: 'true'})
+        features: [itemlist.selection({autoSelectFirst: 'true'}), itemlist.keyboardSelection({})]
+      }),
+      html({
+        title: 'separator',
+        html: '<div></div>',
+        features: [
+          css.border({width: '1', side: 'right', color: 'grey'}),
+          css.margin({left: '10', right: '10'})
+        ]
       }),
       group({
         title: 'person',
-        style: propertySheet.titlesLeft({}),
+        style: propertySheet.titlesAbove('5'),
         controls: [
-          text({title: 'name', text: '%name%'}),
-          text({title: 'age', text: '%age%'})
+          text({title: 'name', text: '%name%', style: label.cardTitle()}),
+          text({title: 'age', text: '%age%', style: label.cardTitle()})
         ],
         features: group.data({data: '%$itemlistCntrData/selected%', watch: true})
       })
@@ -260,24 +237,69 @@ jb.component('itemlists.master-details-with-container', { /* itemlists.masterDet
 jb.component('itemlists.master-details', { /* itemlists.masterDetails */
   type: 'control',
   impl: group({
+    style: layout.horizontal(),
     controls: [
       itemlist({
         items: '%$people%',
         controls: [
           text({title: 'name', text: '%name%'})
         ],
-        features: itemlist.selection({databind: '%$selected%', autoSelectFirst: 'true'})
+        features: [
+          itemlist.selection({databind: '%$selected%', autoSelectFirst: 'true'}),
+          itemlist.keyboardSelection({})
+        ]
+      }),
+      html({
+        title: 'separator',
+        html: '<div></div>',
+        features: [
+          css.border({width: '1', side: 'right', color: 'grey'}),
+          css.margin({left: '10', right: '10'})
+        ]
       }),
       group({
         title: 'person',
         style: propertySheet.titlesLeft({}),
         controls: [
-          text({title: 'name', text: '%name%'}),
-          text({title: 'age', text: '%age%'})
+          text({title: 'name', text: '%name%', style: label.cardTitle()}),
+          text({title: 'age', text: '%age%', style: label.cardTitle()})
         ],
         features: group.data({data: '%$selected%', watch: true})
       })
     ],
     features: variable({name: 'selected', value: '%$people/0%', watchable: true})
   })
+})
+
+jb.component('itemlists.with-sort', { /* itemlists.withSort */
+  type: 'control',
+  impl: group({
+    controls: [
+      group({
+        style: propertySheet.titlesLeft({vSpacing: '', hSpacing: '', titleWidth: '60'}),
+        controls: [
+          picklist({
+            title: 'sort by:',
+            databind: '%$sortBy%',
+            options: picklist.optionsByComma('age,name'),
+            style: picklist.native(),
+            features: css.width('100')
+          })
+        ]
+      }),
+      itemlist({
+        items: pipeline('%$people%', sort({propertyName: '%$sortBy%', ascending: 'true'})),
+        controls: [
+          text({title: 'name', text: '%name%', features: field.columnWidth('250')}),
+          text({title: 'age', text: '%age%'})
+        ],
+        style: table.withHeaders(),
+        features: watchRef('%$sortBy%')
+      })
+    ]
+  })
+})
+
+jb.component('data-resource.sortBy', { /* dataResource.sortBy */
+  watchableData: 'age'
 })

@@ -201,7 +201,7 @@ jb.component('ui-test.two-way-binding', { /* uiTest.twoWayBinding */
   impl: uiTest({
     control: group({
       controls: [
-        editableText({title: 'name', databind: '%$person/name%', features: id('inp')}),
+        editableText({title: 'name', databind: '%$person/name%', features: [field.databindText(0,false), id('inp')] }),
         label('%$person/name%')
       ]
     }),

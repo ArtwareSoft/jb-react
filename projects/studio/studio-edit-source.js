@@ -488,7 +488,7 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
                     replace({find: 'USERNAME', replace: '%$properties/username%'}),
                     replace({find: 'REPOSITORY', replace: '%$properties/repository%'})
                   ),
-                  style: editableText.studioCodemirrorTgp(),
+                  style: editableText.codemirror({mode: 'text'}),
                   features: [watchRef('%$item%')]
                 })
               ],
@@ -516,10 +516,18 @@ git push origin master`
                         'commit',
                         `Open cmd at your project directory and run the following commands
 
+git add . 
 git commit -am COMMIT_REMARK
-git push origin master`
+git push origin master
+
+#explanation
+git add -  mark all files to be handled by the local repository. 
+Needed only if you added new files
+git commit - adds the changes to your local git repository
+git push - copy the local repostiry to github's cloud repository`
                       )
-                  )
+                  ),
+                  watchable: false
                 })
               ]
             })
