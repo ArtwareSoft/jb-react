@@ -32243,14 +32243,18 @@ st.injectImMemoryProjectToPreview = function(previewWin) {
   const jsToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/js$/))
     .map(e => 'eval(' + '`'+ e[1].replace(/`/g,'\\`').replace(/<\/script>/gi,'`+`</`+`script>`+`')  + '`)'
      ).join('\n')
+  const injectWithSrc = st.inMemoryProject.js.map(jsFile => `<script type="text/javascript" src="${st.inMemoryProject.baseUrl}/${jsFile}"></script>`)
   const cssToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/css$/))
     .map(e => `<style>${e[1]}</style>` ).join('\n')
   let html = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/html$/))[0][1]
   if (html.match(/<!-- load-jb-scripts-here -->/)) {
     // replace did not work here beacuse of '$'
     const pos = html.indexOf('<!-- load-jb-scripts-here -->'), len = '<!-- load-jb-scripts-here -->'.length
-    html = html.slice(0,pos) 
-     + [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),`<script>${jsToInject}</script>`,cssToInject].join('\n')
+    html = html.slice(0,pos) + [
+        st.host.scriptForLoadLibraries(st.inMemoryProject.libs),
+        ...injectWithSrc,
+        `<script>${jsToInject}</script>`,
+        cssToInject].join('\n')
      + html.slice(pos+len)
   }
   
@@ -37878,6 +37882,10 @@ jb.component('studio.search-list', { /* studio.searchList */
           }),
           field({title: 'type', data: '%type%'}),
           field({
+            title: 'file',
+            data: pipeline('%file%', split({separator: '/', part: 'last'}))
+          }),
+          field({
             title: 'impl',
             data: pipeline('%implType%', data.if('%% = \"function\"', 'javascript', ''))
           })
@@ -38061,6 +38069,13 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
                 title: 'html parsing',
                 action: gotoUrl(
                   'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/html-parsing&project=html-parsing',
+                  'new tab'
+                )
+              }),
+              menu.action({
+                title: 'd3 chart',
+                action: gotoUrl(
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/d3_demo&project=d3_demo',
                   'new tab'
                 )
               })
@@ -38341,7 +38356,8 @@ st.projectHosts = {
     github: {
         fetchProject(gitHubUrl) {
             gitHubUrl = gitHubUrl.match(/\/$/) ? gitHubUrl : gitHubUrl + '/'
-            const project = gitHubUrl.split('/').filter(x=>x).pop() 
+            const baseUrl = gitHubUrl
+            const project = gitHubUrl.split('/').filter(x=>x).pop().replace(baseUrl,'')
             return getUrlContent(gitHubUrl).then(html =>{
                 const srcUrls = html.split('<script type="text/javascript" src="').slice(1)
                     .map(x=>x.match(/^[^"]*/)[0])
@@ -38349,11 +38365,11 @@ st.projectHosts = {
                     .map(x=>x.match(/^[^"]*/)[0])
                 const js = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
                 const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)\.js$/)[1]).filter(x=>x!='jb-react-all')
-                return css.concat(js).reduce((acc,file)=> 
+                return css.reduce((acc,file)=> 
                     acc.then(files => getUrlContent(gitHubUrl + file).then(content => Object.assign(files, {[file]: content}))), Promise.resolve({
                         [`${project}.html`]: fixHtml(html)
                     }) )
-                        .then(files => ({project, files, libs}))
+                        .then(files => ({project, files, js, libs, baseUrl }))
             })
 
             function fixHtml(html) {
