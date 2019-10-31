@@ -167,7 +167,8 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
 
 st.injectImMemoryProjectToPreview = function(previewWin) {
   const jsToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/js$/))
-    .map(e => 'eval(' + '`'+ e[1].replace(/`/g,'\`') + '`)' ).join('\n')
+    .map(e => 'eval(' + '`'+ e[1].replace(/`/g,'\\`').replace(/<\/script>/gi,'`+`</`+`script>`+`')  + '`)'
+     ).join('\n')
   const cssToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/css$/))
     .map(e => `<style>${e[1]}</style>` ).join('\n')
   let html = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/html$/))[0][1]
