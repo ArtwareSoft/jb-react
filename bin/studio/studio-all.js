@@ -4632,7 +4632,7 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 }
 
 ui.databindObservable = (cmp,settings) =>
-	cmp.databindRefChanged.flatMap(ref =>
+	cmp.databindRefChanged.merge(jb.rx.Observable.of(cmp.state.databindRef)).flatMap(ref =>
 			(!cmp.watchRefOn && jb.isWatchable(ref) && jb.ui.refObservable(ref,cmp,settings)
 				.map(e=>Object.assign({ref},e)) ) || [])
 
@@ -32506,7 +32506,7 @@ jb.component('dialog.studio-floating', { /* dialog.studioFloating */
   })
 })
 
-jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePhonePopup */ 
+jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePhonePopup */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -32536,12 +32536,12 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
         ),
         genericControl: group({
           title: '%$controlItem/id%',
-          style: propertySheet.titlesLeft({vSpacing: 20, hSpacing: 20, titleWidth: 100}),
+          style: layout.horizontal('70'),
           controls: [
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/width%',
               title: 'width',
-              style: editableNumber.slider(),
+              style: editableText.mdlInput(),
               min: '%$controlItem/width/min%',
               max: '%$controlItem/width/max%',
               features: [
@@ -32552,7 +32552,7 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/height%',
               title: 'height',
-              style: editableNumber.slider(),
+              style: editableText.mdlInput(),
               min: '%$controlItem/height/min%',
               max: '%$controlItem/height/max%',
               features: [

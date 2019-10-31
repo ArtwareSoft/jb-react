@@ -4632,7 +4632,7 @@ ui.watchRef = function(ctx,cmp,ref,includeChildren,delay,allowSelfRefresh) {
 }
 
 ui.databindObservable = (cmp,settings) =>
-	cmp.databindRefChanged.flatMap(ref =>
+	cmp.databindRefChanged.merge(jb.rx.Observable.of(cmp.state.databindRef)).flatMap(ref =>
 			(!cmp.watchRefOn && jb.isWatchable(ref) && jb.ui.refObservable(ref,cmp,settings)
 				.map(e=>Object.assign({ref},e)) ) || [])
 
