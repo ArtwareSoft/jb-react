@@ -128,6 +128,13 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
                   'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/html-parsing&project=html-parsing',
                   'new tab'
                 )
+              }),
+              menu.action({
+                title: 'd3 chart',
+                action: gotoUrl(
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/d3_demo&project=d3_demo',
+                  'new tab'
+                )
               })
             ]
           }),

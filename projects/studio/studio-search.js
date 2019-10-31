@@ -52,6 +52,10 @@ jb.component('studio.search-list', { /* studio.searchList */
           }),
           field({title: 'type', data: '%type%'}),
           field({
+            title: 'file',
+            data: pipeline('%file%', split({separator: '/', part: 'last'}))
+          }),
+          field({
             title: 'impl',
             data: pipeline('%implType%', data.if('%% = \"function\"', 'javascript', ''))
           })

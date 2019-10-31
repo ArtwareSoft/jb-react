@@ -102,7 +102,8 @@ st.projectHosts = {
     github: {
         fetchProject(gitHubUrl) {
             gitHubUrl = gitHubUrl.match(/\/$/) ? gitHubUrl : gitHubUrl + '/'
-            const project = gitHubUrl.split('/').filter(x=>x).pop() 
+            const baseUrl = gitHubUrl
+            const project = gitHubUrl.split('/').filter(x=>x).pop().replace(baseUrl,'')
             return getUrlContent(gitHubUrl).then(html =>{
                 const srcUrls = html.split('<script type="text/javascript" src="').slice(1)
                     .map(x=>x.match(/^[^"]*/)[0])
@@ -110,11 +111,11 @@ st.projectHosts = {
                     .map(x=>x.match(/^[^"]*/)[0])
                 const js = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
                 const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)\.js$/)[1]).filter(x=>x!='jb-react-all')
-                return css.concat(js).reduce((acc,file)=> 
+                return css.reduce((acc,file)=> 
                     acc.then(files => getUrlContent(gitHubUrl + file).then(content => Object.assign(files, {[file]: content}))), Promise.resolve({
                         [`${project}.html`]: fixHtml(html)
                     }) )
-                        .then(files => ({project, files, libs}))
+                        .then(files => ({project, files, js, libs, baseUrl }))
             })
 
             function fixHtml(html) {
