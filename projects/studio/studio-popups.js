@@ -225,7 +225,7 @@ jb.component('dialog.studio-floating', { /* dialog.studioFloating */
   })
 })
 
-jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePhonePopup */ 
+jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePhonePopup */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -255,12 +255,12 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
         ),
         genericControl: group({
           title: '%$controlItem/id%',
-          style: propertySheet.titlesLeft({vSpacing: 20, hSpacing: 20, titleWidth: 100}),
+          style: layout.horizontal('70'),
           controls: [
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/width%',
               title: 'width',
-              style: editableNumber.slider(),
+              style: editableText.mdlInput(),
               min: '%$controlItem/width/min%',
               max: '%$controlItem/width/max%',
               features: [
@@ -271,7 +271,7 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/height%',
               title: 'height',
-              style: editableNumber.slider(),
+              style: editableText.mdlInput(),
               min: '%$controlItem/height/min%',
               max: '%$controlItem/height/max%',
               features: [

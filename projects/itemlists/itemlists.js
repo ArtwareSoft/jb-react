@@ -8,12 +8,14 @@ jb.component('people', { watchableData: [
 jb.component('itemlists.main', { /* itemlists.main */
   type: 'control',
   impl: itemlist({
+    title: '',
     items: '%$people%',
     controls: [
       text({title: 'name', text: '%name%', features: field.columnWidth('250')}),
       text({title: 'age', text: '%age%'})
     ],
-    style: table.withHeaders()
+    style: table.withHeaders(),
+    features: itemlist.selection({databind: '%$selectedItem%', autoSelectFirst: 'true'})
   })
 })
 
@@ -302,4 +304,10 @@ jb.component('itemlists.with-sort', { /* itemlists.withSort */
 
 jb.component('data-resource.sortBy', { /* dataResource.sortBy */
   watchableData: 'age'
+})
+
+jb.component('data-resource.selectedItem', { /* dataResource.selectedItem */
+  watchableData: {
+    
+  }
 })
