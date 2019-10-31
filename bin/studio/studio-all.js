@@ -32243,7 +32243,7 @@ st.injectImMemoryProjectToPreview = function(previewWin) {
   const jsToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/js$/))
     .map(e => 'eval(' + '`'+ e[1].replace(/`/g,'\\`').replace(/<\/script>/gi,'`+`</`+`script>`+`')  + '`)'
      ).join('\n')
-  const injectWithSrc = st.inMemoryProject.js.map(jsFile => `<script type="text/javascript" src="${st.inMemoryProject.baseUrl}/${jsFile}"></script>`)
+  const injectWithSrc = (st.inMemoryProject.js ||[]).map(jsFile => `<script type="text/javascript" src="${st.inMemoryProject.baseUrl}/${jsFile}"></script>`)
   const cssToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/css$/))
     .map(e => `<style>${e[1]}</style>` ).join('\n')
   let html = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/html$/))[0][1]
@@ -38356,7 +38356,7 @@ st.projectHosts = {
     github: {
         fetchProject(gitHubUrl) {
             gitHubUrl = gitHubUrl.match(/\/$/) ? gitHubUrl : gitHubUrl + '/'
-            const baseUrl = gitHubUrl
+            const baseUrl = decodeURIComponent(gitHubUrl)
             const project = gitHubUrl.split('/').filter(x=>x).pop().replace(baseUrl,'')
             return getUrlContent(gitHubUrl).then(html =>{
                 const srcUrls = html.split('<script type="text/javascript" src="').slice(1)

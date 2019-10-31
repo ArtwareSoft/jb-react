@@ -102,7 +102,7 @@ st.projectHosts = {
     github: {
         fetchProject(gitHubUrl) {
             gitHubUrl = gitHubUrl.match(/\/$/) ? gitHubUrl : gitHubUrl + '/'
-            const baseUrl = gitHubUrl
+            const baseUrl = decodeURIComponent(gitHubUrl)
             const project = gitHubUrl.split('/').filter(x=>x).pop().replace(baseUrl,'')
             return getUrlContent(gitHubUrl).then(html =>{
                 const srcUrls = html.split('<script type="text/javascript" src="').slice(1)
