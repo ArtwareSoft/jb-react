@@ -2,6 +2,7 @@ jb.ns('studio-helper')
 jb.studio.initCompsRefHandler(jb)
 jb.studio.previewWindow = window
 // fake current path
+jb.delay(100).then(()=>new jb.jbCtx().run(writeValue('%$studio/project','studio-helper')))
 
 jb.component('data-test.parse-project-html', {
   impl: dataTest({
@@ -504,7 +505,8 @@ jb.component('studio-helper.comps-chart', { /* studioHelper.compsChart */
       d3g.chartScatter({
         title: 'comps chart',
         items: pipeline(
-          studio.componentsStatistics(),
+          studio.allComps(),
+          studio.componentStatistics('%%'),
           filter(contains({text: 'projects/studio', allText: '%file%'}))
         ),
         frame: d3g.frame({width: '2400', height: 500, top: 30, right: 50, bottom: 40, left: 60}),

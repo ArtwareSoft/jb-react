@@ -1,40 +1,51 @@
-jb.component('studio.components-statistics', {
+jb.component('studio.all-comps', {
   type: 'data',
-  impl: ctx => {
+  impl: (ctx,cmpId) => Object.keys(jb.studio.previewjb.comps)
+})
+
+jb.component('studio.component-statistics', {
+  type: 'data',
+  params: [
+    {id: 'cmpId', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,cmpId) => {
 	  var _jb = jb.studio.previewjb;
 	  jb.studio.scriptChange.subscribe(_=>_jb.statistics = null);
-	  if (_jb.statistics) return _jb.statistics;
+	  if (!_jb.statistics) {
+      const refs = {}, comps = _jb.comps;
 
-	  var refs = {}, comps = _jb.comps;
+      Object.keys(comps).filter(k=>comps[k]).forEach(k=>
+        refs[k] = {
+          refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
+          by: []
+      });
+      Object.keys(comps).filter(k=>comps[k]).forEach(k=>
+        refs[k].refs.forEach(cross=>
+          refs[cross] && refs[cross].by.push(k))
+      );
 
-    Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
-      refs[k] = {
-        refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
-        by: []
-    });
-    Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
-      refs[k].refs.forEach(cross=>
-        refs[cross] && refs[cross].by.push(k))
-    );
+      _jb.statistics = refs;
+    }
 
-    return _jb.statistics = jb.entries(comps).map(e=>({
-          id: e[0],
-          file: e[1][_jb.location][0],
-          lineInFile: +e[1][_jb.location][1],
-          linesOfCode: (jb.prettyPrint(e[1].impl || '',{comps: _jb.comps}).match(/\n/g)||[]).length,
-          refs: refs[e[0]].refs,
-          referredBy: refs[e[0]].by,
-          type: e[1].type || 'data',
-          implType: typeof e[1].impl,
-          refCount: refs[e[0]].by.length
-          //text: jb_prettyPrintComp(comps[k]),
-          //size: jb_prettyPrintComp(e[0],e[1]).length
-    }));
+    const cmp = _jb.comps[cmpId], refs = _jb.statistics
+    if (!cmp) return {}
 
+    return {
+      id: cmpId,
+      file: (cmp[_jb.location] || [])[0],
+      lineInFile: +(cmp[_jb.location] ||[])[1],
+      linesOfCode: (jb.prettyPrint(cmp.impl || '',{comps: _jb.comps}).match(/\n/g)||[]).length,
+      refs: refs[cmpId].refs,
+      referredBy: refs[cmpId].by,
+      type: cmp.type || 'data',
+      implType: typeof cmp.impl,
+      refCount: refs[cmpId].by.length,
+      size: jb.prettyPrintComp(cmpId,cmp).length
+    }
 
     function calcRefs(profile) {
       if (profile == null || typeof profile != 'object') return [];
-      return Object.getOwnPropertyNames(profile).reduce((res,prop)=>
+      return Object.keys(profile).reduce((res,prop)=>
         res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
     }
 	}
@@ -138,48 +149,53 @@ jb.component('studio.components-list', { /* studio.componentsList */
   type: 'control',
   impl: group({
     controls: [
-      itemlist({
-        items: studio.cmpsOfProjectByFiles(),
-        controls: [
-          materialIcon({
-            icon: studio.iconOfType('%val/type%'),
-            features: [
-              css.opacity('0.3'),
-              css('{ font-size: 16px }'),
-              css.padding({top: '5', left: '5'}),
-              field.columnWidth('50px')
-            ]
+      tableTree({
+        treeModel: tree.jsonReadOnly(studio.cmpsOfProjectByFiles(), ''),
+        leafFields: [
+          text({
+            title: 'size',
+            text: pipeline(studio.componentStatistics('%val%'), '%size%'),
+            features: [field.columnWidth('80')]
           }),
           button({
-            title: 'delete',
+            title: pipeline(studio.componentStatistics('%val%'), '%refCount%.', split('.')),
+            action: menu.openContextMenu({
+              menu: menu.menu({
+                options: [studio.gotoReferencesOptions('%val%', studio.references('%val%'))]
+              })
+            }),
+            style: button.href(),
+            features: [field.title('refs'), field.columnWidth('40')]
+          }),
+          button({
+            title: '',
             action: openDialog({
+              vars: [Var('compId', pipeline('%path%', split({separator: '~', part: 'last'})))],
               style: dialog.dialogOkCancel(),
               content: group({}),
-              title: 'Delete %id%?',
-              onOK: studio.delete('%id%'),
+              title: 'delete %$compId%',
+              onOK: studio.delete('%$compId%'),
               features: [css('z-index: 6000 !important'), dialogFeature.nearLauncherPosition({})]
             }),
             style: button.x(),
-            features: [itemlist.shownOnlyOnItemHover(), field.columnWidth('50px')]
-          }),
-          button({
-            title: '%id%',
-            action: studio.openJbEditor('%id%'),
-            style: button.href(),
-            features: field.columnWidth('400')
+            features: [
+              field.columnWidth('20'),
+              itemlist.shownOnlyOnItemHover(),
+              field.columnWidth('40')
+            ]
           })
         ],
-        style: table.withHeaders(true),
-        features: [
-          itemlist.selection({}),
-          itemlist.keyboardSelection({onEnter: studio.gotoPath('%id%')}),
-          css.width('300')
-        ]
+        chapterHeadline: text({
+          title: '',
+          text: pipeline('%path%', split({separator: '~', part: 'last'}))
+        }),
+        style: tableTree.plain({hideHeaders: false, gapWidth: '130', expColWidth: '10'}),
+        features: []
       })
     ],
     features: [
       css.padding({top: '4', right: '5'}),
-      css.height({height: '400', overflow: 'scroll', minMax: 'max'})
+      css.height({height: '400', overflow: 'auto', minMax: ''})
     ]
   })
 })

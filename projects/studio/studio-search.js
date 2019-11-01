@@ -7,8 +7,9 @@ jb.component('studio.search-list', { /* studio.searchList */
     controls: [
       table({
         items: pipeline(
-          studio.componentsStatistics(),
+          studio.allComps(),
           itemlistContainer.filter(),
+          studio.componentStatistics('%%'),
           sort('refCount'),
           slice('0', '50')
         ),
@@ -93,8 +94,7 @@ jb.component('studio.search-component', { /* studio.searchComponent */
     controls: [
       itemlistContainer.search({
         title: 'Search',
-        searchIn: item =>
-          item.id,
+//        searchIn: item => item.id,
         databind: '%$itemlistCntrData/search_pattern%',
         style: editableText.mdlSearch(),
         features: [

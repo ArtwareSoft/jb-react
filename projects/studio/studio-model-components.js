@@ -470,28 +470,36 @@ jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
 
 jb.component('studio.cmps-of-project-by-files', { /* studio.cmpsOfProjectByFiles */
   type: 'data',
-  impl: pipeline(
-    Var(
-        'files',
-        pipeline(
-          () => jb.studio.previewWindow.document.head.outerHTML,
-          studio.parseProjectHtml(),
-          '%fileNames%',
-          filter(or(contains('%$studio/project%'), contains('..')))
-        )
-      ),
-    () => jb.studio.previewjb.comps,
-    properties('%%'),
-    filter(
-        inGroup(
-          '%$files%',
-          pipeline(
-            ({data}) => data.val[jb.location][0],
-            split({separator: '/', part: 'last'})
+  impl: dynamicObject({
+    items: pipeline(
+      () => jb.studio.previewWindow.document.head.outerHTML,
+      studio.parseProjectHtml(),
+      '%fileNames%',
+      filter(
+          or(
+            contains({text: firstSucceeding('%$studio/project%', 'studio-helper')}),
+            contains('..')
           )
         )
-      )
-  ),
+    ),
+    propertyName: '%%',
+    value: pipeline(
+      Var('file', '%%'),
+      () => jb.studio.previewjb.comps,
+      properties('%%'),
+      filter(
+          equals(
+            pipeline(
+              ({data}) => data.val[jb.location][0],
+              split({separator: '/', part: 'last'})
+            ),
+            '%$file%'
+          )
+        ),
+      '%id%',
+      aggregate(dynamicObject({items: '%%', propertyName: '%%', value: '%%'}))
+    )
+  }),
   testData: 'sampleData'
 })
 

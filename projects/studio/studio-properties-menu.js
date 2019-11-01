@@ -165,7 +165,7 @@ jb.component('studio.jb-editor-menu', { /* studio.jbEditorMenu */
       menu.studioWrapWith({
         path: '%$path%',
         type: 'data',
-        components: list('pipeline', 'list', 'firstSucceeding')
+        components: list('pipeline', 'list', 'first-succeeding')
       }),
       menu.studioWrapWith({
         path: '%$path%',

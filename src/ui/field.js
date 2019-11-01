@@ -240,7 +240,7 @@ jb.component('field.title', {
   type: 'feature',
   category: 'table:80',
   params: [
-    {id: 'title', as: 'string', dynamic: true },
+    {id: 'title', as: 'string', dynamic: true, mandatory: true },
   ],
   impl: (ctx,title) => ({
       enrichField: field => field.title = ctx => title(ctx)

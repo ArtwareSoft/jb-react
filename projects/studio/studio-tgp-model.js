@@ -365,9 +365,8 @@ Object.assign(st,{
 
 	closestTestCtx: pathToTrace => {
 		const compId = pathToTrace.split('~')[0]
-		const statistics = new jb.jbCtx().run(studio.componentsStatistics())
-		const test = statistics.filter(c=>c.id == compId).flatMap(c=>c.referredBy)
-			.filter(refferer=>st.isOfType(refferer,'test') )[0]
+		const statistics = new jb.jbCtx().run(studio.componentStatistics(ctx=>compId))
+		const test = statistics.referredBy.filter(refferer=>st.isOfType(refferer,'test'))[0]
 		const _ctx = new st.previewjb.jbCtx()
 		if (test)
 			return _ctx.ctx({ profile: {$: test}, comp: test, path: ''})
