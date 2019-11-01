@@ -281,7 +281,6 @@ jb.component('itemlist.shown-only-on-item-hover', { /* itemlist.shownOnlyOnItemH
   description: 'put on the control inside the item which is shown when the mouse enters the line',
   impl: (ctx,cssClass,cond) => ({
     class: 'jb-shown-on-item-hover',
-    css: '{ display: none }'
   })
 })
 

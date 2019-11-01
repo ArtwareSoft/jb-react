@@ -5,14 +5,13 @@ jb.component('studio.save-components', { /* studio.saveComponents */
   type: 'action,has-side-effects',
   impl: ctx => {
     const messages = []
-    const loc = (st.previewjb || jb).location
-    const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][loc] && e[1][loc][0]).filter(x=>x))
-      .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>e[1][loc][0] == fn)}))
+    const filesToUpdate = jb.unique(st.changedComps().map(e=>locationOfComp(e)).filter(x=>x))
+      .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>locationOfComp(e) == fn)}))
     if (st.inMemoryProject) {
       const project = st.inMemoryProject.project, baseDir = st.inMemoryProject.baseDir
       const files = jb.objFromEntries(jb.entries(st.inMemoryProject.files)
         .map(file=>[file[0],newFileContent(file[1], 
-            st.changedComps().filter(comp=>comp[1][loc][0].indexOf(file[0]) != -1))
+            st.changedComps().filter(comp=>locationOfComp(comp).indexOf(file[0]) != -1))
         ]))
       
       const jsToInject = jb.entries(files).filter(e=>e[0].match(/js$/))
@@ -65,6 +64,14 @@ jb.component('studio.save-components', { /* studio.saveComponents */
     }
 })
 
+function locationOfComp(compE) {
+  try {
+    return (compE[1] || st.compsHistory[0].before[compE[0]])[jb.location][0]
+  } catch (e) {
+    return ''
+  }
+}
+
 function newFileContent(fileContent, comps) {
   let lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const compsToUpdate = comps.filter(([id])=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) != -1)
@@ -76,7 +83,7 @@ function newFileContent(fileContent, comps) {
     const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
     if (nextjbComponent != -1 && nextjbComponent < compLastLine)
       return jb.logError(['can not find end of component', fn,id, linesFromComp])
-    const newComp = jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n')
+    const newComp = comp ? jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n') : []
     if (JSON.stringify(linesFromComp.slice(0,compLastLine+1)) === JSON.stringify(newComp))
         return
     lines.splice(lineOfComp,compLastLine+1,...newComp)
@@ -94,7 +101,7 @@ jb.component('studio.file-after-changes', {
     {id: 'fileContent', as: 'string'},
   ],
   impl: (ctx, fileName, fileContent) => {
-    const location = (st.previewjb || jb).location
+    const location = jb.location
     const comps = st.changedComps().filter(e=>e[1][location] && e[1][location][0].indexOf(fileName) != -1)
     return newFileContent(fileContent, comps)
   }

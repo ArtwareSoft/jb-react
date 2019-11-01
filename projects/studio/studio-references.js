@@ -115,7 +115,7 @@ jb.component('studio.goto-references-button', { /* studio.gotoReferencesButton *
   )
 })
 
-jb.component('studio.goto-references-menu', { /* studio.gotoReferencesMenu */ 
+jb.component('studio.goto-references-menu', { /* studio.gotoReferencesMenu */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -134,3 +134,52 @@ jb.component('studio.goto-references-menu', { /* studio.gotoReferencesMenu */
   }
 })
 
+jb.component('studio.components-list', { /* studio.componentsList */
+  type: 'control',
+  impl: group({
+    controls: [
+      itemlist({
+        items: studio.cmpsOfProjectByFiles(),
+        controls: [
+          materialIcon({
+            icon: studio.iconOfType('%val/type%'),
+            features: [
+              css.opacity('0.3'),
+              css('{ font-size: 16px }'),
+              css.padding({top: '5', left: '5'}),
+              field.columnWidth('50px')
+            ]
+          }),
+          button({
+            title: 'delete',
+            action: openDialog({
+              style: dialog.dialogOkCancel(),
+              content: group({}),
+              title: 'Delete %id%?',
+              onOK: studio.delete('%id%'),
+              features: [css('z-index: 6000 !important'), dialogFeature.nearLauncherPosition({})]
+            }),
+            style: button.x(),
+            features: [itemlist.shownOnlyOnItemHover(), field.columnWidth('50px')]
+          }),
+          button({
+            title: '%id%',
+            action: studio.openJbEditor('%id%'),
+            style: button.href(),
+            features: field.columnWidth('400')
+          })
+        ],
+        style: table.withHeaders(true),
+        features: [
+          itemlist.selection({}),
+          itemlist.keyboardSelection({onEnter: studio.gotoPath('%id%')}),
+          css.width('300')
+        ]
+      })
+    ],
+    features: [
+      css.padding({top: '4', right: '5'}),
+      css.height({height: '400', overflow: 'scroll', minMax: 'max'})
+    ]
+  })
+})

@@ -439,7 +439,7 @@ jb.component('studio.is-disabled', { /* studio.isDisabled */
 			st.disabled(path)
 })
 
-jb.component('studio.disabled-support', { /* studio.disabledSupport */ 
+jb.component('studio.disabled-support', { /* studio.disabledSupport */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -456,6 +456,43 @@ jb.component('studio.params-of-path', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => st.paramsOfPath(path)
+})
+
+jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
+  type: 'data',
+  params: [
+    {id: 'project', as: 'string'}
+  ],
+  impl: (ctx,prj) =>
+      jb.studio.previewjb ? Object.keys(jb.studio.previewjb.comps)
+              .filter(id=> id.split('.')[0] == prj) : []
+})
+
+jb.component('studio.cmps-of-project-by-files', { /* studio.cmpsOfProjectByFiles */
+  type: 'data',
+  impl: pipeline(
+    Var(
+        'files',
+        pipeline(
+          () => jb.studio.previewWindow.document.head.outerHTML,
+          studio.parseProjectHtml(),
+          '%fileNames%',
+          filter(or(contains('%$studio/project%'), contains('..')))
+        )
+      ),
+    () => jb.studio.previewjb.comps,
+    properties('%%'),
+    filter(
+        inGroup(
+          '%$files%',
+          pipeline(
+            ({data}) => data.val[jb.location][0],
+            split({separator: '/', part: 'last'})
+          )
+        )
+      )
+  ),
+  testData: 'sampleData'
 })
 
 })();

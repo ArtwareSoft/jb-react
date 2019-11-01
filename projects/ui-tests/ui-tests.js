@@ -377,6 +377,24 @@ jb.component('ui-test.itemlist', { /* uiTest.itemlist */
   })
 })
 
+jb.component('ui-test.itemlist.shown-only-on-item-hover', {
+  impl: uiTest({
+    control: itemlist({items: '%$people%',
+      style: table.withHeaders(),
+      controls: [
+        label('%name%'),
+        button({
+          title: 'delete',
+          style: button.x(),
+          features: [itemlist.shownOnlyOnItemHover(), field.columnWidth('50px')]
+        })        
+      ]
+    }),
+    expectedResult: contains(['Homer Simpson'])
+  })
+})
+
+
 jb.component('ui-test.itemlist-with-select', { /* uiTest.itemlistWithSelect */
   impl: uiTest({
     control: itemlist({

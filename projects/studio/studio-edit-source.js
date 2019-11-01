@@ -412,10 +412,6 @@ jb.component('source-editor.files-of-project', {
     if (jb.studio.inMemoryProject)
       return Object.keys(jb.studio.inMemoryProject.files)
     return st.projectUtils.projectContent(ctx)
-    // const _jb = jb.studio.previewjb
-    // const project =  ctx.exp('%$studio/project%')
-    // const files = jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf(`/${project}/`) != -1 || x.indexOf(`/${project}.`) != -1))
-    // return files.filter(f=>f.indexOf(`${project}.js`) != -1).flatMap(x=>x.replace(/js$/,'html')).concat(files)
   }
 })
 

@@ -109,13 +109,13 @@ st.projectHosts = {
                     .map(x=>x.match(/^[^"]*/)[0])
                 const css = html.split('<link rel="stylesheet" href="').slice(1)
                     .map(x=>x.match(/^[^"]*/)[0])
-                const js = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
+                const fileNames = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
                 const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)\.js$/)[1]).filter(x=>x!='jb-react-all')
                 return css.reduce((acc,file)=> 
                     acc.then(files => getUrlContent(gitHubUrl + file).then(content => Object.assign(files, {[file]: content}))), Promise.resolve({
                         [`${project}.html`]: fixHtml(html)
                     }) )
-                        .then(files => ({project, files, js, libs, baseUrl }))
+                        .then(files => ({project, files, fileNames, libs, baseUrl }))
             })
 
             function fixHtml(html) {
@@ -135,7 +135,7 @@ st.projectUtils = {
             return fileNames.reduce((acc,file)=> 
                 acc.then(res => st.host.getFile(st.host.pathToJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
                     [`${project}.html`]: html
-            }) ).then(files => ({project, files, libs}))
+            }) ).then(files => ({project, files, fileNames, libs}))
         })
     }
 }

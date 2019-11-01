@@ -12,16 +12,6 @@ jb.component('pickSelection', { // can not put rich objects as watchable, only p
   passiveData: {  ctx: null, elem: null }
 })
 
-jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
-  type: 'data',
-  params: [
-    {id: 'project', as: 'string'}
-  ],
-  impl: (ctx,prj) =>
-      jb.studio.previewjb ? Object.keys(jb.studio.previewjb.comps)
-              .filter(id=>id.split('.')[0] == prj) : []
-})
-
 jb.component('studio.pages', { /* studio.pages */
   type: 'control',
   impl: group({
@@ -157,6 +147,15 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
       menu.menu({
         title: 'View',
         options: [
+          menu.action({
+            title: 'Components...',
+            action: openDialog({
+              style: dialog.studioFloating({}),
+              content: studio.componentsList(),
+              title: 'components',
+              features: css.width('600')
+            })
+          }),
           menu.action({title: 'Refresh Preview', action: studio.refreshPreview()}),
           menu.action({title: 'Redraw Studio', action: studio.redrawStudio()}),
           menu.action({title: 'Edit source', action: studio.editSource()}),
