@@ -7674,7 +7674,6 @@ jb.component('itemlist.shown-only-on-item-hover', { /* itemlist.shownOnlyOnItemH
   description: 'put on the control inside the item which is shown when the mouse enters the line',
   impl: (ctx,cssClass,cond) => ({
     class: 'jb-shown-on-item-hover',
-    css: '{ display: none }'
   })
 })
 
@@ -9235,12 +9234,11 @@ jb.component('button.x', { /* button.x */
             font: %$size%px sans-serif;
             border: none;
             background: transparent;
-            color: #000;
+            color: rgba(0,0,0,0.2);
             text-shadow: 0 1px 0 #fff;
             font-weight: 700;
-            opacity: .2;
         }
-        :hover { opacity: .5 }`
+        :hover { color: rgba(0,0,0,0.5) }`
   })
 })
 
@@ -32243,7 +32241,7 @@ st.injectImMemoryProjectToPreview = function(previewWin) {
   const jsToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/js$/))
     .map(e => 'eval(' + '`'+ e[1].replace(/`/g,'\\`').replace(/<\/script>/gi,'`+`</`+`script>`+`')  + '`)'
      ).join('\n')
-  const injectWithSrc = (st.inMemoryProject.js ||[]).map(jsFile => `<script type="text/javascript" src="${st.inMemoryProject.baseUrl}/${jsFile}"></script>`)
+  const injectWithSrc = (st.inMemoryProject.fileNames ||[]).map(jsFile => `<script type="text/javascript" src="${st.inMemoryProject.baseUrl}/${jsFile}"></script>`)
   const cssToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/css$/))
     .map(e => `<style>${e[1]}</style>` ).join('\n')
   let html = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/html$/))[0][1]
@@ -33093,7 +33091,7 @@ jb.component('studio.is-disabled', { /* studio.isDisabled */
 			st.disabled(path)
 })
 
-jb.component('studio.disabled-support', { /* studio.disabledSupport */ 
+jb.component('studio.disabled-support', { /* studio.disabledSupport */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
@@ -33110,6 +33108,43 @@ jb.component('studio.params-of-path', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => st.paramsOfPath(path)
+})
+
+jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
+  type: 'data',
+  params: [
+    {id: 'project', as: 'string'}
+  ],
+  impl: (ctx,prj) =>
+      jb.studio.previewjb ? Object.keys(jb.studio.previewjb.comps)
+              .filter(id=> id.split('.')[0] == prj) : []
+})
+
+jb.component('studio.cmps-of-project-by-files', { /* studio.cmpsOfProjectByFiles */
+  type: 'data',
+  impl: pipeline(
+    Var(
+        'files',
+        pipeline(
+          () => jb.studio.previewWindow.document.head.outerHTML,
+          studio.parseProjectHtml(),
+          '%fileNames%',
+          filter(or(contains('%$studio/project%'), contains('..')))
+        )
+      ),
+    () => jb.studio.previewjb.comps,
+    properties('%%'),
+    filter(
+        inGroup(
+          '%$files%',
+          pipeline(
+            ({data}) => data.val[jb.location][0],
+            split({separator: '/', part: 'last'})
+          )
+        )
+      )
+  ),
+  testData: 'sampleData'
 })
 
 })();
@@ -35401,10 +35436,6 @@ jb.component('source-editor.files-of-project', {
     if (jb.studio.inMemoryProject)
       return Object.keys(jb.studio.inMemoryProject.files)
     return st.projectUtils.projectContent(ctx)
-    // const _jb = jb.studio.previewjb
-    // const project =  ctx.exp('%$studio/project%')
-    // const files = jb.unique(jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=>x.indexOf(`/${project}/`) != -1 || x.indexOf(`/${project}.`) != -1))
-    // return files.filter(f=>f.indexOf(`${project}.js`) != -1).flatMap(x=>x.replace(/js$/,'html')).concat(files)
   }
 })
 
@@ -36712,7 +36743,7 @@ jb.component('studio.goto-references-button', { /* studio.gotoReferencesButton *
   )
 })
 
-jb.component('studio.goto-references-menu', { /* studio.gotoReferencesMenu */ 
+jb.component('studio.goto-references-menu', { /* studio.gotoReferencesMenu */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -36731,6 +36762,55 @@ jb.component('studio.goto-references-menu', { /* studio.gotoReferencesMenu */
   }
 })
 
+jb.component('studio.components-list', { /* studio.componentsList */
+  type: 'control',
+  impl: group({
+    controls: [
+      itemlist({
+        items: studio.cmpsOfProjectByFiles(),
+        controls: [
+          materialIcon({
+            icon: studio.iconOfType('%val/type%'),
+            features: [
+              css.opacity('0.3'),
+              css('{ font-size: 16px }'),
+              css.padding({top: '5', left: '5'}),
+              field.columnWidth('50px')
+            ]
+          }),
+          button({
+            title: 'delete',
+            action: openDialog({
+              style: dialog.dialogOkCancel(),
+              content: group({}),
+              title: 'Delete %id%?',
+              onOK: studio.delete('%id%'),
+              features: [css('z-index: 6000 !important'), dialogFeature.nearLauncherPosition({})]
+            }),
+            style: button.x(),
+            features: [itemlist.shownOnlyOnItemHover(), field.columnWidth('50px')]
+          }),
+          button({
+            title: '%id%',
+            action: studio.openJbEditor('%id%'),
+            style: button.href(),
+            features: field.columnWidth('400')
+          })
+        ],
+        style: table.withHeaders(true),
+        features: [
+          itemlist.selection({}),
+          itemlist.keyboardSelection({onEnter: studio.gotoPath('%id%')}),
+          css.width('300')
+        ]
+      })
+    ],
+    features: [
+      css.padding({top: '4', right: '5'}),
+      css.height({height: '400', overflow: 'scroll', minMax: 'max'})
+    ]
+  })
+})
 ;
 
 jb.component('studio.goto-path', { /* studio.gotoPath */
@@ -37017,14 +37097,13 @@ jb.component('studio.save-components', { /* studio.saveComponents */
   type: 'action,has-side-effects',
   impl: ctx => {
     const messages = []
-    const loc = (st.previewjb || jb).location
-    const filesToUpdate = jb.unique(st.changedComps().map(e=>e[1][loc] && e[1][loc][0]).filter(x=>x))
-      .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>e[1][loc][0] == fn)}))
+    const filesToUpdate = jb.unique(st.changedComps().map(e=>locationOfComp(e)).filter(x=>x))
+      .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>locationOfComp(e) == fn)}))
     if (st.inMemoryProject) {
       const project = st.inMemoryProject.project, baseDir = st.inMemoryProject.baseDir
       const files = jb.objFromEntries(jb.entries(st.inMemoryProject.files)
         .map(file=>[file[0],newFileContent(file[1], 
-            st.changedComps().filter(comp=>comp[1][loc][0].indexOf(file[0]) != -1))
+            st.changedComps().filter(comp=>locationOfComp(comp).indexOf(file[0]) != -1))
         ]))
       
       const jsToInject = jb.entries(files).filter(e=>e[0].match(/js$/))
@@ -37077,6 +37156,14 @@ jb.component('studio.save-components', { /* studio.saveComponents */
     }
 })
 
+function locationOfComp(compE) {
+  try {
+    return (compE[1] || st.compsHistory[0].before[compE[0]])[jb.location][0]
+  } catch (e) {
+    return ''
+  }
+}
+
 function newFileContent(fileContent, comps) {
   let lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const compsToUpdate = comps.filter(([id])=>lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0) != -1)
@@ -37088,7 +37175,7 @@ function newFileContent(fileContent, comps) {
     const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
     if (nextjbComponent != -1 && nextjbComponent < compLastLine)
       return jb.logError(['can not find end of component', fn,id, linesFromComp])
-    const newComp = jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n')
+    const newComp = comp ? jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n') : []
     if (JSON.stringify(linesFromComp.slice(0,compLastLine+1)) === JSON.stringify(newComp))
         return
     lines.splice(lineOfComp,compLastLine+1,...newComp)
@@ -37106,7 +37193,7 @@ jb.component('studio.file-after-changes', {
     {id: 'fileContent', as: 'string'},
   ],
   impl: (ctx, fileName, fileContent) => {
-    const location = (st.previewjb || jb).location
+    const location = jb.location
     const comps = st.changedComps().filter(e=>e[1][location] && e[1][location][0].indexOf(fileName) != -1)
     return newFileContent(fileContent, comps)
   }
@@ -37955,16 +38042,6 @@ jb.component('pickSelection', { // can not put rich objects as watchable, only p
   passiveData: {  ctx: null, elem: null }
 })
 
-jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
-  type: 'data',
-  params: [
-    {id: 'project', as: 'string'}
-  ],
-  impl: (ctx,prj) =>
-      jb.studio.previewjb ? Object.keys(jb.studio.previewjb.comps)
-              .filter(id=>id.split('.')[0] == prj) : []
-})
-
 jb.component('studio.pages', { /* studio.pages */
   type: 'control',
   impl: group({
@@ -38100,6 +38177,15 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
       menu.menu({
         title: 'View',
         options: [
+          menu.action({
+            title: 'Components...',
+            action: openDialog({
+              style: dialog.studioFloating({}),
+              content: studio.componentsList(),
+              title: 'components',
+              features: css.width('600')
+            })
+          }),
           menu.action({title: 'Refresh Preview', action: studio.refreshPreview()}),
           menu.action({title: 'Redraw Studio', action: studio.redrawStudio()}),
           menu.action({title: 'Edit source', action: studio.editSource()}),
@@ -38363,13 +38449,13 @@ st.projectHosts = {
                     .map(x=>x.match(/^[^"]*/)[0])
                 const css = html.split('<link rel="stylesheet" href="').slice(1)
                     .map(x=>x.match(/^[^"]*/)[0])
-                const js = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
+                const fileNames = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
                 const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)\.js$/)[1]).filter(x=>x!='jb-react-all')
                 return css.reduce((acc,file)=> 
                     acc.then(files => getUrlContent(gitHubUrl + file).then(content => Object.assign(files, {[file]: content}))), Promise.resolve({
                         [`${project}.html`]: fixHtml(html)
                     }) )
-                        .then(files => ({project, files, js, libs, baseUrl }))
+                        .then(files => ({project, files, fileNames, libs, baseUrl }))
             })
 
             function fixHtml(html) {
@@ -38389,7 +38475,7 @@ st.projectUtils = {
             return fileNames.reduce((acc,file)=> 
                 acc.then(res => st.host.getFile(st.host.pathToJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
                     [`${project}.html`]: html
-            }) ).then(files => ({project, files, libs}))
+            }) ).then(files => ({project, files, fileNames, libs}))
         })
     }
 }

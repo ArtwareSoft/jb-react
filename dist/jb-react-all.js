@@ -7674,7 +7674,6 @@ jb.component('itemlist.shown-only-on-item-hover', { /* itemlist.shownOnlyOnItemH
   description: 'put on the control inside the item which is shown when the mouse enters the line',
   impl: (ctx,cssClass,cond) => ({
     class: 'jb-shown-on-item-hover',
-    css: '{ display: none }'
   })
 })
 
@@ -9235,12 +9234,11 @@ jb.component('button.x', { /* button.x */
             font: %$size%px sans-serif;
             border: none;
             background: transparent;
-            color: #000;
+            color: rgba(0,0,0,0.2);
             text-shadow: 0 1px 0 #fff;
             font-weight: 700;
-            opacity: .2;
         }
-        :hover { opacity: .5 }`
+        :hover { color: rgba(0,0,0,0.5) }`
   })
 })
 
