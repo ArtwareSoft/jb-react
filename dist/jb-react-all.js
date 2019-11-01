@@ -5910,7 +5910,7 @@ jb.component('field.title', {
   type: 'feature',
   category: 'table:80',
   params: [
-    {id: 'title', as: 'string', dynamic: true },
+    {id: 'title', as: 'string', dynamic: true, mandatory: true },
   ],
   impl: (ctx,title) => ({
       enrichField: field => field.title = ctx => title(ctx)
@@ -10905,6 +10905,8 @@ jb.component('table-tree.init', {
             const treeModel = cmp.treeModel = cmp.ctx.vars.$model.treeModel()
             treeModel.maxDepth = treeModel.maxDepth || 5
             cmp.state.expanded = {[treeModel.rootPath]: true}
+            treeModel.children(treeModel.rootPath).forEach(path=>cmp.state.expanded[path] = true)
+
             cmp.refresh = () => cmp.setState({items:cmp.calcItems()})
             cmp.calcItems = () => calcItems(treeModel.rootPath,0)
             cmp.leafFields = calcFields('leafFields')
@@ -10936,7 +10938,7 @@ jb.component('table-tree.init', {
                     }
                 )
             }
-            
+
             function calcItems(top) {
                 if (cmp.ctx.vars.$model.includeRoot)
                     return doCalcItems(top, 0)
@@ -10969,12 +10971,12 @@ jb.component('table-tree.init', {
 })
   
 jb.component('table-tree.plain', {
+    type: 'table-tree.style',
     params: [ 
       { id: 'hideHeaders',  as: 'boolean' },
       { id: 'gapWidth', as: 'number', defaultValue: 30 },
       { id: 'expColWidth', as: 'number', defaultValue: 16 },
     ],
-    type: 'table.style,itemlist.style',
     impl: customStyle({
       template: (cmp,state,h) => h('table',{},[
           ...Array.from(new Array(cmp.treeModel.maxDepth)).map(f=>h('col',{width: cmp.expColWidth + 'px'})),

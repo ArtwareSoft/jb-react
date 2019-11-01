@@ -5910,7 +5910,7 @@ jb.component('field.title', {
   type: 'feature',
   category: 'table:80',
   params: [
-    {id: 'title', as: 'string', dynamic: true },
+    {id: 'title', as: 'string', dynamic: true, mandatory: true },
   ],
   impl: (ctx,title) => ({
       enrichField: field => field.title = ctx => title(ctx)
@@ -10720,6 +10720,8 @@ jb.component('table-tree.init', {
             const treeModel = cmp.treeModel = cmp.ctx.vars.$model.treeModel()
             treeModel.maxDepth = treeModel.maxDepth || 5
             cmp.state.expanded = {[treeModel.rootPath]: true}
+            treeModel.children(treeModel.rootPath).forEach(path=>cmp.state.expanded[path] = true)
+
             cmp.refresh = () => cmp.setState({items:cmp.calcItems()})
             cmp.calcItems = () => calcItems(treeModel.rootPath,0)
             cmp.leafFields = calcFields('leafFields')
@@ -10751,7 +10753,7 @@ jb.component('table-tree.init', {
                     }
                 )
             }
-            
+
             function calcItems(top) {
                 if (cmp.ctx.vars.$model.includeRoot)
                     return doCalcItems(top, 0)
@@ -10784,12 +10786,12 @@ jb.component('table-tree.init', {
 })
   
 jb.component('table-tree.plain', {
+    type: 'table-tree.style',
     params: [ 
       { id: 'hideHeaders',  as: 'boolean' },
       { id: 'gapWidth', as: 'number', defaultValue: 30 },
       { id: 'expColWidth', as: 'number', defaultValue: 16 },
     ],
-    type: 'table.style,itemlist.style',
     impl: customStyle({
       template: (cmp,state,h) => h('table',{},[
           ...Array.from(new Array(cmp.treeModel.maxDepth)).map(f=>h('col',{width: cmp.expColWidth + 'px'})),
@@ -33122,28 +33124,36 @@ jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
 
 jb.component('studio.cmps-of-project-by-files', { /* studio.cmpsOfProjectByFiles */
   type: 'data',
-  impl: pipeline(
-    Var(
-        'files',
-        pipeline(
-          () => jb.studio.previewWindow.document.head.outerHTML,
-          studio.parseProjectHtml(),
-          '%fileNames%',
-          filter(or(contains('%$studio/project%'), contains('..')))
-        )
-      ),
-    () => jb.studio.previewjb.comps,
-    properties('%%'),
-    filter(
-        inGroup(
-          '%$files%',
-          pipeline(
-            ({data}) => data.val[jb.location][0],
-            split({separator: '/', part: 'last'})
+  impl: dynamicObject({
+    items: pipeline(
+      () => jb.studio.previewWindow.document.head.outerHTML,
+      studio.parseProjectHtml(),
+      '%fileNames%',
+      filter(
+          or(
+            contains({text: firstSucceeding('%$studio/project%', 'studio-helper')}),
+            contains('..')
           )
         )
-      )
-  ),
+    ),
+    propertyName: '%%',
+    value: pipeline(
+      Var('file', '%%'),
+      () => jb.studio.previewjb.comps,
+      properties('%%'),
+      filter(
+          equals(
+            pipeline(
+              ({data}) => data.val[jb.location][0],
+              split({separator: '/', part: 'last'})
+            ),
+            '%$file%'
+          )
+        ),
+      '%id%',
+      aggregate(dynamicObject({items: '%%', propertyName: '%%', value: '%%'}))
+    )
+  }),
   testData: 'sampleData'
 })
 
@@ -33793,9 +33803,8 @@ Object.assign(st,{
 
 	closestTestCtx: pathToTrace => {
 		const compId = pathToTrace.split('~')[0]
-		const statistics = new jb.jbCtx().run(studio.componentsStatistics())
-		const test = statistics.filter(c=>c.id == compId).flatMap(c=>c.referredBy)
-			.filter(refferer=>st.isOfType(refferer,'test') )[0]
+		const statistics = new jb.jbCtx().run(studio.componentStatistics(ctx=>compId))
+		const test = statistics.referredBy.filter(refferer=>st.isOfType(refferer,'test'))[0]
 		const _ctx = new st.previewjb.jbCtx()
 		if (test)
 			return _ctx.ctx({ profile: {$: test}, comp: test, path: ''})
@@ -36626,43 +36635,54 @@ jb.component('studio.style-editor-options', { /* studio.styleEditorOptions */
 })
 ;
 
-jb.component('studio.components-statistics', {
+jb.component('studio.all-comps', {
   type: 'data',
-  impl: ctx => {
+  impl: (ctx,cmpId) => Object.keys(jb.studio.previewjb.comps)
+})
+
+jb.component('studio.component-statistics', {
+  type: 'data',
+  params: [
+    {id: 'cmpId', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,cmpId) => {
 	  var _jb = jb.studio.previewjb;
 	  jb.studio.scriptChange.subscribe(_=>_jb.statistics = null);
-	  if (_jb.statistics) return _jb.statistics;
+	  if (!_jb.statistics) {
+      const refs = {}, comps = _jb.comps;
 
-	  var refs = {}, comps = _jb.comps;
+      Object.keys(comps).filter(k=>comps[k]).forEach(k=>
+        refs[k] = {
+          refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
+          by: []
+      });
+      Object.keys(comps).filter(k=>comps[k]).forEach(k=>
+        refs[k].refs.forEach(cross=>
+          refs[cross] && refs[cross].by.push(k))
+      );
 
-    Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
-      refs[k] = {
-        refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
-        by: []
-    });
-    Object.getOwnPropertyNames(comps).filter(k=>comps[k]).forEach(k=>
-      refs[k].refs.forEach(cross=>
-        refs[cross] && refs[cross].by.push(k))
-    );
+      _jb.statistics = refs;
+    }
 
-    return _jb.statistics = jb.entries(comps).map(e=>({
-          id: e[0],
-          file: e[1][_jb.location][0],
-          lineInFile: +e[1][_jb.location][1],
-          linesOfCode: (jb.prettyPrint(e[1].impl || '',{comps: _jb.comps}).match(/\n/g)||[]).length,
-          refs: refs[e[0]].refs,
-          referredBy: refs[e[0]].by,
-          type: e[1].type || 'data',
-          implType: typeof e[1].impl,
-          refCount: refs[e[0]].by.length
-          //text: jb_prettyPrintComp(comps[k]),
-          //size: jb_prettyPrintComp(e[0],e[1]).length
-    }));
+    const cmp = _jb.comps[cmpId], refs = _jb.statistics
+    if (!cmp) return {}
 
+    return {
+      id: cmpId,
+      file: (cmp[_jb.location] || [])[0],
+      lineInFile: +(cmp[_jb.location] ||[])[1],
+      linesOfCode: (jb.prettyPrint(cmp.impl || '',{comps: _jb.comps}).match(/\n/g)||[]).length,
+      refs: refs[cmpId].refs,
+      referredBy: refs[cmpId].by,
+      type: cmp.type || 'data',
+      implType: typeof cmp.impl,
+      refCount: refs[cmpId].by.length,
+      size: jb.prettyPrintComp(cmpId,cmp).length
+    }
 
     function calcRefs(profile) {
       if (profile == null || typeof profile != 'object') return [];
-      return Object.getOwnPropertyNames(profile).reduce((res,prop)=>
+      return Object.keys(profile).reduce((res,prop)=>
         res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
     }
 	}
@@ -36766,48 +36786,53 @@ jb.component('studio.components-list', { /* studio.componentsList */
   type: 'control',
   impl: group({
     controls: [
-      itemlist({
-        items: studio.cmpsOfProjectByFiles(),
-        controls: [
-          materialIcon({
-            icon: studio.iconOfType('%val/type%'),
-            features: [
-              css.opacity('0.3'),
-              css('{ font-size: 16px }'),
-              css.padding({top: '5', left: '5'}),
-              field.columnWidth('50px')
-            ]
+      tableTree({
+        treeModel: tree.jsonReadOnly(studio.cmpsOfProjectByFiles(), ''),
+        leafFields: [
+          text({
+            title: 'size',
+            text: pipeline(studio.componentStatistics('%val%'), '%size%'),
+            features: [field.columnWidth('80')]
           }),
           button({
-            title: 'delete',
+            title: pipeline(studio.componentStatistics('%val%'), '%refCount%.', split('.')),
+            action: menu.openContextMenu({
+              menu: menu.menu({
+                options: [studio.gotoReferencesOptions('%val%', studio.references('%val%'))]
+              })
+            }),
+            style: button.href(),
+            features: [field.title('refs'), field.columnWidth('40')]
+          }),
+          button({
+            title: '',
             action: openDialog({
+              vars: [Var('compId', pipeline('%path%', split({separator: '~', part: 'last'})))],
               style: dialog.dialogOkCancel(),
               content: group({}),
-              title: 'Delete %id%?',
-              onOK: studio.delete('%id%'),
+              title: 'delete %$compId%',
+              onOK: studio.delete('%$compId%'),
               features: [css('z-index: 6000 !important'), dialogFeature.nearLauncherPosition({})]
             }),
             style: button.x(),
-            features: [itemlist.shownOnlyOnItemHover(), field.columnWidth('50px')]
-          }),
-          button({
-            title: '%id%',
-            action: studio.openJbEditor('%id%'),
-            style: button.href(),
-            features: field.columnWidth('400')
+            features: [
+              field.columnWidth('20'),
+              itemlist.shownOnlyOnItemHover(),
+              field.columnWidth('40')
+            ]
           })
         ],
-        style: table.withHeaders(true),
-        features: [
-          itemlist.selection({}),
-          itemlist.keyboardSelection({onEnter: studio.gotoPath('%id%')}),
-          css.width('300')
-        ]
+        chapterHeadline: text({
+          title: '',
+          text: pipeline('%path%', split({separator: '~', part: 'last'}))
+        }),
+        style: tableTree.plain({hideHeaders: false, gapWidth: '130', expColWidth: '10'}),
+        features: []
       })
     ],
     features: [
       css.padding({top: '4', right: '5'}),
-      css.height({height: '400', overflow: 'scroll', minMax: 'max'})
+      css.height({height: '400', overflow: 'auto', minMax: ''})
     ]
   })
 })
@@ -36980,7 +37005,7 @@ jb.component('studio.jb-editor-menu', { /* studio.jbEditorMenu */
       menu.studioWrapWith({
         path: '%$path%',
         type: 'data',
-        components: list('pipeline', 'list', 'firstSucceeding')
+        components: list('pipeline', 'list', 'first-succeeding')
       }),
       menu.studioWrapWith({
         path: '%$path%',
@@ -37924,8 +37949,9 @@ jb.component('studio.search-list', { /* studio.searchList */
     controls: [
       table({
         items: pipeline(
-          studio.componentsStatistics(),
+          studio.allComps(),
           itemlistContainer.filter(),
+          studio.componentStatistics('%%'),
           sort('refCount'),
           slice('0', '50')
         ),
@@ -38010,8 +38036,7 @@ jb.component('studio.search-component', { /* studio.searchComponent */
     controls: [
       itemlistContainer.search({
         title: 'Search',
-        searchIn: item =>
-          item.id,
+//        searchIn: item => item.id,
         databind: '%$itemlistCntrData/search_pattern%',
         style: editableText.mdlSearch(),
         features: [
