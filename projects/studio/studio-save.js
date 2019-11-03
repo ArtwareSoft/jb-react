@@ -15,9 +15,9 @@ jb.component('studio.save-components', { /* studio.saveComponents */
         ]))
       
       const jsToInject = jb.entries(files).filter(e=>e[0].match(/js$/))
-        .map(e => `<script type="text/javascript" src="${st.host.pathToJsFile(project,e[0],baseDir)}"></script>`).join('\n')
+        .map(e => `<script type="text/javascript" src="${st.host.srcOfJsFile(project,e[0],baseDir)}"></script>`).join('\n')
       const cssToInject = jb.entries(files).filter(e=>e[0].match(/css$/))
-        .map(e => `<link rel="stylesheet" href="${st.host.pathToJsFile(project,e[0],baseDir)}" charset="utf-8">`).join('\n')
+        .map(e => `<link rel="stylesheet" href="${st.host.srcOfJsFile(project,e[0],baseDir)}" charset="utf-8">`).join('\n')
     
       jb.entries(files).forEach(e=>
         files[e[0]] = e[1].replace(/<!-- load-jb-scripts-here -->/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))

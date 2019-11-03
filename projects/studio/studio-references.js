@@ -168,13 +168,17 @@ jb.component('studio.components-list', { /* studio.componentsList */
             features: [field.title('refs'), field.columnWidth('40')]
           }),
           button({
-            title: '',
+            title: 'delete',
             action: openDialog({
               vars: [Var('compId', pipeline('%path%', split({separator: '~', part: 'last'})))],
               style: dialog.dialogOkCancel(),
               content: group({}),
               title: 'delete %$compId%',
-              onOK: studio.delete('%$compId%'),
+              onOK: runActions(
+                studio.delete('%$compId%'),
+                ctx => delete jb.studio.comps[ctx.vars.compId],
+                refreshControlById('component-list')
+              ),
               features: [css('z-index: 6000 !important'), dialogFeature.nearLauncherPosition({})]
             }),
             style: button.x(),
@@ -190,12 +194,12 @@ jb.component('studio.components-list', { /* studio.componentsList */
           text: pipeline('%path%', split({separator: '~', part: 'last'}))
         }),
         style: tableTree.plain({hideHeaders: false, gapWidth: '130', expColWidth: '10'}),
-        features: []
       })
     ],
     features: [
       css.padding({top: '4', right: '5'}),
-      css.height({height: '400', overflow: 'auto', minMax: ''})
+      css.height({height: '400', overflow: 'auto', minMax: ''}),
+      id('component-list')
     ]
   })
 })

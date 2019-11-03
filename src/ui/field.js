@@ -26,8 +26,9 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
     if (val === undefined)
       return jb.val(cmp.state.databindRef);
     else { // write
+        cmp.state.model = val;
         if (!oneWay)
-          cmp.setState({model: val});
+          cmp.setState({});
         jb.ui.checkValidationError(cmp);
         jb.writeValue(cmp.state.databindRef,val,ctx);
     }

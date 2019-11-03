@@ -1386,14 +1386,14 @@ jb.component('ui-test.validator', {
           databind: '%$person/name%',
           features: [
             id('fld'),
-            validation(matchRegex('^[a-zA-Z_0-9]+$'),'illegal project name')
+            validation(matchRegex('^[a-zA-Z_0-9]+$'),'invalid project name')
           ]
         }),
       ],
       features: variable({name: 'formContainer', value: obj(prop('err',''))})
     }),
     action: uiAction.setText('a b','#fld'),
-    expectedResult: contains('illegal project name')
+    expectedResult: contains('invalid project name')
   })
 })
 

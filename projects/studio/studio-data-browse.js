@@ -89,8 +89,7 @@ jb.component('studio.data-resource-menu', { /* studio.dataResourceMenu */
     options: [
       menu.endWithSeparator({
         options: dynamicControls({
-          controlItems: ctx => jb.entries(jb.studio.previewjb.comps)
-          .filter(e=>! jb.comps[e[0]])
+          controlItems: ctx => jb.studio.projectCompsAsEntries()
           .filter(e=>e[1].watchableData !== undefined || e[1].passiveData !== undefined)
             .map(e=> {
               const watchableOrPassive = e[1].watchableData !== undefined ? 'watchable' : 'passive'

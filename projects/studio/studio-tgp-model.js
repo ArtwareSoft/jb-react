@@ -264,6 +264,21 @@ Object.assign(st,{
 
 		return 'radio_button_unchecked';
 	},
+	previewCompsAsEntries: () => jb.entries(st.previewjb.comps).filter(e=>e[1]),
+	projectFiles: () => {
+		const ctx = new jb.jbCtx()
+		const project = ctx.exp('%$studio/project%') // || 'studio-helper'
+		return ctx.setData(jb.studio.previewWindow.document.head.outerHTML).run(studio.parseProjectHtml())
+			.fileNames.filter(x=>x.indexOf(project) != -1 || x.indexOf('..') != -1)
+			.map(x=>x.split('/').pop())
+	},
+	projectCompsAsEntries: () => {
+		const files = st.projectFiles()
+		return st.previewCompsAsEntries().filter(e=> {
+			const fn = e[1][jb.location][0].split('/').pop()
+			return files.indexOf(fn) != -1
+		})
+	},
 
 	// queries
 	paramDef: path => {

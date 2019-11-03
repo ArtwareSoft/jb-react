@@ -66,7 +66,6 @@ jb.component('studio.categories-of-type', { /* studio.categoriesOfType */
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,_type,path) => {
-		var val = st.valOfPath(path);
 		var comps = st.previewjb.comps;
 		var pts = st.PTsOfType(_type);
 		var categories = jb.unique([].concat.apply([],pts.map(pt=>
@@ -460,43 +459,28 @@ jb.component('studio.params-of-path', {
 
 jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
   type: 'data',
-  params: [
-    {id: 'project', as: 'string'}
-  ],
-  impl: (ctx,prj) =>
-      jb.studio.previewjb ? Object.keys(jb.studio.previewjb.comps)
-              .filter(id=> id.split('.')[0] == prj) : []
+  impl: () => st.projectCompsAsEntries(),
+  testData: 'sampleData'
 })
 
 jb.component('studio.cmps-of-project-by-files', { /* studio.cmpsOfProjectByFiles */
   type: 'data',
   impl: dynamicObject({
-    items: pipeline(
-      () => jb.studio.previewWindow.document.head.outerHTML,
-      studio.parseProjectHtml(),
-      '%fileNames%',
-      filter(
-          or(
-            contains({text: firstSucceeding('%$studio/project%', 'studio-helper')}),
-            contains('..')
-          )
-        )
-    ),
+    items: () => st.projectFiles(),
     propertyName: '%%',
     value: pipeline(
       Var('file', '%%'),
-      () => jb.studio.previewjb.comps,
-      properties('%%'),
+      () => st.projectCompsAsEntries(),
       filter(
           equals(
             pipeline(
-              ({data}) => data.val[jb.location][0],
+              ({data}) => jb.studio.previewjb.comps[data][jb.location][0],
               split({separator: '/', part: 'last'})
             ),
             '%$file%'
           )
         ),
-      '%id%',
+      '%[0]%',
       aggregate(dynamicObject({items: '%%', propertyName: '%%', value: '%%'}))
     )
   }),

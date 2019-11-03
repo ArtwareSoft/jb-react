@@ -15,7 +15,8 @@ const devHost = {
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
     scriptForLoadLibraries: libs => `<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,${libs.join(',')}"></script>`,
-    pathToJsFile: (project,fn) => `/projects/${project}/${fn}`,
+    srcOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
+    pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
 }
 
@@ -27,7 +28,8 @@ const userLocalHost = Object.assign({},devHost,{
             + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="/dist/${lib}.css"/>`)
         return '<link rel="stylesheet" type="text/css" href="/dist/css/styles.css"/>\n<script type="text/javascript" src="/dist/jb-react-all.js"></script>\n' + libScripts
     },
-    pathToJsFile: (project,fn,baseDir) => baseDir == './' ? `../${fn}` : `/${project}/${fn}`,
+    srcOfJsFile: (project,fn,baseDir) => baseDir == './' ? `../${fn}` : `/${project}/${fn}`,
+    pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
 })
 
@@ -43,7 +45,7 @@ const cloudHost = {
             + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/${lib}.css"/>`)
         return '<link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/css/styles.css"/>\n<script type="text/javascript" src="//unpkg.com/jb-react/dist/jb-react-all.js"></script>\n' + libScripts
     },
-    pathToJsFile: (project,fn) => fn,
+    pathOfJsFile: (project,fn) => fn,
     projectUrlInStudio: project => ``,
     canNotSave: true
 }
@@ -129,11 +131,11 @@ st.projectUtils = {
     projectContent: ctx => {
         const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/rootName%')
         const baseDir = rootName == project ? './' : ''
-        const htmlPath = st.host.pathToJsFile(project,project+'.html',baseDir)
+        const htmlPath = st.host.pathOfJsFile(project,project+'.html',baseDir)
         return st.host.getFile(htmlPath).then(html=> {
             const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
             return fileNames.reduce((acc,file)=> 
-                acc.then(res => st.host.getFile(st.host.pathToJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
+                acc.then(res => st.host.getFile(st.host.pathOfJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
                     [`${project}.html`]: html
             }) ).then(files => ({project, files, fileNames, libs}))
         })
