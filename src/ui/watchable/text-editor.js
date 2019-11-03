@@ -1,15 +1,15 @@
 (function(){
 
 function getSinglePathChange(newVal, currentVal) {
-    return pathAndValueOfSingleChange(jb.objectDiff(newVal,currentVal),'')
+    return pathAndValueOfSingleChange(jb.objectDiff(newVal,currentVal),'',currentVal)
 
-    function pathAndValueOfSingleChange(obj, pathSoFar) {
-        if (typeof obj !== 'object' && obj !== undefined)
+    function pathAndValueOfSingleChange(obj, pathSoFar, currentVal) {
+        if (currentVal === undefined || (typeof obj !== 'object' && obj !== undefined))
             return { innerPath: pathSoFar, innerValue: obj }
         const entries = jb.entries(obj)
         if (entries.length != 1) // if not single returns empty answer
             return {}
-        return pathAndValueOfSingleChange(entries[0][1],pathSoFar+'~'+entries[0][0])
+        return pathAndValueOfSingleChange(entries[0][1],pathSoFar+'~'+entries[0][0],currentVal[entries[0][0]])
     }
 }
 
@@ -52,9 +52,9 @@ jb.component('watchable-as-text', { /* watchableAsText */
         prettyPrintWithPositions() {
             const ref = this.getRef()
             const initialPath = ref.handler.pathOfRef(ref).join('~')
-            const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath})
+            const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath, comps: ref.jbToUse && ref.jbToUse.comps})
             this.locationMap = enrichMapWithOffsets(res.text, res.map)
-            this.text = res.text
+            this.text = res.text.replace(/\s*(\]|\})$/,'\n$1')
         },
         writeFullValue(newVal) {
             jb.writeValue(this.getRef(),newVal,ctx)
@@ -132,31 +132,31 @@ jb.component('text-editor.is-dirty', { /* textEditor.isDirty */
     }
 })
 
-jb.component('text-editor.watch-source-changes', { /* textEditor.watchSourceChanges */
-  type: 'feature',
-  params: [
+// jb.component('text-editor.watch-source-changes', { /* textEditor.watchSourceChanges */
+//   type: 'feature',
+//   params: [
 
-  ],
-  impl: ctx => ({ init: cmp => {
-      try {
-        const text_ref = cmp.state.databindRef
-        const data_ref = text_ref.getRef()
-        jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{srcCtx: cmp.ctx, includeChildren: 'yes'})
-            .subscribe(e => {
-            const path = e.path
-            const editor = cmp.editor
-            const locations = cmp.state.databindRef.locationMap
-            const loc = locations[path.concat('!value').join('~')]
-            const newVal = jb.prettyPrint(e.newVal)
-            editor.replaceRange(newVal, {line: loc[0], col:loc[1]}, {line: loc[2], col: loc[3]})
-            const newEndPos = jb.prettyPrint.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
-            editor.markText({line: loc[0], col:loc[1]}, {line: newEndPos.line, col: newEndPos.col},{
-                className: 'jb-highlight-comp-changed'
-            })
-            })
-        } catch (e) {}
-    }})
-})
+//   ],
+//   impl: ctx => ({ init: cmp => {
+//       try {
+//         const text_ref = cmp.state.databindRef
+//         const data_ref = text_ref.getRef()
+//         jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{srcCtx: cmp.ctx, includeChildren: 'yes'})
+//             .subscribe(e => {
+//             const path = e.path
+//             const editor = cmp.editor
+//             const locations = cmp.state.databindRef.locationMap
+//             const loc = locations[path.concat('!value').join('~')]
+//             const newVal = jb.prettyPrint(e.newVal)
+//             editor.replaceRange(newVal, {line: loc[0], col:loc[1]}, {line: loc[2], col: loc[3]})
+//             const newEndPos = jb.prettyPrint.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
+//             editor.markText({line: loc[0], col:loc[1]}, {line: newEndPos.line, col: newEndPos.col},{
+//                 className: 'jb-highlight-comp-changed'
+//             })
+//             })
+//         } catch (e) {}
+//     }})
+// })
 
 jb.component('text-editor.init', { /* textEditor.init */
   type: 'feature',

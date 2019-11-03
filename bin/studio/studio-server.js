@@ -8,7 +8,7 @@ _iswin = /^win/.test(process.platform);
 
 let settings = { port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './', exclude: 'node_modules|\.git' }
 try {
-  settings = JSON.parse(fs.readFileSync('./jbart.json'))
+  Object.assign(settings,JSON.parse(fs.readFileSync('./jbart.json')))
 } catch(e) {}
 
 // define projects not under /jbart/projects directory

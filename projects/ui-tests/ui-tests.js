@@ -45,6 +45,11 @@ jb.component('personWithChildren', { /* personWithChildren */
   }
 })
 
+jb.component('empty-array', {
+  watchableData: []
+})
+
+
 jb.component('ui-test.label', { /* uiTest.label */
   impl: uiTest({
     control: label('hello world'),

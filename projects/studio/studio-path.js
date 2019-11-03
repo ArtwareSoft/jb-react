@@ -68,8 +68,10 @@ Object.assign(st,{
   refOfPath: (path,silent) => {
 		const _path = path.split('~');
 		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0]);
-		return st.compsRefHandler.refOfPath(_path,silent)
-	},
+		const ref = st.compsRefHandler.refOfPath(_path,silent)
+		ref.jbToUse = st.previewjb
+		return ref
+  },
   parentPath: path =>
 		path.split('~').slice(0,-1).join('~'),
   valOfPath: path =>

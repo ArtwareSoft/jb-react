@@ -334,6 +334,31 @@ jb.component('ui-test.watchable-as-text-write', {
   })
 })
 
+jb.component('ui-test.watchable-as-text-write-object-in-array', {
+  impl: uiTest({
+    control: editableText({
+      databind: watchableAsText('%$watchable-people%'),
+      features: id('editor'),
+      style: editableText.textarea({rows: 30,cols: 80})
+    }),
+    action: uiAction_setText('[{a:3}]','#editor'),
+    expectedResult: equals('%$watchable-people/0/a%','3')
+  })
+})
+
+jb.component('ui-test.watchable-as-text-write-set-object-to-array', {
+  impl: uiTest({
+    control: editableText({
+      databind: watchableAsText('%$empty-array%'),
+      features: id('editor'),
+      style: editableText.textarea({rows: 30,cols: 80})
+    }),
+    action: uiAction_setText('[{a:3}]','#editor'),
+    expectedResult: equals('%$empty-array/0/a%','3')
+  })
+})
+
+
 jb.component('data-test.watchable-object-to-primitive-bug', {
   impl: uiTest({
     control: label('%$person%'),
