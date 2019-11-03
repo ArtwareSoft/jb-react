@@ -14,16 +14,6 @@ const jbRx = {
   resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
 };
 
-const jbPreact = {
-  mode: 'development',
-  entry: JBART_DIR + 'src/ui/jb-preact.js',
-  output: {
-    path: JBART_DIR + 'dist',
-    filename: 'jb-preact.js',
-  },
-  resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
-};
-
 const jbImmutable = {
   mode: 'development',
   entry: JBART_DIR + 'src/ui/jb-immutable.js',
@@ -75,4 +65,4 @@ const jbJison = {
   resolve: { modules: [ 'node_modules'] },
 };
 
-module.exports = [jbPreact,jbImmutable,jbRx,babel_ext,jbJison];
+module.exports = [jbImmutable,jbRx,babel_ext,jbJison];

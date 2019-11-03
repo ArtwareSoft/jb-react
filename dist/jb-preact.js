@@ -105,7 +105,7 @@ eval("(function (global, factory) {\n\t true ? factory(exports) :\n\tundefined;\
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! preact */ \"./node_modules/preact/dist/preact.umd.js\");\n/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(preact__WEBPACK_IMPORTED_MODULE_0__);\n\r\n\r\nObject.assign(jb.ui, { preact: preact__WEBPACK_IMPORTED_MODULE_0__, h: preact__WEBPACK_IMPORTED_MODULE_0__[\"h\"], render: preact__WEBPACK_IMPORTED_MODULE_0__[\"render\"], Component: preact__WEBPACK_IMPORTED_MODULE_0__[\"Component\"] })\r\n\n\n//# sourceURL=webpack:///./src/ui/jb-preact.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! preact */ \"./node_modules/preact/dist/preact.umd.js\");\n/* harmony import */ var preact__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(preact__WEBPACK_IMPORTED_MODULE_0__);\n\r\n\r\nObject.assign(jb.ui, { preact: preact__WEBPACK_IMPORTED_MODULE_0__, h: preact__WEBPACK_IMPORTED_MODULE_0__[\"h\"], render: preact__WEBPACK_IMPORTED_MODULE_0__[\"render\"], recyclerComponents: preact__WEBPACK_IMPORTED_MODULE_0__[\"recyclerComponents\"], Component: preact__WEBPACK_IMPORTED_MODULE_0__[\"Component\"] })\r\n\n\n//# sourceURL=webpack:///./src/ui/jb-preact.js?");
 
 /***/ })
 

@@ -230,6 +230,7 @@ function injectLifeCycleMethods(Comp,jbComp) {
 }
 
 ui.garbageCollectCtxDictionary = function(force) {
+	jb.ui.recyclerComponents.splice(0,jb.ui.recyclerComponents.length)
 	const now = new Date().getTime();
 	ui.ctxDictionaryLastCleanUp = ui.ctxDictionaryLastCleanUp || now;
 	const timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp;

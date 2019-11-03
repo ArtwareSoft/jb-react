@@ -16,7 +16,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'css/font.css',
         'css/styles.css',
 
-        'dist/jb-preact.js',
+        'dist/preact.dev.js',
         'dist/jb-immutable.js', // the immutable-helper lib
         'dist/jb-rx.js',
 

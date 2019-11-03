@@ -839,7 +839,8 @@ Object.assign(jb,{
     })
     return out;
   },
-  synchArray: ar => {
+  synchArray: __ar => {
+    const ar = jb.asArray(__ar)
     const isSynch = ar.filter(v=> v &&  (typeof v.then == 'function' || typeof v.subscribe == 'function')).length == 0;
     if (isSynch) return ar;
 
@@ -943,7 +944,7 @@ jb.component('call', { /* call */
  	}
 })
 
-jb.pipe = function(context,items,ptName) {
+jb.pipe = function(context,ptName) {
 	const start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
 	if (typeof context.profile.items == 'string')
 		return context.runInner(context.profile.items,null,'items');
@@ -952,12 +953,10 @@ jb.pipe = function(context,items,ptName) {
 		: (context.profile[ptName] ? (ptName + '~') : 'items~');
 
 	if (ptName == '$pipe') // promise pipe
-		return profiles.reduce((deferred,prof,index) => {
-			return deferred.then(data=>
-				jb.synchArray(data))
-			.then(data=>
-				step(prof,index,data))
-		}, Promise.resolve(start))
+		return profiles.reduce((deferred,prof,index) =>
+			deferred.then(data=>jb.synchArray(data)).then(data=>step(prof,index,data))
+    , Promise.resolve(start))
+      .then(data=>jb.synchArray(data))
 
 	return profiles.reduce((data,prof,index) =>
 		step(prof,index,data), start)
@@ -987,7 +986,7 @@ jb.component('pipeline', { /* pipeline */
       composite: true
     }
   ],
-  impl: (ctx,items) => jb.pipe(ctx,items,'$pipeline')
+  impl: ctx => jb.pipe(ctx,'$pipeline')
 })
 
 jb.component('pipe', { /* pipe */
@@ -1002,7 +1001,7 @@ jb.component('pipe', { /* pipe */
       composite: true
     }
   ],
-  impl: (ctx,items) => jb.pipe(ctx,items,'$pipe')
+  impl: ctx => jb.pipe(ctx,'$pipe')
 })
 
 jb.component('data.if', { /* data.if */
@@ -1227,7 +1226,7 @@ jb.component('write-value', { /* writeValue */
     {id: 'value', mandatory: true}
   ],
   impl: (ctx,to,value) =>
-		jb.writeValue(to,jb.val(value),ctx)
+    Promise.resolve(jb.val(value)).then(val=>jb.writeValue(to,val,ctx))
 })
 
 jb.component('property', {
@@ -1822,7 +1821,7 @@ jb.component('delay', { /* delay */
   params: [
     {id: 'mSec', type: 'number', defaultValue: 1}
   ],
-  impl: (ctx,mSec) => jb.delay(mSec)
+  impl: (ctx,mSec) => jb.delay(mSec).then(() => ctx.data)
 })
 
 jb.component('on-next-timer', { /* onNextTimer */
