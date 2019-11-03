@@ -5696,8 +5696,9 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
     if (val === undefined)
       return jb.val(cmp.state.databindRef);
     else { // write
+        cmp.state.model = val;
         if (!oneWay)
-          cmp.setState({model: val});
+          cmp.setState({});
         jb.ui.checkValidationError(cmp);
         jb.writeValue(cmp.state.databindRef,val,ctx);
     }
@@ -32720,7 +32721,6 @@ jb.component('studio.categories-of-type', { /* studio.categoriesOfType */
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,_type,path) => {
-		var val = st.valOfPath(path);
 		var comps = st.previewjb.comps;
 		var pts = st.PTsOfType(_type);
 		var categories = jb.unique([].concat.apply([],pts.map(pt=>
@@ -33114,43 +33114,28 @@ jb.component('studio.params-of-path', {
 
 jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
   type: 'data',
-  params: [
-    {id: 'project', as: 'string'}
-  ],
-  impl: (ctx,prj) =>
-      jb.studio.previewjb ? Object.keys(jb.studio.previewjb.comps)
-              .filter(id=> id.split('.')[0] == prj) : []
+  impl: () => st.projectCompsAsEntries(),
+  testData: 'sampleData'
 })
 
 jb.component('studio.cmps-of-project-by-files', { /* studio.cmpsOfProjectByFiles */
   type: 'data',
   impl: dynamicObject({
-    items: pipeline(
-      () => jb.studio.previewWindow.document.head.outerHTML,
-      studio.parseProjectHtml(),
-      '%fileNames%',
-      filter(
-          or(
-            contains({text: firstSucceeding('%$studio/project%', 'studio-helper')}),
-            contains('..')
-          )
-        )
-    ),
+    items: () => st.projectFiles(),
     propertyName: '%%',
     value: pipeline(
       Var('file', '%%'),
-      () => jb.studio.previewjb.comps,
-      properties('%%'),
+      () => st.projectCompsAsEntries(),
       filter(
           equals(
             pipeline(
-              ({data}) => data.val[jb.location][0],
+              ({data}) => jb.studio.previewjb.comps[data][jb.location][0],
               split({separator: '/', part: 'last'})
             ),
             '%$file%'
           )
         ),
-      '%id%',
+      '%[0]%',
       aggregate(dynamicObject({items: '%%', propertyName: '%%', value: '%%'}))
     )
   }),
@@ -33701,6 +33686,21 @@ Object.assign(st,{
 			return 'play_arrow'
 
 		return 'radio_button_unchecked';
+	},
+	previewCompsAsEntries: () => jb.entries(st.previewjb.comps).filter(e=>e[1]),
+	projectFiles: () => {
+		const ctx = new jb.jbCtx()
+		const project = ctx.exp('%$studio/project%') // || 'studio-helper'
+		return ctx.setData(jb.studio.previewWindow.document.head.outerHTML).run(studio.parseProjectHtml())
+			.fileNames.filter(x=>x.indexOf(project) != -1 || x.indexOf('..') != -1)
+			.map(x=>x.split('/').pop())
+	},
+	projectCompsAsEntries: () => {
+		const files = st.projectFiles()
+		return st.previewCompsAsEntries().filter(e=> {
+			const fn = e[1][jb.location][0].split('/').pop()
+			return files.indexOf(fn) != -1
+		})
 	},
 
 	// queries
@@ -36805,13 +36805,17 @@ jb.component('studio.components-list', { /* studio.componentsList */
             features: [field.title('refs'), field.columnWidth('40')]
           }),
           button({
-            title: '',
+            title: 'delete',
             action: openDialog({
               vars: [Var('compId', pipeline('%path%', split({separator: '~', part: 'last'})))],
               style: dialog.dialogOkCancel(),
               content: group({}),
               title: 'delete %$compId%',
-              onOK: studio.delete('%$compId%'),
+              onOK: runActions(
+                studio.delete('%$compId%'),
+                ctx => delete jb.studio.comps[ctx.vars.compId],
+                refreshControlById('component-list')
+              ),
               features: [css('z-index: 6000 !important'), dialogFeature.nearLauncherPosition({})]
             }),
             style: button.x(),
@@ -36827,12 +36831,12 @@ jb.component('studio.components-list', { /* studio.componentsList */
           text: pipeline('%path%', split({separator: '~', part: 'last'}))
         }),
         style: tableTree.plain({hideHeaders: false, gapWidth: '130', expColWidth: '10'}),
-        features: []
       })
     ],
     features: [
       css.padding({top: '4', right: '5'}),
-      css.height({height: '400', overflow: 'auto', minMax: ''})
+      css.height({height: '400', overflow: 'auto', minMax: ''}),
+      id('component-list')
     ]
   })
 })
@@ -37132,9 +37136,9 @@ jb.component('studio.save-components', { /* studio.saveComponents */
         ]))
       
       const jsToInject = jb.entries(files).filter(e=>e[0].match(/js$/))
-        .map(e => `<script type="text/javascript" src="${st.host.pathToJsFile(project,e[0],baseDir)}"></script>`).join('\n')
+        .map(e => `<script type="text/javascript" src="${st.host.srcOfJsFile(project,e[0],baseDir)}"></script>`).join('\n')
       const cssToInject = jb.entries(files).filter(e=>e[0].match(/css$/))
-        .map(e => `<link rel="stylesheet" href="${st.host.pathToJsFile(project,e[0],baseDir)}" charset="utf-8">`).join('\n')
+        .map(e => `<link rel="stylesheet" href="${st.host.srcOfJsFile(project,e[0],baseDir)}" charset="utf-8">`).join('\n')
     
       jb.entries(files).forEach(e=>
         files[e[0]] = e[1].replace(/<!-- load-jb-scripts-here -->/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
@@ -37571,8 +37575,7 @@ jb.component('studio.data-resource-menu', { /* studio.dataResourceMenu */
     options: [
       menu.endWithSeparator({
         options: dynamicControls({
-          controlItems: ctx => jb.entries(jb.studio.previewjb.comps)
-          .filter(e=>! jb.comps[e[0]])
+          controlItems: ctx => jb.studio.projectCompsAsEntries()
           .filter(e=>e[1].watchableData !== undefined || e[1].passiveData !== undefined)
             .map(e=> {
               const watchableOrPassive = e[1].watchableData !== undefined ? 'watchable' : 'passive'
@@ -37657,7 +37660,7 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
           style: editableText.mdlInput(),
           features: [
               feature.onEnter(dialog.closeContainingPopup()),
-              validation(matchRegex('^[a-zA-Z_0-9]+$'),'illegal project name')
+              validation(matchRegex('^[a-zA-Z_0-9]+$'),'invalid project name')
           ]
         })
       ],
@@ -38380,7 +38383,8 @@ const devHost = {
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
     scriptForLoadLibraries: libs => `<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,${libs.join(',')}"></script>`,
-    pathToJsFile: (project,fn) => `/projects/${project}/${fn}`,
+    srcOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
+    pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
 }
 
@@ -38392,7 +38396,8 @@ const userLocalHost = Object.assign({},devHost,{
             + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="/dist/${lib}.css"/>`)
         return '<link rel="stylesheet" type="text/css" href="/dist/css/styles.css"/>\n<script type="text/javascript" src="/dist/jb-react-all.js"></script>\n' + libScripts
     },
-    pathToJsFile: (project,fn,baseDir) => baseDir == './' ? `../${fn}` : `/${project}/${fn}`,
+    srcOfJsFile: (project,fn,baseDir) => baseDir == './' ? `../${fn}` : `/${project}/${fn}`,
+    pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
 })
 
@@ -38408,7 +38413,7 @@ const cloudHost = {
             + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/${lib}.css"/>`)
         return '<link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/css/styles.css"/>\n<script type="text/javascript" src="//unpkg.com/jb-react/dist/jb-react-all.js"></script>\n' + libScripts
     },
-    pathToJsFile: (project,fn) => fn,
+    pathOfJsFile: (project,fn) => fn,
     projectUrlInStudio: project => ``,
     canNotSave: true
 }
@@ -38494,11 +38499,11 @@ st.projectUtils = {
     projectContent: ctx => {
         const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/rootName%')
         const baseDir = rootName == project ? './' : ''
-        const htmlPath = st.host.pathToJsFile(project,project+'.html',baseDir)
+        const htmlPath = st.host.pathOfJsFile(project,project+'.html',baseDir)
         return st.host.getFile(htmlPath).then(html=> {
             const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
             return fileNames.reduce((acc,file)=> 
-                acc.then(res => st.host.getFile(st.host.pathToJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
+                acc.then(res => st.host.getFile(st.host.pathOfJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
                     [`${project}.html`]: html
             }) ).then(files => ({project, files, fileNames, libs}))
         })
