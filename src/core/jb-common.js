@@ -894,7 +894,7 @@ jb.component('delay', { /* delay */
   params: [
     {id: 'mSec', type: 'number', defaultValue: 1}
   ],
-  impl: (ctx,mSec) => jb.delay(mSec)
+  impl: (ctx,mSec) => jb.delay(mSec).then(() => ctx.data)
 })
 
 jb.component('on-next-timer', { /* onNextTimer */

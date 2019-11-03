@@ -30,22 +30,30 @@ jb.component('label.bind-text', { /* label.bindText */
     init: cmp => {
       const textF = ctx.vars.$model.text || ctx.vars.$model.title 
       const textRef = textF(cmp.ctx);
-      cmp.state.text = fixTextVal(textRef);
+      const val = fixTextVal(textRef)
+      if (val && typeof val.then == 'function')
+        refreshAsynchText(val)
+      else
+        cmp.state.text = val
+
       if (jb.isWatchable(textRef))
         jb.ui.refObservable(textRef,cmp,{srcCtx: ctx})
-            .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,{text: fixTextVal(textF(cmp.ctx))},e,ctx));
+            .subscribe(e=> !cmp.watchRefOn && Promise.resolve(fixTextVal(textF(cmp.ctx))).then(text => jb.ui.setState(cmp,{text},e,ctx)))
 
-      cmp.refresh = _ =>
-        cmp.setState({text: fixTextVal(textF(cmp.ctx))})
+      cmp.refresh = _ => refreshAsynchText(fixTextVal(textF(cmp.ctx)))
 
       function fixTextVal(textRef) {
         if (textRef == null || textRef.$jb_invalid)
             return 'ref error';
         return jb.ui.toVdomOrStr(textRef);
       }
+      function refreshAsynchText(textPromise) {
+        Promise.resolve(textPromise).then(text => cmp.setState({text}))
+      }
     }
   })
 })
+
 
 jb.component('label.htmlTag', { /* label.htmlTag */
   type: 'label.style',
