@@ -353,6 +353,23 @@ jb.component('data-test.pipe-with-promise', { /* dataTest.pipeWithPromise */
   })
 })
 
+jb.component('data-test.pipe-in-pipe', { 
+  impl: dataTest({
+    calculate: pipe(Var('a',3),
+        pipe(delay(1), list([1,2,'%$a%']), join())
+    ),
+    expectedResult: equals('1,2,3')
+  })
+})
+
+jb.component('data-test.pipe-in-pipe-with-delayed-var', { 
+  impl: dataTest({
+    calculate: pipe(Var('a',ctx => Promise.resolve(3)),
+      pipe(delay(1), list([1,2,'%$a%']), join())),
+    expectedResult: equals('1,2,3')
+  })
+})
+
 jb.component('data-test.pipe-with-promise2', { /* dataTest.pipeWithPromise2 */
   impl: dataTest({
     calculate: pipe(delayedObj(list(1, 2)), join({})),

@@ -515,6 +515,9 @@ ui.item = function(cmp,vdom,data) {
 }
 
 ui.toVdomOrStr = val => {
+	if (val &&  (typeof val.then == 'function' || typeof val.subscribe == 'function'))
+		return jb.synchArray(val).then(v => ui.toVdomOrStr(v[0]))
+
 	const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val;
 	let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1);
 	if (typeof res == 'boolean')

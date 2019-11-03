@@ -839,7 +839,8 @@ Object.assign(jb,{
     })
     return out;
   },
-  synchArray: ar => {
+  synchArray: __ar => {
+    const ar = jb.asArray(__ar)
     const isSynch = ar.filter(v=> v &&  (typeof v.then == 'function' || typeof v.subscribe == 'function')).length == 0;
     if (isSynch) return ar;
 

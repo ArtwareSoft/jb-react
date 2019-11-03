@@ -26,12 +26,10 @@ jb.pipe = function(context,ptName) {
 		: (context.profile[ptName] ? (ptName + '~') : 'items~');
 
 	if (ptName == '$pipe') // promise pipe
-		return profiles.reduce((deferred,prof,index) => {
-			return deferred.then(data=>
-				jb.synchArray(data))
-			.then(data=>
-				step(prof,index,data))
-		}, Promise.resolve(start))
+		return profiles.reduce((deferred,prof,index) =>
+			deferred.then(data=>jb.synchArray(data)).then(data=>step(prof,index,data))
+    , Promise.resolve(start))
+      .then(data=>jb.synchArray(data))
 
 	return profiles.reduce((data,prof,index) =>
 		step(prof,index,data), start)

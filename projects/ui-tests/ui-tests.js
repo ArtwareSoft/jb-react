@@ -94,13 +94,25 @@ jb.component('ui-test.wait-for', { /* uiTest.waitFor */
   })
 })
 
-// jb.component('ui-test.asynch-label', {
-//    impl :{$: 'ui-test',
-//     control: {$:'label', title: ctx => jb.delay(10).then(_=>'hello') },
-//     action: ctx=> jb.delay(40),
-//     expectedResult :{$: 'contains', text: 'hello' }
-//   },
-// })
+jb.component('ui-test.wait-for-with-pipe', {
+  impl: uiTest({
+    control: group({
+      controls: label('%%'),
+      features: group.wait({for: pipe(delay(10), 'hello')})
+    }),
+    action: ctx => jb.delay(40),
+    expectedResult: contains('hello')
+  })
+})
+
+jb.component('ui-test.asynch-label', {
+   impl :{$: 'ui-test',
+    control: {$:'label', title: ctx => jb.delay(10).then(_=>'hello') },
+    action: ctx=> jb.delay(40),
+    expectedResult :{$: 'contains', text: 'hello' }
+  },
+})
+
 //
 // jb.component('ui-test.asynch-label-with-pipeline1', {
 //    impl :{$: 'ui-test',
