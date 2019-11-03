@@ -17,7 +17,7 @@ jb.component('call', { /* call */
  	}
 })
 
-jb.pipe = function(context,items,ptName) {
+jb.pipe = function(context,ptName) {
 	const start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
 	if (typeof context.profile.items == 'string')
 		return context.runInner(context.profile.items,null,'items');
@@ -61,7 +61,7 @@ jb.component('pipeline', { /* pipeline */
       composite: true
     }
   ],
-  impl: (ctx,items) => jb.pipe(ctx,items,'$pipeline')
+  impl: ctx => jb.pipe(ctx,'$pipeline')
 })
 
 jb.component('pipe', { /* pipe */
@@ -76,7 +76,7 @@ jb.component('pipe', { /* pipe */
       composite: true
     }
   ],
-  impl: (ctx,items) => jb.pipe(ctx,items,'$pipe')
+  impl: ctx => jb.pipe(ctx,'$pipe')
 })
 
 jb.component('data.if', { /* data.if */
@@ -301,7 +301,7 @@ jb.component('write-value', { /* writeValue */
     {id: 'value', mandatory: true}
   ],
   impl: (ctx,to,value) =>
-		jb.writeValue(to,jb.val(value),ctx)
+    Promise.resolve(jb.val(value)).then(val=>jb.writeValue(to,val,ctx))
 })
 
 jb.component('property', {

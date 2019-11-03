@@ -107,6 +107,8 @@ st.jbEditorTree = class {
 
 		if (compName)
 			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
+		else if (prop === '$vars')
+			return jb.ui.h('div',{},['vars= ',jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
 		else if (['string','boolean','number'].indexOf(typeof val) != -1)
 			return jb.ui.h('div',{},[prop + (collapsed ? ': ': ''),jb.ui.h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,50))]);
 
@@ -206,16 +208,19 @@ Object.assign(st,{
 			return [path]
 	},
 	isControlType: type =>
-		(type||'').match(/^(control|options|menu|table-field|d3.pivot)/),
+		(type||'').match(/^(control|options|menu|table-field|d3g.pivot)/),
 	controlParams: path =>
 		st.paramsOfPath(path).filter(p=>st.isControlType(p.type)).map(p=>p.id),
 
 	summary: path => {
 		const val = st.valOfPath(path);
 		if (path.match(/~cases~[0-9]*$/))
-		return st.summary(path+'~condition');
-			if (val == null || typeof val != 'object') return '';
-			return st.paramsOfPath(path).map(x=>x.id)
+			return st.summary(path+'~condition');
+		if (val == null || typeof val != 'object') 
+			return '';
+		if (path.match(/~\$vars$/))
+			return Object.keys(val).join(', ')
+		return st.paramsOfPath(path).map(x=>x.id)
 				.filter(p=> p != '$')
 				.filter(p=> p.indexOf('$jb_') != 0)
 				.map(p=>val[p])
@@ -303,10 +308,9 @@ Object.assign(st,{
 		
     	if (path.indexOf('~') == -1)
 		  return st.isCompNameOfType(path,type);
-		const paramDef = st.paramDef(path);
-		if (paramDef)
-			return (paramDef.type || 'data').split(',')
-				.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length;
+		const paramDef = st.paramDef(path) || {};
+		return (paramDef.type || 'data').split(',')
+			.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length;
 	},
 	PTsOfType: type => {
 		const single = /([^\[]*)(\[\])?/;

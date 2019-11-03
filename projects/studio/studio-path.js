@@ -80,7 +80,7 @@ Object.assign(st,{
     if (path.indexOf('~') == -1)
       return 'jb-component';
     if (path.match(/~\$vars$/)) return;
-    var prof = st.valOfPath(path,silent); // + (path.indexOf('~') == -1 ? '~impl' : '');
+    const prof = st.valOfPath(path,silent); // + (path.indexOf('~') == -1 ? '~impl' : '');
   	return jb.compName(prof) || jb.compName(prof,st.paramDef(path))
   },
   compOfPath: (path,silent) =>

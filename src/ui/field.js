@@ -2,7 +2,6 @@
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 
 function databindField(cmp,ctx,debounceTime,oneWay) {
-  debounceTime = debounceTime || 300
   if (debounceTime) {
     cmp.debouncer = new jb.rx.Subject();
     cmp.debouncer.takeUntil( cmp.destroyed )
