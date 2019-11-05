@@ -204,7 +204,8 @@ jb.textEditor = {
     getSuggestions,
     offsetToLineCol,
     lineColToOffset,
-    cm_hint
+    cm_hint,
+    formatComponent
 }
 
 function pathOfPosition(ref,_pos) {
@@ -272,50 +273,29 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     const locationMap = enrichMapWithOffsets(text, map)
     const srcForImpl = '{\n'+compSrc.slice((/^  /m.exec(compSrc) || {}).index,-1)
-    adjustOffsets(locationMap,srcForImpl,text)
     const cursorOffset = lineColToOffset(srcForImpl, {line: pos.line - componentHeaderIndex, col: pos.col})
     const path = pathOfPosition({text, locationMap}, cursorOffset)
     return { path, suggestions: new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path)) }
 }
 
-function adjustOffsets(map,original,formatted) {
-    const offsetFixes = []
-    calcFixes(0,formatted,original)
-    offsetFixes.reduce((acc,fix) => {
-        acc += fix.delta
-        return fix.accDelta = acc
-    },0)
-    const rFixes = offsetFixes.reverse()
-
-    Object.keys(map).forEach(k=>{
-        const fixFrom = rFixes.find(f=> map[k].offset_from >= f.from)
-        if (fixFrom)
-            map[k].offset_from += fixFrom.accDelta;
-        const fixTo = rFixes.find(f=> map[k].offset_to >= f.from)
-        if (fixTo)
-            map[k].offset_to += fixTo.accDelta;
-    })
-
-    function calcFixes(start,txt1,txt2) {
-        if (!txt1 && !txt2) return
-        const nonSpace1 = txt1.match(/^[^\s]+/), nonSpace2 = txt2.match(/^[^\s]+/), ws1 = txt1.match(/^[^\s]+([\s]*)/), ws2 = txt2.match(/^[^\s]+([\s]*)/)
-        if (!txt1 || !txt2 || !nonSpace1 || !nonSpace2 || !ws1 || !ws2) 
-            return jb.logError('calcFixes','unexpected input',txt1,txt2)
-        const delta = ws2[1].length - ws1[1].length
-        if (nonSpace1[0] == nonSpace2[0]) {
-            if (delta)
-                offsetFixes.push({from: start + ws1[0].length, delta})
-            calcFixes(start + ws1[0].length, txt1.slice(ws1[0].length), txt2.slice(ws2[0].length))
-        } else if (nonSpace1[0].indexOf(nonSpace2[0]) == 0) {
-            const length = nonSpace2[0].length
-            offsetFixes.push({from: start + length, delta: ws2[1].length})
-            calcFixes(start + length, txt1.slice(length), txt2.slice(length))
-        } else if (nonSpace2[0].indexOf(nonSpace1[0]) == 0) {
-            const length = nonSpace1[0].length
-            offsetFixes.push({from: start + ws1[0].length, delta: 0-ws1[1].length})
-            calcFixes(start + ws1[0].length, txt1.slice(ws1[0].length), txt2.slice(length))
-        }
-    }
+function formatComponent(fileContent, pos, jbToUse = jb) {
+    const lines = fileContent.split('\n')
+    const closestComp = lines.slice(0,pos.line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
+    if (closestComp == -1) return []
+    const componentHeaderIndex = pos.line - closestComp
+    const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
+    if (!compId) return []
+    const linesFromComp = lines.slice(componentHeaderIndex)
+    const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+    const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
+    if (nextjbComponent != -1 && nextjbComponent < compLastLine)
+      return jb.logError(['can not find end of component', compId, linesFromComp])
+    const linesOfComp = linesFromComp.slice(0,compLastLine+1)
+    const compSrc = linesOfComp.join('\n')
+    if (jb.evalStr(compSrc,jbToUse.frame) === Symbol.for('parseError'))
+        return []
+    return {text: jb.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n', 
+        from: {line: componentHeaderIndex, col: 0}, to: {line: componentHeaderIndex+compLastLine+1, col: 0} }
 }
 
 const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
@@ -323,7 +303,7 @@ function cm_hint(cmEditor) {
     const cursor = cmEditor.getDoc().getCursor()
     return {
         from: cursor, to: cursor,
-        list: jb.textEditor.getSuggestions(cmEditor.getValue(),posFromCM(cursor))
+        list: jb.textEditor.getSuggestions(cmEditor.getValue(),posFromCM(cursor)).suggestions
     }
 }
 

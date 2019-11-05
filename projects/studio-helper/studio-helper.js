@@ -12,6 +12,16 @@ jb.component('data-test.parse-project-html', {
   })
 })
 
+jb.component('studio-helper.top-bar', { /* studioHelper.topBar */
+  params: [
+    {id: 'path', defaultValue: 'studio-helper-sample.control'}
+  ],
+  type: 'control',
+  impl: studio.topBar(
+    Var('simulateProfilePath', '%$path%')
+  )
+})
+
 jb.component('studio-helper.event-tracker', { /* studioHelper.eventTracker */
   type: 'control',
   impl: group({
@@ -23,16 +33,6 @@ jb.component('studio-helper.event-tracker', { /* studioHelper.eventTracker */
       studio.eventTracker()
     ]
   })
-})
-
-jb.component('studio-helper.top-bar', { /* studioHelper.topBar */
-  params: [
-    {id: 'path', defaultValue: 'studio-helper-sample.control'}
-  ],
-  type: 'control',
-  impl: studio.topBar(
-    Var('simulateProfilePath', '%$path%')
-  )
 })
 
 jb.component('studio-helper.editable-source', { /* studioHelper.editableSource */
@@ -337,22 +337,26 @@ jb.component('studio-helper.editable-text-input', { /* studioHelper.editableText
 })
 
 
-jb.component('studio-helper.edit-file', {
+jb.component('studio-helper.edit-file', { /* studioHelper.editFile */
   type: 'control',
   impl: editableText({
-          databind: ctx => jb.studio.host.getFile('/projects/studio-helper/studio-helper.js'),
-          style: editableText.codemirror({
-            cm_settings: {
-              extraKeys: {
-                'Ctrl-Enter': ctx => {
+    databind: ctx => jb.studio.host.getFile('/projects/studio-helper/studio-helper.js'),
+    style: editableText.codemirror({
+      cm_settings: {
+        extraKeys: {
+          'Ctrl-Enter': ctx => {
+                  ctx.vars.editor().formatComponent()
+                },
+          'Ctrl-Space': ctx => {
                   const cmEditor = ctx.vars.editor().cmEditor
                   cmEditor.showHint({ hint: jb.textEditor.cm_hint })
                 }
-              }
-            }
-          }),
-          features: textEditor.init()
-        })
+        }
+      },
+      height: '100%'
+    }),
+    features: textEditor.init()
+  })
 })
 
 jb.component('studio-helper-sample.properties-params', { /* studioHelperSample.propertiesParams */

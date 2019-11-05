@@ -14,7 +14,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
       as: 'boolean',
       description: 'resizer id or true (id is used to keep size in session storage)'
     },
-    {id: 'height', as: 'number'},
+    {id: 'height', as: 'string'},
     {id: 'mode', as: 'string'},
     {id: 'debounceTime', as: 'number', defaultValue: 300},
     {id: 'lineWrapping', as: 'boolean', type: 'boolean'},
@@ -80,6 +80,10 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
 						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
 						focus: () => editor.focus(),
+						formatComponent() { 
+							const {text, from, to} = jb.textEditor.formatComponent(editor.getValue(),this.getCursorPos(),data_ref.jbToUse)
+							this.replaceRange(text, from, to)
+						},
 						cmEditor: editor
 					}
 					cmp.refresh = () => Promise.resolve(cmp.ctx.vars.$model.databind(cmp.ctx)).then(ref=>{
@@ -88,7 +92,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 					})
 					const wrapper = editor.getWrapperElement();
 					if (height)
-						wrapper.style.height = height + 'px';
+						wrapper.style.height = jb.ui.withUnits(height);
 					jb.delay(1).then(() => {
 						if (_enableFullScreen)
 							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))

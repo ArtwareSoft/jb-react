@@ -308,11 +308,6 @@ const op_get_handlers = {
         .concat(fs.existsSync(`./${rootName}.html`) ? [rootName] : [])
       res.end(JSON.stringify({projects}));
     },
-    proxy: function(req,res) {
-      const url = getURLParam(req,'url');
-      if (url)
-        return 
-    },
     gotoSource: function(req,res) {
       const path = getURLParam(req,'path');
       if (path)
