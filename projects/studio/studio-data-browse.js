@@ -11,7 +11,7 @@ jb.component('studio.save-data-resource-to-comp',{
     {id: 'path', as: 'string'},
     {id: 'name', as: 'string'}
   ],
-  impl: writeValue(studio.profileAsText('%$path%'), 
+  impl: writeValue(studio.profileAsText('%$path%'),
     (ctx,vars,{name}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+name+'%'))
   )
 })
@@ -23,25 +23,26 @@ jb.component('studio.open-resource', { /* studio.openResource */
     {id: 'name', as: 'string'}
   ],
   impl: runActions(
-    studio.saveDataResourceToComp('%$path%','%$name%'),
+    studio.saveDataResourceToComp('%$path%', '%$name%'),
     openDialog({
-      style: dialog.editSourceStyle({id: 'editor', width: 600}),
-      content: editableText({
-        databind: studio.profileAsText('%$path%'),
-        style: editableText.studioCodemirrorTgp(),
-        features: ctx => ({
+        style: dialog.editSourceStyle({id: 'edit-data-resource', width: 600}),
+        content: editableText({
+          databind: studio.profileAsText('%$path%'),
+          style: editableText.studioCodemirrorTgp(),
+          features: ctx => ({
           init: cmp => ctx.vars.$dialog.refresh = () => {
             ctx.run(studio.saveDataResourceToComp('%$path%','%$name%'))
             cmp.refresh && cmp.refresh()
           }
         })
-      }),
-      title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
-      features: [
-        css('.jb-dialog-content-parent {overflow-y: hidden}'),
-        dialogFeature.resizer(true)
-      ]
-  }))
+        }),
+        title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
+        features: [
+          css('.jb-dialog-content-parent {overflow-y: hidden}'),
+          dialogFeature.resizer(true)
+        ]
+      })
+  )
 })
 
 jb.component('studio.open-new-resource', { /* studio.openNewResource */

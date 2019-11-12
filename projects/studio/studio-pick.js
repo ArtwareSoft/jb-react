@@ -108,7 +108,7 @@ function pathFromElem(_window,profElem) {
 
 function eventToElem(e,_window) {
     const mousePos = {
-        x: e.pageX - document.body.scrollLeft, y: e.pageY - - document.body.scrollTop
+        x: e.pageX - _window.pageXOffset, y: e.pageY  - _window.pageYOffset
     };
     const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
     const results = elems.flatMap(el=>[el,...jb.ui.parents(el)])

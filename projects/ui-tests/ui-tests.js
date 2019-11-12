@@ -415,7 +415,7 @@ jb.component('ui-test.itemlist.shown-only-on-item-hover', {
 jb.component('ui-test.itemlist-with-select', { /* uiTest.itemlistWithSelect */
   impl: uiTest({
     control: itemlist({
-      items: '%$people%',
+      items: list('%$people%','%$people%','%$people%'),
       controls: label('%$item.name% - %name%'),
       features: itemlist.selection({})
     }),

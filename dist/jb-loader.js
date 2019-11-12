@@ -80,13 +80,19 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'node_modules/codemirror/mode/jsx/jsx.js',
         'node_modules/codemirror/mode/htmlmixed/htmlmixed.js',
         'node_modules/codemirror/addon/hint/show-hint.js',
-//        'node_modules/codemirror/addon/hint/javascript-hint.js',
-//        'node_modules/codemirror/addon/hint/xml-hint.js',
-//        'node_modules/codemirror/addon/hint/html-hint.js',
+
+        'node_modules/codemirror/addon/dialog/dialog.js',
+        'node_modules/codemirror/addon/search/searchcursor.js',
+        'node_modules/codemirror/addon/search/search.js',
+        'node_modules/codemirror/addon/scroll/annotatescrollbar.js',
+        'node_modules/codemirror/addon/search/matchesonscrollbar.js',
+
         'node_modules/codemirror/addon/fold/foldgutter.js',
         'node_modules/codemirror/addon/selection/active-line.js',
       ],
       'codemirror-css-files': [
+        'node_modules/codemirror/addon/dialog/dialog.css',
+        'node_modules/codemirror/addon/search/matchesonscrollbar.css',
         'node_modules/codemirror/lib/codemirror.css',
         'node_modules/codemirror/theme/solarized.css',
         'node_modules/codemirror/addon/hint/show-hint.css',

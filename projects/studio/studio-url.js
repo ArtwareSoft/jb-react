@@ -20,7 +20,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
                     .filter(e=>e.val)
                     .map(({p,val})=>`${p}=${encodeURIComponent(val)}`)
                     .join('&');
-                return {search} 
+                return {search}
             }
         } : {
             urlToObj({pathname}) {
@@ -36,7 +36,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
                 const pathname = split_base[0] + `/${base}/` +
                     params.map(p=>encodeURIComponent(jb.tostring(obj[p])||''))
                     .join('/').replace(/\/*$/,'');
-                return {pathname} 
+                return {pathname}
             }
         }
 
@@ -72,4 +72,10 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
                 ctx.params.onUrlChange(ctx.setData(loc));
             })
     }
+})
+
+jb.component('data-resource.queryParams', { /* dataResource.queryParams */
+  passiveData: {
+    
+  }
 })

@@ -98,7 +98,7 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: openDialog({
-    style: dialog.studioFloating({id: 'editor', width: 600}),
+    style: dialog.studioFloating({id: 'edit-source', width: 600}),
     content: group({
       title: 'project files',
       controls: [
@@ -512,12 +512,12 @@ git push origin master`
                         'commit',
                         `Open cmd at your project directory and run the following commands
 
-git add . 
+git add .
 git commit -am COMMIT_REMARK
 git push origin master
 
 #explanation
-git add -  mark all files to be handled by the local repository. 
+git add -  mark all files to be handled by the local repository.
 Needed only if you added new files
 git commit - adds the changes to your local git repository
 git push - copy the local repostiry to github's cloud repository`

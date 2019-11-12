@@ -274,3 +274,20 @@ jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
     ]
   })
 })
+
+jb.component('data-resource.studio', { /* dataResource.studio */
+  watchableData: {
+    project: '',
+    page: '',
+    profile_path: '',
+    pickSelectionCtxId: '',
+    baseStudioUrl: '//unpkg.com/jb-react/bin/studio/'
+  }
+})
+
+jb.component('data-resource.pickSelection', { /* dataResource.pickSelection */
+  passiveData: {
+    ctx: null,
+    elem: null
+  }
+})
