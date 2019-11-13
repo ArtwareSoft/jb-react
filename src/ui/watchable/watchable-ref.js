@@ -370,12 +370,6 @@ function comparePaths(path1,path2) {
     return path1[i] < path2[i] ? -2 : 2
 }
 
-// function isPathInsideStyle(path) {
-//     const cmpId = path.split('~')[0]
-//     const cmp = jb.comps[cmpId]
-//     return cmp && (cmp.type||'').match(/style$/)
-// }
-
 function resourcesRef(val) {
   if (typeof val == 'undefined')
     return jb.resources;

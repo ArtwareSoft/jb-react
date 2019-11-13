@@ -2,8 +2,6 @@ import { getEffectiveTypeRoots } from "typescript";
 
 //import __ from '../../../dist/jb-react-all'
 
-jb.resource('exp', { val : 'window.parent.wSpy.logs', res: '' })
-
 function __cloneDeepLimited(obj, maxDepth) {
   if (typeof obj == 'function') return 'func ' + obj.name;
   if (maxDepth == 0) return obj && obj.toString && obj.toString();

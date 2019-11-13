@@ -1,4 +1,4 @@
-jb.component('studio', { /* studio */
+jb.component('data-resource.studio', { /* dataResource.studio */
   watchableData: {
     project: '',
     page: '',
@@ -8,10 +8,12 @@ jb.component('studio', { /* studio */
   }
 })
 
-jb.component('pickSelection', { // can not put rich objects as watchable, only pickSelectionCtxId is watchable
-  passiveData: {  ctx: null, elem: null }
+jb.component('data-resource.pickSelection', { /* dataResource.pickSelection */
+  passiveData: {
+    ctx: null,
+    elem: null
+  }
 })
-
 jb.component('studio.pages', { /* studio.pages */
   type: 'control',
   impl: group({
@@ -273,21 +275,4 @@ jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
       })
     ]
   })
-})
-
-jb.component('data-resource.studio', { /* dataResource.studio */
-  watchableData: {
-    project: '',
-    page: '',
-    profile_path: '',
-    pickSelectionCtxId: '',
-    baseStudioUrl: '//unpkg.com/jb-react/bin/studio/'
-  }
-})
-
-jb.component('data-resource.pickSelection', { /* dataResource.pickSelection */
-  passiveData: {
-    ctx: null,
-    elem: null
-  }
 })

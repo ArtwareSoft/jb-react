@@ -1,12 +1,12 @@
 var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : {}), {
       'core': [
         'src/core/jb-core.js',
-        'src/misc/wSpy.js'
+        'src/misc/spy.js'
       ],
       'common': [
         'src/core/jb-core.js',
         'src/core/jb-common.js',
-        'src/misc/wSpy.js',
+        'src/misc/spy.js',
       ],
       'material-css': [
         'dist/material.css',
@@ -118,7 +118,8 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
-        'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe'
+        'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
+        'watchref-viewer'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',

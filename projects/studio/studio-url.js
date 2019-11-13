@@ -1,5 +1,3 @@
-jb.component('queryParams', { passiveData: {} })
-
 jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudioUrlToResource */
   type: 'action',
   params: [

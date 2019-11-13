@@ -556,7 +556,7 @@ const logs = {};
 
 const profileOfPath = path => path.reduce((o,p)=>o && o[p], jb.comps) || {}
 
-const log = (logName, record) => frame.wSpy && frame.wSpy.log(logName, record, {
+const log = (logName, record) => jb.spy && jb.spy.log(logName, record, {
   modifier: record => {
     if (record[1] instanceof jbCtx)
       record.splice(1,0,pathSummary(record[1].path))

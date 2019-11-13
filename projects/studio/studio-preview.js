@@ -158,7 +158,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
           return
         }
         const cacheKiller =  'cacheKiller='+(''+Math.random()).slice(10)
-        const src = `/project/${project}?${cacheKiller}&wspy=preview`
+        const src = `/project/${project}?${cacheKiller}&spy=preview`
         cmp.state.src = src
         document.title = project + ' with jBart';
       },
