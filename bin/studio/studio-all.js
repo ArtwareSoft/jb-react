@@ -757,7 +757,9 @@ Object.assign(jb,{
       const firstParamIsArray = (params[0] && params[0].type||'').indexOf('[]') != -1
       if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
         return {$: id, [params[0].id]: args }
-      if (!(profile.usageByValue === false) && (params.length < 3 || profile.usageByValue))
+      const macroByProps = args.length == 1 && typeof args[0] === 'object' && 
+        (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
+      if ((profile.macroByValue || params.length < 3) && profile.macroByValue !== false && !macroByProps)
         return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
       if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object')
         return {$: id, ...args[0]}
@@ -787,11 +789,7 @@ Object.assign(jb,{
     path = jb.asArray(path)
 
     if (typeof value == 'undefined') {  // get
-      for(let i=0;i<path.length;i++) {
-        cur = cur[path[i]];
-        if (cur === null || cur === undefined) return cur;
-      }
-      return cur;
+      return path.reduce((o,k)=>o && o[k], object)
     } else { // set
       for(let i=0;i<path.length;i++)
         if (i == path.length-1)
@@ -1006,7 +1004,7 @@ jb.component('pipe', { /* pipe */
 
 jb.component('data.if', { /* data.if */
   type: 'data',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
     {id: 'then', mandatory: true, dynamic: true},
@@ -1019,7 +1017,7 @@ jb.component('data.if', { /* data.if */
 jb.component('action.if', { /* action.if */
   type: 'action',
   description: 'if then else',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
     {id: 'then', type: 'action', mandatory: true, dynamic: true},
@@ -1407,7 +1405,7 @@ jb.component('extend-with-index', { /* extendWithIndex */
 
 jb.component('prop', { /* prop */
   type: 'prop',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'title', as: 'string', mandatory: true},
     {id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: ''},
@@ -1438,7 +1436,7 @@ jb.component('remark', { /* remark */
 })
 
 jb.component('If', { /* If */
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'condition', as: 'boolean', type: 'boolean', mandatory: true},
     {id: 'then'},
@@ -1798,7 +1796,7 @@ jb.component('runActions', { /* runActions */
 
 jb.component('run-action-on-items', { /* runActionOnItems */
   type: 'action',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'items', as: 'ref', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
@@ -1995,7 +1993,7 @@ jb.component('asRef', { /* asRef */
 })
 
 jb.component('data.switch', { /* data.switch */
-  usageByValue: false,
+  macroByValue: false,
   params: [
     {
       id: 'cases',
@@ -5887,7 +5885,7 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', { /* firstSucceedi
 
 jb.component('control-with-condition', { /* controlWithCondition */
   type: 'control',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'condition', type: 'boolean', dynamic: true, mandatory: true, as: 'boolean'},
     {id: 'control', type: 'control', mandatory: true, dynamic: true},
@@ -6007,7 +6005,7 @@ jb.component('label.card-supporting-text', { /* label.cardSupportingText */
 
 jb.component('highlight', { /* highlight */
   type: 'data',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'base', as: 'string', dynamic: true},
     {id: 'highlight', as: 'string', dynamic: true},
@@ -7176,7 +7174,7 @@ jb.ui.checkKey = function(e, key) {
 jb.component('feature.onKey', { /* feature.onKey */
   type: 'feature',
   category: 'events',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
@@ -8111,7 +8109,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
 
 jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
   type: 'feature',
-  usageByValue: false,
+  macroByValue: false,
   params: [
     {id: 'autoFocus', type: 'boolean'},
     {id: 'onEnter', type: 'action', dynamic: true}
@@ -26391,20 +26389,20 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
     const oneFirstParam = keys.length === 1 && params[0] && params[0].id == keys[0]
-        && (typeof attOfProfile(keys[0]) !== 'object' || Array.isArray(attOfProfile(keys[0])))
-    if ((params.length < 3 && comp.usageByValue !== false) || comp.usageByValue || oneFirstParam) {
-      const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: attOfProfile(param.id)})))
+        && (typeof propOfProfile(keys[0]) !== 'object' || Array.isArray(propOfProfile(keys[0])))
+    if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstParam) {
+      const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
       for(let i=0;i<5;i++)
         if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
       return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
     }
     const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
     const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
-    const args = systemPropsInObj.concat(params.filter(param=>attOfProfile(param.id) !== undefined)
-        .map(param=>({innerPath: param.id, val: attOfProfile(param.id)})))
+    const args = systemPropsInObj.concat(params.filter(param=>propOfProfile(param.id) !== undefined)
+        .map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
       return joinVals(ctx, args,openProfileGroup, closeProfileGroup, flat, false)
 
-    function attOfProfile(paramId) {
+    function propOfProfile(paramId) {
       const isFirst = params[0] && params[0].id == paramId
       return isFirst && profile['$'+id] || profile[paramId]
     }

@@ -167,7 +167,7 @@ jb.component('ui-action.keyboard-event', { /* uiAction.keyboardEvent */
 
 jb.component('ui-action.set-text', { /* uiAction.setText */
   type: 'ui-action',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'value', as: 'string', mandatory: true},
     {id: 'selector', as: 'string', defaultValue: 'input,textarea'},
