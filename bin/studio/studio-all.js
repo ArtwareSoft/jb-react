@@ -556,7 +556,7 @@ const logs = {};
 
 const profileOfPath = path => path.reduce((o,p)=>o && o[p], jb.comps) || {}
 
-const log = (logName, record) => frame.wSpy && frame.wSpy.log(logName, record, {
+const log = (logName, record) => jb.spy && jb.spy.log(logName, record, {
   modifier: record => {
     if (record[1] instanceof jbCtx)
       record.splice(1,0,pathSummary(record[1].path))
@@ -2056,32 +2056,37 @@ jb.component('action.switch-case', { /* action.switchCase */
 ;
 
 (function() {
-'use strict'
 const spySettings = { 
     moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog', 
 	includeLogs: 'exception,error',
-	stackFilter: /wSpy|jb_spy|Object.log|node_modules/i,
-    extraIgnoredEvents: [], MAX_LOG_SIZE: 10000, DEFAULT_LOGS_COUNT: 300, GROUP_MIN_LEN: 5
+	stackFilter: /spy|jb_spy|Object.log|node_modules/i,
+    extraIgnoredEvents: [], MAX_LOG_SIZE: 10000
 }
-const frame = typeof window === 'object' ? window : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
+const frame = jb.frame
 
-function initSpy({Error, settings, wSpyParam, memoryUsage}) {
-    const systemProps = ['index', 'time', '_time', 'mem', 'source']
+jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) {
+	Error = Error || frame.Error,
+	memoryUsage = memoryUsage || (() => frame.performance && performance.memory && performance.memory.usedJSHeapSize)
+	settings = Object.assign(settings||{}, spySettings)
+
+	const systemProps = ['index', 'time', '_time', 'mem', 'source']
 
     const isRegex = x => Object.prototype.toString.call(x) === '[object RegExp]'
-    const isString = x => typeof x === 'string' || x instanceof String
+	const isString = x => typeof x === 'string' || x instanceof String
+	if (resetSpyToNull)
+		return jb.spy = null
     
-    return {
-		ver: 7,
+    jb.spy = {
 		logs: {},
-		wSpyParam,
+		spyParam,
 		otherSpies: [],
 		enabled: () => true,
 		log(logName, record, {takeFrom, funcTitle, modifier} = {}) {
 			const init = () => {
+				this.observable = new jb.rx.Subject()
 				if (!this.includeLogs) {
-					const includeLogsFromParam = (this.wSpyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
-					const excludeLogsFromParam = (this.wSpyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
+					const includeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
+					const excludeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
 					this.includeLogs = settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
 						acc[log] = true
 						return acc
@@ -2089,7 +2094,7 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 				}
 			}
 			const shouldLog = (logName, record) =>
-				this.wSpyParam === 'all' || Array.isArray(record) && this.includeLogs[logName] && !settings.extraIgnoredEvents.includes(record[0])
+				this.spyParam === 'all' || Array.isArray(record) && this.includeLogs[logName] && !settings.extraIgnoredEvents.includes(record[0])
 
 			init()
 			this.logs[logName] = this.logs[logName] || []
@@ -2119,28 +2124,7 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 				modifier(record)
 			}
 			this.logs[logName].push(record)
-		},
-		getCallbackName(cb, takeFrom) {
-			if (!cb) {
-				return
-			}
-			if (!cb.name || isString(cb.name) && cb.name.startsWith('bound ')) {
-				if (Array.isArray(cb.source)) {
-					return cb.source[0]
-				}
-				const nameFromSource = this.source(takeFrom)
-				if (Array.isArray(nameFromSource)) {
-					return nameFromSource
-				}
-			}
-			return cb.name.trim()
-		},
-		logCallBackRegistration(cb, logName, record, takeFrom) {
-			cb.source = this.source(takeFrom)
-			this.log(logName, [this.getCallbackName(cb, takeFrom), ...record], takeFrom)
-		},
-		logCallBackExecution(cb, logName, record, takeFrom) {
-			this.log(logName, [this.getCallbackName(cb, takeFrom), cb.source, ...record], takeFrom)
+			this.observable.next(record)
 		},
 		source(takeFrom) {
 			Error.stackTraceLimit = 50
@@ -2164,32 +2148,28 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 		},
         
         // browsing methods
-		resetParam: wSpyParam => {
-			this.wSpyParam = wSpyParam;
+		resetParam: spyParam => {
+			this.spyParam = spyParam;
 			this.includeLogs = null;
-		},
-		purge(count) {
-			const countFromEnd = -1 * (count || settings.DEFAULT_LOGS_COUNT)
-			Object.keys(this.logs).forEach(log => this.logs[log] = this.logs[log].slice(countFromEnd))
 		},
 		setLogs(logs) {
 			if (logs === 'all')
-				this.wSpyParam = 'all'
+				this.spyParam = 'all'
 			this.includeLogs = (logs||'').split(',').reduce((acc,log) => {acc[log] = true; return acc },{})
 		},
-		clear(logs) {
+		clear() {
 			Object.keys(this.logs).forEach(log => delete this.logs[log])
 		},
         search(pattern) {
 			if (isRegex(pattern)) {
-				return this.merged(x => pattern.test(x.join(' ')))
+				return this.all(x => pattern.test(x.join(' ')))
 			} else if (isString(pattern)) {
-				return this.merged(x => x.join(' ').indexOf(pattern) !== -1)
+				return this.all(x => x.join(' ').indexOf(pattern) !== -1)
 			} else if (Number.isInteger(pattern)) {
-				return this.merged().slice(-1 * pattern)
+				return this.all().slice(-1 * pattern)
 			}
 		},
-		merged(filter) {
+		all(filter) {
 			return [].concat.apply([], Object.keys(this.logs).filter(log => Array.isArray(this.logs[log])).map(module =>
 				this.logs[module].map(arr => {
 					const res = [arr.index, module, ...arr]
@@ -2200,90 +2180,19 @@ function initSpy({Error, settings, wSpyParam, memoryUsage}) {
 				}))).
 				filter((e, i, src) => !filter || filter(e, i, src)).
 				sort((x, y) => x.index - y.index)
-		},
-		all(filter) {
-			return this.merged(filter)
-		},
-		grouped(filter) {
-			const merged = this.merged(filter)
-			const countFromEnd = -1 * settings.DEFAULT_LOGS_COUNT
-			return [].concat.apply([], merged.reduce((acc, curr, i, arr) => {
-				const group = acc[acc.length - 1]
-				if (!group) {
-					return [newGroup(curr)]
-				}
-				if (curr[1] === group[0][1]) {
-					group.push(curr)
-				} else {
-					if (group.length > settings.GROUP_MIN_LEN) {
-						group.unshift(`[${group.length}] ${group[0][1]}`)
-					}
-					acc.push(newGroup(curr))
-				}
-				if (i === arr.length - 1 && group.length > settings.GROUP_MIN_LEN) {
-					group.unshift(`[${group.length}] ${group[0][1]}`)
-				}
-				return acc
-			}, []).map(e => e.length > settings.GROUP_MIN_LEN ? [e] : e)).
-				slice(countFromEnd).
-				map((x, i, arr) => {
-					const delay = i === 0 ? 0 : x.time - arr[i - 1].time
-					x[0] = `${x[0]} +${delay}`
-					return x
-				})
-			function newGroup(rec) {
-				const res = [rec]
-				res.time = rec.time
-				return res
-			}
 		}
 	}
 } 
 
-const noop = () => false;
-const noopSpy = {
-    log: noop, getCallbackName: noop, logCallBackRegistration: noop, logCallBackExecution: noop, enabled: noop
-}
-
-frame.initwSpy = function(settings = {}) {
-	const getParentUrl = () => { try { return frame.parent.location.href } catch(e) {} }
+function initSpyByUrl() {
 	const getUrl = () => { try { return frame.location.href } catch(e) {} }
-	const getSpyParam = url => (url.match('[?&]w[sS]py=([^&]+)') || ['', ''])[1]
-	const getFirstLoadedSpy = () => { try { return frame.parent && frame.parent.wSpy || frame.wSpy } catch(e) {} }
-	function saveOnFrame(wSpy) { 
-		try { 
-			frame.wSpy = wSpy;  
-			if (frame.parent)
-				frame.parent.wSpy = wSpy
-		} catch(e) {} 
-		return wSpy
-	}
-
-	function doInit() {
-		try {
-			if (settings.forceNoop)
-				return noopSpy
-			const existingSpy = getFirstLoadedSpy();
-			if (existingSpy && existingSpy.enabled())
-				return existingSpy;
-	
-			const wSpyParam = settings.wSpyParam || getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
-			if (wSpyParam) return initSpy({
-				Error: frame.Error,
-				memoryUsage: () => frame.performance && performance.memory && performance.memory.usedJSHeapSize,
-				wSpyParam,
-				settings: Object.assign(settings, spySettings)
-			});
-		} catch (e) {}
-		return noopSpy
-	}
-
-	return saveOnFrame(doInit())
+	const getParentUrl = () => { try { return frame.parent.location.href } catch(e) {} }
+	const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
+	const spyParam = getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
+	if (spyParam)
+		jb.initSpy({spyParam})
 }
-
-if (typeof window == 'object') {
-	frame.initwSpy()
-}
+initSpyByUrl()
 
 })()
 ;
@@ -5272,13 +5181,14 @@ ui.outerHeight = el => {
   const style = getComputedStyle(el);
   return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
 }
-ui.offset = el => {
-  const rect = el.getBoundingClientRect();
-  return {
-    top: rect.top + document.body.scrollTop,
-    left: rect.left + document.body.scrollLeft
-  }
-}
+ui.offset = el => el.getBoundingClientRect()
+// {
+//   const rect = el.getBoundingClientRect();
+//   return {
+//     top: rect.top + el.ownerDocument.body.scrollTop,
+//     left: rect.left + el.ownerDocument.body.scrollLeft
+//   }
+// }
 ui.parents = el => {
   const res = [];
   el = el.parentNode;
@@ -5751,12 +5661,6 @@ function comparePaths(path1,path2) {
     if (i == path2.length && i < path1.length) return 1;
     return path1[i] < path2[i] ? -2 : 2
 }
-
-// function isPathInsideStyle(path) {
-//     const cmpId = path.split('~')[0]
-//     const cmp = jb.comps[cmpId]
-//     return cmp && (cmp.type||'').match(/style$/)
-// }
 
 function resourcesRef(val) {
   if (typeof val == 'undefined')
@@ -9748,20 +9652,6 @@ jb.component('goto-url', { /* gotoUrl */
 	}
 })
 
-jb.component('reset-wspy', { /* resetWspy */
-  type: 'action',
-  description: 'initalize logger',
-  params: [
-    {id: 'param', as: 'string'}
-  ],
-  impl: (ctx,param) => {
-		const wspy = jb.frame.initwSpy && frame.initwSpy()
-		if (wspy && wspy.enabled()) {
-			wspy.resetParam(param)
-			wspy.clear()
-		}
-	}
-})
 ;
 
 jb.component('mdl-style.init-dynamic', { /* mdlStyle.initDynamic */
@@ -31653,13 +31543,12 @@ componentHandler.register({
 
 var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : {}), {
       'core': [
-        'src/core/jb-core.js',
-        'src/misc/wSpy.js'
+        'src/core/jb-core.js'
       ],
       'common': [
         'src/core/jb-core.js',
         'src/core/jb-common.js',
-        'src/misc/wSpy.js',
+        'src/misc/spy.js',
       ],
       'material-css': [
         'dist/material.css',
@@ -31750,6 +31639,10 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'node_modules/codemirror/theme/solarized.css',
         'node_modules/codemirror/addon/hint/show-hint.css',
       ],
+      animate: [
+        'node_modules/animejs/lib/anime.js',
+        'src/ui/animation/animation.js'
+      ],
       'd3': [
         'node_modules/d3/dist/d3.js',
         'src/ui/d3-chart/d3-math.js',
@@ -31765,18 +31658,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
           'dist/dragula.css',
       ],
       'jb-d3': ['dist/jb-d3.js'],
-      studio: [
-        'dist/material.js','src/loader/jb-loader.js', 'src/ui/watchable/text-editor.js',
-        'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js',
-        'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
-        'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
-        'references','properties-menu','save','open-project','tree',
-        'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe'
-      ],
-      'studio-tests': [
-        'projects/studio/studio-testers.js',
-        'probe','model','tree','suggestion'
-      ],
       'css-files': [
         'dist/material.min.css',
         'dist/material.indigo-pink.min.css',
@@ -31799,9 +31680,21 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'xml': [ 'src/misc/xml.js' ],
       'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
       'parsing': [ 'src/misc/parsing.js' ],
-      'spy': [ 'src/misc/spy.js' ],
-      'dynamic-studio': [ 'src/misc/dynamic-studio.js' ],
-})
+      studio: [
+        'dist/material.js','src/loader/jb-loader.js', 'src/ui/watchable/text-editor.js', 
+        'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js',
+        'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
+        'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
+        'references','properties-menu','save','open-project','tree',
+        'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
+        'watchref-viewer'
+      ],
+      'studio-tests': [
+        'projects/studio/studio-testers.js',
+        'probe','model','tree','suggestion'
+      ],
+
+    })
 
 function jb_dynamicLoad(modules,prefix) {
   prefix = prefix || '';
@@ -31960,7 +31853,7 @@ jb.component('text-editor.with-cursor-path', { /* textEditor.withCursorPath */
         if (editor && editor.getCursorPos)
             action(editor.ctx().setVars({
                 cursorPath: pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
-                cursorCoord: editor.cursorCoords(editor)
+                cursorCoord: editor.cursorCoords()
             }))
     }
 })
@@ -32520,8 +32413,13 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						cmp,
 						ctx: () => cmp.ctx.setVars({$launchingElement: { el : cmp.base, launcherHeightFix: 1 }}),
 						getCursorPos: () => posFromCM(editor.getCursor()),
-						cursorCoords: editor => {
-							const coords = editor.cmEditor && editor.cmEditor.cursorCoords()
+						charCoords(pos) {
+							return this.normalizeCoords(charCoords(posToCM(pos)))
+						},
+						cursorCoords() {
+							return this.normalizeCoords(editor.cursorCoords())
+						},
+						normalizeCoords(coords) {
 							const offset = jb.ui.offset(cmp.base)
 							return coords && Object.assign(coords,{
 								top: coords.top - offset.top,
@@ -33798,7 +33696,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
           return
         }
         const cacheKiller =  'cacheKiller='+(''+Math.random()).slice(10)
-        const src = `/project/${project}?${cacheKiller}&wspy=preview`
+        const src = `/project/${project}?${cacheKiller}&spy=preview`
         cmp.state.src = src
         document.title = project + ' with jBart';
       },
@@ -34141,8 +34039,6 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
 })
 ;
 
-jb.component('queryParams', { passiveData: {} })
-
 jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudioUrlToResource */
   type: 'action',
   params: [
@@ -34163,7 +34059,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
                     .filter(e=>e.val)
                     .map(({p,val})=>`${p}=${encodeURIComponent(val)}`)
                     .join('&');
-                return {search} 
+                return {search}
             }
         } : {
             urlToObj({pathname}) {
@@ -34179,7 +34075,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
                 const pathname = split_base[0] + `/${base}/` +
                     params.map(p=>encodeURIComponent(jb.tostring(obj[p])||''))
                     .join('/').replace(/\/*$/,'');
-                return {pathname} 
+                return {pathname}
             }
         }
 
@@ -34215,6 +34111,12 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
                 ctx.params.onUrlChange(ctx.setData(loc));
             })
     }
+})
+
+jb.component('data-resource.queryParams', { /* dataResource.queryParams */
+  passiveData: {
+    
+  }
 })
 ;
 
@@ -36700,7 +36602,7 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: openDialog({
-    style: dialog.studioFloating({id: 'editor', width: 600}),
+    style: dialog.studioFloating({id: 'edit-source', width: 600}),
     content: group({
       title: 'project files',
       controls: [
@@ -37114,12 +37016,12 @@ git push origin master`
                         'commit',
                         `Open cmd at your project directory and run the following commands
 
-git add . 
+git add .
 git commit -am COMMIT_REMARK
 git push origin master
 
 #explanation
-git add -  mark all files to be handled by the local repository. 
+git add -  mark all files to be handled by the local repository.
 Needed only if you added new files
 git commit - adds the changes to your local git repository
 git push - copy the local repostiry to github's cloud repository`
@@ -37727,7 +37629,7 @@ function pathFromElem(_window,profElem) {
 
 function eventToElem(e,_window) {
     const mousePos = {
-        x: e.pageX - document.body.scrollLeft, y: e.pageY - - document.body.scrollTop
+        x: e.pageX - _window.pageXOffset, y: e.pageY  - _window.pageYOffset
     };
     const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
     const results = elems.flatMap(el=>[el,...jb.ui.parents(el)])
@@ -37784,7 +37686,6 @@ st.highlightByScriptPath = function(path) {
     const result = st.closestCtxInPreview(pathStr)
     st.highlightCtx(result.ctx)
 }
-
 
 st.highlight = function(elems) {
     const html = elems.map(el => {
@@ -39066,7 +38967,7 @@ jb.component('studio.save-data-resource-to-comp',{
     {id: 'path', as: 'string'},
     {id: 'name', as: 'string'}
   ],
-  impl: writeValue(studio.profileAsText('%$path%'), 
+  impl: writeValue(studio.profileAsText('%$path%'),
     (ctx,vars,{name}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+name+'%'))
   )
 })
@@ -39078,25 +38979,26 @@ jb.component('studio.open-resource', { /* studio.openResource */
     {id: 'name', as: 'string'}
   ],
   impl: runActions(
-    studio.saveDataResourceToComp('%$path%','%$name%'),
+    studio.saveDataResourceToComp('%$path%', '%$name%'),
     openDialog({
-      style: dialog.editSourceStyle({id: 'editor', width: 600}),
-      content: editableText({
-        databind: studio.profileAsText('%$path%'),
-        style: editableText.studioCodemirrorTgp(),
-        features: ctx => ({
+        style: dialog.editSourceStyle({id: 'edit-data-resource', width: 600}),
+        content: editableText({
+          databind: studio.profileAsText('%$path%'),
+          style: editableText.studioCodemirrorTgp(),
+          features: ctx => ({
           init: cmp => ctx.vars.$dialog.refresh = () => {
             ctx.run(studio.saveDataResourceToComp('%$path%','%$name%'))
             cmp.refresh && cmp.refresh()
           }
         })
-      }),
-      title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
-      features: [
-        css('.jb-dialog-content-parent {overflow-y: hidden}'),
-        dialogFeature.resizer(true)
-      ]
-  }))
+        }),
+        title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
+        features: [
+          css('.jb-dialog-content-parent {overflow-y: hidden}'),
+          dialogFeature.resizer(true)
+        ]
+      })
+  )
 })
 
 jb.component('studio.open-new-resource', { /* studio.openNewResource */
@@ -39229,7 +39131,7 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
           style: editableText.mdlInput(),
           features: [
               feature.onEnter(dialog.closeContainingPopup()),
-              validation(matchRegex('^[a-zA-Z_0-9]+$'),'invalid project name')
+              validation(matchRegex('^[\-a-zA-Z_0-9]+$'),'invalid project name')
           ]
         })
       ],
@@ -39625,7 +39527,7 @@ jb.component('studio.search-component', { /* studio.searchComponent */
 })
 ;
 
-jb.component('studio', { /* studio */
+jb.component('data-resource.studio', { /* dataResource.studio */
   watchableData: {
     project: '',
     page: '',
@@ -39635,10 +39537,12 @@ jb.component('studio', { /* studio */
   }
 })
 
-jb.component('pickSelection', { // can not put rich objects as watchable, only pickSelectionCtxId is watchable
-  passiveData: {  ctx: null, elem: null }
+jb.component('data-resource.pickSelection', { /* dataResource.pickSelection */
+  passiveData: {
+    ctx: null,
+    elem: null
+  }
 })
-
 jb.component('studio.pages', { /* studio.pages */
   type: 'control',
   impl: group({
@@ -40289,4 +40193,59 @@ jb.component('studio.probe', { /* studio.probe */
 
 })()
 ;
+
+(function() {
+const st = jb.studio
+
+jb.component('position-of-data', {
+    type: 'position',
+    params: [
+        {id: 'data', defaultValue: '%%'},
+    ],
+    impl: (ctx,data) => {
+        const ref = jb.asRef(data)
+        const path = ref && jb.refHandler(ref).pathOfRef(ref)
+        if (!path) return
+        const resource = path.split('~')[0]
+        const innerPath = path.split('~').slice(1).join('~')
+        const dialog_elem = document.querySelectorAll('[dialogId=edit-data-resource')
+            .filter(el=>el._component.ctx.data.path == resource + '~watchableData')[0]
+        if (!dialog_elem) {
+            openDataResource(path)
+            return jb.delay(500).then(()=> positionOfData(path))
+        }
+        const cm_elem = dialog_elem.querySelector('.CodeMirror')
+        const editor = cm_elem.parentElement._component.editor
+        const map = editor.data_ref.locationMap
+        const positions = jb.entries(map).filter(e=>e[0].split('~watchableData~')[1].split('~!')[0] == innerPath)
+            .map(e=>e[1].positions)
+        const asPoints = positions.map(pos=>editor(charCoords))
+        return {
+            top: Math.min(...asPoints.map(x=>x.top)),
+            left: Math.min(...asPoints.map(x=>x.left)),
+            right: Math.max(...asPoints.map(x=>x.left + x.width)),
+            buttom: Math.max(...asPoints.map(x=>x.top + x.height))
+        }
+    }
+})
+
+function openDataResource(path) {
+}
+
+jb.component('position-of-ctx', {
+    type: 'position',
+    params: [
+        {id: 'ctxId', as: 'string'},
+    ],
+    impl: (ctx,ctxId) => Array.from(st.previewWindow.document.querySelectorAll(`[jb-ctx="${ctxId}"]`))
+        .map(el => jb.ui.offset(el))
+})
+
+jb.studio.activateWatchRefViewer = () => {
+    if (!st.previewjb.spy)
+        st.previewjb.initSpy({})
+    st.previewjb.spy.includeLogs.registerCmpObservable = true
+}
+
+})();
 

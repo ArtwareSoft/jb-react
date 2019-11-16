@@ -183,7 +183,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
 
 jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
   type: 'feature',
-  usageByValue: false,
+  macroByValue: false,
   params: [
     {id: 'autoFocus', type: 'boolean'},
     {id: 'onEnter', type: 'action', dynamic: true}

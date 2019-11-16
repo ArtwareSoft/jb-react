@@ -11,9 +11,9 @@ jb.component('data-test', { /* dataTest */
 		console.log('starting ' + ctx.path )
 		var initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 		if (expectedCounters) {
-			if (!jb.frame.wSpy.enabled())
-				jb.frame.initwSpy({wSpyParam: 'data-test'})
-			jb.frame.wSpy.clear()
+			if (!jb.spy)
+				jb.initSpy({spyParam: 'data-test'})
+			jb.spy.clear()
 		}
 		return Promise.resolve(runBefore())
 			.then(_ =>
@@ -32,7 +32,7 @@ jb.component('data-test', { /* dataTest */
 			})
 			.then(result => { // default cleanup
 				if (expectedCounters)
-					jb.frame.initwSpy({resetwSpyToNoop: true})
+					jb.initSpy({resetSpyToNull: true})
 				jb.resources = JSON.parse(ctx.vars.initial_resources); jb.rebuildRefHandler && jb.rebuildRefHandler();
 				jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 				return result;
@@ -65,9 +65,9 @@ jb.component('ui-test', { /* uiTest */
 			.then(_ => {
 				try {
 					if (expectedCounters) {
-						if (!jb.frame.wSpy.enabled())
-							jb.frame.initwSpy({wSpyParam: 'ui-test'})
-						jb.frame.wSpy.clear()
+						if (!jb.spy)
+							jb.initSpy({spyParam: 'ui-test'})
+						jb.spy.clear()
 					}
 					const elem = document.createElement('div');
 					const ctxForTst = ctx.setVars({elemToTest : elem })
@@ -99,7 +99,7 @@ jb.component('ui-test', { /* uiTest */
 					jb.entries(JSON.parse(ctx.vars.initial_resources)).forEach(e=>jb.resource(e[0],e[1]))
 					jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 					if (expectedCounters)
-						jb.frame.initwSpy({resetwSpyToNoop: true})
+						jb.initSpy({resetSpyToNull: true})
 				}
 				return result;
 			}).then(result =>
@@ -110,14 +110,15 @@ jb.component('ui-test', { /* uiTest */
 })
 
 function countersErrors(expectedCounters) {
-	if ((jb.frame.wSpy.logs && jb.frame.wSpy.logs.exception || [])[0])
-		return (jb.frame.wSpy.logs.exception || [])[0][0]
-	if (jb.frame.wSpy.$counters && jb.frame.wSpy.$counters.exception)
+	if (!jb.spy) return ''
+	if ((jb.spy.logs.exception || [])[0])
+		return (jb.spy.logs.exception || [])[0][0]
+	if (jb.spy.$counters && jb.spy.$counters.exception)
 		return 'exception occured'
 
 	return Object.keys(expectedCounters || {}).map(
-		counter => expectedCounters[counter] !== (jb.frame.wSpy.logs.$counters[counter] || 0)
-			? `${counter}: ${jb.frame.wSpy.logs.$counters[counter]} instead of ${expectedCounters[counter]}` : '')
+		counter => expectedCounters[counter] !== (jb.spy.logs.$counters[counter] || 0)
+			? `${counter}: ${jb.spy.logs.$counters[counter]} instead of ${expectedCounters[counter]}` : '')
 		.filter(x=>x)
 		.join(', ')
 }
@@ -255,7 +256,7 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 				else
 					jb_fail_counter++;
 				const baseUrl = window.location.href.split('/tests.html')[0]
-				var elem = `<div class="${res.success ? 'success' : 'failure'}""><a href="${baseUrl}/tests.html?test=${res.id}&show&wspy=res" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+				var elem = `<div class="${res.success ? 'success' : 'failure'}""><a href="${baseUrl}/tests.html?test=${res.id}&show&spy=res" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 				<button class="editor" onclick="goto_editor('${res.id}')">src</button><span>${res.reason||''}</span>
 				</div>`;
 

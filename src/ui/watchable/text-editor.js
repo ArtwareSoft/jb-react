@@ -119,7 +119,7 @@ jb.component('text-editor.with-cursor-path', { /* textEditor.withCursorPath */
         if (editor && editor.getCursorPos)
             action(editor.ctx().setVars({
                 cursorPath: pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
-                cursorCoord: editor.cursorCoords(editor)
+                cursorCoord: editor.cursorCoords()
             }))
     }
 })

@@ -757,7 +757,9 @@ Object.assign(jb,{
       const firstParamIsArray = (params[0] && params[0].type||'').indexOf('[]') != -1
       if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
         return {$: id, [params[0].id]: args }
-      if (!(profile.usageByValue === false) && (params.length < 3 || profile.usageByValue))
+      const macroByProps = args.length == 1 && typeof args[0] === 'object' && 
+        (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
+      if ((profile.macroByValue || params.length < 3) && profile.macroByValue !== false && !macroByProps)
         return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
       if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object')
         return {$: id, ...args[0]}
@@ -787,11 +789,7 @@ Object.assign(jb,{
     path = jb.asArray(path)
 
     if (typeof value == 'undefined') {  // get
-      for(let i=0;i<path.length;i++) {
-        cur = cur[path[i]];
-        if (cur === null || cur === undefined) return cur;
-      }
-      return cur;
+      return path.reduce((o,k)=>o && o[k], object)
     } else { // set
       for(let i=0;i<path.length;i++)
         if (i == path.length-1)

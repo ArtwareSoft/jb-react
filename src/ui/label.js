@@ -107,7 +107,7 @@ jb.component('label.card-supporting-text', { /* label.cardSupportingText */
 
 jb.component('highlight', { /* highlight */
   type: 'data',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'base', as: 'string', dynamic: true},
     {id: 'highlight', as: 'string', dynamic: true},

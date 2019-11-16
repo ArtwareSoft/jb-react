@@ -173,7 +173,7 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', { /* firstSucceedi
 
 jb.component('control-with-condition', { /* controlWithCondition */
   type: 'control',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'condition', type: 'boolean', dynamic: true, mandatory: true, as: 'boolean'},
     {id: 'control', type: 'control', mandatory: true, dynamic: true},

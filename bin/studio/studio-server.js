@@ -102,6 +102,7 @@ function serveFile(req,res,path) {
           res.statusCode = 500;
           return endWithFailure(res,'file status code 500 ' + full_path + ' ' + err);
         } else {
+          res.setHeader('Cache-Control','max-age: 0, must-revalidate,no-cache');
           const etag = stat.size + '-' + Date.parse(stat.mtime);
           res.setHeader('Last-Modified', stat.mtime);
 

@@ -64,8 +64,13 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						cmp,
 						ctx: () => cmp.ctx.setVars({$launchingElement: { el : cmp.base, launcherHeightFix: 1 }}),
 						getCursorPos: () => posFromCM(editor.getCursor()),
-						cursorCoords: editor => {
-							const coords = editor.cmEditor && editor.cmEditor.cursorCoords()
+						charCoords(pos) {
+							return this.normalizeCoords(charCoords(posToCM(pos)))
+						},
+						cursorCoords() {
+							return this.normalizeCoords(editor.cursorCoords())
+						},
+						normalizeCoords(coords) {
 							const offset = jb.ui.offset(cmp.base)
 							return coords && Object.assign(coords,{
 								top: coords.top - offset.top,

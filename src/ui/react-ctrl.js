@@ -452,13 +452,14 @@ ui.outerHeight = el => {
   const style = getComputedStyle(el);
   return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
 }
-ui.offset = el => {
-  const rect = el.getBoundingClientRect();
-  return {
-    top: rect.top + document.body.scrollTop,
-    left: rect.left + document.body.scrollLeft
-  }
-}
+ui.offset = el => el.getBoundingClientRect()
+// {
+//   const rect = el.getBoundingClientRect();
+//   return {
+//     top: rect.top + el.ownerDocument.body.scrollTop,
+//     left: rect.left + el.ownerDocument.body.scrollLeft
+//   }
+// }
 ui.parents = el => {
   const res = [];
   el = el.parentNode;

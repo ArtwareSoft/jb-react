@@ -79,7 +79,7 @@ jb.component('pipe', { /* pipe */
 
 jb.component('data.if', { /* data.if */
   type: 'data',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
     {id: 'then', mandatory: true, dynamic: true},
@@ -92,7 +92,7 @@ jb.component('data.if', { /* data.if */
 jb.component('action.if', { /* action.if */
   type: 'action',
   description: 'if then else',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
     {id: 'then', type: 'action', mandatory: true, dynamic: true},
@@ -480,7 +480,7 @@ jb.component('extend-with-index', { /* extendWithIndex */
 
 jb.component('prop', { /* prop */
   type: 'prop',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'title', as: 'string', mandatory: true},
     {id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: ''},
@@ -511,7 +511,7 @@ jb.component('remark', { /* remark */
 })
 
 jb.component('If', { /* If */
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'condition', as: 'boolean', type: 'boolean', mandatory: true},
     {id: 'then'},
@@ -871,7 +871,7 @@ jb.component('runActions', { /* runActions */
 
 jb.component('run-action-on-items', { /* runActionOnItems */
   type: 'action',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'items', as: 'ref', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
@@ -1068,7 +1068,7 @@ jb.component('asRef', { /* asRef */
 })
 
 jb.component('data.switch', { /* data.switch */
-  usageByValue: false,
+  macroByValue: false,
   params: [
     {
       id: 'cases',

@@ -1,12 +1,11 @@
 var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : {}), {
       'core': [
-        'src/core/jb-core.js',
-        'src/misc/wSpy.js'
+        'src/core/jb-core.js'
       ],
       'common': [
         'src/core/jb-core.js',
         'src/core/jb-common.js',
-        'src/misc/wSpy.js',
+        'src/misc/spy.js',
       ],
       'material-css': [
         'dist/material.css',
@@ -97,6 +96,10 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'node_modules/codemirror/theme/solarized.css',
         'node_modules/codemirror/addon/hint/show-hint.css',
       ],
+      animate: [
+        'node_modules/animejs/lib/anime.js',
+        'src/ui/animation/animation.js'
+      ],
       'd3': [
         'node_modules/d3/dist/d3.js',
         'src/ui/d3-chart/d3-math.js',
@@ -112,18 +115,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
           'dist/dragula.css',
       ],
       'jb-d3': ['dist/jb-d3.js'],
-      studio: [
-        'dist/material.js','src/loader/jb-loader.js', 'src/ui/watchable/text-editor.js',
-        'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js',
-        'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
-        'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
-        'references','properties-menu','save','open-project','tree',
-        'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe'
-      ],
-      'studio-tests': [
-        'projects/studio/studio-testers.js',
-        'probe','model','tree','suggestion'
-      ],
       'css-files': [
         'dist/material.min.css',
         'dist/material.indigo-pink.min.css',
@@ -146,9 +137,21 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'xml': [ 'src/misc/xml.js' ],
       'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
       'parsing': [ 'src/misc/parsing.js' ],
-      'spy': [ 'src/misc/spy.js' ],
-      'dynamic-studio': [ 'src/misc/dynamic-studio.js' ],
-})
+      studio: [
+        'dist/material.js','src/loader/jb-loader.js', 'src/ui/watchable/text-editor.js', 
+        'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js',
+        'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
+        'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
+        'references','properties-menu','save','open-project','tree',
+        'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
+        'watchref-viewer'
+      ],
+      'studio-tests': [
+        'projects/studio/studio-testers.js',
+        'probe','model','tree','suggestion'
+      ],
+
+    })
 
 function jb_dynamicLoad(modules,prefix) {
   prefix = prefix || '';

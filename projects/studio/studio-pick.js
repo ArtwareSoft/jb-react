@@ -166,7 +166,6 @@ st.highlightByScriptPath = function(path) {
     st.highlightCtx(result.ctx)
 }
 
-
 st.highlight = function(elems) {
     const html = elems.map(el => {
         const offset = jb.ui.offset(el);

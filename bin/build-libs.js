@@ -16,13 +16,15 @@ function concatFiles(files,target) {
 const filesOfModules = modules => modules.split(',').map(m=>jb_modules[m]).flat().filter(x=>typeof x == 'string')
 
 const jbReactFiles = filesOfModules('common,ui-common,pretty-print,ui-tree').filter(x=>!x.match(/.css$/));
-const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,pretty-print,history').filter(x=>!x.match(/.css$/))
+const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,pretty-print,history,animation').filter(x=>!x.match(/.css$/))
     .concat(jb_modules.studio.map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js'));
 const studioCssFiles = ['/css/styles.css', '/projects/studio/css/studio.css'].concat(filesOfModules('common,ui-common,ui-tree,codemirror,material-css')).filter(x=>x.match(/.css$/));
 const nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').filter(x=>!x.match(/.css$/));
 const coreFiles = jb_modules['core'];
 
 concatFiles(filesOfModules('codemirror-js-files'),'codemirror.js')
+concatFiles(filesOfModules('animate'),'animate.js')
+concatFiles(filesOfModules('d3'),'d3.js');
 concatFiles(['node_modules/material-design-lite/material.js'],'material.js')
 concatFiles(['node_modules/dragula/dist/dragula.js'],'dragula.js')
 concatFiles(['node_modules/history/umd/history.js'],'history.js')
@@ -30,7 +32,6 @@ concatFiles(['node_modules/history/umd/history.js'],'history.js')
 concatFiles(jbReactFiles,'jb-react-all.js');
 concatFiles(nodeFiles,'jb4node.js');
 concatFiles(coreFiles,'jbart-core.js');
-concatFiles(filesOfModules('d3'),'d3.js');
 concatFiles(jb_modules['pretty-print'],'pretty-print.js');
 concatFiles(jb_modules['parsing'],'parsing.js');
 concatFiles(jb_modules['xml'],'xml.js');

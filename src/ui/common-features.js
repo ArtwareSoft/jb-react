@@ -430,7 +430,7 @@ jb.ui.checkKey = function(e, key) {
 jb.component('feature.onKey', { /* feature.onKey */
   type: 'feature',
   category: 'events',
-  usageByValue: true,
+  macroByValue: true,
   params: [
     {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
