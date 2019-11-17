@@ -1816,8 +1816,9 @@ jb.component('run-action-on-items', { /* runActionOnItems */
 })
 
 jb.component('delay', { /* delay */
+  type: 'action',
   params: [
-    {id: 'mSec', type: 'number', defaultValue: 1}
+    {id: 'mSec', as: 'number', defaultValue: 1}
   ],
   impl: (ctx,mSec) => jb.delay(mSec).then(() => ctx.data)
 })
@@ -7036,6 +7037,7 @@ jb.component('feature.init', { /* feature.init */
 
 jb.component('feature.after-load', { /* feature.afterLoad */
   type: 'feature',
+  description: 'init, onload',
   category: 'lifecycle',
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
@@ -7121,7 +7123,7 @@ jb.component('feature.onEvent', { /* feature.onEvent */
       id: 'event',
       as: 'string',
       mandatory: true,
-      options: 'blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover'
+      options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover'
     },
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
     {
@@ -7133,10 +7135,15 @@ jb.component('feature.onEvent', { /* feature.onEvent */
   ],
   impl: (ctx,event,action,debounceTime) => ({
       [`on${event}`]: true,
-      afterViewInit: cmp=>
-        (debounceTime ? cmp[`on${event}`].debounceTime(debounceTime) : cmp[`on${event}`])
-          .subscribe(event=>
-                jb.ui.wrapWithLauchingElement(action, cmp.ctx.setVars({event}), cmp.base)())
+      afterViewInit: cmp => {
+        if (event == 'load') {
+          jb.delay(1).then(() => jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
+        } else {
+          (debounceTime ? cmp[`on${event}`].debounceTime(debounceTime) : cmp[`on${event}`])
+            .subscribe(event=>
+                  jb.ui.wrapWithLauchingElement(action, cmp.ctx.setVars({event}), cmp.base)())
+        }
+      }
   })
 })
 
@@ -7858,6 +7865,14 @@ jb.component('dialog.popup', { /* dialog.popup */
   })
 })
 
+jb.component('dialog.div', { /* dialog.div */
+	type: 'dialog.style',
+	impl: customStyle({
+	  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
+	  css: '{ position: absolute }'
+	})
+})
+  
 jb.ui.dialogs = {
  	dialogs: [],
 	addDialog(dialog,context) {

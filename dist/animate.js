@@ -1288,7 +1288,7 @@ jb.component('animation.start', {
     type: 'action',
     params: [
         {id: 'animation', type: 'animation[]', dynamic: true, flattenArray: true, as: 'array', mandatory: true  },
-        {id: 'target', as: 'string', description: 'query selector, default is current control'},
+        {id: 'target', description: 'query selector or elements, default is current control'},
         {id: 'direction', as: 'string', options: ',reverse,alternate', description: 'alternate goes back to origin'},
         {id: 'loop', as: 'boolean' },
         {id: 'duration', as: 'string', description: 'in mSec' },
@@ -1523,7 +1523,8 @@ jb.component('animation.fixed-pos', {
 jb.animate = {
     anime,
     fixValues(obj) {
-        return jb.objFromEntries(jb.entries(obj).filter(e=>e[1] != null).map(e=>[e[0],isNaN(+e[1]) ? e[1] : +e[1]] ))
+        return jb.objFromEntries(jb.entries(obj).filter(e=>e[1]).map(e=>[e[0], 
+            typeof e[1] == 'string' && !isNaN(+e[1]) ? +e[1] : e[1]] ))
     },
     options(animations) {
         return Object.assign({}, ...animations())
