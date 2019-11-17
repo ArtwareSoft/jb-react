@@ -12,6 +12,10 @@ function concatFiles(files,target) {
   files.map(x=>JBART_DIR +x).forEach(f=>
     fs.appendFileSync(fn,('' +fs.readFileSync(f)) + (type === 'css' ? '' : ';\n\n') ) );
 }
+function removeExports(target) {
+  const fn = JBART_DIR + 'dist/' + target;
+  fs.writeFileSync(fn,('' +fs.readFileSync(fn)).replace(/module.exports = .*/,''))
+}
 
 const filesOfModules = modules => modules.split(',').map(m=>jb_modules[m]).flat().filter(x=>typeof x == 'string')
 
@@ -24,6 +28,7 @@ const coreFiles = jb_modules['core'];
 
 concatFiles(filesOfModules('codemirror-js-files'),'codemirror.js')
 concatFiles(filesOfModules('animate'),'animate.js')
+removeExports('animate.js')
 concatFiles(filesOfModules('d3'),'d3.js');
 concatFiles(['node_modules/material-design-lite/material.js'],'material.js')
 concatFiles(['node_modules/dragula/dist/dragula.js'],'dragula.js')
