@@ -410,6 +410,14 @@ jb.component('dialog.popup', { /* dialog.popup */
   })
 })
 
+jb.component('dialog.div', { /* dialog.div */
+	type: 'dialog.style',
+	impl: customStyle({
+	  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
+	  css: '{ position: absolute }'
+	})
+})
+  
 jb.ui.dialogs = {
  	dialogs: [],
 	addDialog(dialog,context) {

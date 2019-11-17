@@ -88,3 +88,32 @@ jb.component('animation-demo.itemlist', { /* animationDemo.itemlist */
     features: []
   })
 })
+
+jb.component('animation-demo.particle', { /* animationDemo.particle */
+  type: 'control',
+  impl: group({
+    controls: [
+      button({
+        title: 'particle',
+        action: openDialog({
+          style: dialog.div(),
+          content: label({
+            title: '◯',
+            features: feature.onEvent({
+              event: 'load',
+              action: runActions(
+                animation.start({
+                    animation: animation.moveTo({X: animation.expression('400')}),
+                    direction: 'alternate',
+                    duration: '2000'
+                  }),
+                dialog.closeContainingPopup()
+              )
+            })
+          }),
+          title: ''
+        })
+      })
+    ]
+  })
+})

@@ -292,6 +292,7 @@ jb.component('feature.init', { /* feature.init */
 
 jb.component('feature.after-load', { /* feature.afterLoad */
   type: 'feature',
+  description: 'init, onload',
   category: 'lifecycle',
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
@@ -377,7 +378,7 @@ jb.component('feature.onEvent', { /* feature.onEvent */
       id: 'event',
       as: 'string',
       mandatory: true,
-      options: 'blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover'
+      options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover'
     },
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
     {
@@ -389,10 +390,15 @@ jb.component('feature.onEvent', { /* feature.onEvent */
   ],
   impl: (ctx,event,action,debounceTime) => ({
       [`on${event}`]: true,
-      afterViewInit: cmp=>
-        (debounceTime ? cmp[`on${event}`].debounceTime(debounceTime) : cmp[`on${event}`])
-          .subscribe(event=>
-                jb.ui.wrapWithLauchingElement(action, cmp.ctx.setVars({event}), cmp.base)())
+      afterViewInit: cmp => {
+        if (event == 'load') {
+          jb.delay(1).then(() => jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
+        } else {
+          (debounceTime ? cmp[`on${event}`].debounceTime(debounceTime) : cmp[`on${event}`])
+            .subscribe(event=>
+                  jb.ui.wrapWithLauchingElement(action, cmp.ctx.setVars({event}), cmp.base)())
+        }
+      }
   })
 })
 
