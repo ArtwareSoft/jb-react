@@ -127,6 +127,13 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
                   'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/d3_demo&project=d3_demo',
                   'new tab'
                 )
+              }),
+              menu.action({
+                title: 'animation',
+                action: gotoUrl(
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/animation-demo&project=animation-demo',
+                  'new tab'
+                )
               })
             ]
           }),
