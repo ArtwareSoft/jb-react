@@ -35174,6 +35174,8 @@ Object.assign(st,{
 	},
 	previewCompsAsEntries: () => jb.entries(st.previewjb.comps).filter(e=>e[1]),
 	projectFiles: () => {
+		if (st.inMemoryProject && st.inMemoryProject.fileNames)
+			return st.inMemoryProject.fileNames
 		const ctx = new jb.jbCtx()
 		const project = ctx.exp('%$studio/project%') // || 'studio-helper'
 		return ctx.setData(jb.studio.previewWindow.document.head.outerHTML).run(studio.parseProjectHtml())
@@ -39103,6 +39105,7 @@ jb.component('studio.new-in-memory-project', {
 <html>
 <head>
   <meta charset="utf-8">
+  <link rel="icon" type="image/png" href="//unpkg.com/jb-react@0.5.4/bin/studio/css/favicon.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
     startTime = new Date().getTime();
