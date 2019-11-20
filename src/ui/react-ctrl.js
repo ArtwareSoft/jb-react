@@ -34,13 +34,14 @@ class JbComponent {
 		//		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
 	}
 	initField() {
+		const ctx = this.ctxForPick || this.ctx
 		this.field = {
 			class: '',
-			ctxId: ui.preserveCtx(this.ctx),
-			control: (item,index,noCache) => this.getOrCreateItemField(item, () => this.ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp(),noCache)
+			ctxId: ui.preserveCtx(ctx),
+			control: (item,index,noCache) => this.getOrCreateItemField(item, () => ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp(),noCache)
 		}
 		this.enrichField.forEach(enrichField=>enrichField(this.field))
-		let title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => '');
+		let title = jb.tosingle(jb.val(ctx.params.title)) || (() => '');
 		if (this.field.title !== undefined)
 			title = this.field.title
 		// make it always a function 

@@ -256,6 +256,10 @@ border: 1px solid rgb(213, 213, 213);}
   top:0;
   left:0;
   right:0;
+}
+
+.jb-dialogs {
+  position: absolute; top: 0; left: 0
 }@keyframes slide_from_top {
     0%   {margin-top: -50px;}
     10%  {margin-top: 0;}
@@ -598,6 +602,10 @@ border: 1px solid rgb(213, 213, 213);}
   top:0;
   left:0;
   right:0;
+}
+
+.jb-dialogs {
+  position: absolute; top: 0; left: 0
 }.CodeMirror-dialog {
   position: absolute;
   left: 0; right: 0;

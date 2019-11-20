@@ -23,10 +23,14 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		logs: {},
 		spyParam,
 		otherSpies: [],
+		observable() { 
+			const _jb = jb.path(jb,'studio.studiojb') || jb
+			this._obs = this._obs || new _jb.rx.Subject()
+			return this._obs
+		},
 		enabled: () => true,
 		log(logName, record, {takeFrom, funcTitle, modifier} = {}) {
 			const init = () => {
-				this.observable = new jb.rx.Subject()
 				if (!this.includeLogs) {
 					const includeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
 					const excludeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
@@ -67,7 +71,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				modifier(record)
 			}
 			this.logs[logName].push(record)
-			this.observable.next(record)
+			this._obs.next({logName,record})
 		},
 		source(takeFrom) {
 			Error.stackTraceLimit = 50

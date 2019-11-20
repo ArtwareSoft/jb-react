@@ -1406,7 +1406,7 @@ jb.component('animation.delay', {
     impl: ctx => jb.animate.fixValues(ctx.params)
 })
 
-jb.component('animation.moveTo', {
+jb.component('animation.move-to', {
     type: 'animation',
     params: [
         {id: 'X', type: 'animation.val', description: 'e.g. 20 , +=10, *=2, list(100,200)' },

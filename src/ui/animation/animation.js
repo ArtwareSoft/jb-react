@@ -122,7 +122,7 @@ jb.component('animation.delay', {
     impl: ctx => jb.animate.fixValues(ctx.params)
 })
 
-jb.component('animation.moveTo', {
+jb.component('animation.move-to', {
     type: 'animation',
     params: [
         {id: 'X', type: 'animation.val', description: 'e.g. 20 , +=10, *=2, list(100,200)' },
@@ -197,9 +197,9 @@ jb.component('animation.in-out-easing', {
 jb.component('animation.elastic-easing', {
     type: 'animation.easing',
     params: [
-        { id: 'inOut', as: 'string', options: 'in,out,inOut', defaultValue: 'inOut'},
-        { id: 'amplitude', as: 'number', description: '1-10  Controls the overshoot of the curve', defaultValue: 1 },
-        { id: 'period', as: 'number', description: '0.1-2 Controls how many times the curve goes back and forth', defaultValue: 0.5 },
+        { id: 'inOut', as: 'string', options: 'in,out,inOut', templateValue: 'inOut'},
+        { id: 'amplitude', as: 'string', description: '1-10  Controls the overshoot of the curve', templateValue: '1' },
+        { id: 'period', as: 'string', description: '0.1-2 Controls how many times the curve goes back and forth', templateValue: '0.5' },
     ],
     impl: (ctx,inOut,amplitude,period) => `ease${inOut}Elastic(${amplitude},${period})`
 })

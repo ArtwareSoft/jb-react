@@ -67,6 +67,15 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 	})
 })
 
+jb.component('studio.dialog-particle-style', { 
+	type: 'dialog.style',
+	impl: customStyle({
+	  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
+	  css: '{ position: fixed; z-index: 6000 !important }'
+	})
+})
+
+
 jb.component('dialog.show-source-style', {
 	type: 'dialog.style',
 	params: [

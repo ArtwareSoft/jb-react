@@ -12,6 +12,11 @@
 <body>
 <div id="test"> </div>
 <script>
+    jb.rx.Observable.zip(
+        jb.rx.Observable.interval(1000),
+        jb.rx.Observable.from([10,20,30,40])
+    ).subscribe(x=>console.log(x[1]))
+
     function compFromStr(str) {
         class R2 extends jb.ui.Component {
             render(props,state) {

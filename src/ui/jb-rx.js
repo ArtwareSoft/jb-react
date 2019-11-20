@@ -18,6 +18,7 @@ import 'rxjs/add/observable/fromPromise';
 import 'rxjs/add/observable/fromEvent';
 import 'rxjs/add/observable/from';
 import 'rxjs/add/observable/of';
+import 'rxjs/add/observable/zip';
 import 'rxjs/add/observable/interval';
 import 'rxjs/add/operator/distinctUntilChanged';
 import 'rxjs/add/operator/debounceTime';

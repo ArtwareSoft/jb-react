@@ -65,13 +65,16 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						ctx: () => cmp.ctx.setVars({$launchingElement: { el : cmp.base, launcherHeightFix: 1 }}),
 						getCursorPos: () => posFromCM(editor.getCursor()),
 						charCoords(pos) {
-							return this.normalizeCoords(charCoords(posToCM(pos)))
+							return editor.charCoords(posToCM(pos),'window')
 						},
 						cursorCoords() {
-							return this.normalizeCoords(editor.cursorCoords())
+							return editor.cursorCoords('window')
 						},
-						normalizeCoords(coords) {
-							const offset = jb.ui.offset(cmp.base)
+						normalizePreviewCoords(coords) {
+							const previewIframe = document.querySelector('.preview-iframe')
+							if (!previewIframe) return coords
+
+							const offset = jb.ui.offset(previewIframe)
 							return coords && Object.assign(coords,{
 								top: coords.top - offset.top,
 								left: coords.left - offset.left

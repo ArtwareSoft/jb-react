@@ -132,7 +132,7 @@ Object.assign(st, {
 		let result = param.defaultValue || {$: ''};
 		if (st.paramTypeOfPath(path).indexOf('data') != -1)
 			result = '';
-		if (param.type.indexOf('[') != -1)
+		if ((param.type ||'').indexOf('[') != -1)
 			result = [];
 		st.writeValueOfPath(path,result,srcCtx);
 	},

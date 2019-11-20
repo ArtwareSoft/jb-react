@@ -6,10 +6,26 @@ jb.component('animation-demo.main', { /* animationDemo.main */
     controls: [
       button({
         title: 'click to animate',
-        action: animation.start({
-          animation: animation.moveTo({X: animation.expression('100')}),
-          direction: 'alternate'
-        })
+        action: runActions(
+          animation.start({
+              animation: [
+                animation.scale({scale: animation.expression('2')}),
+                animation.easing(animation.elasticEasing({amplitude: '1', period: '0.5'}))
+              ],
+              direction: '',
+              duration: '500'
+            }),
+          animation.start({
+              animation: [animation.moveTo({X: animation.expression('100')})],
+              direction: '',
+              duration: '2000'
+            }),
+          animation.start({
+              animation: [animation.scale({scale: animation.expression('1')})],
+              direction: '',
+              duration: '2000'
+            })
+        )
       })
     ]
   })
@@ -97,9 +113,12 @@ jb.component('animation-demo.particle', { /* animationDemo.particle */
               event: 'load',
               action: runActions(
                 animation.start({
-                    animation: animation.moveTo({X: animation.expression('400')}),
+                    animation: animation.moveTo({
+                      X: animation.range('10', '100'),
+                      Y: animation.range('10', '100')
+                    }),
                     direction: 'alternate',
-                    duration: '2000'
+                    duration: '1000'
                   }),
                 dialog.closeContainingPopup()
               )
@@ -110,4 +129,19 @@ jb.component('animation-demo.particle', { /* animationDemo.particle */
       })
     ]
   })
+})
+
+jb.component('animation-demo.watch-ref', { /* animationDemo.watchRef */
+  type: 'control',
+  impl: group({
+    controls: [
+      label('%$name%'),
+      editableText({databind: '%$name%'}),
+      label('%$name%')
+    ]
+  })
+})
+
+jb.component('data-resource.name', { /* dataResource.name */
+  watchableData: 'Dan'
 })

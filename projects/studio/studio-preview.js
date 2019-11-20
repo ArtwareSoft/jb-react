@@ -45,6 +45,7 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.serverComps = st.previewjb.comps;
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;
+      st.previewjb.studio.studiojb = jb;
       st.previewjb.lastRun = {}
     
       // reload the changed components and rebuild the history
@@ -62,6 +63,8 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
         st.previewjb.studio.initEventTracker();
+
+      st.activateWatchRefViewer && st.activateWatchRefViewer();
 
 			fixInvalidUrl()
 

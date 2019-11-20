@@ -31,7 +31,7 @@ type cmp_def_anyType = {
 type callPT = {$: 'call', param: dataType}
 
 // type data
-type dataType = pipelinePT | pipePT | data_ifPT | listPT | first_succeedingPT | keysPT | propertiesPT | entriesPT | eval_expressionPT | prefixPT | suffixPT | remove_prefixPT | remove_suffixPT | remove_suffix_regexPT | propertyPT | index_ofPT | objPT | extendPT | assignPT | IfPT | to_uppercasePT | to_lowercasePT | capitalizePT | logPT | asIsPT | objectPT | json_stringifyPT | json_parsePT | splitPT | replacePT | delayPT | extract_prefixPT | extract_suffixPT | rangePT | type_ofPT | class_namePT | http_getPT | isRefPT | asRefPT | data_switchPT | jison_parsePT | extract_textPT | break_textPT | zip_arraysPT | remove_sectionsPT | mergePT | dynamic_objectPT | filter_empty_propertiesPT | trimPT | remove_prefix_regexPT | pretty_printPT | fs_readFilePT | fs_statPT | fs_readdirPT | fs_directory_contentPT | test_dialog_contentPT | field_dataPT | itemlist_container_search_in_all_propertiesPT | highlightPT | custom_stylePT | style_by_controlPT | group_divPT | group_sectionPT | json_path_selectorPT | watchable_as_textPT | text_editor_is_dirtyPT | ((ctx: ctx) => any)
+type dataType = pipelinePT | pipePT | data_ifPT | listPT | first_succeedingPT | keysPT | propertiesPT | entriesPT | eval_expressionPT | prefixPT | suffixPT | remove_prefixPT | remove_suffixPT | remove_suffix_regexPT | propertyPT | index_ofPT | objPT | extendPT | assignPT | IfPT | to_uppercasePT | to_lowercasePT | capitalizePT | logPT | asIsPT | objectPT | json_stringifyPT | json_parsePT | splitPT | replacePT | extract_prefixPT | extract_suffixPT | rangePT | type_ofPT | class_namePT | http_getPT | isRefPT | asRefPT | data_switchPT | jison_parsePT | extract_textPT | break_textPT | zip_arraysPT | remove_sectionsPT | mergePT | dynamic_objectPT | filter_empty_propertiesPT | trimPT | remove_prefix_regexPT | pretty_printPT | fs_readFilePT | fs_statPT | fs_readdirPT | fs_directory_contentPT | test_dialog_contentPT | field_dataPT | itemlist_container_search_in_all_propertiesPT | highlightPT | custom_stylePT | style_by_controlPT | group_divPT | group_sectionPT | json_path_selectorPT | watchable_as_textPT | text_editor_is_dirtyPT | ((ctx: ctx) => any)
 type cmp_def_dataType = {
 	type: 'data',
 	params?: [param],
@@ -71,7 +71,6 @@ type splitPT = {$: 'split',
 /** E.g., "," or "<a>" */separator: dataType, text: dataType, part: dataType}
 type replacePT = {$: 'replace', find: dataType, replace: dataType, text: dataType, useRegex: booleanType, 
 /** g,i,m */regexFlags: dataType}
-type delayPT = {$: 'delay', mSec: numberType}
 type extract_prefixPT = {$: 'extract-prefix', 
 /** /w- alphnumberic, /s- whitespace, ^- beginline, $-endline */separator: dataType, text: dataType, 
 /** separator is regex */regex: booleanType, keepSeparator: booleanType}
@@ -178,7 +177,7 @@ type is_of_typePT = {$: 'is-of-type',
 type in_groupPT = {$: 'in-group', group: dataType, item: dataType}
 
 // type action
-type actionType = action_ifPT | jb_runPT | write_valuePT | add_to_arrayPT | splicePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | run_action_on_itemsPT | on_next_timerPT | http_getPT | http_postPT | action_switchPT | write_value_asynchPT | refresh_control_by_idPT | focus_on_first_elementPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | text_editor_with_cursor_pathPT | run_transactionPT | goto_urlPT | reset_wspyPT | ((ctx: ctx) => any)
+type actionType = action_ifPT | jb_runPT | write_valuePT | add_to_arrayPT | splicePT | remove_from_arrayPT | toggle_boolean_valuePT | touchPT | runActionsPT | run_action_on_itemsPT | delayPT | on_next_timerPT | http_getPT | http_postPT | action_switchPT | write_value_asynchPT | animation_startPT | animation_timelinePT | refresh_control_by_idPT | focus_on_first_elementPT | dialog_close_containing_popupPT | dialog_close_dialogPT | dialog_close_all_popupsPT | dialog_close_allPT | tree_regain_focusPT | tree_redrawPT | url_history_map_url_to_resourcePT | text_editor_with_cursor_pathPT | run_transactionPT | goto_urlPT | ((ctx: ctx) => any)
 type cmp_def_actionType = {
 	type: 'action',
 	params?: [param],
@@ -198,6 +197,7 @@ type touchPT = {$: 'touch', data: dataType}
 type runActionsPT = {$: 'runActions', actions: [actionType]}
 type run_action_on_itemsPT = {$: 'run-action-on-items', items: dataType, action: actionType, 
 /** notification for watch-ref, defualt behavior is after each action */notifications: dataType}
+type delayPT = {$: 'delay', mSec: dataType}
 type on_next_timerPT = {$: 'on-next-timer', action: actionType, delay: numberType}
 type http_getPT = {$: 'http.get', url: dataType, 
 /** convert result to json */json: booleanType, useProxy: booleanType}
@@ -205,6 +205,12 @@ type http_postPT = {$: 'http.post', url: dataType, postData: dataType,
 /** convert result to json */jsonResult: booleanType}
 type action_switchPT = {$: 'action.switch', cases: [action_switch_caseType], defaultAction: actionType}
 type write_value_asynchPT = {$: 'write-value-asynch', to: dataType, value: dataType}
+type animation_startPT = {$: 'animation.start', animation: [animationType], 
+/** query selector or elements, default is current control */target: dataType, 
+/** alternate goes back to origin */direction: dataType, loop: booleanType, 
+/** in mSec */duration: dataType}
+type animation_timelinePT = {$: 'animation.timeline', animation: [animationType], 
+/** query selector, default is current control */target: dataType}
 type refresh_control_by_idPT = {$: 'refresh-control-by-id', id: dataType}
 type focus_on_first_elementPT = {$: 'focus-on-first-element', selector: dataType}
 type dialog_close_containing_popupPT = {$: 'dialog.close-containing-popup', OK: booleanType}
@@ -218,7 +224,6 @@ type url_history_map_url_to_resourcePT = {$: 'url-history.map-url-to-resource', 
 type text_editor_with_cursor_pathPT = {$: 'text-editor.with-cursor-path', action: actionType, selector: dataType}
 type run_transactionPT = {$: 'run-transaction', actions: [actionType], disableNotifications: booleanType}
 type goto_urlPT = {$: 'goto-url', url: dataType, target: enumType}
-type reset_wspyPT = {$: 'reset-wspy', param: dataType}
 
 // type prop
 type propType = propPT | ((ctx: ctx) => any)
@@ -333,6 +338,106 @@ type cmp_def_ui_actionType = {
 type ui_action_clickPT = {$: 'ui-action.click', selector: dataType, methodToActivate: dataType}
 type ui_action_keyboard_eventPT = {$: 'ui-action.keyboard-event', selector: dataType, type: dataType, keyCode: dataType, ctrl: dataType}
 type ui_action_set_textPT = {$: 'ui-action.set-text', value: dataType, selector: dataType, delay: dataType}
+
+// type animation
+type animationType = animation_keyframesPT | animation_directionPT | animation_durationPT | animation_delayPT | animation_move_toPT | animation_rotatePT | animation_scalePT | animation_skewPT | animation_perspectivePT | animation_easingPT | animation_movementPT | ((ctx: ctx) => any)
+type cmp_def_animationType = {
+	type: 'animation',
+	params?: [param],
+	impl: animationType,
+}
+type animation_keyframesPT = {$: 'animation.keyframes', animation: [animationType]}
+type animation_directionPT = {$: 'animation.direction', 
+/** alternate goes back to origin */direction: dataType}
+type animation_durationPT = {$: 'animation.duration', 
+/** time of animation in mSec */duration: animation_valType}
+type animation_delayPT = {$: 'animation.delay', 
+/** delay before animation */delay: animation_valType, 
+/** delay at the end of animation */endDelay: animation_valType}
+type animation_move_toPT = {$: 'animation.move-to', 
+/** e.g. 20 , +=10, *=2, list(100,200) */X: animation_valType, Y: animation_valType, Z: animation_valType}
+type animation_rotatePT = {$: 'animation.rotate', 
+/** degree units, e.g. 20 , +=10, *=2, 1turn, list(20,270) */rotate: animation_valType, rotateX: animation_valType, rotateY: animation_valType, rotateZ: animation_valType}
+type animation_scalePT = {$: 'animation.scale', 
+/** e.g. 1.5 , *=2, list(2,3) */scale: animation_valType, scaleX: animation_valType, scaleY: animation_valType, scaleZ: animation_valType}
+type animation_skewPT = {$: 'animation.skew', 
+/** e.g. 20 , +=10, *=2, list(1,2) */skew: dataType, 
+/** e.g. 20 , +=10, *=2, list(1,2) */skewX: dataType, 
+/** e.g. 20 , +=10, *=2, list(1,2) */skewY: dataType, 
+/** e.g. 20 , +=10, *=2, list(1,2) */skewZ: dataType}
+type animation_perspectivePT = {$: 'animation.perspective', 
+/** e.g. 100 , +=10, *=2, list(10,20) */perspective: animation_valType}
+type animation_easingPT = {$: 'animation.easing', easing: animation_easingType}
+type animation_movementPT = {$: 'animation.movement', to: positionType, subAnimations: [animationType]}
+
+// type animation.val
+type animation_valType = animation_expressionPT | animation_rangePT | animation_staggerPT | ((ctx: ctx) => any)
+type cmp_def_animation_valType = {
+	type: 'animation_val',
+	params?: [param],
+	impl: animation_valType,
+}
+type animation_expressionPT = {$: 'animation.expression', 
+/** e.g. 20 , +=10, *=2 */val: dataType}
+type animation_rangePT = {$: 'animation.range', 
+/** e.g. 20 */from: dataType, 
+/** e.g. 30 */to: dataType}
+type animation_staggerPT = {$: 'animation.stagger', 
+/** value range */val: animation_stager_valType, 
+/** Starts the stagger effect from a specific position */from: dataType, 
+/** e.g. 20 */direction: dataType, easing: animation_easingType, grid: animation_stager_gridType}
+
+// type animation.stager-grid
+type animation_stager_gridType = animation_stager_gridPT | ((ctx: ctx) => any)
+type cmp_def_animation_stager_gridType = {
+	type: 'animation_stager_grid',
+	params?: [param],
+	impl: animation_stager_gridType,
+}
+type animation_stager_gridPT = {$: 'animation.stager-grid', 
+/** e.g. 2 */rows: dataType, 
+/** e.g. 5 */columns: dataType, 
+/** direction of staggering */axis: dataType}
+
+// type animation.stager-val
+type animation_stager_valType = animation_stager_increasePT | animation_stager_rangePT | ((ctx: ctx) => any)
+type cmp_def_animation_stager_valType = {
+	type: 'animation_stager_val',
+	params?: [param],
+	impl: animation_stager_valType,
+}
+type animation_stager_increasePT = {$: 'animation.stager-increase', 
+/** e.g. 20 */increase: dataType, 
+/** optional, e.g. 10 */start: dataType}
+type animation_stager_rangePT = {$: 'animation.stager-range', 
+/** e.g. 20 */from: dataType, 
+/** e.g. 30 */to: dataType}
+
+// type animation.easing
+type animation_easingType = animation_in_out_easingPT | animation_elastic_easingPT | animation_spring_easingPT | ((ctx: ctx) => any)
+type cmp_def_animation_easingType = {
+	type: 'animation_easing',
+	params?: [param],
+	impl: animation_easingType,
+}
+type animation_in_out_easingPT = {$: 'animation.in-out-easing', method: dataType, inOut: dataType}
+type animation_elastic_easingPT = {$: 'animation.elastic-easing', inOut: dataType, 
+/** 1-10  Controls the overshoot of the curve */amplitude: dataType, 
+/** 0.1-2 Controls how many times the curve goes back and forth */period: dataType}
+type animation_spring_easingPT = {$: 'animation.spring-easing', 
+/** 0-100 */mass: dataType, 
+/** 0-100 */stiffness: dataType, 
+/** 0-100 */damping: dataType, 
+/** 0-100 */velocity: dataType}
+
+// type position
+type positionType = animation_fixed_posPT | ((ctx: ctx) => any)
+type cmp_def_positionType = {
+	type: 'position',
+	params?: [param],
+	impl: positionType,
+}
+type animation_fixed_posPT = {$: 'animation.fixed-pos', top: dataType, left: dataType}
 
 // type feature
 type featureType = ctrl_actionPT | alt_actionPT | button_disabledPT | card_initPT | watch_refPT | watch_observablePT | group_dataPT | html_attributePT | idPT | feature_hover_titlePT | variablePT | bind_refsPT | calculated_varPT | featuresPT | feature_initPT | feature_after_loadPT | feature_ifPT | hiddenPT | conditional_classPT | feature_keyboard_shortcutPT | feature_onEventPT | feature_onHoverPT | feature_onKeyPT | feature_onEnterPT | feature_onEscPT | group_auto_focus_on_first_inputPT | cssPT | css_dynamicPT | css_with_conditionPT | css_classPT | css_widthPT | css_heightPT | css_opacityPT | css_paddingPT | css_marginPT | css_transform_rotatePT | css_colorPT | css_transform_scalePT | css_box_shadowPT | css_borderPT | d3_scatter_initPT | editable_boolean_keyboard_supportPT | editable_text_x_buttonPT | editable_text_helper_popupPT | field_databindPT | field_databind_textPT | field_defaultPT | field_init_valuePT | field_keyboard_shortcutPT | field_subscribePT | field_on_changePT | field_toolbarPT | validationPT | field_titlePT | field_column_widthPT | group_init_groupPT | group_dynamic_titlesPT | first_succeeding_watch_refresh_on_ctrl_changePT | group_itemlist_containerPT | itemlist_itemlist_selectedPT | itemlist_container_filter_fieldPT | itemlist_watch_items_with_headingPT | itemlist_no_containerPT | itemlist_initPT | itemlist_init_tablePT | itemlist_selectionPT | itemlist_keyboard_selectionPT | itemlist_drag_and_dropPT | itemlist_drag_handlePT | itemlist_shown_only_on_item_hoverPT | itemlist_dividerPT | label_bind_textPT | menu_init_popup_menuPT | menu_init_menu_optionPT | picklist_dynamic_optionsPT | picklist_onChangePT | slider_initPT | slider_handle_arrow_keysPT | group_init_expandablePT | group_init_accordionPT | flex_layout_container_align_main_axisPT | flex_item_growPT | flex_item_basisPT | flex_item_align_selfPT | responsive_not_for_phonePT | mdl_style_init_dynamicPT | mdl_ripple_effectPT | table_init_table_or_itemlistPT | table_initPT | table_init_sortPT | group_init_tabsPT | group_themePT | tree_selectionPT | tree_keyboard_selectionPT | tree_drag_and_dropPT | textarea_init_textarea_editorPT | ((ctx: ctx) => any)
@@ -852,7 +957,7 @@ type custom_stylePT = {$: 'custom-style', template: dataType, css: dataType, fea
 type style_by_controlPT = {$: 'style-by-control', control: controlType, modelVar: dataType}
 type tree_ul_liPT = {$: 'tree.ul-li', }
 type tree_no_headPT = {$: 'tree.no-head', }
-type cmpDef = cmp_def_anyType | cmp_def_dataType | cmp_def_aggregatorType | cmp_def_booleanType | cmp_def_actionType | cmp_def_propType | cmp_def_varType | cmp_def_systemType | cmp_def_data_switch_caseType | cmp_def_action_switch_caseType | cmp_def_jison_parserType | cmp_def_lexer_ruleType | cmp_def_bnf_expressionType | cmp_def_expression_optionType | cmp_def_testType | cmp_def_ui_actionType | cmp_def_featureType | cmp_def_controlType | cmp_def_dialog_featureType | cmp_def_d3g_frameType | cmp_def_d3_featureType | cmp_def_d3g_axesType | cmp_def_d3g_scaleType | cmp_def_d3g_rangeType | cmp_def_d3g_domainType | cmp_def_divider_styleType | cmp_def_inner_html_styleType | cmp_def_filter_typeType | cmp_def_itemlist_group_byType | cmp_def_group_styleType | cmp_def_markdown_styleType | cmp_def_menu_optionType | cmp_def_picklist_optionsType | cmp_def_picklist_promoteType | cmp_def_button_styleType | cmp_def_icon_with_action_styleType | cmp_def_editable_text_styleType | cmp_def_text_styleType | cmp_def_editable_boolean_styleType | cmp_def_first_succeeding_styleType | cmp_def_label_styleType | cmp_def_picklist_styleType | cmp_def_table_fieldType | cmp_def_themeType | cmp_def_tree_node_modelType | cmp_def_tree_styleType
+type cmpDef = cmp_def_anyType | cmp_def_dataType | cmp_def_aggregatorType | cmp_def_booleanType | cmp_def_actionType | cmp_def_propType | cmp_def_varType | cmp_def_systemType | cmp_def_data_switch_caseType | cmp_def_action_switch_caseType | cmp_def_jison_parserType | cmp_def_lexer_ruleType | cmp_def_bnf_expressionType | cmp_def_expression_optionType | cmp_def_testType | cmp_def_ui_actionType | cmp_def_animationType | cmp_def_animation_valType | cmp_def_animation_stager_gridType | cmp_def_animation_stager_valType | cmp_def_animation_easingType | cmp_def_positionType | cmp_def_featureType | cmp_def_controlType | cmp_def_dialog_featureType | cmp_def_d3g_frameType | cmp_def_d3_featureType | cmp_def_d3g_axesType | cmp_def_d3g_scaleType | cmp_def_d3g_rangeType | cmp_def_d3g_domainType | cmp_def_divider_styleType | cmp_def_inner_html_styleType | cmp_def_filter_typeType | cmp_def_itemlist_group_byType | cmp_def_group_styleType | cmp_def_markdown_styleType | cmp_def_menu_optionType | cmp_def_picklist_optionsType | cmp_def_picklist_promoteType | cmp_def_button_styleType | cmp_def_icon_with_action_styleType | cmp_def_editable_text_styleType | cmp_def_text_styleType | cmp_def_editable_boolean_styleType | cmp_def_first_succeeding_styleType | cmp_def_label_styleType | cmp_def_picklist_styleType | cmp_def_table_fieldType | cmp_def_themeType | cmp_def_tree_node_modelType | cmp_def_tree_styleType
 function call : anyType;
 function call(param: dataType) : anyType;
 function pipeline : dataType;
@@ -860,10 +965,10 @@ function pipeline(...items: dataType | [aggregatorType][]) : dataType;
 function pipe : dataType;
 function pipe(...items: dataType | [aggregatorType][]) : dataType;
 function data_if : dataType;
-function data_if(condition: booleanType, then: dataType, else: dataType) : dataType;
+function data_if(profile: { condition: booleanType, then: dataType, else: dataType}) : dataType;
 function data_if(condition: booleanType) : dataType;
 function action_if : actionType;
-function action_if(condition: booleanType, then: actionType, else: actionType) : actionType;
+function action_if(profile: { condition: booleanType, then: actionType, else: actionType}) : actionType;
 function action_if(condition: booleanType) : actionType;
 function jbRun : actionType;
 function jbRun(
@@ -960,7 +1065,7 @@ function assign(...props: [propType][]) : dataType;
 function extendWithIndex : aggregatorType;
 function extendWithIndex(...props: [propType][]) : aggregatorType;
 function prop : propType;
-function prop(title: dataType, val: dataType, type: dataType) : propType;
+function prop(profile: { title: dataType, val: dataType, type: dataType}) : propType;
 function prop(title: dataType) : propType;
 function Var : varType | systemType;
 function Var(name: dataType, val: dataType) : varType | systemType;
@@ -968,7 +1073,7 @@ function Var(name: dataType) : varType | systemType;
 function remark : systemType;
 function remark(remark: dataType) : systemType;
 function If : dataType;
-function If(condition: booleanType, then: dataType, Else: dataType) : dataType;
+function If(profile: { condition: booleanType, then: dataType, Else: dataType}) : dataType;
 function If(condition: booleanType) : dataType;
 function not : booleanType;
 function not(of: booleanType) : booleanType;
@@ -1046,11 +1151,11 @@ function notEquals(item1: dataType) : booleanType;
 function runActions : actionType;
 function runActions(...actions: [actionType][]) : actionType;
 function runActionOnItems : actionType;
-function runActionOnItems(items: dataType, action: actionType, 
-/** notification for watch-ref, defualt behavior is after each action */notifications: dataType) : actionType;
+function runActionOnItems(profile: { items: dataType, action: actionType, 
+/** notification for watch-ref, defualt behavior is after each action */notifications: dataType}) : actionType;
 function runActionOnItems(items: dataType) : actionType;
-function delay : dataType;
-function delay(mSec: numberType) : dataType;
+function delay : actionType;
+function delay(mSec: dataType) : actionType;
 function onNextTimer : actionType;
 function onNextTimer(action: actionType, delay: numberType) : actionType;
 function onNextTimer(action: actionType) : actionType;
@@ -1094,7 +1199,7 @@ function isRef(obj: dataType) : dataType;
 function asRef : dataType;
 function asRef(obj: dataType) : dataType;
 function data_switch : dataType;
-function data_switch(profile: { cases: [data_switch_caseType], default: dataType}) : dataType;
+function data_switch(cases: [data_switch_caseType], default: dataType) : dataType;
 function data_case : data_switch_caseType;
 function data_case(condition: booleanType, value: dataType) : data_switch_caseType;
 function data_case(condition: booleanType) : data_switch_caseType;
@@ -1199,10 +1304,117 @@ function uiAction_keyboardEvent : ui_actionType;
 function uiAction_keyboardEvent(profile: { selector: dataType, type: dataType, keyCode: dataType, ctrl: dataType}) : ui_actionType;
 function uiAction_keyboardEvent(selector: dataType) : ui_actionType;
 function uiAction_setText : ui_actionType;
-function uiAction_setText(value: dataType, selector: dataType, delay: dataType) : ui_actionType;
+function uiAction_setText(profile: { value: dataType, selector: dataType, delay: dataType}) : ui_actionType;
 function uiAction_setText(value: dataType) : ui_actionType;
 function test_dialogContent : dataType;
 function test_dialogContent(id: dataType) : dataType;
+function animation_start : actionType;
+function animation_start(profile: { animation: [animationType], 
+/** query selector or elements, default is current control */target: dataType, 
+/** alternate goes back to origin */direction: dataType, loop: booleanType, 
+/** in mSec */duration: dataType}) : actionType;
+function animation_timeline : actionType;
+function animation_timeline(animation: [animationType], 
+/** query selector, default is current control */target: dataType) : actionType;
+function animation_keyframes : animationType;
+function animation_keyframes(...animation: [animationType][]) : animationType;
+function animation_expression : animation_valType;
+function animation_expression(
+/** e.g. 20 , +=10, *=2 */val: dataType) : animation_valType;
+function animation_range : animation_valType;
+function animation_range(
+/** e.g. 20 */from: dataType, 
+/** e.g. 30 */to: dataType) : animation_valType;
+function animation_range(
+/** e.g. 20 */from: dataType) : animation_valType;
+function animation_stagger : animation_valType;
+function animation_stagger(profile: { 
+/** value range */val: animation_stager_valType, 
+/** Starts the stagger effect from a specific position */from: dataType, 
+/** e.g. 20 */direction: dataType, easing: animation_easingType, grid: animation_stager_gridType}) : animation_valType;
+function animation_stagger(
+/** value range */val: animation_stager_valType) : animation_valType;
+function animation_stagerGrid : animation_stager_gridType;
+function animation_stagerGrid(profile: { 
+/** e.g. 2 */rows: dataType, 
+/** e.g. 5 */columns: dataType, 
+/** direction of staggering */axis: dataType}) : animation_stager_gridType;
+function animation_stagerGrid(
+/** e.g. 2 */rows: dataType) : animation_stager_gridType;
+function animation_stagerIncrease : animation_stager_valType;
+function animation_stagerIncrease(
+/** e.g. 20 */increase: dataType, 
+/** optional, e.g. 10 */start: dataType) : animation_stager_valType;
+function animation_stagerIncrease(
+/** e.g. 20 */increase: dataType) : animation_stager_valType;
+function animation_stagerRange : animation_stager_valType;
+function animation_stagerRange(
+/** e.g. 20 */from: dataType, 
+/** e.g. 30 */to: dataType) : animation_stager_valType;
+function animation_stagerRange(
+/** e.g. 20 */from: dataType) : animation_stager_valType;
+function animation_direction : animationType;
+function animation_direction(
+/** alternate goes back to origin */direction: dataType) : animationType;
+function animation_duration : animationType;
+function animation_duration(
+/** time of animation in mSec */duration: animation_valType) : animationType;
+function animation_delay : animationType;
+function animation_delay(
+/** delay before animation */delay: animation_valType, 
+/** delay at the end of animation */endDelay: animation_valType) : animationType;
+function animation_delay(
+/** delay before animation */delay: animation_valType) : animationType;
+function animation_moveTo : animationType;
+function animation_moveTo(profile: { 
+/** e.g. 20 , +=10, *=2, list(100,200) */X: animation_valType, Y: animation_valType, Z: animation_valType}) : animationType;
+function animation_moveTo(
+/** e.g. 20 , +=10, *=2, list(100,200) */X: animation_valType) : animationType;
+function animation_rotate : animationType;
+function animation_rotate(profile: { 
+/** degree units, e.g. 20 , +=10, *=2, 1turn, list(20,270) */rotate: animation_valType, rotateX: animation_valType, rotateY: animation_valType, rotateZ: animation_valType}) : animationType;
+function animation_rotate(
+/** degree units, e.g. 20 , +=10, *=2, 1turn, list(20,270) */rotate: animation_valType) : animationType;
+function animation_scale : animationType;
+function animation_scale(profile: { 
+/** e.g. 1.5 , *=2, list(2,3) */scale: animation_valType, scaleX: animation_valType, scaleY: animation_valType, scaleZ: animation_valType}) : animationType;
+function animation_scale(
+/** e.g. 1.5 , *=2, list(2,3) */scale: animation_valType) : animationType;
+function animation_skew : animationType;
+function animation_skew(profile: { 
+/** e.g. 20 , +=10, *=2, list(1,2) */skew: dataType, 
+/** e.g. 20 , +=10, *=2, list(1,2) */skewX: dataType, 
+/** e.g. 20 , +=10, *=2, list(1,2) */skewY: dataType, 
+/** e.g. 20 , +=10, *=2, list(1,2) */skewZ: dataType}) : animationType;
+function animation_skew(
+/** e.g. 20 , +=10, *=2, list(1,2) */skew: dataType) : animationType;
+function animation_perspective : animationType;
+function animation_perspective(
+/** e.g. 100 , +=10, *=2, list(10,20) */perspective: animation_valType) : animationType;
+function animation_easing : animationType;
+function animation_easing(easing: animation_easingType) : animationType;
+function animation_inOutEasing : animation_easingType;
+function animation_inOutEasing(method: dataType, inOut: dataType) : animation_easingType;
+function animation_inOutEasing(method: dataType) : animation_easingType;
+function animation_elasticEasing : animation_easingType;
+function animation_elasticEasing(profile: { inOut: dataType, 
+/** 1-10  Controls the overshoot of the curve */amplitude: dataType, 
+/** 0.1-2 Controls how many times the curve goes back and forth */period: dataType}) : animation_easingType;
+function animation_elasticEasing(inOut: dataType) : animation_easingType;
+function animation_springEasing : animation_easingType;
+function animation_springEasing(profile: { 
+/** 0-100 */mass: dataType, 
+/** 0-100 */stiffness: dataType, 
+/** 0-100 */damping: dataType, 
+/** 0-100 */velocity: dataType}) : animation_easingType;
+function animation_springEasing(
+/** 0-100 */mass: dataType) : animation_easingType;
+function animation_movement : animationType;
+function animation_movement(to: positionType, subAnimations: [animationType]) : animationType;
+function animation_movement(to: positionType) : animationType;
+function animation_fixedPos : positionType;
+function animation_fixedPos(top: dataType, left: dataType) : positionType;
+function animation_fixedPos(top: dataType) : positionType;
 function ctrlAction : featureType;
 function ctrlAction(action: actionType) : featureType;
 function altAction : featureType;
@@ -1275,8 +1487,8 @@ function feature_onEvent(event: dataType) : featureType;
 function feature_onHover : featureType;
 function feature_onHover(...action: [actionType][]) : featureType;
 function feature_onKey : featureType;
-function feature_onKey(
-/** E.g., a,27,Enter,Esc,Ctrl+C or Alt+V */key: dataType, action: actionType, doNotWrapWithLauchingElement: booleanType) : featureType;
+function feature_onKey(profile: { 
+/** E.g., a,27,Enter,Esc,Ctrl+C or Alt+V */key: dataType, action: actionType, doNotWrapWithLauchingElement: booleanType}) : featureType;
 function feature_onKey(
 /** E.g., a,27,Enter,Esc,Ctrl+C or Alt+V */key: dataType) : featureType;
 function feature_onEnter : featureType;
@@ -1463,7 +1675,7 @@ function firstSucceeding_watchRefreshOnCtrlChange(
 function firstSucceeding_watchRefreshOnCtrlChange(
 /** reference to data */ref: dataType) : featureType;
 function controlWithCondition : controlType;
-function controlWithCondition(condition: booleanType, control: controlType, title: dataType) : controlType;
+function controlWithCondition(profile: { condition: booleanType, control: controlType, title: dataType}) : controlType;
 function controlWithCondition(condition: booleanType) : controlType;
 function innerHtml : controlType;
 function innerHtml(profile: { title: dataType, html: dataType, style: inner_html_styleType, features: [featureType]}) : controlType;
@@ -1518,7 +1730,7 @@ function itemlist_selection(profile: { databind: dataType, selectedToDatabind: d
 /** e.g. background: red;color: blue */cssForSelected: dataType}) : featureType;
 function itemlist_selection(databind: dataType) : featureType;
 function itemlist_keyboardSelection : featureType;
-function itemlist_keyboardSelection(profile: { autoFocus: booleanType, onEnter: actionType}) : featureType;
+function itemlist_keyboardSelection(autoFocus: booleanType, onEnter: actionType) : featureType;
 function itemlist_keyboardSelection(autoFocus: booleanType) : featureType;
 function itemlist_dragAndDrop : featureType;
 function itemlist_dragAndDrop() : featureType;
@@ -1536,7 +1748,7 @@ function itemlog_div() : group_styleType;
 function label_bindText : featureType;
 function label_bindText() : featureType;
 function highlight : dataType;
-function highlight(base: dataType, highlight: dataType, cssClass: dataType) : dataType;
+function highlight(profile: { base: dataType, highlight: dataType, cssClass: dataType}) : dataType;
 function highlight(base: dataType) : dataType;
 function markdown : controlType;
 function markdown(profile: { markdown: dataType, style: markdown_styleType, title: dataType, features: [featureType]}) : controlType;
@@ -1792,21 +2004,19 @@ function runTransaction(actions: [actionType], disableNotifications: booleanType
 function gotoUrl : actionType;
 function gotoUrl(url: dataType, target: enumType) : actionType;
 function gotoUrl(url: dataType) : actionType;
-function resetWspy : actionType;
-function resetWspy(param: dataType) : actionType;
 type data = {
 if : dataType,
-if(condition: booleanType, then: dataType, else: dataType) : dataType,
+if(profile: { condition: booleanType, then: dataType, else: dataType}) : dataType,
 if(condition: booleanType) : dataType,
 switch : dataType,
-switch(profile: { cases: [data_switch_caseType], default: dataType}) : dataType,
+switch(cases: [data_switch_caseType], default: dataType) : dataType,
 case : data_switch_caseType,
 case(condition: booleanType, value: dataType) : data_switch_caseType,
 case(condition: booleanType) : data_switch_caseType,
 }
 declare var data : data;,type action = {
 if : actionType,
-if(condition: booleanType, then: actionType, else: actionType) : actionType,
+if(profile: { condition: booleanType, then: actionType, else: actionType}) : actionType,
 if(condition: booleanType) : actionType,
 switch : actionType,
 switch(cases: [action_switch_caseType], defaultAction: actionType) : actionType,
@@ -1888,14 +2098,123 @@ keyboardEvent : ui_actionType,
 keyboardEvent(profile: { selector: dataType, type: dataType, keyCode: dataType, ctrl: dataType}) : ui_actionType,
 keyboardEvent(selector: dataType) : ui_actionType,
 setText : ui_actionType,
-setText(value: dataType, selector: dataType, delay: dataType) : ui_actionType,
+setText(profile: { value: dataType, selector: dataType, delay: dataType}) : ui_actionType,
 setText(value: dataType) : ui_actionType,
 }
 declare var uiAction : uiAction;,type test = {
 dialogContent : dataType,
 dialogContent(id: dataType) : dataType,
 }
-declare var test : test;,type card = {
+declare var test : test;,type animation = {
+start : actionType,
+start(profile: { animation: [animationType], 
+/** query selector or elements, default is current control */target: dataType, 
+/** alternate goes back to origin */direction: dataType, loop: booleanType, 
+/** in mSec */duration: dataType}) : actionType,
+timeline : actionType,
+timeline(animation: [animationType], 
+/** query selector, default is current control */target: dataType) : actionType,
+keyframes : animationType,
+keyframes(...animation: [animationType][]) : animationType,
+expression : animation_valType,
+expression(
+/** e.g. 20 , +=10, *=2 */val: dataType) : animation_valType,
+range : animation_valType,
+range(
+/** e.g. 20 */from: dataType, 
+/** e.g. 30 */to: dataType) : animation_valType,
+range(
+/** e.g. 20 */from: dataType) : animation_valType,
+stagger : animation_valType,
+stagger(profile: { 
+/** value range */val: animation_stager_valType, 
+/** Starts the stagger effect from a specific position */from: dataType, 
+/** e.g. 20 */direction: dataType, easing: animation_easingType, grid: animation_stager_gridType}) : animation_valType,
+stagger(
+/** value range */val: animation_stager_valType) : animation_valType,
+stagerGrid : animation_stager_gridType,
+stagerGrid(profile: { 
+/** e.g. 2 */rows: dataType, 
+/** e.g. 5 */columns: dataType, 
+/** direction of staggering */axis: dataType}) : animation_stager_gridType,
+stagerGrid(
+/** e.g. 2 */rows: dataType) : animation_stager_gridType,
+stagerIncrease : animation_stager_valType,
+stagerIncrease(
+/** e.g. 20 */increase: dataType, 
+/** optional, e.g. 10 */start: dataType) : animation_stager_valType,
+stagerIncrease(
+/** e.g. 20 */increase: dataType) : animation_stager_valType,
+stagerRange : animation_stager_valType,
+stagerRange(
+/** e.g. 20 */from: dataType, 
+/** e.g. 30 */to: dataType) : animation_stager_valType,
+stagerRange(
+/** e.g. 20 */from: dataType) : animation_stager_valType,
+direction : animationType,
+direction(
+/** alternate goes back to origin */direction: dataType) : animationType,
+duration : animationType,
+duration(
+/** time of animation in mSec */duration: animation_valType) : animationType,
+delay : animationType,
+delay(
+/** delay before animation */delay: animation_valType, 
+/** delay at the end of animation */endDelay: animation_valType) : animationType,
+delay(
+/** delay before animation */delay: animation_valType) : animationType,
+moveTo : animationType,
+moveTo(profile: { 
+/** e.g. 20 , +=10, *=2, list(100,200) */X: animation_valType, Y: animation_valType, Z: animation_valType}) : animationType,
+moveTo(
+/** e.g. 20 , +=10, *=2, list(100,200) */X: animation_valType) : animationType,
+rotate : animationType,
+rotate(profile: { 
+/** degree units, e.g. 20 , +=10, *=2, 1turn, list(20,270) */rotate: animation_valType, rotateX: animation_valType, rotateY: animation_valType, rotateZ: animation_valType}) : animationType,
+rotate(
+/** degree units, e.g. 20 , +=10, *=2, 1turn, list(20,270) */rotate: animation_valType) : animationType,
+scale : animationType,
+scale(profile: { 
+/** e.g. 1.5 , *=2, list(2,3) */scale: animation_valType, scaleX: animation_valType, scaleY: animation_valType, scaleZ: animation_valType}) : animationType,
+scale(
+/** e.g. 1.5 , *=2, list(2,3) */scale: animation_valType) : animationType,
+skew : animationType,
+skew(profile: { 
+/** e.g. 20 , +=10, *=2, list(1,2) */skew: dataType, 
+/** e.g. 20 , +=10, *=2, list(1,2) */skewX: dataType, 
+/** e.g. 20 , +=10, *=2, list(1,2) */skewY: dataType, 
+/** e.g. 20 , +=10, *=2, list(1,2) */skewZ: dataType}) : animationType,
+skew(
+/** e.g. 20 , +=10, *=2, list(1,2) */skew: dataType) : animationType,
+perspective : animationType,
+perspective(
+/** e.g. 100 , +=10, *=2, list(10,20) */perspective: animation_valType) : animationType,
+easing : animationType,
+easing(easing: animation_easingType) : animationType,
+inOutEasing : animation_easingType,
+inOutEasing(method: dataType, inOut: dataType) : animation_easingType,
+inOutEasing(method: dataType) : animation_easingType,
+elasticEasing : animation_easingType,
+elasticEasing(profile: { inOut: dataType, 
+/** 1-10  Controls the overshoot of the curve */amplitude: dataType, 
+/** 0.1-2 Controls how many times the curve goes back and forth */period: dataType}) : animation_easingType,
+elasticEasing(inOut: dataType) : animation_easingType,
+springEasing : animation_easingType,
+springEasing(profile: { 
+/** 0-100 */mass: dataType, 
+/** 0-100 */stiffness: dataType, 
+/** 0-100 */damping: dataType, 
+/** 0-100 */velocity: dataType}) : animation_easingType,
+springEasing(
+/** 0-100 */mass: dataType) : animation_easingType,
+movement : animationType,
+movement(to: positionType, subAnimations: [animationType]) : animationType,
+movement(to: positionType) : animationType,
+fixedPos : positionType,
+fixedPos(top: dataType, left: dataType) : positionType,
+fixedPos(top: dataType) : positionType,
+}
+declare var animation : animation;,type card = {
 init : featureType,
 init() : featureType,
 card : group_styleType,
@@ -1968,8 +2287,8 @@ onEvent(event: dataType) : featureType,
 onHover : featureType,
 onHover(...action: [actionType][]) : featureType,
 onKey : featureType,
-onKey(
-/** E.g., a,27,Enter,Esc,Ctrl+C or Alt+V */key: dataType, action: actionType, doNotWrapWithLauchingElement: booleanType) : featureType,
+onKey(profile: { 
+/** E.g., a,27,Enter,Esc,Ctrl+C or Alt+V */key: dataType, action: actionType, doNotWrapWithLauchingElement: booleanType}) : featureType,
 onKey(
 /** E.g., a,27,Enter,Esc,Ctrl+C or Alt+V */key: dataType) : featureType,
 onEnter : featureType,
@@ -2208,7 +2527,7 @@ selection(profile: { databind: dataType, selectedToDatabind: dataType, databindT
 /** e.g. background: red;color: blue */cssForSelected: dataType}) : featureType,
 selection(databind: dataType) : featureType,
 keyboardSelection : featureType,
-keyboardSelection(profile: { autoFocus: booleanType, onEnter: actionType}) : featureType,
+keyboardSelection(autoFocus: booleanType, onEnter: actionType) : featureType,
 keyboardSelection(autoFocus: booleanType) : featureType,
 dragAndDrop : featureType,
 dragAndDrop() : featureType,
