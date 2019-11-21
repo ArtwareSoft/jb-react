@@ -186,6 +186,7 @@ jb.component('break-text', { /* breakText */
 
 
 jb.component('zip-arrays', { /* zipArrays */
+  type: 'data',
   description: '[[1,2],[10,20],[100,200]] => [[1,10,100],[2,20,200]]',
   params: [
     {id: 'value', description: 'array of arrays', as: 'array', mandatory: true}

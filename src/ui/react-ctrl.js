@@ -559,4 +559,15 @@ jb.component('style-by-control', { /* styleByControl */
 		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
 })
 
+jb.component('style-with-features', { 
+	typePattern: /\.style$/,
+	category: 'advanced:10,all:20',
+	params: [
+	  {id: 'style', type: '$asParent', mandatory: true },
+	  {id: 'features', type: 'feature[]', templateValue: [], dynamic: true}
+	],
+	impl: (ctx,style,features) => 
+		Object.assign({featuresOptions: (style.featuresOptions || []).concat(features())},style)
+  })
+  
 })()

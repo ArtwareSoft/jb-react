@@ -1,3 +1,16 @@
+jb.component('layout.horizontal1', {
+  type: 'feature',
+  category: 'layout:100',
+  params: [
+    {id: 'spacing', as: 'number', defaultValue: 3}
+  ],
+  impl: ({
+    css: `{display: flex}
+        >* { margin-right: %$spacing%px }
+        >*:last-child { margin-right:0 }`,
+  })
+})
+
 jb.component('layout.vertical', { /* layout.vertical */
   type: 'group.style',
   params: [

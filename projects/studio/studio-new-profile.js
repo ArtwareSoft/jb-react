@@ -196,7 +196,8 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
         value: {'$if': studio.val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
         watchable: true
       }),
-      group.itemlistContainer({initialSelection: studio.compName('%$path%')})
+      group.itemlistContainer({initialSelection: studio.compName('%$path%')}),
+      css.width('400')
     ]
   })
 })
@@ -262,7 +263,7 @@ jb.component('studio.pick-profile', { /* studio.pickProfile */
         path: '%$path%'
       }),
       features: [
-        dialogFeature.autoFocusOnFirstInput(), 
+        dialogFeature.autoFocusOnFirstInput(),
         css.padding({right: '20'}),
         feature.init(writeValue('%$dialogData/originalVal%', studio.val('%$path%'))),
         dialogFeature.onClose(action.if(not('%%'),studio.setComp('%$path%', '%$dialogData/originalVal%')))

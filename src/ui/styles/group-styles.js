@@ -196,3 +196,55 @@ jb.component('group.tabs', { /* group.tabs */
   )
 })
 
+jb.component('group.sections1', { /* group.sections */
+  type: 'group.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('section',{ class: 'jb-group'},
+        state.ctrls.map(ctrl => jb.ui.item(cmp,
+          h('div',{ class: 'section' }, [
+            h('div',{ class: 'header'}, h('div',{ class: 'title'}, jb.ui.fieldTitle(cmp,ctrl,h))),
+            h(ctrl)
+          ]), ctrl.ctx.data))
+    ),
+    css: `>.section>.header { display: flex; flex-direction: row; }
+        >.section>.header>button:hover { background: none }
+        >.section>.header>button { margin-left: auto }
+        >.section>.header>.title { margin: 5px }`,
+    features: group.initGroup()
+  })
+})
+
+jb.component('group.sections', { /* group.sections */
+  type: 'group.style',
+  params: [
+    {
+      id: 'title',
+      type: 'label.style',
+      dynamic: true,
+      defaultValue: label.htmlTag('h3')
+    },
+    {id: 'section', type: 'group.style', dynamic: true, defaultValue: group.section()},
+    {id: 'innerGroup', type: 'group.style', dynamic: true, defaultValue: group.div()}
+  ],
+  impl: styleByControl(
+    group({
+      controls: [
+        dynamicControls({
+          controlItems: '%$sectionsModel/controls%',
+          genericControl: group({
+            style: call('section'),
+            controls: [
+              label({
+                title: ({},{section}) => section.field.title(),
+                style: label.noWrappingTag()
+              }),
+              group({style: call('innerGroup'), controls: ({},{section}) => section})
+            ]
+          }),
+          itemVariable: 'section'
+        })
+      ]
+    }),
+    'sectionsModel'
+  )
+})

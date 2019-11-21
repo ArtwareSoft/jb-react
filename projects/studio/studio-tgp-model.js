@@ -342,7 +342,7 @@ Object.assign(st,{
 	// single first param type
 	paramTypeOfPath: path => {
 		const res = ((st.paramDef(path) || {}).type || 'data').split(',')[0].split('[')[0];
-		if (res == '*')
+		if (res == '$asParent' || res == '*')
 			return st.paramTypeOfPath(st.parentPath(path));
 		return res;
 	},

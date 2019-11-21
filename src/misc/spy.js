@@ -71,7 +71,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				modifier(record)
 			}
 			this.logs[logName].push(record)
-			this._obs.next({logName,record})
+			this._obs && this._obs.next({logName,record})
 		},
 		source(takeFrom) {
 			Error.stackTraceLimit = 50

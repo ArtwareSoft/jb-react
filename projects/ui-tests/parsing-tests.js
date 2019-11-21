@@ -1,3 +1,4 @@
+
 jb.const('textToParse',`
 before
 #start
@@ -117,6 +118,6 @@ jb.component('data-test.break-text-regex', { /* dataTest.breakTextRegex */
 jb.component('data-test.zip-arrays', { /* dataTest.zipArrays */
   impl: dataTest({
     calculate: json.stringify(zipArrays(ctx => [[1,2],[10,20],[100,200]])),
-    expectedResult: '%% == [[1,10,100],[2,20,200]]'
+    expectedResult: ({data}) => JSON.stringify(data) == JSON.stringify([[1,10,100],[2,20,200]])
   })
 })
