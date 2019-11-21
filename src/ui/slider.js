@@ -17,7 +17,7 @@ jb.component('editable-number.slider', { /* editableNumber.slider */
     group({
       title: '%$editableNumberModel/title%',
       controls: group({
-        style: layout.horizontal(20),
+        layout: layout.horizontal(20),
         controls: [
           editableText({
             databind: '%$editableNumberModel/databind%',
@@ -110,7 +110,7 @@ jb.component('slider.edit-as-text-popup', { /* slider.editAsTextPopup */
     style: dialog.popup(),
     content: group({
       title: 'data-settings',
-      style: layout.vertical(3),
+      layout: layout.vertical(3),
       controls: [
         editableText({
           title: '%title%',

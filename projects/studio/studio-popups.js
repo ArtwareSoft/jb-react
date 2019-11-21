@@ -264,7 +264,7 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
         ),
         genericControl: group({
           title: '%$controlItem/id%',
-          style: layout.horizontal('70'),
+          layout: layout.horizontal('70'),
           controls: [
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/width%',

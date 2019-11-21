@@ -59,7 +59,7 @@ jb.component('studio.style-editor', { /* studio.styleEditor */
         tabs: [
           group({
             title: 'css',
-            style: layout.vertical(3),
+            layout: layout.vertical(3),
             controls: [
               editableText({
                 title: 'css',
@@ -122,7 +122,7 @@ jb.component('studio.style-editor', { /* studio.styleEditor */
           }),
           group({
             title: 'Inteliscript editor',
-            style: layout.vertical(),
+            layout: layout.vertical(),
             controls: [
               studio.jbEditor('%$path%')
             ]

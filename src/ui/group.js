@@ -1,15 +1,15 @@
-jb.ns('layout')
-jb.ns('tabs')
+jb.ns('group,layout,tabs')
 
 jb.component('group', { /* group */
   type: 'control',
   category: 'group:100,common:90',
   params: [
     {id: 'title', as: 'string', dynamic: true},
+    {id: 'layout', type: 'layout' },
     {
       id: 'style',
       type: 'group.style',
-      defaultValue: layout.vertical(),
+      defaultValue: group.div(),
       mandatory: true,
       dynamic: true
     },
@@ -24,7 +24,7 @@ jb.component('group', { /* group */
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
-    jb.ui.ctrl(ctx)
+    jb.ui.ctrl(ctx,ctx.params.layout)
 })
 
 jb.component('group.init-group', { /* group.initGroup */

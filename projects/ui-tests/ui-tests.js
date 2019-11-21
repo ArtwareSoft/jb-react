@@ -230,7 +230,20 @@ jb.component('ui-test.two-way-binding', { /* uiTest.twoWayBinding */
 jb.component('ui-test.group-horizontal', { /* uiTest.groupHorizontal */
   impl: uiTest({
     control: group({
-      style: layout.horizontal(),
+      layout: layout.horizontal(30),
+      controls: [
+        button('button1'),
+        label('label1')
+      ]
+    }),
+    expectedResult: contains(['button1', 'label1'])
+  })
+})
+
+jb.component('ui-test.layout-vertical', {
+  impl: uiTest({
+    control: group({
+      layout: layout.vertical(30),
       controls: [
         button('button1'),
         label('label1')
@@ -349,7 +362,7 @@ jb.component('ui-test.dialog-cleanup-bug', { /* uiTest.dialogCleanupBug */
 jb.component('ui-test.group-flex', { /* uiTest.groupFlex */
   impl: uiTest({
     control: group({
-      style: layout.flex({direction: 'row'}),
+      layout: layout.flex({direction: 'row'}),
       controls: [
         button('button1'),
         label('label1')
@@ -750,7 +763,7 @@ jb.component('ui-test.property-sheet.titles-left', { /* uiTest.propertySheet.tit
 jb.component('ui-test.editable-number', { /* uiTest.editableNumber */
   impl: uiTest({
     control: group({
-      style: layout.vertical(),
+      layout: layout.vertical(),
       controls: [
         editableNumber({
           databind: '%$person/age%',

@@ -206,7 +206,7 @@ jb.component('studio.property-enum', { /* studio.propertyEnum */
   impl: picklist({
     databind: studio.ref('%$path%'),
     options: studio.enumOptions('%$path%'),
-    style: picklist.mdl(),
+    style: picklist.native()
   })
 })
 
@@ -242,7 +242,7 @@ jb.component('studio.property-tgp-old', { /* studio.propertyTgpOld */
     controls: [
       group({
         title: 'header',
-        style: layout.horizontal(0),
+        layout: layout.horizontal(0),
         controls: [
           editableBoolean({
             databind: '%$userExpanded%',
@@ -280,7 +280,7 @@ jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
   impl: group({
     controls: [
       group({
-        style: layout.flex('space-between'),
+        layout: layout.flex('space-between'),
         controls: [
           editableBoolean({
             databind: '%$expanded%',

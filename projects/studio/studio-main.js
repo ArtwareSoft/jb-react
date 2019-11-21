@@ -18,7 +18,7 @@ jb.component('studio.pages', { /* studio.pages */
   type: 'control',
   impl: group({
     title: 'pages',
-    style: layout.horizontal(),
+    layout: layout.horizontal(),
     controls: [
       button({
         title: 'new page',
@@ -195,7 +195,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
   type: 'control',
   impl: group({
     title: 'top bar',
-    style: layout.horizontal('3'),
+    layout: layout.horizontal('3'),
     controls: [
       image({
         url: '%$studio/baseStudioUrl%css/jbartlogo.png',
@@ -206,7 +206,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
       }),
       group({
         title: 'title and menu',
-        style: layout.vertical('17'),
+        layout: layout.vertical('17'),
         controls: [
           label({title: 'message', style: label.studioMessage()}),
           label({
@@ -218,7 +218,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
           }),
           group({
             title: 'menu and toolbar',
-            style: layout.flex('space-between'),
+            layout: layout.flex('space-between'),
             controls: [
               menu.control({
                 menu: studio.mainMenu(),
@@ -267,7 +267,7 @@ jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
     {id: 'prefix', as: 'string'}
   ],
   impl: group({
-    style: layout.horizontal('9'),
+    layout: layout.horizontal('9'),
     controls: [
       label('%$prefix%'),
       button({

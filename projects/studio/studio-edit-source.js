@@ -423,7 +423,7 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
       controls: [
         group({
           title: 'properties',
-          style: layout.flex({spacing: '100'}),
+          layout: layout.flex({spacing: '100'}),
           controls: [
             editableText({
               title: 'github username',
@@ -441,7 +441,7 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
           controls: [
             group({
               title: 'share urls',
-              style: layout.flex({spacing: '', justifyContent: 'flex-start'}),
+              layout: layout.flex({spacing: '', justifyContent: 'flex-start'}),
               controls: [
                 html({
                   title: 'share link',

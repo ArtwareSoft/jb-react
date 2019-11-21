@@ -7,7 +7,7 @@ jb.component('dialogs.main', { /* dialogs.main */
         action: openDialog({
           style: dialog.dialogOkCancel(),
           content: group({
-            style: layout.vertical(),
+            layout: layout.vertical(),
             controls: [
               editableText({title: 'name', databind: '%$dialogData/name%', updateOnBlur: false}),
               editableText({title: 'phone', databind: '%$dialogData/phone%'})

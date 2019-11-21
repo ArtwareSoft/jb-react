@@ -171,7 +171,7 @@ jb.component('itemlists.table-with-filters', { /* itemlists.tableWithFilters */
         controls: [
           group({
             title: 'filters',
-            style: layout.horizontal(45),
+            layout: layout.horizontal(45),
             controls: [
               editableText({
                 title: 'name',
@@ -205,7 +205,7 @@ jb.component('itemlists.table-with-filters', { /* itemlists.tableWithFilters */
 jb.component('itemlists.master-details-with-container', { /* itemlists.masterDetailsWithContainer */
   type: 'control',
   impl: group({
-    style: layout.horizontal(),
+    layout: layout.horizontal(),
     controls: [
       itemlist({
         items: '%$people%',
@@ -239,7 +239,7 @@ jb.component('itemlists.master-details-with-container', { /* itemlists.masterDet
 jb.component('itemlists.master-details', { /* itemlists.masterDetails */
   type: 'control',
   impl: group({
-    style: layout.horizontal(),
+    layout: layout.horizontal(),
     controls: [
       itemlist({
         items: '%$people%',

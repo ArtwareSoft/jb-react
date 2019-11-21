@@ -307,7 +307,7 @@ jb.component('studio.jb-editor', { /* studio.jbEditor */
   ],
   impl: group({
     title: 'main',
-    style: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%'}),
+    layout: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%'}),
     controls: [
       studio.jbEditorInteliTree('%$path%'),
       studio.probeDataView()

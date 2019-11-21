@@ -165,7 +165,7 @@ jb.component('group.tabs', { /* group.tabs */
       controls: [
         group({
           title: 'thumbs',
-          style: layout.horizontal(),
+          layout: layout.horizontal(),
           controls: dynamicControls({
             controlItems: '%$tabsModel/controls%',
             genericControl: button({

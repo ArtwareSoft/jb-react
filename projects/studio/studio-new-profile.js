@@ -66,10 +66,10 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
   ],
   impl: group({
     title: 'itemlist-with-find',
-    style: layout.vertical(3),
+    layout: layout.vertical(3),
     controls: [
       group({
-        style: layout.horizontal(3),
+        layout: layout.horizontal(3),
         controls: [
           itemlistContainer.search({
             title: 'search',
@@ -88,7 +88,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
       }),
       group({
         title: 'categories and items',
-        style: layout.horizontal('33'),
+        layout: layout.horizontal('33'),
         controls: [
           itemlist({
             title: 'items',

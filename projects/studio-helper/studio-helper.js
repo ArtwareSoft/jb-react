@@ -26,7 +26,7 @@ jb.component('studio-helper.event-tracker', { /* studioHelper.eventTracker */
   type: 'control',
   impl: group({
     title: '',
-    style: layout.vertical(3),
+    layout: layout.vertical(3),
     controls: [
       editableText({databind: '%$globals/test1%', style: editableText.mdlInput()}),
       label({title: '%$globals/test1%', style: label.span()}),
@@ -74,7 +74,7 @@ jb.component('studio-helper.jb-editor', { /* studioHelper.jbEditor */
   ],
   impl: group({
     title: 'main',
-    style: layout.flex('flex-start'),
+    layout: layout.flex('flex-start'),
     controls: [
       studio.jbEditor('studio-helper-sample.properties-params-prof'),
       group({
@@ -99,7 +99,7 @@ jb.component('studio-helper.inteli-tree', { /* studioHelper.inteliTree */
   ],
   impl: group({
     title: 'main',
-    style: layout.flex('flex-start'),
+    layout: layout.flex('flex-start'),
     controls: [
       studio.jbEditorInteliTree('%$path%~impl~controls')
     ],
@@ -216,7 +216,7 @@ jb.component('studio-helper.select-feature', { /* studioHelper.selectFeature */
   type: 'control',
   impl: group({
     title: 'select-feature',
-    style: layout.horizontal('53'),
+    layout: layout.horizontal('53'),
     controls: [
       studio.selectProfile({
         type: 'feature',
@@ -403,7 +403,7 @@ jb.component('studio-helper-sample.properties-params-prof', { /* studioHelperSam
     boolAsJs: ctx => ctx.vars.aa,
     boolAsExp: '%$person/male%',
     style: button.href(),
-    groupStyle: layout.horizontal('38'),
+    grouplayout: layout.horizontal('38'),
     features: [label.bindText(), mdlStyle.initDynamic()]
   }),
   '$vars': {

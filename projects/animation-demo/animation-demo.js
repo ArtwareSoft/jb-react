@@ -36,7 +36,7 @@ jb.component('animation-demo.itemlist', { /* animationDemo.itemlist */
   impl: group({
     controls: [
       group({
-        style: layout.flex({alignItems: 'center', spacing: '30', justifyContent: ''}),
+        layout: layout.flex({alignItems: 'center', spacing: '30', justifyContent: ''}),
         controls: [
           button({
             title: 'rotate',

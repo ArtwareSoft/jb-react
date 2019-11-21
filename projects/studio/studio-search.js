@@ -90,7 +90,7 @@ jb.component('studio.search-component', { /* studio.searchComponent */
   ],
   impl: group({
     title: 'itemlist-with-find',
-    style: layout.horizontal(''),
+    layout: layout.horizontal(''),
     controls: [
       itemlistContainer.search({
         title: 'Search',

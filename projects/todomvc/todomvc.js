@@ -43,7 +43,7 @@ jb.component('todomvc.main', { /* todomvc.main */
             ),
             controls: [
               group({
-                style: layout.flex({alignItems: 'center', spacing: '20'}),
+                layout: layout.flex({alignItems: 'center', spacing: '20'}),
                 controls: [
                   editableBoolean({
                     databind: '%completed%',
@@ -80,7 +80,7 @@ jb.component('todomvc.main', { /* todomvc.main */
       }),
       group({
         title: 'toolbar',
-        style: layout.flex({
+        layout: layout.flex({
           alignItems: 'center',
           spacing: '30',
           justifyContent: 'space-between'

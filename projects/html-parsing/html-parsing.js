@@ -131,7 +131,7 @@ jb.component('html-parsing.parseDevice', { /* htmlParsing.parseDevice */
   impl: group({
     controls: [
       group({
-        style: layout.horizontal(),
+        layout: layout.horizontal(),
         controls: [
           text({
             title: 'fix values',
