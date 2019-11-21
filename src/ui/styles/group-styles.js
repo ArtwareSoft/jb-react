@@ -18,15 +18,13 @@ jb.component('group.htmlTag', { /* group.htmlTag */
 })
 
 jb.component('group.div', { /* group.div */
-  impl: group.htmlTag(
-    'div'
-  )
+  type: 'group.style',
+  impl: group.htmlTag('div')
 })
 
 jb.component('group.section', { /* group.section */
-  impl: group.htmlTag(
-    'section'
-  )
+  type: 'group.style',
+  impl: group.htmlTag('section')
 })
 
 jb.component('first-succeeding.style', { /* firstSucceeding.style */
@@ -194,24 +192,6 @@ jb.component('group.tabs', { /* group.tabs */
     }),
     'tabsModel'
   )
-})
-
-jb.component('group.sections1', { /* group.sections */
-  type: 'group.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('section',{ class: 'jb-group'},
-        state.ctrls.map(ctrl => jb.ui.item(cmp,
-          h('div',{ class: 'section' }, [
-            h('div',{ class: 'header'}, h('div',{ class: 'title'}, jb.ui.fieldTitle(cmp,ctrl,h))),
-            h(ctrl)
-          ]), ctrl.ctx.data))
-    ),
-    css: `>.section>.header { display: flex; flex-direction: row; }
-        >.section>.header>button:hover { background: none }
-        >.section>.header>button { margin-left: auto }
-        >.section>.header>.title { margin: 5px }`,
-    features: group.initGroup()
-  })
 })
 
 jb.component('group.sections', { /* group.sections */

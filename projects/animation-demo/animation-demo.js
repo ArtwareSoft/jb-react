@@ -134,6 +134,7 @@ jb.component('animation-demo.particle', { /* animationDemo.particle */
 jb.component('animation-demo.watch-ref', { /* animationDemo.watchRef */
   type: 'control',
   impl: group({
+    layout: layout.vertical('30'),
     controls: [
       label('%$name%'),
       editableText({databind: '%$name%'}),

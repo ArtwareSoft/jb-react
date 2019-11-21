@@ -206,7 +206,8 @@ jb.component('studio.property-enum', { /* studio.propertyEnum */
   impl: picklist({
     databind: studio.ref('%$path%'),
     options: studio.enumOptions('%$path%'),
-    style: picklist.native()
+    style: picklist.nativeMdLookOpen(),
+    features: css.width({width: '100', minMax: 'min'})
   })
 })
 

@@ -1,39 +1,37 @@
-jb.resource('person',{
+jb.component('person',{ watchableData : {
   name: "Homer Simpson",
   male: true,
   isMale: 'yes',
   age: 42
-})
+}})
 
-jb.resource('people',[
+jb.component('people',{ watchableData : [
   { "name": "Homer Simpson" ,age: 42 , male: true},
   { "name": "Marge Simpson" ,age: 38 , male: false},
   { "name": "Bart Simpson"  ,age: 12 , male: true}
-]);
+]});
 
 jb.component('picklists.main', { /* picklists.main */
   type: 'control',
   impl: group({
+    layout: layout.flex({wrap: 'wrap'}),
     style: group.sections({
       sectionStyle: styleWithFeatures(
         card.card(),
         [css.margin({left: '30', bottom: '40'}), css.padding({left: '20'})]
-      )
+      ),
+      innerGroupStyle: styleWithFeatures(group.div(), [css.padding({right: '50'})])
     }),
     controls: [
-      picklist({
-        title: 'native',
-        databind: '%$person/name%',
-        options: picklist.options('%$people/name%'),
-        style: picklist.native(),
-        features: css.width('200')
-      }),
-      picklist({
-        title: 'selection list',
-        databind: '%$person/name%',
-        options: picklist.options('%$people/name%'),
-        style: picklist.selectionList(),
-        features: [css.width('200'), css.margin({right: '20'})]
+      dynamicControls({
+        controlItems: ctx => ctx.frame().parent.jb.studio.PTsOfType('picklist.style').filter(x=>x.indexOf('picklist') != -1),
+        genericControl: picklist({
+          title: pipeline('%$picklistStyle%', suffix('.')),
+          databind: '%$person/name%',
+          options: picklist.options('%$people/name%'),
+          style: ctx => ctx.run({$: ctx.data})
+        }),
+        itemVariable: 'picklistStyle'
       })
     ]
   }),
@@ -42,3 +40,12 @@ jb.component('picklists.main', { /* picklists.main */
   ]
 })
 
+
+jb.component('data-resource.person', { /* dataResource.person */
+  watchableData: {
+    name: 'Homer Simpson',
+    male: true,
+    isMale: 'yes',
+    age: 42
+  }
+})

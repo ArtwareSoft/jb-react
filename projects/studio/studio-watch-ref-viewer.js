@@ -22,7 +22,7 @@ jb.component('studio.position-of-data', {
             .map(e=>e[1].positions)
         if (positions.length == 0)
             positions.push({line: 0, col: 0})
-        const asPoints = positions.map(pos=>editor.charCoords(pos))
+        const asPoints = positions.map(pos=>editor.charCoords({line: pos[0], col: pos[1]}))
         return enrichWithCenter({
             top: Math.min(...asPoints.map(x=>x.top)),
             left: Math.min(...asPoints.map(x=>x.left)),
