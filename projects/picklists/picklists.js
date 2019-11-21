@@ -14,7 +14,12 @@ jb.resource('people',[
 jb.component('picklists.main', { /* picklists.main */
   type: 'control',
   impl: group({
-    style: group.sections({title: label.cardTitle(), section: card.card()}),
+    style: group.sections({
+      sectionStyle: styleWithFeatures(
+        card.card(),
+        [css.margin({left: '30', bottom: '40'}), css.padding({left: '20'})]
+      )
+    }),
     controls: [
       picklist({
         title: 'native',
@@ -28,7 +33,7 @@ jb.component('picklists.main', { /* picklists.main */
         databind: '%$person/name%',
         options: picklist.options('%$people/name%'),
         style: picklist.selectionList(),
-        features: css.width('200')
+        features: [css.width('200'), css.margin({right: '20'})]
       })
     ]
   }),

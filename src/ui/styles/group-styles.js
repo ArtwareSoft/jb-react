@@ -218,13 +218,13 @@ jb.component('group.sections', { /* group.sections */
   type: 'group.style',
   params: [
     {
-      id: 'title',
+      id: 'titleStyle',
       type: 'label.style',
       dynamic: true,
       defaultValue: label.htmlTag('h3')
     },
-    {id: 'section', type: 'group.style', dynamic: true, defaultValue: group.section()},
-    {id: 'innerGroup', type: 'group.style', dynamic: true, defaultValue: group.div()}
+    {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
+    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
   impl: styleByControl(
     group({
@@ -232,13 +232,13 @@ jb.component('group.sections', { /* group.sections */
         dynamicControls({
           controlItems: '%$sectionsModel/controls%',
           genericControl: group({
-            style: call('section'),
+            style: call('sectionStyle'),
             controls: [
               label({
                 title: ({},{section}) => section.field.title(),
-                style: label.noWrappingTag()
+                style: call('titleStyle')
               }),
-              group({style: call('innerGroup'), controls: ({},{section}) => section})
+              group({style: call('innerGroupStyle'), controls: ({},{section}) => section})
             ]
           }),
           itemVariable: 'section'

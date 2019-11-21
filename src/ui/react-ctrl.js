@@ -567,7 +567,7 @@ jb.component('style-with-features', {
 	  {id: 'features', type: 'feature[]', templateValue: [], dynamic: true}
 	],
 	impl: (ctx,style,features) => 
-		Object.assign({featuresOptions: (style.featuresOptions || []).concat(features())},style)
+		Object.assign({},style,{featuresOptions: (style.featuresOptions || []).concat(features())})
   })
   
 })()
