@@ -197,12 +197,7 @@ jb.component('group.tabs', { /* group.tabs */
 jb.component('group.sections', { /* group.sections */
   type: 'group.style',
   params: [
-    {
-      id: 'titleStyle',
-      type: 'label.style',
-      dynamic: true,
-      defaultValue: label.htmlTag('h3')
-    },
+    {id: 'titleStyle', type: 'label.style', dynamic: true, defaultValue: label.htmlTag('h3')},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],

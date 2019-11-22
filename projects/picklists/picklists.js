@@ -49,3 +49,18 @@ jb.component('data-resource.person', { /* dataResource.person */
     age: 42
   }
 })
+
+jb.component('picklists.custom', { /* picklists.custom */
+  type: 'control',
+  impl: group({
+    controls: picklist({
+      title: 'hyperlinks',
+      databind: '%$person/name%',
+      options: picklist.options('%$people/name%'),
+      style: styleWithFeatures(
+        picklist.radio(''),
+        layout.grid({columnSizes: list('30px', 'auto')})
+      )
+    })
+  })
+})

@@ -311,6 +311,8 @@ Object.assign(st,{
     	if (path.indexOf('~') == -1)
 		  return st.isCompNameOfType(path,type);
 		const paramDef = st.paramDef(path) || {};
+		if (type == 'style' && (paramDef.type || '').indexOf('.style') != -1)
+			return true
 		return (paramDef.type || 'data').split(',')
 			.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length;
 	},

@@ -15,17 +15,25 @@ jb.component('picklist.native', { /* picklist.native */
 jb.component('picklist.radio', {
   type: 'picklist.style',
   params:[
-    { id: 'radioCss', as: 'string', defaultValue: 'display: none' },
-    { id: 'label', type: 'control', defaultValue: button({title: '%text%', style: button.href()}), dynamic: true },
+    { id: 'radioCss', as: 'string', defaultValue: '', description: 'e.g. display: none' },
+    { id: 'text', defaultValue: '%text%', dynamic: true },
   ],
   impl: customStyle({
     template: (cmp,{options, fieldId},h) => h('div', {},
           options.flatMap(option=> [h('input', {
-              type: 'radio', name: fieldId, id: option.code, value: option.text, onchange: e => cmp.jbModel(option.code,e)
-            }), h('label',{for: option.code}, h(jb.ui.renderable(cmp.label(cmp.ctx.setData(option)) ) ))] )),
-    css: `>input {%$radioCss%}`,
+              type: 'radio', name: fieldId, id: '' + cmp.ctx.id + option.code, value: option.text, onchange: e => cmp.jbModel(option.code,e)
+            }), h('label',{for: '' + cmp.ctx.id + option.code}, cmp.text(cmp.ctx.setData(option))) ] )),
+    css: `>input { %$radioCss% }`,
     features: field.databind()
   })
+})
+
+jb.component('picklist.radio-vertical', {
+  type: 'picklist.style',
+  impl: styleWithFeatures(
+    picklist.radio(),
+    layout.grid({columnSizes: list('30px', 'auto')})
+  )
 })
 
 jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
@@ -104,81 +112,65 @@ jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
   })
 })
 
-
-jb.component('picklist.mdl', { /* picklist.mdl */
+jb.component('picklist.label-list', { /* picklist.labelList */
   type: 'picklist.style',
   params: [
-    {id: 'noLabel', type: 'boolean', as: 'boolean'}
+    {id: 'labelStyle', type: 'label.style', dynamic: true, defaultValue: label.span()},
+    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff' },
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fix-height'},[
-        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
-            value: state.model,
-            readonly: true,
-            tabIndex: -1
-        }),
-        h('label',{for: 'input_' + state.fieldId},
-          h('i',{class: 'mdl-icon-toggle__label material-icons'},'keyboard_arrow_down')
-        ),
-//        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title),
-        h('ul',{for: 'input_' + state.fieldId, class: 'mdl-menu mdl-menu--bottom-left mdl-js-menu',
-            onclick: e =>
-              cmp.jbModel(e.target.getAttribute('code'))
-          },
-          state.options.map(option=>h('li',{class: 'mdl-menu__item', code: option.code},option.text))
-        )
-      ]),
-    css: '>label>i {float: right; margin-top: -30px;}',
-    features: [field.databind(), mdlStyle.initDynamic()]
+  impl: styleByControl(
+    itemlist({
+      items: '%$picklistModel/options%',
+      controls: label({
+        title: '%text%',
+        style: call('labelStyle')
+      }),
+      style: call('itemlistStyle'),
+      features: itemlist.selection({
+        databind: '%$picklistModel/databind%',
+        selectedToDatabind: '%code%',
+        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
+        cssForSelected: '%$cssForSelected%'
+      })
+    }),
+    'picklistModel'
+  )
+})
+
+jb.component('picklist.button-list', { /* picklist.buttonList */
+  type: 'picklist.style',
+  params: [
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdlFlatRipple()},
+    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal() },
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red;color: blue;font-weight: bold;', defaultValue: 'background: #bbb; color: #fff' },
+  ],
+  impl: styleByControl(
+    itemlist({
+      items: '%$picklistModel/options%',
+      controls: button({
+        title: '%text%',
+        style: call('buttonStyle')
+      }),
+      style: call('itemlistStyle'),
+      features: itemlist.selection({
+        databind: '%$picklistModel/databind%',
+        selectedToDatabind: '%code%',
+        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
+        cssForSelected: '%$cssForSelected%'
+      })
+    }),
+    'picklistModel'
+  )
+})
+
+jb.component('picklist.hyperlinks', { /* hyperlinks */
+  type: 'picklist.style',
+  impl: picklist.buttonList({
+    buttonStyle: button.href(),
+    itemlistStyle: itemlist.horizontal('10'),
+    cssForSelected: '>a { color: red }'
   })
-})
-
-jb.component('picklist.selection-list', { /* picklist.selectionList */
-  type: 'picklist.style',
-  params: [
-    {id: 'width', as: 'number'}
-  ],
-  impl: styleByControl(
-    itemlist({
-      items: '%$picklistModel/options%',
-      controls: label({
-        title: '%text%',
-        style: label.mdlRippleEffect(),
-        features: [css.width('%$width%'), css('{text-align: left}')]
-      }),
-      style: itemlist.horizontal('5'),
-      features: itemlist.selection({
-        databind: '%$picklistModel/databind%',
-        selectedToDatabind: '%code%',
-        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0]
-      })
-    }),
-    'picklistModel'
-  )
-})
-
-jb.component('picklist.horizontal-buttons', {
-  type: 'picklist.style',
-  params: [
-    {id: 'width', as: 'number', defaultValue: '200'}
-  ],
-  impl: styleByControl(
-    itemlist({
-      items: '%$picklistModel/options%',
-      controls: label({
-        title: '%text%',
-        style: label.mdlButton(),
-        features: [css.width('%$width%'), css('{text-align: left}')]
-      }),
-      style: itemlist.horizontal('5'),
-      features: itemlist.selection({
-        databind: '%$picklistModel/databind%',
-        selectedToDatabind: '%code%',
-        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0]
-      })
-    }),
-    'picklistModel'
-  )
 })
 
 jb.component('picklist.groups', { /* picklist.groups */

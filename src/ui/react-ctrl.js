@@ -2,8 +2,8 @@
 const ui = jb.ui;
 
 ui.ctrl = function(context,options) {
-	var ctx = context.setVars({ $model: context.params });
-	var styleOptions = defaultStyle(ctx) || {};
+	const ctx = context.setVars({ $model: context.params });
+	const styleOptions = defaultStyle(ctx) || {};
 	if (styleOptions.jbExtend)  {// style by control
 		styleOptions.ctxForPick = ctx;
 		return styleOptions.jbExtend(options).applyFeatures(ctx).initField();
@@ -11,8 +11,8 @@ ui.ctrl = function(context,options) {
 	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx).initField();
 
 	function defaultStyle(ctx) {
-		var profile = context.profile;
-		var defaultVar = '$theme.' + (profile.$ || '');
+		const profile = context.profile;
+		const defaultVar = '$theme.' + (profile.$ || '');
 		if (!profile.style && context.vars[defaultVar])
 			return ctx.run({$:context.vars[defaultVar]})
 		return context.params.style ? context.params.style(ctx) : {};
@@ -491,6 +491,7 @@ ui.addHTML = (el,html) => {
 }
 
 ui.withUnits = v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`
+ui.fixCssLine = css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css
 
 // ****************** vdom utils ***************
 
@@ -563,8 +564,8 @@ jb.component('style-with-features', {
 	typePattern: /\.style$/,
 	category: 'advanced:10,all:20',
 	params: [
-	  {id: 'style', type: '$asParent', mandatory: true },
-	  {id: 'features', type: 'feature[]', templateValue: [], dynamic: true}
+	  {id: 'style', type: '$asParent', mandatory: true, composite: true },
+	  {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
 	],
 	impl: (ctx,style,features) => 
 		Object.assign({},style,{featuresOptions: (style.featuresOptions || []).concat(features())})

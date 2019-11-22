@@ -177,7 +177,8 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         ctx.params.onDoubleClick(cmp.ctx.setData(data))
       }
     },
-    css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
+    css2: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
+    css: ['>.selected','>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(ctx.params.cssForSelected)).join('\n')
   })
 })
 

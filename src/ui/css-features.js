@@ -1,6 +1,6 @@
 (function() {
 const withUnits = jb.ui.withUnits
-const fixCssLine = css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css
+const fixCssLine = jb.ui.fixCssLine
 
 jb.component('css', { /* css */
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',

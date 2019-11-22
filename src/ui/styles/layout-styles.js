@@ -65,6 +65,22 @@ jb.component('layout.flex', { /* layout.flex */
   })
 })
 
+jb.component('layout.grid', { /* layout.grid */
+  type: 'layout,feature',
+  params: [
+    {id: 'columnSizes', as: 'array', templateValue: list('auto','auto'), description: 'grid-template-columns, list of lengths' },
+    {id: 'rowSizes', as: 'array', description: 'grid-template-rows, list of lengths' },
+    {id: 'columnGap', as: 'string', description: 'grid-column-gap' },
+    {id: 'rowGap', as: 'string', description: 'grid-row-gap' },
+  ],
+  impl: ctx => ({
+    css: ctx.setVars({...ctx.params,
+          colSizes: ctx.params.columnSizes.join(' ') , rowSizes: ctx.params.rowSizes.join(' ')
+         }).exp(`{ display: grid; {?grid-template-columns:%$colSizes%;?} {?grid-template-rows:%$rowSizes%;?} 
+            {?grid-column-gap:%$columnGap%;?} {?grid-column-gap:%$rowGap%;?} }`)
+  })
+})
+
 jb.component('flex-item.grow', { /* flexItem.grow */
   type: 'feature',
   category: 'flex-item',

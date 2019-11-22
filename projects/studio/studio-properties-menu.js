@@ -162,6 +162,7 @@ jb.component('studio.jb-editor-menu', { /* studio.jbEditorMenu */
       ),
       studio.gotoEditorOptions('%$path%'),
       menu.studioWrapWith({path: '%$path%', type: 'control', components: list('group')}),
+      menu.studioWrapWith({path: '%$path%', type: 'style', components: list('style-with-features')}),
       menu.studioWrapWith({
         path: '%$path%',
         type: 'data',
