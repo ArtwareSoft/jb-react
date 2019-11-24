@@ -877,7 +877,7 @@ Object.assign(jb,{
   extraWatchableHandlers: [],
   extraWatchableHandler: (handler,oldHandler) => { 
     jb.extraWatchableHandlers.push(handler)
-    const oldHandlerIndex = oldHandler && jb.extraWatchableHandlers.indexOf(oldHandler)
+    const oldHandlerIndex = jb.extraWatchableHandlers.indexOf(oldHandler)
     if (oldHandlerIndex != -1)
       jb.extraWatchableHandlers.splice(oldHandlerIndex,1)
     jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
@@ -2052,7 +2052,9 @@ jb.component('action.switch-case', { /* action.switchCase */
   ],
   impl: ctx => ctx.params
 })
-;
+
+jb.exec = (...args) => new jb.jbCtx().run(...args)
+jb.exp = (...args) => new jb.jbCtx().exp(...args);
 
 (function() {
 const spySettings = { 
@@ -2080,7 +2082,8 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		spyParam,
 		otherSpies: [],
 		observable() { 
-			this._obs = this._obs || new jb.rx.Subject()
+			const _jb = jb.path(jb,'studio.studiojb') || jb
+			this._obs = this._obs || new _jb.rx.Subject()
 			return this._obs
 		},
 		enabled: () => true,
@@ -2126,7 +2129,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				modifier(record)
 			}
 			this.logs[logName].push(record)
-			this._obs.next({logName,record})
+			this._obs && this._obs.next({logName,record})
 		},
 		source(takeFrom) {
 			Error.stackTraceLimit = 50
@@ -4769,8 +4772,8 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var rxjs
 const ui = jb.ui;
 
 ui.ctrl = function(context,options) {
-	var ctx = context.setVars({ $model: context.params });
-	var styleOptions = defaultStyle(ctx) || {};
+	const ctx = context.setVars({ $model: context.params });
+	const styleOptions = defaultStyle(ctx) || {};
 	if (styleOptions.jbExtend)  {// style by control
 		styleOptions.ctxForPick = ctx;
 		return styleOptions.jbExtend(options).applyFeatures(ctx).initField();
@@ -4778,8 +4781,8 @@ ui.ctrl = function(context,options) {
 	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx).initField();
 
 	function defaultStyle(ctx) {
-		var profile = context.profile;
-		var defaultVar = '$theme.' + (profile.$ || '');
+		const profile = context.profile;
+		const defaultVar = '$theme.' + (profile.$ || '');
 		if (!profile.style && context.vars[defaultVar])
 			return ctx.run({$:context.vars[defaultVar]})
 		return context.params.style ? context.params.style(ctx) : {};
@@ -4801,13 +4804,14 @@ class JbComponent {
 		//		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
 	}
 	initField() {
+		const ctx = this.ctxForPick || this.ctx
 		this.field = {
 			class: '',
-			ctxId: ui.preserveCtx(this.ctx),
-			control: (item,index,noCache) => this.getOrCreateItemField(item, () => this.ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp(),noCache)
+			ctxId: ui.preserveCtx(ctx),
+			control: (item,index,noCache) => this.getOrCreateItemField(item, () => ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp(),noCache)
 		}
 		this.enrichField.forEach(enrichField=>enrichField(this.field))
-		let title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => '');
+		let title = jb.tosingle(jb.val(ctx.params.title)) || (() => '');
 		if (this.field.title !== undefined)
 			title = this.field.title
 		// make it always a function 
@@ -4872,6 +4876,7 @@ class JbComponent {
 			}
 	  		componentWillUnmount() {
 				this._destroyed = true
+				jb.log('destroyCmp',[this]);
 				jbComp.jbDestroyFuncs.forEach(f=> tryWrapper(() => f(this), 'destroy'));
 				this.resolveDestroyed();
 			}
@@ -5119,7 +5124,7 @@ ui.renderWidget = function(profile,top) {
 						.filter(({page})=>page != this.state.profile.$)
 						.subscribe(({page})=>
 							this.setState({profile: {$: page }}));
-					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + this.fixedDebounce))
+					st.scriptChange.filter(e=>(jb.path(e,'path.0') || '').indexOf('data-resource.') != 0).takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + this.fixedDebounce))
 						.subscribe(e=>{
 							this.setState(null)
 							jb.ui.dialogs.reRenderAll()
@@ -5257,6 +5262,7 @@ ui.addHTML = (el,html) => {
 }
 
 ui.withUnits = v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`
+ui.fixCssLine = css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css
 
 // ****************** vdom utils ***************
 
@@ -5325,6 +5331,17 @@ jb.component('style-by-control', { /* styleByControl */
 		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
 })
 
+jb.component('style-with-features', { 
+	typePattern: /\.style$/,
+	category: 'advanced:10,all:20',
+	params: [
+	  {id: 'style', type: '$asParent', mandatory: true, composite: true },
+	  {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
+	],
+	impl: (ctx,style,features) => 
+		Object.assign({},style,{featuresOptions: (style.featuresOptions || []).concat(features())})
+  })
+  
 })()
 ;
 
@@ -5338,7 +5355,7 @@ jb.component('style-by-control', { /* styleByControl */
 const isProxy = Symbol.for("isProxy")
 const originalVal = Symbol.for("originalVal")
 const targetVal = Symbol.for("targetVal")
-const jbId = Symbol.for("jbId")
+const jbId = Symbol("jbId")
 
 class WatchableValueByRef {
   constructor(resources) {
@@ -5636,11 +5653,11 @@ class WatchableValueByRef {
       req.srcCtx = req.srcCtx || { path: ''}
       const key = this.pathOfRef(req.ref).join('~') + ' : ' + req.cmp.ctx.path
       const entry = { ...req, subject, key }
-      const found = key && this.observables.find(e=>e.key === key && e.cmp === entry.cmp)
-      if (found) {
-        jb.logError('observable already exists', entry)
-        return found.subject
-      }
+      // const found = key && this.observables.find(e=>e.key === key && e.cmp === entry.cmp)
+      // if (found) {
+      //   jb.logError('observable already exists', entry)
+      //   return found.subject
+      // }
       
       this.observables.push(entry);
       this.observables.sort((e1,e2) => comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
@@ -5750,18 +5767,18 @@ jb.component('run-transaction', { /* runTransaction */
 })()
 ;
 
-jb.ns('layout')
-jb.ns('tabs')
+jb.ns('group,layout,tabs')
 
 jb.component('group', { /* group */
   type: 'control',
   category: 'group:100,common:90',
   params: [
     {id: 'title', as: 'string', dynamic: true},
+    {id: 'layout', type: 'layout' },
     {
       id: 'style',
       type: 'group.style',
-      defaultValue: layout.vertical(),
+      defaultValue: group.div(),
       mandatory: true,
       dynamic: true
     },
@@ -5776,7 +5793,7 @@ jb.component('group', { /* group */
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
-    jb.ui.ctrl(ctx)
+    jb.ui.ctrl(ctx,ctx.params.layout)
 })
 
 jb.component('group.init-group', { /* group.initGroup */
@@ -7307,7 +7324,7 @@ jb.component('focus-on-first-element', { /* focusOnFirstElement */
 
 (function() {
 const withUnits = jb.ui.withUnits
-const fixCssLine = css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css
+const fixCssLine = jb.ui.fixCssLine
 
 jb.component('css', { /* css */
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
@@ -8157,7 +8174,8 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         ctx.params.onDoubleClick(cmp.ctx.setData(data))
       }
     },
-    css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
+    css2: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
+    css: ['>.selected','>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(ctx.params.cssForSelected)).join('\n')
   })
 })
 
@@ -9299,7 +9317,7 @@ jb.component('editable-number.slider', { /* editableNumber.slider */
     group({
       title: '%$editableNumberModel/title%',
       controls: group({
-        style: layout.horizontal(20),
+        layout: layout.horizontal(20),
         controls: [
           editableText({
             databind: '%$editableNumberModel/databind%',
@@ -9392,7 +9410,7 @@ jb.component('slider.edit-as-text-popup', { /* slider.editAsTextPopup */
     style: dialog.popup(),
     content: group({
       title: 'data-settings',
-      style: layout.vertical(3),
+      layout: layout.vertical(3),
       controls: [
         editableText({
           title: '%title%',
@@ -10059,103 +10077,93 @@ jb.component('editable-text.expandable', {
 ;
 
 jb.component('layout.vertical', { /* layout.vertical */
-  type: 'group.style',
+  type: 'layout,feature',
   params: [
-    {id: 'spacing', as: 'number', defaultValue: 3}
+    {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('div', {} ,h(ctrl)), ctrl.ctx.data) )),
-    css: `>div { margin-bottom: %$spacing%px; display: block }
-          >div:last-child { margin-bottom:0 }`,
-    features: group.initGroup()
+  impl: ctx => ({
+    css: `>* { margin-bottom: ${jb.ui.withUnits(ctx.params.spacing)}; display: block }
+          >*:last-child { margin-bottom:0 }`,
   })
 })
 
 jb.component('layout.horizontal', { /* layout.horizontal */
-  type: 'group.style',
+  type: 'layout,feature',
   params: [
-    {id: 'spacing', as: 'number', defaultValue: 3}
+    {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
+  impl: ctx => ({
     css: `{display: flex}
-        >* { margin-right: %$spacing%px }
+        >* { margin-right: ${jb.ui.withUnits(ctx.params.spacing)} }
         >*:last-child { margin-right:0 }`,
-    features: group.initGroup()
   })
 })
 
 jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit */
-  type: 'group.style',
+  type: 'layout,feature',
   params: [
     {id: 'leftWidth', as: 'string', defaultValue: '200px', mandatory: true},
     {id: 'rightWidth', as: 'string', defaultValue: '100%', mandatory: true},
-    {id: 'spacing', as: 'string', defaultValue: '3px'}
+    {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
+  impl: ctx => ({
     css: `{display: flex}
-        >*:first-child { margin-right: %$spacing%; width: %$leftWidth%; }
-        >*:last-child { margin-right:0; width: %$rightWidth%; }`,
-    features: group.initGroup()
+        >*:first-child { margin-right: ${jb.ui.withUnits(ctx.params.spacing)}; 
+          width: ${jb.ui.withUnits(ctx.params.leftWidth)}; }
+        >*:last-child { margin-right:0; width: ${jb.ui.withUnits(ctx.params.rightWidth)}; }`,
   })
 })
 
 jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
-  type: 'group.style',
+  type: 'layout,feature',
   params: [
-    {id: 'spacing', as: 'number', defaultValue: 3}
+    {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('span', {} ,h(ctrl)),ctrl.ctx.data) )),
+  impl: ctx => ({
     css: `{display: flex}
-        >* { margin-right: %$spacing%px }
+        >* { margin-right: ${jb.ui.withUnits(ctx.params.spacing)} }
         >*:last-child { margin-right:0 }`,
-    features: group.initGroup()
   })
 })
 
 jb.component('layout.flex', { /* layout.flex */
-  type: 'group.style',
+  type: 'layout,feature',
   params: [
     {id: 'alignItems', as: 'string', options: ',normal,stretch,center,start,end,flex-start,flex-end,baseline,first baseline,last baseline,safe center,unsafe center' },
-    {id: 'spacing', as: 'number', defaultValue: 3},
+    {id: 'spacing', as: 'string', defaultValue: 3},
     {id: 'justifyContent', as: 'string', options: ',flex-start,flex-end,center,space-between,space-around' },
     {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
     {id: 'wrap', as: 'string', options: ',wrap,wrap-reverse,nowrap'}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
-    css: `{ display: flex; {?align-items:%$alignItems%;?} {?justify-content:%$justifyContent%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }
-    >* { margin-right: %$spacing%px }
-    >*:last-child { margin-right:0 }`,
-    features: group.initGroup()
+  impl: ctx => ({
+    css: ctx.setVars({spacingWithUnits: jb.ui.withUnits(ctx.params.spacing), ...ctx.params}).exp(
+      `{ display: flex; {?align-items:%$alignItems%;?} {?justify-content:%$justifyContent%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }
+    >* { margin-right: %$spacingWithUnits% }
+    >*:last-child { margin-right:0 }`),
   })
 })
-jb.component('flex-layout-container.align-main-axis', { /* flexLayoutContainer.alignMainAxis */
-  type: 'feature',
+
+jb.component('layout.grid', { /* layout.grid */
+  type: 'layout,feature',
   params: [
-    {
-      id: 'align',
-      as: 'string',
-      options: 'flex-start,flex-end,center,space-between,space-around',
-      defaultValue: 'flex-start'
-    }
+    {id: 'columnSizes', as: 'array', templateValue: list('auto','auto'), description: 'grid-template-columns, list of lengths' },
+    {id: 'rowSizes', as: 'array', description: 'grid-template-rows, list of lengths' },
+    {id: 'columnGap', as: 'string', description: 'grid-column-gap' },
+    {id: 'rowGap', as: 'string', description: 'grid-row-gap' },
   ],
-  impl: (ctx,factor) => ({
-      css: `{ justify-content: ${align} }`
-    })
+  impl: ctx => ({
+    css: ctx.setVars({...ctx.params,
+          colSizes: ctx.params.columnSizes.join(' ') , rowSizes: ctx.params.rowSizes.join(' ')
+         }).exp(`{ display: grid; {?grid-template-columns:%$colSizes%;?} {?grid-template-rows:%$rowSizes%;?} 
+            {?grid-column-gap:%$columnGap%;?} {?grid-column-gap:%$rowGap%;?} }`)
+  })
 })
 
 jb.component('flex-item.grow', { /* flexItem.grow */
   type: 'feature',
+  category: 'flex-item',
   params: [
-    {id: 'factor', as: 'number', defaultValue: '1'}
+    {id: 'factor', as: 'string', defaultValue: '1'}
   ],
   impl: (ctx,factor) => ({
       css: `{ flex-grow: ${factor} }`
@@ -10164,8 +10172,9 @@ jb.component('flex-item.grow', { /* flexItem.grow */
 
 jb.component('flex-item.basis', { /* flexItem.basis */
   type: 'feature',
+  category: 'flex-item',
   params: [
-    {id: 'factor', as: 'number', defaultValue: '1'}
+    {id: 'factor', as: 'string', defaultValue: '1'}
   ],
   impl: (ctx,factor) => ({
       css: `{ flex-basis: ${factor} }`
@@ -10174,6 +10183,7 @@ jb.component('flex-item.basis', { /* flexItem.basis */
 
 jb.component('flex-item.align-self', { /* flexItem.alignSelf */
   type: 'feature',
+  category: 'flex-item',
   params: [
     {
       id: 'align',
@@ -10191,9 +10201,9 @@ jb.component('flex-item.align-self', { /* flexItem.alignSelf */
 //     type: 'control',
 //     params: [
 //         { id: 'title', as: 'string', defaultValue: 'flex filler' },
-//         { id: 'basis', as: 'number', defaultValue: '1' },
-//         { id: 'grow', as: 'number', defaultValue: '1' },
-//         { id: 'shrink', as: 'number', defaultValue: '0' },
+//         { id: 'basis', as: 'string', defaultValue: '1' },
+//         { id: 'grow', as: 'string', defaultValue: '1' },
+//         { id: 'shrink', as: 'string', defaultValue: '0' },
 //     ],
 //     impl: (ctx,title,basis,grow,shrink) => {
 //       var css = [
@@ -10242,15 +10252,13 @@ jb.component('group.htmlTag', { /* group.htmlTag */
 })
 
 jb.component('group.div', { /* group.div */
-  impl: group.htmlTag(
-    'div'
-  )
+  type: 'group.style',
+  impl: group.htmlTag('div')
 })
 
 jb.component('group.section', { /* group.section */
-  impl: group.htmlTag(
-    'section'
-  )
+  type: 'group.style',
+  impl: group.htmlTag('section')
 })
 
 jb.component('first-succeeding.style', { /* firstSucceeding.style */
@@ -10389,7 +10397,7 @@ jb.component('group.tabs', { /* group.tabs */
       controls: [
         group({
           title: 'thumbs',
-          style: layout.horizontal(),
+          layout: layout.horizontal(),
           controls: dynamicControls({
             controlItems: '%$tabsModel/controls%',
             genericControl: button({
@@ -10420,6 +10428,35 @@ jb.component('group.tabs', { /* group.tabs */
   )
 })
 
+jb.component('group.sections', { /* group.sections */
+  type: 'group.style',
+  params: [
+    {id: 'titleStyle', type: 'label.style', dynamic: true, defaultValue: label.htmlTag('h3')},
+    {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
+    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
+  ],
+  impl: styleByControl(
+    group({
+      controls: [
+        dynamicControls({
+          controlItems: '%$sectionsModel/controls%',
+          genericControl: group({
+            style: call('sectionStyle'),
+            controls: [
+              label({
+                title: ({},{section}) => section.field.title(),
+                style: call('titleStyle')
+              }),
+              group({style: call('innerGroupStyle'), controls: ({},{section}) => section})
+            ]
+          }),
+          itemVariable: 'section'
+        })
+      ]
+    }),
+    'sectionsModel'
+  )
+})
 ;
 
 jb.component('table.with-headers', { /* table.withHeaders */
@@ -10505,17 +10542,25 @@ jb.component('picklist.native', { /* picklist.native */
 jb.component('picklist.radio', {
   type: 'picklist.style',
   params:[
-    { id: 'radioCss', as: 'string', defaultValue: 'display: none' },
-    { id: 'label', type: 'control', defaultValue: button({title: '%text%', style: button.href()}), dynamic: true },
+    { id: 'radioCss', as: 'string', defaultValue: '', description: 'e.g. display: none' },
+    { id: 'text', defaultValue: '%text%', dynamic: true },
   ],
   impl: customStyle({
     template: (cmp,{options, fieldId},h) => h('div', {},
           options.flatMap(option=> [h('input', {
-              type: 'radio', name: fieldId, id: option.code, value: option.text, onchange: e => cmp.jbModel(option.code,e)
-            }), h('label',{for: option.code}, h(jb.ui.renderable(cmp.label(cmp.ctx.setData(option)) ) ))] )),
-    css: `>input {%$radioCss%}`,
+              type: 'radio', name: fieldId, id: '' + cmp.ctx.id + option.code, value: option.text, onchange: e => cmp.jbModel(option.code,e)
+            }), h('label',{for: '' + cmp.ctx.id + option.code}, cmp.text(cmp.ctx.setData(option))) ] )),
+    css: `>input { %$radioCss% }`,
     features: field.databind()
   })
+})
+
+jb.component('picklist.radio-vertical', {
+  type: 'picklist.style',
+  impl: styleWithFeatures(
+    picklist.radio(),
+    layout.grid({columnSizes: list('30px', 'auto')})
+  )
 })
 
 jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
@@ -10594,81 +10639,65 @@ jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
   })
 })
 
-
-jb.component('picklist.mdl', { /* picklist.mdl */
+jb.component('picklist.label-list', { /* picklist.labelList */
   type: 'picklist.style',
   params: [
-    {id: 'noLabel', type: 'boolean', as: 'boolean'}
+    {id: 'labelStyle', type: 'label.style', dynamic: true, defaultValue: label.span()},
+    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff' },
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fix-height'},[
-        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
-            value: state.model,
-            readonly: true,
-            tabIndex: -1
-        }),
-        h('label',{for: 'input_' + state.fieldId},
-          h('i',{class: 'mdl-icon-toggle__label material-icons'},'keyboard_arrow_down')
-        ),
-//        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title),
-        h('ul',{for: 'input_' + state.fieldId, class: 'mdl-menu mdl-menu--bottom-left mdl-js-menu',
-            onclick: e =>
-              cmp.jbModel(e.target.getAttribute('code'))
-          },
-          state.options.map(option=>h('li',{class: 'mdl-menu__item', code: option.code},option.text))
-        )
-      ]),
-    css: '>label>i {float: right; margin-top: -30px;}',
-    features: [field.databind(), mdlStyle.initDynamic()]
+  impl: styleByControl(
+    itemlist({
+      items: '%$picklistModel/options%',
+      controls: label({
+        title: '%text%',
+        style: call('labelStyle')
+      }),
+      style: call('itemlistStyle'),
+      features: itemlist.selection({
+        databind: '%$picklistModel/databind%',
+        selectedToDatabind: '%code%',
+        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
+        cssForSelected: '%$cssForSelected%'
+      })
+    }),
+    'picklistModel'
+  )
+})
+
+jb.component('picklist.button-list', { /* picklist.buttonList */
+  type: 'picklist.style',
+  params: [
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdlFlatRipple()},
+    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal() },
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red;color: blue;font-weight: bold;', defaultValue: 'background: #bbb; color: #fff' },
+  ],
+  impl: styleByControl(
+    itemlist({
+      items: '%$picklistModel/options%',
+      controls: button({
+        title: '%text%',
+        style: call('buttonStyle')
+      }),
+      style: call('itemlistStyle'),
+      features: itemlist.selection({
+        databind: '%$picklistModel/databind%',
+        selectedToDatabind: '%code%',
+        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
+        cssForSelected: '%$cssForSelected%'
+      })
+    }),
+    'picklistModel'
+  )
+})
+
+jb.component('picklist.hyperlinks', { /* hyperlinks */
+  type: 'picklist.style',
+  impl: picklist.buttonList({
+    buttonStyle: button.href(),
+    itemlistStyle: itemlist.horizontal('10'),
+    cssForSelected: '>a { color: red }'
   })
-})
-
-jb.component('picklist.selection-list', { /* picklist.selectionList */
-  type: 'picklist.style',
-  params: [
-    {id: 'width', as: 'number'}
-  ],
-  impl: styleByControl(
-    itemlist({
-      items: '%$picklistModel/options%',
-      controls: label({
-        title: '%text%',
-        style: label.mdlRippleEffect(),
-        features: [css.width('%$width%'), css('{text-align: left}')]
-      }),
-      style: itemlist.horizontal('5'),
-      features: itemlist.selection({
-        databind: '%$picklistModel/databind%',
-        selectedToDatabind: '%code%',
-        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0]
-      })
-    }),
-    'picklistModel'
-  )
-})
-
-jb.component('picklist.horizontal-buttons', {
-  type: 'picklist.style',
-  params: [
-    {id: 'width', as: 'number', defaultValue: '200'}
-  ],
-  impl: styleByControl(
-    itemlist({
-      items: '%$picklistModel/options%',
-      controls: label({
-        title: '%text%',
-        style: label.mdlButton(),
-        features: [css.width('%$width%'), css('{text-align: left}')]
-      }),
-      style: itemlist.horizontal('5'),
-      features: itemlist.selection({
-        databind: '%$picklistModel/databind%',
-        selectedToDatabind: '%code%',
-        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0]
-      })
-    }),
-    'picklistModel'
-  )
 })
 
 jb.component('picklist.groups', { /* picklist.groups */
@@ -32283,6 +32312,7 @@ jb.component('break-text', { /* breakText */
 
 
 jb.component('zip-arrays', { /* zipArrays */
+  type: 'data',
   description: '[[1,2],[10,20],[100,200]] => [[1,10,100],[2,20,200]]',
   params: [
     {id: 'value', description: 'array of arrays', as: 'array', mandatory: true}
@@ -32466,13 +32496,16 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 						ctx: () => cmp.ctx.setVars({$launchingElement: { el : cmp.base, launcherHeightFix: 1 }}),
 						getCursorPos: () => posFromCM(editor.getCursor()),
 						charCoords(pos) {
-							return this.normalizeCoords(charCoords(posToCM(pos)))
+							return editor.charCoords(posToCM(pos),'window')
 						},
 						cursorCoords() {
-							return this.normalizeCoords(editor.cursorCoords())
+							return editor.cursorCoords('window')
 						},
-						normalizeCoords(coords) {
-							const offset = jb.ui.offset(cmp.base)
+						normalizePreviewCoords(coords) {
+							const previewIframe = document.querySelector('.preview-iframe')
+							if (!previewIframe) return coords
+
+							const offset = jb.ui.offset(previewIframe)
 							return coords && Object.assign(coords,{
 								top: coords.top - offset.top,
 								left: coords.left - offset.left
@@ -33201,7 +33234,7 @@ Object.assign(st, {
 		let result = param.defaultValue || {$: ''};
 		if (st.paramTypeOfPath(path).indexOf('data') != -1)
 			result = '';
-		if (param.type.indexOf('[') != -1)
+		if ((param.type ||'').indexOf('[') != -1)
 			result = [];
 		st.writeValueOfPath(path,result,srcCtx);
 	},
@@ -33635,6 +33668,7 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.serverComps = st.previewjb.comps;
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;
+      st.previewjb.studio.studiojb = jb;
       st.previewjb.lastRun = {}
     
       // reload the changed components and rebuild the history
@@ -33652,8 +33686,8 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.initEventTracker();
       if (preview_window.location.href.match(/\/studio-helper/))
         st.previewjb.studio.initEventTracker();
-        
-      st.activateWatchRefViewer && st.activateWatchRefViewer();
+
+      jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
 
 			fixInvalidUrl()
 
@@ -33673,6 +33707,7 @@ jb.component('studio.refresh-preview', { /* studio.refreshPreview */
     jb.ui.garbageCollectCtxDictionary(true);
     jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
     //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
+    jb.ui.dialogs.closeAll()
     ctx.run(refreshControlById('preview-parent'))
   }
 })
@@ -33731,7 +33766,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
             })
         }
         let project = ctx.exp('%$studio/project%')
-        const rootName = ctx.exp('%$studio/rootName%')
+        const rootName = ctx.exp('%$studio/settings/rootName%')
         if (!project) {
           project = rootName
           cmp.ctx.run(writeValue('%$studio/project%',project))
@@ -33817,7 +33852,7 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 					_=> cmp.dialogClose() },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
 				h('div',{class: 'dialog-buttons'},[
-					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.gotoEditor && cmp.dialog.gotoEditor() },'goto editor'),
+					...(cmp.dialog.gotoEditor ? [h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.gotoEditor() },'goto editor')] : []),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.refresh() },'refresh'),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },'ok'),
 				].filter(x=>x) ),
@@ -33874,7 +33909,8 @@ jb.component('studio.dialog-particle-style', {
 	type: 'dialog.style',
 	impl: customStyle({
 	  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
-	  css: '{ position: fixed; z-index: 6000 }'
+	  css: `{ position: fixed; z-index: 6000 !important; width: 20px; height: 20px;}
+	  >* { display: inline-block; }`
 	})
 })
 
@@ -34067,7 +34103,7 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
         ),
         genericControl: group({
           title: '%$controlItem/id%',
-          style: layout.horizontal('70'),
+          layout: layout.horizontal('70'),
           controls: [
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/width%',
@@ -35264,6 +35300,8 @@ Object.assign(st,{
     	if (path.indexOf('~') == -1)
 		  return st.isCompNameOfType(path,type);
 		const paramDef = st.paramDef(path) || {};
+		if (type == 'style' && (paramDef.type || '').indexOf('.style') != -1)
+			return true
 		return (paramDef.type || 'data').split(',')
 			.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length;
 	},
@@ -35295,7 +35333,7 @@ Object.assign(st,{
 	// single first param type
 	paramTypeOfPath: path => {
 		const res = ((st.paramDef(path) || {}).type || 'data').split(',')[0].split('[')[0];
-		if (res == '*')
+		if (res == '$asParent' || res == '*')
 			return st.paramTypeOfPath(st.parentPath(path));
 		return res;
 	},
@@ -35421,10 +35459,10 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
   ],
   impl: group({
     title: 'itemlist-with-find',
-    style: layout.vertical(3),
+    layout: layout.vertical(3),
     controls: [
       group({
-        style: layout.horizontal(3),
+        layout: layout.horizontal(3),
         controls: [
           itemlistContainer.search({
             title: 'search',
@@ -35443,7 +35481,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
       }),
       group({
         title: 'categories and items',
-        style: layout.horizontal('33'),
+        layout: layout.horizontal('33'),
         controls: [
           itemlist({
             title: 'items',
@@ -35551,7 +35589,8 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
         value: {'$if': studio.val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
         watchable: true
       }),
-      group.itemlistContainer({initialSelection: studio.compName('%$path%')})
+      group.itemlistContainer({initialSelection: studio.compName('%$path%')}),
+      css.width('400')
     ]
   })
 })
@@ -35617,7 +35656,7 @@ jb.component('studio.pick-profile', { /* studio.pickProfile */
         path: '%$path%'
       }),
       features: [
-        dialogFeature.autoFocusOnFirstInput(), 
+        dialogFeature.autoFocusOnFirstInput(),
         css.padding({right: '20'}),
         feature.init(writeValue('%$dialogData/originalVal%', studio.val('%$path%'))),
         dialogFeature.onClose(action.if(not('%%'),studio.setComp('%$path%', '%$dialogData/originalVal%')))
@@ -36269,6 +36308,7 @@ jb.component('studio.property-enum', { /* studio.propertyEnum */
     databind: studio.ref('%$path%'),
     options: studio.enumOptions('%$path%'),
     style: picklist.nativeMdLookOpen(),
+    features: css.width({width: '100', minMax: 'min'})
   })
 })
 
@@ -36304,7 +36344,7 @@ jb.component('studio.property-tgp-old', { /* studio.propertyTgpOld */
     controls: [
       group({
         title: 'header',
-        style: layout.horizontal(0),
+        layout: layout.horizontal(0),
         controls: [
           editableBoolean({
             databind: '%$userExpanded%',
@@ -36342,7 +36382,7 @@ jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
   impl: group({
     controls: [
       group({
-        style: layout.flex('space-between'),
+        layout: layout.flex('space-between'),
         controls: [
           editableBoolean({
             databind: '%$expanded%',
@@ -36992,7 +37032,7 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
       controls: [
         group({
           title: 'properties',
-          style: layout.flex({spacing: '100'}),
+          layout: layout.flex({spacing: '100'}),
           controls: [
             editableText({
               title: 'github username',
@@ -37010,7 +37050,7 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
           controls: [
             group({
               title: 'share urls',
-              style: layout.flex({spacing: '', justifyContent: 'flex-start'}),
+              layout: layout.flex({spacing: '', justifyContent: 'flex-start'}),
               controls: [
                 html({
                   title: 'share link',
@@ -37428,7 +37468,7 @@ jb.component('studio.jb-editor', { /* studio.jbEditor */
   ],
   impl: group({
     title: 'main',
-    style: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%'}),
+    layout: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%'}),
     controls: [
       studio.jbEditorInteliTree('%$path%'),
       studio.probeDataView()
@@ -37729,20 +37769,20 @@ function showBox(cmp,profElem,_window,previewOffset) {
     });
 }
 
-jb.studio.getOrCreateHighlightBox = function() {
-  const _window = st.previewWindow || window;
-  if (!_window.document.querySelector('#preview-box')) {
-    const elem = _window.document.createElement('div');
+jb.studio.getOrCreateHighlightBox = function(sampleElem) {
+  const doc = sampleElem.ownerDocument
+  if (!doc.querySelector('#preview-box')) {
+    const elem = doc.createElement('div');
     elem.setAttribute('id','preview-box');
-    !_window.document.body.appendChild(elem);
+    !doc.body.appendChild(elem);
   }
-  return _window.document.querySelector('#preview-box');
+  return doc.querySelector('#preview-box');
 }
 
 st.highlightCtx = function(ctx) {
     if (!ctx) return
     const _window = st.previewWindow || window;
-    st.highlight(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
+    st.highlightElems(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
 //		.filter(e=>e.getAttribute('jb-ctx') == ctx.id))
 }
 
@@ -37752,21 +37792,22 @@ st.highlightByScriptPath = function(path) {
     st.highlightCtx(result.ctx)
 }
 
-st.highlight = function(elems) {
-    const html = elems.map(el => {
-        const offset = jb.ui.offset(el);
-        let width = jb.ui.outerWidth(el);
-        if (width == jb.ui.outerWidth(document.body))
-            width -= 10;
-        return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; z-index: 5000;
-            width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
-    }).join('');
+st.highlightElems = function(elems) {
+  if (!elems || !elems.length) return
+  const html = elems.map(el => {
+      const offset = jb.ui.offset(el);
+      let width = jb.ui.outerWidth(el);
+      if (width == jb.ui.outerWidth(document.body))
+          width -= 10;
+      return `<div style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; z-index: 10000;
+          width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
+  }).join('');
 
-    const box = jb.studio.getOrCreateHighlightBox();
-    jb.ui.removeClass(box,'jb-fade-3s-transition');
-    box.innerHTML = html;
-    jb.delay(1).then(()=> jb.ui.addClass(box,'jb-fade-3s-transition'));
-    jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
+  const box = jb.studio.getOrCreateHighlightBox(elems[0]);
+  jb.ui.removeClass(box,'jb-fade-3s-transition');
+  box.innerHTML = html;
+  jb.delay(1).then(()=> jb.ui.addClass(box,'jb-fade-3s-transition'));
+  jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox(elems[0]).innerHTML = ''); // clean after the fade animation
 }
 
 jb.component('studio.highlight-in-preview', { /* studio.highlightInPreview */
@@ -37791,7 +37832,7 @@ jb.component('studio.highlight-in-preview', { /* studio.highlightInPreview */
                 return _ctx && _ctx.path == path
             })
 
-        jb.studio.highlight(elems);
+        jb.studio.highlightElems(elems);
   }
 })
 
@@ -37818,23 +37859,6 @@ st.closestCtxInPreview = _path => {
         .filter(e=>e.ctx && path.indexOf(e.ctx.path) == 0)
     return candidates.sort((e2,e1) => 1000* (e1.ctx.path.length - e2.ctx.path.length) + (e1.ctx.id - e2.ctx.id) )[0] || {ctx: null, elem: null}
 }
-
-// st.refreshPreviewOfPath = path => {
-// 	var closest = st.closestCtxInPreview(path);
-// 	if (!closest.ctx) return;
-// 	var closest_path = closest.ctx.path;
-// 	var _window = st.previewWindow || window;
-// 	Array.from(_window.document.querySelectorAll('[jb-ctx]'))
-// 		.map(el=> ({el:el, ctx: _window.jb.ctxDictionary[el.getAttribute('jb-ctx')]}))
-// 		.filter(elCtx => (elCtx.ctx||{}).path == closest_path )
-// 		.forEach(elCtx=>{
-// 			try {
-// 			elCtx.ctx.profile = st.valOfPath(elCtx.ctx.path); // recalc last version of profile
-// 			if (elCtx.ctx.profile)
-// 				jb.ui.refreshComp(elCtx.ctx,elCtx.el);
-// 			} catch(e) { jb.logException(e) };
-// 		})
-// }
 
 })()
 ;
@@ -38036,7 +38060,7 @@ jb.component('studio.style-editor', { /* studio.styleEditor */
         tabs: [
           group({
             title: 'css',
-            style: layout.vertical(3),
+            layout: layout.vertical(3),
             controls: [
               editableText({
                 title: 'css',
@@ -38099,7 +38123,7 @@ jb.component('studio.style-editor', { /* studio.styleEditor */
           }),
           group({
             title: 'Inteliscript editor',
-            style: layout.vertical(),
+            layout: layout.vertical(),
             controls: [
               studio.jbEditor('%$path%')
             ]
@@ -38541,6 +38565,7 @@ jb.component('studio.jb-editor-menu', { /* studio.jbEditorMenu */
       ),
       studio.gotoEditorOptions('%$path%'),
       menu.studioWrapWith({path: '%$path%', type: 'control', components: list('group')}),
+      menu.studioWrapWith({path: '%$path%', type: 'style', components: list('style-with-features')}),
       menu.studioWrapWith({
         path: '%$path%',
         type: 'data',
@@ -39026,7 +39051,7 @@ jb.component('studio.watchable-or-passive', { /* studio.watchableOrPassive */
   impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
 })
 
-jb.component('studio.save-data-resource-to-comp',{
+jb.component('studio.copy-data-resource-to-comp', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -39044,7 +39069,7 @@ jb.component('studio.open-resource', { /* studio.openResource */
     {id: 'name', as: 'string'}
   ],
   impl: runActions(
-    studio.saveDataResourceToComp('%$path%', '%$name%'),
+    studio.copyDataResourceToComp('%$path%', '%$name%'),
     openDialog({
         style: dialog.editSourceStyle({id: 'edit-data-resource', width: 600}),
         content: editableText({
@@ -39052,7 +39077,7 @@ jb.component('studio.open-resource', { /* studio.openResource */
           style: editableText.studioCodemirrorTgp(),
           features: ctx => ({
           init: cmp => ctx.vars.$dialog.refresh = () => {
-            ctx.run(studio.saveDataResourceToComp('%$path%','%$name%'))
+            ctx.run(studio.copyDataResourceToComp('%$path%','%$name%'))
             cmp.refresh && cmp.refresh()
           }
         })
@@ -39572,7 +39597,7 @@ jb.component('studio.search-component', { /* studio.searchComponent */
   ],
   impl: group({
     title: 'itemlist-with-find',
-    style: layout.horizontal(''),
+    layout: layout.horizontal(''),
     controls: [
       itemlistContainer.search({
         title: 'Search',
@@ -39613,7 +39638,7 @@ jb.component('studio.pages', { /* studio.pages */
   type: 'control',
   impl: group({
     title: 'pages',
-    style: layout.horizontal(),
+    layout: layout.horizontal(),
     controls: [
       button({
         title: 'new page',
@@ -39790,7 +39815,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
   type: 'control',
   impl: group({
     title: 'top bar',
-    style: layout.horizontal('3'),
+    layout: layout.flex({alignItems: 'start', spacing: '3'}),
     controls: [
       image({
         url: '%$studio/baseStudioUrl%css/jbartlogo.png',
@@ -39801,19 +39826,16 @@ jb.component('studio.top-bar', { /* studio.topBar */
       }),
       group({
         title: 'title and menu',
-        style: layout.vertical('17'),
+        layout: layout.vertical('17'),
         controls: [
           label({title: 'message', style: label.studioMessage()}),
           label({
             title: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
-            features: [
-              css('{ font: 20px Arial; margin-left: 6px; }'),
-              watchRef('%$studio/project%')
-            ]
+            features: [css('{ font: 20px Arial; margin-left: 6px; }'), watchRef('%$studio/project%')]
           }),
           group({
             title: 'menu and toolbar',
-            style: layout.flex('space-between'),
+            layout: layout.flex('space-between'),
             controls: [
               menu.control({
                 menu: studio.mainMenu(),
@@ -39826,10 +39848,10 @@ jb.component('studio.top-bar', { /* studio.topBar */
             features: [css.width('1040')]
           })
         ],
-        features: css('{ padding-left: 18px; width: 100%; }')
+        features: css('padding-left: 18px; width: 100%; ')
       })
     ],
-    features: css('{ height: 90px; border-bottom: 1px #d9d9d9 solid}')
+    features: css('height: 73px; border-bottom: 1px #d9d9d9 solid;')
   })
 })
 
@@ -39847,7 +39869,7 @@ jb.component('studio.all', { /* studio.all */
     ],
     features: [
       group.wait({
-        for: ctx => jb.studio.host.rootName().then(rootName => ctx.run(writeValue('%$studio/rootName%',rootName))),
+        for: ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',JSON.parse(settings)))),
         loadingControl: label('')}),
       group.data({data: '%$studio/project%', watch: true}),
       feature.init(urlHistory.mapStudioUrlToResource('studio'))
@@ -39862,7 +39884,7 @@ jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
     {id: 'prefix', as: 'string'}
   ],
   impl: group({
-    style: layout.horizontal('9'),
+    layout: layout.horizontal('9'),
     controls: [
       label('%$prefix%'),
       button({
@@ -39916,7 +39938,7 @@ jb.component('jb-param', { /* jbParam */
 const st = jb.studio;
 
 const devHost = {
-    rootName: () => fetch(`/?op=rootName`).then(res=>res.text()),
+    settings: () => fetch(`/?op=settings`).then(res=>res.text()),
     rootExists: () => fetch(`/?op=rootExists`).then(res=>res.text()).then(res=>res==='true'),
     getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
@@ -39948,7 +39970,7 @@ const userLocalHost = Object.assign({},devHost,{
 })
 
 const cloudHost = {
-    rootName: () => Promise.resolve(''),
+    settings: () => Promise.resolve(''),
     rootExists: () => Promise.resolve(false),
     getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
     htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
@@ -40043,7 +40065,7 @@ st.projectHosts = {
 
 st.projectUtils = {
     projectContent: ctx => {
-        const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/rootName%')
+        const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/settings/rootName%')
         const baseDir = rootName == project ? './' : ''
         const htmlPath = st.host.pathOfJsFile(project,project+'.html',baseDir)
         return st.host.getFile(htmlPath).then(html=> {
@@ -40246,7 +40268,7 @@ jb.component('studio.probe', { /* studio.probe */
         if (!circuitCtx) {
             const circuitInPreview = st.closestCtxInPreview(path)
                 if (circuitInPreview.ctx) {
-                    st.highlight([circuitInPreview.elem])
+                    st.highlightElems([circuitInPreview.elem])
                     circuitCtx = circuitInPreview.ctx
             }
         }
@@ -40277,47 +40299,65 @@ jb.component('studio.position-of-data', {
         {id: 'path', as: 'string'},
     ],
     impl: (ctx,path) => {
-        const resource = path.split('~')[0]
-        const innerPath = path.split('~').slice(1).join('~')
-        const dialog_elem = Array.from(document.querySelectorAll('[dialogId=edit-data-resource'))
-            .filter(el=>el._component.ctx.data.path == resource + '~watchableData')[0]
-        const previewOffset = jb.ui.offset(document.querySelector('.preview-iframe'))
-        if (!dialog_elem) {
-            return { centerX: 300, centerY: 100}
-            // openDataResource(path)
-            // return jb.delay(500).then(()=> positionOfData(path))
-        }
-        const cm_elem = dialog_elem.querySelector('.CodeMirror')
-        const editor = cm_elem.parentElement._component.editor
-        const map = editor.data_ref.locationMap
-        const positions = jb.entries(map).filter(e=>e[0].split('~watchableData~')[1].split('~!')[0] == innerPath)
-            .map(e=>e[1].positions)
-        const asPoints = positions.map(pos=>editor(charCoords))
+        const editor = editorOfPath(path)
+        if (!editor) return []
+        const positions = posOfData(path)
+        if (positions.length == 0)
+            positions.push([0,0,0,0])
+        const asPoints = positions.map(pos=>editor.charCoords({line: pos[0], col: pos[1]}))
         return enrichWithCenter({
             top: Math.min(...asPoints.map(x=>x.top)),
             left: Math.min(...asPoints.map(x=>x.left)),
-            right: Math.max(...asPoints.map(x=>x.left + x.width)),
-            bottom: Math.max(...asPoints.map(x=>x.top + x.height)),
+            right: Math.max(...asPoints.map(x=>x.right)),
+            bottom: Math.max(...asPoints.map(x=>x.bottom)),
         })
     }
 })
 
+function editorOfPath(path) {
+    const resource = path.split('~')[0]
+    const dialog_elem = Array.from(document.querySelectorAll('[dialogId=edit-data-resource]'))
+        .filter(el=>el._component.ctx.data.path.split('data-resource.').pop() == resource + '~watchableData')[0]
+    return dialog_elem && dialog_elem.querySelector('.CodeMirror').parentElement._component.editor
+}
+
+function posOfData(path) {
+    const editor = editorOfPath(path)
+    if (!editor) return []
+    const map = editor.data_ref.locationMap
+    const innerPath = path.split('~').slice(1).join('~')
+    return jb.entries(map).filter(e=>e[0].split('~watchableData~')[1].split('~!')[0] == innerPath)
+        .map(e=>e[1].positions)
+}
+
+function highlightData(path) {
+    const editor = editorOfPath(path)
+    posOfData(path).forEach(pos=>editor.markText({line: pos[0], col: pos[1]}, {line: pos[2], col: pos[3]}))
+}
+
 function enrichWithCenter(e) {
-    const previewOffset = jb.ui.offset(document.querySelector('.preview-iframe'))
     return Object.assign(e,{
-        centerX: Math.floor((e.top + e.bottom)/2) + previewOffset.x,
-        centerY: Math.floor((e.left + e.right)/2) + previewOffset.y , 
+        centerY: Math.floor((e.top + e.bottom)/2), centerX: Math.floor((e.left + e.right)/2)
     })
 }
 
-jb.component('studio.position-of-ctx', {
-    type: 'position',
-    params: [
-        {id: 'ctxId', as: 'string'},
-    ],
-    impl: (ctx,ctxId) => Array.from(st.previewWindow.document.querySelectorAll(`[jb-ctx="${ctxId}"]`))
-        .map(el => enrichWithCenter(jb.ui.offset(el)))
-})
+function fixPreviewOffset(e) {
+    const previewOffset = jb.ui.offset(document.querySelector('.preview-iframe'))
+    return Object.assign(e,{ centerX: e.centerX + previewOffset.x, centerY: e.centerY + previewOffset.y })
+}
+
+function elemsOfCtx(ctx)  {
+    let elems = Array.from(st.previewWindow.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`))
+    return elems.length ? elems : Array.from(st.previewWindow.document.querySelectorAll('[jb-ctx]'))
+            .filter(e=>{
+                const _ctx = st.previewWindow.jb.ctxDictionary[e.getAttribute('jb-ctx')];
+                return _ctx && _ctx.path == ctx.path
+    })
+}
+
+function positionsOfCtx(ctx)  {
+    return elemsOfCtx(ctx).map(el => fixPreviewOffset(enrichWithCenter(jb.ui.offset(el))))
+}
 
 jb.component('studio.animate-watch-ref-particle', {
     type: 'action',
@@ -40328,51 +40368,167 @@ jb.component('studio.animate-watch-ref-particle', {
     impl: openDialog({
         style: studio.dialogParticleStyle(),
         content: label({
-          title: '◯',
-          features: feature.onEvent({
+          title: '➤',
+          features: [
+            css((ctx,{},{from,to}) => {
+                const dx = (to.centerX - from.centerX) || 1, dy = (to.centerY - from.centerY) || 1
+                const addPI = dx < 0 ? 3.14 : 0
+                return `transform: rotate(${addPI+Math.atan(dx/dy)}rad)`
+            }),
+            feature.onEvent({
             event: 'load',
             action: runActions(
               animation.start({
                   animation: animation.moveTo({
-                    X: animation.range('%$from/centerX%', '%$to/centerX%'),
-                    Y: animation.range('%$from/centerY%', '%$to/centerY%')
-                  }),
-                  duration: '2000'
+                        X: animation.range('%$from/centerX%', '%$to/centerX%'),
+                        Y: animation.range('%$from/centerY%', '%$to/centerY%')
+                     }),
+                  duration: '1000'
                 }),
-//              dialog.closeContainingPopup()
+              dialog.closeContainingPopup()
+            )
+          })]
+        }),
+    })
+})
+
+jb.component('studio.animate-cmp-destroy', {
+    type: 'action',
+    params: [
+        {id: 'pos'},
+    ],
+    impl: openDialog({
+        style: studio.dialogParticleStyle(),
+        content: label({
+          title: '◯',
+          features: [ 
+            css('color: grey'),
+            feature.onEvent({
+                event: 'load',
+                action: runActions(
+                    animation.start({
+                        animation: animation.moveTo({
+                            X: '%$pos/centerX%',
+                            Y: '%$pos/centerY%'
+                        }),
+                        duration: '1'
+                    }),
+                    animation.start({
+                        animation: [
+                        animation.scale({scale: animation.range('0.1', '3')}),
+                        animation.easing(animation.inOutEasing('Cubic', 'Out'))
+                        ],
+                        direction: 'reverse',
+                        duration: '1000'
+                    }),
+                dialog.closeContainingPopup()
+                )
+          })]
+        }),
+    })
+})
+
+jb.component('studio.animate-cmp-refresh', {
+    type: 'action',
+    params: [
+        {id: 'pos'},
+    ],
+    impl: openDialog({
+        style: studio.dialogParticleStyle(),
+        content: label({
+          title: '▯',
+          features: feature.onEvent({
+            event: 'load',
+            action: runActions(
+                animation.start({
+                    animation: animation.moveTo({
+                        X: '%$pos/centerX%',
+                        Y: '%$pos/centerY%'
+                    }),
+                    duration: '1'
+                }),
+                animation.start({
+                    animation: animation.rotate('5turn'),
+                    duration: '1000'
+                }),
+              dialog.closeContainingPopup()
             )
           })
         }),
     })
 })
 
+function animateCtxRefresh(ctx) {    
+    jb.exec(
+        animation.start({
+            animation: [
+                animation.rotate({rotateY: () => [0,25]}),
+                animation.easing(animation.inOutEasing('Quad', 'InOut'))
+            ],
+            duration: '600',
+            direction: 'alternate',
+            target: () => elemsOfCtx(ctx)
+        })
+    )
+}
+
+function animateCtxDestroy(ctx) {    
+    jb.exec(
+        animation.start({
+            animation: [
+                animation.scale({scale: () => [1,0.1]}),
+                animation.easing(animation.inOutEasing('Quad', 'InOut'))
+            ],
+            duration: '600',
+            direction: 'alternate',
+            target: () => elemsOfCtx(ctx)
+        })
+    )
+}
+
+
 jb.studio.activateWatchRefViewer = () => {
     if (!st.previewjb.spy)
         st.previewjb.initSpy({})
-    st.previewjb.spy.setLogs('registerCmpObservable,notifyCmpObservable')
+    st.previewjb.spy.setLogs('registerCmpObservable,notifyCmpObservable,destroyCmp,setState')
 
-    st.previewjb.spy.observable().filter(e=>e.logName === 'registerCmpObservable')
-        .delay(500)
-        .subscribe(e=> {
+    const delayedSpy = jb.rx.Observable.zip(
+            jb.rx.Observable.interval(300),
+            st.previewjb.spy.observable()
+    ).map(z=>z[1])
+    
+    delayedSpy.filter(e=>e.logName === 'registerCmpObservable').subscribe(e=> {
             const ref = e.record[0].ref
             const ctx = e.record[0].cmp.ctx
-            const path = ref && jb.refHandler(ref).pathOfRef(ref)
-            new jb.jbCtx().run(studio.animateWatchRefParticle(
-                studio.positionOfCtx(ctx.id),
-                studio.positionOfData(path.join('~'))
-            ))
+            const path = ref && jb.refHandler(ref).pathOfRef(ref).join('~')
+            if (!editorOfPath(path)) return
+            jb.studio.highlightCtx(ctx)
+            highlightData(path)
+            positionsOfCtx(ctx).forEach(pos => jb.exec(studio.animateWatchRefParticle(
+                () => pos,
+                studio.positionOfData(path)
+            )))
     })
-    st.previewjb.spy.observable().filter(e=>e.logName === 'notifyCmpObservable')
-        .delay(500)
+    delayedSpy.filter(e=>e.logName === 'notifyCmpObservable')
         .subscribe(e=> {
-            const ref = e.record[1].ref
-            const ctx = e.record[1].cmp.ctx
-            const path = ref && jb.refHandler(ref).pathOfRef(ref)
-            new jb.jbCtx().run(studio.animateWatchRefParticle(
-                studio.positionOfData(path.join('~')),
-                studio.positionOfCtx(ctx.id),
-            ))
+            const ref = e.record[3].ref
+            const ctx = e.record[3].cmp.ctx
+            const path = ref && jb.refHandler(ref).pathOfRef(ref).join('~')
+            if (!editorOfPath(path)) return
+            jb.studio.highlightCtx(ctx)
+            highlightData(path)
+            positionsOfCtx(ctx).forEach(pos => jb.exec(studio.animateWatchRefParticle(
+                studio.positionOfData(path),
+                () => pos,
+            )))
     })
+
+    delayedSpy.filter(e=>e.logName === 'destroyCmp').subscribe(e =>
+        positionsOfCtx(e.record[0].ctx).forEach(pos=>
+            jb.exec(studio.animateCmpDestroy({pos}))))
+
+    delayedSpy.filter(e=>e.logName === 'setState').subscribe(e => 
+        animateCtxRefresh(e.record[1]))
 }
 
 })();

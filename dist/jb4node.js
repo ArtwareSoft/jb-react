@@ -877,7 +877,7 @@ Object.assign(jb,{
   extraWatchableHandlers: [],
   extraWatchableHandler: (handler,oldHandler) => { 
     jb.extraWatchableHandlers.push(handler)
-    const oldHandlerIndex = oldHandler && jb.extraWatchableHandlers.indexOf(oldHandler)
+    const oldHandlerIndex = jb.extraWatchableHandlers.indexOf(oldHandler)
     if (oldHandlerIndex != -1)
       jb.extraWatchableHandlers.splice(oldHandlerIndex,1)
     jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
@@ -2052,7 +2052,9 @@ jb.component('action.switch-case', { /* action.switchCase */
   ],
   impl: ctx => ctx.params
 })
-;
+
+jb.exec = (...args) => new jb.jbCtx().run(...args)
+jb.exp = (...args) => new jb.jbCtx().exp(...args);
 
 (function() {
 const spySettings = { 
@@ -2080,7 +2082,8 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		spyParam,
 		otherSpies: [],
 		observable() { 
-			this._obs = this._obs || new jb.rx.Subject()
+			const _jb = jb.path(jb,'studio.studiojb') || jb
+			this._obs = this._obs || new _jb.rx.Subject()
 			return this._obs
 		},
 		enabled: () => true,
@@ -2126,7 +2129,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				modifier(record)
 			}
 			this.logs[logName].push(record)
-			this._obs.next({logName,record})
+			this._obs && this._obs.next({logName,record})
 		},
 		source(takeFrom) {
 			Error.stackTraceLimit = 50
@@ -3094,6 +3097,7 @@ jb.component('break-text', { /* breakText */
 
 
 jb.component('zip-arrays', { /* zipArrays */
+  type: 'data',
   description: '[[1,2],[10,20],[100,200]] => [[1,10,100],[2,20,200]]',
   params: [
     {id: 'value', description: 'array of arrays', as: 'array', mandatory: true}

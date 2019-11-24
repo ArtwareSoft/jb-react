@@ -1278,8 +1278,6 @@ anime.timeline = timeline;
 anime.easing = parseEasings;
 anime.penner = penner;
 anime.random = function (min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; };
-
-
 ;
 
 jb.ns('animation')
@@ -1481,9 +1479,9 @@ jb.component('animation.in-out-easing', {
 jb.component('animation.elastic-easing', {
     type: 'animation.easing',
     params: [
-        { id: 'inOut', as: 'string', options: 'in,out,inOut', defaultValue: 'inOut'},
-        { id: 'amplitude', as: 'number', description: '1-10  Controls the overshoot of the curve', defaultValue: 1 },
-        { id: 'period', as: 'number', description: '0.1-2 Controls how many times the curve goes back and forth', defaultValue: 0.5 },
+        { id: 'inOut', as: 'string', options: 'in,out,inOut', templateValue: 'inOut'},
+        { id: 'amplitude', as: 'string', description: '1-10  Controls the overshoot of the curve', templateValue: '1' },
+        { id: 'period', as: 'string', description: '0.1-2 Controls how many times the curve goes back and forth', templateValue: '0.5' },
     ],
     impl: (ctx,inOut,amplitude,period) => `ease${inOut}Elastic(${amplitude},${period})`
 })

@@ -877,7 +877,7 @@ Object.assign(jb,{
   extraWatchableHandlers: [],
   extraWatchableHandler: (handler,oldHandler) => { 
     jb.extraWatchableHandlers.push(handler)
-    const oldHandlerIndex = oldHandler && jb.extraWatchableHandlers.indexOf(oldHandler)
+    const oldHandlerIndex = jb.extraWatchableHandlers.indexOf(oldHandler)
     if (oldHandlerIndex != -1)
       jb.extraWatchableHandlers.splice(oldHandlerIndex,1)
     jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
@@ -2052,7 +2052,9 @@ jb.component('action.switch-case', { /* action.switchCase */
   ],
   impl: ctx => ctx.params
 })
-;
+
+jb.exec = (...args) => new jb.jbCtx().run(...args)
+jb.exp = (...args) => new jb.jbCtx().exp(...args);
 
 (function() {
 const spySettings = { 
@@ -2080,7 +2082,8 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		spyParam,
 		otherSpies: [],
 		observable() { 
-			this._obs = this._obs || new jb.rx.Subject()
+			const _jb = jb.path(jb,'studio.studiojb') || jb
+			this._obs = this._obs || new _jb.rx.Subject()
 			return this._obs
 		},
 		enabled: () => true,
@@ -2126,7 +2129,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				modifier(record)
 			}
 			this.logs[logName].push(record)
-			this._obs.next({logName,record})
+			this._obs && this._obs.next({logName,record})
 		},
 		source(takeFrom) {
 			Error.stackTraceLimit = 50
@@ -4769,8 +4772,8 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var rxjs
 const ui = jb.ui;
 
 ui.ctrl = function(context,options) {
-	var ctx = context.setVars({ $model: context.params });
-	var styleOptions = defaultStyle(ctx) || {};
+	const ctx = context.setVars({ $model: context.params });
+	const styleOptions = defaultStyle(ctx) || {};
 	if (styleOptions.jbExtend)  {// style by control
 		styleOptions.ctxForPick = ctx;
 		return styleOptions.jbExtend(options).applyFeatures(ctx).initField();
@@ -4778,8 +4781,8 @@ ui.ctrl = function(context,options) {
 	return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx).initField();
 
 	function defaultStyle(ctx) {
-		var profile = context.profile;
-		var defaultVar = '$theme.' + (profile.$ || '');
+		const profile = context.profile;
+		const defaultVar = '$theme.' + (profile.$ || '');
 		if (!profile.style && context.vars[defaultVar])
 			return ctx.run({$:context.vars[defaultVar]})
 		return context.params.style ? context.params.style(ctx) : {};
@@ -4801,13 +4804,14 @@ class JbComponent {
 		//		this.jb$title = (typeof title == 'function') ? title() : title; // for debug
 	}
 	initField() {
+		const ctx = this.ctxForPick || this.ctx
 		this.field = {
 			class: '',
-			ctxId: ui.preserveCtx(this.ctx),
-			control: (item,index,noCache) => this.getOrCreateItemField(item, () => this.ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp(),noCache)
+			ctxId: ui.preserveCtx(ctx),
+			control: (item,index,noCache) => this.getOrCreateItemField(item, () => ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp(),noCache)
 		}
 		this.enrichField.forEach(enrichField=>enrichField(this.field))
-		let title = jb.tosingle(jb.val(this.ctx.params.title)) || (() => '');
+		let title = jb.tosingle(jb.val(ctx.params.title)) || (() => '');
 		if (this.field.title !== undefined)
 			title = this.field.title
 		// make it always a function 
@@ -4872,6 +4876,7 @@ class JbComponent {
 			}
 	  		componentWillUnmount() {
 				this._destroyed = true
+				jb.log('destroyCmp',[this]);
 				jbComp.jbDestroyFuncs.forEach(f=> tryWrapper(() => f(this), 'destroy'));
 				this.resolveDestroyed();
 			}
@@ -5119,7 +5124,7 @@ ui.renderWidget = function(profile,top) {
 						.filter(({page})=>page != this.state.profile.$)
 						.subscribe(({page})=>
 							this.setState({profile: {$: page }}));
-					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + this.fixedDebounce))
+					st.scriptChange.filter(e=>(jb.path(e,'path.0') || '').indexOf('data-resource.') != 0).takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + this.fixedDebounce))
 						.subscribe(e=>{
 							this.setState(null)
 							jb.ui.dialogs.reRenderAll()
@@ -5257,6 +5262,7 @@ ui.addHTML = (el,html) => {
 }
 
 ui.withUnits = v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`
+ui.fixCssLine = css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css
 
 // ****************** vdom utils ***************
 
@@ -5325,6 +5331,17 @@ jb.component('style-by-control', { /* styleByControl */
 		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
 })
 
+jb.component('style-with-features', { 
+	typePattern: /\.style$/,
+	category: 'advanced:10,all:20',
+	params: [
+	  {id: 'style', type: '$asParent', mandatory: true, composite: true },
+	  {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
+	],
+	impl: (ctx,style,features) => 
+		Object.assign({},style,{featuresOptions: (style.featuresOptions || []).concat(features())})
+  })
+  
 })()
 ;
 
@@ -5338,7 +5355,7 @@ jb.component('style-by-control', { /* styleByControl */
 const isProxy = Symbol.for("isProxy")
 const originalVal = Symbol.for("originalVal")
 const targetVal = Symbol.for("targetVal")
-const jbId = Symbol.for("jbId")
+const jbId = Symbol("jbId")
 
 class WatchableValueByRef {
   constructor(resources) {
@@ -5636,11 +5653,11 @@ class WatchableValueByRef {
       req.srcCtx = req.srcCtx || { path: ''}
       const key = this.pathOfRef(req.ref).join('~') + ' : ' + req.cmp.ctx.path
       const entry = { ...req, subject, key }
-      const found = key && this.observables.find(e=>e.key === key && e.cmp === entry.cmp)
-      if (found) {
-        jb.logError('observable already exists', entry)
-        return found.subject
-      }
+      // const found = key && this.observables.find(e=>e.key === key && e.cmp === entry.cmp)
+      // if (found) {
+      //   jb.logError('observable already exists', entry)
+      //   return found.subject
+      // }
       
       this.observables.push(entry);
       this.observables.sort((e1,e2) => comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
@@ -5750,18 +5767,18 @@ jb.component('run-transaction', { /* runTransaction */
 })()
 ;
 
-jb.ns('layout')
-jb.ns('tabs')
+jb.ns('group,layout,tabs')
 
 jb.component('group', { /* group */
   type: 'control',
   category: 'group:100,common:90',
   params: [
     {id: 'title', as: 'string', dynamic: true},
+    {id: 'layout', type: 'layout' },
     {
       id: 'style',
       type: 'group.style',
-      defaultValue: layout.vertical(),
+      defaultValue: group.div(),
       mandatory: true,
       dynamic: true
     },
@@ -5776,7 +5793,7 @@ jb.component('group', { /* group */
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
-    jb.ui.ctrl(ctx)
+    jb.ui.ctrl(ctx,ctx.params.layout)
 })
 
 jb.component('group.init-group', { /* group.initGroup */
@@ -7307,7 +7324,7 @@ jb.component('focus-on-first-element', { /* focusOnFirstElement */
 
 (function() {
 const withUnits = jb.ui.withUnits
-const fixCssLine = css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css
+const fixCssLine = jb.ui.fixCssLine
 
 jb.component('css', { /* css */
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
@@ -8157,7 +8174,8 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         ctx.params.onDoubleClick(cmp.ctx.setData(data))
       }
     },
-    css: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
+    css2: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
+    css: ['>.selected','>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(ctx.params.cssForSelected)).join('\n')
   })
 })
 
@@ -9299,7 +9317,7 @@ jb.component('editable-number.slider', { /* editableNumber.slider */
     group({
       title: '%$editableNumberModel/title%',
       controls: group({
-        style: layout.horizontal(20),
+        layout: layout.horizontal(20),
         controls: [
           editableText({
             databind: '%$editableNumberModel/databind%',
@@ -9392,7 +9410,7 @@ jb.component('slider.edit-as-text-popup', { /* slider.editAsTextPopup */
     style: dialog.popup(),
     content: group({
       title: 'data-settings',
-      style: layout.vertical(3),
+      layout: layout.vertical(3),
       controls: [
         editableText({
           title: '%title%',
@@ -10059,103 +10077,93 @@ jb.component('editable-text.expandable', {
 ;
 
 jb.component('layout.vertical', { /* layout.vertical */
-  type: 'group.style',
+  type: 'layout,feature',
   params: [
-    {id: 'spacing', as: 'number', defaultValue: 3}
+    {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('div', {} ,h(ctrl)), ctrl.ctx.data) )),
-    css: `>div { margin-bottom: %$spacing%px; display: block }
-          >div:last-child { margin-bottom:0 }`,
-    features: group.initGroup()
+  impl: ctx => ({
+    css: `>* { margin-bottom: ${jb.ui.withUnits(ctx.params.spacing)}; display: block }
+          >*:last-child { margin-bottom:0 }`,
   })
 })
 
 jb.component('layout.horizontal', { /* layout.horizontal */
-  type: 'group.style',
+  type: 'layout,feature',
   params: [
-    {id: 'spacing', as: 'number', defaultValue: 3}
+    {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
+  impl: ctx => ({
     css: `{display: flex}
-        >* { margin-right: %$spacing%px }
+        >* { margin-right: ${jb.ui.withUnits(ctx.params.spacing)} }
         >*:last-child { margin-right:0 }`,
-    features: group.initGroup()
   })
 })
 
 jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit */
-  type: 'group.style',
+  type: 'layout,feature',
   params: [
     {id: 'leftWidth', as: 'string', defaultValue: '200px', mandatory: true},
     {id: 'rightWidth', as: 'string', defaultValue: '100%', mandatory: true},
-    {id: 'spacing', as: 'string', defaultValue: '3px'}
+    {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
+  impl: ctx => ({
     css: `{display: flex}
-        >*:first-child { margin-right: %$spacing%; width: %$leftWidth%; }
-        >*:last-child { margin-right:0; width: %$rightWidth%; }`,
-    features: group.initGroup()
+        >*:first-child { margin-right: ${jb.ui.withUnits(ctx.params.spacing)}; 
+          width: ${jb.ui.withUnits(ctx.params.leftWidth)}; }
+        >*:last-child { margin-right:0; width: ${jb.ui.withUnits(ctx.params.rightWidth)}; }`,
   })
 })
 
 jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
-  type: 'group.style',
+  type: 'layout,feature',
   params: [
-    {id: 'spacing', as: 'number', defaultValue: 3}
+    {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('span', {} ,h(ctrl)),ctrl.ctx.data) )),
+  impl: ctx => ({
     css: `{display: flex}
-        >* { margin-right: %$spacing%px }
+        >* { margin-right: ${jb.ui.withUnits(ctx.params.spacing)} }
         >*:last-child { margin-right:0 }`,
-    features: group.initGroup()
   })
 })
 
 jb.component('layout.flex', { /* layout.flex */
-  type: 'group.style',
+  type: 'layout,feature',
   params: [
     {id: 'alignItems', as: 'string', options: ',normal,stretch,center,start,end,flex-start,flex-end,baseline,first baseline,last baseline,safe center,unsafe center' },
-    {id: 'spacing', as: 'number', defaultValue: 3},
+    {id: 'spacing', as: 'string', defaultValue: 3},
     {id: 'justifyContent', as: 'string', options: ',flex-start,flex-end,center,space-between,space-around' },
     {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
     {id: 'wrap', as: 'string', options: ',wrap,wrap-reverse,nowrap'}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl),ctrl.ctx.data))),
-    css: `{ display: flex; {?align-items:%$alignItems%;?} {?justify-content:%$justifyContent%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }
-    >* { margin-right: %$spacing%px }
-    >*:last-child { margin-right:0 }`,
-    features: group.initGroup()
+  impl: ctx => ({
+    css: ctx.setVars({spacingWithUnits: jb.ui.withUnits(ctx.params.spacing), ...ctx.params}).exp(
+      `{ display: flex; {?align-items:%$alignItems%;?} {?justify-content:%$justifyContent%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }
+    >* { margin-right: %$spacingWithUnits% }
+    >*:last-child { margin-right:0 }`),
   })
 })
-jb.component('flex-layout-container.align-main-axis', { /* flexLayoutContainer.alignMainAxis */
-  type: 'feature',
+
+jb.component('layout.grid', { /* layout.grid */
+  type: 'layout,feature',
   params: [
-    {
-      id: 'align',
-      as: 'string',
-      options: 'flex-start,flex-end,center,space-between,space-around',
-      defaultValue: 'flex-start'
-    }
+    {id: 'columnSizes', as: 'array', templateValue: list('auto','auto'), description: 'grid-template-columns, list of lengths' },
+    {id: 'rowSizes', as: 'array', description: 'grid-template-rows, list of lengths' },
+    {id: 'columnGap', as: 'string', description: 'grid-column-gap' },
+    {id: 'rowGap', as: 'string', description: 'grid-row-gap' },
   ],
-  impl: (ctx,factor) => ({
-      css: `{ justify-content: ${align} }`
-    })
+  impl: ctx => ({
+    css: ctx.setVars({...ctx.params,
+          colSizes: ctx.params.columnSizes.join(' ') , rowSizes: ctx.params.rowSizes.join(' ')
+         }).exp(`{ display: grid; {?grid-template-columns:%$colSizes%;?} {?grid-template-rows:%$rowSizes%;?} 
+            {?grid-column-gap:%$columnGap%;?} {?grid-column-gap:%$rowGap%;?} }`)
+  })
 })
 
 jb.component('flex-item.grow', { /* flexItem.grow */
   type: 'feature',
+  category: 'flex-item',
   params: [
-    {id: 'factor', as: 'number', defaultValue: '1'}
+    {id: 'factor', as: 'string', defaultValue: '1'}
   ],
   impl: (ctx,factor) => ({
       css: `{ flex-grow: ${factor} }`
@@ -10164,8 +10172,9 @@ jb.component('flex-item.grow', { /* flexItem.grow */
 
 jb.component('flex-item.basis', { /* flexItem.basis */
   type: 'feature',
+  category: 'flex-item',
   params: [
-    {id: 'factor', as: 'number', defaultValue: '1'}
+    {id: 'factor', as: 'string', defaultValue: '1'}
   ],
   impl: (ctx,factor) => ({
       css: `{ flex-basis: ${factor} }`
@@ -10174,6 +10183,7 @@ jb.component('flex-item.basis', { /* flexItem.basis */
 
 jb.component('flex-item.align-self', { /* flexItem.alignSelf */
   type: 'feature',
+  category: 'flex-item',
   params: [
     {
       id: 'align',
@@ -10191,9 +10201,9 @@ jb.component('flex-item.align-self', { /* flexItem.alignSelf */
 //     type: 'control',
 //     params: [
 //         { id: 'title', as: 'string', defaultValue: 'flex filler' },
-//         { id: 'basis', as: 'number', defaultValue: '1' },
-//         { id: 'grow', as: 'number', defaultValue: '1' },
-//         { id: 'shrink', as: 'number', defaultValue: '0' },
+//         { id: 'basis', as: 'string', defaultValue: '1' },
+//         { id: 'grow', as: 'string', defaultValue: '1' },
+//         { id: 'shrink', as: 'string', defaultValue: '0' },
 //     ],
 //     impl: (ctx,title,basis,grow,shrink) => {
 //       var css = [
@@ -10242,15 +10252,13 @@ jb.component('group.htmlTag', { /* group.htmlTag */
 })
 
 jb.component('group.div', { /* group.div */
-  impl: group.htmlTag(
-    'div'
-  )
+  type: 'group.style',
+  impl: group.htmlTag('div')
 })
 
 jb.component('group.section', { /* group.section */
-  impl: group.htmlTag(
-    'section'
-  )
+  type: 'group.style',
+  impl: group.htmlTag('section')
 })
 
 jb.component('first-succeeding.style', { /* firstSucceeding.style */
@@ -10389,7 +10397,7 @@ jb.component('group.tabs', { /* group.tabs */
       controls: [
         group({
           title: 'thumbs',
-          style: layout.horizontal(),
+          layout: layout.horizontal(),
           controls: dynamicControls({
             controlItems: '%$tabsModel/controls%',
             genericControl: button({
@@ -10420,6 +10428,35 @@ jb.component('group.tabs', { /* group.tabs */
   )
 })
 
+jb.component('group.sections', { /* group.sections */
+  type: 'group.style',
+  params: [
+    {id: 'titleStyle', type: 'label.style', dynamic: true, defaultValue: label.htmlTag('h3')},
+    {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
+    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
+  ],
+  impl: styleByControl(
+    group({
+      controls: [
+        dynamicControls({
+          controlItems: '%$sectionsModel/controls%',
+          genericControl: group({
+            style: call('sectionStyle'),
+            controls: [
+              label({
+                title: ({},{section}) => section.field.title(),
+                style: call('titleStyle')
+              }),
+              group({style: call('innerGroupStyle'), controls: ({},{section}) => section})
+            ]
+          }),
+          itemVariable: 'section'
+        })
+      ]
+    }),
+    'sectionsModel'
+  )
+})
 ;
 
 jb.component('table.with-headers', { /* table.withHeaders */
@@ -10505,17 +10542,25 @@ jb.component('picklist.native', { /* picklist.native */
 jb.component('picklist.radio', {
   type: 'picklist.style',
   params:[
-    { id: 'radioCss', as: 'string', defaultValue: 'display: none' },
-    { id: 'label', type: 'control', defaultValue: button({title: '%text%', style: button.href()}), dynamic: true },
+    { id: 'radioCss', as: 'string', defaultValue: '', description: 'e.g. display: none' },
+    { id: 'text', defaultValue: '%text%', dynamic: true },
   ],
   impl: customStyle({
     template: (cmp,{options, fieldId},h) => h('div', {},
           options.flatMap(option=> [h('input', {
-              type: 'radio', name: fieldId, id: option.code, value: option.text, onchange: e => cmp.jbModel(option.code,e)
-            }), h('label',{for: option.code}, h(jb.ui.renderable(cmp.label(cmp.ctx.setData(option)) ) ))] )),
-    css: `>input {%$radioCss%}`,
+              type: 'radio', name: fieldId, id: '' + cmp.ctx.id + option.code, value: option.text, onchange: e => cmp.jbModel(option.code,e)
+            }), h('label',{for: '' + cmp.ctx.id + option.code}, cmp.text(cmp.ctx.setData(option))) ] )),
+    css: `>input { %$radioCss% }`,
     features: field.databind()
   })
+})
+
+jb.component('picklist.radio-vertical', {
+  type: 'picklist.style',
+  impl: styleWithFeatures(
+    picklist.radio(),
+    layout.grid({columnSizes: list('30px', 'auto')})
+  )
 })
 
 jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
@@ -10594,81 +10639,65 @@ jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
   })
 })
 
-
-jb.component('picklist.mdl', { /* picklist.mdl */
+jb.component('picklist.label-list', { /* picklist.labelList */
   type: 'picklist.style',
   params: [
-    {id: 'noLabel', type: 'boolean', as: 'boolean'}
+    {id: 'labelStyle', type: 'label.style', dynamic: true, defaultValue: label.span()},
+    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff' },
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fix-height'},[
-        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
-            value: state.model,
-            readonly: true,
-            tabIndex: -1
-        }),
-        h('label',{for: 'input_' + state.fieldId},
-          h('i',{class: 'mdl-icon-toggle__label material-icons'},'keyboard_arrow_down')
-        ),
-//        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title),
-        h('ul',{for: 'input_' + state.fieldId, class: 'mdl-menu mdl-menu--bottom-left mdl-js-menu',
-            onclick: e =>
-              cmp.jbModel(e.target.getAttribute('code'))
-          },
-          state.options.map(option=>h('li',{class: 'mdl-menu__item', code: option.code},option.text))
-        )
-      ]),
-    css: '>label>i {float: right; margin-top: -30px;}',
-    features: [field.databind(), mdlStyle.initDynamic()]
+  impl: styleByControl(
+    itemlist({
+      items: '%$picklistModel/options%',
+      controls: label({
+        title: '%text%',
+        style: call('labelStyle')
+      }),
+      style: call('itemlistStyle'),
+      features: itemlist.selection({
+        databind: '%$picklistModel/databind%',
+        selectedToDatabind: '%code%',
+        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
+        cssForSelected: '%$cssForSelected%'
+      })
+    }),
+    'picklistModel'
+  )
+})
+
+jb.component('picklist.button-list', { /* picklist.buttonList */
+  type: 'picklist.style',
+  params: [
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdlFlatRipple()},
+    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal() },
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red;color: blue;font-weight: bold;', defaultValue: 'background: #bbb; color: #fff' },
+  ],
+  impl: styleByControl(
+    itemlist({
+      items: '%$picklistModel/options%',
+      controls: button({
+        title: '%text%',
+        style: call('buttonStyle')
+      }),
+      style: call('itemlistStyle'),
+      features: itemlist.selection({
+        databind: '%$picklistModel/databind%',
+        selectedToDatabind: '%code%',
+        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
+        cssForSelected: '%$cssForSelected%'
+      })
+    }),
+    'picklistModel'
+  )
+})
+
+jb.component('picklist.hyperlinks', { /* hyperlinks */
+  type: 'picklist.style',
+  impl: picklist.buttonList({
+    buttonStyle: button.href(),
+    itemlistStyle: itemlist.horizontal('10'),
+    cssForSelected: '>a { color: red }'
   })
-})
-
-jb.component('picklist.selection-list', { /* picklist.selectionList */
-  type: 'picklist.style',
-  params: [
-    {id: 'width', as: 'number'}
-  ],
-  impl: styleByControl(
-    itemlist({
-      items: '%$picklistModel/options%',
-      controls: label({
-        title: '%text%',
-        style: label.mdlRippleEffect(),
-        features: [css.width('%$width%'), css('{text-align: left}')]
-      }),
-      style: itemlist.horizontal('5'),
-      features: itemlist.selection({
-        databind: '%$picklistModel/databind%',
-        selectedToDatabind: '%code%',
-        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0]
-      })
-    }),
-    'picklistModel'
-  )
-})
-
-jb.component('picklist.horizontal-buttons', {
-  type: 'picklist.style',
-  params: [
-    {id: 'width', as: 'number', defaultValue: '200'}
-  ],
-  impl: styleByControl(
-    itemlist({
-      items: '%$picklistModel/options%',
-      controls: label({
-        title: '%text%',
-        style: label.mdlButton(),
-        features: [css.width('%$width%'), css('{text-align: left}')]
-      }),
-      style: itemlist.horizontal('5'),
-      features: itemlist.selection({
-        databind: '%$picklistModel/databind%',
-        selectedToDatabind: '%code%',
-        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0]
-      })
-    }),
-    'picklistModel'
-  )
 })
 
 jb.component('picklist.groups', { /* picklist.groups */

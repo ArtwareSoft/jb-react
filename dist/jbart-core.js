@@ -877,7 +877,7 @@ Object.assign(jb,{
   extraWatchableHandlers: [],
   extraWatchableHandler: (handler,oldHandler) => { 
     jb.extraWatchableHandlers.push(handler)
-    const oldHandlerIndex = oldHandler && jb.extraWatchableHandlers.indexOf(oldHandler)
+    const oldHandlerIndex = jb.extraWatchableHandlers.indexOf(oldHandler)
     if (oldHandlerIndex != -1)
       jb.extraWatchableHandlers.splice(oldHandlerIndex,1)
     jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
