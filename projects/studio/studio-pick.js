@@ -143,20 +143,20 @@ function showBox(cmp,profElem,_window,previewOffset) {
     });
 }
 
-jb.studio.getOrCreateHighlightBox = function() {
-  const _window = st.previewWindow || window;
-  if (!_window.document.querySelector('#preview-box')) {
-    const elem = _window.document.createElement('div');
+jb.studio.getOrCreateHighlightBox = function(sampleElem) {
+  const doc = sampleElem.ownerDocument
+  if (!doc.querySelector('#preview-box')) {
+    const elem = doc.createElement('div');
     elem.setAttribute('id','preview-box');
-    !_window.document.body.appendChild(elem);
+    !doc.body.appendChild(elem);
   }
-  return _window.document.querySelector('#preview-box');
+  return doc.querySelector('#preview-box');
 }
 
 st.highlightCtx = function(ctx) {
     if (!ctx) return
     const _window = st.previewWindow || window;
-    st.highlight(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
+    st.highlightElems(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
 //		.filter(e=>e.getAttribute('jb-ctx') == ctx.id))
 }
 
@@ -166,21 +166,22 @@ st.highlightByScriptPath = function(path) {
     st.highlightCtx(result.ctx)
 }
 
-st.highlight = function(elems) {
-    const html = elems.map(el => {
-        const offset = jb.ui.offset(el);
-        let width = jb.ui.outerWidth(el);
-        if (width == jb.ui.outerWidth(document.body))
-            width -= 10;
-        return `<div class="jbstudio_highlight_in_preview jb-fade-500ms" style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; z-index: 5000;
-            width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
-    }).join('');
+st.highlightElems = function(elems) {
+  if (!elems || !elems.length) return
+  const html = elems.map(el => {
+      const offset = jb.ui.offset(el);
+      let width = jb.ui.outerWidth(el);
+      if (width == jb.ui.outerWidth(document.body))
+          width -= 10;
+      return `<div style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; z-index: 10000;
+          width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
+  }).join('');
 
-    const box = jb.studio.getOrCreateHighlightBox();
-    jb.ui.removeClass(box,'jb-fade-3s-transition');
-    box.innerHTML = html;
-    jb.delay(1).then(()=> jb.ui.addClass(box,'jb-fade-3s-transition'));
-    jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox().innerHTML = ''); // clean after the fade animation
+  const box = jb.studio.getOrCreateHighlightBox(elems[0]);
+  jb.ui.removeClass(box,'jb-fade-3s-transition');
+  box.innerHTML = html;
+  jb.delay(1).then(()=> jb.ui.addClass(box,'jb-fade-3s-transition'));
+  jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox(elems[0]).innerHTML = ''); // clean after the fade animation
 }
 
 jb.component('studio.highlight-in-preview', { /* studio.highlightInPreview */
@@ -205,7 +206,7 @@ jb.component('studio.highlight-in-preview', { /* studio.highlightInPreview */
                 return _ctx && _ctx.path == path
             })
 
-        jb.studio.highlight(elems);
+        jb.studio.highlightElems(elems);
   }
 })
 
@@ -232,22 +233,5 @@ st.closestCtxInPreview = _path => {
         .filter(e=>e.ctx && path.indexOf(e.ctx.path) == 0)
     return candidates.sort((e2,e1) => 1000* (e1.ctx.path.length - e2.ctx.path.length) + (e1.ctx.id - e2.ctx.id) )[0] || {ctx: null, elem: null}
 }
-
-// st.refreshPreviewOfPath = path => {
-// 	var closest = st.closestCtxInPreview(path);
-// 	if (!closest.ctx) return;
-// 	var closest_path = closest.ctx.path;
-// 	var _window = st.previewWindow || window;
-// 	Array.from(_window.document.querySelectorAll('[jb-ctx]'))
-// 		.map(el=> ({el:el, ctx: _window.jb.ctxDictionary[el.getAttribute('jb-ctx')]}))
-// 		.filter(elCtx => (elCtx.ctx||{}).path == closest_path )
-// 		.forEach(elCtx=>{
-// 			try {
-// 			elCtx.ctx.profile = st.valOfPath(elCtx.ctx.path); // recalc last version of profile
-// 			if (elCtx.ctx.profile)
-// 				jb.ui.refreshComp(elCtx.ctx,elCtx.el);
-// 			} catch(e) { jb.logException(e) };
-// 		})
-// }
 
 })()

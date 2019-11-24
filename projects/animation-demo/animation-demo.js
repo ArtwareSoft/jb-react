@@ -102,9 +102,10 @@ jb.component('animation-demo.itemlist', { /* animationDemo.itemlist */
 jb.component('animation-demo.particle', { /* animationDemo.particle */
   type: 'control',
   impl: group({
+    layout: layout.horizontal('20'),
     controls: [
       button({
-        title: 'particle',
+        title: 'move',
         action: openDialog({
           style: dialog.div(),
           content: label({
@@ -136,13 +137,20 @@ jb.component('animation-demo.watch-ref', { /* animationDemo.watchRef */
   impl: group({
     layout: layout.vertical('30'),
     controls: [
-      label('%$name%'),
-      editableText({databind: '%$name%'}),
-      label('%$name%')
-    ]
+      label('%$person/name%'),
+      editableText({databind: '%$person/name%'}),
+      label('%$person/name%')
+    ],
+    features: css.width('200')
   })
 })
 
 jb.component('data-resource.name', { /* dataResource.name */
   watchableData: 'Dan'
+})
+
+jb.component('data-resource.person', { /* dataResource.person */
+  watchableData: {
+    name: 'dan11111'
+  }
 })

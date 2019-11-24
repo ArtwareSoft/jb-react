@@ -152,7 +152,7 @@ jb.component('studio.probe', { /* studio.probe */
         if (!circuitCtx) {
             const circuitInPreview = st.closestCtxInPreview(path)
                 if (circuitInPreview.ctx) {
-                    st.highlight([circuitInPreview.elem])
+                    st.highlightElems([circuitInPreview.elem])
                     circuitCtx = circuitInPreview.ctx
             }
         }

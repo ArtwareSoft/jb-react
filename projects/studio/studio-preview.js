@@ -64,7 +64,7 @@ st.initPreview = function(preview_window,allowedTypes) {
       if (preview_window.location.href.match(/\/studio-helper/))
         st.previewjb.studio.initEventTracker();
 
-      st.activateWatchRefViewer && st.activateWatchRefViewer();
+      jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
 
 			fixInvalidUrl()
 
@@ -84,6 +84,7 @@ jb.component('studio.refresh-preview', { /* studio.refreshPreview */
     jb.ui.garbageCollectCtxDictionary(true);
     jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
     //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
+    jb.ui.dialogs.closeAll()
     ctx.run(refreshControlById('preview-parent'))
   }
 })
@@ -142,7 +143,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
             })
         }
         let project = ctx.exp('%$studio/project%')
-        const rootName = ctx.exp('%$studio/rootName%')
+        const rootName = ctx.exp('%$studio/settings/rootName%')
         if (!project) {
           project = rootName
           cmp.ctx.run(writeValue('%$studio/project%',project))

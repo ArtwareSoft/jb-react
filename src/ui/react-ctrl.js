@@ -106,6 +106,7 @@ class JbComponent {
 			}
 	  		componentWillUnmount() {
 				this._destroyed = true
+				jb.log('destroyCmp',[this]);
 				jbComp.jbDestroyFuncs.forEach(f=> tryWrapper(() => f(this), 'destroy'));
 				this.resolveDestroyed();
 			}
@@ -353,7 +354,7 @@ ui.renderWidget = function(profile,top) {
 						.filter(({page})=>page != this.state.profile.$)
 						.subscribe(({page})=>
 							this.setState({profile: {$: page }}));
-					st.scriptChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + this.fixedDebounce))
+					st.scriptChange.filter(e=>(jb.path(e,'path.0') || '').indexOf('data-resource.') != 0).takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + this.fixedDebounce))
 						.subscribe(e=>{
 							this.setState(null)
 							jb.ui.dialogs.reRenderAll()

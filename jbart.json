@@ -7,5 +7,6 @@
   "http_dir": "./",
   "exclude": "node_modules",
   "devHost": true,
-  "allowCmd": false
+  "allowCmd": false,
+  "activateWatchRefViewer": true
 }

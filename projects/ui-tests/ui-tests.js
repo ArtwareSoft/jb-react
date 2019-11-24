@@ -622,7 +622,7 @@ jb.component('ui-test.search-doesnot-create-ReactClass', { /* uiTest.searchDoesn
 jb.component('ui-test.itemlist-with-table-style', {
   impl: uiTest({
     control: itemlist({
-      items: '%$people%',
+      items: '%$watchable-people%',
       style: table.withHeaders(),
       controls: [
         text({title: 'index', text: '%$index%', features: field.columnWidth(40) }), 

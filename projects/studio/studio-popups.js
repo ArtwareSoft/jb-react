@@ -14,7 +14,7 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 					_=> cmp.dialogClose() },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
 				h('div',{class: 'dialog-buttons'},[
-					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.gotoEditor && cmp.dialog.gotoEditor() },'goto editor'),
+					...(cmp.dialog.gotoEditor ? [h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.gotoEditor() },'goto editor')] : []),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.refresh() },'refresh'),
 					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },'ok'),
 				].filter(x=>x) ),
@@ -71,7 +71,8 @@ jb.component('studio.dialog-particle-style', {
 	type: 'dialog.style',
 	impl: customStyle({
 	  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
-	  css: '{ position: fixed; z-index: 6000 !important }'
+	  css: `{ position: fixed; z-index: 6000 !important; width: 20px; height: 20px;}
+	  >* { display: inline-block; }`
 	})
 })
 

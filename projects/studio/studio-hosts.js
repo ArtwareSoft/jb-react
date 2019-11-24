@@ -2,7 +2,7 @@
 const st = jb.studio;
 
 const devHost = {
-    rootName: () => fetch(`/?op=rootName`).then(res=>res.text()),
+    settings: () => fetch(`/?op=settings`).then(res=>res.text()),
     rootExists: () => fetch(`/?op=rootExists`).then(res=>res.text()).then(res=>res==='true'),
     getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
@@ -34,7 +34,7 @@ const userLocalHost = Object.assign({},devHost,{
 })
 
 const cloudHost = {
-    rootName: () => Promise.resolve(''),
+    settings: () => Promise.resolve(''),
     rootExists: () => Promise.resolve(false),
     getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
     htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
@@ -129,7 +129,7 @@ st.projectHosts = {
 
 st.projectUtils = {
     projectContent: ctx => {
-        const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/rootName%')
+        const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/settings/rootName%')
         const baseDir = rootName == project ? './' : ''
         const htmlPath = st.host.pathOfJsFile(project,project+'.html',baseDir)
         return st.host.getFile(htmlPath).then(html=> {

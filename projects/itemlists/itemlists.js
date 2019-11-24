@@ -269,7 +269,10 @@ jb.component('itemlists.master-details', { /* itemlists.masterDetails */
         features: group.data({data: '%$selected%', watch: true})
       })
     ],
-    features: variable({name: 'selected', value: '%$people/0%', watchable: true})
+    features: [
+      variable({name: 'selected', value: '%$people/0%', watchable: true}),
+      css.width('500')
+    ]
   })
 })
 
@@ -308,6 +311,24 @@ jb.component('data-resource.sortBy', { /* dataResource.sortBy */
 
 jb.component('data-resource.selectedItem', { /* dataResource.selectedItem */
   watchableData: {
-    
+
   }
+})
+
+jb.component('data-resource.people', { /* dataResource.people */
+  watchableData: [
+    {
+      name: 'Homer Simpson',
+      age: 42,
+      male: true,
+      children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}]
+    },
+    {
+      name: 'Marge Simpson',
+      age: 38,
+      male: false,
+      children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}]
+    },
+    {name: 'Bart Simpson', age: 12, male: true, children: []}
+  ]
 })

@@ -1127,3 +1127,6 @@ jb.component('action.switch-case', { /* action.switchCase */
   ],
   impl: ctx => ctx.params
 })
+
+jb.exec = (...args) => new jb.jbCtx().run(...args)
+jb.exp = (...args) => new jb.jbCtx().exp(...args)

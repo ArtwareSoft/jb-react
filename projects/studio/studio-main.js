@@ -195,7 +195,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
   type: 'control',
   impl: group({
     title: 'top bar',
-    layout: layout.horizontal('3'),
+    layout: layout.flex({alignItems: 'start', spacing: '3'}),
     controls: [
       image({
         url: '%$studio/baseStudioUrl%css/jbartlogo.png',
@@ -211,10 +211,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
           label({title: 'message', style: label.studioMessage()}),
           label({
             title: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
-            features: [
-              css('{ font: 20px Arial; margin-left: 6px; }'),
-              watchRef('%$studio/project%')
-            ]
+            features: [css('{ font: 20px Arial; margin-left: 6px; }'), watchRef('%$studio/project%')]
           }),
           group({
             title: 'menu and toolbar',
@@ -231,10 +228,10 @@ jb.component('studio.top-bar', { /* studio.topBar */
             features: [css.width('1040')]
           })
         ],
-        features: css('{ padding-left: 18px; width: 100%; }')
+        features: css('padding-left: 18px; width: 100%; ')
       })
     ],
-    features: css('{ height: 90px; border-bottom: 1px #d9d9d9 solid}')
+    features: css('height: 73px; border-bottom: 1px #d9d9d9 solid;')
   })
 })
 
@@ -252,7 +249,7 @@ jb.component('studio.all', { /* studio.all */
     ],
     features: [
       group.wait({
-        for: ctx => jb.studio.host.rootName().then(rootName => ctx.run(writeValue('%$studio/rootName%',rootName))),
+        for: ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',JSON.parse(settings)))),
         loadingControl: label('')}),
       group.data({data: '%$studio/project%', watch: true}),
       feature.init(urlHistory.mapStudioUrlToResource('studio'))

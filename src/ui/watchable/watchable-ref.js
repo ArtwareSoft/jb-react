@@ -8,7 +8,7 @@
 const isProxy = Symbol.for("isProxy")
 const originalVal = Symbol.for("originalVal")
 const targetVal = Symbol.for("targetVal")
-const jbId = Symbol.for("jbId")
+const jbId = Symbol("jbId")
 
 class WatchableValueByRef {
   constructor(resources) {
@@ -306,11 +306,11 @@ class WatchableValueByRef {
       req.srcCtx = req.srcCtx || { path: ''}
       const key = this.pathOfRef(req.ref).join('~') + ' : ' + req.cmp.ctx.path
       const entry = { ...req, subject, key }
-      const found = key && this.observables.find(e=>e.key === key && e.cmp === entry.cmp)
-      if (found) {
-        jb.logError('observable already exists', entry)
-        return found.subject
-      }
+      // const found = key && this.observables.find(e=>e.key === key && e.cmp === entry.cmp)
+      // if (found) {
+      //   jb.logError('observable already exists', entry)
+      //   return found.subject
+      // }
       
       this.observables.push(entry);
       this.observables.sort((e1,e2) => comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))

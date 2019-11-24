@@ -5,7 +5,7 @@ jb.component('studio.watchable-or-passive', { /* studio.watchableOrPassive */
   impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
 })
 
-jb.component('studio.save-data-resource-to-comp',{
+jb.component('studio.copy-data-resource-to-comp', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -23,7 +23,7 @@ jb.component('studio.open-resource', { /* studio.openResource */
     {id: 'name', as: 'string'}
   ],
   impl: runActions(
-    studio.saveDataResourceToComp('%$path%', '%$name%'),
+    studio.copyDataResourceToComp('%$path%', '%$name%'),
     openDialog({
         style: dialog.editSourceStyle({id: 'edit-data-resource', width: 600}),
         content: editableText({
@@ -31,7 +31,7 @@ jb.component('studio.open-resource', { /* studio.openResource */
           style: editableText.studioCodemirrorTgp(),
           features: ctx => ({
           init: cmp => ctx.vars.$dialog.refresh = () => {
-            ctx.run(studio.saveDataResourceToComp('%$path%','%$name%'))
+            ctx.run(studio.copyDataResourceToComp('%$path%','%$name%'))
             cmp.refresh && cmp.refresh()
           }
         })

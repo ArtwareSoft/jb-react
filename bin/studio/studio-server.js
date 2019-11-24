@@ -266,6 +266,10 @@ const op_get_handlers = {
         }
       });
     },
+    settings: (req,res) => {
+      res.setHeader('Content-Type', 'application/json;charset=utf8');
+      res.end(JSON.stringify(Object.assign({rootName},settings)))
+    },
     rootName: (req,res) => {
       res.setHeader('Content-Type', 'application/text;charset=utf8');
       res.end(rootName);
