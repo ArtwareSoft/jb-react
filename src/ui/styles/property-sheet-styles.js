@@ -6,7 +6,7 @@ jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
       h('div',{ class: 'property'},[
-            h('label',{ class: 'property-title'},jb.ui.fieldTitle(cmp,ctrl,h)),
+            h('label',{ class: 'property-title'}, jb.ui.fieldTitle(cmp,ctrl,h)),
             h(ctrl)
     ]))),
     css: `>.property { margin-bottom: %$spacing%px }
@@ -60,28 +60,39 @@ jb.component('property-sheet.titles-above-float-left', { /* propertySheet.titles
 jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
   type: 'group.style',
   params: [
-    {id: 'vSpacing', as: 'number', defaultValue: 20},
-    {id: 'hSpacing', as: 'number', defaultValue: 20},
-    {id: 'titleWidth', as: 'number', defaultValue: 100}
+    {id: 'titleStyle', type: 'label.style', defaultValue: styleWithFeatures(label.span(), css.bold()), dynamic: true },
+    {id: 'titleText', defaultValue: '%%:', dynamic: true },
+    {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px' },
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{}, state.ctrls.map(ctrl=>
-      h('div',{ class: 'property'},[
-          h('label',{ class: 'property-title'}, jb.ui.fieldTitle(cmp,ctrl,h)),
-          h(ctrl)
-    ]))),
-    css: `>.property { margin-bottom: %$vSpacing%px; display: flex }
-      >.property:last-child { margin-bottom:0px }
-      >.property>.property-title {
-        width: %$titleWidth%px;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        vertical-align:top;
-        margin-top:2px;
-        font-size:14px;
-        margin-right: %$hSpacing%px;
-      }
-      >.property>*:last-child { margin-right:0 }`,
+    template: (cmp,state,h) => h('div',{}, state.ctrls.flatMap(ctrl=>[
+        h(jb.ui.renderable(cmp.ctx.run(label({title: ctx => cmp.titleText(ctx.setData(ctrl.field.title())), style: ctx => cmp.titleStyle(ctx)})))),
+        h(ctrl)
+      ])
+    ),
+    css: `{ display: grid; grid-template-columns: auto auto; grid-column-gap:%$spacing%}`,
     features: group.initGroup()
   })
 })
+
+jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
+  type: 'group.style',
+  params: [
+    {id: 'titleStyle', type: 'label.style', defaultValue: styleWithFeatures(label.span(), css.bold()), dynamic: true },
+    {id: 'titleText', defaultValue: '%%', dynamic: true },
+    {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px' },
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ style: {'grid-template-columns': state.ctrls.map(()=>'auto').join(' ')}}, [
+        ...state.ctrls.map(ctrl=>
+          h(jb.ui.renderable(cmp.ctx.run(label({
+            title: ctx => cmp.titleText(ctx.setData(ctrl.field.title())), 
+            style: ctx => cmp.titleStyle(ctx)}))))), 
+        ...state.ctrls.map(ctrl=>h(ctrl))
+      ]
+    ),
+    css: `{ display: grid; grid-column-gap:%$spacing% }`,
+    features: group.initGroup()
+  })
+})
+

@@ -101,6 +101,14 @@ jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
 	}
 })
 
+jb.component('itemlist-container.condition-filter', { /* itemlistContainer.conditionFilter */
+	type: 'boolean',
+	category: 'itemlist-filter:100',
+	requires: ctx => ctx.vars.itemlistCntr,
+	impl: ctx => ctx.vars.itemlistCntr && 
+		ctx.vars.itemlistCntr.filters.reduce((res,filter) => res && filter([ctx.data]).length, true)
+})
+  
 jb.component('itemlist-container.search', { /* itemlistContainer.search */
   type: 'control',
   category: 'itemlist-filter:100',

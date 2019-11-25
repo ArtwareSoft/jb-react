@@ -15,7 +15,10 @@ jb.component('itemlists.main', { /* itemlists.main */
       text({title: 'age', text: '%age%'})
     ],
     style: table.withHeaders(),
-    features: itemlist.selection({databind: '%$selectedItem%', autoSelectFirst: 'true'})
+    features: [
+      itemlist.selection({databind: '%$selectedItem%', autoSelectFirst: 'true'}),
+      itemlist.keyboardSelection({})
+    ]
   })
 })
 
@@ -83,6 +86,50 @@ jb.component('itemlists.large-table', { /* itemlists.largeTable */
         visualSizeLimit: '1000'
       })
     ]
+  })
+})
+
+jb.component('itemlists.large-table-with-search', { /* itemlists.largeTableWithSearch */
+  type: 'control',
+  impl: group({
+    title: 'large-table',
+    controls: [
+      itemlistContainer.search({}),
+      table({
+        items: pipeline(
+          range(1, '1000'),
+          {'$': 'object', id: '%%', name: '%%-%%'},
+          itemlistContainer.filter()
+        ),
+        fields: [
+          field({title: 'id', data: '%id%', hoverTitle: '--%id%--', numeric: true}),
+          field({title: 'group', data: ctx => Math.floor(Number(ctx.data.id) /10)})
+        ],
+        style: table.mdl(
+          'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
+          'mdl-data-table__cell--non-numeric'
+        ),
+        visualSizeLimit: '1000',
+        features: [
+          watchRef('%$itemlistCntrData/search_pattern%'),
+          itemlist.selection({
+            onDoubleClick: openDialog({
+              content: group({}),
+              title: '%id%',
+              features: dialogFeature.uniqueDialog('unique')
+            })
+          }),
+          itemlist.keyboardSelection({
+            onEnter: openDialog({
+              content: group({}),
+              title: '%id%',
+              features: [dialogFeature.uniqueDialog('unique')]
+            })
+          })
+        ]
+      })
+    ],
+    features: group.itemlistContainer({})
   })
 })
 
@@ -224,10 +271,15 @@ jb.component('itemlists.master-details-with-container', { /* itemlists.masterDet
       }),
       group({
         title: 'person',
-        style: propertySheet.titlesAbove('5'),
+        style: propertySheet.titlesAbove({
+          titleStyle: styleWithFeatures(
+            label.mdlRippleEffect(),
+            css('text-align: left; padding-left: 0;')
+          )
+        }),
         controls: [
-          text({title: 'name', text: '%name%', style: label.cardTitle()}),
-          text({title: 'age', text: '%age%', style: label.cardTitle()})
+          text({title: 'name', text: '%name%'}),
+          text({title: 'age', text: '%age%'})
         ],
         features: group.data({data: '%$itemlistCntrData/selected%', watch: true})
       })
@@ -261,10 +313,13 @@ jb.component('itemlists.master-details', { /* itemlists.masterDetails */
       }),
       group({
         title: 'person',
-        style: propertySheet.titlesLeft({}),
+        style: propertySheet.titlesLeft({
+          titleStyle: styleWithFeatures(label.span(), css.bold()),
+          titleText: '%%:'
+        }),
         controls: [
-          text({title: 'name', text: '%name%', style: label.cardTitle()}),
-          text({title: 'age', text: '%age%', style: label.cardTitle()})
+          text({title: 'name', text: '%name%'}),
+          text({title: 'age', text: '%age%'})
         ],
         features: group.data({data: '%$selected%', watch: true})
       })

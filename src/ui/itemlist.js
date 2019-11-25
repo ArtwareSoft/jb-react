@@ -1,4 +1,4 @@
-jb.ns('itemlist')
+jb.ns('itemlist,itemlistContainer')
 
 jb.component('itemlist', { /* itemlist */
   type: 'control',
@@ -74,6 +74,32 @@ jb.component('itemlist.init-table', { /* itemlist.initTable */
   })
 })
 
+jb.component('itemlist.fast-filter', {
+  type: 'feature',
+  params: [
+    {id: 'showCondition', mandatory: true, dynamic: true, defaultValue: itemlistContainer.conditionFilter() },
+    {id: 'filtersRef', mandatory: true, as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
+  ],
+  impl: (ctx,showCondition,filtersRef,includeChildren) => ({
+      init: cmp => {
+        jb.ui.refObservable(filtersRef(cmp.ctx),cmp,{includeChildren, srcCtx: ctx})
+          .subscribe(e=> cmp.fastFilter())
+
+        cmp.fastFilter = _ => {
+          if (!cmp.base) return
+          Array.from(cmp.base.querySelectorAll('.jb-item, *>.jb-item'))
+            .forEach(elem=> {
+              if (showCondition(jb.ctxDictionary[elem.getAttribute('jb-ctx')]))
+                elem.style.display = 'block'
+              else
+                elem.style.display = 'none'
+            })
+        }
+      },
+  })
+})
+
 jb.component('itemlist.ul-li', { /* itemlist.ulLi */
   type: 'itemlist.style',
   impl: customStyle({
@@ -133,21 +159,31 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         cmp.selectionEmitter = new jb.rx.Subject();
         cmp.clickEmitter = new jb.rx.Subject();
 
+        cmp.setSelected = selected => {
+          cmp.selected = selected
+          if (!cmp.base) return
+          Array.from(cmp.base.querySelectorAll('.jb-item.selected, *>.jb-item.selected'))
+            .forEach(elem=>elem.classList.remove('selected'))
+          Array.from(cmp.base.querySelectorAll('.jb-item, *>.jb-item'))
+            .filter(elem=> jb.ctxDictionary[elem.getAttribute('jb-ctx')].data === selected)
+            .forEach(elem=> elem.classList.add('selected'))
+        }
+
         cmp.selectionEmitter
           .merge(cmp.clickEmitter)
           .distinctUntilChanged()
           .filter(x=>x)
           .subscribe( selected => {
               writeSelectedToDatabind(selected);
-              cmp.setState({selected: selected});
+              cmp.setSelected(selected)
               ctx.params.onSelection(cmp.ctx.setData(selected));
           });
 
         const selectedRef = databind()
         jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, srcCtx: ctx})
-          .catch(e=>jb.ui.setState(cmp,{selected: null }) || [])
+          .catch(e=>cmp.setSelected(null) || [])
           .subscribe(e=>
-            jb.ui.setState(cmp,{selected: selectedOfDatabind() },e))
+            cmp.setSelected(selectedOfDatabind()))
 
         function autoSelectFirst() {
           if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(selectedRef))
@@ -160,16 +196,16 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setVars({items: cmp.items}).setData(jb.val(selectedRef))))
         }
         jb.delay(1).then(_=>{
-           if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1)
-              cmp.state.selected = null;
+           if (cmp.selected && cmp.items.indexOf(cmp.selected) == -1)
+              cmp.selected = null;
            if (selectedRef && jb.val(selectedRef))
-             cmp.setState({selected: selectedOfDatabind()});
-           if (!cmp.state.selected)
+             cmp.setSelected(selectedOfDatabind())
+           if (!cmp.selected)
               autoSelectFirst()
         })
     },
     extendItem: (cmp,vdom,data) => {
-      jb.ui.toggleClassInVdom(vdom,'selected',cmp.state.selected == data);
+//      jb.ui.toggleClassInVdom(vdom,'selected',cmp.selected == data);
       vdom.attributes.onclick = _ =>
         cmp.clickEmitter.next(data)
       vdom.attributes.ondblclick = _ => {
@@ -177,7 +213,6 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         ctx.params.onDoubleClick(cmp.ctx.setData(data))
       }
     },
-    css2: '>.selected , >*>.selected { ' + ctx.params.cssForSelected + ' }',
     css: ['>.selected','>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(ctx.params.cssForSelected)).join('\n')
   })
 })
@@ -202,9 +237,9 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
         }
         cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );
 
-        cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
+        cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.selected)
           .subscribe(x=>
-            ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
+            ctx.params.onEnter(cmp.ctx.setData(cmp.selected)));
 
         cmp.onkeydown.filter(e=> !e.ctrlKey &&
               (e.keyCode == 38 || e.keyCode == 40))
@@ -212,7 +247,7 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
               event.stopPropagation();
               var diff = event.keyCode == 40 ? 1 : -1;
               var items = cmp.items;
-              return items[(items.indexOf(cmp.state.selected) + diff + items.length) % items.length] || cmp.state.selected;
+              return items[(items.indexOf(cmp.selected) + diff + items.length) % items.length] || cmp.selected;
         }).subscribe(x=>
           cmp.selectionEmitter && cmp.selectionEmitter.next(x)
         )
@@ -257,10 +292,10 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
             e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
             .subscribe(e=> {
               const diff = e.keyCode == 40 ? 1 : -1;
-              const selectedIndex = cmp.items.indexOf(cmp.state.selected);
+              const selectedIndex = cmp.items.indexOf(cmp.selected);
               if (selectedIndex == -1) return;
               const index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-              jb.splice(jb.asRef(cmp.items),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
+              jb.splice(jb.asRef(cmp.items),[[selectedIndex,1],[index,0,cmp.selected]],ctx);
           })
 //        })
       }

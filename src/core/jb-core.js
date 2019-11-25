@@ -866,6 +866,7 @@ Object.assign(jb,{
   isEmpty: o => Object.keys(o).length === 0,
   isObject: o => o != null && typeof o === 'object',
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+  filterEmpty: obj => Object.entries(obj).reduce((a,[k,v]) => (v == null ? a : {...a, [k]:v}), {}),
 
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),

@@ -142,8 +142,9 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
               watchRef('%$itemlistCntrData/search_pattern%'),
               css.margin({top: '3', selector: '>li'}),
               css.width('200')
-            ]
+            ],
           }),
+          itemlistContainer.moreItemsButton(),
           picklist({
             title: '',
             databind: '%$SelectedCategory%',
@@ -196,7 +197,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
         value: {'$if': studio.val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
         watchable: true
       }),
-      group.itemlistContainer({initialSelection: studio.compName('%$path%')}),
+      group.itemlistContainer({initialSelection: studio.compName('%$path%'), maxItems: 30}),
       css.width('400')
     ]
   })

@@ -38,7 +38,7 @@ class JbComponent {
 		this.field = {
 			class: '',
 			ctxId: ui.preserveCtx(ctx),
-			control: (item,index,noCache) => this.getOrCreateItemField(item, () => ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp(),noCache)
+			control: (item,index,noCache) => this.getOrCreateItemField(item, () => ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp(),noCache),
 		}
 		this.enrichField.forEach(enrichField=>enrichField(this.field))
 		let title = jb.tosingle(jb.val(ctx.params.title)) || (() => '');

@@ -66,15 +66,17 @@ jb.component('open-dialog', { /* openDialog */
 })
 
 jb.component('dialog.close-containing-popup', { /* dialog.closeContainingPopup */
-  type: 'action',
-  params: [
-    {id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
-  ],
-  impl: (context,OK) =>
+	description: 'close parent dialog',
+	type: 'action',
+	params: [
+		{id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
+	],
+	impl: (context,OK) =>
 		context.vars.$dialog && context.vars.$dialog.close({OK:OK})
 })
 
 jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
+  description: 'automatic close dialogs of the same id',
   type: 'dialog-feature',
   params: [
     {id: 'id', as: 'string'},

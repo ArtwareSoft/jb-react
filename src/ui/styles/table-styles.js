@@ -9,7 +9,7 @@ jb.component('table.with-headers', { /* table.withHeaders */
           cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: f.class }, 
+              h('td', jb.filterEmpty({ 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: f.class, title: f.hoverTitle &&  f.hoverTitle(item) }), 
                 f.control ? h(f.control(item,index),{index, row: item}) : f.fieldData(item,index))))
               ,item))
         ),
@@ -53,7 +53,11 @@ jb.component('table.mdl', { /* table.mdl */
           ,jb.ui.fieldTitle(cmp,f,h))) )),
         h('tbody',{class: 'jb-drag-parent'},
             state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
-              h('td', { 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: (f.class + ' ' + cmp.classForTd).trim() }, f.control ? h(f.control(item,index),{row:item, index: index}) : f.fieldData(item,index))))
+              h('td', jb.filterEmpty({ 
+                'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), 
+                class: (f.class + ' ' + cmp.classForTd).trim(), 
+                title: f.hoverTitle &&  f.hoverTitle(item) 
+              }) , f.control ? h(f.control(item,index),{row:item, index: index}) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''

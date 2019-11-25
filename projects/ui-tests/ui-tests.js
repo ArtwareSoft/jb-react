@@ -542,24 +542,24 @@ jb.component('ui-test.itemlist-container-search-ctrl', { /* uiTest.itemlistConta
   type: 'control',
   impl: group({
     controls: [
-      itemlistContainer.search({}),
+      itemlistContainer.search(),
       itemlist({
-        items: pipeline('%$people%', itemlistContainer.filter()),
+        items: '%$people%',
         controls: label({
           title: highlight('%name%', '%$itemlistCntrData/search_pattern%'),
           features: [css.class('label1'), watchRef('%$itemlistCntrData/search_pattern%')]
         }),
         features: [
+          itemlist.fastFilter(),
           itemlist.selection({autoSelectFirst: true}),
           itemlist.keyboardSelection({
             autoFocus: true,
             onEnter: writeValue('%$person/selected%', '%name%')
           }),
-          watchRef('%$itemlistCntrData/search_pattern%')
         ]
       })
     ],
-    features: group.itemlistContainer({})
+    features: group.itemlistContainer()
   })
 })
 
@@ -567,7 +567,7 @@ jb.component('ui-test.itemlist-container-search', { /* uiTest.itemlistContainerS
   impl: uiTest({
     control: uiTest.itemlistContainerSearchCtrl(),
     action: uiAction.setText('ho', '.mdl-textfield'),
-    expectedResult: and(contains(['Ho', 'mer']), not(contains('Marge')), not(contains('Homer')))
+    expectedResult: contains(['Ho', 'mer','display: none;','display: none;'])
   })
 })
 

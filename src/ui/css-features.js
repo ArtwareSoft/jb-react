@@ -81,7 +81,7 @@ jb.component('css.padding', { /* css.padding */
     {id: 'bottom', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx) => {
+  impl: ctx => {
     var css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != null)
       .map(x=> `padding-${x}: ${withUnits(ctx.params[x])}`)
@@ -99,7 +99,7 @@ jb.component('css.margin', { /* css.margin */
     {id: 'bottom', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx) => {
+  impl: ctx => {
     var css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != null)
       .map(x=> `margin-${x}: ${withUnits(ctx.params[x])}`)
@@ -114,7 +114,7 @@ jb.component('css.transform-rotate', { /* css.transformRotate */
     {id: 'angle', as: 'string', description: '0-360'},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx) => {
+  impl: ctx => {
     return {css: `${ctx.params.selector} {transform:rotate(${ctx.params.angle}deg)}`};
   }
 })
@@ -142,9 +142,17 @@ jb.component('css.transform-scale', { /* css.transformScale */
     {id: 'y', as: 'string', description: '0-1'},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx) => {
-    return {css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`};
-  }
+  impl: ctx => ({css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`})
+})
+
+jb.component('css.bold', { 
+  type: 'feature',
+  impl: ctx => ({css: `{font-weight: bold}`})
+})
+
+jb.component('css.underline', { 
+  type: 'feature',
+  impl: ctx => ({css: `{text-decoration: underline}`})
 })
 
 jb.component('css.box-shadow', { /* css.boxShadow */

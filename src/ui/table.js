@@ -30,15 +30,17 @@ jb.component('field', { /* field */
   params: [
     {id: 'title', as: 'string', mandatory: true},
     {id: 'data', as: 'string', mandatory: true, dynamic: true},
+    {id: 'hoverTitle', as: 'string', dynamic: true},
     {id: 'width', as: 'number'},
     {id: 'numeric', as: 'boolean', type: 'boolean'},
     {id: 'extendItems', as: 'boolean', type: 'boolean', description: 'extend the items with the calculated field using the title as field name' },
     {id: 'class', as: 'string'}
   ],
-  impl: (ctx,title,data,width,numeric,extendItems,_class) => ({
+  impl: (ctx,title,data,hoverTitle,width,numeric,extendItems,_class) => ({
     title: () => title,
     fieldData: row => extendItems ? row[title] : data(ctx.setData(row)),
     calcFieldData: row => data(ctx.setData(row)),
+    hoverTitle: hoverTitle.profile ? (row => hoverTitle(ctx.setData(row))) : null,
     class: _class,
     width: width,
     numeric: numeric,
