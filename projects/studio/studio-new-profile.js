@@ -90,8 +90,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
         title: 'categories and items',
         layout: layout.horizontal('33'),
         controls: [
-          itemlist({
-            title: 'items',
+          table({
             items: pipeline(
               '%$Categories%',
               filter(
@@ -104,23 +103,13 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
               itemlistContainer.filter(),
               unique('%%', '%%')
             ),
-            controls: [
-              label({
-                title: highlight('%%', '%$itemlistCntrData/search_pattern%'),
-                style: label.span(),
-                features: [
-                  css('{ text-align: left; }'),
-                  css.padding({top: '0', left: '4', right: '4', bottom: '0'}),
-                  css.width({width: '250', minMax: 'min'}),
-                  feature.hoverTitle(
-                    pipeline(ctx => jb.studio.previewjb.comps[ctx.data], '%description%')
-                  )
-                ]
-              })
-            ],
-            itemVariable: 'item',
+            fields: field({
+              title: 'profile',
+              data: '%%',
+              hoverTitle: ({data}) => (jb.studio.previewjb.comps[data]||{}).description || ''
+            }),
+            style: table.withHeaders(true),
             features: [
-              css.height({height: '300', overflow: 'auto', minMax: ''}),
               itemlist.selection({
                 databind: '%$itemlistCntrData/selected%',
                 onSelection: call('onBrowse'),
@@ -142,9 +131,8 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
               watchRef('%$itemlistCntrData/search_pattern%'),
               css.margin({top: '3', selector: '>li'}),
               css.width('200')
-            ],
+            ]
           }),
-          itemlistContainer.moreItemsButton(),
           picklist({
             title: '',
             databind: '%$SelectedCategory%',
@@ -197,7 +185,10 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
         value: {'$if': studio.val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
         watchable: true
       }),
-      group.itemlistContainer({initialSelection: studio.compName('%$path%'), maxItems: 30}),
+      group.itemlistContainer({
+        maxItems: 30,
+        initialSelection: studio.compName('%$path%')
+      }),
       css.width('400')
     ]
   })

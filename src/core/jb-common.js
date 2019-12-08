@@ -1030,7 +1030,7 @@ jb.component('http.get', { /* http.get */
 			  .then(r =>
 			  		json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
-			  .catch(e => jb.logException(e,'',ctx) || [])
+			  .catch(e => jb.logException(e,'http.get',ctx) || [])
 	}
 })
 
@@ -1039,18 +1039,22 @@ jb.component('http.post', { /* http.post */
   params: [
     {id: 'url', as: 'string'},
     {id: 'postData', as: 'single'},
+    {id: 'headers', as: 'single'},
     {
       id: 'jsonResult',
       as: 'boolean',
       description: 'convert result to json',
       type: 'boolean'
-    }
+    },
+    {id: 'useProxy', as: 'boolean'},
   ],
-  impl: (ctx,url,postData,json) => {
-		return fetch(url,{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(postData) })
-			  .then(r =>
-			  		json ? r.json() : r.text())
-			  .catch(e => jb.logException(e,'',ctx) || [])
+  impl: (ctx,url,postData,headers,json) => {
+    return fetch(url, {
+      method: 'POST', 
+      headers: Object.assign({'Content-Type': 'application/json; charset=UTF-8' },headers || {}), 
+      body: typeof postData == 'string' ? postData : JSON.stringify(postData) })
+			  .then(r => json ? r.json() : r.text())
+			  .catch(e => jb.logException(e,'http.post',ctx) || [])
 	}
 })
 

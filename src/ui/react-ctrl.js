@@ -57,9 +57,13 @@ class JbComponent {
 		return this.itemfieldCache.get(item)
 	}
 
+	reactCompOrVdom() {
+		// check watchable, id, onXX
+	}
+
 	reactComp() {
 		jb.log('createReactClass',[this.ctx, this]);
-		var jbComp = this;
+		const jbComp = this;
 		const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 
 		class ReactComp extends ui.Component {
@@ -520,6 +524,8 @@ ui.item = function(cmp,vdom,data) {
 }
 
 ui.toVdomOrStr = val => {
+	if (val && val.$jb_invalid)
+		return 'ref error';
 	if (val &&  (typeof val.then == 'function' || typeof val.subscribe == 'function'))
 		return jb.synchArray(val).then(v => ui.toVdomOrStr(v[0]))
 
@@ -570,6 +576,6 @@ jb.component('style-with-features', {
 	],
 	impl: (ctx,style,features) => 
 		Object.assign({},style,{featuresOptions: (style.featuresOptions || []).concat(features())})
-  })
+})
   
 })()

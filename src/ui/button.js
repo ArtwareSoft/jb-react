@@ -20,18 +20,18 @@ jb.component('button', { /* button */
         cmp.state.title = jb.val(ctx.params.title());
         cmp.refresh = _ =>
           cmp.setState({title: jb.val(ctx.params.title(cmp.ctx))});
-
-        cmp.clicked = ev => {
-          if (ev && ev.ctrlKey && cmp.ctrlAction)
-            cmp.ctrlAction(ctx.setVars({event:ev}))
-          else if (ev && ev.altKey && cmp.altAction)
-            cmp.altAction(ctx.setVars({event:ev}))
-          else
-            cmp.action && cmp.action(ctx.setVars({event:ev}));
-        }
       },
-      afterViewInit: cmp =>
+      afterViewInit: cmp => {
           cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
+          cmp.onclickHandler = ev => {
+            if (ev && ev.ctrlKey && cmp.ctrlAction)
+              cmp.ctrlAction(ctx.setVars({event:ev}))
+            else if (ev && ev.altKey && cmp.altAction)
+              cmp.altAction(ctx.setVars({event:ev}))
+            else
+              cmp.action && cmp.action(ctx.setVars({event:ev}));
+          }
+      }
     })
 })
 
@@ -42,7 +42,7 @@ jb.component('ctrl-action', { /* ctrlAction */
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
-  impl: (ctx,action) => ({
+  impl: ctx => ({
       afterViewInit: cmp =>
         cmp.ctrlAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
   })
@@ -55,7 +55,7 @@ jb.component('alt-action', { /* altAction */
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
-  impl: (ctx,action) => ({
+  impl: ctx => ({
       afterViewInit: cmp =>
         cmp.altAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
   })
@@ -70,7 +70,7 @@ jb.component('button-disabled', { /* buttonDisabled */
   ],
   impl: (ctx,cond) => ({
       init: cmp =>
-        cmp.state.isEnabled = ctx2 => cond(ctx.extendVars(ctx2))
+        cmp.isEnabled = ctx2 => cond(ctx.extendVars(ctx2))
   })
 })
 
@@ -89,8 +89,7 @@ jb.component('icon-with-action', { /* iconWithAction */
     },
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx, {
+  impl: ctx => jb.ui.ctrl(ctx, {
 			init: cmp=>  {
 					cmp.icon = ctx.params.icon;
 					cmp.state.title = ctx.params.title;

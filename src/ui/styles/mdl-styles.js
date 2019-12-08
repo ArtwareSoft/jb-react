@@ -40,7 +40,8 @@ jb.component('mdl.ripple-effect', { /* mdl.rippleEffect */
   type: 'feature',
   description: 'add ripple effect to buttons',
   impl: ctx => ({
-      templateModifier: (vdom,cmp,state) => {
+      templateModifier1: (vdom,cmp,state) => {
+        vdom.children = jb.asArray(vdom.children)
         vdom.children.push(jb.ui.h('span',{class:'mdl-ripple'}));
         return vdom;
       },

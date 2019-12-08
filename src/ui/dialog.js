@@ -44,6 +44,8 @@ jb.component('open-dialog', { /* openDialog */
 				}
 				dialog.onOK = ctx2 =>
 					context.params.onOK(cmp.ctx.extendVars(ctx2));
+				cmp.dialogCloseOK = () =>
+					dialog.close({OK: true});
 				cmp.dialogClose = args =>
 					dialog.close(args);
 				cmp.recalcTitle = (e,srcCtx) =>
@@ -155,8 +157,7 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 	impl: customStyle({
 	  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
 			  h('div',{class: 'dialog-title'},state.title),
-			  h('button',{class: 'dialog-close', onclick:
-				  _=> cmp.dialogClose() },'×'),
+			  h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
 			  h(state.contentComp),
 		  ]),
 	  features: dialogFeature.dragTitle()
@@ -327,11 +328,11 @@ jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
 			h('div',{class: 'dialog-title'},state.title),
-			h('button',{class: 'dialog-close', onclick: _=> cmp.dialogClose() },'×'),
+			h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
 			h(state.contentComp),
 			h('div',{class: 'dialog-buttons'},[
-				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: false}) },cmp.cancelLabel),
-				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },cmp.okLabel),
+				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: 'dialogClose' },cmp.cancelLabel),
+				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: 'dialogCloseOK' },cmp.okLabel),
 			]),
 		]),
     css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }'
@@ -350,7 +351,7 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
   ],
   impl: (ctx,codeMirror) => ({
 	templateModifier: (vdom,cmp,state) => {
-            if (vdom && vdom.nodeName != 'div') return vdom;
+            if (vdom && vdom.tag != 'div') return vdom;
 				vdom.children.push(jb.ui.h('img', {class: 'jb-resizer'}));
 			return vdom;
 	},
@@ -472,7 +473,8 @@ jb.ui.dialogs = {
 	remove(dialog) {
 		const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
 		if (!elem) return; // already closed due to asynch request handling and multiple requests to close
-		jb.ui.render('', elem, elem.firstElementChild);// react - remove
+		jb.ui.unmount(elem)
+		//jb.ui.render('', elem, elem.firstElementChild);// react - remove
 		// jb.ui.unmountComponent(elem.firstElementChild._component);
 		this.getOrCreateDialogsElem().removeChild(elem);
 	},

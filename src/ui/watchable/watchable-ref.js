@@ -329,18 +329,11 @@ class WatchableValueByRef {
       this.resourceChange.subscribe(e=>{
           const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref));
           this.observables = this.observables.filter(obs=>jb.refHandler(obs.ref) && jb.refHandler(obs.ref).pathOfRef(obs.ref))
-          const notifiedElems = []
-
           if (changed_path)
-            this.observables.forEach(obs=>{
-              if (notifiedElems.some(elem => elem.contains(obs.cmp.base) && elem !== obs.cmp.base)) { // parent was notified 
-                jb.delay(1).then(() => !obs.cmp._destroyed && this.notifyOneObserver(e,obs,changed_path,notifiedElems))
-              } else
-                this.notifyOneObserver(e,obs,changed_path,notifiedElems)
-            })
+            this.observables.forEach(obs=> !obs.cmp._destroyed && this.notifyOneObserver(e,obs,changed_path))
       })
   }
-  notifyOneObserver(e,obs,changed_path,notifiedElems) {
+  notifyOneObserver(e,obs,changed_path) {
       let obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
       obsPath = obsPath && this.removeLinksFromPath(obsPath)
       if (!obsPath)
@@ -351,7 +344,6 @@ class WatchableValueByRef {
       const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
       if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
           jb.log('notifyCmpObservable',['notify change',e.srcCtx,obs,e])
-          notifiedElems.push(obs.cmp.base)
           obs.subject.next(e)
       }
   }

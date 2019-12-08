@@ -45,7 +45,7 @@ class ROjson {
 
 		return h('div',{},[h('span',{},prop + ': ')].concat(
 			Object.keys(val).filter(p=>p.indexOf('$jb_') != 0).filter(p=> ['string','boolean','number'].indexOf(typeof val[p]) != -1)
-			.map(p=> [h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)) ])))
+			.map(p=> h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)))))
 	}
 }
 
@@ -97,7 +97,7 @@ class Json {
 
 		return h('div',{},[h('span',{},prop + ': ')].concat(
 			Object.keys(val).filter(p=> typeof val[p] == 'string' || typeof val[p] == 'number' || typeof val[p] == 'boolean')
-			.map(p=> [h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)) ])))
+			.map(p=> h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)))))
 	}
 	modify(op,path,args,ctx) {
 		op.call(this,path,args);

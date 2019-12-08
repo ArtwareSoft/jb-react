@@ -2,9 +2,7 @@ jb.component('editable-text.input', { /* editableText.input */
   type: 'editable-text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('input', {
-        value: state.model,
-        onchange: e => cmp.jbModel(e.target.value),
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
+        value: state.model, onchange: true, onkeyup: true, onblur: true }),
     features: field.databindText()
   })
 })
@@ -19,8 +17,8 @@ jb.component('editable-text.textarea', { /* editableText.textarea */
   impl: customStyle({
     template: (cmp,state,h) => h('textarea', {
         rows: cmp.rows, cols: cmp.cols,
-        value: state.model, onchange: e => cmp.jbModel(e.target.value), onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-    features: field.databindText(undefined, '%$oneWay')
+        value: state.model, onchange: true, onkeyup: true, onblur: true  }),
+    features: field.databindText(0, '%$oneWay%')
   })
 })
 
@@ -32,9 +30,7 @@ jb.component('editable-text.mdl-input', { /* editableText.mdlInput */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{class: ['mdl-textfield','mdl-js-textfield','mdl-textfield--floating-label',state.error ? 'is-invalid' : ''].join(' ') },[
         h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
-            value: state.model,
-            onchange: e => cmp.jbModel(e.target.value),
-            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+            value: state.model, onchange: true, onkeyup: true, onblur: true,
         }),
         h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title),
         h('span',{class: 'mdl-textfield__error' }, state.error || '')
@@ -58,9 +54,7 @@ jb.component('editable-text.mdl-input-no-floating-label', { /* editableText.mdlI
   impl: customStyle({
     template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text',
-            value: state.model,
-            onchange: e => cmp.jbModel(e.target.value),
-            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+            value: state.model, onchange: true, onkeyup: true, onblur: true,
         }),
     css: '{ {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
     features: [field.databindText(), mdlStyle.initDynamic()]
@@ -73,9 +67,7 @@ jb.component('editable-text.mdl-search', { /* editableText.mdlSearch */
   impl: customStyle({
     template: (cmp,{model, fieldId, title},h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[
         h('input', { class: 'mdl-textfield__input', id: 'search_' + fieldId, type: 'text',
-            value: model,
-            onchange: e => cmp.jbModel(e.target.value),
-            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+            value: model, onchange: true, onkeyup: true, onblur: true,
         }),
         h('label',{class: 'mdl-textfield__label', for: 'search_' + fieldId}, model ? '' : title)
       ]),

@@ -84,7 +84,7 @@ jb.component('studio.refresh-preview', { /* studio.refreshPreview */
     jb.ui.garbageCollectCtxDictionary(true);
     jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
     //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
-    jb.ui.dialogs.closeAll()
+    jb.ui.dialogs.reRenderAll()
     ctx.run(refreshControlById('preview-parent'))
   }
 })

@@ -46,8 +46,8 @@ jb.component('table-tree.init', {
         beforeInit: cmp => {
             const treeModel = cmp.treeModel = cmp.ctx.vars.$model.treeModel()
             treeModel.maxDepth = treeModel.maxDepth || 5
-            cmp.state.expanded = {[treeModel.rootPath]: true}
-            treeModel.children(treeModel.rootPath).forEach(path=>cmp.state.expanded[path] = true)
+            cmp.expanded = {[treeModel.rootPath]: true}
+            treeModel.children(treeModel.rootPath).forEach(path=>cmp.expanded[path] = true)
 
             cmp.refresh = () => cmp.setState({items:cmp.calcItems()})
             cmp.calcItems = () => calcItems(treeModel.rootPath,0)
@@ -56,7 +56,7 @@ jb.component('table-tree.init', {
             cmp.fieldsForPath = path => treeModel.isArray(path) ? cmp.commonFields : cmp.leafFields.concat(cmp.commonFields)
             cmp.headline = item => ctx.vars.$model.chapterHeadline(
                 cmp.ctx.setData({path: item.path, val: treeModel.val(item.path)})
-                    .setVars({item,collapsed: !cmp.state.expanded[item.path]})).reactComp()
+                    .setVars({item,collapsed: !cmp.expanded[item.path]})).reactComp()
 
             cmp.expandingFieldsOfItem = item => {
                 const maxDepthAr = Array.from(new Array(treeModel.maxDepth))
@@ -67,19 +67,26 @@ jb.component('table-tree.init', {
                         if (i < depthOfItem || i == depthOfItem && !treeModel.isArray(item.path)) 
                             return { empty: true }
                         if (i == depthOfItem) return {
-                            expanded: cmp.state.expanded[item.path],
-                            toggle: () => { 
-                                cmp.state.expanded[item.path] = !cmp.state.expanded[item.path]
-                                cmp.refresh()
-                            }
+                            expanded: cmp.expanded[item.path],
+                            toggle: true
                         }
                         if (i == depthOfItem+1) return {
                             headline: true,
                             colSpan: treeModel.maxDepth-i+1
                         }
+                        debugger
                     }
                 )
             }
+
+            cmp.flipExpandCollapse = e => {
+                const path = cmp.elemToPath(e.target)
+                if (!path) debugger
+                cmp.expanded[path] = !(cmp.expanded[path]);
+                cmp.refresh();
+            }
+            cmp.elemToPath = el => el && (el.getAttribute('path') || jb.ui.closest(el,'.jb-item') && jb.ui.closest(el,'.jb-item').getAttribute('path'))
+
 
             function calcItems(top) {
                 if (cmp.ctx.vars.$model.includeRoot)
@@ -88,8 +95,8 @@ jb.component('table-tree.init', {
             }
 
             function doCalcItems(top, depth) {
-                const item = [{path: top, depth, val: treeModel.val(top), expanded: cmp.state.expanded[top]}]
-                if (cmp.state.expanded[top])
+                const item = [{path: top, depth, val: treeModel.val(top), expanded: cmp.expanded[top]}]
+                if (cmp.expanded[top])
                     return treeModel.children(top).reduce((acc,child) => 
                         depth >= treeModel.maxDepth ? acc : acc = acc.concat(doCalcItems(child, depth+1)),item)
                 return item
@@ -97,13 +104,13 @@ jb.component('table-tree.init', {
             function getOrCreateControl(field,item,index) {
                 if (!treeModel.FieldCache)
                     return field.control(item,index)
-                cmp.ctrlCache = cmp.ctrlCache || {}
+                cmp.ctrlCache = {} //cmp.ctrlCache || {}
                 const key = item.path+'~!'+item.expanded + '~' +field.ctxId
                 cmp.ctrlCache[key] = cmp.ctrlCache[key] || field.control(item,index)
                 return cmp.ctrlCache[key]
             }
             function calcFields(fieldsProp) {
-                const fields = ctx.vars.$model[fieldsProp]().map(x=>x.field)
+                const fields = ctx.vars.$model[fieldsProp]().map(x=>x.field())
                 fields.forEach(f=>f.cachedControl = (item,index) => getOrCreateControl(f,item,index))
                 return fields
             }
@@ -131,7 +138,7 @@ jb.component('table-tree.plain', {
               state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', path: item.path}, 
                 [...cmp.expandingFieldsOfItem(item).map(f=>h('td',
                             f.empty ? { class: 'empty-expand-collapse'} : f.toggle ? {class: 'expandbox' } : {class: 'headline', colSpan: f.colSpan},
-                            f.empty ? '' : f.toggle ? h('span',{}, h('i',{class:'material-icons noselect', onclick: _=> f.toggle() },
+                            f.empty ? '' : f.toggle ? h('span',{}, h('i',{class:'material-icons noselect', onclick: 'flipExpandCollapse' },
                                             f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right')) : h(cmp.headline(item))
                 )), 
                     ...cmp.fieldsForPath(item.path).map(f=>h('td', {'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: 'tree-field'}, 

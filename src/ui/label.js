@@ -8,8 +8,7 @@ jb.component('label', { /* label */
     {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx =>
-        jb.ui.ctrl(ctx)
+  impl: ctx => jb.ui.ctrl(ctx)
 })
 
 jb.component('text', { /* text */
@@ -27,6 +26,8 @@ jb.component('text', { /* text */
 jb.component('label.bind-text', { /* label.bindText */
   type: 'feature',
   impl: ctx => ({
+    cmpToState: cmp => ({ text: jb.ui.toVdomOrStr((ctx.vars.$model.text || ctx.vars.$model.title)(cmp.ctx)) }),
+
     init: cmp => {
       const textF = ctx.vars.$model.text || ctx.vars.$model.title 
       const textRef = textF(cmp.ctx);
@@ -43,8 +44,6 @@ jb.component('label.bind-text', { /* label.bindText */
       cmp.refresh = _ => refreshAsynchText(fixTextVal(textF(cmp.ctx)))
 
       function fixTextVal(textRef) {
-        if (textRef == null || textRef.$jb_invalid)
-            return 'ref error';
         return jb.ui.toVdomOrStr(textRef);
       }
       function refreshAsynchText(textPromise) {

@@ -367,7 +367,7 @@ jb.component('studio.watch-path', { /* studio.watchPath */
   ],
   impl: (ctx,path,includeChildren,delay,allowSelfRefresh) => ({
       init: cmp =>
-      	jb.ui.watchRef(ctx,cmp,st.refOfPath(path),includeChildren,delay,allowSelfRefresh)
+      	jb.ui.watchRef(ctx,cmp,st.refOfPath(path),{includeChildren,delay,allowSelfRefresh})
   })
 })
 

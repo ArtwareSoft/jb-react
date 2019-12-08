@@ -227,8 +227,8 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
 				cmp.setState({title: ctx.vars.menuModel.title});
 
 				cmp.mouseEnter = _ => {
-					if (jb.ui.find('.context-menu-popup')[0])
-						cmp.openPopup()
+					if (jb.ui.find('.context-menu-popup')[0]) // first open with click...
+  					cmp.openPopup()
 				};
 				cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {
 					cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
@@ -349,7 +349,8 @@ jb.component('menu.selection', { /* menu.selection */
     {id: 'autoSelectFirst', type: 'boolean'}
   ],
   impl: ctx => ({
-			onkeydown: true,
+      onkeydown: true,
+      onmousemove: true,
 			afterViewInit: cmp => {
 				cmp.base.setAttribute('tabIndex','0');
 				// putting the emitter at the top-menu only and listen at all sub menus
@@ -359,7 +360,9 @@ jb.component('menu.selection', { /* menu.selection */
 			}
 
 			const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
-
+      cmp.onmousemove.map(e=> dataOfElems(e.target.ownerDocument.elementsFromPoint(e.pageX, e.pageY)))
+        .filter(x=>x).filter(data => data != ctx.vars.topMenu.selected)
+        .subscribe(data => cmp.select(data))
 			keydown.filter(e=>
 						e.keyCode == 38 || e.keyCode == 40 )
 					.map(event => {
@@ -369,10 +372,8 @@ jb.component('menu.selection', { /* menu.selection */
 						const selectedIndex = items.indexOf(ctx.vars.topMenu.selected);
 						if (selectedIndex != -1)
 							return items[(selectedIndex + diff + items.length) % items.length];
-				}).subscribe(x=>{
-					if (x)
-						cmp.select(x);
-			})
+				}).filter(x=>x).subscribe(data => cmp.select(data))
+			
 			keydown.filter(e=>e.keyCode == 27) // close all popups
 					.subscribe(_=>{
 						jb.ui.dialogs.dialogs
@@ -381,20 +382,28 @@ jb.component('menu.selection', { /* menu.selection */
 						cmp.ctx.vars.topMenu.popups = [];
 						cmp.ctx.run({$:'tree.regain-focus'});
 				})
-			cmp.select = item => {
-				if (ctx.vars.topMenu.selected != item)
-					cmp.setState({selected: ctx.vars.topMenu.selected = item})
-			}
-			cmp.selected = _ =>
-				ctx.vars.topMenu.selected;
 
-				if (ctx.params.autoSelectFirst && cmp.items[0])
-						cmp.select(cmp.items[0]);
-			},
+      cmp.select = selected => {
+				ctx.vars.topMenu.selected = selected
+        if (!cmp.base) return
+        Array.from(cmp.base.querySelectorAll('.jb-item.selected, *>.jb-item.selected'))
+          .forEach(elem=>elem.classList.remove('selected'))
+        Array.from(cmp.base.querySelectorAll('.jb-item, *>.jb-item'))
+          .filter(elem=> jb.ctxDictionary[elem.getAttribute('jb-ctx')].data === selected)
+          .forEach(elem=> elem.classList.add('selected'))
+      }
+			cmp.selected = _ =>	ctx.vars.topMenu.selected;
+			if (ctx.params.autoSelectFirst && cmp.items[0])
+            cmp.select(cmp.items[0])
+
+      function dataOfElems(elems) {
+        const itemElem = elems.find(el=>el.classList && el.classList.contains('jb-item'))
+        const ctxId = itemElem && itemElem.getAttribute('jb-ctx')
+        return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
+      }
+		},
 		extendItem: (cmp,vdom,data) => {
 				jb.ui.toggleClassInVdom(vdom,'selected', ctx.vars.topMenu.selected == data);
-				vdom.attributes.onmouseenter = _ =>
-					cmp.select(data)
 		},
 		css: '>.selected { background: #bbb !important; color: #fff !important }',
 		})
@@ -404,7 +413,7 @@ jb.component('menu-style.option-line', { /* menuStyle.optionLine */
   type: 'menu-option.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
-				class: 'line noselect', onmousedown: _ => cmp.action && cmp.action()
+				class: 'line noselect', onmousedown: 'action'
 			},[
 				h('i',{class:'material-icons'},state.icon),
 				h('span',{class:'title'},state.title),
@@ -437,10 +446,10 @@ jb.component('menu-style.popup-as-option', { /* menuStyle.popupAsOption */
   type: 'menu.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
-				class: 'line noselect', onmousedown: _ => cmp.action()
+				class: 'line noselect', onmousedown: 'action'
 			},[
 				h('span',{class:'title'},state.title),
-				h('i',{class:'material-icons', onmouseenter: e => cmp.openPopup(e) },'play_arrow'),
+				h('i',{class:'material-icons', onmouseenter: 'openPopup' },'play_arrow'),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
@@ -456,9 +465,8 @@ jb.component('menu-style.popup-thumb', { /* menuStyle.popupThumb */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
 				class: 'pulldown-top-menu-item',
-				onmouseenter: _ =>
-					cmp.mouseEnter(),
-				onclick: _ => cmp.openPopup()
+				onmouseenter: 'mouseEnter',
+				onclick: 'openPopup'
 		},state.title),
     features: [menu.initPopupMenu(), mdl.rippleEffect()]
   })

@@ -32,16 +32,10 @@ jb.component('group.init-group', { /* group.initGroup */
   category: 'group:0',
   impl: ctx => ({
     init: cmp => {
-      cmp.calcCtrls = cmp.calcCtrls || (_ =>
-        ctx.vars.$model.controls(cmp.ctx).map(c=>jb.ui.renderable(c)).filter(x=>x))
+      cmp.calcCtrls = cmp.calcCtrls || (() => ctx.vars.$model.controls(cmp.ctx).filter(x=>x))
       if (!cmp.state.ctrls)
         cmp.state.ctrls = cmp.calcCtrls()
-      cmp.refresh = cmp.refresh || (_ =>
-          cmp.setState({ctrls: cmp.calcCtrls() }))
-
-      if (cmp.ctrlEmitter)
-        cmp.ctrlEmitter.subscribe(ctrls=>
-              jb.ui.setState(cmp,{ctrls:ctrls.map(c=>jb.ui.renderable(c)).filter(x=>x)},null,ctx))
+      cmp.refresh = cmp.refresh || (() => cmp.setState({ctrls: cmp.calcCtrls() }))
     }
   })
 })
@@ -81,8 +75,7 @@ jb.component('group.dynamic-titles', { /* group.dynamicTitles */
   description: 'dynamic titles for sub controls',
   impl: ctx => ({
     componentWillUpdate: cmp =>
-      (cmp.state.ctrls || []).forEach(ctrl=>
-        ctrl.title = ctrl.jbComp.field.title ? ctrl.jbComp.field.title() : '')
+      (cmp.state.ctrls || []).forEach(ctrl=> ctrl.title = ctrl.field().title ? ctrl.field().title() : '')
   })
 })
 
@@ -159,7 +152,7 @@ jb.component('first-succeeding.watch-refresh-on-ctrl-change', { /* firstSucceedi
           for(let i=0;i<(originalControls ||[]).length;i++) {
             const res = cmp.ctx.runInner(originalControls[i],null,i)
             if (res) {
-              if (cmp.state.ctrls[0].jbComp.firstSucceedingIndex !== i) {
+              if (cmp.state.ctrls[0].firstSucceedingIndex !== i) {
                 res.firstSucceedingIndex = i
                 jb.ui.setState(cmp,{ctrls: [jb.ui.renderable(res)]},e,ctx);
               }

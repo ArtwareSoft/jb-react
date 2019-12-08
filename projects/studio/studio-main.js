@@ -206,12 +206,12 @@ jb.component('studio.top-bar', { /* studio.topBar */
       }),
       group({
         title: 'title and menu',
-        layout: layout.vertical('17'),
+        layout: layout.vertical('11'),
         controls: [
           label({title: 'message', style: label.studioMessage()}),
           label({
             title: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
-            features: [css('{ font: 20px Arial; margin-left: 6px; }'), watchRef('%$studio/project%')]
+            features: [css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'), watchRef('%$studio/project%')]
           }),
           group({
             title: 'menu and toolbar',

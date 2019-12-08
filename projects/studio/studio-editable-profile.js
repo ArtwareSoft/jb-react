@@ -45,13 +45,13 @@ jb.component('editable-profile.flatten-properties', {
         h('tr',{ class: 'property' },[
             h('td',{ class: 'property-title', title: state.title}, state.title),
             h('td',{ class: 'property-ctrl'}, h(state.profileSelector)),
-            h('td',{ class: 'property-toolbar'}, h(state.profileSelector.jbComp.toolbar) ),
+            h('td',{ class: 'property-toolbar'}, h(state.profileSelector.toolbar) ),
         ]), 
       ...state.ctrls.map(ctrl=>
         h('tr',{ class: 'property' },[
             h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
             h('td',{ class: 'property-ctrl'},h(ctrl)),
-            h('td',{ class: 'property-toolbar'}, h(ctrl.jbComp.toolbar) ),
+            h('td',{ class: 'property-toolbar'}, h(ctrl.toolbar) ),
         ]))]
       ),
       css: `

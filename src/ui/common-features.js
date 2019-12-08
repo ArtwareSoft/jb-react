@@ -1,3 +1,9 @@
+jb.component('feature.light', {
+  type: 'feature',
+  description: 'creates vdom with no comp and no lifecycle',
+  impl: () => ({ light: true })
+})
+
 jb.component('group.wait', { /* group.wait */
   type: 'feature',
   category: 'group:70',
@@ -18,26 +24,26 @@ jb.component('group.wait', { /* group.wait */
     },
     {id: 'varName', as: 'string'}
   ],
-  impl: (context,waitFor,loading,error,varName) => ({
-      beforeInit : cmp =>
-        cmp.state.ctrls = [loading(context)].map(c=>c.reactComp()),
+  impl: (ctx,waitFor,loading,error,varName) => ({
+      beforeInit : cmp => {
+        cmp.state.ctrls = [loading(ctx)]
+        cmp.refresh = ctxWithData => {
+            if (ctxWithData)
+              cmp.ctx = ctxWithData
+            cmp.setState({ctrls: cmp.calcCtrls() })
+        }
+      },
 
       afterViewInit: cmp => {
-        jb.rx.Observable.from(waitFor()).takeUntil(cmp.destroyed).take(1)
-          .catch(e=> {
-              cmp.setState( { ctrls: [error(context.setVars({error:e}))].map(c=>c.reactComp()) })
-              return []
+        Promise.resolve(waitFor())
+          .then(data => {
+              const ctxWithData = varName ? cmp.ctx.setData(data).setVars(jb.obj(varName,data)) : cmp.ctx.setData(data);
+              cmp.refresh(ctxWithData)
           })
-          .subscribe(data => {
-              cmp.ctx = cmp.ctx.setData(data);
-              if (varName)
-                cmp.ctx = cmp.ctx.setVars(jb.obj(varName,data));
-              // strong refresh
-              cmp.setState({ctrls: []});
-              jb.delay(1).then(
-                _=>cmp.refresh())
-            })
-      },
+          .catch(e=> {
+            cmp.setState( { ctrls: [error(ctx.setVars({error:e}))] })
+        })
+    },
   })
 })
 
@@ -67,16 +73,22 @@ jb.component('watch-ref', { /* watchRef */
       type: 'boolean'
     },
     {
+      id: 'strongRefresh',
+      as: 'boolean',
+      description: 'rebuild the component, including all features and variables',
+      type: 'boolean'
+    },
+    {
       id: 'delay',
       as: 'number',
       description: 'delay in activation, can be used to set priority'
     },
    ],
-  impl: (ctx,ref,includeChildren,delay,allowSelfRefresh) => ({
+  impl: (ctx,ref) => ({
       beforeInit: cmp =>
         cmp.watchRefOn = true,
       init: cmp =>
-        jb.ui.watchRef(cmp.ctx,cmp,ref(cmp.ctx),includeChildren,delay,allowSelfRefresh)
+        jb.ui.watchRef(cmp.ctx,cmp,ref(cmp.ctx),ctx.params)
   })
 })
 
@@ -121,7 +133,7 @@ jb.component('group.data', { /* group.data */
   impl: (ctx, data_ref, itemVariable,watch,includeChildren) => ({
       init: cmp => {
         if (watch)
-          jb.ui.watchRef(ctx,cmp,data_ref(),includeChildren)
+          jb.ui.watchRef(ctx,cmp,data_ref(),{includeChildren})
       },
       extendCtxOnce: ctx => {
           var val = data_ref();
@@ -207,29 +219,6 @@ jb.component('variable', { /* variable */
   })
 })
 
-jb.component('bind-refs', { /* bindRefs */
-  type: 'feature',
-  category: 'watch',
-  description: 'automatically updates a mutual variable when other value is changing',
-  params: [
-    {id: 'watchRef', mandatory: true, as: 'ref'},
-    {
-      id: 'includeChildren',
-      as: 'string',
-      options: 'yes,no,structure',
-      defaultValue: 'no',
-      description: 'watch childern change as well'
-    },
-    {id: 'updateRef', mandatory: true, as: 'ref'},
-    {id: 'value', mandatory: true, as: 'single', dynamic: true}
-  ],
-  impl: (ctx,ref,includeChildren,updateRef,value) => ({
-    afterViewInit: cmp =>
-        jb.ui.refObservable(ref,cmp,{includeChildren:includeChildren, srcCtx: ctx}).subscribe(e=>
-          jb.writeValue(updateRef,value(cmp.ctx),ctx))
-  })
-})
-
 jb.component('calculated-var', { /* calculatedVar */
   type: 'feature',
   category: 'general:60',
@@ -269,17 +258,6 @@ jb.component('calculated-var', { /* calculatedVar */
       }
   })
 })
-
-jb.component('features', { /* features */
-  type: 'feature',
-  description: 'list of features',
-  params: [
-    {id: 'features', type: 'feature[]', flattenArray: true, dynamic: true}
-  ],
-  impl: (ctx,features) =>
-    features()
-})
-
 
 jb.component('feature.init', { /* feature.init */
   type: 'feature',
@@ -352,7 +330,7 @@ jb.component('feature.keyboard-shortcut', { /* feature.keyboardShortcut */
     {id: 'key', as: 'string', description: 'e.g. Alt+C'},
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: (context,key,action) => ({
+  impl: (ctx,key,action) => ({
       afterViewInit: cmp =>
         jb.rx.Observable.fromEvent(cmp.base.ownerDocument, 'keydown')
             .takeUntil( cmp.destroyed )

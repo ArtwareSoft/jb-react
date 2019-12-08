@@ -33,41 +33,6 @@ jb.component('itemlists.table', { /* itemlists.table */
   })
 })
 
-jb.component('itemlists.button-field', { /* itemlists.buttonField */
-  type: 'control',
-  impl: group({
-    title: 'button-field',
-    controls: [
-      table({
-        items: '%$people%',
-        fields: [
-          field({title: 'name', data: '%name%'}),
-          field.button({
-            title: 'children',
-            buttonText: '%children/length%',
-            action: openDialog({
-              content: group({
-                controls: label({
-                  title: pipeline(
-                    '%children/name%',
-                    join({separator: {'$': 'newline'}, items: '%%', itemName: 'item', itemText: '%%'})
-                  ),
-                  style: label.cardTitle()
-                })
-              }),
-              title: 'children of %name%',
-              onOK: {}
-            })
-          })
-        ],
-        style: table.withHeaders(),
-        visualSizeLimit: 100,
-        features: [css.width('300')]
-      })
-    ]
-  })
-})
-
 jb.component('itemlists.large-table', { /* itemlists.largeTable */
   type: 'control',
   impl: group({

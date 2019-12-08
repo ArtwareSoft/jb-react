@@ -185,7 +185,7 @@ jb.component('property-sheet.studio-properties', { /* propertySheet.studioProper
       h('tr',{ class: 'property' },[
           h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
           h('td',{ class: 'property-ctrl'},h(ctrl)),
-          h('td',{ class: 'property-toolbar'}, h(ctrl.jbComp.toolbar) ),
+          h('td',{ class: 'property-toolbar'}, h(ctrl.toolbar) ),
       ])
     )),
     css: `
@@ -204,7 +204,7 @@ jb.component('property-sheet.studio-properties-in-tgp', { /* propertySheet.studi
       h('tr',{ class: 'property' },[
           h('td',{ class: 'property-title', title: ctrl.title}, ctrl.title),
           h('td',{ class: 'property-ctrl'},h(ctrl)),
-          h('td',{ class: 'property-toolbar'}, h(ctrl.jbComp.toolbar) ),
+          h('td',{ class: 'property-toolbar'}, h(ctrl.toolbar) ),
       ])
     )),
     css: `
@@ -226,7 +226,7 @@ jb.component('property-sheet.studio-plain', { /* propertySheet.studioPlain */
           h('label',{ class: 'property-title', title: ctrl.title}, ctrl.title),
           h('div',{ class: 'input-and-toolbar'}, [
             h(ctrl),
-            h(ctrl.jbComp.toolbar)
+            h(ctrl.toolbar)
           ])
     ]))),
     css: `>.property { margin-bottom: 5px; display: flex }

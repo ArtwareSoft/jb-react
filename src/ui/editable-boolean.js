@@ -16,21 +16,20 @@ jb.component('editable-boolean', { /* editableBoolean */
     {id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx,{
-			init: cmp => {
-				cmp.toggle = () =>
-					cmp.jbModel(!cmp.jbModel());
+  impl: ctx => jb.ui.ctrl(ctx, {
+		init: cmp => {
+			cmp.toggle = () => cmp.jbModel(!cmp.jbModel());
+			cmp.setChecked = (e,source) => cmp.jbModel(e.target.checked,source)
 
-				cmp.text = () => {
-					if (!cmp.jbModel) return '';
-					return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
-				}
-				cmp.extendRefresh = _ =>
-					cmp.setState({text: cmp.text()})
-
-				cmp.refresh();
-			},
-		})
+			cmp.text = () => {
+				if (!cmp.jbModel) return '';
+				return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
+			}
+			cmp.extendRefresh = _ =>
+				cmp.setState({text: cmp.text()})
+			cmp.state.text = cmp.text()
+		},
+	})
 })
 
 jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardSupport */

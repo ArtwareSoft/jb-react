@@ -25,7 +25,7 @@ jb.component('picklist', { /* picklist */
   impl: ctx =>
     jb.ui.ctrl(ctx,{
       beforeInit: cmp => {
-        cmp.recalcOptions = function() {
+        cmp.recalcOptions = function(init) {
           var options = ctx.params.options(ctx);
           var groupsHash = {};
           var promotedGroups = (ctx.params.promote() || {}).groups || [];
@@ -40,13 +40,13 @@ jb.component('picklist', { /* picklist */
             group.options.push({text: (o.text||'').split('.').pop(), code: o.code });
           })
           groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
-          jb.ui.setState(cmp,{
+          return {
             groups: groups,
             options: options,
             hasEmptyOption: options.filter(x=>!x.text)[0]
-          })
+          }
         }
-        cmp.recalcOptions();
+        cmp.state = cmp.recalcOptions();
       },
       afterViewInit: cmp => {
         if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{srcCtx: ctx})
@@ -72,8 +72,7 @@ jb.component('picklist.dynamic-options', { /* picklist.dynamicOptions */
     init: cmp =>
       recalcEm && recalcEm.subscribe &&
         recalcEm.takeUntil( cmp.destroyed )
-        .subscribe(e=>
-            cmp.recalcOptions())
+        .subscribe(e=> cmp.setState(cmp.recalcOptions()))
   })
 })
 

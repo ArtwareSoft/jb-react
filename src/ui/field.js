@@ -27,7 +27,7 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
     else { // write
         cmp.state.model = val;
         if (!oneWay)
-          cmp.setState({});
+          cmp.setState();
         jb.ui.checkValidationError(cmp);
         jb.writeValue(cmp.state.databindRef,val,ctx);
     }
@@ -81,8 +81,9 @@ jb.ui.checkValidationError = cmp => {
   }
 }
 
-jb.ui.fieldTitle = function(cmp,ctrl,h) {
-	const field = ctrl.field || ctrl
+jb.ui.fieldTitle = function(cmp,fieldOrCtrl,h) {
+  let field = fieldOrCtrl.field && fieldOrCtrl.field() || fieldOrCtrl
+  field = typeof field === 'function' ? field() : field  
 	if (field.titleCtrl) {
 		const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
 		const jbComp = field.titleCtrl(ctx);
@@ -99,14 +100,13 @@ jb.ui.preserveFieldCtxWithItem = (field,item) => {
 jb.component('field.databind', { /* field.databind */
   type: 'feature',
   impl: ctx => ({
-      beforeInit: cmp => databindField(cmp,ctx),
-      templateModifier: (vdom,cmp,state) => {
-        if (!vdom.attributes || !ctx.vars.$model.updateOnBlur) return;
-        Object.assign(vdom.attributes, {
-          onchange: undefined, onkeyup: undefined, onkeydown: undefined,
-          onblur: e => cmp.jbModel(e.target.value),
-        })
-      }
+      beforeInit: cmp => { 
+        databindField(cmp,ctx),
+        cmp.onblurHandler = (e,src) => cmp.jbModel(e.target.value,src)
+        if (!ctx.vars.$model.updateOnBlur)
+          cmp.onchangeHandler = cmp.onkeyupHandler = onkeydownHandler = cmp.onblurHandler
+      },
+      init: cmp => cmp.fieldInitialValue && (cmp.state.model = cmp.fieldInitialValue(cmp.ctx))
   })
 })
 
@@ -117,15 +117,13 @@ jb.component('field.databind-text', { /* field.databindText */
     {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
   impl: (ctx,debounceTime,oneWay) => ({
-      beforeInit: cmp => databindField(cmp,ctx,debounceTime,oneWay),
-      templateModifier: (vdom,cmp,state) => {
-        if (!vdom.attributes || !ctx.vars.$model.updateOnBlur) return;
-        const elemToChange = cmp.elemToInput ? cmp.elemToInput(vdom) : vdom
-        Object.assign(elemToChange.attributes, {
-          onchange: undefined, onkeyup: undefined, onkeydown: undefined,
-          onblur: e => cmp.jbModel(e.target.value),
-        })
-      }
+      beforeInit: cmp => {
+        databindField(cmp,ctx,debounceTime,oneWay)
+        cmp.onblurHandler = (e,src) => cmp.jbModel(e.target.value,src)
+        if (!ctx.vars.$model.updateOnBlur)
+          cmp.onchangeHandler = cmp.onkeyupHandler = onkeydownHandler = cmp.onblurHandler
+      },
+      init: cmp => cmp.fieldInitialValue && (cmp.state.model = cmp.fieldInitialValue(cmp.ctx))
   })
 })
 
@@ -150,10 +148,11 @@ jb.component('field.default', { /* field.default */
 jb.component('field.init-value', { /* field.initValue */
   type: 'feature',
   params: [
-    {id: 'value', type: 'data'}
+    {id: 'value', type: 'data' , dynamic: true}
   ],
-  impl: (ctx,value) =>
-    ctx.vars.$model.databind && jb.writeValue(ctx.vars.$model.databind(), jb.val(value), ctx)
+  impl: (ctx,valueF) => ({
+    beforeInit: cmp => cmp.fieldInitialValue = ctx2 => jb.val(valueF(ctx2 || ctx))
+  })
 })
 
 jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */

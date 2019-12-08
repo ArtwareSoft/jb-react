@@ -63,7 +63,7 @@ jb.component('ui-test.tree-DD-after-last', { /* uiTest.treeDDAfterLast */
     })
 })
   
-jb.component('ui-test.table-tree', {
+jb.component('ui-test.table-tree-refresh1', {
   impl: uiTest({
       control: tableTree({
         treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
@@ -79,6 +79,28 @@ jb.component('ui-test.table-tree', {
       cmp.refresh()
     },
     expectedResult: contains(['name','path','Homer','friends','Barnie','~friends~0~name'])
+  })
+})
+
+jb.component('ui-test.table-tree-refresh2', {
+  impl: uiTest({
+      control: tableTree({
+        treeModel: tree.jsonReadOnly(()=>({
+          a: { a1: 'val' },
+          b: { b1: 'val' },
+        }) , ''),
+        leafFields: text({title: 'name', text: '%val%'}),
+        commonFields: text({title: 'path', text: '%path%'}),
+        chapterHeadline: label({title: suffix('~', '%path%')}),
+        style: tableTree.plain(),
+        features: id('tableTree')
+    }),
+    action: ctx => {
+      const cmp = jb.ui.cmpOfSelector('#tableTree',ctx)
+      Object.assign(cmp.expanded,{'~a':false })
+      cmp.refresh()
+    },
+    expectedResult: not(contains(['undefined']))
   })
 })
 

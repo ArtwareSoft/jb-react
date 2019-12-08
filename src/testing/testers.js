@@ -136,7 +136,7 @@ jb.component('ui-action.click', { /* uiAction.click */
   type: 'ui-action',
   params: [
     {id: 'selector', as: 'string'},
-    {id: 'methodToActivate', as: 'string', defaultValue: 'clicked'}
+    {id: 'methodToActivate', as: 'string', defaultValue: 'onclickHandler'}
   ],
   impl: (ctx,selector,methodToActivate) => {
 		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
@@ -177,7 +177,7 @@ jb.component('ui-action.set-text', { /* uiAction.setText */
 		const elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=> {
 			e._component.jbModel(value);
-			jb.ui.findIncludeSelf(e,selector).forEach(el=>el.value = value);
+			jb.ui.findIncludeSelf(e,`${selector},${selector} input,${selector} textarea`).forEach(el=>el.value = value);
 		})
 		return jb.delay(delay);
 	}

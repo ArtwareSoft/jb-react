@@ -1,6 +1,7 @@
 jb.ns('itemlist,itemlistContainer')
 
 jb.component('itemlist', { /* itemlist */
+  description: 'list, dynamic group, collection, repeat',
   type: 'control',
   category: 'group:80,common:80',
   params: [
@@ -68,7 +69,7 @@ jb.component('itemlist.init-table', { /* itemlist.initTable */
               cmp.ctx.vars.itemlistCntr.items = cmp.items;
             return cmp.items;
         }
-        cmp.fields = ctx.vars.$model.controls().map(x=>x.field)
+        cmp.fields = ctx.vars.$model.controls().map(inner=>inner.field())
       },
       init: cmp => cmp.state.items = cmp.calcItems(),
   })
@@ -157,7 +158,9 @@ jb.component('itemlist.selection', { /* itemlist.selection */
     ondblclick: true,
     afterViewInit: cmp => {
         cmp.selectionEmitter = new jb.rx.Subject();
-        cmp.clickEmitter = new jb.rx.Subject();
+        cmp.clickEmitter = cmp.onclick.merge(cmp.ondblclick).map(e=>dataOfElem(e.target)).filter(x=>x)
+        cmp.ondblclick.map(e=> dataOfElem(e.target)).filter(x=>x)
+          .subscribe(data => ctx.params.onDoubleClick(cmp.ctx.setData(data)))
 
         cmp.setSelected = selected => {
           cmp.selected = selected
@@ -195,6 +198,12 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         function selectedOfDatabind() {
           return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setVars({items: cmp.items}).setData(jb.val(selectedRef))))
         }
+        function dataOfElem(el) {
+          const itemElem = jb.ui.parents(el).find(el=>el.classList && el.classList.contains('jb-item'))
+          const ctxId = itemElem && itemElem.getAttribute('jb-ctx')
+          return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
+        }
+
         jb.delay(1).then(_=>{
            if (cmp.selected && cmp.items.indexOf(cmp.selected) == -1)
               cmp.selected = null;
@@ -203,15 +212,6 @@ jb.component('itemlist.selection', { /* itemlist.selection */
            if (!cmp.selected)
               autoSelectFirst()
         })
-    },
-    extendItem: (cmp,vdom,data) => {
-//      jb.ui.toggleClassInVdom(vdom,'selected',cmp.selected == data);
-      vdom.attributes.onclick = _ =>
-        cmp.clickEmitter.next(data)
-      vdom.attributes.ondblclick = _ => {
-        cmp.clickEmitter.next(data)
-        ctx.params.onDoubleClick(cmp.ctx.setData(data))
-      }
     },
     css: ['>.selected','>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(ctx.params.cssForSelected)).join('\n')
   })

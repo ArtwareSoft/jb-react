@@ -57,7 +57,7 @@ jb.component('table.mdl', { /* table.mdl */
                 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), 
                 class: (f.class + ' ' + cmp.classForTd).trim(), 
                 title: f.hoverTitle &&  f.hoverTitle(item) 
-              }) , f.control ? h(f.control(item,index),{row:item, index: index}) : f.fieldData(item,index))))
+              }) , f.control ? h(f.control(item,index)) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''

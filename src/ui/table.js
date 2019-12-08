@@ -56,7 +56,7 @@ jb.component('field.index', { /* field.index */
     {id: 'width', as: 'number', defaultValue: 10},
     {id: 'class', as: 'string'}
   ],
-  impl: (ctx,title,propName,width_class) => ({
+  impl: (ctx,title) => ({
     title: () => title,
     fieldData: (row,index) => index,
     class: _class,
@@ -89,43 +89,6 @@ jb.component('field.control', { /* field.control */
     numeric: numeric,
     ctxId: jb.ui.preserveCtx(ctx)
   })
-})
-
-jb.component('field.button', { /* field.button */
-  type: 'table-field',
-  params: [
-    {id: 'title', as: 'string', mandatory: true},
-    {id: 'buttonText', as: 'string', mandatory: true, dynamic: true},
-    {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {id: 'width', as: 'number'},
-    {id: 'dataForSort', dynamic: true},
-    {id: 'numeric', as: 'boolean', type: 'boolean'},
-    {
-      id: 'style',
-      type: 'table-button.style',
-      defaultValue: button.tableCellHref(),
-      dynamic: true
-    },
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => {
-    const ctrl = jb.ui.ctrl(ctx,{
-      beforeInit: (cmp,props) => {
-        cmp.state.title = ctx.params.buttonText(ctx.setData(props.row));
-      },
-      afterViewInit : cmp=>
-        cmp.clicked = _ => ctx.params.action(cmp.ctx.setData(cmp.props.row).setVars({ $launchingElement: { el : cmp.base }}))
-    }).reactComp();
-
-    return {
-      title: () => ctx.params.title,
-      control: _ => ctrl,
-      width: ctx.params.width,
-      fieldData: row => dataForSort(ctx.setData(row)),
-      numeric: ctx.params.numeric,
-      ctxId: jb.ui.preserveCtx(ctx)
-    }
-  }
 })
 
 // todo - move to styles
