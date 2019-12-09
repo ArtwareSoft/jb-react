@@ -16,20 +16,26 @@ function applyVdomDiff(elem,vdomBefore,vdomAfter,cmp) {
     jb.log('applyVdomDiff',[...arguments]);
     if (vdomBefore == null || elem == null) debugger
     if (typeof vdomAfter !== 'object') {
+        if (vdomAfter === vdomBefore) return
         elem.nodeType == 3 ? elem.nodeValue = vdomAfter : elem.innerText = vdomAfter
+        jb.log('htmlChange',['change text',elem,vdomBefore,vdomAfter,cmp]);
         if (typeof vdomAfter === 'object') 
             unmount(vdomAfter.base)
         return elem
     }
     if ((vdomBefore.tag || vdomBefore.cmp) != (vdomAfter.tag || vdomAfter.cmp)) {
         unmount(elem)
-        return elem.parentElement.replaceChild(render(vdomAfter,elem.parentElement,cmp),elem)
+        const replaceWith = render(vdomAfter,elem.parentElement,cmp)
+        jb.log('htmlChange',['replaceChild',replaceWith,elem]);
+        return elem.parentElement.replaceChild(replaceWith,elem)
     }
     if (vdomBefore.cmp) // same cmp
-        return applyVdomDiff(elem,vdomBefore.cmp.vdomBefore,vdomBefore.cmp.renderVdom(),vdomBefore.cmp)
+        return //applyVdomDiff(elem,vdomBefore.cmp.vdomBefore,vdomBefore.cmp.renderVdom(),vdomBefore.cmp)
     
-    applyAttsDiff(elem, vdomBefore.attributes || {}, vdomAfter.attributes || {})
-    applyChildrenDiff(elem, jb.asArray(vdomBefore.children), jb.asArray(vdomAfter.children),cmp)
+    if (vdomBefore.attributes || vdomAfter.attributes)
+        applyAttsDiff(elem, vdomBefore.attributes || {}, vdomAfter.attributes || {})
+    if (vdomBefore.children || vdomAfter.children)
+        applyChildrenDiff(elem, jb.asArray(vdomBefore.children), jb.asArray(vdomAfter.children),cmp)
     return elem
 
     function applyAttsDiff(elem, vdomBefore, vdomAfter) {
@@ -43,11 +49,15 @@ function applyVdomDiff(elem,vdomBefore,vdomAfter,cmp) {
         jb.log('applyChildrenDiff',[...arguments]);
         let remainingBefore = vdomBefore.map((e,i)=> {
             if (!parentElem.childNodes[i]) debugger
-            return Object.assign({},e,{base: parentElem.childNodes[i]})
+            return Object.assign({},e,{i, base: parentElem.childNodes[i]})
         })
         const unmountCandidates = remainingBefore.slice(0)
-        const childrenMap = vdomAfter.map(toLocate=> locateCurrentVdom(toLocate,remainingBefore))
-        unmountCandidates.filter(toLocate => childrenMap.indexOf(toLocate) == -1).forEach(elem => unmount(elem.base))
+        const childrenMap = vdomAfter.map((toLocate,i)=> locateCurrentVdom(toLocate,i,remainingBefore))
+        unmountCandidates.filter(toLocate => childrenMap.indexOf(toLocate) == -1).forEach(elem =>{
+            unmount(elem.base)
+            parentElem.removeChild(elem.base)
+            jb.log('htmlChange',['removeChild',elem.base]);
+        })
         let lastElem = vdomAfter.reduce((prevElem,after,index) => {
             const current = childrenMap[index]
             const childElem = current ? applyVdomDiff(current.base,current,after,cmp) : render(after,parentElem,cmp)
@@ -57,37 +67,60 @@ function applyVdomDiff(elem,vdomBefore,vdomAfter,cmp) {
         while(lastElem) {
             //unmount(lastElem)
             parentElem.removeChild(lastElem)
+            jb.log('htmlChange',['removeChild',lastElem]);
             lastElem = lastElem.nextSibling
         }
 
         function putInPlace(childElem,prevElem) {
-            prevElem && parentElem.insertBefore(childElem,prevElem && prevElem.nextSibling)
+            if (prevElem && prevElem.nextSibling != childElem) {
+                parentElem.insertBefore(childElem, prevElem.nextSibling)
+                jb.log('htmlChange',['insertBefore',childElem,prevElem && prevElem.nextSibling]);
+            }
             return childElem
         }
-        function locateCurrentVdom(toLocate,remainingBefore) {
-            const found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
-            if (found != -1)
+        function locateCurrentVdom(toLocate,index,remainingBefore) {
+            let found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
+            if (found == -1)
+                found = remainingBefore.findIndex(before=>before.tag && before.i == index && before.tag === toLocate.tag)
+            if (found != -1)                
                 return remainingBefore.splice(found,1)[0]
         }
     }
     function sameSource(vdomBefore,vdomAfter) {
         if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
         const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
-        if (atts1.cmpId === atts2.cmpId || atts1.ctxId === atts2.ctxId) return true
-        return compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)
+        if (atts1.cmpId && atts1.cmpId === atts2.cmpId || atts1.ctxId && atts1.ctxId === atts2.ctxId) return true
+        if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
+        if (compareAtts(['id','path','name'],atts1,atts2)) return true
+    }
+    function compareAtts(attsToCompare,atts1,atts2) {
+        for(let i=0;i<attsToCompare.length;i++)
+            if (atts1[attsToCompare[i]] && atts1[attsToCompare[i]] == atts2[attsToCompare[i]])
+                return true
     }
     function compareCtxAtt(att,atts1,atts2) {
-        const val1 = jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
-        const val2 = jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
+        const val1 = atts1.ctxId && jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
+        const val2 = atts2.ctxId && jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
         return val1 && val2 && val1 == val2
     }
 }
 
 function setAtt(elem,att,val) {
-    if (att == 'style')
+    if (att == 'style' && typeof val === 'object') {
         elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
-    else
+        jb.log('htmlChange',['setAtt',...arguments]);
+    } else if (att == 'value' && elem.tagName.match(/input|textarea/i) ) {
+        const active = document.activeElement === elem
+        if (elem.value == val) return
+        elem.value = val
+        if (active)
+            elem.focus()
+        jb.log('htmlChange',['setAtt',...arguments]);
+    }
+    else {
         elem.setAttribute(att,val)
+        jb.log('htmlChange',['setAtt',...arguments]);
+    }
 }
 function isAttUndefined(key,vdom) {
     return !vdom.hasOwnProperty(key) || (key == 'checked' && vdom[key] === false)
@@ -103,20 +136,24 @@ function render(vdom,parentElem,cmp) {
     jb.log('render',[...arguments]);
     let elem = null
     if (typeof vdom !== 'object') {
+        jb.log('htmlChange',['innerText',...arguments])
         parentElem.nodeType == 3 ? parentElem.nodeValue = vdom : parentElem.innerText = vdom
     } else if (vdom.tag) {
+        jb.log('htmlChange',['createElement',...arguments])
         elem = parentElem.ownerDocument.createElement(vdom.tag)
         jb.entries(vdom.attributes).filter(e=>e[0].indexOf('on') != 0 && !isAttUndefined(e[0],vdom.attributes)).forEach(e=>setAtt(elem,e[0],e[1]))
         jb.entries(vdom.attributes).filter(e=>e[0].indexOf('on') == 0).forEach(
-                e=>elem.setAttribute(e[0],`jb.ui.handleCmpEvent(event,'${cmp.id}','${e[0].slice(2)}','${typeof e[1] == 'string' && e[1]}')`))
+                e=>elem.setAttribute(e[0],`jb.ui.handleCmpEvent(${typeof e[1] == 'string' && e[1] ? "'" + e[1] + "'" : '' })`))
         jb.asArray(vdom.children).map(child=> render(child,elem,cmp)).filter(x=>x)
             .forEach(chElem=>elem.appendChild(chElem))
         parentElem.appendChild(elem)
+        jb.log('htmlChange',['appendChild',parentElem,elem])
     } else if (vdom.cmp) {
         elem = render(vdom.cmp.renderVdom(),parentElem, vdom.cmp)
         vdom.cmp.base = elem
         elem._component = vdom.cmp
         parentElem.appendChild(elem)
+        jb.log('htmlChange',['appendChild',parentElem,elem])
         vdom.cmp.componentDidMount()
     } 
     return elem
@@ -124,12 +161,15 @@ function render(vdom,parentElem,cmp) {
 
 Object.assign(jb.ui, {
     h, render, unmount,
-    handleCmpEvent(ev,cmpId,source,specificHandler) {
-        Array.from(document.querySelectorAll(`[cmpId="${cmpId}"]`)).forEach(el=> {
-            const methodName = specificHandler && specificHandler != 'false' ? specificHandler : `on${source}Handler`
-            const handler = jb.path(el,['_component',methodName])
-            handler && handler.call(el._component,ev,source)
-        })
+    handleCmpEvent(specificHandler) {
+        const cmpId = [event.target, ...jb.ui.parents(event.target)].find(el=> el.getAttribute && el.getAttribute('cmpId') != null).getAttribute('cmpId')
+        const el = document.querySelector(`[cmpId="${cmpId}"]`)
+        if (!el) return
+        const methodPath = specificHandler ? specificHandler : `on${event.type}Handler`
+        const path = ['_component',...methodPath.split('.')]
+        const handler = jb.path(el,path)
+        const obj = jb.path(el,path.slice(-1))
+        handler && handler.call(obj,event,event.type)
     },
     ctrl(context,options) {
         const ctx = context.setVars({ $model: context.params });
@@ -454,53 +494,42 @@ ui.renderWidget = function(profile,top) {
 			window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
 	} catch(e) {
 		return jb.logException(e)
-	}
+    }
+    
+    let currentProfile = profile
+    let lastRenderTime = 0, fixedDebounce = 500
+    let vdomBefore = {}
+    const debounceTime = () => Math.min(2000,lastRenderTime*3 + fixedDebounce)
 
-	doRender()
+    if (jb.studio.studioWindow) {
+        const studioWin = jb.studio.studioWindow
+        const st = studioWin.jb.studio;
+        const project = studioWin.jb.resources.studio.project
+        const page = studioWin.jb.resources.studio.page
+        if (project && page)
+            currentProfile = {$: `${project}.${page}`}
 
-	function doRender() {
-		class R extends jb.ui.Component {
-			constructor(props) {
-				super();
-				this.state.profile = profile;
-				this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
-				if (jb.studio.studioWindow) {
-					const studioWin = jb.studio.studioWindow
-					const st = studioWin.jb.studio;
-					const project = studioWin.jb.resources.studio.project
-					const page = studioWin.jb.resources.studio.page
-					if (project && page)
-						this.state.profile = {$: `${project}.${page}`}
+        st.pageChange.filter(({page})=>page != currentProfile.$).subscribe(({page})=> doRender(page))
+        st.scriptChange
+            .filter(e=>(jb.path(e,'path.0') || '').indexOf('data-resource.') != 0) // do not update on data change
+            .debounce(() => jb.delay(debounceTime()))
+            .subscribe(() =>{
+                doRender()
+                jb.ui.dialogs.reRenderAll()
+            });
+    }
+    const elem = top.ownerDocument.createElement('div')
+    top.appendChild(elem)
 
-					this.lastRenderTime = 0
-					this.fixedDebounce = 500
+    doRender()
 
-					st.pageChange.takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + this.fixedDebounce))
-						.filter(({page})=>page != this.state.profile.$)
-						.subscribe(({page})=>
-							this.setState({profile: {$: page }}));
-					st.scriptChange.filter(e=>(jb.path(e,'path.0') || '').indexOf('data-resource.') != 0).takeUntil(this.destroyed).debounce(() => jb.delay(this.lastRenderTime*3 + this.fixedDebounce))
-						.subscribe(e=>{
-							this.setState(null)
-							jb.ui.dialogs.reRenderAll()
-						});
-				}
-			}
-			render(props,state) {
-				const profToRun = state.profile;
-				if (!jb.comps[profToRun.$]) return '';
-				this.start = new Date().getTime()
-				return ui.h(new jb.jbCtx().run(profToRun).reactComp())
-			}
-			componentDidUpdate() {
-				this.lastRenderTime = new Date().getTime() - this.start
-			}
-			componentWillUnmount() {
-				this.resolveDestroyed();
-			}
-		}
-		jb.delay(10).then(()=>ui.render(ui.h(R),top))
-	}
+	function doRender(page) {
+        if (page) currentProfile = {$: page}
+        const cmp = new jb.jbCtx().run(currentProfile)
+        const start = new Date().getTime()
+        applyVdomDiff(top.firstChild, {},h(cmp),cmp)
+        lastRenderTime = new Date().getTime() - start
+    }
 }
 
 ui.cachedMap = mapFunc => {
@@ -532,7 +561,7 @@ ui.setState = function(cmp,state,opEvent,watchedAt) {
 	ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent, watchedAt: watchedAt });
 }
 
-ui.watchRef = function(ctx,cmp,ref,{includeChildren,delay,allowSelfRefresh,strongRefresh}) {
+ui.watchRef = function(ctx,cmp,ref,{includeChildren,delay,allowSelfRefresh,strongRefresh} = {}) {
 		if (!ref) return
     	ui.refObservable(ref,cmp,{includeChildren, srcCtx: ctx})
 			.subscribe(e=>{

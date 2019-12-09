@@ -445,38 +445,29 @@ jb.ui.dialogs = {
 				dialog.em.complete();
 
 				const index = self.dialogs.indexOf(dialog);
-				if (index != -1)
+				if (index != -1) 
 					self.dialogs.splice(index, 1);
 				if (dialog.modal && document.querySelector('.modal-overlay'))
 					document.body.removeChild(document.querySelector('.modal-overlay'));
-				jb.ui.dialogs.remove(dialog);
+				self.refresh();
 			})
 		},
-		dialog.closed = _ =>
-			self.dialogs.indexOf(dialog) == -1;
+		dialog.closed = () => self.dialogs.indexOf(dialog) == -1;
 
-		this.render(dialog);
+		this.refresh();
 	},
 	closeAll() {
-		this.dialogs.forEach(d=>d.close());
+		this.dialogs.forEach(d=>d.close())
 	},
-	getOrCreateDialogsElem() {
-		if (!document.querySelector('.jb-dialogs'))
-		jb.ui.addHTML(document.body,'<div class="jb-dialogs"/>');
-		return document.querySelector('.jb-dialogs');
+	dialogsCmp() {
+		if (!this._dialogsCmp) {
+			this._dialogsCmp = new jb.jbCtx().run(dialog.jbDialogs())
+			jb.ui.render(jb.ui.h(this._dialogsCmp),document.body,this._dialogsCmp)
+		}
+		return this._dialogsCmp
 	},
-    render(dialog) {
-		jb.ui.addHTML(this.getOrCreateDialogsElem(),`<div id="${dialog.instanceId}"/>`);
-		const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
-		jb.ui.render(jb.ui.h(dialog.comp),elem);
-	},
-	remove(dialog) {
-		const elem = document.querySelector(`.jb-dialogs>[id="${dialog.instanceId}"]`);
-		if (!elem) return; // already closed due to asynch request handling and multiple requests to close
-		jb.ui.unmount(elem)
-		//jb.ui.render('', elem, elem.firstElementChild);// react - remove
-		// jb.ui.unmountComponent(elem.firstElementChild._component);
-		this.getOrCreateDialogsElem().removeChild(elem);
+    refresh() {
+		this.dialogsCmp().setState()
 	},
 	reRenderAll() {
 		return this.dialogs.reduce((p,dialog) => p.then(()=>
@@ -486,3 +477,14 @@ jb.ui.dialogs = {
 			})), Promise.resolve())
 	}
 }
+
+jb.component('dialog.jb-dialogs', { 
+	type: 'control',
+	params: [
+	  {id: 'style', dynamic: true, defaultValue: customStyle({
+			template: (cmp,state,h) => h('div', { class:'jb-dialogs' }, jb.ui.dialogs.dialogs.map(d=>h(d.comp))  )
+		  })
+	  },
+	],
+	impl: ctx => jb.ui.ctrl(ctx)
+})

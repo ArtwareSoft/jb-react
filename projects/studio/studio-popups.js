@@ -10,13 +10,12 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
 				h('div',{class: 'dialog-title noselect'},state.title),
 				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
-				h('button',{class: 'dialog-close', onclick:
-					_=> cmp.dialogClose() },'×'),
+				h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
 				h('div',{class: 'dialog-buttons'},[
-					...(cmp.dialog.gotoEditor ? [h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.gotoEditor() },'goto editor')] : []),
-					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialog.refresh() },'refresh'),
-					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: _=> cmp.dialogClose({OK: true}) },'ok'),
+					...(cmp.dialog.gotoEditor ? [h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: 'dialog.gotoEditor' },'goto editor')] : []),
+					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: 'dialog.refresh' },'refresh'),
+					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: 'dialogCloseOK' },'ok'),
 				].filter(x=>x) ),
 			]),
 			features: [
@@ -87,7 +86,7 @@ jb.component('dialog.show-source-style', {
 	impl: customStyle({
 			  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
 				  h('div',{class: 'dialog-title noselect'},state.title),
-				  h('button',{class: 'dialog-close', onclick:  _=> cmp.dialogClose() },'×'),
+				  h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
 				  h('div',{class: 'jb-dialog-content-parent stretchedToMargin'},h(state.contentComp)),
 			  ]),
 			  features: [
@@ -185,8 +184,7 @@ jb.component('dialog.studio-floating', { /* dialog.studioFloating */
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
 				h('div',{class: 'dialog-title noselect'},state.title),
 				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
-				h('button',{class: 'dialog-close', onclick:
-					_=> cmp.dialogClose() },'×'),
+				h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
 			]),
     css: `{ position: fixed;

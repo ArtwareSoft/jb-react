@@ -75,7 +75,7 @@ jb.component('ui-test.table-tree-refresh1', {
     }),
     action: ctx => {
       const cmp = jb.ui.cmpOfSelector('#tableTree',ctx)
-      Object.assign(cmp.state.expanded,{'~friends':true, '~friends~0': true })
+      Object.assign(cmp.expanded,{'~friends':true, '~friends~0': true })
       cmp.refresh()
     },
     expectedResult: contains(['name','path','Homer','friends','Barnie','~friends~0~name'])

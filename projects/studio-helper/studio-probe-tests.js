@@ -71,7 +71,7 @@ jb.component('probe-test.inner-in-template', { /* probeTest.innerInTemplate */
   impl: studioProbeTest({
     circuit: group({controls: test.innerLabelTemplate(label('hello'))}),
     probePath: 'controls~ctrl~title',
-    expectedVisits: 2
+    expectedVisits: 1
   })
 })
 
@@ -116,7 +116,7 @@ jb.component('probe-test.inside-open-dialog', { /* probeTest.insideOpenDialog */
   impl: studioProbeTest({
     circuit: button({action: openDialog({content: label('hello')})}),
     probePath: 'action~content~title',
-    expectedVisits: 2
+    expectedVisits: 1
   })
 })
 

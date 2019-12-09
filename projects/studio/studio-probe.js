@@ -91,12 +91,11 @@ st.Probe = class {
         // check if parent ctx returns object with method name of breakprop as in dialog.onOK
         const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
         const obj = this.probe[_path][0].out
-        if (obj[breakingProp] && typeof obj[breakingProp] == 'function')
+        const hasSideEffect = st.previewjb.comps[st.compNameOfPath(breakingPath)] && (st.previewjb.comps[st.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1
+        if (!hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
             return Promise.resolve(obj[breakingProp]())
                 .then(_=>this.handleGaps(_path))
 
-    // use the ctx to run the breaking param if it has no side effects
-        const hasSideEffect = st.previewjb.comps[st.compNameOfPath(breakingPath)] && (st.previewjb.comps[st.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1
         if (!hasSideEffect)
             return Promise.resolve(parentCtx.runInner(parentCtx.profile[breakingProp],st.paramDef(breakingPath),breakingProp))
                 .then(_=>this.handleGaps(_path))

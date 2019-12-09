@@ -132,7 +132,7 @@ jb.component('tree.selection', { /* tree.selection */
 		  // first auto selection selection
 		  var first_selected = jb.val(selectedRef);
 		  if (!first_selected && ctx.params.autoSelectFirst) {
-			  var first = jb.ui.find(cmp.el.parentNode,'.treenode')[0];
+			  var first = jb.ui.find(cmp.base.parentNode,'.treenode')[0];
 			  first_selected = cmp.elemToPath(first);
 		  }
 		  if (first_selected)

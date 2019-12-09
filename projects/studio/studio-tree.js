@@ -129,7 +129,6 @@ jb.component('studio.control-tree', { /* studio.controlTree */
       tree({
         nodeModel: studio.controlTreeNodes(),
         features: [
-          css.class('jb-control-tree'),
           tree.selection({
             databind: '%$studio/profile_path%',
             autoSelectFirst: true,

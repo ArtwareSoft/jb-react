@@ -104,7 +104,7 @@ jb.component('table-tree.init', {
             function getOrCreateControl(field,item,index) {
                 if (!treeModel.FieldCache)
                     return field.control(item,index)
-                cmp.ctrlCache = {} //cmp.ctrlCache || {}
+                cmp.ctrlCache = cmp.ctrlCache || {}
                 const key = item.path+'~!'+item.expanded + '~' +field.ctxId
                 cmp.ctrlCache[key] = cmp.ctrlCache[key] || field.control(item,index)
                 return cmp.ctrlCache[key]

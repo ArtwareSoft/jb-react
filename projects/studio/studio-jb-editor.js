@@ -115,7 +115,6 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
               nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
               style: tree.noHead(),
               features: [
-                css.class('jb-control-tree'),
                 tree.selection({}),
                 tree.keyboardSelection({}),
                 css.width({width: '%$width%', minMax: 'max'})
@@ -281,7 +280,7 @@ jb.component('studio.jb-editor-inteli-tree', { /* studio.jbEditorInteliTree */
   impl: tree({
         nodeModel: studio.jbEditorNodes('%$path%'),
         features: [
-          css.class('jb-editor jb-control-tree'),
+          css.class('jb-editor'),
           tree.selection({
             databind: '%$jbEditorCntrData/selected%',
             autoSelectFirst: true,
