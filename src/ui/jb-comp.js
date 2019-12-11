@@ -2,13 +2,15 @@
 const ui = jb.ui;
 
 // react 
-
+ui.VNode = Symbol.for("VNode")
 function h(cmpOrTag,attributes,children) {
+    if (cmpOrTag && cmpOrTag[ui.VNode]) return cmpOrTag
     if (cmpOrTag && cmpOrTag.light)
         return cmp.renderVdom()
     if (Array.isArray(children) && children.length > 1)
         children = children.filter(x=>x).map(item=> typeof item == 'string' ? h('span',{},item) : item)
-    return {...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,attributes,children}
+    
+    return {...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,attributes,children,[ui.VNode]: true}
 }
 
 function applyVdomDiff(elem,vdomBefore,vdomAfter,cmp) {
@@ -30,7 +32,7 @@ function applyVdomDiff(elem,vdomBefore,vdomAfter,cmp) {
         return elem.parentElement.replaceChild(replaceWith,elem)
     }
     if (vdomBefore.cmp) // same cmp
-        return //applyVdomDiff(elem,vdomBefore.cmp.vdomBefore,vdomBefore.cmp.renderVdom(),vdomBefore.cmp)
+        return
     
     if (vdomBefore.attributes || vdomAfter.attributes)
         applyAttsDiff(elem, vdomBefore.attributes || {}, vdomAfter.attributes || {})
@@ -44,15 +46,18 @@ function applyVdomDiff(elem,vdomBefore,vdomAfter,cmp) {
         keys.forEach(key => (vdomAfter[key] != vdomBefore[key]) && setAtt(elem,key,vdomAfter[key]))
     }
     function applyChildrenDiff(parentElem, vdomBefore, vdomAfter, cmp) {
-        if (vdomBefore.length ==1 && vdomAfter.length == 1)
+        if (vdomBefore.length ==1 && vdomAfter.length == 1) {
+            //if (!parentElem.firstChild) return
             return applyVdomDiff(parentElem.firstChild || parentElem, vdomBefore[0], vdomAfter[0], cmp)
+        }
         jb.log('applyChildrenDiff',[...arguments]);
         let remainingBefore = vdomBefore.map((e,i)=> {
             if (!parentElem.childNodes[i]) debugger
             return Object.assign({},e,{i, base: parentElem.childNodes[i]})
         })
         const unmountCandidates = remainingBefore.slice(0)
-        const childrenMap = vdomAfter.map((toLocate,i)=> locateCurrentVdom(toLocate,i,remainingBefore))
+        const childrenMap = vdomAfter.map((toLocate,i)=> locateCurrentVdom1(toLocate,i,remainingBefore))
+        vdomAfter.forEach((toLocate,i)=> childrenMap[i] = childrenMap[i] || locateCurrentVdom2(toLocate,i,remainingBefore))
         unmountCandidates.filter(toLocate => childrenMap.indexOf(toLocate) == -1).forEach(elem =>{
             unmount(elem.base)
             parentElem.removeChild(elem.base)
@@ -78,10 +83,13 @@ function applyVdomDiff(elem,vdomBefore,vdomAfter,cmp) {
             }
             return childElem
         }
-        function locateCurrentVdom(toLocate,index,remainingBefore) {
-            let found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
-            if (found == -1)
-                found = remainingBefore.findIndex(before=>before.tag && before.i == index && before.tag === toLocate.tag)
+        function locateCurrentVdom1(toLocate,index,remainingBefore) {
+            const found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
+            if (found != -1)                
+                return remainingBefore.splice(found,1)[0]
+        }
+        function locateCurrentVdom2(toLocate,index,remainingBefore) {
+            const found = remainingBefore.findIndex(before=>before.tag && before.i == index && before.tag === toLocate.tag)
             if (found != -1)                
                 return remainingBefore.splice(found,1)[0]
         }
@@ -106,6 +114,7 @@ function applyVdomDiff(elem,vdomBefore,vdomAfter,cmp) {
 }
 
 function setAtt(elem,att,val) {
+    if (val == null) return
     if (att == 'style' && typeof val === 'object') {
         elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
         jb.log('htmlChange',['setAtt',...arguments]);
@@ -129,7 +138,10 @@ function isAttUndefined(key,vdom) {
 function unmount(elem) {
     jb.log('unmount',[...arguments]);
     elem && elem.querySelectorAll && [elem, ...Array.from(elem.querySelectorAll('[cmpId]'))]
-        .forEach(el=>el._component && el._component.componentWillUnmount())
+        .forEach(el=> {
+            el._component && el._component.componentWillUnmount()
+            el._component = null
+        })
 }
 
 function render(vdom,parentElem,cmp) {
@@ -151,7 +163,12 @@ function render(vdom,parentElem,cmp) {
     } else if (vdom.cmp) {
         elem = render(vdom.cmp.renderVdom(),parentElem, vdom.cmp)
         vdom.cmp.base = elem
-        elem._component = vdom.cmp
+        if (elem._component) {
+            elem._extraComps = elem._extraComps || []
+            elem._extraComps.push(vdom.cmp)
+        } else {
+            elem._component = vdom.cmp
+        }
         parentElem.appendChild(elem)
         jb.log('htmlChange',['appendChild',parentElem,elem])
         vdom.cmp.componentDidMount()
@@ -162,20 +179,19 @@ function render(vdom,parentElem,cmp) {
 Object.assign(jb.ui, {
     h, render, unmount,
     handleCmpEvent(specificHandler) {
-        const cmpId = [event.target, ...jb.ui.parents(event.target)].find(el=> el.getAttribute && el.getAttribute('cmpId') != null).getAttribute('cmpId')
-        const el = document.querySelector(`[cmpId="${cmpId}"]`)
+        const el = [event.currentTarget, ...jb.ui.parents(event.currentTarget)].find(el=> el.getAttribute && el.getAttribute('cmpId') != null)
+        //const el = document.querySelector(`[cmpId="${cmpId}"]`)
         if (!el) return
         const methodPath = specificHandler ? specificHandler : `on${event.type}Handler`
         const path = ['_component',...methodPath.split('.')]
         const handler = jb.path(el,path)
-        const obj = jb.path(el,path.slice(-1))
+        const obj = jb.path(el,path.slice(0,-1))
         handler && handler.call(obj,event,event.type)
     },
     ctrl(context,options) {
         const ctx = context.setVars({ $model: context.params });
         const styleOptions = defaultStyle(ctx) || {};
         if (styleOptions.jbExtend)  {// style by control
-//            styleOptions.originatingCtx = ctx;
             return styleOptions.jbExtend(options).applyFeatures(ctx);
         }
         return new JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx);
@@ -243,9 +259,7 @@ class JbComponent {
     }
     strongRefresh() {
         const newCmp = this.originatingCtx.runItself()
-        const vdomBefore = this.vdomBefore
-        const vdomAfter = newCmp.renderVdom()
-        applyVdomDiff(this.base, vdomBefore,vdomAfter,newCmp)
+        applyVdomDiff(this.base, h(this),h(newCmp),newCmp)
     }
 	field() {
         if (this._field) return this._field
@@ -274,7 +288,8 @@ class JbComponent {
     renderVdom() {
         this.initIfNeeded()
         const vdom = this.doRender() || ui.h('span',{display: 'none'})
-        vdom.attributes = Object.assign(vdom.attributes || {},{cmpId: this.id, 'jb-ctx': this.ctx.id })
+        if (typeof vdom == 'object')
+            vdom.attributes = Object.assign(vdom.attributes || {},{cmpId: this.id, 'jb-ctx': ui.preserveCtx(this.originatingCtx) })
         return this.vdomBefore = vdom
     }
     doRender() {
@@ -462,16 +477,11 @@ if (typeof $ != 'undefined' && $.fn)
 
 jb.jstypes.renderable = value => {
   if (value == null) return '';
-  if (value.cmpId !== undefined) return value
+  if (value[ui.VNode]) return value;
+  if (value instanceof JbComponent) return h(value)
   if (Array.isArray(value))
   	return ui.h('div',{},value.map(item=>jb.jstypes.renderable(item)));
-  value = jb.val(value,true);
-  if (typeof(value) == 'undefined') return '';
-  if (value.reactComp)
-  	return ui.h(value.reactComp())
-  else if (value.constructor && value.constructor.name == 'VNode')
-  	return value;
-  return '' + value;
+  return '' + jb.val(value,true);
 }
 
 ui.renderable = ctrl => ctrl //ctrl && ctrl.reactComp && ctrl.reactComp();

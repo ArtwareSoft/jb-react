@@ -50,13 +50,13 @@ jb.component('table-tree.init', {
             treeModel.children(treeModel.rootPath).forEach(path=>cmp.expanded[path] = true)
 
             cmp.refresh = () => cmp.setState({items:cmp.calcItems()})
+            cmp.itemsCache = {}
+            cmp.headLineCache = {}
             cmp.calcItems = () => calcItems(treeModel.rootPath,0)
             cmp.leafFields = calcFields('leafFields')
             cmp.commonFields = calcFields('commonFields')
             cmp.fieldsForPath = path => treeModel.isArray(path) ? cmp.commonFields : cmp.leafFields.concat(cmp.commonFields)
-            cmp.headline = item => ctx.vars.$model.chapterHeadline(
-                cmp.ctx.setData({path: item.path, val: treeModel.val(item.path)})
-                    .setVars({item,collapsed: !cmp.expanded[item.path]})).reactComp()
+            cmp.headline = item => getOrCreateHeadlineCmp(item)
 
             cmp.expandingFieldsOfItem = item => {
                 const maxDepthAr = Array.from(new Array(treeModel.maxDepth))
@@ -90,10 +90,16 @@ jb.component('table-tree.init', {
 
             function calcItems(top) {
                 if (cmp.ctx.vars.$model.includeRoot)
-                    return doCalcItems(top, 0)
-                return doCalcItems(top, -1).filter(x=>x.depth > -1)
+                    return refreshItemsFromCache(doCalcItems(top, 0))
+                return refreshItemsFromCache(doCalcItems(top, -1).filter(x=>x.depth > -1))
             }
-
+            function refreshItemsFromCache(items) {
+                return items.map(item=>{
+                    if (!cmp.itemsCache[item.path])
+                        cmp.itemsCache[item.path] = item
+                    return Object.assign(cmp.itemsCache[item.path],item)
+                })
+            }
             function doCalcItems(top, depth) {
                 const item = [{path: top, depth, val: treeModel.val(top), expanded: cmp.expanded[top]}]
                 if (cmp.expanded[top])
@@ -114,6 +120,13 @@ jb.component('table-tree.init', {
                 fields.forEach(f=>f.cachedControl = (item,index) => getOrCreateControl(f,item,index))
                 return fields
             }
+            function getOrCreateHeadlineCmp(item) {
+                if (!cmp.headLineCache[item.path])
+                    cmp.headLineCache[item.path] = ctx.vars.$model.chapterHeadline(
+                        cmp.ctx.setData({path: item.path, val: treeModel.val(item.path)})
+                            .setVars({item,collapsed: ctx2 => !cmp.expanded[item.path]}))
+                return cmp.headLineCache[item.path]
+            }
         },
         init: cmp => cmp.state.items = cmp.calcItems(),
     })
@@ -133,12 +146,12 @@ jb.component('table-tree.plain', {
           ...cmp.leafFields.concat(cmp.commonFields).map(f=>h('col',{width: f.width || '200px'})),
           ...(cmp.hideHeaders ? [] : [h('thead',{},h('tr',{},
           Array.from(new Array(cmp.treeModel.maxDepth+1)).map(f=>h('th',{class: 'th-expand-collapse'})).concat(
-                [...cmp.leafFields, ...cmp.commonFields].map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} },jb.ui.fieldTitle(cmp,f,h))) )))]),
+                [...cmp.leafFields, ...cmp.commonFields].map(f=>h('th',{'jb-ctx': f.ctxId},jb.ui.fieldTitle(cmp,f,h))) )))]),
           h('tbody',{class: 'jb-drag-parent'},
-              state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', path: item.path}, 
+              state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', path: item.path }, 
                 [...cmp.expandingFieldsOfItem(item).map(f=>h('td',
-                            f.empty ? { class: 'empty-expand-collapse'} : f.toggle ? {class: 'expandbox' } : {class: 'headline', colSpan: f.colSpan},
-                            f.empty ? '' : f.toggle ? h('span',{}, h('i',{class:'material-icons noselect', onclick: 'flipExpandCollapse' },
+                            f.empty ? { class: 'empty-expand-collapse'} : f.toggle ? {class: 'expandbox' } : {class: 'headline', colSpan: f.colSpan, onclick: 'flipExpandCollapse' },
+                            f.empty ? '' : f.toggle ? h('span',{}, h('i',{class:'material-icons noselect', onclick: 'flipExpandCollapse'  },
                                             f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right')) : h(cmp.headline(item))
                 )), 
                     ...cmp.fieldsForPath(item.path).map(f=>h('td', {'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: 'tree-field'}, 
@@ -147,10 +160,9 @@ jb.component('table-tree.plain', {
           ),
           state.items.length == 0 ? 'no items' : ''
           ]),
-      css: `{border-spacing: 0; text-align: left}
+      css: `{border-spacing: 0; text-align: left;width: 100%; table-layout:fixed;}
       >tbody>tr>td>span { font-size:16px; cursor: pointer; display: flex; border: 1px solid transparent }
-      >tbody>tr>td>span>i { margin-left: -10px }
-      {width: 100%; table-layout:fixed;}
+      >tbody>tr>td>span>i { font-size: 16px; }
       `,
       features: tableTree.init()
     })

@@ -2,7 +2,7 @@ jb.component('dialog.studio-jb-editor-popup', { /* dialog.studioJbEditorPopup */
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
-        h('button',{class: 'dialog-close', onclick: _=> cmp.dialogClose() },'×'),
+        h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
         h(state.contentComp),
       ]),
     css: `{ background: #fff; position: absolute }

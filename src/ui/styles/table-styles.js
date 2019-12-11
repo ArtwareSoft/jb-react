@@ -4,7 +4,7 @@ jb.component('table.with-headers', { /* table.withHeaders */
   ],
   type: 'table.style,itemlist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('table',{},[
+    template: (cmp,state,h) => h('div',{},h('table',{},[
         ...(cmp.hideHeaders ? [] : [h('thead',{},h('tr',{},
           cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
         h('tbody',{class: 'jb-drag-parent'},
@@ -14,10 +14,9 @@ jb.component('table.with-headers', { /* table.withHeaders */
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
-        ]),
-    css: `{border-spacing: 0; text-align: left}
-    >tbody>tr>td { padding-right: 5px }
-    {width: 100%}
+        ])),
+    css: `>table{border-spacing: 0; text-align: left; width: 100%}
+    >table>tbody>tr>td { padding-right: 5px }
     `,
     features: table.initTableOrItemlist()
   })

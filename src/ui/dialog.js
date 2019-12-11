@@ -35,10 +35,10 @@ jb.component('open-dialog', { /* openDialog */
 
 				cmp.state.title = ctx.params.title(ctx);
 				try {
-					cmp.state.contentComp = ctx.params.content(cmp.ctx).reactComp();
+					cmp.state.contentComp = ctx.params.content(cmp.ctx);
 					cmp.hasMenu = !!ctx.params.menu.profile;
 					if (cmp.hasMenu)
-						cmp.menuComp = ctx.params.menu(cmp.ctx).reactComp();
+						cmp.menuComp = ctx.params.menu(cmp.ctx);
 				} catch (e) {
 					jb.logException(e,'dialog',ctx);
 				}
@@ -56,7 +56,7 @@ jb.component('open-dialog', { /* openDialog */
 				if (!cmp.dialog.el.style.zIndex)
 					cmp.dialog.el.style.zIndex = 100;
 			},
-		}).reactComp();
+		});
 
 		if (!context.probe)
 			jb.ui.dialogs.addDialog(dialog,ctx);

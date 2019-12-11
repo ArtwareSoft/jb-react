@@ -3,9 +3,7 @@ jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrim
   impl: customStyle({
     template: (cmp,state,h) => h('input', {
           class: 'mdl-textfield__input',
-          value: state.model,
-          onchange: e => cmp.jbModel(e.target.value),
-          onkeyup: e => cmp.jbModel(e.target.value,'keyup')
+          value: state.model, onchange: true, onkeyup: true, onblur: true
       }),
     css: ':focus { border-color: #3F51B5; border-width: 2px}',
     features: field.databindText(500,false)
@@ -17,8 +15,7 @@ jb.component('editable-text.floating-input', { /* editableText.floatingInput */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
       h('input', { class: 'mdl-textfield__input', id1: 'jb_input_' + state.fieldId, type: 'text', autocomplete: 'nop',
-          value: state.model,
-          onchange: e => cmp.jbModel(e.target.value),
+          value: state.model, onchange: true, onkeyup: true, onblur: true,
       }),
       h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
   ]),
@@ -70,11 +67,12 @@ jb.component('editable-text.studio-codemirror-tgp', { /* editableText.studioCode
 jb.component('button.select-profile-style', { /* button.selectProfileStyle */
   type: 'button.style',
   impl: customStyle({
+    init: cmp => cmp.clickedEnter = ev => ev.keyCode == 13 && cmp.onclickHandler(ev),
     template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
-            onmouseup:ev => cmp.clicked(ev),
-            onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
+            onmouseup: 'onclickHandler',
+            onkeydown: 'clickedEnter',
         }),
     css: '{ cursor: pointer; } :focus { border-color: #3F51B5; border-width: 2px}'
   })
@@ -84,7 +82,7 @@ jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle *
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('i',{class: 'material-icons',
-        onclick: ev => cmp.clicked(ev)
+        onclick: 'clicked'
       },'more_vert'),
     css: '{ cursor: pointer;width: 16px; font-size: 16px; padding-top: 3px }'
   })
@@ -97,8 +95,8 @@ jb.component('editable-text.jb-editor-floating-input', { /* editableText.jbEdito
     template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
         h('input', { class: 'mdl-textfield__input', id: 'jb_input_' + state.fieldId, type: 'text',
             value: state.model,
-            onchange: e => cmp.jbModel(e.target.value),
-            onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
+            onchange: true,
+            onkeyup: true,
         }),
         h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
       ]),
@@ -110,56 +108,21 @@ jb.component('editable-text.jb-editor-floating-input', { /* editableText.jbEdito
 jb.component('button.studio-script', { /* button.studioScript */
   type: 'button.style',
   impl: customStyle({
+    init: cmp => cmp.clickedEnter = ev => ev.keyCode == 13 && cmp.onclickHandler(ev),
     template: (cmp,state,h) =>
         h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
-            onmouseup:ev => cmp.clicked(ev),
-            onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
+            onmouseup: 'onclickHandler',
+            onkeydown: 'clickedEnter',
         }),
     css: '{ cursor: pointer;width1: 367px; opacity: 0.8; font-style: italic; }'
   })
 })
 
-// jb.component('button.studio-script2', {
-//   type: 'button.style',
-//   impl :{$: 'custom-style',
-//       template: (cmp,state,h) => h('div', { title: state.title, onclick: _ => cmp.clicked() },
-//         h('div',{class:'inner-text'},state.title)),
-//           css: `>.inner-text {
-//   white-space: nowrap; overflow-x: hidden;
-//   display: inline; height: 16px;
-//   padding-left: 4px; padding-top: 2px;
-//   font: 12px "arial"; color: #555555;
-// }
-
-// {
-//   width: 149px;
-//   border: 1px solid #ccc; border-radius: 4px;
-//   cursor: pointer;
-//   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
-//   background: #eee;
-//   white-space: nowrap; overflow-x: hidden;
-//   text-overflow: ellipsis;
-// }`,
-// }
-// })
-
-
-// todo: take from http://creativeit.github.io/getmdl-select/
- // <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fullwidth">
- //            <input class="mdl-textfield__input" type="text" id="sample1" value="Belarus" readonly tabIndex="-1">
- //            <label for="sample1" class="mdl-textfield__label">Country</label>
- //            <ul for="sample1" class="mdl-menu mdl-menu--bottom-left mdl-js-menu">
- //                <li class="mdl-menu__item">Germany</li>
- //                <li class="mdl-menu__item">Belarus</li>
- //                <li class="mdl-menu__item">Russia</li>
- //            </ul>
- //        </div>
-
 jb.component('picklist.studio-enum', { /* picklist.studioEnum */
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('select', { value: state.model, onchange: e => cmp.jbModel(e.target.value) },
+    template: (cmp,state,h) => h('select', { value: state.model, onchange: true },
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
@@ -253,7 +216,7 @@ jb.component('editable-boolean.studio-expand-collapse-in-toolbar', { /* editable
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
-          onclick: _=> cmp.toggle(),
+          onclick: 'toggle',
           title: cmp.jbModel() ? 'collapse' : 'expand'},
             h('i',{class: 'material-icons'}, cmp.jbModel() ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
           ),
@@ -266,7 +229,7 @@ jb.component('editable-boolean.studio-expand-collapse-in-array', { /* editableBo
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('button',{class: 'md-icon-button md-button',
-          onclick: _=> cmp.toggle(),
+          onclick: 'toggle',
           title: cmp.jbModel() ? 'collapse' : 'expand'},
             h('i',{class: 'material-icons'}, cmp.jbModel() ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
           ),
@@ -342,8 +305,7 @@ jb.component('dialog.studio-multiline-edit', { /* dialog.studioMultilineEdit */
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
-      h('button',{class: 'dialog-close', onclick:
-        _=> cmp.dialogClose() },'×'),
+      h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
       h(state.contentComp),
     ]),
     css: `{ background: #fff; position: absolute; min-width: 280px; min-height: 200px;
@@ -371,21 +333,6 @@ jb.component('dialog.studio-multiline-edit', { /* dialog.studioMultilineEdit */
     ]
   })
 })
-
-// jb.component('studio.toolbarButton', {
-// 	type: 'button.style',
-// 	params: [
-// 		{ id: 'spritePosition', as: 'string', defaultValue: '0,0' }
-// 	],
-// 	impl: {$: 'custom-style',
-// 			template: (cmp,state,h) => h('button',{class: 'studio-btn-toolbar', click: _=> cmp.clicked() },
-//           h('span', {title: state.title, style: { 'background-position': state.pos} })),
-//       features: ctx => ({
-//           init: cmp =>
-//               cmp.state.pos = cmp.spritePosition.split(',').map(item => (-parseInt(item) * 16) + 'px').join(' '),
-//       })
-// 	}
-// })
 
 jb.component('studio.toolbar-style', { /* studio.toolbarStyle */
   type: 'group.style',

@@ -89,7 +89,7 @@ jb.component('itemlist.fast-filter', {
 
         cmp.fastFilter = _ => {
           if (!cmp.base) return
-          Array.from(cmp.base.querySelectorAll('.jb-item, *>.jb-item'))
+          Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
             .forEach(elem=> {
               if (showCondition(jb.ctxDictionary[elem.getAttribute('jb-ctx')]))
                 elem.style.display = 'block'
@@ -165,11 +165,11 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         cmp.setSelected = selected => {
           cmp.selected = selected
           if (!cmp.base) return
-          Array.from(cmp.base.querySelectorAll('.jb-item.selected, *>.jb-item.selected'))
+          Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
             .forEach(elem=>elem.classList.remove('selected'))
-          Array.from(cmp.base.querySelectorAll('.jb-item, *>.jb-item'))
+          Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
             .filter(elem=> jb.ctxDictionary[elem.getAttribute('jb-ctx')].data === selected)
-            .forEach(elem=> elem.classList.add('selected'))
+            .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoView()})
         }
 
         cmp.selectionEmitter
@@ -213,7 +213,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
               autoSelectFirst()
         })
     },
-    css: ['>.selected','>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(ctx.params.cssForSelected)).join('\n')
+    css: ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(ctx.params.cssForSelected)).join('\n')
   })
 })
 

@@ -8,17 +8,17 @@ jb.component('mdl-style.init-dynamic', { /* mdlStyle.initDynamic */
       afterViewInit: cmp => {
         if (typeof componentHandler === 'undefined') return
         var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
-        cmp.refreshMdl = _ => {
-          jb.delay(1).then(_ => elems.forEach(el=> {
+        cmp.refreshMdl = _ => jb.delay(1).then(_ => elems.forEach(el=> {
             if (!jb.ui.inDocument(el))
               return;
             componentHandler.downgradeElements(el);
             componentHandler.upgradeElement(el);
-          }))
-        };
-        jb.delay(1).catch(e=>{}).then(_ =>
+          })).catch(e=>jb.logException(e,'mdlStyle.initDynamic',ctx))
+
+        jb.delay(1).then(_ =>
       	 elems.forEach(el=>
-      	 	jb.ui.inDocument(el) && componentHandler.upgradeElement(el))).catch(e=>{})
+           jb.ui.inDocument(el) && componentHandler.upgradeElement(el)))
+            .catch(e=>jb.logException(e,'mdlStyle.initDynamic',ctx))
       },
       componentDidUpdate: cmp => {
        var input = cmp.base.querySelector('input');
@@ -31,7 +31,7 @@ jb.component('mdl-style.init-dynamic', { /* mdlStyle.initDynamic */
           typeof $ !== 'undefined' && $.contains(document.documentElement, cmp.base) &&
           (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
       	 	   jb.ui.inDocument(el) && componentHandler.downgradeElements(el))
-        } catch(e) {}
+        } catch(e) { jb.logException(e,'mdlStyle.initDynamic',ctx) }
        }
     })
 })

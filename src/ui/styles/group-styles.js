@@ -31,7 +31,7 @@ jb.component('first-succeeding.style', { /* firstSucceeding.style */
   type: 'first-succeeding.style',
   impl: customStyle({
     template: (cmp,state,h) => {
-      var ctrl = state.ctrls.filter(x=>x)[0];
+      const ctrl = state.ctrls.filter(x=>x)[0];
       return ctrl && h(ctrl)
     },
     features: group.initGroup()

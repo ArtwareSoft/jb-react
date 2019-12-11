@@ -83,16 +83,16 @@ jb.component('ui-test.group', { /* uiTest.group */
   })
 })
 
-jb.component('ui-test.wait-for', { /* uiTest.waitFor */
-  impl: uiTest({
-    control: group({
-      controls: label('%%'),
-      features: group.wait(ctx => jb.delay(10).then(_ => 'hello'))
-    }),
-    action: ctx => jb.delay(40),
-    expectedResult: and(contains('hello'),not(contains('loading')))
-  })
-})
+// jb.component('ui-test.wait-for', { /* uiTest.waitFor */
+//   impl: uiTest({
+//     control: group({
+//       controls: label('%%'),
+//       features: group.wait(ctx => jb.delay(10).then(_ => 'hello'))
+//     }),
+//     action: ctx => jb.delay(40),
+//     expectedResult: and(contains('hello'),not(contains('loading')))
+//   })
+// })
 
 jb.component('ui-test.wait-for-with-pipe', {
   impl: uiTest({
@@ -100,17 +100,24 @@ jb.component('ui-test.wait-for-with-pipe', {
       controls: label('%%'),
       features: group.wait({for: pipe(delay(10), 'hello')})
     }),
-    action: ctx => jb.delay(40),
-    expectedResult: contains('hello')
+    action: delay(40),
+    expectedResult: and(contains('hello'),not(contains('loading')))
   })
 })
 
 jb.component('ui-test.asynch-label', {
-   impl :{$: 'ui-test',
-    control: {$:'label', title: ctx => jb.delay(10).then(_=>'hello') },
-    action: ctx=> jb.delay(40),
-    expectedResult :{$: 'contains', text: 'hello' }
-  },
+  impl: uiTest({
+    control: label({title: pipe(delay(10), 'hello')}),
+    action: delay(40),
+    expectedResult: contains('hello')
+  })
+})
+
+jb.component('ui-test.label.macro-bug', {
+  impl: uiTest({
+    control: label(pipeline('hello')),
+    expectedResult: contains('hello')
+  })
 })
 
 //
@@ -1238,13 +1245,12 @@ jb.component('ui-test.refresh-control-by-id', { /* uiTest.refreshControlById */
   })
 })
 
-// jb.component('ui-test.raw-vdom', {
-//   impl :{$: 'ui-test',
-//     control: ctx =>
-//       jb.ui.h('div',{},'hello world'),
-//     expectedResult: contains('hello world')
-//   },
-// })
+jb.component('ui-test.raw-vdom', {
+  impl :{$: 'ui-test',
+    control: ctx => jb.ui.h('div',{},'hello world'),
+    expectedResult: contains('hello world')
+  },
+})
 
 // jb.component('ui-test.raw-vdom-in-group', {
 //   impl :{$: 'ui-test',

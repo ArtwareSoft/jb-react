@@ -91,6 +91,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
         layout: layout.horizontal('33'),
         controls: [
           table({
+            visualSizeLimit: 500,
             items: pipeline(
               '%$Categories%',
               filter(
@@ -130,6 +131,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
               watchRef('%$SelectedCategory%'),
               watchRef('%$itemlistCntrData/search_pattern%'),
               css.margin({top: '3', selector: '>li'}),
+              css.height({height: '360', overflow: 'auto'}),
               css.width('200')
             ]
           }),
@@ -186,7 +188,6 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
         watchable: true
       }),
       group.itemlistContainer({
-        maxItems: 30,
         initialSelection: studio.compName('%$path%')
       }),
       css.width('400')
@@ -228,7 +229,7 @@ jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog 
     }),
     title: 'new %$type%',
     features: [
-      css.height({height: '430', overflow: 'hidden'}),
+      css.height({height: '520', overflow: 'hidden'}),
       css.width({width: '450', overflow: 'hidden'}),
       dialogFeature.dragTitle('new %$type%'),
       studio.nearLauncherPosition(),

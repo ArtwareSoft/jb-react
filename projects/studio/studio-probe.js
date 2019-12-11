@@ -150,10 +150,7 @@ jb.component('studio.probe', { /* studio.probe */
             circuitCtx = ctx.exp('%$pickSelection/ctx%')
         if (!circuitCtx) {
             const circuitInPreview = st.closestCtxInPreview(path)
-                if (circuitInPreview.ctx) {
-                    st.highlightElems([circuitInPreview.elem])
-                    circuitCtx = circuitInPreview.ctx
-            }
+            circuitCtx = circuitInPreview && circuitInPreview.ctx
         }
         if (!circuitCtx)
             circuitCtx = st.closestCtxOfLastRun(path)

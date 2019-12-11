@@ -1,7 +1,7 @@
 jb.component('button.href', { /* button.href */
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
+    template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: true }, state.title),
     css: '{color: grey}'
   })
 })
@@ -12,7 +12,7 @@ jb.component('button.x', { /* button.x */
     {id: 'size', as: 'number', defaultValue: '21'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('button',{title: state.title, onclick: ev => cmp.clicked(ev)},'×'),
+    template: (cmp,state,h) => h('button',{title: state.title, onclick: true },'×'),
     css: `{
             padding: 0;
             cursor: pointer;
@@ -30,14 +30,14 @@ jb.component('button.x', { /* button.x */
 jb.component('button.native', {
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('button',{title: state.title, onclick: ev => cmp.clicked(ev)}),
+    template: (cmp,state,h) => h('button',{title: state.title, onclick: true }),
   })
 })
 
 jb.component('button.mdl-raised', { /* button.mdlRaised */
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('button',{class: 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev)},state.title),
+    template: (cmp,state,h) => h('button',{class: 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: true},state.title),
     features: mdlStyle.initDynamic()
   })
 })
@@ -45,7 +45,7 @@ jb.component('button.mdl-raised', { /* button.mdlRaised */
 jb.component('button.mdl-flat-ripple', { /* button.mdlFlatRipple */
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
+    template: (cmp,state,h) => h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: true},state.title),
     css: '{ text-transform: none }',
     features: mdlStyle.initDynamic()
   })
@@ -59,8 +59,7 @@ jb.component('button.mdl-icon', { /* button.mdlIcon */
   impl: customStyle({
     template: (cmp,state,h) => h('button',{
           class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
-          title: state.title, tabIndex: -1,
-          onclick:  ev => cmp.clicked(ev) },
+          title: state.title, tabIndex: -1, onclick:  true},
         h('i',{class: 'material-icons'},cmp.icon)
       ),
     css: `{ border-radius: 2px}
@@ -77,8 +76,7 @@ jb.component('button.mdl-round-icon', { /* button.mdlRoundIcon */
   impl: customStyle({
     template: (cmp,state,h) => h('button',{
           class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
-          title: state.title, tabIndex: -1,
-          onclick:  ev => cmp.clicked(ev) },
+          title: state.title, tabIndex: -1, onclick: true},
         h('i',{class: 'material-icons'},cmp.icon)
       ),
     features: mdlStyle.initDynamic()
@@ -93,8 +91,7 @@ jb.component('button.mdl-icon12-with-ripple', { /* button.mdlIcon12WithRipple */
   impl: customStyle({
     template: (cmp,state,h) => h('button',{
           class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
-          title: state.title, tabIndex: -1,
-          onclick: ev => cmp.clicked(ev) },
+          title: state.title, tabIndex: -1, onclick: true },
         h('i',{class: 'material-icons'},cmp.icon)
       ),
     css: '>.material-icons { font-size:12px;  }',
@@ -108,9 +105,7 @@ jb.component('button.mdl-icon12', { /* button.mdlIcon12 */
     {id: 'icon', as: 'string', default: 'code'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('i',{class: 'material-icons',
-        onclick: ev => cmp.clicked(ev)
-      },cmp.icon),
+    template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: true},cmp.icon),
     css: '{ font-size:12px; cursor: pointer }'
   })
 })
@@ -118,7 +113,7 @@ jb.component('button.mdl-icon12', { /* button.mdlIcon12 */
 jb.component('button.mdl-card-flat', { /* button.mdlCardFlat */
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('a',{class:'mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect', onclick: ev=>cmp.clicked(ev)},state.title),
+    template: (cmp,state,h) => h('a',{class:'mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect', onclick: true},state.title),
     features: mdlStyle.initDynamic()
   })
 })
