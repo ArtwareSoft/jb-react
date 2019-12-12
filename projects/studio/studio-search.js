@@ -28,7 +28,7 @@ jb.component('studio.search-list', { /* studio.searchList */
             title: 'id',
             control: button({
               title: pipeline(
-                highlight(
+                label.highlight(
                     '%id%',
                     '%$itemlistCntrData/search_pattern%',
                     'mdl-color-text--indigo-A700'

@@ -89,7 +89,7 @@ jb.component('ui-test.group', { /* uiTest.group */
 //       controls: label('%%'),
 //       features: group.wait(ctx => jb.delay(10).then(_ => 'hello'))
 //     }),
-//     action: ctx => jb.delay(40),
+//     action: delay(40),
 //     expectedResult: and(contains('hello'),not(contains('loading')))
 //   })
 // })
@@ -107,45 +107,19 @@ jb.component('ui-test.wait-for-with-pipe', {
 
 jb.component('ui-test.asynch-label', {
   impl: uiTest({
-    control: label({title: pipe(delay(10), 'hello')}),
+    control: label(pipe(delay(10), 'hello')),
     action: delay(40),
     expectedResult: contains('hello')
   })
 })
 
-jb.component('ui-test.label.macro-bug', {
-  impl: uiTest({
-    control: label(pipeline('hello')),
-    expectedResult: contains('hello')
-  })
-})
-
-//
-// jb.component('ui-test.asynch-label-with-pipeline1', {
-//    impl :{$: 'ui-test',
-//     control: {$:'label', title: {$pipeline: [ 'hello', ctx => jb.delay(10).then(ctx.data)] } },
-//     action: ctx=> jb.delay(40),
-//     expectedResult :{$: 'contains', text: 'hello' }
-//   },
-// })
-//
-// jb.component('ui-test.asynch-label-with-pipeline2', {
-//    impl :{$: 'ui-test',
-//     control: {$:'label', title: {$pipeline: [ ctx => jb.delay(10).then('hello'), '%%'] } },
-//     action: ctx=> jb.delay(40),
-//     expectedResult :{$: 'contains', text: 'hello' }
-//   },
-// })
-
 jb.component('ui-test.wait-for-with-var', { /* uiTest.waitForWithVar */
   impl: uiTest({
     control: group({
-      controls: [
-        label('%$txt%')
-      ],
-      features: group.wait({for: ctx => jb.delay(10).then(_ => 'hello'), varName: 'txt'})
+      controls: label('%$txt%'),
+      features: group.wait({for: pipe(delay(10), 'hello'), varName: 'txt'})
     }),
-    action: ctx => jb.delay(40),
+    action: delay(40),
     expectedResult: contains('hello')
   })
 })
@@ -225,12 +199,12 @@ jb.component('ui-test.two-way-binding', { /* uiTest.twoWayBinding */
   impl: uiTest({
     control: group({
       controls: [
-        editableText({title: 'name', databind: '%$person/name%', features: [id('inp')] }),
+        editableText({title: 'name', databind: '%$person/name%', features: id('inp') }),
         label('%$person/name%')
       ]
     }),
     action: uiAction.setText('hello', '#inp'),
-    expectedResult: contains(['hello', 'hello'])
+    expectedResult: contains(['<span', 'hello','</span'])
   })
 })
 
@@ -365,6 +339,29 @@ jb.component('ui-test.dialog-cleanup-bug', { /* uiTest.dialogCleanupBug */
     action: [uiAction.click('button'), dialog.closeAll()],
     expectedResult: ctx =>
       !jb.resources['jb_dialog_hello']
+  })
+})
+
+// ensure the right order between the unmount that causes elem._component = null and the blur event which is automatically generated when detaching the dialog
+jb.component('ui-test.updateOnBlur-when-dialog-closed', { 
+  impl: uiTest({
+    control: group({ controls: [
+        button({
+          title: 'click me',
+          action: openDialog({content:
+            editableText({title: 'name', updateOnBlur: true, databind: '%$person/name%' })
+          }),
+        }),
+        label('%$person/name%')
+      ]
+    }),
+    action: runActions(uiAction.click('button'), 
+      ctx => {
+        jb.ui.elemOfSelector('input',ctx).value = 'hello';
+        jb.ui.elemOfSelector('input',ctx).focus()
+      }, 
+      dialog.closeAll()),
+    expectedResult: contains('hello')
   })
 })
 
@@ -555,7 +552,7 @@ jb.component('ui-test.itemlist-container-search-ctrl', { /* uiTest.itemlistConta
       itemlist({
         items: '%$people%',
         controls: label({
-          title: highlight('%name%', '%$itemlistCntrData/search_pattern%'),
+          title: label.highlight('%name%', '%$itemlistCntrData/search_pattern%'),
           features: [css.class('label1'), watchRef('%$itemlistCntrData/search_pattern%')]
         }),
         features: [
@@ -612,7 +609,7 @@ jb.component('ui-test.search-doesnot-create-ReactClass', { /* uiTest.searchDoesn
         itemlistContainer.search({}),
         itemlist({
           items: pipeline('%$people%', itemlistContainer.filter()),
-          controls: label({title: highlight('%name%', '%$itemlistCntrData/search_pattern%')}),
+          controls: label({title: label.highlight('%name%', '%$itemlistCntrData/search_pattern%')}),
           features: [
             itemlist.selection({autoSelectFirst: true}),
             itemlist.keyboardSelection(true),
@@ -718,7 +715,7 @@ jb.component('ui-test.property-sheet.titles-above', { /* uiTest.propertySheet.ti
     control: group({
       controls: [
         group({
-          style: propertySheet.titlesAboveFloatLeft(),
+          style: propertySheet.titlesAbove(),
           controls: [
             editableText({title: 'name', databind: '%$person/name%'}),
             editableText({title: 'address', databind: '%$person/address%'})
@@ -1474,7 +1471,22 @@ jb.component('ui-test.watchable-parent-refresh-mask-children', {
     }),
     action: writeValue('%$person/name%','hello'),
     expectedResult: contains('hello'),
-    expectedCounters: ctx => ({ notifyCmpObservable: 1 })
+    expectedCounters: { notifyCmpObservable: 1 }
+  })
+})
+
+jb.component('ui-test.itemlist-with-group-wait', { 
+  impl: uiTest({
+    control: itemlist({
+      items: '%$items%', 
+      controls: label('%name%'),
+      features: group.wait({
+        for: pipe(delay(1),()=>[{name: 'homer'}]),
+        varName: 'items'
+      }),
+    }),
+    action: delay(20),
+    expectedResult: contains('homer'),
   })
 })
 

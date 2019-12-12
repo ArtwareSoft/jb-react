@@ -81,9 +81,7 @@ jb.component('button.select-profile-style', { /* button.selectProfileStyle */
 jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle */
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('i',{class: 'material-icons',
-        onclick: 'clicked'
-      },'more_vert'),
+    template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: true },'more_vert'),
     css: '{ cursor: pointer;width: 16px; font-size: 16px; padding-top: 3px }'
   })
 })
@@ -255,36 +253,6 @@ jb.component('dialog-feature.studio-position-under-property', { /* dialogFeature
         }
 			}
 		})
-})
-
-jb.component('group.studio-properties-accordion', { /* group.studioPropertiesAccordion */
-  type: 'group.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('section',{ class: 'jb-group'},
-        state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
-          h('div',{ class: 'header' },[
-            h('div',{ class: 'title', onclick: _=> cmp.show(index) }, ctrl.title),
-            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl), onclick: _=> cmp.flip(index) },
-              h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
-            )
-          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)
-    )),
-    css: `>.accordion-section>.header { cursor: pointer; display: flex; flex-direction: row; background: #eee; margin-bottom: 2px; justify-content: space-between}
->.accordion-section>.header>button:hover { background: none }
->.accordion-section>.header>button { margin-left: 0px }
->.accordion-section>.header>button>i { color: #; cursor: pointer }
->.accordion-section>.header>.title { margin: 5px }
->.accordion-section:last-child() { padding-top: 2px }
-`,
-    features: [
-      group.initGroup(),
-      group.initAccordion(true, true),
-      ctx =>({
-          afterViewInit: cmp =>
-            ctx.vars.PropertiesDialog.openFeatureSection = _ => cmp.show(1)
-        })
-    ]
-  })
 })
 
 jb.component('label.studio-message', { /* label.studioMessage */

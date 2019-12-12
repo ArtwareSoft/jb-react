@@ -4,11 +4,13 @@ const ui = jb.ui;
 // react 
 ui.VNode = Symbol.for("VNode")
 function h(cmpOrTag,attributes,children) {
-    if (cmpOrTag && cmpOrTag[ui.VNode]) return cmpOrTag
+    if (cmpOrTag && cmpOrTag[ui.VNode]) return cmpOrTag // Vdom
     if (cmpOrTag && cmpOrTag.light)
         return cmp.renderVdom()
     if (Array.isArray(children) && children.length > 1)
         children = children.filter(x=>x).map(item=> typeof item == 'string' ? h('span',{},item) : item)
+    if (children === "") children = null
+    if (typeof children === 'string') children = [children]
     
     return {...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,attributes,children,[ui.VNode]: true}
 }
@@ -21,15 +23,16 @@ function applyVdomDiff(elem,vdomBefore,vdomAfter,cmp) {
         if (vdomAfter === vdomBefore) return
         elem.nodeType == 3 ? elem.nodeValue = vdomAfter : elem.innerText = vdomAfter
         jb.log('htmlChange',['change text',elem,vdomBefore,vdomAfter,cmp]);
-        if (typeof vdomAfter === 'object') 
-            unmount(vdomAfter.base)
+        elem.children && Array.from(elem.children).forEach(ch=>unmount(ch))
         return elem
     }
     if ((vdomBefore.tag || vdomBefore.cmp) != (vdomAfter.tag || vdomAfter.cmp)) {
-        unmount(elem)
+        unmountNotification(elem)
         const replaceWith = render(vdomAfter,elem.parentElement,cmp)
         jb.log('htmlChange',['replaceChild',replaceWith,elem]);
-        return elem.parentElement.replaceChild(replaceWith,elem)
+        const res = elem.parentElement.replaceChild(replaceWith,elem)
+        unbindCmps(elem)
+        return res
     }
     if (vdomBefore.cmp) // same cmp
         return
@@ -39,78 +42,80 @@ function applyVdomDiff(elem,vdomBefore,vdomAfter,cmp) {
     if (vdomBefore.children || vdomAfter.children)
         applyChildrenDiff(elem, jb.asArray(vdomBefore.children), jb.asArray(vdomAfter.children),cmp)
     return elem
+}
 
-    function applyAttsDiff(elem, vdomBefore, vdomAfter) {
-        const keys = Object.keys(vdomBefore).filter(k=>k.indexOf('on') != 0)
-        keys.forEach(key => isAttUndefined(key,vdomAfter) && elem.removeAttribute(key))
-        keys.forEach(key => (vdomAfter[key] != vdomBefore[key]) && setAtt(elem,key,vdomAfter[key]))
-    }
-    function applyChildrenDiff(parentElem, vdomBefore, vdomAfter, cmp) {
-        if (vdomBefore.length ==1 && vdomAfter.length == 1) {
-            //if (!parentElem.firstChild) return
-            return applyVdomDiff(parentElem.firstChild || parentElem, vdomBefore[0], vdomAfter[0], cmp)
-        }
-        jb.log('applyChildrenDiff',[...arguments]);
-        let remainingBefore = vdomBefore.map((e,i)=> {
-            if (!parentElem.childNodes[i]) debugger
-            return Object.assign({},e,{i, base: parentElem.childNodes[i]})
-        })
-        const unmountCandidates = remainingBefore.slice(0)
-        const childrenMap = vdomAfter.map((toLocate,i)=> locateCurrentVdom1(toLocate,i,remainingBefore))
-        vdomAfter.forEach((toLocate,i)=> childrenMap[i] = childrenMap[i] || locateCurrentVdom2(toLocate,i,remainingBefore))
-        unmountCandidates.filter(toLocate => childrenMap.indexOf(toLocate) == -1).forEach(elem =>{
-            unmount(elem.base)
-            parentElem.removeChild(elem.base)
-            jb.log('htmlChange',['removeChild',elem.base]);
-        })
-        let lastElem = vdomAfter.reduce((prevElem,after,index) => {
-            const current = childrenMap[index]
-            const childElem = current ? applyVdomDiff(current.base,current,after,cmp) : render(after,parentElem,cmp)
-            return putInPlace(childElem,prevElem)
-        },null)
-        lastElem = lastElem && lastElem.nextSibling
-        while(lastElem) {
-            //unmount(lastElem)
-            parentElem.removeChild(lastElem)
-            jb.log('htmlChange',['removeChild',lastElem]);
-            lastElem = lastElem.nextSibling
-        }
+function applyAttsDiff(elem, vdomBefore, vdomAfter) {
+    const keys = Object.keys(vdomBefore).filter(k=>k.indexOf('on') != 0)
+    keys.forEach(key => isAttUndefined(key,vdomAfter) && elem.removeAttribute(key))
+    keys.forEach(key => (vdomAfter[key] != vdomBefore[key]) && setAtt(elem,key,vdomAfter[key]))
+}
 
-        function putInPlace(childElem,prevElem) {
-            if (prevElem && prevElem.nextSibling != childElem) {
-                parentElem.insertBefore(childElem, prevElem.nextSibling)
-                jb.log('htmlChange',['insertBefore',childElem,prevElem && prevElem.nextSibling]);
-            }
-            return childElem
+function applyChildrenDiff(parentElem, vdomBefore, vdomAfter, cmp) {
+    if (vdomBefore.length ==1 && vdomAfter.length == 1 && parentElem.childElementCount === 0 && parentElem.firstChild) 
+        return applyVdomDiff(parentElem.firstChild, vdomBefore[0], vdomAfter[0], cmp)
+    jb.log('applyChildrenDiff',[...arguments]);
+    let remainingBefore = vdomBefore.map((e,i)=> {
+        if (!parentElem.childNodes[i]) debugger
+        return Object.assign({},e,{i, base: parentElem.childNodes[i]})
+    })
+    const unmountCandidates = remainingBefore.slice(0)
+    const childrenMap = vdomAfter.map((toLocate,i)=> locateCurrentVdom1(toLocate,i,remainingBefore))
+    vdomAfter.forEach((toLocate,i)=> childrenMap[i] = childrenMap[i] || locateCurrentVdom2(toLocate,i,remainingBefore))
+    unmountCandidates.filter(toLocate => childrenMap.indexOf(toLocate) == -1).forEach(elem =>{
+        unmountNotification(elem.base)
+        parentElem.removeChild(elem.base)
+        unbindCmps(elem.base)
+        jb.log('htmlChange',['removeChild',elem.base]);
+    })
+    let lastElem = vdomAfter.reduce((prevElem,after,index) => {
+        const current = childrenMap[index]
+        const childElem = current ? applyVdomDiff(current.base,current,after,cmp) : render(after,parentElem,cmp)
+        return putInPlace(childElem,prevElem)
+    },null)
+    lastElem = lastElem && lastElem.nextSibling
+    while(lastElem) {
+        parentElem.removeChild(lastElem)
+        jb.log('htmlChange',['removeChild',lastElem]);
+        lastElem = lastElem.nextSibling
+    }
+
+    function putInPlace(childElem,prevElem) {
+        if (prevElem && prevElem.nextSibling != childElem) {
+            parentElem.insertBefore(childElem, prevElem.nextSibling)
+            jb.log('htmlChange',['insertBefore',childElem,prevElem && prevElem.nextSibling]);
         }
-        function locateCurrentVdom1(toLocate,index,remainingBefore) {
-            const found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
-            if (found != -1)                
-                return remainingBefore.splice(found,1)[0]
-        }
-        function locateCurrentVdom2(toLocate,index,remainingBefore) {
-            const found = remainingBefore.findIndex(before=>before.tag && before.i == index && before.tag === toLocate.tag)
-            if (found != -1)                
-                return remainingBefore.splice(found,1)[0]
-        }
+        return childElem
     }
-    function sameSource(vdomBefore,vdomAfter) {
-        if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
-        const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
-        if (atts1.cmpId && atts1.cmpId === atts2.cmpId || atts1.ctxId && atts1.ctxId === atts2.ctxId) return true
-        if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
-        if (compareAtts(['id','path','name'],atts1,atts2)) return true
+    function locateCurrentVdom1(toLocate,index,remainingBefore) {
+        const found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
+        if (found != -1)                
+            return remainingBefore.splice(found,1)[0]
     }
-    function compareAtts(attsToCompare,atts1,atts2) {
-        for(let i=0;i<attsToCompare.length;i++)
-            if (atts1[attsToCompare[i]] && atts1[attsToCompare[i]] == atts2[attsToCompare[i]])
-                return true
+    function locateCurrentVdom2(toLocate,index,remainingBefore) {
+        const found = remainingBefore.findIndex(before=>before.tag && before.i == index && before.tag === toLocate.tag)
+        if (found != -1)                
+            return remainingBefore.splice(found,1)[0]
     }
-    function compareCtxAtt(att,atts1,atts2) {
-        const val1 = atts1.ctxId && jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
-        const val2 = atts2.ctxId && jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
-        return val1 && val2 && val1 == val2
-    }
+}
+
+function sameSource(vdomBefore,vdomAfter) {
+    if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
+    const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
+    if (atts1.cmpId && atts1.cmpId === atts2.cmpId || atts1.ctxId && atts1.ctxId === atts2.ctxId) return true
+    if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
+    if (compareAtts(['id','path','name'],atts1,atts2)) return true
+}
+
+function compareAtts(attsToCompare,atts1,atts2) {
+    for(let i=0;i<attsToCompare.length;i++)
+        if (atts1[attsToCompare[i]] && atts1[attsToCompare[i]] == atts2[attsToCompare[i]])
+            return true
+}
+
+function compareCtxAtt(att,atts1,atts2) {
+    const val1 = atts1.ctxId && jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
+    const val2 = atts2.ctxId && jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
+    return val1 && val2 && val1 == val2
 }
 
 function setAtt(elem,att,val) {
@@ -136,12 +141,20 @@ function isAttUndefined(key,vdom) {
 }
 
 function unmount(elem) {
+    unmountNotification(elem)
+    unbindCmps(elem)
+}
+function unmountNotification(elem) {
     jb.log('unmount',[...arguments]);
     elem && elem.querySelectorAll && [elem, ...Array.from(elem.querySelectorAll('[cmpId]'))]
         .forEach(el=> {
-            el._component && el._component.componentWillUnmount()
-            el._component = null
+            [el._component, ...(el._extraCmps || [])].filter(x=>x).map(cmp=> cmp.componentWillUnmount())
         })
+    ui.garbageCollectCtxDictionary()
+}
+function unbindCmps(elem) {
+    elem && elem.querySelectorAll && [elem, ...Array.from(elem.querySelectorAll('[cmpId]'))]
+        .forEach(el=> el._extraCmps = el._component = null)
 }
 
 function render(vdom,parentElem,cmp) {
@@ -162,10 +175,11 @@ function render(vdom,parentElem,cmp) {
         jb.log('htmlChange',['appendChild',parentElem,elem])
     } else if (vdom.cmp) {
         elem = render(vdom.cmp.renderVdom(),parentElem, vdom.cmp)
+        if (!elem) return // string
         vdom.cmp.base = elem
         if (elem._component) {
-            elem._extraComps = elem._extraComps || []
-            elem._extraComps.push(vdom.cmp)
+            elem._extraCmps = elem._extraCmps || []
+            elem._extraCmps.push(vdom.cmp)
         } else {
             elem._component = vdom.cmp
         }
@@ -683,13 +697,14 @@ ui.toVdomOrStr = val => {
 	if (val &&  (typeof val.then == 'function' || typeof val.subscribe == 'function'))
 		return jb.synchArray(val).then(v => ui.toVdomOrStr(v[0]))
 
-	const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val;
-	let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1);
-	if (typeof res == 'boolean')
-		res = '' + res;
-	if (res && res.slice)
-		res = res.slice(0,1000);
-	return res;
+	const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val
+    let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1)
+    if (res && res[ui.VNode] || Array.isArray(res)) return res
+	if (typeof res === 'boolean' || typeof res === 'object')
+        res = '' + res
+	else if (typeof res === 'string')
+		res = res.slice(0,1000)
+	return res
 }
 
 // ****************** components ****************
@@ -729,7 +744,7 @@ jb.component('custom-style', { /* customStyle */
         {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
       ],
       impl: (ctx,style,features) => 
-          Object.assign({},style,{featuresOptions: (style.featuresOptions || []).concat(features())})
+          style && Object.assign({},style,{featuresOptions: (style.featuresOptions || []).concat(features())})
   })  
   
 })()

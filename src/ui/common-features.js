@@ -19,26 +19,19 @@ jb.component('group.wait', { /* group.wait */
     {
       id: 'error',
       type: 'control',
-      defaultValue: label({title: 'error: %$error%'}),
+      defaultValue: label('error: %$error%'),
       dynamic: true
     },
     {id: 'varName', as: 'string'}
   ],
   impl: (ctx,waitFor,loading,error,varName) => ({
-      beforeInit : cmp => {
-        cmp.state.ctrls = [loading(ctx)]
-        cmp.refresh = ctxWithData => {
-            if (ctxWithData)
-              cmp.ctx = ctxWithData
-            cmp.setState({ctrls: cmp.calcCtrls() })
-        }
-      },
+      beforeInit : cmp => cmp.state.ctrls = [loading(ctx)],
 
       afterViewInit: cmp => {
         Promise.resolve(waitFor())
           .then(data => {
-              const ctxWithData = varName ? cmp.ctx.setData(data).setVars(jb.obj(varName,data)) : cmp.ctx.setData(data);
-              cmp.refresh(ctxWithData)
+              cmp.ctx = varName ? cmp.ctx.setData(data).setVars(jb.obj(varName,data)) : cmp.ctx.setData(data);
+              cmp.refresh()
           })
           .catch(e=> {
             cmp.setState( { ctrls: [error(ctx.setVars({error:e}))] })

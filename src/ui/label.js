@@ -104,7 +104,7 @@ jb.component('label.card-supporting-text', { /* label.cardSupportingText */
   })
 })
 
-jb.component('highlight', { /* highlight */
+jb.component('label.highlight', { /* label.highlight */
   type: 'data',
   macroByValue: true,
   params: [

@@ -39,11 +39,10 @@ jb.component('picklist.radio-vertical', {
 jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{},
-        h('input', { type: 'text', value: state.model, list: 'list_' + cmp.ctx.id,
-          onchange: true,
-        }),
-        h('datalist', {id: 'list_' + cmp.ctx.id}, state.options.map(option=>h('option',{},option.text)))),
+    template: (cmp,state,h) => h('div',{}, [ 
+        h('input', { type: 'text', value: state.model, list: 'list_' + cmp.ctx.id, onchange: true }),
+        h('datalist', {id: 'list_' + cmp.ctx.id}, state.options.map(option=>h('option',{},option.text)))
+    ]),
     css: `>input {  appearance: none; -webkit-appearance: none; font-family: inherit;
   background-color: transparent;
   padding: 6px 0;

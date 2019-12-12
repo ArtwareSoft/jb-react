@@ -428,12 +428,10 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
             editableText({
               title: 'github username',
               databind: '%$properties/username%',
-              updateOnBlur: false
             }),
             editableText({
               title: 'github repository',
               databind: '%$properties/repository%',
-              updateOnBlur: false
             })
           ]
         }),

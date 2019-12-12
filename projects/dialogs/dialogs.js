@@ -9,7 +9,7 @@ jb.component('dialogs.main', { /* dialogs.main */
           content: group({
             layout: layout.vertical(),
             controls: [
-              editableText({title: 'name', databind: '%$dialogData/name%', updateOnBlur: false}),
+              editableText({title: 'name', databind: '%$dialogData/name%'}),
               editableText({title: 'phone', databind: '%$dialogData/phone%'})
             ],
             features: css.padding({left: '30', right: '30'})

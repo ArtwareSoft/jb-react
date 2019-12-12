@@ -210,7 +210,7 @@ jb.component('group.sections', { /* group.sections */
             style: call('sectionStyle'),
             controls: [
               label({
-                title: ({},{section}) => section.field.title(),
+                title: ({},{section}) => section.field().title(),
                 style: call('titleStyle')
               }),
               group({style: call('innerGroupStyle'), controls: ({},{section}) => section})

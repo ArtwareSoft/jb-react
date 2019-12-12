@@ -376,7 +376,7 @@ jb.component('studio.watch-script-changes', { /* studio.watchScriptChanges */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
-        st.scriptChange.debounceTime(200).subscribe(e=>
+        st.scriptChange.takeUntil( cmp.destroyed ).debounceTime(200).subscribe(e=>
             jb.ui.setState(cmp,null,e,ctx))
    })
 })
@@ -385,7 +385,7 @@ jb.component('studio.watch-components', { /* studio.watchComponents */
   type: 'feature',
   impl: ctx => ({
       init: cmp =>
-        st.scriptChange.filter(e=>e.path.length == 1)
+        st.scriptChange.takeUntil( cmp.destroyed ).filter(e=>e.path.length == 1)
         	.subscribe(e=>
             	jb.ui.setState(cmp,null,e,ctx))
    })

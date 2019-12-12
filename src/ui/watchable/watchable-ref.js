@@ -52,9 +52,9 @@ class WatchableValueByRef {
         }
       }
 
-      jb.path(op,path,opOnRef); // create op as nested object
-      const opEvent = {op: opOnRef, path, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime()};
-      this.resources(jb.ui.update(this.resources(),op),opEvent);
+      jb.path(op,path,opOnRef) // create op as nested object
+      const opEvent = {op: opOnRef, path, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime()}
+      this.resources(jb.ui.update(this.resources(),op),opEvent)
       const newVal = (opVal != null && opVal[isProxy]) ? opVal : this.valOfPath(path);
       if (opOnRef.$push) {
         opOnRef.$push.forEach((toAdd,i)=>
@@ -306,16 +306,14 @@ class WatchableValueByRef {
       req.srcCtx = req.srcCtx || { path: ''}
       const key = this.pathOfRef(req.ref).join('~') + ' : ' + req.cmp.ctx.path
       const entry = { ...req, subject, key }
-      // const found = key && this.observables.find(e=>e.key === key && e.cmp === entry.cmp)
-      // if (found) {
-      //   jb.logError('observable already exists', entry)
-      //   return found.subject
-      // }
       
       this.observables.push(entry);
       this.observables.sort((e1,e2) => comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
-      req.cmp.destroyed.then(_=> {
-          this.observables.splice(this.observables.indexOf(entry), 1);
+      req.cmp.jbDestroyFuncs.push(_=> {
+          if (this.observables.indexOf(entry) != -1) {
+            jb.log('removeCmpObservable',[entry])
+            this.observables.splice(this.observables.indexOf(entry), 1);
+          }
           subject.complete()
       });
       jb.log('registerCmpObservable',[entry])
@@ -327,10 +325,10 @@ class WatchableValueByRef {
 
   propagateResourceChangeToObservables() {
       this.resourceChange.subscribe(e=>{
-          const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref));
-          this.observables = this.observables.filter(obs=>jb.refHandler(obs.ref) && jb.refHandler(obs.ref).pathOfRef(obs.ref))
-          if (changed_path)
-            this.observables.forEach(obs=> !obs.cmp._destroyed && this.notifyOneObserver(e,obs,changed_path))
+        const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
+        const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
+        if (changed_path)
+          observablesToUpdate.forEach(obs=> !obs.cmp._destroyed && this.notifyOneObserver(e,obs,changed_path))
       })
   }
   notifyOneObserver(e,obs,changed_path) {
