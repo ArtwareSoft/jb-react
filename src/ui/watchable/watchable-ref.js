@@ -196,7 +196,7 @@ class WatchableValueByRef {
     return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
   }
   objectProperty(obj,prop,ctx) {
-    jb.log('watchable',['objectProperty',...arguments]);
+    jb.log('objectProperty',[...arguments]);
     if (!obj)
       return jb.logError('objectProperty: null obj',ctx);
     var ref = this.asRef(obj);
@@ -309,7 +309,7 @@ class WatchableValueByRef {
       
       this.observables.push(entry);
       this.observables.sort((e1,e2) => comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
-      req.cmp.jbDestroyFuncs.push(_=> {
+      req.cmp.jbDestroyFuncs.push(() => {
           if (this.observables.indexOf(entry) != -1) {
             jb.log('removeCmpObservable',[entry])
             this.observables.splice(this.observables.indexOf(entry), 1);

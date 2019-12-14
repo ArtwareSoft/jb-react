@@ -83,22 +83,9 @@ jb.component('control.first-succeeding', { /* control.firstSucceeding */
   type: 'control',
   category: 'common:30',
   params: [
-    {
-      id: 'controls',
-      type: 'control[]',
-      mandatory: true,
-      flattenArray: true,
-      dynamic: true,
-      composite: true
-    },
+    {id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true},
     {id: 'title', as: 'string', dynamic: true},
-  {
-      id: 'style',
-      type: 'first-succeeding.style',
-      defaultValue: firstSucceeding.style(),
-      mandatory: true,
-      dynamic: true
-    },
+    {id: 'style', type: 'first-succeeding.style', defaultValue: firstSucceeding.style(), mandatory: true, dynamic: true },
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(new jb.jbCtx(ctx,{params: Object.assign({},ctx.params,{
@@ -118,6 +105,17 @@ jb.component('control.first-succeeding', { /* control.firstSucceeding */
         }
       }
     })}))
+})
+
+jb.component('first-succeeding.style', { /* firstSucceeding.style */
+  type: 'first-succeeding.style',
+  impl: customStyle({
+    template: (cmp,state,h) => {
+      const ctrl = state.ctrls.filter(x=>x)[0];
+      return h('div',{},ctrl && h(ctrl))
+    },
+    features: group.initGroup()
+  })
 })
 
 jb.component('first-succeeding.watch-refresh-on-ctrl-change', { /* firstSucceeding.watchRefreshOnCtrlChange */

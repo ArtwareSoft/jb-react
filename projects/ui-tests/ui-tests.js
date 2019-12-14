@@ -1294,24 +1294,12 @@ jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change', { /* uiTes
     control: group({
       controls: [
         editableText({databind: '%$gender%'}),
-        button({
-          title: 'female',
-          action: writeValue('%$gender%', 'female'),
-          features: id('female')
-        }),
-        button({
-          title: 'zee',
-          action: writeValue('%$gender%', 'zee'),
-          features: id('zee')
-        }),
-        button({
-          title: 'male',
-          action: writeValue('%$gender%', 'male'),
-          features: id('male')
-        }),
+        button({ title: 'female', action: writeValue('%$gender%', 'female'), features: id('female') }),
+        button({ title: 'zee', action: writeValue('%$gender%', 'zee'), features: id('zee') }),
+        button({ title: 'male', action: writeValue('%$gender%', 'male'), features: id('male') }),
         control.firstSucceeding({
           controls: [
-            controlWithCondition('%$gender% == \"male\"', label('male')),
+            controlWithCondition('%$gender% == \"male\"', label('a male')),
             label('not male')
           ],
           features: firstSucceeding.watchRefreshOnCtrlChange('%$gender%')
@@ -1319,9 +1307,33 @@ jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change', { /* uiTes
       ],
       features: variable({name: 'gender', value: 'male', watchable: true})
     }),
-    action: runActions(uiAction.click('#female'), uiAction.click('#zee')),
+    action: uiAction.click('#female'),
     expectedResult: contains('not male'),
     expectedCounters: {initComp: 8}
+  })
+})
+
+jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change-and-back', { 
+  impl: uiTest({
+    control: group({
+      controls: [
+        editableText({databind: '%$gender%'}),
+        button({ title: 'female', action: writeValue('%$gender%', 'female'), features: id('female') }),
+        button({ title: 'zee', action: writeValue('%$gender%', 'zee'), features: id('zee') }),
+        button({ title: 'male', action: writeValue('%$gender%', 'male'), features: id('male') }),
+        control.firstSucceeding({
+          controls: [
+            controlWithCondition('%$gender% == \"male\"', label('a male')),
+            label('not male')
+          ],
+          features: firstSucceeding.watchRefreshOnCtrlChange('%$gender%')
+        })
+      ],
+      features: variable({name: 'gender', value: 'male', watchable: true})
+    }),
+    action: runActions(uiAction.click('#female'), uiAction.click('#male')),
+    expectedResult: contains('a male'),
+    //expectedCounters: {initComp: 8}
   })
 })
 

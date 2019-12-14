@@ -7,7 +7,7 @@ jb.component('tree', { /* tree */
   type: 'control',
   params: [
     {id: 'nodeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
-    {id: 'style', type: 'tree.style', defaultValue: tree.ulLi(), dynamic: true},
+    {id: 'style', type: 'tree.style', defaultValue: tree.expandBox(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: context => {
@@ -23,12 +23,19 @@ jb.component('tree', { /* tree */
 					const path = cmp.elemToPath(e.target)
 					if (!path) debugger
 					cmp.expanded[path] = !(cmp.expanded[path]);
-					cmp.setState({expanded:cmp.expanded[path]});
+					cmp.setState();
 				}
 				cmp.expanded = { [nodeModel.rootPath] : true }
 				cmp.selectionEmitter = new jb.rx.Subject()
 				tree.redraw = cmp.redraw = () => cmp.setState()
+				tree.cmp = cmp
 
+				cmp.expandPath = path => path.split('~').reduce((base, x) => {
+					const path = base ? (base + '~' + x) : x;
+					cmp.expanded[path] = true;
+					return path;
+				},'')
+	
 				cmp.elemToPath = el => el && (el.getAttribute('path') || jb.ui.closest(el,'.treenode') && jb.ui.closest(el,'.treenode').getAttribute('path'))
 			},
 			css: '{user-select: none}'
@@ -36,91 +43,152 @@ jb.component('tree', { /* tree */
 	}
 })
 
-function renderLine({path,cmp,model,h}) {
-	const collapsed = cmp.expanded[path] ? '' : ' collapsed';
-	const nochildren = model.isArray(path) ? '' : ' nochildren';
-	const title = model.title(path,!cmp.expanded[path]);
-	const icon = model.icon ? model.icon(path) : 'radio_button_unchecked';
-	
-	return h('div',{ class: `treenode-line${collapsed}`},[
-		h('button',{class: `treenode-expandbox${nochildren}`, onclick: 'flipExpandCollapse', path },[
-			h('div',{ class: 'frame'}),
-			h('div',{ class: 'line-lr'}),
-			h('div',{ class: 'line-tb'}),
-		]),
-		h('i',{class: 'material-icons', style: 'font-size: 16px; margin-left: -4px; padding-right:2px'}, icon),
-		h('span',{class: 'treenode-label'}, title),
-	])
+class TreeRenderer {
+	constructor(args) {
+		Object.assign(this,args)
+		this.model = this.cmp.model
+	}
+	renderTree() {
+		const {model,h} = this
+		if (this.noHead) 
+			return h('div',{}, model.children(model.rootPath).map(childPath=> this.renderNode(childPath)))
+		return this.renderNode(model.rootPath)
+	}
+	renderNode(path) {
+		const {cmp,model,h} = this
+		const disabled = model.disabled && model.disabled(path) ? 'jb-disabled' : ''
+		const clz = ['treenode', model.isArray(path) ? 'jb-array-node': '',disabled].filter(x=>x).join(' ')
+		const children = cmp.expanded[path] ? [h('div',{ class: 'treenode-children'} ,
+			model.children(path).map(childPath=>this.renderNode(childPath)))] : []
+
+		return h('div',{class: clz, path}, [ this.renderLine(path), ...children ] )
+	}
 }
 
-function renderNode({path,cmp,model,h}) {
-	const disabled = model.disabled && model.disabled(path) ? 'jb-disabled' : ''
-	const selected = cmp.selected == path ? 'selected' : ''
-	const clz = ['treenode', selected, model.isArray(path) ? 'jb-array-node': '',disabled].filter(x=>x).join(' ')
-	const children = cmp.expanded[path] ? [h('div',{ class: 'treenode-children'} ,
-		model.children(path).map(childPath=>renderNode({path: childPath,cmp,model,h})))] : []
-	return h('div',{class: clz, path}, [ renderLine({path,cmp,model,h}), ...children ] )
-}
-
-jb.component('tree.ul-li', { /* tree.ulLi */
+jb.component('tree.plain', { /* tree.plain */
   type: 'tree.style',
-  impl: customStyle({
-	features: css.class('jb-control-tree'),
-	template: (cmp,state,h) => renderNode({path: cmp.model.rootPath,cmp,model: cmp.model,h})
-  })
+  params: [
+	{id: 'showIcon', as: 'boolean'},
+	{id: 'noHead', as: 'boolean'},
+  ],
+  impl: (ctx,showIcon,noHead) => ctx.run(customStyle({
+	template: (cmp,state,h) => {
+		function renderLine(path) {
+			const model = cmp.model
+			const icon = model.icon && model.icon(path) || 'radio_button_unchecked';
+			return h('div',{ class: `treenode-line`},[
+				model.isArray(path) ? h('i',{class:'material-icons noselect flip-icon', onclick: 'flipExpandCollapse', path },
+					cmp.expanded[path] ? 'keyboard_arrow_down' : 'keyboard_arrow_right') : h('span',{class: 'no-children-holder'}),
+				...(showIcon ? [h('i',{class: 'material-icons treenode-icon'}, icon)] : []),
+				h('span',{class: 'treenode-label'}, model.title(path,!cmp.expanded[path])),
+			])
+		}
+		return new TreeRenderer({cmp,h,showIcon,noHead,renderLine}).renderTree(cmp.model.rootPath)
+	},
+	css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
+	|>.treenode-label { margin-top: -1px }
+
+	|>.treenode-label .treenode-val { color: red; padding-left: 4px; }
+	|>.treenode-line { display: flex; box-orient: horizontal; padding-bottom: 3px; align-items: center }
+
+	|>.treenode { display: block }
+	|>.flip-icon { font-size: 16px; margin-right: 2px;}
+	|>.treenode-icon { font-size: 16px; margin-right: 2px; }
+
+	|>.treenode.selected>*>.treenode-label,.treenode.selected>*>.treenode-label  { background: #D9E8FB;}
+	`
+  }))
 })
 
-jb.component('tree.no-head', { /* tree.noHead */
-  type: 'tree.style',
-  impl: customStyle({
-	features: css.class('jb-control-tree'),
-	template: (cmp,state,h) => h('div',{}, cmp.model.children(cmp.model.rootPath)
-		.map(childPath=> renderNode({path: childPath,cmp,model: cmp.model,h})))
-	}),
-	css: '{user-select: none}'
-})
+jb.component('tree.expand-box', {
+	type: 'tree.style',
+	params: [
+	  {id: 'showIcon', as: 'boolean'},
+	  {id: 'noHead', as: 'boolean'},
+	  {id: 'lineWidth', as: 'string', defaultValue: '300px'},
+	],
+	impl: (ctx,showIcon,noHead,lineWidth) => ctx.run(customStyle({
+	  template: (cmp,state,h) => {
+		function renderLine(path) {
+			const model = cmp.model
+			const icon = model.icon && model.icon(path) || 'radio_button_unchecked';
+			const nochildren = model.isArray(path) ? '' : ' nochildren'
+			const collapsed = cmp.expanded[path] ? '' : ' collapsed';
+			const showIconClass = showIcon ? ' showIcon' : '';
 
+			return h('div',{ class: `treenode-line${collapsed}`},[
+				h('button',{class: `treenode-expandbox${nochildren}${showIconClass}`, onclick: 'flipExpandCollapse', path },[
+					h('div',{ class: 'frame'}),
+					h('div',{ class: 'line-lr'}),
+					h('div',{ class: 'line-tb'}),
+				]),
+				...(showIcon ? [h('i',{class: 'material-icons treenode-icon'}, icon)] : []),
+				h('span',{class: 'treenode-label'}, model.title(path,!cmp.expanded[path])),
+			])
+		}
+		return new TreeRenderer({cmp,h,showIcon,noHead,renderLine}).renderTree(cmp.model.rootPath)
+	  },
+	  css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
+	|>.treenode-label { margin-top: -2px }
+	|>.treenode-label .treenode-val { color: red; padding-left: 4px; }
+	|>.treenode-line { display: flex; box-orient: horizontal; width: ${lineWidth}; padding-bottom: 3px;}
+	  
+	|>.treenode { display: block }
+	|>.treenode.selected>*>.treenode-label,.treenode.selected>*>.treenode-label  { background: #D9E8FB;}
+  
+	|>.treenode-icon { font-size: 16px; margin-right: 2px; }
+	|>.treenode-expandbox { border: none; background: none; position: relative; width:9px; height:9px; padding: 0; vertical-align: top;
+		margin-top: 5px;  margin-right: 5px;  cursor: pointer;}
+	|>.treenode-expandbox.showIcon { margin-top: 3px }
+	|>.treenode-expandbox div { position: absolute; }
+	|>.treenode-expandbox .frame { background: #F8FFF9; border-radius: 3px; border: 1px solid #91B193; top: 0; left: 0; right: 0; bottom: 0; }
+	|>.treenode-expandbox .line-lr { background: #91B193; top: 4px; left: 2px; width: 5px; height: 1px; }
+	|>.treenode-expandbox .line-tb { background: #91B193; left: 4px; top: 2px; height: 5px; width: 1px; display: none;}
+	|>.treenode-line.collapsed .line-tb { display: block; }
+	|>.treenode.collapsed .line-tb { display: block; }
+	|>.treenode-expandbox.nochildren .frame { display: none; }
+	|>.treenode-expandbox.nochildren .line-lr { display: none; }
+	|>.treenode-expandbox.nochildren .line-tb { display: none;}`
+	}))
+})
+  
 jb.component('tree.selection', { /* tree.selection */
   type: 'feature',
   params: [
     {id: 'databind', as: 'ref', dynamic: true},
-    {id: 'autoSelectFirst', type: 'boolean'},
+    {id: 'autoSelectFirst', as: 'boolean'},
     {id: 'onSelection', type: 'action', dynamic: true},
     {id: 'onRightClick', type: 'action', dynamic: true}
   ],
   impl: (ctx,databind) => ({
-	    onclick: true,
+		onclick: true,
+		componentDidUpdate : cmp => cmp.setSelected(cmp.selected),
+
   		afterViewInit: cmp => {
-		  const selectedRef = databind()
+			const selectedRef = databind()
+  			const databindObs = jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}).map(e=>jb.val(e.ref))
 
-  		  const databindObs = jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}).map(e=>jb.val(e.ref));
-
+			cmp.setSelected = selected => {
+				cmp.selected = selected
+				if (!cmp.base) return
+				jb.ui.findIncludeSelf(cmp.base,'.treenode.selected').forEach(elem=>elem.classList.remove('selected'))
+				jb.ui.findIncludeSelf(cmp.base,'.treenode').filter(elem=> elem.getAttribute('path') === selected)
+					.forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoView()})
+			}
+	  
 		  cmp.selectionEmitter
 		  	.merge(databindObs || [])
-		  	.merge(cmp.onclick.map(event =>
-		  		cmp.elemToPath(event.target)))
+		  	.merge(cmp.onclick.map(event => cmp.elemToPath(event.target)))
 		  	.filter(x=>x)
-		  	.map(x=>
-		  		jb.val(x))
-//	  		.distinctUntilChanged()
+		  	.map(x=> jb.val(x))
 		  	.subscribe(selected=> {
-		  	  if (cmp.selected == selected)
-		  	  	return;
-			  cmp.selected = selected;
-			  selected.split('~').slice(0,-1).reduce(function(base, x) {
-				  var path = base ? (base + '~' + x) : x;
-				  cmp.expanded[path] = true;
-				  return path;
-			  },'')
+			  cmp.setSelected(selected);
+			  cmp.expandPath(selected.split('~').slice(0,-1).join('~'))
 			  if (selectedRef)
 				  jb.writeValue(selectedRef, selected, ctx);
 			  ctx.params.onSelection(cmp.ctx.setData(selected));
-			  cmp.redraw();
-		  });
-
-		  cmp.onclick.subscribe(_=>
-		  	cmp.regainFocus && cmp.regainFocus()
-		  );
+		  })
+		  cmp.onclick.subscribe(_=>	cmp.regainFocus && cmp.regainFocus())
 
 		if (ctx.params.onRightClick.profile)
 			cmp.base.oncontextmenu = (e=> {
@@ -136,8 +204,7 @@ jb.component('tree.selection', { /* tree.selection */
 			  first_selected = cmp.elemToPath(first);
 		  }
 		  if (first_selected)
-  			jb.delay(1).then(() =>
-  				cmp.selectionEmitter.next(first_selected))
+  			jb.delay(1).then(() => cmp.selectionEmitter.next(first_selected))
   		},
   	})
 })
@@ -161,7 +228,7 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 				context.vars.$tree.regainFocus = cmp.regainFocus = cmp.getKeyboardFocus = cmp.getKeyboardFocus || (_ => {
 					jb.ui.focus(cmp.base,'tree.keyboard-selection regain focus',context);
 					return false;
-				});
+				})
 
 				if (context.params.autoFocus)
 					jb.ui.focus(cmp.base,'tree.keyboard-selection init autofocus',context);
@@ -224,10 +291,19 @@ jb.component('tree.redraw', { /* tree.redraw */
 	}
 })
 
+jb.component('tree.expand-path', { 
+	type: 'action',
+	params: [
+	  {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
+	],
+	impl: (ctx,paths) => ctx.vars.$tree && paths.forEach(path => ctx.vars.$tree.cmp.expandPath(path))
+})
+  
 jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
   type: 'feature',
   impl: ctx => ({
-  		onkeydown: true,
+		onkeydown: true,
+		componentDidUpdate : cmp => cmp.drake && (cmp.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children')),
   		afterViewInit: cmp => {
         	const drake = cmp.drake = dragula([], {
 				moves: el => jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
@@ -241,11 +317,12 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 				delete cmp.expanded[path]; // collapse when dragging
 			})
 
-			drake.on('drop', (dropElm, target, source,targetSibling) => {
+			drake.on('drop', (dropElm, target, source,_targetSibling) => {
 				if (!dropElm.dragged) return;
 				dropElm.parentNode.removeChild(dropElm);
 				cmp.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
 				const state = treeStateAsRefs(cmp);
+				const targetSibling = _targetSibling; // || target.lastElementChild == dropElm && target.previousElementSibling
 				let targetPath = targetSibling ? cmp.elemToPath(targetSibling) : addToIndex(cmp.elemToPath(target.lastElementChild),1);
 				// strange dragule behavior fix
 				const draggedIndex = Number(dropElm.dragged.path.split('~').pop());
@@ -253,10 +330,10 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 				if (target === source && targetIndex > draggedIndex)
 					targetPath = addToIndex(targetPath,-1)
 				cmp.model.move(dropElm.dragged.path,targetPath,ctx);
-				cmp.selectionEmitter.next(targetPath)
 				restoreTreeStateFromRefs(cmp,state);
+				cmp.selectionEmitter.next(targetPath)
 				dropElm.dragged = null;
-//				cmp.redraw(true);
+				cmp.redraw(true);
 		    })
 
 	        // ctrl up and down
@@ -274,11 +351,6 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 						restoreTreeStateFromRefs(cmp,state);
       			})
       		},
-      		componentWillUpdate: function(cmp) {
-    		  	if (cmp.drake)
-    			     cmp.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
-    				       //$(cmp.base).findIncludeSelf('.jb-array-node').children().filter('.treenode-children').get();
-      		}
   	})
 })
 

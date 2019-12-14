@@ -457,12 +457,11 @@ jb.component('refresh-control-by-id', { /* refreshControlById */
     const base = ctx.vars.elemToTest || typeof document !== 'undefined' && document
     const elem = base && base.querySelector('#'+id)
     if (!elem)
-      jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
+      return jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
     const comp = elem && elem._component
     if (!comp)
-      jb.logError('refresh-control-by-id can not get comp for elem', ctx)
-    if (comp && comp.refresh)
-      comp.refresh(ctx)
+      return jb.logError('refresh-control-by-id can not get comp for elem', ctx)
+    comp.refresh && comp.refresh(ctx)
   }
 })
 

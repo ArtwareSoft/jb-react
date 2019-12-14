@@ -27,17 +27,6 @@ jb.component('group.section', { /* group.section */
   impl: group.htmlTag('section')
 })
 
-jb.component('first-succeeding.style', { /* firstSucceeding.style */
-  type: 'first-succeeding.style',
-  impl: customStyle({
-    template: (cmp,state,h) => {
-      const ctrl = state.ctrls.filter(x=>x)[0];
-      return ctrl && h(ctrl)
-    },
-    features: group.initGroup()
-  })
-})
-
 jb.component('group.ul-li', { /* group.ulLi */
   type: 'group.style',
   impl: customStyle({

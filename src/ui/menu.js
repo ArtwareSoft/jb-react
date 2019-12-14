@@ -239,12 +239,9 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
 							})
 						} , cmp.ctx, cmp.base );
 
-				cmp.closePopup = _ => {
-						jb.ui.dialogs.dialogs
-							.filter(d=>d.id == ctx.vars.optionsParentId)
-							.forEach(d=>d.close());
-						cmp.ctx.vars.topMenu.popups.pop();
-				};
+				cmp.closePopup = () => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs
+              .filter(d=>d.id == ctx.vars.optionsParentId))
+              .then(()=> cmp.ctx.vars.topMenu.popups.pop()),
 
 				jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
 					if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
@@ -275,11 +272,11 @@ jb.component('menu.init-menu-option', { /* menu.initMenuOption */
 		afterViewInit: cmp => {
 			const leafParams = ctx.vars.menuModel.leaf;
 					cmp.setState({title:  leafParams.title() ,icon : leafParams.icon ,shortcut: leafParams.shortcut});
-					cmp.action = jb.ui.wrapWithLauchingElement( _ => {
-				jb.ui.dialogs.dialogs.filter(d=>d.isPopup)
-						.forEach(d=>d.close());
-					jb.delay(50).then(_=>	ctx.vars.menuModel.action())
-					}, ctx, cmp.base);
+					cmp.action = jb.ui.wrapWithLauchingElement( () =>
+            jb.ui.dialogs.closePopups()
+//              .then(()=>jb.delay(50))
+              .then(() =>	ctx.vars.menuModel.action())
+					, ctx, cmp.base);
 
 				jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
 				if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
@@ -375,13 +372,10 @@ jb.component('menu.selection', { /* menu.selection */
 				}).filter(x=>x).subscribe(data => cmp.select(data))
 			
 			keydown.filter(e=>e.keyCode == 27) // close all popups
-					.subscribe(_=>{
-						jb.ui.dialogs.dialogs
-							.filter(d=>d.isPopup)
-							.forEach(d=>d.close())
-						cmp.ctx.vars.topMenu.popups = [];
-						cmp.ctx.run({$:'tree.regain-focus'});
-				})
+					.subscribe(_=> jb.ui.dialogs.closePopups().then(()=> {
+              cmp.ctx.vars.topMenu.popups = [];
+              cmp.ctx.run({$:'tree.regain-focus'}) // very ugly
+          }))
 
       cmp.select = selected => {
 				ctx.vars.topMenu.selected = selected

@@ -113,7 +113,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
             controlWithCondition(isNull('%$obj%'), label('null')),
             tree({
               nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
-              style: tree.noHead(),
+              style: tree.expandBox({noHead: true, showIcon: true}),
               features: [
                 tree.selection({}),
                 tree.keyboardSelection({}),
@@ -279,6 +279,7 @@ jb.component('studio.jb-editor-inteli-tree', { /* studio.jbEditorInteliTree */
   ],
   impl: tree({
         nodeModel: studio.jbEditorNodes('%$path%'),
+        style: tree.expandBox({showIcon: true}),
         features: [
           css.class('jb-editor'),
           tree.selection({
@@ -366,18 +367,13 @@ jb.component('studio.expand-and-select-first-child-in-jb-editor', { /* studio.ex
     const jbEditorElem = document.querySelector('.jb-editor')
     if (!jbEditorElem) return
     const ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[jbEditorElem.getAttribute('jb-ctx')];
-    const tree = ctxOfTree.vars.$tree;
-    if (!tree) return;
-    tree.expanded[tree.selected] = true;
-    jb.delay(100).then(()=>{
-      const firstChild = tree.nodeModel.children(tree.selected)[0];
-      if (firstChild) {
-        tree.selectionEmitter.next(firstChild);
-        tree.regainFocus && tree.regainFocus();
-//        jb_ui.apply(ctx);
-//        jb.delay(100);
-      }
-    })
+    const cmp = ctxOfTree.vars.$tree && ctxOfTree.vars.$tree.cmp;
+    if (!cmp) return;
+    cmp.expanded[cmp.selected] = true;
+    const firstChild = cmp.model.children(cmp.selected)[0];
+    if (firstChild)
+      cmp.selectionEmitter.next(firstChild)
+    cmp.regainFocus && cmp.regainFocus()
   }
 })
 

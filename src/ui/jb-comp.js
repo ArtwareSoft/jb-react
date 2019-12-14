@@ -53,15 +53,20 @@ function applyAttsDiff(elem, vdomBefore, vdomAfter) {
 function applyChildrenDiff(parentElem, vdomBefore, vdomAfter, cmp) {
     if (vdomBefore.length ==1 && vdomAfter.length == 1 && parentElem.childElementCount === 0 && parentElem.firstChild) 
         return applyVdomDiff(parentElem.firstChild, vdomBefore[0], vdomAfter[0], cmp)
-    jb.log('applyChildrenDiff',[...arguments]);
-    let remainingBefore = vdomBefore.map((e,i)=> {
-        if (!parentElem.childNodes[i]) debugger
-        return Object.assign({},e,{i, base: parentElem.childNodes[i]})
-    })
+    jb.log('applyChildrenDiff',[...arguments])
+    if (vdomBefore.length != parentElem.childElementCount) {
+        jb.log('applyChildrenDiff',['unexpected dom',...arguments])
+        while(parentElem.firstChild) {
+            unmount(parentElem.firstChild)
+            parentElem.removeChild(parentElem.firstChild)
+        }
+    }
+    let remainingBefore = vdomBefore.filter((e,i)=>parentElem.childNodes[i])
+        .map((e,i)=> Object.assign({},e,{i, base: parentElem.childNodes[i]}))
     const unmountCandidates = remainingBefore.slice(0)
     const childrenMap = vdomAfter.map((toLocate,i)=> locateCurrentVdom1(toLocate,i,remainingBefore))
     vdomAfter.forEach((toLocate,i)=> childrenMap[i] = childrenMap[i] || locateCurrentVdom2(toLocate,i,remainingBefore))
-    unmountCandidates.filter(toLocate => childrenMap.indexOf(toLocate) == -1).forEach(elem =>{
+    unmountCandidates.filter(toLocate => childrenMap.indexOf(toLocate) == -1 && toLocate.base).forEach(elem =>{
         unmountNotification(elem.base)
         parentElem.removeChild(elem.base)
         unbindCmps(elem.base)
@@ -228,7 +233,7 @@ const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,
 class JbComponent {
 	constructor(ctx) {
         this.ctx = ctx
-        this.id = cmpId++
+        this.cmpId = cmpId++
 		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbComponentDidMountFuncs: [],
 			jbComponentDidUpdateFuncs: [], willUpdateFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], 
 			extendItemFuncs: [], enrichField: [], dynamicCss: [], contexts: [] })
@@ -303,7 +308,7 @@ class JbComponent {
         this.initIfNeeded()
         const vdom = this.doRender() || ui.h('span',{display: 'none'})
         if (typeof vdom == 'object')
-            vdom.attributes = Object.assign(vdom.attributes || {},{cmpId: this.id, 'jb-ctx': ui.preserveCtx(this.originatingCtx) })
+            vdom.attributes = Object.assign(vdom.attributes || {},{cmpId: this.cmpId, 'jb-ctx': ui.preserveCtx(this.originatingCtx) })
         return this.vdomBefore = vdom
     }
     doRender() {
@@ -345,7 +350,7 @@ class JbComponent {
 			cssSelectors_hash[cssKey] = cssId;
 			const cssStyle = cssLines.map(selectorPlusExp=>{
 				const selector = selectorPlusExp.split('{')[0];
-				const fixed_selector = selector.split(',').map(x=>x.trim()).map(x=>`.jb-${cssId}${x}`);
+				const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' ')).map(x=>`.jb-${cssId}${x}`);
 				return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
 			}).join('\n');
 			const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;

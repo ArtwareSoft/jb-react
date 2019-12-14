@@ -23,12 +23,12 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
           .catch(e=> jb.logException(e,'suggestions',cmp.ctx) || [])
           .distinctUntilChanged((e1,e2)=> e1.key == e2.key) // compare options - if options are the same - leave it.
           .takeUntil( cmp.destroyed )
+          .delay(1) // let the itemlist to be built at the first time
           .subscribe(e=> {
               cmp.ctx.run((ctx,{suggestionData}) => {
                 suggestionData && Object.assign(suggestionData,e)
                 if (suggestionData.options.indexOf(suggestionData.selected) == -1)
                   suggestionData.selected = null
-                //suggestionData.selected = suggestionData.selected || suggestionData.options[0]
               })
               cmp.ctx.run(refreshControlById('suggestions-itemlist'))
           });
@@ -139,8 +139,8 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
             popupId: 'suggestions',
             popupStyle: dialog.popup(),
             showHelper: studio.showSuggestions(),
-            onEnter: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()],
-            onEsc: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()]
+            onEnter: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()),
+            onEsc: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus())
           })
         ]
       }),
@@ -260,7 +260,7 @@ class ValueOption {
       const pos = this.pos + 1;
       input.value = input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos);
       try {
-        input._component.jbModel(input.value,'keyup') // sometimes the onupdate event is not activated...
+        input._component && input._component.jbModel(input.value,'keyup') // sometimes the onupdate event is not activated...
       } catch (e) {}
       ctx.exp('%$suggestionData%').options = [] // disable more pastes...
 
@@ -285,8 +285,8 @@ class CompOption {
     }
     writeValue(ctx) {
       st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste);
-      ctx.run({$: 'dialog.close-dialog', id: 'studio-jb-editor-popup' });
-      ctx.run({$: 'studio.expand-and-select-first-child-in-jb-editor' });
+      return ctx.run(runActions(dialog.closeDialog('studio-jb-editor-popup'),
+        studio.expandAndSelectFirstChildInJbEditor()))
     }
 }
 

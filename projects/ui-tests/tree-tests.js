@@ -27,22 +27,72 @@ jb.component('ui-test.tree-DD', { /* uiTest.treeDD */
     impl: uiTest({
       control: tree({
         nodeModel: tree.json('%$personWithChildren%', 'Homer'),
-        features: [tree.selection({}), tree.dragAndDrop(), tree.keyboardSelection({})]
+        features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
       }),
-      action: ctx =>
-        jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
-          ctx.exp('%$personWithChildren/friends[0]%', 'ref'),ctx),
+      action: ctx => jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
+            ctx.exp('%$personWithChildren/friends[0]%', 'ref'),ctx),
       expectedResult: equals(
         pipeline(
           list('%$personWithChildren/children%', '%$personWithChildren/friends%'),
           '%name%',
-          join({})
+          join()
         ),
         'Bart,Maggie,Lisa,Barnie'
       )
     })
 })
-  
+
+jb.component('ui-test.tree-visual-DD', {
+  impl: uiTest({
+    control: tree({
+      nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
+      features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection(),
+        feature.init(tree.expandPath(['personWithChildren~children','personWithChildren~friends']))
+      ]
+    }),
+    expectedResult: true
+  })
+})
+
+jb.component('ui-test.tree-styles', {
+  impl: uiTest({
+    control: group({
+      layout: layout.vertical({spacing: '30'}),
+      controls: [
+        tree({
+          style: tree.expandBox({showIcon: true, noHead: true}),
+          nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
+          features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection(),
+            feature.init(tree.expandPath(['personWithChildren~children','personWithChildren~friends']))
+          ]
+        }),
+        tree({
+          style: tree.expandBox({showIcon: false, noHead: true}),
+          nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
+          features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection(),
+            feature.init(tree.expandPath(['personWithChildren~children','personWithChildren~friends']))
+          ]
+        }),
+        tree({
+          style: tree.plain({showIcon: true, noHead: true}),
+          nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
+          features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection(),
+            feature.init(tree.expandPath(['personWithChildren~children','personWithChildren~friends']))
+          ]
+        }),
+        tree({
+          style: tree.plain({showIcon: false, noHead: true}),
+          nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
+          features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection(),
+            feature.init(tree.expandPath(['personWithChildren~children','personWithChildren~friends']))
+          ]
+        }),
+      ]
+    }),
+    expectedResult: true
+  })
+})
+
 jb.component('ui-test.tree-DD-after-last', { /* uiTest.treeDDAfterLast */
     impl: uiTest({
         control: tree({

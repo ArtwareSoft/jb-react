@@ -42,14 +42,10 @@ jb.component('open-dialog', { /* openDialog */
 				} catch (e) {
 					jb.logException(e,'dialog',ctx);
 				}
-				dialog.onOK = ctx2 =>
-					context.params.onOK(cmp.ctx.extendVars(ctx2));
-				cmp.dialogCloseOK = () =>
-					dialog.close({OK: true});
-				cmp.dialogClose = args =>
-					dialog.close(args);
-				cmp.recalcTitle = (e,srcCtx) =>
-					jb.ui.setState(cmp,{title: ctx.params.title(ctx)},e,srcCtx)
+				dialog.onOK = ctx2 => context.params.onOK(cmp.ctx.extendVars(ctx2));
+				cmp.dialogCloseOK = () => dialog.close({OK: true});
+				cmp.dialogClose = args => dialog.close(args);
+				cmp.recalcTitle = (e,srcCtx) =>	jb.ui.setState(cmp,{title: ctx.params.title(ctx)},e,srcCtx)
 			},
 			afterViewInit: cmp => {
 				cmp.dialog.el = cmp.base;
@@ -73,8 +69,7 @@ jb.component('dialog.close-containing-popup', { /* dialog.closeContainingPopup *
 	params: [
 		{id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
 	],
-	impl: (context,OK) =>
-		context.vars.$dialog && context.vars.$dialog.close({OK:OK})
+	impl: (context,OK) => context.vars.$dialog && context.vars.$dialog.close({OK:OK})
 })
 
 jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
@@ -207,12 +202,8 @@ jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: (ctx,action) =>
-		ctx.vars.$dialog.em
-			.filter(e => e.type == 'close')
-			.take(1)
-			.subscribe(e=>
-				action(ctx.setData(e.OK)))
+  impl: (ctx,action) => ctx.vars.$dialog.em.filter(e => e.type == 'close').take(1)
+			.subscribe(e=> action(ctx.setData(e.OK)))
 })
 
 jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.closeWhenClickingOutside */
@@ -243,22 +234,13 @@ jb.component('dialog.close-dialog', { /* dialog.closeDialog */
     {id: 'id', as: 'string'},
     {id: 'delay', as: 'number', defaultValue: 200}
   ],
-  impl: (ctx,id,delay) =>
-		jb.ui.dialogs.dialogs.filter(d=>d.id == id)
-  			.forEach(d=>jb.delay(delay).then(d.close()))
-})
-
-jb.component('dialog.close-all-popups', { /* dialog.closeAllPopups */
-  type: 'action',
-  impl: ctx =>
-		jb.ui.dialogs.dialogs.filter(d=>d.isPopup)
-  			.forEach(d=>d.close())
+  impl: (ctx,id,delay) => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs.filter(d=>d.id == id))
+  
 })
 
 jb.component('dialog.close-all', { /* dialog.closeAll */
   type: 'action',
-  impl: ctx =>
-		jb.ui.dialogs.dialogs.forEach(d=>d.close())
+  impl: ctx => jb.ui.dialogs.closeAll()
 })
 
 jb.component('dialog-feature.auto-focus-on-first-input', { /* dialogFeature.autoFocusOnFirstInput */
@@ -449,15 +431,21 @@ jb.ui.dialogs = {
 					self.dialogs.splice(index, 1);
 				if (dialog.modal && document.querySelector('.modal-overlay'))
 					document.body.removeChild(document.querySelector('.modal-overlay'));
-				self.refresh();
+				return self.refresh();
 			})
 		},
 		dialog.closed = () => self.dialogs.indexOf(dialog) == -1;
 
 		this.refresh();
 	},
+	closeDialogs(dialogs) {
+		return dialogs.slice(0).reduce((pr,dialog) => pr.then(()=>dialog.close()), Promise.resolve())
+	},
 	closeAll() {
-		this.dialogs.forEach(d=>d.close())
+		return this.closeDialogs(this.dialogs)
+	},
+	closePopups() {
+		return jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs.filter(d=>d.isPopup))
 	},
 	dialogsCmp() {
 		if (!this._dialogsCmp) {

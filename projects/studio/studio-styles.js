@@ -86,23 +86,6 @@ jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle *
   })
 })
 
-
-jb.component('editable-text.jb-editor-floating-input', { /* editableText.jbEditorFloatingInput */
-  type: 'editable-text.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
-        h('input', { class: 'mdl-textfield__input', id: 'jb_input_' + state.fieldId, type: 'text',
-            value: state.model,
-            onchange: true,
-            onkeyup: true,
-        }),
-        h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
-      ]),
-    css: '{ margin-right: 13px; }',
-    features: [field.databindText(300, true), mdlStyle.initDynamic()]
-  })
-})
-
 jb.component('button.studio-script', { /* button.studioScript */
   type: 'button.style',
   impl: customStyle({

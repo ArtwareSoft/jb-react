@@ -267,7 +267,7 @@ Object.assign(st,{
 		if (st.isOfType(path,'action'))
 			return 'play_arrow'
 
-		return 'radio_button_unchecked';
+		return '';
 	},
 	previewCompsAsEntries: () => jb.entries(st.previewjb.comps).filter(e=>e[1]),
 	projectFiles: () => {

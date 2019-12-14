@@ -127,6 +127,7 @@ jb.component('studio.control-tree', { /* studio.controlTree */
   impl: group({
     controls: [
       tree({
+        style: tree.expandBox({showIcon: true}),
         nodeModel: studio.controlTreeNodes(),
         features: [
           tree.selection({
@@ -148,35 +149,6 @@ jb.component('studio.control-tree', { /* studio.controlTree */
     features: [css.padding('10')]
   })
 })
-
-// after model modifications the paths of the selected and expanded nodes may change and the tree should fix it.
-// jb.component('studio.control-tree.refresh-path-changes', {
-//   type: 'feature',
-//   impl: ctx => ({
-//     init : cmp => {
-//       var tree = cmp.ctx.vars.$tree;
-//       if (!tree) return;
-//       jb.studio.scriptChange.takeUntil( cmp.destroyed )
-//         .subscribe(opEvent => {
-//           var new_expanded = {};
-//           jb.entries(tree.expanded)
-//             .filter(e=>e[1]).map(e=>e[0])
-//             .map(path=> fixPath(path,opEvent))
-//             .filter(x=>x)
-//             .forEach(path => new_expanded[path] = true)
-//           tree.expanded = new_expanded;
-//           tree.selectionEmitter.next(fixPath(tree.selected,opEvent));
-//         })
-//
-//         function fixPath(path,opEvent) {
-//           var oldPath = opEvent.oldRef.$jb_path.join('~');
-//           if (path.indexOf(oldPath) == 0)
-//             return opEvent.ref.$jb_invalid ? null : path.replace(oldPath,opEvent.ref.$jb_path.join('~'));
-//           return path;
-//         }
-//     }
-//   })
-// })
 
 jb.component('studio.open-control-tree', { /* studio.openControlTree */ 
   type: 'action',

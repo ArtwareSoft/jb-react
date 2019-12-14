@@ -63,8 +63,7 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
   impl: ctx =>({
     onkeyup: true,
     onkeydown: true, // used for arrows
-    extendCtxOnce: (ctx,cmp) =>
-      ctx.setVars({selectionKeySource: {}}),
+    extendCtxOnce: (ctx,cmp) => ctx.setVars({selectionKeySource: {}}),
 
     afterViewInit: cmp => {
       var input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
@@ -78,15 +77,12 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
               features: [
                 dialogFeature.maxZIndexOnClick(),
                 dialogFeature.uniqueDialog(ctx.params.popupId),
-//                css('{z-index: 10000 !important}'),
               ]
             }))
           ,cmp.ctx, cmp.base);
 
-      cmp.popup = _ =>
-        jb.ui.dialogs.dialogs.filter(d=>d.id == ctx.params.popupId)[0];
-      cmp.closePopup = _ =>
-        cmp.popup() && cmp.popup().close();
+      cmp.popup = _ => jb.ui.dialogs.dialogs.filter(d=>d.id == ctx.params.popupId)[0];
+      cmp.closePopup = _ => cmp.popup() && cmp.popup().close();
       cmp.refreshSuggestionPopupOpenClose = _ => {
           const showHelper = ctx.params.showHelper(cmp.ctx.setData(input))
           jb.log('helper-popup', ['refreshSuggestionPopupOpenClose', showHelper,input.value,cmp.ctx,cmp,ctx] );

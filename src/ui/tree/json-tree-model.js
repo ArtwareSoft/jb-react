@@ -88,9 +88,9 @@ class Json {
 		var prop = path.split('~').pop();
 		var h = jb.ui.h;
 		if (val == null)
-			return h(prop + ': null');
+			return prop + ': null';
 		if (!collapsed && typeof val == 'object')
-			return h('div',{},prop);
+			return prop
 
 		if (typeof val != 'object')
 			return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: val},jb.ui.limitStringLength(val,20))]);
