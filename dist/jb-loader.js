@@ -19,7 +19,8 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'dist/jb-immutable.js', // the immutable-helper lib
         'dist/jb-rx.js',
 
-        'src/ui/react-ctrl.js',
+//        'src/ui/react-ctrl.js',
+        'src/ui/jb-comp.js',
         'src/ui/watchable/watchable-ref.js',
 
         'src/ui/group.js',

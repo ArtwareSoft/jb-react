@@ -761,7 +761,7 @@ Object.assign(jb,{
         (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
       if ((profile.macroByValue || params.length < 3) && profile.macroByValue !== false && !macroByProps)
         return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
-      if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object')
+      if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
         return {$: id, ...args[0]}
       if (args.length == 1 && params.length)
         return {$: id, [params[0].id]: args[0]}
@@ -866,6 +866,7 @@ Object.assign(jb,{
   isEmpty: o => Object.keys(o).length === 0,
   isObject: o => o != null && typeof o === 'object',
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+  filterEmpty: obj => Object.entries(obj).reduce((a,[k,v]) => (v == null ? a : {...a, [k]:v}), {}),
 
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),

@@ -123,7 +123,7 @@ function countersErrors(expectedCounters) {
 		.join(', ')
 }
 
-jb.ui.elemOfSelector = (selector,ctx) => ctx.vars.elemToTest.querySelector(selector)
+jb.ui.elemOfSelector = (selector,ctx) => ctx.vars.elemToTest.querySelector(selector) || document.querySelector('.jb-dialogs '+ selector)
 jb.ui.cmpOfSelector = (selector,ctx) => jb.path(jb.ui.elemOfSelector(selector,ctx),['_component'])
 
 jb.ui.cssOfSelector = (selector,ctx) => {
@@ -136,7 +136,7 @@ jb.component('ui-action.click', { /* uiAction.click */
   type: 'ui-action',
   params: [
     {id: 'selector', as: 'string'},
-    {id: 'methodToActivate', as: 'string', defaultValue: 'clicked'}
+    {id: 'methodToActivate', as: 'string', defaultValue: 'onclickHandler'}
   ],
   impl: (ctx,selector,methodToActivate) => {
 		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
@@ -156,7 +156,7 @@ jb.component('ui-action.keyboard-event', { /* uiAction.keyboardEvent */
     {id: 'ctrl', as: 'string', options: ['ctrl', 'alt']}
   ],
   impl: (ctx,selector,type,keyCode,ctrl) => {
-		const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : ctx.vars.elemToTest;
+		const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest;
 		if (!elem) return
 		const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt' });
 		Object.defineProperty(e, 'keyCode', { get : _ => keyCode });
@@ -174,11 +174,9 @@ jb.component('ui-action.set-text', { /* uiAction.setText */
     {id: 'delay', as: 'number', defaultValue: 1}
   ],
   impl: (ctx,value,selector,delay) => {
-		const elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
-		elems.forEach(e=> {
-			e._component.jbModel(value);
-			jb.ui.findIncludeSelf(e,selector).forEach(el=>el.value = value);
-		})
+		const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest;
+		elem && elem._component && elem._component.jbModel(value) 
+//			&& jb.ui.findIncludeSelf(elem,`${selector},${selector} input,${selector} textarea`).forEach(el=>el.value = value);
 		return jb.delay(delay);
 	}
 })

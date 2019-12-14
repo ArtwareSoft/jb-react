@@ -761,7 +761,7 @@ Object.assign(jb,{
         (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
       if ((profile.macroByValue || params.length < 3) && profile.macroByValue !== false && !macroByProps)
         return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
-      if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object')
+      if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
         return {$: id, ...args[0]}
       if (args.length == 1 && params.length)
         return {$: id, [params[0].id]: args[0]}
@@ -866,6 +866,7 @@ Object.assign(jb,{
   isEmpty: o => Object.keys(o).length === 0,
   isObject: o => o != null && typeof o === 'object',
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+  filterEmpty: obj => Object.entries(obj).reduce((a,[k,v]) => (v == null ? a : {...a, [k]:v}), {}),
 
   equals: (x,y) =>
     x == y || jb.val(x) == jb.val(y),
@@ -1955,7 +1956,7 @@ jb.component('http.get', { /* http.get */
 			  .then(r =>
 			  		json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
-			  .catch(e => jb.logException(e,'',ctx) || [])
+			  .catch(e => jb.logException(e,'http.get',ctx) || [])
 	}
 })
 
@@ -1964,18 +1965,22 @@ jb.component('http.post', { /* http.post */
   params: [
     {id: 'url', as: 'string'},
     {id: 'postData', as: 'single'},
+    {id: 'headers', as: 'single'},
     {
       id: 'jsonResult',
       as: 'boolean',
       description: 'convert result to json',
       type: 'boolean'
-    }
+    },
+    {id: 'useProxy', as: 'boolean'},
   ],
-  impl: (ctx,url,postData,json) => {
-		return fetch(url,{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(postData) })
-			  .then(r =>
-			  		json ? r.json() : r.text())
-			  .catch(e => jb.logException(e,'',ctx) || [])
+  impl: (ctx,url,postData,headers,json) => {
+    return fetch(url, {
+      method: 'POST', 
+      headers: Object.assign({'Content-Type': 'application/json; charset=UTF-8' },headers || {}), 
+      body: typeof postData == 'string' ? postData : JSON.stringify(postData) })
+			  .then(r => json ? r.json() : r.text())
+			  .catch(e => jb.logException(e,'http.post',ctx) || [])
 	}
 })
 
@@ -2058,7 +2063,11 @@ jb.exp = (...args) => new jb.jbCtx().exp(...args);
 
 (function() {
 const spySettings = { 
-    moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog', 
+	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog', 
+	groups: {
+		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,scriptChange',
+		react: 'applyVdomDiff,htmlChange,applyChildrenDiff,unmount,render,initComp,setState',
+	},
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|node_modules/i,
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000
@@ -2091,6 +2100,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			const init = () => {
 				if (!this.includeLogs) {
 					const includeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
+						.flatMap(x=>Object.keys(settings.groups).indexOf(x) == -1 ? [x] : settings.groups[x].split(','))
 					const excludeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
 					this.includeLogs = settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
 						acc[log] = true
