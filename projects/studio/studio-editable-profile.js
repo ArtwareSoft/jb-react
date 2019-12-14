@@ -31,8 +31,7 @@ jb.component('editable-profile.init-flatten-properties', {
 
         if (!cmp.state.ctrls)
           cmp.state.ctrls = cmp.calcCtrls()
-        cmp.refresh = cmp.refresh || (_ =>
-            cmp.setState({ctrls: cmp.calcCtrls() }))
+        cmp.refresh = cmp.refresh || (_ => cmp.setState({ctrls: cmp.calcCtrls() }))
       }
     })
 })

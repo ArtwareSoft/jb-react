@@ -15,11 +15,10 @@ jb.component('button', { /* button */
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
-    jb.ui.ctrl(ctx,{
+    jb.ui.ctrl(ctx, {
       beforeInit: cmp => {
-        cmp.state.title = jb.val(ctx.params.title());
-        cmp.refresh = _ =>
-          cmp.setState({title: jb.val(ctx.params.title(cmp.ctx))});
+        cmp.state.title = jb.val(ctx.params.title(cmp.ctx));
+        cmp.refresh = _ => cmp.setState({title: jb.val(ctx.params.title(cmp.ctx))});
       },
       afterViewInit: cmp => {
           cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)

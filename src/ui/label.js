@@ -26,7 +26,7 @@ jb.component('text', { /* text */
 jb.component('label.bind-text', { /* label.bindText */
   type: 'feature',
   impl: ctx => ({
-    cmpToState: cmp => ({ text: jb.ui.toVdomOrStr((ctx.vars.$model.text || ctx.vars.$model.title)(cmp.ctx)) }),
+    calcState: cmp => ({ text: jb.ui.toVdomOrStr((ctx.vars.$model.text || ctx.vars.$model.title)(cmp.ctx)) }),
 
     init: cmp => {
       const textF = ctx.vars.$model.text || ctx.vars.$model.title 

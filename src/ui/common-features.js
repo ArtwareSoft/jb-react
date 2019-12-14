@@ -72,6 +72,12 @@ jb.component('watch-ref', { /* watchRef */
       type: 'boolean'
     },
     {
+      id: 'recalcVars',
+      as: 'boolean',
+      description: 'recalculate feature variables',
+      type: 'boolean'
+    },
+    {
       id: 'delay',
       as: 'number',
       description: 'delay in activation, can be used to set priority'

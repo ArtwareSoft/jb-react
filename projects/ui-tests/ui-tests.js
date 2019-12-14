@@ -20,7 +20,6 @@ jb.component('people', { /* people */
   ]
 })
 
-
 jb.component('person', { /* person */
   watchableData: {
     name: 'Homer Simpson',
@@ -360,7 +359,9 @@ jb.component('ui-test.updateOnBlur-when-dialog-closed', {
         jb.ui.elemOfSelector('input',ctx).value = 'hello';
         jb.ui.elemOfSelector('input',ctx).focus()
       }, 
-      dialog.closeAll()),
+      dialog.closeAll(),
+      delay(20)
+      ),
     expectedResult: contains('hello')
   })
 })
@@ -645,7 +646,6 @@ jb.component('ui-test.itemlist-with-table-style', {
     expectedResult: contains(['300','age', 'Homer Simpson', '38', '>3<', 'Bart'])
   })
 })
-
 
 jb.component('ui-test.table', { /* uiTest.table */
   impl: uiTest({
@@ -1249,39 +1249,30 @@ jb.component('ui-test.raw-vdom', {
   },
 })
 
-// jb.component('ui-test.raw-vdom-in-group', {
-//   impl :{$: 'ui-test',
-//     control: { $: 'group',
-//       controls: ctx =>
-//           jb.ui.h('div',{},'hello world')
-//     },
-//     expectedResult :{$: 'contains', text: 'hello world' },
-//   },
-// })
-
-jb.component('ui-test.control.first-succeeding', { /* uiTest.control.firstSucceeding */
+jb.component('ui-test.control.first-succeeding', { /* uiTest.group.firstSucceeding */
   impl: uiTest({
     control: group({
       controls: [
-        control.firstSucceeding(
-          [
-            controlWithCondition('%$gender% == \"male\"', label('male'))
-          ]
-        ),
-        control.firstSucceeding(
-          [
+        group({
+          features: group.firstSucceeding(),
+          controls: controlWithCondition('%$gender% == \"male\"', label('male'))
+        }),
+        group({
+          features: group.firstSucceeding(),
+          controls: [
             controlWithCondition('%$gender% == \"female\"', label('female')),
             controlWithCondition('%$gender% != \"female\"', label('male2')),
             controlWithCondition(true, label('second-succeeding'))
           ]
-        ),
-        control.firstSucceeding(
-          [
+        }),
+        group({
+          features: group.firstSucceeding(),
+          controls: [
             controlWithCondition('%$gender% == \"female\"', label('female')),
             controlWithCondition('%$gender% == \"lale\"', label('male2')),
             label('default')
           ]
-        )
+        })
       ],
       features: [variable({name: 'gender', value: 'male'})]
     }),
@@ -1289,25 +1280,39 @@ jb.component('ui-test.control.first-succeeding', { /* uiTest.control.firstSuccee
   })
 })
 
+jb.component('ui-test.first-succeeding-watchable-sample', {
+  type: 'control',
+  impl: group({
+    controls: [
+      editableText({databind: '%$gender%'}),
+      button({ title: 'female', action: writeValue('%$gender%', 'female'), features: id('female') }),
+      button({ title: 'zee', action: writeValue('%$gender%', 'zee'), features: id('zee') }),
+      button({ title: 'male', action: writeValue('%$gender%', 'male'), features: id('male') }),
+      group({
+        controls: [
+          controlWithCondition('%$gender% == \"male\"', label('a male')),
+          label('not male')
+        ],
+        features: [ group.firstSucceeding(), watchRef('%$gender%') ]
+      })
+    ],
+    features: variable({name: 'gender', value: 'male', watchable: true})
+  })
+})
+
 jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change', { /* uiTest.firstSucceeding.watchRefreshOnCtrlChange */
   impl: uiTest({
-    control: group({
-      controls: [
-        editableText({databind: '%$gender%'}),
-        button({ title: 'female', action: writeValue('%$gender%', 'female'), features: id('female') }),
-        button({ title: 'zee', action: writeValue('%$gender%', 'zee'), features: id('zee') }),
-        button({ title: 'male', action: writeValue('%$gender%', 'male'), features: id('male') }),
-        control.firstSucceeding({
-          controls: [
-            controlWithCondition('%$gender% == \"male\"', label('a male')),
-            label('not male')
-          ],
-          features: firstSucceeding.watchRefreshOnCtrlChange('%$gender%')
-        })
-      ],
-      features: variable({name: 'gender', value: 'male', watchable: true})
-    }),
+    control: uiTest.firstSucceedingWatchableSample(),
     action: uiAction.click('#female'),
+    expectedResult: contains('not male'),
+    expectedCounters: {initComp: 8}
+  })
+})
+
+jb.component('ui-test.first-succeeding.same-does-not-recreate', { 
+  impl: uiTest({
+    control: uiTest.firstSucceedingWatchableSample(),
+    action: [uiAction.click('#female'),uiAction.click('#zee')],
     expectedResult: contains('not male'),
     expectedCounters: {initComp: 8}
   })
@@ -1315,25 +1320,23 @@ jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change', { /* uiTes
 
 jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change-and-back', { 
   impl: uiTest({
-    control: group({
-      controls: [
-        editableText({databind: '%$gender%'}),
-        button({ title: 'female', action: writeValue('%$gender%', 'female'), features: id('female') }),
-        button({ title: 'zee', action: writeValue('%$gender%', 'zee'), features: id('zee') }),
-        button({ title: 'male', action: writeValue('%$gender%', 'male'), features: id('male') }),
-        control.firstSucceeding({
-          controls: [
-            controlWithCondition('%$gender% == \"male\"', label('a male')),
-            label('not male')
-          ],
-          features: firstSucceeding.watchRefreshOnCtrlChange('%$gender%')
-        })
-      ],
-      features: variable({name: 'gender', value: 'male', watchable: true})
-    }),
+    control: uiTest.firstSucceedingWatchableSample(),
     action: runActions(uiAction.click('#female'), uiAction.click('#male')),
     expectedResult: contains('a male'),
-    //expectedCounters: {initComp: 8}
+    expectedCounters: {initComp: 9}
+  })
+})
+
+jb.component('ui-test.watchRef.recalcVars', { 
+  impl: uiTest({
+    control: label({ title: '%$changed%',
+          features: [
+            variable({name: 'changed', value: '--%$person/name%--'}),
+            watchRef({ ref: '%$person/name%', recalcVars: true})
+          ]
+    }),
+    action: writeValue('%$person/name%','hello'),
+    expectedResult: contains('--hello--')
   })
 })
 

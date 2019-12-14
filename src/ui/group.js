@@ -31,6 +31,7 @@ jb.component('group.init-group', { /* group.initGroup */
   type: 'feature',
   category: 'group:0',
   impl: ctx => ({
+    calcState: cmp => ({ctrls: cmp.calcCtrls() }),
     init: cmp => {
       cmp.calcCtrls = cmp.calcCtrls || (() => ctx.vars.$model.controls(cmp.ctx).filter(x=>x))
       if (!cmp.state.ctrls)
@@ -79,85 +80,22 @@ jb.component('group.dynamic-titles', { /* group.dynamicTitles */
   })
 })
 
-jb.component('control.first-succeeding', { /* control.firstSucceeding */
-  type: 'control',
-  category: 'common:30',
-  params: [
-    {id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true},
-    {id: 'title', as: 'string', dynamic: true},
-    {id: 'style', type: 'first-succeeding.style', defaultValue: firstSucceeding.style(), mandatory: true, dynamic: true },
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => jb.ui.ctrl(new jb.jbCtx(ctx,{params: Object.assign({},ctx.params,{
-      originalControls: ctx.profile.controls,
-      controls: ctx2 => {
-        try {
-          for(let i=0;i<ctx.profile.controls.length;i++) {
-            const res = ctx2.runInner(ctx.profile.controls[i],null,i)
-            if (res) {
-              res.firstSucceedingIndex = i;
-              return [res]
-            }
-          }
-          return []
-        } catch(e) {
-          return []
-        }
-      }
-    })}))
-})
-
-jb.component('first-succeeding.style', { /* firstSucceeding.style */
-  type: 'first-succeeding.style',
-  impl: customStyle({
-    template: (cmp,state,h) => {
-      const ctrl = state.ctrls.filter(x=>x)[0];
-      return h('div',{},ctrl && h(ctrl))
-    },
-    features: group.initGroup()
-  })
-})
-
-jb.component('first-succeeding.watch-refresh-on-ctrl-change', { /* firstSucceeding.watchRefreshOnCtrlChange */
+jb.component('group.first-succeeding', { /* group.firstSucceeding */
   type: 'feature',
-  category: 'watch:30',
-  description: 'relevant only for first-succeeding',
-  params: [
-    {
-      id: 'ref',
-      mandatory: true,
-      as: 'ref',
-      dynamic: true,
-      description: 'reference to data'
-    },
-    {
-      id: 'includeChildren',
-      as: 'boolean',
-      description: 'watch childern change as well',
-      type: 'boolean'
-    }
-  ],
-  impl: (ctx,refF,includeChildren) => ({
-      init: cmp => {
-        const ref = refF(cmp.ctx)
-        ref && jb.ui.refObservable(ref,cmp,{includeChildren, srcCtx: ctx})
-        .subscribe(e=>{
-          if (ctx && ctx.profile && ctx.profile.$trace)
-            console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
-
-          const originalControls = ctx.vars.$model.originalControls
-          if (!originalControls) return
-          for(let i=0;i<(originalControls ||[]).length;i++) {
-            const res = cmp.ctx.runInner(originalControls[i],null,i)
-            if (res) {
-              if (cmp.state.ctrls[0].firstSucceedingIndex !== i) {
-                res.firstSucceedingIndex = i
-                jb.ui.setState(cmp,{ctrls: [jb.ui.renderable(res)]},e,ctx);
-              }
-              return
-            }
-          }
-      })
+  category: 'group:70',
+  description: 'Used with controlWithCondition. Takes the fhe first succeeding control',
+  impl: ctx => ({
+    beforeInit: cmp => cmp.calcCtrls = () => {
+      cmp.lastSucceeding = cmp.lastSucceeding || { index: -1 }
+      const profiles = jb.asArray(cmp.ctx.profile.controls)
+      for(let i=0;i<profiles.length;i++) {
+        const found = cmp.ctx.run(profiles[i])
+        if (found && cmp.lastSucceeding.index != i)
+          cmp.lastSucceeding = { index: i, cmp: found }
+        if (found) 
+          return [cmp.lastSucceeding.cmp]
+      }
+      return []
     }
   })
 })
@@ -170,6 +108,5 @@ jb.component('control-with-condition', { /* controlWithCondition */
     {id: 'control', type: 'control', mandatory: true, dynamic: true},
     {id: 'title', as: 'string'}
   ],
-  impl: (ctx,condition,ctrl) =>
-    condition() && ctrl(ctx)
+  impl: (ctx,condition,ctrl) => condition() && ctrl(ctx)
 })

@@ -323,22 +323,7 @@ jb.component('studio.name-of-ref', { /* studio.nameOfRef */
   params: [
     {id: 'ref', defaultValue: '%%', mandatory: true}
   ],
-  impl: (ctx,ref) =>
-		st.nameOfRef(ref)
-})
-
-
-jb.component('studio.is-new', { /* studio.isNew */
-  type: 'boolean',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,path) => {
-		if (st.compsHistory.length == 0 || st.previewjb.comps.$jb_selectionPreview) return false;
-		var res =  JSON.stringify(jb.path(st.compsHistory.slice(-1)[0].before,path.split('~'))) !=
-					JSON.stringify(jb.path(st.previewjb.comps,path.split('~')));
-		return res;
-	}
+  impl: (ctx,ref) => st.nameOfRef(ref)
 })
 
 jb.component('studio.watch-path', { /* studio.watchPath */
@@ -347,63 +332,55 @@ jb.component('studio.watch-path', { /* studio.watchPath */
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {
-      id: 'includeChildren',
-      as: 'string',
-      options: 'yes,no,structure',
-      defaultValue: 'no',
-      description: 'watch childern change as well'
-    },
-    {
-      id: 'delay',
-      as: 'number',
-      description: 'delay in activation, can be used to set priority'
-    },
-    {
-      id: 'allowSelfRefresh',
-      as: 'boolean',
-      description: 'allow refresh originated from the components or its children',
-      type: 'boolean',
-      defaultValue: true
-    }
+		id: 'includeChildren',
+		as: 'string',
+		options: 'yes,no,structure',
+		defaultValue: 'no',
+		description: 'watch childern change as well'
+	  },
+	 {
+		id: 'allowSelfRefresh',
+		as: 'boolean',
+		description: 'allow refresh originated from the components or its children',
+		type: 'boolean'
+	  },
+	  {
+		id: 'strongRefresh',
+		as: 'boolean',
+		description: 'rebuild the component, including all features and variables',
+		type: 'boolean'
+	  },
+	  {
+		id: 'recalcVars',
+		as: 'boolean',
+		description: 'recalculate feature variables',
+		type: 'boolean'
+	  },
+	  {
+		id: 'delay',
+		as: 'number',
+		description: 'delay in activation, can be used to set priority'
+	  },
   ],
-  impl: (ctx,path,includeChildren,delay,allowSelfRefresh) => ({
-      init: cmp =>
-      	jb.ui.watchRef(ctx,cmp,st.refOfPath(path),{includeChildren,delay,allowSelfRefresh})
+  impl: (ctx,path) => ({
+      init: cmp => jb.ui.watchRef(ctx,cmp,st.refOfPath(path),ctx.params)
   })
 })
 
 jb.component('studio.watch-script-changes', { /* studio.watchScriptChanges */
   type: 'feature',
   impl: ctx => ({
-      init: cmp =>
-        st.scriptChange.takeUntil( cmp.destroyed ).debounceTime(200).subscribe(e=>
-            jb.ui.setState(cmp,null,e,ctx))
+      init: cmp => st.scriptChange.takeUntil( cmp.destroyed )
+		//.debounceTime(200)
+		.subscribe(e=> jb.ui.setState(cmp,null,e,ctx))
    })
 })
 
 jb.component('studio.watch-components', { /* studio.watchComponents */
   type: 'feature',
   impl: ctx => ({
-      init: cmp =>
-        st.scriptChange.takeUntil( cmp.destroyed ).filter(e=>e.path.length == 1)
-        	.subscribe(e=>
-            	jb.ui.setState(cmp,null,e,ctx))
-   })
-})
-
-
-jb.component('studio.watch-typeof-script', { /* studio.watchTypeofScript */
-  params: [
-    {id: 'path', as: 'string', mandatory: true}
-  ],
-  type: 'feature',
-  impl: (ctx,path) => ({
-      init: cmp =>
-    	jb.ui.refObservable(st.refOfPath(path),cmp,{ includeChildren: 'yes', srcCtx: ctx})
-    		.filter(e=>
-    			(typeof e.oldVal == 'object') != (typeof e.newVal == 'object'))
-    		.subscribe(e=>
-        		jb.ui.setState(cmp,null,e,ctx))
+      init: cmp => st.scriptChange.takeUntil( cmp.destroyed ).filter(e=>e.path.length == 1)
+        	.subscribe(e=> jb.ui.setState(cmp,null,e,ctx))
    })
 })
 

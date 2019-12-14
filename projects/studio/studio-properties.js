@@ -1,11 +1,3 @@
-jb.component('studio.properties-tree-nodes', { /* studio.propertiesTreeNodes */
-  type: 'tree.node-model',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,path) => new jb.studio.PropertiesTree(path)
-})
-
 jb.component('studio.properties', { /* studio.properties */
   type: 'control',
   params: [
@@ -14,7 +6,7 @@ jb.component('studio.properties', { /* studio.properties */
   impl: group({
     controls: [
       tableTree({
-        treeModel: studio.propertiesTreeNodes('%$path%'),
+        treeModel: (ctx,{},{path}) => new jb.studio.PropertiesTree(path),
         commonFields: [
           group({
             controls: studio.propField('%path%', '%expanded%'),
@@ -27,14 +19,14 @@ jb.component('studio.properties', { /* studio.properties */
         ],
         chapterHeadline: label({
           title: ({data}) => {
-          const path = data.path
-          const prop = path.split('~').pop()
-          if (Array.isArray(jb.studio.valOfPath(path)))
-            return `${prop} (${jb.studio.valOfPath(path).length})`
-          if (isNaN(Number(prop)))
-            return prop
-          return Number(prop) + 1
-        },
+            const path = data.path
+            const prop = path.split('~').pop()
+            if (Array.isArray(jb.studio.valOfPath(path)))
+              return `${prop} (${jb.studio.valOfPath(path).length})`
+            if (isNaN(Number(prop)))
+              return prop
+            return Number(prop) + 1
+          },
           features: feature.hoverTitle(pipeline(studio.paramDef('%path%'), '%description%'))
         }),
         style: tableTree.plain({hideHeaders: true, gapWidth: 100}),
@@ -58,8 +50,7 @@ jb.component('studio.prop-field', { /* studio.propField */
   ],
   impl: group({
     title: studio.propName('%$path%'),
-    controls: control.firstSucceeding({
-      vars: [Var('paramDef', studio.paramDef('%$path%')), Var('val', studio.val('%$path%'))],
+    controls: group({
       controls: [
         controlWithCondition(
           and(
@@ -91,7 +82,12 @@ jb.component('studio.prop-field', { /* studio.propField */
         ),
         studio.propertyScript('%$path%')
       ],
-      features: firstSucceeding.watchRefreshOnCtrlChange(studio.ref('%$path%'), true)
+      features: [
+        group.firstSucceeding(),
+        studio.watchPath({ path: '%$path%', includeChildren: 'yes', recalcVars: true }),
+        variable('paramDef', studio.paramDef('%$path%')), 
+        variable('val', studio.val('%$path%'))
+      ]
     }),
     features: [
       studio.propertyToolbarFeature('%$path%'),
@@ -132,46 +128,6 @@ jb.component('studio.property-toolbar-feature', { /* studio.propertyToolbarFeatu
   )
 })
 
-
-jb.component('studio.focus-on-first-property', { /* studio.focusOnFirstProperty */
-  type: 'action',
-  params: [
-    {id: 'delay', as: 'number', defaultValue: 100}
-  ],
-  impl: (ctx,delay) => {
-    jb.delay(delay).then ( _=> {
-    var elem =  Array.from(document.querySelectorAll('[dialogid="studio-properties"] input,textarea,select'))
-      .filter(e => e.getAttribute('type') != 'checkbox')[0];
-    elem && jb.ui.focus(elem,'studio.focus-on-first-property',ctx);
-    })
-  }
-})
-
-jb.component('studio.open-source-dialog', { /* studio.openSourceDialog */
-  type: 'action',
-  impl: openDialog({
-    style: dialog.dialogOkCancel(),
-    content: text({text: studio.compSource(), style: text.codemirror({})}),
-    title: 'Source',
-    modal: true
-  })
-})
-
-jb.component('studio.properties-in-tgp', { /* studio.propertiesInTgp */
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: group({
-    style: propertySheet.studioPropertiesInTgp(),
-    controls: dynamicControls({
-      controlItems: studio.nonControlChildren('%$path%', true),
-      genericControl: studio.propertyField('%$controlItem%')
-    }),
-    features: group.autoFocusOnFirstInput()
-  })
-})
-
 jb.component('studio.property-script', { /* studio.propertyScript */
   type: 'control',
   params: [
@@ -208,190 +164,6 @@ jb.component('studio.property-enum', { /* studio.propertyEnum */
     options: studio.enumOptions('%$path%'),
     style: picklist.nativeMdLookOpen(),
     features: css.width({width: '100', minMax: 'min'})
-  })
-})
-
-jb.component('studio.property-tgp', { /* studio.propertyTgp */
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: inlineControls(
-    studio.pickProfile('%$path%'),
-    studio.propertiesInTgp('%$path%')
-  )
-})
-
-jb.component('studio.properties-expanded-relevant', { /* studio.propertiesExpandedRelevant */
-  type: 'boolean',
-  params: [
-    {id: 'path', as: 'string', mandatory: true}
-  ],
-  impl: and(
-    notEmpty(studio.nonControlChildren('%$path%')),
-    notEmpty(studio.val('%$path%')),
-    notEquals(studio.compName('%$path%'), 'custom-style')
-  )
-})
-
-jb.component('studio.property-tgp-old', { /* studio.propertyTgpOld */
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: group({
-    controls: [
-      group({
-        title: 'header',
-        layout: layout.horizontal(0),
-        controls: [
-          editableBoolean({
-            databind: '%$userExpanded%',
-            style: editableBoolean.expandCollapse(),
-            features: [
-              field.initValue(studio.isNew('%$path%')),
-              hidden(studio.propertiesExpandedRelevant('%$path%')),
-              css('{ position: absolute; margin-left: -20px; margin-top: 5px }')
-            ]
-          }),
-          group({controls: studio.pickProfile('%$path%'), features: css.width(150)})
-        ],
-        features: [css('{ position: relative }'), studio.watchPath('%$path%')]
-      }),
-      group({
-        title: 'inner',
-        controls: studio.propertiesInTgp('%$path%'),
-        features: [
-          studio.watchPath('%$path%'),
-          watchRef('%$userExpanded%'),
-          feature.if('%$userExpanded%'),
-          css('{ margin-top: 9px; margin-left: -83px; margin-bottom: 4px;}')
-        ]
-      })
-    ],
-    features: [variable({name: 'userExpanded', value: false, watchable: true})]
-  })
-})
-
-jb.component('studio.property-tgp-in-array', { /* studio.propertyTgpInArray */
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: group({
-    controls: [
-      group({
-        layout: layout.flex('space-between'),
-        controls: [
-          editableBoolean({
-            databind: '%$expanded%',
-            style: editableBoolean.expandCollapse(),
-            features: [css.padding('4')]
-          }),
-          label({
-            title: pipeline(studio.compName('%$path%'), suffix('.', '%%')),
-            style: label.htmlTag('p'),
-            features: [css.width('100'), css.class('drag-handle'), css('{font-weight: bold}')]
-          }),
-          label({
-            title: studio.summary('%$path%'),
-            style: label.htmlTag('p'),
-            features: [css.width('335'), studio.watchPath({path: '%$path%', includeChildren: 'yes'})]
-          }),
-          studio.propertyToolbar('%$path%')
-        ],
-        features: [studio.disabledSupport('%$path%')]
-      }),
-      group({
-        controls: studio.propertiesInTgp('%$path%'),
-        features: [
-          feature.if('%$expanded%'),
-          watchRef('%$expanded%'),
-          css('{ margin-left: 10px; margin-bottom: 4px;}'),
-          studio.disabledSupport('%$path%')
-        ]
-      })
-    ],
-    features: [
-      css.margin({left: '-100'}),
-      variable({name: 'expanded', value: studio.isNew('%$path%'), watchable: true}),
-      studio.watchPath({path: '%$path%', includeChildren: 'structure'})
-    ]
-  })
-})
-
-jb.component('studio.property-array', { /* studio.propertyArray */
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: itemlist({
-    items: studio.asArrayChildren('%$path%'),
-    controls: group({
-      style: propertySheet.studioPlain(),
-      controls: studio.propertyTgpInArray('%$arrayItem%')
-    }),
-    itemVariable: 'arrayItem',
-    features: [
-      studio.watchPath({
-        path: '%$path%',
-        includeChildren: 'structure',
-        allowSelfRefresh: true
-      }),
-      itemlist.divider(),
-      itemlist.dragAndDrop()
-    ]
-  })
-})
-
-jb.component('studio.property-field', { /* studio.propertyField */
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: group({
-    title: studio.propName('%$path%'),
-    controls: control.firstSucceeding({
-      vars: [Var('paramDef', studio.paramDef('%$path%'))],
-      controls: [
-        controlWithCondition(
-          and(
-            studio.isOfType('%$path%', 'data,boolean'),
-            not(isOfType('string,number,boolean,undefined', studio.val('%$path%')))
-          ),
-          studio.propertyScript('%$path%')
-        ),
-        controlWithCondition(
-          and(
-            studio.isOfType('%$path%', 'action'),
-            isOfType('array', studio.val('%$path%'))
-          ),
-          studio.propertyScript('%$path%')
-        ),
-        controlWithCondition('%$paramDef/options%', studio.propertyEnum('%$path%')),
-        controlWithCondition(
-          and(
-            '%$paramDef/as%==\"boolean\"',
-            or(
-                inGroup(list(true, false), studio.val('%$path%')),
-                isEmpty(studio.val('%$path%'))
-              ),
-            not('%$paramDef/dynamic%')
-          ),
-          studio.propertyBoolean('%$path%')
-        ),
-        controlWithCondition(
-          studio.isOfType('%$path%', 'data,boolean'),
-          studio.propertyPrimitive('%$path%')
-        ),
-        studio.propertyTgpOld('%$path%')
-      ],
-      features: firstSucceeding.watchRefreshOnCtrlChange(studio.ref('%$path%'), true)
-    }),
-    features: [
-      studio.propertyToolbarFeature('%$path%'),
-      field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%'))
-    ]
   })
 })
 

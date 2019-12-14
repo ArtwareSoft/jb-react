@@ -3,6 +3,9 @@ const ui = jb.ui;
 
 // react 
 ui.VNode = Symbol.for("VNode")
+ui.StrongRefresh = Symbol.for("StrongRefresh")
+ui.RecalcVars = Symbol.for("RecalcVars")
+
 function h(cmpOrTag,attributes,children) {
     if (cmpOrTag && cmpOrTag[ui.VNode]) return cmpOrTag // Vdom
     if (cmpOrTag && cmpOrTag.light)
@@ -253,10 +256,6 @@ class JbComponent {
         Object.assign(this,(this.styleCtx || {}).params); // assign style params to cmp to be used in render
         this.jbBeforeInitFuncs.forEach(init=> tryWrapper(() => init(this)), 'beforeinit');
         this.jbInitFuncs.forEach(init=> tryWrapper(() => init(this)), 'init');
-        // this.softRefreshCtx = new jbCtx(this.ctx, { 
-        //     profile: () => this.setState(this.recalcState && this.recalcState()) , 
-        //     path: '--refresh--'
-        // })
         this.initialized = 'done'
         return this
     }
@@ -264,12 +263,17 @@ class JbComponent {
         this.jbRegisterEventsFuncs.forEach(init=> tryWrapper(() => init(this), 'registerEvents'));
         this.jbComponentDidMountFuncs.forEach(init=> tryWrapper(() => init(this), 'componentDidMount'));
     }
-    // state === true means strong refresh
     setState(state) {
         if (this.initialized != 'done')
             return jb.logError('setState',['setState called before initialization finished',this,state])
-        if (state === true)
+        if (typeof state === 'object' && state[ui.StrongRefresh])
             return this.strongRefresh()
+        if (typeof state === 'object' && state[ui.RecalcVars]) {
+            this.extendCtxOnceFuncs.forEach(extendCtx => tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx')
+            if (this.calcState)
+                Object.assign(state,this.calcState(this))
+        }
+            
         this.state = Object.assign(this.state || {}, state)
         const vdomBefore = this.vdomBefore
         const vdomAfter = this.renderVdom()
@@ -386,6 +390,7 @@ class JbComponent {
 
         this.light = this.light || options.light;
     	this.template = this.template || options.template;
+    	this.calcState = this.calcState || options.calcState;
 
 		if (options.beforeInit) this.jbBeforeInitFuncs.push(options.beforeInit);
 		if (options.init) this.jbInitFuncs.push(options.init);
@@ -580,17 +585,16 @@ ui.limitStringLength = function(str,maxLength) {
 
 ui.stateChangeEm = new jb.rx.Subject();
 
-// state === true means strong refresh
 ui.setState = function(cmp,state,opEvent,watchedAt) {
-	jb.log('setState',[cmp.ctx,state, ...arguments]);
+	jb.log('setState',[...arguments]);
     if ((state === false || state == null) && cmp.refresh)
 		cmp.refresh();
 	else
 		cmp.setState(state || {});
-	ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent, watchedAt: watchedAt });
+	ui.stateChangeEm.next({cmp,opEvent,watchedAt});
 }
 
-ui.watchRef = function(ctx,cmp,ref,{includeChildren,delay,allowSelfRefresh,strongRefresh} = {}) {
+ui.watchRef = function(ctx,cmp,ref,{includeChildren,delay,allowSelfRefresh,strongRefresh,recalcVars} = {}) {
 		if (!ref) return
     	ui.refObservable(ref,cmp,{includeChildren, srcCtx: ctx})
 			.subscribe(e=>{
@@ -610,11 +614,12 @@ ui.watchRef = function(ctx,cmp,ref,{includeChildren,delay,allowSelfRefresh,stron
 							return
 				}
 				if (ctx && ctx.profile && ctx.profile.$trace)
-					console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
+                    console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
+                const newState = (strongRefresh || recalcVars) && Object.assign(strongRefresh && {[ui.StrongRefresh]: true} || {}, recalcVars && {[ui.RecalcVars]: true} || {})
 				if (delay)
-                    return jb.delay(delay).then(()=> ui.setState(cmp,strongRefresh,e,ctx))
+                    return jb.delay(delay).then(()=> ui.setState(cmp,newState,e,ctx))
                     
-                return ui.setState(cmp,strongRefresh,e,ctx)
+                return ui.setState(cmp,newState,e,ctx)
 	      })
 }
 

@@ -17,7 +17,6 @@ jb.component('studio.pickAndOpen', { /* studio.pickAndOpen */
 jb.component('studio.toolbar', { /* studio.toolbar */ 
   type: 'control',
   impl: group({
-    style: studio.toolbarStyle(),
     controls: [
       label({title: '', features: css('{ width: 170px }')}),
       button({

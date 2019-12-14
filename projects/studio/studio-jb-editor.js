@@ -85,8 +85,9 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
   ],
   impl: group({
       controls: [
-        control.firstSucceeding(
-          [
+        group({
+          features: group.firstSucceeding(),
+          controls: [ 
             controlWithCondition(
               inGroup(list('JbComponent', 'jbCtx'), className('%$obj%')),
               label({title: className('%$obj%')})
@@ -113,7 +114,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
             controlWithCondition(isNull('%$obj%'), label('null')),
             tree({
               nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
-              style: tree.expandBox({noHead: true, showIcon: true}),
+              style: tree.expandBox(),
               features: [
                 tree.selection({}),
                 tree.keyboardSelection({}),
@@ -121,7 +122,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
               ]
             })
           ]
-        ),
+        }),
         controlWithCondition(
           and('%$obj/length% > 100', isOfType('string', '%$obj%')),
           button({
