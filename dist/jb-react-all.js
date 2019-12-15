@@ -665,8 +665,8 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      const line = new Error().stack.split(/\r|\n/).filter(x=>!x.match(/<anonymous>|about:blank/)).pop()
-      comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
+      const line = new Error().stack.split(/\r|\n/).filter(x=>x && !x.match(/<anonymous>|about:blank/)).pop()
+      comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3)
     
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
@@ -1939,48 +1939,67 @@ jb.component('in-group', { /* inGroup */
 })
 
 jb.urlProxy = (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
-
+jb.cacheKiller = 0
 jb.component('http.get', { /* http.get */
   type: 'data,action',
   description: 'fetch data from external url',
   params: [
     {id: 'url', as: 'string'},
     {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
-    {id: 'useProxy', as: 'boolean'},
+    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'},
   ],
-  impl: (ctx,url,_json,useProxy) => {
+  impl: (ctx,_url,_json,useProxy) => {
 		if (ctx.probe)
 			return jb.http_get_cache[url];
-		const json = _json || url.match(/json$/);
-		return fetch((useProxy ? jb.urlProxy : '') + url, {mode: 'cors'})
-			  .then(r =>
-			  		json ? r.json() : r.text())
+    const json = _json || url.match(/json$/);
+    let url = _url
+    if (useProxy == 'localhost-server')
+      url = `//localhost:8082/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
+    else if (useProxy == 'cloud')
+      url = `//jbart5-server.appspot.com/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
+
+		return fetch(url, {mode: 'cors'})
+			  .then(r => json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
 			  .catch(e => jb.logException(e,'http.get',ctx) || [])
 	}
 })
 
-jb.component('http.post', { /* http.post */
-  type: 'action',
+jb.component('http.fetch', { /* http.fetch */
+  type: 'data,action',
+  description: 'fetch, get or post data from external url',
   params: [
     {id: 'url', as: 'string'},
-    {id: 'postData', as: 'single'},
-    {id: 'headers', as: 'single'},
-    {
-      id: 'jsonResult',
-      as: 'boolean',
-      description: 'convert result to json',
-      type: 'boolean'
-    },
-    {id: 'useProxy', as: 'boolean'},
+    {id: 'method', as: 'string', options: 'GET,POST', defaultValue: 'GET'},
+    {id: 'headers', as: 'single', templateValue: obj(prop('Content-Type','application/json; charset=UTF-8'))},
+    {id: 'body', as: 'single'},
+    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
+    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud,cloud-test-local'},
   ],
-  impl: (ctx,url,postData,headers,json) => {
-    return fetch(url, {
-      method: 'POST', 
-      headers: Object.assign({'Content-Type': 'application/json; charset=UTF-8' },headers || {}), 
-      body: typeof postData == 'string' ? postData : JSON.stringify(postData) })
+  impl: (ctx,url,method,headers,body,json,proxy) => {
+    const reqObj = {
+      url,
+      method,
+      headers: headers || {}, 
+      mode: 'cors',
+      body: typeof body == 'string' ? body : JSON.stringify(body) 
+    }
+
+    const reqStr = encodeURIComponent(JSON.stringify(reqObj))
+		if (ctx.probe)
+			return jb.http_get_cache[reqStr];
+
+    if (proxy == 'localhost-server')
+      reqObj.url = `//localhost:8082/?op=fetch&req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
+    else if (proxy == 'cloud')
+      reqObj.url = `//jbart5-server.appspot.com/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
+    else if (proxy == 'cloud-test-local')
+      reqObj.url = `http://localhost:8080/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
+
+    return fetch(reqObj.url, proxy ? {mode: 'cors'} : reqObj)
 			  .then(r => json ? r.json() : r.text())
-			  .catch(e => jb.logException(e,'http.post',ctx) || [])
+				.then(res=> jb.http_get_cache ? (jb.http_get_cache[reqStr] = res) : res)
+			  .catch(e => jb.logException(e,'http.fetch',ctx) || [])
 	}
 })
 
@@ -8247,7 +8266,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
             .forEach(elem=>elem.classList.remove('selected'))
           Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-            .filter(elem=> jb.ctxDictionary[elem.getAttribute('jb-ctx')].data === selected)
+            .filter(elem=> (jb.ctxDictionary[elem.getAttribute('jb-ctx')] || {}).data === selected)
             .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoView()})
         }
 
@@ -9084,7 +9103,7 @@ jb.component('menu.selection', { /* menu.selection */
         Array.from(cmp.base.querySelectorAll('.jb-item.selected, *>.jb-item.selected'))
           .forEach(elem=>elem.classList.remove('selected'))
         Array.from(cmp.base.querySelectorAll('.jb-item, *>.jb-item'))
-          .filter(elem=> jb.ctxDictionary[elem.getAttribute('jb-ctx')].data === selected)
+          .filter(elem=> (jb.ctxDictionary[elem.getAttribute('jb-ctx')] || {}).data === selected)
           .forEach(elem=> elem.classList.add('selected'))
       }
 			cmp.selected = _ =>	ctx.vars.topMenu.selected;
@@ -9757,42 +9776,6 @@ jb.component('table.init-sort', { /* table.initSort */
 })
 ;
 
-jb.component('tabs', { /* tabs */
-  type: 'control',
-  category: 'group:80',
-  params: [
-    {id: 'tabs', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true},
-    {id: 'style', type: 'tabs.style', dynamic: true, defaultValue: tabs.simple()},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
-})
-
-jb.component('group.init-tabs', { /* group.initTabs */
-  type: 'feature',
-  category: 'group:0',
-  params: [
-    {id: 'keyboardSupport', as: 'boolean', type: 'boolean'},
-    {id: 'autoFocus', as: 'boolean', type: 'boolean'}
-  ],
-  impl: ctx => ({
-    init: cmp => {
-			cmp.tabs = ctx.vars.$model.tabs();
-      cmp.titles = cmp.tabs.map(tab=>tab && tab.field.title(ctx));
-			cmp.state.shown = 0;
-
-      cmp.show = index =>
-        jb.ui.setState(cmp,{shown: index},null,ctx);
-
-      cmp.next = diff =>
-        cmp.setState({shown: (cmp.state.index + diff + cmp.ctrls.length) % cmp.ctrls.length});
-    },
-  })
-})
-
-;
-
 jb.component('goto-url', { /* gotoUrl */
   type: 'action',
   description: 'navigate/open a new web page, change href location',
@@ -10437,21 +10420,6 @@ jb.component('group.init-accordion', { /* group.initAccordion */
               cmp.next(e.keyCode == 33 ? -1 : 1))
       }
     }
-  })
-})
-
-jb.component('tabs.simple', { /* tabs.simple */
-  type: 'group.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{}, [
-			  h('div',{class: 'tabs-header'}, cmp.titles.map((title,index)=>
-					h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect' + (index == state.shown ? ' selected-tab': ''),
-						onclick: ev=>cmp.show(index)},title))),
-				h('div',{class: 'tabs-content'}, h(jb.ui.renderable(cmp.tabs[state.shown]) )) ,
-				]),
-    css: `>.tabs-header>.selected-tab { border-bottom: 2px solid #66afe9 }
-		`,
-    features: [group.initTabs(), mdlStyle.initDynamic('.mdl-js-button')]
   })
 })
 

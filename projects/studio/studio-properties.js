@@ -173,7 +173,7 @@ jb.component('studio.jb-floating-input-rich', { /* studio.jbFloatingInputRich */
     {id: 'path', as: 'string'}
   ],
   impl: group({
-    controls: studio.propertyField('%$path%'),
+    controls: studio.propField('%$path%'),
     features: css('{padding: 20px}')
   })
 })

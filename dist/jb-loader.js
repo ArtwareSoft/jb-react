@@ -43,7 +43,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/icon.js',
         'src/ui/slider.js',
         'src/ui/table.js',
-        'src/ui/tabs.js',
         'src/ui/window.js',
 
         'src/ui/styles/mdl-styles.js',

@@ -81,7 +81,7 @@ jb.component('studio.pages', { /* studio.pages */
 jb.component('studio.ctx-counters', { /* studio.ctxCounters */
   type: 'control',
   impl: label({
-    title: ctx => (performance.memory.usedJSHeapSize / 1000000)  + 'M',
+    title: ctx => (jb.frame.performance && performance.memory && performance.memory.usedJSHeapSize / 1000000)  + 'M',
     features: [
       css('{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'),
       watchObservable(ctx => jb.studio.scriptChange.debounceTime(500))

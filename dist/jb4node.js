@@ -665,8 +665,8 @@ Object.assign(jb,{
     id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
   component: (id,comp) => {
     try {
-      const line = new Error().stack.split(/\r|\n/).filter(x=>!x.match(/<anonymous>|about:blank/)).pop()
-      comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || []).slice(1,3)
+      const line = new Error().stack.split(/\r|\n/).filter(x=>x && !x.match(/<anonymous>|about:blank/)).pop()
+      comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3)
     
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
@@ -1939,48 +1939,67 @@ jb.component('in-group', { /* inGroup */
 })
 
 jb.urlProxy = (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
-
+jb.cacheKiller = 0
 jb.component('http.get', { /* http.get */
   type: 'data,action',
   description: 'fetch data from external url',
   params: [
     {id: 'url', as: 'string'},
     {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
-    {id: 'useProxy', as: 'boolean'},
+    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'},
   ],
-  impl: (ctx,url,_json,useProxy) => {
+  impl: (ctx,_url,_json,useProxy) => {
 		if (ctx.probe)
 			return jb.http_get_cache[url];
-		const json = _json || url.match(/json$/);
-		return fetch((useProxy ? jb.urlProxy : '') + url, {mode: 'cors'})
-			  .then(r =>
-			  		json ? r.json() : r.text())
+    const json = _json || url.match(/json$/);
+    let url = _url
+    if (useProxy == 'localhost-server')
+      url = `//localhost:8082/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
+    else if (useProxy == 'cloud')
+      url = `//jbart5-server.appspot.com/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
+
+		return fetch(url, {mode: 'cors'})
+			  .then(r => json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
 			  .catch(e => jb.logException(e,'http.get',ctx) || [])
 	}
 })
 
-jb.component('http.post', { /* http.post */
-  type: 'action',
+jb.component('http.fetch', { /* http.fetch */
+  type: 'data,action',
+  description: 'fetch, get or post data from external url',
   params: [
     {id: 'url', as: 'string'},
-    {id: 'postData', as: 'single'},
-    {id: 'headers', as: 'single'},
-    {
-      id: 'jsonResult',
-      as: 'boolean',
-      description: 'convert result to json',
-      type: 'boolean'
-    },
-    {id: 'useProxy', as: 'boolean'},
+    {id: 'method', as: 'string', options: 'GET,POST', defaultValue: 'GET'},
+    {id: 'headers', as: 'single', templateValue: obj(prop('Content-Type','application/json; charset=UTF-8'))},
+    {id: 'body', as: 'single'},
+    {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
+    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud,cloud-test-local'},
   ],
-  impl: (ctx,url,postData,headers,json) => {
-    return fetch(url, {
-      method: 'POST', 
-      headers: Object.assign({'Content-Type': 'application/json; charset=UTF-8' },headers || {}), 
-      body: typeof postData == 'string' ? postData : JSON.stringify(postData) })
+  impl: (ctx,url,method,headers,body,json,proxy) => {
+    const reqObj = {
+      url,
+      method,
+      headers: headers || {}, 
+      mode: 'cors',
+      body: typeof body == 'string' ? body : JSON.stringify(body) 
+    }
+
+    const reqStr = encodeURIComponent(JSON.stringify(reqObj))
+		if (ctx.probe)
+			return jb.http_get_cache[reqStr];
+
+    if (proxy == 'localhost-server')
+      reqObj.url = `//localhost:8082/?op=fetch&req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
+    else if (proxy == 'cloud')
+      reqObj.url = `//jbart5-server.appspot.com/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
+    else if (proxy == 'cloud-test-local')
+      reqObj.url = `http://localhost:8080/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
+
+    return fetch(reqObj.url, proxy ? {mode: 'cors'} : reqObj)
 			  .then(r => json ? r.json() : r.text())
-			  .catch(e => jb.logException(e,'http.post',ctx) || [])
+				.then(res=> jb.http_get_cache ? (jb.http_get_cache[reqStr] = res) : res)
+			  .catch(e => jb.logException(e,'http.fetch',ctx) || [])
 	}
 })
 

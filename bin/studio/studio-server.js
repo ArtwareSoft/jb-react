@@ -1,6 +1,7 @@
 fs = require('fs');
 http = require('http');
 child = require('child_process');
+const fetch = require('node-fetch');
 
 file_type_handlers = {};
 
@@ -186,17 +187,6 @@ const op_post_handlers = {
       }
       endWithSuccess(res,'Project Created');
     },
-    // fetch: function(req, res,body,path) {
-    //   try {
-    //     clientReq = JSON.parse(body);
-    //     if (!clientReq)
-    //        return endWithFailure(res,'Can not parse json request');
-    //     return fetch(clientReq.url,clientReq.options).then(res=>res.text())
-    //       .then(result=>endWithSuccess(res,result))
-    //   } catch(e) {
-    //     return endWithFailure(res,e)
-    //   }
-    // },
     createDirectoryWithFiles: function(req, res,body,path) {
       let clientReq;
       try {
@@ -335,7 +325,21 @@ const op_get_handlers = {
         child.exec(cmd,{});
         endWithSuccess(res,'open editor cmd: ' + cmd);
       }
-    }
+    },
+    fetch: function(req, res) {
+      try {
+        const param = getURLParam(req,'req')
+        const fetchReq = JSON.parse(param);
+        if (!fetchReq)
+           return endWithFailure(fetchReq,'Can not parse fetchReq');
+        return fetch(fetchReq.url,fetchReq)
+          .then(res=> res.text())
+          .then(result=> res.end(result))
+          .catch(e => endWithFailure(res, param + '. ' + e.message ))
+      } catch(e) {
+        return endWithFailure(res,e)
+      }
+    },
 };
 
 
