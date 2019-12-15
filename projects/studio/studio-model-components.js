@@ -459,7 +459,7 @@ jb.component('studio.params-of-path', {
 
 jb.component('studio.cmps-of-project', { /* studio.cmpsOfProject */
   type: 'data',
-  impl: () => st.projectCompsAsEntries(),
+  impl: () => st.projectCompsAsEntries().filter(e=>e[1].impl),
   testData: 'sampleData'
 })
 
