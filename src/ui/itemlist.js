@@ -168,7 +168,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
             .forEach(elem=>elem.classList.remove('selected'))
           Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-            .filter(elem=> jb.ctxDictionary[elem.getAttribute('jb-ctx')].data === selected)
+            .filter(elem=> (jb.ctxDictionary[elem.getAttribute('jb-ctx')] || {}).data === selected)
             .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoView()})
         }
 

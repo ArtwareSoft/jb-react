@@ -240,8 +240,9 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
   ],
   impl: openDialog({
     style: dialog.studioFloating('responsive'),
-    content: tabs({
-      tabs: dynamicControls({
+    content: group({
+		style: group.tabs(),
+		controls : dynamicControls({
         controlItems: asIs(
           [
             {
@@ -291,7 +292,6 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
           features: [css('{ padding-left: 12px; padding-top: 7px }')]
         })
       }),
-      style: tabs.simple()
     }),
     title: 'responsive'
   })

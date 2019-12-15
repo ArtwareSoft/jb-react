@@ -251,7 +251,9 @@ jb.component('studio.pick-profile', { /* studio.pickProfile */
       style: dialog.popup(),
       content: studio.selectProfile({
         onSelect: studio.setComp('%$path%', '%%'),
-        onBrowse: action.if(endsWith('.style',studio.paramType('%$path%')), studio.setComp('%$path%', '%%')),
+        onBrowse: action.if(or(
+          equals('layout',studio.paramType('%$path%')),
+          endsWith('.style',studio.paramType('%$path%'))), studio.setComp('%$path%', '%%')),
         type: studio.paramType('%$path%'),
         path: '%$path%'
       }),

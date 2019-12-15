@@ -211,11 +211,14 @@ jb.component('studio.top-bar', { /* studio.topBar */
           label({title: 'message', style: label.studioMessage()}),
           label({
             title: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
-            features: [css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'), watchRef('%$studio/project%')]
+            features: [
+              css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'),
+              watchRef('%$studio/project%')
+            ]
           }),
           group({
             title: 'menu and toolbar',
-            layout: layout.flex('space-between'),
+            layout: layout.flex({alignItems: '', spacing: '', justifyContent: 'space-between'}),
             controls: [
               menu.control({
                 menu: studio.mainMenu(),

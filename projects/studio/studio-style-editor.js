@@ -55,8 +55,9 @@ jb.component('studio.style-editor', { /* studio.styleEditor */
   ],
   impl: group({
     controls: [
-      tabs({
-        tabs: [
+      group({
+        style: group.tabs(),
+        controls: [
           group({
             title: 'css',
             layout: layout.vertical(3),
@@ -128,7 +129,6 @@ jb.component('studio.style-editor', { /* studio.styleEditor */
             ]
           })
         ],
-        style: tabs.simple()
       })
     ]
   })

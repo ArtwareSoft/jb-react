@@ -383,7 +383,7 @@ jb.component('menu.selection', { /* menu.selection */
         Array.from(cmp.base.querySelectorAll('.jb-item.selected, *>.jb-item.selected'))
           .forEach(elem=>elem.classList.remove('selected'))
         Array.from(cmp.base.querySelectorAll('.jb-item, *>.jb-item'))
-          .filter(elem=> jb.ctxDictionary[elem.getAttribute('jb-ctx')].data === selected)
+          .filter(elem=> (jb.ctxDictionary[elem.getAttribute('jb-ctx')] || {}).data === selected)
           .forEach(elem=> elem.classList.add('selected'))
       }
 			cmp.selected = _ =>	ctx.vars.topMenu.selected;
