@@ -30,7 +30,7 @@ jb.component('studio.properties', { /* studio.properties */
           features: feature.hoverTitle(pipeline(studio.paramDef('%path%'), '%description%'))
         }),
         style: tableTree.plain({hideHeaders: true, gapWidth: 100}),
-        features: studio.watchPath({path: '%$path%', includeChildren: 'structure'})
+        features: studio.watchPath({path: '%$path%', includeChildren: 'structure', allowSelfRefresh: true})
       }),
       button({
         title: 'new feature',

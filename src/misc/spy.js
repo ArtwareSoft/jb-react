@@ -143,6 +143,7 @@ function initSpyByUrl() {
 	const spyParam = getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
 	if (spyParam)
 		jb.initSpy({spyParam})
+	if (jb.frame) jb.frame.spy = jb.spy // for console use
 }
 initSpyByUrl()
 

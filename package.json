@@ -1,6 +1,6 @@
 {
   "name": "jb-react",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "jBart - Visual Development with react",
   "homepage": "https://github.com/artwaresoft/jb-react",
   "bugs": {
@@ -37,7 +37,9 @@
   "bin": {
     "studio": "bin/studio"
   },
-  "dependencies": {},
+  "dependencies": {
+    "node-fetch": "^2.6.0"
+  },
   "devDependencies": {
     "animejs": "^3.1.0",
     "babel-core": "^6.24.1",
