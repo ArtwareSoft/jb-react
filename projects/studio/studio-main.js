@@ -32,7 +32,7 @@ jb.component('studio.pages', { /* studio.pages */
           filter(studio.isOfType('%%', 'control')),
           suffix('.')
         ),
-        controls: label({title: extractSuffix('.'), features: css.class('studio-page')}),
+        controls: label({text: extractSuffix('.'), features: css.class('studio-page')}),
         style: itemlist.horizontal(),
         features: [
           id('pages'),
@@ -58,7 +58,7 @@ jb.component('studio.pages', { /* studio.pages */
           suffix('.')
         ),
         controls: label({
-          title: extractSuffix('.'),
+          text: extractSuffix('.'),
           features: [
             feature.onEvent({
               event: 'click',
@@ -81,7 +81,7 @@ jb.component('studio.pages', { /* studio.pages */
 jb.component('studio.ctx-counters', { /* studio.ctxCounters */
   type: 'control',
   impl: label({
-    title: ctx => (jb.frame.performance && performance.memory && performance.memory.usedJSHeapSize / 1000000)  + 'M',
+    text: ctx => (jb.frame.performance && performance.memory && performance.memory.usedJSHeapSize / 1000000)  + 'M',
     features: [
       css('{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'),
       watchObservable(ctx => jb.studio.scriptChange.debounceTime(500))
@@ -208,9 +208,9 @@ jb.component('studio.top-bar', { /* studio.topBar */
         title: 'title and menu',
         layout: layout.vertical('11'),
         controls: [
-          label({title: 'message', style: label.studioMessage()}),
+          label({text: 'message', style: label.studioMessage()}),
           label({
-            title: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
+            text: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
             features: [
               css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'),
               watchRef('%$studio/project%')

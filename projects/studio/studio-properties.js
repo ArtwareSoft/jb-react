@@ -18,7 +18,7 @@ jb.component('studio.properties', { /* studio.properties */
           })
         ],
         chapterHeadline: label({
-          title: ({data}) => {
+          text: ({data}) => {
             const path = data.path
             const prop = path.split('~').pop()
             if (Array.isArray(jb.studio.valOfPath(path)))
@@ -77,7 +77,7 @@ jb.component('studio.prop-field', { /* studio.propField */
           studio.propertyPrimitive('%$path%')
         ),
         controlWithCondition(
-          or('%$expanded%', isEmpty('%$val%'), endsWith('.style', '%$paramDef/type%')),
+          or('%$expanded%', isEmpty('%$val%'), not(studio.isOfType('%$path%', 'data,boolean'))),
           studio.pickProfile('%$path%')
         ),
         studio.propertyScript('%$path%')

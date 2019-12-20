@@ -56,7 +56,7 @@ jb.component('studio-data-test.moveFixDestination-null-group', { /* studioDataTe
           studio.val('test.move-in-tree~impl~controls'),
           studio.val('test.move-in-tree~impl~controls~2~controls')
         ),
-      '%title%',
+      '%text%',
       join({})
     ),
     runBefore: ctx =>
@@ -72,7 +72,7 @@ jb.component('studio-data-test.moveFixDestination-empty-group', { /* studioDataT
           studio.val('test.move-in-tree~impl~controls'),
           studio.val('test.move-in-tree~impl~controls~3~controls')
         ),
-      '%title%',
+      '%text%',
       join({})
     ),
     runBefore: ctx =>
@@ -83,7 +83,7 @@ jb.component('studio-data-test.moveFixDestination-empty-group', { /* studioDataT
 
 jb.component('studio-data-test.jb-editor-move', { /* studioDataTest.jbEditorMove */
   impl: dataTest({
-    calculate: pipeline(studio.val('test.move-in-tree~impl~controls'), '%title%', join({})),
+    calculate: pipeline(studio.val('test.move-in-tree~impl~controls'), '%text%', join({})),
     runBefore: ctx =>
 	 		jb.move(jb.studio.refOfPath('test.move-in-tree~impl~controls~1'), jb.studio.refOfPath('test.move-in-tree~impl~controls~0'),ctx),
     expectedResult: equals('b,a,c')
@@ -91,41 +91,33 @@ jb.component('studio-data-test.jb-editor-move', { /* studioDataTest.jbEditorMove
 })
 
 jb.component('test.set-sugar-comp-simple', { /* test.setSugarCompSimple */
-  impl: label({
-
-  })
+  impl: label({})
 })
 
 jb.component('test.set-sugar-comp-wrap', { /* test.setSugarCompWrap */
-  impl: label(
-    'a'
-  )
+  impl: label('a')
 })
 
 jb.component('test.set-sugar-comp-override1', { /* test.setSugarCompOverride1 */
-  impl: label({
-    title: pipeline('a', 'b')
-  })
+  impl: label(pipeline('a', 'b'))
 })
 
 jb.component('test.set-sugar-comp-override2', { /* test.setSugarCompOverride2 */
-  impl: label({
-    title: list('a', 'b')
-  })
+  impl: label(list('a', 'b'))
 })
 
 jb.component('studio-data-test.set-sugar-comp-simple', { /* studioDataTest.setSugarCompSimple */
   impl: dataTest({
-    calculate: studio.val('test.set-sugar-comp-simple~impl~title~$pipeline'),
-    runBefore: studio.setComp('test.set-sugar-comp-simple~impl~title', 'pipeline'),
+    calculate: studio.val('test.set-sugar-comp-simple~impl~text~$pipeline'),
+    runBefore: studio.setComp('test.set-sugar-comp-simple~impl~text', 'pipeline'),
     expectedResult: ctx => JSON.stringify(ctx.data) == '[]'
   })
 })
 
 jb.component('studio-data-test.set-sugar-comp-wrap', { /* studioDataTest.setSugarCompWrap */
   impl: dataTest({
-    calculate: studio.val('test.set-sugar-comp-wrap~impl~title~$pipeline'),
-    runBefore: studio.setComp('test.set-sugar-comp-wrap~impl~title', 'pipeline'),
+    calculate: studio.val('test.set-sugar-comp-wrap~impl~text~$pipeline'),
+    runBefore: studio.setComp('test.set-sugar-comp-wrap~impl~text', 'pipeline'),
     expectedResult: ctx =>
 			JSON.stringify(ctx.data) == '["a"]'
   })
@@ -133,8 +125,8 @@ jb.component('studio-data-test.set-sugar-comp-wrap', { /* studioDataTest.setSuga
 
 jb.component('studio-data-test.set-sugar-comp-override1', { /* studioDataTest.setSugarCompOverride1 */
   impl: dataTest({
-    calculate: studio.val('test.set-sugar-comp-override1~impl~title~$pipeline'),
-    runBefore: studio.setComp('test.set-sugar-comp-override1~impl~title', 'pipeline'),
+    calculate: studio.val('test.set-sugar-comp-override1~impl~text~$pipeline'),
+    runBefore: studio.setComp('test.set-sugar-comp-override1~impl~text', 'pipeline'),
     expectedResult: ctx =>
 			JSON.stringify(ctx.data) == '["a","b"]'
   })
@@ -142,8 +134,8 @@ jb.component('studio-data-test.set-sugar-comp-override1', { /* studioDataTest.se
 
 jb.component('studio-data-test.set-sugar-comp-override2', { /* studioDataTest.setSugarCompOverride2 */
   impl: dataTest({
-    calculate: studio.val('test.set-sugar-comp-override2~impl~title~$pipeline'),
-    runBefore: studio.setComp('test.set-sugar-comp-override2~impl~title', 'pipeline'),
+    calculate: studio.val('test.set-sugar-comp-override2~impl~text~$pipeline'),
+    runBefore: studio.setComp('test.set-sugar-comp-override2~impl~text', 'pipeline'),
     expectedResult: ctx =>
 			JSON.stringify(ctx.data) == '["a","b"]'
   })
@@ -154,13 +146,6 @@ jb.component('test.profile-as-text-example', { /* test.profileAsTextExample */
     'a'
   )
 })
-
-// jb.component('studio-data-test.components-cross-ref', {
-// 	 impl :{$: 'data-test',
-// 		calculate :{$: 'studio.components-cross-ref' },
-// 		expectedResult : ctx => ctx.data.length > 500
-// 	},
-// })
 
 jb.component('test.referee', { /* test.referee */
   impl: ctx => ''

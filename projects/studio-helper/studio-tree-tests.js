@@ -19,7 +19,7 @@ jb.component('jb-editor-test.cmp4', { /* jbEditorTest.cmp4 */
 
 jb.component('jb-editor-test.cmp5-json-format', { /* jbEditorTest.cmp5 */
   impl: label({
-    title: {$pipeline: ['a','b'] }
+    text: {$pipeline: ['a','b'] }
   })
 })
 
@@ -63,7 +63,7 @@ jb.component('jb-editor-test.empty-pipeline-bug', { /* jbEditorTest.emptyPipelin
 
 jb.component('jb-editor-test.$pipline', { /* jbEditorTest.$pipline */
   impl: jbEditorChildrenTest({
-    path: 'jb-editor-test.cmp5-json-format~impl~title',
+    path: 'jb-editor-test.cmp5-json-format~impl~text',
     childrenType: 'jb-editor',
     expectedResult: and(contains(['[0]', '[1]']), notContains('$pipeline'), notContains('items'))
   })

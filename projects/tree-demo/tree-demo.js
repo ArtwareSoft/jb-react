@@ -63,7 +63,7 @@ jb.component('tree-demo.table-tree', { /* treeDemo.tableTree */
           )
         }),
         commonFields: text({title: 'path', text: '%path%'}),
-        chapterHeadline: label({title: suffix('~', '%path%')}),
+        chapterHeadline: label({text: suffix('~', '%path%')}),
         style: tableTree.plain(),
         features: id('tableTree')
       })

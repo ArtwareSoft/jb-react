@@ -74,7 +74,7 @@ jb.component('studio.style-editor', { /* studio.styleEditor */
                   onCtrlEnter: studio.refreshPreview()
                 })
               }),
-              label({title: 'jsx', style: label.htmlTag('h5')}),
+              label({text: 'jsx', style: label.htmlTag('h5')}),
               editableText({
                 title: 'template',
                 databind: pipeline(studio.templateAsJsx('%$path%~template'), studio.pretty('%%')),

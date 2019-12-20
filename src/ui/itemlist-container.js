@@ -177,8 +177,8 @@ jb.component('itemlist-container.more-items-button', { /* itemlistContainer.more
     {id: 'style', type: 'button.style', defaultValue: button.href(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: (ctx,title,delta) => {
-		return jb.ui.ctrl(ctx,{
+  impl: (ctx,title,delta) => jb.ui.ctrl(ctx,{
+			watchRef: { refF: () => cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref')},
 			beforeInit: cmp => {
 				if (!ctx.vars.itemlistCntr) return;
 				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
@@ -186,7 +186,6 @@ jb.component('itemlist-container.more-items-button', { /* itemlistContainer.more
 					jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta, ctx);
 				cmp.refresh = _ =>
 					cmp.setState({title: jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta})))});
-				jb.ui.watchRef(ctx,cmp,maxItemsRef);
 			},
 			init: cmp =>
 				cmp.state.title = jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta}))),
@@ -196,8 +195,7 @@ jb.component('itemlist-container.more-items-button', { /* itemlistContainer.more
 					return jb.ui.h('span');
 				return vdom;
 			}
-		})
-	}
+	})
 })
 
 jb.ui.extractPropFromExpression = exp => { // performance for simple cases such as %prop1%

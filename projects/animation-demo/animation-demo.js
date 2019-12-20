@@ -90,7 +90,7 @@ jb.component('animation-demo.itemlist', { /* animationDemo.itemlist */
       itemlist({
         items: range(),
         controls: [
-          label({title: '%%', features: []})
+          label({text: '%%', features: []})
         ],
         features: [css.margin({left: '200'}), css.height('200'), css.width('50'), id('numbers')]
       })

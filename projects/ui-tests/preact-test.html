@@ -2,53 +2,13 @@
 <html>
 <title>tests</title>
 <head>
-	<script type="text/javascript">
-		startTime = new Date().getTime();
-    </script>
-    <script type="text/javascript" src="eval.js"></script>
-	<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common"></script>
+    <script type="module" src="moduleTest.js"></script>
 	</style>
 </head>
 <body>
-<div id="test"> </div>
 <script>
-    jb.rx.Observable.zip(
-        jb.rx.Observable.interval(1000),
-        jb.rx.Observable.from([10,20,30,40])
-    ).subscribe(x=>console.log(x[1]))
-
-    function compFromStr(str) {
-        class R2 extends jb.ui.Component {
-            render(props,state) {
-                console.log('render ' + str)
-                return h('span',{},str)
-            }
-            componentWillUpdate() {
-                debugger
-            }
-            componentWillUnmount() {
-                console.log('unmount ' + str)
-            }
-        }
-        return R2
-    }
-    
-    const h = jb.ui.h
-    class R extends jb.ui.Component {
-        constructor() {
-            super();
-            this.state.title = 'hello'
-            this.state.ctrls = []
-        }
-        render(props,state) {
-            return h('div',{},[
-                h('button',{onclick: () => this.setState({title: 'xx', ctrls: [1,2,3].map(i=>compFromStr('fromStr' + i)) }) },state.title), 
-                state.ctrls.map(x=>h(x))
-            ])
-        }
-    }
-    const elem = document.getElementById('test')
-    jb.ui.render(h(R),elem);
+import {f1} from './modules/my-functions.js';
+myFunction ()
 </script>
 </body>
 </html>

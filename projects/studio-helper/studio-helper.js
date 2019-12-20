@@ -29,7 +29,7 @@ jb.component('studio-helper.event-tracker', { /* studioHelper.eventTracker */
     layout: layout.vertical(3),
     controls: [
       editableText({databind: '%$globals/test1%', style: editableText.mdlInput()}),
-      label({title: '%$globals/test1%', style: label.span()}),
+      label({text: '%$globals/test1%', style: label.span()}),
       studio.eventTracker()
     ]
   })

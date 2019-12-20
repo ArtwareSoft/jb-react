@@ -83,11 +83,12 @@ jb.component('watch-ref', { /* watchRef */
       description: 'delay in activation, can be used to set priority'
     },
    ],
-  impl: (ctx,ref) => ({
-      beforeInit: cmp =>
-        cmp.watchRefOn = true,
-      init: cmp =>
-        jb.ui.watchRef(cmp.ctx,cmp,ref(cmp.ctx),ctx.params)
+  impl: ctx => ({
+      watchRef: {refF: ctx.params.ref, ...ctx.params},
+      // beforeInit: cmp =>
+      //   cmp.watchRefOn = true,
+      // init: cmp =>
+      //   jb.ui.watchRef(cmp.ctx,cmp,ref(cmp.ctx),ctx.params)
   })
 })
 
@@ -99,14 +100,7 @@ jb.component('watch-observable', { /* watchObservable */
     {id: 'toWatch', mandatory: true}
   ],
   impl: (ctx,toWatch) => ({
-      init: cmp => {
-        if (!toWatch.subscribe)
-          return jb.logError('watch-observable: non obsevable parameter', ctx);
-        var virtualRef = { $jb_observable: cmp =>
-          toWatch
-        };
-        jb.ui.watchRef(ctx,cmp,virtualRef)
-      }
+      init: cmp => toWatch.takeUntil(cmp.destroyed).subscribe(()=>jb.ui.setState(cmp))
   })
 })
 
@@ -129,16 +123,13 @@ jb.component('group.data', { /* group.data */
       description: 'watch childern change as well'
     }
   ],
-  impl: (ctx, data_ref, itemVariable,watch,includeChildren) => ({
-      init: cmp => {
-        if (watch)
-          jb.ui.watchRef(ctx,cmp,data_ref(),{includeChildren})
-      },
+  impl: (ctx, refF, itemVariable,watch,includeChildren) => ({
+      ...(watch ? {watchRef: { refF, includeChildren }} : {}),
       extendCtxOnce: ctx => {
-          var val = data_ref();
-          var res = ctx.setData(val);
+          const ref = refF();
+          const res = ctx.setData(ref);
           if (itemVariable)
-            res = res.setVars(jb.obj(itemVariable,val));
+            res = res.setVars(jb.obj(itemVariable,ref));
           return res;
       },
   })

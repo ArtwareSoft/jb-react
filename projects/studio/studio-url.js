@@ -49,8 +49,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
         const browserUrlEm = jb.rx.Observable.create(obs=>
             jb.ui.location.listen(x=> obs.next(x)));
 
-        const databindEm = jb.ui.resourceChange
-            .filter(e=> e.path[0] == resource)
+        const databindEm = jb.ui.resourceChange().filter(e=> e.path[0] == resource)
               .map(_=> jb.resource(resource))
             .filter(obj=>
                 obj[params[0]])

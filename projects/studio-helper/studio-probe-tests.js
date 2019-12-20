@@ -52,11 +52,7 @@ jb.component('test.inner-label-template-static-param', { /* test.innerLabelTempl
   params: [
     {id: 'param1', type: 'string'}
   ],
-  impl: group({
-    controls: [
-
-    ]
-  })
+  impl: group({ controls: []})
 })
 
 jb.component('probe-test.static-inner-in-template', { /* probeTest.staticInnerInTemplate */
@@ -67,32 +63,40 @@ jb.component('probe-test.static-inner-in-template', { /* probeTest.staticInnerIn
   })
 })
 
+jb.component('probe-test.label-text', {
+  impl: studioProbeTest({
+    circuit: label({text: ctx => 'hello' }),
+    probePath: 'text',
+    expectedVisits: 1
+  })
+})
+
 jb.component('probe-test.inner-in-template', { /* probeTest.innerInTemplate */
   impl: studioProbeTest({
     circuit: group({controls: test.innerLabelTemplate(label('hello'))}),
-    probePath: 'controls~ctrl~title',
+    probePath: 'controls~ctrl~text',
     expectedVisits: 1
   })
 })
 
 jb.component('probe-test.pipeline-sugar-json-format', { /* probeTest.pipelineSugar */
   impl: studioProbeTest({
-    circuit: group({controls: label({ title: {$pipeline: ['hello'] } })}) ,
-    probePath: 'controls~title~$pipeline~0'
+    circuit: group({controls: label({text: {$pipeline: ['hello'] } })}) ,
+    probePath: 'controls~text~$pipeline~0'
   })
 })
 
 jb.component('probe-test.pipeline-no-sugar', { /* probeTest.pipelineNoSugar */
   impl: studioProbeTest({
-    circuit: group({controls: label({title: pipeline('hello')})}),
-    probePath: 'controls~title~items~0'
+    circuit: group({controls: label({text: pipeline('hello')})}),
+    probePath: 'controls~text~items~0'
   })
 })
 
 jb.component('probe-test.pipeline-one-elem-json-format', { /* probeTest.pipelineOneElem */
   impl: studioProbeTest({
-    circuit: group({controls: label({title: {$: 'pipeline', items: 'hello' }})}),
-    probePath: 'controls~title~items'
+    circuit: group({controls: label({text: {$: 'pipeline', items: 'hello' }})}),
+    probePath: 'controls~text~items'
   })
 })
 
@@ -115,7 +119,7 @@ jb.component('probe-test.inside-write-value', { /* probeTest.insideWriteValue */
 jb.component('probe-test.inside-open-dialog', { /* probeTest.insideOpenDialog */
   impl: studioProbeTest({
     circuit: button({action: openDialog({content: label('hello')})}),
-    probePath: 'action~content~title',
+    probePath: 'action~content~text',
     expectedVisits: 1
   })
 })
@@ -160,8 +164,8 @@ jb.component('probe-test.inside-action-with-side-effects', { /* probeTest.inside
 
 jb.component('probe-test.filter-no-sugar', { /* probeTest.filterNoSugar */
   impl: studioProbeTest({
-    circuit: group({controls: label({title: pipeline('hello', filter('%% == \"hello\"'))})}),
-    probePath: 'controls~title~items~1~filter'
+    circuit: group({controls: label({text: pipeline('hello', filter('%% == \"hello\"'))})}),
+    probePath: 'controls~text~items~1~filter'
   })
 })
 
@@ -237,7 +241,7 @@ jb.component('probe-test.pathSrc-through-$call-2', { /* probeTest.pathSrcThrough
 // // 		circuit: {$: 'group',
 // 			controls :{$: 'label', title :{ $asIs: 'hello'} },
 // 		},
-// 		probePath : 'controls~title~$asIs',
+// 		probePath : 'controls~text~$asIs',
 // 		expectedVisits: 0,
 // 		probeCheck : '%$tst% == ""'
 // 	}

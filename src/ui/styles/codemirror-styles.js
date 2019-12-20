@@ -248,7 +248,7 @@ jb.component('text.codemirror', { /* text.codemirror */
                     return;
                 }
                 editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-                jb.ui.resourceChange.takeUntil(cmp.destroyed)
+                jb.ui.resourceChange().takeUntil(cmp.destroyed)
                     .map(()=> ctx.vars.$model.text())
                     .filter(x=>x)
                     .distinctUntilChanged()

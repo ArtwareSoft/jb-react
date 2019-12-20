@@ -106,7 +106,10 @@ jb.component('ui-test.wait-for-with-pipe', {
 
 jb.component('ui-test.asynch-label', {
   impl: uiTest({
-    control: label(pipe(delay(10), 'hello')),
+    control: label({ 
+      text: pipe(delay(10), 'hello'),
+      features: label.allowAsychValue()
+    }),
     action: delay(40),
     expectedResult: contains('hello')
   })
@@ -202,7 +205,7 @@ jb.component('ui-test.two-way-binding', { /* uiTest.twoWayBinding */
         label('%$person/name%')
       ]
     }),
-    action: uiAction.setText('hello', '#inp'),
+    action: ctx => ctx.run(uiAction.setText('hello', '#inp')),
     expectedResult: contains(['<span', 'hello','</span'])
   })
 })
@@ -347,14 +350,15 @@ jb.component('ui-test.updateOnBlur-when-dialog-closed', {
     control: group({ controls: [
         button({
           title: 'click me',
-          action: openDialog({content:
+          action: ctx => ctx.setVars({elemToTest:null}).run(openDialog({content:
             editableText({title: 'name', updateOnBlur: true, databind: '%$person/name%' })
-          }),
+          })),
         }),
         label('%$person/name%')
       ]
     }),
-    action: runActions(uiAction.click('button'), 
+    action: runActions(
+      uiAction.click('button'), 
       ctx => {
         jb.ui.elemOfSelector('input',ctx).value = 'hello';
         jb.ui.elemOfSelector('input',ctx).focus()
@@ -402,7 +406,7 @@ jb.component('ui-test.resource', { /* uiTest.resource */
 
 jb.component('ui-test.features-css', { /* uiTest.featuresCss */
   impl: uiTest({
-    control: label({title: 'Hello World2', features: css('{color: cyan; font-weight: bold}')}),
+    control: label({text: 'Hello World2', features: css('{color: cyan; font-weight: bold}')}),
     expectedResult: contains(['Hello'])
   })
 })
@@ -449,7 +453,7 @@ jb.component('ui-test.itemlist-DD', { /* uiTest.itemlistDD */
       controls: [
         itemlist({
           items: '%$watchable-people%',
-          controls: label({title: '%name%', features: css.class('drag-handle')}),
+          controls: label({text: '%name%', features: css.class('drag-handle')}),
           features: [
             itemlist.selection({
               databind: '%$globals/selectedPerson%',
@@ -535,12 +539,11 @@ jb.component('ui-test.itemlist-MD', { /* uiTest.itemlistMD */
           ]
         }),
         label({
-          title: '%$globals/selectedPerson/name% selected',
+          text: '%$globals/selectedPerson/name% selected',
           features: watchRef('%$globals/selectedPerson%')
         })
       ]
     }),
-    action: ctx => jb.delay(50),
     expectedResult: contains(['Homer Simpson', 'Homer Simpson selected'])
   })
 })
@@ -553,7 +556,7 @@ jb.component('ui-test.itemlist-container-search-ctrl', { /* uiTest.itemlistConta
       itemlist({
         items: '%$people%',
         controls: label({
-          title: label.highlight('%name%', '%$itemlistCntrData/search_pattern%'),
+          text: label.highlight('%name%', '%$itemlistCntrData/search_pattern%'),
           features: [css.class('label1'), watchRef('%$itemlistCntrData/search_pattern%')]
         }),
         features: [
@@ -610,7 +613,7 @@ jb.component('ui-test.search-doesnot-create-ReactClass', { /* uiTest.searchDoesn
         itemlistContainer.search({}),
         itemlist({
           items: pipeline('%$people%', itemlistContainer.filter()),
-          controls: label({title: label.highlight('%name%', '%$itemlistCntrData/search_pattern%')}),
+          controls: label({text: label.highlight('%name%', '%$itemlistCntrData/search_pattern%')}),
           features: [
             itemlist.selection({autoSelectFirst: true}),
             itemlist.keyboardSelection(true),
@@ -858,7 +861,7 @@ jb.component('ui-test.editable-boolean.expand-collapse', { /* uiTest.editableBoo
           features: id('toggle')
         }),
         label({
-          title: 'inner text',
+          text: 'inner text',
           features: [feature.if('%$expanded%'), watchRef('%$expanded%')]
         })
       ],
@@ -887,7 +890,7 @@ jb.component('ui-test.expand-collapse-with-default-collapse', { /* uiTest.expand
             features: [id('expCollapse'), field.initValue('%$default%')]
           }),
           label({
-            title: 'inner text',
+            text: 'inner text',
             features: [feature.if('%$expanded%'), watchRef('%$expanded%')]
           })
         ],
@@ -952,7 +955,7 @@ jb.component('ui-test.inner-label1-tst', { /* uiTest.innerLabel1Tst */
     {id: 'title', mandatory: true, dynamic: true}
   ],
   impl: label({
-    title: call('title')
+    text: call('title')
   })
 })
 
@@ -1031,7 +1034,7 @@ jb.component('ui-test.field-title-of-label', {
   impl: uiTest({
     control: group({
       style: propertySheet.titlesLeft({}),
-      controls: label({title: '%$personWithAddress/address/city%', features: field.title('City')})
+      controls: label({text: '%$personWithAddress/address/city%', features: field.title('City')})
     }),
     expectedResult: contains('City')
   })
@@ -1157,8 +1160,8 @@ jb.component('ui-test.markdown', { /* uiTest.markdown */
 jb.component('ui-test.style-by-control', { /* uiTest.styleByControl */
   impl: uiTest({
     control: label({
-      title: 'Hello World',
-      style: styleByControl(button('%$labelModel/title%2'), 'labelModel')
+      text: 'Hello World',
+      style: styleByControl(button('%$labelModel/text%2'), 'labelModel')
     }),
     expectedResult: contains('Hello World2')
   })
@@ -1329,7 +1332,7 @@ jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change-and-back', {
 
 jb.component('ui-test.watchRef.recalcVars', { 
   impl: uiTest({
-    control: label({ title: '%$changed%',
+    control: label({text: '%$changed%',
           features: [
             variable({name: 'changed', value: '--%$person/name%--'}),
             watchRef({ ref: '%$person/name%', recalcVars: true})
@@ -1373,7 +1376,7 @@ jb.component('ui-test.check-box-with-text', { /* uiTest.checkBoxWithText */
 jb.component('ui-test.hidden-ref-bug', { 
   impl: uiTest({
     control: group({
-    controls: label({title: 'hey', features: hidden('%$hidden%')}),
+    controls: label({text: 'hey', features: hidden('%$hidden%')}),
     features: variable({name: 'hidden', watchable: true})
     }),
     expectedResult: contains('display:none'),
@@ -1384,7 +1387,7 @@ jb.component('ui-test.css-dynamic', {
   impl: uiTest({
     control: group({
       controls: [
-        label({title: '%$color%', features: [css.dynamic('{ color: %$color% }'), id('label')] }),
+        label({text: '%$color%', features: [css.dynamic('{ color: %$color% }'), id('label')] }),
         button({title: 'green', action: writeValue('%$color%', 'green'), features: id('green')}),
         button({title: 'blue', action: writeValue('%$color%', 'blue')})
       ],
@@ -1399,7 +1402,7 @@ jb.component('ui-test.css-with-condition', {
   impl: uiTest({
     control: group({
       controls: [
-        label({title: '%$color%', features: [
+        label({text: '%$color%', features: [
           css.dynamic('{ color: %$color% }'),
           css.withCondition('%$color%==blue', '{background: white}'), 
           css.withCondition('%$color%==green', '{background: grey}'), 

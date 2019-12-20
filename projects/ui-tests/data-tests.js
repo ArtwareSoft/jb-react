@@ -613,7 +613,7 @@ jb.component('data-test.pretty-print-positions', { /* dataTest.prettyPrintPositi
   impl: dataTest({
     calculate: pipeline(
       () => jb.prettyPrintWithPositions(group({title: '2.0', controls: label('my label')})),
-      '%map/~controls~title~!value%',
+      '%map/~controls~text~!value%',
       join({})
     ),
     expectedResult: equals('3,4,3,14')
@@ -632,7 +632,7 @@ jb.component('data-test.pretty-print-positions-inner-flat', { /* dataTest.pretty
         ]
       })
       ),
-      '%map/~controls~0~controls~title~!value%',
+      '%map/~controls~0~controls~text~!value%',
       join({})
     ),
     expectedResult: equals('3,41,3,51')

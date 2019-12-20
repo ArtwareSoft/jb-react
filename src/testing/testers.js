@@ -95,9 +95,11 @@ jb.component('ui-test', { /* uiTest */
 			}).then(result=> { // default cleanup
 				if (new URL(location.href).searchParams.get('show') === null) {
 					jb.ui.dialogs.dialogs.forEach(d=>d.close())
+					jb.ui.unmount(result.elem)
 					jb.rebuildRefHandler && jb.rebuildRefHandler();
 					jb.entries(JSON.parse(ctx.vars.initial_resources)).forEach(e=>jb.resource(e[0],e[1]))
 					jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
+					jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
 					if (expectedCounters)
 						jb.initSpy({resetSpyToNull: true})
 				}

@@ -119,7 +119,7 @@ jb.component('ui-test.table-tree-refresh1', {
         treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
         leafFields: text({title: 'name', text: '%val%'}),
         commonFields: text({title: 'path', text: '%path%'}),
-        chapterHeadline: label({title: suffix('~', '%path%')}),
+        chapterHeadline: label({text: suffix('~', '%path%')}),
         style: tableTree.plain(),
         features: id('tableTree')
     }),
@@ -141,7 +141,7 @@ jb.component('ui-test.table-tree-refresh2', {
         }) , ''),
         leafFields: text({title: 'name', text: '%val%'}),
         commonFields: text({title: 'path', text: '%path%'}),
-        chapterHeadline: label({title: suffix('~', '%path%')}),
+        chapterHeadline: label({text: suffix('~', '%path%')}),
         style: tableTree.plain(),
         features: id('tableTree')
     }),
@@ -166,7 +166,7 @@ jb.component('ui-test.table-tree-with-title-ctrl', {
               style: button.href()
           }))        
         }),
-        chapterHeadline: label({title: suffix('~', '%path%')}),
+        chapterHeadline: label({text: suffix('~', '%path%')}),
     }),
     expectedResult: contains(['my name','path','Homer'])
   })

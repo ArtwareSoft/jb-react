@@ -18,7 +18,7 @@ jb.component('studio.toolbar', { /* studio.toolbar */
   type: 'control',
   impl: group({
     controls: [
-      label({title: '', features: css('{ width: 170px }')}),
+      label({text: '', features: css('{ width: 170px }')}),
       button({
         title: 'Select',
         action: studio.pickAndOpen(),

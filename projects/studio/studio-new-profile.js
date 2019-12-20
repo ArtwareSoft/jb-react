@@ -144,7 +144,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
                 controls: itemlist({
                   items: '%$picklistModel/options/code%',
                   controls: label({
-                    title: pipeline('%$Categories%', filter('%code% == %$item%'), '%code% (%pts/length%)'),
+                    text: pipeline('%$Categories%', filter('%code% == %$item%'), '%code% (%pts/length%)'),
                     style: label.span(),
                     features: [css.width('120'), css('{text-align: left}'), css.padding({left: '10'})]
                   }),
@@ -165,7 +165,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
         ]
       }),
       label({
-        title: pipeline('%$itemlistCntrData/selected%', studio.val('%%'), '%description%'),
+        text: pipeline('%$itemlistCntrData/selected%', studio.val('%%'), '%description%'),
         style: label.span()
       })
     ],

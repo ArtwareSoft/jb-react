@@ -4,6 +4,7 @@ jb.component('label', { /* label */
   type: 'control',
   category: 'control:100,common:80',
   params: [
+    {id: 'text', as: 'ref', mandatory: true, defaultValue: 'my text', dynamic: true},
     {id: 'title', as: 'ref', mandatory: true, defaultValue: 'my label', dynamic: true},
     {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
@@ -11,41 +12,29 @@ jb.component('label', { /* label */
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('text', { /* text */
-  type: 'control',
-  category: 'control:100,common:80',
-  params: [
-    {id: 'title', as: 'string', mandatory: true, defaultValue: 'no title', dynamic: true},
-    {id: 'text', as: 'ref', mandatory: true, defaultValue: 'my text', dynamic: true},
-    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => jb.ui.ctrl(ctx)
-})
+jb.component('text', jb.comps.label)
 
 jb.component('label.bind-text', { /* label.bindText */
   type: 'feature',
   impl: ctx => ({
-    calcState: cmp => ({ text: jb.ui.toVdomOrStr((ctx.vars.$model.text || ctx.vars.$model.title)(cmp.ctx)) }),
+    watchAndCalcRefProp: { prop: 'text', toState: jb.ui.toVdomOrStr },
+    // watchRef: { refF: ctx.vars.$model.text, srcCtx: ctx },
+    // calcState: cmp => ({ text: jb.ui.toVdomOrStr((ctx.vars.$model.text)(cmp.ctx)) }),
+  })
+})
 
+jb.component('label.allow-asych-value', {
+  type: 'feature',
+  impl: ctx => ({
     init: cmp => {
-      const textF = ctx.vars.$model.text || ctx.vars.$model.title 
+      const textF = ctx.vars.$model.text 
       const textRef = textF(cmp.ctx);
-      const val = fixTextVal(textRef)
+      const val = jb.ui.toVdomOrStr(textRef)
       if (val && typeof val.then == 'function')
         refreshAsynchText(val)
-      else
-        cmp.state.text = val
 
-      if (jb.isWatchable(textRef))
-        jb.ui.refObservable(textRef,cmp,{srcCtx: ctx})
-            .subscribe(e=> !cmp.watchRefOn && Promise.resolve(fixTextVal(textF(cmp.ctx))).then(text => jb.ui.setState(cmp,{text},e,ctx)))
+      cmp.refresh = _ => refreshAsynchText(jb.ui.toVdomOrStr(textF(cmp.ctx)))
 
-      cmp.refresh = _ => refreshAsynchText(fixTextVal(textF(cmp.ctx)))
-
-      function fixTextVal(textRef) {
-        return jb.ui.toVdomOrStr(textRef);
-      }
       function refreshAsynchText(textPromise) {
         Promise.resolve(textPromise).then(text => cmp.setState({text}))
       }

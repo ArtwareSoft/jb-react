@@ -363,7 +363,7 @@ jb.component('studio.watch-path', { /* studio.watchPath */
 	  },
   ],
   impl: (ctx,path) => ({
-      init: cmp => jb.ui.watchRef(ctx,cmp,st.refOfPath(path),ctx.params)
+	  watchRef: {refF: () => st.refOfPath(path), ...ctx.params},
   })
 })
 

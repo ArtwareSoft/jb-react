@@ -405,9 +405,9 @@ jb.component('dialog.div', { /* dialog.div */
   
 jb.ui.dialogs = {
  	dialogs: [],
-	addDialog(dialog,context) {
+	addDialog(dialog,ctx) {
 		const self = this;
-		dialog.context = context;
+		dialog.context = ctx;
 		this.dialogs.forEach(d=>
 			d.em.next({ type: 'new-dialog', dialog: dialog }));
 		this.dialogs.push(dialog);
@@ -421,7 +421,7 @@ jb.ui.dialogs = {
 				if (dialog.closing) return;
 				dialog.closing = true;
 				if (dialog.onOK && args && args.OK)
-					return dialog.onOK(context)
+					return dialog.onOK(ctx)
 			}).then( _ => {
 				dialog.em.next({type: 'close', OK: args && args.OK})
 				dialog.em.complete();
@@ -436,7 +436,7 @@ jb.ui.dialogs = {
 		},
 		dialog.closed = () => self.dialogs.indexOf(dialog) == -1;
 
-		this.refresh();
+		this.refresh(ctx);
 	},
 	closeDialogs(dialogs) {
 		return dialogs.slice(0).reduce((pr,dialog) => pr.then(()=>dialog.close()), Promise.resolve())
@@ -447,15 +447,16 @@ jb.ui.dialogs = {
 	closePopups() {
 		return jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs.filter(d=>d.isPopup))
 	},
-	dialogsCmp() {
+	dialogsCmp(_ctx) {
 		if (!this._dialogsCmp) {
-			this._dialogsCmp = new jb.jbCtx().run(dialog.jbDialogs())
-			jb.ui.render(jb.ui.h(this._dialogsCmp),document.body,this._dialogsCmp)
+			const ctx = _ctx || new jb.jbCtx()
+			this._dialogsCmp = ctx.run(dialog.jbDialogs())
+			jb.ui.render(jb.ui.h(this._dialogsCmp),ctx.vars.elemToTest || document.body,this._dialogsCmp)
 		}
 		return this._dialogsCmp
 	},
-    refresh() {
-		this.dialogsCmp().setState()
+    refresh(ctx) {
+		this.dialogsCmp(ctx).setState()
 	},
 	reRenderAll() {
 		return this.dialogs.reduce((p,dialog) => p.then(()=>

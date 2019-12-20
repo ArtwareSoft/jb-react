@@ -122,7 +122,7 @@ jb.component('picklist.label-list', { /* picklist.labelList */
     itemlist({
       items: '%$picklistModel/options%',
       controls: label({
-        title: '%text%',
+        text: '%text%',
         style: call('labelStyle')
       }),
       style: call('itemlistStyle'),

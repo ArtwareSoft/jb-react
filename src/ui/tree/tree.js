@@ -173,7 +173,7 @@ jb.component('tree.selection', { /* tree.selection */
 				if (!cmp.base) return
 				jb.ui.findIncludeSelf(cmp.base,'.treenode.selected').forEach(elem=>elem.classList.remove('selected'))
 				jb.ui.findIncludeSelf(cmp.base,'.treenode').filter(elem=> elem.getAttribute('path') === selected)
-					.forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoView()})
+					.forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
 			}
 	  
 		  cmp.selectionEmitter

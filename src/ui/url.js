@@ -31,7 +31,7 @@ jb.component('url-history.map-url-to-resource', {
 				return url.replace(/\/*$/,'');
 		}
 
-		var databindEm = jb.ui.resourceChange
+		var databindEm = jb.ui.resourceChange().
 			.filter(e=> e.path[0] == resource)
 				.map(_=> jb.resource(resource))
 				.filter(obj=>

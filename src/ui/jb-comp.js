@@ -235,12 +235,9 @@ const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,
 
 class JbComponent {
 	constructor(ctx) {
-        this.ctx = ctx
-        this.cmpId = cmpId++
-		Object.assign(this, {jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbComponentDidMountFuncs: [],
+		Object.assign(this, {ctx, cmpId: cmpId++, jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbComponentDidMountFuncs: [],
 			jbComponentDidUpdateFuncs: [], willUpdateFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], 
-			extendItemFuncs: [], enrichField: [], dynamicCss: [], contexts: [] })
-		this.staticCssLines = []
+			extendItemFuncs: [], enrichField: [], dynamicCss: [], contexts: [], watchRef: [], watchAndCalcRefProp: [], staticCssLines: [] })
     }
     initIfNeeded() {
         if (this.initialized) return
@@ -256,6 +253,15 @@ class JbComponent {
         Object.assign(this,(this.styleCtx || {}).params); // assign style params to cmp to be used in render
         this.jbBeforeInitFuncs.forEach(init=> tryWrapper(() => init(this)), 'beforeinit');
         this.jbInitFuncs.forEach(init=> tryWrapper(() => init(this)), 'init');
+        this.toObserve = this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref))
+        this.watchAndCalcRefProp.forEach(e=>{
+            const ref = this.ctx.vars.$model[e.prop](this.ctx)
+            if (jb.isWatchable(ref))
+                this.toObserve.push({id: e.prop, cmp: this, ref,...e})
+            this.state[e.prop] = (e.toState || (x=>x))(jb.val(ref))
+        })
+        if (this.calcState)
+            this.state = this.calcState(this)
         this.initialized = 'done'
         return this
     }
@@ -273,6 +279,10 @@ class JbComponent {
             if (this.calcState)
                 Object.assign(state,this.calcState(this))
         }
+        this.watchAndCalcRefProp.filter(e=> !state[e.prop]).forEach(e=>{
+            const ref = this.ctx.vars.$model[e.prop](this.ctx)
+            this.state[e.prop] = (e.toState || (x=>x))(jb.val(ref))
+        })
             
         this.state = Object.assign(this.state || {}, state)
         const vdomBefore = this.vdomBefore
@@ -392,7 +402,7 @@ class JbComponent {
     	this.template = this.template || options.template;
     	this.calcState = this.calcState || options.calcState;
 
-		if (options.beforeInit) this.jbBeforeInitFuncs.push(options.beforeInit);
+        if (options.beforeInit) this.jbBeforeInitFuncs.push(options.beforeInit);
 		if (options.init) this.jbInitFuncs.push(options.init);
 		if (options.componentDidMount) this.jbComponentDidMountFuncs.push(options.componentDidMount);
 		if (options.afterViewInit) this.jbComponentDidMountFuncs.push(options.afterViewInit);
@@ -402,6 +412,8 @@ class JbComponent {
 		if (options.templateModifier) this.modifierFuncs.push(options.templateModifier);
 		if (options.enrichField) this.enrichField.push(options.enrichField);
 		if (options.dynamicCss) this.dynamicCss.push(options.dynamicCss);
+        if (options.watchRef) this.watchRef.push(Object.assign({cmp: this},options.watchRef));
+        if (options.watchAndCalcRefProp) this.watchAndCalcRefProp.push(options.watchAndCalcRefProp);
 		
 		if (typeof options.class == 'string')
 			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class));
@@ -586,41 +598,65 @@ ui.limitStringLength = function(str,maxLength) {
 ui.stateChangeEm = new jb.rx.Subject();
 
 ui.setState = function(cmp,state,opEvent,watchedAt) {
-	jb.log('setState',[...arguments]);
-    if ((state === false || state == null) && cmp.refresh)
+    jb.log('setState',[...arguments]);
+    if ((state === false || state == null) && cmp.refresh) {
 		cmp.refresh();
-	else
-		cmp.setState(state || {});
+    } else {
+        cmp.setState(state || cmp.calcState && cmp.calcState(cmp) || {});
+    }
 	ui.stateChangeEm.next({cmp,opEvent,watchedAt});
 }
 
-ui.watchRef = function(ctx,cmp,ref,{includeChildren,delay,allowSelfRefresh,strongRefresh,recalcVars} = {}) {
-		if (!ref) return
-    	ui.refObservable(ref,cmp,{includeChildren, srcCtx: ctx})
-			.subscribe(e=>{
-				let ctxStack=[]; for(let innerCtx=e.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
-				const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x)
-					.filter(x=>x.indexOf('jb-editor') == -1)
-					.filter(x=>!x.match(/^studio-helper/))
-				const callerPathsUniqe = jb.unique(callerPaths)
-				if (callerPathsUniqe.length !== callerPaths.length)
-					return jb.logError('circular watchRef',callerPaths)
+ui.subscribeToRefChange = watchHandler => watchHandler.resourceChange.subscribe(e=> {
+    const changed_path = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(e.ref))
+    if (!changed_path) debugger
+    const observablesCmps = Array.from((e.srcCtx.vars.elemToTest || document).querySelectorAll('[cmpId]')).map(el=>el._component)
+        .filter(cmp=>cmp && cmp.toObserve.length)// .sort((e1,e2) => ui.comparePaths(e1.ctx.path, e2.ctx.path))
 
-				if (!allowSelfRefresh) {
-					const callerPathsToCompare = callerPaths.map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
-					const ctxStylePath = ctx.path.replace(/~features~?[0-9]*$/,'')
-					for(let i=0;i<callerPathsToCompare.length;i++)
-						if (callerPathsToCompare[i].indexOf(ctxStylePath) == 0) // ignore - generated from a watchRef feature in the call stack
-							return
-				}
-				if (ctx && ctx.profile && ctx.profile.$trace)
-                    console.log('ref change watched: ' + (ref && ref.path && ref.path().join('~')),e,cmp,ref,ctx);
-                const newState = (strongRefresh || recalcVars) && Object.assign(strongRefresh && {[ui.StrongRefresh]: true} || {}, recalcVars && {[ui.RecalcVars]: true} || {})
-				if (delay)
-                    return jb.delay(delay).then(()=> ui.setState(cmp,newState,e,ctx))
-                    
-                return ui.setState(cmp,newState,e,ctx)
-	      })
+    observablesCmps.forEach(cmp => {
+        if (cmp._destroyed) return // can not use filter as cmp may be destroyed during the process
+        const newState = {}
+        let refresh = false
+        cmp.toObserve.forEach(obs=>{
+            if (checkCircularity(obs)) return
+            let obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
+            obsPath = obsPath && watchHandler.removeLinksFromPath(obsPath)
+            if (!obsPath)
+            return jb.logError('observer ref path is empty',obs,e)
+            const diff = ui.comparePaths(changed_path, obsPath)
+            const isChildOfChange = diff == 1
+            const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
+            const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
+            if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
+                jb.log('notifyCmpObservable',['notify change',e.srcCtx,obs,e])
+                refresh = true
+                Object.assign(newState, obs.strongRefresh && {[ui.StrongRefresh]: true}, obs.recalcVars && {[ui.RecalcVars]: true})
+            }
+        })
+        if (refresh)
+            ui.setState(cmp,Object.getOwnPropertySymbols(newState).length ? newState : null,e,e.srcCtx)
+    })
+})
+ui.subscribeToRefChange(jb.mainWatchableHandler)
+
+function checkCircularity(obs) {
+    let ctxStack=[]; for(let innerCtx=obs.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
+    const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x)
+        .filter(x=>x.indexOf('jb-editor') == -1)
+        .filter(x=>!x.match(/^studio-helper/))
+    const callerPathsUniqe = jb.unique(callerPaths)
+    if (callerPathsUniqe.length !== callerPaths.length) {
+        jb.logError('circular watchRef',callerPaths)
+        return true
+    }
+
+    if (!obs.allowSelfRefresh && obs.srcCtx) {
+        const callerPathsToCompare = callerPaths.map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
+        const ctxStylePath = obs.srcCtx.path.replace(/~features~?[0-9]*$/,'')
+        for(let i=0;i<callerPathsToCompare.length;i++)
+            if (callerPathsToCompare[i].indexOf(ctxStylePath) == 0) // ignore - generated from a watchRef feature in the call stack
+                return true
+    }
 }
 
 ui.databindObservable = (cmp,settings) =>

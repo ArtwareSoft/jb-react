@@ -20,7 +20,7 @@ jb.component('suggestions-test', { /* suggestionsTest */
     {
       id: 'path',
       as: 'string',
-      defaultValue: 'suggestions-test.default-probe~impl~title'
+      defaultValue: 'suggestions-test.default-probe~impl~text'
     },
     {id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean'}
   ],

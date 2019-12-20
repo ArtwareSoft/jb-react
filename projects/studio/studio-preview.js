@@ -114,7 +114,7 @@ jb.component('studio.wait-for-preview-iframe', { /* studio.waitForPreviewIframe 
       jb.studio.previewWindow)
 })
 
-jb.studio.pageChange = jb.ui.resourceChange.filter(e=>e.path.join('/') == 'studio/page')
+jb.studio.pageChange = jb.ui.resourceChange().filter(e=>e.path.join('/') == 'studio/page')
       .startWith(1)
       .flatMap(e=> {
         const page = jb.resources.studio.project + '.' + jb.resources.studio.page;

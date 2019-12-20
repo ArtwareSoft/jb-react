@@ -34,8 +34,6 @@ jb.component('group.init-group', { /* group.initGroup */
     calcState: cmp => ({ctrls: cmp.calcCtrls() }),
     init: cmp => {
       cmp.calcCtrls = cmp.calcCtrls || (() => ctx.vars.$model.controls(cmp.ctx).filter(x=>x))
-      if (!cmp.state.ctrls)
-        cmp.state.ctrls = cmp.calcCtrls()
       cmp.refresh = cmp.refresh || (() => cmp.setState({ctrls: cmp.calcCtrls() }))
     }
   })

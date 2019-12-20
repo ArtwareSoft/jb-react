@@ -90,7 +90,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
           controls: [ 
             controlWithCondition(
               inGroup(list('JbComponent', 'jbCtx'), className('%$obj%')),
-              label({title: className('%$obj%')})
+              label({text: className('%$obj%')})
             ),
             controlWithCondition(
               isOfType('string,boolean,number', '%$obj%'),

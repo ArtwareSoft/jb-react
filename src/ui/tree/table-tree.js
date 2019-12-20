@@ -109,7 +109,7 @@ jb.component('table-tree.init', {
             }
             function getOrCreateControl(field,item,index) {
                 if (!treeModel.FieldCache)
-                    return field.control(item,index)
+                    return field.control(item,index,true)
                 cmp.ctrlCache = cmp.ctrlCache || {}
                 const key = item.path+'~!'+item.expanded + '~' +field.ctxId
                 cmp.ctrlCache[key] = cmp.ctrlCache[key] || field.control(item,index)
@@ -120,11 +120,16 @@ jb.component('table-tree.init', {
                 fields.forEach(f=>f.cachedControl = (item,index) => getOrCreateControl(f,item,index))
                 return fields
             }
-            function getOrCreateHeadlineCmp(item) {
-                if (!cmp.headLineCache[item.path])
-                    cmp.headLineCache[item.path] = ctx.vars.$model.chapterHeadline(
+            function headlineCmp(item) {
+                return ctx.vars.$model.chapterHeadline(
                         cmp.ctx.setData({path: item.path, val: treeModel.val(item.path)})
                             .setVars({item,collapsed: ctx2 => !cmp.expanded[item.path]}))
+            }
+            function getOrCreateHeadlineCmp(item) {
+                if (!treeModel.HeadLineCache)
+                    return headlineCmp(item)
+                if (!cmp.headLineCache[item.path])
+                    cmp.headLineCache[item.path] = headlineCmp(item)
                 return cmp.headLineCache[item.path]
             }
         },

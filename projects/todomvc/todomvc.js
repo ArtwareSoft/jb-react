@@ -12,7 +12,7 @@ jb.component('todomvc.main', { /* todomvc.main */
   type: 'control',
   impl: group({
     controls: [
-      label({title: 'todos', style: label.htmlTag('h1')}),
+      label({text: 'todos', style: label.htmlTag('h1')}),
       editableText({
         title: 'input',
         databind: '%$new-task/task%',

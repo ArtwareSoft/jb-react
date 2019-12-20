@@ -308,7 +308,7 @@ class WatchableValueByRef {
       const entry = { ...req, subject, key }
       
       this.observables.push(entry);
-      this.observables.sort((e1,e2) => comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
+      this.observables.sort((e1,e2) => jb.ui.comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
       req.cmp.jbDestroyFuncs.push(() => {
           if (this.observables.indexOf(entry) != -1) {
             jb.log('removeCmpObservable',[entry])
@@ -322,21 +322,20 @@ class WatchableValueByRef {
   frame() {
     return this.resources.frame || jb.frame
   }
-
   propagateResourceChangeToObservables() {
-      this.resourceChange.subscribe(e=>{
-        const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
-        const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
-        if (changed_path)
-          observablesToUpdate.forEach(obs=> !obs.cmp._destroyed && this.notifyOneObserver(e,obs,changed_path))
-      })
+    this.resourceChange.subscribe(e=>{
+      const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
+      const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
+      if (changed_path)
+        observablesToUpdate.forEach(obs=> !obs.cmp._destroyed && this.notifyOneObserver(e,obs,changed_path))
+    })
   }
   notifyOneObserver(e,obs,changed_path) {
       let obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
       obsPath = obsPath && this.removeLinksFromPath(obsPath)
       if (!obsPath)
         return jb.logError('observer ref path is empty',obs,e)
-      const diff = comparePaths(changed_path, obsPath)
+      const diff = jb.ui.comparePaths(changed_path, obsPath)
       const isChildOfChange = diff == 1
       const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
       const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
@@ -345,11 +344,13 @@ class WatchableValueByRef {
           obs.subject.next(e)
       }
   }
-
+  dispose() {
+    this.resourceChange.complete()
+  }
 }
 
 // 0- equals, -1,1 means contains -2,2 lexical
-function comparePaths(path1,path2) {
+jb.ui.comparePaths = function(path1,path2) {
     path1 = path1 || ''
     path2 = path2 || ''
     let i=0;
@@ -367,7 +368,10 @@ function resourcesRef(val) {
     jb.resources = val;
 }
 jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef));
-jb.rebuildRefHandler = () => jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef));
+jb.rebuildRefHandler = () => {
+  jb.mainWatchableHandler && jb.mainWatchableHandler.dispose()
+  jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
+}
 jb.isWatchable = ref => jb.refHandler(ref) instanceof WatchableValueByRef || ref && ref.$jb_observable
 
 jb.ui.refObservable = (ref,cmp,settings={}) => {
@@ -381,8 +385,13 @@ jb.ui.refObservable = (ref,cmp,settings={}) => {
   //jb.refHandler(ref).refObservable(ref,cmp,settings);
 }
 
-jb.ui.extraWatchableHandler = (resources,oldHandler) => jb.extraWatchableHandler(new WatchableValueByRef(resources),oldHandler);
-jb.ui.resourceChange = jb.mainWatchableHandler.resourceChange;
+jb.ui.extraWatchableHandler = (resources,oldHandler) => {
+  const res = jb.extraWatchableHandler(new WatchableValueByRef(resources),oldHandler)
+  jb.ui.subscribeToRefChange(res)
+  return res
+}
+
+jb.ui.resourceChange = () => jb.mainWatchableHandler.resourceChange;
 
 jb.component('run-transaction', { /* runTransaction */
   type: 'action',
