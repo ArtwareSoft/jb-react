@@ -43,11 +43,11 @@ jb.component('ui-test.boolean-watchable-var-as-boolean-false-to-true', {
 
 jb.component('ui-test.watchable-var',  /* uiTest_mutableVar */ {
     impl: uiTest({
-      control: label({
-        text: '%$var1%',
+      control: group({
+        controls: label('%$var1%'),
         features: [
           variable({name: 'var1', value: 'hello', watchable: true}),
-          feature_afterLoad(writeValue('%$var1%', 'foo'))
+          feature.afterLoad(writeValue('%$var1%', 'foo'))
         ]
       }),
       expectedResult: contains('foo')
@@ -56,28 +56,26 @@ jb.component('ui-test.watchable-var',  /* uiTest_mutableVar */ {
 
 jb.component('ui-test.watchable-var-with-global-id',  /* uiTest_mutableVarWithGlobalId */ {
     impl: uiTest({
-      control: label({
-        text: '%$var1%',
+      control: group({
+        controls: label('%$var1%'),
         features: [
           variable({name: 'var1', value: 'hello', watchable: true, globalId: 'globalVar1'}),
           feature_afterLoad(writeValue('%$var1%', 'foo'))
         ]
       }),
-      action: ctx => jb.delay(1).then(_ => jb.delay(1)),
       expectedResult: contains('foo')
     })
 })
 
 jb.component('ui-test.watchable-var-as-object',  /* uiTest_mutableVarAsObject */ {
     impl: uiTest({
-      control: label({
-        text: '%$obj1/txt%',
+      control: group({
+        controls: label('%$obj1/txt%'),
         features: [
           variable({name: 'obj1', value: {$: 'object', txt: 'hello'}, watchable: true}),
-          feature_afterLoad(writeValue('%$obj1/txt%', 'foo'))
+          feature.afterLoad(writeValue('%$obj1/txt%', 'foo'))
         ]
       }),
-      action: ctx => jb.delay(1).then(_ => jb.delay(1)),
       expectedResult: contains('foo')
     })
 })
@@ -108,16 +106,15 @@ jb.component('ui-test.watchable-var-as-array-one-item',  /* uiTest_mutableVarAsA
 })
 
 
-  jb.component('ui-test.watchable-var-as-object-not-initialized',  /* uiTest_mutableVarAsObjectNotInitialized */ {
+jb.component('ui-test.watchable-var-as-object-not-initialized',  /* uiTest_mutableVarAsObjectNotInitialized */ {
     impl: uiTest({
-      control: label({
-        text: '%$obj1/txt%',
+      control: group({
+        controls: label('%$obj1/txt%'),
         features: [
           variable({name: 'obj1', value: {$: 'object'}, watchable: true}),
-          feature_afterLoad(writeValue('%$obj1/txt%', 'foo'))
+          feature.afterLoad(writeValue('%$obj1/txt%', 'foo'))
         ]
       }),
-      action: ctx => jb.delay(1).then(_ => jb.delay(1)),
       expectedResult: contains('foo')
     })
 })
@@ -251,7 +248,7 @@ jb.component('ui-test.group-watching-structure', {
       features: [
         variable({name: 'text1', watchable: true, value: obj(prop('text','OK'))}),
         watchRef({ref: '%$text1%', includeChildren: 'structure'}),
-        feature_afterLoad(writeValue('%$text1/text%', 'changed'))
+        feature.afterLoad(writeValue('%$text1/text%', 'changed'))
       ]
     }),
     expectedCounters: {setState: 1},
@@ -267,7 +264,7 @@ jb.component('ui-test.watch-ref-array-delete-with-run-action-on-items',  {
           features: watchRef({ref: '%$watchable-people%', includeChildren: 'yes'}) 
       }),
       features: [
-        feature_afterLoad( 
+        feature.afterLoad( 
           runActionOnItems('%$watchable-people%', 
             splice({
               array: "%$watchable-people%",

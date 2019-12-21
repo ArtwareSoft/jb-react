@@ -63,7 +63,7 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
   impl: ctx =>({
     onkeyup: true,
     onkeydown: true, // used for arrows
-    extendCtxOnce: (ctx,cmp) => ctx.setVars({selectionKeySource: {}}),
+    extendCtx: (ctx,cmp) => ctx.setVars({selectionKeySource: {}}),
 
     afterViewInit: cmp => {
       var input = jb.ui.findIncludeSelf(cmp.base,'input')[0];

@@ -17,13 +17,11 @@ jb.component('text', jb.comps.label)
 jb.component('label.bind-text', { /* label.bindText */
   type: 'feature',
   impl: ctx => ({
-    watchAndCalcRefProp: { prop: 'text', toState: jb.ui.toVdomOrStr },
-    // watchRef: { refF: ctx.vars.$model.text, srcCtx: ctx },
-    // calcState: cmp => ({ text: jb.ui.toVdomOrStr((ctx.vars.$model.text)(cmp.ctx)) }),
+    watchAndCalcRefProp: { prop: 'text', toState: jb.ui.toVdomOrStr, strongRefresh: true },
   })
 })
 
-jb.component('label.allow-asych-value', {
+jb.component('label.allow-asynch-value', {
   type: 'feature',
   impl: ctx => ({
     init: cmp => {

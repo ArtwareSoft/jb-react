@@ -309,7 +309,8 @@ class WatchableValueByRef {
       
       this.observables.push(entry);
       this.observables.sort((e1,e2) => jb.ui.comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
-      req.cmp.jbDestroyFuncs.push(() => {
+      req.cmp.destroyFuncs = req.cmp.destroyFuncs || []
+      req.cmp.destroyFuncs.push(() => {
           if (this.observables.indexOf(entry) != -1) {
             jb.log('removeCmpObservable',[entry])
             this.observables.splice(this.observables.indexOf(entry), 1);

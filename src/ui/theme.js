@@ -6,8 +6,7 @@ jb.component('group.theme', { /* group.theme */
     {id: 'theme', type: 'theme'}
   ],
   impl: (context,theme) => ({
-    extendCtxOnce: (ctx,cmp) =>
-      ctx.setVars(theme)
+    extendCtx: (ctx,cmp) => ctx.setVars(theme)
   })
 })
 

@@ -26,8 +26,7 @@ jb.component('itemlist.no-container', { /* itemlist.noContainer */
   type: 'feature',
   category: 'group:20',
   impl: ctx => ({
-    extendCtxOnce: (ctx,cmp) =>
-      ctx.setVars({itemlistCntr: null})
+    extendCtx: (ctx,cmp) => ctx.setVars({itemlistCntr: null})
     })
 })
 
@@ -35,8 +34,7 @@ jb.component('itemlist.init', { /* itemlist.init */
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
-        cmp.refresh = _ =>
-            cmp.setState({ctrls: cmp.calcCtrls()})
+        cmp.refresh = _ => cmp.setState({ctrls: cmp.calcCtrls()})
 
         cmp.calcCtrls = _ => {
             cmp.items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
@@ -199,7 +197,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setVars({items: cmp.items}).setData(jb.val(selectedRef))))
         }
         function dataOfElem(el) {
-          const itemElem = jb.ui.parents(el).find(el=>el.classList && el.classList.contains('jb-item'))
+          const itemElem = jb.ui.closest(el,'.jb-item')
           const ctxId = itemElem && itemElem.getAttribute('jb-ctx')
           return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
         }

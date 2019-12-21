@@ -24,15 +24,9 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
 jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandCollapse */
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{},[
-          h('input', { type: 'checkbox',
-            checked: state.model,
-            onchange: 'setChecked',
-            onkeyup: 'setChecked'  }, state.text),
-          h('i',{class:'material-icons noselect', onclick: _=> cmp.toggle() }, state.model ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
-      ]),
-    css: `>i { font-size:16px; cursor: pointer; }
-          >input { display: none }`,
+    template: (cmp,state,h) => h('i',{class:'material-icons noselect', onclick: 'toggle' }, 
+      state.model ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
+    css: `{ font-size:16px; cursor: pointer; }`,
     features: field.databind()
   })
 })

@@ -25,18 +25,21 @@ jb.component('group.wait', { /* group.wait */
     {id: 'varName', as: 'string'}
   ],
   impl: (ctx,waitFor,loading,error,varName) => ({
-      beforeInit : cmp => cmp.state.ctrls = [loading(ctx)],
-
-      afterViewInit: cmp => {
-        Promise.resolve(waitFor())
-          .then(data => {
+      beforeInit: cmp => {
+        cmp.originalCalcState = cmp.calcState
+        cmp.calcState = cmp => ({ ctrls: [loading(cmp.ctx)].map(x=>cmp.ctx.profile.$ == 'itemlist' ? [x] : x) })
+        Promise.resolve(waitFor()).then(data => {
               cmp.ctx = varName ? cmp.ctx.setData(data).setVars(jb.obj(varName,data)) : cmp.ctx.setData(data);
+              cmp.calcState = cmp.originalCalcState
               cmp.refresh()
+          }).catch(e=> {
+            cmp.calcState = cmp => ({ ctrls: [error(ctx.setVars({error:e}))], text: JSON.stringify(e) })
+            cmp.refresh()
           })
-          .catch(e=> {
-            cmp.setState( { ctrls: [error(ctx.setVars({error:e}))] })
-        })
-    },
+      },
+      init: cmp => {
+        cmp.refresh = cmp.refresh || (() => cmp.setState({ctrls: cmp.calcCtrls()}))
+      }
   })
 })
 
@@ -125,7 +128,7 @@ jb.component('group.data', { /* group.data */
   ],
   impl: (ctx, refF, itemVariable,watch,includeChildren) => ({
       ...(watch ? {watchRef: { refF, includeChildren }} : {}),
-      extendCtxOnce: ctx => {
+      extendCtx: ctx => {
           const ref = refF();
           const res = ctx.setData(ref);
           if (itemVariable)
@@ -195,7 +198,7 @@ jb.component('variable', { /* variable */
     }
   ],
   impl: (context, name, value, watchable, globalId,type) => ({
-      extendCtxOnce: (ctx,cmp) => {
+      extendCtx: (ctx,cmp) => {
         if (!watchable)
           return ctx.setVars({[name]: jb.val(value(ctx)) })
 
@@ -234,7 +237,7 @@ jb.component('calculated-var', { /* calculatedVar */
       destroy: cmp => {
         jb.writeValue(jb.mainWatchableHandler.refOfPath([name + ':' + cmp.resourceId]),null,context)
       },
-      extendCtxOnce: (ctx,cmp) => {
+      extendCtx: (ctx,cmp) => {
         cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
         const fullName = globalId || (name + ':' + cmp.resourceId);
         jb.log('calculated var',['new-resource',ctx,fullName])

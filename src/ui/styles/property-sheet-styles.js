@@ -7,7 +7,7 @@ jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, state.ctrls.flatMap(ctrl=>[
-        h(jb.ui.renderable(cmp.ctx.run(label({text: ctx => cmp.titleText(ctx.setData(ctrl.field().title())), style: ctx => cmp.titleStyle(ctx)})))),
+        h(cmp.ctx.run(label({text: ctx => cmp.titleText(ctx.setData(ctrl.field().title())), style: ctx => cmp.titleStyle(ctx)}))),
         h(ctrl)
       ])
     ),
@@ -26,9 +26,9 @@ jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ style: {'grid-template-columns': state.ctrls.map(()=>'auto').join(' ')}}, [
         ...state.ctrls.map(ctrl=>
-          h(jb.ui.renderable(cmp.ctx.run(label({
-            title: ctx => cmp.titleText(ctx.setData(ctrl.field().title())), 
-            style: ctx => cmp.titleStyle(ctx)}))))), 
+          h(cmp.ctx.run(label({
+            text: ctx => cmp.titleText(ctx.setData(ctrl.field().title())), 
+            style: ctx => cmp.titleStyle(ctx)})))), 
         ...state.ctrls.map(ctrl=>h(ctrl))
       ]
     ),

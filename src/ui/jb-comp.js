@@ -8,8 +8,8 @@ ui.RecalcVars = Symbol.for("RecalcVars")
 
 function h(cmpOrTag,attributes,children) {
     if (cmpOrTag && cmpOrTag[ui.VNode]) return cmpOrTag // Vdom
-    if (cmpOrTag && cmpOrTag.light)
-        return cmp.renderVdom()
+    if (cmpOrTag && cmpOrTag.noNeedForCmpObject && cmpOrTag.noNeedForCmpObject())
+        return cmpOrTag.renderVdom()
     if (Array.isArray(children) && children.length > 1)
         children = children.filter(x=>x).map(item=> typeof item == 'string' ? h('span',{},item) : item)
     if (children === "") children = null
@@ -232,42 +232,51 @@ Object.assign(jb.ui, {
 let cssId = 0, cmpId = 0;
 const cssSelectors_hash = ui.cssSelectors_hash = {};
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
+const lifeCycle = new Set('beforeInit,init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
+const arrayProps = new Set('enrichField,dynamicCss,contexts,watchAndCalcRefProp,staticCssLines'.split(','))
+const singular = new Set('template,calcState,toolbar,styleCtx'.split(','))
 
 class JbComponent {
 	constructor(ctx) {
-		Object.assign(this, {ctx, cmpId: cmpId++, jbInitFuncs: [], jbBeforeInitFuncs: [], jbRegisterEventsFuncs:[], jbComponentDidMountFuncs: [],
-			jbComponentDidUpdateFuncs: [], willUpdateFuncs: [],jbDestroyFuncs: [], extendCtxOnceFuncs: [], modifierFuncs: [], 
-			extendItemFuncs: [], enrichField: [], dynamicCss: [], contexts: [], watchRef: [], watchAndCalcRefProp: [], staticCssLines: [] })
+        this.ctx = ctx
+        this.cmpId = cmpId++
+        this.registerEventsFuncs = []
+        this.staticCssLines = []
+        this.contexts = []
     }
     initIfNeeded() {
         if (this.initialized) return
-        jb.log('initComp',[this]);
+        jb.log('initCmp',[this]);
         this.initialized = 'inProcess'
 
         this.ctxForPick = this.originatingCtx = this.contexts[0];
         this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
-        this.extendCtxOnceFuncs.forEach(extendCtx =>
+        this.extendCtxFuncs && this.extendCtxFuncs.forEach(extendCtx =>
             tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx')
         this.state = {}
     
         Object.assign(this,(this.styleCtx || {}).params); // assign style params to cmp to be used in render
-        this.jbBeforeInitFuncs.forEach(init=> tryWrapper(() => init(this)), 'beforeinit');
-        this.jbInitFuncs.forEach(init=> tryWrapper(() => init(this)), 'init');
-        this.toObserve = this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref))
-        this.watchAndCalcRefProp.forEach(e=>{
+        this.beforeInitFuncs && this.beforeInitFuncs.forEach(init=> tryWrapper(() => init(this)), 'beforeinit');
+        this.initFuncs && this.initFuncs.forEach(init=> tryWrapper(() => init(this)), 'init');
+        this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
+        this.watchAndCalcRefProp && this.watchAndCalcRefProp.forEach(e=>{
             const ref = this.ctx.vars.$model[e.prop](this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
             this.state[e.prop] = (e.toState || (x=>x))(jb.val(ref))
         })
-        if (this.calcState)
-            this.state = this.calcState(this)
+        this.calcState && Object.assign(this.state,this.calcState(this))
         this.initialized = 'done'
         return this
     }
+    noNeedForCmpObject() {
+        this.initIfNeeded()
+        return !this.refresh && !this.toObserve.length && !this.registerEventsFuncs.length 
+            && !this.componentDidMountFuncs && !this.destroyFuncs
+    }
     componentDidMount() {
-        this.jbRegisterEventsFuncs.forEach(init=> tryWrapper(() => init(this), 'registerEvents'));
-        this.jbComponentDidMountFuncs.forEach(init=> tryWrapper(() => init(this), 'componentDidMount'));
+        this.registerEventsFuncs.forEach(init=> tryWrapper(() => init(this), 'registerEvents'));
+        this.componentDidMountFuncs && this.componentDidMountFuncs.forEach(init=> tryWrapper(() => init(this), 'componentDidMount'));
     }
     setState(state) {
         if (this.initialized != 'done')
@@ -275,11 +284,10 @@ class JbComponent {
         if (typeof state === 'object' && state[ui.StrongRefresh])
             return this.strongRefresh()
         if (typeof state === 'object' && state[ui.RecalcVars]) {
-            this.extendCtxOnceFuncs.forEach(extendCtx => tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx')
-            if (this.calcState)
-                Object.assign(state,this.calcState(this))
+            this.extendCtxFuncs && this.extendCtxFuncs.forEach(extendCtx => tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx')
+            this.calcState && Object.assign(state,this.calcState(this))
         }
-        this.watchAndCalcRefProp.filter(e=> !state[e.prop]).forEach(e=>{
+        this.watchAndCalcRefProp && this.watchAndCalcRefProp.filter(e=> !state[e.prop]).forEach(e=>{
             const ref = this.ctx.vars.$model[e.prop](this.ctx)
             this.state[e.prop] = (e.toState || (x=>x))(jb.val(ref))
         })
@@ -288,7 +296,7 @@ class JbComponent {
         const vdomBefore = this.vdomBefore
         const vdomAfter = this.renderVdom()
         applyVdomDiff(this.base, vdomBefore,vdomAfter,this)
-        this.jbComponentDidUpdateFuncs.forEach(f=> tryWrapper(() => f(this), 'componentDidUpdate'));
+        this.componentDidUpdateFuncs && this.componentDidUpdateFuncs.forEach(f=> tryWrapper(() => f(this), 'componentDidUpdate'));
     }
     strongRefresh() {
         const newCmp = this.originatingCtx.runItself()
@@ -302,7 +310,7 @@ class JbComponent {
 			ctxId: ui.preserveCtx(ctx),
 			control: (item,index,noCache) => this.getOrCreateItemField(item, () => ctx.setData(item).setVars({index: (index||0)+1}).runItself().reactComp(),noCache),
 		}
-		this.enrichField.forEach(enrichField=>enrichField(this._field))
+		this.enrichField && this.enrichField.forEach(enrichField=>enrichField(this._field))
 		let title = jb.tosingle(jb.val(ctx.params.title)) || (() => '');
 		if (this._field.title !== undefined)
 			title = this._field.title
@@ -332,7 +340,7 @@ class JbComponent {
         //console.log('render',jb.studio.shortTitle(this.ctx.path));
         try {
             let vdom = this.template(this,this.state,ui.h);
-            this.modifierFuncs.forEach(modifier=>
+            this.templateModifierFuncs && this.templateModifierFuncs.forEach(modifier=>
                 vdom = (vdom && typeof vdom === 'object') ? tryWrapper(() => modifier(vdom,this,this.state,ui.h) || vdom) : vdom
             )
             if (typeof vdom === 'object')
@@ -346,7 +354,7 @@ class JbComponent {
     componentWillUnmount() {
         this._destroyed = true
         jb.log('destroyCmp',[this]);
-        this.jbDestroyFuncs.forEach(f=> tryWrapper(() => f(this), 'destroy'));
+        this.destroyFuncs && this.destroyFuncs.forEach(f=> tryWrapper(() => f(this), 'destroy'));
         this.resolveDestroyed();
     }
     reactComp() { 
@@ -356,7 +364,7 @@ class JbComponent {
 		if (this.cachedClass)
             return this.cachedClass
         const ctx = this.ctx
-		const cssLines = (this.staticCssLines || []).concat(this.dynamicCss.map(dynCss=>dynCss(ctx))).filter(x=>x)
+		const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || []).map(dynCss=>dynCss(ctx))).filter(x=>x)
 		const cssKey = cssLines.join('\n')
 		if (!cssKey) return ''
 		if (!cssSelectors_hash[cssKey]) {
@@ -373,7 +381,7 @@ class JbComponent {
 			document.head.appendChild(style_elem);
 		}
 		const jbClass = `jb-${cssSelectors_hash[cssKey]}`
-		if (!this.dynamicCss.length)
+		if (!this.dynamicCss)
 			this.cachedClass = jbClass
 		return jbClass
 	}
@@ -390,46 +398,40 @@ class JbComponent {
 		return this;
 	}
 
-	jbExtend(options,ctx) {
-    	if (!options) return this;
+    jbExtend(options,ctx) {
+        if (!options) return this;
     	ctx = ctx || this.ctx;
     	if (!ctx)
     		console.log('no ctx provided for jbExtend');
     	if (typeof options != 'object')
-    		debugger;
+            debugger;
 
-        this.light = this.light || options.light;
-    	this.template = this.template || options.template;
-    	this.calcState = this.calcState || options.calcState;
+        if (options.afterViewInit) options.componentDidMount = options.afterViewInit
+		if (typeof options.class == 'string') options.templateModifier = vdom => ui.addClassToVdom(vdom,options.class)
 
-        if (options.beforeInit) this.jbBeforeInitFuncs.push(options.beforeInit);
-		if (options.init) this.jbInitFuncs.push(options.init);
-		if (options.componentDidMount) this.jbComponentDidMountFuncs.push(options.componentDidMount);
-		if (options.afterViewInit) this.jbComponentDidMountFuncs.push(options.afterViewInit);
-		if (options.componentWillUpdate) this.willUpdateFuncs.push(options.componentWillUpdate);
-		if (options.destroy) this.jbDestroyFuncs.push(options.destroy);
-		if (options.componentDidUpdate) this.jbComponentDidUpdateFuncs.push(options.componentDidUpdate);
-		if (options.templateModifier) this.modifierFuncs.push(options.templateModifier);
-		if (options.enrichField) this.enrichField.push(options.enrichField);
-		if (options.dynamicCss) this.dynamicCss.push(options.dynamicCss);
-        if (options.watchRef) this.watchRef.push(Object.assign({cmp: this},options.watchRef));
-        if (options.watchAndCalcRefProp) this.watchAndCalcRefProp.push(options.watchAndCalcRefProp);
-		
-		if (typeof options.class == 'string')
-			this.modifierFuncs.push(vdom=> ui.addClassToVdom(vdom,options.class));
+        Object.keys(options).forEach(key=>{
+            if (lifeCycle.has(key)) {
+                this[key+'Funcs'] = this[key+'Funcs'] || []
+                this[key+'Funcs'].push(options[key])
+            }
+            if (arrayProps.has(key)) {
+                this[key] = this[key] || []
+                this[key].push(options[key])
+            }
+            if (singular.has(key))
+                this[key] = this[key] || options[key]
+        })
+        if (options.watchRef) {
+            this.watchRef = this.watchRef || []
+            this.watchRef.push(Object.assign({cmp: this},options.watchRef));
+        }
+
 		// events
 		const events = Object.keys(options).filter(op=>op.indexOf('on') == 0);
 		events.forEach(op=>
-			this.jbRegisterEventsFuncs.push(cmp=>
+			this.registerEventsFuncs.push(cmp=>
                      cmp[op] = cmp[op] || jb.rx.Observable.fromEvent(cmp.base, op.slice(2))
 		       	  	.takeUntil( cmp.destroyed )));
-
-		if (options.extendCtxOnce) this.extendCtxOnceFuncs.push(options.extendCtxOnce);
-		if (options.extendItem)
-			this.extendItemFuncs.push(options.extendItem);
-		this.styleCtx = this.styleCtx || options.styleCtx;
-		this.toolbar = this.toolbar || options.toolbar;
-		this.noUpdates = this.noUpdates || options.noUpdates;
 
 	   	if (options.css)
     		this.staticCssLines = (this.staticCssLines || [])
@@ -439,13 +441,8 @@ class JbComponent {
     				.map(x=>x+'}')
     				.map(x=>x.replace(/^!/,' ')));
 
-		(options.featuresOptions || []).forEach(f =>
-			this.jbExtend(f, ctx))
+		(options.featuresOptions || []).forEach(f => this.jbExtend(f, ctx))
 		return this;
-    }
-    pushToArray(prop,item) {
-        if (!this[prop]) this[prop] = []
-        this[prop].push(item)
     }
 }
 
@@ -735,7 +732,7 @@ ui.toggleClassInVdom = function(vdom,clz,add) {
 }
 
 ui.item = function(cmp,vdom,data) {
-	cmp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
+	cmp.extendItemFuncs && cmp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
 	return vdom;
 }
 

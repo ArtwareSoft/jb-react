@@ -70,63 +70,6 @@ jb.component('group.init-expandable', { /* group.initExpandable */
   })
 })
 
-jb.component('group.accordion', { /* group.accordion */
-  type: 'group.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('section',{ class: 'jb-group'},
-        state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
-          h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
-            h('div',{ class: 'title'}, jb.ui.fieldTitle(cmp,ctrl,h)),
-            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) },
-              h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
-            )
-          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)
-    )),
-    css: `>.accordion-section>.header { display: flex; flex-direction: row; }
-        >.accordion-section>.header>button:hover { background: none }
-        >.accordion-section>.header>button { margin-left: auto }
-        >.accordion-section>.header>.title { margin: 5px }`,
-    features: [group.initGroup(), group.initAccordion()]
-  })
-})
-
-jb.component('group.init-accordion', { /* group.initAccordion */
-  type: 'feature',
-  category: 'group:0',
-  params: [
-    {id: 'keyboardSupport', as: 'boolean', type: 'boolean'},
-    {id: 'autoFocus', as: 'boolean', type: 'boolean'}
-  ],
-  impl: ctx => ({
-    onkeydown: ctx.params.keyboardSupport,
-    init: cmp => {
-      cmp.state.shown = 0;
-      cmp.expand_title = index =>
-        index == cmp.state.shown ? 'collapse' : 'expand';
-
-      cmp.show = index =>
-        cmp.setState({shown: index});
-
-      cmp.flip = index => {
-        if (cmp.state.shown == index)
-          cmp.setState({shown: (cmp.state.shown + 1) % cmp.state.ctrls.length})
-        else
-          cmp.setState({shown: index})
-      }
-
-      cmp.next = diff =>
-        cmp.setState({shown: (cmp.state.shown + diff + cmp.state.ctrls.length) % cmp.state.ctrls.length});
-    },
-    afterViewInit: cmp => {
-      if (ctx.params.keyboardSupport) {
-        cmp.onkeydown.filter(e=> e.keyCode == 33 || e.keyCode == 34) // pageUp/Down
-            .subscribe(e=>
-              cmp.next(e.keyCode == 33 ? -1 : 1))
-      }
-    }
-  })
-})
-
 jb.component('group.tabs', { /* group.tabs */
   type: 'group.style',
   params: [
@@ -168,7 +111,47 @@ jb.component('group.tabs', { /* group.tabs */
   )
 })
 
-jb.component('group.sections', { /* group.sections */
+jb.component('group.accordion', {
+  type: 'group.style',
+  params: [
+    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdlFlatRipple() },
+    {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
+    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
+  ],
+  impl: styleByControl(
+    group({
+      controls: dynamicControls({
+          controlItems: '%$sectionsModel/controls%',
+          genericControl: group({
+            style: call('sectionStyle'),
+            controls: [
+              button({
+                title: ({},{section}) => section.field().title(),
+                style: call('titleStyle'),
+                action: runActions(
+                  writeValue('%$selectedTab/path%', '%$section/ctx/path%'),
+                  refreshControlById(ctx=> 'accoridon_' + ctx.componentContext.id)
+                )
+              }),
+              group({style: call('innerGroupStyle'), controls: ({},{section,selectedTab}) => section.ctx.path == selectedTab.path && section})
+            ]
+          }),
+          itemVariable: 'section'
+      }),
+      features: [
+        id(ctx=> 'accoridon_' + ctx.componentContext.id),
+        variable({
+          name: 'selectedTab',
+          value: obj(prop('path','%$sectionsModel/controls[0]/ctx/path%'))
+        }),
+        group.initGroup()
+      ]
+    }),
+    'sectionsModel'
+  )
+})
+
+jb.component('group.sections', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'label.style', dynamic: true, defaultValue: label.htmlTag('h3')},
@@ -184,7 +167,7 @@ jb.component('group.sections', { /* group.sections */
             style: call('sectionStyle'),
             controls: [
               label({
-                title: ({},{section}) => section.field().title(),
+                text: ({},{section}) => section.field().title(),
                 style: call('titleStyle')
               }),
               group({style: call('innerGroupStyle'), controls: ({},{section}) => section})

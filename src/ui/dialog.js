@@ -431,7 +431,7 @@ jb.ui.dialogs = {
 					self.dialogs.splice(index, 1);
 				if (dialog.modal && document.querySelector('.modal-overlay'))
 					document.body.removeChild(document.querySelector('.modal-overlay'));
-				return self.refresh();
+				return self.refresh(ctx);
 			})
 		},
 		dialog.closed = () => self.dialogs.indexOf(dialog) == -1;
@@ -470,10 +470,10 @@ jb.ui.dialogs = {
 jb.component('dialog.jb-dialogs', { 
 	type: 'control',
 	params: [
-	  {id: 'style', dynamic: true, defaultValue: customStyle({
-			template: (cmp,state,h) => h('div', { class:'jb-dialogs' }, jb.ui.dialogs.dialogs.map(d=>h(d.comp))  )
-		  })
-	  },
+	  {id: 'style', dynamic: true },
 	],
-	impl: ctx => jb.ui.ctrl(ctx)
+	impl: ctx => jb.ui.ctrl(ctx,{
+		afterViewInit: () => {},
+		template: (cmp,state,h) => h('div', { class:'jb-dialogs' }, jb.ui.dialogs.dialogs.map(d=>h(d.comp))  )
+	})
 })

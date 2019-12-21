@@ -164,7 +164,7 @@ jb.component('text-editor.init', { /* textEditor.init */
 
   ],
   impl: ctx => ({
-    extendCtxOnce: (ctx,cmp) => ctx.setVars({
+    extendCtx: (ctx,cmp) => ctx.setVars({
         editor: () => cmp.editor,
         refreshEditor: path => refreshEditor(cmp,path)
       })
