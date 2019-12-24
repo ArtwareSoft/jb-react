@@ -9,7 +9,7 @@ jb.component('studio.pickAndOpen', { /* studio.pickAndOpen */
       writeValue('%$studio/last_pick_selection%', '%%'),
       writeValue('%$studio/profile_path%', '%path%'),
       studio.openControlTree(),
-      studio.openProperties()
+      studio.openProperties(true)
     ]
   )
 })
@@ -47,7 +47,7 @@ jb.component('studio.toolbar', { /* studio.toolbar */
       }),
       button({
         title: 'Properties',
-        action: studio.openProperties('true'),
+        action: studio.openProperties(true),
         style: button.mdlIcon('storage')
       }),
       button({

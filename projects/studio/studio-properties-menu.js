@@ -3,14 +3,14 @@ jb.component('studio.goto-path', { /* studio.gotoPath */
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: runActions(
+  impl: action.if('%$path%', runActions(
     dialog.closeContainingPopup(),
     writeValue('%$studio/profile_path%', '%$path%'),
-    action.if(
-        studio.isOfType('%$path%', 'control,table-field'),
-        studio.openControlTree()
-      )
-  )
+    // action.if(
+    //     studio.isOfType('%$path%', 'control,table-field'),
+    //     studio.openControlTree(true)
+    //   )
+  ))
 })
 
 jb.component('studio.open-property-menu', { /* studio.openPropertyMenu */

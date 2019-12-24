@@ -401,19 +401,25 @@ jb.component('refresh-control-by-id', { /* refreshControlById */
     if (!elem)
       return jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
     jb.ui.refreshElem(elem,ctx.params,ctx)
-    // const cmp = elem && elem._component
-    // if (!cmp)
-    //   return jb.logError('refresh-control-by-id can not get cmp for elem', ctx)
-    // jb.ui.setState(cmp,Object.assign({}, strongRefresh && {[ui.StrongRefresh]: true}, recalcVars && {[ui.RecalcVars]: true}),null,ctx)
-    //cmp.refresh && cmp.refresh(ctx)
   }
+})
+
+jb.component('feature.define-handler', { 
+  type: 'feature',
+  params: [
+    {id: 'id', as: 'string', mandatory: true, description: 'to be used in html, e.g. onclick="clicked" '},
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,id,action) => ({
+      init: cmp => cmp[id] = ev => jb.ui.wrapWithLauchingElement(action, cmp.ctx, ev.currentTarget)()
+  })
 })
 
 jb.component('group.auto-focus-on-first-input', { /* group.autoFocusOnFirstInput */
   type: 'feature',
-  impl: ctx => ({
+  impl: (ctx,condition) => ({
       afterViewInit: cmp => {
-          var elem = Array.from(cmp.base.querySelectorAll('input,textarea,select'))
+          const elem = Array.from(cmp.base.querySelectorAll('input,textarea,select'))
             .filter(e => e.getAttribute('type') != 'checkbox')[0];
           elem && jb.ui.focus(elem,'group.auto-focus-on-first-input',ctx);
         }
@@ -432,3 +438,15 @@ jb.component('focus-on-first-element', { /* focusOnFirstElement */
     })
 })
 
+jb.component('feature.byCondition', { /* feature.byCondition */
+  type: 'feature',
+  description: 'define feature if then else condition',
+  macroByValue: true,
+  params: [
+    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+    {id: 'then', type: 'feature', mandatory: true, dynamic: true},
+    {id: 'else', type: 'feature', dynamic: true}
+  ],
+  impl: (ctx,cond,_then,_else) =>
+ 		cond ? _then() : _else()
+})

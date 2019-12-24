@@ -1,7 +1,8 @@
 jb.component('studio.properties', { /* studio.properties */
   type: 'control',
   params: [
-    {id: 'path', as: 'string'}
+    {id: 'path', as: 'string'},
+    {id: 'focus', type: 'boolean', as: 'boolean'}
   ],
   impl: group({
     controls: [
@@ -38,7 +39,8 @@ jb.component('studio.properties', { /* studio.properties */
         style: button.href(),
         features: css.margin({top: '20', left: '5'})
       })
-    ]
+    ],
+    features: feature.byCondition(or('%$focus%',studio.lastEdit()),group.autoFocusOnFirstInput()),
   })
 })
 
@@ -178,7 +180,6 @@ jb.component('studio.jb-floating-input-rich', { /* studio.jbFloatingInputRich */
   })
 })
 
-
 jb.component('studio.open-properties', { /* studio.openProperties */
   type: 'action',
   params: [
@@ -186,7 +187,7 @@ jb.component('studio.open-properties', { /* studio.openProperties */
   ],
   impl: openDialog({
     style: dialog.studioFloating({id: 'studio-properties', width: '500'}),
-    content: studio.properties(studio.currentProfilePath()),
+    content: studio.properties(studio.currentProfilePath(),'%$focus%'),
     title: pipeline(
       {
           '$': 'object',
@@ -196,7 +197,6 @@ jb.component('studio.open-properties', { /* studio.openProperties */
       'Properties of %comp% %title%'
     ),
     features: [
-      {'$if': '%$focus%', then: dialogFeature.autoFocusOnFirstInput()},
       feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
       dialogFeature.resizer()
     ]

@@ -4,7 +4,8 @@ jb.component('layout.vertical', { /* layout.vertical */
     {id: 'spacing', as: 'string', defaultValue: 3}
   ],
   impl: ctx => ({
-    css: `>* { margin-bottom: ${jb.ui.withUnits(ctx.params.spacing)} }
+    css: `{display: flex; flex-direction: column}
+          >* { margin-bottom: ${jb.ui.withUnits(ctx.params.spacing)} }
           >*:last-child { margin-bottom:0 }`,
   })
 })

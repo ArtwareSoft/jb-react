@@ -25,7 +25,7 @@ jb.component('studio.open-style-menu', { /* studio.openStyleMenu */
           action: [
             studio.makeLocal('%$path%'),
             studio.openStyleEditor('%$styleSource/innerPath%'),
-            studio.openProperties()
+            studio.openProperties(true)
           ],
           icon: 'build',
           showCondition: "%$styleSource/type% == 'global'"

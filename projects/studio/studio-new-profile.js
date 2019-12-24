@@ -397,9 +397,3 @@ jb.component('studio.new-comp', {
   }
 })
 
-jb.studio.newControl = path =>
-  new jb.jbCtx().run({$: 'studio.open-new-profile-dialog',
-          path: path,
-          type: 'control',
-          mode: 'insert-control'
-});

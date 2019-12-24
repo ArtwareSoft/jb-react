@@ -143,9 +143,12 @@ jb.component('studio.control-tree', { /* studio.controlTree */
           }),
           tree.dragAndDrop(),
           studio.watchScriptChanges(),
-          ctx => ({
-            init: cmp => cmp.newControl = ev => jb.studio.newControl(cmp.elemToPath(ev.target))
-          })
+          feature.defineHandler('newControl', studio.openNewProfileDialog({
+            path: (ctx,{$tree,$launchingElement}) => $tree.cmp.elemToPath($launchingElement.el),
+            type: 'control',
+            mode: 'insert-control',
+            onClose: studio.gotoLastEdit()
+          }))
         ]
       })
     ],

@@ -30,11 +30,16 @@ jb.component('tree', { /* tree */
 				tree.redraw = cmp.redraw = () => cmp.setState()
 				tree.cmp = cmp
 
-				cmp.expandPath = path => path.split('~').reduce((base, x) => {
-					const path = base ? (base + '~' + x) : x;
-					cmp.expanded[path] = true;
-					return path;
-				},'')
+				cmp.expandPath = path => {
+					let changed = false
+					path.split('~').reduce((base, x) => {
+							const inner = base ? (base + '~' + x) : x;
+							changed = changed || (!cmp.expanded[inner])
+							cmp.expanded[inner] = true;
+							return inner;
+						},'')
+					if (changed) cmp.redraw()
+				}
 	
 				cmp.elemToPath = el => el && (el.getAttribute('path') || jb.ui.closest(el,'.treenode') && jb.ui.closest(el,'.treenode').getAttribute('path'))
 			},
@@ -179,6 +184,7 @@ jb.component('tree.selection', { /* tree.selection */
 		  cmp.selectionEmitter
 		  	.merge(databindObs || [])
 		  	.merge(cmp.onclick.map(event => cmp.elemToPath(event.target)))
+			.distinctUntilChanged()
 		  	.filter(x=>x)
 		  	.map(x=> jb.val(x))
 		  	.subscribe(selected=> {

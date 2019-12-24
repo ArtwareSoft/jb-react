@@ -42,14 +42,12 @@ jb.component('studio.message', { /* studio.message */
   params: [
     {id: 'message', as: 'string'}
   ],
-  impl: (ctx,message) =>
-		st.message(message)
+  impl: (ctx,message) => st.message(message)
 })
 
 jb.component('studio.redraw-studio', { /* studio.redrawStudio */
   type: 'action',
-  impl: ctx =>
-    	st.redrawStudio && st.redrawStudio()
+  impl: ctx => st.redrawStudio && st.redrawStudio()
 })
 
 jb.component('studio.last-edit', { /* studio.lastEdit */
@@ -60,8 +58,7 @@ jb.component('studio.last-edit', { /* studio.lastEdit */
   impl: (ctx,justNow) => {
 		const now = new Date().getTime();
 		const lastEvent = st.compsHistory.slice(-1).map(x=>x.opEvent).filter(x=>x)
-			.filter(r=>
-				!justNow || now - r.timeStamp < 1000)[0];
+			.filter(r=>	!justNow || now - r.timeStamp < 1000)[0];
 		const res = lastEvent && (lastEvent.insertedPath || lastEvent.path);
 		if (res)
 			return res.join('~')
@@ -70,11 +67,7 @@ jb.component('studio.last-edit', { /* studio.lastEdit */
 
 jb.component('studio.goto-last-edit', { /* studio.gotoLastEdit */
   type: 'action',
-  impl: ctx=>{
-		const lastEdit = ctx.run({$: 'studio.last-edit'})
-		if (lastEdit)
-			ctx.setData(lastEdit).run({$: 'studio.goto-path', path: '%%'})
-	}
+  impl: studio.gotoPath(studio.lastEdit())
 })
 
 jb.component('studio.project-source', { /* studio.projectSource */
@@ -92,17 +85,7 @@ jb.component('studio.comp-source', { /* studio.compSource */
   params: [
     {id: 'comp', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
-  impl: (context,comp) =>
-		st.compAsStr(comp.split('~')[0])
+  impl: (context,comp) =>	st.compAsStr(comp.split('~')[0])
 })
-
-jb.component('studio.dynamic-options-watch-new-comp', { /* studio.dynamicOptionsWatchNewComp */ 
-  type: 'feature',
-  impl: picklist.dynamicOptions(
-    () =>
-          st.scriptChange.filter(e => e.path.length == 1)
-  )
-})
-
 
 })();
