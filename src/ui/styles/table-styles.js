@@ -39,7 +39,7 @@ jb.component('table.mdl', { /* table.mdl */
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('table',{ class: cmp.classForTable },[
-        h('thead',{},h('tr',{},cmp.fields.map(f=>h('th',{
+        h('thead',{},h('tr',{},cmp.fields.map((f,i) =>h('th',{
           'jb-ctx': f.ctxId, 
           class: [cmp.classForTd]
             .concat([ 
@@ -47,7 +47,8 @@ jb.component('table.mdl', { /* table.mdl */
               (state.sortOptions && state.sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'des' ? 'mdl-data-table__header--sorted-descending': '',
             ]).filter(x=>x).join(' '), 
           style: { width: f.width ? f.width + 'px' : ''},
-          onclick: ev => cmp.toggleSort(f),
+          onclick: 'toggleSort',
+          fieldIndex: i
           }
           ,jb.ui.fieldTitle(cmp,f,h))) )),
         h('tbody',{class: 'jb-drag-parent'},

@@ -44,7 +44,7 @@ jb.component('group.expandable', { /* group.expandable */
     template: (cmp,state,h) => h('section',{ class: 'jb-group'},[
         h('div',{ class: 'header'},[
           h('div',{ class: 'title'}, state.title),
-          h('button',{ class: 'mdl-button mdl-button--icon', onclick: _=> cmp.toggle(), title: cmp.expand_title() },
+          h('button',{ class: 'mdl-button mdl-button--icon', onclick: 'toggle', title: cmp.expand_title() },
             h('i',{ class: 'material-icons'}, state.show ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
           )
         ])

@@ -154,7 +154,9 @@ function unmount(elem) {
 }
 function unmountNotification(elem) {
     jb.log('unmount',[...arguments]);
-    elem && elem.querySelectorAll && [elem, ...Array.from(elem.querySelectorAll('[cmpId]'))]
+    if (!elem) return
+    elem.setAttribute && elem.setAttribute('recycleCounter',(+(elem.getAttribute('recycleCounter') || '0')) + 1)
+    elem.querySelectorAll && [elem, ...Array.from(elem.querySelectorAll('[cmpId]'))]
         .forEach(el=> {
             [el._component, ...(el._extraCmps || [])].filter(x=>x).map(cmp=> cmp.componentWillUnmount())
         })
@@ -287,7 +289,7 @@ class JbComponent {
             this.extendCtxFuncs && this.extendCtxFuncs.forEach(extendCtx => tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx')
             this.calcState && Object.assign(state,this.calcState(this))
         }
-        this.watchAndCalcRefProp && this.watchAndCalcRefProp.filter(e=> !state[e.prop]).forEach(e=>{
+        this.watchAndCalcRefProp && this.watchAndCalcRefProp.filter(e=>!state || !state[e.prop]).forEach(e=>{
             const ref = this.ctx.vars.$model[e.prop](this.ctx)
             this.state[e.prop] = (e.toState || (x=>x))(jb.val(ref))
         })
@@ -575,17 +577,6 @@ ui.renderWidget = function(profile,top) {
     }
 }
 
-ui.cachedMap = mapFunc => {
-	const cache = new Map();
-	return item => {
-		if (cache.has(item))
-			return cache.get(item)
-		const val = mapFunc(item);
-		cache.set(item, val);
-		return val;
-	}
-}
-
 ui.limitStringLength = function(str,maxLength) {
   if (typeof str == 'string' && str.length > maxLength-3)
     return str.substring(0,maxLength) + '...';
@@ -604,11 +595,26 @@ ui.setState = function(cmp,state,opEvent,watchedAt) {
 	ui.stateChangeEm.next({cmp,opEvent,watchedAt});
 }
 
+ui.ctxOfElem = elem => elem && elem.getAttribute && elem.getAttribute('jb-ctx') && jb.ctxDictionary[elem.getAttribute('jb-ctx')]
+
+ui.refreshElem = function(elem,{strongRefresh,recalcVars},sourceCtx) {
+    if (strongRefresh || !elem._component) 
+        return doStrongRefresh(elem)
+    const cmp = elem._component
+    cmp && ui.setState(cmp,recalcVars && {[ui.RecalcVars]: true}, null,sourceCtx)
+
+    function doStrongRefresh() {
+        const originatingCtx = ui.ctxOfElem(elem)
+        const newCmp = originatingCtx && originatingCtx.runItself()
+        newCmp && applyVdomDiff(elem, h(''),h(newCmp),newCmp)
+    }
+}
+
 ui.subscribeToRefChange = watchHandler => watchHandler.resourceChange.subscribe(e=> {
     const changed_path = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(e.ref))
     if (!changed_path) debugger
     const observablesCmps = Array.from((e.srcCtx.vars.elemToTest || document).querySelectorAll('[cmpId]')).map(el=>el._component)
-        .filter(cmp=>cmp && cmp.toObserve.length)// .sort((e1,e2) => ui.comparePaths(e1.ctx.path, e2.ctx.path))
+        .filter(cmp=>cmp && cmp.toObserve.length)
 
     observablesCmps.forEach(cmp => {
         if (cmp._destroyed) return // can not use filter as cmp may be destroyed during the process

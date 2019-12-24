@@ -64,7 +64,7 @@ st.initPreview = function(preview_window,allowedTypes) {
       if (preview_window.location.href.match(/\/studio-helper/))
         st.previewjb.studio.initEventTracker();
 
-      //jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
+      jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
 
 			fixInvalidUrl()
 

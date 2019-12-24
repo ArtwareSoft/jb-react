@@ -142,7 +142,10 @@ jb.component('studio.control-tree', { /* studio.controlTree */
             applyMenuShortcuts: studio.treeMenu('%%')
           }),
           tree.dragAndDrop(),
-          studio.watchScriptChanges()
+          studio.watchScriptChanges(),
+          ctx => ({
+            init: cmp => cmp.newControl = ev => jb.studio.newControl(cmp.elemToPath(ev.target))
+          })
         ]
       })
     ],

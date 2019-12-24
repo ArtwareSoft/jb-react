@@ -32,7 +32,7 @@ jb.component('d3g.chart-scatter', { /* d3g.chartScatter */
 jb.component('d3-scatter.plain', { /* d3Scatter.plain */
   type: 'd3g.scatter-style',
   impl: customStyle({
-    template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height, onclick: ev => cmp.clicked(ev)},
+    template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height, onclick: 'clicked')},
     	  h('g', { transform: 'translate(' + cmp.left + ',' + cmp.top + ')' },
     		[
     			h('g',{ axisIndex: 0, class: 'x axis', transform: 'translate(0,' + cmp.innerHeight + ')'}),

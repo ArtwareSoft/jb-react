@@ -258,38 +258,6 @@ jb.component('studio-helper-sample.table', { /* studioHelperSample.table */
   })
 })
 
-jb.component('studio-helper-sample.picklist', { /* studioHelperSample.picklist */
-  type: 'control',
-  impl: picklist({
-    title: pipeline('aa'),
-    databind: 'ada',
-    options: picklist.options('%'),
-    style: customStyle({
-      template: (cmp,state,h) => h('div',{ class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fix-height'},[
-        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
-            value: state.model,
-            readonly: true,
-            tabIndex: -1
-        }),
-        h('label',{for: 'input_' + state.fieldId},
-          h('i',{class: 'mdl-icon-toggle__label material-icons'},'keyboard_arrow_down')
-        ),
-//        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title),
-        h('ul',{for: 'input_' + state.fieldId, class: 'mdl-menu mdl-menu--bottom-left mdl-js-menu',
-            onclick: e =>
-              cmp.jbModel(e.target.getAttribute('code'))
-          },
-          state.options.map(option=>h('li',{class: 'mdl-menu__item', code: option.code},option.text))
-        )
-      ]),
-      css: '>label>i {float: right; margin-top: -30px;}',
-      features: [field.databind(), mdlStyle.initDynamic()]
-    }),
-    features: [feature.onKey(), css.padding({}), css.padding({}), css.width({})]
-  })
-})
-
-
 jb.component('studio-helper.studio-properties-rich', { /* studioHelper.studioPropertiesRich */
   type: 'control',
   impl: group({

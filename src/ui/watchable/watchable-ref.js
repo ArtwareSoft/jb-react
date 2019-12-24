@@ -66,8 +66,15 @@ class WatchableValueByRef {
         this.removeObjFromMap(oldVal)
         this.addObjToMap(newVal,path)
         opEvent.ref.$jb_path = () => path
+      } else if (opOnRef.$splice) {
+        // TODO: make is more effecient in case of move
+        opOnRef.$splice.forEach(ar=> {
+          oldVal.slice(ar[0],ar[0]+ar[1]).forEach(toRemove=>this.removeObjFromMap(toRemove));
+          jb.asArray(ar[2]).forEach(toAdd=>this.addObjToMap(toAdd,path.concat(newVal.indexOf(toAdd))))
+        })
+        this.fixSplicedPaths(path,opOnRef.$splice)
       } else {
-          // TODO: make is more effecient in case of $merge, $splice
+          // TODO: make is more effecient in case of $merge
           this.removeObjFromMap(oldVal)
           this.addObjToMap(newVal,path)
       }
@@ -76,6 +83,7 @@ class WatchableValueByRef {
         this.primitiveArraysDeltas[ref.$jb_obj[jbId]].push(opOnRef.$splice)
       }
       opEvent.newVal = newVal;
+      // TODO: split splice event to delete, push, and insert
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
       else
@@ -103,11 +111,24 @@ class WatchableValueByRef {
         this.objToPath.delete(top[jbId])
     Object.keys(top).filter(key=>key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key],true))
   }
-  refreshMapDown(top) {
-    const ref = this.asRef(top, true)
-    const path = ref && ref.path && ref.path()
-    if (path)
-      this.addObjToMap(top,path)
+  fixSplicedPaths(path,spliceOp) {
+    const propDepth = path.length
+    Array.from(this.objToPath.keys()).filter(k=>startsWithPath(this.objToPath.get(k)))
+      .forEach(k=>{
+        const newPath = this.objToPath.get(k)
+        newPath[propDepth] = fixIndexProp(+newPath[propDepth])
+        this.objToPath.set(k,newPath)
+      })
+
+    function startsWithPath(toCompare) {
+      if (toCompare.length <= propDepth) return
+      for(let i=0;i<propDepth;i++)
+        if (toCompare[i] != path[i]) return
+      return true
+    }
+    function fixIndexProp(oldIndex) {
+      return oldIndex + spliceOp.reduce((delta,ar) => (oldIndex < ar[0]) ? 0 : (ar[2] || []).length - ar[1],0)
+    }
   }
   pathOfRef(ref) {
     if (ref.$jb_path)
@@ -304,20 +325,14 @@ class WatchableValueByRef {
   getOrCreateObservable(req) {
       const subject = new jb.rx.Subject()
       req.srcCtx = req.srcCtx || { path: ''}
-      const key = this.pathOfRef(req.ref).join('~') + ' : ' + req.cmp.ctx.path
-      const entry = { ...req, subject, key }
+      const ctx = req.cmpOrElem.ctx || jb.ui.ctxOfElem(req.cmpOrElem)
+      const key = this.pathOfRef(req.ref).join('~') + ' : ' + ctx.path
+      const recycleCounter = req.cmpOrElem.getAttribute && +(req.cmpOrElem.getAttribute('recycleCounter') || 0)
+      const obs = { ...req, subject, key, recycleCounter, ctx }
       
-      this.observables.push(entry);
-      this.observables.sort((e1,e2) => jb.ui.comparePaths(e1.cmp && e1.cmp.ctx.path, e2.cmp && e2.cmp.ctx.path))
-      req.cmp.destroyFuncs = req.cmp.destroyFuncs || []
-      req.cmp.destroyFuncs.push(() => {
-          if (this.observables.indexOf(entry) != -1) {
-            jb.log('removeCmpObservable',[entry])
-            this.observables.splice(this.observables.indexOf(entry), 1);
-          }
-          subject.complete()
-      });
-      jb.log('registerCmpObservable',[entry])
+      this.observables.push(obs);
+      this.observables.sort((e1,e2) => jb.ui.comparePaths(e1.ctx.path, e2.ctx.path))
+      jb.log('registerCmpObservable',[obs])
       return subject
   }
   frame() {
@@ -327,10 +342,20 @@ class WatchableValueByRef {
     this.resourceChange.subscribe(e=>{
       const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
       const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
-      if (changed_path)
-        observablesToUpdate.forEach(obs=> !obs.cmp._destroyed && this.notifyOneObserver(e,obs,changed_path))
+      if (changed_path) observablesToUpdate.forEach(obs=> {
+        const isOld = obs.cmpOrElem.NodeType && (+obs.cmpOrElem.getAttribute('recycleCounter')) > obs.recycleCounter 
+        if (obs.cmpOrElem._destroyed || isOld) {
+          if (this.observables.indexOf(obs) != -1) {
+            jb.log('removeCmpObservable',[obs])
+            this.observables.splice(this.observables.indexOf(obs), 1);
+          }
+        } else {
+          this.notifyOneObserver(e,obs,changed_path)
+        }
+      })
     })
   }
+
   notifyOneObserver(e,obs,changed_path) {
       let obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
       obsPath = obsPath && this.removeLinksFromPath(obsPath)
@@ -345,6 +370,7 @@ class WatchableValueByRef {
           obs.subject.next(e)
       }
   }
+
   dispose() {
     this.resourceChange.complete()
   }
@@ -375,15 +401,15 @@ jb.rebuildRefHandler = () => {
 }
 jb.isWatchable = ref => jb.refHandler(ref) instanceof WatchableValueByRef || ref && ref.$jb_observable
 
-jb.ui.refObservable = (ref,cmp,settings={}) => {
+jb.ui.refObservable = (ref,cmpOrElem,settings={}) => {
   if (ref && ref.$jb_observable)
-    return ref.$jb_observable(cmp);
+    return ref.$jb_observable(cmpOrElem);
   if (!jb.isWatchable(ref)) {
     jb.logError('ref is not watchable', ref)
     return jb.rx.Observable.from([])
   }
-  return jb.refHandler(ref).getOrCreateObservable({ref,cmp,...settings})
-  //jb.refHandler(ref).refObservable(ref,cmp,settings);
+  return jb.refHandler(ref).getOrCreateObservable({ref,cmpOrElem,...settings})
+  //jb.refHandler(ref).refObservable(ref,cmpOrElem,settings);
 }
 
 jb.ui.extraWatchableHandler = (resources,oldHandler) => {

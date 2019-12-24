@@ -16,7 +16,7 @@ jb.component('material-icon', { /* materialIcon */
 jb.component('icon.icon-in-button', { /* icon.iconInButton */
   type: 'icon-with-action.style',
   impl: customStyle(
-    (cmp,state,h) => h('button',{ class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect', onclick: ev => cmp.clicked(ev) },
+    (cmp,state,h) => h('button',{ class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect', onclick: 'clicked' },
 		      h('i',{ class: 'material-icons' }, state.icon))
   )
 })

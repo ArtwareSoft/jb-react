@@ -10,16 +10,10 @@ jb.component('itemlist', { /* itemlist */
     {id: 'controls', type: 'control[]', mandatory: true, dynamic: true},
     {id: 'style', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
     {id: 'itemVariable', as: 'string', defaultValue: 'item'},
-    {
-      id: 'visualSizeLimit',
-      as: 'number',
-      defaultValue: 100,
-      description: 'by default itemlist is limmited to 100 shown items'
-    },
+    {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items'},
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
+  impl: ctx => jb.ui.ctrl(ctx)
 })
 
 jb.component('itemlist.no-container', { /* itemlist.noContainer */
@@ -33,7 +27,20 @@ jb.component('itemlist.no-container', { /* itemlist.noContainer */
 jb.component('itemlist.init', { /* itemlist.init */
   type: 'feature',
   impl: ctx => ({
-      beforeInit: cmp => {
+    calcState: cmp => ({ctrls: cmp.calcCtrls() }),
+    init: cmp => cmp.calcCtrls = () => {
+      const controlsOfItem = item => ctx.vars.$model.controls(
+          new jb.jbCtx(cmp.ctx,{data: item, vars: {[ctx.vars.$model.itemVariable]: item}})).filter(x=>x)
+
+      cmp.items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
+      if (cmp.ctx.vars.itemlistCntr)
+        cmp.ctx.vars.itemlistCntr.items = cmp.items;
+      return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit || 100).map(item=>
+        Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
+
+    },
+
+    beforeInit1: cmp => {
         cmp.refresh = _ => cmp.setState({ctrls: cmp.calcCtrls()})
 
         cmp.calcCtrls = _ => {
@@ -44,12 +51,7 @@ jb.component('itemlist.init', { /* itemlist.init */
               Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
         }
 
-        const controlsOfItem = jb.ui.cachedMap(item =>
-          ctx.vars.$model.controls(cmp.ctx.setData(item).setVars(jb.obj(ctx.vars.$model.itemVariable,item)))
-            .filter(x=>x).map(c=>jb.ui.renderable(c)).filter(x=>x));
-
       },
-      init: cmp => cmp.state.ctrls = cmp.calcCtrls(),
   })
 })
 
@@ -75,6 +77,7 @@ jb.component('itemlist.init-table', { /* itemlist.initTable */
 
 jb.component('itemlist.fast-filter', {
   type: 'feature',
+  description: 'use display:hide to filter itemlist elements',
   params: [
     {id: 'showCondition', mandatory: true, dynamic: true, defaultValue: itemlistContainer.conditionFilter() },
     {id: 'filtersRef', mandatory: true, as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},

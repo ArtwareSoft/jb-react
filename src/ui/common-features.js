@@ -1,27 +1,11 @@
-jb.component('feature.light', {
-  type: 'feature',
-  description: 'creates vdom with no comp and no lifecycle',
-  impl: () => ({ light: true })
-})
-
 jb.component('group.wait', { /* group.wait */
   type: 'feature',
   category: 'group:70',
   description: 'wait for asynch data before showing the control',
   params: [
     {id: 'for', mandatory: true, dynamic: true},
-    {
-      id: 'loadingControl',
-      type: 'control',
-      defaultValue: label('loading ...'),
-      dynamic: true
-    },
-    {
-      id: 'error',
-      type: 'control',
-      defaultValue: label('error: %$error%'),
-      dynamic: true
-    },
+    {id: 'loadingControl', type: 'control', defaultValue: label('loading ...'), dynamic: true},
+    {id: 'error', type: 'control', defaultValue: label('error: %$error%'), dynamic: true },
     {id: 'varName', as: 'string'}
   ],
   impl: (ctx,waitFor,loading,error,varName) => ({
@@ -48,51 +32,14 @@ jb.component('watch-ref', { /* watchRef */
   category: 'watch:100',
   description: 'subscribes to data changes to refresh component',
   params: [
-    {
-      id: 'ref',
-      mandatory: true,
-      as: 'ref',
-      dynamic: true,
-      description: 'reference to data'
-    },
-    {
-      id: 'includeChildren',
-      as: 'string',
-      options: 'yes,no,structure',
-      defaultValue: 'no',
-      description: 'watch childern change as well'
-    },
-   {
-      id: 'allowSelfRefresh',
-      as: 'boolean',
-      description: 'allow refresh originated from the components or its children',
-      type: 'boolean'
-    },
-    {
-      id: 'strongRefresh',
-      as: 'boolean',
-      description: 'rebuild the component, including all features and variables',
-      type: 'boolean'
-    },
-    {
-      id: 'recalcVars',
-      as: 'boolean',
-      description: 'recalculate feature variables',
-      type: 'boolean'
-    },
-    {
-      id: 'delay',
-      as: 'number',
-      description: 'delay in activation, can be used to set priority'
-    },
+    { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
+    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
+    { id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean' },
+    { id: 'strongRefresh', as: 'boolean', description: 'rebuild the component, including all features and variables', type: 'boolean' },
+    { id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean' },
+    { id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
    ],
-  impl: ctx => ({
-      watchRef: {refF: ctx.params.ref, ...ctx.params},
-      // beforeInit: cmp =>
-      //   cmp.watchRefOn = true,
-      // init: cmp =>
-      //   jb.ui.watchRef(cmp.ctx,cmp,ref(cmp.ctx),ctx.params)
-  })
+  impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
 })
 
 jb.component('watch-observable', { /* watchObservable */
@@ -100,10 +47,11 @@ jb.component('watch-observable', { /* watchObservable */
   category: 'watch',
   description: 'subscribes to a custom rx.observable to refresh component',
   params: [
-    {id: 'toWatch', mandatory: true}
+    {id: 'toWatch', mandatory: true},
   ],
   impl: (ctx,toWatch) => ({
-      init: cmp => toWatch.takeUntil(cmp.destroyed).subscribe(()=>jb.ui.setState(cmp))
+      init: cmp => toWatch.takeUntil(cmp.destroyed).subscribe(()=>jb.ui.setState(cmp,null,null,ctx)),
+      afterViewInit: () => {} // to keep the comp
   })
 })
 
@@ -280,7 +228,7 @@ jb.component('feature.if', { /* feature.if */
   ],
   impl: (ctx, condition,watch) => ({
     templateModifier: (vdom,cmp,state) =>
-        jb.toboolean(condition(cmp.ctx)) ? vdom : jb.ui.h('span',{style: {display: 'none'}})
+    jb.toboolean(condition(cmp.ctx)) ? vdom : jb.ui.h('span',{style: {display: 'none'}})
   })
 })
 
@@ -381,8 +329,7 @@ jb.component('feature.onHover', { /* feature.onHover */
   ],
   impl: (ctx,action) => ({
       onmouseenter: true,
-      afterViewInit: cmp=>
-        cmp.onmouseenter.debounceTime(500).subscribe(()=>
+      afterViewInit: cmp => cmp.onmouseenter.debounceTime(500).subscribe(()=>
               jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
   })
 })
@@ -415,12 +362,11 @@ jb.component('feature.onKey', { /* feature.onKey */
   ],
   impl: (ctx,key,action) => ({
       onkeydown: true,
-      afterViewInit: cmp =>
-        cmp.onkeydown.subscribe(e=> {
+      afterViewInit: cmp => cmp.onkeydown.subscribe(e=> {
           if (!jb.ui.checkKey(e,key)) return
           ctx.params.doNotWrapWithLauchingElement ? action(cmp.ctx) :
             jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)()
-        })
+      })
   })
 })
 
@@ -430,10 +376,7 @@ jb.component('feature.onEnter', { /* feature.onEnter */
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.onKey(
-    'Enter',
-    call('action')
-  )
+  impl: feature.onKey('Enter', call('action') )
 })
 
 jb.component('feature.onEsc', { /* feature.onEsc */
@@ -442,29 +385,29 @@ jb.component('feature.onEsc', { /* feature.onEsc */
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.onKey(
-    'Esc',
-    call('action')
-  )
+  impl: feature.onKey('Esc', call('action'))
 })
 
 jb.component('refresh-control-by-id', { /* refreshControlById */
   type: 'action',
   params: [
-    {id: 'id', as: 'string', mandatory: true}
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component, including all features and variables', type: 'boolean' },
+    {id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean' },
   ],
   impl: (ctx,id) => {
     const base = ctx.vars.elemToTest || typeof document !== 'undefined' && document
     const elem = base && base.querySelector('#'+id)
     if (!elem)
       return jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
-    const comp = elem && elem._component
-    if (!comp)
-      return jb.logError('refresh-control-by-id can not get comp for elem', ctx)
-    comp.refresh && comp.refresh(ctx)
+    jb.ui.refreshElem(elem,ctx.params,ctx)
+    // const cmp = elem && elem._component
+    // if (!cmp)
+    //   return jb.logError('refresh-control-by-id can not get cmp for elem', ctx)
+    // jb.ui.setState(cmp,Object.assign({}, strongRefresh && {[ui.StrongRefresh]: true}, recalcVars && {[ui.RecalcVars]: true}),null,ctx)
+    //cmp.refresh && cmp.refresh(ctx)
   }
 })
-
 
 jb.component('group.auto-focus-on-first-input', { /* group.autoFocusOnFirstInput */
   type: 'feature',

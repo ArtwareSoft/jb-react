@@ -171,16 +171,31 @@ jb.component('ui-test.boolean-not-reffable-false',  /* uiTest_booleanNotReffable
     })
 })
 
-jb.component('ui-test.label-with-watch-ref-in-spliced-array',  /* uiTest_labelWithWatchRef */ {
+jb.component('ui-test.label-with-watch-ref-in-spliced-array', {
     impl: uiTest({
       control: label({
         text: '%$personWithChildren/children[1]/name%',
-        features: watchRef('%$personWithChildren/children%')
+        //features: watchRef('%$personWithChildren/children%')
       }),
       action: splice({array: '%$personWithChildren/children%', fromIndex: 0, noOfItemsToRemove: 1}),
       expectedResult: contains('Maggie'),
       expectedCounters: {setState: 1}
     })
+})
+
+jb.component('ui-test.splice-and-set', {
+  impl: uiTest({
+    control: label({
+      text: '%$personWithChildren/children[1]/name%',
+      features: watchRef('%$personWithChildren/children%')
+    }),
+    action: [
+      splice({array: '%$personWithChildren/children%', fromIndex: 0, noOfItemsToRemove: 1}),
+      writeValue('%$personWithChildren/children[1]/name%','hello')
+    ],
+    expectedResult: contains('hello'),
+    //expectedCounters: {setState: 2}
+  })
 })
 
 jb.component('ui-test.label-not-watching-ui-var', {

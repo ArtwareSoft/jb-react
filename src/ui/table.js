@@ -96,7 +96,7 @@ jb.component('field.control', { /* field.control */
 jb.component('button.table-cell-href', { /* tableButton.href */
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: ev => cmp.clicked(ev)}, state.title),
+    template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: 'clicked'}, state.title),
     css: '{color: grey}'
   })
 })
@@ -140,8 +140,9 @@ jb.component('table.init-sort', { /* table.initSort */
   type: 'feature',
   impl: ctx => ({
       beforeInit: cmp => {
-        cmp.toggleSort = function(field) {
-          var sortOptions = cmp.state.sortOptions || [];
+        cmp.toggleSort = ev => {
+          const field = cmp.fields[ev.currentTarget.getAttribute('fieldIndex')]
+          const sortOptions = cmp.state.sortOptions || [];
           var option = sortOptions.filter(o=>o.field == field)[0];
           if (!option)
             sortOptions = [{field: field,dir: 'none'}].concat(sortOptions).slice(0,2);
@@ -154,7 +155,7 @@ jb.component('table.init-sort', { /* table.initSort */
           cmp.setState({sortOptions: sortOptions});
           cmp.refresh();
         }
-        cmp.sortItems = function() {
+        cmp.sortItems = () => {
           if (!cmp.items || !cmp.state.sortOptions || cmp.state.sortOptions.length == 0) return;
           cmp.items.forEach((item,index)=>cmp.state.sortOptions.forEach(o=> 
               item['$jb_$sort_'+o.field.title] = o.field.fieldData(item,index)));
@@ -180,6 +181,6 @@ jb.component('table.init-sort', { /* table.initSort */
           }
 
         }
-      },
+      }
   })
 })

@@ -6,25 +6,11 @@ jb.component('group', { /* group */
   params: [
     {id: 'title', as: 'string', dynamic: true},
     {id: 'layout', type: 'layout' },
-    {
-      id: 'style',
-      type: 'group.style',
-      defaultValue: group.div(),
-      mandatory: true,
-      dynamic: true
-    },
-    {
-      id: 'controls',
-      type: 'control[]',
-      mandatory: true,
-      flattenArray: true,
-      dynamic: true,
-      composite: true
-    },
+    {id: 'style',type: 'group.style',defaultValue: group.div(),mandatory: true,dynamic: true},
+    {id: 'controls',type: 'control[]',mandatory: true,flattenArray: true,dynamic: true,composite: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx,ctx.params.layout)
+  impl: ctx => jb.ui.ctrl(ctx,ctx.params.layout)
 })
 
 jb.component('group.init-group', { /* group.initGroup */
@@ -32,40 +18,30 @@ jb.component('group.init-group', { /* group.initGroup */
   category: 'group:0',
   impl: ctx => ({
     calcState: cmp => ({ctrls: cmp.calcCtrls() }),
-    init: cmp => {
-      cmp.calcCtrls = cmp.calcCtrls || (() => ctx.vars.$model.controls(cmp.ctx).filter(x=>x))
-      //cmp.refresh = cmp.refresh || (() => cmp.setState({ctrls: cmp.calcCtrls() }))
-    }
+    init: cmp => cmp.calcCtrls = cmp.calcCtrls || (() => ctx.vars.$model.controls(cmp.ctx).filter(x=>x))
   })
 })
 
 jb.component('inline-controls', { /* inlineControls */
   type: 'control',
+  description: 'controls without a wrapping group',
   params: [
-    {
-      id: 'controls',
-      type: 'control[]',
-      mandatory: true,
-      flattenArray: true,
-      dynamic: true,
-      composite: true
-    }
+    {id: 'controls',type: 'control[]',mandatory: true,flattenArray: true,dynamic: true,composite: true }
   ],
   impl: ctx => ctx.params.controls().filter(x=>x)
 })
 
 jb.component('dynamic-controls', { /* dynamicControls */
   type: 'control',
+  description: 'calculated controls by data items without a wrapping group',
   params: [
     {id: 'controlItems', type: 'data', as: 'array', mandatory: true, dynamic: true},
     {id: 'genericControl', type: 'control', mandatory: true, dynamic: true},
-    {id: 'itemVariable', as: 'string', defaultValue: 'controlItem'}
+    {id: 'itemVariable', as: 'string', defaultValue: 'controlItem'},
   ],
-  impl: (context,controlItems,genericControl,itemVariable) =>
-    controlItems()
-      .map(jb.ui.cachedMap(controlItem => jb.tosingle(genericControl(
-        new jb.jbCtx(context,{data: controlItem, vars: jb.obj(itemVariable,controlItem)})))
-      ))
+  impl: (ctx,controlItems,genericControl,itemVariable,noCache) => controlItems()
+      .map(controlItem => jb.tosingle(genericControl(
+        new jb.jbCtx(ctx,{data: controlItem, vars: {[itemVariable]: controlItem}}))))
 })
 
 jb.component('group.dynamic-titles', { /* group.dynamicTitles */

@@ -40,7 +40,7 @@ st.ControlTree = class {
 	title(path,collapsed) {
 		const val = st.valOfPath(path);
 		if (path &&  (val == null || Array.isArray(val) && val.length == 0) && path.match(/~controls$/))
-			return jb.ui.h('a',{style: {cursor: 'pointer', 'text-decoration': 'underline'}, onclick: e => st.newControl(path) },'add new');
+			return jb.ui.h('a',{style: {cursor: 'pointer', 'text-decoration': 'underline'}, onclick: 'newControl' },'add new');
 		return this.fixTitles(st.shortTitle(path),path,collapsed)
 	}
 	// differnt from children() == 0, beacuse in the control tree you can drop into empty group

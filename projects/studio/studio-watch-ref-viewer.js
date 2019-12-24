@@ -77,7 +77,7 @@ jb.component('studio.animate-watch-ref-particle', {
     impl: openDialog({
         style: studio.dialogParticleStyle(),
         content: label({
-          title: '➤',
+          text: '➤',
           features: [
             css((ctx,{},{from,to}) => {
                 const dx = (to.centerX - from.centerX) || 1, dy = (to.centerY - from.centerY) || 1
@@ -109,7 +109,7 @@ jb.component('studio.animate-cmp-destroy', {
     impl: openDialog({
         style: studio.dialogParticleStyle(),
         content: label({
-          title: '◯',
+          text: '◯',
           features: [ 
             css('color: grey'),
             feature.onEvent({
@@ -145,7 +145,7 @@ jb.component('studio.animate-cmp-refresh', {
     impl: openDialog({
         style: studio.dialogParticleStyle(),
         content: label({
-          title: '▯',
+          text: '▯',
           features: feature.onEvent({
             event: 'load',
             action: runActions(
@@ -167,7 +167,7 @@ jb.component('studio.animate-cmp-refresh', {
     })
 })
 
-function animateCtxRefresh(ctx) {    
+function animateCtxRefresh(ctx) {
     jb.exec(
         animation.start({
             animation: [
@@ -202,7 +202,7 @@ jb.studio.activateWatchRefViewer = () => {
     st.previewjb.spy.setLogs('registerCmpObservable,notifyCmpObservable,destroyCmp,setState')
 
     const delayedSpy = jb.rx.Observable.zip(
-            jb.rx.Observable.interval(300),
+            jb.rx.Observable.interval(100),
             st.previewjb.spy.observable()
     ).map(z=>z[1])
     
@@ -237,7 +237,7 @@ jb.studio.activateWatchRefViewer = () => {
             jb.exec(studio.animateCmpDestroy({pos}))))
 
     delayedSpy.filter(e=>e.logName === 'setState').subscribe(e => 
-        animateCtxRefresh(e.record[1]))
+        animateCtxRefresh(e.record[0].ctx))
 }
 
 })()

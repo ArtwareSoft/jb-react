@@ -150,7 +150,25 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
             title: 'Source ...',
             action: studio.viewAllFiles(studio.currentProfilePath())
           }),
-          menu.action({title: 'Github helper...', action: studio.githubHelper()})
+          menu.action({title: 'Github helper...', action: studio.githubHelper()}),
+          menu.action({
+            title: 'Settings...',
+            action: openDialog({
+              style: dialog.dialogOkCancel(),
+              content: group({
+                style: propertySheet.titlesLeft({}),
+                controls: [
+                  editableBoolean({
+                    databind: '%$studio/settings/activateWatchRefViewer%',
+                    style: editableBoolean.mdlSlideToggle(),
+                    title: 'activate watchRef viewer'
+                  })
+                ],
+                features: css.margin({top: '10', left: '10'})
+              }),
+              title: 'Settings'
+            })
+          })
         ]
       }),
       menu.menu({

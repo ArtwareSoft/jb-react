@@ -109,10 +109,21 @@ jb.component('ui-test.wait-for-with-var', { /* uiTest.waitForWithVar */
   impl: uiTest({
     control: group({
       controls: label('%$txt%'),
-      features: group.wait({for: pipe(delay(10), 'hello'), varName: 'txt'})
+      features: group.wait({for: pipe(delay(1), 'hello'), varName: 'txt'})
     }),
     action: delay(40),
     expectedResult: contains('hello')
+  })
+})
+
+jb.component('ui-test.watchObservable', {
+  impl: uiTest({
+    control: label({
+      text: '%$person/name%',
+      features: watchObservable({ toWatch: jb.rx.Observable.fromPromise(jb.delay(1)) })
+    }),
+    expectedCounters: {setState: 1},
+    expectedResult: true
   })
 })
 
