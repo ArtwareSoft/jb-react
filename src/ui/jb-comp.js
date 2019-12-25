@@ -781,10 +781,7 @@ jb.component('custom-style', { /* customStyle */
       {id: 'control', type: 'control', mandatory: true, dynamic: true},
       {id: 'modelVar', as: 'string', mandatory: true}
     ],
-    impl: (ctx,control,modelVar) => {
-        const originatingControlPaths = (ctx.vars.originatingControlPaths || '')  + ctx.componentContext.callerPath + ','
-        return control(ctx.setVars({originatingControlPaths, [modelVar]: ctx.vars.$model}))
-    }
+    impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar,ctx.vars.$model))
   })
   
   jb.component('style-with-features', { 

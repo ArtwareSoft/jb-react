@@ -158,12 +158,12 @@ jb.component('css.underline', {
 jb.component('css.box-shadow', { /* css.boxShadow */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'blurRadius', as: 'string', defaultValue: '5'},
-    {id: 'spreadRadius', as: 'string', defaultValue: '0'},
-    {id: 'shadowColor', as: 'string', defaultValue: '#000000'},
-    {id: 'opacity', as: 'string', description: '0-1'},
-    {id: 'horizontal', as: 'string', defaultValue: '10'},
-    {id: 'vertical', as: 'string', defaultValue: '10'},
+    {id: 'blurRadius', as: 'string', templateValue: '5'},
+    {id: 'spreadRadius', as: 'string', templateValue: '0'},
+    {id: 'shadowColor', as: 'string', templateValue: '#000000'},
+    {id: 'opacity', as: 'string', templateValue: 0.5, description: '0-1'},
+    {id: 'horizontal', as: 'string', templateValue: '10'},
+    {id: 'vertical', as: 'string', templateValue: '10'},
     {id: 'selector', as: 'string'}
   ],
   impl: (context,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {

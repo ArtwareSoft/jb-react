@@ -44,7 +44,6 @@ jb.component('tree-demo.drag-and-drop-children', {
     }),
 })
 
-
 jb.component('tree-demo.table-tree', { /* treeDemo.tableTree */
   type: 'control',
   impl: group({
