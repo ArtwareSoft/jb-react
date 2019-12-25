@@ -4,6 +4,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'common': [
         'src/core/jb-core.js',
+        'src/core/jb-macro.js',
         'src/core/jb-common.js',
         'src/misc/spy.js',
       ],
