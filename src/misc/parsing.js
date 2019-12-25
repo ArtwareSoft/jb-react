@@ -243,7 +243,7 @@ jb.component('dynamic-object', { /* dynamicObject */
     {id: 'value', mandatory: true, dynamic: true}
   ],
   impl: (ctx,items,name,value) =>
-    items.reduce((obj,item)=>Object.assign(obj,jb.obj(name(ctx.setData(item)),value(ctx.setData(item)))),{})
+    items.reduce((obj,item)=>({ ...obj, [name(ctx.setData(item))]: value(ctx.setData(item)) }),{})
 })
 
 jb.component('filter-empty-properties', { /* filterEmptyProperties */

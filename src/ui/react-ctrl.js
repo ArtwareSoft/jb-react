@@ -564,7 +564,7 @@ jb.component('style-by-control', { /* styleByControl */
     {id: 'modelVar', as: 'string', mandatory: true}
   ],
   impl: (ctx,control,modelVar) =>
-		control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
+		control(ctx.setVar(modelVar,ctx.vars.$model))
 })
 
 jb.component('style-with-features', { 

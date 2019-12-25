@@ -50,8 +50,8 @@ jb.component('mdl.ripple-effect', { /* mdl.rippleEffect */
           cmp.base.classList.add('mdl-js-ripple-effect');
           (typeof componentHandler !== 'undefined') && jb.ui.inDocument(cmp.base) && componentHandler.upgradeElement(cmp.base);
       },
-      destroy: cmp =>
-      (typeof componentHandler !== 'undefined') && jb.ui.inDocument(cmp.base) && componentHandler.downgradeElements(cmp.base)
+      destroy: cmp => (typeof componentHandler !== 'undefined') && 
+        jb.ui.inDocument(cmp.base) && componentHandler.downgradeElements(cmp.base)
    })
 })
 

@@ -120,9 +120,9 @@ Object.assign(st, {
 		if (compositeParam) {
 			const singleOrArray = compositeParam.type.indexOf('[') == -1 ? st.valOfPath(path) : [st.valOfPath(path)];
 			if (jb.compParams(comp).length == 1) // use sugar
-				var result = jb.obj('$'+compName,singleOrArray);
+				var result = {['$'+compName]:singleOrArray};
 			else
-				var result = Object.assign({ $: compName }, jb.obj(compositeParam.id,singleOrArray));
+				var result = { $: compName, [compositeParam.id]: singleOrArray};
 			st.writeValueOfPath(path,result,srcCtx);
 		}
 	},
@@ -203,7 +203,7 @@ Object.assign(st, {
 		}
 		if (currentVal && !Array.isArray(currentVal) && (param.type||'').indexOf('[') != -1)
 			currentVal = [currentVal];
-		st.writeValue(st.refOfPath(path),jb.obj('$'+compName,currentVal || emptyVal),srcCtx)
+		st.writeValue(st.refOfPath(path),{['$'+compName]: currentVal || emptyVal} ,srcCtx)
 	},
 
 	insertControl: (path,compName,srcCtx) => {

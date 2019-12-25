@@ -50,7 +50,7 @@ jb.component('itemlist.watch-items-with-heading', {
             cmp.items = items; //.filter(item=>!item.heading);
 
             var ctx2 = cmp.ctx.setData(items);
-            var ctx3 = itemVariableName ? ctx2.setVars(jb.obj(itemVariableName,items)) : ctx2;
+            var ctx3 = itemVariableName ? ctx2.setVar(itemVariableName,items) : ctx2;
             var ctrls = context.vars.$model.controls(ctx3);
             return ctrls;
         }

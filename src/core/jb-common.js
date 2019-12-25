@@ -678,9 +678,9 @@ jb.component('join', { /* join */
     {id: 'itemText', as: 'string', dynamic: true, defaultValue: '%%'}
   ],
   type: 'aggregator',
-  impl: function(context,separator,prefix,suffix,items,itemName,itemText) {
-		const itemToText = (context.profile.itemText) ?
-			item => itemText(new jb.jbCtx(context, {data: item, vars: jb.obj(itemName,item) })) :
+  impl: function(ctx,separator,prefix,suffix,items,itemName,itemText) {
+		const itemToText = (ctx.profile.itemText) ?
+			item => itemText(itemName ? new jb.jbCtx(ctx, {data: item, vars: {[itemName]: item} }): ctx.setData(item)) :
 			item => jb.tostring(item);	// performance
 
 		return prefix + items.map(itemToText).join(separator) + suffix;

@@ -85,7 +85,7 @@ jb.component('editable-text.expandable', {
     { id: 'editableStyle', type: 'editable-text.style', dynamic: true , defaultValue: editableText.input() },
     { id: 'onToggle', type: 'action' , dynamic: true  }
   ], 
-  impl:  styleByControl(group({
+  impl: styleByControl(group({
     controls: [
         editableText({
           databind: '%$editableTextModel/databind%',

@@ -13,7 +13,7 @@ jb.component('group.wait', { /* group.wait */
         cmp.originalCalcState = cmp.calcState
         cmp.calcState = cmp => ({ ctrls: [loading(cmp.ctx)].map(x=>cmp.ctx.profile.$ == 'itemlist' ? [x] : x) })
         Promise.resolve(waitFor()).then(data => {
-              cmp.ctx = varName ? cmp.ctx.setData(data).setVars(jb.obj(varName,data)) : cmp.ctx.setData(data);
+              cmp.ctx = varName ? cmp.ctx.setData(data).setVar(varName,data) : cmp.ctx.setData(data);
               cmp.calcState = cmp.originalCalcState
               cmp.refresh()
           }).catch(e=> {
@@ -80,7 +80,7 @@ jb.component('group.data', { /* group.data */
           const ref = refF();
           const res = ctx.setData(ref);
           if (itemVariable)
-            res = res.setVars(jb.obj(itemVariable,ref));
+            res = res.setVar(itemVariable,ref);
           return res;
       },
   })
@@ -148,14 +148,14 @@ jb.component('variable', { /* variable */
   impl: (context, name, value, watchable, globalId,type) => ({
       extendCtx: (ctx,cmp) => {
         if (!watchable)
-          return ctx.setVars({[name]: jb.val(value(ctx)) })
+          return ctx.setVar(name,jb.val(value(ctx)))
 
         cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
         const fullName = globalId || (name + ':' + cmp.resourceId);
         jb.log('var',['new-watchable',ctx,fullName])
         jb.resource(fullName, value(ctx));
         const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
-        return ctx.setVars(jb.obj(name, refToResource));
+        return ctx.setVar(name, refToResource);
       }
   })
 })
@@ -195,7 +195,7 @@ jb.component('calculated-var', { /* calculatedVar */
             jb.ui.refObservable(ref,cmp,{includeChildren: 'yes', srcCtx: context}).subscribe(e=>
               jb.writeValue(refToResource,value(cmp.ctx),context))
           )
-        return ctx.setVars(jb.obj(name, refToResource));
+        return ctx.setVar(name, refToResource);
       }
   })
 })

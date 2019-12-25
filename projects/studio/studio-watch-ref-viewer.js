@@ -195,7 +195,6 @@ function animateCtxDestroy(ctx) {
     )
 }
 
-
 jb.studio.activateWatchRefViewer = () => {
     if (!st.previewjb.spy)
         st.previewjb.initSpy({})

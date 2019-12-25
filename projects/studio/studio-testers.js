@@ -35,7 +35,7 @@ jb.component('suggestions-test', { /* suggestionsTest */
       return probeRes.then(res=>{
         const probeCtx = res.result[0] && res.result[0].in;
         const obj = new jb.studio.suggestions({ value: params.expression, selectionStart: selectionStart })
-          .extendWithOptions(probeCtx.setVars({'people-array': ctx.exp('%$people-array%')}),probeCtx.path);
+          .extendWithOptions(probeCtx.setVar('people-array',ctx.exp('%$people-array%')),probeCtx.path);
         return JSON.stringify(JSON.stringify(obj.options.map(x=>x.text)));
       })
     },

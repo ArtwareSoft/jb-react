@@ -110,7 +110,7 @@ function extendWithVars(ctx,vars) {
   if (!vars) return ctx;
   let res = ctx;
   for(let varname in vars || {})
-    res = new jbCtx(res,{ vars: jb.obj(varname,res.runInner(vars[varname], null,'$vars~'+varname)) });
+    res = new jbCtx(res,{ vars: {[varname]: res.runInner(vars[varname], null,'$vars~'+varname)} });
   return res;
 }
 
@@ -526,6 +526,7 @@ class jbCtx {
   }
   exp(exp,jstype) { return expression(exp, this, {as: jstype}) }
   setVars(vars) { return new jbCtx(this,{vars: vars}) }
+  setVar(name,val) { return new jbCtx(this,{vars: {[name]: val}}) }
   setData(data) { return new jbCtx(this,{data: data}) }
   runInner(profile,parentParam, path) { return jb_run(new jbCtx(this,{profile: profile,path: path}), parentParam) }
   bool(profile) { return this.run(profile, { as: 'boolean'}) }
@@ -806,7 +807,7 @@ Object.assign(jb,{
         res.push(i);
     return res;
   },
-  obj: (k,v,base) => {
+  obj1: (k,v,base) => {
     let ret = base || {};
     ret[k] = v;
     return ret;

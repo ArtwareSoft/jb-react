@@ -16,7 +16,7 @@ jb.component('itemlog', {
         beforeInit: cmp => {
           cmp.ctrls = [];
           ctx.params.items(ctx).subscribe(itemCtx=>  {
-              var ctrl = ctx.params.controls(itemCtx.setVars(jb.obj(ctx.params.itemVariable,itemCtx.data)))[0];
+              var ctrl = ctx.params.controls(itemCtx.setVar(jb.obj(ctx.params.itemVariable,itemCtx.data)))[0];
               cmp.ctrls.unshift(ctrl);
               if (ctx.params.counter)
                 jb.writeValue(ctx.params.counter,cmp.ctrls.length, ctx);
