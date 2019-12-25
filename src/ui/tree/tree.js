@@ -39,6 +39,7 @@ jb.component('tree', { /* tree */
 							return inner;
 						},'')
 					if (changed) cmp.redraw()
+					return changed
 				}
 	
 				cmp.elemToPath = el => el && (el.getAttribute('path') || jb.ui.closest(el,'.treenode') && jb.ui.closest(el,'.treenode').getAttribute('path'))
@@ -188,11 +189,10 @@ jb.component('tree.selection', { /* tree.selection */
 		  	.filter(x=>x)
 		  	.map(x=> jb.val(x))
 		  	.subscribe(selected=> {
-			  cmp.setSelected(selected);
-			  cmp.expandPath(selected.split('~').slice(0,-1).join('~'))
-			  if (selectedRef)
-				  jb.writeValue(selectedRef, selected, ctx);
-			  ctx.params.onSelection(cmp.ctx.setData(selected));
+				cmp.setSelected(selected);
+				const changed = cmp.expandPath(selected.split('~').slice(0,-1).join('~'))
+				selectedRef && jb.writeValue(selectedRef, selected, ctx);
+				ctx.params.onSelection(cmp.ctx.setData(selected));
 		  })
 		  cmp.onclick.subscribe(_=>	cmp.regainFocus && cmp.regainFocus())
 
@@ -248,8 +248,7 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 						const nodes = jb.ui.findIncludeSelf(cmp.base,'.treenode');
 						const selected = jb.ui.findIncludeSelf(cmp.base,'.treenode.selected')[0];
 						return cmp.elemToPath(nodes[nodes.indexOf(selected) + diff]) || cmp.selected;
-					}).subscribe(x=>
-						cmp.selectionEmitter.next(x))
+					}).subscribe(x=> cmp.selectionEmitter.next(x))
 				// expand collapse
 				keyDownNoAlts
 					.filter(e=> e.keyCode == 37 || e.keyCode == 39)

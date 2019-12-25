@@ -125,28 +125,52 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
     {id: 'path', as: 'string'}
   ],
   impl: group({
+    layout: layout.horizontal(),
     controls: [
-      editableText({
-        title: studio.propName('%$path%'),
-        databind: studio.profileValueAsText('%$path%'),
-        updateOnBlur: true,
-        style: editableText.floatingInput(),
-        features: [
-          feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
-          feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
-          editableText.helperPopup({
-            control: studio.suggestionsItemlist('%$path%', 'floating-input'),
-            popupId: 'suggestions',
-            popupStyle: dialog.popup(),
-            showHelper: studio.showSuggestions(),
-            onEnter: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()),
-            onEsc: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus())
+      group({
+        title: '',
+        controls: [
+          editableText({
+            title: studio.propName('%$path%'),
+            databind: studio.profileValueAsText('%$path%'),
+            updateOnBlur: true,
+            style: editableText.floatingInput(),
+            features: [
+              watchRef({ref: studio.ref('%$path%'), strongRefresh: true}),
+              feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
+              feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
+              editableText.helperPopup({
+                control: studio.suggestionsItemlist('%$path%', 'floating-input'),
+                popupId: 'suggestions',
+                popupStyle: dialog.popup(),
+                showHelper: studio.showSuggestions(),
+                onEnter: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()),
+                onEsc: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus())
+              })
+            ]
+          }),
+          label({
+            text: pipeline(studio.paramDef('%$path%'), '%description%'),
+            features: css('{    bottom: 0;     left: 4px;     position: absolute; }}')
           })
         ]
       }),
-      label({
-        text: pipeline(studio.paramDef('%$path%'), '%description%'),
-        features: css('{border: 1px solid white;}')
+      editableBoolean({
+        databind: '%$val%',
+        style: editableBoolean.checkbox(),
+        features: [
+          variable({
+            name: 'val',
+            value: If(studio.ref('%$path%'), 'true', 'false'),
+            watchable: true
+          }),
+          feature.onEvent({
+            event: 'change',
+            action: writeValue(studio.ref('%$path%'), '%$val%')
+          }),
+          feature.if(studio.isOfType('%$path%', 'boolean')),
+          css.margin({top: '35', left: '', right: '20'})
+        ]
       })
     ],
     features: [
@@ -154,8 +178,7 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
         name: 'suggestionData',
         value: {'$': 'object', selected: '', options: [], path: '%$path%'}
       }),
-      css.padding({left: '4', right: '4'}),
-      css.margin({top: '-20', selector: '>*:last-child'})
+      css.padding({left: '4', right: '4'})
     ]
   })
 })

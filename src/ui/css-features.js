@@ -24,7 +24,7 @@ jb.component('css.with-condition', {
   description: 'css with dynamic condition. e.g. .myclz {color: red}',
   type: 'feature,dialog-feature',
   params: [
-    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
     {id: 'css', mandatory: true, as: 'string', dynamic: true}
   ],
   impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? fixCssLine(css(ctx2)) : ''})

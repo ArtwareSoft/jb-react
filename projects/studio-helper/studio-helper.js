@@ -2,7 +2,7 @@ jb.ns('studio-helper')
 jb.studio.initCompsRefHandler(jb)
 jb.studio.previewWindow = window
 // fake current path
-jb.delay(100).then(()=>new jb.jbCtx().run(writeValue('%$studio/project','studio-helper')))
+jb.delay(100).then(()=>new jb.jbCtx().run(runActions(writeValue('%$studio/project%','studio-helper')),writeValue('%$studio/page%','topBar') ))
 
 jb.component('data-test.parse-project-html', {
   impl: dataTest({
@@ -336,7 +336,7 @@ jb.component('studio-helper-sample.properties-params', { /* studioHelperSample.p
     {id: 'enumStr', as: 'string', options: 'a,b,c'},
     {id: 'enumNum', as: 'number', options: '1,2,3'},
     {id: 'boolTrue', type: 'boolean', as: 'boolean'},
-    {id: 'boolFalse', type: 'boolean', as: 'boolean'},
+    {id: 'boolFalse', type: 'boolean', as: 'boolean', description: 'desc'},
     {id: 'boolAsComp', type: 'boolean', as: 'boolean'},
     {id: 'boolAsJs', type: 'boolean', as: 'boolean'},
     {id: 'boolAsExp', type: 'boolean', as: 'boolean'},
@@ -353,7 +353,7 @@ jb.component('studio-helper-sample.properties-params', { /* studioHelperSample.p
 jb.component('studio-helper-sample.properties-params-prof', { /* studioHelperSample.propertiesParamsProf */
   type: 'contsdfdswqeqweqwewqe',
   impl: studioHelperSample.propertiesParams({
-    simpleStr: 'hello',
+    simpleStr: 'adasdas',
     strAsComp: pipeline(
       remark('asad'),
       split({separator: ',', text: '1,2,3,4,5,6,7,8'}),
@@ -366,16 +366,15 @@ jb.component('studio-helper-sample.properties-params-prof', { /* studioHelperSam
     enumStr: 'c',
     enumNum: '1',
     boolTrue: true,
-    boolFalse: false,
+    boolFalse: 'false',
     boolAsComp: pipeline('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', '%%==\"a\"'),
     boolAsJs: ctx => ctx.vars.aa,
     boolAsExp: '%$person/male%',
     style: button.href(),
-    grouplayout: layout.horizontal('38'),
     features: [label.bindText(), mdlStyle.initDynamic()]
   }),
   '$vars': {
-
+    
   }
 })
 

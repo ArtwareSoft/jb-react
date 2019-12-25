@@ -613,7 +613,7 @@ ui.refreshElem = function(elem,{strongRefresh,recalcVars},sourceCtx) {
 ui.subscribeToRefChange = watchHandler => watchHandler.resourceChange.subscribe(e=> {
     const changed_path = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(e.ref))
     if (!changed_path) debugger
-    const observablesCmps = Array.from((e.srcCtx.vars.elemToTest || document).querySelectorAll('[cmpId]')).map(el=>el._component)
+    const observablesCmps = Array.from((e.srcCtx && e.srcCtx.vars.elemToTest || document).querySelectorAll('[cmpId]')).map(el=>el._component)
         .filter(cmp=>cmp && cmp.toObserve.length)
 
     observablesCmps.forEach(cmp => {

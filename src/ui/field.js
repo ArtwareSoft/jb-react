@@ -34,7 +34,7 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
   }
 
   cmp.refresh = _ => {
-    const newRef = ctx.vars.$model.databind();
+    const newRef = ctx.vars.$model.databind(cmp.ctx);
     if (jb.val(newRef) != jb.val(cmp.state.databindRef))
       cmp.databindRefChanged.next(newRef)
     cmp.setState({model: cmp.jbModel()});
@@ -59,7 +59,7 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
       .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
       .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,null,e,ctx))
 
-   cmp.databindRefChangedSub.next(ctx.vars.$model.databind());
+   cmp.databindRefChangedSub.next(ctx.vars.$model.databind(cmp.ctx));
 }
 
 jb.ui.checkValidationError = cmp => {
@@ -129,8 +129,7 @@ jb.component('field.databind-text', { /* field.databindText */
 
 jb.component('field.data', { /* field.data */
   type: 'data',
-  impl: ctx =>
-    ctx.vars.$model.databind()
+  impl: ctx => ctx.vars.$model.databind()
 })
 
 jb.component('field.default', { /* field.default */

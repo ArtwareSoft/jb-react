@@ -53,7 +53,7 @@ jb.component('layout.flex', { /* layout.flex */
   type: 'layout,feature',
   params: [
     {id: 'alignItems', as: 'string', options: ',normal,stretch,center,start,end,flex-start,flex-end,baseline,first baseline,last baseline,safe center,unsafe center' },
-    {id: 'spacing', as: 'string', defaultValue: 3},
+    {id: 'spacing', as: 'string' },
     {id: 'justifyContent', as: 'string', options: ',flex-start,flex-end,center,space-between,space-around' },
     {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
     {id: 'wrap', as: 'string', options: ',wrap,wrap-reverse,nowrap'}
@@ -62,7 +62,7 @@ jb.component('layout.flex', { /* layout.flex */
     css: ctx.setVars({spacingWithUnits: jb.ui.withUnits(ctx.params.spacing), ...ctx.params}).exp(
       `{ display: flex; {?align-items:%$alignItems%;?} {?justify-content:%$justifyContent%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }
     >* { margin-right: %$spacingWithUnits% }
-    >*:last-child { margin-right:0 }`),
+    ${ctx.params.spacing ? '>*:last-child { margin-right:0 }' : ''}`),
   })
 })
 

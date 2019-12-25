@@ -95,7 +95,7 @@ jb.component('html-parsing.makeToDevices', { /* htmlParsing.makeToDevices */
         action: runActionOnItems(
           pipeline('%$deviceUrls%', slice('0', '5')),
           runActions(
-            writeValueAsynch(
+            writeValue(
                 '%$devices/{%%}%',
                 pipe(
                   http.get('https://www.gsmarena.com/%%.php'),

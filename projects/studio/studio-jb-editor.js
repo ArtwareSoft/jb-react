@@ -370,7 +370,6 @@ jb.component('studio.expand-and-select-first-child-in-jb-editor', { /* studio.ex
     const ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[jbEditorElem.getAttribute('jb-ctx')];
     const cmp = ctxOfTree.vars.$tree && ctxOfTree.vars.$tree.cmp;
     if (!cmp) return;
-    cmp.expanded[cmp.selected] = true;
     const firstChild = cmp.model.children(cmp.selected)[0];
     if (firstChild)
       cmp.selectionEmitter.next(firstChild)
