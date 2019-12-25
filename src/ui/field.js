@@ -87,7 +87,7 @@ jb.ui.fieldTitle = function(cmp,fieldOrCtrl,h) {
 	if (field.titleCtrl) {
 		const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
 		const jbComp = field.titleCtrl(ctx);
-		return jbComp && h(jbComp.reactComp(),{'jb-ctx': jb.ui.preserveCtx(ctx) })
+		return jbComp && h(jbComp,{'jb-ctx': jb.ui.preserveCtx(ctx) })
 	}
 	return field.title(cmp.ctx)
 }

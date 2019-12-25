@@ -25,20 +25,11 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
           }
           mouseMoveEm
               .debounceTime(50)
-              .takeUntil(
-                  keyUpEm.filter(e=>
-                      e.keyCode == 27)
-                        .merge(userPick))
-              // .do(e=>{
-              // 	if (e.keyCode == 27)
-              // 		ctx.vars.$dialog.close({OK:false});
-              // })
-              .map(e=>
-                  eventToElem(e,_window))
+              .takeUntil(keyUpEm.filter(e=>e.keyCode == 27).merge(userPick))
+              .map(e=> eventToElem(e,_window))
               .filter(x=>x && x.getAttribute)
-              .do(profElem=>
-                showBox(cmp,profElem,_window,previewOffset))
-            .last() // esc or user pick
+              .do(profElem=> showBox(cmp,profElem,_window,previewOffset))
+              .last() // esc or user pick
               .subscribe(profElem=> {
                   const pickSelection = ctx.exp('%$pickSelection%')
                   pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];

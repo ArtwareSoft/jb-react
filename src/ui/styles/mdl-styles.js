@@ -48,13 +48,12 @@ jb.component('mdl.ripple-effect', { /* mdl.rippleEffect */
       css: '{ position: relative; overflow:hidden }',
       afterViewInit: cmp => {
           cmp.base.classList.add('mdl-js-ripple-effect');
-          jb.ui.inDocument(cmp.base) && componentHandler.upgradeElement(cmp.base);
+          (typeof componentHandler !== 'undefined') && jb.ui.inDocument(cmp.base) && componentHandler.upgradeElement(cmp.base);
       },
       destroy: cmp =>
-          jb.ui.inDocument(cmp.base) && componentHandler.downgradeElements(cmp.base)
+      (typeof componentHandler !== 'undefined') && jb.ui.inDocument(cmp.base) && componentHandler.downgradeElements(cmp.base)
    })
 })
-
 
 // ****** label styles
 

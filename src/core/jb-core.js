@@ -547,7 +547,7 @@ class jbCtx {
   callStack() {
     const ctxStack=[]; 
     for(let innerCtx=this; innerCtx; innerCtx = innerCtx.componentContext) 
-      ctxStack = ctxStack.push(innerCtx)
+      ctxStack.push(innerCtx)
     return ctxStack.map(ctx=>ctx.callerPath)
   }
 }

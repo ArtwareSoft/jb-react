@@ -235,7 +235,7 @@ let cssId = 0, cmpId = 0;
 const cssSelectors_hash = ui.cssSelectors_hash = {};
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('beforeInit,init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
-const arrayProps = new Set('enrichField,dynamicCss,contexts,watchAndCalcRefProp,staticCssLines'.split(','))
+const arrayProps = new Set('enrichField,dynamicCss,contexts,watchAndCalcRefProp,staticCssLines,ctxForPick'.split(','))
 const singular = new Set('template,calcState,toolbar,styleCtx'.split(','))
 
 class JbComponent {
@@ -251,7 +251,8 @@ class JbComponent {
         jb.log('initCmp',[this]);
         this.initialized = 'inProcess'
 
-        this.ctxForPick = this.originatingCtx = this.contexts[0];
+        this.originatingCtx = this.ctxForPick && this.ctxForPick[0] || this.contexts[0];
+
         this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve);
         this.extendCtxFuncs && this.extendCtxFuncs.forEach(extendCtx =>
             tryWrapper(() => this.ctx = extendCtx(this.ctx,this) || this.ctx), 'extendCtx')
@@ -543,7 +544,6 @@ ui.renderWidget = function(profile,top) {
     
     let currentProfile = profile
     let lastRenderTime = 0, fixedDebounce = 500
-    let vdomBefore = {}
     const debounceTime = () => Math.min(2000,lastRenderTime*3 + fixedDebounce)
 
     if (jb.studio.studioWindow) {
@@ -781,8 +781,10 @@ jb.component('custom-style', { /* customStyle */
       {id: 'control', type: 'control', mandatory: true, dynamic: true},
       {id: 'modelVar', as: 'string', mandatory: true}
     ],
-    impl: (ctx,control,modelVar) =>
-          control(ctx.setVars( jb.obj(modelVar,ctx.vars.$model)))
+    impl: (ctx,control,modelVar) => {
+        const originatingControlPaths = (ctx.vars.originatingControlPaths || '')  + ctx.componentContext.callerPath + ','
+        return control(ctx.setVars({originatingControlPaths, [modelVar]: ctx.vars.$model}))
+    }
   })
   
   jb.component('style-with-features', { 
@@ -792,8 +794,7 @@ jb.component('custom-style', { /* customStyle */
         {id: 'style', type: '$asParent', mandatory: true, composite: true },
         {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
       ],
-      impl: (ctx,style,features) => 
-          style && Object.assign({},style,{featuresOptions: (style.featuresOptions || []).concat(features())})
+      impl: (ctx,style,features) => style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
   })  
   
 })()
