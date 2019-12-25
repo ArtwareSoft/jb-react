@@ -110,7 +110,7 @@ function extendWithVars(ctx,vars) {
   if (!vars) return ctx;
   let res = ctx;
   for(let varname in vars || {})
-    res = new jbCtx(res,{ vars: jb.obj(varname,res.runInner(vars[varname], null,'$vars~'+varname)) });
+    res = new jbCtx(res,{ vars: {[varname]: res.runInner(vars[varname], null,'$vars~'+varname)} });
   return res;
 }
 
@@ -132,7 +132,6 @@ function prepareParams(comp,profile,ctx) {
         val = sugar[1];
       }
       const valOrDefault = (val !== undefined) ? val : (param.defaultValue !== undefined ? param.defaultValue : null);
-//      const valOrDefault = (typeof val != "undefined" && val != null) ? val : (typeof param.defaultValue != 'undefined' ? param.defaultValue : null);
       const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
       const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
 
@@ -141,8 +140,7 @@ function prepareParams(comp,profile,ctx) {
           let func;
           if (arrayParam)
             func = (ctx2,data2) =>
-              jb.flattenArray(valOrDefaultArray.map((prof,i)=>
-                runCtx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
+              jb.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
           else
             func = (ctx2,data2) =>
                   valOrDefault != null ? runCtx.extendVars(ctx2,data2).runInner(valOrDefault,param,path) : valOrDefault;
@@ -526,6 +524,7 @@ class jbCtx {
   }
   exp(exp,jstype) { return expression(exp, this, {as: jstype}) }
   setVars(vars) { return new jbCtx(this,{vars: vars}) }
+  setVar(name,val) { return new jbCtx(this,{vars: {[name]: val}}) }
   setData(data) { return new jbCtx(this,{data: data}) }
   runInner(profile,parentParam, path) { return jb_run(new jbCtx(this,{profile: profile,path: path}), parentParam) }
   bool(profile) { return this.run(profile, { as: 'boolean'}) }
@@ -547,7 +546,7 @@ class jbCtx {
   callStack() {
     const ctxStack=[]; 
     for(let innerCtx=this; innerCtx; innerCtx = innerCtx.componentContext) 
-      ctxStack = ctxStack.push(innerCtx)
+      ctxStack.push(innerCtx)
     return ctxStack.map(ctx=>ctx.callerPath)
   }
 }
@@ -653,16 +652,9 @@ return {
 Object.assign(jb,{
   comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, location: Symbol.for('location'),
   studio: { previewjb: jb },
-  knownNSAndCompCases: ['field'],
-  macroName: id =>
-    id.replace(/[_-]([a-zA-Z])/g,(_,letter) => letter.toUpperCase()),
-  ns: nsIds =>
-    nsIds.split(',').forEach(nsId=>jb.registerMacro(nsId+'.$dummyComp',{}))
-  ,
-  removeDataResourcePrefix: id =>
-    id.indexOf('data-resource.') == 0 ? id.slice('data-resource.'.length) : id,
-  addDataResourcePrefix: id =>
-    id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
+  removeDataResourcePrefix: id => id.indexOf('data-resource.') == 0 ? id.slice('data-resource.'.length) : id,
+  addDataResourcePrefix: id => id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
+
   component: (id,comp) => {
     try {
       const line = new Error().stack.split(/\r|\n/).filter(x=>x && !x.match(/<anonymous>|about:blank/)).pop()
@@ -699,89 +691,6 @@ Object.assign(jb,{
   },
   const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
   functionDef: (id,val) => jb.functions[id] = val,
-  registerMacro: (id, profile) => {
-    const macroId = jb.macroName(id).replace(/\./g,'_')
-    const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
-
-    if (checkId(macroId))
-      registerProxy(macroId)
-    if (nameSpace && checkId(nameSpace,true) && !frame[nameSpace]) {
-      registerProxy(nameSpace, true)
-      jb.macroNs[nameSpace] = true
-    }
-
-    function registerProxy(proxyId) {
-      frame[proxyId] = new Proxy(()=>0, { 
-          get: (o,p) => {
-            if (typeof p === 'symbol') return true
-            return frame[proxyId+'_'+p] || genericMacroProcessor(proxyId,p)
-          },
-          apply: function(target, thisArg, allArgs) {
-            const {args,system} = splitSystemArgs(allArgs)
-            return Object.assign(processMacro(args),system)
-          }
-      })
-    }
-  
-    function splitSystemArgs(allArgs) {
-      const args=[], system={} // system props: constVar, remark
-      allArgs.forEach(arg=>{
-        if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
-          jb.comps[arg.$].macro(system,arg)
-        else
-          args.push(arg)
-      })
-      if (args.length == 1 && typeof args[0] === 'object') {
-        jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system,arg))
-        args[0].remark && jb.comps.remark.macro(system,args[0])
-      }
-      return {args,system}
-    }
-
-    function checkId(macroId,isNS) {
-      if (frame[macroId] && !frame[macroId][jb.macroDef]) {
-        jb.logError(macroId +' is reserved by system or libs. please use a different name')
-        return false
-      }
-      if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
-        jb.logError(macroId + ' is defined more than once, using last definition ' + id)
-      if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId] && jb.knownNSAndCompCases.indexOf[macroId] == -1)
-        jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
-      return true;
-    }
-   
-    function processMacro(args) {
-      if (args.length == 0)
-        return {$: id }
-      const params = profile.params || []
-      const firstParamIsArray = (params[0] && params[0].type||'').indexOf('[]') != -1
-      if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
-        return {$: id, [params[0].id]: args }
-      const macroByProps = args.length == 1 && typeof args[0] === 'object' && 
-        (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
-      if ((profile.macroByValue || params.length < 3) && profile.macroByValue !== false && !macroByProps)
-        return {$: id, ...jb.objFromEntries(args.filter((_,i)=>params[i]).map((arg,i)=>[params[i].id,arg])) }
-      if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
-        return {$: id, ...args[0]}
-      if (args.length == 1 && params.length)
-        return {$: id, [params[0].id]: args[0]}
-      if (args.length == 2 && params.length > 1)
-        return {$: id, [params[0].id]: args[0], [params[1].id]: args[1]}
-      debugger;
-    }
-    const unMacro = macroId => macroId.replace(/([A-Z])/g, (all,s)=>'-'+s.toLowerCase())
-    function genericMacroProcessor(ns,macroId) {
-      return (...allArgs) => {
-        const {args,system} = splitSystemArgs(allArgs)
-        const out = {$: unMacro(ns) +'.'+ unMacro(macroId)}
-        if (args.length == 1 && typeof args[0] == 'object' && !jb.compName(args[0]))
-          Object.assign(out,args[0])
-        else
-          Object.assign(out,{$byValue: args})
-        return Object.assign(out,system)
-      }
-    }
-   },
 // force path - create objects in the path if not exist
   path: (object,path,value) => {
     let cur = object;
@@ -799,18 +708,7 @@ Object.assign(jb,{
       return value;
     }
   },
-  ownPropertyNames: obj => {
-    let res = [];
-    for (let i in (obj || {}))
-      if (obj.hasOwnProperty(i))
-        res.push(i);
-    return res;
-  },
-  obj: (k,v,base) => {
-    let ret = base || {};
-    ret[k] = v;
-    return ret;
-  },
+
   compareArrays: (arr1, arr2) => {
     if (arr1 === arr2)
       return true;
@@ -824,8 +722,7 @@ Object.assign(jb,{
     }
     return true;
   },
-  range: (start, count) =>
-    Array.apply(0, Array(count)).map((element, index) => index + start),
+  range: (start, count) => Array.apply(0, Array(count)).map((element, index) => index + start),
 
   flattenArray: items => {
     let out = [];
@@ -867,12 +764,8 @@ Object.assign(jb,{
   isObject: o => o != null && typeof o === 'object',
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
   filterEmpty: obj => Object.entries(obj).reduce((a,[k,v]) => (v == null ? a : {...a, [k]:v}), {}),
-
-  equals: (x,y) =>
-    x == y || jb.val(x) == jb.val(y),
-
-  delay: mSec =>
-    new Promise(r=>{setTimeout(r,mSec)}),
+  equals: (x,y) => x == y || jb.val(x) == jb.val(y),
+  delay: mSec => new Promise(r=>{setTimeout(r,mSec)}),
 
   // valueByRef API
   extraWatchableHandlers: [],
@@ -923,6 +816,95 @@ if (typeof self != 'undefined')
   self.jb = jb
 if (typeof module != 'undefined')
   module.exports = jb;
+
+Object.assign(jb, {
+    macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
+    ns: nsIds => nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$dummyComp', {})),
+    registerMacro: (id, profile) => {
+        const macroId = jb.macroName(id).replace(/\./g, '_')
+        const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
+
+        if (checkId(macroId))
+            registerProxy(macroId)
+        if (nameSpace && checkId(nameSpace, true) && !frame[nameSpace]) {
+            registerProxy(nameSpace, true)
+            jb.macroNs[nameSpace] = true
+        }
+
+        function registerProxy(proxyId) {
+            frame[proxyId] = new Proxy(() => 0, {
+                get: (o, p) => {
+                    if (typeof p === 'symbol') return true
+                    return frame[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
+                },
+                apply: function (target, thisArg, allArgs) {
+                    const { args, system } = splitSystemArgs(allArgs)
+                    return Object.assign(processMacro(args), system)
+                }
+            })
+        }
+
+        function splitSystemArgs(allArgs) {
+            const args = [], system = {} // system props: constVar, remark
+            allArgs.forEach(arg => {
+                if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
+                    jb.comps[arg.$].macro(system, arg)
+                else
+                    args.push(arg)
+            })
+            if (args.length == 1 && typeof args[0] === 'object') {
+                jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system, arg))
+                args[0].remark && jb.comps.remark.macro(system, args[0])
+            }
+            return { args, system }
+        }
+
+        function checkId(macroId, isNS) {
+            if (frame[macroId] && !frame[macroId][jb.macroDef]) {
+                jb.logError(macroId + ' is reserved by system or libs. please use a different name')
+                return false
+            }
+            if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
+                jb.logError(macroId + ' is defined more than once, using last definition ' + id)
+            if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
+                jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
+            return true;
+        }
+
+        function processMacro(args) {
+            if (args.length == 0)
+                return { $: id }
+            const params = profile.params || []
+            const firstParamIsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
+            if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
+                return { $: id, [params[0].id]: args }
+            const macroByProps = args.length == 1 && typeof args[0] === 'object' &&
+                (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
+            if ((profile.macroByValue || params.length < 3) && profile.macroByValue !== false && !macroByProps)
+                return { $: id, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
+            if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
+                return { $: id, ...args[0] }
+            if (args.length == 1 && params.length)
+                return { $: id, [params[0].id]: args[0] }
+            if (args.length == 2 && params.length > 1)
+                return { $: id, [params[0].id]: args[0], [params[1].id]: args[1] }
+            debugger;
+        }
+        const unMacro = macroId => macroId.replace(/([A-Z])/g, (all, s) => '-' + s.toLowerCase())
+        function genericMacroProcessor(ns, macroId) {
+            return (...allArgs) => {
+                const { args, system } = splitSystemArgs(allArgs)
+                const out = { $: unMacro(ns) + '.' + unMacro(macroId) }
+                if (args.length == 1 && typeof args[0] == 'object' && !jb.compName(args[0]))
+                    Object.assign(out, args[0])
+                else
+                    Object.assign(out, { $byValue: args })
+                return Object.assign(out, system)
+            }
+        }
+    }
+})
+;
 
 jb.component('call', { /* call */
   type: 'any',
@@ -1092,8 +1074,7 @@ jb.component('properties', { /* properties */
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx,obj) =>
-		jb.ownPropertyNames(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
+  impl: (ctx,obj) => Object.keys(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
 			({id: id, val: obj[id], index: index}))
 })
 
@@ -1604,9 +1585,9 @@ jb.component('join', { /* join */
     {id: 'itemText', as: 'string', dynamic: true, defaultValue: '%%'}
   ],
   type: 'aggregator',
-  impl: function(context,separator,prefix,suffix,items,itemName,itemText) {
-		const itemToText = (context.profile.itemText) ?
-			item => itemText(new jb.jbCtx(context, {data: item, vars: jb.obj(itemName,item) })) :
+  impl: function(ctx,separator,prefix,suffix,items,itemName,itemText) {
+		const itemToText = (ctx.profile.itemText) ?
+			item => itemText(itemName ? new jb.jbCtx(ctx, {data: item, vars: {[itemName]: item} }): ctx.setData(item)) :
 			item => jb.tostring(item);	// performance
 
 		return prefix + items.map(itemToText).join(separator) + suffix;
@@ -2085,7 +2066,7 @@ const spySettings = {
 	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog', 
 	groups: {
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,scriptChange',
-		react: 'applyVdomDiff,htmlChange,applyChildrenDiff,unmount,render,initComp,setState',
+		react: 'applyVdomDiff,htmlChange,applyChildrenDiff,unmount,render,initCmp,setState',
 	},
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|node_modules/i,
@@ -2225,6 +2206,7 @@ function initSpyByUrl() {
 	const spyParam = getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
 	if (spyParam)
 		jb.initSpy({spyParam})
+	if (jb.frame) jb.frame.spy = jb.spy // for console use
 }
 initSpyByUrl()
 
@@ -3183,7 +3165,7 @@ jb.component('dynamic-object', { /* dynamicObject */
     {id: 'value', mandatory: true, dynamic: true}
   ],
   impl: (ctx,items,name,value) =>
-    items.reduce((obj,item)=>Object.assign(obj,jb.obj(name(ctx.setData(item)),value(ctx.setData(item)))),{})
+    items.reduce((obj,item)=>({ ...obj, [name(ctx.setData(item))]: value(ctx.setData(item)) }),{})
 })
 
 jb.component('filter-empty-properties', { /* filterEmptyProperties */

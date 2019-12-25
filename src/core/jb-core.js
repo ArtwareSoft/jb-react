@@ -650,8 +650,7 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, location: Symbol.for('location'),
-  studio: { previewjb: jb },
+  comps: {}, resources: {}, consts: {}, location: Symbol.for('location'), studio: { previewjb: jb },
   removeDataResourcePrefix: id => id.indexOf('data-resource.') == 0 ? id.slice('data-resource.'.length) : id,
   addDataResourcePrefix: id => id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
 
@@ -680,7 +679,7 @@ Object.assign(jb,{
         p.type = 'boolean'
     })
 
-    jb.registerMacro(id, comp)
+    jb.registerMacro && jb.registerMacro(id, comp)
   },
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => { 

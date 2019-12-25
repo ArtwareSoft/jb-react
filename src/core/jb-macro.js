@@ -1,4 +1,5 @@
 Object.assign(jb, {
+    macroDef: Symbol('macroDef'), macroNs: {}, 
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$dummyComp', {})),
     registerMacro: (id, profile) => {

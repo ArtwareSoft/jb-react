@@ -22,7 +22,6 @@ const jbImmutable = {
     filename: 'jb-immutable.js',
   },
   resolve: { modules: [ 'node_modules' ] },
-//  resolve1: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
 };
 
 const babel_ext = {
@@ -40,9 +39,8 @@ const babel_ext = {
 };
 
 const jbRxMin = {
-  mode: 'development',
+  mode: 'production',
   entry: JBART_DIR + 'src/ui/jb-rx.js',
-//  entry: JBART_DIR + 'projects/ui-tests/common-styles.jsx',
   output: {
     path: JBART_DIR + 'dist',
     filename: 'jb-rx.min.js',
