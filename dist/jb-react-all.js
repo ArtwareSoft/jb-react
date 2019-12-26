@@ -524,7 +524,7 @@ class jbCtx {
   }
   exp(exp,jstype) { return expression(exp, this, {as: jstype}) }
   setVars(vars) { return new jbCtx(this,{vars: vars}) }
-  setVar(name,val) { return new jbCtx(this,{vars: {[name]: val}}) }
+  setVar(name,val) { return name ? new jbCtx(this,{vars: {[name]: val}}) : this }
   setData(data) { return new jbCtx(this,{data: data}) }
   runInner(profile,parentParam, path) { return jb_run(new jbCtx(this,{profile: profile,path: path}), parentParam) }
   bool(profile) { return this.run(profile, { as: 'boolean'}) }
@@ -650,8 +650,7 @@ return {
 })();
 
 Object.assign(jb,{
-  comps: {}, resources: {}, consts: {}, macroDef: Symbol('macroDef'), macroNs: {}, location: Symbol.for('location'),
-  studio: { previewjb: jb },
+  comps: {}, resources: {}, consts: {}, location: Symbol.for('location'), studio: { previewjb: jb },
   removeDataResourcePrefix: id => id.indexOf('data-resource.') == 0 ? id.slice('data-resource.'.length) : id,
   addDataResourcePrefix: id => id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
 
@@ -680,7 +679,7 @@ Object.assign(jb,{
         p.type = 'boolean'
     })
 
-    jb.registerMacro(id, comp)
+    jb.registerMacro && jb.registerMacro(id, comp)
   },
   type: (id,val) => jb.types[id] = val || {},
   resource: (id,val) => { 
@@ -818,6 +817,7 @@ if (typeof module != 'undefined')
   module.exports = jb;
 
 Object.assign(jb, {
+    macroDef: Symbol('macroDef'), macroNs: {}, 
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$dummyComp', {})),
     registerMacro: (id, profile) => {
@@ -6010,10 +6010,7 @@ jb.component('custom-style', { /* customStyle */
       {id: 'control', type: 'control', mandatory: true, dynamic: true},
       {id: 'modelVar', as: 'string', mandatory: true}
     ],
-    impl: (ctx,control,modelVar) => {
-        const originatingControlPaths = (ctx.vars.originatingControlPaths || '')  + ctx.componentContext.callerPath + ','
-        return control(ctx.setVars({originatingControlPaths, [modelVar]: ctx.vars.$model}))
-    }
+    impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar,ctx.vars.$model))
   })
   
   jb.component('style-with-features', { 
@@ -7555,12 +7552,12 @@ jb.component('css.underline', {
 jb.component('css.box-shadow', { /* css.boxShadow */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'blurRadius', as: 'string', defaultValue: '5'},
-    {id: 'spreadRadius', as: 'string', defaultValue: '0'},
-    {id: 'shadowColor', as: 'string', defaultValue: '#000000'},
-    {id: 'opacity', as: 'string', description: '0-1'},
-    {id: 'horizontal', as: 'string', defaultValue: '10'},
-    {id: 'vertical', as: 'string', defaultValue: '10'},
+    {id: 'blurRadius', as: 'string', templateValue: '5'},
+    {id: 'spreadRadius', as: 'string', templateValue: '0'},
+    {id: 'shadowColor', as: 'string', templateValue: '#000000'},
+    {id: 'opacity', as: 'string', templateValue: 0.5, description: '0-1'},
+    {id: 'horizontal', as: 'string', templateValue: '10'},
+    {id: 'vertical', as: 'string', templateValue: '10'},
     {id: 'selector', as: 'string'}
   ],
   impl: (context,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
