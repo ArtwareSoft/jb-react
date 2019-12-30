@@ -375,7 +375,8 @@ class JbComponent {
 			cssSelectors_hash[cssKey] = cssId;
 			const cssStyle = cssLines.map(selectorPlusExp=>{
 				const selector = selectorPlusExp.split('{')[0];
-				const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' ')).map(x=>`.jb-${cssId}${x}`);
+                const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' '))
+                    .map(x=>x.indexOf('~') == -1 ? `.jb-${cssId}${x}` : x.replace('~',`.jb-${cssId}`));
 				return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
 			}).join('\n');
 			const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;

@@ -323,14 +323,36 @@ jb.component('feature.onEvent', { /* feature.onEvent */
 
 jb.component('feature.onHover', { /* feature.onHover */
   type: 'feature',
+  description: 'on mouse enter',
   category: 'events',
   params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true, mandatory: true},
+    {id: 'onLeave', type: 'action[]', mandatory: true, dynamic: true}
   ],
   impl: (ctx,action) => ({
-      onmouseenter: true,
-      afterViewInit: cmp => cmp.onmouseenter.debounceTime(500).subscribe(()=>
+      onmouseenter: true, onmouseleave: true,
+      afterViewInit: cmp => {
+        cmp.onmouseenter.debounceTime(500).subscribe(()=>
               jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
+        cmp.onmouseleave.debounceTime(500).subscribe(()=>
+              jb.ui.wrapWithLauchingElement(ctx.params.onLeave, cmp.ctx, cmp.base)())
+      }
+  })
+})
+
+jb.component('feature.class-on-hover', {
+  type: 'feature',
+  description: 'set css class on mouse enter',
+  category: 'events',
+  params: [
+    {id: 'class', type: 'string', defaultValue: 'item-hover', description: 'css class to add/remove on hover'}
+  ],
+  impl: (ctx,clz) => ({
+    onmouseenter: true, onmouseleave: true,
+    afterViewInit: cmp => {
+      cmp.onmouseenter.subscribe(()=> jb.ui.addClass(cmp.base,clz))
+      cmp.onmouseleave.subscribe(()=> jb.ui.removeClass(cmp.base,clz))
+    }
   })
 })
 
@@ -440,11 +462,11 @@ jb.component('focus-on-first-element', { /* focusOnFirstElement */
 
 jb.component('feature.byCondition', { /* feature.byCondition */
   type: 'feature',
-  description: 'define feature if then else condition',
+  description: 'conditional feature, define feature if then else condition',
   macroByValue: true,
   params: [
     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
-    {id: 'then', type: 'feature', mandatory: true, dynamic: true},
+    {id: 'then', type: 'feature', mandatory: true, dynamic: true, composite: true},
     {id: 'else', type: 'feature', dynamic: true}
   ],
   impl: (ctx,cond,_then,_else) =>

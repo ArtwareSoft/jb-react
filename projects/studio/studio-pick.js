@@ -23,8 +23,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
               userPick = userPick.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'mousedown'));
               keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'keyup'));
           }
-          mouseMoveEm
-              .debounceTime(50)
+          mouseMoveEm.debounceTime(50)
               .takeUntil(keyUpEm.filter(e=>e.keyCode == 27).merge(userPick))
               .map(e=> eventToElem(e,_window))
               .filter(x=>x && x.getAttribute)

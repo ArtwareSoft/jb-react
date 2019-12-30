@@ -1150,5 +1150,23 @@ jb.component('action.switch-case', { /* action.switchCase */
   impl: ctx => ctx.params
 })
 
+jb.component('format-date', {
+  description: 'using toLocaleDateString',
+  params: [
+    {id: 'date', defaultValue: '%%', description: 'Date value'},
+    {id: 'dateStyle', as: 'string', options: 'full,long,medium,short' },
+    {id: 'timeStyle', as: 'string', options: 'full,long,medium,short' },
+    {id: 'weekday', as: 'string', options: 'long,short,narrow' },
+    {id: 'year', as: 'string', options: 'numeric,2-digit' },
+    {id: 'month', as: 'string', options: 'numeric,2-digit,long,short,narrow' },
+    {id: 'day', as: 'string', options: 'numeric,2-digit' },
+    {id: 'hour', as: 'string', options: 'numeric,2-digit' },
+    {id: 'minute', as: 'string', options: 'numeric,2-digit' },
+    {id: 'second', as: 'string', options: 'numeric,2-digit' },
+    {id: 'timeZoneName', as: 'string', options: 'long,short' },
+  ],
+  impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1]))),
+})
+
 jb.exec = (...args) => new jb.jbCtx().run(...args)
 jb.exp = (...args) => new jb.jbCtx().exp(...args)

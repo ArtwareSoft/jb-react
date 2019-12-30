@@ -178,6 +178,11 @@ jb.component('studio.jb-editor-menu', { /* studio.jbEditorMenu */
         type: 'action',
         components: list('runActions', 'runActionOnItems')
       }),
+      menu.studioWrapWith({
+        path: '%$path%',
+        type: 'feature',
+        components: list('feature.byCondition')
+      }),
       menu.studioWrapWithArray('%$path%'),
       menu.action({
         title: 'Duplicate',
