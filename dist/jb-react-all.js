@@ -230,6 +230,9 @@ function resolveFinishedPromise(val) {
   return val;
 }
 
+function isRefType(jstype) {
+  return jstype === 'ref' || jstype === 'ref[]'
+}
 function calcVar(ctx,varname,jstype) {
   let res;
   if (ctx.componentContext && ctx.componentContext.params[varname] !== undefined)
@@ -239,9 +242,9 @@ function calcVar(ctx,varname,jstype) {
   else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
     res = ctx.vars.scope[varname]
   else if (jb.resources && jb.resources[varname] !== undefined)
-    res = jstype == 'ref' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
+    res = isRefType(jstype) ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
   else if (jb.consts && jb.consts[varname] !== undefined)
-    res = jstype == 'ref' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
+    res = isRefType(jstype) ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
 
   return resolveFinishedPromise(res);
 }
@@ -320,7 +323,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         if (obj === null || obj === undefined) return;
         if (typeof obj[subExp] === 'function' && (parentParam.dynamic || obj[subExp].profile))
             return obj[subExp](ctx);
-        if (jstype == 'ref') {
+        if (isRefType(jstype)) {
           if (last)
             return refHandler.objectProperty(obj,subExp,ctx);
           if (obj[subExp] === undefined)
@@ -393,10 +396,7 @@ function bool_expression(exp, ctx, parentParam) {
 }
 
 function castToParam(value,param) {
-  let res = tojstype(value,param ? param.as : null);
-  if (param && param.as == 'ref' && param.whenNotRefferable && !jb.isRef(res))
-    res = tojstype(value,param.whenNotRefferable);
-  return res;
+  return tojstype(value,param ? param.as : null);
 }
 
 function tojstype(value,jstype) {
@@ -451,6 +451,11 @@ const jstypes = {
       return val(value);
     },
     ref(value) {
+      if (Array.isArray(value))
+        value = value[0];
+      return jb.asRef(value);
+    },
+    'ref[]': function(value) {
       return jb.asRef(value);
     },
     value(value) {
@@ -1780,7 +1785,7 @@ jb.component('run-action-on-items', { /* runActionOnItems */
   type: 'action',
   macroByValue: true,
   params: [
-    {id: 'items', as: 'ref', mandatory: true},
+    {id: 'items', as: 'ref[]', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
     {
       id: 'notifications',
@@ -2056,6 +2061,24 @@ jb.component('action.switch-case', { /* action.switchCase */
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: ctx => ctx.params
+})
+
+jb.component('format-date', {
+  description: 'using toLocaleDateString',
+  params: [
+    {id: 'date', defaultValue: '%%', description: 'Date value'},
+    {id: 'dateStyle', as: 'string', options: 'full,long,medium,short' },
+    {id: 'timeStyle', as: 'string', options: 'full,long,medium,short' },
+    {id: 'weekday', as: 'string', options: 'long,short,narrow' },
+    {id: 'year', as: 'string', options: 'numeric,2-digit' },
+    {id: 'month', as: 'string', options: 'numeric,2-digit,long,short,narrow' },
+    {id: 'day', as: 'string', options: 'numeric,2-digit' },
+    {id: 'hour', as: 'string', options: 'numeric,2-digit' },
+    {id: 'minute', as: 'string', options: 'numeric,2-digit' },
+    {id: 'second', as: 'string', options: 'numeric,2-digit' },
+    {id: 'timeZoneName', as: 'string', options: 'long,short' },
+  ],
+  impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1]))),
 })
 
 jb.exec = (...args) => new jb.jbCtx().run(...args)
@@ -5404,12 +5427,15 @@ function render(vdom,parentElem,cmp) {
         parentElem.nodeType == 3 ? parentElem.nodeValue = vdom : parentElem.innerText = vdom
     } else if (vdom.tag) {
         jb.log('htmlChange',['createElement',...arguments])
-        elem = parentElem.ownerDocument.createElement(vdom.tag)
+        elem = parentElem.ownerDocument.createElement(vdom.tag == 'html' ? 'div' : vdom.tag)
         jb.entries(vdom.attributes).filter(e=>e[0].indexOf('on') != 0 && !isAttUndefined(e[0],vdom.attributes)).forEach(e=>setAtt(elem,e[0],e[1]))
         jb.entries(vdom.attributes).filter(e=>e[0].indexOf('on') == 0).forEach(
                 e=>elem.setAttribute(e[0],`jb.ui.handleCmpEvent(${typeof e[1] == 'string' && e[1] ? "'" + e[1] + "'" : '' })`))
-        jb.asArray(vdom.children).map(child=> render(child,elem,cmp)).filter(x=>x)
-            .forEach(chElem=>elem.appendChild(chElem))
+        if (vdom.tag == 'html')
+            elem.innerHTML = vdom.children[0]
+        else 
+            jb.asArray(vdom.children).map(child=> render(child,elem,cmp)).filter(x=>x)
+                .forEach(chElem=>elem.appendChild(chElem))
         parentElem.appendChild(elem)
         jb.log('htmlChange',['appendChild',parentElem,elem])
     } else if (vdom.cmp) {
@@ -5439,7 +5465,7 @@ Object.assign(jb.ui, {
         const path = ['_component',...methodPath.split('.')]
         const handler = jb.path(el,path)
         const obj = jb.path(el,path.slice(0,-1))
-        handler && handler.call(obj,event,event.type)
+        return handler && handler.call(obj,event,event.type)
     },
     ctrl(context,options) {
         const ctx = context.setVars({ $model: context.params });
@@ -5604,7 +5630,8 @@ class JbComponent {
 			cssSelectors_hash[cssKey] = cssId;
 			const cssStyle = cssLines.map(selectorPlusExp=>{
 				const selector = selectorPlusExp.split('{')[0];
-				const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' ')).map(x=>`.jb-${cssId}${x}`);
+                const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' '))
+                    .map(x=>x.indexOf('~') == -1 ? `.jb-${cssId}${x}` : x.replace('~',`.jb-${cssId}`));
 				return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
 			}).join('\n');
 			const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
@@ -5673,7 +5700,8 @@ class JbComponent {
     				.map(x=>x+'}')
     				.map(x=>x.replace(/^!/,' ')));
 
-		(options.featuresOptions || []).forEach(f => this.jbExtend(f, ctx))
+		jb.asArray(options.featuresOptions || []).forEach(f => this.jbExtend(f, ctx))
+		jb.asArray(ui.inStudio() && options.studioFeatures).forEach(f => this.jbExtend(ctx.run(f), ctx))
 		return this;
     }
 }
@@ -5730,10 +5758,10 @@ ui.focus = function(elem,logTxt,srcCtx) {
   	})
 }
 
-ui.wrapWithLauchingElement = (f,context,elem,options={}) => ctx2 => {
+ui.wrapWithLauchingElement = (f,ctx,elem,options={}) => ctx2 => {
 		if (!elem) debugger;
-		return f(context.extendVars(ctx2).setVars({ $launchingElement: { el : elem, ...options }}));
-	}
+		return f(ctx.extendVars(ctx2).setVars({ $launchingElement: { el : elem, ...options }}));
+}
 
 
 if (typeof $ != 'undefined' && $.fn)
@@ -5756,6 +5784,8 @@ ui.preserveCtx = ctx => {
   jb.ctxDictionary[ctx.id] = ctx;
   return ctx.id;
 }
+
+ui.inStudio = () => jb.studio && jb.studio.studioWindow
 
 ui.renderWidget = function(profile,top) {
 	let blockedParentWin = false // catch security execption from the browser if parent is not accessible
@@ -6116,24 +6146,25 @@ jb.component('control-with-condition', { /* controlWithCondition */
 
 jb.ns('label')
 
-jb.component('label', { /* label */
+jb.component('text', { /* label */
   type: 'control',
-  category: 'control:100,common:80',
+  category: 'control:100,common:100',
   params: [
-    {id: 'text', as: 'ref', mandatory: true, defaultValue: 'my text', dynamic: true},
-    {id: 'title', as: 'ref', mandatory: true, defaultValue: 'my label', dynamic: true},
+    {id: 'text', as: 'ref', mandatory: true, templateValue: 'my text', dynamic: true},
+    {id: 'title', as: 'ref', mandatory: true, templateValue: 'my title', dynamic: true},
     {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('text', jb.comps.label)
+jb.component('label', {...jb.comps.text,type: 'depricated-control'} )
 
 jb.component('label.bind-text', { /* label.bindText */
   type: 'feature',
   impl: ctx => ({
     watchAndCalcRefProp: { prop: 'text', toState: jb.ui.toVdomOrStr, strongRefresh: true },
+    studioFeatures: feature.editableContent('text')
   })
 })
 
@@ -6156,7 +6187,6 @@ jb.component('label.allow-asynch-value', {
   })
 })
 
-
 jb.component('label.htmlTag', { /* label.htmlTag */
   type: 'label.style',
   params: [
@@ -6170,7 +6200,7 @@ jb.component('label.htmlTag', { /* label.htmlTag */
   ],
   impl: customStyle({
     template: (cmp,state,h) => h(cmp.htmlTag,{class: cmp.cssClass},state.text),
-    features: label.bindText()
+    features: label.bindText(),
   })
 })
 
@@ -6190,7 +6220,15 @@ jb.component('label.span', { /* label.span */
   })
 })
 
-jb.component('label.card-title', { /* label.cardTitle */
+;[1,2,3,4,5,6].map(level=>jb.component(`header.h${level}`, {
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h(`h${level}`,{},state.text),
+    features: label.bindText()
+  })
+}))
+
+jb.component('header.card-title', { /* label.cardTitle */
   type: 'label.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'mdl-card__title' },
@@ -6220,9 +6258,9 @@ jb.component('label.highlight', { /* label.highlight */
     if (!h || !b) return b;
     const highlight = (b.match(new RegExp(h,'i'))||[])[0]; // case sensitive highlight
     if (!highlight) return b;
-    return [  b.split(highlight)[0],
+    return jb.ui.h('div',{},[  b.split(highlight)[0],
               jb.ui.h('span',{class: cssClass},highlight),
-              b.split(highlight).slice(1).join(highlight)]
+              b.split(highlight).slice(1).join(highlight)])
   }
 })
 ;
@@ -6231,10 +6269,11 @@ jb.ns('html')
 
 jb.component('html', { 
     type: 'control',
+    description: 'rich text',
     category: 'control:100,common:80',
     params: [
       {id: 'title', as: 'string', mandatory: true, templateValue: 'html', dynamic: true},
-      {id: 'html', as: 'string', mandatory: true, templateValue: '<p>html here</p>', dynamic: true},
+      {id: 'html', as: 'ref', mandatory: true, templateValue: '<p>html here</p>', dynamic: true},
       {id: 'style', type: 'html.style', defaultValue: html.plain(), dynamic: true},
       {id: 'features', type: 'feature[]', dynamic: true}
     ],
@@ -6243,11 +6282,10 @@ jb.component('html', {
 
 jb.component('html.plain', {
     type: 'html.style',
-    impl: customStyle({
-        template: (cmp,state,h) => h('div'),
-        features: ctx => ({
-            afterViewInit: cmp => cmp.base.innerHTML = cmp.ctx.vars.$model.html()
-        })
+    impl: ctx => ({
+        watchAndCalcRefProp: { prop: 'html', strongRefresh: true },
+        template: (cmp,state,h) => h('html',{},state.html),
+        studioFeatures: feature.editableContent('html',true),
     })
 })
 
@@ -6274,9 +6312,9 @@ jb.ns('image')
 
 jb.component('image', { /* image */
   type: 'control,image',
-  category: 'control:50',
+  category: 'control:50,common:70',
   params: [
-    {id: 'url', as: 'string', mandatory: true},
+    {id: 'url', as: 'string', mandatory: true, templateValue: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'},
     {id: 'imageWidth', as: 'string'},
     {id: 'imageHeight', as: 'string'},
     {id: 'width', as: 'string'},
@@ -6286,8 +6324,7 @@ jb.component('image', { /* image */
   ],
   impl: ctx => jb.ui.ctrl(ctx, {
     init: cmp => {
-      ['imageWidth','imageHeight','width','height'].map(k=>
-          cmp.state[k] = jb.ui.withUnits(ctx.params[k])) 
+      ['imageWidth','imageHeight','width','height'].map(k=> cmp.state[k] = jb.ui.withUnits(ctx.params[k])) 
       cmp.state.url = ctx.params.url
   }})
 })
@@ -6300,7 +6337,28 @@ jb.component('image.default', { /* image.default */
         h('img', {src: state.url, style: {width: state.imageWidth, height: state.imageHeight}})),
   })
 })
-;
+
+jb.component('image.background-image', { 
+  type: 'image.style',
+  params: [
+      {id: 'backgroundPositionX', as: 'string', description: 'e.g. 50%, right 3px, left 25%'},
+      {id: 'backgroundPositionY', as: 'string', description: 'e.g. 50%, bottom 3px, top 25%'},
+  ],    
+  impl: customStyle({
+    template: (cmp,state,h) => h('div', { style: {
+            'background-image': `url("${state.url}")`,
+            ...(state.width ? {'min-width': jb.ui.withUnits(state.width)} : {}),
+            ...(state.height ? {'min-height': jb.ui.withUnits(state.height)} : {}),
+        }}),
+      css: `
+      { 
+          background-size: cover; 
+          {? background-position-x: %$backgroundPositionX%;?} 
+          {? background-position-y: %$backgroundPositionY%; ?}
+          background-repeat: no-repeat
+      }`
+  })
+});
 
 jb.ns('button')
 
@@ -6318,21 +6376,19 @@ jb.component('button', { /* button */
     },
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx, {
-      beforeInit: cmp => {
-        cmp.state.title = jb.val(ctx.params.title(cmp.ctx));
-        cmp.refresh = _ => cmp.setState({title: jb.val(ctx.params.title(cmp.ctx))});
-      },
+  impl: ctx => jb.ui.ctrl(ctx, {
+      watchAndCalcRefProp: { prop: 'title', strongRefresh: true },
+      studioFeatures: feature.editableContent('title'),
+
       afterViewInit: cmp => {
-          cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
+          cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)
           cmp.onclickHandler = ev => {
             if (ev && ev.ctrlKey && cmp.ctrlAction)
-              cmp.ctrlAction(ctx.setVars({event:ev}))
+              cmp.ctrlAction(cmp.ctx.setVars({event:ev}))
             else if (ev && ev.altKey && cmp.altAction)
-              cmp.altAction(ctx.setVars({event:ev}))
+              cmp.altAction(cmp.ctx.setVars({event:ev}))
             else
-              cmp.action && cmp.action(ctx.setVars({event:ev}));
+              cmp.action && cmp.action(cmp.ctx.setVars({event:ev}));
           }
       }
     })
@@ -6346,8 +6402,7 @@ jb.component('ctrl-action', { /* ctrlAction */
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: ctx => ({
-      afterViewInit: cmp =>
-        cmp.ctrlAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
+      afterViewInit: cmp => cmp.ctrlAction = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)
   })
 })
 
@@ -6359,8 +6414,7 @@ jb.component('alt-action', { /* altAction */
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: ctx => ({
-      afterViewInit: cmp =>
-        cmp.altAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
+      afterViewInit: cmp => cmp.altAction = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)
   })
 })
 
@@ -6372,34 +6426,8 @@ jb.component('button-disabled', { /* buttonDisabled */
     {id: 'enabledCondition', type: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx,cond) => ({
-      init: cmp =>
-        cmp.isEnabled = ctx2 => cond(ctx.extendVars(ctx2))
+      init: cmp => cmp.isEnabled = ctx2 => cond(ctx.extendVars(ctx2))
   })
-})
-
-jb.component('icon-with-action', { /* iconWithAction */
-  type: 'control,clickable',
-  category: 'control:30',
-  params: [
-    {id: 'icon', as: 'string', mandatory: true},
-    {id: 'title', as: 'string'},
-    {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {
-      id: 'style',
-      type: 'icon-with-action.style',
-      dynamic: true,
-      defaultValue: button.mdlIcon()
-    },
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => jb.ui.ctrl(ctx, {
-			init: cmp=>  {
-					cmp.icon = ctx.params.icon;
-					cmp.state.title = ctx.params.title;
-			},
-      afterViewInit: cmp =>
-          cmp.clicked = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
-    })
 })
 ;
 
@@ -6614,9 +6642,7 @@ jb.component('field.toolbar', { /* field.toolbar */
   params: [
     {id: 'toolbar', type: 'control', mandatory: true, dynamic: true}
   ],
-  impl: (context,toolbar) => ({
-    toolbar: toolbar().reactComp()
-  })
+  impl: (ctx,toolbar) => ({ toolbar: toolbar() })
 })
 
 // ***** validation
@@ -7263,14 +7289,36 @@ jb.component('feature.onEvent', { /* feature.onEvent */
 
 jb.component('feature.onHover', { /* feature.onHover */
   type: 'feature',
+  description: 'on mouse enter',
   category: 'events',
   params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true, mandatory: true},
+    {id: 'onLeave', type: 'action[]', mandatory: true, dynamic: true}
   ],
   impl: (ctx,action) => ({
-      onmouseenter: true,
-      afterViewInit: cmp => cmp.onmouseenter.debounceTime(500).subscribe(()=>
+      onmouseenter: true, onmouseleave: true,
+      afterViewInit: cmp => {
+        cmp.onmouseenter.debounceTime(500).subscribe(()=>
               jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
+        cmp.onmouseleave.debounceTime(500).subscribe(()=>
+              jb.ui.wrapWithLauchingElement(ctx.params.onLeave, cmp.ctx, cmp.base)())
+      }
+  })
+})
+
+jb.component('feature.class-on-hover', {
+  type: 'feature',
+  description: 'set css class on mouse enter',
+  category: 'events',
+  params: [
+    {id: 'class', type: 'string', defaultValue: 'item-hover', description: 'css class to add/remove on hover'}
+  ],
+  impl: (ctx,clz) => ({
+    onmouseenter: true, onmouseleave: true,
+    afterViewInit: cmp => {
+      cmp.onmouseenter.subscribe(()=> jb.ui.addClass(cmp.base,clz))
+      cmp.onmouseleave.subscribe(()=> jb.ui.removeClass(cmp.base,clz))
+    }
   })
 })
 
@@ -7380,15 +7428,42 @@ jb.component('focus-on-first-element', { /* focusOnFirstElement */
 
 jb.component('feature.byCondition', { /* feature.byCondition */
   type: 'feature',
-  description: 'define feature if then else condition',
+  description: 'conditional feature, define feature if then else condition',
   macroByValue: true,
   params: [
     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
-    {id: 'then', type: 'feature', mandatory: true, dynamic: true},
+    {id: 'then', type: 'feature', mandatory: true, dynamic: true, composite: true},
     {id: 'else', type: 'feature', dynamic: true}
   ],
   impl: (ctx,cond,_then,_else) =>
  		cond ? _then() : _else()
+})
+
+jb.component('feature.editable-content', {
+  type: 'feature',
+  params: [
+    {id: 'editableContentParam', as: 'string' },
+    {id: 'isHtml', as: 'boolean' },
+  ],
+  impl: (ctx,editableContentParam,isHtml) => ({
+    afterViewInit: () => {}, // keep the component
+    init: cmp => {
+      const contentEditable = jb.studio.studioWindow.jb.ui.contentEditable
+      if (contentEditable) {
+        cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,editableContentParam,isHtml)
+        if (!isHtml)
+          cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,editableContentParam)
+        cmp.onmousedownHandler = ev => contentEditable.openToolbar(ev,cmp.ctx.path)
+      }
+    },
+    templateModifier: (vdom,cmp) => {
+      const contentEditable = jb.studio.studioWindow.jb.ui.contentEditable
+      if (!contentEditable || !contentEditable.refOfProp(cmp,editableContentParam)) return vdom
+      vdom.attributes = vdom.attributes || {};
+      Object.assign(vdom.attributes,{contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true})
+      return vdom;
+    }
+  })
 })
 ;
 
@@ -7672,8 +7747,7 @@ jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
 		if (!id) return;
 		const dialog = context.vars.$dialog;
 		dialog.id = id;
-		dialog.em.filter(e=>
-			e.type == 'new-dialog')
+		dialog.em.filter(e=> e.type == 'new-dialog')
 			.subscribe(e=> {
 				if (e.dialog != dialog && e.dialog.id == id )
 					dialog.close();
@@ -7971,9 +8045,7 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
 jb.component('dialog.popup', { /* dialog.popup */
   type: 'dialog.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
-			  h(state.contentComp),
-		  ]),
+    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
     css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }',
     features: [
       dialogFeature.maxZIndexOnClick(),
@@ -9566,7 +9638,7 @@ jb.component('table', { /* table */
   category: 'group:80,common:70',
   params: [
     {id: 'title', as: 'string'},
-    {id: 'items', as: 'ref', whenNotRefferable: 'array', dynamic: true, mandatory: true},
+    {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'fields', type: 'table-field[]', mandatory: true, dynamic: true},
     {
       id: 'style',
@@ -9881,7 +9953,7 @@ jb.component('button.x', { /* button.x */
 jb.component('button.native', {
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('button',{title: state.title, onclick: true }),
+    template: (cmp,state,h) => h('button',{title: state.title, onclick: true },state.title),
   })
 })
 

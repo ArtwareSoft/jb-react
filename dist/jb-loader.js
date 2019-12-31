@@ -106,10 +106,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/d3-chart/d3-chart.js',
         'src/ui/d3-chart/d3-histogram.js',
       ],
-      'history': [
-        'dist/history.js',
-//        'src/ui/url.js'
-      ],
       'dragula': [
           'dist/dragula.js',
           'dist/dragula.css',
@@ -131,6 +127,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'dist/material.css',
         'dist/material.indigo-pink.min.css',
       ],
+      'history': [ 'dist/history.js' ],
       'node-adapter': [ 'src/node-adapter/node-adapter.js' ],
       'pretty-print': [ 'src/misc/pretty-print.js' ],
       'object-encoder': [ 'src/misc/object-encoder.js' ],
@@ -144,7 +141,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
-        'watch-ref-viewer'
+        'watch-ref-viewer', 'content-editable'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',
