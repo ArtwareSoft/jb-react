@@ -2,9 +2,9 @@ jb.ns('image')
 
 jb.component('image', { /* image */
   type: 'control,image',
-  category: 'control:50',
+  category: 'control:50,common:70',
   params: [
-    {id: 'url', as: 'string', mandatory: true},
+    {id: 'url', as: 'string', mandatory: true, templateValue: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'},
     {id: 'imageWidth', as: 'string'},
     {id: 'imageHeight', as: 'string'},
     {id: 'width', as: 'string'},

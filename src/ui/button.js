@@ -14,21 +14,19 @@ jb.component('button', { /* button */
     },
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx, {
-      beforeInit: cmp => {
-        cmp.state.title = jb.val(ctx.params.title(cmp.ctx));
-        cmp.refresh = _ => cmp.setState({title: jb.val(ctx.params.title(cmp.ctx))});
-      },
+  impl: ctx => jb.ui.ctrl(ctx, {
+      watchAndCalcRefProp: { prop: 'title', strongRefresh: true },
+      studioFeatures: feature.editableContent('title'),
+
       afterViewInit: cmp => {
-          cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
+          cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)
           cmp.onclickHandler = ev => {
             if (ev && ev.ctrlKey && cmp.ctrlAction)
-              cmp.ctrlAction(ctx.setVars({event:ev}))
+              cmp.ctrlAction(cmp.ctx.setVars({event:ev}))
             else if (ev && ev.altKey && cmp.altAction)
-              cmp.altAction(ctx.setVars({event:ev}))
+              cmp.altAction(cmp.ctx.setVars({event:ev}))
             else
-              cmp.action && cmp.action(ctx.setVars({event:ev}));
+              cmp.action && cmp.action(cmp.ctx.setVars({event:ev}));
           }
       }
     })
@@ -42,8 +40,7 @@ jb.component('ctrl-action', { /* ctrlAction */
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: ctx => ({
-      afterViewInit: cmp =>
-        cmp.ctrlAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
+      afterViewInit: cmp => cmp.ctrlAction = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)
   })
 })
 
@@ -55,8 +52,7 @@ jb.component('alt-action', { /* altAction */
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: ctx => ({
-      afterViewInit: cmp =>
-        cmp.altAction = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
+      afterViewInit: cmp => cmp.altAction = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)
   })
 })
 
@@ -68,32 +64,6 @@ jb.component('button-disabled', { /* buttonDisabled */
     {id: 'enabledCondition', type: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx,cond) => ({
-      init: cmp =>
-        cmp.isEnabled = ctx2 => cond(ctx.extendVars(ctx2))
+      init: cmp => cmp.isEnabled = ctx2 => cond(ctx.extendVars(ctx2))
   })
-})
-
-jb.component('icon-with-action', { /* iconWithAction */
-  type: 'control,clickable',
-  category: 'control:30',
-  params: [
-    {id: 'icon', as: 'string', mandatory: true},
-    {id: 'title', as: 'string'},
-    {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {
-      id: 'style',
-      type: 'icon-with-action.style',
-      dynamic: true,
-      defaultValue: button.mdlIcon()
-    },
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => jb.ui.ctrl(ctx, {
-			init: cmp=>  {
-					cmp.icon = ctx.params.icon;
-					cmp.state.title = ctx.params.title;
-			},
-      afterViewInit: cmp =>
-          cmp.clicked = jb.ui.wrapWithLauchingElement(ctx.params.action, ctx, cmp.base)
-    })
 })

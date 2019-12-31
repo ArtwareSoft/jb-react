@@ -175,12 +175,15 @@ function render(vdom,parentElem,cmp) {
         parentElem.nodeType == 3 ? parentElem.nodeValue = vdom : parentElem.innerText = vdom
     } else if (vdom.tag) {
         jb.log('htmlChange',['createElement',...arguments])
-        elem = parentElem.ownerDocument.createElement(vdom.tag)
+        elem = parentElem.ownerDocument.createElement(vdom.tag == 'html' ? 'div' : vdom.tag)
         jb.entries(vdom.attributes).filter(e=>e[0].indexOf('on') != 0 && !isAttUndefined(e[0],vdom.attributes)).forEach(e=>setAtt(elem,e[0],e[1]))
         jb.entries(vdom.attributes).filter(e=>e[0].indexOf('on') == 0).forEach(
                 e=>elem.setAttribute(e[0],`jb.ui.handleCmpEvent(${typeof e[1] == 'string' && e[1] ? "'" + e[1] + "'" : '' })`))
-        jb.asArray(vdom.children).map(child=> render(child,elem,cmp)).filter(x=>x)
-            .forEach(chElem=>elem.appendChild(chElem))
+        if (vdom.tag == 'html')
+            elem.innerHTML = vdom.children[0]
+        else 
+            jb.asArray(vdom.children).map(child=> render(child,elem,cmp)).filter(x=>x)
+                .forEach(chElem=>elem.appendChild(chElem))
         parentElem.appendChild(elem)
         jb.log('htmlChange',['appendChild',parentElem,elem])
     } else if (vdom.cmp) {

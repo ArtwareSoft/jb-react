@@ -247,25 +247,33 @@ jb.component('studio.pick-profile', { /* studio.pickProfile */
   ],
   impl: button({
     title: firstSucceeding(studio.compName('%$path%'), ''),
-    action: openDialog({
-      style: dialog.popup(),
-      content: studio.selectProfile({
-        onSelect: studio.setComp('%$path%', '%%'),
-        onBrowse: action.if(or(
-          equals('layout',studio.paramType('%$path%')),
-          endsWith('.style',studio.paramType('%$path%'))), studio.setComp('%$path%', '%%')),
-        type: studio.paramType('%$path%'),
-        path: '%$path%'
-      }),
-      features: [
-        dialogFeature.autoFocusOnFirstInput(),
-        css.padding({right: '20'}),
-        feature.init(writeValue('%$dialogData/originalVal%', studio.val('%$path%'))),
-        dialogFeature.onClose(action.if(not('%%'),studio.setComp('%$path%', '%$dialogData/originalVal%')))
-      ]
-    }),
+    action: studio.openPickProfile('%$path%'),
     style: button.selectProfileStyle(),
     features: studio.watchPath('%$path%')
+  })
+})
+
+jb.component('studio.open-pick-profile', { 
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: openDialog({
+    style: dialog.popup(),
+    content: studio.selectProfile({
+      onSelect: studio.setComp('%$path%', '%%'),
+      onBrowse: action.if(or(
+        equals('layout',studio.paramType('%$path%')),
+        endsWith('.style',studio.paramType('%$path%'))), studio.setComp('%$path%', '%%')),
+      type: studio.paramType('%$path%'),
+      path: '%$path%'
+    }),
+    features: [
+      dialogFeature.autoFocusOnFirstInput(),
+      css.padding({right: '20'}),
+      feature.init(writeValue('%$dialogData/originalVal%', studio.val('%$path%'))),
+      dialogFeature.onClose(action.if(not('%%'),studio.setComp('%$path%', '%$dialogData/originalVal%')))
+    ]
   })
 })
 

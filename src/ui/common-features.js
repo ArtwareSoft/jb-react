@@ -472,3 +472,30 @@ jb.component('feature.byCondition', { /* feature.byCondition */
   impl: (ctx,cond,_then,_else) =>
  		cond ? _then() : _else()
 })
+
+jb.component('feature.editable-content', {
+  type: 'feature',
+  params: [
+    {id: 'editableContentParam', as: 'string' },
+    {id: 'isHtml', as: 'boolean' },
+  ],
+  impl: (ctx,editableContentParam,isHtml) => ({
+    afterViewInit: () => {}, // keep the component
+    init: cmp => {
+      const contentEditable = jb.studio.studioWindow.jb.ui.contentEditable
+      if (contentEditable) {
+        cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,editableContentParam,isHtml)
+        if (!isHtml)
+          cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,editableContentParam)
+        cmp.onmousedownHandler = ev => contentEditable.openToolbar(ev,cmp.ctx.path)
+      }
+    },
+    templateModifier: (vdom,cmp) => {
+      const contentEditable = jb.studio.studioWindow.jb.ui.contentEditable
+      if (!contentEditable || !contentEditable.refOfProp(cmp,editableContentParam)) return vdom
+      vdom.attributes = vdom.attributes || {};
+      Object.assign(vdom.attributes,{contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true})
+      return vdom;
+    }
+  })
+})

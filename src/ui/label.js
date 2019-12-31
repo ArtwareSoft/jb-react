@@ -2,7 +2,7 @@ jb.ns('label')
 
 jb.component('text', { /* label */
   type: 'control',
-  category: 'control:100,common:80',
+  category: 'control:100,common:100',
   params: [
     {id: 'text', as: 'ref', mandatory: true, templateValue: 'my text', dynamic: true},
     {id: 'title', as: 'ref', mandatory: true, templateValue: 'my title', dynamic: true},
@@ -18,7 +18,7 @@ jb.component('label.bind-text', { /* label.bindText */
   type: 'feature',
   impl: ctx => ({
     watchAndCalcRefProp: { prop: 'text', toState: jb.ui.toVdomOrStr, strongRefresh: true },
-    studioFeatures: label.editableContent()
+    studioFeatures: feature.editableContent('text')
   })
 })
 
@@ -74,7 +74,15 @@ jb.component('label.span', { /* label.span */
   })
 })
 
-jb.component('label.card-title', { /* label.cardTitle */
+;[1,2,3,4,5,6].map(level=>jb.component(`header.h${level}`, {
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h(`h${level}`,{},state.text),
+    features: label.bindText()
+  })
+}))
+
+jb.component('header.card-title', { /* label.cardTitle */
   type: 'label.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'mdl-card__title' },
@@ -108,47 +116,4 @@ jb.component('label.highlight', { /* label.highlight */
               jb.ui.h('span',{class: cssClass},highlight),
               b.split(highlight).slice(1).join(highlight)])
   }
-})
-
-jb.component('label.editable-content', {
-  type: 'feature',
-  impl: ({
-    afterViewInit: () => {}, // keep the component
-    init: cmp => {
-      cmp.setScriptData = ev => {
-        const resourceRef = cmp.toObserve.filter(e=>e.id == 'text').map(e=>e.ref)[0]
-        const scriptRef = cmp.scriptRef()
-        const val = ev.target.innerText
-        if (resourceRef)
-          jb.writeValue(resourceRef,val,cmp.ctx)
-        else if (scriptRef)
-          jb.studio.studioWindow.jb.writeValue(scriptRef,val,cmp.ctx)
-      }
-      cmp.onclickHandler = ev => {
-        new jb.studio.studioWindow.jb.jbCtx().setVar('$launchingElement',{ el : ev.target})
-          .run({$: 'content-editable.open-toolbar', path: cmp.ctx.path})
-      }
-      cmp.onkeydownHandler = cmp.onkeypressHandler = ev => {
-        if (ev.keyCode == 13) {
-          cmp.setScriptData(ev)
-          if (!cmp._destroyed)
-            cmp.strongRefresh()
-          return false
-        }
-      }
-      cmp.scriptRef = () => {
-        const studioJb = jb.studio.studioWindow.jb
-        const ref = studioJb.studio.refOfPath(cmp.ctx.path + '~text')
-        const val = studioJb.val(ref)
-        return typeof val === 'string' && ref
-      }
-      cmp.refOfText = () => cmp.toObserve.filter(e=>e.id == 'text').map(e=>e.ref)[0] || cmp.scriptRef()
-    },
-    templateModifier: (vdom,cmp) => {
-      if (!cmp.refOfText()) return vdom
-      vdom.attributes = vdom.attributes || {};
-      Object.assign(vdom.attributes,{contenteditable: 'true', onblur: 'setScriptData', onclick: true, onkeypress: true, onkeydown: true})
-      return vdom;
-    }
-  })
 })

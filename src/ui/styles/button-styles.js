@@ -30,7 +30,7 @@ jb.component('button.x', { /* button.x */
 jb.component('button.native', {
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('button',{title: state.title, onclick: true }),
+    template: (cmp,state,h) => h('button',{title: state.title, onclick: true },state.title),
   })
 })
 
