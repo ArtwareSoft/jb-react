@@ -38,10 +38,6 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
 
                   ctx.vars.$dialog.close({OK: true});
                   _window.document.body.removeChild(cover);
-                  // jb.delay(200).then(_=> {
-            //         if (st.previewWindow && st.previewWindow.getSelection())
-            //           st.previewWindow.getSelection().innerHTML = ''
-            //         })
               })
         }
     })

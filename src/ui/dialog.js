@@ -83,8 +83,7 @@ jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
 		if (!id) return;
 		const dialog = context.vars.$dialog;
 		dialog.id = id;
-		dialog.em.filter(e=>
-			e.type == 'new-dialog')
+		dialog.em.filter(e=> e.type == 'new-dialog')
 			.subscribe(e=> {
 				if (e.dialog != dialog && e.dialog.id == id )
 					dialog.close();
@@ -382,9 +381,7 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
 jb.component('dialog.popup', { /* dialog.popup */
   type: 'dialog.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
-			  h(state.contentComp),
-		  ]),
+    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
     css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }',
     features: [
       dialogFeature.maxZIndexOnClick(),

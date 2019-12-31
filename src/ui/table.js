@@ -5,7 +5,7 @@ jb.component('table', { /* table */
   category: 'group:80,common:70',
   params: [
     {id: 'title', as: 'string'},
-    {id: 'items', as: 'ref', whenNotRefferable: 'array', dynamic: true, mandatory: true},
+    {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'fields', type: 'table-field[]', mandatory: true, dynamic: true},
     {
       id: 'style',

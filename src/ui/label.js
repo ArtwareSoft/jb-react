@@ -1,23 +1,24 @@
 jb.ns('label')
 
-jb.component('label', { /* label */
+jb.component('text', { /* label */
   type: 'control',
   category: 'control:100,common:80',
   params: [
-    {id: 'text', as: 'ref', mandatory: true, defaultValue: 'my text', dynamic: true},
-    {id: 'title', as: 'ref', mandatory: true, defaultValue: 'my label', dynamic: true},
+    {id: 'text', as: 'ref', mandatory: true, templateValue: 'my text', dynamic: true},
+    {id: 'title', as: 'ref', mandatory: true, templateValue: 'my title', dynamic: true},
     {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('text', jb.comps.label)
+jb.component('label', {...jb.comps.text,type: 'depricated-control'} )
 
 jb.component('label.bind-text', { /* label.bindText */
   type: 'feature',
   impl: ctx => ({
     watchAndCalcRefProp: { prop: 'text', toState: jb.ui.toVdomOrStr, strongRefresh: true },
+    studioFeatures: label.editableContent()
   })
 })
 
@@ -40,7 +41,6 @@ jb.component('label.allow-asynch-value', {
   })
 })
 
-
 jb.component('label.htmlTag', { /* label.htmlTag */
   type: 'label.style',
   params: [
@@ -54,7 +54,7 @@ jb.component('label.htmlTag', { /* label.htmlTag */
   ],
   impl: customStyle({
     template: (cmp,state,h) => h(cmp.htmlTag,{class: cmp.cssClass},state.text),
-    features: label.bindText()
+    features: label.bindText(),
   })
 })
 
@@ -104,8 +104,51 @@ jb.component('label.highlight', { /* label.highlight */
     if (!h || !b) return b;
     const highlight = (b.match(new RegExp(h,'i'))||[])[0]; // case sensitive highlight
     if (!highlight) return b;
-    return [  b.split(highlight)[0],
+    return jb.ui.h('div',{},[  b.split(highlight)[0],
               jb.ui.h('span',{class: cssClass},highlight),
-              b.split(highlight).slice(1).join(highlight)]
+              b.split(highlight).slice(1).join(highlight)])
   }
+})
+
+jb.component('label.editable-content', {
+  type: 'feature',
+  impl: ({
+    afterViewInit: () => {}, // keep the component
+    init: cmp => {
+      cmp.setScriptData = ev => {
+        const resourceRef = cmp.toObserve.filter(e=>e.id == 'text').map(e=>e.ref)[0]
+        const scriptRef = cmp.scriptRef()
+        const val = ev.target.innerText
+        if (resourceRef)
+          jb.writeValue(resourceRef,val,cmp.ctx)
+        else if (scriptRef)
+          jb.studio.studioWindow.jb.writeValue(scriptRef,val,cmp.ctx)
+      }
+      cmp.onclickHandler = ev => {
+        new jb.studio.studioWindow.jb.jbCtx().setVar('$launchingElement',{ el : ev.target})
+          .run({$: 'content-editable.open-toolbar', path: cmp.ctx.path})
+      }
+      cmp.onkeydownHandler = cmp.onkeypressHandler = ev => {
+        if (ev.keyCode == 13) {
+          cmp.setScriptData(ev)
+          if (!cmp._destroyed)
+            cmp.strongRefresh()
+          return false
+        }
+      }
+      cmp.scriptRef = () => {
+        const studioJb = jb.studio.studioWindow.jb
+        const ref = studioJb.studio.refOfPath(cmp.ctx.path + '~text')
+        const val = studioJb.val(ref)
+        return typeof val === 'string' && ref
+      }
+      cmp.refOfText = () => cmp.toObserve.filter(e=>e.id == 'text').map(e=>e.ref)[0] || cmp.scriptRef()
+    },
+    templateModifier: (vdom,cmp) => {
+      if (!cmp.refOfText()) return vdom
+      vdom.attributes = vdom.attributes || {};
+      Object.assign(vdom.attributes,{contenteditable: 'true', onblur: 'setScriptData', onclick: true, onkeypress: true, onkeydown: true})
+      return vdom;
+    }
+  })
 })

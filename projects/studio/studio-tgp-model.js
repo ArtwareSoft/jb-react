@@ -282,7 +282,7 @@ Object.assign(st,{
 	projectCompsAsEntries: () => {
 		const files = st.projectFiles()
 		return st.previewCompsAsEntries().filter(e=> {
-			const fn = e[1][jb.location][0].split('/').pop()
+			const fn = e[1][jb.location] && e[1][jb.location][0].split('/').pop()
 			return files.indexOf(fn) != -1
 		})
 	},

@@ -2,8 +2,9 @@ jb.ns('helloWorld')
 jb.component('hello-world.main', { /* helloWorld.main */
   type: 'control',
   impl: group({
+    layout: layout.vertical(),
     controls: [
-      label('hello world')
+      text({text: pipeline('%$people[0]/name%'), title: ''})
     ]
   })
 })
@@ -11,7 +12,7 @@ jb.component('hello-world.main', { /* helloWorld.main */
 jb.component('data-resource.people', { /* dataResource.people */
   watchableData: [
     {
-      name: 'Homer Simpson',
+      name: 'Homedsf ds r',
       age: 42,
       male: false,
       children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}]

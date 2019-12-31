@@ -65,7 +65,7 @@ jb.component('probe-test.static-inner-in-template', { /* probeTest.staticInnerIn
 
 jb.component('probe-test.label-text', {
   impl: studioProbeTest({
-    circuit: label({text: ctx => 'hello' }),
+    circuit: text({text: ctx => 'hello' }),
     probePath: 'text',
     expectedVisits: 1
   })

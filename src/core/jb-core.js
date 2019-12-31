@@ -230,6 +230,9 @@ function resolveFinishedPromise(val) {
   return val;
 }
 
+function isRefType(jstype) {
+  return jstype === 'ref' || jstype === 'ref[]'
+}
 function calcVar(ctx,varname,jstype) {
   let res;
   if (ctx.componentContext && ctx.componentContext.params[varname] !== undefined)
@@ -239,9 +242,9 @@ function calcVar(ctx,varname,jstype) {
   else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
     res = ctx.vars.scope[varname]
   else if (jb.resources && jb.resources[varname] !== undefined)
-    res = jstype == 'ref' ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
+    res = isRefType(jstype) ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
   else if (jb.consts && jb.consts[varname] !== undefined)
-    res = jstype == 'ref' ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
+    res = isRefType(jstype) ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname];
 
   return resolveFinishedPromise(res);
 }
@@ -320,7 +323,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         if (obj === null || obj === undefined) return;
         if (typeof obj[subExp] === 'function' && (parentParam.dynamic || obj[subExp].profile))
             return obj[subExp](ctx);
-        if (jstype == 'ref') {
+        if (isRefType(jstype)) {
           if (last)
             return refHandler.objectProperty(obj,subExp,ctx);
           if (obj[subExp] === undefined)
@@ -393,10 +396,7 @@ function bool_expression(exp, ctx, parentParam) {
 }
 
 function castToParam(value,param) {
-  let res = tojstype(value,param ? param.as : null);
-  if (param && param.as == 'ref' && param.whenNotRefferable && !jb.isRef(res))
-    res = tojstype(value,param.whenNotRefferable);
-  return res;
+  return tojstype(value,param ? param.as : null);
 }
 
 function tojstype(value,jstype) {
@@ -451,6 +451,11 @@ const jstypes = {
       return val(value);
     },
     ref(value) {
+      if (Array.isArray(value))
+        value = value[0];
+      return jb.asRef(value);
+    },
+    'ref[]': function(value) {
       return jb.asRef(value);
     },
     value(value) {

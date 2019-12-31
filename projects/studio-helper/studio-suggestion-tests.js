@@ -10,9 +10,7 @@ jb.component('people-array', { /* peopleArray */
 
 jb.component('suggestions-test.default-probe', { /* suggestionsTest.defaultProbe */
   type: 'control',
-  impl: label(
-    ''
-  )
+  impl: text('')
 })
 
 jb.component('suggestions-test.simple-vars', { /* suggestionsTest.simpleVars */

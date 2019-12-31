@@ -872,7 +872,7 @@ jb.component('run-action-on-items', { /* runActionOnItems */
   type: 'action',
   macroByValue: true,
   params: [
-    {id: 'items', as: 'ref', mandatory: true},
+    {id: 'items', as: 'ref[]', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
     {
       id: 'notifications',

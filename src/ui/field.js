@@ -209,9 +209,7 @@ jb.component('field.toolbar', { /* field.toolbar */
   params: [
     {id: 'toolbar', type: 'control', mandatory: true, dynamic: true}
   ],
-  impl: (context,toolbar) => ({
-    toolbar: toolbar().reactComp()
-  })
+  impl: (ctx,toolbar) => ({ toolbar: toolbar() })
 })
 
 // ***** validation

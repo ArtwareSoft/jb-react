@@ -210,7 +210,7 @@ Object.assign(jb.ui, {
         const path = ['_component',...methodPath.split('.')]
         const handler = jb.path(el,path)
         const obj = jb.path(el,path.slice(0,-1))
-        handler && handler.call(obj,event,event.type)
+        return handler && handler.call(obj,event,event.type)
     },
     ctrl(context,options) {
         const ctx = context.setVars({ $model: context.params });
@@ -445,7 +445,8 @@ class JbComponent {
     				.map(x=>x+'}')
     				.map(x=>x.replace(/^!/,' ')));
 
-		(options.featuresOptions || []).forEach(f => this.jbExtend(f, ctx))
+		jb.asArray(options.featuresOptions || []).forEach(f => this.jbExtend(f, ctx))
+		jb.asArray(ui.inStudio() && options.studioFeatures).forEach(f => this.jbExtend(ctx.run(f), ctx))
 		return this;
     }
 }
@@ -502,10 +503,10 @@ ui.focus = function(elem,logTxt,srcCtx) {
   	})
 }
 
-ui.wrapWithLauchingElement = (f,context,elem,options={}) => ctx2 => {
+ui.wrapWithLauchingElement = (f,ctx,elem,options={}) => ctx2 => {
 		if (!elem) debugger;
-		return f(context.extendVars(ctx2).setVars({ $launchingElement: { el : elem, ...options }}));
-	}
+		return f(ctx.extendVars(ctx2).setVars({ $launchingElement: { el : elem, ...options }}));
+}
 
 
 if (typeof $ != 'undefined' && $.fn)
@@ -528,6 +529,8 @@ ui.preserveCtx = ctx => {
   jb.ctxDictionary[ctx.id] = ctx;
   return ctx.id;
 }
+
+ui.inStudio = () => jb.studio && jb.studio.studioWindow
 
 ui.renderWidget = function(profile,top) {
 	let blockedParentWin = false // catch security execption from the browser if parent is not accessible

@@ -160,27 +160,11 @@ jb.component('studio-helper-dummy.label', { /* studioHelperDummy.label */
   })
 })
 
-
 jb.component('studio-helper.group-with-label', { /* studioHelper.groupWithLabel */
   type: 'control',
   impl: group({
-    controls: [
-      group({
-        remark: 'adsas',
-        controls: [
-          label({
-            title: pipeline('%$people-array/people%', filter('%age% == 42'), '%name%')
-          }),
-          editableText({}),
-          table({
-            items: '%$people%',
-            fields: [field({title: 'name', data: '%name%'})],
-            style: table.withHeaders(),
-            visualSizeLimit: 100
-          })
-        ]
-      })
-    ]
+    title: '',
+    controls: label('hello')
   })
 })
 
@@ -374,7 +358,7 @@ jb.component('studio-helper-sample.properties-params-prof', { /* studioHelperSam
     features: [label.bindText(), mdlStyle.initDynamic()]
   }),
   '$vars': {
-    
+
   }
 })
 
