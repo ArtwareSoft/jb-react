@@ -13,6 +13,19 @@ jb.component('content-editable.open-toolbar', {
     }))
 })
 
+jb.component('content-editable.open-layout', {
+  type: 'action',
+  params: [
+      {id: 'path', as: 'string'},
+  ],
+  impl: runActions(
+      writeValue('%$studio/profile_path%','%$path%'),
+      openDialog({
+//          style: contentEditable.popupStyle(),
+          content: contentEditable.toolbar()
+  }))
+})
+
 jb.component('content-editable.popup-style', {
     type: 'dialog.style',
     impl: customStyle({
@@ -25,6 +38,20 @@ jb.component('content-editable.popup-style', {
         dialogFeature.nearLauncherPosition({offsetLeft: 100, offsetTop: () => document.querySelector('#jb-preview').getBoundingClientRect().top})
       ]
    })
+})
+
+jb.component('studio.open-toolbar-of-last-edit', { /* studio.openToolbarOfLastEdit */
+  type: 'action',
+  impl: ctx => {
+      const path = ctx.run(studio.lastEdit())
+      jb.delay(500).then(()=>{
+        const _window = jb.studio.previewWindow;
+        const el = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
+          .filter(e=> jb.path(_window.jb.ctxDictionary[e.getAttribute('jb-ctx')],'path') == path)[0]
+        if (el)
+          new jb.jbCtx().setVar('$launchingElement',{ el }).run({$: 'content-editable.open-toolbar', path })
+      })
+    }
 })
 
 jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
@@ -44,7 +71,7 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
         action: studio.openNewProfileDialog({
           type: 'control',
           mode: 'insert-control',
-          onClose: runActions(studio.gotoLastEdit(), studio.openProperties())
+          onClose: studio.openToolbarOfLastEdit()
         }),
         style: button.mdlIcon('add')
       }),
@@ -56,9 +83,16 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
         layout: layout.horizontal(),
         controls: [
           button({
-            title: 'Properties',
-            action: studio.openProperties(true),
-            style: button.mdlIcon('storage')
+            vars: Var('parentLayout', ctx =>
+              jb.studio.parents(ctx.run(studio.currentProfilePath())).find(path=> jb.studio.compNameOfPath(path) == 'group') + '~layout'),
+            title: 'Layout',
+            action: studio.openPickProfile('%$parentLayout%'),
+            style: button.mdlIcon('view_quilt')
+          }),
+          button({
+            title: 'Document Structure',
+            action: toggleBooleanValue('%$showTree%'),
+            style: button.mdlIcon('dynamic_feed')
           }),
           button({
             title: 'Outline',
@@ -82,8 +116,9 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
           })
         ],
         features: css('zoom: 0.7')
-      })
-    ]
+      }),
+    ],
+    features: variable({name:'showTree', value: false, watchable: true})
   })
 })
 
@@ -99,7 +134,7 @@ jb.ui.contentEditable = {
     },
     openToolbar(ev,path) { 
         new jb.jbCtx().setVar('$launchingElement',{ el : ev.target})
-            .run({$: 'content-editable.open-toolbar', path: path})
+            .run({$: 'content-editable.open-toolbar', path })
     },
     handleKeyEvent(ev,cmp,prop) {
         if (ev.keyCode == 13) {

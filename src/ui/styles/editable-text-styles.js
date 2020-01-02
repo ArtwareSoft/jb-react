@@ -39,9 +39,6 @@ jb.component('editable-text.mdl-input', { /* editableText.mdlInput */
     features: [
       field.databindText(),
       mdlStyle.initDynamic(),
-      ctx => ({
-            beforeInit: cmp => cmp.elemToInput = elem => elem.children[0]
-          })
     ]
   })
 })
@@ -52,12 +49,11 @@ jb.component('editable-text.mdl-input-no-floating-label', { /* editableText.mdlI
     {id: 'width', as: 'number'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) =>
-        h('input', { class: 'mdl-textfield__input', type: 'text',
+    template: (cmp,state,h) => h('input', { class: 'mdl-textfield__input', type: 'text',
             value: state.model, onchange: true, onkeyup: true, onblur: true,
-        }),
+    }),
     css: '{ {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
-    features: [field.databindText(), mdlStyle.initDynamic()]
+    features: [field.databindText()]
   })
 })
 

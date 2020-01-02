@@ -172,3 +172,14 @@ jb.component('ui-test.table-tree-with-title-ctrl', {
   })
 })
 
+jb.component('ui-test.table-tree-with-filter', {
+  impl: uiTest({
+      control: tableTree({
+        treeModel: tree.modelFilter(tree.jsonReadOnly('%$personWithChildren%', ''), endsWith('~name')),
+        leafFields: text({title: 'name', text: '%val%' }),
+        chapterHeadline: label({text: suffix('~', '%path%')}),
+    }),
+    expectedResult: and(contains(['name','Homer']),not(contains('friends')))
+  })
+})
+

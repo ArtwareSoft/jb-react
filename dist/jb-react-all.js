@@ -5432,7 +5432,7 @@ function render(vdom,parentElem,cmp) {
         jb.entries(vdom.attributes).filter(e=>e[0].indexOf('on') == 0).forEach(
                 e=>elem.setAttribute(e[0],`jb.ui.handleCmpEvent(${typeof e[1] == 'string' && e[1] ? "'" + e[1] + "'" : '' })`))
         if (vdom.tag == 'html')
-            elem.innerHTML = vdom.children[0]
+            elem.innerHTML = vdom.children[0] || ''
         else 
             jb.asArray(vdom.children).map(child=> render(child,elem,cmp)).filter(x=>x)
                 .forEach(chElem=>elem.appendChild(chElem))

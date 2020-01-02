@@ -180,7 +180,7 @@ function render(vdom,parentElem,cmp) {
         jb.entries(vdom.attributes).filter(e=>e[0].indexOf('on') == 0).forEach(
                 e=>elem.setAttribute(e[0],`jb.ui.handleCmpEvent(${typeof e[1] == 'string' && e[1] ? "'" + e[1] + "'" : '' })`))
         if (vdom.tag == 'html')
-            elem.innerHTML = vdom.children[0]
+            elem.innerHTML = vdom.children && vdom.children[0] || ''
         else 
             jb.asArray(vdom.children).map(child=> render(child,elem,cmp)).filter(x=>x)
                 .forEach(chElem=>elem.appendChild(chElem))
@@ -778,10 +778,10 @@ jb.component('custom-style', { /* customStyle */
           css: css,
           featuresOptions: features(),
           styleCtx: context._parent
-      })
-  })
+    })
+})
   
-  jb.component('style-by-control', { /* styleByControl */
+jb.component('style-by-control', { /* styleByControl */
     typePattern: /\.style$/,
     category: 'advanced:10,all:20',
     params: [
@@ -789,9 +789,9 @@ jb.component('custom-style', { /* customStyle */
       {id: 'modelVar', as: 'string', mandatory: true}
     ],
     impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar,ctx.vars.$model))
-  })
+})
   
-  jb.component('style-with-features', { 
+jb.component('style-with-features', { 
       typePattern: /\.style$/,
       category: 'advanced:10,all:20',
       params: [
@@ -799,6 +799,16 @@ jb.component('custom-style', { /* customStyle */
         {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
       ],
       impl: (ctx,style,features) => style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
-  })  
-  
+})  
+
+jb.component('control-with-features', {
+    type: 'control',
+    category: 'advanced:10,all:20',
+    params: [
+        {id: 'control', type: 'control', mandatory: true},
+        {id: 'features', type: 'feature[]', templateValue: [], mandatory: true}
+    ],
+    impl: (ctx,control,features) => control.jbExtend(features,ctx)
+})  
+
 })()

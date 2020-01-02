@@ -260,14 +260,17 @@ jb.component('studio.open-pick-profile', {
   ],
   impl: openDialog({
     style: dialog.popup(),
-    content: studio.selectProfile({
-      onSelect: studio.setComp('%$path%', '%%'),
-      onBrowse: action.if(or(
-        equals('layout',studio.paramType('%$path%')),
-        endsWith('.style',studio.paramType('%$path%'))), studio.setComp('%$path%', '%%')),
-      type: studio.paramType('%$path%'),
-      path: '%$path%'
-    }),
+    content: group({ controls: [
+      studio.selectProfile({
+        onSelect: studio.setComp('%$path%', '%%'),
+        onBrowse: action.if(or(
+          equals('layout',studio.paramType('%$path%')),
+          endsWith('.style',studio.paramType('%$path%'))), studio.setComp('%$path%', '%%')),
+        type: studio.paramType('%$path%'),
+        path: '%$path%'
+      }),
+      studio.properties('%$path%')
+    ]}),
     features: [
       dialogFeature.autoFocusOnFirstInput(),
       css.padding({right: '20'}),

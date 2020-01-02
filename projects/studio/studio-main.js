@@ -217,10 +217,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
     controls: [
       image({
         url: '%$studio/baseStudioUrl%css/jbartlogo.png',
-        imageHeight: '60',
-        width: '88',
-        style: image.default(),
-        features: css.margin({top: '15', left: '5'})
+        features: [css.margin({top: '5', left: '5'}), css.width('80'), css.height('100')]
       }),
       group({
         title: 'title and menu',

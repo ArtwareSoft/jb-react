@@ -66,7 +66,7 @@ function serve(req, res) {
 }
 
 // static file handlers
-supported_ext =  ['js','gif','png','jpg','html','xml','css','xtml','txt','json','bmp','woff','jsx','prj','woff2','map','ico'];
+supported_ext =  ['js','gif','png','jpg','html','xml','css','xtml','txt','json','bmp','woff','jsx','prj','woff2','map','ico','svg'];
 for(i=0;i<supported_ext.length;i++)
   file_type_handlers[supported_ext[i]] = function(req, res,path) { serveFile(req,res,path); };
 

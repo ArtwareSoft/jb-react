@@ -76,7 +76,7 @@ jb.component('layout.grid', { /* layout.grid */
   ],
   impl: ctx => ({
     css: ctx.setVars({...ctx.params,
-          colSizes: ctx.params.columnSizes.join(' ') , rowSizes: ctx.params.rowSizes.join(' ')
+          colSizes: ctx.params.columnSizes.map(x=>jb.ui.withUnits(x)).join(' ') , rowSizes: ctx.params.rowSizes.map(x=>jb.ui.withUnits(x)).join(' ')
          }).exp(`{ display: grid; {?grid-template-columns:%$colSizes%;?} {?grid-template-rows:%$rowSizes%;?} 
             {?grid-column-gap:%$columnGap%;?} {?grid-column-gap:%$rowGap%;?} }`)
   })

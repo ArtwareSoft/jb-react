@@ -70,17 +70,6 @@ jb.component('studio.goto-last-edit', { /* studio.gotoLastEdit */
   impl: studio.gotoPath(studio.lastEdit())
 })
 
-jb.component('studio.project-source', { /* studio.projectSource */
-  params: [
-    {id: 'project', as: 'string', defaultValue: '%$studio/project%'}
-  ],
-  impl: (context,project) => {
-		if (!project) return;
-		var comps = jb.entries(st.previewjb.comps).map(x=>x[0]).filter(x=>x.indexOf(project) == 0);
-		return comps.map(comp=>st.compAsStr(comp)).join('\n\n')
-	}
-})
-
 jb.component('studio.comp-source', { /* studio.compSource */
   params: [
     {id: 'comp', as: 'string', defaultValue: studio.currentProfilePath()}

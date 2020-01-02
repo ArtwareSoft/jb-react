@@ -5,8 +5,7 @@ jb.component('tree.json-read-only', { /* tree.jsonReadOnly */
     {id: 'object', as: 'single'},
     {id: 'rootPath', as: 'string'}
   ],
-  impl: (ctx, json, rootPath) =>
-		new ROjson(json,rootPath)
+  impl: (ctx, json, rootPath) => new ROjson(json,rootPath)
 })
 
 class ROjson {

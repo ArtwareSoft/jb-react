@@ -1,8 +1,6 @@
 (function() {
 jb.ns('tree')
 
- //********************* jBart Components
-
 jb.component('tree', { /* tree */
   type: 'control',
   params: [

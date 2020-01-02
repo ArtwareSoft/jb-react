@@ -1,4 +1,4 @@
-jb.ns('table-tree')
+jb.ns('table-tree,tree')
 jb.ns('json')
 
 jb.component('table-tree', {
@@ -14,29 +14,15 @@ jb.component('table-tree', {
     impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('tree.node-model', {
-    description: 'tree model of paths with ~ as separator',
+jb.component('tree.model-filter', {
     type: 'tree.node-model',
+    description: 'filters a model by path filter predicate',
     params: [
-      {id: 'rootPath', as: 'single', mandatory: true },
-      {id: 'children', dynamic: true, mandatory: true, description: 'from parent path to children paths' },
-      {id: 'pathToItem', dynamic: true, mandatory: true, description: 'value of path' },
-      {id: 'icon', dynamic: true, as: 'string', description: 'icon name from material icons' },
-      {id: 'isChapter', dynamic: true, as: 'boolean', description: 'path as input. differnt from children() == 0, as you can drop into empty array' },
-      {id: 'maxDepth',  as: 'number', defaultValue: 3 },
-      {id: 'fieldCache', as: 'boolean' },
-      {id: 'includeRoot',  as: 'boolean' },
+        {id: 'model', type: 'tree.node-model', mandatory: true},
+        {id: 'pathFilter', type: 'boolean', dynamic: true, mandatory: true, description: 'input is path. e.g a~b~c' }
     ],
-    impl: ctx => ({
-        rootPath: ctx.params.rootPath,
-        children: path => ctx.params.children(ctx.setData(path)),
-        val: path => ctx.params.pathToItem(ctx.setData(path)),
-        icon: path => ctx.params.icon(ctx.setData(path)),
-        title: () => '',
-        isArray: path => ctx.params.isChapter.profile ? ctx.params.isChapter(ctx.setData(path)) : ctx.params.children(ctx.setData(path)).length,
-        maxDepth: ctx.params.maxDepth,
-        fieldCache: ctx.params.fieldCache,
-        includeRoot: ctx.params.includeRoot
+    impl: (ctx, model, pathFilter) => Object.assign(Object.create(model),{
+                children: path => model.children(path).filter(childPath => pathFilter(ctx.setData(childPath)))
     })
 })
   
@@ -143,6 +129,7 @@ jb.component('table-tree.plain', {
       { id: 'hideHeaders',  as: 'boolean' },
       { id: 'gapWidth', as: 'number', defaultValue: 30 },
       { id: 'expColWidth', as: 'number', defaultValue: 16 },
+      { id: 'noItemsCtrl', type: 'control', dynamic: true, defaultValue: text('no items') },
     ],
     impl: customStyle({
       template: (cmp,state,h) => h('table',{},[
@@ -163,7 +150,7 @@ jb.component('table-tree.plain', {
                         h(f.cachedControl(item,index),{index: index}))) ]
               ), item ))
           ),
-          state.items.length == 0 ? 'no items' : ''
+          state.items.length == 0 ? h(cmp.noItemsCtrl()) : ''
           ]),
       css: `{border-spacing: 0; text-align: left;width: 100%; table-layout:fixed;}
       >tbody>tr>td>span { font-size:16px; cursor: pointer; display: flex; border: 1px solid transparent }

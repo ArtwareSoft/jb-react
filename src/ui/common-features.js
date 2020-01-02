@@ -475,9 +475,10 @@ jb.component('feature.byCondition', { /* feature.byCondition */
 
 jb.component('feature.editable-content', {
   type: 'feature',
+  description: 'studio editing behavior',
   params: [
-    {id: 'editableContentParam', as: 'string' },
-    {id: 'isHtml', as: 'boolean' },
+    {id: 'editableContentParam', as: 'string', description: 'name of param mapped to the content editable element' },
+    {id: 'isHtml', as: 'boolean', description: 'allow rich text editing' },
   ],
   impl: (ctx,editableContentParam,isHtml) => ({
     afterViewInit: () => {}, // keep the component
@@ -492,9 +493,15 @@ jb.component('feature.editable-content', {
     },
     templateModifier: (vdom,cmp) => {
       const contentEditable = jb.studio.studioWindow.jb.ui.contentEditable
-      if (!contentEditable || !contentEditable.refOfProp(cmp,editableContentParam)) return vdom
+      if (!contentEditable || editableContentParam && !contentEditable.refOfProp(cmp,editableContentParam)) return vdom
+      const attsToInject = {contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true}
+      // fix spacebar bug in button
+      if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {
+        vdom.children[0] = jb.ui.h('span',attsToInject,vdom.children[0])
+        return vdom
+      }
       vdom.attributes = vdom.attributes || {};
-      Object.assign(vdom.attributes,{contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true})
+      Object.assign(vdom.attributes,attsToInject)
       return vdom;
     }
   })

@@ -106,16 +106,14 @@ jb.component('studio.short-title', { /* studio.shortTitle */
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.shortTitle(path)
+  impl: (ctx,path) =>	st.shortTitle(path)
 })
 
 jb.component('studio.summary', { /* studio.summary */
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.summary(path)
+  impl: (ctx,path) =>	st.summary(path)
 })
 
 jb.component('studio.has-param', { /* studio.hasParam */
@@ -123,8 +121,7 @@ jb.component('studio.has-param', { /* studio.hasParam */
     {id: 'path', as: 'string'},
     {id: 'param', as: 'string'}
   ],
-  impl: (ctx,path,param) =>
-		st.paramDef(path+'~'+param)
+  impl: (ctx,path,param) =>	st.paramDef(path+'~'+param)
 })
 
 jb.component('studio.non-control-children', { /* studio.nonControlChildren */
@@ -260,8 +257,7 @@ jb.component('studio.insert-control', { /* studio.insertControl */
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
     {id: 'comp', as: 'string'}
   ],
-  impl: (ctx,path,comp,type) =>
-		st.insertControl(path, comp,ctx)
+  impl: (ctx,path,comp,type) =>	st.insertControl(path, comp,ctx)
 })
 
 jb.component('studio.wrap', { /* studio.wrap */

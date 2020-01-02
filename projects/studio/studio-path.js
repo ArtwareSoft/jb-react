@@ -47,24 +47,15 @@ function writeValueToDataResource(path,value) {
 // adaptors
 
 Object.assign(st,{
-  val: (v) =>
-    st.compsRefHandler.val(v),
-  writeValue: (ref,value,srcCtx) =>
-    st.compsRefHandler.writeValue(ref,value,srcCtx),
-  objectProperty: (obj,prop) =>
-    st.compsRefHandler.objectProperty(obj,prop),
-  splice: (ref,args,srcCtx) =>
-    st.compsRefHandler.splice(ref,args,srcCtx),
-  push: (ref,value,srcCtx) =>
-    st.compsRefHandler.push(ref,value,srcCtx),
-  merge: (ref,value,srcCtx) =>
-    st.compsRefHandler.merge(ref,value,srcCtx),
-  isRef: (ref) =>
-    st.compsRefHandler.isRef(ref),
-  asRef: (obj) =>
-    st.compsRefHandler.asRef(obj),
-  refreshRef: (ref) =>
-    st.compsRefHandler.refresh(ref),
+  val: v => st.compsRefHandler.val(v),
+  writeValue: (ref,value,srcCtx) => st.compsRefHandler.writeValue(ref,value,srcCtx),
+  objectProperty: (obj,prop) => st.compsRefHandler.objectProperty(obj,prop),
+  splice: (ref,args,srcCtx) => st.compsRefHandler.splice(ref,args,srcCtx),
+  push: (ref,value,srcCtx) => st.compsRefHandler.push(ref,value,srcCtx),
+  merge: (ref,value,srcCtx) => st.compsRefHandler.merge(ref,value,srcCtx),
+  isRef: (ref) => st.compsRefHandler.isRef(ref),
+  asRef: (obj) => st.compsRefHandler.asRef(obj),
+  refreshRef: (ref) => st.compsRefHandler.refresh(ref),
   refOfPath: (path,silent) => {
 		const _path = path.split('~');
 		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0]);
@@ -73,10 +64,9 @@ Object.assign(st,{
 		ref.jbToUse = st.previewjb
 		return ref
   },
-  parentPath: path =>
-		path.split('~').slice(0,-1).join('~'),
-  valOfPath: path =>
-  	jb.path(st.previewjb.comps,path.split('~')),
+  parentPath: path => path.split('~').slice(0,-1).join('~'),
+  parents: path => path.split('~').reduce((acc,last,i) => acc.concat(i ? [acc[acc.length-1],last].join('~') : last),[]).reverse(),
+  valOfPath: path => jb.path(st.previewjb.comps,path.split('~')),
   compNameOfPath: (path,silent) => {
     if (path.indexOf('~') == -1)
       return 'jb-component';
@@ -84,16 +74,11 @@ Object.assign(st,{
     const prof = st.valOfPath(path,silent); // + (path.indexOf('~') == -1 ? '~impl' : '');
   	return jb.compName(prof) || jb.compName(prof,st.paramDef(path))
   },
-  compOfPath: (path,silent) =>
-  	st.getComp(st.compNameOfPath(path,silent)),
-  paramsOfPath: (path,silent) =>
-  	jb.compParams(st.compOfPath(path,silent)), //.concat(st.compHeaderParams(path)),
-  writeValueOfPath: (path,value,srcCtx) =>
-		st.writeValue(st.refOfPath(path),value,srcCtx),
-  getComp: id =>
-		st.previewjb.comps[id],
-  compAsStr: id =>
-		jb.prettyPrintComp(id,st.getComp(id)),
+  compOfPath: (path,silent) => st.getComp(st.compNameOfPath(path,silent)),
+  paramsOfPath: (path,silent) => jb.compParams(st.compOfPath(path,silent)), //.concat(st.compHeaderParams(path)),
+  writeValueOfPath: (path,value,srcCtx) => st.writeValue(st.refOfPath(path),value,srcCtx),
+  getComp: id => st.previewjb.comps[id],
+  compAsStr: id => jb.prettyPrintComp(id,st.getComp(id)),
 })
 
 
@@ -215,11 +200,13 @@ Object.assign(st, {
 		// find group parent that can insert the control
 		if (path.indexOf('~') == -1)
 			path = path + '~impl';
-		var group_path = path;
+		let group_path = path;
 		while (st.controlParams(group_path).length == 0 && group_path)
 			group_path = st.parentPath(group_path);
-		var group_ref = st.getOrCreateControlArrayRef(group_path,srcCtx);
-		if (group_ref)
+		const group_ref = st.getOrCreateControlArrayRef(group_path,srcCtx);
+		if (group_path == st.parentPath(st.parentPath(path)))
+			st.splice(group_ref,[[Number(path.split('~').pop())+1, 0,newCtrl]],srcCtx);
+		else if (group_ref)
 			st.push(group_ref,[newCtrl],srcCtx);
 	},
     // if drop destination is not an array item, fix it
@@ -285,19 +272,15 @@ Object.assign(st, {
 		}
 	},
 
-  pathOfRef: ref =>
-  		ref && ref.path().join('~'),
-	nameOfRef: ref =>
-		ref.path().slice(-1)[0].split(':')[0],
-	valSummaryOfRef: ref =>
-		st.valSummary(jb.val(ref)),
+  	pathOfRef: ref => ref && ref.path().join('~'),
+	nameOfRef: ref => ref.path().slice(-1)[0].split(':')[0],
+	valSummaryOfRef: ref => st.valSummary(jb.val(ref)),
 	valSummary: val => {
 		if (val && typeof val == 'object')
 			return val.id || val.name
 		return '' + val;
 	},
-	pathSummary: path =>
-		path.replace(/~controls~/g,'~').replace(/~impl~/g,'~').replace(/^[^\.]*./,''),
+	pathSummary: path => path.replace(/~controls~/g,'~').replace(/~impl~/g,'~').replace(/^[^\.]*./,''),
 	isPrimitiveValue: val => ['string','boolean','number'].indexOf(typeof val) != -1,
 })
 
@@ -315,8 +298,7 @@ jb.component('studio.path-of-ref', { /* studio.pathOfRef */
   params: [
     {id: 'ref', defaultValue: '%%', mandatory: true}
   ],
-  impl: (ctx,ref) =>
-		st.pathOfRef(ref)
+  impl: (ctx,ref) => st.pathOfRef(ref)
 })
 
 jb.component('studio.name-of-ref', { /* studio.nameOfRef */
