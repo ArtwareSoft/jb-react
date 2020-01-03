@@ -28,10 +28,14 @@ jb.component('studio.properties', { /* studio.properties */
               return prop
             return Number(prop) + 1
           },
-          features: feature.hoverTitle(pipeline(studio.paramDef('%path%'), '%description%'))
+          features: [feature.hoverTitle(pipeline(studio.paramDef('%path%'), '%description%'))]
         }),
         style: tableTree.plain({hideHeaders: true, gapWidth: 100, noItemsCtrl: text('')}),
-        features: studio.watchPath({path: '%$path%', includeChildren: 'structure', allowSelfRefresh: true})
+        features: studio.watchPath({
+          path: '%$path%',
+          includeChildren: 'structure',
+          allowSelfRefresh: true
+        })
       }),
       button({
         title: 'new feature',
@@ -43,7 +47,10 @@ jb.component('studio.properties', { /* studio.properties */
         ]
       })
     ],
-    features: feature.byCondition(or('%$focus%',studio.lastEdit()),group.autoFocusOnFirstInput()),
+    features: feature.byCondition(
+      or('%$focus%', studio.lastEdit()),
+      group.autoFocusOnFirstInput()
+    )
   })
 })
 
@@ -90,7 +97,7 @@ jb.component('studio.prop-field', { /* studio.propField */
       features: [
         group.firstSucceeding(),
         studio.watchPath({ path: '%$path%', includeChildren: 'yes', recalcVars: true }),
-        variable('paramDef', studio.paramDef('%$path%')), 
+        variable('paramDef', studio.paramDef('%$path%')),
         variable('val', studio.val('%$path%'))
       ]
     }),
@@ -155,7 +162,7 @@ jb.component('studio.property-boolean', { /* studio.propertyBoolean */
   ],
   impl: editableBoolean({
     databind: studio.ref('%$path%'),
-    style: editableBoolean.mdlSlideToggle(),
+    style: editableBoolean.mdcSlideToggle(),
   })
 })
 

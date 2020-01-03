@@ -61,10 +61,13 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
     controls: [
       button({
         title: 'Edit Style',
-        action: studio.openPickProfile(
-          join({separator: '~', items: list(studio.currentProfilePath(), 'style')})
+        action: action.if(equals(studio.compName(studio.currentProfilePath()), 'image'),
+          studio.openProperties(),
+          studio.openPickProfile(
+            join({separator: '~', items: list(studio.currentProfilePath(), 'style')})
+          )
         ),
-        style: button.mdlIcon('border_color')
+        style: button.mdcIcon('border_color')
       }),
       button({
         title: 'Insert Control',
@@ -73,51 +76,21 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
           mode: 'insert-control',
           onClose: studio.openToolbarOfLastEdit()
         }),
-        style: button.mdlIcon('add')
+        style: button.mdcIcon('add')
       }),
-      text({
-        text: '',
-        features: css('border-left: 1px solid #38546d;margin: 0 12px !important;')
+      button({
+        vars: Var('parentLayout', ctx =>
+          jb.studio.parents(ctx.run(studio.currentProfilePath())).find(path=> jb.studio.compNameOfPath(path) == 'group') + '~layout'),
+        title: 'Layout',
+        action: studio.openPickProfile('%$parentLayout%'),
+        style: button.mdcIcon('view_quilt')
       }),
-      group({
-        layout: layout.horizontal(),
-        controls: [
-          button({
-            vars: Var('parentLayout', ctx =>
-              jb.studio.parents(ctx.run(studio.currentProfilePath())).find(path=> jb.studio.compNameOfPath(path) == 'group') + '~layout'),
-            title: 'Layout',
-            action: studio.openPickProfile('%$parentLayout%'),
-            style: button.mdlIcon('view_quilt')
-          }),
-          button({
-            title: 'Document Structure',
-            action: toggleBooleanValue('%$showTree%'),
-            style: button.mdlIcon('dynamic_feed')
-          }),
-          button({
-            title: 'Outline',
-            action: studio.openControlTree(),
-            style: button.mdlIcon('format_align_left')
-          }),
-          button({
-            title: 'jbEditor',
-            action: studio.openComponentInJbEditor(studio.currentProfilePath()),
-            style: button.mdlIcon('build')
-          }),
-          button({
-            title: 'Javascript',
-            action: studio.editSource(),
-            style: button.mdlIcon('language_javascript')
-          }),
-          button({
-            title: 'Delete',
-            action: studio.delete(studio.currentProfilePath()),
-            style: button.mdlIcon('delete')
-          })
-        ],
-        features: css('zoom: 0.7')
-      }),
-    ],
+      button({
+        title: 'Delete',
+        action: studio.delete(studio.currentProfilePath()),
+        style: button.mdcIcon('delete')
+      })
+     ],
     features: variable({name:'showTree', value: false, watchable: true})
   })
 })

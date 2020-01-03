@@ -117,7 +117,7 @@ jb.component('html-parsing.makeToDevices', { /* htmlParsing.makeToDevices */
             features: field.columnWidth('100')
           })
         ],
-        style: table.mdl(),
+        style: table.mdc(),
         visualSizeLimit: '4',
         features: [css.width('600'), watchRef({ref: '%$progress%', includeChildren: 'yes'})]
       })

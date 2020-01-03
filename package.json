@@ -22,6 +22,7 @@
     "eStudio": "node_modules/.bin/electron hosts/jb-electron -path:projects/studio/cards",
     "eTests": "node_modules/.bin/electron hosts/jb-electron -path:projects/ui-tests/tests.html",
     "dev": "concurrently \"npm run webpack\" \"npm run studio\" ",
+    "webpack": "node_modules/.bin/webpack",
     "build": "node_modules/.bin/webpack & node bin/build-libs & npm run ts",
     "build-libs": "node bin/build-libs",
     "ts": "node bin/tgp2ts srcDir:bin/studio -out:dist/jbart",
@@ -41,6 +42,11 @@
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
+    "@material/data-table": "^4.0.0",
+    "@material/floating-label": "^4.0.0",
+    "@material/ripple": "^4.0.0",
+    "@material/switch": "^4.0.0",
+    "@material/textfield": "^4.0.0",
     "animejs": "^3.1.0",
     "babel-core": "^6.24.1",
     "babel-loader": "^6.4.1",

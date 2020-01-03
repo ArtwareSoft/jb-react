@@ -38,7 +38,6 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
     if (jb.val(newRef) != jb.val(cmp.state.databindRef))
       cmp.databindRefChanged.next(newRef)
     cmp.setState({model: cmp.jbModel()});
-    cmp.refreshMdl && cmp.refreshMdl();
     cmp.extendRefresh && cmp.extendRefresh();
   }
 

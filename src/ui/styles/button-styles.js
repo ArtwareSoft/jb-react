@@ -34,72 +34,45 @@ jb.component('button.native', {
   })
 })
 
-jb.component('button.mdl-raised', { /* button.mdlRaised */
+jb.component('button.mdc', {
   type: 'button.style',
+  params: [
+    {id: 'raised', as: 'boolean' }
+  ],
   impl: customStyle({
-    template: (cmp,state,h) => h('button',{class: 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: true},state.title),
-    features: mdlStyle.initDynamic()
+    template: (cmp,{title},h) => h('button',{class: 'mdc-button' + (cmp.raised ? ' mdc-button--raised': ''), onclick: true},[
+      h('div',{class:'mdc-button__ripple'}),
+      h('span',{class:'mdc-button__label'},title),
+    ]),
+    features: mdcStyle.initDynamic()
   })
 })
 
-jb.component('button.mdl-flat-ripple', { /* button.mdlFlatRipple */
+jb.component('button.mdc-raised', {
   type: 'button.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: true},state.title),
-    css: '{ text-transform: none }',
-    features: mdlStyle.initDynamic()
-  })
+  impl: button.mdc(true)
 })
 
-jb.component('button.mdl-icon', { /* button.mdlIcon */
+jb.component('button.mdc-flat', {
+  type: 'button.style',
+  impl: button.mdc(false) 
+})
+
+jb.component('button.mdc-icon', { /* button.mdcIcon */
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', default: 'code'}
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('button',{
-          class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
-          title: state.title, tabIndex: -1, onclick:  true},
-        h('i',{class: 'material-icons'},cmp.icon)
-      ),
-    css: `{ border-radius: 2px}
-      >i {border-radius: 2px}`,
-    features: mdlStyle.initDynamic()
+          class: 'mdc-icon-button material-icons mdc-ripple-surface',
+          title: state.title, tabIndex: -1, onclick:  true},cmp.icon),
+    css: `{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}`,
+    features: mdcStyle.initDynamic()
   })
 })
 
-jb.component('button.mdl-round-icon', { /* button.mdlRoundIcon */
-  type: 'button.style,icon-with-action.style',
-  params: [
-    {id: 'icon', as: 'string', default: 'code'}
-  ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('button',{
-          class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
-          title: state.title, tabIndex: -1, onclick: true},
-        h('i',{class: 'material-icons'},cmp.icon)
-      ),
-    features: mdlStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdl-icon12-with-ripple', { /* button.mdlIcon12WithRipple */
-  type: 'button.style,icon-with-action.style',
-  params: [
-    {id: 'icon', as: 'string', default: 'code'}
-  ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('button',{
-          class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
-          title: state.title, tabIndex: -1, onclick: true },
-        h('i',{class: 'material-icons'},cmp.icon)
-      ),
-    css: '>.material-icons { font-size:12px;  }',
-    features: mdlStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdl-icon12', { /* button.mdlIcon12 */
+jb.component('button.mdc-icon12', { /* button.mdcIcon12 */
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', default: 'code'}
@@ -110,10 +83,3 @@ jb.component('button.mdl-icon12', { /* button.mdlIcon12 */
   })
 })
 
-jb.component('button.mdl-card-flat', { /* button.mdlCardFlat */
-  type: 'button.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('a',{class:'mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect', onclick: true},state.title),
-    features: mdlStyle.initDynamic()
-  })
-})

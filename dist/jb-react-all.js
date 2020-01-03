@@ -3052,7 +3052,7 @@ initSpyByUrl()
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./src/ui/jb-immutable.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/ui/pack-immutable.js");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -3080,15 +3080,15 @@ eval("/**\n * Copyright (c) 2013-present, Facebook, Inc.\n *\n * This source cod
 
 /***/ }),
 
-/***/ "./src/ui/jb-immutable.js":
-/*!********************************!*\
-  !*** ./src/ui/jb-immutable.js ***!
-  \********************************/
+/***/ "./src/ui/pack-immutable.js":
+/*!**********************************!*\
+  !*** ./src/ui/pack-immutable.js ***!
+  \**********************************/
 /*! no exports provided */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! immutability-helper */ \"./node_modules/immutability-helper/index.js\");\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(immutability_helper__WEBPACK_IMPORTED_MODULE_0__);\n\r\n\r\njb.ui.update = immutability_helper__WEBPACK_IMPORTED_MODULE_0___default.a;\r\n\n\n//# sourceURL=webpack:///./src/ui/jb-immutable.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! immutability-helper */ \"./node_modules/immutability-helper/index.js\");\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(immutability_helper__WEBPACK_IMPORTED_MODULE_0__);\n\r\n\r\njb.ui.update = immutability_helper__WEBPACK_IMPORTED_MODULE_0___default.a;\r\n\n\n//# sourceURL=webpack:///./src/ui/pack-immutable.js?");
 
 /***/ })
 
@@ -4857,7 +4857,9 @@ class WatchableValueByRef {
       }
 
       jb.path(op,path,opOnRef) // create op as nested object
-      const opEvent = {op: opOnRef, path, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime()}
+      const insertedIndex = jb.path(opOnRef.$splice,[0,2]) && jb.path(opOnRef.$splice,[0,0])
+      const insertedPath = insertedIndex != null && path.concat(insertedIndex)
+      const opEvent = {op: opOnRef, path, insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime()}
       this.resources(jb.ui.update(this.resources(),op),opEvent)
       const newVal = (opVal != null && opVal[isProxy]) ? opVal : this.valOfPath(path);
       if (opOnRef.$push) {
@@ -5432,7 +5434,7 @@ function render(vdom,parentElem,cmp) {
         jb.entries(vdom.attributes).filter(e=>e[0].indexOf('on') == 0).forEach(
                 e=>elem.setAttribute(e[0],`jb.ui.handleCmpEvent(${typeof e[1] == 'string' && e[1] ? "'" + e[1] + "'" : '' })`))
         if (vdom.tag == 'html')
-            elem.innerHTML = vdom.children[0] || ''
+            elem.innerHTML = vdom.children && vdom.children[0] || ''
         else 
             jb.asArray(vdom.children).map(child=> render(child,elem,cmp)).filter(x=>x)
                 .forEach(chElem=>elem.appendChild(chElem))
@@ -6030,10 +6032,10 @@ jb.component('custom-style', { /* customStyle */
           css: css,
           featuresOptions: features(),
           styleCtx: context._parent
-      })
-  })
+    })
+})
   
-  jb.component('style-by-control', { /* styleByControl */
+jb.component('style-by-control', { /* styleByControl */
     typePattern: /\.style$/,
     category: 'advanced:10,all:20',
     params: [
@@ -6041,9 +6043,9 @@ jb.component('custom-style', { /* customStyle */
       {id: 'modelVar', as: 'string', mandatory: true}
     ],
     impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar,ctx.vars.$model))
-  })
+})
   
-  jb.component('style-with-features', { 
+jb.component('style-with-features', { 
       typePattern: /\.style$/,
       category: 'advanced:10,all:20',
       params: [
@@ -6051,8 +6053,18 @@ jb.component('custom-style', { /* customStyle */
         {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
       ],
       impl: (ctx,style,features) => style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
-  })  
-  
+})  
+
+jb.component('control-with-features', {
+    type: 'control',
+    category: 'advanced:10,all:20',
+    params: [
+        {id: 'control', type: 'control', mandatory: true},
+        {id: 'features', type: 'feature[]', templateValue: [], mandatory: true}
+    ],
+    impl: (ctx,control,features) => control.jbExtend(features,ctx)
+})  
+
 })()
 ;
 
@@ -6308,53 +6320,65 @@ jb.component('html.in-iframe', {
 })
 ;
 
-jb.ns('image')
+jb.ns('image,css')
 
 jb.component('image', { /* image */
   type: 'control,image',
   category: 'control:50,common:70',
   params: [
     {id: 'url', as: 'string', mandatory: true, templateValue: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'},
-    {id: 'imageWidth', as: 'string'},
-    {id: 'imageHeight', as: 'string'},
-    {id: 'width', as: 'string'},
-    {id: 'height', as: 'string'},
-    {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.default()},
-    {id: 'features', type: 'feature[]', dynamic: true}
+    {id: 'resize', type: 'image.resize', defaultValue: image.fullyVisible()},
+    {id: 'position', type: 'image.position', description: 'move/shift image' },
+    {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.defaultStyle()},
+    {id: 'features', type: 'feature[]', dynamic: true, templateValue: css.height('100')}
   ],
   impl: ctx => jb.ui.ctrl(ctx, {
-    init: cmp => {
-      ['imageWidth','imageHeight','width','height'].map(k=> cmp.state[k] = jb.ui.withUnits(ctx.params[k])) 
-      cmp.state.url = ctx.params.url
-  }})
-})
-
-jb.component('image.default', { /* image.default */
-  type: 'image.style',
-  impl: customStyle({
-    template: (cmp,state,h) =>
-      h('div',{ style: { width: state.width, height: state.height }}, 
-        h('img', {src: state.url, style: {width: state.imageWidth, height: state.imageHeight}})),
+    studioFeatures: feature.editableContent(),
   })
 })
 
-jb.component('image.background-image', { 
-  type: 'image.style',
+jb.component('image.width-height', {
+  type: 'image.resize',
+  description: 'fixed size or precentage of the original',
   params: [
-      {id: 'backgroundPositionX', as: 'string', description: 'e.g. 50%, right 3px, left 25%'},
-      {id: 'backgroundPositionY', as: 'string', description: 'e.g. 50%, bottom 3px, top 25%'},
-  ],    
+    {id: 'width', as: 'string', description: 'e.g: 100, 20%'},
+    {id: 'height', as: 'string', description: 'e.g: 100, 20%'},
+  ],
+  impl: (ctx,width,height) => [ jb.ui.withUnits(width) ||'auto',jb.ui.withUnits(height)||'auto'].join(' ')
+})
+
+jb.component('image.cover', {
+  description: 'auto resize or crop to cover all area',
+  type: 'image.resize',
+  impl: 'cover'
+})
+
+jb.component('image.fully-visible', {
+  description: 'contain, auto resize to ensure the image is fully visible',
+  type: 'image.resize',
+  impl: 'contain'
+})
+
+jb.component('image.position', {
+  description: 'offset move shift original image',
+  type: 'image.position',
+  params: [
+    {id: 'x', as: 'string', description: 'e.g. 7, 50%, right'},
+    {id: 'y', as: 'string', description: 'e.g. 10, 50%, bottom'},
+  ],
+  impl: (ctx,x,y) => [x && `x: ${jb.ui.withUnits(x)}`,y && `y: ${jb.ui.withUnits(y)}`]
+    .filter(x=>x).map(x=>`background-position-${x}`).join(';')
+})
+
+jb.component('image.default-style', { 
+  type: 'image.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div', { style: {
-            'background-image': `url("${state.url}")`,
-            ...(state.width ? {'min-width': jb.ui.withUnits(state.width)} : {}),
-            ...(state.height ? {'min-height': jb.ui.withUnits(state.height)} : {}),
-        }}),
-      css: `
+    template: (cmp,state,h) => h('div'),
+    css: (ctx,{$model}) => `
       { 
-          background-size: cover; 
-          {? background-position-x: %$backgroundPositionX%;?} 
-          {? background-position-y: %$backgroundPositionY%; ?}
+          background-image: url('${$model.url}');
+          background-size: ${$model.resize};
+          ${$model.position};
           background-repeat: no-repeat
       }`
   })
@@ -7441,9 +7465,10 @@ jb.component('feature.byCondition', { /* feature.byCondition */
 
 jb.component('feature.editable-content', {
   type: 'feature',
+  description: 'studio editing behavior',
   params: [
-    {id: 'editableContentParam', as: 'string' },
-    {id: 'isHtml', as: 'boolean' },
+    {id: 'editableContentParam', as: 'string', description: 'name of param mapped to the content editable element' },
+    {id: 'isHtml', as: 'boolean', description: 'allow rich text editing' },
   ],
   impl: (ctx,editableContentParam,isHtml) => ({
     afterViewInit: () => {}, // keep the component
@@ -7458,9 +7483,15 @@ jb.component('feature.editable-content', {
     },
     templateModifier: (vdom,cmp) => {
       const contentEditable = jb.studio.studioWindow.jb.ui.contentEditable
-      if (!contentEditable || !contentEditable.refOfProp(cmp,editableContentParam)) return vdom
+      if (!contentEditable || editableContentParam && !contentEditable.refOfProp(cmp,editableContentParam)) return vdom
+      const attsToInject = {contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true}
+      // fix spacebar bug in button
+      if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {
+        vdom.children[0] = jb.ui.h('span',attsToInject,vdom.children[0])
+        return vdom
+      }
       vdom.attributes = vdom.attributes || {};
-      Object.assign(vdom.attributes,{contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true})
+      Object.assign(vdom.attributes,attsToInject)
       return vdom;
     }
   })
@@ -9981,12 +10012,9 @@ jb.component('button.mdl-icon', { /* button.mdlIcon */
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('button',{
-          class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
-          title: state.title, tabIndex: -1, onclick:  true},
-        h('i',{class: 'material-icons'},cmp.icon)
-      ),
-    css: `{ border-radius: 2px}
-      >i {border-radius: 2px}`,
+          class: 'mdc-icon-button material-icons mdc-ripple-surface',
+          title: state.title, tabIndex: -1, onclick:  true},cmp.icon),
+    css: `{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}`,
     features: mdlStyle.initDynamic()
   })
 })
@@ -10072,20 +10100,18 @@ jb.component('editable-text.mdl-input', { /* editableText.mdlInput */
     {id: 'width', as: 'number'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{class: ['mdl-textfield','mdl-js-textfield','mdl-textfield--floating-label',state.error ? 'is-invalid' : ''].join(' ') },[
-        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
+    template: (cmp,state,h) => h('div',{class: ['mdc-text-field',state.error ? 'is-invalid' : ''].join(' ') },[
+        h('input', { class: 'mdc-text-field__input', id: 'input_' + state.fieldId, type: 'text',
             value: state.model, onchange: true, onkeyup: true, onblur: true,
         }),
-        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title),
-        h('span',{class: 'mdl-textfield__error' }, state.error || '')
+        h('label',{class: 'mdc-label', for: 'input_' + state.fieldId},state.title),
+        //h('div',{class: 'mdc-line-ripple' }),
+        h('span',{class: 'mdc-text-field-helper-text' }, state.error || '')
       ]),
     css: '{ {?width: %$width%px?} }',
     features: [
       field.databindText(),
-      mdlStyle.initDynamic(),
-      ctx => ({
-            beforeInit: cmp => cmp.elemToInput = elem => elem.children[0]
-          })
+      //mdlStyle.initDynamic(),
     ]
   })
 })
@@ -10096,12 +10122,10 @@ jb.component('editable-text.mdl-input-no-floating-label', { /* editableText.mdlI
     {id: 'width', as: 'number'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) =>
-        h('input', { class: 'mdl-textfield__input', type: 'text',
-            value: state.model, onchange: true, onkeyup: true, onblur: true,
-        }),
+    template: (cmp,state,h) => h('input', { class: 'mdl-textfield__input', type: 'text',
+            value: state.model, onchange: true, onkeyup: true, onblur: true }),
     css: '{ {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
-    features: [field.databindText(), mdlStyle.initDynamic()]
+    features: [field.databindText()]
   })
 })
 
@@ -10258,7 +10282,7 @@ jb.component('layout.grid', { /* layout.grid */
   ],
   impl: ctx => ({
     css: ctx.setVars({...ctx.params,
-          colSizes: ctx.params.columnSizes.join(' ') , rowSizes: ctx.params.rowSizes.join(' ')
+          colSizes: ctx.params.columnSizes.map(x=>jb.ui.withUnits(x)).join(' ') , rowSizes: ctx.params.rowSizes.map(x=>jb.ui.withUnits(x)).join(' ')
          }).exp(`{ display: grid; {?grid-template-columns:%$colSizes%;?} {?grid-template-rows:%$rowSizes%;?} 
             {?grid-column-gap:%$columnGap%;?} {?grid-column-gap:%$rowGap%;?} }`)
   })
@@ -11111,8 +11135,6 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
 (function() {
 jb.ns('tree')
 
- //********************* jBart Components
-
 jb.component('tree', { /* tree */
   type: 'control',
   params: [
@@ -11495,7 +11517,7 @@ addToIndex = (path,toAdd) => {
 })()
 ;
 
-jb.ns('table-tree')
+jb.ns('table-tree,tree')
 jb.ns('json')
 
 jb.component('table-tree', {
@@ -11511,29 +11533,15 @@ jb.component('table-tree', {
     impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('tree.node-model', {
-    description: 'tree model of paths with ~ as separator',
+jb.component('tree.model-filter', {
     type: 'tree.node-model',
+    description: 'filters a model by path filter predicate',
     params: [
-      {id: 'rootPath', as: 'single', mandatory: true },
-      {id: 'children', dynamic: true, mandatory: true, description: 'from parent path to children paths' },
-      {id: 'pathToItem', dynamic: true, mandatory: true, description: 'value of path' },
-      {id: 'icon', dynamic: true, as: 'string', description: 'icon name from material icons' },
-      {id: 'isChapter', dynamic: true, as: 'boolean', description: 'path as input. differnt from children() == 0, as you can drop into empty array' },
-      {id: 'maxDepth',  as: 'number', defaultValue: 3 },
-      {id: 'fieldCache', as: 'boolean' },
-      {id: 'includeRoot',  as: 'boolean' },
+        {id: 'model', type: 'tree.node-model', mandatory: true},
+        {id: 'pathFilter', type: 'boolean', dynamic: true, mandatory: true, description: 'input is path. e.g a~b~c' }
     ],
-    impl: ctx => ({
-        rootPath: ctx.params.rootPath,
-        children: path => ctx.params.children(ctx.setData(path)),
-        val: path => ctx.params.pathToItem(ctx.setData(path)),
-        icon: path => ctx.params.icon(ctx.setData(path)),
-        title: () => '',
-        isArray: path => ctx.params.isChapter.profile ? ctx.params.isChapter(ctx.setData(path)) : ctx.params.children(ctx.setData(path)).length,
-        maxDepth: ctx.params.maxDepth,
-        fieldCache: ctx.params.fieldCache,
-        includeRoot: ctx.params.includeRoot
+    impl: (ctx, model, pathFilter) => Object.assign(Object.create(model),{
+                children: path => model.children(path).filter(childPath => pathFilter(ctx.setData(childPath)))
     })
 })
   
@@ -11640,6 +11648,7 @@ jb.component('table-tree.plain', {
       { id: 'hideHeaders',  as: 'boolean' },
       { id: 'gapWidth', as: 'number', defaultValue: 30 },
       { id: 'expColWidth', as: 'number', defaultValue: 16 },
+      { id: 'noItemsCtrl', type: 'control', dynamic: true, defaultValue: text('no items') },
     ],
     impl: customStyle({
       template: (cmp,state,h) => h('table',{},[
@@ -11660,7 +11669,7 @@ jb.component('table-tree.plain', {
                         h(f.cachedControl(item,index),{index: index}))) ]
               ), item ))
           ),
-          state.items.length == 0 ? 'no items' : ''
+          state.items.length == 0 ? h(cmp.noItemsCtrl()) : ''
           ]),
       css: `{border-spacing: 0; text-align: left;width: 100%; table-layout:fixed;}
       >tbody>tr>td>span { font-size:16px; cursor: pointer; display: flex; border: 1px solid transparent }
@@ -11690,8 +11699,7 @@ jb.component('tree.json-read-only', { /* tree.jsonReadOnly */
     {id: 'object', as: 'single'},
     {id: 'rootPath', as: 'string'}
   ],
-  impl: (ctx, json, rootPath) =>
-		new ROjson(json,rootPath)
+  impl: (ctx, json, rootPath) => new ROjson(json,rootPath)
 })
 
 class ROjson {

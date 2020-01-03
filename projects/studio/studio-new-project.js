@@ -49,7 +49,7 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
         editableText({
           title: 'project name',
           databind: '%$dialogData/name%',
-          style: editableText.mdlInput(),
+          style: editableText.mdcInput(),
           features: [
               feature.onEnter(dialog.closeContainingPopup()),
               validation(matchRegex('^[\-a-zA-Z_0-9]+$'),'invalid project name')

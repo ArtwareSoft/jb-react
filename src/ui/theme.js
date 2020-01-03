@@ -13,6 +13,6 @@ jb.component('group.theme', { /* group.theme */
 jb.component('theme.material-design', { /* theme.materialDesign */
   type: 'theme',
   impl: () => ({
-  	'$theme.editable-text': 'editable-text.mdl-input'
+  	'$theme.editable-text': 'editable-text.mdc-input'
   })
 })

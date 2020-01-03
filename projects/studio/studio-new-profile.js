@@ -29,8 +29,8 @@ jb.component('studio.categories-marks', { /* studio.categoriesMarks */
               'events:85',
               'group:80',
               'all:20',
-              'feature:0,tabs:0,label:0,picklist:0,mdl:0,studio:0,text:0,menu:0,flex-layout-container:0,mdl-style:0,itemlist-container:0,editable-text:0,editable-boolean:0,first-succeeding:0,itemlist-filter:0',
-              'mdl-style:0'
+              'feature:0,tabs:0,label:0,picklist:0,studio:0,text:0,menu:0,flex-layout-container:0,md-style:0,itemlist-container:0,editable-text:0,editable-boolean:0,first-succeeding:0,itemlist-filter:0',
+              'md-style:0'
             ),
           split(','),
           {
@@ -75,7 +75,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
             title: 'search',
             searchIn: itemlistContainer.searchInAllProperties(),
             databind: '%$itemlistCntrData/search_pattern%',
-            style: editableText.mdlInput('200'),
+            style: editableText.mdcInput('200'),
             features: feature.onEsc(dialog.closeContainingPopup(false))
           }),
           materialIcon({
@@ -290,7 +290,7 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
         editableText({
           title: 'page name',
           databind: '%$dialogData/name%',
-          style: editableText.mdlInput(),
+          style: editableText.mdcInput(),
           features: feature.onEnter(dialog.closeContainingPopup())
         })
       ],
@@ -325,7 +325,7 @@ jb.component('studio.open-new-function', {
         editableText({
           title: 'function name',
           databind: '%$dialogData/name%',
-          style: editableText.mdlInput(),
+          style: editableText.mdcInput(),
           features: feature.onEnter(dialog.closeContainingPopup())
         })
       ],

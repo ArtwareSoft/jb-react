@@ -1,3998 +1,689 @@
-;(function() {
+/******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId]) {
+/******/ 			return installedModules[moduleId].exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Flag the module as loaded
+/******/ 		module.l = true;
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+/******/
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// define __esModule on exports
+/******/ 	__webpack_require__.r = function(exports) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
+/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/
+/******/ 	// create a fake namespace object
+/******/ 	// mode & 1: value is a module id, require it
+/******/ 	// mode & 2: merge all properties of value into the ns
+/******/ 	// mode & 4: return value when already ns object
+/******/ 	// mode & 8|1: behave like require
+/******/ 	__webpack_require__.t = function(value, mode) {
+/******/ 		if(mode & 1) value = __webpack_require__(value);
+/******/ 		if(mode & 8) return value;
+/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
+/******/ 		var ns = Object.create(null);
+/******/ 		__webpack_require__.r(ns);
+/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
+/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
+/******/ 		return ns;
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "";
+/******/
+/******/
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/ui/pack-material.js");
+/******/ })
+/************************************************************************/
+/******/ ({
+
+/***/ "./node_modules/@material/animation/util.js":
+/*!**************************************************!*\
+  !*** ./node_modules/@material/animation/util.js ***!
+  \**************************************************/
+/*! exports provided: getCorrectPropertyName, getCorrectEventName */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
 "use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"getCorrectPropertyName\", function() { return getCorrectPropertyName; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"getCorrectEventName\", function() { return getCorrectEventName; });\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar cssPropertyNameMap = {\n    animation: {\n        prefixed: '-webkit-animation',\n        standard: 'animation',\n    },\n    transform: {\n        prefixed: '-webkit-transform',\n        standard: 'transform',\n    },\n    transition: {\n        prefixed: '-webkit-transition',\n        standard: 'transition',\n    },\n};\nvar jsEventTypeMap = {\n    animationend: {\n        cssProperty: 'animation',\n        prefixed: 'webkitAnimationEnd',\n        standard: 'animationend',\n    },\n    animationiteration: {\n        cssProperty: 'animation',\n        prefixed: 'webkitAnimationIteration',\n        standard: 'animationiteration',\n    },\n    animationstart: {\n        cssProperty: 'animation',\n        prefixed: 'webkitAnimationStart',\n        standard: 'animationstart',\n    },\n    transitionend: {\n        cssProperty: 'transition',\n        prefixed: 'webkitTransitionEnd',\n        standard: 'transitionend',\n    },\n};\nfunction isWindow(windowObj) {\n    return Boolean(windowObj.document) && typeof windowObj.document.createElement === 'function';\n}\nfunction getCorrectPropertyName(windowObj, cssProperty) {\n    if (isWindow(windowObj) && cssProperty in cssPropertyNameMap) {\n        var el = windowObj.document.createElement('div');\n        var _a = cssPropertyNameMap[cssProperty], standard = _a.standard, prefixed = _a.prefixed;\n        var isStandard = standard in el.style;\n        return isStandard ? standard : prefixed;\n    }\n    return cssProperty;\n}\nfunction getCorrectEventName(windowObj, eventType) {\n    if (isWindow(windowObj) && eventType in jsEventTypeMap) {\n        var el = windowObj.document.createElement('div');\n        var _a = jsEventTypeMap[eventType], standard = _a.standard, prefixed = _a.prefixed, cssProperty = _a.cssProperty;\n        var isStandard = cssProperty in el.style;\n        return isStandard ? standard : prefixed;\n    }\n    return eventType;\n}\n//# sourceMappingURL=util.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/animation/util.js?");
 
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/***/ }),
 
-/**
- * A component handler interface using the revealing module design pattern.
- * More details on this design pattern here:
- * https://github.com/jasonmayes/mdl-component-design-pattern
- *
- * @author Jason Mayes.
- */
-/* exported componentHandler */
+/***/ "./node_modules/@material/base/component.js":
+/*!**************************************************!*\
+  !*** ./node_modules/@material/base/component.js ***!
+  \**************************************************/
+/*! exports provided: MDCComponent, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-// Pre-defining the componentHandler interface, for closure documentation and
-// static verification.
-var componentHandler = {
-  /**
-   * Searches existing DOM for elements of our component type and upgrades them
-   * if they have not already been upgraded.
-   *
-   * @param {string=} optJsClass the programatic name of the element class we
-   * need to create a new instance of.
-   * @param {string=} optCssClass the name of the CSS class elements of this
-   * type will have.
-   */
-  upgradeDom: function(optJsClass, optCssClass) {},
-  /**
-   * Upgrades a specific element rather than all in the DOM.
-   *
-   * @param {!Element} element The element we wish to upgrade.
-   * @param {string=} optJsClass Optional name of the class we want to upgrade
-   * the element to.
-   */
-  upgradeElement: function(element, optJsClass) {},
-  /**
-   * Upgrades a specific list of elements rather than all in the DOM.
-   *
-   * @param {!Element|!Array<!Element>|!NodeList|!HTMLCollection} elements
-   * The elements we wish to upgrade.
-   */
-  upgradeElements: function(elements) {},
-  /**
-   * Upgrades all registered components found in the current DOM. This is
-   * automatically called on window load.
-   */
-  upgradeAllRegistered: function() {},
-  /**
-   * Allows user to be alerted to any upgrades that are performed for a given
-   * component type
-   *
-   * @param {string} jsClass The class name of the MDL component we wish
-   * to hook into for any upgrades performed.
-   * @param {function(!HTMLElement)} callback The function to call upon an
-   * upgrade. This function should expect 1 parameter - the HTMLElement which
-   * got upgraded.
-   */
-  registerUpgradedCallback: function(jsClass, callback) {},
-  /**
-   * Registers a class for future use and attempts to upgrade existing DOM.
-   *
-   * @param {componentHandler.ComponentConfigPublic} config the registration configuration
-   */
-  register: function(config) {},
-  /**
-   * Downgrade either a given node, an array of nodes, or a NodeList.
-   *
-   * @param {!Node|!Array<!Node>|!NodeList} nodes
-   */
-  downgradeElements: function(nodes) {}
-};
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCComponent\", function() { return MDCComponent; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/base/foundation.js\");\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\nvar MDCComponent = /** @class */ (function () {\n    function MDCComponent(root, foundation) {\n        var args = [];\n        for (var _i = 2; _i < arguments.length; _i++) {\n            args[_i - 2] = arguments[_i];\n        }\n        this.root_ = root;\n        this.initialize.apply(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__spread\"](args));\n        // Note that we initialize foundation here and not within the constructor's default param so that\n        // this.root_ is defined and can be used within the foundation class.\n        this.foundation_ = foundation === undefined ? this.getDefaultFoundation() : foundation;\n        this.foundation_.init();\n        this.initialSyncWithDOM();\n    }\n    MDCComponent.attachTo = function (root) {\n        // Subclasses which extend MDCBase should provide an attachTo() method that takes a root element and\n        // returns an instantiated component with its root set to that element. Also note that in the cases of\n        // subclasses, an explicit foundation class will not have to be passed in; it will simply be initialized\n        // from getDefaultFoundation().\n        return new MDCComponent(root, new _foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]({}));\n    };\n    /* istanbul ignore next: method param only exists for typing purposes; it does not need to be unit tested */\n    MDCComponent.prototype.initialize = function () {\n        var _args = [];\n        for (var _i = 0; _i < arguments.length; _i++) {\n            _args[_i] = arguments[_i];\n        }\n        // Subclasses can override this to do any additional setup work that would be considered part of a\n        // \"constructor\". Essentially, it is a hook into the parent constructor before the foundation is\n        // initialized. Any additional arguments besides root and foundation will be passed in here.\n    };\n    MDCComponent.prototype.getDefaultFoundation = function () {\n        // Subclasses must override this method to return a properly configured foundation class for the\n        // component.\n        throw new Error('Subclasses must override getDefaultFoundation to return a properly configured ' +\n            'foundation class');\n    };\n    MDCComponent.prototype.initialSyncWithDOM = function () {\n        // Subclasses should override this method if they need to perform work to synchronize with a host DOM\n        // object. An example of this would be a form control wrapper that needs to synchronize its internal state\n        // to some property or attribute of the host DOM. Please note: this is *not* the place to perform DOM\n        // reads/writes that would cause layout / paint, as this is called synchronously from within the constructor.\n    };\n    MDCComponent.prototype.destroy = function () {\n        // Subclasses may implement this method to release any resources / deregister any listeners they have\n        // attached. An example of this might be deregistering a resize event from the window object.\n        this.foundation_.destroy();\n    };\n    MDCComponent.prototype.listen = function (evtType, handler, options) {\n        this.root_.addEventListener(evtType, handler, options);\n    };\n    MDCComponent.prototype.unlisten = function (evtType, handler, options) {\n        this.root_.removeEventListener(evtType, handler, options);\n    };\n    /**\n     * Fires a cross-browser-compatible custom event from the component root of the given type, with the given data.\n     */\n    MDCComponent.prototype.emit = function (evtType, evtData, shouldBubble) {\n        if (shouldBubble === void 0) { shouldBubble = false; }\n        var evt;\n        if (typeof CustomEvent === 'function') {\n            evt = new CustomEvent(evtType, {\n                bubbles: shouldBubble,\n                detail: evtData,\n            });\n        }\n        else {\n            evt = document.createEvent('CustomEvent');\n            evt.initCustomEvent(evtType, shouldBubble, false, evtData);\n        }\n        this.root_.dispatchEvent(evt);\n    };\n    return MDCComponent;\n}());\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCComponent);\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/base/component.js?");
 
-componentHandler = (function() {
-  'use strict';
+/***/ }),
 
-  /** @type {!Array<componentHandler.ComponentConfig>} */
-  var registeredComponents_ = [];
+/***/ "./node_modules/@material/base/foundation.js":
+/*!***************************************************!*\
+  !*** ./node_modules/@material/base/foundation.js ***!
+  \***************************************************/
+/*! exports provided: MDCFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-  /** @type {!Array<componentHandler.Component>} */
-  var createdComponents_ = [];
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCFoundation\", function() { return MDCFoundation; });\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar MDCFoundation = /** @class */ (function () {\n    function MDCFoundation(adapter) {\n        if (adapter === void 0) { adapter = {}; }\n        this.adapter_ = adapter;\n    }\n    Object.defineProperty(MDCFoundation, \"cssClasses\", {\n        get: function () {\n            // Classes extending MDCFoundation should implement this method to return an object which exports every\n            // CSS class the foundation class needs as a property. e.g. {ACTIVE: 'mdc-component--active'}\n            return {};\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCFoundation, \"strings\", {\n        get: function () {\n            // Classes extending MDCFoundation should implement this method to return an object which exports all\n            // semantic strings as constants. e.g. {ARIA_ROLE: 'tablist'}\n            return {};\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCFoundation, \"numbers\", {\n        get: function () {\n            // Classes extending MDCFoundation should implement this method to return an object which exports all\n            // of its semantic numbers as constants. e.g. {ANIMATION_DELAY_MS: 350}\n            return {};\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCFoundation, \"defaultAdapter\", {\n        get: function () {\n            // Classes extending MDCFoundation may choose to implement this getter in order to provide a convenient\n            // way of viewing the necessary methods of an adapter. In the future, this could also be used for adapter\n            // validation.\n            return {};\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCFoundation.prototype.init = function () {\n        // Subclasses should override this method to perform initialization routines (registering events, etc.)\n    };\n    MDCFoundation.prototype.destroy = function () {\n        // Subclasses should override this method to perform de-initialization routines (de-registering events, etc.)\n    };\n    return MDCFoundation;\n}());\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/base/foundation.js?");
 
-  var componentConfigProperty_ = 'mdlComponentConfigInternal_';
+/***/ }),
 
-  /**
-   * Searches registered components for a class we are interested in using.
-   * Optionally replaces a match with passed object if specified.
-   *
-   * @param {string} name The name of a class we want to use.
-   * @param {componentHandler.ComponentConfig=} optReplace Optional object to replace match with.
-   * @return {!Object|boolean}
-   * @private
-   */
-  function findRegisteredClass_(name, optReplace) {
-    for (var i = 0; i < registeredComponents_.length; i++) {
-      if (registeredComponents_[i].className === name) {
-        if (typeof optReplace !== 'undefined') {
-          registeredComponents_[i] = optReplace;
-        }
-        return registeredComponents_[i];
-      }
-    }
-    return false;
-  }
+/***/ "./node_modules/@material/checkbox/component.js":
+/*!******************************************************!*\
+  !*** ./node_modules/@material/checkbox/component.js ***!
+  \******************************************************/
+/*! exports provided: MDCCheckbox */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-  /**
-   * Returns an array of the classNames of the upgraded classes on the element.
-   *
-   * @param {!Element} element The element to fetch data from.
-   * @return {!Array<string>}
-   * @private
-   */
-  function getUpgradedListOfElement_(element) {
-    var dataUpgraded = element.getAttribute('data-upgraded');
-    // Use `['']` as default value to conform the `,name,name...` style.
-    return dataUpgraded === null ? [''] : dataUpgraded.split(',');
-  }
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCCheckbox\", function() { return MDCCheckbox; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_animation_util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/animation/util */ \"./node_modules/@material/animation/util.js\");\n/* harmony import */ var _material_base_component__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material/base/component */ \"./node_modules/@material/base/component.js\");\n/* harmony import */ var _material_dom_events__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material/dom/events */ \"./node_modules/@material/dom/events.js\");\n/* harmony import */ var _material_dom_ponyfill__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @material/dom/ponyfill */ \"./node_modules/@material/dom/ponyfill.js\");\n/* harmony import */ var _material_ripple_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @material/ripple/component */ \"./node_modules/@material/ripple/component.js\");\n/* harmony import */ var _material_ripple_foundation__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @material/ripple/foundation */ \"./node_modules/@material/ripple/foundation.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/checkbox/foundation.js\");\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n\n\n\n\n\nvar CB_PROTO_PROPS = ['checked', 'indeterminate'];\nvar MDCCheckbox = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCCheckbox, _super);\n    function MDCCheckbox() {\n        var _this = _super !== null && _super.apply(this, arguments) || this;\n        _this.ripple_ = _this.createRipple_();\n        return _this;\n    }\n    MDCCheckbox.attachTo = function (root) {\n        return new MDCCheckbox(root);\n    };\n    Object.defineProperty(MDCCheckbox.prototype, \"ripple\", {\n        get: function () {\n            return this.ripple_;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCCheckbox.prototype, \"checked\", {\n        get: function () {\n            return this.nativeControl_.checked;\n        },\n        set: function (checked) {\n            this.nativeControl_.checked = checked;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCCheckbox.prototype, \"indeterminate\", {\n        get: function () {\n            return this.nativeControl_.indeterminate;\n        },\n        set: function (indeterminate) {\n            this.nativeControl_.indeterminate = indeterminate;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCCheckbox.prototype, \"disabled\", {\n        get: function () {\n            return this.nativeControl_.disabled;\n        },\n        set: function (disabled) {\n            this.foundation_.setDisabled(disabled);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCCheckbox.prototype, \"value\", {\n        get: function () {\n            return this.nativeControl_.value;\n        },\n        set: function (value) {\n            this.nativeControl_.value = value;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCCheckbox.prototype.initialSyncWithDOM = function () {\n        var _this = this;\n        this.handleChange_ = function () { return _this.foundation_.handleChange(); };\n        this.handleAnimationEnd_ = function () { return _this.foundation_.handleAnimationEnd(); };\n        this.nativeControl_.addEventListener('change', this.handleChange_);\n        this.listen(Object(_material_animation_util__WEBPACK_IMPORTED_MODULE_1__[\"getCorrectEventName\"])(window, 'animationend'), this.handleAnimationEnd_);\n        this.installPropertyChangeHooks_();\n    };\n    MDCCheckbox.prototype.destroy = function () {\n        this.ripple_.destroy();\n        this.nativeControl_.removeEventListener('change', this.handleChange_);\n        this.unlisten(Object(_material_animation_util__WEBPACK_IMPORTED_MODULE_1__[\"getCorrectEventName\"])(window, 'animationend'), this.handleAnimationEnd_);\n        this.uninstallPropertyChangeHooks_();\n        _super.prototype.destroy.call(this);\n    };\n    MDCCheckbox.prototype.getDefaultFoundation = function () {\n        var _this = this;\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        var adapter = {\n            addClass: function (className) { return _this.root_.classList.add(className); },\n            forceLayout: function () { return _this.root_.offsetWidth; },\n            hasNativeControl: function () { return !!_this.nativeControl_; },\n            isAttachedToDOM: function () { return Boolean(_this.root_.parentNode); },\n            isChecked: function () { return _this.checked; },\n            isIndeterminate: function () { return _this.indeterminate; },\n            removeClass: function (className) { return _this.root_.classList.remove(className); },\n            removeNativeControlAttr: function (attr) { return _this.nativeControl_.removeAttribute(attr); },\n            setNativeControlAttr: function (attr, value) { return _this.nativeControl_.setAttribute(attr, value); },\n            setNativeControlDisabled: function (disabled) { return _this.nativeControl_.disabled = disabled; },\n        };\n        return new _foundation__WEBPACK_IMPORTED_MODULE_7__[\"MDCCheckboxFoundation\"](adapter);\n    };\n    MDCCheckbox.prototype.createRipple_ = function () {\n        var _this = this;\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        var adapter = tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, _material_ripple_component__WEBPACK_IMPORTED_MODULE_5__[\"MDCRipple\"].createAdapter(this), { deregisterInteractionHandler: function (evtType, handler) { return _this.nativeControl_.removeEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_3__[\"applyPassive\"])()); }, isSurfaceActive: function () { return Object(_material_dom_ponyfill__WEBPACK_IMPORTED_MODULE_4__[\"matches\"])(_this.nativeControl_, ':active'); }, isUnbounded: function () { return true; }, registerInteractionHandler: function (evtType, handler) { return _this.nativeControl_.addEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_3__[\"applyPassive\"])()); } });\n        return new _material_ripple_component__WEBPACK_IMPORTED_MODULE_5__[\"MDCRipple\"](this.root_, new _material_ripple_foundation__WEBPACK_IMPORTED_MODULE_6__[\"MDCRippleFoundation\"](adapter));\n    };\n    MDCCheckbox.prototype.installPropertyChangeHooks_ = function () {\n        var _this = this;\n        var nativeCb = this.nativeControl_;\n        var cbProto = Object.getPrototypeOf(nativeCb);\n        CB_PROTO_PROPS.forEach(function (controlState) {\n            var desc = Object.getOwnPropertyDescriptor(cbProto, controlState);\n            // We have to check for this descriptor, since some browsers (Safari) don't support its return.\n            // See: https://bugs.webkit.org/show_bug.cgi?id=49739\n            if (!validDescriptor(desc)) {\n                return;\n            }\n            // Type cast is needed for compatibility with Closure Compiler.\n            var nativeGetter = desc.get;\n            var nativeCbDesc = {\n                configurable: desc.configurable,\n                enumerable: desc.enumerable,\n                get: nativeGetter,\n                set: function (state) {\n                    desc.set.call(nativeCb, state);\n                    _this.foundation_.handleChange();\n                },\n            };\n            Object.defineProperty(nativeCb, controlState, nativeCbDesc);\n        });\n    };\n    MDCCheckbox.prototype.uninstallPropertyChangeHooks_ = function () {\n        var nativeCb = this.nativeControl_;\n        var cbProto = Object.getPrototypeOf(nativeCb);\n        CB_PROTO_PROPS.forEach(function (controlState) {\n            var desc = Object.getOwnPropertyDescriptor(cbProto, controlState);\n            if (!validDescriptor(desc)) {\n                return;\n            }\n            Object.defineProperty(nativeCb, controlState, desc);\n        });\n    };\n    Object.defineProperty(MDCCheckbox.prototype, \"nativeControl_\", {\n        get: function () {\n            var NATIVE_CONTROL_SELECTOR = _foundation__WEBPACK_IMPORTED_MODULE_7__[\"MDCCheckboxFoundation\"].strings.NATIVE_CONTROL_SELECTOR;\n            var el = this.root_.querySelector(NATIVE_CONTROL_SELECTOR);\n            if (!el) {\n                throw new Error(\"Checkbox component requires a \" + NATIVE_CONTROL_SELECTOR + \" element\");\n            }\n            return el;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    return MDCCheckbox;\n}(_material_base_component__WEBPACK_IMPORTED_MODULE_2__[\"MDCComponent\"]));\n\nfunction validDescriptor(inputPropDesc) {\n    return !!inputPropDesc && typeof inputPropDesc.set === 'function';\n}\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/checkbox/component.js?");
 
-  /**
-   * Returns true if the given element has already been upgraded for the given
-   * class.
-   *
-   * @param {!Element} element The element we want to check.
-   * @param {string} jsClass The class to check for.
-   * @returns {boolean}
-   * @private
-   */
-  function isElementUpgraded_(element, jsClass) {
-    var upgradedList = getUpgradedListOfElement_(element);
-    return upgradedList.indexOf(jsClass) !== -1;
-  }
+/***/ }),
 
-  /**
-   * Create an event object.
-   *
-   * @param {string} eventType The type name of the event.
-   * @param {boolean} bubbles Whether the event should bubble up the DOM.
-   * @param {boolean} cancelable Whether the event can be canceled.
-   * @returns {!Event}
-   */
-  function createEvent_(eventType, bubbles, cancelable) {
-    if ('CustomEvent' in window && typeof window.CustomEvent === 'function') {
-      return new CustomEvent(eventType, {
-        bubbles: bubbles,
-        cancelable: cancelable
-      });
-    } else {
-      var ev = document.createEvent('Events');
-      ev.initEvent(eventType, bubbles, cancelable);
-      return ev;
-    }
-  }
+/***/ "./node_modules/@material/checkbox/constants.js":
+/*!******************************************************!*\
+  !*** ./node_modules/@material/checkbox/constants.js ***!
+  \******************************************************/
+/*! exports provided: cssClasses, strings, numbers */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-  /**
-   * Searches existing DOM for elements of our component type and upgrades them
-   * if they have not already been upgraded.
-   *
-   * @param {string=} optJsClass the programatic name of the element class we
-   * need to create a new instance of.
-   * @param {string=} optCssClass the name of the CSS class elements of this
-   * type will have.
-   */
-  function upgradeDomInternal(optJsClass, optCssClass) {
-    if (typeof optJsClass === 'undefined' &&
-        typeof optCssClass === 'undefined') {
-      for (var i = 0; i < registeredComponents_.length; i++) {
-        upgradeDomInternal(registeredComponents_[i].className,
-            registeredComponents_[i].cssClass);
-      }
-    } else {
-      var jsClass = /** @type {string} */ (optJsClass);
-      if (typeof optCssClass === 'undefined') {
-        var registeredClass = findRegisteredClass_(jsClass);
-        if (registeredClass) {
-          optCssClass = registeredClass.cssClass;
-        }
-      }
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return cssClasses; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return strings; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"numbers\", function() { return numbers; });\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar cssClasses = {\n    ANIM_CHECKED_INDETERMINATE: 'mdc-checkbox--anim-checked-indeterminate',\n    ANIM_CHECKED_UNCHECKED: 'mdc-checkbox--anim-checked-unchecked',\n    ANIM_INDETERMINATE_CHECKED: 'mdc-checkbox--anim-indeterminate-checked',\n    ANIM_INDETERMINATE_UNCHECKED: 'mdc-checkbox--anim-indeterminate-unchecked',\n    ANIM_UNCHECKED_CHECKED: 'mdc-checkbox--anim-unchecked-checked',\n    ANIM_UNCHECKED_INDETERMINATE: 'mdc-checkbox--anim-unchecked-indeterminate',\n    BACKGROUND: 'mdc-checkbox__background',\n    CHECKED: 'mdc-checkbox--checked',\n    CHECKMARK: 'mdc-checkbox__checkmark',\n    CHECKMARK_PATH: 'mdc-checkbox__checkmark-path',\n    DISABLED: 'mdc-checkbox--disabled',\n    INDETERMINATE: 'mdc-checkbox--indeterminate',\n    MIXEDMARK: 'mdc-checkbox__mixedmark',\n    NATIVE_CONTROL: 'mdc-checkbox__native-control',\n    ROOT: 'mdc-checkbox',\n    SELECTED: 'mdc-checkbox--selected',\n    UPGRADED: 'mdc-checkbox--upgraded',\n};\nvar strings = {\n    ARIA_CHECKED_ATTR: 'aria-checked',\n    ARIA_CHECKED_INDETERMINATE_VALUE: 'mixed',\n    NATIVE_CONTROL_SELECTOR: '.mdc-checkbox__native-control',\n    TRANSITION_STATE_CHECKED: 'checked',\n    TRANSITION_STATE_INDETERMINATE: 'indeterminate',\n    TRANSITION_STATE_INIT: 'init',\n    TRANSITION_STATE_UNCHECKED: 'unchecked',\n};\nvar numbers = {\n    ANIM_END_LATCH_MS: 250,\n};\n//# sourceMappingURL=constants.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/checkbox/constants.js?");
 
-      var elements = document.querySelectorAll('.' + optCssClass);
-      for (var n = 0; n < elements.length; n++) {
-        upgradeElementInternal(elements[n], jsClass);
-      }
-    }
-  }
+/***/ }),
 
-  /**
-   * Upgrades a specific element rather than all in the DOM.
-   *
-   * @param {!Element} element The element we wish to upgrade.
-   * @param {string=} optJsClass Optional name of the class we want to upgrade
-   * the element to.
-   */
-  function upgradeElementInternal(element, optJsClass) {
-    // Verify argument type.
-    if (!(typeof element === 'object' && element instanceof Element)) {
-      throw new Error('Invalid argument provided to upgrade MDL element.');
-    }
-    // Allow upgrade to be canceled by canceling emitted event.
-    var upgradingEv = createEvent_('mdl-componentupgrading', true, true);
-    element.dispatchEvent(upgradingEv);
-    if (upgradingEv.defaultPrevented) {
-      return;
-    }
+/***/ "./node_modules/@material/checkbox/foundation.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/@material/checkbox/foundation.js ***!
+  \*******************************************************/
+/*! exports provided: MDCCheckboxFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-    var upgradedList = getUpgradedListOfElement_(element);
-    var classesToUpgrade = [];
-    // If jsClass is not provided scan the registered components to find the
-    // ones matching the element's CSS classList.
-    if (!optJsClass) {
-      var classList = element.classList;
-      registeredComponents_.forEach(function(component) {
-        // Match CSS & Not to be upgraded & Not upgraded.
-        if (classList.contains(component.cssClass) &&
-            classesToUpgrade.indexOf(component) === -1 &&
-            !isElementUpgraded_(element, component.className)) {
-          classesToUpgrade.push(component);
-        }
-      });
-    } else if (!isElementUpgraded_(element, optJsClass)) {
-      classesToUpgrade.push(findRegisteredClass_(optJsClass));
-    }
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCCheckboxFoundation\", function() { return MDCCheckboxFoundation; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/foundation */ \"./node_modules/@material/base/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/checkbox/constants.js\");\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCCheckboxFoundation = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCCheckboxFoundation, _super);\n    function MDCCheckboxFoundation(adapter) {\n        var _this = _super.call(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, MDCCheckboxFoundation.defaultAdapter, adapter)) || this;\n        _this.currentCheckState_ = _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].TRANSITION_STATE_INIT;\n        _this.currentAnimationClass_ = '';\n        _this.animEndLatchTimer_ = 0;\n        _this.enableAnimationEndHandler_ = false;\n        return _this;\n    }\n    Object.defineProperty(MDCCheckboxFoundation, \"cssClasses\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCCheckboxFoundation, \"strings\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCCheckboxFoundation, \"numbers\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"numbers\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCCheckboxFoundation, \"defaultAdapter\", {\n        get: function () {\n            return {\n                addClass: function () { return undefined; },\n                forceLayout: function () { return undefined; },\n                hasNativeControl: function () { return false; },\n                isAttachedToDOM: function () { return false; },\n                isChecked: function () { return false; },\n                isIndeterminate: function () { return false; },\n                removeClass: function () { return undefined; },\n                removeNativeControlAttr: function () { return undefined; },\n                setNativeControlAttr: function () { return undefined; },\n                setNativeControlDisabled: function () { return undefined; },\n            };\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCCheckboxFoundation.prototype.init = function () {\n        this.currentCheckState_ = this.determineCheckState_();\n        this.updateAriaChecked_();\n        this.adapter_.addClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].UPGRADED);\n    };\n    MDCCheckboxFoundation.prototype.destroy = function () {\n        clearTimeout(this.animEndLatchTimer_);\n    };\n    MDCCheckboxFoundation.prototype.setDisabled = function (disabled) {\n        this.adapter_.setNativeControlDisabled(disabled);\n        if (disabled) {\n            this.adapter_.addClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].DISABLED);\n        }\n        else {\n            this.adapter_.removeClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].DISABLED);\n        }\n    };\n    /**\n     * Handles the animationend event for the checkbox\n     */\n    MDCCheckboxFoundation.prototype.handleAnimationEnd = function () {\n        var _this = this;\n        if (!this.enableAnimationEndHandler_) {\n            return;\n        }\n        clearTimeout(this.animEndLatchTimer_);\n        this.animEndLatchTimer_ = setTimeout(function () {\n            _this.adapter_.removeClass(_this.currentAnimationClass_);\n            _this.enableAnimationEndHandler_ = false;\n        }, _constants__WEBPACK_IMPORTED_MODULE_2__[\"numbers\"].ANIM_END_LATCH_MS);\n    };\n    /**\n     * Handles the change event for the checkbox\n     */\n    MDCCheckboxFoundation.prototype.handleChange = function () {\n        this.transitionCheckState_();\n    };\n    MDCCheckboxFoundation.prototype.transitionCheckState_ = function () {\n        if (!this.adapter_.hasNativeControl()) {\n            return;\n        }\n        var oldState = this.currentCheckState_;\n        var newState = this.determineCheckState_();\n        if (oldState === newState) {\n            return;\n        }\n        this.updateAriaChecked_();\n        var TRANSITION_STATE_UNCHECKED = _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].TRANSITION_STATE_UNCHECKED;\n        var SELECTED = _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].SELECTED;\n        if (newState === TRANSITION_STATE_UNCHECKED) {\n            this.adapter_.removeClass(SELECTED);\n        }\n        else {\n            this.adapter_.addClass(SELECTED);\n        }\n        // Check to ensure that there isn't a previously existing animation class, in case for example\n        // the user interacted with the checkbox before the animation was finished.\n        if (this.currentAnimationClass_.length > 0) {\n            clearTimeout(this.animEndLatchTimer_);\n            this.adapter_.forceLayout();\n            this.adapter_.removeClass(this.currentAnimationClass_);\n        }\n        this.currentAnimationClass_ = this.getTransitionAnimationClass_(oldState, newState);\n        this.currentCheckState_ = newState;\n        // Check for parentNode so that animations are only run when the element is attached\n        // to the DOM.\n        if (this.adapter_.isAttachedToDOM() && this.currentAnimationClass_.length > 0) {\n            this.adapter_.addClass(this.currentAnimationClass_);\n            this.enableAnimationEndHandler_ = true;\n        }\n    };\n    MDCCheckboxFoundation.prototype.determineCheckState_ = function () {\n        var TRANSITION_STATE_INDETERMINATE = _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].TRANSITION_STATE_INDETERMINATE, TRANSITION_STATE_CHECKED = _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].TRANSITION_STATE_CHECKED, TRANSITION_STATE_UNCHECKED = _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].TRANSITION_STATE_UNCHECKED;\n        if (this.adapter_.isIndeterminate()) {\n            return TRANSITION_STATE_INDETERMINATE;\n        }\n        return this.adapter_.isChecked() ? TRANSITION_STATE_CHECKED : TRANSITION_STATE_UNCHECKED;\n    };\n    MDCCheckboxFoundation.prototype.getTransitionAnimationClass_ = function (oldState, newState) {\n        var TRANSITION_STATE_INIT = _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].TRANSITION_STATE_INIT, TRANSITION_STATE_CHECKED = _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].TRANSITION_STATE_CHECKED, TRANSITION_STATE_UNCHECKED = _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].TRANSITION_STATE_UNCHECKED;\n        var _a = MDCCheckboxFoundation.cssClasses, ANIM_UNCHECKED_CHECKED = _a.ANIM_UNCHECKED_CHECKED, ANIM_UNCHECKED_INDETERMINATE = _a.ANIM_UNCHECKED_INDETERMINATE, ANIM_CHECKED_UNCHECKED = _a.ANIM_CHECKED_UNCHECKED, ANIM_CHECKED_INDETERMINATE = _a.ANIM_CHECKED_INDETERMINATE, ANIM_INDETERMINATE_CHECKED = _a.ANIM_INDETERMINATE_CHECKED, ANIM_INDETERMINATE_UNCHECKED = _a.ANIM_INDETERMINATE_UNCHECKED;\n        switch (oldState) {\n            case TRANSITION_STATE_INIT:\n                if (newState === TRANSITION_STATE_UNCHECKED) {\n                    return '';\n                }\n                return newState === TRANSITION_STATE_CHECKED ? ANIM_INDETERMINATE_CHECKED : ANIM_INDETERMINATE_UNCHECKED;\n            case TRANSITION_STATE_UNCHECKED:\n                return newState === TRANSITION_STATE_CHECKED ? ANIM_UNCHECKED_CHECKED : ANIM_UNCHECKED_INDETERMINATE;\n            case TRANSITION_STATE_CHECKED:\n                return newState === TRANSITION_STATE_UNCHECKED ? ANIM_CHECKED_UNCHECKED : ANIM_CHECKED_INDETERMINATE;\n            default: // TRANSITION_STATE_INDETERMINATE\n                return newState === TRANSITION_STATE_CHECKED ? ANIM_INDETERMINATE_CHECKED : ANIM_INDETERMINATE_UNCHECKED;\n        }\n    };\n    MDCCheckboxFoundation.prototype.updateAriaChecked_ = function () {\n        // Ensure aria-checked is set to mixed if checkbox is in indeterminate state.\n        if (this.adapter_.isIndeterminate()) {\n            this.adapter_.setNativeControlAttr(_constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].ARIA_CHECKED_ATTR, _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].ARIA_CHECKED_INDETERMINATE_VALUE);\n        }\n        else {\n            // The on/off state does not need to keep track of aria-checked, since\n            // the screenreader uses the checked property on the checkbox element.\n            this.adapter_.removeNativeControlAttr(_constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].ARIA_CHECKED_ATTR);\n        }\n    };\n    return MDCCheckboxFoundation;\n}(_material_base_foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]));\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCCheckboxFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/checkbox/foundation.js?");
 
-    // Upgrade the element for each classes.
-    for (var i = 0, n = classesToUpgrade.length, registeredClass; i < n; i++) {
-      registeredClass = classesToUpgrade[i];
-      if (registeredClass) {
-        // Mark element as upgraded.
-        upgradedList.push(registeredClass.className);
-        element.setAttribute('data-upgraded', upgradedList.join(','));
-        var instance = new registeredClass.classConstructor(element);
-        instance[componentConfigProperty_] = registeredClass;
-        createdComponents_.push(instance);
-        // Call any callbacks the user has registered with this component type.
-        for (var j = 0, m = registeredClass.callbacks.length; j < m; j++) {
-          registeredClass.callbacks[j](element);
-        }
+/***/ }),
 
-        if (registeredClass.widget) {
-          // Assign per element instance for control over API
-          element[registeredClass.className] = instance;
-        }
-      } else {
-        throw new Error(
-          'Unable to find a registered component for the given class.');
-      }
+/***/ "./node_modules/@material/data-table/component.js":
+/*!********************************************************!*\
+  !*** ./node_modules/@material/data-table/component.js ***!
+  \********************************************************/
+/*! exports provided: MDCDataTable */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-      var upgradedEv = createEvent_('mdl-componentupgraded', true, false);
-      element.dispatchEvent(upgradedEv);
-    }
-  }
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCDataTable\", function() { return MDCDataTable; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/@material/data-table/node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/component */ \"./node_modules/@material/base/component.js\");\n/* harmony import */ var _material_checkbox_component__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material/checkbox/component */ \"./node_modules/@material/checkbox/component.js\");\n/* harmony import */ var _material_dom_ponyfill__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material/dom/ponyfill */ \"./node_modules/@material/dom/ponyfill.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/data-table/constants.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/data-table/foundation.js\");\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n\n\n\nvar MDCDataTable = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCDataTable, _super);\n    function MDCDataTable() {\n        return _super !== null && _super.apply(this, arguments) || this;\n    }\n    MDCDataTable.attachTo = function (root) {\n        return new MDCDataTable(root);\n    };\n    MDCDataTable.prototype.initialize = function (checkboxFactory) {\n        if (checkboxFactory === void 0) { checkboxFactory = function (el) { return new _material_checkbox_component__WEBPACK_IMPORTED_MODULE_2__[\"MDCCheckbox\"](el); }; }\n        this.checkboxFactory_ = checkboxFactory;\n    };\n    MDCDataTable.prototype.initialSyncWithDOM = function () {\n        var _this = this;\n        this.headerRow_ = this.root_.querySelector(\".\" + _constants__WEBPACK_IMPORTED_MODULE_4__[\"cssClasses\"].HEADER_ROW);\n        this.handleHeaderRowCheckboxChange_ = function () { return _this.foundation_.handleHeaderRowCheckboxChange(); };\n        this.headerRow_.addEventListener('change', this.handleHeaderRowCheckboxChange_);\n        this.content_ = this.root_.querySelector(\".\" + _constants__WEBPACK_IMPORTED_MODULE_4__[\"cssClasses\"].CONTENT);\n        this.handleRowCheckboxChange_ = function (event) { return _this.foundation_.handleRowCheckboxChange(event); };\n        this.content_.addEventListener('change', this.handleRowCheckboxChange_);\n        this.layout();\n    };\n    /**\n     * Re-initializes header row checkbox and row checkboxes when selectable rows are added or removed from table.\n     */\n    MDCDataTable.prototype.layout = function () {\n        this.foundation_.layout();\n    };\n    /**\n     * @return Returns array of row elements.\n     */\n    MDCDataTable.prototype.getRows = function () {\n        return this.foundation_.getRows();\n    };\n    /**\n     * @return Returns array of selected row ids.\n     */\n    MDCDataTable.prototype.getSelectedRowIds = function () {\n        return this.foundation_.getSelectedRowIds();\n    };\n    /**\n     * Sets selected row ids. Overwrites previously selected rows.\n     * @param rowIds Array of row ids that needs to be selected.\n     */\n    MDCDataTable.prototype.setSelectedRowIds = function (rowIds) {\n        this.foundation_.setSelectedRowIds(rowIds);\n    };\n    MDCDataTable.prototype.destroy = function () {\n        this.headerRow_.removeEventListener('change', this.handleHeaderRowCheckboxChange_);\n        this.content_.removeEventListener('change', this.handleRowCheckboxChange_);\n        this.headerRowCheckbox_.destroy();\n        this.rowCheckboxList_.forEach(function (checkbox) { return checkbox.destroy(); });\n    };\n    MDCDataTable.prototype.getDefaultFoundation = function () {\n        var _this = this;\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n        var adapter = {\n            addClassAtRowIndex: function (rowIndex, className) { return _this.getRows()[rowIndex].classList.add(className); },\n            getRowCount: function () { return _this.getRows().length; },\n            getRowElements: function () { return [].slice.call(_this.root_.querySelectorAll(_constants__WEBPACK_IMPORTED_MODULE_4__[\"strings\"].ROW_SELECTOR)); },\n            getRowIdAtIndex: function (rowIndex) { return _this.getRows()[rowIndex].getAttribute(_constants__WEBPACK_IMPORTED_MODULE_4__[\"strings\"].DATA_ROW_ID_ATTR); },\n            getRowIndexByChildElement: function (el) {\n                return _this.getRows().indexOf(Object(_material_dom_ponyfill__WEBPACK_IMPORTED_MODULE_3__[\"closest\"])(el, _constants__WEBPACK_IMPORTED_MODULE_4__[\"strings\"].ROW_SELECTOR));\n            },\n            getSelectedRowCount: function () { return _this.root_.querySelectorAll(_constants__WEBPACK_IMPORTED_MODULE_4__[\"strings\"].ROW_SELECTED_SELECTOR).length; },\n            isCheckboxAtRowIndexChecked: function (rowIndex) { return _this.rowCheckboxList_[rowIndex].checked; },\n            isHeaderRowCheckboxChecked: function () { return _this.headerRowCheckbox_.checked; },\n            isRowsSelectable: function () { return !!_this.root_.querySelector(_constants__WEBPACK_IMPORTED_MODULE_4__[\"strings\"].ROW_CHECKBOX_SELECTOR); },\n            notifyRowSelectionChanged: function (data) {\n                _this.emit(_constants__WEBPACK_IMPORTED_MODULE_4__[\"events\"].ROW_SELECTION_CHANGED, {\n                    row: _this.getRowByIndex_(data.rowIndex),\n                    rowId: _this.getRowIdByIndex_(data.rowIndex),\n                    rowIndex: data.rowIndex,\n                    selected: data.selected,\n                }, \n                /** shouldBubble */ true);\n            },\n            notifySelectedAll: function () { return _this.emit(_constants__WEBPACK_IMPORTED_MODULE_4__[\"events\"].SELECTED_ALL, {}, /** shouldBubble */ true); },\n            notifyUnselectedAll: function () { return _this.emit(_constants__WEBPACK_IMPORTED_MODULE_4__[\"events\"].UNSELECTED_ALL, {}, /** shouldBubble */ true); },\n            registerHeaderRowCheckbox: function () {\n                if (_this.headerRowCheckbox_) {\n                    _this.headerRowCheckbox_.destroy();\n                }\n                var checkboxEl = _this.root_.querySelector(_constants__WEBPACK_IMPORTED_MODULE_4__[\"strings\"].HEADER_ROW_CHECKBOX_SELECTOR);\n                _this.headerRowCheckbox_ = _this.checkboxFactory_(checkboxEl);\n            },\n            registerRowCheckboxes: function () {\n                if (_this.rowCheckboxList_) {\n                    _this.rowCheckboxList_.forEach(function (checkbox) { return checkbox.destroy(); });\n                }\n                _this.rowCheckboxList_ = [];\n                _this.getRows().forEach(function (rowEl) {\n                    var checkbox = _this.checkboxFactory_(rowEl.querySelector(_constants__WEBPACK_IMPORTED_MODULE_4__[\"strings\"].ROW_CHECKBOX_SELECTOR));\n                    _this.rowCheckboxList_.push(checkbox);\n                });\n            },\n            removeClassAtRowIndex: function (rowIndex, className) {\n                _this.getRows()[rowIndex].classList.remove(className);\n            },\n            setAttributeAtRowIndex: function (rowIndex, attr, value) {\n                _this.getRows()[rowIndex].setAttribute(attr, value);\n            },\n            setHeaderRowCheckboxChecked: function (checked) {\n                _this.headerRowCheckbox_.checked = checked;\n            },\n            setHeaderRowCheckboxIndeterminate: function (indeterminate) {\n                _this.headerRowCheckbox_.indeterminate = indeterminate;\n            },\n            setRowCheckboxCheckedAtIndex: function (rowIndex, checked) {\n                _this.rowCheckboxList_[rowIndex].checked = checked;\n            },\n        };\n        return new _foundation__WEBPACK_IMPORTED_MODULE_5__[\"MDCDataTableFoundation\"](adapter);\n    };\n    MDCDataTable.prototype.getRowByIndex_ = function (index) {\n        return this.getRows()[index];\n    };\n    MDCDataTable.prototype.getRowIdByIndex_ = function (index) {\n        return this.getRowByIndex_(index).getAttribute(_constants__WEBPACK_IMPORTED_MODULE_4__[\"strings\"].DATA_ROW_ID_ATTR);\n    };\n    return MDCDataTable;\n}(_material_base_component__WEBPACK_IMPORTED_MODULE_1__[\"MDCComponent\"]));\n\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/data-table/component.js?");
 
-  /**
-   * Upgrades a specific list of elements rather than all in the DOM.
-   *
-   * @param {!Element|!Array<!Element>|!NodeList|!HTMLCollection} elements
-   * The elements we wish to upgrade.
-   */
-  function upgradeElementsInternal(elements) {
-    if (!Array.isArray(elements)) {
-      if (elements instanceof Element) {
-        elements = [elements];
-      } else {
-        elements = Array.prototype.slice.call(elements);
-      }
-    }
-    for (var i = 0, n = elements.length, element; i < n; i++) {
-      element = elements[i];
-      if (element instanceof HTMLElement) {
-        upgradeElementInternal(element);
-        if (element.children.length > 0) {
-          upgradeElementsInternal(element.children);
-        }
-      }
-    }
-  }
+/***/ }),
 
-  /**
-   * Registers a class for future use and attempts to upgrade existing DOM.
-   *
-   * @param {componentHandler.ComponentConfigPublic} config
-   */
-  function registerInternal(config) {
-    // In order to support both Closure-compiled and uncompiled code accessing
-    // this method, we need to allow for both the dot and array syntax for
-    // property access. You'll therefore see the `foo.bar || foo['bar']`
-    // pattern repeated across this method.
-    var widgetMissing = (typeof config.widget === 'undefined' &&
-        typeof config['widget'] === 'undefined');
-    var widget = true;
+/***/ "./node_modules/@material/data-table/constants.js":
+/*!********************************************************!*\
+  !*** ./node_modules/@material/data-table/constants.js ***!
+  \********************************************************/
+/*! exports provided: cssClasses, strings, events */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-    if (!widgetMissing) {
-      widget = config.widget || config['widget'];
-    }
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return cssClasses; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return strings; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"events\", function() { return events; });\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar cssClasses = {\n    CELL: 'mdc-data-table__cell',\n    CELL_NUMERIC: 'mdc-data-table__cell--numeric',\n    CONTENT: 'mdc-data-table__content',\n    HEADER_ROW: 'mdc-data-table__header-row',\n    HEADER_ROW_CHECKBOX: 'mdc-data-table__header-row-checkbox',\n    ROOT: 'mdc-data-table',\n    ROW: 'mdc-data-table__row',\n    ROW_CHECKBOX: 'mdc-data-table__row-checkbox',\n    ROW_SELECTED: 'mdc-data-table__row--selected',\n};\nvar strings = {\n    ARIA_SELECTED: 'aria-selected',\n    DATA_ROW_ID_ATTR: 'data-row-id',\n    HEADER_ROW_CHECKBOX_SELECTOR: \".\" + cssClasses.HEADER_ROW_CHECKBOX,\n    ROW_CHECKBOX_SELECTOR: \".\" + cssClasses.ROW_CHECKBOX,\n    ROW_SELECTED_SELECTOR: \".\" + cssClasses.ROW_SELECTED,\n    ROW_SELECTOR: \".\" + cssClasses.ROW,\n};\nvar events = {\n    ROW_SELECTION_CHANGED: 'MDCDataTable:rowSelectionChanged',\n    SELECTED_ALL: 'MDCDataTable:selectedAll',\n    UNSELECTED_ALL: 'MDCDataTable:unselectedAll',\n};\n//# sourceMappingURL=constants.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/data-table/constants.js?");
 
-    var newConfig = /** @type {componentHandler.ComponentConfig} */ ({
-      classConstructor: config.constructor || config['constructor'],
-      className: config.classAsString || config['classAsString'],
-      cssClass: config.cssClass || config['cssClass'],
-      widget: widget,
-      callbacks: []
-    });
+/***/ }),
 
-    registeredComponents_.forEach(function(item) {
-      if (item.cssClass === newConfig.cssClass) {
-        throw new Error('The provided cssClass has already been registered: ' + item.cssClass);
-      }
-      if (item.className === newConfig.className) {
-        throw new Error('The provided className has already been registered');
-      }
-    });
+/***/ "./node_modules/@material/data-table/foundation.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/@material/data-table/foundation.js ***!
+  \*********************************************************/
+/*! exports provided: MDCDataTableFoundation */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-    if (config.constructor.prototype
-        .hasOwnProperty(componentConfigProperty_)) {
-      throw new Error(
-          'MDL component classes must not have ' + componentConfigProperty_ +
-          ' defined as a property.');
-    }
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCDataTableFoundation\", function() { return MDCDataTableFoundation; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/@material/data-table/node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/foundation */ \"./node_modules/@material/base/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/data-table/constants.js\");\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCDataTableFoundation = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCDataTableFoundation, _super);\n    function MDCDataTableFoundation(adapter) {\n        return _super.call(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, MDCDataTableFoundation.defaultAdapter, adapter)) || this;\n    }\n    Object.defineProperty(MDCDataTableFoundation, \"defaultAdapter\", {\n        get: function () {\n            return {\n                addClassAtRowIndex: function () { return undefined; },\n                getRowCount: function () { return 0; },\n                getRowElements: function () { return []; },\n                getRowIdAtIndex: function () { return ''; },\n                getRowIndexByChildElement: function () { return 0; },\n                getSelectedRowCount: function () { return 0; },\n                isCheckboxAtRowIndexChecked: function () { return false; },\n                isHeaderRowCheckboxChecked: function () { return false; },\n                isRowsSelectable: function () { return false; },\n                notifyRowSelectionChanged: function () { return undefined; },\n                notifySelectedAll: function () { return undefined; },\n                notifyUnselectedAll: function () { return undefined; },\n                registerHeaderRowCheckbox: function () { return undefined; },\n                registerRowCheckboxes: function () { return undefined; },\n                removeClassAtRowIndex: function () { return undefined; },\n                setAttributeAtRowIndex: function () { return undefined; },\n                setHeaderRowCheckboxChecked: function () { return undefined; },\n                setHeaderRowCheckboxIndeterminate: function () { return undefined; },\n                setRowCheckboxCheckedAtIndex: function () { return undefined; },\n            };\n        },\n        enumerable: true,\n        configurable: true\n    });\n    /**\n     * Re-initializes header row checkbox and row checkboxes when selectable rows are added or removed from table.\n     * Use this if registering checkbox is synchronous.\n     */\n    MDCDataTableFoundation.prototype.layout = function () {\n        if (this.adapter_.isRowsSelectable()) {\n            this.adapter_.registerHeaderRowCheckbox();\n            this.adapter_.registerRowCheckboxes();\n            this.setHeaderRowCheckboxState_();\n        }\n    };\n    /**\n     * Re-initializes header row checkbox and row checkboxes when selectable rows are added or removed from table.\n     * Use this if registering checkbox is asynchronous.\n     */\n    MDCDataTableFoundation.prototype.layoutAsync = function () {\n        return tslib__WEBPACK_IMPORTED_MODULE_0__[\"__awaiter\"](this, void 0, void 0, function () {\n            return tslib__WEBPACK_IMPORTED_MODULE_0__[\"__generator\"](this, function (_a) {\n                switch (_a.label) {\n                    case 0:\n                        if (!this.adapter_.isRowsSelectable()) return [3 /*break*/, 3];\n                        return [4 /*yield*/, this.adapter_.registerHeaderRowCheckbox()];\n                    case 1:\n                        _a.sent();\n                        return [4 /*yield*/, this.adapter_.registerRowCheckboxes()];\n                    case 2:\n                        _a.sent();\n                        this.setHeaderRowCheckboxState_();\n                        _a.label = 3;\n                    case 3: return [2 /*return*/];\n                }\n            });\n        });\n    };\n    /**\n     * @return Returns array of row elements.\n     */\n    MDCDataTableFoundation.prototype.getRows = function () {\n        return this.adapter_.getRowElements();\n    };\n    /**\n     * Sets selected row ids. Overwrites previously selected rows.\n     * @param rowIds Array of row ids that needs to be selected.\n     */\n    MDCDataTableFoundation.prototype.setSelectedRowIds = function (rowIds) {\n        for (var rowIndex = 0; rowIndex < this.adapter_.getRowCount(); rowIndex++) {\n            var rowId = this.adapter_.getRowIdAtIndex(rowIndex);\n            var isSelected = false;\n            if (rowId && rowIds.indexOf(rowId) >= 0) {\n                isSelected = true;\n            }\n            this.adapter_.setRowCheckboxCheckedAtIndex(rowIndex, isSelected);\n            this.selectRowAtIndex_(rowIndex, isSelected);\n        }\n        this.setHeaderRowCheckboxState_();\n    };\n    /**\n     * @return Returns array of selected row ids.\n     */\n    MDCDataTableFoundation.prototype.getSelectedRowIds = function () {\n        var selectedRowIds = [];\n        for (var rowIndex = 0; rowIndex < this.adapter_.getRowCount(); rowIndex++) {\n            if (this.adapter_.isCheckboxAtRowIndexChecked(rowIndex)) {\n                selectedRowIds.push(this.adapter_.getRowIdAtIndex(rowIndex));\n            }\n        }\n        return selectedRowIds;\n    };\n    /**\n     * Handles header row checkbox change event.\n     */\n    MDCDataTableFoundation.prototype.handleHeaderRowCheckboxChange = function () {\n        var isHeaderChecked = this.adapter_.isHeaderRowCheckboxChecked();\n        for (var rowIndex = 0; rowIndex < this.adapter_.getRowCount(); rowIndex++) {\n            this.adapter_.setRowCheckboxCheckedAtIndex(rowIndex, isHeaderChecked);\n            this.selectRowAtIndex_(rowIndex, isHeaderChecked);\n        }\n        if (isHeaderChecked) {\n            this.adapter_.notifySelectedAll();\n        }\n        else {\n            this.adapter_.notifyUnselectedAll();\n        }\n    };\n    /**\n     * Handles change event originated from row checkboxes.\n     */\n    MDCDataTableFoundation.prototype.handleRowCheckboxChange = function (event) {\n        var rowIndex = this.adapter_.getRowIndexByChildElement(event.target);\n        if (rowIndex === -1) {\n            return;\n        }\n        var selected = this.adapter_.isCheckboxAtRowIndexChecked(rowIndex);\n        this.selectRowAtIndex_(rowIndex, selected);\n        this.setHeaderRowCheckboxState_();\n        var rowId = this.adapter_.getRowIdAtIndex(rowIndex);\n        this.adapter_.notifyRowSelectionChanged({ rowId: rowId, rowIndex: rowIndex, selected: selected });\n    };\n    /**\n     * Updates header row checkbox state based on number of rows selected.\n     */\n    MDCDataTableFoundation.prototype.setHeaderRowCheckboxState_ = function () {\n        if (this.adapter_.getSelectedRowCount() === this.adapter_.getRowCount()) {\n            this.adapter_.setHeaderRowCheckboxChecked(true);\n            this.adapter_.setHeaderRowCheckboxIndeterminate(false);\n        }\n        else if (this.adapter_.getSelectedRowCount() === 0) {\n            this.adapter_.setHeaderRowCheckboxIndeterminate(false);\n            this.adapter_.setHeaderRowCheckboxChecked(false);\n        }\n        else {\n            this.adapter_.setHeaderRowCheckboxIndeterminate(true);\n            this.adapter_.setHeaderRowCheckboxChecked(false);\n        }\n    };\n    /**\n     * Sets the attributes of row element based on selection state.\n     */\n    MDCDataTableFoundation.prototype.selectRowAtIndex_ = function (rowIndex, selected) {\n        if (selected) {\n            this.adapter_.addClassAtRowIndex(rowIndex, _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].ROW_SELECTED);\n            this.adapter_.setAttributeAtRowIndex(rowIndex, _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].ARIA_SELECTED, 'true');\n        }\n        else {\n            this.adapter_.removeClassAtRowIndex(rowIndex, _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].ROW_SELECTED);\n            this.adapter_.setAttributeAtRowIndex(rowIndex, _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].ARIA_SELECTED, 'false');\n        }\n    };\n    return MDCDataTableFoundation;\n}(_material_base_foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]));\n\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/data-table/foundation.js?");
 
-    var found = findRegisteredClass_(config.classAsString, newConfig);
+/***/ }),
 
-    if (!found) {
-      registeredComponents_.push(newConfig);
-    }
-  }
+/***/ "./node_modules/@material/data-table/index.js":
+/*!****************************************************!*\
+  !*** ./node_modules/@material/data-table/index.js ***!
+  \****************************************************/
+/*! exports provided: MDCDataTable, MDCDataTableFoundation, cssClasses, strings, events */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-  /**
-   * Allows user to be alerted to any upgrades that are performed for a given
-   * component type
-   *
-   * @param {string} jsClass The class name of the MDL component we wish
-   * to hook into for any upgrades performed.
-   * @param {function(!HTMLElement)} callback The function to call upon an
-   * upgrade. This function should expect 1 parameter - the HTMLElement which
-   * got upgraded.
-   */
-  function registerUpgradedCallbackInternal(jsClass, callback) {
-    var regClass = findRegisteredClass_(jsClass);
-    if (regClass) {
-      regClass.callbacks.push(callback);
-    }
-  }
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _component__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./component */ \"./node_modules/@material/data-table/component.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCDataTable\", function() { return _component__WEBPACK_IMPORTED_MODULE_0__[\"MDCDataTable\"]; });\n\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/data-table/foundation.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCDataTableFoundation\", function() { return _foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCDataTableFoundation\"]; });\n\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/data-table/constants.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"events\", function() { return _constants__WEBPACK_IMPORTED_MODULE_2__[\"events\"]; });\n\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n//# sourceMappingURL=index.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/data-table/index.js?");
 
-  /**
-   * Upgrades all registered components found in the current DOM. This is
-   * automatically called on window load.
-   */
-  function upgradeAllRegisteredInternal() {
-    for (var n = 0; n < registeredComponents_.length; n++) {
-      upgradeDomInternal(registeredComponents_[n].className);
-    }
-  }
+/***/ }),
 
-  /**
-   * Check the component for the downgrade method.
-   * Execute if found.
-   * Remove component from createdComponents list.
-   *
-   * @param {?componentHandler.Component} component
-   */
-  function deconstructComponentInternal(component) {
-    if (component) {
-      var componentIndex = createdComponents_.indexOf(component);
-      createdComponents_.splice(componentIndex, 1);
+/***/ "./node_modules/@material/data-table/node_modules/tslib/tslib.es6.js":
+/*!***************************************************************************!*\
+  !*** ./node_modules/@material/data-table/node_modules/tslib/tslib.es6.js ***!
+  \***************************************************************************/
+/*! exports provided: __extends, __assign, __rest, __decorate, __param, __metadata, __awaiter, __generator, __exportStar, __values, __read, __spread, __spreadArrays, __await, __asyncGenerator, __asyncDelegator, __asyncValues, __makeTemplateObject, __importStar, __importDefault */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-      var upgrades = component.element_.getAttribute('data-upgraded').split(',');
-      var componentPlace = upgrades.indexOf(component[componentConfigProperty_].classAsString);
-      upgrades.splice(componentPlace, 1);
-      component.element_.setAttribute('data-upgraded', upgrades.join(','));
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__extends\", function() { return __extends; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__assign\", function() { return __assign; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__rest\", function() { return __rest; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__decorate\", function() { return __decorate; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__param\", function() { return __param; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__metadata\", function() { return __metadata; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__awaiter\", function() { return __awaiter; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__generator\", function() { return __generator; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__exportStar\", function() { return __exportStar; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__values\", function() { return __values; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__read\", function() { return __read; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__spread\", function() { return __spread; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__spreadArrays\", function() { return __spreadArrays; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__await\", function() { return __await; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__asyncGenerator\", function() { return __asyncGenerator; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__asyncDelegator\", function() { return __asyncDelegator; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__asyncValues\", function() { return __asyncValues; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__makeTemplateObject\", function() { return __makeTemplateObject; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__importStar\", function() { return __importStar; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__importDefault\", function() { return __importDefault; });\n/*! *****************************************************************************\r\nCopyright (c) Microsoft Corporation. All rights reserved.\r\nLicensed under the Apache License, Version 2.0 (the \"License\"); you may not use\r\nthis file except in compliance with the License. You may obtain a copy of the\r\nLicense at http://www.apache.org/licenses/LICENSE-2.0\r\n\r\nTHIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY\r\nKIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED\r\nWARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,\r\nMERCHANTABLITY OR NON-INFRINGEMENT.\r\n\r\nSee the Apache Version 2.0 License for specific language governing permissions\r\nand limitations under the License.\r\n***************************************************************************** */\r\n/* global Reflect, Promise */\r\n\r\nvar extendStatics = function(d, b) {\r\n    extendStatics = Object.setPrototypeOf ||\r\n        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||\r\n        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };\r\n    return extendStatics(d, b);\r\n};\r\n\r\nfunction __extends(d, b) {\r\n    extendStatics(d, b);\r\n    function __() { this.constructor = d; }\r\n    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());\r\n}\r\n\r\nvar __assign = function() {\r\n    __assign = Object.assign || function __assign(t) {\r\n        for (var s, i = 1, n = arguments.length; i < n; i++) {\r\n            s = arguments[i];\r\n            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];\r\n        }\r\n        return t;\r\n    }\r\n    return __assign.apply(this, arguments);\r\n}\r\n\r\nfunction __rest(s, e) {\r\n    var t = {};\r\n    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)\r\n        t[p] = s[p];\r\n    if (s != null && typeof Object.getOwnPropertySymbols === \"function\")\r\n        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {\r\n            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))\r\n                t[p[i]] = s[p[i]];\r\n        }\r\n    return t;\r\n}\r\n\r\nfunction __decorate(decorators, target, key, desc) {\r\n    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;\r\n    if (typeof Reflect === \"object\" && typeof Reflect.decorate === \"function\") r = Reflect.decorate(decorators, target, key, desc);\r\n    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;\r\n    return c > 3 && r && Object.defineProperty(target, key, r), r;\r\n}\r\n\r\nfunction __param(paramIndex, decorator) {\r\n    return function (target, key) { decorator(target, key, paramIndex); }\r\n}\r\n\r\nfunction __metadata(metadataKey, metadataValue) {\r\n    if (typeof Reflect === \"object\" && typeof Reflect.metadata === \"function\") return Reflect.metadata(metadataKey, metadataValue);\r\n}\r\n\r\nfunction __awaiter(thisArg, _arguments, P, generator) {\r\n    return new (P || (P = Promise))(function (resolve, reject) {\r\n        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }\r\n        function rejected(value) { try { step(generator[\"throw\"](value)); } catch (e) { reject(e); } }\r\n        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }\r\n        step((generator = generator.apply(thisArg, _arguments || [])).next());\r\n    });\r\n}\r\n\r\nfunction __generator(thisArg, body) {\r\n    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;\r\n    return g = { next: verb(0), \"throw\": verb(1), \"return\": verb(2) }, typeof Symbol === \"function\" && (g[Symbol.iterator] = function() { return this; }), g;\r\n    function verb(n) { return function (v) { return step([n, v]); }; }\r\n    function step(op) {\r\n        if (f) throw new TypeError(\"Generator is already executing.\");\r\n        while (_) try {\r\n            if (f = 1, y && (t = op[0] & 2 ? y[\"return\"] : op[0] ? y[\"throw\"] || ((t = y[\"return\"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;\r\n            if (y = 0, t) op = [op[0] & 2, t.value];\r\n            switch (op[0]) {\r\n                case 0: case 1: t = op; break;\r\n                case 4: _.label++; return { value: op[1], done: false };\r\n                case 5: _.label++; y = op[1]; op = [0]; continue;\r\n                case 7: op = _.ops.pop(); _.trys.pop(); continue;\r\n                default:\r\n                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }\r\n                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }\r\n                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }\r\n                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }\r\n                    if (t[2]) _.ops.pop();\r\n                    _.trys.pop(); continue;\r\n            }\r\n            op = body.call(thisArg, _);\r\n        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }\r\n        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };\r\n    }\r\n}\r\n\r\nfunction __exportStar(m, exports) {\r\n    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];\r\n}\r\n\r\nfunction __values(o) {\r\n    var m = typeof Symbol === \"function\" && o[Symbol.iterator], i = 0;\r\n    if (m) return m.call(o);\r\n    return {\r\n        next: function () {\r\n            if (o && i >= o.length) o = void 0;\r\n            return { value: o && o[i++], done: !o };\r\n        }\r\n    };\r\n}\r\n\r\nfunction __read(o, n) {\r\n    var m = typeof Symbol === \"function\" && o[Symbol.iterator];\r\n    if (!m) return o;\r\n    var i = m.call(o), r, ar = [], e;\r\n    try {\r\n        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);\r\n    }\r\n    catch (error) { e = { error: error }; }\r\n    finally {\r\n        try {\r\n            if (r && !r.done && (m = i[\"return\"])) m.call(i);\r\n        }\r\n        finally { if (e) throw e.error; }\r\n    }\r\n    return ar;\r\n}\r\n\r\nfunction __spread() {\r\n    for (var ar = [], i = 0; i < arguments.length; i++)\r\n        ar = ar.concat(__read(arguments[i]));\r\n    return ar;\r\n}\r\n\r\nfunction __spreadArrays() {\r\n    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;\r\n    for (var r = Array(s), k = 0, i = 0; i < il; i++)\r\n        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)\r\n            r[k] = a[j];\r\n    return r;\r\n};\r\n\r\nfunction __await(v) {\r\n    return this instanceof __await ? (this.v = v, this) : new __await(v);\r\n}\r\n\r\nfunction __asyncGenerator(thisArg, _arguments, generator) {\r\n    if (!Symbol.asyncIterator) throw new TypeError(\"Symbol.asyncIterator is not defined.\");\r\n    var g = generator.apply(thisArg, _arguments || []), i, q = [];\r\n    return i = {}, verb(\"next\"), verb(\"throw\"), verb(\"return\"), i[Symbol.asyncIterator] = function () { return this; }, i;\r\n    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }\r\n    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }\r\n    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }\r\n    function fulfill(value) { resume(\"next\", value); }\r\n    function reject(value) { resume(\"throw\", value); }\r\n    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }\r\n}\r\n\r\nfunction __asyncDelegator(o) {\r\n    var i, p;\r\n    return i = {}, verb(\"next\"), verb(\"throw\", function (e) { throw e; }), verb(\"return\"), i[Symbol.iterator] = function () { return this; }, i;\r\n    function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === \"return\" } : f ? f(v) : v; } : f; }\r\n}\r\n\r\nfunction __asyncValues(o) {\r\n    if (!Symbol.asyncIterator) throw new TypeError(\"Symbol.asyncIterator is not defined.\");\r\n    var m = o[Symbol.asyncIterator], i;\r\n    return m ? m.call(o) : (o = typeof __values === \"function\" ? __values(o) : o[Symbol.iterator](), i = {}, verb(\"next\"), verb(\"throw\"), verb(\"return\"), i[Symbol.asyncIterator] = function () { return this; }, i);\r\n    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }\r\n    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }\r\n}\r\n\r\nfunction __makeTemplateObject(cooked, raw) {\r\n    if (Object.defineProperty) { Object.defineProperty(cooked, \"raw\", { value: raw }); } else { cooked.raw = raw; }\r\n    return cooked;\r\n};\r\n\r\nfunction __importStar(mod) {\r\n    if (mod && mod.__esModule) return mod;\r\n    var result = {};\r\n    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];\r\n    result.default = mod;\r\n    return result;\r\n}\r\n\r\nfunction __importDefault(mod) {\r\n    return (mod && mod.__esModule) ? mod : { default: mod };\r\n}\r\n\n\n//# sourceURL=webpack:///./node_modules/@material/data-table/node_modules/tslib/tslib.es6.js?");
 
-      var ev = createEvent_('mdl-componentdowngraded', true, false);
-      component.element_.dispatchEvent(ev);
-    }
-  }
+/***/ }),
 
-  /**
-   * Downgrade either a given node, an array of nodes, or a NodeList.
-   *
-   * @param {!Node|!Array<!Node>|!NodeList} nodes
-   */
-  function downgradeNodesInternal(nodes) {
-    /**
-     * Auxiliary function to downgrade a single node.
-     * @param  {!Node} node the node to be downgraded
-     */
-    var downgradeNode = function(node) {
-      createdComponents_.filter(function(item) {
-        return item.element_ === node;
-      }).forEach(deconstructComponentInternal);
-    };
-    if (nodes instanceof Array || nodes instanceof NodeList) {
-      for (var n = 0; n < nodes.length; n++) {
-        downgradeNode(nodes[n]);
-      }
-    } else if (nodes instanceof Node) {
-      downgradeNode(nodes);
-    } else {
-      throw new Error('Invalid argument provided to downgrade MDL nodes.');
-    }
-  }
+/***/ "./node_modules/@material/dom/events.js":
+/*!**********************************************!*\
+  !*** ./node_modules/@material/dom/events.js ***!
+  \**********************************************/
+/*! exports provided: applyPassive */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-  // Now return the functions that should be made public with their publicly
-  // facing names...
-  return {
-    upgradeDom: upgradeDomInternal,
-    upgradeElement: upgradeElementInternal,
-    upgradeElements: upgradeElementsInternal,
-    upgradeAllRegistered: upgradeAllRegisteredInternal,
-    registerUpgradedCallback: registerUpgradedCallbackInternal,
-    register: registerInternal,
-    downgradeElements: downgradeNodesInternal
-  };
-})();
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"applyPassive\", function() { return applyPassive; });\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n/**\n * Stores result from applyPassive to avoid redundant processing to detect\n * passive event listener support.\n */\nvar supportsPassive_;\n/**\n * Determine whether the current browser supports passive event listeners, and\n * if so, use them.\n */\nfunction applyPassive(globalObj, forceRefresh) {\n    if (globalObj === void 0) { globalObj = window; }\n    if (forceRefresh === void 0) { forceRefresh = false; }\n    if (supportsPassive_ === undefined || forceRefresh) {\n        var isSupported_1 = false;\n        try {\n            globalObj.document.addEventListener('test', function () { return undefined; }, {\n                get passive() {\n                    isSupported_1 = true;\n                    return isSupported_1;\n                },\n            });\n        }\n        catch (e) {\n        } // tslint:disable-line:no-empty cannot throw error due to tests. tslint also disables console.log.\n        supportsPassive_ = isSupported_1;\n    }\n    return supportsPassive_ ? { passive: true } : false;\n}\n//# sourceMappingURL=events.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/dom/events.js?");
 
-/**
- * Describes the type of a registered component type managed by
- * componentHandler. Provided for benefit of the Closure compiler.
- *
- * @typedef {{
- *   constructor: Function,
- *   classAsString: string,
- *   cssClass: string,
- *   widget: (string|boolean|undefined)
- * }}
- */
-componentHandler.ComponentConfigPublic;  // jshint ignore:line
+/***/ }),
 
-/**
- * Describes the type of a registered component type managed by
- * componentHandler. Provided for benefit of the Closure compiler.
- *
- * @typedef {{
- *   constructor: !Function,
- *   className: string,
- *   cssClass: string,
- *   widget: (string|boolean),
- *   callbacks: !Array<function(!HTMLElement)>
- * }}
- */
-componentHandler.ComponentConfig;  // jshint ignore:line
+/***/ "./node_modules/@material/dom/ponyfill.js":
+/*!************************************************!*\
+  !*** ./node_modules/@material/dom/ponyfill.js ***!
+  \************************************************/
+/*! exports provided: closest, matches */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-/**
- * Created component (i.e., upgraded element) type as managed by
- * componentHandler. Provided for benefit of the Closure compiler.
- *
- * @typedef {{
- *   element_: !HTMLElement,
- *   className: string,
- *   classAsString: string,
- *   cssClass: string,
- *   widget: string
- * }}
- */
-componentHandler.Component;  // jshint ignore:line
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"closest\", function() { return closest; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"matches\", function() { return matches; });\n/**\n * @license\n * Copyright 2018 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n/**\n * @fileoverview A \"ponyfill\" is a polyfill that doesn't modify the global prototype chain.\n * This makes ponyfills safer than traditional polyfills, especially for libraries like MDC.\n */\nfunction closest(element, selector) {\n    if (element.closest) {\n        return element.closest(selector);\n    }\n    var el = element;\n    while (el) {\n        if (matches(el, selector)) {\n            return el;\n        }\n        el = el.parentElement;\n    }\n    return null;\n}\nfunction matches(element, selector) {\n    var nativeMatches = element.matches\n        || element.webkitMatchesSelector\n        || element.msMatchesSelector;\n    return nativeMatches.call(element, selector);\n}\n//# sourceMappingURL=ponyfill.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/dom/ponyfill.js?");
 
-// Export all symbols, for the benefit of Closure compiler.
-// No effect on uncompiled code.
-componentHandler['upgradeDom'] = componentHandler.upgradeDom;
-componentHandler['upgradeElement'] = componentHandler.upgradeElement;
-componentHandler['upgradeElements'] = componentHandler.upgradeElements;
-componentHandler['upgradeAllRegistered'] =
-    componentHandler.upgradeAllRegistered;
-componentHandler['registerUpgradedCallback'] =
-    componentHandler.registerUpgradedCallback;
-componentHandler['register'] = componentHandler.register;
-componentHandler['downgradeElements'] = componentHandler.downgradeElements;
-window.componentHandler = componentHandler;
-window['componentHandler'] = componentHandler;
+/***/ }),
 
-window.addEventListener('load', function() {
-  'use strict';
+/***/ "./node_modules/@material/floating-label/component.js":
+/*!************************************************************!*\
+  !*** ./node_modules/@material/floating-label/component.js ***!
+  \************************************************************/
+/*! exports provided: MDCFloatingLabel */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
 
-  /**
-   * Performs a "Cutting the mustard" test. If the browser supports the features
-   * tested, adds a mdl-js class to the <html> element. It then upgrades all MDL
-   * components requiring JavaScript.
-   */
-  if ('classList' in document.createElement('div') &&
-      'querySelector' in document &&
-      'addEventListener' in window && Array.prototype.forEach) {
-    document.documentElement.classList.add('mdl-js');
-    componentHandler.upgradeAllRegistered();
-  } else {
-    /**
-     * Dummy function to avoid JS errors.
-     */
-    componentHandler.upgradeElement = function() {};
-    /**
-     * Dummy function to avoid JS errors.
-     */
-    componentHandler.register = function() {};
-  }
-});
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCFloatingLabel\", function() { return MDCFloatingLabel; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/component */ \"./node_modules/@material/base/component.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/floating-label/foundation.js\");\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCFloatingLabel = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCFloatingLabel, _super);\n    function MDCFloatingLabel() {\n        return _super !== null && _super.apply(this, arguments) || this;\n    }\n    MDCFloatingLabel.attachTo = function (root) {\n        return new MDCFloatingLabel(root);\n    };\n    /**\n     * Styles the label to produce the label shake for errors.\n     * @param shouldShake If true, shakes the label by adding a CSS class; otherwise, stops shaking by removing the class.\n     */\n    MDCFloatingLabel.prototype.shake = function (shouldShake) {\n        this.foundation_.shake(shouldShake);\n    };\n    /**\n     * Styles the label to float/dock.\n     * @param shouldFloat If true, floats the label by adding a CSS class; otherwise, docks it by removing the class.\n     */\n    MDCFloatingLabel.prototype.float = function (shouldFloat) {\n        this.foundation_.float(shouldFloat);\n    };\n    MDCFloatingLabel.prototype.getWidth = function () {\n        return this.foundation_.getWidth();\n    };\n    MDCFloatingLabel.prototype.getDefaultFoundation = function () {\n        var _this = this;\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n        var adapter = {\n            addClass: function (className) { return _this.root_.classList.add(className); },\n            removeClass: function (className) { return _this.root_.classList.remove(className); },\n            getWidth: function () { return _this.root_.scrollWidth; },\n            registerInteractionHandler: function (evtType, handler) { return _this.listen(evtType, handler); },\n            deregisterInteractionHandler: function (evtType, handler) { return _this.unlisten(evtType, handler); },\n        };\n        // tslint:enable:object-literal-sort-keys\n        return new _foundation__WEBPACK_IMPORTED_MODULE_2__[\"MDCFloatingLabelFoundation\"](adapter);\n    };\n    return MDCFloatingLabel;\n}(_material_base_component__WEBPACK_IMPORTED_MODULE_1__[\"MDCComponent\"]));\n\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/floating-label/component.js?");
 
-// Source: https://github.com/darius/requestAnimationFrame/blob/master/requestAnimationFrame.js
-// Adapted from https://gist.github.com/paulirish/1579671 which derived from
-// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
-// http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
-// requestAnimationFrame polyfill by Erik Möller.
-// Fixes from Paul Irish, Tino Zijdel, Andrew Mao, Klemen Slavič, Darius Bacon
-// MIT license
-if (!Date.now) {
-    /**
-     * Date.now polyfill.
-     * @return {number} the current Date
-     */
-    Date.now = function () {
-        return new Date().getTime();
-    };
-    Date['now'] = Date.now;
-}
-var vendors = [
-    'webkit',
-    'moz'
-];
-for (var i = 0; i < vendors.length && !window.requestAnimationFrame; ++i) {
-    var vp = vendors[i];
-    window.requestAnimationFrame = window[vp + 'RequestAnimationFrame'];
-    window.cancelAnimationFrame = window[vp + 'CancelAnimationFrame'] || window[vp + 'CancelRequestAnimationFrame'];
-    window['requestAnimationFrame'] = window.requestAnimationFrame;
-    window['cancelAnimationFrame'] = window.cancelAnimationFrame;
-}
-if (/iP(ad|hone|od).*OS 6/.test(window.navigator.userAgent) || !window.requestAnimationFrame || !window.cancelAnimationFrame) {
-    var lastTime = 0;
-    /**
-     * requestAnimationFrame polyfill.
-     * @param  {!Function} callback the callback function.
-     */
-    window.requestAnimationFrame = function (callback) {
-        var now = Date.now();
-        var nextTime = Math.max(lastTime + 16, now);
-        return setTimeout(function () {
-            callback(lastTime = nextTime);
-        }, nextTime - now);
-    };
-    window.cancelAnimationFrame = clearTimeout;
-    window['requestAnimationFrame'] = window.requestAnimationFrame;
-    window['cancelAnimationFrame'] = window.cancelAnimationFrame;
-}
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Button MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialButton = function MaterialButton(element) {
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialButton'] = MaterialButton;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialButton.prototype.Constant_ = {};
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialButton.prototype.CssClasses_ = {
-    RIPPLE_EFFECT: 'mdl-js-ripple-effect',
-    RIPPLE_CONTAINER: 'mdl-button__ripple-container',
-    RIPPLE: 'mdl-ripple'
-};
-/**
-   * Handle blur of element.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialButton.prototype.blurHandler_ = function (event) {
-    if (event) {
-        this.element_.blur();
-    }
-};
-// Public methods.
-/**
-   * Disable button.
-   *
-   * @public
-   */
-MaterialButton.prototype.disable = function () {
-    this.element_.disabled = true;
-};
-MaterialButton.prototype['disable'] = MaterialButton.prototype.disable;
-/**
-   * Enable button.
-   *
-   * @public
-   */
-MaterialButton.prototype.enable = function () {
-    this.element_.disabled = false;
-};
-MaterialButton.prototype['enable'] = MaterialButton.prototype.enable;
-/**
-   * Initialize element.
-   */
-MaterialButton.prototype.init = function () {
-    if (this.element_) {
-        if (this.element_.classList.contains(this.CssClasses_.RIPPLE_EFFECT)) {
-            var rippleContainer = document.createElement('span');
-            rippleContainer.classList.add(this.CssClasses_.RIPPLE_CONTAINER);
-            this.rippleElement_ = document.createElement('span');
-            this.rippleElement_.classList.add(this.CssClasses_.RIPPLE);
-            rippleContainer.appendChild(this.rippleElement_);
-            this.boundRippleBlurHandler = this.blurHandler_.bind(this);
-            this.rippleElement_.addEventListener('mouseup', this.boundRippleBlurHandler);
-            this.element_.appendChild(rippleContainer);
-        }
-        this.boundButtonBlurHandler = this.blurHandler_.bind(this);
-        this.element_.addEventListener('mouseup', this.boundButtonBlurHandler);
-        this.element_.addEventListener('mouseleave', this.boundButtonBlurHandler);
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialButton,
-    classAsString: 'MaterialButton',
-    cssClass: 'mdl-js-button',
-    widget: true
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Checkbox MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialCheckbox = function MaterialCheckbox(element) {
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialCheckbox'] = MaterialCheckbox;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialCheckbox.prototype.Constant_ = { TINY_TIMEOUT: 0.001 };
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialCheckbox.prototype.CssClasses_ = {
-    INPUT: 'mdl-checkbox__input',
-    BOX_OUTLINE: 'mdl-checkbox__box-outline',
-    FOCUS_HELPER: 'mdl-checkbox__focus-helper',
-    TICK_OUTLINE: 'mdl-checkbox__tick-outline',
-    RIPPLE_EFFECT: 'mdl-js-ripple-effect',
-    RIPPLE_IGNORE_EVENTS: 'mdl-js-ripple-effect--ignore-events',
-    RIPPLE_CONTAINER: 'mdl-checkbox__ripple-container',
-    RIPPLE_CENTER: 'mdl-ripple--center',
-    RIPPLE: 'mdl-ripple',
-    IS_FOCUSED: 'is-focused',
-    IS_DISABLED: 'is-disabled',
-    IS_CHECKED: 'is-checked',
-    IS_UPGRADED: 'is-upgraded'
-};
-/**
-   * Handle change of state.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialCheckbox.prototype.onChange_ = function (event) {
-    this.updateClasses_();
-};
-/**
-   * Handle focus of element.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialCheckbox.prototype.onFocus_ = function (event) {
-    this.element_.classList.add(this.CssClasses_.IS_FOCUSED);
-};
-/**
-   * Handle lost focus of element.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialCheckbox.prototype.onBlur_ = function (event) {
-    this.element_.classList.remove(this.CssClasses_.IS_FOCUSED);
-};
-/**
-   * Handle mouseup.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialCheckbox.prototype.onMouseUp_ = function (event) {
-    this.blur_();
-};
-/**
-   * Handle class updates.
-   *
-   * @private
-   */
-MaterialCheckbox.prototype.updateClasses_ = function () {
-    this.checkDisabled();
-    this.checkToggleState();
-};
-/**
-   * Add blur.
-   *
-   * @private
-   */
-MaterialCheckbox.prototype.blur_ = function () {
-    // TODO: figure out why there's a focus event being fired after our blur,
-    // so that we can avoid this hack.
-    window.setTimeout(function () {
-        this.inputElement_.blur();
-    }.bind(this), this.Constant_.TINY_TIMEOUT);
-};
-// Public methods.
-/**
-   * Check the inputs toggle state and update display.
-   *
-   * @public
-   */
-MaterialCheckbox.prototype.checkToggleState = function () {
-    if (this.inputElement_.checked) {
-        this.element_.classList.add(this.CssClasses_.IS_CHECKED);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_CHECKED);
-    }
-};
-MaterialCheckbox.prototype['checkToggleState'] = MaterialCheckbox.prototype.checkToggleState;
-/**
-   * Check the inputs disabled state and update display.
-   *
-   * @public
-   */
-MaterialCheckbox.prototype.checkDisabled = function () {
-    if (this.inputElement_.disabled) {
-        this.element_.classList.add(this.CssClasses_.IS_DISABLED);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
-    }
-};
-MaterialCheckbox.prototype['checkDisabled'] = MaterialCheckbox.prototype.checkDisabled;
-/**
-   * Disable checkbox.
-   *
-   * @public
-   */
-MaterialCheckbox.prototype.disable = function () {
-    this.inputElement_.disabled = true;
-    this.updateClasses_();
-};
-MaterialCheckbox.prototype['disable'] = MaterialCheckbox.prototype.disable;
-/**
-   * Enable checkbox.
-   *
-   * @public
-   */
-MaterialCheckbox.prototype.enable = function () {
-    this.inputElement_.disabled = false;
-    this.updateClasses_();
-};
-MaterialCheckbox.prototype['enable'] = MaterialCheckbox.prototype.enable;
-/**
-   * Check checkbox.
-   *
-   * @public
-   */
-MaterialCheckbox.prototype.check = function () {
-    this.inputElement_.checked = true;
-    this.updateClasses_();
-};
-MaterialCheckbox.prototype['check'] = MaterialCheckbox.prototype.check;
-/**
-   * Uncheck checkbox.
-   *
-   * @public
-   */
-MaterialCheckbox.prototype.uncheck = function () {
-    this.inputElement_.checked = false;
-    this.updateClasses_();
-};
-MaterialCheckbox.prototype['uncheck'] = MaterialCheckbox.prototype.uncheck;
-/**
-   * Initialize element.
-   */
-MaterialCheckbox.prototype.init = function () {
-    if (this.element_) {
-        this.inputElement_ = this.element_.querySelector('.' + this.CssClasses_.INPUT);
-        var boxOutline = document.createElement('span');
-        boxOutline.classList.add(this.CssClasses_.BOX_OUTLINE);
-        var tickContainer = document.createElement('span');
-        tickContainer.classList.add(this.CssClasses_.FOCUS_HELPER);
-        var tickOutline = document.createElement('span');
-        tickOutline.classList.add(this.CssClasses_.TICK_OUTLINE);
-        boxOutline.appendChild(tickOutline);
-        this.element_.appendChild(tickContainer);
-        this.element_.appendChild(boxOutline);
-        if (this.element_.classList.contains(this.CssClasses_.RIPPLE_EFFECT)) {
-            this.element_.classList.add(this.CssClasses_.RIPPLE_IGNORE_EVENTS);
-            this.rippleContainerElement_ = document.createElement('span');
-            this.rippleContainerElement_.classList.add(this.CssClasses_.RIPPLE_CONTAINER);
-            this.rippleContainerElement_.classList.add(this.CssClasses_.RIPPLE_EFFECT);
-            this.rippleContainerElement_.classList.add(this.CssClasses_.RIPPLE_CENTER);
-            this.boundRippleMouseUp = this.onMouseUp_.bind(this);
-            this.rippleContainerElement_.addEventListener('mouseup', this.boundRippleMouseUp);
-            var ripple = document.createElement('span');
-            ripple.classList.add(this.CssClasses_.RIPPLE);
-            this.rippleContainerElement_.appendChild(ripple);
-            this.element_.appendChild(this.rippleContainerElement_);
-        }
-        this.boundInputOnChange = this.onChange_.bind(this);
-        this.boundInputOnFocus = this.onFocus_.bind(this);
-        this.boundInputOnBlur = this.onBlur_.bind(this);
-        this.boundElementMouseUp = this.onMouseUp_.bind(this);
-        this.inputElement_.addEventListener('change', this.boundInputOnChange);
-        this.inputElement_.addEventListener('focus', this.boundInputOnFocus);
-        this.inputElement_.addEventListener('blur', this.boundInputOnBlur);
-        this.element_.addEventListener('mouseup', this.boundElementMouseUp);
-        this.updateClasses_();
-        this.element_.classList.add(this.CssClasses_.IS_UPGRADED);
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialCheckbox,
-    classAsString: 'MaterialCheckbox',
-    cssClass: 'mdl-js-checkbox',
-    widget: true
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for icon toggle MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialIconToggle = function MaterialIconToggle(element) {
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialIconToggle'] = MaterialIconToggle;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialIconToggle.prototype.Constant_ = { TINY_TIMEOUT: 0.001 };
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialIconToggle.prototype.CssClasses_ = {
-    INPUT: 'mdl-icon-toggle__input',
-    JS_RIPPLE_EFFECT: 'mdl-js-ripple-effect',
-    RIPPLE_IGNORE_EVENTS: 'mdl-js-ripple-effect--ignore-events',
-    RIPPLE_CONTAINER: 'mdl-icon-toggle__ripple-container',
-    RIPPLE_CENTER: 'mdl-ripple--center',
-    RIPPLE: 'mdl-ripple',
-    IS_FOCUSED: 'is-focused',
-    IS_DISABLED: 'is-disabled',
-    IS_CHECKED: 'is-checked'
-};
-/**
-   * Handle change of state.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialIconToggle.prototype.onChange_ = function (event) {
-    this.updateClasses_();
-};
-/**
-   * Handle focus of element.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialIconToggle.prototype.onFocus_ = function (event) {
-    this.element_.classList.add(this.CssClasses_.IS_FOCUSED);
-};
-/**
-   * Handle lost focus of element.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialIconToggle.prototype.onBlur_ = function (event) {
-    this.element_.classList.remove(this.CssClasses_.IS_FOCUSED);
-};
-/**
-   * Handle mouseup.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialIconToggle.prototype.onMouseUp_ = function (event) {
-    this.blur_();
-};
-/**
-   * Handle class updates.
-   *
-   * @private
-   */
-MaterialIconToggle.prototype.updateClasses_ = function () {
-    this.checkDisabled();
-    this.checkToggleState();
-};
-/**
-   * Add blur.
-   *
-   * @private
-   */
-MaterialIconToggle.prototype.blur_ = function () {
-    // TODO: figure out why there's a focus event being fired after our blur,
-    // so that we can avoid this hack.
-    window.setTimeout(function () {
-        this.inputElement_.blur();
-    }.bind(this), this.Constant_.TINY_TIMEOUT);
-};
-// Public methods.
-/**
-   * Check the inputs toggle state and update display.
-   *
-   * @public
-   */
-MaterialIconToggle.prototype.checkToggleState = function () {
-    if (this.inputElement_.checked) {
-        this.element_.classList.add(this.CssClasses_.IS_CHECKED);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_CHECKED);
-    }
-};
-MaterialIconToggle.prototype['checkToggleState'] = MaterialIconToggle.prototype.checkToggleState;
-/**
-   * Check the inputs disabled state and update display.
-   *
-   * @public
-   */
-MaterialIconToggle.prototype.checkDisabled = function () {
-    if (this.inputElement_.disabled) {
-        this.element_.classList.add(this.CssClasses_.IS_DISABLED);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
-    }
-};
-MaterialIconToggle.prototype['checkDisabled'] = MaterialIconToggle.prototype.checkDisabled;
-/**
-   * Disable icon toggle.
-   *
-   * @public
-   */
-MaterialIconToggle.prototype.disable = function () {
-    this.inputElement_.disabled = true;
-    this.updateClasses_();
-};
-MaterialIconToggle.prototype['disable'] = MaterialIconToggle.prototype.disable;
-/**
-   * Enable icon toggle.
-   *
-   * @public
-   */
-MaterialIconToggle.prototype.enable = function () {
-    this.inputElement_.disabled = false;
-    this.updateClasses_();
-};
-MaterialIconToggle.prototype['enable'] = MaterialIconToggle.prototype.enable;
-/**
-   * Check icon toggle.
-   *
-   * @public
-   */
-MaterialIconToggle.prototype.check = function () {
-    this.inputElement_.checked = true;
-    this.updateClasses_();
-};
-MaterialIconToggle.prototype['check'] = MaterialIconToggle.prototype.check;
-/**
-   * Uncheck icon toggle.
-   *
-   * @public
-   */
-MaterialIconToggle.prototype.uncheck = function () {
-    this.inputElement_.checked = false;
-    this.updateClasses_();
-};
-MaterialIconToggle.prototype['uncheck'] = MaterialIconToggle.prototype.uncheck;
-/**
-   * Initialize element.
-   */
-MaterialIconToggle.prototype.init = function () {
-    if (this.element_) {
-        this.inputElement_ = this.element_.querySelector('.' + this.CssClasses_.INPUT);
-        if (this.element_.classList.contains(this.CssClasses_.JS_RIPPLE_EFFECT)) {
-            this.element_.classList.add(this.CssClasses_.RIPPLE_IGNORE_EVENTS);
-            this.rippleContainerElement_ = document.createElement('span');
-            this.rippleContainerElement_.classList.add(this.CssClasses_.RIPPLE_CONTAINER);
-            this.rippleContainerElement_.classList.add(this.CssClasses_.JS_RIPPLE_EFFECT);
-            this.rippleContainerElement_.classList.add(this.CssClasses_.RIPPLE_CENTER);
-            this.boundRippleMouseUp = this.onMouseUp_.bind(this);
-            this.rippleContainerElement_.addEventListener('mouseup', this.boundRippleMouseUp);
-            var ripple = document.createElement('span');
-            ripple.classList.add(this.CssClasses_.RIPPLE);
-            this.rippleContainerElement_.appendChild(ripple);
-            this.element_.appendChild(this.rippleContainerElement_);
-        }
-        this.boundInputOnChange = this.onChange_.bind(this);
-        this.boundInputOnFocus = this.onFocus_.bind(this);
-        this.boundInputOnBlur = this.onBlur_.bind(this);
-        this.boundElementOnMouseUp = this.onMouseUp_.bind(this);
-        this.inputElement_.addEventListener('change', this.boundInputOnChange);
-        this.inputElement_.addEventListener('focus', this.boundInputOnFocus);
-        this.inputElement_.addEventListener('blur', this.boundInputOnBlur);
-        this.element_.addEventListener('mouseup', this.boundElementOnMouseUp);
-        this.updateClasses_();
-        this.element_.classList.add('is-upgraded');
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialIconToggle,
-    classAsString: 'MaterialIconToggle',
-    cssClass: 'mdl-js-icon-toggle',
-    widget: true
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for dropdown MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialMenu = function MaterialMenu(element) {
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialMenu'] = MaterialMenu;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialMenu.prototype.Constant_ = {
-    // Total duration of the menu animation.
-    TRANSITION_DURATION_SECONDS: 0.3,
-    // The fraction of the total duration we want to use for menu item animations.
-    TRANSITION_DURATION_FRACTION: 0.8,
-    // How long the menu stays open after choosing an option (so the user can see
-    // the ripple).
-    CLOSE_TIMEOUT: 150
-};
-/**
-   * Keycodes, for code readability.
-   *
-   * @enum {number}
-   * @private
-   */
-MaterialMenu.prototype.Keycodes_ = {
-    ENTER: 13,
-    ESCAPE: 27,
-    SPACE: 32,
-    UP_ARROW: 38,
-    DOWN_ARROW: 40
-};
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialMenu.prototype.CssClasses_ = {
-    CONTAINER: 'mdl-menu__container',
-    OUTLINE: 'mdl-menu__outline',
-    ITEM: 'mdl-menu__item',
-    ITEM_RIPPLE_CONTAINER: 'mdl-menu__item-ripple-container',
-    RIPPLE_EFFECT: 'mdl-js-ripple-effect',
-    RIPPLE_IGNORE_EVENTS: 'mdl-js-ripple-effect--ignore-events',
-    RIPPLE: 'mdl-ripple',
-    // Statuses
-    IS_UPGRADED: 'is-upgraded',
-    IS_VISIBLE: 'is-visible',
-    IS_ANIMATING: 'is-animating',
-    // Alignment options
-    BOTTOM_LEFT: 'mdl-menu--bottom-left',
-    // This is the default.
-    BOTTOM_RIGHT: 'mdl-menu--bottom-right',
-    TOP_LEFT: 'mdl-menu--top-left',
-    TOP_RIGHT: 'mdl-menu--top-right',
-    UNALIGNED: 'mdl-menu--unaligned'
-};
-/**
-   * Initialize element.
-   */
-MaterialMenu.prototype.init = function () {
-    if (this.element_) {
-        // Create container for the menu.
-        var container = document.createElement('div');
-        container.classList.add(this.CssClasses_.CONTAINER);
-        this.element_.parentElement.insertBefore(container, this.element_);
-        this.element_.parentElement.removeChild(this.element_);
-        container.appendChild(this.element_);
-        this.container_ = container;
-        // Create outline for the menu (shadow and background).
-        var outline = document.createElement('div');
-        outline.classList.add(this.CssClasses_.OUTLINE);
-        this.outline_ = outline;
-        container.insertBefore(outline, this.element_);
-        // Find the "for" element and bind events to it.
-        var forElId = this.element_.getAttribute('for') || this.element_.getAttribute('data-mdl-for');
-        var forEl = null;
-        if (forElId) {
-            forEl = document.getElementById(forElId);
-            if (forEl) {
-                this.forElement_ = forEl;
-                forEl.addEventListener('click', this.handleForClick_.bind(this));
-                forEl.addEventListener('keydown', this.handleForKeyboardEvent_.bind(this));
-            }
-        }
-        var items = this.element_.querySelectorAll('.' + this.CssClasses_.ITEM);
-        this.boundItemKeydown_ = this.handleItemKeyboardEvent_.bind(this);
-        this.boundItemClick_ = this.handleItemClick_.bind(this);
-        for (var i = 0; i < items.length; i++) {
-            // Add a listener to each menu item.
-            items[i].addEventListener('click', this.boundItemClick_);
-            // Add a tab index to each menu item.
-            items[i].tabIndex = '-1';
-            // Add a keyboard listener to each menu item.
-            items[i].addEventListener('keydown', this.boundItemKeydown_);
-        }
-        // Add ripple classes to each item, if the user has enabled ripples.
-        if (this.element_.classList.contains(this.CssClasses_.RIPPLE_EFFECT)) {
-            this.element_.classList.add(this.CssClasses_.RIPPLE_IGNORE_EVENTS);
-            for (i = 0; i < items.length; i++) {
-                var item = items[i];
-                var rippleContainer = document.createElement('span');
-                rippleContainer.classList.add(this.CssClasses_.ITEM_RIPPLE_CONTAINER);
-                var ripple = document.createElement('span');
-                ripple.classList.add(this.CssClasses_.RIPPLE);
-                rippleContainer.appendChild(ripple);
-                item.appendChild(rippleContainer);
-                item.classList.add(this.CssClasses_.RIPPLE_EFFECT);
-            }
-        }
-        // Copy alignment classes to the container, so the outline can use them.
-        if (this.element_.classList.contains(this.CssClasses_.BOTTOM_LEFT)) {
-            this.outline_.classList.add(this.CssClasses_.BOTTOM_LEFT);
-        }
-        if (this.element_.classList.contains(this.CssClasses_.BOTTOM_RIGHT)) {
-            this.outline_.classList.add(this.CssClasses_.BOTTOM_RIGHT);
-        }
-        if (this.element_.classList.contains(this.CssClasses_.TOP_LEFT)) {
-            this.outline_.classList.add(this.CssClasses_.TOP_LEFT);
-        }
-        if (this.element_.classList.contains(this.CssClasses_.TOP_RIGHT)) {
-            this.outline_.classList.add(this.CssClasses_.TOP_RIGHT);
-        }
-        if (this.element_.classList.contains(this.CssClasses_.UNALIGNED)) {
-            this.outline_.classList.add(this.CssClasses_.UNALIGNED);
-        }
-        container.classList.add(this.CssClasses_.IS_UPGRADED);
-    }
-};
-/**
-   * Handles a click on the "for" element, by positioning the menu and then
-   * toggling it.
-   *
-   * @param {Event} evt The event that fired.
-   * @private
-   */
-MaterialMenu.prototype.handleForClick_ = function (evt) {
-    if (this.element_ && this.forElement_) {
-        var rect = this.forElement_.getBoundingClientRect();
-        var forRect = this.forElement_.parentElement.getBoundingClientRect();
-        if (this.element_.classList.contains(this.CssClasses_.UNALIGNED)) {
-        } else if (this.element_.classList.contains(this.CssClasses_.BOTTOM_RIGHT)) {
-            // Position below the "for" element, aligned to its right.
-            this.container_.style.right = forRect.right - rect.right + 'px';
-            this.container_.style.top = this.forElement_.offsetTop + this.forElement_.offsetHeight + 'px';
-        } else if (this.element_.classList.contains(this.CssClasses_.TOP_LEFT)) {
-            // Position above the "for" element, aligned to its left.
-            this.container_.style.left = this.forElement_.offsetLeft + 'px';
-            this.container_.style.bottom = forRect.bottom - rect.top + 'px';
-        } else if (this.element_.classList.contains(this.CssClasses_.TOP_RIGHT)) {
-            // Position above the "for" element, aligned to its right.
-            this.container_.style.right = forRect.right - rect.right + 'px';
-            this.container_.style.bottom = forRect.bottom - rect.top + 'px';
-        } else {
-            // Default: position below the "for" element, aligned to its left.
-            this.container_.style.left = this.forElement_.offsetLeft + 'px';
-            this.container_.style.top = this.forElement_.offsetTop + this.forElement_.offsetHeight + 'px';
-        }
-    }
-    this.toggle(evt);
-};
-/**
-   * Handles a keyboard event on the "for" element.
-   *
-   * @param {Event} evt The event that fired.
-   * @private
-   */
-MaterialMenu.prototype.handleForKeyboardEvent_ = function (evt) {
-    if (this.element_ && this.container_ && this.forElement_) {
-        var items = this.element_.querySelectorAll('.' + this.CssClasses_.ITEM + ':not([disabled])');
-        if (items && items.length > 0 && this.container_.classList.contains(this.CssClasses_.IS_VISIBLE)) {
-            if (evt.keyCode === this.Keycodes_.UP_ARROW) {
-                evt.preventDefault();
-                items[items.length - 1].focus();
-            } else if (evt.keyCode === this.Keycodes_.DOWN_ARROW) {
-                evt.preventDefault();
-                items[0].focus();
-            }
-        }
-    }
-};
-/**
-   * Handles a keyboard event on an item.
-   *
-   * @param {Event} evt The event that fired.
-   * @private
-   */
-MaterialMenu.prototype.handleItemKeyboardEvent_ = function (evt) {
-    if (this.element_ && this.container_) {
-        var items = this.element_.querySelectorAll('.' + this.CssClasses_.ITEM + ':not([disabled])');
-        if (items && items.length > 0 && this.container_.classList.contains(this.CssClasses_.IS_VISIBLE)) {
-            var currentIndex = Array.prototype.slice.call(items).indexOf(evt.target);
-            if (evt.keyCode === this.Keycodes_.UP_ARROW) {
-                evt.preventDefault();
-                if (currentIndex > 0) {
-                    items[currentIndex - 1].focus();
-                } else {
-                    items[items.length - 1].focus();
-                }
-            } else if (evt.keyCode === this.Keycodes_.DOWN_ARROW) {
-                evt.preventDefault();
-                if (items.length > currentIndex + 1) {
-                    items[currentIndex + 1].focus();
-                } else {
-                    items[0].focus();
-                }
-            } else if (evt.keyCode === this.Keycodes_.SPACE || evt.keyCode === this.Keycodes_.ENTER) {
-                evt.preventDefault();
-                // Send mousedown and mouseup to trigger ripple.
-                var e = new MouseEvent('mousedown');
-                evt.target.dispatchEvent(e);
-                e = new MouseEvent('mouseup');
-                evt.target.dispatchEvent(e);
-                // Send click.
-                evt.target.click();
-            } else if (evt.keyCode === this.Keycodes_.ESCAPE) {
-                evt.preventDefault();
-                this.hide();
-            }
-        }
-    }
-};
-/**
-   * Handles a click event on an item.
-   *
-   * @param {Event} evt The event that fired.
-   * @private
-   */
-MaterialMenu.prototype.handleItemClick_ = function (evt) {
-    if (evt.target.hasAttribute('disabled')) {
-        evt.stopPropagation();
-    } else {
-        // Wait some time before closing menu, so the user can see the ripple.
-        this.closing_ = true;
-        window.setTimeout(function (evt) {
-            this.hide();
-            this.closing_ = false;
-        }.bind(this), this.Constant_.CLOSE_TIMEOUT);
-    }
-};
-/**
-   * Calculates the initial clip (for opening the menu) or final clip (for closing
-   * it), and applies it. This allows us to animate from or to the correct point,
-   * that is, the point it's aligned to in the "for" element.
-   *
-   * @param {number} height Height of the clip rectangle
-   * @param {number} width Width of the clip rectangle
-   * @private
-   */
-MaterialMenu.prototype.applyClip_ = function (height, width) {
-    if (this.element_.classList.contains(this.CssClasses_.UNALIGNED)) {
-        // Do not clip.
-        this.element_.style.clip = '';
-    } else if (this.element_.classList.contains(this.CssClasses_.BOTTOM_RIGHT)) {
-        // Clip to the top right corner of the menu.
-        this.element_.style.clip = 'rect(0 ' + width + 'px ' + '0 ' + width + 'px)';
-    } else if (this.element_.classList.contains(this.CssClasses_.TOP_LEFT)) {
-        // Clip to the bottom left corner of the menu.
-        this.element_.style.clip = 'rect(' + height + 'px 0 ' + height + 'px 0)';
-    } else if (this.element_.classList.contains(this.CssClasses_.TOP_RIGHT)) {
-        // Clip to the bottom right corner of the menu.
-        this.element_.style.clip = 'rect(' + height + 'px ' + width + 'px ' + height + 'px ' + width + 'px)';
-    } else {
-        // Default: do not clip (same as clipping to the top left corner).
-        this.element_.style.clip = '';
-    }
-};
-/**
-   * Cleanup function to remove animation listeners.
-   *
-   * @param {Event} evt
-   * @private
-   */
-MaterialMenu.prototype.removeAnimationEndListener_ = function (evt) {
-    evt.target.classList.remove(MaterialMenu.prototype.CssClasses_.IS_ANIMATING);
-};
-/**
-   * Adds an event listener to clean up after the animation ends.
-   *
-   * @private
-   */
-MaterialMenu.prototype.addAnimationEndListener_ = function () {
-    this.element_.addEventListener('transitionend', this.removeAnimationEndListener_);
-    this.element_.addEventListener('webkitTransitionEnd', this.removeAnimationEndListener_);
-};
-/**
-   * Displays the menu.
-   *
-   * @public
-   */
-MaterialMenu.prototype.show = function (evt) {
-    if (this.element_ && this.container_ && this.outline_) {
-        // Measure the inner element.
-        var height = this.element_.getBoundingClientRect().height;
-        var width = this.element_.getBoundingClientRect().width;
-        // Apply the inner element's size to the container and outline.
-        this.container_.style.width = width + 'px';
-        this.container_.style.height = height + 'px';
-        this.outline_.style.width = width + 'px';
-        this.outline_.style.height = height + 'px';
-        var transitionDuration = this.Constant_.TRANSITION_DURATION_SECONDS * this.Constant_.TRANSITION_DURATION_FRACTION;
-        // Calculate transition delays for individual menu items, so that they fade
-        // in one at a time.
-        var items = this.element_.querySelectorAll('.' + this.CssClasses_.ITEM);
-        for (var i = 0; i < items.length; i++) {
-            var itemDelay = null;
-            if (this.element_.classList.contains(this.CssClasses_.TOP_LEFT) || this.element_.classList.contains(this.CssClasses_.TOP_RIGHT)) {
-                itemDelay = (height - items[i].offsetTop - items[i].offsetHeight) / height * transitionDuration + 's';
-            } else {
-                itemDelay = items[i].offsetTop / height * transitionDuration + 's';
-            }
-            items[i].style.transitionDelay = itemDelay;
-        }
-        // Apply the initial clip to the text before we start animating.
-        this.applyClip_(height, width);
-        // Wait for the next frame, turn on animation, and apply the final clip.
-        // Also make it visible. This triggers the transitions.
-        window.requestAnimationFrame(function () {
-            this.element_.classList.add(this.CssClasses_.IS_ANIMATING);
-            this.element_.style.clip = 'rect(0 ' + width + 'px ' + height + 'px 0)';
-            this.container_.classList.add(this.CssClasses_.IS_VISIBLE);
-        }.bind(this));
-        // Clean up after the animation is complete.
-        this.addAnimationEndListener_();
-        // Add a click listener to the document, to close the menu.
-        var callback = function (e) {
-            // Check to see if the document is processing the same event that
-            // displayed the menu in the first place. If so, do nothing.
-            // Also check to see if the menu is in the process of closing itself, and
-            // do nothing in that case.
-            // Also check if the clicked element is a menu item
-            // if so, do nothing.
-            if (e !== evt && !this.closing_ && e.target.parentNode !== this.element_) {
-                document.removeEventListener('click', callback);
-                this.hide();
-            }
-        }.bind(this);
-        document.addEventListener('click', callback);
-    }
-};
-MaterialMenu.prototype['show'] = MaterialMenu.prototype.show;
-/**
-   * Hides the menu.
-   *
-   * @public
-   */
-MaterialMenu.prototype.hide = function () {
-    if (this.element_ && this.container_ && this.outline_) {
-        var items = this.element_.querySelectorAll('.' + this.CssClasses_.ITEM);
-        // Remove all transition delays; menu items fade out concurrently.
-        for (var i = 0; i < items.length; i++) {
-            items[i].style.removeProperty('transition-delay');
-        }
-        // Measure the inner element.
-        var rect = this.element_.getBoundingClientRect();
-        var height = rect.height;
-        var width = rect.width;
-        // Turn on animation, and apply the final clip. Also make invisible.
-        // This triggers the transitions.
-        this.element_.classList.add(this.CssClasses_.IS_ANIMATING);
-        this.applyClip_(height, width);
-        this.container_.classList.remove(this.CssClasses_.IS_VISIBLE);
-        // Clean up after the animation is complete.
-        this.addAnimationEndListener_();
-    }
-};
-MaterialMenu.prototype['hide'] = MaterialMenu.prototype.hide;
-/**
-   * Displays or hides the menu, depending on current state.
-   *
-   * @public
-   */
-MaterialMenu.prototype.toggle = function (evt) {
-    if (this.container_.classList.contains(this.CssClasses_.IS_VISIBLE)) {
-        this.hide();
-    } else {
-        this.show(evt);
-    }
-};
-MaterialMenu.prototype['toggle'] = MaterialMenu.prototype.toggle;
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialMenu,
-    classAsString: 'MaterialMenu',
-    cssClass: 'mdl-js-menu',
-    widget: true
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Progress MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialProgress = function MaterialProgress(element) {
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialProgress'] = MaterialProgress;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialProgress.prototype.Constant_ = {};
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialProgress.prototype.CssClasses_ = { INDETERMINATE_CLASS: 'mdl-progress__indeterminate' };
-/**
-   * Set the current progress of the progressbar.
-   *
-   * @param {number} p Percentage of the progress (0-100)
-   * @public
-   */
-MaterialProgress.prototype.setProgress = function (p) {
-    if (this.element_.classList.contains(this.CssClasses_.INDETERMINATE_CLASS)) {
-        return;
-    }
-    this.progressbar_.style.width = p + '%';
-};
-MaterialProgress.prototype['setProgress'] = MaterialProgress.prototype.setProgress;
-/**
-   * Set the current progress of the buffer.
-   *
-   * @param {number} p Percentage of the buffer (0-100)
-   * @public
-   */
-MaterialProgress.prototype.setBuffer = function (p) {
-    this.bufferbar_.style.width = p + '%';
-    this.auxbar_.style.width = 100 - p + '%';
-};
-MaterialProgress.prototype['setBuffer'] = MaterialProgress.prototype.setBuffer;
-/**
-   * Initialize element.
-   */
-MaterialProgress.prototype.init = function () {
-    if (this.element_) {
-        var el = document.createElement('div');
-        el.className = 'progressbar bar bar1';
-        this.element_.appendChild(el);
-        this.progressbar_ = el;
-        el = document.createElement('div');
-        el.className = 'bufferbar bar bar2';
-        this.element_.appendChild(el);
-        this.bufferbar_ = el;
-        el = document.createElement('div');
-        el.className = 'auxbar bar bar3';
-        this.element_.appendChild(el);
-        this.auxbar_ = el;
-        this.progressbar_.style.width = '0%';
-        this.bufferbar_.style.width = '100%';
-        this.auxbar_.style.width = '0%';
-        this.element_.classList.add('is-upgraded');
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialProgress,
-    classAsString: 'MaterialProgress',
-    cssClass: 'mdl-js-progress',
-    widget: true
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Radio MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialRadio = function MaterialRadio(element) {
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialRadio'] = MaterialRadio;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialRadio.prototype.Constant_ = { TINY_TIMEOUT: 0.001 };
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialRadio.prototype.CssClasses_ = {
-    IS_FOCUSED: 'is-focused',
-    IS_DISABLED: 'is-disabled',
-    IS_CHECKED: 'is-checked',
-    IS_UPGRADED: 'is-upgraded',
-    JS_RADIO: 'mdl-js-radio',
-    RADIO_BTN: 'mdl-radio__button',
-    RADIO_OUTER_CIRCLE: 'mdl-radio__outer-circle',
-    RADIO_INNER_CIRCLE: 'mdl-radio__inner-circle',
-    RIPPLE_EFFECT: 'mdl-js-ripple-effect',
-    RIPPLE_IGNORE_EVENTS: 'mdl-js-ripple-effect--ignore-events',
-    RIPPLE_CONTAINER: 'mdl-radio__ripple-container',
-    RIPPLE_CENTER: 'mdl-ripple--center',
-    RIPPLE: 'mdl-ripple'
-};
-/**
-   * Handle change of state.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialRadio.prototype.onChange_ = function (event) {
-    // Since other radio buttons don't get change events, we need to look for
-    // them to update their classes.
-    var radios = document.getElementsByClassName(this.CssClasses_.JS_RADIO);
-    for (var i = 0; i < radios.length; i++) {
-        var button = radios[i].querySelector('.' + this.CssClasses_.RADIO_BTN);
-        // Different name == different group, so no point updating those.
-        if (button.getAttribute('name') === this.btnElement_.getAttribute('name')) {
-            if (typeof radios[i]['MaterialRadio'] !== 'undefined') {
-                radios[i]['MaterialRadio'].updateClasses_();
-            }
-        }
-    }
-};
-/**
-   * Handle focus.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialRadio.prototype.onFocus_ = function (event) {
-    this.element_.classList.add(this.CssClasses_.IS_FOCUSED);
-};
-/**
-   * Handle lost focus.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialRadio.prototype.onBlur_ = function (event) {
-    this.element_.classList.remove(this.CssClasses_.IS_FOCUSED);
-};
-/**
-   * Handle mouseup.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialRadio.prototype.onMouseup_ = function (event) {
-    this.blur_();
-};
-/**
-   * Update classes.
-   *
-   * @private
-   */
-MaterialRadio.prototype.updateClasses_ = function () {
-    this.checkDisabled();
-    this.checkToggleState();
-};
-/**
-   * Add blur.
-   *
-   * @private
-   */
-MaterialRadio.prototype.blur_ = function () {
-    // TODO: figure out why there's a focus event being fired after our blur,
-    // so that we can avoid this hack.
-    window.setTimeout(function () {
-        this.btnElement_.blur();
-    }.bind(this), this.Constant_.TINY_TIMEOUT);
-};
-// Public methods.
-/**
-   * Check the components disabled state.
-   *
-   * @public
-   */
-MaterialRadio.prototype.checkDisabled = function () {
-    if (this.btnElement_.disabled) {
-        this.element_.classList.add(this.CssClasses_.IS_DISABLED);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
-    }
-};
-MaterialRadio.prototype['checkDisabled'] = MaterialRadio.prototype.checkDisabled;
-/**
-   * Check the components toggled state.
-   *
-   * @public
-   */
-MaterialRadio.prototype.checkToggleState = function () {
-    if (this.btnElement_.checked) {
-        this.element_.classList.add(this.CssClasses_.IS_CHECKED);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_CHECKED);
-    }
-};
-MaterialRadio.prototype['checkToggleState'] = MaterialRadio.prototype.checkToggleState;
-/**
-   * Disable radio.
-   *
-   * @public
-   */
-MaterialRadio.prototype.disable = function () {
-    this.btnElement_.disabled = true;
-    this.updateClasses_();
-};
-MaterialRadio.prototype['disable'] = MaterialRadio.prototype.disable;
-/**
-   * Enable radio.
-   *
-   * @public
-   */
-MaterialRadio.prototype.enable = function () {
-    this.btnElement_.disabled = false;
-    this.updateClasses_();
-};
-MaterialRadio.prototype['enable'] = MaterialRadio.prototype.enable;
-/**
-   * Check radio.
-   *
-   * @public
-   */
-MaterialRadio.prototype.check = function () {
-    this.btnElement_.checked = true;
-    this.onChange_(null);
-};
-MaterialRadio.prototype['check'] = MaterialRadio.prototype.check;
-/**
-   * Uncheck radio.
-   *
-   * @public
-   */
-MaterialRadio.prototype.uncheck = function () {
-    this.btnElement_.checked = false;
-    this.onChange_(null);
-};
-MaterialRadio.prototype['uncheck'] = MaterialRadio.prototype.uncheck;
-/**
-   * Initialize element.
-   */
-MaterialRadio.prototype.init = function () {
-    if (this.element_) {
-        this.btnElement_ = this.element_.querySelector('.' + this.CssClasses_.RADIO_BTN);
-        this.boundChangeHandler_ = this.onChange_.bind(this);
-        this.boundFocusHandler_ = this.onChange_.bind(this);
-        this.boundBlurHandler_ = this.onBlur_.bind(this);
-        this.boundMouseUpHandler_ = this.onMouseup_.bind(this);
-        var outerCircle = document.createElement('span');
-        outerCircle.classList.add(this.CssClasses_.RADIO_OUTER_CIRCLE);
-        var innerCircle = document.createElement('span');
-        innerCircle.classList.add(this.CssClasses_.RADIO_INNER_CIRCLE);
-        this.element_.appendChild(outerCircle);
-        this.element_.appendChild(innerCircle);
-        var rippleContainer;
-        if (this.element_.classList.contains(this.CssClasses_.RIPPLE_EFFECT)) {
-            this.element_.classList.add(this.CssClasses_.RIPPLE_IGNORE_EVENTS);
-            rippleContainer = document.createElement('span');
-            rippleContainer.classList.add(this.CssClasses_.RIPPLE_CONTAINER);
-            rippleContainer.classList.add(this.CssClasses_.RIPPLE_EFFECT);
-            rippleContainer.classList.add(this.CssClasses_.RIPPLE_CENTER);
-            rippleContainer.addEventListener('mouseup', this.boundMouseUpHandler_);
-            var ripple = document.createElement('span');
-            ripple.classList.add(this.CssClasses_.RIPPLE);
-            rippleContainer.appendChild(ripple);
-            this.element_.appendChild(rippleContainer);
-        }
-        this.btnElement_.addEventListener('change', this.boundChangeHandler_);
-        this.btnElement_.addEventListener('focus', this.boundFocusHandler_);
-        this.btnElement_.addEventListener('blur', this.boundBlurHandler_);
-        this.element_.addEventListener('mouseup', this.boundMouseUpHandler_);
-        this.updateClasses_();
-        this.element_.classList.add(this.CssClasses_.IS_UPGRADED);
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialRadio,
-    classAsString: 'MaterialRadio',
-    cssClass: 'mdl-js-radio',
-    widget: true
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Slider MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialSlider = function MaterialSlider(element) {
-    this.element_ = element;
-    // Browser feature detection.
-    this.isIE_ = window.navigator.msPointerEnabled;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialSlider'] = MaterialSlider;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialSlider.prototype.Constant_ = {};
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialSlider.prototype.CssClasses_ = {
-    IE_CONTAINER: 'mdl-slider__ie-container',
-    SLIDER_CONTAINER: 'mdl-slider__container',
-    BACKGROUND_FLEX: 'mdl-slider__background-flex',
-    BACKGROUND_LOWER: 'mdl-slider__background-lower',
-    BACKGROUND_UPPER: 'mdl-slider__background-upper',
-    IS_LOWEST_VALUE: 'is-lowest-value',
-    IS_UPGRADED: 'is-upgraded'
-};
-/**
-   * Handle input on element.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialSlider.prototype.onInput_ = function (event) {
-    this.updateValueStyles_();
-};
-/**
-   * Handle change on element.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialSlider.prototype.onChange_ = function (event) {
-    this.updateValueStyles_();
-};
-/**
-   * Handle mouseup on element.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialSlider.prototype.onMouseUp_ = function (event) {
-    event.target.blur();
-};
-/**
-   * Handle mousedown on container element.
-   * This handler is purpose is to not require the use to click
-   * exactly on the 2px slider element, as FireFox seems to be very
-   * strict about this.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   * @suppress {missingProperties}
-   */
-MaterialSlider.prototype.onContainerMouseDown_ = function (event) {
-    // If this click is not on the parent element (but rather some child)
-    // ignore. It may still bubble up.
-    if (event.target !== this.element_.parentElement) {
-        return;
-    }
-    // Discard the original event and create a new event that
-    // is on the slider element.
-    event.preventDefault();
-    var newEvent = new MouseEvent('mousedown', {
-        target: event.target,
-        buttons: event.buttons,
-        clientX: event.clientX,
-        clientY: this.element_.getBoundingClientRect().y
-    });
-    this.element_.dispatchEvent(newEvent);
-};
-/**
-   * Handle updating of values.
-   *
-   * @private
-   */
-MaterialSlider.prototype.updateValueStyles_ = function () {
-    // Calculate and apply percentages to div structure behind slider.
-    var fraction = (this.element_.value - this.element_.min) / (this.element_.max - this.element_.min);
-    if (fraction === 0) {
-        this.element_.classList.add(this.CssClasses_.IS_LOWEST_VALUE);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_LOWEST_VALUE);
-    }
-    if (!this.isIE_) {
-        this.backgroundLower_.style.flex = fraction;
-        this.backgroundLower_.style.webkitFlex = fraction;
-        this.backgroundUpper_.style.flex = 1 - fraction;
-        this.backgroundUpper_.style.webkitFlex = 1 - fraction;
-    }
-};
-// Public methods.
-/**
-   * Disable slider.
-   *
-   * @public
-   */
-MaterialSlider.prototype.disable = function () {
-    this.element_.disabled = true;
-};
-MaterialSlider.prototype['disable'] = MaterialSlider.prototype.disable;
-/**
-   * Enable slider.
-   *
-   * @public
-   */
-MaterialSlider.prototype.enable = function () {
-    this.element_.disabled = false;
-};
-MaterialSlider.prototype['enable'] = MaterialSlider.prototype.enable;
-/**
-   * Update slider value.
-   *
-   * @param {number} value The value to which to set the control (optional).
-   * @public
-   */
-MaterialSlider.prototype.change = function (value) {
-    if (typeof value !== 'undefined') {
-        this.element_.value = value;
-    }
-    this.updateValueStyles_();
-};
-MaterialSlider.prototype['change'] = MaterialSlider.prototype.change;
-/**
-   * Initialize element.
-   */
-MaterialSlider.prototype.init = function () {
-    if (this.element_) {
-        if (this.isIE_) {
-            // Since we need to specify a very large height in IE due to
-            // implementation limitations, we add a parent here that trims it down to
-            // a reasonable size.
-            var containerIE = document.createElement('div');
-            containerIE.classList.add(this.CssClasses_.IE_CONTAINER);
-            this.element_.parentElement.insertBefore(containerIE, this.element_);
-            this.element_.parentElement.removeChild(this.element_);
-            containerIE.appendChild(this.element_);
-        } else {
-            // For non-IE browsers, we need a div structure that sits behind the
-            // slider and allows us to style the left and right sides of it with
-            // different colors.
-            var container = document.createElement('div');
-            container.classList.add(this.CssClasses_.SLIDER_CONTAINER);
-            this.element_.parentElement.insertBefore(container, this.element_);
-            this.element_.parentElement.removeChild(this.element_);
-            container.appendChild(this.element_);
-            var backgroundFlex = document.createElement('div');
-            backgroundFlex.classList.add(this.CssClasses_.BACKGROUND_FLEX);
-            container.appendChild(backgroundFlex);
-            this.backgroundLower_ = document.createElement('div');
-            this.backgroundLower_.classList.add(this.CssClasses_.BACKGROUND_LOWER);
-            backgroundFlex.appendChild(this.backgroundLower_);
-            this.backgroundUpper_ = document.createElement('div');
-            this.backgroundUpper_.classList.add(this.CssClasses_.BACKGROUND_UPPER);
-            backgroundFlex.appendChild(this.backgroundUpper_);
-        }
-        this.boundInputHandler = this.onInput_.bind(this);
-        this.boundChangeHandler = this.onChange_.bind(this);
-        this.boundMouseUpHandler = this.onMouseUp_.bind(this);
-        this.boundContainerMouseDownHandler = this.onContainerMouseDown_.bind(this);
-        this.element_.addEventListener('input', this.boundInputHandler);
-        this.element_.addEventListener('change', this.boundChangeHandler);
-        this.element_.addEventListener('mouseup', this.boundMouseUpHandler);
-        this.element_.parentElement.addEventListener('mousedown', this.boundContainerMouseDownHandler);
-        this.updateValueStyles_();
-        this.element_.classList.add(this.CssClasses_.IS_UPGRADED);
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialSlider,
-    classAsString: 'MaterialSlider',
-    cssClass: 'mdl-js-slider',
-    widget: true
-});
-/**
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Snackbar MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialSnackbar = function MaterialSnackbar(element) {
-    this.element_ = element;
-    this.textElement_ = this.element_.querySelector('.' + this.cssClasses_.MESSAGE);
-    this.actionElement_ = this.element_.querySelector('.' + this.cssClasses_.ACTION);
-    if (!this.textElement_) {
-        throw new Error('There must be a message element for a snackbar.');
-    }
-    if (!this.actionElement_) {
-        throw new Error('There must be an action element for a snackbar.');
-    }
-    this.active = false;
-    this.actionHandler_ = undefined;
-    this.message_ = undefined;
-    this.actionText_ = undefined;
-    this.queuedNotifications_ = [];
-    this.setActionHidden_(true);
-};
-window['MaterialSnackbar'] = MaterialSnackbar;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialSnackbar.prototype.Constant_ = {
-    // The duration of the snackbar show/hide animation, in ms.
-    ANIMATION_LENGTH: 250
-};
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialSnackbar.prototype.cssClasses_ = {
-    SNACKBAR: 'mdl-snackbar',
-    MESSAGE: 'mdl-snackbar__text',
-    ACTION: 'mdl-snackbar__action',
-    ACTIVE: 'mdl-snackbar--active'
-};
-/**
-   * Display the snackbar.
-   *
-   * @private
-   */
-MaterialSnackbar.prototype.displaySnackbar_ = function () {
-    this.element_.setAttribute('aria-hidden', 'true');
-    if (this.actionHandler_) {
-        this.actionElement_.textContent = this.actionText_;
-        this.actionElement_.addEventListener('click', this.actionHandler_);
-        this.setActionHidden_(false);
-    }
-    this.textElement_.textContent = this.message_;
-    this.element_.classList.add(this.cssClasses_.ACTIVE);
-    this.element_.setAttribute('aria-hidden', 'false');
-    setTimeout(this.cleanup_.bind(this), this.timeout_);
-};
-/**
-   * Show the snackbar.
-   *
-   * @param {Object} data The data for the notification.
-   * @public
-   */
-MaterialSnackbar.prototype.showSnackbar = function (data) {
-    if (data === undefined) {
-        throw new Error('Please provide a data object with at least a message to display.');
-    }
-    if (data['message'] === undefined) {
-        throw new Error('Please provide a message to be displayed.');
-    }
-    if (data['actionHandler'] && !data['actionText']) {
-        throw new Error('Please provide action text with the handler.');
-    }
-    if (this.active) {
-        this.queuedNotifications_.push(data);
-    } else {
-        this.active = true;
-        this.message_ = data['message'];
-        if (data['timeout']) {
-            this.timeout_ = data['timeout'];
-        } else {
-            this.timeout_ = 2750;
-        }
-        if (data['actionHandler']) {
-            this.actionHandler_ = data['actionHandler'];
-        }
-        if (data['actionText']) {
-            this.actionText_ = data['actionText'];
-        }
-        this.displaySnackbar_();
-    }
-};
-MaterialSnackbar.prototype['showSnackbar'] = MaterialSnackbar.prototype.showSnackbar;
-/**
-   * Check if the queue has items within it.
-   * If it does, display the next entry.
-   *
-   * @private
-   */
-MaterialSnackbar.prototype.checkQueue_ = function () {
-    if (this.queuedNotifications_.length > 0) {
-        this.showSnackbar(this.queuedNotifications_.shift());
-    }
-};
-/**
-   * Cleanup the snackbar event listeners and accessiblity attributes.
-   *
-   * @private
-   */
-MaterialSnackbar.prototype.cleanup_ = function () {
-    this.element_.classList.remove(this.cssClasses_.ACTIVE);
-    setTimeout(function () {
-        this.element_.setAttribute('aria-hidden', 'true');
-        this.textElement_.textContent = '';
-        if (!Boolean(this.actionElement_.getAttribute('aria-hidden'))) {
-            this.setActionHidden_(true);
-            this.actionElement_.textContent = '';
-            this.actionElement_.removeEventListener('click', this.actionHandler_);
-        }
-        this.actionHandler_ = undefined;
-        this.message_ = undefined;
-        this.actionText_ = undefined;
-        this.active = false;
-        this.checkQueue_();
-    }.bind(this), this.Constant_.ANIMATION_LENGTH);
-};
-/**
-   * Set the action handler hidden state.
-   *
-   * @param {boolean} value
-   * @private
-   */
-MaterialSnackbar.prototype.setActionHidden_ = function (value) {
-    if (value) {
-        this.actionElement_.setAttribute('aria-hidden', 'true');
-    } else {
-        this.actionElement_.removeAttribute('aria-hidden');
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialSnackbar,
-    classAsString: 'MaterialSnackbar',
-    cssClass: 'mdl-js-snackbar',
-    widget: true
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Spinner MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @param {HTMLElement} element The element that will be upgraded.
-   * @constructor
-   */
-var MaterialSpinner = function MaterialSpinner(element) {
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialSpinner'] = MaterialSpinner;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialSpinner.prototype.Constant_ = { MDL_SPINNER_LAYER_COUNT: 4 };
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialSpinner.prototype.CssClasses_ = {
-    MDL_SPINNER_LAYER: 'mdl-spinner__layer',
-    MDL_SPINNER_CIRCLE_CLIPPER: 'mdl-spinner__circle-clipper',
-    MDL_SPINNER_CIRCLE: 'mdl-spinner__circle',
-    MDL_SPINNER_GAP_PATCH: 'mdl-spinner__gap-patch',
-    MDL_SPINNER_LEFT: 'mdl-spinner__left',
-    MDL_SPINNER_RIGHT: 'mdl-spinner__right'
-};
-/**
-   * Auxiliary method to create a spinner layer.
-   *
-   * @param {number} index Index of the layer to be created.
-   * @public
-   */
-MaterialSpinner.prototype.createLayer = function (index) {
-    var layer = document.createElement('div');
-    layer.classList.add(this.CssClasses_.MDL_SPINNER_LAYER);
-    layer.classList.add(this.CssClasses_.MDL_SPINNER_LAYER + '-' + index);
-    var leftClipper = document.createElement('div');
-    leftClipper.classList.add(this.CssClasses_.MDL_SPINNER_CIRCLE_CLIPPER);
-    leftClipper.classList.add(this.CssClasses_.MDL_SPINNER_LEFT);
-    var gapPatch = document.createElement('div');
-    gapPatch.classList.add(this.CssClasses_.MDL_SPINNER_GAP_PATCH);
-    var rightClipper = document.createElement('div');
-    rightClipper.classList.add(this.CssClasses_.MDL_SPINNER_CIRCLE_CLIPPER);
-    rightClipper.classList.add(this.CssClasses_.MDL_SPINNER_RIGHT);
-    var circleOwners = [
-        leftClipper,
-        gapPatch,
-        rightClipper
-    ];
-    for (var i = 0; i < circleOwners.length; i++) {
-        var circle = document.createElement('div');
-        circle.classList.add(this.CssClasses_.MDL_SPINNER_CIRCLE);
-        circleOwners[i].appendChild(circle);
-    }
-    layer.appendChild(leftClipper);
-    layer.appendChild(gapPatch);
-    layer.appendChild(rightClipper);
-    this.element_.appendChild(layer);
-};
-MaterialSpinner.prototype['createLayer'] = MaterialSpinner.prototype.createLayer;
-/**
-   * Stops the spinner animation.
-   * Public method for users who need to stop the spinner for any reason.
-   *
-   * @public
-   */
-MaterialSpinner.prototype.stop = function () {
-    this.element_.classList.remove('is-active');
-};
-MaterialSpinner.prototype['stop'] = MaterialSpinner.prototype.stop;
-/**
-   * Starts the spinner animation.
-   * Public method for users who need to manually start the spinner for any reason
-   * (instead of just adding the 'is-active' class to their markup).
-   *
-   * @public
-   */
-MaterialSpinner.prototype.start = function () {
-    this.element_.classList.add('is-active');
-};
-MaterialSpinner.prototype['start'] = MaterialSpinner.prototype.start;
-/**
-   * Initialize element.
-   */
-MaterialSpinner.prototype.init = function () {
-    if (this.element_) {
-        for (var i = 1; i <= this.Constant_.MDL_SPINNER_LAYER_COUNT; i++) {
-            this.createLayer(i);
-        }
-        this.element_.classList.add('is-upgraded');
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialSpinner,
-    classAsString: 'MaterialSpinner',
-    cssClass: 'mdl-js-spinner',
-    widget: true
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Checkbox MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialSwitch = function MaterialSwitch(element) {
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialSwitch'] = MaterialSwitch;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialSwitch.prototype.Constant_ = { TINY_TIMEOUT: 0.001 };
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialSwitch.prototype.CssClasses_ = {
-    INPUT: 'mdl-switch__input',
-    TRACK: 'mdl-switch__track',
-    THUMB: 'mdl-switch__thumb',
-    FOCUS_HELPER: 'mdl-switch__focus-helper',
-    RIPPLE_EFFECT: 'mdl-js-ripple-effect',
-    RIPPLE_IGNORE_EVENTS: 'mdl-js-ripple-effect--ignore-events',
-    RIPPLE_CONTAINER: 'mdl-switch__ripple-container',
-    RIPPLE_CENTER: 'mdl-ripple--center',
-    RIPPLE: 'mdl-ripple',
-    IS_FOCUSED: 'is-focused',
-    IS_DISABLED: 'is-disabled',
-    IS_CHECKED: 'is-checked'
-};
-/**
-   * Handle change of state.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialSwitch.prototype.onChange_ = function (event) {
-    this.updateClasses_();
-};
-/**
-   * Handle focus of element.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialSwitch.prototype.onFocus_ = function (event) {
-    this.element_.classList.add(this.CssClasses_.IS_FOCUSED);
-};
-/**
-   * Handle lost focus of element.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialSwitch.prototype.onBlur_ = function (event) {
-    this.element_.classList.remove(this.CssClasses_.IS_FOCUSED);
-};
-/**
-   * Handle mouseup.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialSwitch.prototype.onMouseUp_ = function (event) {
-    this.blur_();
-};
-/**
-   * Handle class updates.
-   *
-   * @private
-   */
-MaterialSwitch.prototype.updateClasses_ = function () {
-    this.checkDisabled();
-    this.checkToggleState();
-};
-/**
-   * Add blur.
-   *
-   * @private
-   */
-MaterialSwitch.prototype.blur_ = function () {
-    // TODO: figure out why there's a focus event being fired after our blur,
-    // so that we can avoid this hack.
-    window.setTimeout(function () {
-        this.inputElement_.blur();
-    }.bind(this), this.Constant_.TINY_TIMEOUT);
-};
-// Public methods.
-/**
-   * Check the components disabled state.
-   *
-   * @public
-   */
-MaterialSwitch.prototype.checkDisabled = function () {
-    if (this.inputElement_.disabled) {
-        this.element_.classList.add(this.CssClasses_.IS_DISABLED);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
-    }
-};
-MaterialSwitch.prototype['checkDisabled'] = MaterialSwitch.prototype.checkDisabled;
-/**
-   * Check the components toggled state.
-   *
-   * @public
-   */
-MaterialSwitch.prototype.checkToggleState = function () {
-    if (this.inputElement_.checked) {
-        this.element_.classList.add(this.CssClasses_.IS_CHECKED);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_CHECKED);
-    }
-};
-MaterialSwitch.prototype['checkToggleState'] = MaterialSwitch.prototype.checkToggleState;
-/**
-   * Disable switch.
-   *
-   * @public
-   */
-MaterialSwitch.prototype.disable = function () {
-    this.inputElement_.disabled = true;
-    this.updateClasses_();
-};
-MaterialSwitch.prototype['disable'] = MaterialSwitch.prototype.disable;
-/**
-   * Enable switch.
-   *
-   * @public
-   */
-MaterialSwitch.prototype.enable = function () {
-    this.inputElement_.disabled = false;
-    this.updateClasses_();
-};
-MaterialSwitch.prototype['enable'] = MaterialSwitch.prototype.enable;
-/**
-   * Activate switch.
-   *
-   * @public
-   */
-MaterialSwitch.prototype.on = function () {
-    this.inputElement_.checked = true;
-    this.updateClasses_();
-};
-MaterialSwitch.prototype['on'] = MaterialSwitch.prototype.on;
-/**
-   * Deactivate switch.
-   *
-   * @public
-   */
-MaterialSwitch.prototype.off = function () {
-    this.inputElement_.checked = false;
-    this.updateClasses_();
-};
-MaterialSwitch.prototype['off'] = MaterialSwitch.prototype.off;
-/**
-   * Initialize element.
-   */
-MaterialSwitch.prototype.init = function () {
-    if (this.element_) {
-        this.inputElement_ = this.element_.querySelector('.' + this.CssClasses_.INPUT);
-        var track = document.createElement('div');
-        track.classList.add(this.CssClasses_.TRACK);
-        var thumb = document.createElement('div');
-        thumb.classList.add(this.CssClasses_.THUMB);
-        var focusHelper = document.createElement('span');
-        focusHelper.classList.add(this.CssClasses_.FOCUS_HELPER);
-        thumb.appendChild(focusHelper);
-        this.element_.appendChild(track);
-        this.element_.appendChild(thumb);
-        this.boundMouseUpHandler = this.onMouseUp_.bind(this);
-        if (this.element_.classList.contains(this.CssClasses_.RIPPLE_EFFECT)) {
-            this.element_.classList.add(this.CssClasses_.RIPPLE_IGNORE_EVENTS);
-            this.rippleContainerElement_ = document.createElement('span');
-            this.rippleContainerElement_.classList.add(this.CssClasses_.RIPPLE_CONTAINER);
-            this.rippleContainerElement_.classList.add(this.CssClasses_.RIPPLE_EFFECT);
-            this.rippleContainerElement_.classList.add(this.CssClasses_.RIPPLE_CENTER);
-            this.rippleContainerElement_.addEventListener('mouseup', this.boundMouseUpHandler);
-            var ripple = document.createElement('span');
-            ripple.classList.add(this.CssClasses_.RIPPLE);
-            this.rippleContainerElement_.appendChild(ripple);
-            this.element_.appendChild(this.rippleContainerElement_);
-        }
-        this.boundChangeHandler = this.onChange_.bind(this);
-        this.boundFocusHandler = this.onFocus_.bind(this);
-        this.boundBlurHandler = this.onBlur_.bind(this);
-        this.inputElement_.addEventListener('change', this.boundChangeHandler);
-        this.inputElement_.addEventListener('focus', this.boundFocusHandler);
-        this.inputElement_.addEventListener('blur', this.boundBlurHandler);
-        this.element_.addEventListener('mouseup', this.boundMouseUpHandler);
-        this.updateClasses_();
-        this.element_.classList.add('is-upgraded');
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialSwitch,
-    classAsString: 'MaterialSwitch',
-    cssClass: 'mdl-js-switch',
-    widget: true
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Tabs MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {Element} element The element that will be upgraded.
-   */
-var MaterialTabs = function MaterialTabs(element) {
-    // Stores the HTML element.
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialTabs'] = MaterialTabs;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialTabs.prototype.Constant_ = {};
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialTabs.prototype.CssClasses_ = {
-    TAB_CLASS: 'mdl-tabs__tab',
-    PANEL_CLASS: 'mdl-tabs__panel',
-    ACTIVE_CLASS: 'is-active',
-    UPGRADED_CLASS: 'is-upgraded',
-    MDL_JS_RIPPLE_EFFECT: 'mdl-js-ripple-effect',
-    MDL_RIPPLE_CONTAINER: 'mdl-tabs__ripple-container',
-    MDL_RIPPLE: 'mdl-ripple',
-    MDL_JS_RIPPLE_EFFECT_IGNORE_EVENTS: 'mdl-js-ripple-effect--ignore-events'
-};
-/**
-   * Handle clicks to a tabs component
-   *
-   * @private
-   */
-MaterialTabs.prototype.initTabs_ = function () {
-    if (this.element_.classList.contains(this.CssClasses_.MDL_JS_RIPPLE_EFFECT)) {
-        this.element_.classList.add(this.CssClasses_.MDL_JS_RIPPLE_EFFECT_IGNORE_EVENTS);
-    }
-    // Select element tabs, document panels
-    this.tabs_ = this.element_.querySelectorAll('.' + this.CssClasses_.TAB_CLASS);
-    this.panels_ = this.element_.querySelectorAll('.' + this.CssClasses_.PANEL_CLASS);
-    // Create new tabs for each tab element
-    for (var i = 0; i < this.tabs_.length; i++) {
-        new MaterialTab(this.tabs_[i], this);
-    }
-    this.element_.classList.add(this.CssClasses_.UPGRADED_CLASS);
-};
-/**
-   * Reset tab state, dropping active classes
-   *
-   * @private
-   */
-MaterialTabs.prototype.resetTabState_ = function () {
-    for (var k = 0; k < this.tabs_.length; k++) {
-        this.tabs_[k].classList.remove(this.CssClasses_.ACTIVE_CLASS);
-    }
-};
-/**
-   * Reset panel state, droping active classes
-   *
-   * @private
-   */
-MaterialTabs.prototype.resetPanelState_ = function () {
-    for (var j = 0; j < this.panels_.length; j++) {
-        this.panels_[j].classList.remove(this.CssClasses_.ACTIVE_CLASS);
-    }
-};
-/**
-   * Initialize element.
-   */
-MaterialTabs.prototype.init = function () {
-    if (this.element_) {
-        this.initTabs_();
-    }
-};
-/**
-   * Constructor for an individual tab.
-   *
-   * @constructor
-   * @param {Element} tab The HTML element for the tab.
-   * @param {MaterialTabs} ctx The MaterialTabs object that owns the tab.
-   */
-function MaterialTab(tab, ctx) {
-    if (tab) {
-        if (ctx.element_.classList.contains(ctx.CssClasses_.MDL_JS_RIPPLE_EFFECT)) {
-            var rippleContainer = document.createElement('span');
-            rippleContainer.classList.add(ctx.CssClasses_.MDL_RIPPLE_CONTAINER);
-            rippleContainer.classList.add(ctx.CssClasses_.MDL_JS_RIPPLE_EFFECT);
-            var ripple = document.createElement('span');
-            ripple.classList.add(ctx.CssClasses_.MDL_RIPPLE);
-            rippleContainer.appendChild(ripple);
-            tab.appendChild(rippleContainer);
-        }
-        tab.addEventListener('click', function (e) {
-            if (tab.getAttribute('href').charAt(0) === '#') {
-                e.preventDefault();
-                var href = tab.href.split('#')[1];
-                var panel = ctx.element_.querySelector('#' + href);
-                ctx.resetTabState_();
-                ctx.resetPanelState_();
-                tab.classList.add(ctx.CssClasses_.ACTIVE_CLASS);
-                panel.classList.add(ctx.CssClasses_.ACTIVE_CLASS);
-            }
-        });
-    }
-}
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialTabs,
-    classAsString: 'MaterialTabs',
-    cssClass: 'mdl-js-tabs'
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Textfield MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialTextfield = function MaterialTextfield(element) {
-    this.element_ = element;
-    this.maxRows = this.Constant_.NO_MAX_ROWS;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialTextfield'] = MaterialTextfield;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialTextfield.prototype.Constant_ = {
-    NO_MAX_ROWS: -1,
-    MAX_ROWS_ATTRIBUTE: 'maxrows'
-};
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialTextfield.prototype.CssClasses_ = {
-    LABEL: 'mdl-textfield__label',
-    INPUT: 'mdl-textfield__input',
-    IS_DIRTY: 'is-dirty',
-    IS_FOCUSED: 'is-focused',
-    IS_DISABLED: 'is-disabled',
-    IS_INVALID: 'is-invalid',
-    IS_UPGRADED: 'is-upgraded',
-    HAS_PLACEHOLDER: 'has-placeholder'
-};
-/**
-   * Handle input being entered.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialTextfield.prototype.onKeyDown_ = function (event) {
-    var currentRowCount = event.target.value.split('\n').length;
-    if (event.keyCode === 13) {
-        if (currentRowCount >= this.maxRows) {
-            event.preventDefault();
-        }
-    }
-};
-/**
-   * Handle focus.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialTextfield.prototype.onFocus_ = function (event) {
-    this.element_.classList.add(this.CssClasses_.IS_FOCUSED);
-};
-/**
-   * Handle lost focus.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialTextfield.prototype.onBlur_ = function (event) {
-    this.element_.classList.remove(this.CssClasses_.IS_FOCUSED);
-};
-/**
-   * Handle reset event from out side.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialTextfield.prototype.onReset_ = function (event) {
-    this.updateClasses_();
-};
-/**
-   * Handle class updates.
-   *
-   * @private
-   */
-MaterialTextfield.prototype.updateClasses_ = function () {
-    this.checkDisabled();
-    this.checkValidity();
-    this.checkDirty();
-    this.checkFocus();
-};
-// Public methods.
-/**
-   * Check the disabled state and update field accordingly.
-   *
-   * @public
-   */
-MaterialTextfield.prototype.checkDisabled = function () {
-    if (this.input_.disabled) {
-        this.element_.classList.add(this.CssClasses_.IS_DISABLED);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_DISABLED);
-    }
-};
-MaterialTextfield.prototype['checkDisabled'] = MaterialTextfield.prototype.checkDisabled;
-/**
-  * Check the focus state and update field accordingly.
-  *
-  * @public
-  */
-MaterialTextfield.prototype.checkFocus = function () {
-    if (Boolean(this.element_.querySelector(':focus'))) {
-        this.element_.classList.add(this.CssClasses_.IS_FOCUSED);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_FOCUSED);
-    }
-};
-MaterialTextfield.prototype['checkFocus'] = MaterialTextfield.prototype.checkFocus;
-/**
-   * Check the validity state and update field accordingly.
-   *
-   * @public
-   */
-MaterialTextfield.prototype.checkValidity = function () {
-    if (this.input_.validity) {
-        if (this.input_.validity.valid) {
-            this.element_.classList.remove(this.CssClasses_.IS_INVALID);
-        } else {
-            this.element_.classList.add(this.CssClasses_.IS_INVALID);
-        }
-    }
-};
-MaterialTextfield.prototype['checkValidity'] = MaterialTextfield.prototype.checkValidity;
-/**
-   * Check the dirty state and update field accordingly.
-   *
-   * @public
-   */
-MaterialTextfield.prototype.checkDirty = function () {
-    if (this.input_.value && this.input_.value.length > 0) {
-        this.element_.classList.add(this.CssClasses_.IS_DIRTY);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_DIRTY);
-    }
-};
-MaterialTextfield.prototype['checkDirty'] = MaterialTextfield.prototype.checkDirty;
-/**
-   * Disable text field.
-   *
-   * @public
-   */
-MaterialTextfield.prototype.disable = function () {
-    this.input_.disabled = true;
-    this.updateClasses_();
-};
-MaterialTextfield.prototype['disable'] = MaterialTextfield.prototype.disable;
-/**
-   * Enable text field.
-   *
-   * @public
-   */
-MaterialTextfield.prototype.enable = function () {
-    this.input_.disabled = false;
-    this.updateClasses_();
-};
-MaterialTextfield.prototype['enable'] = MaterialTextfield.prototype.enable;
-/**
-   * Update text field value.
-   *
-   * @param {string} value The value to which to set the control (optional).
-   * @public
-   */
-MaterialTextfield.prototype.change = function (value) {
-    this.input_.value = value || '';
-    this.updateClasses_();
-};
-MaterialTextfield.prototype['change'] = MaterialTextfield.prototype.change;
-/**
-   * Initialize element.
-   */
-MaterialTextfield.prototype.init = function () {
-    if (this.element_) {
-        this.label_ = this.element_.querySelector('.' + this.CssClasses_.LABEL);
-        this.input_ = this.element_.querySelector('.' + this.CssClasses_.INPUT);
-        if (this.input_) {
-            if (this.input_.hasAttribute(this.Constant_.MAX_ROWS_ATTRIBUTE)) {
-                this.maxRows = parseInt(this.input_.getAttribute(this.Constant_.MAX_ROWS_ATTRIBUTE), 10);
-                if (isNaN(this.maxRows)) {
-                    this.maxRows = this.Constant_.NO_MAX_ROWS;
-                }
-            }
-            if (this.input_.hasAttribute('placeholder')) {
-                this.element_.classList.add(this.CssClasses_.HAS_PLACEHOLDER);
-            }
-            this.boundUpdateClassesHandler = this.updateClasses_.bind(this);
-            this.boundFocusHandler = this.onFocus_.bind(this);
-            this.boundBlurHandler = this.onBlur_.bind(this);
-            this.boundResetHandler = this.onReset_.bind(this);
-            this.input_.addEventListener('input', this.boundUpdateClassesHandler);
-            this.input_.addEventListener('focus', this.boundFocusHandler);
-            this.input_.addEventListener('blur', this.boundBlurHandler);
-            this.input_.addEventListener('reset', this.boundResetHandler);
-            if (this.maxRows !== this.Constant_.NO_MAX_ROWS) {
-                // TODO: This should handle pasting multi line text.
-                // Currently doesn't.
-                this.boundKeyDownHandler = this.onKeyDown_.bind(this);
-                this.input_.addEventListener('keydown', this.boundKeyDownHandler);
-            }
-            var invalid = this.element_.classList.contains(this.CssClasses_.IS_INVALID);
-            this.updateClasses_();
-            this.element_.classList.add(this.CssClasses_.IS_UPGRADED);
-            if (invalid) {
-                this.element_.classList.add(this.CssClasses_.IS_INVALID);
-            }
-            if (this.input_.hasAttribute('autofocus')) {
-                this.element_.focus();
-                this.checkFocus();
-            }
-        }
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialTextfield,
-    classAsString: 'MaterialTextfield',
-    cssClass: 'mdl-js-textfield',
-    widget: true
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Tooltip MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialTooltip = function MaterialTooltip(element) {
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialTooltip'] = MaterialTooltip;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialTooltip.prototype.Constant_ = {};
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialTooltip.prototype.CssClasses_ = {
-    IS_ACTIVE: 'is-active',
-    BOTTOM: 'mdl-tooltip--bottom',
-    LEFT: 'mdl-tooltip--left',
-    RIGHT: 'mdl-tooltip--right',
-    TOP: 'mdl-tooltip--top'
-};
-/**
-   * Handle mouseenter for tooltip.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialTooltip.prototype.handleMouseEnter_ = function (event) {
-    var props = event.target.getBoundingClientRect();
-    var left = props.left + props.width / 2;
-    var top = props.top + props.height / 2;
-    var marginLeft = -1 * (this.element_.offsetWidth / 2);
-    var marginTop = -1 * (this.element_.offsetHeight / 2);
-    if (this.element_.classList.contains(this.CssClasses_.LEFT) || this.element_.classList.contains(this.CssClasses_.RIGHT)) {
-        left = props.width / 2;
-        if (top + marginTop < 0) {
-            this.element_.style.top = '0';
-            this.element_.style.marginTop = '0';
-        } else {
-            this.element_.style.top = top + 'px';
-            this.element_.style.marginTop = marginTop + 'px';
-        }
-    } else {
-        if (left + marginLeft < 0) {
-            this.element_.style.left = '0';
-            this.element_.style.marginLeft = '0';
-        } else {
-            this.element_.style.left = left + 'px';
-            this.element_.style.marginLeft = marginLeft + 'px';
-        }
-    }
-    if (this.element_.classList.contains(this.CssClasses_.TOP)) {
-        this.element_.style.top = props.top - this.element_.offsetHeight - 10 + 'px';
-    } else if (this.element_.classList.contains(this.CssClasses_.RIGHT)) {
-        this.element_.style.left = props.left + props.width + 10 + 'px';
-    } else if (this.element_.classList.contains(this.CssClasses_.LEFT)) {
-        this.element_.style.left = props.left - this.element_.offsetWidth - 10 + 'px';
-    } else {
-        this.element_.style.top = props.top + props.height + 10 + 'px';
-    }
-    this.element_.classList.add(this.CssClasses_.IS_ACTIVE);
-};
-/**
-   * Hide tooltip on mouseleave or scroll
-   *
-   * @private
-   */
-MaterialTooltip.prototype.hideTooltip_ = function () {
-    this.element_.classList.remove(this.CssClasses_.IS_ACTIVE);
-};
-/**
-   * Initialize element.
-   */
-MaterialTooltip.prototype.init = function () {
-    if (this.element_) {
-        var forElId = this.element_.getAttribute('for') || this.element_.getAttribute('data-mdl-for');
-        if (forElId) {
-            this.forElement_ = document.getElementById(forElId);
-        }
-        if (this.forElement_) {
-            // It's left here because it prevents accidental text selection on Android
-            if (!this.forElement_.hasAttribute('tabindex')) {
-                this.forElement_.setAttribute('tabindex', '0');
-            }
-            this.boundMouseEnterHandler = this.handleMouseEnter_.bind(this);
-            this.boundMouseLeaveAndScrollHandler = this.hideTooltip_.bind(this);
-            this.forElement_.addEventListener('mouseenter', this.boundMouseEnterHandler, false);
-            this.forElement_.addEventListener('touchend', this.boundMouseEnterHandler, false);
-            this.forElement_.addEventListener('mouseleave', this.boundMouseLeaveAndScrollHandler, false);
-            window.addEventListener('scroll', this.boundMouseLeaveAndScrollHandler, true);
-            window.addEventListener('touchstart', this.boundMouseLeaveAndScrollHandler);
-        }
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialTooltip,
-    classAsString: 'MaterialTooltip',
-    cssClass: 'mdl-tooltip'
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Layout MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialLayout = function MaterialLayout(element) {
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialLayout'] = MaterialLayout;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialLayout.prototype.Constant_ = {
-    MAX_WIDTH: '(max-width: 1024px)',
-    TAB_SCROLL_PIXELS: 100,
-    RESIZE_TIMEOUT: 100,
-    MENU_ICON: '&#xE5D2;',
-    CHEVRON_LEFT: 'chevron_left',
-    CHEVRON_RIGHT: 'chevron_right'
-};
-/**
-   * Keycodes, for code readability.
-   *
-   * @enum {number}
-   * @private
-   */
-MaterialLayout.prototype.Keycodes_ = {
-    ENTER: 13,
-    ESCAPE: 27,
-    SPACE: 32
-};
-/**
-   * Modes.
-   *
-   * @enum {number}
-   * @private
-   */
-MaterialLayout.prototype.Mode_ = {
-    STANDARD: 0,
-    SEAMED: 1,
-    WATERFALL: 2,
-    SCROLL: 3
-};
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialLayout.prototype.CssClasses_ = {
-    CONTAINER: 'mdl-layout__container',
-    HEADER: 'mdl-layout__header',
-    DRAWER: 'mdl-layout__drawer',
-    CONTENT: 'mdl-layout__content',
-    DRAWER_BTN: 'mdl-layout__drawer-button',
-    ICON: 'material-icons',
-    JS_RIPPLE_EFFECT: 'mdl-js-ripple-effect',
-    RIPPLE_CONTAINER: 'mdl-layout__tab-ripple-container',
-    RIPPLE: 'mdl-ripple',
-    RIPPLE_IGNORE_EVENTS: 'mdl-js-ripple-effect--ignore-events',
-    HEADER_SEAMED: 'mdl-layout__header--seamed',
-    HEADER_WATERFALL: 'mdl-layout__header--waterfall',
-    HEADER_SCROLL: 'mdl-layout__header--scroll',
-    FIXED_HEADER: 'mdl-layout--fixed-header',
-    OBFUSCATOR: 'mdl-layout__obfuscator',
-    TAB_BAR: 'mdl-layout__tab-bar',
-    TAB_CONTAINER: 'mdl-layout__tab-bar-container',
-    TAB: 'mdl-layout__tab',
-    TAB_BAR_BUTTON: 'mdl-layout__tab-bar-button',
-    TAB_BAR_LEFT_BUTTON: 'mdl-layout__tab-bar-left-button',
-    TAB_BAR_RIGHT_BUTTON: 'mdl-layout__tab-bar-right-button',
-    TAB_MANUAL_SWITCH: 'mdl-layout__tab-manual-switch',
-    PANEL: 'mdl-layout__tab-panel',
-    HAS_DRAWER: 'has-drawer',
-    HAS_TABS: 'has-tabs',
-    HAS_SCROLLING_HEADER: 'has-scrolling-header',
-    CASTING_SHADOW: 'is-casting-shadow',
-    IS_COMPACT: 'is-compact',
-    IS_SMALL_SCREEN: 'is-small-screen',
-    IS_DRAWER_OPEN: 'is-visible',
-    IS_ACTIVE: 'is-active',
-    IS_UPGRADED: 'is-upgraded',
-    IS_ANIMATING: 'is-animating',
-    ON_LARGE_SCREEN: 'mdl-layout--large-screen-only',
-    ON_SMALL_SCREEN: 'mdl-layout--small-screen-only'
-};
-/**
-   * Handles scrolling on the content.
-   *
-   * @private
-   */
-MaterialLayout.prototype.contentScrollHandler_ = function () {
-    if (this.header_.classList.contains(this.CssClasses_.IS_ANIMATING)) {
-        return;
-    }
-    var headerVisible = !this.element_.classList.contains(this.CssClasses_.IS_SMALL_SCREEN) || this.element_.classList.contains(this.CssClasses_.FIXED_HEADER);
-    if (this.content_.scrollTop > 0 && !this.header_.classList.contains(this.CssClasses_.IS_COMPACT)) {
-        this.header_.classList.add(this.CssClasses_.CASTING_SHADOW);
-        this.header_.classList.add(this.CssClasses_.IS_COMPACT);
-        if (headerVisible) {
-            this.header_.classList.add(this.CssClasses_.IS_ANIMATING);
-        }
-    } else if (this.content_.scrollTop <= 0 && this.header_.classList.contains(this.CssClasses_.IS_COMPACT)) {
-        this.header_.classList.remove(this.CssClasses_.CASTING_SHADOW);
-        this.header_.classList.remove(this.CssClasses_.IS_COMPACT);
-        if (headerVisible) {
-            this.header_.classList.add(this.CssClasses_.IS_ANIMATING);
-        }
-    }
-};
-/**
-   * Handles a keyboard event on the drawer.
-   *
-   * @param {Event} evt The event that fired.
-   * @private
-   */
-MaterialLayout.prototype.keyboardEventHandler_ = function (evt) {
-    // Only react when the drawer is open.
-    if (evt.keyCode === this.Keycodes_.ESCAPE && this.drawer_.classList.contains(this.CssClasses_.IS_DRAWER_OPEN)) {
-        this.toggleDrawer();
-    }
-};
-/**
-   * Handles changes in screen size.
-   *
-   * @private
-   */
-MaterialLayout.prototype.screenSizeHandler_ = function () {
-    if (this.screenSizeMediaQuery_.matches) {
-        this.element_.classList.add(this.CssClasses_.IS_SMALL_SCREEN);
-    } else {
-        this.element_.classList.remove(this.CssClasses_.IS_SMALL_SCREEN);
-        // Collapse drawer (if any) when moving to a large screen size.
-        if (this.drawer_) {
-            this.drawer_.classList.remove(this.CssClasses_.IS_DRAWER_OPEN);
-            this.obfuscator_.classList.remove(this.CssClasses_.IS_DRAWER_OPEN);
-        }
-    }
-};
-/**
-   * Handles events of drawer button.
-   *
-   * @param {Event} evt The event that fired.
-   * @private
-   */
-MaterialLayout.prototype.drawerToggleHandler_ = function (evt) {
-    if (evt && evt.type === 'keydown') {
-        if (evt.keyCode === this.Keycodes_.SPACE || evt.keyCode === this.Keycodes_.ENTER) {
-            // prevent scrolling in drawer nav
-            evt.preventDefault();
-        } else {
-            // prevent other keys
-            return;
-        }
-    }
-    this.toggleDrawer();
-};
-/**
-   * Handles (un)setting the `is-animating` class
-   *
-   * @private
-   */
-MaterialLayout.prototype.headerTransitionEndHandler_ = function () {
-    this.header_.classList.remove(this.CssClasses_.IS_ANIMATING);
-};
-/**
-   * Handles expanding the header on click
-   *
-   * @private
-   */
-MaterialLayout.prototype.headerClickHandler_ = function () {
-    if (this.header_.classList.contains(this.CssClasses_.IS_COMPACT)) {
-        this.header_.classList.remove(this.CssClasses_.IS_COMPACT);
-        this.header_.classList.add(this.CssClasses_.IS_ANIMATING);
-    }
-};
-/**
-   * Reset tab state, dropping active classes
-   *
-   * @private
-   */
-MaterialLayout.prototype.resetTabState_ = function (tabBar) {
-    for (var k = 0; k < tabBar.length; k++) {
-        tabBar[k].classList.remove(this.CssClasses_.IS_ACTIVE);
-    }
-};
-/**
-   * Reset panel state, droping active classes
-   *
-   * @private
-   */
-MaterialLayout.prototype.resetPanelState_ = function (panels) {
-    for (var j = 0; j < panels.length; j++) {
-        panels[j].classList.remove(this.CssClasses_.IS_ACTIVE);
-    }
-};
-/**
-  * Toggle drawer state
-  *
-  * @public
-  */
-MaterialLayout.prototype.toggleDrawer = function () {
-    var drawerButton = this.element_.querySelector('.' + this.CssClasses_.DRAWER_BTN);
-    this.drawer_.classList.toggle(this.CssClasses_.IS_DRAWER_OPEN);
-    this.obfuscator_.classList.toggle(this.CssClasses_.IS_DRAWER_OPEN);
-    // Set accessibility properties.
-    if (this.drawer_.classList.contains(this.CssClasses_.IS_DRAWER_OPEN)) {
-        this.drawer_.setAttribute('aria-hidden', 'false');
-        drawerButton.setAttribute('aria-expanded', 'true');
-    } else {
-        this.drawer_.setAttribute('aria-hidden', 'true');
-        drawerButton.setAttribute('aria-expanded', 'false');
-    }
-};
-MaterialLayout.prototype['toggleDrawer'] = MaterialLayout.prototype.toggleDrawer;
-/**
-   * Initialize element.
-   */
-MaterialLayout.prototype.init = function () {
-    if (this.element_) {
-        var container = document.createElement('div');
-        container.classList.add(this.CssClasses_.CONTAINER);
-        var focusedElement = this.element_.querySelector(':focus');
-        this.element_.parentElement.insertBefore(container, this.element_);
-        this.element_.parentElement.removeChild(this.element_);
-        container.appendChild(this.element_);
-        if (focusedElement) {
-            focusedElement.focus();
-        }
-        var directChildren = this.element_.childNodes;
-        var numChildren = directChildren.length;
-        for (var c = 0; c < numChildren; c++) {
-            var child = directChildren[c];
-            if (child.classList && child.classList.contains(this.CssClasses_.HEADER)) {
-                this.header_ = child;
-            }
-            if (child.classList && child.classList.contains(this.CssClasses_.DRAWER)) {
-                this.drawer_ = child;
-            }
-            if (child.classList && child.classList.contains(this.CssClasses_.CONTENT)) {
-                this.content_ = child;
-            }
-        }
-        window.addEventListener('pageshow', function (e) {
-            if (e.persisted) {
-                // when page is loaded from back/forward cache
-                // trigger repaint to let layout scroll in safari
-                this.element_.style.overflowY = 'hidden';
-                requestAnimationFrame(function () {
-                    this.element_.style.overflowY = '';
-                }.bind(this));
-            }
-        }.bind(this), false);
-        if (this.header_) {
-            this.tabBar_ = this.header_.querySelector('.' + this.CssClasses_.TAB_BAR);
-        }
-        var mode = this.Mode_.STANDARD;
-        if (this.header_) {
-            if (this.header_.classList.contains(this.CssClasses_.HEADER_SEAMED)) {
-                mode = this.Mode_.SEAMED;
-            } else if (this.header_.classList.contains(this.CssClasses_.HEADER_WATERFALL)) {
-                mode = this.Mode_.WATERFALL;
-                this.header_.addEventListener('transitionend', this.headerTransitionEndHandler_.bind(this));
-                this.header_.addEventListener('click', this.headerClickHandler_.bind(this));
-            } else if (this.header_.classList.contains(this.CssClasses_.HEADER_SCROLL)) {
-                mode = this.Mode_.SCROLL;
-                container.classList.add(this.CssClasses_.HAS_SCROLLING_HEADER);
-            }
-            if (mode === this.Mode_.STANDARD) {
-                this.header_.classList.add(this.CssClasses_.CASTING_SHADOW);
-                if (this.tabBar_) {
-                    this.tabBar_.classList.add(this.CssClasses_.CASTING_SHADOW);
-                }
-            } else if (mode === this.Mode_.SEAMED || mode === this.Mode_.SCROLL) {
-                this.header_.classList.remove(this.CssClasses_.CASTING_SHADOW);
-                if (this.tabBar_) {
-                    this.tabBar_.classList.remove(this.CssClasses_.CASTING_SHADOW);
-                }
-            } else if (mode === this.Mode_.WATERFALL) {
-                // Add and remove shadows depending on scroll position.
-                // Also add/remove auxiliary class for styling of the compact version of
-                // the header.
-                this.content_.addEventListener('scroll', this.contentScrollHandler_.bind(this));
-                this.contentScrollHandler_();
-            }
-        }
-        // Add drawer toggling button to our layout, if we have an openable drawer.
-        if (this.drawer_) {
-            var drawerButton = this.element_.querySelector('.' + this.CssClasses_.DRAWER_BTN);
-            if (!drawerButton) {
-                drawerButton = document.createElement('div');
-                drawerButton.setAttribute('aria-expanded', 'false');
-                drawerButton.setAttribute('role', 'button');
-                drawerButton.setAttribute('tabindex', '0');
-                drawerButton.classList.add(this.CssClasses_.DRAWER_BTN);
-                var drawerButtonIcon = document.createElement('i');
-                drawerButtonIcon.classList.add(this.CssClasses_.ICON);
-                drawerButtonIcon.innerHTML = this.Constant_.MENU_ICON;
-                drawerButton.appendChild(drawerButtonIcon);
-            }
-            if (this.drawer_.classList.contains(this.CssClasses_.ON_LARGE_SCREEN)) {
-                //If drawer has ON_LARGE_SCREEN class then add it to the drawer toggle button as well.
-                drawerButton.classList.add(this.CssClasses_.ON_LARGE_SCREEN);
-            } else if (this.drawer_.classList.contains(this.CssClasses_.ON_SMALL_SCREEN)) {
-                //If drawer has ON_SMALL_SCREEN class then add it to the drawer toggle button as well.
-                drawerButton.classList.add(this.CssClasses_.ON_SMALL_SCREEN);
-            }
-            drawerButton.addEventListener('click', this.drawerToggleHandler_.bind(this));
-            drawerButton.addEventListener('keydown', this.drawerToggleHandler_.bind(this));
-            // Add a class if the layout has a drawer, for altering the left padding.
-            // Adds the HAS_DRAWER to the elements since this.header_ may or may
-            // not be present.
-            this.element_.classList.add(this.CssClasses_.HAS_DRAWER);
-            // If we have a fixed header, add the button to the header rather than
-            // the layout.
-            if (this.element_.classList.contains(this.CssClasses_.FIXED_HEADER)) {
-                this.header_.insertBefore(drawerButton, this.header_.firstChild);
-            } else {
-                this.element_.insertBefore(drawerButton, this.content_);
-            }
-            var obfuscator = document.createElement('div');
-            obfuscator.classList.add(this.CssClasses_.OBFUSCATOR);
-            this.element_.appendChild(obfuscator);
-            obfuscator.addEventListener('click', this.drawerToggleHandler_.bind(this));
-            this.obfuscator_ = obfuscator;
-            this.drawer_.addEventListener('keydown', this.keyboardEventHandler_.bind(this));
-            this.drawer_.setAttribute('aria-hidden', 'true');
-        }
-        // Keep an eye on screen size, and add/remove auxiliary class for styling
-        // of small screens.
-        this.screenSizeMediaQuery_ = window.matchMedia(this.Constant_.MAX_WIDTH);
-        this.screenSizeMediaQuery_.addListener(this.screenSizeHandler_.bind(this));
-        this.screenSizeHandler_();
-        // Initialize tabs, if any.
-        if (this.header_ && this.tabBar_) {
-            this.element_.classList.add(this.CssClasses_.HAS_TABS);
-            var tabContainer = document.createElement('div');
-            tabContainer.classList.add(this.CssClasses_.TAB_CONTAINER);
-            this.header_.insertBefore(tabContainer, this.tabBar_);
-            this.header_.removeChild(this.tabBar_);
-            var leftButton = document.createElement('div');
-            leftButton.classList.add(this.CssClasses_.TAB_BAR_BUTTON);
-            leftButton.classList.add(this.CssClasses_.TAB_BAR_LEFT_BUTTON);
-            var leftButtonIcon = document.createElement('i');
-            leftButtonIcon.classList.add(this.CssClasses_.ICON);
-            leftButtonIcon.textContent = this.Constant_.CHEVRON_LEFT;
-            leftButton.appendChild(leftButtonIcon);
-            leftButton.addEventListener('click', function () {
-                this.tabBar_.scrollLeft -= this.Constant_.TAB_SCROLL_PIXELS;
-            }.bind(this));
-            var rightButton = document.createElement('div');
-            rightButton.classList.add(this.CssClasses_.TAB_BAR_BUTTON);
-            rightButton.classList.add(this.CssClasses_.TAB_BAR_RIGHT_BUTTON);
-            var rightButtonIcon = document.createElement('i');
-            rightButtonIcon.classList.add(this.CssClasses_.ICON);
-            rightButtonIcon.textContent = this.Constant_.CHEVRON_RIGHT;
-            rightButton.appendChild(rightButtonIcon);
-            rightButton.addEventListener('click', function () {
-                this.tabBar_.scrollLeft += this.Constant_.TAB_SCROLL_PIXELS;
-            }.bind(this));
-            tabContainer.appendChild(leftButton);
-            tabContainer.appendChild(this.tabBar_);
-            tabContainer.appendChild(rightButton);
-            // Add and remove tab buttons depending on scroll position and total
-            // window size.
-            var tabUpdateHandler = function () {
-                if (this.tabBar_.scrollLeft > 0) {
-                    leftButton.classList.add(this.CssClasses_.IS_ACTIVE);
-                } else {
-                    leftButton.classList.remove(this.CssClasses_.IS_ACTIVE);
-                }
-                if (this.tabBar_.scrollLeft < this.tabBar_.scrollWidth - this.tabBar_.offsetWidth) {
-                    rightButton.classList.add(this.CssClasses_.IS_ACTIVE);
-                } else {
-                    rightButton.classList.remove(this.CssClasses_.IS_ACTIVE);
-                }
-            }.bind(this);
-            this.tabBar_.addEventListener('scroll', tabUpdateHandler);
-            tabUpdateHandler();
-            // Update tabs when the window resizes.
-            var windowResizeHandler = function () {
-                // Use timeouts to make sure it doesn't happen too often.
-                if (this.resizeTimeoutId_) {
-                    clearTimeout(this.resizeTimeoutId_);
-                }
-                this.resizeTimeoutId_ = setTimeout(function () {
-                    tabUpdateHandler();
-                    this.resizeTimeoutId_ = null;
-                }.bind(this), this.Constant_.RESIZE_TIMEOUT);
-            }.bind(this);
-            window.addEventListener('resize', windowResizeHandler);
-            if (this.tabBar_.classList.contains(this.CssClasses_.JS_RIPPLE_EFFECT)) {
-                this.tabBar_.classList.add(this.CssClasses_.RIPPLE_IGNORE_EVENTS);
-            }
-            // Select element tabs, document panels
-            var tabs = this.tabBar_.querySelectorAll('.' + this.CssClasses_.TAB);
-            var panels = this.content_.querySelectorAll('.' + this.CssClasses_.PANEL);
-            // Create new tabs for each tab element
-            for (var i = 0; i < tabs.length; i++) {
-                new MaterialLayoutTab(tabs[i], tabs, panels, this);
-            }
-        }
-        this.element_.classList.add(this.CssClasses_.IS_UPGRADED);
-    }
-};
-/**
-   * Constructor for an individual tab.
-   *
-   * @constructor
-   * @param {HTMLElement} tab The HTML element for the tab.
-   * @param {!Array<HTMLElement>} tabs Array with HTML elements for all tabs.
-   * @param {!Array<HTMLElement>} panels Array with HTML elements for all panels.
-   * @param {MaterialLayout} layout The MaterialLayout object that owns the tab.
-   */
-function MaterialLayoutTab(tab, tabs, panels, layout) {
-    /**
-     * Auxiliary method to programmatically select a tab in the UI.
-     */
-    function selectTab() {
-        var href = tab.href.split('#')[1];
-        var panel = layout.content_.querySelector('#' + href);
-        layout.resetTabState_(tabs);
-        layout.resetPanelState_(panels);
-        tab.classList.add(layout.CssClasses_.IS_ACTIVE);
-        panel.classList.add(layout.CssClasses_.IS_ACTIVE);
-    }
-    if (layout.tabBar_.classList.contains(layout.CssClasses_.JS_RIPPLE_EFFECT)) {
-        var rippleContainer = document.createElement('span');
-        rippleContainer.classList.add(layout.CssClasses_.RIPPLE_CONTAINER);
-        rippleContainer.classList.add(layout.CssClasses_.JS_RIPPLE_EFFECT);
-        var ripple = document.createElement('span');
-        ripple.classList.add(layout.CssClasses_.RIPPLE);
-        rippleContainer.appendChild(ripple);
-        tab.appendChild(rippleContainer);
-    }
-    if (!layout.tabBar_.classList.contains(layout.CssClasses_.TAB_MANUAL_SWITCH)) {
-        tab.addEventListener('click', function (e) {
-            if (tab.getAttribute('href').charAt(0) === '#') {
-                e.preventDefault();
-                selectTab();
-            }
-        });
-    }
-    tab.show = selectTab;
-}
-window['MaterialLayoutTab'] = MaterialLayoutTab;
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialLayout,
-    classAsString: 'MaterialLayout',
-    cssClass: 'mdl-js-layout'
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Data Table Card MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {Element} element The element that will be upgraded.
-   */
-var MaterialDataTable = function MaterialDataTable(element) {
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialDataTable'] = MaterialDataTable;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialDataTable.prototype.Constant_ = {};
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialDataTable.prototype.CssClasses_ = {
-    DATA_TABLE: 'mdl-data-table',
-    SELECTABLE: 'mdl-data-table--selectable',
-    SELECT_ELEMENT: 'mdl-data-table__select',
-    IS_SELECTED: 'is-selected',
-    IS_UPGRADED: 'is-upgraded'
-};
-/**
-   * Generates and returns a function that toggles the selection state of a
-   * single row (or multiple rows).
-   *
-   * @param {Element} checkbox Checkbox that toggles the selection state.
-   * @param {Element} row Row to toggle when checkbox changes.
-   * @param {(Array<Object>|NodeList)=} opt_rows Rows to toggle when checkbox changes.
-   * @private
-   */
-MaterialDataTable.prototype.selectRow_ = function (checkbox, row, opt_rows) {
-    if (row) {
-        return function () {
-            if (checkbox.checked) {
-                row.classList.add(this.CssClasses_.IS_SELECTED);
-            } else {
-                row.classList.remove(this.CssClasses_.IS_SELECTED);
-            }
-        }.bind(this);
-    }
-    if (opt_rows) {
-        return function () {
-            var i;
-            var el;
-            if (checkbox.checked) {
-                for (i = 0; i < opt_rows.length; i++) {
-                    el = opt_rows[i].querySelector('td').querySelector('.mdl-checkbox');
-                    el['MaterialCheckbox'].check();
-                    opt_rows[i].classList.add(this.CssClasses_.IS_SELECTED);
-                }
-            } else {
-                for (i = 0; i < opt_rows.length; i++) {
-                    el = opt_rows[i].querySelector('td').querySelector('.mdl-checkbox');
-                    el['MaterialCheckbox'].uncheck();
-                    opt_rows[i].classList.remove(this.CssClasses_.IS_SELECTED);
-                }
-            }
-        }.bind(this);
-    }
-};
-/**
-   * Creates a checkbox for a single or or multiple rows and hooks up the
-   * event handling.
-   *
-   * @param {Element} row Row to toggle when checkbox changes.
-   * @param {(Array<Object>|NodeList)=} opt_rows Rows to toggle when checkbox changes.
-   * @private
-   */
-MaterialDataTable.prototype.createCheckbox_ = function (row, opt_rows) {
-    var label = document.createElement('label');
-    var labelClasses = [
-        'mdl-checkbox',
-        'mdl-js-checkbox',
-        'mdl-js-ripple-effect',
-        this.CssClasses_.SELECT_ELEMENT
-    ];
-    label.className = labelClasses.join(' ');
-    var checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.classList.add('mdl-checkbox__input');
-    if (row) {
-        checkbox.checked = row.classList.contains(this.CssClasses_.IS_SELECTED);
-        checkbox.addEventListener('change', this.selectRow_(checkbox, row));
-    } else if (opt_rows) {
-        checkbox.addEventListener('change', this.selectRow_(checkbox, null, opt_rows));
-    }
-    label.appendChild(checkbox);
-    componentHandler.upgradeElement(label, 'MaterialCheckbox');
-    return label;
-};
-/**
-   * Initialize element.
-   */
-MaterialDataTable.prototype.init = function () {
-    if (this.element_) {
-        var firstHeader = this.element_.querySelector('th');
-        var bodyRows = Array.prototype.slice.call(this.element_.querySelectorAll('tbody tr'));
-        var footRows = Array.prototype.slice.call(this.element_.querySelectorAll('tfoot tr'));
-        var rows = bodyRows.concat(footRows);
-        if (this.element_.classList.contains(this.CssClasses_.SELECTABLE)) {
-            var th = document.createElement('th');
-            var headerCheckbox = this.createCheckbox_(null, rows);
-            th.appendChild(headerCheckbox);
-            firstHeader.parentElement.insertBefore(th, firstHeader);
-            for (var i = 0; i < rows.length; i++) {
-                var firstCell = rows[i].querySelector('td');
-                if (firstCell) {
-                    var td = document.createElement('td');
-                    if (rows[i].parentNode.nodeName.toUpperCase() === 'TBODY') {
-                        var rowCheckbox = this.createCheckbox_(rows[i]);
-                        td.appendChild(rowCheckbox);
-                    }
-                    rows[i].insertBefore(td, firstCell);
-                }
-            }
-            this.element_.classList.add(this.CssClasses_.IS_UPGRADED);
-        }
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialDataTable,
-    classAsString: 'MaterialDataTable',
-    cssClass: 'mdl-js-data-table'
-});
-/**
- * @license
- * Copyright 2015 Google Inc. All Rights Reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
-   * Class constructor for Ripple MDL component.
-   * Implements MDL component design pattern defined at:
-   * https://github.com/jasonmayes/mdl-component-design-pattern
-   *
-   * @constructor
-   * @param {HTMLElement} element The element that will be upgraded.
-   */
-var MaterialRipple = function MaterialRipple(element) {
-    this.element_ = element;
-    // Initialize instance.
-    this.init();
-};
-window['MaterialRipple'] = MaterialRipple;
-/**
-   * Store constants in one place so they can be updated easily.
-   *
-   * @enum {string | number}
-   * @private
-   */
-MaterialRipple.prototype.Constant_ = {
-    INITIAL_SCALE: 'scale(0.0001, 0.0001)',
-    INITIAL_SIZE: '1px',
-    INITIAL_OPACITY: '0.4',
-    FINAL_OPACITY: '0',
-    FINAL_SCALE: ''
-};
-/**
-   * Store strings for class names defined by this component that are used in
-   * JavaScript. This allows us to simply change it in one place should we
-   * decide to modify at a later date.
-   *
-   * @enum {string}
-   * @private
-   */
-MaterialRipple.prototype.CssClasses_ = {
-    RIPPLE_CENTER: 'mdl-ripple--center',
-    RIPPLE_EFFECT_IGNORE_EVENTS: 'mdl-js-ripple-effect--ignore-events',
-    RIPPLE: 'mdl-ripple',
-    IS_ANIMATING: 'is-animating',
-    IS_VISIBLE: 'is-visible'
-};
-/**
-   * Handle mouse / finger down on element.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialRipple.prototype.downHandler_ = function (event) {
-    if (!this.rippleElement_.style.width && !this.rippleElement_.style.height) {
-        var rect = this.element_.getBoundingClientRect();
-        this.boundHeight = rect.height;
-        this.boundWidth = rect.width;
-        this.rippleSize_ = Math.sqrt(rect.width * rect.width + rect.height * rect.height) * 2 + 2;
-        this.rippleElement_.style.width = this.rippleSize_ + 'px';
-        this.rippleElement_.style.height = this.rippleSize_ + 'px';
-    }
-    this.rippleElement_.classList.add(this.CssClasses_.IS_VISIBLE);
-    if (event.type === 'mousedown' && this.ignoringMouseDown_) {
-        this.ignoringMouseDown_ = false;
-    } else {
-        if (event.type === 'touchstart') {
-            this.ignoringMouseDown_ = true;
-        }
-        var frameCount = this.getFrameCount();
-        if (frameCount > 0) {
-            return;
-        }
-        this.setFrameCount(1);
-        var bound = event.currentTarget.getBoundingClientRect();
-        var x;
-        var y;
-        // Check if we are handling a keyboard click.
-        if (event.clientX === 0 && event.clientY === 0) {
-            x = Math.round(bound.width / 2);
-            y = Math.round(bound.height / 2);
-        } else {
-            var clientX = event.clientX !== undefined ? event.clientX : event.touches[0].clientX;
-            var clientY = event.clientY !== undefined ? event.clientY : event.touches[0].clientY;
-            x = Math.round(clientX - bound.left);
-            y = Math.round(clientY - bound.top);
-        }
-        this.setRippleXY(x, y);
-        this.setRippleStyles(true);
-        window.requestAnimationFrame(this.animFrameHandler.bind(this));
-    }
-};
-/**
-   * Handle mouse / finger up on element.
-   *
-   * @param {Event} event The event that fired.
-   * @private
-   */
-MaterialRipple.prototype.upHandler_ = function (event) {
-    // Don't fire for the artificial "mouseup" generated by a double-click.
-    if (event && event.detail !== 2) {
-        // Allow a repaint to occur before removing this class, so the animation
-        // shows for tap events, which seem to trigger a mouseup too soon after
-        // mousedown.
-        window.setTimeout(function () {
-            this.rippleElement_.classList.remove(this.CssClasses_.IS_VISIBLE);
-        }.bind(this), 0);
-    }
-};
-/**
-   * Initialize element.
-   */
-MaterialRipple.prototype.init = function () {
-    if (this.element_) {
-        var recentering = this.element_.classList.contains(this.CssClasses_.RIPPLE_CENTER);
-        if (!this.element_.classList.contains(this.CssClasses_.RIPPLE_EFFECT_IGNORE_EVENTS)) {
-            this.rippleElement_ = this.element_.querySelector('.' + this.CssClasses_.RIPPLE);
-            this.frameCount_ = 0;
-            this.rippleSize_ = 0;
-            this.x_ = 0;
-            this.y_ = 0;
-            // Touch start produces a compat mouse down event, which would cause a
-            // second ripples. To avoid that, we use this property to ignore the first
-            // mouse down after a touch start.
-            this.ignoringMouseDown_ = false;
-            this.boundDownHandler = this.downHandler_.bind(this);
-            this.element_.addEventListener('mousedown', this.boundDownHandler);
-            this.element_.addEventListener('touchstart', this.boundDownHandler);
-            this.boundUpHandler = this.upHandler_.bind(this);
-            this.element_.addEventListener('mouseup', this.boundUpHandler);
-            this.element_.addEventListener('mouseleave', this.boundUpHandler);
-            this.element_.addEventListener('touchend', this.boundUpHandler);
-            this.element_.addEventListener('blur', this.boundUpHandler);
-            /**
-         * Getter for frameCount_.
-         * @return {number} the frame count.
-         */
-            this.getFrameCount = function () {
-                return this.frameCount_;
-            };
-            /**
-         * Setter for frameCount_.
-         * @param {number} fC the frame count.
-         */
-            this.setFrameCount = function (fC) {
-                this.frameCount_ = fC;
-            };
-            /**
-         * Getter for rippleElement_.
-         * @return {Element} the ripple element.
-         */
-            this.getRippleElement = function () {
-                return this.rippleElement_;
-            };
-            /**
-         * Sets the ripple X and Y coordinates.
-         * @param  {number} newX the new X coordinate
-         * @param  {number} newY the new Y coordinate
-         */
-            this.setRippleXY = function (newX, newY) {
-                this.x_ = newX;
-                this.y_ = newY;
-            };
-            /**
-         * Sets the ripple styles.
-         * @param  {boolean} start whether or not this is the start frame.
-         */
-            this.setRippleStyles = function (start) {
-                if (this.rippleElement_ !== null) {
-                    var transformString;
-                    var scale;
-                    var size;
-                    var offset = 'translate(' + this.x_ + 'px, ' + this.y_ + 'px)';
-                    if (start) {
-                        scale = this.Constant_.INITIAL_SCALE;
-                        size = this.Constant_.INITIAL_SIZE;
-                    } else {
-                        scale = this.Constant_.FINAL_SCALE;
-                        size = this.rippleSize_ + 'px';
-                        if (recentering) {
-                            offset = 'translate(' + this.boundWidth / 2 + 'px, ' + this.boundHeight / 2 + 'px)';
-                        }
-                    }
-                    transformString = 'translate(-50%, -50%) ' + offset + scale;
-                    this.rippleElement_.style.webkitTransform = transformString;
-                    this.rippleElement_.style.msTransform = transformString;
-                    this.rippleElement_.style.transform = transformString;
-                    if (start) {
-                        this.rippleElement_.classList.remove(this.CssClasses_.IS_ANIMATING);
-                    } else {
-                        this.rippleElement_.classList.add(this.CssClasses_.IS_ANIMATING);
-                    }
-                }
-            };
-            /**
-         * Handles an animation frame.
-         */
-            this.animFrameHandler = function () {
-                if (this.frameCount_-- > 0) {
-                    window.requestAnimationFrame(this.animFrameHandler.bind(this));
-                } else {
-                    this.setRippleStyles(false);
-                }
-            };
-        }
-    }
-};
-// The component registers itself. It can assume componentHandler is available
-// in the global scope.
-componentHandler.register({
-    constructor: MaterialRipple,
-    classAsString: 'MaterialRipple',
-    cssClass: 'mdl-js-ripple-effect',
-    widget: false
-});
-}());
-;
+/***/ }),
 
+/***/ "./node_modules/@material/floating-label/constants.js":
+/*!************************************************************!*\
+  !*** ./node_modules/@material/floating-label/constants.js ***!
+  \************************************************************/
+/*! exports provided: cssClasses */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return cssClasses; });\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar cssClasses = {\n    LABEL_FLOAT_ABOVE: 'mdc-floating-label--float-above',\n    LABEL_SHAKE: 'mdc-floating-label--shake',\n    ROOT: 'mdc-floating-label',\n};\n//# sourceMappingURL=constants.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/floating-label/constants.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/floating-label/foundation.js":
+/*!*************************************************************!*\
+  !*** ./node_modules/@material/floating-label/foundation.js ***!
+  \*************************************************************/
+/*! exports provided: MDCFloatingLabelFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCFloatingLabelFoundation\", function() { return MDCFloatingLabelFoundation; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/foundation */ \"./node_modules/@material/base/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/floating-label/constants.js\");\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCFloatingLabelFoundation = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCFloatingLabelFoundation, _super);\n    function MDCFloatingLabelFoundation(adapter) {\n        var _this = _super.call(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, MDCFloatingLabelFoundation.defaultAdapter, adapter)) || this;\n        _this.shakeAnimationEndHandler_ = function () { return _this.handleShakeAnimationEnd_(); };\n        return _this;\n    }\n    Object.defineProperty(MDCFloatingLabelFoundation, \"cssClasses\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCFloatingLabelFoundation, \"defaultAdapter\", {\n        /**\n         * See {@link MDCFloatingLabelAdapter} for typing information on parameters and return types.\n         */\n        get: function () {\n            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n            return {\n                addClass: function () { return undefined; },\n                removeClass: function () { return undefined; },\n                getWidth: function () { return 0; },\n                registerInteractionHandler: function () { return undefined; },\n                deregisterInteractionHandler: function () { return undefined; },\n            };\n            // tslint:enable:object-literal-sort-keys\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCFloatingLabelFoundation.prototype.init = function () {\n        this.adapter_.registerInteractionHandler('animationend', this.shakeAnimationEndHandler_);\n    };\n    MDCFloatingLabelFoundation.prototype.destroy = function () {\n        this.adapter_.deregisterInteractionHandler('animationend', this.shakeAnimationEndHandler_);\n    };\n    /**\n     * Returns the width of the label element.\n     */\n    MDCFloatingLabelFoundation.prototype.getWidth = function () {\n        return this.adapter_.getWidth();\n    };\n    /**\n     * Styles the label to produce a shake animation to indicate an error.\n     * @param shouldShake If true, adds the shake CSS class; otherwise, removes shake class.\n     */\n    MDCFloatingLabelFoundation.prototype.shake = function (shouldShake) {\n        var LABEL_SHAKE = MDCFloatingLabelFoundation.cssClasses.LABEL_SHAKE;\n        if (shouldShake) {\n            this.adapter_.addClass(LABEL_SHAKE);\n        }\n        else {\n            this.adapter_.removeClass(LABEL_SHAKE);\n        }\n    };\n    /**\n     * Styles the label to float or dock.\n     * @param shouldFloat If true, adds the float CSS class; otherwise, removes float and shake classes to dock the label.\n     */\n    MDCFloatingLabelFoundation.prototype.float = function (shouldFloat) {\n        var _a = MDCFloatingLabelFoundation.cssClasses, LABEL_FLOAT_ABOVE = _a.LABEL_FLOAT_ABOVE, LABEL_SHAKE = _a.LABEL_SHAKE;\n        if (shouldFloat) {\n            this.adapter_.addClass(LABEL_FLOAT_ABOVE);\n        }\n        else {\n            this.adapter_.removeClass(LABEL_FLOAT_ABOVE);\n            this.adapter_.removeClass(LABEL_SHAKE);\n        }\n    };\n    MDCFloatingLabelFoundation.prototype.handleShakeAnimationEnd_ = function () {\n        var LABEL_SHAKE = MDCFloatingLabelFoundation.cssClasses.LABEL_SHAKE;\n        this.adapter_.removeClass(LABEL_SHAKE);\n    };\n    return MDCFloatingLabelFoundation;\n}(_material_base_foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]));\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCFloatingLabelFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/floating-label/foundation.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/floating-label/index.js":
+/*!********************************************************!*\
+  !*** ./node_modules/@material/floating-label/index.js ***!
+  \********************************************************/
+/*! exports provided: MDCFloatingLabel, cssClasses, MDCFloatingLabelFoundation */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _component__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./component */ \"./node_modules/@material/floating-label/component.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCFloatingLabel\", function() { return _component__WEBPACK_IMPORTED_MODULE_0__[\"MDCFloatingLabel\"]; });\n\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/floating-label/constants.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return _constants__WEBPACK_IMPORTED_MODULE_1__[\"cssClasses\"]; });\n\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/floating-label/foundation.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCFloatingLabelFoundation\", function() { return _foundation__WEBPACK_IMPORTED_MODULE_2__[\"MDCFloatingLabelFoundation\"]; });\n\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n//# sourceMappingURL=index.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/floating-label/index.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/line-ripple/component.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/@material/line-ripple/component.js ***!
+  \*********************************************************/
+/*! exports provided: MDCLineRipple */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCLineRipple\", function() { return MDCLineRipple; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/component */ \"./node_modules/@material/base/component.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/line-ripple/foundation.js\");\n/**\n * @license\n * Copyright 2018 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCLineRipple = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCLineRipple, _super);\n    function MDCLineRipple() {\n        return _super !== null && _super.apply(this, arguments) || this;\n    }\n    MDCLineRipple.attachTo = function (root) {\n        return new MDCLineRipple(root);\n    };\n    /**\n     * Activates the line ripple\n     */\n    MDCLineRipple.prototype.activate = function () {\n        this.foundation_.activate();\n    };\n    /**\n     * Deactivates the line ripple\n     */\n    MDCLineRipple.prototype.deactivate = function () {\n        this.foundation_.deactivate();\n    };\n    /**\n     * Sets the transform origin given a user's click location.\n     * The `rippleCenter` is the x-coordinate of the middle of the ripple.\n     */\n    MDCLineRipple.prototype.setRippleCenter = function (xCoordinate) {\n        this.foundation_.setRippleCenter(xCoordinate);\n    };\n    MDCLineRipple.prototype.getDefaultFoundation = function () {\n        var _this = this;\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n        var adapter = {\n            addClass: function (className) { return _this.root_.classList.add(className); },\n            removeClass: function (className) { return _this.root_.classList.remove(className); },\n            hasClass: function (className) { return _this.root_.classList.contains(className); },\n            setStyle: function (propertyName, value) { return _this.root_.style.setProperty(propertyName, value); },\n            registerEventHandler: function (evtType, handler) { return _this.listen(evtType, handler); },\n            deregisterEventHandler: function (evtType, handler) { return _this.unlisten(evtType, handler); },\n        };\n        // tslint:enable:object-literal-sort-keys\n        return new _foundation__WEBPACK_IMPORTED_MODULE_2__[\"MDCLineRippleFoundation\"](adapter);\n    };\n    return MDCLineRipple;\n}(_material_base_component__WEBPACK_IMPORTED_MODULE_1__[\"MDCComponent\"]));\n\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/line-ripple/component.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/line-ripple/constants.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/@material/line-ripple/constants.js ***!
+  \*********************************************************/
+/*! exports provided: cssClasses */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return cssClasses; });\n/**\n * @license\n * Copyright 2018 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar cssClasses = {\n    LINE_RIPPLE_ACTIVE: 'mdc-line-ripple--active',\n    LINE_RIPPLE_DEACTIVATING: 'mdc-line-ripple--deactivating',\n};\n\n//# sourceMappingURL=constants.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/line-ripple/constants.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/line-ripple/foundation.js":
+/*!**********************************************************!*\
+  !*** ./node_modules/@material/line-ripple/foundation.js ***!
+  \**********************************************************/
+/*! exports provided: MDCLineRippleFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCLineRippleFoundation\", function() { return MDCLineRippleFoundation; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/foundation */ \"./node_modules/@material/base/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/line-ripple/constants.js\");\n/**\n * @license\n * Copyright 2018 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCLineRippleFoundation = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCLineRippleFoundation, _super);\n    function MDCLineRippleFoundation(adapter) {\n        var _this = _super.call(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, MDCLineRippleFoundation.defaultAdapter, adapter)) || this;\n        _this.transitionEndHandler_ = function (evt) { return _this.handleTransitionEnd(evt); };\n        return _this;\n    }\n    Object.defineProperty(MDCLineRippleFoundation, \"cssClasses\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCLineRippleFoundation, \"defaultAdapter\", {\n        /**\n         * See {@link MDCLineRippleAdapter} for typing information on parameters and return types.\n         */\n        get: function () {\n            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n            return {\n                addClass: function () { return undefined; },\n                removeClass: function () { return undefined; },\n                hasClass: function () { return false; },\n                setStyle: function () { return undefined; },\n                registerEventHandler: function () { return undefined; },\n                deregisterEventHandler: function () { return undefined; },\n            };\n            // tslint:enable:object-literal-sort-keys\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCLineRippleFoundation.prototype.init = function () {\n        this.adapter_.registerEventHandler('transitionend', this.transitionEndHandler_);\n    };\n    MDCLineRippleFoundation.prototype.destroy = function () {\n        this.adapter_.deregisterEventHandler('transitionend', this.transitionEndHandler_);\n    };\n    MDCLineRippleFoundation.prototype.activate = function () {\n        this.adapter_.removeClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].LINE_RIPPLE_DEACTIVATING);\n        this.adapter_.addClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].LINE_RIPPLE_ACTIVE);\n    };\n    MDCLineRippleFoundation.prototype.setRippleCenter = function (xCoordinate) {\n        this.adapter_.setStyle('transform-origin', xCoordinate + \"px center\");\n    };\n    MDCLineRippleFoundation.prototype.deactivate = function () {\n        this.adapter_.addClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].LINE_RIPPLE_DEACTIVATING);\n    };\n    MDCLineRippleFoundation.prototype.handleTransitionEnd = function (evt) {\n        // Wait for the line ripple to be either transparent or opaque\n        // before emitting the animation end event\n        var isDeactivating = this.adapter_.hasClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].LINE_RIPPLE_DEACTIVATING);\n        if (evt.propertyName === 'opacity') {\n            if (isDeactivating) {\n                this.adapter_.removeClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].LINE_RIPPLE_ACTIVE);\n                this.adapter_.removeClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].LINE_RIPPLE_DEACTIVATING);\n            }\n        }\n    };\n    return MDCLineRippleFoundation;\n}(_material_base_foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]));\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCLineRippleFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/line-ripple/foundation.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/notched-outline/component.js":
+/*!*************************************************************!*\
+  !*** ./node_modules/@material/notched-outline/component.js ***!
+  \*************************************************************/
+/*! exports provided: MDCNotchedOutline */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCNotchedOutline\", function() { return MDCNotchedOutline; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/component */ \"./node_modules/@material/base/component.js\");\n/* harmony import */ var _material_floating_label_foundation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material/floating-label/foundation */ \"./node_modules/@material/floating-label/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/notched-outline/constants.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/notched-outline/foundation.js\");\n/**\n * @license\n * Copyright 2017 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n\n\nvar MDCNotchedOutline = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCNotchedOutline, _super);\n    function MDCNotchedOutline() {\n        return _super !== null && _super.apply(this, arguments) || this;\n    }\n    MDCNotchedOutline.attachTo = function (root) {\n        return new MDCNotchedOutline(root);\n    };\n    MDCNotchedOutline.prototype.initialSyncWithDOM = function () {\n        this.notchElement_ = this.root_.querySelector(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].NOTCH_ELEMENT_SELECTOR);\n        var label = this.root_.querySelector('.' + _material_floating_label_foundation__WEBPACK_IMPORTED_MODULE_2__[\"MDCFloatingLabelFoundation\"].cssClasses.ROOT);\n        if (label) {\n            label.style.transitionDuration = '0s';\n            this.root_.classList.add(_constants__WEBPACK_IMPORTED_MODULE_3__[\"cssClasses\"].OUTLINE_UPGRADED);\n            requestAnimationFrame(function () {\n                label.style.transitionDuration = '';\n            });\n        }\n        else {\n            this.root_.classList.add(_constants__WEBPACK_IMPORTED_MODULE_3__[\"cssClasses\"].NO_LABEL);\n        }\n    };\n    /**\n     * Updates classes and styles to open the notch to the specified width.\n     * @param notchWidth The notch width in the outline.\n     */\n    MDCNotchedOutline.prototype.notch = function (notchWidth) {\n        this.foundation_.notch(notchWidth);\n    };\n    /**\n     * Updates classes and styles to close the notch.\n     */\n    MDCNotchedOutline.prototype.closeNotch = function () {\n        this.foundation_.closeNotch();\n    };\n    MDCNotchedOutline.prototype.getDefaultFoundation = function () {\n        var _this = this;\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n        var adapter = {\n            addClass: function (className) { return _this.root_.classList.add(className); },\n            removeClass: function (className) { return _this.root_.classList.remove(className); },\n            setNotchWidthProperty: function (width) { return _this.notchElement_.style.setProperty('width', width + 'px'); },\n            removeNotchWidthProperty: function () { return _this.notchElement_.style.removeProperty('width'); },\n        };\n        // tslint:enable:object-literal-sort-keys\n        return new _foundation__WEBPACK_IMPORTED_MODULE_4__[\"MDCNotchedOutlineFoundation\"](adapter);\n    };\n    return MDCNotchedOutline;\n}(_material_base_component__WEBPACK_IMPORTED_MODULE_1__[\"MDCComponent\"]));\n\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/notched-outline/component.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/notched-outline/constants.js":
+/*!*************************************************************!*\
+  !*** ./node_modules/@material/notched-outline/constants.js ***!
+  \*************************************************************/
+/*! exports provided: cssClasses, numbers, strings */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return cssClasses; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"numbers\", function() { return numbers; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return strings; });\n/**\n * @license\n * Copyright 2018 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar strings = {\n    NOTCH_ELEMENT_SELECTOR: '.mdc-notched-outline__notch',\n};\nvar numbers = {\n    // This should stay in sync with $mdc-notched-outline-padding * 2.\n    NOTCH_ELEMENT_PADDING: 8,\n};\nvar cssClasses = {\n    NO_LABEL: 'mdc-notched-outline--no-label',\n    OUTLINE_NOTCHED: 'mdc-notched-outline--notched',\n    OUTLINE_UPGRADED: 'mdc-notched-outline--upgraded',\n};\n\n//# sourceMappingURL=constants.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/notched-outline/constants.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/notched-outline/foundation.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/@material/notched-outline/foundation.js ***!
+  \**************************************************************/
+/*! exports provided: MDCNotchedOutlineFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCNotchedOutlineFoundation\", function() { return MDCNotchedOutlineFoundation; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/foundation */ \"./node_modules/@material/base/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/notched-outline/constants.js\");\n/**\n * @license\n * Copyright 2017 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCNotchedOutlineFoundation = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCNotchedOutlineFoundation, _super);\n    function MDCNotchedOutlineFoundation(adapter) {\n        return _super.call(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, MDCNotchedOutlineFoundation.defaultAdapter, adapter)) || this;\n    }\n    Object.defineProperty(MDCNotchedOutlineFoundation, \"strings\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCNotchedOutlineFoundation, \"cssClasses\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCNotchedOutlineFoundation, \"numbers\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"numbers\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCNotchedOutlineFoundation, \"defaultAdapter\", {\n        /**\n         * See {@link MDCNotchedOutlineAdapter} for typing information on parameters and return types.\n         */\n        get: function () {\n            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n            return {\n                addClass: function () { return undefined; },\n                removeClass: function () { return undefined; },\n                setNotchWidthProperty: function () { return undefined; },\n                removeNotchWidthProperty: function () { return undefined; },\n            };\n            // tslint:enable:object-literal-sort-keys\n        },\n        enumerable: true,\n        configurable: true\n    });\n    /**\n     * Adds the outline notched selector and updates the notch width calculated based off of notchWidth.\n     */\n    MDCNotchedOutlineFoundation.prototype.notch = function (notchWidth) {\n        var OUTLINE_NOTCHED = MDCNotchedOutlineFoundation.cssClasses.OUTLINE_NOTCHED;\n        if (notchWidth > 0) {\n            notchWidth += _constants__WEBPACK_IMPORTED_MODULE_2__[\"numbers\"].NOTCH_ELEMENT_PADDING; // Add padding from left/right.\n        }\n        this.adapter_.setNotchWidthProperty(notchWidth);\n        this.adapter_.addClass(OUTLINE_NOTCHED);\n    };\n    /**\n     * Removes notched outline selector to close the notch in the outline.\n     */\n    MDCNotchedOutlineFoundation.prototype.closeNotch = function () {\n        var OUTLINE_NOTCHED = MDCNotchedOutlineFoundation.cssClasses.OUTLINE_NOTCHED;\n        this.adapter_.removeClass(OUTLINE_NOTCHED);\n        this.adapter_.removeNotchWidthProperty();\n    };\n    return MDCNotchedOutlineFoundation;\n}(_material_base_foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]));\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCNotchedOutlineFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/notched-outline/foundation.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/ripple/component.js":
+/*!****************************************************!*\
+  !*** ./node_modules/@material/ripple/component.js ***!
+  \****************************************************/
+/*! exports provided: MDCRipple */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCRipple\", function() { return MDCRipple; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/component */ \"./node_modules/@material/base/component.js\");\n/* harmony import */ var _material_dom_events__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material/dom/events */ \"./node_modules/@material/dom/events.js\");\n/* harmony import */ var _material_dom_ponyfill__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material/dom/ponyfill */ \"./node_modules/@material/dom/ponyfill.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/ripple/foundation.js\");\n/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./util */ \"./node_modules/@material/ripple/util.js\");\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n\n\n\nvar MDCRipple = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCRipple, _super);\n    function MDCRipple() {\n        var _this = _super !== null && _super.apply(this, arguments) || this;\n        _this.disabled = false;\n        return _this;\n    }\n    MDCRipple.attachTo = function (root, opts) {\n        if (opts === void 0) { opts = { isUnbounded: undefined }; }\n        var ripple = new MDCRipple(root);\n        // Only override unbounded behavior if option is explicitly specified\n        if (opts.isUnbounded !== undefined) {\n            ripple.unbounded = opts.isUnbounded;\n        }\n        return ripple;\n    };\n    MDCRipple.createAdapter = function (instance) {\n        return {\n            addClass: function (className) { return instance.root_.classList.add(className); },\n            browserSupportsCssVars: function () { return _util__WEBPACK_IMPORTED_MODULE_5__[\"supportsCssVariables\"](window); },\n            computeBoundingRect: function () { return instance.root_.getBoundingClientRect(); },\n            containsEventTarget: function (target) { return instance.root_.contains(target); },\n            deregisterDocumentInteractionHandler: function (evtType, handler) {\n                return document.documentElement.removeEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            },\n            deregisterInteractionHandler: function (evtType, handler) {\n                return instance.root_.removeEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            },\n            deregisterResizeHandler: function (handler) { return window.removeEventListener('resize', handler); },\n            getWindowPageOffset: function () { return ({ x: window.pageXOffset, y: window.pageYOffset }); },\n            isSurfaceActive: function () { return Object(_material_dom_ponyfill__WEBPACK_IMPORTED_MODULE_3__[\"matches\"])(instance.root_, ':active'); },\n            isSurfaceDisabled: function () { return Boolean(instance.disabled); },\n            isUnbounded: function () { return Boolean(instance.unbounded); },\n            registerDocumentInteractionHandler: function (evtType, handler) {\n                return document.documentElement.addEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            },\n            registerInteractionHandler: function (evtType, handler) {\n                return instance.root_.addEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            },\n            registerResizeHandler: function (handler) { return window.addEventListener('resize', handler); },\n            removeClass: function (className) { return instance.root_.classList.remove(className); },\n            updateCssVariable: function (varName, value) { return instance.root_.style.setProperty(varName, value); },\n        };\n    };\n    Object.defineProperty(MDCRipple.prototype, \"unbounded\", {\n        get: function () {\n            return Boolean(this.unbounded_);\n        },\n        set: function (unbounded) {\n            this.unbounded_ = Boolean(unbounded);\n            this.setUnbounded_();\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCRipple.prototype.activate = function () {\n        this.foundation_.activate();\n    };\n    MDCRipple.prototype.deactivate = function () {\n        this.foundation_.deactivate();\n    };\n    MDCRipple.prototype.layout = function () {\n        this.foundation_.layout();\n    };\n    MDCRipple.prototype.getDefaultFoundation = function () {\n        return new _foundation__WEBPACK_IMPORTED_MODULE_4__[\"MDCRippleFoundation\"](MDCRipple.createAdapter(this));\n    };\n    MDCRipple.prototype.initialSyncWithDOM = function () {\n        var root = this.root_;\n        this.unbounded = 'mdcRippleIsUnbounded' in root.dataset;\n    };\n    /**\n     * Closure Compiler throws an access control error when directly accessing a\n     * protected or private property inside a getter/setter, like unbounded above.\n     * By accessing the protected property inside a method, we solve that problem.\n     * That's why this function exists.\n     */\n    MDCRipple.prototype.setUnbounded_ = function () {\n        this.foundation_.setUnbounded(Boolean(this.unbounded_));\n    };\n    return MDCRipple;\n}(_material_base_component__WEBPACK_IMPORTED_MODULE_1__[\"MDCComponent\"]));\n\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/ripple/component.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/ripple/constants.js":
+/*!****************************************************!*\
+  !*** ./node_modules/@material/ripple/constants.js ***!
+  \****************************************************/
+/*! exports provided: cssClasses, strings, numbers */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return cssClasses; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return strings; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"numbers\", function() { return numbers; });\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar cssClasses = {\n    // Ripple is a special case where the \"root\" component is really a \"mixin\" of sorts,\n    // given that it's an 'upgrade' to an existing component. That being said it is the root\n    // CSS class that all other CSS classes derive from.\n    BG_FOCUSED: 'mdc-ripple-upgraded--background-focused',\n    FG_ACTIVATION: 'mdc-ripple-upgraded--foreground-activation',\n    FG_DEACTIVATION: 'mdc-ripple-upgraded--foreground-deactivation',\n    ROOT: 'mdc-ripple-upgraded',\n    UNBOUNDED: 'mdc-ripple-upgraded--unbounded',\n};\nvar strings = {\n    VAR_FG_SCALE: '--mdc-ripple-fg-scale',\n    VAR_FG_SIZE: '--mdc-ripple-fg-size',\n    VAR_FG_TRANSLATE_END: '--mdc-ripple-fg-translate-end',\n    VAR_FG_TRANSLATE_START: '--mdc-ripple-fg-translate-start',\n    VAR_LEFT: '--mdc-ripple-left',\n    VAR_TOP: '--mdc-ripple-top',\n};\nvar numbers = {\n    DEACTIVATION_TIMEOUT_MS: 225,\n    FG_DEACTIVATION_MS: 150,\n    INITIAL_ORIGIN_SCALE: 0.6,\n    PADDING: 10,\n    TAP_DELAY_MS: 300,\n};\n//# sourceMappingURL=constants.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/ripple/constants.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/ripple/foundation.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/ripple/foundation.js ***!
+  \*****************************************************/
+/*! exports provided: MDCRippleFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCRippleFoundation\", function() { return MDCRippleFoundation; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/foundation */ \"./node_modules/@material/base/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/ripple/constants.js\");\n/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./util */ \"./node_modules/@material/ripple/util.js\");\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n\n// Activation events registered on the root element of each instance for activation\nvar ACTIVATION_EVENT_TYPES = [\n    'touchstart', 'pointerdown', 'mousedown', 'keydown',\n];\n// Deactivation events registered on documentElement when a pointer-related down event occurs\nvar POINTER_DEACTIVATION_EVENT_TYPES = [\n    'touchend', 'pointerup', 'mouseup', 'contextmenu',\n];\n// simultaneous nested activations\nvar activatedTargets = [];\nvar MDCRippleFoundation = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCRippleFoundation, _super);\n    function MDCRippleFoundation(adapter) {\n        var _this = _super.call(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, MDCRippleFoundation.defaultAdapter, adapter)) || this;\n        _this.activationAnimationHasEnded_ = false;\n        _this.activationTimer_ = 0;\n        _this.fgDeactivationRemovalTimer_ = 0;\n        _this.fgScale_ = '0';\n        _this.frame_ = { width: 0, height: 0 };\n        _this.initialSize_ = 0;\n        _this.layoutFrame_ = 0;\n        _this.maxRadius_ = 0;\n        _this.unboundedCoords_ = { left: 0, top: 0 };\n        _this.activationState_ = _this.defaultActivationState_();\n        _this.activationTimerCallback_ = function () {\n            _this.activationAnimationHasEnded_ = true;\n            _this.runDeactivationUXLogicIfReady_();\n        };\n        _this.activateHandler_ = function (e) { return _this.activate_(e); };\n        _this.deactivateHandler_ = function () { return _this.deactivate_(); };\n        _this.focusHandler_ = function () { return _this.handleFocus(); };\n        _this.blurHandler_ = function () { return _this.handleBlur(); };\n        _this.resizeHandler_ = function () { return _this.layout(); };\n        return _this;\n    }\n    Object.defineProperty(MDCRippleFoundation, \"cssClasses\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCRippleFoundation, \"strings\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCRippleFoundation, \"numbers\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"numbers\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCRippleFoundation, \"defaultAdapter\", {\n        get: function () {\n            return {\n                addClass: function () { return undefined; },\n                browserSupportsCssVars: function () { return true; },\n                computeBoundingRect: function () { return ({ top: 0, right: 0, bottom: 0, left: 0, width: 0, height: 0 }); },\n                containsEventTarget: function () { return true; },\n                deregisterDocumentInteractionHandler: function () { return undefined; },\n                deregisterInteractionHandler: function () { return undefined; },\n                deregisterResizeHandler: function () { return undefined; },\n                getWindowPageOffset: function () { return ({ x: 0, y: 0 }); },\n                isSurfaceActive: function () { return true; },\n                isSurfaceDisabled: function () { return true; },\n                isUnbounded: function () { return true; },\n                registerDocumentInteractionHandler: function () { return undefined; },\n                registerInteractionHandler: function () { return undefined; },\n                registerResizeHandler: function () { return undefined; },\n                removeClass: function () { return undefined; },\n                updateCssVariable: function () { return undefined; },\n            };\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCRippleFoundation.prototype.init = function () {\n        var _this = this;\n        var supportsPressRipple = this.supportsPressRipple_();\n        this.registerRootHandlers_(supportsPressRipple);\n        if (supportsPressRipple) {\n            var _a = MDCRippleFoundation.cssClasses, ROOT_1 = _a.ROOT, UNBOUNDED_1 = _a.UNBOUNDED;\n            requestAnimationFrame(function () {\n                _this.adapter_.addClass(ROOT_1);\n                if (_this.adapter_.isUnbounded()) {\n                    _this.adapter_.addClass(UNBOUNDED_1);\n                    // Unbounded ripples need layout logic applied immediately to set coordinates for both shade and ripple\n                    _this.layoutInternal_();\n                }\n            });\n        }\n    };\n    MDCRippleFoundation.prototype.destroy = function () {\n        var _this = this;\n        if (this.supportsPressRipple_()) {\n            if (this.activationTimer_) {\n                clearTimeout(this.activationTimer_);\n                this.activationTimer_ = 0;\n                this.adapter_.removeClass(MDCRippleFoundation.cssClasses.FG_ACTIVATION);\n            }\n            if (this.fgDeactivationRemovalTimer_) {\n                clearTimeout(this.fgDeactivationRemovalTimer_);\n                this.fgDeactivationRemovalTimer_ = 0;\n                this.adapter_.removeClass(MDCRippleFoundation.cssClasses.FG_DEACTIVATION);\n            }\n            var _a = MDCRippleFoundation.cssClasses, ROOT_2 = _a.ROOT, UNBOUNDED_2 = _a.UNBOUNDED;\n            requestAnimationFrame(function () {\n                _this.adapter_.removeClass(ROOT_2);\n                _this.adapter_.removeClass(UNBOUNDED_2);\n                _this.removeCssVars_();\n            });\n        }\n        this.deregisterRootHandlers_();\n        this.deregisterDeactivationHandlers_();\n    };\n    /**\n     * @param evt Optional event containing position information.\n     */\n    MDCRippleFoundation.prototype.activate = function (evt) {\n        this.activate_(evt);\n    };\n    MDCRippleFoundation.prototype.deactivate = function () {\n        this.deactivate_();\n    };\n    MDCRippleFoundation.prototype.layout = function () {\n        var _this = this;\n        if (this.layoutFrame_) {\n            cancelAnimationFrame(this.layoutFrame_);\n        }\n        this.layoutFrame_ = requestAnimationFrame(function () {\n            _this.layoutInternal_();\n            _this.layoutFrame_ = 0;\n        });\n    };\n    MDCRippleFoundation.prototype.setUnbounded = function (unbounded) {\n        var UNBOUNDED = MDCRippleFoundation.cssClasses.UNBOUNDED;\n        if (unbounded) {\n            this.adapter_.addClass(UNBOUNDED);\n        }\n        else {\n            this.adapter_.removeClass(UNBOUNDED);\n        }\n    };\n    MDCRippleFoundation.prototype.handleFocus = function () {\n        var _this = this;\n        requestAnimationFrame(function () {\n            return _this.adapter_.addClass(MDCRippleFoundation.cssClasses.BG_FOCUSED);\n        });\n    };\n    MDCRippleFoundation.prototype.handleBlur = function () {\n        var _this = this;\n        requestAnimationFrame(function () {\n            return _this.adapter_.removeClass(MDCRippleFoundation.cssClasses.BG_FOCUSED);\n        });\n    };\n    /**\n     * We compute this property so that we are not querying information about the client\n     * until the point in time where the foundation requests it. This prevents scenarios where\n     * client-side feature-detection may happen too early, such as when components are rendered on the server\n     * and then initialized at mount time on the client.\n     */\n    MDCRippleFoundation.prototype.supportsPressRipple_ = function () {\n        return this.adapter_.browserSupportsCssVars();\n    };\n    MDCRippleFoundation.prototype.defaultActivationState_ = function () {\n        return {\n            activationEvent: undefined,\n            hasDeactivationUXRun: false,\n            isActivated: false,\n            isProgrammatic: false,\n            wasActivatedByPointer: false,\n            wasElementMadeActive: false,\n        };\n    };\n    /**\n     * supportsPressRipple Passed from init to save a redundant function call\n     */\n    MDCRippleFoundation.prototype.registerRootHandlers_ = function (supportsPressRipple) {\n        var _this = this;\n        if (supportsPressRipple) {\n            ACTIVATION_EVENT_TYPES.forEach(function (evtType) {\n                _this.adapter_.registerInteractionHandler(evtType, _this.activateHandler_);\n            });\n            if (this.adapter_.isUnbounded()) {\n                this.adapter_.registerResizeHandler(this.resizeHandler_);\n            }\n        }\n        this.adapter_.registerInteractionHandler('focus', this.focusHandler_);\n        this.adapter_.registerInteractionHandler('blur', this.blurHandler_);\n    };\n    MDCRippleFoundation.prototype.registerDeactivationHandlers_ = function (evt) {\n        var _this = this;\n        if (evt.type === 'keydown') {\n            this.adapter_.registerInteractionHandler('keyup', this.deactivateHandler_);\n        }\n        else {\n            POINTER_DEACTIVATION_EVENT_TYPES.forEach(function (evtType) {\n                _this.adapter_.registerDocumentInteractionHandler(evtType, _this.deactivateHandler_);\n            });\n        }\n    };\n    MDCRippleFoundation.prototype.deregisterRootHandlers_ = function () {\n        var _this = this;\n        ACTIVATION_EVENT_TYPES.forEach(function (evtType) {\n            _this.adapter_.deregisterInteractionHandler(evtType, _this.activateHandler_);\n        });\n        this.adapter_.deregisterInteractionHandler('focus', this.focusHandler_);\n        this.adapter_.deregisterInteractionHandler('blur', this.blurHandler_);\n        if (this.adapter_.isUnbounded()) {\n            this.adapter_.deregisterResizeHandler(this.resizeHandler_);\n        }\n    };\n    MDCRippleFoundation.prototype.deregisterDeactivationHandlers_ = function () {\n        var _this = this;\n        this.adapter_.deregisterInteractionHandler('keyup', this.deactivateHandler_);\n        POINTER_DEACTIVATION_EVENT_TYPES.forEach(function (evtType) {\n            _this.adapter_.deregisterDocumentInteractionHandler(evtType, _this.deactivateHandler_);\n        });\n    };\n    MDCRippleFoundation.prototype.removeCssVars_ = function () {\n        var _this = this;\n        var rippleStrings = MDCRippleFoundation.strings;\n        var keys = Object.keys(rippleStrings);\n        keys.forEach(function (key) {\n            if (key.indexOf('VAR_') === 0) {\n                _this.adapter_.updateCssVariable(rippleStrings[key], null);\n            }\n        });\n    };\n    MDCRippleFoundation.prototype.activate_ = function (evt) {\n        var _this = this;\n        if (this.adapter_.isSurfaceDisabled()) {\n            return;\n        }\n        var activationState = this.activationState_;\n        if (activationState.isActivated) {\n            return;\n        }\n        // Avoid reacting to follow-on events fired by touch device after an already-processed user interaction\n        var previousActivationEvent = this.previousActivationEvent_;\n        var isSameInteraction = previousActivationEvent && evt !== undefined && previousActivationEvent.type !== evt.type;\n        if (isSameInteraction) {\n            return;\n        }\n        activationState.isActivated = true;\n        activationState.isProgrammatic = evt === undefined;\n        activationState.activationEvent = evt;\n        activationState.wasActivatedByPointer = activationState.isProgrammatic ? false : evt !== undefined && (evt.type === 'mousedown' || evt.type === 'touchstart' || evt.type === 'pointerdown');\n        var hasActivatedChild = evt !== undefined && activatedTargets.length > 0 && activatedTargets.some(function (target) { return _this.adapter_.containsEventTarget(target); });\n        if (hasActivatedChild) {\n            // Immediately reset activation state, while preserving logic that prevents touch follow-on events\n            this.resetActivationState_();\n            return;\n        }\n        if (evt !== undefined) {\n            activatedTargets.push(evt.target);\n            this.registerDeactivationHandlers_(evt);\n        }\n        activationState.wasElementMadeActive = this.checkElementMadeActive_(evt);\n        if (activationState.wasElementMadeActive) {\n            this.animateActivation_();\n        }\n        requestAnimationFrame(function () {\n            // Reset array on next frame after the current event has had a chance to bubble to prevent ancestor ripples\n            activatedTargets = [];\n            if (!activationState.wasElementMadeActive\n                && evt !== undefined\n                && (evt.key === ' ' || evt.keyCode === 32)) {\n                // If space was pressed, try again within an rAF call to detect :active, because different UAs report\n                // active states inconsistently when they're called within event handling code:\n                // - https://bugs.chromium.org/p/chromium/issues/detail?id=635971\n                // - https://bugzilla.mozilla.org/show_bug.cgi?id=1293741\n                // We try first outside rAF to support Edge, which does not exhibit this problem, but will crash if a CSS\n                // variable is set within a rAF callback for a submit button interaction (#2241).\n                activationState.wasElementMadeActive = _this.checkElementMadeActive_(evt);\n                if (activationState.wasElementMadeActive) {\n                    _this.animateActivation_();\n                }\n            }\n            if (!activationState.wasElementMadeActive) {\n                // Reset activation state immediately if element was not made active.\n                _this.activationState_ = _this.defaultActivationState_();\n            }\n        });\n    };\n    MDCRippleFoundation.prototype.checkElementMadeActive_ = function (evt) {\n        return (evt !== undefined && evt.type === 'keydown') ? this.adapter_.isSurfaceActive() : true;\n    };\n    MDCRippleFoundation.prototype.animateActivation_ = function () {\n        var _this = this;\n        var _a = MDCRippleFoundation.strings, VAR_FG_TRANSLATE_START = _a.VAR_FG_TRANSLATE_START, VAR_FG_TRANSLATE_END = _a.VAR_FG_TRANSLATE_END;\n        var _b = MDCRippleFoundation.cssClasses, FG_DEACTIVATION = _b.FG_DEACTIVATION, FG_ACTIVATION = _b.FG_ACTIVATION;\n        var DEACTIVATION_TIMEOUT_MS = MDCRippleFoundation.numbers.DEACTIVATION_TIMEOUT_MS;\n        this.layoutInternal_();\n        var translateStart = '';\n        var translateEnd = '';\n        if (!this.adapter_.isUnbounded()) {\n            var _c = this.getFgTranslationCoordinates_(), startPoint = _c.startPoint, endPoint = _c.endPoint;\n            translateStart = startPoint.x + \"px, \" + startPoint.y + \"px\";\n            translateEnd = endPoint.x + \"px, \" + endPoint.y + \"px\";\n        }\n        this.adapter_.updateCssVariable(VAR_FG_TRANSLATE_START, translateStart);\n        this.adapter_.updateCssVariable(VAR_FG_TRANSLATE_END, translateEnd);\n        // Cancel any ongoing activation/deactivation animations\n        clearTimeout(this.activationTimer_);\n        clearTimeout(this.fgDeactivationRemovalTimer_);\n        this.rmBoundedActivationClasses_();\n        this.adapter_.removeClass(FG_DEACTIVATION);\n        // Force layout in order to re-trigger the animation.\n        this.adapter_.computeBoundingRect();\n        this.adapter_.addClass(FG_ACTIVATION);\n        this.activationTimer_ = setTimeout(function () { return _this.activationTimerCallback_(); }, DEACTIVATION_TIMEOUT_MS);\n    };\n    MDCRippleFoundation.prototype.getFgTranslationCoordinates_ = function () {\n        var _a = this.activationState_, activationEvent = _a.activationEvent, wasActivatedByPointer = _a.wasActivatedByPointer;\n        var startPoint;\n        if (wasActivatedByPointer) {\n            startPoint = Object(_util__WEBPACK_IMPORTED_MODULE_3__[\"getNormalizedEventCoords\"])(activationEvent, this.adapter_.getWindowPageOffset(), this.adapter_.computeBoundingRect());\n        }\n        else {\n            startPoint = {\n                x: this.frame_.width / 2,\n                y: this.frame_.height / 2,\n            };\n        }\n        // Center the element around the start point.\n        startPoint = {\n            x: startPoint.x - (this.initialSize_ / 2),\n            y: startPoint.y - (this.initialSize_ / 2),\n        };\n        var endPoint = {\n            x: (this.frame_.width / 2) - (this.initialSize_ / 2),\n            y: (this.frame_.height / 2) - (this.initialSize_ / 2),\n        };\n        return { startPoint: startPoint, endPoint: endPoint };\n    };\n    MDCRippleFoundation.prototype.runDeactivationUXLogicIfReady_ = function () {\n        var _this = this;\n        // This method is called both when a pointing device is released, and when the activation animation ends.\n        // The deactivation animation should only run after both of those occur.\n        var FG_DEACTIVATION = MDCRippleFoundation.cssClasses.FG_DEACTIVATION;\n        var _a = this.activationState_, hasDeactivationUXRun = _a.hasDeactivationUXRun, isActivated = _a.isActivated;\n        var activationHasEnded = hasDeactivationUXRun || !isActivated;\n        if (activationHasEnded && this.activationAnimationHasEnded_) {\n            this.rmBoundedActivationClasses_();\n            this.adapter_.addClass(FG_DEACTIVATION);\n            this.fgDeactivationRemovalTimer_ = setTimeout(function () {\n                _this.adapter_.removeClass(FG_DEACTIVATION);\n            }, _constants__WEBPACK_IMPORTED_MODULE_2__[\"numbers\"].FG_DEACTIVATION_MS);\n        }\n    };\n    MDCRippleFoundation.prototype.rmBoundedActivationClasses_ = function () {\n        var FG_ACTIVATION = MDCRippleFoundation.cssClasses.FG_ACTIVATION;\n        this.adapter_.removeClass(FG_ACTIVATION);\n        this.activationAnimationHasEnded_ = false;\n        this.adapter_.computeBoundingRect();\n    };\n    MDCRippleFoundation.prototype.resetActivationState_ = function () {\n        var _this = this;\n        this.previousActivationEvent_ = this.activationState_.activationEvent;\n        this.activationState_ = this.defaultActivationState_();\n        // Touch devices may fire additional events for the same interaction within a short time.\n        // Store the previous event until it's safe to assume that subsequent events are for new interactions.\n        setTimeout(function () { return _this.previousActivationEvent_ = undefined; }, MDCRippleFoundation.numbers.TAP_DELAY_MS);\n    };\n    MDCRippleFoundation.prototype.deactivate_ = function () {\n        var _this = this;\n        var activationState = this.activationState_;\n        // This can happen in scenarios such as when you have a keyup event that blurs the element.\n        if (!activationState.isActivated) {\n            return;\n        }\n        var state = tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, activationState);\n        if (activationState.isProgrammatic) {\n            requestAnimationFrame(function () { return _this.animateDeactivation_(state); });\n            this.resetActivationState_();\n        }\n        else {\n            this.deregisterDeactivationHandlers_();\n            requestAnimationFrame(function () {\n                _this.activationState_.hasDeactivationUXRun = true;\n                _this.animateDeactivation_(state);\n                _this.resetActivationState_();\n            });\n        }\n    };\n    MDCRippleFoundation.prototype.animateDeactivation_ = function (_a) {\n        var wasActivatedByPointer = _a.wasActivatedByPointer, wasElementMadeActive = _a.wasElementMadeActive;\n        if (wasActivatedByPointer || wasElementMadeActive) {\n            this.runDeactivationUXLogicIfReady_();\n        }\n    };\n    MDCRippleFoundation.prototype.layoutInternal_ = function () {\n        var _this = this;\n        this.frame_ = this.adapter_.computeBoundingRect();\n        var maxDim = Math.max(this.frame_.height, this.frame_.width);\n        // Surface diameter is treated differently for unbounded vs. bounded ripples.\n        // Unbounded ripple diameter is calculated smaller since the surface is expected to already be padded appropriately\n        // to extend the hitbox, and the ripple is expected to meet the edges of the padded hitbox (which is typically\n        // square). Bounded ripples, on the other hand, are fully expected to expand beyond the surface's longest diameter\n        // (calculated based on the diagonal plus a constant padding), and are clipped at the surface's border via\n        // `overflow: hidden`.\n        var getBoundedRadius = function () {\n            var hypotenuse = Math.sqrt(Math.pow(_this.frame_.width, 2) + Math.pow(_this.frame_.height, 2));\n            return hypotenuse + MDCRippleFoundation.numbers.PADDING;\n        };\n        this.maxRadius_ = this.adapter_.isUnbounded() ? maxDim : getBoundedRadius();\n        // Ripple is sized as a fraction of the largest dimension of the surface, then scales up using a CSS scale transform\n        var initialSize = Math.floor(maxDim * MDCRippleFoundation.numbers.INITIAL_ORIGIN_SCALE);\n        // Unbounded ripple size should always be even number to equally center align.\n        if (this.adapter_.isUnbounded() && initialSize % 2 !== 0) {\n            this.initialSize_ = initialSize - 1;\n        }\n        else {\n            this.initialSize_ = initialSize;\n        }\n        this.fgScale_ = \"\" + this.maxRadius_ / this.initialSize_;\n        this.updateLayoutCssVars_();\n    };\n    MDCRippleFoundation.prototype.updateLayoutCssVars_ = function () {\n        var _a = MDCRippleFoundation.strings, VAR_FG_SIZE = _a.VAR_FG_SIZE, VAR_LEFT = _a.VAR_LEFT, VAR_TOP = _a.VAR_TOP, VAR_FG_SCALE = _a.VAR_FG_SCALE;\n        this.adapter_.updateCssVariable(VAR_FG_SIZE, this.initialSize_ + \"px\");\n        this.adapter_.updateCssVariable(VAR_FG_SCALE, this.fgScale_);\n        if (this.adapter_.isUnbounded()) {\n            this.unboundedCoords_ = {\n                left: Math.round((this.frame_.width / 2) - (this.initialSize_ / 2)),\n                top: Math.round((this.frame_.height / 2) - (this.initialSize_ / 2)),\n            };\n            this.adapter_.updateCssVariable(VAR_LEFT, this.unboundedCoords_.left + \"px\");\n            this.adapter_.updateCssVariable(VAR_TOP, this.unboundedCoords_.top + \"px\");\n        }\n    };\n    return MDCRippleFoundation;\n}(_material_base_foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]));\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCRippleFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/ripple/foundation.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/ripple/index.js":
+/*!************************************************!*\
+  !*** ./node_modules/@material/ripple/index.js ***!
+  \************************************************/
+/*! exports provided: util, MDCRipple, cssClasses, strings, numbers, MDCRippleFoundation */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./util */ \"./node_modules/@material/ripple/util.js\");\n/* harmony reexport (module object) */ __webpack_require__.d(__webpack_exports__, \"util\", function() { return _util__WEBPACK_IMPORTED_MODULE_0__; });\n/* harmony import */ var _component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./component */ \"./node_modules/@material/ripple/component.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCRipple\", function() { return _component__WEBPACK_IMPORTED_MODULE_1__[\"MDCRipple\"]; });\n\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/ripple/constants.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"numbers\", function() { return _constants__WEBPACK_IMPORTED_MODULE_2__[\"numbers\"]; });\n\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/ripple/foundation.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCRippleFoundation\", function() { return _foundation__WEBPACK_IMPORTED_MODULE_3__[\"MDCRippleFoundation\"]; });\n\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n\n\n//# sourceMappingURL=index.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/ripple/index.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/ripple/util.js":
+/*!***********************************************!*\
+  !*** ./node_modules/@material/ripple/util.js ***!
+  \***********************************************/
+/*! exports provided: supportsCssVariables, getNormalizedEventCoords */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"supportsCssVariables\", function() { return supportsCssVariables; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"getNormalizedEventCoords\", function() { return getNormalizedEventCoords; });\n/**\n * Stores result from supportsCssVariables to avoid redundant processing to\n * detect CSS custom variable support.\n */\nvar supportsCssVariables_;\nfunction detectEdgePseudoVarBug(windowObj) {\n    // Detect versions of Edge with buggy var() support\n    // See: https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/11495448/\n    var document = windowObj.document;\n    var node = document.createElement('div');\n    node.className = 'mdc-ripple-surface--test-edge-var-bug';\n    // Append to head instead of body because this script might be invoked in the\n    // head, in which case the body doesn't exist yet. The probe works either way.\n    document.head.appendChild(node);\n    // The bug exists if ::before style ends up propagating to the parent element.\n    // Additionally, getComputedStyle returns null in iframes with display: \"none\" in Firefox,\n    // but Firefox is known to support CSS custom properties correctly.\n    // See: https://bugzilla.mozilla.org/show_bug.cgi?id=548397\n    var computedStyle = windowObj.getComputedStyle(node);\n    var hasPseudoVarBug = computedStyle !== null && computedStyle.borderTopStyle === 'solid';\n    if (node.parentNode) {\n        node.parentNode.removeChild(node);\n    }\n    return hasPseudoVarBug;\n}\nfunction supportsCssVariables(windowObj, forceRefresh) {\n    if (forceRefresh === void 0) { forceRefresh = false; }\n    var CSS = windowObj.CSS;\n    var supportsCssVars = supportsCssVariables_;\n    if (typeof supportsCssVariables_ === 'boolean' && !forceRefresh) {\n        return supportsCssVariables_;\n    }\n    var supportsFunctionPresent = CSS && typeof CSS.supports === 'function';\n    if (!supportsFunctionPresent) {\n        return false;\n    }\n    var explicitlySupportsCssVars = CSS.supports('--css-vars', 'yes');\n    // See: https://bugs.webkit.org/show_bug.cgi?id=154669\n    // See: README section on Safari\n    var weAreFeatureDetectingSafari10plus = (CSS.supports('(--css-vars: yes)') &&\n        CSS.supports('color', '#00000000'));\n    if (explicitlySupportsCssVars || weAreFeatureDetectingSafari10plus) {\n        supportsCssVars = !detectEdgePseudoVarBug(windowObj);\n    }\n    else {\n        supportsCssVars = false;\n    }\n    if (!forceRefresh) {\n        supportsCssVariables_ = supportsCssVars;\n    }\n    return supportsCssVars;\n}\nfunction getNormalizedEventCoords(evt, pageOffset, clientRect) {\n    if (!evt) {\n        return { x: 0, y: 0 };\n    }\n    var x = pageOffset.x, y = pageOffset.y;\n    var documentX = x + clientRect.left;\n    var documentY = y + clientRect.top;\n    var normalizedX;\n    var normalizedY;\n    // Determine touch point relative to the ripple container.\n    if (evt.type === 'touchstart') {\n        var touchEvent = evt;\n        normalizedX = touchEvent.changedTouches[0].pageX - documentX;\n        normalizedY = touchEvent.changedTouches[0].pageY - documentY;\n    }\n    else {\n        var mouseEvent = evt;\n        normalizedX = mouseEvent.pageX - documentX;\n        normalizedY = mouseEvent.pageY - documentY;\n    }\n    return { x: normalizedX, y: normalizedY };\n}\n//# sourceMappingURL=util.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/ripple/util.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/switch/component.js":
+/*!****************************************************!*\
+  !*** ./node_modules/@material/switch/component.js ***!
+  \****************************************************/
+/*! exports provided: MDCSwitch */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCSwitch\", function() { return MDCSwitch; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/component */ \"./node_modules/@material/base/component.js\");\n/* harmony import */ var _material_dom_events__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material/dom/events */ \"./node_modules/@material/dom/events.js\");\n/* harmony import */ var _material_dom_ponyfill__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material/dom/ponyfill */ \"./node_modules/@material/dom/ponyfill.js\");\n/* harmony import */ var _material_ripple_component__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @material/ripple/component */ \"./node_modules/@material/ripple/component.js\");\n/* harmony import */ var _material_ripple_foundation__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @material/ripple/foundation */ \"./node_modules/@material/ripple/foundation.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/switch/foundation.js\");\n/**\n * @license\n * Copyright 2018 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n\n\n\n\nvar MDCSwitch = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCSwitch, _super);\n    function MDCSwitch() {\n        var _this = _super !== null && _super.apply(this, arguments) || this;\n        _this.ripple_ = _this.createRipple_();\n        return _this;\n    }\n    MDCSwitch.attachTo = function (root) {\n        return new MDCSwitch(root);\n    };\n    MDCSwitch.prototype.destroy = function () {\n        _super.prototype.destroy.call(this);\n        this.ripple_.destroy();\n        this.nativeControl_.removeEventListener('change', this.changeHandler_);\n    };\n    MDCSwitch.prototype.initialSyncWithDOM = function () {\n        var _this = this;\n        this.changeHandler_ = function () {\n            var _a;\n            var args = [];\n            for (var _i = 0; _i < arguments.length; _i++) {\n                args[_i] = arguments[_i];\n            }\n            return (_a = _this.foundation_).handleChange.apply(_a, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__spread\"](args));\n        };\n        this.nativeControl_.addEventListener('change', this.changeHandler_);\n        // Sometimes the checked state of the input element is saved in the history.\n        // The switch styling should match the checked state of the input element.\n        // Do an initial sync between the native control and the foundation.\n        this.checked = this.checked;\n    };\n    MDCSwitch.prototype.getDefaultFoundation = function () {\n        var _this = this;\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        var adapter = {\n            addClass: function (className) { return _this.root_.classList.add(className); },\n            removeClass: function (className) { return _this.root_.classList.remove(className); },\n            setNativeControlChecked: function (checked) { return _this.nativeControl_.checked = checked; },\n            setNativeControlDisabled: function (disabled) { return _this.nativeControl_.disabled = disabled; },\n        };\n        return new _foundation__WEBPACK_IMPORTED_MODULE_6__[\"MDCSwitchFoundation\"](adapter);\n    };\n    Object.defineProperty(MDCSwitch.prototype, \"ripple\", {\n        get: function () {\n            return this.ripple_;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCSwitch.prototype, \"checked\", {\n        get: function () {\n            return this.nativeControl_.checked;\n        },\n        set: function (checked) {\n            this.foundation_.setChecked(checked);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCSwitch.prototype, \"disabled\", {\n        get: function () {\n            return this.nativeControl_.disabled;\n        },\n        set: function (disabled) {\n            this.foundation_.setDisabled(disabled);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCSwitch.prototype.createRipple_ = function () {\n        var _this = this;\n        var RIPPLE_SURFACE_SELECTOR = _foundation__WEBPACK_IMPORTED_MODULE_6__[\"MDCSwitchFoundation\"].strings.RIPPLE_SURFACE_SELECTOR;\n        var rippleSurface = this.root_.querySelector(RIPPLE_SURFACE_SELECTOR);\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        var adapter = tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, _material_ripple_component__WEBPACK_IMPORTED_MODULE_4__[\"MDCRipple\"].createAdapter(this), { addClass: function (className) { return rippleSurface.classList.add(className); }, computeBoundingRect: function () { return rippleSurface.getBoundingClientRect(); }, deregisterInteractionHandler: function (evtType, handler) {\n                _this.nativeControl_.removeEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            }, isSurfaceActive: function () { return Object(_material_dom_ponyfill__WEBPACK_IMPORTED_MODULE_3__[\"matches\"])(_this.nativeControl_, ':active'); }, isUnbounded: function () { return true; }, registerInteractionHandler: function (evtType, handler) {\n                _this.nativeControl_.addEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            }, removeClass: function (className) { return rippleSurface.classList.remove(className); }, updateCssVariable: function (varName, value) {\n                rippleSurface.style.setProperty(varName, value);\n            } });\n        return new _material_ripple_component__WEBPACK_IMPORTED_MODULE_4__[\"MDCRipple\"](this.root_, new _material_ripple_foundation__WEBPACK_IMPORTED_MODULE_5__[\"MDCRippleFoundation\"](adapter));\n    };\n    Object.defineProperty(MDCSwitch.prototype, \"nativeControl_\", {\n        get: function () {\n            var NATIVE_CONTROL_SELECTOR = _foundation__WEBPACK_IMPORTED_MODULE_6__[\"MDCSwitchFoundation\"].strings.NATIVE_CONTROL_SELECTOR;\n            return this.root_.querySelector(NATIVE_CONTROL_SELECTOR);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    return MDCSwitch;\n}(_material_base_component__WEBPACK_IMPORTED_MODULE_1__[\"MDCComponent\"]));\n\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/switch/component.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/switch/constants.js":
+/*!****************************************************!*\
+  !*** ./node_modules/@material/switch/constants.js ***!
+  \****************************************************/
+/*! exports provided: cssClasses, strings */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return cssClasses; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return strings; });\n/**\n * @license\n * Copyright 2018 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n/** CSS classes used by the switch. */\nvar cssClasses = {\n    /** Class used for a switch that is in the \"checked\" (on) position. */\n    CHECKED: 'mdc-switch--checked',\n    /** Class used for a switch that is disabled. */\n    DISABLED: 'mdc-switch--disabled',\n};\n/** String constants used by the switch. */\nvar strings = {\n    /** A CSS selector used to locate the native HTML control for the switch.  */\n    NATIVE_CONTROL_SELECTOR: '.mdc-switch__native-control',\n    /** A CSS selector used to locate the ripple surface element for the switch. */\n    RIPPLE_SURFACE_SELECTOR: '.mdc-switch__thumb-underlay',\n};\n\n//# sourceMappingURL=constants.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/switch/constants.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/switch/foundation.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/switch/foundation.js ***!
+  \*****************************************************/
+/*! exports provided: MDCSwitchFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCSwitchFoundation\", function() { return MDCSwitchFoundation; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/foundation */ \"./node_modules/@material/base/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/switch/constants.js\");\n/**\n * @license\n * Copyright 2018 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCSwitchFoundation = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCSwitchFoundation, _super);\n    function MDCSwitchFoundation(adapter) {\n        return _super.call(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, MDCSwitchFoundation.defaultAdapter, adapter)) || this;\n    }\n    Object.defineProperty(MDCSwitchFoundation, \"strings\", {\n        /** The string constants used by the switch. */\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCSwitchFoundation, \"cssClasses\", {\n        /** The CSS classes used by the switch. */\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCSwitchFoundation, \"defaultAdapter\", {\n        /** The default Adapter for the switch. */\n        get: function () {\n            return {\n                addClass: function () { return undefined; },\n                removeClass: function () { return undefined; },\n                setNativeControlChecked: function () { return undefined; },\n                setNativeControlDisabled: function () { return undefined; },\n            };\n        },\n        enumerable: true,\n        configurable: true\n    });\n    /** Sets the checked state of the switch. */\n    MDCSwitchFoundation.prototype.setChecked = function (checked) {\n        this.adapter_.setNativeControlChecked(checked);\n        this.updateCheckedStyling_(checked);\n    };\n    /** Sets the disabled state of the switch. */\n    MDCSwitchFoundation.prototype.setDisabled = function (disabled) {\n        this.adapter_.setNativeControlDisabled(disabled);\n        if (disabled) {\n            this.adapter_.addClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].DISABLED);\n        }\n        else {\n            this.adapter_.removeClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].DISABLED);\n        }\n    };\n    /** Handles the change event for the switch native control. */\n    MDCSwitchFoundation.prototype.handleChange = function (evt) {\n        var nativeControl = evt.target;\n        this.updateCheckedStyling_(nativeControl.checked);\n    };\n    /** Updates the styling of the switch based on its checked state. */\n    MDCSwitchFoundation.prototype.updateCheckedStyling_ = function (checked) {\n        if (checked) {\n            this.adapter_.addClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].CHECKED);\n        }\n        else {\n            this.adapter_.removeClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].CHECKED);\n        }\n    };\n    return MDCSwitchFoundation;\n}(_material_base_foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]));\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCSwitchFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/switch/foundation.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/switch/index.js":
+/*!************************************************!*\
+  !*** ./node_modules/@material/switch/index.js ***!
+  \************************************************/
+/*! exports provided: MDCSwitch, cssClasses, strings, MDCSwitchFoundation */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _component__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./component */ \"./node_modules/@material/switch/component.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCSwitch\", function() { return _component__WEBPACK_IMPORTED_MODULE_0__[\"MDCSwitch\"]; });\n\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/switch/constants.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return _constants__WEBPACK_IMPORTED_MODULE_1__[\"cssClasses\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return _constants__WEBPACK_IMPORTED_MODULE_1__[\"strings\"]; });\n\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/switch/foundation.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCSwitchFoundation\", function() { return _foundation__WEBPACK_IMPORTED_MODULE_2__[\"MDCSwitchFoundation\"]; });\n\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n//# sourceMappingURL=index.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/switch/index.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/character-counter/component.js":
+/*!*************************************************************************!*\
+  !*** ./node_modules/@material/textfield/character-counter/component.js ***!
+  \*************************************************************************/
+/*! exports provided: MDCTextFieldCharacterCounter */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldCharacterCounter\", function() { return MDCTextFieldCharacterCounter; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/component */ \"./node_modules/@material/base/component.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/textfield/character-counter/foundation.js\");\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCTextFieldCharacterCounter = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCTextFieldCharacterCounter, _super);\n    function MDCTextFieldCharacterCounter() {\n        return _super !== null && _super.apply(this, arguments) || this;\n    }\n    MDCTextFieldCharacterCounter.attachTo = function (root) {\n        return new MDCTextFieldCharacterCounter(root);\n    };\n    Object.defineProperty(MDCTextFieldCharacterCounter.prototype, \"foundation\", {\n        get: function () {\n            return this.foundation_;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCTextFieldCharacterCounter.prototype.getDefaultFoundation = function () {\n        var _this = this;\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        var adapter = {\n            setContent: function (content) {\n                _this.root_.textContent = content;\n            },\n        };\n        return new _foundation__WEBPACK_IMPORTED_MODULE_2__[\"MDCTextFieldCharacterCounterFoundation\"](adapter);\n    };\n    return MDCTextFieldCharacterCounter;\n}(_material_base_component__WEBPACK_IMPORTED_MODULE_1__[\"MDCComponent\"]));\n\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/character-counter/component.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/character-counter/constants.js":
+/*!*************************************************************************!*\
+  !*** ./node_modules/@material/textfield/character-counter/constants.js ***!
+  \*************************************************************************/
+/*! exports provided: strings, cssClasses */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return strings; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return cssClasses; });\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar cssClasses = {\n    ROOT: 'mdc-text-field-character-counter',\n};\nvar strings = {\n    ROOT_SELECTOR: \".\" + cssClasses.ROOT,\n};\n\n//# sourceMappingURL=constants.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/character-counter/constants.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/character-counter/foundation.js":
+/*!**************************************************************************!*\
+  !*** ./node_modules/@material/textfield/character-counter/foundation.js ***!
+  \**************************************************************************/
+/*! exports provided: MDCTextFieldCharacterCounterFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldCharacterCounterFoundation\", function() { return MDCTextFieldCharacterCounterFoundation; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/foundation */ \"./node_modules/@material/base/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/textfield/character-counter/constants.js\");\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCTextFieldCharacterCounterFoundation = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCTextFieldCharacterCounterFoundation, _super);\n    function MDCTextFieldCharacterCounterFoundation(adapter) {\n        return _super.call(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, MDCTextFieldCharacterCounterFoundation.defaultAdapter, adapter)) || this;\n    }\n    Object.defineProperty(MDCTextFieldCharacterCounterFoundation, \"cssClasses\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextFieldCharacterCounterFoundation, \"strings\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextFieldCharacterCounterFoundation, \"defaultAdapter\", {\n        /**\n         * See {@link MDCTextFieldCharacterCounterAdapter} for typing information on parameters and return types.\n         */\n        get: function () {\n            return {\n                setContent: function () { return undefined; },\n            };\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCTextFieldCharacterCounterFoundation.prototype.setCounterValue = function (currentLength, maxLength) {\n        currentLength = Math.min(currentLength, maxLength);\n        this.adapter_.setContent(currentLength + \" / \" + maxLength);\n    };\n    return MDCTextFieldCharacterCounterFoundation;\n}(_material_base_foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]));\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCTextFieldCharacterCounterFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/character-counter/foundation.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/character-counter/index.js":
+/*!*********************************************************************!*\
+  !*** ./node_modules/@material/textfield/character-counter/index.js ***!
+  \*********************************************************************/
+/*! exports provided: characterCountCssClasses, characterCountStrings, MDCTextFieldCharacterCounter, MDCTextFieldCharacterCounterFoundation */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _component__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./component */ \"./node_modules/@material/textfield/character-counter/component.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldCharacterCounter\", function() { return _component__WEBPACK_IMPORTED_MODULE_0__[\"MDCTextFieldCharacterCounter\"]; });\n\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/textfield/character-counter/foundation.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldCharacterCounterFoundation\", function() { return _foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCTextFieldCharacterCounterFoundation\"]; });\n\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/textfield/character-counter/constants.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"characterCountCssClasses\", function() { return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"characterCountStrings\", function() { return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"]; });\n\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n//# sourceMappingURL=index.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/character-counter/index.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/component.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/@material/textfield/component.js ***!
+  \*******************************************************/
+/*! exports provided: MDCTextField */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCTextField\", function() { return MDCTextField; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/component */ \"./node_modules/@material/base/component.js\");\n/* harmony import */ var _material_dom_events__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material/dom/events */ \"./node_modules/@material/dom/events.js\");\n/* harmony import */ var _material_dom_ponyfill__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material/dom/ponyfill */ \"./node_modules/@material/dom/ponyfill.js\");\n/* harmony import */ var _material_floating_label_component__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @material/floating-label/component */ \"./node_modules/@material/floating-label/component.js\");\n/* harmony import */ var _material_line_ripple_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @material/line-ripple/component */ \"./node_modules/@material/line-ripple/component.js\");\n/* harmony import */ var _material_notched_outline_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @material/notched-outline/component */ \"./node_modules/@material/notched-outline/component.js\");\n/* harmony import */ var _material_ripple_component__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @material/ripple/component */ \"./node_modules/@material/ripple/component.js\");\n/* harmony import */ var _material_ripple_foundation__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @material/ripple/foundation */ \"./node_modules/@material/ripple/foundation.js\");\n/* harmony import */ var _character_counter_component__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! ./character-counter/component */ \"./node_modules/@material/textfield/character-counter/component.js\");\n/* harmony import */ var _character_counter_foundation__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! ./character-counter/foundation */ \"./node_modules/@material/textfield/character-counter/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/textfield/constants.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/textfield/foundation.js\");\n/* harmony import */ var _helper_text_component__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./helper-text/component */ \"./node_modules/@material/textfield/helper-text/component.js\");\n/* harmony import */ var _helper_text_foundation__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! ./helper-text/foundation */ \"./node_modules/@material/textfield/helper-text/foundation.js\");\n/* harmony import */ var _icon_component__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ./icon/component */ \"./node_modules/@material/textfield/icon/component.js\");\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nvar MDCTextField = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCTextField, _super);\n    function MDCTextField() {\n        return _super !== null && _super.apply(this, arguments) || this;\n    }\n    MDCTextField.attachTo = function (root) {\n        return new MDCTextField(root);\n    };\n    MDCTextField.prototype.initialize = function (rippleFactory, lineRippleFactory, helperTextFactory, characterCounterFactory, iconFactory, labelFactory, outlineFactory) {\n        if (rippleFactory === void 0) { rippleFactory = function (el, foundation) { return new _material_ripple_component__WEBPACK_IMPORTED_MODULE_7__[\"MDCRipple\"](el, foundation); }; }\n        if (lineRippleFactory === void 0) { lineRippleFactory = function (el) { return new _material_line_ripple_component__WEBPACK_IMPORTED_MODULE_5__[\"MDCLineRipple\"](el); }; }\n        if (helperTextFactory === void 0) { helperTextFactory = function (el) { return new _helper_text_component__WEBPACK_IMPORTED_MODULE_13__[\"MDCTextFieldHelperText\"](el); }; }\n        if (characterCounterFactory === void 0) { characterCounterFactory = function (el) { return new _character_counter_component__WEBPACK_IMPORTED_MODULE_9__[\"MDCTextFieldCharacterCounter\"](el); }; }\n        if (iconFactory === void 0) { iconFactory = function (el) { return new _icon_component__WEBPACK_IMPORTED_MODULE_15__[\"MDCTextFieldIcon\"](el); }; }\n        if (labelFactory === void 0) { labelFactory = function (el) { return new _material_floating_label_component__WEBPACK_IMPORTED_MODULE_4__[\"MDCFloatingLabel\"](el); }; }\n        if (outlineFactory === void 0) { outlineFactory = function (el) { return new _material_notched_outline_component__WEBPACK_IMPORTED_MODULE_6__[\"MDCNotchedOutline\"](el); }; }\n        this.input_ = this.root_.querySelector(_constants__WEBPACK_IMPORTED_MODULE_11__[\"strings\"].INPUT_SELECTOR);\n        var labelElement = this.root_.querySelector(_constants__WEBPACK_IMPORTED_MODULE_11__[\"strings\"].LABEL_SELECTOR);\n        this.label_ = labelElement ? labelFactory(labelElement) : null;\n        var lineRippleElement = this.root_.querySelector(_constants__WEBPACK_IMPORTED_MODULE_11__[\"strings\"].LINE_RIPPLE_SELECTOR);\n        this.lineRipple_ = lineRippleElement ? lineRippleFactory(lineRippleElement) : null;\n        var outlineElement = this.root_.querySelector(_constants__WEBPACK_IMPORTED_MODULE_11__[\"strings\"].OUTLINE_SELECTOR);\n        this.outline_ = outlineElement ? outlineFactory(outlineElement) : null;\n        // Helper text\n        var helperTextStrings = _helper_text_foundation__WEBPACK_IMPORTED_MODULE_14__[\"MDCTextFieldHelperTextFoundation\"].strings;\n        var nextElementSibling = this.root_.nextElementSibling;\n        var hasHelperLine = (nextElementSibling && nextElementSibling.classList.contains(_constants__WEBPACK_IMPORTED_MODULE_11__[\"cssClasses\"].HELPER_LINE));\n        var helperTextEl = hasHelperLine && nextElementSibling && nextElementSibling.querySelector(helperTextStrings.ROOT_SELECTOR);\n        this.helperText_ = helperTextEl ? helperTextFactory(helperTextEl) : null;\n        // Character counter\n        var characterCounterStrings = _character_counter_foundation__WEBPACK_IMPORTED_MODULE_10__[\"MDCTextFieldCharacterCounterFoundation\"].strings;\n        var characterCounterEl = this.root_.querySelector(characterCounterStrings.ROOT_SELECTOR);\n        // If character counter is not found in root element search in sibling element.\n        if (!characterCounterEl && hasHelperLine && nextElementSibling) {\n            characterCounterEl = nextElementSibling.querySelector(characterCounterStrings.ROOT_SELECTOR);\n        }\n        this.characterCounter_ = characterCounterEl ? characterCounterFactory(characterCounterEl) : null;\n        this.leadingIcon_ = null;\n        this.trailingIcon_ = null;\n        var iconElements = this.root_.querySelectorAll(_constants__WEBPACK_IMPORTED_MODULE_11__[\"strings\"].ICON_SELECTOR);\n        if (iconElements.length > 0) {\n            if (iconElements.length > 1) { // Has both icons.\n                this.leadingIcon_ = iconFactory(iconElements[0]);\n                this.trailingIcon_ = iconFactory(iconElements[1]);\n            }\n            else {\n                if (this.root_.classList.contains(_constants__WEBPACK_IMPORTED_MODULE_11__[\"cssClasses\"].WITH_LEADING_ICON)) {\n                    this.leadingIcon_ = iconFactory(iconElements[0]);\n                }\n                else {\n                    this.trailingIcon_ = iconFactory(iconElements[0]);\n                }\n            }\n        }\n        this.ripple = this.createRipple_(rippleFactory);\n    };\n    MDCTextField.prototype.destroy = function () {\n        if (this.ripple) {\n            this.ripple.destroy();\n        }\n        if (this.lineRipple_) {\n            this.lineRipple_.destroy();\n        }\n        if (this.helperText_) {\n            this.helperText_.destroy();\n        }\n        if (this.characterCounter_) {\n            this.characterCounter_.destroy();\n        }\n        if (this.leadingIcon_) {\n            this.leadingIcon_.destroy();\n        }\n        if (this.trailingIcon_) {\n            this.trailingIcon_.destroy();\n        }\n        if (this.label_) {\n            this.label_.destroy();\n        }\n        if (this.outline_) {\n            this.outline_.destroy();\n        }\n        _super.prototype.destroy.call(this);\n    };\n    /**\n     * Initializes the Text Field's internal state based on the environment's\n     * state.\n     */\n    MDCTextField.prototype.initialSyncWithDOM = function () {\n        this.disabled = this.input_.disabled;\n    };\n    Object.defineProperty(MDCTextField.prototype, \"value\", {\n        get: function () {\n            return this.foundation_.getValue();\n        },\n        /**\n         * @param value The value to set on the input.\n         */\n        set: function (value) {\n            this.foundation_.setValue(value);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"disabled\", {\n        get: function () {\n            return this.foundation_.isDisabled();\n        },\n        /**\n         * @param disabled Sets the Text Field disabled or enabled.\n         */\n        set: function (disabled) {\n            this.foundation_.setDisabled(disabled);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"valid\", {\n        get: function () {\n            return this.foundation_.isValid();\n        },\n        /**\n         * @param valid Sets the Text Field valid or invalid.\n         */\n        set: function (valid) {\n            this.foundation_.setValid(valid);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"required\", {\n        get: function () {\n            return this.input_.required;\n        },\n        /**\n         * @param required Sets the Text Field to required.\n         */\n        set: function (required) {\n            this.input_.required = required;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"pattern\", {\n        get: function () {\n            return this.input_.pattern;\n        },\n        /**\n         * @param pattern Sets the input element's validation pattern.\n         */\n        set: function (pattern) {\n            this.input_.pattern = pattern;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"minLength\", {\n        get: function () {\n            return this.input_.minLength;\n        },\n        /**\n         * @param minLength Sets the input element's minLength.\n         */\n        set: function (minLength) {\n            this.input_.minLength = minLength;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"maxLength\", {\n        get: function () {\n            return this.input_.maxLength;\n        },\n        /**\n         * @param maxLength Sets the input element's maxLength.\n         */\n        set: function (maxLength) {\n            // Chrome throws exception if maxLength is set to a value less than zero\n            if (maxLength < 0) {\n                this.input_.removeAttribute('maxLength');\n            }\n            else {\n                this.input_.maxLength = maxLength;\n            }\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"min\", {\n        get: function () {\n            return this.input_.min;\n        },\n        /**\n         * @param min Sets the input element's min.\n         */\n        set: function (min) {\n            this.input_.min = min;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"max\", {\n        get: function () {\n            return this.input_.max;\n        },\n        /**\n         * @param max Sets the input element's max.\n         */\n        set: function (max) {\n            this.input_.max = max;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"step\", {\n        get: function () {\n            return this.input_.step;\n        },\n        /**\n         * @param step Sets the input element's step.\n         */\n        set: function (step) {\n            this.input_.step = step;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"helperTextContent\", {\n        /**\n         * Sets the helper text element content.\n         */\n        set: function (content) {\n            this.foundation_.setHelperTextContent(content);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"leadingIconAriaLabel\", {\n        /**\n         * Sets the aria label of the leading icon.\n         */\n        set: function (label) {\n            this.foundation_.setLeadingIconAriaLabel(label);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"leadingIconContent\", {\n        /**\n         * Sets the text content of the leading icon.\n         */\n        set: function (content) {\n            this.foundation_.setLeadingIconContent(content);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"trailingIconAriaLabel\", {\n        /**\n         * Sets the aria label of the trailing icon.\n         */\n        set: function (label) {\n            this.foundation_.setTrailingIconAriaLabel(label);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"trailingIconContent\", {\n        /**\n         * Sets the text content of the trailing icon.\n         */\n        set: function (content) {\n            this.foundation_.setTrailingIconContent(content);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextField.prototype, \"useNativeValidation\", {\n        /**\n         * Enables or disables the use of native validation. Use this for custom validation.\n         * @param useNativeValidation Set this to false to ignore native input validation.\n         */\n        set: function (useNativeValidation) {\n            this.foundation_.setUseNativeValidation(useNativeValidation);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    /**\n     * Focuses the input element.\n     */\n    MDCTextField.prototype.focus = function () {\n        this.input_.focus();\n    };\n    /**\n     * Recomputes the outline SVG path for the outline element.\n     */\n    MDCTextField.prototype.layout = function () {\n        var openNotch = this.foundation_.shouldFloat;\n        this.foundation_.notchOutline(openNotch);\n    };\n    MDCTextField.prototype.getDefaultFoundation = function () {\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n        var adapter = tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, this.getRootAdapterMethods_(), this.getInputAdapterMethods_(), this.getLabelAdapterMethods_(), this.getLineRippleAdapterMethods_(), this.getOutlineAdapterMethods_());\n        // tslint:enable:object-literal-sort-keys\n        return new _foundation__WEBPACK_IMPORTED_MODULE_12__[\"MDCTextFieldFoundation\"](adapter, this.getFoundationMap_());\n    };\n    MDCTextField.prototype.getRootAdapterMethods_ = function () {\n        var _this = this;\n        // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n        return {\n            addClass: function (className) { return _this.root_.classList.add(className); },\n            removeClass: function (className) { return _this.root_.classList.remove(className); },\n            hasClass: function (className) { return _this.root_.classList.contains(className); },\n            registerTextFieldInteractionHandler: function (evtType, handler) { return _this.listen(evtType, handler); },\n            deregisterTextFieldInteractionHandler: function (evtType, handler) { return _this.unlisten(evtType, handler); },\n            registerValidationAttributeChangeHandler: function (handler) {\n                var getAttributesList = function (mutationsList) {\n                    return mutationsList\n                        .map(function (mutation) { return mutation.attributeName; })\n                        .filter(function (attributeName) { return attributeName; });\n                };\n                var observer = new MutationObserver(function (mutationsList) { return handler(getAttributesList(mutationsList)); });\n                var config = { attributes: true };\n                observer.observe(_this.input_, config);\n                return observer;\n            },\n            deregisterValidationAttributeChangeHandler: function (observer) { return observer.disconnect(); },\n        };\n        // tslint:enable:object-literal-sort-keys\n    };\n    MDCTextField.prototype.getInputAdapterMethods_ = function () {\n        var _this = this;\n        // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n        return {\n            getNativeInput: function () { return _this.input_; },\n            isFocused: function () { return document.activeElement === _this.input_; },\n            registerInputInteractionHandler: function (evtType, handler) {\n                return _this.input_.addEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            },\n            deregisterInputInteractionHandler: function (evtType, handler) {\n                return _this.input_.removeEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            },\n        };\n        // tslint:enable:object-literal-sort-keys\n    };\n    MDCTextField.prototype.getLabelAdapterMethods_ = function () {\n        var _this = this;\n        return {\n            floatLabel: function (shouldFloat) { return _this.label_ && _this.label_.float(shouldFloat); },\n            getLabelWidth: function () { return _this.label_ ? _this.label_.getWidth() : 0; },\n            hasLabel: function () { return Boolean(_this.label_); },\n            shakeLabel: function (shouldShake) { return _this.label_ && _this.label_.shake(shouldShake); },\n        };\n    };\n    MDCTextField.prototype.getLineRippleAdapterMethods_ = function () {\n        var _this = this;\n        return {\n            activateLineRipple: function () {\n                if (_this.lineRipple_) {\n                    _this.lineRipple_.activate();\n                }\n            },\n            deactivateLineRipple: function () {\n                if (_this.lineRipple_) {\n                    _this.lineRipple_.deactivate();\n                }\n            },\n            setLineRippleTransformOrigin: function (normalizedX) {\n                if (_this.lineRipple_) {\n                    _this.lineRipple_.setRippleCenter(normalizedX);\n                }\n            },\n        };\n    };\n    MDCTextField.prototype.getOutlineAdapterMethods_ = function () {\n        var _this = this;\n        return {\n            closeOutline: function () { return _this.outline_ && _this.outline_.closeNotch(); },\n            hasOutline: function () { return Boolean(_this.outline_); },\n            notchOutline: function (labelWidth) { return _this.outline_ && _this.outline_.notch(labelWidth); },\n        };\n    };\n    /**\n     * @return A map of all subcomponents to subfoundations.\n     */\n    MDCTextField.prototype.getFoundationMap_ = function () {\n        return {\n            characterCounter: this.characterCounter_ ? this.characterCounter_.foundation : undefined,\n            helperText: this.helperText_ ? this.helperText_.foundation : undefined,\n            leadingIcon: this.leadingIcon_ ? this.leadingIcon_.foundation : undefined,\n            trailingIcon: this.trailingIcon_ ? this.trailingIcon_.foundation : undefined,\n        };\n    };\n    MDCTextField.prototype.createRipple_ = function (rippleFactory) {\n        var _this = this;\n        var isTextArea = this.root_.classList.contains(_constants__WEBPACK_IMPORTED_MODULE_11__[\"cssClasses\"].TEXTAREA);\n        var isOutlined = this.root_.classList.contains(_constants__WEBPACK_IMPORTED_MODULE_11__[\"cssClasses\"].OUTLINED);\n        if (isTextArea || isOutlined) {\n            return null;\n        }\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n        var adapter = tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, _material_ripple_component__WEBPACK_IMPORTED_MODULE_7__[\"MDCRipple\"].createAdapter(this), { isSurfaceActive: function () { return _material_dom_ponyfill__WEBPACK_IMPORTED_MODULE_3__[\"matches\"](_this.input_, ':active'); }, registerInteractionHandler: function (evtType, handler) { return _this.input_.addEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])()); }, deregisterInteractionHandler: function (evtType, handler) {\n                return _this.input_.removeEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            } });\n        // tslint:enable:object-literal-sort-keys\n        return rippleFactory(this.root_, new _material_ripple_foundation__WEBPACK_IMPORTED_MODULE_8__[\"MDCRippleFoundation\"](adapter));\n    };\n    return MDCTextField;\n}(_material_base_component__WEBPACK_IMPORTED_MODULE_1__[\"MDCComponent\"]));\n\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/component.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/constants.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/@material/textfield/constants.js ***!
+  \*******************************************************/
+/*! exports provided: cssClasses, strings, numbers, VALIDATION_ATTR_WHITELIST, ALWAYS_FLOAT_TYPES */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return cssClasses; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return strings; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"numbers\", function() { return numbers; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"VALIDATION_ATTR_WHITELIST\", function() { return VALIDATION_ATTR_WHITELIST; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"ALWAYS_FLOAT_TYPES\", function() { return ALWAYS_FLOAT_TYPES; });\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar strings = {\n    ARIA_CONTROLS: 'aria-controls',\n    ICON_SELECTOR: '.mdc-text-field__icon',\n    INPUT_SELECTOR: '.mdc-text-field__input',\n    LABEL_SELECTOR: '.mdc-floating-label',\n    LINE_RIPPLE_SELECTOR: '.mdc-line-ripple',\n    OUTLINE_SELECTOR: '.mdc-notched-outline',\n};\nvar cssClasses = {\n    DENSE: 'mdc-text-field--dense',\n    DISABLED: 'mdc-text-field--disabled',\n    FOCUSED: 'mdc-text-field--focused',\n    FULLWIDTH: 'mdc-text-field--fullwidth',\n    HELPER_LINE: 'mdc-text-field-helper-line',\n    INVALID: 'mdc-text-field--invalid',\n    NO_LABEL: 'mdc-text-field--no-label',\n    OUTLINED: 'mdc-text-field--outlined',\n    ROOT: 'mdc-text-field',\n    TEXTAREA: 'mdc-text-field--textarea',\n    WITH_LEADING_ICON: 'mdc-text-field--with-leading-icon',\n    WITH_TRAILING_ICON: 'mdc-text-field--with-trailing-icon',\n};\nvar numbers = {\n    DENSE_LABEL_SCALE: 0.923,\n    LABEL_SCALE: 0.75,\n};\n/**\n * Whitelist based off of https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/HTML5/Constraint_validation\n * under the \"Validation-related attributes\" section.\n */\nvar VALIDATION_ATTR_WHITELIST = [\n    'pattern', 'min', 'max', 'required', 'step', 'minlength', 'maxlength',\n];\n/**\n * Label should always float for these types as they show some UI even if value is empty.\n */\nvar ALWAYS_FLOAT_TYPES = [\n    'color', 'date', 'datetime-local', 'month', 'range', 'time', 'week',\n];\n\n//# sourceMappingURL=constants.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/constants.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/foundation.js":
+/*!********************************************************!*\
+  !*** ./node_modules/@material/textfield/foundation.js ***!
+  \********************************************************/
+/*! exports provided: MDCTextFieldFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldFoundation\", function() { return MDCTextFieldFoundation; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/foundation */ \"./node_modules/@material/base/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/textfield/constants.js\");\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar POINTERDOWN_EVENTS = ['mousedown', 'touchstart'];\nvar INTERACTION_EVENTS = ['click', 'keydown'];\nvar MDCTextFieldFoundation = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCTextFieldFoundation, _super);\n    /**\n     * @param adapter\n     * @param foundationMap Map from subcomponent names to their subfoundations.\n     */\n    function MDCTextFieldFoundation(adapter, foundationMap) {\n        if (foundationMap === void 0) { foundationMap = {}; }\n        var _this = _super.call(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, MDCTextFieldFoundation.defaultAdapter, adapter)) || this;\n        _this.isFocused_ = false;\n        _this.receivedUserInput_ = false;\n        _this.isValid_ = true;\n        _this.useNativeValidation_ = true;\n        _this.helperText_ = foundationMap.helperText;\n        _this.characterCounter_ = foundationMap.characterCounter;\n        _this.leadingIcon_ = foundationMap.leadingIcon;\n        _this.trailingIcon_ = foundationMap.trailingIcon;\n        _this.inputFocusHandler_ = function () { return _this.activateFocus(); };\n        _this.inputBlurHandler_ = function () { return _this.deactivateFocus(); };\n        _this.inputInputHandler_ = function () { return _this.handleInput(); };\n        _this.setPointerXOffset_ = function (evt) { return _this.setTransformOrigin(evt); };\n        _this.textFieldInteractionHandler_ = function () { return _this.handleTextFieldInteraction(); };\n        _this.validationAttributeChangeHandler_ = function (attributesList) { return _this.handleValidationAttributeChange(attributesList); };\n        return _this;\n    }\n    Object.defineProperty(MDCTextFieldFoundation, \"cssClasses\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextFieldFoundation, \"strings\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextFieldFoundation, \"numbers\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"numbers\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextFieldFoundation.prototype, \"shouldAlwaysFloat_\", {\n        get: function () {\n            var type = this.getNativeInput_().type;\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"ALWAYS_FLOAT_TYPES\"].indexOf(type) >= 0;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextFieldFoundation.prototype, \"shouldFloat\", {\n        get: function () {\n            return this.shouldAlwaysFloat_ || this.isFocused_ || !!this.getValue() || this.isBadInput_();\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextFieldFoundation.prototype, \"shouldShake\", {\n        get: function () {\n            return !this.isFocused_ && !this.isValid() && !!this.getValue();\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextFieldFoundation, \"defaultAdapter\", {\n        /**\n         * See {@link MDCTextFieldAdapter} for typing information on parameters and return types.\n         */\n        get: function () {\n            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n            return {\n                addClass: function () { return undefined; },\n                removeClass: function () { return undefined; },\n                hasClass: function () { return true; },\n                registerTextFieldInteractionHandler: function () { return undefined; },\n                deregisterTextFieldInteractionHandler: function () { return undefined; },\n                registerInputInteractionHandler: function () { return undefined; },\n                deregisterInputInteractionHandler: function () { return undefined; },\n                registerValidationAttributeChangeHandler: function () { return new MutationObserver(function () { return undefined; }); },\n                deregisterValidationAttributeChangeHandler: function () { return undefined; },\n                getNativeInput: function () { return null; },\n                isFocused: function () { return false; },\n                activateLineRipple: function () { return undefined; },\n                deactivateLineRipple: function () { return undefined; },\n                setLineRippleTransformOrigin: function () { return undefined; },\n                shakeLabel: function () { return undefined; },\n                floatLabel: function () { return undefined; },\n                hasLabel: function () { return false; },\n                getLabelWidth: function () { return 0; },\n                hasOutline: function () { return false; },\n                notchOutline: function () { return undefined; },\n                closeOutline: function () { return undefined; },\n            };\n            // tslint:enable:object-literal-sort-keys\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCTextFieldFoundation.prototype.init = function () {\n        var _this = this;\n        if (this.adapter_.isFocused()) {\n            this.inputFocusHandler_();\n        }\n        else if (this.adapter_.hasLabel() && this.shouldFloat) {\n            this.notchOutline(true);\n            this.adapter_.floatLabel(true);\n        }\n        this.adapter_.registerInputInteractionHandler('focus', this.inputFocusHandler_);\n        this.adapter_.registerInputInteractionHandler('blur', this.inputBlurHandler_);\n        this.adapter_.registerInputInteractionHandler('input', this.inputInputHandler_);\n        POINTERDOWN_EVENTS.forEach(function (evtType) {\n            _this.adapter_.registerInputInteractionHandler(evtType, _this.setPointerXOffset_);\n        });\n        INTERACTION_EVENTS.forEach(function (evtType) {\n            _this.adapter_.registerTextFieldInteractionHandler(evtType, _this.textFieldInteractionHandler_);\n        });\n        this.validationObserver_ =\n            this.adapter_.registerValidationAttributeChangeHandler(this.validationAttributeChangeHandler_);\n        this.setCharacterCounter_(this.getValue().length);\n    };\n    MDCTextFieldFoundation.prototype.destroy = function () {\n        var _this = this;\n        this.adapter_.deregisterInputInteractionHandler('focus', this.inputFocusHandler_);\n        this.adapter_.deregisterInputInteractionHandler('blur', this.inputBlurHandler_);\n        this.adapter_.deregisterInputInteractionHandler('input', this.inputInputHandler_);\n        POINTERDOWN_EVENTS.forEach(function (evtType) {\n            _this.adapter_.deregisterInputInteractionHandler(evtType, _this.setPointerXOffset_);\n        });\n        INTERACTION_EVENTS.forEach(function (evtType) {\n            _this.adapter_.deregisterTextFieldInteractionHandler(evtType, _this.textFieldInteractionHandler_);\n        });\n        this.adapter_.deregisterValidationAttributeChangeHandler(this.validationObserver_);\n    };\n    /**\n     * Handles user interactions with the Text Field.\n     */\n    MDCTextFieldFoundation.prototype.handleTextFieldInteraction = function () {\n        var nativeInput = this.adapter_.getNativeInput();\n        if (nativeInput && nativeInput.disabled) {\n            return;\n        }\n        this.receivedUserInput_ = true;\n    };\n    /**\n     * Handles validation attribute changes\n     */\n    MDCTextFieldFoundation.prototype.handleValidationAttributeChange = function (attributesList) {\n        var _this = this;\n        attributesList.some(function (attributeName) {\n            if (_constants__WEBPACK_IMPORTED_MODULE_2__[\"VALIDATION_ATTR_WHITELIST\"].indexOf(attributeName) > -1) {\n                _this.styleValidity_(true);\n                return true;\n            }\n            return false;\n        });\n        if (attributesList.indexOf('maxlength') > -1) {\n            this.setCharacterCounter_(this.getValue().length);\n        }\n    };\n    /**\n     * Opens/closes the notched outline.\n     */\n    MDCTextFieldFoundation.prototype.notchOutline = function (openNotch) {\n        if (!this.adapter_.hasOutline()) {\n            return;\n        }\n        if (openNotch) {\n            var isDense = this.adapter_.hasClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].DENSE);\n            var labelScale = isDense ? _constants__WEBPACK_IMPORTED_MODULE_2__[\"numbers\"].DENSE_LABEL_SCALE : _constants__WEBPACK_IMPORTED_MODULE_2__[\"numbers\"].LABEL_SCALE;\n            var labelWidth = this.adapter_.getLabelWidth() * labelScale;\n            this.adapter_.notchOutline(labelWidth);\n        }\n        else {\n            this.adapter_.closeOutline();\n        }\n    };\n    /**\n     * Activates the text field focus state.\n     */\n    MDCTextFieldFoundation.prototype.activateFocus = function () {\n        this.isFocused_ = true;\n        this.styleFocused_(this.isFocused_);\n        this.adapter_.activateLineRipple();\n        if (this.adapter_.hasLabel()) {\n            this.notchOutline(this.shouldFloat);\n            this.adapter_.floatLabel(this.shouldFloat);\n            this.adapter_.shakeLabel(this.shouldShake);\n        }\n        if (this.helperText_) {\n            this.helperText_.showToScreenReader();\n        }\n    };\n    /**\n     * Sets the line ripple's transform origin, so that the line ripple activate\n     * animation will animate out from the user's click location.\n     */\n    MDCTextFieldFoundation.prototype.setTransformOrigin = function (evt) {\n        var touches = evt.touches;\n        var targetEvent = touches ? touches[0] : evt;\n        var targetClientRect = targetEvent.target.getBoundingClientRect();\n        var normalizedX = targetEvent.clientX - targetClientRect.left;\n        this.adapter_.setLineRippleTransformOrigin(normalizedX);\n    };\n    /**\n     * Handles input change of text input and text area.\n     */\n    MDCTextFieldFoundation.prototype.handleInput = function () {\n        this.autoCompleteFocus();\n        this.setCharacterCounter_(this.getValue().length);\n    };\n    /**\n     * Activates the Text Field's focus state in cases when the input value\n     * changes without user input (e.g. programmatically).\n     */\n    MDCTextFieldFoundation.prototype.autoCompleteFocus = function () {\n        if (!this.receivedUserInput_) {\n            this.activateFocus();\n        }\n    };\n    /**\n     * Deactivates the Text Field's focus state.\n     */\n    MDCTextFieldFoundation.prototype.deactivateFocus = function () {\n        this.isFocused_ = false;\n        this.adapter_.deactivateLineRipple();\n        var isValid = this.isValid();\n        this.styleValidity_(isValid);\n        this.styleFocused_(this.isFocused_);\n        if (this.adapter_.hasLabel()) {\n            this.notchOutline(this.shouldFloat);\n            this.adapter_.floatLabel(this.shouldFloat);\n            this.adapter_.shakeLabel(this.shouldShake);\n        }\n        if (!this.shouldFloat) {\n            this.receivedUserInput_ = false;\n        }\n    };\n    MDCTextFieldFoundation.prototype.getValue = function () {\n        return this.getNativeInput_().value;\n    };\n    /**\n     * @param value The value to set on the input Element.\n     */\n    MDCTextFieldFoundation.prototype.setValue = function (value) {\n        // Prevent Safari from moving the caret to the end of the input when the value has not changed.\n        if (this.getValue() !== value) {\n            this.getNativeInput_().value = value;\n        }\n        this.setCharacterCounter_(value.length);\n        var isValid = this.isValid();\n        this.styleValidity_(isValid);\n        if (this.adapter_.hasLabel()) {\n            this.notchOutline(this.shouldFloat);\n            this.adapter_.floatLabel(this.shouldFloat);\n            this.adapter_.shakeLabel(this.shouldShake);\n        }\n    };\n    /**\n     * @return The custom validity state, if set; otherwise, the result of a native validity check.\n     */\n    MDCTextFieldFoundation.prototype.isValid = function () {\n        return this.useNativeValidation_\n            ? this.isNativeInputValid_() : this.isValid_;\n    };\n    /**\n     * @param isValid Sets the custom validity state of the Text Field.\n     */\n    MDCTextFieldFoundation.prototype.setValid = function (isValid) {\n        this.isValid_ = isValid;\n        this.styleValidity_(isValid);\n        var shouldShake = !isValid && !this.isFocused_ && !!this.getValue();\n        if (this.adapter_.hasLabel()) {\n            this.adapter_.shakeLabel(shouldShake);\n        }\n    };\n    /**\n     * Enables or disables the use of native validation. Use this for custom validation.\n     * @param useNativeValidation Set this to false to ignore native input validation.\n     */\n    MDCTextFieldFoundation.prototype.setUseNativeValidation = function (useNativeValidation) {\n        this.useNativeValidation_ = useNativeValidation;\n    };\n    MDCTextFieldFoundation.prototype.isDisabled = function () {\n        return this.getNativeInput_().disabled;\n    };\n    /**\n     * @param disabled Sets the text-field disabled or enabled.\n     */\n    MDCTextFieldFoundation.prototype.setDisabled = function (disabled) {\n        this.getNativeInput_().disabled = disabled;\n        this.styleDisabled_(disabled);\n    };\n    /**\n     * @param content Sets the content of the helper text.\n     */\n    MDCTextFieldFoundation.prototype.setHelperTextContent = function (content) {\n        if (this.helperText_) {\n            this.helperText_.setContent(content);\n        }\n    };\n    /**\n     * Sets the aria label of the leading icon.\n     */\n    MDCTextFieldFoundation.prototype.setLeadingIconAriaLabel = function (label) {\n        if (this.leadingIcon_) {\n            this.leadingIcon_.setAriaLabel(label);\n        }\n    };\n    /**\n     * Sets the text content of the leading icon.\n     */\n    MDCTextFieldFoundation.prototype.setLeadingIconContent = function (content) {\n        if (this.leadingIcon_) {\n            this.leadingIcon_.setContent(content);\n        }\n    };\n    /**\n     * Sets the aria label of the trailing icon.\n     */\n    MDCTextFieldFoundation.prototype.setTrailingIconAriaLabel = function (label) {\n        if (this.trailingIcon_) {\n            this.trailingIcon_.setAriaLabel(label);\n        }\n    };\n    /**\n     * Sets the text content of the trailing icon.\n     */\n    MDCTextFieldFoundation.prototype.setTrailingIconContent = function (content) {\n        if (this.trailingIcon_) {\n            this.trailingIcon_.setContent(content);\n        }\n    };\n    /**\n     * Sets character counter values that shows characters used and the total character limit.\n     */\n    MDCTextFieldFoundation.prototype.setCharacterCounter_ = function (currentLength) {\n        if (!this.characterCounter_) {\n            return;\n        }\n        var maxLength = this.getNativeInput_().maxLength;\n        if (maxLength === -1) {\n            throw new Error('MDCTextFieldFoundation: Expected maxlength html property on text input or textarea.');\n        }\n        this.characterCounter_.setCounterValue(currentLength, maxLength);\n    };\n    /**\n     * @return True if the Text Field input fails in converting the user-supplied value.\n     */\n    MDCTextFieldFoundation.prototype.isBadInput_ = function () {\n        // The badInput property is not supported in IE 11 💩.\n        return this.getNativeInput_().validity.badInput || false;\n    };\n    /**\n     * @return The result of native validity checking (ValidityState.valid).\n     */\n    MDCTextFieldFoundation.prototype.isNativeInputValid_ = function () {\n        return this.getNativeInput_().validity.valid;\n    };\n    /**\n     * Styles the component based on the validity state.\n     */\n    MDCTextFieldFoundation.prototype.styleValidity_ = function (isValid) {\n        var INVALID = MDCTextFieldFoundation.cssClasses.INVALID;\n        if (isValid) {\n            this.adapter_.removeClass(INVALID);\n        }\n        else {\n            this.adapter_.addClass(INVALID);\n        }\n        if (this.helperText_) {\n            this.helperText_.setValidity(isValid);\n        }\n    };\n    /**\n     * Styles the component based on the focused state.\n     */\n    MDCTextFieldFoundation.prototype.styleFocused_ = function (isFocused) {\n        var FOCUSED = MDCTextFieldFoundation.cssClasses.FOCUSED;\n        if (isFocused) {\n            this.adapter_.addClass(FOCUSED);\n        }\n        else {\n            this.adapter_.removeClass(FOCUSED);\n        }\n    };\n    /**\n     * Styles the component based on the disabled state.\n     */\n    MDCTextFieldFoundation.prototype.styleDisabled_ = function (isDisabled) {\n        var _a = MDCTextFieldFoundation.cssClasses, DISABLED = _a.DISABLED, INVALID = _a.INVALID;\n        if (isDisabled) {\n            this.adapter_.addClass(DISABLED);\n            this.adapter_.removeClass(INVALID);\n        }\n        else {\n            this.adapter_.removeClass(DISABLED);\n        }\n        if (this.leadingIcon_) {\n            this.leadingIcon_.setDisabled(isDisabled);\n        }\n        if (this.trailingIcon_) {\n            this.trailingIcon_.setDisabled(isDisabled);\n        }\n    };\n    /**\n     * @return The native text input element from the host environment, or an object with the same shape for unit tests.\n     */\n    MDCTextFieldFoundation.prototype.getNativeInput_ = function () {\n        // this.adapter_ may be undefined in foundation unit tests. This happens when testdouble is creating a mock object\n        // and invokes the shouldShake/shouldFloat getters (which in turn call getValue(), which calls this method) before\n        // init() has been called from the MDCTextField constructor. To work around that issue, we return a dummy object.\n        var nativeInput = this.adapter_ ? this.adapter_.getNativeInput() : null;\n        return nativeInput || {\n            disabled: false,\n            maxLength: -1,\n            type: 'input',\n            validity: {\n                badInput: false,\n                valid: true,\n            },\n            value: '',\n        };\n    };\n    return MDCTextFieldFoundation;\n}(_material_base_foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]));\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCTextFieldFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/foundation.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/helper-text/component.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/@material/textfield/helper-text/component.js ***!
+  \*******************************************************************/
+/*! exports provided: MDCTextFieldHelperText */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldHelperText\", function() { return MDCTextFieldHelperText; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/component */ \"./node_modules/@material/base/component.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/textfield/helper-text/foundation.js\");\n/**\n * @license\n * Copyright 2017 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCTextFieldHelperText = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCTextFieldHelperText, _super);\n    function MDCTextFieldHelperText() {\n        return _super !== null && _super.apply(this, arguments) || this;\n    }\n    MDCTextFieldHelperText.attachTo = function (root) {\n        return new MDCTextFieldHelperText(root);\n    };\n    Object.defineProperty(MDCTextFieldHelperText.prototype, \"foundation\", {\n        get: function () {\n            return this.foundation_;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCTextFieldHelperText.prototype.getDefaultFoundation = function () {\n        var _this = this;\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n        var adapter = {\n            addClass: function (className) { return _this.root_.classList.add(className); },\n            removeClass: function (className) { return _this.root_.classList.remove(className); },\n            hasClass: function (className) { return _this.root_.classList.contains(className); },\n            setAttr: function (attr, value) { return _this.root_.setAttribute(attr, value); },\n            removeAttr: function (attr) { return _this.root_.removeAttribute(attr); },\n            setContent: function (content) {\n                _this.root_.textContent = content;\n            },\n        };\n        // tslint:enable:object-literal-sort-keys\n        return new _foundation__WEBPACK_IMPORTED_MODULE_2__[\"MDCTextFieldHelperTextFoundation\"](adapter);\n    };\n    return MDCTextFieldHelperText;\n}(_material_base_component__WEBPACK_IMPORTED_MODULE_1__[\"MDCComponent\"]));\n\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/helper-text/component.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/helper-text/constants.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/@material/textfield/helper-text/constants.js ***!
+  \*******************************************************************/
+/*! exports provided: strings, cssClasses */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return strings; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return cssClasses; });\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar cssClasses = {\n    HELPER_TEXT_PERSISTENT: 'mdc-text-field-helper-text--persistent',\n    HELPER_TEXT_VALIDATION_MSG: 'mdc-text-field-helper-text--validation-msg',\n    ROOT: 'mdc-text-field-helper-text',\n};\nvar strings = {\n    ARIA_HIDDEN: 'aria-hidden',\n    ROLE: 'role',\n    ROOT_SELECTOR: \".\" + cssClasses.ROOT,\n};\n\n//# sourceMappingURL=constants.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/helper-text/constants.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/helper-text/foundation.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/@material/textfield/helper-text/foundation.js ***!
+  \********************************************************************/
+/*! exports provided: MDCTextFieldHelperTextFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldHelperTextFoundation\", function() { return MDCTextFieldHelperTextFoundation; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/foundation */ \"./node_modules/@material/base/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/textfield/helper-text/constants.js\");\n/**\n * @license\n * Copyright 2017 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCTextFieldHelperTextFoundation = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCTextFieldHelperTextFoundation, _super);\n    function MDCTextFieldHelperTextFoundation(adapter) {\n        return _super.call(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, MDCTextFieldHelperTextFoundation.defaultAdapter, adapter)) || this;\n    }\n    Object.defineProperty(MDCTextFieldHelperTextFoundation, \"cssClasses\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextFieldHelperTextFoundation, \"strings\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextFieldHelperTextFoundation, \"defaultAdapter\", {\n        /**\n         * See {@link MDCTextFieldHelperTextAdapter} for typing information on parameters and return types.\n         */\n        get: function () {\n            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n            return {\n                addClass: function () { return undefined; },\n                removeClass: function () { return undefined; },\n                hasClass: function () { return false; },\n                setAttr: function () { return undefined; },\n                removeAttr: function () { return undefined; },\n                setContent: function () { return undefined; },\n            };\n            // tslint:enable:object-literal-sort-keys\n        },\n        enumerable: true,\n        configurable: true\n    });\n    /**\n     * Sets the content of the helper text field.\n     */\n    MDCTextFieldHelperTextFoundation.prototype.setContent = function (content) {\n        this.adapter_.setContent(content);\n    };\n    /**\n     * @param isPersistent Sets the persistency of the helper text.\n     */\n    MDCTextFieldHelperTextFoundation.prototype.setPersistent = function (isPersistent) {\n        if (isPersistent) {\n            this.adapter_.addClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].HELPER_TEXT_PERSISTENT);\n        }\n        else {\n            this.adapter_.removeClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].HELPER_TEXT_PERSISTENT);\n        }\n    };\n    /**\n     * @param isValidation True to make the helper text act as an error validation message.\n     */\n    MDCTextFieldHelperTextFoundation.prototype.setValidation = function (isValidation) {\n        if (isValidation) {\n            this.adapter_.addClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].HELPER_TEXT_VALIDATION_MSG);\n        }\n        else {\n            this.adapter_.removeClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].HELPER_TEXT_VALIDATION_MSG);\n        }\n    };\n    /**\n     * Makes the helper text visible to the screen reader.\n     */\n    MDCTextFieldHelperTextFoundation.prototype.showToScreenReader = function () {\n        this.adapter_.removeAttr(_constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].ARIA_HIDDEN);\n    };\n    /**\n     * Sets the validity of the helper text based on the input validity.\n     */\n    MDCTextFieldHelperTextFoundation.prototype.setValidity = function (inputIsValid) {\n        var helperTextIsPersistent = this.adapter_.hasClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].HELPER_TEXT_PERSISTENT);\n        var helperTextIsValidationMsg = this.adapter_.hasClass(_constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"].HELPER_TEXT_VALIDATION_MSG);\n        var validationMsgNeedsDisplay = helperTextIsValidationMsg && !inputIsValid;\n        if (validationMsgNeedsDisplay) {\n            this.adapter_.setAttr(_constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].ROLE, 'alert');\n        }\n        else {\n            this.adapter_.removeAttr(_constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].ROLE);\n        }\n        if (!helperTextIsPersistent && !validationMsgNeedsDisplay) {\n            this.hide_();\n        }\n    };\n    /**\n     * Hides the help text from screen readers.\n     */\n    MDCTextFieldHelperTextFoundation.prototype.hide_ = function () {\n        this.adapter_.setAttr(_constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].ARIA_HIDDEN, 'true');\n    };\n    return MDCTextFieldHelperTextFoundation;\n}(_material_base_foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]));\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCTextFieldHelperTextFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/helper-text/foundation.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/helper-text/index.js":
+/*!***************************************************************!*\
+  !*** ./node_modules/@material/textfield/helper-text/index.js ***!
+  \***************************************************************/
+/*! exports provided: helperTextCssClasses, helperTextStrings, MDCTextFieldHelperText, MDCTextFieldHelperTextFoundation */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _component__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./component */ \"./node_modules/@material/textfield/helper-text/component.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldHelperText\", function() { return _component__WEBPACK_IMPORTED_MODULE_0__[\"MDCTextFieldHelperText\"]; });\n\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/textfield/helper-text/foundation.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldHelperTextFoundation\", function() { return _foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCTextFieldHelperTextFoundation\"]; });\n\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/textfield/helper-text/constants.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"helperTextCssClasses\", function() { return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"helperTextStrings\", function() { return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"]; });\n\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n//# sourceMappingURL=index.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/helper-text/index.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/icon/component.js":
+/*!************************************************************!*\
+  !*** ./node_modules/@material/textfield/icon/component.js ***!
+  \************************************************************/
+/*! exports provided: MDCTextFieldIcon */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldIcon\", function() { return MDCTextFieldIcon; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/component */ \"./node_modules/@material/base/component.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/textfield/icon/foundation.js\");\n/**\n * @license\n * Copyright 2017 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar MDCTextFieldIcon = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCTextFieldIcon, _super);\n    function MDCTextFieldIcon() {\n        return _super !== null && _super.apply(this, arguments) || this;\n    }\n    MDCTextFieldIcon.attachTo = function (root) {\n        return new MDCTextFieldIcon(root);\n    };\n    Object.defineProperty(MDCTextFieldIcon.prototype, \"foundation\", {\n        get: function () {\n            return this.foundation_;\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCTextFieldIcon.prototype.getDefaultFoundation = function () {\n        var _this = this;\n        // DO NOT INLINE this variable. For backward compatibility, foundations take a Partial<MDCFooAdapter>.\n        // To ensure we don't accidentally omit any methods, we need a separate, strongly typed adapter variable.\n        // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n        var adapter = {\n            getAttr: function (attr) { return _this.root_.getAttribute(attr); },\n            setAttr: function (attr, value) { return _this.root_.setAttribute(attr, value); },\n            removeAttr: function (attr) { return _this.root_.removeAttribute(attr); },\n            setContent: function (content) {\n                _this.root_.textContent = content;\n            },\n            registerInteractionHandler: function (evtType, handler) { return _this.listen(evtType, handler); },\n            deregisterInteractionHandler: function (evtType, handler) { return _this.unlisten(evtType, handler); },\n            notifyIconAction: function () { return _this.emit(_foundation__WEBPACK_IMPORTED_MODULE_2__[\"MDCTextFieldIconFoundation\"].strings.ICON_EVENT, {} /* evtData */, true /* shouldBubble */); },\n        };\n        // tslint:enable:object-literal-sort-keys\n        return new _foundation__WEBPACK_IMPORTED_MODULE_2__[\"MDCTextFieldIconFoundation\"](adapter);\n    };\n    return MDCTextFieldIcon;\n}(_material_base_component__WEBPACK_IMPORTED_MODULE_1__[\"MDCComponent\"]));\n\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/icon/component.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/icon/constants.js":
+/*!************************************************************!*\
+  !*** ./node_modules/@material/textfield/icon/constants.js ***!
+  \************************************************************/
+/*! exports provided: strings, cssClasses */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return strings; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return cssClasses; });\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar strings = {\n    ICON_EVENT: 'MDCTextField:icon',\n    ICON_ROLE: 'button',\n};\nvar cssClasses = {\n    ROOT: 'mdc-text-field__icon',\n};\n\n//# sourceMappingURL=constants.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/icon/constants.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/icon/foundation.js":
+/*!*************************************************************!*\
+  !*** ./node_modules/@material/textfield/icon/foundation.js ***!
+  \*************************************************************/
+/*! exports provided: MDCTextFieldIconFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldIconFoundation\", function() { return MDCTextFieldIconFoundation; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/foundation */ \"./node_modules/@material/base/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/textfield/icon/constants.js\");\n/**\n * @license\n * Copyright 2017 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\nvar INTERACTION_EVENTS = ['click', 'keydown'];\nvar MDCTextFieldIconFoundation = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCTextFieldIconFoundation, _super);\n    function MDCTextFieldIconFoundation(adapter) {\n        var _this = _super.call(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, MDCTextFieldIconFoundation.defaultAdapter, adapter)) || this;\n        _this.savedTabIndex_ = null;\n        _this.interactionHandler_ = function (evt) { return _this.handleInteraction(evt); };\n        return _this;\n    }\n    Object.defineProperty(MDCTextFieldIconFoundation, \"strings\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextFieldIconFoundation, \"cssClasses\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCTextFieldIconFoundation, \"defaultAdapter\", {\n        /**\n         * See {@link MDCTextFieldIconAdapter} for typing information on parameters and return types.\n         */\n        get: function () {\n            // tslint:disable:object-literal-sort-keys Methods should be in the same order as the adapter interface.\n            return {\n                getAttr: function () { return null; },\n                setAttr: function () { return undefined; },\n                removeAttr: function () { return undefined; },\n                setContent: function () { return undefined; },\n                registerInteractionHandler: function () { return undefined; },\n                deregisterInteractionHandler: function () { return undefined; },\n                notifyIconAction: function () { return undefined; },\n            };\n            // tslint:enable:object-literal-sort-keys\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCTextFieldIconFoundation.prototype.init = function () {\n        var _this = this;\n        this.savedTabIndex_ = this.adapter_.getAttr('tabindex');\n        INTERACTION_EVENTS.forEach(function (evtType) {\n            _this.adapter_.registerInteractionHandler(evtType, _this.interactionHandler_);\n        });\n    };\n    MDCTextFieldIconFoundation.prototype.destroy = function () {\n        var _this = this;\n        INTERACTION_EVENTS.forEach(function (evtType) {\n            _this.adapter_.deregisterInteractionHandler(evtType, _this.interactionHandler_);\n        });\n    };\n    MDCTextFieldIconFoundation.prototype.setDisabled = function (disabled) {\n        if (!this.savedTabIndex_) {\n            return;\n        }\n        if (disabled) {\n            this.adapter_.setAttr('tabindex', '-1');\n            this.adapter_.removeAttr('role');\n        }\n        else {\n            this.adapter_.setAttr('tabindex', this.savedTabIndex_);\n            this.adapter_.setAttr('role', _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"].ICON_ROLE);\n        }\n    };\n    MDCTextFieldIconFoundation.prototype.setAriaLabel = function (label) {\n        this.adapter_.setAttr('aria-label', label);\n    };\n    MDCTextFieldIconFoundation.prototype.setContent = function (content) {\n        this.adapter_.setContent(content);\n    };\n    MDCTextFieldIconFoundation.prototype.handleInteraction = function (evt) {\n        var isEnterKey = evt.key === 'Enter' || evt.keyCode === 13;\n        if (evt.type === 'click' || isEnterKey) {\n            this.adapter_.notifyIconAction();\n        }\n    };\n    return MDCTextFieldIconFoundation;\n}(_material_base_foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]));\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCTextFieldIconFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/icon/foundation.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/icon/index.js":
+/*!********************************************************!*\
+  !*** ./node_modules/@material/textfield/icon/index.js ***!
+  \********************************************************/
+/*! exports provided: iconCssClasses, iconStrings, MDCTextFieldIcon, MDCTextFieldIconFoundation */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _component__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./component */ \"./node_modules/@material/textfield/icon/component.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldIcon\", function() { return _component__WEBPACK_IMPORTED_MODULE_0__[\"MDCTextFieldIcon\"]; });\n\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/textfield/icon/foundation.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldIconFoundation\", function() { return _foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCTextFieldIconFoundation\"]; });\n\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/textfield/icon/constants.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"iconCssClasses\", function() { return _constants__WEBPACK_IMPORTED_MODULE_2__[\"cssClasses\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"iconStrings\", function() { return _constants__WEBPACK_IMPORTED_MODULE_2__[\"strings\"]; });\n\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n//# sourceMappingURL=index.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/icon/index.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/textfield/index.js":
+/*!***************************************************!*\
+  !*** ./node_modules/@material/textfield/index.js ***!
+  \***************************************************/
+/*! exports provided: MDCTextField, cssClasses, strings, numbers, VALIDATION_ATTR_WHITELIST, ALWAYS_FLOAT_TYPES, MDCTextFieldFoundation, characterCountCssClasses, characterCountStrings, helperTextCssClasses, helperTextStrings, iconCssClasses, iconStrings, MDCTextFieldCharacterCounter, MDCTextFieldCharacterCounterFoundation, MDCTextFieldHelperText, MDCTextFieldHelperTextFoundation, MDCTextFieldIcon, MDCTextFieldIconFoundation */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _component__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./component */ \"./node_modules/@material/textfield/component.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextField\", function() { return _component__WEBPACK_IMPORTED_MODULE_0__[\"MDCTextField\"]; });\n\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/textfield/constants.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return _constants__WEBPACK_IMPORTED_MODULE_1__[\"cssClasses\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return _constants__WEBPACK_IMPORTED_MODULE_1__[\"strings\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"numbers\", function() { return _constants__WEBPACK_IMPORTED_MODULE_1__[\"numbers\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"VALIDATION_ATTR_WHITELIST\", function() { return _constants__WEBPACK_IMPORTED_MODULE_1__[\"VALIDATION_ATTR_WHITELIST\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"ALWAYS_FLOAT_TYPES\", function() { return _constants__WEBPACK_IMPORTED_MODULE_1__[\"ALWAYS_FLOAT_TYPES\"]; });\n\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/textfield/foundation.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldFoundation\", function() { return _foundation__WEBPACK_IMPORTED_MODULE_2__[\"MDCTextFieldFoundation\"]; });\n\n/* harmony import */ var _character_counter_index__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./character-counter/index */ \"./node_modules/@material/textfield/character-counter/index.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"characterCountCssClasses\", function() { return _character_counter_index__WEBPACK_IMPORTED_MODULE_3__[\"characterCountCssClasses\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"characterCountStrings\", function() { return _character_counter_index__WEBPACK_IMPORTED_MODULE_3__[\"characterCountStrings\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldCharacterCounter\", function() { return _character_counter_index__WEBPACK_IMPORTED_MODULE_3__[\"MDCTextFieldCharacterCounter\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldCharacterCounterFoundation\", function() { return _character_counter_index__WEBPACK_IMPORTED_MODULE_3__[\"MDCTextFieldCharacterCounterFoundation\"]; });\n\n/* harmony import */ var _helper_text_index__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./helper-text/index */ \"./node_modules/@material/textfield/helper-text/index.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"helperTextCssClasses\", function() { return _helper_text_index__WEBPACK_IMPORTED_MODULE_4__[\"helperTextCssClasses\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"helperTextStrings\", function() { return _helper_text_index__WEBPACK_IMPORTED_MODULE_4__[\"helperTextStrings\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldHelperText\", function() { return _helper_text_index__WEBPACK_IMPORTED_MODULE_4__[\"MDCTextFieldHelperText\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldHelperTextFoundation\", function() { return _helper_text_index__WEBPACK_IMPORTED_MODULE_4__[\"MDCTextFieldHelperTextFoundation\"]; });\n\n/* harmony import */ var _icon_index__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./icon/index */ \"./node_modules/@material/textfield/icon/index.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"iconCssClasses\", function() { return _icon_index__WEBPACK_IMPORTED_MODULE_5__[\"iconCssClasses\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"iconStrings\", function() { return _icon_index__WEBPACK_IMPORTED_MODULE_5__[\"iconStrings\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldIcon\", function() { return _icon_index__WEBPACK_IMPORTED_MODULE_5__[\"MDCTextFieldIcon\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCTextFieldIconFoundation\", function() { return _icon_index__WEBPACK_IMPORTED_MODULE_5__[\"MDCTextFieldIconFoundation\"]; });\n\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n\n\n\n//# sourceMappingURL=index.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/textfield/index.js?");
+
+/***/ }),
+
+/***/ "./node_modules/tslib/tslib.es6.js":
+/*!*****************************************!*\
+  !*** ./node_modules/tslib/tslib.es6.js ***!
+  \*****************************************/
+/*! exports provided: __extends, __assign, __rest, __decorate, __param, __metadata, __awaiter, __generator, __exportStar, __values, __read, __spread, __await, __asyncGenerator, __asyncDelegator, __asyncValues, __makeTemplateObject, __importStar, __importDefault */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__extends\", function() { return __extends; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__assign\", function() { return __assign; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__rest\", function() { return __rest; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__decorate\", function() { return __decorate; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__param\", function() { return __param; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__metadata\", function() { return __metadata; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__awaiter\", function() { return __awaiter; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__generator\", function() { return __generator; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__exportStar\", function() { return __exportStar; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__values\", function() { return __values; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__read\", function() { return __read; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__spread\", function() { return __spread; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__await\", function() { return __await; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__asyncGenerator\", function() { return __asyncGenerator; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__asyncDelegator\", function() { return __asyncDelegator; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__asyncValues\", function() { return __asyncValues; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__makeTemplateObject\", function() { return __makeTemplateObject; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__importStar\", function() { return __importStar; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"__importDefault\", function() { return __importDefault; });\n/*! *****************************************************************************\r\nCopyright (c) Microsoft Corporation. All rights reserved.\r\nLicensed under the Apache License, Version 2.0 (the \"License\"); you may not use\r\nthis file except in compliance with the License. You may obtain a copy of the\r\nLicense at http://www.apache.org/licenses/LICENSE-2.0\r\n\r\nTHIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY\r\nKIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED\r\nWARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,\r\nMERCHANTABLITY OR NON-INFRINGEMENT.\r\n\r\nSee the Apache Version 2.0 License for specific language governing permissions\r\nand limitations under the License.\r\n***************************************************************************** */\r\n/* global Reflect, Promise */\r\n\r\nvar extendStatics = function(d, b) {\r\n    extendStatics = Object.setPrototypeOf ||\r\n        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||\r\n        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };\r\n    return extendStatics(d, b);\r\n};\r\n\r\nfunction __extends(d, b) {\r\n    extendStatics(d, b);\r\n    function __() { this.constructor = d; }\r\n    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());\r\n}\r\n\r\nvar __assign = function() {\r\n    __assign = Object.assign || function __assign(t) {\r\n        for (var s, i = 1, n = arguments.length; i < n; i++) {\r\n            s = arguments[i];\r\n            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];\r\n        }\r\n        return t;\r\n    }\r\n    return __assign.apply(this, arguments);\r\n}\r\n\r\nfunction __rest(s, e) {\r\n    var t = {};\r\n    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)\r\n        t[p] = s[p];\r\n    if (s != null && typeof Object.getOwnPropertySymbols === \"function\")\r\n        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0)\r\n            t[p[i]] = s[p[i]];\r\n    return t;\r\n}\r\n\r\nfunction __decorate(decorators, target, key, desc) {\r\n    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;\r\n    if (typeof Reflect === \"object\" && typeof Reflect.decorate === \"function\") r = Reflect.decorate(decorators, target, key, desc);\r\n    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;\r\n    return c > 3 && r && Object.defineProperty(target, key, r), r;\r\n}\r\n\r\nfunction __param(paramIndex, decorator) {\r\n    return function (target, key) { decorator(target, key, paramIndex); }\r\n}\r\n\r\nfunction __metadata(metadataKey, metadataValue) {\r\n    if (typeof Reflect === \"object\" && typeof Reflect.metadata === \"function\") return Reflect.metadata(metadataKey, metadataValue);\r\n}\r\n\r\nfunction __awaiter(thisArg, _arguments, P, generator) {\r\n    return new (P || (P = Promise))(function (resolve, reject) {\r\n        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }\r\n        function rejected(value) { try { step(generator[\"throw\"](value)); } catch (e) { reject(e); } }\r\n        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }\r\n        step((generator = generator.apply(thisArg, _arguments || [])).next());\r\n    });\r\n}\r\n\r\nfunction __generator(thisArg, body) {\r\n    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;\r\n    return g = { next: verb(0), \"throw\": verb(1), \"return\": verb(2) }, typeof Symbol === \"function\" && (g[Symbol.iterator] = function() { return this; }), g;\r\n    function verb(n) { return function (v) { return step([n, v]); }; }\r\n    function step(op) {\r\n        if (f) throw new TypeError(\"Generator is already executing.\");\r\n        while (_) try {\r\n            if (f = 1, y && (t = op[0] & 2 ? y[\"return\"] : op[0] ? y[\"throw\"] || ((t = y[\"return\"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;\r\n            if (y = 0, t) op = [op[0] & 2, t.value];\r\n            switch (op[0]) {\r\n                case 0: case 1: t = op; break;\r\n                case 4: _.label++; return { value: op[1], done: false };\r\n                case 5: _.label++; y = op[1]; op = [0]; continue;\r\n                case 7: op = _.ops.pop(); _.trys.pop(); continue;\r\n                default:\r\n                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }\r\n                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }\r\n                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }\r\n                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }\r\n                    if (t[2]) _.ops.pop();\r\n                    _.trys.pop(); continue;\r\n            }\r\n            op = body.call(thisArg, _);\r\n        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }\r\n        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };\r\n    }\r\n}\r\n\r\nfunction __exportStar(m, exports) {\r\n    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];\r\n}\r\n\r\nfunction __values(o) {\r\n    var m = typeof Symbol === \"function\" && o[Symbol.iterator], i = 0;\r\n    if (m) return m.call(o);\r\n    return {\r\n        next: function () {\r\n            if (o && i >= o.length) o = void 0;\r\n            return { value: o && o[i++], done: !o };\r\n        }\r\n    };\r\n}\r\n\r\nfunction __read(o, n) {\r\n    var m = typeof Symbol === \"function\" && o[Symbol.iterator];\r\n    if (!m) return o;\r\n    var i = m.call(o), r, ar = [], e;\r\n    try {\r\n        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);\r\n    }\r\n    catch (error) { e = { error: error }; }\r\n    finally {\r\n        try {\r\n            if (r && !r.done && (m = i[\"return\"])) m.call(i);\r\n        }\r\n        finally { if (e) throw e.error; }\r\n    }\r\n    return ar;\r\n}\r\n\r\nfunction __spread() {\r\n    for (var ar = [], i = 0; i < arguments.length; i++)\r\n        ar = ar.concat(__read(arguments[i]));\r\n    return ar;\r\n}\r\n\r\nfunction __await(v) {\r\n    return this instanceof __await ? (this.v = v, this) : new __await(v);\r\n}\r\n\r\nfunction __asyncGenerator(thisArg, _arguments, generator) {\r\n    if (!Symbol.asyncIterator) throw new TypeError(\"Symbol.asyncIterator is not defined.\");\r\n    var g = generator.apply(thisArg, _arguments || []), i, q = [];\r\n    return i = {}, verb(\"next\"), verb(\"throw\"), verb(\"return\"), i[Symbol.asyncIterator] = function () { return this; }, i;\r\n    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }\r\n    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }\r\n    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }\r\n    function fulfill(value) { resume(\"next\", value); }\r\n    function reject(value) { resume(\"throw\", value); }\r\n    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }\r\n}\r\n\r\nfunction __asyncDelegator(o) {\r\n    var i, p;\r\n    return i = {}, verb(\"next\"), verb(\"throw\", function (e) { throw e; }), verb(\"return\"), i[Symbol.iterator] = function () { return this; }, i;\r\n    function verb(n, f) { i[n] = o[n] ? function (v) { return (p = !p) ? { value: __await(o[n](v)), done: n === \"return\" } : f ? f(v) : v; } : f; }\r\n}\r\n\r\nfunction __asyncValues(o) {\r\n    if (!Symbol.asyncIterator) throw new TypeError(\"Symbol.asyncIterator is not defined.\");\r\n    var m = o[Symbol.asyncIterator], i;\r\n    return m ? m.call(o) : (o = typeof __values === \"function\" ? __values(o) : o[Symbol.iterator](), i = {}, verb(\"next\"), verb(\"throw\"), verb(\"return\"), i[Symbol.asyncIterator] = function () { return this; }, i);\r\n    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }\r\n    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }\r\n}\r\n\r\nfunction __makeTemplateObject(cooked, raw) {\r\n    if (Object.defineProperty) { Object.defineProperty(cooked, \"raw\", { value: raw }); } else { cooked.raw = raw; }\r\n    return cooked;\r\n};\r\n\r\nfunction __importStar(mod) {\r\n    if (mod && mod.__esModule) return mod;\r\n    var result = {};\r\n    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];\r\n    result.default = mod;\r\n    return result;\r\n}\r\n\r\nfunction __importDefault(mod) {\r\n    return (mod && mod.__esModule) ? mod : { default: mod };\r\n}\r\n\n\n//# sourceURL=webpack:///./node_modules/tslib/tslib.es6.js?");
+
+/***/ }),
+
+/***/ "./src/ui/pack-material.js":
+/*!*********************************!*\
+  !*** ./src/ui/pack-material.js ***!
+  \*********************************/
+/*! no exports provided */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _material_ripple__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @material/ripple */ \"./node_modules/@material/ripple/index.js\");\n/* harmony import */ var _material_floating_label__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/floating-label */ \"./node_modules/@material/floating-label/index.js\");\n/* harmony import */ var _material_textfield__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material/textfield */ \"./node_modules/@material/textfield/index.js\");\n/* harmony import */ var _material_data_table__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material/data-table */ \"./node_modules/@material/data-table/index.js\");\n/* harmony import */ var _material_switch__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @material/switch */ \"./node_modules/@material/switch/index.js\");\n\r\n\r\n\r\n\r\n\r\n\r\njb.ui.material = {MDCFloatingLabel: _material_floating_label__WEBPACK_IMPORTED_MODULE_1__[\"MDCFloatingLabel\"],MDCRipple: _material_ripple__WEBPACK_IMPORTED_MODULE_0__[\"MDCRipple\"],MDCTextField: _material_textfield__WEBPACK_IMPORTED_MODULE_2__[\"MDCTextField\"],MDCDataTable: _material_data_table__WEBPACK_IMPORTED_MODULE_3__[\"MDCDataTable\"],MDCSwitch: _material_switch__WEBPACK_IMPORTED_MODULE_4__[\"MDCSwitch\"]};\r\n\n\n//# sourceURL=webpack:///./src/ui/pack-material.js?");
+
+/***/ })
+
+/******/ });

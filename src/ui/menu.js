@@ -1,6 +1,6 @@
 jb.ns('menuStyle')
 jb.ns('menuSeparator')
-jb.ns('mdl')
+jb.ns('mdc')
 
 jb.component('menu.menu', { /* menu.menu */
   type: 'menu.option',
@@ -412,6 +412,7 @@ jb.component('menu-style.option-line', { /* menuStyle.optionLine */
 				h('i',{class:'material-icons'},state.icon),
 				h('span',{class:'title'},state.title),
 				h('span',{class:'shortcut'},state.shortcut),
+        h('div',{class: 'mdc-line-ripple' }),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				.selected { background: #d8d8d8 }
@@ -419,7 +420,7 @@ jb.component('menu-style.option-line', { /* menuStyle.optionLine */
 				>span { padding-top: 3px }
 						>.title { display: block; text-align: left; white-space: nowrap; }
 				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
-    features: [mdl.rippleEffect(), menu.initMenuOption()]
+    features: [menu.initMenuOption(),mdc.rippleEffect()]
   })
 })
 
@@ -462,7 +463,7 @@ jb.component('menu-style.popup-thumb', { /* menuStyle.popupThumb */
 				onmouseenter: 'mouseEnter',
 				onclick: 'openPopup'
 		},state.title),
-    features: [menu.initPopupMenu(), mdl.rippleEffect()]
+    features: [menu.initPopupMenu(), mdc.rippleEffect()]
   })
 })
 

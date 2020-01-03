@@ -104,10 +104,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
                   title: pipeline(count('%$obj%'), '%% items'),
                   control: studio.dataBrowse({obj: '%%', width: 200})
                 }),
-                style: table.mdl(
-                  'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
-                  'mdl-data-table__cell--non-numeric'
-                ),
+                style: table.mdc(),
                 features: [watchRef('%$maxItems%')]
               })
             ),
@@ -188,7 +185,7 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
           }),
           group({title: 'out', controls: studio.dataBrowse('%out%'), features: field.columnWidth(100)})
         ],
-        style: table.mdl('mdl-data-table', 'mdl-data-table__cell--non-numeric'),
+        style: table.mdc(),
         features: [
           watchRef('%$maxItems%'),
           feature.if('%$jbEditorCntrData/selected%'),
@@ -333,7 +330,7 @@ jb.component('studio.open-jb-editor', { /* studio.openJbEditor */
     content: studio.jbEditor('%$path%'),
     menu: button({
       action: studio.openJbEditorMenu('%$path%', '%$path%'),
-      style: button.mdlIcon('menu')
+      style: button.mdcIcon('menu')
     }),
     title: studio.pathHyperlink('%$path%', 'Inteliscript'),
     features: [studio.jbEditorContainer('jb-editor'), dialogFeature.resizer()]
@@ -354,7 +351,7 @@ jb.component('studio.open-component-in-jb-editor', { /* studio.openComponentInJb
         content: studio.jbEditor('%$compPath%'),
         menu: button({
           action: studio.openJbEditorMenu('%$jbEditorCntrData/selected%', '%$path%'),
-          style: button.mdlIcon('menu')
+          style: button.mdcIcon('menu')
         }),
         title: studio.pathHyperlink('%$compPath%', 'Inteliscript'),
         features: [studio.jbEditorContainer('comp-in-jb-editor'), dialogFeature.resizer()]
@@ -432,7 +429,7 @@ jb.component('studio.add-variable', { /* studio.addVariable */
           editableText({
             title: 'variable name',
             databind: '%$dialogData/name%',
-            style: editableText.mdlInput(),
+            style: editableText.mdcInput(),
             features: [
               feature.onEnter(
                 writeValue(studio.ref('%$path%~%$dialogData/name%'), ''),

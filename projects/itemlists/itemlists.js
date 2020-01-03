@@ -44,10 +44,7 @@ jb.component('itemlists.large-table', { /* itemlists.largeTable */
           field({title: 'id', data: '%id%', numeric: true}),
           field({title: 'group', data: ctx => Math.floor(Number(ctx.data.id) /10)})
         ],
-        style: table.mdl(
-          'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
-          'mdl-data-table__cell--non-numeric'
-        ),
+        style: table.mdc(),
         visualSizeLimit: '1000'
       })
     ]
@@ -70,10 +67,7 @@ jb.component('itemlists.large-table-with-search', { /* itemlists.largeTableWithS
           field({title: 'id', data: '%id%', hoverTitle: '--%id%--', numeric: true}),
           field({title: 'group', data: ctx => Math.floor(Number(ctx.data.id) /10)})
         ],
-        style: table.mdl(
-          'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp',
-          'mdl-data-table__cell--non-numeric'
-        ),
+        style: table.mdc(),
         visualSizeLimit: '1000',
         features: [
           watchRef('%$itemlistCntrData/search_pattern%'),
@@ -113,12 +107,12 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
           editableText({
             title: 'name',
             databind: '%name%',
-            style: editableText.mdlInputNoFloatingLabel('200')
+            style: editableText.mdcNoLabel('200')
           }),
           editableText({
             title: 'age',
             databind: '%age%',
-            style: editableText.mdlInputNoFloatingLabel('50')
+            style: editableText.mdcNoLabel('50')
           }),
           button({
             action: removeFromArray({array: '%$people%', itemToRemove: '%%'}),
@@ -126,7 +120,7 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
             features: [itemlist.shownOnlyOnItemHover(), field.columnWidth(60)]
           })
         ],
-        style: table.mdl('mdl-data-table mdl-shadow--2dp', 'mdl-data-table__cell--non-numeric'),
+        style: table.mdc(),
         features: [
           watchRef({ref: '%$people%', includeChildren: 'structure', allowSelfRefresh: true}),
           itemlist.dragAndDrop()
@@ -135,7 +129,7 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
       button({
         title: 'add',
         action: addToArray('%$people%', obj()),
-        style: button.mdlRaised()
+        style: button.mdcRaised()
       })
     ]
   })
@@ -147,16 +141,18 @@ jb.component('itemlists.table-with-search', { /* itemlists.tableWithSearch */
   impl: group({
     controls: [
       group({
+        layout: layout.vertical(),
         controls: [
           itemlistContainer.search({
             title: 'Search',
             searchIn: itemlistContainer.searchInAllProperties(),
             databind: '%$itemlistCntrData/search_pattern%',
-            style: editableText.mdlSearch()
+            style: editableText.mdcSearch()
           }),
           table({
             items: pipeline('%$people%', itemlistContainer.filter()),
             fields: [field({title: 'name', data: '%name%'}), field({title: 'age', data: '%age%'})],
+            style: table.mdc(),
             features: [
               watchRef('%$itemlistCntrData/search_pattern%'),
               itemlist.selection({
@@ -168,7 +164,7 @@ jb.component('itemlists.table-with-search', { /* itemlists.tableWithSearch */
             ]
           })
         ],
-        features: group.itemlistContainer({})
+        features: [group.itemlistContainer({}), css.width('300')]
       })
     ]
   })
@@ -188,13 +184,13 @@ jb.component('itemlists.table-with-filters', { /* itemlists.tableWithFilters */
               editableText({
                 title: 'name',
                 databind: '%$itemlistCntrData/name_filter%',
-                style: editableText.mdlInput('100'),
+                style: editableText.mdcInput('100'),
                 features: itemlistContainer.filterField('%name%', filterType.text(true))
               }),
               editableText({
                 title: 'age above',
                 databind: '%$itemlistCntrData/age_filter%',
-                style: editableText.mdlInput('100'),
+                style: editableText.mdcInput('100'),
                 features: itemlistContainer.filterField('%age%', filterType.numeric())
               })
             ]
@@ -238,7 +234,7 @@ jb.component('itemlists.master-details-with-container', { /* itemlists.masterDet
         title: 'person',
         style: propertySheet.titlesAbove({
           titleStyle: styleWithFeatures(
-            label.mdlRippleEffect(),
+            label.mdcRippleEffect(),
             css('text-align: left; padding-left: 0;')
           )
         }),

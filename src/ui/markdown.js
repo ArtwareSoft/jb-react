@@ -10,7 +10,6 @@ jb.component('markdown', {
         jb.ui.ctrl(ctx)
 })
 
-
 jb.component('markdown.showdown', {
     type: 'markdown.style',
     impl: ctx => ({

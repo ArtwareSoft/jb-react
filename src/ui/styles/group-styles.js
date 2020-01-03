@@ -38,38 +38,6 @@ jb.component('group.ul-li', { /* group.ulLi */
   })
 })
 
-jb.component('group.expandable', { /* group.expandable */
-  type: 'group.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('section',{ class: 'jb-group'},[
-        h('div',{ class: 'header'},[
-          h('div',{ class: 'title'}, state.title),
-          h('button',{ class: 'mdl-button mdl-button--icon', onclick: 'toggle', title: cmp.expand_title() },
-            h('i',{ class: 'material-icons'}, state.show ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
-          )
-        ])
-      ].concat(state.show ? state.ctrls.map(ctrl=> h('div',{ },h(ctrl))): [])
-    ),
-    css: `>.header { display: flex; flex-direction: row; }
-        >.header>button:hover { background: none }
-        >.header>button { margin-left: auto }
-        >.header.title { margin: 5px }`,
-    features: [group.initGroup(), group.initExpandable()]
-  })
-})
-
-jb.component('group.init-expandable', { /* group.initExpandable */
-  type: 'feature',
-  category: 'group:0',
-  impl: ctx => ({
-        init: cmp => {
-            cmp.state.show = true;
-            cmp.expand_title = () => cmp.show ? 'collapse' : 'expand';
-            cmp.toggle = function () { cmp.show = !cmp.show; };
-        },
-  })
-})
-
 jb.component('group.tabs', { /* group.tabs */
   type: 'group.style',
   params: [
@@ -89,7 +57,7 @@ jb.component('group.tabs', { /* group.tabs */
                 writeValue('%$selectedTab/ctrl%', '%$tab%'),
                 refreshControlById(ctx=> 'tab_' + ctx.componentContext.id)
               ),
-              style: button.mdlFlatRipple(),
+              style: button.mdcFlat(),
               features: [css.width('%$width%'), css('{text-align: left}')]
             }),
             itemVariable: 'tab'
@@ -114,7 +82,7 @@ jb.component('group.tabs', { /* group.tabs */
 jb.component('group.accordion', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdlFlatRipple() },
+    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcFlat() },
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],

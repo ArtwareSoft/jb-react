@@ -1,8 +1,9 @@
+jb.ns('mdc,mdc-style')
+
 jb.component('editable-text.input', { /* editableText.input */
   type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', {
-        value: state.model, onchange: true, onkeyup: true, onblur: true }),
+    template: (cmp,state,h) => h('input', {value: state.model, onchange: true, onkeyup: true, onblur: true }),
     features: field.databindText()
   })
 })
@@ -16,58 +17,56 @@ jb.component('editable-text.textarea', { /* editableText.textarea */
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('textarea', {
-        rows: cmp.rows, cols: cmp.cols,
-        value: state.model, onchange: true, onkeyup: true, onblur: true  }),
+        rows: cmp.rows, cols: cmp.cols, value: state.model, onchange: true, onkeyup: true, onblur: true  }),
     features: field.databindText(0, '%$oneWay%')
   })
 })
 
-jb.component('editable-text.mdl-input', { /* editableText.mdlInput */
+jb.component('editable-text.mdc-input', { /* editableText.mdcInput */
   type: 'editable-text.style,editable-number.style',
   params: [
     {id: 'width', as: 'number'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{class: ['mdl-textfield','mdl-js-textfield','mdl-textfield--floating-label',state.error ? 'is-invalid' : ''].join(' ') },[
-        h('input', { class: 'mdl-textfield__input', id: 'input_' + state.fieldId, type: 'text',
+    template: (cmp,state,h) => h('div',{class: ['mdc-text-field',state.error ? 'is-invalid' : ''].join(' ') },[
+        h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + state.fieldId,
             value: state.model, onchange: true, onkeyup: true, onblur: true,
         }),
-        h('label',{class: 'mdl-textfield__label', for: 'input_' + state.fieldId},state.title),
-        h('span',{class: 'mdl-textfield__error' }, state.error || '')
+        h('label',{class: 'mdc-floating-label', for: 'input_' + state.fieldId},state.title),
+        h('div',{class: 'mdc-line-ripple' }),
+        h('span',{class: 'mdc-text-field-helper-text' }, state.error || '')
       ]),
     css: '{ {?width: %$width%px?} }',
-    features: [
-      field.databindText(),
-      mdlStyle.initDynamic(),
-    ]
+    features: [field.databindText(), mdcStyle.initDynamic()]
   })
 })
 
-jb.component('editable-text.mdl-input-no-floating-label', { /* editableText.mdlInputNoFloatingLabel */
+jb.component('editable-text.mdc-no-label', { /* editableText.mdcNoLabel */
   type: 'editable-text.style',
   params: [
     {id: 'width', as: 'number'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { class: 'mdl-textfield__input', type: 'text',
-            value: state.model, onchange: true, onkeyup: true, onblur: true,
-    }),
-    css: '{ {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
-    features: [field.databindText()]
+    template: (cmp,state,h) => h('div',{class: 'mdc-text-field mdc-text-field--no-label'},
+        h('input', { class: 'mdc-text-field__input', type: 'text', value: state.model, onchange: true, onkeyup: true, onblur: true }),
+        h('div',{class: 'mdc-line-ripple' }),
+        ),
+    css: '{ padding: 0 !important; {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
+    features: [field.databindText(), mdcStyle.initDynamic()]
   })
 })
 
-jb.component('editable-text.mdl-search', { /* editableText.mdlSearch */
+jb.component('editable-text.mdc-search', { /* editableText.mdcSearch */
   description: 'debounced and one way binding',
   type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,{model, fieldId, title},h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[
-        h('input', { class: 'mdl-textfield__input', id: 'search_' + fieldId, type: 'text',
+    template: (cmp,{model, fieldId, title},h) => h('div',{class:'mdc-text-field'},[
+        h('input', { class: 'mdc-text-field__input', id: 'search_' + fieldId, type: 'text',
             value: model, onchange: true, onkeyup: true, onblur: true,
         }),
-        h('label',{class: 'mdl-textfield__label', for: 'search_' + fieldId}, model ? '' : title)
+        h('label',{class: 'mdc-floating-label mdc-floating-label--float-above', for: 'search_' + fieldId}, model ? '' : title)
       ]),
-    features: [field.databindText(), mdlStyle.initDynamic()]
+    features: [field.databindText(), mdcStyle.initDynamic()]
   })
 })
 

@@ -312,8 +312,8 @@ jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
 			h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
 			h(state.contentComp),
 			h('div',{class: 'dialog-buttons'},[
-				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: 'dialogClose' },cmp.cancelLabel),
-				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: 'dialogCloseOK' },cmp.okLabel),
+				h('button',{class: 'mdc-button', onclick: 'dialogClose' },cmp.cancelLabel),
+				h('button',{class: 'mdc-button', onclick: 'dialogCloseOK' },cmp.okLabel),
 			]),
 		]),
     css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }'

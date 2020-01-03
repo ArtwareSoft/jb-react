@@ -23,7 +23,7 @@ jb.component('studio.pages', { /* studio.pages */
       button({
         title: 'new page',
         action: studio.openNewPage(),
-        style: button.mdlIcon12('add'),
+        style: button.mdcIcon12('add'),
         features: [css('{margin: 5px}'), feature.hoverTitle('new page')]
       }),
       itemlist({
@@ -48,7 +48,7 @@ jb.component('studio.pages', { /* studio.pages */
       button({
         title: 'new function',
         action: studio.openNewFunction(),
-        style: button.mdlIcon12('add'),
+        style: button.mdcIcon12('add'),
         features: [css('{margin: 5px}'), feature.hoverTitle('new function')]
       }),
       itemlist({
@@ -160,7 +160,7 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
                 controls: [
                   editableBoolean({
                     databind: '%$studio/settings/activateWatchRefViewer%',
-                    style: editableBoolean.mdlSlideToggle(),
+                    style: editableBoolean.mdcSlideToggle(),
                     title: 'activate watchRef viewer'
                   })
                 ],
@@ -244,7 +244,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
               studio.toolbar(),
               studio.searchComponent()
             ],
-            features: [css.width('1040')]
+            features: [css.width('960')]
           })
         ],
         features: css('padding-left: 18px; width: 100%; ')

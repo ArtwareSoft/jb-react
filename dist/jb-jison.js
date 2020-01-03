@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./src/misc/jb-jison.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/misc/pack-jison.js");
 /******/ })
 /************************************************************************/
 /******/ ({
@@ -362,14 +362,14 @@ eval("module.exports = function(module) {\n\tif (!module.webpackPolyfill) {\n\t\
 
 /***/ }),
 
-/***/ "./src/misc/jb-jison.js":
-/*!******************************!*\
-  !*** ./src/misc/jb-jison.js ***!
-  \******************************/
+/***/ "./src/misc/pack-jison.js":
+/*!********************************!*\
+  !*** ./src/misc/pack-jison.js ***!
+  \********************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-eval("jb.jisonParser = __webpack_require__(/*! jison */ \"./node_modules/jison/lib/jison.js\");\n\n//# sourceURL=webpack:///./src/misc/jb-jison.js?");
+eval("jb.jisonParser = __webpack_require__(/*! jison */ \"./node_modules/jison/lib/jison.js\");\n\n//# sourceURL=webpack:///./src/misc/pack-jison.js?");
 
 /***/ })
 

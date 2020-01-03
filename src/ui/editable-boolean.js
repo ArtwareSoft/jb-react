@@ -25,8 +25,7 @@ jb.component('editable-boolean', { /* editableBoolean */
 				if (!cmp.jbModel) return '';
 				return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
 			}
-			cmp.extendRefresh = _ =>
-				cmp.setState({text: cmp.text()})
+			cmp.extendRefresh = () => cmp.strongRefresh()
 			cmp.state.text = cmp.text()
 		},
 	})
@@ -36,13 +35,7 @@ jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardS
   type: 'feature',
   impl: ctx => ({
 		onkeydown: true,
-		afterViewInit: cmp => {
-			cmp.onkeydown.filter(e=> 
-					e.keyCode == 37 || e.keyCode == 39)
-				.subscribe(e=> {
-					cmp.toggle();
-					cmp.refreshMdl && cmp.refreshMdl();
-				})
-		},
+		afterViewInit: cmp => cmp.onkeydown.filter(e=> e.keyCode == 37 || e.keyCode == 39)
+			.subscribe(e=> cmp.toggle())
 	})
 })

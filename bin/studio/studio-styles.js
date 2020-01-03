@@ -3,12 +3,12 @@ jb.component('editable-text.studio-primitive-text', {
   impl :{$: 'custom-style',
       features :{$: 'field.databind-text' },
       template: (cmp,state,h) => h('input', {
-          class: 'mdl-textfield__input',
+          class: 'mdc-text-field__input',
           value: state.model,
           onchange: e => cmp.jbModel(e.target.value),
           onkeyup: e => cmp.jbModel(e.target.value,'keyup')
       }),
-    css: `{ width1: 367px} :focus { border-color: #3F51B5; border-width: 2px}`,
+    css: `{ padding: 2px} :focus { border-color: #3F51B5; border-width: 2px}`,
 	}
 })
 
@@ -16,7 +16,7 @@ jb.component('button.select-profile-style', {
   type: 'button.style',
   impl :{$: 'custom-style',
    template: (cmp,state,h) =>
-        h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
+        h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup:ev => cmp.clicked(ev),
             onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
@@ -39,18 +39,17 @@ jb.component('studio.property-toolbar-style', {
 jb.component('editable-text.jb-editor-floating-input', {
   type: 'editable-text.style',
   impl :{$: 'custom-style',
-   template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
-        h('input', { class: 'mdl-textfield__input', id: 'jb_input_' + state.fieldId, type: 'text',
+   template: (cmp,state,h) => h('div',{class:'mdc-text-field'},[
+        h('input', { class: 'mdc-text-field__input', id: 'jb_input_' + state.fieldId, type: 'text',
             value: state.model,
             onchange: e => cmp.jbModel(e.target.value),
             onkeyup: e => cmp.jbModel(e.target.value,'keyup'),
         }),
-        h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
+        h('label',{class: 'mdc-floating-label mdc-floating-label--float-above', for: 'jb_input_' + state.fieldId},state.title)
       ]),
       css: '{ margin-right: 13px; }', // for the x-button
       features :[
           {$: 'field.databind-text', debounceTime: 300, oneWay: true },
-          {$: 'mdl-style.init-dynamic'}
       ],
   }
 })
@@ -59,50 +58,14 @@ jb.component('button.studio-script', {
   type: 'button.style',
   impl :{$: 'custom-style',
    template: (cmp,state,h) =>
-        h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
+        h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup:ev => cmp.clicked(ev),
             onkeydown:ev => ev.keyCode == 13 && cmp.clicked(ev),
         }),
-        css: `{ cursor: pointer;width1: 367px; opacity: 0.8; font-style: italic; }`
+        css: `{ cursor: pointer; opacity: 0.8; font-style: italic; }`
   }
 })
-
-// jb.component('button.studio-script2', {
-//   type: 'button.style',
-//   impl :{$: 'custom-style',
-//       template: (cmp,state,h) => h('div', { title: state.title, onclick: _ => cmp.clicked() },
-//         h('div',{class:'inner-text'},state.title)),
-//           css: `>.inner-text {
-//   white-space: nowrap; overflow-x: hidden;
-//   display: inline; height: 16px;
-//   padding-left: 4px; padding-top: 2px;
-//   font: 12px "arial"; color: #555555;
-// }
-
-// {
-//   width: 149px;
-//   border: 1px solid #ccc; border-radius: 4px;
-//   cursor: pointer;
-//   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
-//   background: #eee;
-//   white-space: nowrap; overflow-x: hidden;
-//   text-overflow: ellipsis;
-// }`,
-// }
-// })
-
-
-// todo: take from http://creativeit.github.io/getmdl-select/
- // <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label getmdl-select getmdl-select__fullwidth">
- //            <input class="mdl-textfield__input" type="text" id="sample1" value="Belarus" readonly tabIndex="-1">
- //            <label for="sample1" class="mdl-textfield__label">Country</label>
- //            <ul for="sample1" class="mdl-menu mdl-menu--bottom-left mdl-js-menu">
- //                <li class="mdl-menu__item">Germany</li>
- //                <li class="mdl-menu__item">Belarus</li>
- //                <li class="mdl-menu__item">Russia</li>
- //            </ul>
- //        </div>
 
 jb.component('picklist.studio-enum', {
   type: 'picklist.style',
@@ -291,36 +254,6 @@ jb.component('dialog-feature.studio-position-under-property', {
         }
 			}
 		})
-})
-
-jb.component('group.studio-properties-accordion', {
-  type: 'group.style',
-  impl :{$: 'custom-style',
-    template: (cmp,state,h) => h('section',{ class: 'jb-group'},
-        state.ctrls.map((ctrl,index)=> jb.ui.item(cmp,h('div',{ class: 'accordion-section' },[
-          h('div',{ class: 'header', onclick: _=> cmp.show(index) },[
-            h('div',{ class: 'title'}, ctrl.title),
-            h('button',{ class: 'mdl-button mdl-button--icon', title: cmp.expand_title(ctrl) },
-              h('i',{ class: 'material-icons'}, state.shown == index ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
-            )
-          ])].concat(state.shown == index ? [h(ctrl)] : [])),ctrl.ctx.data)
-    )),
-    css: `>.accordion-section>.header { cursor: pointer; display: flex; flex-direction: row; background: #eee; margin-bottom: 2px; justify-content: space-between}
->.accordion-section>.header>button:hover { background: none }
->.accordion-section>.header>button { margin-left: auto }
->.accordion-section>.header>button>i { color: #; cursor: pointer }
->.accordion-section>.header>.title { margin: 5px }
->.accordion-section:last-child() { padding-top: 2px }
-`,
-      features : [
-        {$: 'group.init-group' },
-        {$: 'group.init-accordion', keyboardSupport: true, autoFocus: true },
-        ctx =>({
-          afterViewInit: cmp =>
-            ctx.vars.PropertiesDialog.openFeatureSection = _ => cmp.show(1)
-        })
-      ]
-  }
 })
 
 jb.component('label.studio-message', {

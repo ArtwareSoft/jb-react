@@ -9,7 +9,7 @@ jb.component('button', { /* button */
     {
       id: 'style',
       type: 'button.style',
-      defaultValue: button.mdlRaised(),
+      defaultValue: button.mdcRaised(),
       dynamic: true
     },
     {id: 'features', type: 'feature[]', dynamic: true}

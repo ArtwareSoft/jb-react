@@ -2,10 +2,10 @@ jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrim
   type: 'editable-text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('input', {
-          class: 'mdl-textfield__input',
+          class: 'mdc-text-field__input',
           value: state.model, onchange: true, onkeyup: true, onblur: true
       }),
-    css: ':focus { border-color: #3F51B5; border-width: 2px}',
+    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
     features: field.databindText(500,false)
   })
 })
@@ -13,17 +13,17 @@ jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrim
 jb.component('editable-text.floating-input', { /* editableText.floatingInput */
   type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{class:'mdl-textfield mdl-js-textfield mdl-textfield--floating-label'},[
-      h('input', { class: 'mdl-textfield__input', id1: 'jb_input_' + state.fieldId, type: 'text', autocomplete: 'nop',
+    template: (cmp,state,h) => h('div',{class:'mdc-text-field'},[
+      h('input', { class: 'mdc-text-field__input', type: 'text', autocomplete: 'nop',
           value: state.model, onchange: true, onkeyup: true, onblur: true,
       }),
-      h('label',{class: 'mdl-textfield__label', for: 'jb_input_' + state.fieldId},state.title)
-  ]),
-    css: '{ margin-right: 13px; }',
-    features: [field.databindText(300, true), mdlStyle.initDynamic()]
+      h('label',{class: 'mdc-floating-label', for: 'jb_input_' + state.fieldId},state.title)
+    ]),
+    css: `>input { font-size: 1.2rem; }
+    { margin-right: 13px;}`,
+    features: [field.databindText(300, true), mdcStyle.initDynamic()]
   })
 })
-
 
 jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
   incNumberAtCursor(editor, {inc}) {
@@ -69,12 +69,12 @@ jb.component('button.select-profile-style', { /* button.selectProfileStyle */
   impl: customStyle({
     init: cmp => cmp.clickedEnter = ev => ev.keyCode == 13 && cmp.onclickHandler(ev),
     template: (cmp,state,h) =>
-        h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
+        h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup: 'onclickHandler',
             onkeydown: 'clickedEnter',
         }),
-    css: '{ cursor: pointer; } :focus { border-color: #3F51B5; border-width: 2px}'
+    css: '{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px; } :focus { border-color: #3F51B5; border-width: 2px}'
   })
 })
 
@@ -91,14 +91,16 @@ jb.component('button.studio-script', { /* button.studioScript */
   impl: customStyle({
     init: cmp => cmp.clickedEnter = ev => ev.keyCode == 13 && cmp.onclickHandler(ev),
     template: (cmp,state,h) =>
-        h('input', { class: 'mdl-textfield__input', type: 'text', readonly: true, title: state.title,
+        h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup: 'onclickHandler',
             onkeydown: 'clickedEnter',
         }),
-    css: '{ cursor: pointer;width1: 367px; opacity: 0.8; font-style: italic; }'
+    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;; cursor: pointer; opacity: 0.8; font-style: italic; }'
   })
 })
+
+
 
 jb.component('picklist.studio-enum', { /* picklist.studioEnum */
   type: 'picklist.style',

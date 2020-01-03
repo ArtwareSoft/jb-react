@@ -16,10 +16,20 @@ const jbRx = {
 
 const jbImmutable = {
   mode: 'development',
-  entry: JBART_DIR + 'src/ui/jb-immutable.js',
+  entry: JBART_DIR + 'src/ui/pack-immutable.js',
   output: {
     path: JBART_DIR + 'dist',
     filename: 'jb-immutable.js',
+  },
+  resolve: { modules: [ 'node_modules' ] },
+};
+
+const material = {
+  mode: 'development',
+  entry: JBART_DIR + 'src/ui/pack-material.js',
+  output: {
+    path: JBART_DIR + 'dist',
+    filename: 'material.js',
   },
   resolve: { modules: [ 'node_modules' ] },
 };
@@ -51,7 +61,7 @@ const jbRxMin = {
 
 const jbJison = {
   mode: 'development',
-  entry: JBART_DIR + 'src/misc/jb-jison.js',
+  entry: JBART_DIR + 'src/misc/pack-jison.js',
   output: {
     path: JBART_DIR + 'dist',
     filename: 'jb-jison.js',
@@ -63,4 +73,4 @@ const jbJison = {
   resolve: { modules: [ 'node_modules'] },
 };
 
-module.exports = [jbImmutable,jbRx,babel_ext,jbJison];
+module.exports = [jbImmutable,jbRx,babel_ext,jbJison,material];

@@ -10,7 +10,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'material-css': [
         'dist/material.css',
-        'dist/material.indigo-pink.min.css',
+//        'dist/material.indigo-pink.min.css',
       ],
       'ui-common': [
         'css/font.css',
@@ -45,7 +45,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/table.js',
         'src/ui/window.js',
 
-        'src/ui/styles/mdl-styles.js',
+        'src/ui/styles/mdc-styles.js',
         'src/ui/styles/button-styles.js',
         'src/ui/styles/editable-text-styles.js',
         'src/ui/styles/layout-styles.js',
@@ -112,9 +112,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'jb-d3': ['dist/jb-d3.js'],
       'css-files': [
-        'dist/material.min.css',
-        'dist/material.indigo-pink.min.css',
-
+        'dist/material.css',
         'css/font.css',
         'css/styles.css',
       ],
@@ -125,7 +123,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'material': [
         'dist/material.js',
         'dist/material.css',
-        'dist/material.indigo-pink.min.css',
       ],
       'history': [ 'dist/history.js' ],
       'node-adapter': [ 'src/node-adapter/node-adapter.js' ],

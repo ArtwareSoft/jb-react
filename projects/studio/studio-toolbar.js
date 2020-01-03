@@ -14,46 +14,46 @@ jb.component('studio.pickAndOpen', { /* studio.pickAndOpen */
   )
 })
 
-jb.component('studio.toolbar', { /* studio.toolbar */ 
+jb.component('studio.toolbar', { /* studio.toolbar */
   type: 'control',
   impl: group({
+    layout: layout.horizontal('5'),
     controls: [
-      label({text: '', features: css('{ width: 170px }')}),
       button({
         title: 'Select',
         action: studio.pickAndOpen(),
-        style: button.mdlIcon('call_made')
+        style: button.mdcIcon('call_made')
       }),
       button({
         title: 'Save',
         action: studio.saveComponents(),
-        style: button.mdlIcon('save'),
-        features: ctrlAction(studio.saveComponents(true))
+        style: button.mdcIcon('save'),
+        features: ctrlAction(studio.saveComponents())
       }),
       button({
         title: 'Refresh Preview',
         action: studio.refreshPreview(),
-        style: button.mdlIcon('refresh')
+        style: button.mdcIcon('refresh')
       }),
       button({
         title: 'Javascript',
         action: studio.editSource(),
-        style: button.mdlIcon('code')
+        style: button.mdcIcon('code')
       }),
       button({
         title: 'Outline',
         action: studio.openControlTree(),
-        style: button.mdlIcon('format_align_left')
+        style: button.mdcIcon('format_align_left')
       }),
       button({
-        title: 'Properties',
+        title: 'storage',
         action: studio.openProperties(true),
-        style: button.mdlIcon('storage')
+        style: button.mdcIcon('storage')
       }),
       button({
         title: 'jbEditor',
         action: studio.openComponentInJbEditor('%$studio/project%.%$studio/page%'),
-        style: button.mdlIcon('build'),
+        style: button.mdcIcon('build'),
         features: ctrlAction(
           studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true})
         )
@@ -61,32 +61,32 @@ jb.component('studio.toolbar', { /* studio.toolbar */
       button({
         title: 'Event Tracker',
         action: studio.openEventTracker(),
-        style: button.mdlIcon('hearing'),
+        style: button.mdcIcon('hearing'),
         features: ctrlAction(studio.openEventTracker('true'))
       }),
       button({
         title: 'History',
         action: studio.openScriptHistory(),
-        style: button.mdlIcon('pets')
+        style: button.mdcIcon('pets')
       }),
       button({
         title: 'Show Data',
         action: {'$': 'studio.showProbeData'},
-        style: button.mdlIcon('input')
+        style: button.mdcIcon('input')
       }),
       button({
-        title: 'Insert Control',
+        title: 'add',
         action: studio.openNewProfileDialog({
           type: 'control',
           mode: 'insert-control',
           onClose: studio.gotoLastEdit()
         }),
-        style: button.mdlIcon('add')
+        style: button.mdcIcon('add')
       }),
       button({
         title: 'Responsive',
         action: studio.openResponsivePhonePopup(),
-        style: button.mdlIcon('tablet_android')
+        style: button.mdcIcon('tablet_android')
       })
     ],
     features: [

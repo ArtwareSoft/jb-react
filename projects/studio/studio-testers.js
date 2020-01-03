@@ -54,9 +54,7 @@ jb.component('jb-editor-children-test', { /* jbEditorChildrenTest */
     calculate: ctx => {
       const params = ctx.componentContext.params;
       const mdl = new jb.studio.jbEditorTree('');
-      const titles = mdl.children(params.path)
-        .map(path=>
-          mdl.title(path,true));
+      const titles = mdl.children(params.path).map(path=>mdl.title(path,true));
       return JSON.stringify(titles);
     },
     expectedResult: call('expectedResult')

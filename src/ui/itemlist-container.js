@@ -130,7 +130,7 @@ jb.component('itemlist-container.search', { /* itemlistContainer.search */
     {
       id: 'style',
       type: 'editable-text.style',
-      defaultValue: editableText.mdlSearch(),
+      defaultValue: editableText.mdcSearch(),
       dynamic: true
     },
     {id: 'features', type: 'feature[]', dynamic: true}

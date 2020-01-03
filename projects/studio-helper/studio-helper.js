@@ -28,7 +28,7 @@ jb.component('studio-helper.event-tracker', { /* studioHelper.eventTracker */
     title: '',
     layout: layout.vertical(3),
     controls: [
-      editableText({databind: '%$globals/test1%', style: editableText.mdlInput()}),
+      editableText({databind: '%$globals/test1%', style: editableText.mdcInput()}),
       label({text: '%$globals/test1%', style: label.span()}),
       studio.eventTracker()
     ]
@@ -172,7 +172,7 @@ jb.component('studio-helper.empty-group', { /* studioHelper.emptyGroup */
   type: 'control',
   impl: group({
     controls: [
-
+      text({text: pipeline(''), title: 'my title'})
     ]
   })
 })
@@ -182,8 +182,8 @@ jb.component('studio-helper.data-resources', { /* studioHelper.dataResources */
   impl: group({
     controls: [
       {'$': 'studio.data-resources'},
-      button({style: button.mdlFlatRipple()}),
-      button({style: button.mdlFlatRipple()})
+      button({style: button.mdcFlat()}),
+      button({style: button.mdcFlat()})
     ]
   })
 })
@@ -324,7 +324,7 @@ jb.component('studio-helper-sample.properties-params', { /* studioHelperSample.p
     {id: 'boolAsComp', type: 'boolean', as: 'boolean'},
     {id: 'boolAsJs', type: 'boolean', as: 'boolean'},
     {id: 'boolAsExp', type: 'boolean', as: 'boolean'},
-    {id: 'style', type: 'button.style', defaultValue: button.mdlIcon()},
+    {id: 'style', type: 'button.style', defaultValue: button.mdcIcon()},
     {id: 'groupStyle', type: 'group.style'},
     {id: 'action', type: 'action'},
     {id: 'features', type: 'feature[]'},
@@ -355,7 +355,7 @@ jb.component('studio-helper-sample.properties-params-prof', { /* studioHelperSam
     boolAsJs: ctx => ctx.vars.aa,
     boolAsExp: '%$person/male%',
     style: button.href(),
-    features: [label.bindText(), mdlStyle.initDynamic()]
+    features: [label.bindText(), mdcStyle.initDynamic()]
   }),
   '$vars': {
 
@@ -379,31 +379,6 @@ jb.component('studio-helper-sample.properties-tgp', { /* studioHelperSample.prop
     button.x(),
     button.x()
   )
-})
-
-jb.component('studio-helper-sample.custom-style-comp', { /* studioHelperSample.customStyleComp */
-  type: 'control',
-  impl: label({
-    title: 'hello',
-    style: customStyle({
-      template: `
-h('div',{ class: 'demo-card-wide mdl-card mdl-shadow--2dp' },
-  h('div',{ class: 'mdl-card__title' },
-    h('h2',{ class: 'mdl-card__title-text' },
-      'Welcome')),
-  h('div',{ class: 'mdl-card__supporting-text' },
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris sagittis pellentesque lacus eleifend lacinia...'),
-  h('div',{ class: 'mdl-card__actions mdl-card--border' },
-    h('a',{ class: 'mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect' },
-      'Get Started')),
-  h('div',{ class: 'mdl-card__menu' },
-    h('button',{ class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect' },
-      h('i',{ class: 'material-icons' },
-        'share'))))`,
-      css: '',
-      features: [label.bindText(), mdlStyle.initDynamic()]
-    })
-  })
 })
 
 jb.component('studio-helper.edit-style', { /* studioHelper.editStyle */

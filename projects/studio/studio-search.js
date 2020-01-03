@@ -94,18 +94,24 @@ jb.component('studio.search-component', { /* studio.searchComponent */
     controls: [
       itemlistContainer.search({
         title: 'Search',
-//        searchIn: item => item.id,
         databind: '%$itemlistCntrData/search_pattern%',
-        style: editableText.mdlSearch(),
+        style: editableText.mdcNoLabel(),
         features: [
           editableText.helperPopup({
             control: studio.searchList(),
             popupId: 'search-component',
             popupStyle: dialog.popup()
-          })
+          }),
+          css(
+            '>input {padding-right: 45px; border-bottom-color: white !important} {height: 35px; background: white !important}'
+          )
         ]
+      }),
+      materialIcon({
+        icon: 'search',
+        features: [css.margin({top: '5', left: '-30'}), css('z-index: 1000')]
       })
     ],
-    features: [group.itemlistContainer({}), css.margin({top: '-13', left: '10'})]
+    features: [group.itemlistContainer({}), css.margin({top: '-3', left: '10'})]
   })
 })

@@ -117,7 +117,7 @@ jb.component('studio.style-editor', { /* studio.styleEditor */
                   onOK: writeValue(studio.ref('%$path%~template'), studio.jsxToH('%$jsx%')),
                   features: [variable({name: 'jsx', value: 'paste your jsx here', watchable: 'true'})]
                 }),
-                style: button.mdlRaised()
+                style: button.mdcRaised()
               })
             ]
           }),
@@ -162,7 +162,7 @@ jb.component('studio.open-style-editor', { /* studio.openStyleEditor */
     menu: button({
       title: 'style menu',
       action: studio.openStyleMenu('%$path%'),
-      style: button.mdlIcon('menu'),
+      style: button.mdcIcon('menu'),
       features: css('button { background: transparent }')
     }),
     title: 'Style Editor - %$styleSource/path%',

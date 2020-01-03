@@ -125,7 +125,7 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
     {id: 'path', as: 'string'}
   ],
   impl: group({
-    layout: layout.horizontal(),
+    layout: layout.grid({columnSizes: list('90%', 'auto')}),
     controls: [
       group({
         title: '',
@@ -146,7 +146,8 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
                 showHelper: studio.showSuggestions(),
                 onEnter: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()),
                 onEsc: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus())
-              })
+              }),
+              css.width('100%')
             ]
           }),
           label({
@@ -178,7 +179,8 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
         name: 'suggestionData',
         value: {'$': 'object', selected: '', options: [], path: '%$path%'}
       }),
-      css.padding({left: '4', right: '4'})
+      css.padding({left: '4', right: '4'}),
+      css.width('500')
     ]
   })
 })

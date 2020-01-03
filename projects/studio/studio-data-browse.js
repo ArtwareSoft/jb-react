@@ -58,7 +58,7 @@ jb.component('studio.open-new-resource', { /* studio.openNewResource */
         editableText({
           title: 'resource name',
           databind: '%$name%',
-          style: editableText.mdlInput(),
+          style: editableText.mdcInput(),
           features: feature.onEnter(dialog.closeContainingPopup())
         })
       ],

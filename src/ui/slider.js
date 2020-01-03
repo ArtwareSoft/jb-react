@@ -1,5 +1,4 @@
 jb.ns('slider')
-jb.ns('mdlStyle')
 
 jb.component('editable-number.slider-no-text', { /* editableNumber.sliderNoText */
   type: 'editable-number.style',
@@ -21,7 +20,7 @@ jb.component('editable-number.slider', { /* editableNumber.slider */
         controls: [
           editableText({
             databind: '%$editableNumberModel/databind%',
-            style: editableText.mdlInputNoFloatingLabel(36),
+            style: editableText.mdcNoLabel(36),
             features: [slider.handleArrowKeys(), css.margin(-3)]
           }),
           editableNumber({
@@ -115,7 +114,7 @@ jb.component('slider.edit-as-text-popup', { /* slider.editAsTextPopup */
         editableText({
           title: '%title%',
           databind: '%databind%',
-          style: editableText.mdlInput('270'),
+          style: editableText.mdcInput('270'),
           features: feature.onEnter(dialog.closeContainingPopup())
         })
       ],
@@ -132,13 +131,3 @@ jb.component('slider.edit-as-text-popup', { /* slider.editAsTextPopup */
   })
 })
 
-
-jb.component('editable-number.mdl-slider', { /* editableNumber.mdlSlider */
-  type: 'editable-number.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('input',{class:'mdl-slider mdl-js-slider', type: 'range',
-        min: state.min, max: state.max, step: state.step,
-        value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: 0}),
-    features: [field.databind(), slider.init(), mdlStyle.initDynamic()]
-  })
-})

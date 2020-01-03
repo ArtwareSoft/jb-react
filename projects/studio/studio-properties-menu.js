@@ -81,7 +81,7 @@ jb.component('studio.jb-editor-menu', { /* studio.jbEditorMenu */
               editableText({
                 title: 'property name',
                 databind: '%$name%',
-                style: editableText.mdlInput(),
+                style: editableText.mdcInput(),
                 features: [
                   feature.onEnter(
                     writeValue(studio.ref('%$path%~%$name%'), ''),
@@ -208,7 +208,7 @@ jb.component('studio.jb-editor-menu', { /* studio.jbEditorMenu */
                   editableText({
                     title: 'remark',
                     databind: '%$remark%',
-                    style: editableText.mdlInput(),
+                    style: editableText.mdcInput(),
                     features: [
                       feature.onEnter(
                         writeValue(studio.ref('%$path%~remark'), '%$remark%'),

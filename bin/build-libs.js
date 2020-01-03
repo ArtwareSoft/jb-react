@@ -47,6 +47,6 @@ concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');
 
 concatFiles(filesOfModules('codemirror-css-files'),'codemirror.css')
-concatFiles(['node_modules/material-design-lite/material.css'],'material.css')
+//concatFiles(['node_modules/material-design-lite/material.css'],'material.css')
 concatFiles(['node_modules/material-design-lite/dist/material.indigo-pink.min.css'],'material.indigo-pink.min.css')
 concatFiles(['node_modules/dragula/dist/dragula.css'],'dragula.css')

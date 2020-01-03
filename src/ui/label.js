@@ -82,22 +82,29 @@ jb.component('label.span', { /* label.span */
   })
 }))
 
-jb.component('header.card-title', { /* label.cardTitle */
+;[1,2,3,4,5,6].map(level=>jb.component(`header.mdc-headline${level}`, {
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'mdl-card__title' },
-    				h('h2',{ class: 'mdl-card__title-text' },	state.text)),
+    template: (cmp,state,h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},state.text),
     features: label.bindText()
   })
-})
+}))
 
-jb.component('label.card-supporting-text', { /* label.cardSupportingText */
+;[1,2].map(level=>jb.component(`header.mdc-subtitle${level}`, {
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'mdl-card__supporting-text' },	state.text),
+    template: (cmp,state,h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},state.text),
     features: label.bindText()
   })
-})
+}))
+
+;[1,2].map(level=>jb.component(`text.mdc-body${level}`, {
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},state.text),
+    features: label.bindText()
+  })
+}))
 
 jb.component('label.highlight', { /* label.highlight */
   type: 'data',

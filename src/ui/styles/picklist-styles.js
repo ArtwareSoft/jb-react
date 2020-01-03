@@ -140,7 +140,7 @@ jb.component('picklist.label-list', { /* picklist.labelList */
 jb.component('picklist.button-list', { /* picklist.buttonList */
   type: 'picklist.style',
   params: [
-    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdlFlatRipple()},
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
     {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal() },
     {id: 'cssForSelected', as: 'string', description: 'e.g. background: red;color: blue;font-weight: bold;', defaultValue: 'background: #bbb; color: #fff' },
   ],

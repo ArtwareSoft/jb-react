@@ -1,10 +1,7 @@
 jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { type: 'checkbox',
-        checked: state.model,
-        onchange: 'setChecked',
-        onkeyup: 'setChecked'  }),
+    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.model, onchange: 'setChecked', onkeyup: 'setChecked'  }),
     features: field.databind()
   })
 })
@@ -13,13 +10,10 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.model,
-        onchange: 'setChecked',
-        onkeyup: 'setChecked'  }), state.text]),
+        checked: state.model, onchange: 'setChecked', onkeyup: 'setChecked'  }), state.text]),
     features: field.databind()
   })
 })
-
 
 jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandCollapse */
   type: 'editable-boolean.style',
@@ -31,18 +25,23 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
   })
 })
 
-jb.component('editable-boolean.mdl-slide-toggle', { /* editableBoolean.mdlSlideToggle */
+jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideToggle */
   type: 'editable-boolean.style',
   params: [
-    { id: 'width', as: 'number', defaultValue: 80 }
+    { id: 'width', as: 'string', defaultValue: 80 }
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('label',{style: { width: cmp.width+'px'}, class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
-        h('input', { type: 'checkbox', class: 'mdl-switch__input', id: 'switch_' + state.fieldId,
-          checked: state.model, onchange: 'setChecked' }),
-        h('span',{class:'mdl-switch__label' },state.text)
+    template: (cmp,state,h) => h('div',{class: 'mdc-switch'},[
+      h('div',{class: 'mdc-switch__track'}),
+      h('div',{class: 'mdc-switch__thumb-underlay'},[
+        h('div',{class: 'mdc-switch__thumb'},
+          h('input', { type: 'checkbox', role: 'switch', class: 'mdc-switch__native-control', id: 'switch_' + state.fieldId,
+            checked: state.model, onchange: 'setChecked' })),
       ]),
-    features: [field.databind(), editableBoolean.keyboardSupport(), mdlStyle.initDynamic()]
+      h('label',{for: 'switch_' + state.fieldId},state.text)
+    ]),
+    css: ctx => `{ width: ${jb.ui.withUnits(ctx.params.width)}}`,
+    features: [field.databind(), editableBoolean.keyboardSupport(), mdcStyle.initDynamic()]
   })
 })
 

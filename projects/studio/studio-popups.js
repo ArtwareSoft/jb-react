@@ -13,9 +13,9 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 				h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
 				h('div',{class: 'dialog-buttons'},[
-					...(cmp.dialog.gotoEditor ? [h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: 'dialog.gotoEditor' },'goto editor')] : []),
-					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: 'dialog.refresh' },'refresh'),
-					h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: 'dialogCloseOK' },'ok'),
+					...(cmp.dialog.gotoEditor ? [h('button',{class: 'mdc-button', onclick: 'dialog.gotoEditor' },'goto editor')] : []),
+					h('button',{class: 'mdc-button', onclick: 'dialog.refresh' },'refresh'),
+					h('button',{class: 'mdc-button', onclick: 'dialogCloseOK' },'ok'),
 				].filter(x=>x) ),
 			]),
 			features: [
@@ -213,7 +213,7 @@ jb.component('dialog.studio-floating', { /* dialog.studioFloating */
 				>.dialog-menu {
 						position: absolute;
 						cursor: pointer;
-						right: 24px; top: 0;
+						right: 24px; top: 4px;
 						font: 21px sans-serif;
 						border: none;
 						background: transparent;
@@ -269,7 +269,7 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/width%',
               title: 'width',
-              style: editableText.mdlInput(),
+              style: editableText.mdcInput(),
               min: '%$controlItem/width/min%',
               max: '%$controlItem/width/max%',
               features: [
@@ -280,7 +280,7 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/height%',
               title: 'height',
-              style: editableText.mdlInput(),
+              style: editableText.mdcInput(),
               min: '%$controlItem/height/min%',
               max: '%$controlItem/height/max%',
               features: [

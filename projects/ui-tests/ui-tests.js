@@ -134,9 +134,9 @@ jb.component('ui-test.button', { /* uiTest.button */
   })
 })
 
-jb.component('ui-test.button.mdl-icon', { /* uiTest.button.mdlIcon */
+jb.component('ui-test.button.mdc-icon', { /* uiTest.button.mdcIcon */
   impl: uiTest({
-    control: button({title: 'btn1', action: ctx => alert(1), style: button.mdlIcon('build')}),
+    control: button({title: 'btn1', action: ctx => alert(1), style: button.mdcIcon('build')}),
     expectedResult: contains('build')
   })
 })
@@ -165,12 +165,12 @@ jb.component('ui-test.editable-text', { /* uiTest.editableText */
   })
 })
 
-jb.component('ui-test.editable-text-mdl', { /* uiTest.editableTextMdl */
+jb.component('ui-test.editable-text-mdc', {
   impl: uiTest({
     control: editableText({
       title: 'name',
       databind: '%$person/name%',
-      style: editableText.mdlInput()
+      style: editableText.mdcInput()
     }),
     expectedResult: contains(['input', 'Homer Simpson'])
   })
@@ -577,7 +577,7 @@ jb.component('ui-test.itemlist-container-search-ctrl', { /* uiTest.itemlistConta
 jb.component('ui-test.itemlist-container-search', { /* uiTest.itemlistContainerSearch */
   impl: uiTest({
     control: uiTest.itemlistContainerSearchCtrl(),
-    action: uiAction.setText('ho', '.mdl-textfield'),
+    action: uiAction.setText('ho', '.mdc-text-field'),
     expectedResult: contains(['Ho', 'mer','display: none;','display: none;'])
   })
 })
@@ -624,7 +624,7 @@ jb.component('ui-test.search-doesnot-create-ReactClass', { /* uiTest.searchDoesn
       ],
       features: [group.itemlistContainer({})]
     }),
-    action: uiAction.setText('ho', '.mdl-textfield'),
+    action: uiAction.setText('ho', '.mdc-text-field'),
     expectedResult: ctx => true,
 //    expectedCounters: ctx => ({ createReactClass: 6 })
   })
@@ -820,7 +820,7 @@ jb.component('ui-test.editable-boolean.all-styles', { /* uiTest.editableBoolean.
         }),
         editableBoolean({
           databind: '%$person/male%',
-          style: editableBoolean.mdlSlideToggle(),
+          style: editableBoolean.mdcSlideToggle(),
           title: 'male'
         }),
         editableBoolean({

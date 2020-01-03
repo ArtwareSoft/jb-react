@@ -763,6 +763,9 @@ ui.toVdomOrStr = val => {
 	return res
 }
 
+ui.hasClassInVdom = (vdom,clz) => (jb.path(vdom,'attributes.class') || '').split(' ').indexOf(clz) != -1
+ui.findInVdom = (vdom,clz) => ui.hasClassInVdom(vdom,clz) ? vdom : (vdom.children||[]).find(vd=>ui.findInVdom(vd,clz))
+
 // ****************** components ****************
 
 jb.component('custom-style', { /* customStyle */

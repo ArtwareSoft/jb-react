@@ -11,7 +11,7 @@ jb.component('editable-text', { /* editableText */
     {
       id: 'style',
       type: 'editable-text.style',
-      defaultValue: editableText.mdlInput(),
+      defaultValue: editableText.mdcInput(),
       dynamic: true
     },
     {id: 'features', type: 'feature[]', dynamic: true}

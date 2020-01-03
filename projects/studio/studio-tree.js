@@ -164,7 +164,7 @@ jb.component('studio.open-control-tree', { /* studio.openControlTree */
     menu: button({
       title: ' ',
       action: studio.openTreeMenu('%$studio/profile_path%'),
-      style: button.mdlIcon('menu'),
+      style: button.mdcIcon('menu'),
       features: css('{ background: none }')
     }),
     title: 'Outline'
